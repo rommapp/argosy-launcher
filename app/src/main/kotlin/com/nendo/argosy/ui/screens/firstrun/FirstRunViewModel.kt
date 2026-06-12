@@ -163,14 +163,11 @@ class FirstRunViewModel @Inject constructor(
             when (val result = romMRepository.fetchAndStorePlatforms(defaultSyncEnabled = false)) {
                 is RomMResult.Success -> {
                     val allPlatforms = result.data
-                    val filtered = PlatformFilterLogic.filterAndSort(
+                    val filtered = PlatformFilterLogic.filterAndSortPlatformEntities(
                         items = allPlatforms,
                         searchQuery = _uiState.value.platformFilterSearchQuery,
                         filterMode = _uiState.value.platformFilterMode,
-                        sortMode = _uiState.value.platformFilterSortMode,
-                        nameSelector = { it.name },
-                        countSelector = { it.gameCount },
-                        enabledSelector = { it.syncEnabled }
+                        sortMode = _uiState.value.platformFilterSortMode
                     )
                     _uiState.update { it.copy(platformsAll = allPlatforms, platforms = filtered) }
                 }
@@ -306,6 +303,7 @@ class FirstRunViewModel @Inject constructor(
             if (platformIndex == -1) return@launch
 
             val platform = currentAll[platformIndex]
+            val newEnabled = !platform.syncEnabled
             // Update repository
             platformRepository.updateSyncEnabled(platformId, newEnabled)
 
@@ -363,14 +361,11 @@ class FirstRunViewModel @Inject constructor(
         val state = _uiState.value
         val allPlatforms = state.platformsAll
 
-        val filtered = PlatformFilterLogic.filterAndSort(
+        val filtered = PlatformFilterLogic.filterAndSortPlatformEntities(
             items = allPlatforms,
             searchQuery = state.platformFilterSearchQuery,
             filterMode = state.platformFilterMode,
-            sortMode = state.platformFilterSortMode,
-            nameSelector = { it.name },
-            countSelector = { it.gameCount },
-            enabledSelector = { it.syncEnabled }
+            sortMode = state.platformFilterSortMode
         )
 
         _uiState.update {

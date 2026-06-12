@@ -435,15 +435,11 @@ class SyncSettingsDelegate @Inject constructor(
                     syncEnabled = entity.syncEnabled
                 )
             }
-            val currentState = _state.value
-            val filtered = PlatformFilterLogic.filterAndSort(
+            val filtered = PlatformFilterLogic.filterAndSortPlatformFilterItems(
                 items = allPlatforms,
                 searchQuery = _state.value.platformFilterSearchQuery,
                 filterMode = _state.value.platformFilterMode,
-                sortMode = _state.value.platformFilterSortMode,
-                nameSelector = { it.name },
-                countSelector = { it.romCount },
-                enabledSelector = { it.syncEnabled }
+                sortMode = _state.value.platformFilterSortMode
             )
             val enabledCount = allPlatforms.count { it.syncEnabled }
             _state.update {
@@ -465,14 +461,11 @@ class SyncSettingsDelegate @Inject constructor(
 
     fun applyPlatformFilters(resetFocus: Boolean = false) {
         _state.update { state ->
-            val filtered = PlatformFilterLogic.filterAndSort(
+            val filtered = PlatformFilterLogic.filterAndSortPlatformFilterItems(
                 items = state.platformFiltersAllPlatforms,
                 searchQuery = state.platformFilterSearchQuery,
                 filterMode = state.platformFilterMode,
-                sortMode = state.platformFilterSortMode,
-                nameSelector = { it.name },
-                countSelector = { it.romCount },
-                enabledSelector = { it.syncEnabled }
+                sortMode = state.platformFilterSortMode
             )
             state.copy(
                 platformFiltersList = filtered,
@@ -528,9 +521,11 @@ class SyncSettingsDelegate @Inject constructor(
                 val updatedAllPlatforms = state.platformFiltersAllPlatforms.map { item ->
                     if (item.id == platformId) item.copy(syncEnabled = newEnabled) else item
                 }
+                val enabledCount = updatedAllPlatforms.count { it.syncEnabled }
 
                 state.copy(
-                    platformFiltersAllPlatforms = updatedAllPlatforms
+                    platformFiltersAllPlatforms = updatedAllPlatforms,
+                    enabledPlatformCount = enabledCount
                 )
             }
             // Re-apply filters to ensure view remains consistent (e.g. removing disabled items if in ENABLED mode)

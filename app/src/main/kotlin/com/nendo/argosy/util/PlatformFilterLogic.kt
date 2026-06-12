@@ -1,5 +1,9 @@
 package com.nendo.argosy.util
 
+import com.nendo.argosy.data.local.entity.PlatformEntity
+import com.nendo.argosy.ui.screens.settings.PlatformFilterItem
+
+// Concrete public methods to avoid kotlinc type-inference hang with generic call sites.
 object PlatformFilterLogic {
     enum class SortMode {
         DEFAULT,
@@ -15,47 +19,75 @@ object PlatformFilterLogic {
         ENABLED
     }
 
-    fun <T> filterAndSort(
+    fun filterAndSortPlatformEntities(
+        items: List<PlatformEntity>,
+        searchQuery: String,
+        filterMode: FilterMode,
+        sortMode: SortMode
+    ): List<PlatformEntity> = filterAndSortBy(
+        items = items,
+        searchQuery = searchQuery,
+        filterMode = filterMode,
+        sortMode = sortMode,
+        nameOf = { it.name },
+        countOf = { it.gameCount },
+        isEnabled = { it.syncEnabled },
+        defaultCompare = { a, b -> a.sortOrder.compareTo(b.sortOrder) }
+    )
+
+    fun filterAndSortPlatformFilterItems(
+        items: List<PlatformFilterItem>,
+        searchQuery: String,
+        filterMode: FilterMode,
+        sortMode: SortMode
+    ): List<PlatformFilterItem> = filterAndSortBy(
+        items = items,
+        searchQuery = searchQuery,
+        filterMode = filterMode,
+        sortMode = sortMode,
+        nameOf = { it.name },
+        countOf = { it.romCount },
+        isEnabled = { it.syncEnabled },
+        defaultCompare = { _, _ -> 0 }
+    )
+
+    private fun <T> filterAndSortBy(
         items: List<T>,
         searchQuery: String,
         filterMode: FilterMode,
         sortMode: SortMode,
-        nameSelector: (T) -> String,
-        countSelector: (T) -> Int,
-        enabledSelector: ((T) -> Boolean)? = null,
-        defaultSortSelector: ((T) -> Comparable<*>?)? = null
+        nameOf: (T) -> String,
+        countOf: (T) -> Int,
+        isEnabled: (T) -> Boolean,
+        defaultCompare: (T, T) -> Int
     ): List<T> {
         val query = searchQuery.trim()
-        val queryLower = query.lowercase()
-        return items.filter { item ->
-            when (filterMode) {
-                FilterMode.HAS_GAMES -> if (countSelector(item) <= 0) return@filter false
-                FilterMode.ENABLED -> if (enabledSelector != null && !enabledSelector(item)) return@filter false
-                FilterMode.ALL -> {}
+
+        val filtered = items.filter { item ->
+            val matchesFilter = when (filterMode) {
+                FilterMode.ALL -> true
+                FilterMode.HAS_GAMES -> countOf(item) > 0
+                FilterMode.ENABLED -> isEnabled(item)
             }
-            if (query.isNotEmpty() && !nameSelector(item).contains(queryLower, ignoreCase = true)) return@filter false
-            true
-        }.sortedWith { a, b ->
+            val matchesQuery = query.isEmpty() || nameOf(item).contains(query, ignoreCase = true)
+            matchesFilter && matchesQuery
+        }
+
+        return filtered.sortedWith { a, b ->
             when (sortMode) {
-                SortMode.NAME_ASC -> String.CASE_INSENSITIVE_ORDER.compare(nameSelector(a), nameSelector(b))
-                SortMode.NAME_DESC -> String.CASE_INSENSITIVE_ORDER.compare(nameSelector(b), nameSelector(a))
+                SortMode.NAME_ASC -> nameOf(a).compareTo(nameOf(b), ignoreCase = true)
+                SortMode.NAME_DESC -> nameOf(b).compareTo(nameOf(a), ignoreCase = true)
                 SortMode.MOST_GAMES -> {
-                    val countCompare = countSelector(b).compareTo(countSelector(a))
+                    val countCompare = countOf(b).compareTo(countOf(a))
                     if (countCompare != 0) countCompare
-                    else String.CASE_INSENSITIVE_ORDER.compare(nameSelector(a), nameSelector(b))
+                    else nameOf(a).compareTo(nameOf(b), ignoreCase = true)
                 }
                 SortMode.LEAST_GAMES -> {
-                    val countCompare = countSelector(a).compareTo(countSelector(b))
+                    val countCompare = countOf(a).compareTo(countOf(b))
                     if (countCompare != 0) countCompare
-                    else String.CASE_INSENSITIVE_ORDER.compare(nameSelector(a), nameSelector(b))
+                    else nameOf(a).compareTo(nameOf(b), ignoreCase = true)
                 }
-                SortMode.DEFAULT -> {
-                    if (defaultSortSelector != null) {
-                        compareValues(defaultSortSelector(a), defaultSortSelector(b))
-                    } else {
-                        0
-                    }
-                }
+                SortMode.DEFAULT -> defaultCompare(a, b)
             }
         }
     }

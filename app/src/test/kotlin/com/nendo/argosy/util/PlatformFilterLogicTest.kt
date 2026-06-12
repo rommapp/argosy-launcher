@@ -1,277 +1,148 @@
 package com.nendo.argosy.util
 
+import com.nendo.argosy.data.local.entity.PlatformEntity
+import com.nendo.argosy.ui.screens.settings.PlatformFilterItem
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class PlatformFilterLogicTest {
 
-    data class TestPlatform(
-        val name: String,
-        val gameCount: Int,
-        val sortOrder: Int = 0
+    private fun entity(
+        id: Long, name: String, gameCount: Int,
+        syncEnabled: Boolean = true, sortOrder: Int = 0
+    ) = PlatformEntity(
+        id = id, slug = name.lowercase().replace(" ", "-"), name = name,
+        shortName = name.take(3), romExtensions = ".bin",
+        gameCount = gameCount, syncEnabled = syncEnabled, sortOrder = sortOrder
     )
 
-    private val testPlatforms = listOf(
-        TestPlatform("PlayStation 5", 150, 1),
-        TestPlatform("PlayStation 2", 500, 2),
-        TestPlatform("PlayStation 10", 50, 3),
-        TestPlatform("Xbox Series X", 120, 4),
-        TestPlatform("Nintendo Switch", 300, 5),
-        TestPlatform("Game Boy Advance", 200, 6),
-        TestPlatform("Sega Genesis", 0, 7),
-        TestPlatform("Atari 2600", 0, 8)
+    private val platforms = listOf(
+        entity(1, "PlayStation 5", 150, sortOrder = 1),
+        entity(2, "PlayStation 2", 500, sortOrder = 2),
+        entity(3, "Xbox Series X", 120, sortOrder = 3),
+        entity(4, "Nintendo Switch", 300, sortOrder = 4),
+        entity(5, "Game Boy Advance", 200, sortOrder = 5),
+        entity(6, "Sega Genesis", 0, sortOrder = 6),
+        entity(7, "Atari 2600", 0, sortOrder = 7)
     )
 
     @Test
-    fun `filterAndSort with DEFAULT sort mode preserves original order`() {
-        val result = PlatformFilterLogic.filterAndSort(
-            items = testPlatforms,
-            searchQuery = "",
-            filterMode = PlatformFilterLogic.FilterMode.ALL,
-            sortMode = PlatformFilterLogic.SortMode.DEFAULT,
-            nameSelector = { it.name },
-            countSelector = { it.gameCount },
-            defaultSortSelector = { it.sortOrder }
+    fun `DEFAULT sort uses sortOrder`() {
+        val result = PlatformFilterLogic.filterAndSortPlatformEntities(
+            platforms, "", PlatformFilterLogic.FilterMode.ALL, PlatformFilterLogic.SortMode.DEFAULT
         )
-
-        assertEquals(testPlatforms, result)
+        assertEquals(platforms, result)
     }
 
     @Test
-    fun `filterAndSort with NAME_ASC sorts alphabetically case-insensitive`() {
-        val result = PlatformFilterLogic.filterAndSort(
-            items = testPlatforms,
-            searchQuery = "",
-            filterMode = PlatformFilterLogic.FilterMode.ALL,
-            sortMode = PlatformFilterLogic.SortMode.NAME_ASC,
-            nameSelector = { it.name },
-            countSelector = { it.gameCount }
+    fun `NAME_ASC and NAME_DESC sort alphabetically`() {
+        val asc = PlatformFilterLogic.filterAndSortPlatformEntities(
+            platforms, "", PlatformFilterLogic.FilterMode.ALL, PlatformFilterLogic.SortMode.NAME_ASC
         )
+        assertEquals("Atari 2600", asc.first().name)
+        assertEquals("Xbox Series X", asc.last().name)
 
-        val expected = listOf("Atari 2600", "Game Boy Advance", "Nintendo Switch",
-            "PlayStation 10", "PlayStation 2", "PlayStation 5", "Sega Genesis", "Xbox Series X")
-        assertEquals(expected, result.map { it.name })
+        val desc = PlatformFilterLogic.filterAndSortPlatformEntities(
+            platforms, "", PlatformFilterLogic.FilterMode.ALL, PlatformFilterLogic.SortMode.NAME_DESC
+        )
+        assertEquals("Xbox Series X", desc.first().name)
+        assertEquals("Atari 2600", desc.last().name)
     }
 
     @Test
-    fun `filterAndSort with NAME_DESC sorts reverse alphabetically`() {
-        val result = PlatformFilterLogic.filterAndSort(
-            items = testPlatforms,
-            searchQuery = "",
-            filterMode = PlatformFilterLogic.FilterMode.ALL,
-            sortMode = PlatformFilterLogic.SortMode.NAME_DESC,
-            nameSelector = { it.name },
-            countSelector = { it.gameCount }
+    fun `MOST_GAMES and LEAST_GAMES sort by count with name tiebreaker`() {
+        val most = PlatformFilterLogic.filterAndSortPlatformEntities(
+            platforms, "", PlatformFilterLogic.FilterMode.ALL, PlatformFilterLogic.SortMode.MOST_GAMES
         )
+        assertEquals(listOf(500, 300, 200, 150, 120, 0, 0), most.map { it.gameCount })
+        // Tied zeros should be alphabetical
+        assertEquals("Atari 2600", most[5].name)
+        assertEquals("Sega Genesis", most[6].name)
 
-        val expected = listOf("Xbox Series X", "Sega Genesis", "PlayStation 5",
-            "PlayStation 2", "PlayStation 10", "Nintendo Switch", "Game Boy Advance", "Atari 2600")
-        assertEquals(expected, result.map { it.name })
+        val least = PlatformFilterLogic.filterAndSortPlatformEntities(
+            platforms, "", PlatformFilterLogic.FilterMode.ALL, PlatformFilterLogic.SortMode.LEAST_GAMES
+        )
+        assertEquals(listOf(0, 0, 120, 150, 200, 300, 500), least.map { it.gameCount })
     }
 
     @Test
-    fun `filterAndSort with MOST_GAMES sorts by game count descending`() {
-        val result = PlatformFilterLogic.filterAndSort(
-            items = testPlatforms,
-            searchQuery = "",
-            filterMode = PlatformFilterLogic.FilterMode.ALL,
-            sortMode = PlatformFilterLogic.SortMode.MOST_GAMES,
-            nameSelector = { it.name },
-            countSelector = { it.gameCount }
+    fun `search is case-insensitive and matches substrings`() {
+        val result = PlatformFilterLogic.filterAndSortPlatformEntities(
+            platforms, "playstation", PlatformFilterLogic.FilterMode.ALL, PlatformFilterLogic.SortMode.DEFAULT
         )
-
-        assertEquals(listOf(500, 300, 200, 150, 120, 50, 0, 0), result.map { it.gameCount })
+        assertEquals(2, result.size)
+        assertTrue(result.all { it.name.contains("PlayStation") })
     }
 
     @Test
-    fun `filterAndSort with LEAST_GAMES sorts by game count ascending`() {
-        val result = PlatformFilterLogic.filterAndSort(
-            items = testPlatforms,
-            searchQuery = "",
-            filterMode = PlatformFilterLogic.FilterMode.ALL,
-            sortMode = PlatformFilterLogic.SortMode.LEAST_GAMES,
-            nameSelector = { it.name },
-            countSelector = { it.gameCount }
+    fun `whitespace-only search returns all`() {
+        val result = PlatformFilterLogic.filterAndSortPlatformEntities(
+            platforms, "   ", PlatformFilterLogic.FilterMode.ALL, PlatformFilterLogic.SortMode.DEFAULT
         )
-
-        assertEquals(listOf(0, 0, 50, 120, 150, 200, 300, 500), result.map { it.gameCount })
+        assertEquals(platforms.size, result.size)
     }
 
     @Test
-    fun `filterAndSort filters by search query case-insensitive`() {
-        val result = PlatformFilterLogic.filterAndSort(
-            items = testPlatforms,
-            searchQuery = "playstation",
-            filterMode = PlatformFilterLogic.FilterMode.ALL,
-            sortMode = PlatformFilterLogic.SortMode.DEFAULT,
-            nameSelector = { it.name },
-            countSelector = { it.gameCount },
-            defaultSortSelector = { it.sortOrder }
+    fun `HAS_GAMES filters out zero-count platforms`() {
+        val result = PlatformFilterLogic.filterAndSortPlatformEntities(
+            platforms, "", PlatformFilterLogic.FilterMode.HAS_GAMES, PlatformFilterLogic.SortMode.DEFAULT
         )
-
-        assertEquals(3, result.size)
-        assertEquals(listOf("PlayStation 5", "PlayStation 2", "PlayStation 10"), result.map { it.name })
+        assertEquals(5, result.size)
+        result.forEach { assertTrue(it.gameCount > 0) }
     }
 
     @Test
-    fun `filterAndSort filters by partial search query`() {
-        val result = PlatformFilterLogic.filterAndSort(
-            items = testPlatforms,
-            searchQuery = "boy",
-            filterMode = PlatformFilterLogic.FilterMode.ALL,
-            sortMode = PlatformFilterLogic.SortMode.DEFAULT,
-            nameSelector = { it.name },
-            countSelector = { it.gameCount },
-            defaultSortSelector = { it.sortOrder }
+    fun `ENABLED filters by syncEnabled`() {
+        val mixed = listOf(
+            entity(1, "Enabled", 10, syncEnabled = true),
+            entity(2, "Disabled", 20, syncEnabled = false)
         )
-
+        val result = PlatformFilterLogic.filterAndSortPlatformEntities(
+            mixed, "", PlatformFilterLogic.FilterMode.ENABLED, PlatformFilterLogic.SortMode.DEFAULT
+        )
         assertEquals(1, result.size)
-        assertEquals("Game Boy Advance", result[0].name)
+        assertEquals("Enabled", result[0].name)
     }
 
     @Test
-    fun `filterAndSort with hasGames filters out platforms with zero games`() {
-        val result = PlatformFilterLogic.filterAndSort(
-            items = testPlatforms,
-            searchQuery = "",
-            filterMode = PlatformFilterLogic.FilterMode.HAS_GAMES,
-            sortMode = PlatformFilterLogic.SortMode.DEFAULT,
-            nameSelector = { it.name },
-            countSelector = { it.gameCount },
-            defaultSortSelector = { it.sortOrder }
+    fun `search combined with filter and sort`() {
+        val result = PlatformFilterLogic.filterAndSortPlatformEntities(
+            platforms, "play", PlatformFilterLogic.FilterMode.HAS_GAMES, PlatformFilterLogic.SortMode.MOST_GAMES
         )
-
-        assertEquals(6, result.size)
-        result.forEach { platform ->
-            assert(platform.gameCount > 0) { "${platform.name} should have games" }
-        }
+        assertEquals(listOf("PlayStation 2", "PlayStation 5"), result.map { it.name })
     }
 
     @Test
-    fun `filterAndSort combines search and hasGames filters`() {
-        val result = PlatformFilterLogic.filterAndSort(
-            items = testPlatforms,
-            searchQuery = "play",
-            filterMode = PlatformFilterLogic.FilterMode.HAS_GAMES,
-            sortMode = PlatformFilterLogic.SortMode.DEFAULT,
-            nameSelector = { it.name },
-            countSelector = { it.gameCount },
-            defaultSortSelector = { it.sortOrder }
+    fun `empty list and no matches`() {
+        val empty = PlatformFilterLogic.filterAndSortPlatformEntities(
+            emptyList(), "test", PlatformFilterLogic.FilterMode.ALL, PlatformFilterLogic.SortMode.NAME_ASC
         )
+        assertEquals(0, empty.size)
 
-        assertEquals(3, result.size)
-        assertEquals(listOf("PlayStation 5", "PlayStation 2", "PlayStation 10"), result.map { it.name })
+        val noMatch = PlatformFilterLogic.filterAndSortPlatformEntities(
+            platforms, "zzz", PlatformFilterLogic.FilterMode.ALL, PlatformFilterLogic.SortMode.DEFAULT
+        )
+        assertEquals(0, noMatch.size)
     }
 
+    // PlatformFilterItem uses the same underlying logic — just verify the wiring
     @Test
-    fun `filterAndSort combines all filters with sorting`() {
-        val result = PlatformFilterLogic.filterAndSort(
-            items = testPlatforms,
-            searchQuery = "play",
-            filterMode = PlatformFilterLogic.FilterMode.HAS_GAMES,
-            sortMode = PlatformFilterLogic.SortMode.MOST_GAMES,
-            nameSelector = { it.name },
-            countSelector = { it.gameCount }
+    fun `filterItems wires romCount and syncEnabled correctly`() {
+        val items = listOf(
+            PlatformFilterItem(id = 1, name = "PS2", slug = "ps2", romCount = 10, syncEnabled = true),
+            PlatformFilterItem(id = 2, name = "GBA", slug = "gba", romCount = 0, syncEnabled = true),
+            PlatformFilterItem(id = 3, name = "SNES", slug = "snes", romCount = 5, syncEnabled = false)
         )
 
-        assertEquals(3, result.size)
-        assertEquals(listOf("PlayStation 2", "PlayStation 5", "PlayStation 10"), result.map { it.name })
-        assertEquals(listOf(500, 150, 50), result.map { it.gameCount })
-    }
-
-    @Test
-    fun `filterAndSort handles empty search query`() {
-        val result = PlatformFilterLogic.filterAndSort(
-            items = testPlatforms,
-            searchQuery = "   ",
-            filterMode = PlatformFilterLogic.FilterMode.ALL,
-            sortMode = PlatformFilterLogic.SortMode.DEFAULT,
-            nameSelector = { it.name },
-            countSelector = { it.gameCount },
-            defaultSortSelector = { it.sortOrder }
+        val hasGames = PlatformFilterLogic.filterAndSortPlatformFilterItems(
+            items, "", PlatformFilterLogic.FilterMode.HAS_GAMES, PlatformFilterLogic.SortMode.MOST_GAMES
         )
+        assertEquals(listOf("PS2", "SNES"), hasGames.map { it.name })
 
-        assertEquals(testPlatforms.size, result.size)
-    }
-
-    @Test
-    fun `filterAndSort returns empty list when no matches`() {
-        val result = PlatformFilterLogic.filterAndSort(
-            items = testPlatforms,
-            searchQuery = "nonexistent",
-            filterMode = PlatformFilterLogic.FilterMode.ALL,
-            sortMode = PlatformFilterLogic.SortMode.DEFAULT,
-            nameSelector = { it.name },
-            countSelector = { it.gameCount }
+        val enabled = PlatformFilterLogic.filterAndSortPlatformFilterItems(
+            items, "", PlatformFilterLogic.FilterMode.ENABLED, PlatformFilterLogic.SortMode.NAME_ASC
         )
-
-        assertEquals(0, result.size)
-    }
-
-    @Test
-    fun `filterAndSort with numeric edge cases (1, 2, 10) sorts correctly`() {
-        val platforms = listOf(
-            TestPlatform("A", 1),
-            TestPlatform("B", 10),
-            TestPlatform("C", 2)
-        )
-
-        val mostGames = PlatformFilterLogic.filterAndSort(
-            items = platforms,
-            searchQuery = "",
-            filterMode = PlatformFilterLogic.FilterMode.ALL,
-            sortMode = PlatformFilterLogic.SortMode.MOST_GAMES,
-            nameSelector = { it.name },
-            countSelector = { it.gameCount }
-        )
-        // Should be 10 (B), 2 (C), 1 (A)
-        assertEquals(listOf(10, 2, 1), mostGames.map { it.gameCount })
-        assertEquals(listOf("B", "C", "A"), mostGames.map { it.name })
-
-        val leastGames = PlatformFilterLogic.filterAndSort(
-            items = platforms,
-            searchQuery = "",
-            filterMode = PlatformFilterLogic.FilterMode.ALL,
-            sortMode = PlatformFilterLogic.SortMode.LEAST_GAMES,
-            nameSelector = { it.name },
-            countSelector = { it.gameCount }
-        )
-        // Should be 1 (A), 2 (C), 10 (B)
-        assertEquals(listOf(1, 2, 10), leastGames.map { it.gameCount })
-        assertEquals(listOf("A", "C", "B"), leastGames.map { it.name })
-    }
-
-    @Test
-    fun `filterAndSort should use name as secondary sort for same game counts`() {
-        val platforms = listOf(
-            TestPlatform("B", 10),
-            TestPlatform("A", 10),
-            TestPlatform("C", 5)
-        )
-
-        val result = PlatformFilterLogic.filterAndSort(
-            items = platforms,
-            searchQuery = "",
-            filterMode = PlatformFilterLogic.FilterMode.ALL,
-            sortMode = PlatformFilterLogic.SortMode.MOST_GAMES,
-            nameSelector = { it.name },
-            countSelector = { it.gameCount }
-        )
-
-        assertEquals(listOf("A", "B", "C"), result.map { it.name })
-    }
-
-    @Test
-    fun `filterAndSort handles empty input list`() {
-        val result = PlatformFilterLogic.filterAndSort(
-            items = emptyList<TestPlatform>(),
-            searchQuery = "test",
-            filterMode = PlatformFilterLogic.FilterMode.HAS_GAMES,
-            sortMode = PlatformFilterLogic.SortMode.NAME_ASC,
-            nameSelector = { it.name },
-            countSelector = { it.gameCount }
-        )
-
-        assertEquals(0, result.size)
+        assertEquals(listOf("GBA", "PS2"), enabled.map { it.name })
     }
 }

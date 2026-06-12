@@ -50,23 +50,6 @@ import com.nendo.argosy.ui.screens.settings.delegates.SyncSettingsDelegate
 import com.nendo.argosy.core.emulator.LibretroSettingDef
 import com.nendo.argosy.util.LogLevel
 
-import com.nendo.argosy.ui.screens.settings.sections.aboutMaxFocusIndex
-import com.nendo.argosy.ui.screens.settings.sections.boxArtMaxFocusIndex
-import com.nendo.argosy.ui.screens.settings.sections.builtinControlsMaxFocusIndex
-import com.nendo.argosy.ui.screens.settings.sections.builtinVideoMaxFocusIndex
-import com.nendo.argosy.ui.screens.settings.sections.controlsMaxFocusIndex
-import com.nendo.argosy.ui.screens.settings.sections.emulatorsMaxFocusIndex
-import com.nendo.argosy.ui.screens.settings.sections.HomeScreenItem
-import com.nendo.argosy.ui.screens.settings.sections.homeScreenItemAtFocusIndex
-import com.nendo.argosy.ui.screens.settings.sections.homeScreenMaxFocusIndex
-import com.nendo.argosy.ui.screens.settings.sections.InterfaceItem
-import com.nendo.argosy.ui.screens.settings.sections.InterfaceLayoutState
-import com.nendo.argosy.ui.screens.settings.sections.interfaceItemAtFocusIndex
-import com.nendo.argosy.ui.screens.settings.sections.interfaceMaxFocusIndex
-import com.nendo.argosy.ui.screens.settings.sections.mainSettingsMaxFocusIndex
-import com.nendo.argosy.ui.screens.settings.sections.permissionsMaxFocusIndex
-import com.nendo.argosy.ui.screens.settings.sections.storageMaxFocusIndex
-
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableSharedFlow

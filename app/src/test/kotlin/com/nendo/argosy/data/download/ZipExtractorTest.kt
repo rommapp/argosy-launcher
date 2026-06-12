@@ -411,6 +411,47 @@ class ZipExtractorTest {
     }
 
     @Test
+    fun `launchPath points at single extracted nes file when extension not in isGameFile whitelist`() {
+        val zipFile = File(tempDir, "tetris.zip")
+        createTestZip(zipFile, mapOf("Tetris/tetris.nes" to "nes rom bytes"))
+
+        val result = ZipExtractor.extractFolderRom(zipFile, "Tetris", tempDir)
+
+        assertNull(result.primaryFile)
+        assertTrue(result.discFiles.isEmpty())
+        assertTrue(
+            "launchPath should end with .nes but was ${result.launchPath}",
+            result.launchPath.endsWith(".nes")
+        )
+    }
+
+    @Test
+    fun `launchPath points at single extracted sfc file from 7z-style folder layout`() {
+        val zipFile = File(tempDir, "mario.zip")
+        createTestZip(zipFile, mapOf("Super Mario World/smw.sfc" to "snes rom bytes"))
+
+        val result = ZipExtractor.extractFolderRom(zipFile, "Super Mario World", tempDir)
+
+        assertTrue(
+            "launchPath should end with .sfc but was ${result.launchPath}",
+            result.launchPath.endsWith(".sfc")
+        )
+    }
+
+    @Test
+    fun `launchPath points at single flat-extracted gba file`() {
+        val zipFile = File(tempDir, "advance.zip")
+        createTestZip(zipFile, mapOf("metroid.gba" to "gba rom bytes"))
+
+        val result = ZipExtractor.extractFolderRom(zipFile, "Metroid Fusion", tempDir)
+
+        assertTrue(
+            "launchPath should end with .gba but was ${result.launchPath}",
+            result.launchPath.endsWith(".gba")
+        )
+    }
+
+    @Test
     fun `shouldExtractArchive keeps arcade zip zipped because zip is the rom format`() {
         val zipFile = File(tempDir, "mame_rom.zip")
         createTestZip(zipFile, mapOf("game.bin" to "arcade rom content"))

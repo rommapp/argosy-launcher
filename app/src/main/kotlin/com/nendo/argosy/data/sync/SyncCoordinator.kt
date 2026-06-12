@@ -5,9 +5,13 @@ import com.nendo.argosy.data.local.dao.PendingSyncQueueDao
 import com.nendo.argosy.data.local.dao.SaveCacheDao
 import com.nendo.argosy.data.local.entity.PendingSyncQueueEntity
 import com.nendo.argosy.data.local.entity.SaveCacheEntity
+import com.nendo.argosy.data.local.entity.SaveSyncEntity
 import com.nendo.argosy.data.local.entity.SyncPriority
 import com.nendo.argosy.data.local.entity.SyncStatus as DbSyncStatus
 import com.nendo.argosy.data.local.entity.SyncType
+import com.nendo.argosy.data.repository.SaveSyncApiClient
+import com.nendo.argosy.data.local.dao.PendingConflictDao
+import com.nendo.argosy.data.local.entity.PendingConflictEntity
 import com.nendo.argosy.data.remote.romm.ConnectionState
 import com.nendo.argosy.data.remote.romm.RomMRepository
 import com.nendo.argosy.data.preferences.SyncPreferencesRepository
@@ -15,12 +19,16 @@ import com.nendo.argosy.data.repository.SaveCacheManager
 import com.nendo.argosy.data.repository.SaveSyncRepository
 import com.nendo.argosy.data.repository.SaveSyncResult
 import com.nendo.argosy.data.repository.StateCacheManager
+import com.nendo.argosy.data.sync.strategy.LocalSaveState
+import com.nendo.argosy.data.sync.strategy.ReconcilePlan
+import com.nendo.argosy.data.sync.strategy.SaveSyncStrategySelector
 import com.nendo.argosy.util.Logger
 import dagger.Lazy
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.withContext
+import java.io.File
 import java.time.Duration
 import java.time.Instant
 import javax.inject.Inject
@@ -39,10 +47,14 @@ class SyncCoordinator @Inject constructor(
     private val stateCacheManager: Lazy<StateCacheManager>,
     private val syncQueueManager: SyncQueueManager,
     private val syncPreferencesRepository: SyncPreferencesRepository,
-    private val payloadCodec: SyncPayloadCodec
+    private val payloadCodec: SyncPayloadCodec,
+    private val strategySelector: SaveSyncStrategySelector,
+    private val pendingConflictDao: PendingConflictDao,
+    private val reconcileEffectApplier: ReconcileEffectApplier
 ) {
     companion object {
         private const val TAG = "SyncCoordinator"
+        private val NEGOTIATE_COOLDOWN: Duration = Duration.ofMinutes(5)
     }
 
     private val mutex = Mutex()
@@ -51,6 +63,140 @@ class SyncCoordinator @Inject constructor(
         data object NotConnected : ProcessResult()
         data class Completed(val processed: Int, val failed: Int) : ProcessResult()
     }
+
+    suspend fun reconcileAll(): ReconcileSummary = withContext(Dispatchers.IO) {
+        canonicalizeStaleEmulatorIds()
+        val queueResult = processQueue()
+
+        val state = romMRepository.get().connectionState.value
+        val caps = (state as? ConnectionState.Connected)?.capabilities
+        if (caps?.supportsSyncNegotiate != true) {
+            return@withContext ReconcileSummary(queueResult, planConflicts = 0, planApplied = 0)
+        }
+
+        val now = Instant.now()
+        val last = syncPreferencesRepository.getLastNegotiateAt()
+        if (last != null && Duration.between(last, now) < NEGOTIATE_COOLDOWN) {
+            Logger.debug(TAG, "reconcileAll: negotiate cooldown active (last=$last), skipping")
+            return@withContext ReconcileSummary(queueResult, planConflicts = 0, planApplied = 0)
+        }
+        syncPreferencesRepository.setLastNegotiateAt(now)
+
+        val inventory = buildInventory()
+        val plan = strategySelector.current().planReconcile(inventory)
+        if (plan.operations.isEmpty()) {
+            return@withContext ReconcileSummary(queueResult, planConflicts = 0, planApplied = 0)
+        }
+
+        val (conflicts, applied) = applyPlan(plan)
+        Logger.info(TAG, "reconcileAll: plan applied | conflicts=$conflicts handled=$applied sessionId=${plan.sessionId}")
+        ReconcileSummary(queueResult, planConflicts = conflicts, planApplied = applied)
+    }
+
+    private suspend fun buildInventory(): List<LocalSaveState> {
+        val rows = saveSyncDao.getAllWithLocalPath()
+        var skippedNoGame = 0
+        var skippedNoRom = 0
+        var skippedStateShaped = 0
+        val result = rows.mapNotNull { row ->
+            val path = row.localSavePath ?: return@mapNotNull null
+            val file = File(path)
+            if (!file.exists()) return@mapNotNull null
+
+            val channel = row.channelName
+            if (channel != null && Regex("""^state_""", RegexOption.IGNORE_CASE).containsMatchIn(channel)) {
+                skippedStateShaped++
+                return@mapNotNull null
+            }
+
+            val game = gameDao.getById(row.gameId) ?: run { skippedNoGame++; return@mapNotNull null }
+            if (game.localPath == null) { skippedNoRom++; return@mapNotNull null }
+
+            val romBaseName = File(game.localPath).nameWithoutExtension
+            val serverFileName = SaveSyncApiClient.computeUploadFileName(
+                localSavePath = path,
+                channelName = row.channelName,
+                romBaseName = romBaseName
+            )
+
+            val reportedTime = Instant.ofEpochMilli(file.lastModified())
+
+            LocalSaveState(
+                romId = row.rommId,
+                fileName = serverFileName,
+                slot = row.channelName ?: SaveSyncApiClient.AUTOSAVE_SLOT_NAME,
+                emulator = row.emulatorId,
+                contentHash = row.lastUploadedHash,
+                updatedAt = reportedTime.toString(),
+                fileSizeBytes = file.length()
+            )
+        }
+        val nullHashCount = result.count { it.contentHash == null }
+        Logger.debug(TAG, "buildInventory: rows=${result.size} nullHash=$nullHashCount skippedNoGame=$skippedNoGame skippedNoRom=$skippedNoRom skippedStateShaped=$skippedStateShaped")
+        return result
+    }
+
+    private suspend fun applyPlan(plan: ReconcilePlan): Pair<Int, Int> {
+        var outcome = ReconcileEffectOutcome.NONE
+        var skippedNullSlot = 0
+        var skippedStateShaped = 0
+        val stateSlotPattern = Regex("""^state_""", RegexOption.IGNORE_CASE)
+        for (op in plan.operations) {
+            if (op.slot == null) {
+                skippedNullSlot++
+                continue
+            }
+            if (stateSlotPattern.containsMatchIn(op.slot)) {
+                skippedStateShaped++
+                continue
+            }
+            outcome += reconcileEffectApplier.apply(op, plan.sessionId)
+        }
+        if (skippedNullSlot > 0) {
+            Logger.info(TAG, "applyPlan: skipped $skippedNullSlot operations with null slot (legacy archived saves)")
+        }
+        if (skippedStateShaped > 0) {
+            Logger.info(TAG, "applyPlan: skipped $skippedStateShaped operations with state-shaped slot (legacy state-in-save rows)")
+        }
+        return outcome.conflicts to outcome.applied
+    }
+
+    private suspend fun resolveConflictLocalTime(
+        gameId: Long,
+        emulatorId: String?,
+        slot: String?,
+        fallback: Instant?
+    ): Instant? {
+        val emu = emulatorId ?: return fallback
+        val existing = if (slot != null) {
+            saveSyncDao.getByGameEmulatorAndChannel(gameId, emu, slot)
+        } else {
+            saveSyncDao.getByGameAndEmulator(gameId, emu)
+        }
+        return resolveLocalTimeFromEntity(existing, fallback)
+    }
+
+    private fun resolveLocalTimeFromEntity(
+        existing: SaveSyncEntity?,
+        fallback: Instant?
+    ): Instant? {
+        if (existing == null) return fallback
+        val fileMtime = existing.localSavePath?.let { path ->
+            val f = File(path)
+            if (f.exists()) Instant.ofEpochMilli(f.lastModified()) else null
+        }
+        return when (existing.syncStatus) {
+            SaveSyncEntity.STATUS_SYNCED, SaveSyncEntity.STATUS_SERVER_NEWER ->
+                existing.serverUpdatedAt ?: fileMtime ?: existing.localUpdatedAt ?: fallback
+            else -> fileMtime ?: existing.localUpdatedAt ?: fallback
+        }
+    }
+
+    data class ReconcileSummary(
+        val queue: ProcessResult,
+        val planConflicts: Int,
+        val planApplied: Int
+    )
 
     suspend fun processQueue(): ProcessResult = withContext(Dispatchers.IO) {
         val romM = romMRepository.get()
@@ -68,34 +214,42 @@ class SyncCoordinator @Inject constructor(
             var processed = 0
             var failed = 0
 
+            val saveSyncEnabled = syncPreferencesRepository.preferences.first().saveSyncEnabled
+
             val promoted = pendingSyncQueueDao.promoteEligibleFailedToPending()
             if (promoted > 0) {
                 Logger.debug(TAG, "processQueue: Promoted $promoted FAILED rows back to PENDING")
             }
 
-            // Rekey runs every cycle, not once: server saves can arrive any
-            // time carrying RomM-side emulator labels (libretro core names like
-            // mGBA, gpSP, prosystem) that don't match the user's local emulator.
-            // UPDATE OR REPLACE makes this idempotent -- a no-op when no rows
-            // need migration. The "once" flag was missing this drift case.
-            val rewritten = saveSyncRepository.get().rekeySaveSyncToLocalEmulators()
-            if (rewritten > 0) {
-                Logger.info(TAG, "processQueue: Save-sync rekey migration complete | rowsRewritten=$rewritten")
+            if (saveSyncEnabled) {
+                // Rekey runs every cycle, not once: server saves can arrive any
+                // time carrying RomM-side emulator labels (libretro core names like
+                // mGBA, gpSP, prosystem) that don't match the user's local emulator.
+                // UPDATE OR REPLACE makes this idempotent -- a no-op when no rows
+                // need migration. The "once" flag was missing this drift case.
+                val rewritten = saveSyncRepository.get().rekeySaveSyncToLocalEmulators()
+                if (rewritten > 0) {
+                    Logger.info(TAG, "processQueue: Save-sync rekey migration complete | rowsRewritten=$rewritten")
+                }
+
+                if (!syncPreferencesRepository.isSavePathCachePurged()) {
+                    emulatorSaveConfigDao.clearAutoDetected()
+                    Logger.info(TAG, "processQueue: Purged auto-detected save-path cache (no longer used)")
+                    syncPreferencesRepository.setSavePathCachePurged()
+                }
+
+                val deduped = saveSyncDao.deleteDuplicateRows()
+                if (deduped > 0) {
+                    Logger.info(TAG, "processQueue: Deduped $deduped redundant save_sync rows")
+                }
             }
 
-            if (!syncPreferencesRepository.isSavePathCachePurged()) {
-                emulatorSaveConfigDao.clearAutoDetected()
-                Logger.info(TAG, "processQueue: Purged auto-detected save-path cache (no longer used)")
-                syncPreferencesRepository.setSavePathCachePurged()
+            val priorities = if (saveSyncEnabled) {
+                listOf(SyncPriority.SAVE_FILE, SyncPriority.SAVE_STATE, SyncPriority.PROPERTY)
+            } else {
+                listOf(SyncPriority.PROPERTY)
             }
-
-            val deduped = saveSyncDao.deleteDuplicateRows()
-            if (deduped > 0) {
-                Logger.info(TAG, "processQueue: Deduped $deduped redundant save_sync rows")
-            }
-
-            // Process queued items by priority (lower priority value = higher importance)
-            for (priority in listOf(SyncPriority.SAVE_FILE, SyncPriority.SAVE_STATE, SyncPriority.PROPERTY)) {
+            for (priority in priorities) {
                 val items = pendingSyncQueueDao.getPendingByPriorityTier(priority)
                 if (items.isNotEmpty()) Logger.debug(TAG, "processQueue: Processing ${items.size} items at priority $priority")
 
@@ -107,7 +261,11 @@ class SyncCoordinator @Inject constructor(
 
                     val result = processItem(item)
                     if (result) {
-                        pendingSyncQueueDao.deleteById(item.id)
+                        if (item.sessionId != null) {
+                            pendingSyncQueueDao.markCompleted(item.id)
+                        } else {
+                            pendingSyncQueueDao.deleteById(item.id)
+                        }
                         processed++
                     } else {
                         pendingSyncQueueDao.markFailed(item.id, "Processing failed")
@@ -116,22 +274,51 @@ class SyncCoordinator @Inject constructor(
                 }
             }
 
-            // Process dirty save_cache entries (saves marked for remote sync)
-            val dirtySaves = processDirtySaveCaches()
-            processed += dirtySaves
+            if (saveSyncEnabled) {
+                val dirtySaves = processDirtySaveCaches()
+                processed += dirtySaves
 
-            // Drain pending server-side downloads marked on save_sync rows
-            val downloaded = saveSyncRepository.get().downloadPendingServerSaves()
-            processed += downloaded
+                val downloaded = saveSyncRepository.get().downloadPendingServerSaves()
+                processed += downloaded
 
-            // Validate save states (weekly)
-            val validated = validateSaveStates()
-            processed += validated
+                val validated = validateSaveStates()
+                processed += validated
+            }
+
+            finalizeDrainedSessions()
 
             Logger.info(TAG, "processQueue: Completed | processed=$processed, failed=$failed")
             ProcessResult.Completed(processed, failed)
         } finally {
             mutex.unlock()
+        }
+    }
+
+    private suspend fun finalizeDrainedSessions() {
+        val sessions = pendingSyncQueueDao.distinctSessions()
+        for (sid in sessions) {
+            val active = pendingSyncQueueDao.countActiveBySession(sid)
+            if (active > 0) continue
+            val completed = pendingSyncQueueDao.countCompletedBySession(sid)
+            val failed = pendingSyncQueueDao.countFailedBySession(sid)
+            val outcome = strategySelector.current().completeSession(
+                sessionId = sid,
+                operationsCompleted = completed,
+                operationsFailed = failed
+            )
+            when (outcome) {
+                com.nendo.argosy.data.sync.strategy.CompleteOutcome.ACCEPTED -> {
+                    pendingSyncQueueDao.deleteBySession(sid)
+                    Logger.info(TAG, "finalizeDrainedSessions: session $sid finalized | completed=$completed failed=$failed")
+                }
+                com.nendo.argosy.data.sync.strategy.CompleteOutcome.ALREADY_FINALIZED -> {
+                    pendingSyncQueueDao.deleteBySession(sid)
+                    Logger.info(TAG, "finalizeDrainedSessions: session $sid drained (server reported terminal); rows deleted")
+                }
+                com.nendo.argosy.data.sync.strategy.CompleteOutcome.RETRY_LATER -> {
+                    Logger.warn(TAG, "finalizeDrainedSessions: session $sid completeSession transient failure; rows retained for retry next pass")
+                }
+            }
         }
     }
 
@@ -161,6 +348,11 @@ class SyncCoordinator @Inject constructor(
             return true
         }
         val payload = payloadCodec.decodeSaveFile(item.payloadJson) ?: return false
+        val channel = payload.channelName
+        if (channel != null && Regex("""^state_""", RegexOption.IGNORE_CASE).containsMatchIn(channel)) {
+            Logger.debug(TAG, "processSaveFile: dropping queue item for state-shaped channel gameId=${item.gameId} channel=$channel")
+            return true
+        }
 
         syncQueueManager.addOperation(
             SyncOperation(
@@ -181,12 +373,37 @@ class SyncCoordinator @Inject constructor(
         )
 
         when (result) {
-            is SaveSyncResult.Success -> syncQueueManager.completeOperation(item.gameId)
+            is SaveSyncResult.Success -> {
+                if (result.noOp) {
+                    syncQueueManager.removeOperation(item.gameId)
+                } else {
+                    syncQueueManager.completeOperation(item.gameId)
+                }
+            }
             is SaveSyncResult.NoSaveFound,
-            is SaveSyncResult.NotConfigured -> syncQueueManager.completeOperation(item.gameId)
+            is SaveSyncResult.NotConfigured -> syncQueueManager.removeOperation(item.gameId)
             is SaveSyncResult.Error -> syncQueueManager.completeOperation(item.gameId, result.message)
-            is SaveSyncResult.Conflict -> syncQueueManager.completeOperation(item.gameId, "Server has newer save")
-            else -> syncQueueManager.completeOperation(item.gameId, "Skipped")
+            is SaveSyncResult.Conflict -> {
+                val localTime = resolveConflictLocalTime(
+                    item.gameId, payload.emulatorId, payload.channelName, result.localTimestamp
+                )
+                pendingConflictDao.upsert(
+                    PendingConflictEntity(
+                        gameId = item.gameId,
+                        rommSaveId = result.serverSaveId,
+                        fileName = payload.channelName ?: game.title,
+                        slot = payload.channelName,
+                        emulator = payload.emulatorId,
+                        localUpdatedAt = localTime,
+                        serverUpdatedAt = result.serverTimestamp,
+                        localHash = result.localContentHash,
+                        serverHash = result.serverContentHash,
+                        reason = result.serverDeviceName?.let { "Server has newer save from $it" } ?: "Server has newer save"
+                    )
+                )
+                syncQueueManager.removeOperation(item.gameId)
+            }
+            else -> syncQueueManager.removeOperation(item.gameId)
         }
 
         return result is SaveSyncResult.Success
@@ -346,7 +563,8 @@ class SyncCoordinator @Inject constructor(
                 emulatorId = cache.emulatorId,
                 channelName = cache.channelName!!,
                 cacheFile = cacheFile,
-                contentHash = cache.contentHash
+                contentHash = cache.contentHash,
+                uploadedCacheId = cache.id
             )
 
             when (result) {
@@ -363,9 +581,13 @@ class SyncCoordinator @Inject constructor(
                             gameDao.updateActiveSaveTimestamp(cache.gameId, result.serverTimestamp.toEpochMilli())
                         }
                     }
-                    syncQueueManager.completeOperation(cache.gameId)
-                    synced++
-                    Logger.debug(TAG, "processDirtySaveCaches: Synced channel cache id=${cache.id} gameId=${cache.gameId} channel=${cache.channelName} rommSaveId=${result.rommSaveId}")
+                    if (result.noOp) {
+                        syncQueueManager.removeOperation(cache.gameId)
+                    } else {
+                        syncQueueManager.completeOperation(cache.gameId)
+                        synced++
+                    }
+                    Logger.debug(TAG, "processDirtySaveCaches: Synced channel cache id=${cache.id} gameId=${cache.gameId} channel=${cache.channelName} rommSaveId=${result.rommSaveId} noOp=${result.noOp}")
                 }
                 is SaveSyncResult.Conflict -> {
                     saveCacheDao.clearDirtyFlagForChannel(cache.gameId, cache.channelName, excludeId = -1)
@@ -376,7 +598,8 @@ class SyncCoordinator @Inject constructor(
                         localTimestamp = cache.cachedAt,
                         serverTimestamp = result.serverTimestamp,
                         isHashConflict = false,
-                        serverDeviceName = result.serverDeviceName
+                        serverDeviceName = result.serverDeviceName,
+                        serverSaveId = result.serverSaveId
                     ))
                     Logger.warn(TAG, "processDirtySaveCaches: Conflict for channel cache id=${cache.id} gameId=${cache.gameId} channel=${cache.channelName} | cleared dirty flag, awaiting resolution")
                 }
@@ -387,11 +610,11 @@ class SyncCoordinator @Inject constructor(
                 }
                 is SaveSyncResult.NoSaveFound,
                 is SaveSyncResult.NotConfigured -> {
-                    syncQueueManager.completeOperation(cache.gameId)
+                    syncQueueManager.removeOperation(cache.gameId)
                     Logger.debug(TAG, "processDirtySaveCaches: Skipped channel cache id=${cache.id} | result=$result")
                 }
                 else -> {
-                    syncQueueManager.completeOperation(cache.gameId, "Skipped")
+                    syncQueueManager.removeOperation(cache.gameId)
                     Logger.debug(TAG, "processDirtySaveCaches: Skipped channel cache id=${cache.id} | result=$result")
                 }
             }
@@ -414,10 +637,12 @@ class SyncCoordinator @Inject constructor(
                 continue
             }
             if (resolution == ConflictResolution.KEEP_SERVER) {
+                val serverSaveId = conflicts[cache.gameId]?.second?.serverSaveId
                 val downloadResult = saveSyncRepository.get().downloadSave(
                     gameId = cache.gameId,
                     emulatorId = cache.emulatorId,
-                    channelName = null
+                    channelName = null,
+                    knownServerSaveId = serverSaveId
                 )
                 if (downloadResult is SaveSyncResult.Success) {
                     saveCacheDao.markSynced(cache.id, Instant.now())
@@ -444,7 +669,9 @@ class SyncCoordinator @Inject constructor(
                 gameId = cache.gameId,
                 emulatorId = cache.emulatorId,
                 channelName = null,
-                forceOverwrite = forceOverwrite
+                forceOverwrite = forceOverwrite,
+                isHardcore = cache.isHardcore,
+                uploadedCacheId = cache.id
             )
 
             when (result) {
@@ -461,9 +688,13 @@ class SyncCoordinator @Inject constructor(
                             gameDao.updateActiveSaveTimestamp(cache.gameId, result.serverTimestamp.toEpochMilli())
                         }
                     }
-                    syncQueueManager.completeOperation(cache.gameId)
-                    synced++
-                    Logger.debug(TAG, "processDirtySaveCaches: Synced gameId=${cache.gameId}")
+                    if (result.noOp) {
+                        syncQueueManager.removeOperation(cache.gameId)
+                    } else {
+                        syncQueueManager.completeOperation(cache.gameId)
+                        synced++
+                    }
+                    Logger.debug(TAG, "processDirtySaveCaches: Synced gameId=${cache.gameId} noOp=${result.noOp}")
                 }
                 is SaveSyncResult.Error -> {
                     saveCacheDao.markSyncError(cache.id, result.message)
@@ -476,7 +707,7 @@ class SyncCoordinator @Inject constructor(
                 }
                 is SaveSyncResult.NoSaveFound,
                 is SaveSyncResult.NotConfigured -> {
-                    syncQueueManager.completeOperation(cache.gameId)
+                    syncQueueManager.removeOperation(cache.gameId)
                     Logger.debug(TAG, "processDirtySaveCaches: Skipped gameId=${cache.gameId} | result=$result")
                 }
                 else -> {
@@ -519,6 +750,22 @@ class SyncCoordinator @Inject constructor(
 
     suspend fun queueFavoriteChange(gameId: Long, rommId: Long, isFavorite: Boolean) {
         queuePropertyChange(gameId, rommId, SyncType.FAVORITE, intValue = if (isFavorite) 1 else 0)
+    }
+
+    private suspend fun canonicalizeStaleEmulatorIds() {
+        val stale = saveSyncDao.getStaleDefaultEmulatorRows()
+        if (stale.isEmpty()) return
+        val gameIds = stale.map { it.gameId }.toSet()
+        var rekeyed = 0
+        for (gameId in gameIds) {
+            val game = gameDao.getById(gameId) ?: continue
+            val canonical = saveSyncRepository.get().resolveEmulatorForGame(game) ?: continue
+            val touched = saveSyncDao.rekeyEmulatorForGame(gameId, canonical)
+            if (touched > 0) rekeyed += touched
+        }
+        if (rekeyed > 0) {
+            Logger.info(TAG, "canonicalizeStaleEmulatorIds: rekeyed $rekeyed save_sync rows from 'default' to canonical emulator")
+        }
     }
 }
 

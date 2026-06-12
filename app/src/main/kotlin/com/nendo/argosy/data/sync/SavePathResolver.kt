@@ -7,12 +7,14 @@ import com.nendo.argosy.data.emulator.SavePathRegistry
 import com.nendo.argosy.data.emulator.TitleIdExtractor
 import com.nendo.argosy.data.local.dao.EmulatorSaveConfigDao
 import com.nendo.argosy.data.local.dao.GameDao
+import com.nendo.argosy.data.platform.PlatformDefinitions
 import com.nendo.argosy.data.storage.FileAccessLayer
 import com.nendo.argosy.data.sync.platform.GciSaveHandler
 import com.nendo.argosy.data.sync.platform.PlatformSaveHandlerRegistry
 import com.nendo.argosy.data.sync.platform.SwitchSaveHandler
 import com.nendo.argosy.data.titledb.TitleDbRepository
 import com.nendo.argosy.util.Logger
+import com.nendo.argosy.util.SaveDebugLogger
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -42,14 +44,54 @@ class SavePathResolver @Inject constructor(
         gameTitle: String,
         platformSlug: String,
         romPath: String? = null,
-        cachedTitleId: String? = null,
+        cachedSaveId: String? = null,
+        coreName: String? = null,
+        emulatorPackage: String? = null,
+        gameId: Long? = null
+    ): String? {
+        var decision = "unknown"
+        var selectedMemcardForLog: String? = null
+        var savePathOverrideForLog: String? = null
+        val result = discoverSavePathInternal(
+            emulatorId, gameTitle, platformSlug, romPath, cachedSaveId, coreName,
+            emulatorPackage, gameId,
+            onDecision = { d, selectedCard, override ->
+                decision = d
+                selectedMemcardForLog = selectedCard
+                savePathOverrideForLog = override
+            }
+        )
+        if (gameId != null) {
+            SaveDebugLogger.logDiscoverPath(
+                gameId = gameId,
+                emulatorId = emulatorId,
+                emulatorPackage = emulatorPackage,
+                platformSlug = platformSlug,
+                romPath = romPath,
+                cachedSaveId = cachedSaveId,
+                selectedMemcardPath = selectedMemcardForLog,
+                savePathOverride = savePathOverrideForLog,
+                resultPath = result,
+                decision = decision
+            )
+        }
+        return result
+    }
+
+    private suspend fun discoverSavePathInternal(
+        emulatorId: String,
+        gameTitle: String,
+        platformSlug: String,
+        romPath: String? = null,
+        cachedSaveId: String? = null,
         coreName: String? = null,
         emulatorPackage: String? = null,
         gameId: Long? = null,
-        isFolderSaveSyncEnabled: Boolean = false
+        onDecision: (String, String?, String?) -> Unit = { _, _, _ -> }
     ): String? = withContext(Dispatchers.IO) {
         if (emulatorId == "default" || emulatorId.isBlank()) {
             Logger.warn(TAG, "[SaveSync] DISCOVER | Invalid emulatorId='$emulatorId' | game=$gameTitle, platform=$platformSlug")
+            onDecision("invalidEmulatorId", null, null)
             return@withContext null
         }
 
@@ -57,57 +99,61 @@ class SavePathResolver @Inject constructor(
             ?: SavePathRegistry.getConfigForPlatform(emulatorId, platformSlug)
         if (config == null) {
             Logger.warn(TAG, "[SaveSync] DISCOVER | No save path config | emulatorId=$emulatorId, emulatorPackage=$emulatorPackage")
+            onDecision("noConfig", null, null)
             return@withContext null
         }
 
         val effectiveEmulatorId = config.emulatorId
         val userConfig = emulatorSaveConfigDao.getByEmulator(effectiveEmulatorId)
         val isRetroArch = effectiveEmulatorId == "retroarch" || effectiveEmulatorId == "retroarch_64"
+        val savePathOverrideForLog = if (userConfig?.isUserOverride == true) userConfig.savePathPattern else null
+        val selectedMemcardForLog = userConfig?.selectedMemcardPath
 
         if (userConfig?.isUserOverride == true && !isRetroArch) {
-            if (config.usesFolderBasedSaves && romPath != null) {
-                if (!isFolderSaveSyncEnabled) {
-                    return@withContext null
-                }
+            if (config.usesFolderBasedSaves && (romPath != null || cachedSaveId != null)) {
+                onDecision("override+folder", selectedMemcardForLog, savePathOverrideForLog)
                 return@withContext discoverFolderSavePath(
                     config = config,
                     platformSlug = platformSlug,
                     romPath = romPath,
-                    cachedTitleId = cachedTitleId,
+                    cachedSaveId = cachedSaveId,
                     emulatorPackage = emulatorPackage,
                     gameId = gameId,
                     gameTitle = gameTitle,
                     basePathOverride = userConfig.savePathPattern,
-                    isFolderSaveSyncEnabled = isFolderSaveSyncEnabled
+                    selectedMemcardPath = userConfig.selectedMemcardPath
                 )
             }
             if (config.usesGciFormat && romPath != null) {
                 val gciSave = discoverGciSavePath(config, romPath, userConfig.savePathPattern)
                 if (gciSave != null) {
                     Logger.debug(TAG, "discoverSavePath: GCI save found (user override) at $gciSave")
+                    onDecision("override+gci", selectedMemcardForLog, savePathOverrideForLog)
                     return@withContext gciSave
                 }
             }
             if (romPath != null) {
                 val savePath = findSaveByRomName(userConfig.savePathPattern, romPath, config.saveExtensions)
-                if (savePath != null) return@withContext savePath
+                if (savePath != null) {
+                    onDecision("override+romName", selectedMemcardForLog, savePathOverrideForLog)
+                    return@withContext savePath
+                }
             }
+            onDecision("override+title", selectedMemcardForLog, savePathOverrideForLog)
             return@withContext findSaveInPath(userConfig.savePathPattern, gameTitle, config.saveExtensions)
         }
 
-        if (config.usesFolderBasedSaves && romPath != null) {
-            if (!isFolderSaveSyncEnabled) {
-                return@withContext null
-            }
+        if (config.usesFolderBasedSaves && (romPath != null || cachedSaveId != null)) {
+            onDecision("registry+folder", selectedMemcardForLog, savePathOverrideForLog)
             return@withContext discoverFolderSavePath(
                 config = config,
                 platformSlug = platformSlug,
                 romPath = romPath,
-                cachedTitleId = cachedTitleId,
+                cachedSaveId = cachedSaveId,
                 emulatorPackage = emulatorPackage,
                 gameId = gameId,
                 gameTitle = gameTitle,
-                isFolderSaveSyncEnabled = isFolderSaveSyncEnabled
+                selectedMemcardPath = userConfig?.selectedMemcardPath
             )
         }
 
@@ -115,6 +161,7 @@ class SavePathResolver @Inject constructor(
             val gciSave = discoverGciSavePath(config, romPath)
             if (gciSave != null) {
                 Logger.debug(TAG, "discoverSavePath: GCI save found at $gciSave")
+                onDecision("gci", selectedMemcardForLog, savePathOverrideForLog)
                 return@withContext gciSave
             }
         }
@@ -123,6 +170,7 @@ class SavePathResolver @Inject constructor(
             val psxSave = discoverPSXSavePath(config, romPath, emulatorPackage)
             if (psxSave != null) {
                 Logger.debug(TAG, "discoverSavePath: PSX save found at $psxSave")
+                onDecision("psx", selectedMemcardForLog, savePathOverrideForLog)
                 return@withContext psxSave
             }
         }
@@ -149,6 +197,7 @@ class SavePathResolver @Inject constructor(
                 val savePath = findSaveByRomName(basePath, romPath, config.saveExtensions)
                 if (savePath != null) {
                     Logger.debug(TAG, "discoverSavePath: ROM-based match found at $savePath")
+                    onDecision("byRomName", selectedMemcardForLog, savePathOverrideForLog)
                     return@withContext savePath
                 }
             }
@@ -159,28 +208,30 @@ class SavePathResolver @Inject constructor(
             val saveFile = findSaveInPath(basePath, gameTitle, config.saveExtensions)
             if (saveFile != null) {
                 Logger.debug(TAG, "discoverSavePath: found save at $saveFile")
+                onDecision("byTitle", selectedMemcardForLog, savePathOverrideForLog)
                 return@withContext saveFile
             }
         }
 
         Logger.debug(TAG, "discoverSavePath: FAILED - no save found for '$gameTitle' | emulatorId=$effectiveEmulatorId, package=$emulatorPackage, core=$coreName, platformSlug=$platformSlug, romPath=$romPath, candidatePaths=${paths.size}")
+        onDecision("noMatch", selectedMemcardForLog, savePathOverrideForLog)
         null
     }
 
     private suspend fun discoverFolderSavePath(
         config: SavePathConfig,
         platformSlug: String,
-        romPath: String,
-        cachedTitleId: String? = null,
+        romPath: String?,
+        cachedSaveId: String? = null,
         emulatorPackage: String? = null,
         gameId: Long? = null,
         gameTitle: String? = null,
         basePathOverride: String? = null,
-        allowCacheRefresh: Boolean = true,
-        isFolderSaveSyncEnabled: Boolean = false
+        selectedMemcardPath: String? = null,
+        allowCacheRefresh: Boolean = true
     ): String? {
-        val romFile = File(romPath)
-        val resolvedPaths = if (basePathOverride != null) {
+        val romFile = romPath?.let { File(it) }
+        val baseList = if (basePathOverride != null) {
             val effectivePath = if (platformSlug == "switch") {
                 switchSaveHandler.resolveBasePath(
                     SavePathRegistry.getConfig(config.emulatorId)!!,
@@ -194,52 +245,60 @@ class SavePathResolver @Inject constructor(
             }
             listOf(effectivePath)
         } else {
-            SavePathRegistry.resolvePathWithPackage(config, emulatorPackage)
+            SavePathRegistry.resolvePathWithPackage(config, emulatorPackage, context.filesDir.absolutePath, fal.externalStorageRoots())
+        }
+        val resolvedPaths = if (selectedMemcardPath != null && platformSlug == "ps2") {
+            listOf(selectedMemcardPath) + baseList.filterNot { it == selectedMemcardPath }
+        } else {
+            baseList
         }
         val triedTitleIds = mutableSetOf<String>()
         val isSwitchPlatform = platformSlug == "switch"
 
-        val validatedCachedTitleId = if (cachedTitleId != null && isSwitchPlatform) {
-            if (switchSaveHandler.isValidTitleId(cachedTitleId)) {
-                cachedTitleId
+        val validatedCachedSaveId = if (cachedSaveId != null && isSwitchPlatform) {
+            if (switchSaveHandler.isValidTitleId(cachedSaveId)) {
+                cachedSaveId
             } else {
-                Logger.warn(TAG, "[SaveSync] DISCOVER | Invalid cached titleId=$cachedTitleId (doesn't start with 01), clearing")
+                Logger.warn(TAG, "[SaveSync] DISCOVER | Invalid cached titleId=$cachedSaveId (doesn't start with 01), clearing")
                 if (gameId != null) {
                     gameDao.updateTitleId(gameId, null)
                 }
                 null
             }
         } else {
-            cachedTitleId
+            cachedSaveId
         }
 
-        if (validatedCachedTitleId != null) {
-            triedTitleIds.add(validatedCachedTitleId.uppercase())
-            Logger.debug(TAG, "[SaveSync] DISCOVER | Trying cached titleId=$validatedCachedTitleId")
+        if (validatedCachedSaveId != null) {
+            triedTitleIds.add(validatedCachedSaveId.uppercase())
+            Logger.debug(TAG, "[SaveSync] DISCOVER | Trying cached titleId=$validatedCachedSaveId")
             for (basePath in resolvedPaths) {
-                val saveFolder = findSaveFolderByTitleId(basePath, validatedCachedTitleId, platformSlug)
+                val saveFolder = findSaveFolderBySaveId(basePath, validatedCachedSaveId, platformSlug)
                 if (saveFolder != null) return saveFolder
             }
-            Logger.debug(TAG, "[SaveSync] DISCOVER | Cached titleId=$validatedCachedTitleId found no save")
+            Logger.debug(TAG, "[SaveSync] DISCOVER | Cached titleId=$validatedCachedSaveId found no save")
         }
 
-        val extractionResult = titleIdExtractor.extractTitleIdWithSource(romFile, platformSlug, emulatorPackage)
-        if (extractionResult != null && extractionResult.titleId.uppercase() !in triedTitleIds) {
+        val extractionResult = romFile?.let {
+            titleIdExtractor.extractTitleIdWithSource(it, platformSlug, emulatorPackage)
+        }
+        if (extractionResult != null && extractionResult.saveId.uppercase() !in triedTitleIds) {
             val extractedTitleId = extractionResult.titleId
-            triedTitleIds.add(extractedTitleId.uppercase())
-            Logger.debug(TAG, "[SaveSync] DISCOVER | Trying extracted titleId=$extractedTitleId (fromBinary=${extractionResult.fromBinary})")
+            val extractedSaveId = extractionResult.saveId
+            triedTitleIds.add(extractedSaveId.uppercase())
+            Logger.debug(TAG, "[SaveSync] DISCOVER | Trying extracted titleId=$extractedTitleId saveId=$extractedSaveId (fromBinary=${extractionResult.fromBinary})")
 
-            val shouldCacheExtracted = gameId != null && validatedCachedTitleId == null &&
+            val shouldCacheExtracted = gameId != null && validatedCachedSaveId == null &&
                 (!isSwitchPlatform || switchSaveHandler.isValidTitleId(extractedTitleId))
             if (shouldCacheExtracted) {
-                Logger.debug(TAG, "[SaveSync] DISCOVER | Caching extracted titleId=$extractedTitleId for gameId=$gameId, locked=${extractionResult.fromBinary}")
-                gameDao.setTitleIdWithLock(gameId, extractedTitleId, extractionResult.fromBinary)
+                Logger.debug(TAG, "[SaveSync] DISCOVER | Caching extracted titleId=$extractedTitleId saveId=$extractedSaveId for gameId=$gameId, locked=${extractionResult.fromBinary}")
+                gameDao.setTitleAndSaveIdWithLock(gameId, extractedTitleId, extractedSaveId, extractionResult.fromBinary)
             } else if (gameId != null && isSwitchPlatform && !switchSaveHandler.isValidTitleId(extractedTitleId)) {
                 Logger.warn(TAG, "[SaveSync] DISCOVER | Skipping cache of invalid extracted titleId=$extractedTitleId (doesn't start with 01)")
             }
 
             for (basePath in resolvedPaths) {
-                val saveFolder = findSaveFolderByTitleId(basePath, extractedTitleId, platformSlug)
+                val saveFolder = findSaveFolderBySaveId(basePath, extractedSaveId, platformSlug)
                 if (saveFolder != null) {
                     return saveFolder
                 }
@@ -263,7 +322,7 @@ class SavePathResolver @Inject constructor(
             triedTitleIds.add(candidate.uppercase())
             Logger.debug(TAG, "[SaveSync] DISCOVER | Trying candidate titleId=$candidate")
             for (basePath in resolvedPaths) {
-                val saveFolder = findSaveFolderByTitleId(basePath, candidate, platformSlug)
+                val saveFolder = findSaveFolderBySaveId(basePath, candidate, platformSlug)
                 if (saveFolder != null) {
                     val modTime = findNewestFileTime(saveFolder)
                     Logger.debug(TAG, "[SaveSync] DISCOVER | Found match | titleId=$candidate, path=$saveFolder, modTime=$modTime")
@@ -283,8 +342,13 @@ class SavePathResolver @Inject constructor(
             return best.path
         }
 
-        // Don't clear title ID cache here - the title ID may be correct even if no save exists yet
-        // (e.g., downloading a save for the first time). Let the caller handle construction.
+        if (PlatformDefinitions.getCanonicalSlug(platformSlug) == "psp") {
+            val fallback = resolvedPaths.firstOrNull { directoryExists(it) }
+            if (fallback != null) {
+                Logger.debug(TAG, "[SaveSync] DISCOVER | PSP fallback to existing parent for first-save watch | path=$fallback")
+                return fallback
+            }
+        }
 
         Logger.debug(TAG, "[SaveSync] DISCOVER | No save found | title=$gameTitle, tried=${triedTitleIds.size} titleIds")
         return null
@@ -296,7 +360,7 @@ class SavePathResolver @Inject constructor(
         emulatorPackage: String?
     ): String? {
         val romNameNoExt = File(romPath).nameWithoutExtension
-        val resolvedPaths = SavePathRegistry.resolvePathWithPackage(config, emulatorPackage)
+        val resolvedPaths = SavePathRegistry.resolvePathWithPackage(config, emulatorPackage, context.filesDir.absolutePath, fal.externalStorageRoots())
 
         // DuckStation PerGameFileTitle mode: {romFilenameNoExt}_1.mcd
         for (basePath in resolvedPaths) {
@@ -321,7 +385,7 @@ class SavePathResolver @Inject constructor(
         return gciPaths.firstOrNull()
     }
 
-    private fun findSaveFolderByTitleId(basePath: String, titleId: String, platformSlug: String): String? {
+    private fun findSaveFolderBySaveId(basePath: String, titleId: String, platformSlug: String): String? {
         if (!directoryExists(basePath)) {
             Logger.debug(TAG, "[SaveSync] DISCOVER | Base path does not exist | path=$basePath")
             return null
@@ -329,10 +393,10 @@ class SavePathResolver @Inject constructor(
         Logger.debug(TAG, "[SaveSync] DISCOVER | Scanning base path | path=$basePath, titleId=$titleId, platform=$platformSlug")
 
         if (platformSlug == "switch") {
-            return switchSaveHandler.findSaveFolderByTitleId(basePath, titleId)
+            return switchSaveHandler.findSaveFolderBySaveId(basePath, titleId)
         }
         return saveHandlerRegistry.getFolderHandler(platformSlug)
-            ?.findSaveFolderByTitleId(basePath, titleId)
+            ?.findSaveFolderBySaveId(basePath, titleId)
     }
 
     fun findNewestFileTime(folderPath: String): Long {
@@ -441,12 +505,15 @@ class SavePathResolver @Inject constructor(
         gameTitle: String,
         platformSlug: String,
         romPath: String?,
-        coreName: String? = null
+        coreName: String? = null,
+        cachedSaveId: String? = null
     ): String? {
-        val config = SavePathRegistry.getConfig(emulatorId) ?: run {
-            Logger.debug(TAG, "constructSavePath: FAILED - no SavePathConfig | emulatorId=$emulatorId, platformSlug=$platformSlug")
-            return null
-        }
+        val config = SavePathRegistry.getConfigForPlatform(emulatorId, platformSlug)
+            ?: SavePathRegistry.getConfig(emulatorId)
+            ?: run {
+                Logger.debug(TAG, "constructSavePath: FAILED - no SavePathConfig | emulatorId=$emulatorId, platformSlug=$platformSlug")
+                return null
+            }
 
         if (emulatorId == "retroarch" || emulatorId == "retroarch_64") {
             return constructRetroArchSavePath(emulatorId, gameTitle, platformSlug, romPath, coreName)
@@ -466,6 +533,13 @@ class SavePathResolver @Inject constructor(
             resolvedPaths.firstOrNull { directoryExists(it) }
                 ?: resolvedPaths.firstOrNull()
         } ?: return null
+
+        if (config.usesFolderBasedSaves && cachedSaveId != null) {
+            saveHandlerRegistry.getFolderHandler(platformSlug)?.constructSavePath(baseDir, cachedSaveId)?.let {
+                saveArchiver.getFileForPath(it).mkdirs()
+                return it
+            }
+        }
 
         if (platformSlug == "psx" && romPath != null) {
             val romNameNoExt = File(romPath).nameWithoutExtension
@@ -551,7 +625,7 @@ class SavePathResolver @Inject constructor(
         romPath: String?,
         gameId: Long,
         gameTitle: String,
-        cachedTitleId: String? = null,
+        cachedSaveId: String? = null,
         emulatorPackage: String? = null
     ): String? {
         val config = SavePathRegistry.getConfigForPlatform(emulatorId, platformSlug) ?: return null
@@ -575,7 +649,7 @@ class SavePathResolver @Inject constructor(
             return null
         }
 
-        val titleId = cachedTitleId
+        val titleId = cachedSaveId
             ?: (romPath?.let { titleIdExtractor.extractTitleId(File(it), platformSlug, emulatorPackage) })
             ?: titleDbRepository.resolveTitleId(gameId, gameTitle, platformSlug)
 
@@ -605,7 +679,7 @@ class SavePathResolver @Inject constructor(
 
     private fun resolveSavePaths(config: SavePathConfig, platformSlug: String): List<String> {
         val filesDir = if (config.usesInternalStorage) context.filesDir.absolutePath else null
-        return SavePathRegistry.resolvePath(config, platformSlug, filesDir)
+        return SavePathRegistry.resolvePath(config, platformSlug, filesDir, fal.externalStorageRoots())
     }
 
     private fun directoryExists(path: String): Boolean = fal.exists(path) && fal.isDirectory(path)

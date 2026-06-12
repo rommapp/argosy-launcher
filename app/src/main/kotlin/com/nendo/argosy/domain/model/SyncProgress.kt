@@ -70,7 +70,8 @@ sealed class SyncProgress {
     data class LocalModified(
         val gameId: Long,
         val localSavePath: String,
-        val channelName: String?
+        val channelName: String?,
+        val serverSaveId: Long? = null
     ) : SyncProgress()
 
     data class PostSessionConflict(

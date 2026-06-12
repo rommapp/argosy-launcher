@@ -9,6 +9,7 @@ class RefreshAllCollectionsUseCase @Inject constructor(
 ) {
     suspend operator fun invoke() {
         romMRepository.syncCollections()
+        romMRepository.syncAutoCollections()
         syncVirtualCollectionsUseCase()
     }
 }

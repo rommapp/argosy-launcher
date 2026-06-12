@@ -27,9 +27,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.nendo.argosy.libretro.LaunchMode
+import com.nendo.argosy.ui.theme.ALauncherColors
 import com.nendo.argosy.ui.theme.Dimens
 
 @Composable
@@ -38,8 +38,6 @@ fun GameModeSelectionDialog(
     onSelectMode: (LaunchMode) -> Unit,
     onDismiss: () -> Unit
 ) {
-    val goldColor = Color(0xFFFFD700)
-
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
@@ -92,7 +90,7 @@ fun GameModeSelectionDialog(
                         .alpha(if (isOnline) 1f else 0.5f),
                     shape = RoundedCornerShape(Dimens.radiusMd),
                     colors = ButtonDefaults.outlinedButtonColors(
-                        contentColor = goldColor
+                        contentColor = ALauncherColors.StarGold
                     )
                 ) {
                     Row(
@@ -105,7 +103,7 @@ fun GameModeSelectionDialog(
                             Icons.Default.EmojiEvents,
                             contentDescription = null,
                             modifier = Modifier.size(24.dp),
-                            tint = if (isOnline) goldColor else MaterialTheme.colorScheme.onSurfaceVariant
+                            tint = if (isOnline) ALauncherColors.StarGold else MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Spacer(modifier = Modifier.width(Dimens.spacingMd))
                         Column(modifier = Modifier.weight(1f)) {

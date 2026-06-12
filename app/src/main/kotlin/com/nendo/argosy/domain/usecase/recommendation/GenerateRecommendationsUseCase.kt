@@ -3,6 +3,7 @@ package com.nendo.argosy.domain.usecase.recommendation
 import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.entity.GameEntity
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
+import com.nendo.argosy.data.repository.PlatformRepository
 import kotlinx.coroutines.flow.first
 import java.time.DayOfWeek
 import java.time.Duration
@@ -18,7 +19,8 @@ private const val FAVORITE_PENALTY = 0.5f
 
 class GenerateRecommendationsUseCase @Inject constructor(
     private val gameDao: GameDao,
-    private val preferencesRepository: UserPreferencesRepository
+    private val preferencesRepository: UserPreferencesRepository,
+    private val platformRepository: PlatformRepository
 ) {
     suspend operator fun invoke(forceRegenerate: Boolean = false): List<Long> {
         val prefs = preferencesRepository.preferences.first()
@@ -39,8 +41,13 @@ class GenerateRecommendationsUseCase @Inject constructor(
         val platformWeights = calculatePlatformWeights(playedGames)
         val playTimeBoost = calculatePlayTimeBoost(playedGames)
 
+        val syncEnabledPlatformIds = platformRepository.getSyncEnabledPlatforms()
+            .mapTo(mutableSetOf()) { it.id }
+
         val undownloadedGames = gameDao.getUnplayedUndownloadedGames()
+            .filter { it.platformId in syncEnabledPlatformIds }
         val installedUnplayed = gameDao.getUnplayedInstalledGames()
+            .filter { it.platformId in syncEnabledPlatformIds }
 
         if (undownloadedGames.isEmpty() && installedUnplayed.isEmpty()) return emptyList()
 

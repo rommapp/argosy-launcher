@@ -267,6 +267,11 @@ class HomeViewModel @Inject constructor(
                 _uiState.update { it.copy(discPickerState = pickerState) }
             }
         }
+        viewModelScope.launch {
+            gameLaunchDelegate.memcardPickerState.collect { pickerState ->
+                _uiState.update { it.copy(memcardPickerState = pickerState) }
+            }
+        }
     }
 
     private fun observeCollectionModal() {
@@ -640,6 +645,10 @@ class HomeViewModel @Inject constructor(
     fun dismissDiscPicker() = gameLaunchDelegate.dismissDiscPicker()
     fun setDiscPickerFocusIndex(index: Int) { _uiState.update { it.copy(discPickerFocusIndex = index) } }
 
+    fun selectMemcard(cardPath: String) = gameLaunchDelegate.selectMemcard(viewModelScope, cardPath)
+    fun dismissMemcardPicker() = gameLaunchDelegate.dismissMemcardPicker()
+    fun setMemcardPickerFocusIndex(index: Int) { _uiState.update { it.copy(memcardPickerFocusIndex = index) } }
+
     // --- Public API: Sync & Changelog ---
 
     fun syncFromRomm() = syncDelegate.syncFromRomm(viewModelScope) { refreshRecentGames() }
@@ -659,9 +668,9 @@ class HomeViewModel @Inject constructor(
     fun refreshFavorites() { viewModelScope.launch { libraryDelegate.loadFavorites() } }
     fun refreshPlatforms() { viewModelScope.launch { libraryDelegate.loadPlatforms() } }
     fun regenerateRecommendations() = libraryDelegate.regenerateRecommendations(viewModelScope)
-    fun extractGradientForGame(gameId: Long, coverPath: String) {
+    fun extractGradientForGame(gameId: Long, bitmap: android.graphics.Bitmap) {
         val isFocused = _uiState.value.focusedGame?.id == gameId
-        libraryDelegate.extractGradientForGame(viewModelScope, gameId, coverPath, isFocused)
+        libraryDelegate.extractGradientForGame(viewModelScope, gameId, bitmap, isFocused)
     }
     fun repairCoverImage(gameId: Long, failedPath: String) = libraryDelegate.repairCoverImage(viewModelScope, gameId, failedPath)
     fun showLaunchError(message: String) = notificationManager.showError(message)

@@ -114,6 +114,12 @@ class SessionStateStore(context: Context) {
 
     fun isDualScreenEnabled(): Boolean = prefs.getBoolean(KEY_DUAL_SCREEN_ENABLED, false)
 
+    fun setSaveSyncEnabled(enabled: Boolean) {
+        prefs.edit().putBoolean(KEY_SAVE_SYNC_ENABLED, enabled).apply()
+    }
+
+    fun isSaveSyncEnabled(): Boolean = prefs.getBoolean(KEY_SAVE_SYNC_ENABLED, false)
+
     fun setDisplayRoleOverride(override: String) {
         prefs.edit().putString(KEY_DISPLAY_ROLE_OVERRIDE, override).commit()
     }
@@ -240,5 +246,6 @@ class SessionStateStore(context: Context) {
         private const val KEY_SCREENSHOT_VIEWER_OPEN = "screenshot_viewer_open"
         private const val KEY_SCREENSHOT_VIEWER_INDEX = "screenshot_viewer_index"
         private const val KEY_DUAL_SCREEN_ENABLED = "dual_screen_enabled"
+        private const val KEY_SAVE_SYNC_ENABLED = "save_sync_enabled"
     }
 }

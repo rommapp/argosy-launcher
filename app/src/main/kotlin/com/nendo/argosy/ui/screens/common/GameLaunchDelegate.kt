@@ -17,6 +17,7 @@ import com.nendo.argosy.data.emulator.SessionEndResult
 import com.nendo.argosy.data.emulator.SavePathValidator
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.repository.GameRepository
+import com.nendo.argosy.data.repository.HardcoreResolutionChoice
 import com.nendo.argosy.data.repository.SaveCacheManager
 import com.nendo.argosy.data.repository.SaveSyncRepository
 import com.nendo.argosy.data.repository.SaveSyncResult
@@ -84,6 +85,16 @@ data class VariantPickerState(
     val onLaunch: (Intent) -> Unit
 )
 
+data class MemcardPickerState(
+    val gameId: Long,
+    val emulatorId: String,
+    val platformName: String,
+    val cards: List<com.nendo.argosy.data.sync.platform.MemcardInfo>,
+    val channelName: String? = null,
+    val launchMode: LaunchMode? = null,
+    val onLaunch: (Intent) -> Unit
+)
+
 class GameLaunchDelegate @Inject constructor(
     private val application: Application,
     private val gameRepository: GameRepository,
@@ -98,7 +109,8 @@ class GameLaunchDelegate @Inject constructor(
     private val savePathValidator: SavePathValidator,
     private val saveSyncRepository: SaveSyncRepository,
     private val saveCacheManager: SaveCacheManager,
-    private val variantResolver: com.nendo.argosy.data.emulator.VariantResolver
+    private val variantResolver: com.nendo.argosy.data.emulator.VariantResolver,
+    private val emulatorSaveConfigRepository: com.nendo.argosy.data.repository.EmulatorSaveConfigRepository
 ) {
     companion object {
         private const val EMULATOR_KILL_DELAY_MS = 500L
@@ -119,6 +131,9 @@ class GameLaunchDelegate @Inject constructor(
     private val _variantPickerState = MutableStateFlow<VariantPickerState?>(null)
     val variantPickerState: StateFlow<VariantPickerState?> = _variantPickerState.asStateFlow()
 
+    private val _memcardPickerState = MutableStateFlow<MemcardPickerState?>(null)
+    val memcardPickerState: StateFlow<MemcardPickerState?> = _memcardPickerState.asStateFlow()
+
     val isSyncing: Boolean get() = _syncOverlayState.value != null
 
     // Guards against rapid d-pad / button-repeat re-entry on the launch path.
@@ -135,6 +150,8 @@ class GameLaunchDelegate @Inject constructor(
         gameId: Long,
         discId: Long? = null,
         channelName: String? = null,
+        skipPreLaunchSync: Boolean = false,
+        overrideLaunchMode: LaunchMode? = null,
         onLaunch: (Intent) -> Unit,
         onLaunchFailed: () -> Unit = {}
     ) {
@@ -183,7 +200,7 @@ class GameLaunchDelegate @Inject constructor(
 
                 if (canResume) {
                     val result = launchGameUseCase(gameId, discId, forResume = true, variantFileId = resolvedVariantId, prefetchedGame = game)
-                    dispatchPrimaryLaunchResult(result, channelName, launchMode = null, onLaunch, onLaunchFailed)
+                    dispatchPrimaryLaunchResult(result, channelName, launchMode = overrideLaunchMode, onLaunch, onLaunchFailed)
                     return@launch
                 }
 
@@ -194,8 +211,7 @@ class GameLaunchDelegate @Inject constructor(
                 val prefs = preferencesRepository.preferences.first()
                 val canSync = emulatorId != null && SavePathRegistry.canSyncWithSettings(
                     emulatorId,
-                    prefs.saveSyncEnabled,
-                    prefs.experimentalFolderSaveSync
+                    prefs.saveSyncEnabled
                 )
                 android.util.Log.d("GameLaunchDelegate", "launchGame: emulatorPackage=$emulatorPackage, emulatorId=$emulatorId, canSync=$canSync")
 
@@ -212,7 +228,7 @@ class GameLaunchDelegate @Inject constructor(
                 var localModifiedInfo: SyncProgress.LocalModified? = null
                 var localModifiedChoice: LocalModifiedChoice? = null
 
-                launchWithSyncUseCase.invokeWithProgress(gameId, channelName).collect { progress ->
+                launchWithSyncUseCase.invokeWithProgress(gameId, channelName, skipPreLaunchSync).collect { progress ->
                     if (canSync && progress != SyncProgress.Skipped && progress != SyncProgress.Idle) {
                         when (progress) {
                             is SyncProgress.HardcoreConflict -> {
@@ -260,9 +276,9 @@ class GameLaunchDelegate @Inject constructor(
                         channelName = hardcoreConflictInfo!!.channelName
                     )
                     val repoChoice = when (hardcoreConflictChoice!!) {
-                        HardcoreConflictChoice.KEEP_HARDCORE -> SaveSyncRepository.HardcoreResolutionChoice.KEEP_HARDCORE
-                        HardcoreConflictChoice.DOWNGRADE_TO_CASUAL -> SaveSyncRepository.HardcoreResolutionChoice.DOWNGRADE_TO_CASUAL
-                        HardcoreConflictChoice.KEEP_LOCAL -> SaveSyncRepository.HardcoreResolutionChoice.KEEP_LOCAL
+                        HardcoreConflictChoice.KEEP_HARDCORE -> HardcoreResolutionChoice.KEEP_HARDCORE
+                        HardcoreConflictChoice.DOWNGRADE_TO_CASUAL -> HardcoreResolutionChoice.DOWNGRADE_TO_CASUAL
+                        HardcoreConflictChoice.KEEP_LOCAL -> HardcoreResolutionChoice.KEEP_LOCAL
                     }
                     val resolveResult = saveSyncRepository.resolveHardcoreConflict(resolution, repoChoice)
                     android.util.Log.d("GameLaunchDelegate", "Resolution result: $resolveResult")
@@ -298,7 +314,10 @@ class GameLaunchDelegate @Inject constructor(
                             android.util.Log.d("GameLaunchDelegate", "User chose to restore selected save - backing up local first")
                             if (emulatorId != null) {
                                 saveCacheManager.cacheAsRollback(gameId, emulatorId, info.localSavePath)
-                                val downloadResult = saveSyncRepository.downloadSave(gameId, emulatorId, info.channelName)
+                                val downloadResult = saveSyncRepository.downloadSave(
+                                    gameId, emulatorId, info.channelName,
+                                    knownServerSaveId = info.serverSaveId
+                                )
                                 android.util.Log.d("GameLaunchDelegate", "Download result after LocalModified restore: $downloadResult")
                                 gameRepository.updateActiveSaveApplied(gameId, true)
                             }
@@ -318,6 +337,7 @@ class GameLaunchDelegate @Inject constructor(
 
                 val launchMode = when {
                     hardcoreConflictChoice == HardcoreConflictChoice.KEEP_HARDCORE -> LaunchMode.RESUME_HARDCORE
+                    overrideLaunchMode != null -> overrideLaunchMode
                     isActiveSaveHardcore(gameId) -> LaunchMode.RESUME_HARDCORE
                     else -> null
                 }
@@ -356,6 +376,17 @@ class GameLaunchDelegate @Inject constructor(
                 _variantPickerState.value = VariantPickerState(
                     gameId = result.gameId,
                     variants = result.variants,
+                    channelName = channelName,
+                    launchMode = launchMode,
+                    onLaunch = onLaunch
+                )
+            }
+            is LaunchResult.SelectMemcard -> {
+                _memcardPickerState.value = MemcardPickerState(
+                    gameId = result.gameId,
+                    emulatorId = result.emulatorId,
+                    platformName = result.platformName,
+                    cards = result.cards,
                     channelName = channelName,
                     launchMode = launchMode,
                     onLaunch = onLaunch
@@ -442,8 +473,7 @@ class GameLaunchDelegate @Inject constructor(
                 val prefs = preferencesRepository.preferences.first()
                 if (!SavePathRegistry.canSyncWithSettings(
                         emulatorId,
-                        prefs.saveSyncEnabled,
-                        prefs.experimentalFolderSaveSync
+                        prefs.saveSyncEnabled
                     )
                 ) {
                     playSessionTracker.endSession()
@@ -605,6 +635,33 @@ class GameLaunchDelegate @Inject constructor(
         _onLaunchFailed = null
     }
 
+    fun selectMemcard(scope: CoroutineScope, cardPath: String) {
+        val state = _memcardPickerState.value ?: return
+        _memcardPickerState.value = null
+        _onLaunchFailed = null
+
+        scope.launch {
+            emulatorSaveConfigRepository.setMemcardPath(state.emulatorId, cardPath)
+            val result = launchGameUseCase(
+                gameId = state.gameId
+            )
+            when (result) {
+                is LaunchResult.Success -> {
+                    soundManager.play(SoundType.LAUNCH_GAME)
+                    state.onLaunch(applyLaunchMode(result.intent, state.launchMode))
+                }
+                is LaunchResult.Error -> notificationManager.showError(result.message)
+                else -> notificationManager.showError("Failed to launch")
+            }
+        }
+    }
+
+    fun dismissMemcardPicker() {
+        _memcardPickerState.value = null
+        _onLaunchFailed?.invoke()
+        _onLaunchFailed = null
+    }
+
     fun launchSimple(
         scope: CoroutineScope,
         gameId: Long,
@@ -653,6 +710,16 @@ class GameLaunchDelegate @Inject constructor(
                 val handler = callbacks.onSelectVariant
                 if (handler != null) handler(result.variants)
                 else dispatchErrorResult(result, callbacks.onLaunchFailed)
+            }
+            is LaunchResult.SelectMemcard -> {
+                _memcardPickerState.value = MemcardPickerState(
+                    gameId = result.gameId,
+                    emulatorId = result.emulatorId,
+                    platformName = result.platformName,
+                    cards = result.cards,
+                    launchMode = launchMode,
+                    onLaunch = callbacks.onLaunch
+                )
             }
             is LaunchResult.NoEmulator -> {
                 val handler = callbacks.onNoEmulator

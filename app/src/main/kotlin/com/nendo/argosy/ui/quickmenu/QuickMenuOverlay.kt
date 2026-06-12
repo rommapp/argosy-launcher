@@ -30,11 +30,13 @@ import com.nendo.argosy.ui.quickmenu.components.QuickMenuOrbRow
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalLauncherTheme
 import com.nendo.argosy.ui.theme.Motion
+import com.nendo.argosy.ui.util.doubleTapNoFocus
 
 @Composable
 fun QuickMenuOverlay(
     viewModel: QuickMenuViewModel,
     onGameSelect: (Long) -> Unit,
+    closeQuickMenu: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -68,6 +70,7 @@ fun QuickMenuOverlay(
             modifier = Modifier
                 .fillMaxSize()
                 .background(overlayColor)
+                .doubleTapNoFocus { closeQuickMenu() }
         )
     }
 
@@ -112,19 +115,27 @@ fun QuickMenuOverlay(
 
             Spacer(modifier = Modifier.height(Dimens.spacingLg))
 
-            QuickMenuContent(
-                uiState = uiState,
-                isFocused = uiState.contentFocused,
-                onSearchQueryChange = viewModel::updateSearchQuery,
-                onGameSelect = { gameId ->
-                    viewModel.hide()
-                    onGameSelect(gameId)
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f)
-                    .alpha(contentAlpha)
-            )
+            if (contentAlpha > 0f) {
+                QuickMenuContent(
+                    uiState = uiState,
+                    isFocused = uiState.contentFocused,
+                    onSearchQueryChange = viewModel::updateSearchQuery,
+                    onGameSelect = { gameId ->
+                        viewModel.saveSearchQuery()
+                        viewModel.hide()
+                        onGameSelect(gameId)
+                    },
+                    onRecentSearchSelect = { query ->
+                        viewModel.selectRecentSearch(query)
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f)
+                        .alpha(contentAlpha)
+                )
+            } else {
+                Spacer(modifier = Modifier.weight(1f))
+            }
 
             if (topSpacerWeight > 0.01f) {
                 Spacer(modifier = Modifier.weight(topSpacerWeight))

@@ -29,7 +29,10 @@ private const val MIN_DEVICE_API_VERSION = "4.7.0"
 sealed class ConnectionState {
     data object Disconnected : ConnectionState()
     data object Connecting : ConnectionState()
-    data class Connected(val version: String) : ConnectionState()
+    data class Connected(
+        val version: String,
+        val capabilities: RomMCapabilities = RomMCapabilities.from(version)
+    ) : ConnectionState()
     data class Failed(val reason: String) : ConnectionState()
 }
 
@@ -60,21 +63,14 @@ class RomMConnectionManager @Inject constructor(
         return (_connectionState.value as? ConnectionState.Connected)?.version
     }
 
-    fun isVersionAtLeast(minVersion: String): Boolean {
-        val current = getConnectedVersion() ?: return false
-        return compareVersions(current, minVersion) >= 0
+    fun getCapabilities(): RomMCapabilities {
+        return (_connectionState.value as? ConnectionState.Connected)?.capabilities
+            ?: RomMCapabilities.NONE
     }
 
-    fun compareVersions(v1: String, v2: String): Int {
-        val parts1 = v1.split("-")[0].split(".").mapNotNull { it.toIntOrNull() }
-        val parts2 = v2.split("-")[0].split(".").mapNotNull { it.toIntOrNull() }
-        val maxLen = maxOf(parts1.size, parts2.size)
-        for (i in 0 until maxLen) {
-            val p1 = parts1.getOrElse(i) { 0 }
-            val p2 = parts2.getOrElse(i) { 0 }
-            if (p1 != p2) return p1.compareTo(p2)
-        }
-        return 0
+    fun isVersionAtLeast(minVersion: String): Boolean {
+        val current = getConnectedVersion() ?: return false
+        return RomMCapabilities.compareVersions(current, minVersion) >= 0
     }
 
     suspend fun initialize() {
@@ -108,9 +104,12 @@ class RomMConnectionManager @Inject constructor(
                     api = newApi
                     saveSyncRepository.get().setApi(api)
                     biosRepository.setApi(api)
-                    val version = response.body()?.version ?: "unknown"
-                    _connectionState.value = ConnectionState.Connected(version)
-                    Logger.info(TAG, "connect: success at $normalizedUrl, version=$version")
+                    val body = response.body()
+                    val version = body?.version ?: "unknown"
+                    val capabilities = RomMCapabilities.from(version, body?.libretroApiEnabled)
+                    _connectionState.value = ConnectionState.Connected(version, capabilities)
+                    saveSyncRepository.get().setCapabilities(capabilities)
+                    Logger.info(TAG, "connect: success at $normalizedUrl, version=$version, capabilities=$capabilities")
                     if (token != null && isVersionAtLeast(MIN_DEVICE_API_VERSION)) {
                         registerDeviceIfNeeded()
                     }
@@ -213,6 +212,7 @@ class RomMConnectionManager @Inject constructor(
     fun disconnect() {
         api = null
         biosRepository.setApi(null)
+        saveSyncRepository.get().setCapabilities(RomMCapabilities.NONE)
         accessToken = null
         baseUrl = ""
         cachedDeviceId = null
@@ -230,8 +230,11 @@ class RomMConnectionManager @Inject constructor(
         try {
             val response = currentApi.heartbeat()
             if (response.isSuccessful) {
-                val version = response.body()?.version ?: "unknown"
-                _connectionState.value = ConnectionState.Connected(version)
+                val body = response.body()
+                val version = body?.version ?: "unknown"
+                val capabilities = RomMCapabilities.from(version, body?.libretroApiEnabled)
+                _connectionState.value = ConnectionState.Connected(version, capabilities)
+                saveSyncRepository.get().setCapabilities(capabilities)
                 Logger.info(TAG, "checkConnection: connected, version=$version")
             } else {
                 Logger.info(TAG, "checkConnection: heartbeat failed with ${response.code()}, reinitializing")
@@ -282,9 +285,11 @@ class RomMConnectionManager @Inject constructor(
 
         try {
             val deviceName = "${Build.MANUFACTURER} ${Build.MODEL}".trim()
+            val caps = getCapabilities()
             val registration = RomMDeviceRegistration(
                 name = deviceName,
-                clientVersion = clientVersion
+                clientVersion = clientVersion,
+                syncMode = if (caps.supportsDeviceSyncMode) "api" else null
             )
 
             if (existingDeviceId != null) {

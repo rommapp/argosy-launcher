@@ -12,6 +12,7 @@ sealed class SyncState {
     data class LocalModified(
         val gameId: Long,
         val localSavePath: String,
-        val channelName: String?
+        val channelName: String?,
+        val serverSaveId: Long? = null
     ) : SyncState()
 }

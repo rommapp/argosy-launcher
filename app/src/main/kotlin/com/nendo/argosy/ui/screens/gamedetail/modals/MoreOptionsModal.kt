@@ -16,6 +16,7 @@ import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.SystemUpdate
 import androidx.compose.material.icons.filled.Tag
+import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material.icons.filled.VisibilityOff
@@ -71,6 +72,9 @@ fun MoreOptionsModal(
         }
         if (game.hasMultipleCores && isEmulatedGame) {
             add(MoreMenuEntry.Option(label = "Change Core", value = game.selectedCoreName ?: "Default", action = MoreOptionAction.ChangeCore))
+        }
+        if (isEmulatedGame) {
+            add(MoreMenuEntry.Option(Icons.Default.Tune, "Platform Settings", value = game.platformName, action = MoreOptionAction.PlatformSettings))
         }
         if (usesTitleId && isEmulatedGame) {
             add(MoreMenuEntry.Option(Icons.Default.Tag, "Title ID", value = game.titleId ?: "Not detected", action = MoreOptionAction.RefreshTitleId))

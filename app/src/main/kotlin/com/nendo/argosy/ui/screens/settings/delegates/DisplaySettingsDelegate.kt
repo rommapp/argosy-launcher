@@ -350,7 +350,10 @@ class DisplaySettingsDelegate @Inject constructor(
     }
 
     fun cycleSystemIconPosition(scope: CoroutineScope, direction: Int = 1) {
-        val next = cycleEnum(_state.value.systemIconPosition, direction)
+        val corners = SystemIconPosition.CORNERS
+        val current = _state.value.systemIconPosition
+        val idx = corners.indexOf(current).coerceAtLeast(0)
+        val next = corners[(idx + direction).mod(corners.size)]
         scope.launch {
             preferencesRepository.setSystemIconPosition(next)
             _state.update { it.copy(systemIconPosition = next) }
@@ -362,6 +365,22 @@ class DisplaySettingsDelegate @Inject constructor(
         scope.launch {
             preferencesRepository.setSystemIconPadding(next)
             _state.update { it.copy(systemIconPadding = next) }
+        }
+    }
+
+    fun cyclePlatformIndicatorStyle(scope: CoroutineScope, direction: Int = 1) {
+        val next = cycleEnum(_state.value.platformIndicatorStyle, direction)
+        scope.launch {
+            preferencesRepository.setPlatformIndicatorStyle(next)
+            _state.update { it.copy(platformIndicatorStyle = next) }
+        }
+    }
+
+    fun cyclePlatformIndicatorContent(scope: CoroutineScope, direction: Int = 1) {
+        val next = cycleEnum(_state.value.platformIndicatorContent, direction)
+        scope.launch {
+            preferencesRepository.setPlatformIndicatorContent(next)
+            _state.update { it.copy(platformIndicatorContent = next) }
         }
     }
 

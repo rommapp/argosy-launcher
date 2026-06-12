@@ -84,10 +84,12 @@ import com.nendo.argosy.ui.components.CollectionItem
 import com.nendo.argosy.ui.components.FooterBar
 import com.nendo.argosy.ui.components.InputButton
 import com.nendo.argosy.ui.components.DiscPickerModal
+import com.nendo.argosy.ui.components.MemcardPickerModal
 import com.nendo.argosy.ui.components.SyncOverlay
 import com.nendo.argosy.ui.screens.collections.dialogs.CreateCollectionDialog
 import com.nendo.argosy.ui.icons.InputIcons
 import com.nendo.argosy.ui.input.DiscPickerInputHandler
+import com.nendo.argosy.ui.input.MemcardPickerInputHandler
 import com.nendo.argosy.ui.input.HardcoreConflictInputHandler
 import com.nendo.argosy.ui.input.LocalModifiedInputHandler
 import com.nendo.argosy.ui.input.LocalInputDispatcher
@@ -269,7 +271,7 @@ fun LibraryScreen(
     val isTransitioningToGame by argosyViewModel.isTransitioningToGame.collectAsState()
     val returningFromGame by argosyViewModel.returningFromGame.collectAsState()
 
-    val showAnyOverlay = uiState.showFilterMenu || uiState.showQuickMenu || uiState.showAddToCollectionModal || uiState.syncOverlayState != null || uiState.discPickerState != null
+    val showAnyOverlay = uiState.showFilterMenu || uiState.showQuickMenu || uiState.showAddToCollectionModal || uiState.syncOverlayState != null || uiState.discPickerState != null || uiState.memcardPickerState != null
     val modalBlur by animateDpAsState(
         targetValue = if (showAnyOverlay) Motion.blurRadiusModal else 0.dp,
         animationSpec = Motion.focusSpringDp,
@@ -437,13 +439,18 @@ fun LibraryScreen(
             }
 
             Box(modifier = Modifier.align(Alignment.BottomCenter)) {
+                val isViewingHidden = uiState.activeFilters.source == SourceFilter.HIDDEN
                 LibraryFooter(
                     focusedGame = uiState.focusedGame,
+                    isViewingHidden = isViewingHidden,
                     showSectionJump = uiState.sectionLabels.size > 1,
                     onHintClick = { button ->
                         when (button) {
                             InputButton.A -> uiState.focusedGame?.let { onGameSelect(it.id) }
-                            InputButton.Y -> uiState.focusedGame?.let { viewModel.toggleFavorite(it.id) }
+                            InputButton.Y -> uiState.focusedGame?.let {
+                                if (isViewingHidden) viewModel.unhideGame(it.id)
+                                else viewModel.toggleFavorite(it.id)
+                            }
                             InputButton.X -> viewModel.toggleFilterMenu()
                             InputButton.SELECT -> viewModel.toggleQuickMenu()
                             else -> {}
@@ -509,7 +516,7 @@ fun LibraryScreen(
                     },
                     onHide = {
                         viewModel.toggleQuickMenu()
-                        viewModel.hideGame(game.id)
+                        if (game.isHidden) viewModel.unhideGame(game.id) else viewModel.hideGame(game.id)
                     }
                 )
             }
@@ -571,6 +578,42 @@ fun LibraryScreen(
         DisposableEffect(uiState.discPickerState) {
             onDispose {
                 if (uiState.discPickerState != null) {
+                    inputDispatcher.popModal()
+                }
+            }
+        }
+
+        uiState.memcardPickerState?.let { pickerState ->
+            MemcardPickerModal(
+                cards = pickerState.cards,
+                focusIndex = uiState.memcardPickerFocusIndex,
+                selectedCardPath = null,
+                onSelectCard = viewModel::selectMemcard,
+                onDismiss = viewModel::dismissMemcardPicker
+            )
+        }
+
+        val memcardPickerInputHandler = remember(viewModel) {
+            MemcardPickerInputHandler(
+                getCards = { uiState.memcardPickerState?.cards ?: emptyList() },
+                getFocusIndex = { uiState.memcardPickerFocusIndex },
+                onFocusChange = { viewModel.setMemcardPickerFocusIndex(it) },
+                onSelect = { viewModel.selectMemcard(it) },
+                onDismiss = { viewModel.dismissMemcardPicker() }
+            )
+        }
+
+        val showMemcardPicker = uiState.memcardPickerState != null
+        LaunchedEffect(showMemcardPicker) {
+            if (showMemcardPicker) {
+                viewModel.setMemcardPickerFocusIndex(0)
+                inputDispatcher.pushModal(memcardPickerInputHandler)
+            }
+        }
+
+        DisposableEffect(showMemcardPicker) {
+            onDispose {
+                if (showMemcardPicker) {
                     inputDispatcher.popModal()
                 }
             }
@@ -840,6 +883,7 @@ private fun LibraryGameCard(
 @Composable
 private fun LibraryFooter(
     focusedGame: LibraryGameUi?,
+    isViewingHidden: Boolean = false,
     showSectionJump: Boolean = false,
     onHintClick: ((InputButton) -> Unit)? = null
 ) {
@@ -848,7 +892,11 @@ private fun LibraryFooter(
             add(InputButton.LT_RT to "Jump Section")
         }
         add(InputButton.A to "Details")
-        add(InputButton.Y to if (focusedGame?.isFavorite == true) "Unfavorite" else "Favorite")
+        add(InputButton.Y to when {
+            isViewingHidden -> "Unhide"
+            focusedGame?.isFavorite == true -> "Unfavorite"
+            else -> "Favorite"
+        })
         add(InputButton.X to "Filter")
         add(InputButton.SELECT to "Quick Menu")
     }

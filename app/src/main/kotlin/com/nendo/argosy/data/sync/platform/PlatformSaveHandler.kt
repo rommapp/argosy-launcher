@@ -18,18 +18,18 @@ interface PlatformSaveHandler {
     suspend fun extractDownload(tempFile: File, context: SaveContext): ExtractResult
 
     /**
-     * Locate an existing save folder under [basePath] for [titleId]. Returns null when the
-     * platform doesn't store saves per-title-id, or when no match is found.
+     * Locate an existing save folder under [basePath] for [saveId]. Returns null when the
+     * platform doesn't store saves per-save-id, or when no match is found.
      */
-    fun findSaveFolderByTitleId(basePath: String, titleId: String): String? = null
+    fun findSaveFolderBySaveId(basePath: String, saveId: String): String? = null
 
     /**
-     * Locate ALL save folders under [basePath] that belong to [titleId]. Default behavior
-     * narrows to whatever [findSaveFolderByTitleId] returns. Platforms whose disc id maps to
+     * Locate ALL save folders under [basePath] that belong to [saveId]. Default behavior
+     * narrows to whatever [findSaveFolderBySaveId] returns. Platforms whose disc id maps to
      * many on-disk profile folders (PSP) override this to enumerate every match.
      */
-    fun findAllSaveFoldersByTitleId(basePath: String, titleId: String): List<String> =
-        listOfNotNull(findSaveFolderByTitleId(basePath, titleId))
+    fun findAllSaveFoldersBySaveId(basePath: String, saveId: String): List<String> =
+        listOfNotNull(findSaveFolderBySaveId(basePath, saveId))
 
     /**
      * Resolve the platform's save root, applying any user override. Returns null when the
@@ -38,16 +38,18 @@ interface PlatformSaveHandler {
     fun resolveBasePath(config: SavePathConfig, basePathOverride: String?): String? = null
 
     /**
-     * Construct the path where a save for [titleId] should live under [baseDir]. Default returns
+     * Construct the path where a save for [saveId] should live under [baseDir]. Default returns
      * null (handler does not own a folder layout). Folder-based handlers override this.
      */
-    fun constructSavePath(baseDir: String, titleId: String): String? = null
+    fun constructSavePath(baseDir: String, saveId: String): String? = null
+
+    fun isCanonicalFolderPath(savePath: String, saveId: String): Boolean = true
 }
 
 data class SaveContext(
     val config: SavePathConfig,
     val romPath: String?,
-    val titleId: String?,
+    val saveId: String?,
     val emulatorPackage: String?,
     val gameId: Long,
     val gameTitle: String,
@@ -72,4 +74,11 @@ data class ExtractResult(
      * SaveDownloader uses this to skip future attempts at the same
      * server timestamp. */
     val corruptZip: Boolean = false
+)
+
+data class MemcardInfo(
+    val name: String,
+    val path: String,
+    val gameFolderCount: Int,
+    val lastModified: Long
 )

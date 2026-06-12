@@ -50,6 +50,7 @@ import androidx.compose.material.icons.filled.Album
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.SystemUpdate
+import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material.icons.filled.Whatshot
 import androidx.compose.material3.HorizontalDivider
@@ -64,6 +65,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import com.nendo.argosy.ui.theme.ALauncherColors
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
@@ -79,6 +81,8 @@ import com.nendo.argosy.ui.common.savechannel.SaveFocusColumn
 import com.nendo.argosy.ui.common.savechannel.StateSlotRow
 import com.nendo.argosy.ui.common.savechannel.SaveHistoryItem
 import com.nendo.argosy.ui.common.savechannel.SaveSlotItem
+import com.nendo.argosy.ui.screens.gamedetail.components.SaveSyncStatus
+import com.nendo.argosy.ui.screens.gamedetail.components.icon
 import com.nendo.argosy.util.formatSaveSize
 import com.nendo.argosy.util.formatSaveTimestamp
 import com.nendo.argosy.ui.util.touchOnly
@@ -119,6 +123,7 @@ fun DualGameDetailLowerScreen(
         Column(modifier = Modifier.fillMaxSize()) {
             TabHeader(
                 currentTab = state.currentTab,
+                availableTabs = state.availableTabs,
                 onTabChanged = onTabChanged
             )
 
@@ -162,6 +167,10 @@ fun DualGameDetailLowerScreen(
                         status = state.status,
                         emulatorName = state.emulatorName,
                         coreName = state.selectedCoreName,
+                        activeChannel = state.activeChannel,
+                        activeSaveTimestamp = state.activeSaveTimestamp,
+                        saveSyncStatusName = state.saveSyncStatusName,
+                        isHidden = state.isHidden,
                         selectedIndex = selectedOptionIndex,
                         onOptionSelected = onOptionSelected
                     )
@@ -183,6 +192,7 @@ fun DualGameDetailLowerScreen(
 @Composable
 private fun TabHeader(
     currentTab: DualGameDetailTab,
+    availableTabs: List<DualGameDetailTab>,
     onTabChanged: (DualGameDetailTab) -> Unit
 ) {
     Row(
@@ -192,7 +202,7 @@ private fun TabHeader(
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        DualGameDetailTab.entries.forEach { tab ->
+        availableTabs.forEach { tab ->
             val isSelected = tab == currentTab
             Box(
                 modifier = Modifier
@@ -348,7 +358,7 @@ private fun SaveSlotsColumn(
             ),
             verticalArrangement = Arrangement.spacedBy(2.dp)
         ) {
-            itemsIndexed(slots) { index, slot ->
+            itemsIndexed(slots, key = { _, slot -> slot.slotKey }) { index, slot ->
                 val isSelected = index == selectedIndex && isFocused
                 if (slot.isCreateAction) {
                     NewSlotRow(
@@ -727,6 +737,8 @@ private data class OptionEntry(
     val label: String,
     val value: String? = null,
     val tint: Color? = null,
+    val subLabel: String? = null,
+    val subLabelSecondary: String? = null,
     val visualContent: (@Composable () -> Unit)? = null
 )
 
@@ -742,6 +754,10 @@ private fun OptionsTabContent(
     status: String?,
     emulatorName: String?,
     coreName: String?,
+    activeChannel: String?,
+    activeSaveTimestamp: Long?,
+    saveSyncStatusName: String?,
+    isHidden: Boolean,
     selectedIndex: Int,
     onOptionSelected: (GameDetailOption) -> Unit
 ) {
@@ -779,7 +795,30 @@ private fun OptionsTabContent(
                     )
                 }
             } else null
-            OptionEntry(option, icon, label, visualContent = progressVisual)
+
+            val showSaveInfo = isPlayable && dlState == null && activeSaveTimestamp != null
+            val slotLabel = if (showSaveInfo) activeChannel ?: "Auto-save" else null
+            val dateLabel = if (showSaveInfo) formatSaveTimestamp(activeSaveTimestamp!!) else null
+            val statusVisual: (@Composable () -> Unit)? = if (showSaveInfo && saveSyncStatusName != null) {
+                val status = runCatching { SaveSyncStatus.valueOf(saveSyncStatusName) }.getOrNull()
+                if (status != null) {
+                    {
+                        Icon(
+                            imageVector = status.icon,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+                } else null
+            } else null
+
+            OptionEntry(
+                option, icon, label,
+                subLabel = slotLabel,
+                subLabelSecondary = dateLabel,
+                visualContent = progressVisual ?: statusVisual
+            )
         }
         GameDetailOption.RATING -> OptionEntry(
             option, Icons.Filled.Star, "Rating",
@@ -789,7 +828,7 @@ private fun OptionsTabContent(
                     max = 10,
                     filledIcon = Icons.Filled.Star,
                     emptyIcon = Icons.Outlined.Star,
-                    activeColor = Color(0xFFFFB300)
+                    activeColor = ALauncherColors.TrophyAmber
                 )
             }
         )
@@ -801,7 +840,7 @@ private fun OptionsTabContent(
                     max = 10,
                     filledIcon = Icons.Filled.Whatshot,
                     emptyIcon = Icons.Outlined.Whatshot,
-                    activeColor = Color(0xFFFF7043)
+                    activeColor = ALauncherColors.Orange
                 )
             }
         )
@@ -865,10 +904,11 @@ private fun OptionsTabContent(
             option, Icons.Filled.Delete, "Delete from Library",
             tint = Color(0xFFE57373)
         )
-        GameDetailOption.HIDE -> OptionEntry(
-            option, Icons.Filled.VisibilityOff, "Hide Game",
-            tint = Color(0xFFE57373)
-        )
+        GameDetailOption.HIDE -> if (isHidden) {
+            OptionEntry(option, Icons.Filled.Visibility, "Unhide Game")
+        } else {
+            OptionEntry(option, Icons.Filled.VisibilityOff, "Hide Game", tint = Color(0xFFE57373))
+        }
     }
 
     val actionGroup = setOf(GameDetailOption.PLAY)
@@ -926,6 +966,8 @@ private fun OptionsTabContent(
                     value = entry.value,
                     isSelected = itemIndex == selectedIndex,
                     tint = entry.tint,
+                    subLabel = entry.subLabel,
+                    subLabelSecondary = entry.subLabelSecondary,
                     visualContent = entry.visualContent,
                     onClick = { onOptionSelected(entry.option) }
                 )
@@ -974,6 +1016,8 @@ private fun OptionItem(
     value: String? = null,
     isSelected: Boolean,
     tint: Color? = null,
+    subLabel: String? = null,
+    subLabelSecondary: String? = null,
     visualContent: (@Composable () -> Unit)? = null,
     onClick: () -> Unit
 ) {
@@ -1003,12 +1047,31 @@ private fun OptionItem(
             }
         )
         Spacer(modifier = Modifier.width(12.dp))
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodyLarge,
-            color = tint ?: MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.weight(1f)
-        )
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.bodyLarge,
+                color = tint ?: MaterialTheme.colorScheme.onSurface
+            )
+            if (subLabel != null) {
+                Text(
+                    text = subLabel,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+            if (subLabelSecondary != null) {
+                Text(
+                    text = subLabelSecondary,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+        }
         if (visualContent != null) {
             visualContent()
         } else if (value != null) {

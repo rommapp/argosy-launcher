@@ -1,13 +1,17 @@
 package com.nendo.argosy.data.repository
 
 import android.content.Context
+import com.nendo.argosy.data.emulator.EmulatorRegistry
 import com.nendo.argosy.data.emulator.EmulatorResolver
 import com.nendo.argosy.data.emulator.SavePathConfig
 import com.nendo.argosy.data.emulator.SavePathRegistry
 import com.nendo.argosy.data.local.dao.GameDao
+import com.nendo.argosy.data.local.dao.SaveCacheDao
 import com.nendo.argosy.data.local.dao.SaveSyncDao
 import com.nendo.argosy.data.local.entity.SaveSyncEntity
 import com.nendo.argosy.data.remote.romm.RomMDeleteSavesRequest
+import com.nendo.argosy.data.remote.romm.RomMSave
+import com.nendo.argosy.data.remote.romm.originDeviceName
 import com.nendo.argosy.data.storage.FileAccessLayer
 import com.nendo.argosy.data.sync.SaveArchiver
 import com.nendo.argosy.data.sync.SavePathResolver
@@ -31,6 +35,7 @@ import javax.inject.Singleton
 class SaveUploader @Inject constructor(
     @ApplicationContext private val context: Context,
     private val saveSyncDao: SaveSyncDao,
+    private val saveCacheDao: SaveCacheDao,
     private val emulatorResolver: EmulatorResolver,
     private val gameDao: GameDao,
     private val titleDbRepository: TitleDbRepository,
@@ -39,7 +44,8 @@ class SaveUploader @Inject constructor(
     private val fal: FileAccessLayer,
     private val switchSaveHandler: SwitchSaveHandler,
     private val apiClient: dagger.Lazy<SaveSyncApiClient>,
-    private val conflictDetector: ConflictDetector
+    private val conflictDetector: ConflictDetector,
+    private val saveCacheManager: dagger.Lazy<SaveCacheManager>
 ) {
 
     suspend fun uploadSave(
@@ -47,7 +53,8 @@ class SaveUploader @Inject constructor(
         emulatorId: String,
         channelName: String? = null,
         forceOverwrite: Boolean = false,
-        isHardcore: Boolean = false
+        isHardcore: Boolean = false,
+        uploadedCacheId: Long? = null
     ): SaveSyncResult = withContext(Dispatchers.IO) {
         Logger.debug(TAG, "[SaveSync] UPLOAD gameId=$gameId emulator=$emulatorId channel=$channelName | Starting upload")
         val client = apiClient.get()
@@ -57,12 +64,6 @@ class SaveUploader @Inject constructor(
             return@withContext SaveSyncResult.NotConfigured
         }
         val deviceId = client.getDeviceId()
-
-        val syncEntity = if (channelName != null) {
-            saveSyncDao.getByGameEmulatorAndChannel(gameId, emulatorId, channelName)
-        } else {
-            saveSyncDao.getByGameAndEmulatorWithDefault(gameId, emulatorId, SaveSyncApiClient.DEFAULT_SAVE_NAME)
-        }
 
         val game = gameDao.getById(gameId)
         if (game == null) {
@@ -75,7 +76,7 @@ class SaveUploader @Inject constructor(
             return@withContext SaveSyncResult.NotConfigured
         }
 
-        val resolvedEmulatorId = if (emulatorId == "default" || emulatorId.isBlank()) {
+        val resolvedEmulatorId = if (emulatorId.isBlank() || emulatorId == "default") {
             client.resolveEmulatorForGame(game) ?: run {
                 Logger.warn(TAG, "[SaveSync] UPLOAD gameId=$gameId | Cannot resolve emulator from config")
                 return@withContext SaveSyncResult.Error("Cannot determine emulator")
@@ -83,12 +84,20 @@ class SaveUploader @Inject constructor(
         } else {
             emulatorId
         }
-        Logger.debug(TAG, "[SaveSync] UPLOAD gameId=$gameId | Using emulator=$resolvedEmulatorId (original=$emulatorId)")
+        if (resolvedEmulatorId != emulatorId) {
+            Logger.debug(TAG, "[SaveSync] UPLOAD gameId=$gameId | Canonical emulator=$resolvedEmulatorId (original=$emulatorId)")
+        }
+
+        val syncEntity = if (channelName != null) {
+            saveSyncDao.getByGameEmulatorAndChannel(gameId, resolvedEmulatorId, channelName)
+        } else {
+            saveSyncDao.getByGameAndEmulatorWithDefault(gameId, resolvedEmulatorId, SaveSyncApiClient.DEFAULT_SAVE_NAME)
+        }
 
         val emulatorPackage = emulatorResolver.getEmulatorPackageForGame(gameId, game.platformId, game.platformSlug)
         val preferredCore = client.resolveCoreForGame(game)
+        val serverEmulator = EmulatorRegistry.toServerEmulator(resolvedEmulatorId, preferredCore)
 
-        val folderSyncEnabled = client.isFolderSaveSyncEnabled()
         val cachedPath = syncEntity?.localSavePath?.takeIf { path ->
             val switchOk = if (game.platformSlug == "switch") switchSaveHandler.isValidCachedSavePath(path) else true
             switchOk && fal.exists(path)
@@ -102,11 +111,10 @@ class SaveUploader @Inject constructor(
                 gameTitle = game.title,
                 platformSlug = game.platformSlug,
                 romPath = game.localPath,
-                cachedTitleId = game.titleId,
+                cachedSaveId = game.saveId ?: game.titleId,
                 coreName = preferredCore,
                 emulatorPackage = emulatorPackage,
-                gameId = gameId,
-                isFolderSaveSyncEnabled = folderSyncEnabled
+                gameId = gameId
             )
 
         if (localPath == null && (game.titleId != null || titleDbRepository.getCachedCandidates(gameId).isNotEmpty())) {
@@ -117,11 +125,10 @@ class SaveUploader @Inject constructor(
                 gameTitle = game.title,
                 platformSlug = game.platformSlug,
                 romPath = game.localPath,
-                cachedTitleId = null,
+                cachedSaveId = null,
                 coreName = preferredCore,
                 emulatorPackage = emulatorPackage,
-                gameId = gameId,
-                isFolderSaveSyncEnabled = folderSyncEnabled
+                gameId = gameId
             )
         }
 
@@ -140,11 +147,6 @@ class SaveUploader @Inject constructor(
         val isFolderBased = config?.usesFolderBasedSaves == true && isDirectory
         val isGciBundle = config?.usesGciFormat == true
 
-        if (isFolderBased && !client.isFolderSaveSyncEnabled()) {
-            Logger.debug(TAG, "[SaveSync] UPLOAD gameId=$gameId | Folder save sync disabled, skipping")
-            return@withContext SaveSyncResult.NotConfigured
-        }
-
         val localModified = if (isDirectory) {
             Instant.ofEpochMilli(savePathResolver.findNewestFileTime(localPath))
         } else {
@@ -160,7 +162,7 @@ class SaveUploader @Inject constructor(
                 saveExtensions = listOf("sav", "srm")
             ),
             romPath = game.localPath,
-            titleId = game.titleId,
+            saveId = game.saveId ?: game.titleId,
             emulatorPackage = emulatorPackage,
             gameId = gameId,
             gameTitle = game.title,
@@ -205,25 +207,50 @@ class SaveUploader @Inject constructor(
             }
 
             val contentHash = saveArchiver.calculateContentHash(uploadFile)
+
+            run {
+                val matchingCache = saveCacheDao.getByGameAndHash(gameId, contentHash)
+                SaveDebugLogger.logUploadHash(
+                    gameId = gameId,
+                    channel = channelName,
+                    sourcePath = localPath,
+                    diskHash = contentHash,
+                    expectedCacheId = matchingCache?.id,
+                    expectedCacheHash = matchingCache?.contentHash
+                )
+            }
+
             if (syncEntity?.lastUploadedHash == contentHash) {
                 Logger.debug(TAG, "[SaveSync] UPLOAD gameId=$gameId | Skipped - content unchanged (hash=$contentHash)")
                 if (prepared.isTemporary) fileToUpload.delete()
                 tempTrailerFile?.delete()
-                return@withContext SaveSyncResult.Success()
+                syncEntity.rommSaveId?.let { knownId ->
+                    saveCacheDao.getAllByGameChannelAndHash(gameId, channelName, contentHash).firstOrNull()?.let { cache ->
+                        if (cache.rommSaveId != knownId) {
+                            saveCacheDao.updateRommSaveId(cache.id, knownId)
+                            Logger.debug(TAG, "[SaveSync] UPLOAD gameId=$gameId | Self-healed orphan cache row | cacheId=${cache.id}, rommSaveId=$knownId")
+                        }
+                    }
+                }
+                val localMtime = localPath?.let { File(it).takeIf { f -> f.exists() }?.lastModified()?.let(Instant::ofEpochMilli) }
+                saveSyncDao.upsert(
+                    syncEntity.copy(
+                        localUpdatedAt = localMtime ?: syncEntity.localUpdatedAt,
+                        lastSyncedAt = Instant.now()
+                    )
+                )
+                return@withContext SaveSyncResult.Success(noOp = true)
             }
 
             val romFile = game.localPath?.let { File(it) }
             val romBaseName = romFile?.nameWithoutExtension
             val latestSlotName = romBaseName ?: SaveSyncApiClient.DEFAULT_SAVE_NAME
 
-            val uploadFileName = if (channelName != null) {
-                val ext = fileToUpload.extension
-                if (ext.isNotEmpty()) "$channelName.$ext" else channelName
-            } else {
-                val baseName = romBaseName ?: SaveSyncApiClient.DEFAULT_SAVE_NAME
-                val ext = fileToUpload.extension
-                if (ext.isNotEmpty()) "$baseName.$ext" else baseName
-            }
+            val uploadFileName = SaveSyncApiClient.computeUploadFileName(
+                localSavePath = localPath,
+                channelName = channelName,
+                romBaseName = romBaseName
+            )
 
             val serverSaves = client.checkSavesForGame(gameId, rommId)
             Logger.debug(TAG, "[SaveSync] UPLOAD gameId=$gameId | Server saves found | count=${serverSaves.size}, files=${serverSaves.map { it.fileName }}")
@@ -242,10 +269,13 @@ class SaveUploader @Inject constructor(
             )
             if (conflictDecision != null && conflictDecision.isConflict) {
                 return@withContext SaveSyncResult.Conflict(
-                    gameId,
-                    conflictDecision.localTimestamp,
-                    conflictDecision.serverTimestamp,
-                    conflictDecision.serverDeviceName
+                    gameId = gameId,
+                    localTimestamp = conflictDecision.localTimestamp,
+                    serverTimestamp = conflictDecision.serverTimestamp,
+                    serverDeviceName = conflictDecision.serverDeviceName,
+                    serverSaveId = latestServerSave?.id,
+                    localContentHash = contentHash,
+                    serverContentHash = latestServerSave?.contentHash
                 )
             }
 
@@ -281,11 +311,14 @@ class SaveUploader @Inject constructor(
             val requestBody = uploadFile.asRequestBody("application/octet-stream".toMediaType())
             val filePart = MultipartBody.Part.createFormData("saveFile", uploadFileName, requestBody)
 
-            val uploadSlot = channelName ?: latestSlotName
+            val slotForUpload = channelName ?: SaveSyncApiClient.AUTOSAVE_SLOT_NAME
+            val isAutosaveSlot = channelName == null
+            val autocleanupEnabled = isAutosaveSlot
+            val autocleanupLimit = if (isAutosaveSlot) SaveSyncApiClient.AUTOCLEANUP_LIMIT else null
             val response = if (deviceId != null) {
-                api.uploadSaveWithDevice(rommId, resolvedEmulatorId, deviceId, overwrite = forceOverwrite, slot = uploadSlot, autocleanup = true, autocleanupLimit = SaveSyncApiClient.AUTOCLEANUP_LIMIT, saveFile = filePart)
+                api.uploadSaveWithDevice(rommId, serverEmulator, deviceId, overwrite = forceOverwrite, slot = slotForUpload, autocleanup = autocleanupEnabled, autocleanupLimit = autocleanupLimit, saveFile = filePart)
             } else {
-                api.uploadSave(rommId, resolvedEmulatorId, slot = uploadSlot, autocleanup = true, autocleanupLimit = SaveSyncApiClient.AUTOCLEANUP_LIMIT, filePart)
+                api.uploadSave(rommId, serverEmulator, slot = slotForUpload, autocleanup = autocleanupEnabled, autocleanupLimit = autocleanupLimit, filePart)
             }
 
             if (response.code() == 409) {
@@ -293,10 +326,13 @@ class SaveUploader @Inject constructor(
                 val conflictLocalTime = syncEntity?.lastSyncedAt ?: localModified
                 Logger.debug(TAG, "[SaveSync] UPLOAD gameId=$gameId | Decision=CONFLICT | Server returned 409 (device out of sync)")
                 return@withContext SaveSyncResult.Conflict(
-                    gameId,
-                    conflictLocalTime,
-                    serverTime,
-                    conflictDetector.extractUploaderDeviceName(latestServerSave, deviceId)
+                    gameId = gameId,
+                    localTimestamp = conflictLocalTime,
+                    serverTimestamp = serverTime,
+                    serverDeviceName = conflictDetector.extractUploaderDeviceName(latestServerSave, deviceId),
+                    serverSaveId = latestServerSave?.id,
+                    localContentHash = contentHash,
+                    serverContentHash = latestServerSave?.contentHash
                 )
             }
 
@@ -305,6 +341,7 @@ class SaveUploader @Inject constructor(
                     ?: return@withContext SaveSyncResult.Error("Empty response from server")
                 Logger.info(TAG, "[SaveSync] UPLOAD gameId=$gameId | Complete | serverSaveId=${serverSave.id}, fileName=$uploadFileName")
                 val serverTimestamp = SaveSyncApiClient.parseTimestamp(serverSave.updatedAt)
+                val currentDeviceSync = serverSave.deviceSyncs?.firstOrNull { it.isCurrent }
                 saveSyncDao.upsert(
                     SaveSyncEntity(
                         id = syncEntity?.id ?: 0,
@@ -318,8 +355,23 @@ class SaveUploader @Inject constructor(
                         serverUpdatedAt = serverTimestamp,
                         lastSyncedAt = Instant.now(),
                         syncStatus = SaveSyncEntity.STATUS_SYNCED,
-                        lastUploadedHash = contentHash
+                        lastUploadedHash = serverSave.contentHash?.takeIf { client.getCapabilities().trustsServerHash },
+                        lastSyncDeviceId = serverSave.originDeviceId ?: currentDeviceSync?.deviceId ?: deviceId ?: syncEntity?.lastSyncDeviceId,
+                        lastSyncDeviceName = serverSave.originDeviceName() ?: currentDeviceSync?.deviceName ?: syncEntity?.lastSyncDeviceName,
+                        userSelectedRestorePoint = false
                     )
+                )
+
+                Logger.debug(TAG, "[SaveSync] UPLOAD gameId=$gameId | wrote lastUploadedHash=${serverSave.contentHash} (server-verified; localHash=$contentHash)")
+                if (serverSave.contentHash != null && serverSave.contentHash != contentHash) {
+                    Logger.warn(TAG, "[SaveSync] HASH-MISMATCH gameId=$gameId | localHash=$contentHash serverHash=${serverSave.contentHash} file=${uploadFile.name} size=${uploadFile.length()} — client zip-hash algorithm has drifted from server _compute_zip_hash")
+                }
+
+                reconcileCacheRowsAfterUpload(
+                    gameId = gameId,
+                    channelName = channelName,
+                    uploadedCacheId = uploadedCacheId,
+                    serverSave = serverSave
                 )
 
                 SaveDebugLogger.logSyncUploadCompleted(
@@ -368,7 +420,8 @@ class SaveUploader @Inject constructor(
         channelName: String,
         cacheFile: File,
         contentHash: String?,
-        overwrite: Boolean = false
+        overwrite: Boolean = false,
+        uploadedCacheId: Long? = null
     ): SaveSyncResult = withContext(Dispatchers.IO) {
         Logger.debug(TAG, "[SaveSync] UPLOAD_CACHE gameId=$gameId channel=$channelName | Starting cache upload | file=${cacheFile.name}, size=${cacheFile.length()}, overwrite=$overwrite")
         val client = apiClient.get()
@@ -389,6 +442,7 @@ class SaveUploader @Inject constructor(
         } else {
             emulatorId
         }
+        val serverEmulator = EmulatorRegistry.toServerEmulator(resolvedEmulatorId, client.resolveCoreForGame(game))
 
         if (!overwrite && deviceId != null) {
             if (conflictDetector.isSessionOnOlderSave(gameId)) {
@@ -401,10 +455,13 @@ class SaveUploader @Inject constructor(
                     ?: Instant.ofEpochMilli(cacheFile.lastModified())
                 Logger.warn(TAG, "[SaveSync] UPLOAD_CACHE gameId=$gameId | Session started on older save -- conflict for channel=$channelName | preSyncTime=$preSyncTime, server=$serverTime")
                 return@withContext SaveSyncResult.Conflict(
-                    gameId,
-                    preSyncTime,
-                    serverTime,
-                    conflictDetector.extractUploaderDeviceName(latestForSlot, deviceId)
+                    gameId = gameId,
+                    localTimestamp = preSyncTime,
+                    serverTimestamp = serverTime,
+                    serverDeviceName = conflictDetector.extractUploaderDeviceName(latestForSlot, deviceId),
+                    serverSaveId = latestForSlot?.id,
+                    localContentHash = contentHash,
+                    serverContentHash = latestForSlot?.contentHash
                 )
             }
         }
@@ -419,7 +476,7 @@ class SaveUploader @Inject constructor(
             val response = if (deviceId != null) {
                 api.uploadSaveWithDevice(
                     romId = rommId,
-                    emulator = resolvedEmulatorId,
+                    emulator = serverEmulator,
                     deviceId = deviceId,
                     overwrite = overwrite,
                     slot = channelName,
@@ -430,7 +487,7 @@ class SaveUploader @Inject constructor(
             } else {
                 api.uploadSave(
                     romId = rommId,
-                    emulator = resolvedEmulatorId,
+                    emulator = serverEmulator,
                     slot = channelName,
                     autocleanup = true,
                     autocleanupLimit = SaveSyncApiClient.AUTOCLEANUP_LIMIT,
@@ -448,10 +505,13 @@ class SaveUploader @Inject constructor(
                     ?: Instant.ofEpochMilli(cacheFile.lastModified())
                 Logger.debug(TAG, "[SaveSync] UPLOAD_CACHE gameId=$gameId | Server returned 409 (device out of sync for slot=$channelName) | preSyncTime=$conflictLocalTime, server=$serverTime")
                 return@withContext SaveSyncResult.Conflict(
-                    gameId,
-                    conflictLocalTime,
-                    serverTime,
-                    conflictDetector.extractUploaderDeviceName(conflictSlotSave, deviceId)
+                    gameId = gameId,
+                    localTimestamp = conflictLocalTime,
+                    serverTimestamp = serverTime,
+                    serverDeviceName = conflictDetector.extractUploaderDeviceName(conflictSlotSave, deviceId),
+                    serverSaveId = conflictSlotSave?.id,
+                    localContentHash = contentHash,
+                    serverContentHash = conflictSlotSave?.contentHash
                 )
             }
 
@@ -460,6 +520,13 @@ class SaveUploader @Inject constructor(
                     ?: return@withContext SaveSyncResult.Error("Empty response from server")
                 val serverTime = SaveSyncApiClient.parseTimestamp(serverSave.updatedAt)
                 Logger.info(TAG, "[SaveSync] UPLOAD_CACHE gameId=$gameId | Complete | serverSaveId=${serverSave.id}, channel=$channelName, serverTime=$serverTime")
+                reconcileCacheRowsAfterUpload(
+                    gameId = gameId,
+                    channelName = channelName,
+                    uploadedCacheId = uploadedCacheId,
+                    serverSave = serverSave
+                )
+                clearUserSelectedRestorePointIfSet(gameId, resolvedEmulatorId, channelName)
                 SaveSyncResult.Success(rommSaveId = serverSave.id, serverTimestamp = serverTime)
             } else {
                 val errorBody = response.errorBody()?.string()
@@ -469,6 +536,57 @@ class SaveUploader @Inject constructor(
         } catch (e: Exception) {
             Logger.error(TAG, "[SaveSync] UPLOAD_CACHE gameId=$gameId | Exception during upload", e)
             SaveSyncResult.Error(e.message ?: "Upload failed")
+        }
+    }
+
+    private suspend fun clearUserSelectedRestorePointIfSet(gameId: Long, emulatorId: String, channelName: String?) {
+        val row = if (channelName != null) {
+            saveSyncDao.getByGameEmulatorAndChannel(gameId, emulatorId, channelName)
+        } else {
+            saveSyncDao.getByGameAndEmulator(gameId, emulatorId)
+        }
+        if (row?.userSelectedRestorePoint == true) {
+            saveSyncDao.clearUserSelectedRestorePoint(row.id)
+        }
+    }
+
+    private suspend fun reconcileCacheRowsAfterUpload(
+        gameId: Long,
+        channelName: String?,
+        uploadedCacheId: Long?,
+        serverSave: RomMSave
+    ) {
+        val verifiedHash = serverSave.contentHash ?: return
+        val serverTimestamp = SaveSyncApiClient.parseTimestamp(serverSave.updatedAt)
+        val matches = saveCacheDao.getAllByGameChannelAndHash(gameId, channelName, verifiedHash)
+        val older = matches.firstOrNull { uploadedCacheId == null || it.id != uploadedCacheId }
+        if (uploadedCacheId != null && older != null) {
+            saveCacheManager.get().deleteCachedSave(uploadedCacheId)
+            if (older.rommSaveId != serverSave.id) {
+                saveCacheDao.updateRommSaveId(older.id, serverSave.id)
+            }
+            saveCacheDao.markSynced(older.id, Instant.now())
+            if (serverTimestamp != null && older.cachedAt != serverTimestamp) {
+                saveCacheDao.updateCachedAt(older.id, serverTimestamp)
+            }
+            Logger.debug(TAG, "[SaveSync] UPLOAD gameId=$gameId | Discarded duplicate cache row | cacheId=$uploadedCacheId (existingCacheId=${older.id})")
+            return
+        }
+        val keeper = matches.firstOrNull { uploadedCacheId != null && it.id == uploadedCacheId }
+            ?: matches.firstOrNull()
+            ?: uploadedCacheId?.let { saveCacheDao.getById(it) }
+            ?: return
+        if (keeper.rommSaveId != serverSave.id) {
+            saveCacheDao.updateRommSaveId(keeper.id, serverSave.id)
+            Logger.debug(TAG, "[SaveSync] UPLOAD gameId=$gameId | Self-healed orphan cache row | cacheId=${keeper.id}, rommSaveId=${serverSave.id}")
+        }
+        if (serverSave.contentHash != null && keeper.contentHash != serverSave.contentHash) {
+            saveCacheDao.updateContentHash(keeper.id, serverSave.contentHash)
+            Logger.debug(TAG, "[SaveSync] UPLOAD gameId=$gameId | Adopted server hash on cache row | cacheId=${keeper.id}, serverHash=${serverSave.contentHash}")
+        }
+        if (serverTimestamp != null && keeper.cachedAt != serverTimestamp) {
+            saveCacheDao.updateCachedAt(keeper.id, serverTimestamp)
+            Logger.debug(TAG, "[SaveSync] UPLOAD gameId=$gameId | Aligned cache cachedAt to server updatedAt | cacheId=${keeper.id}, serverTimestamp=$serverTimestamp")
         }
     }
 

@@ -45,11 +45,11 @@ import com.nendo.argosy.ui.screens.gamedetail.GameDetailUi
 import com.nendo.argosy.ui.theme.ALauncherColors
 import com.nendo.argosy.ui.theme.AspectRatioClass
 import com.nendo.argosy.ui.theme.Dimens
+import com.nendo.argosy.ui.theme.LocalBoxArtStyle
 import com.nendo.argosy.ui.theme.LocalUiScale
 import com.nendo.argosy.util.formatPlayTime
 
 private val EXPANDED_COVER_WIDTH = 200.dp
-private val EXPANDED_COVER_HEIGHT = 280.dp
 private val COLLAPSED_THUMBNAIL_SIZE = 48.dp
 private val COLLAPSED_BAR_HEIGHT = 64.dp
 
@@ -128,6 +128,9 @@ private fun LandscapeExpandedHeader(
     game: GameDetailUi,
     modifier: Modifier = Modifier
 ) {
+    val coverAspectRatio = LocalBoxArtStyle.current.aspectRatio
+    val coverHeight = EXPANDED_COVER_WIDTH / coverAspectRatio
+
     Row(
         modifier = modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(Dimens.spacingXl)
@@ -137,7 +140,7 @@ private fun LandscapeExpandedHeader(
             contentDescription = game.title,
             modifier = Modifier
                 .width(EXPANDED_COVER_WIDTH)
-                .height(EXPANDED_COVER_HEIGHT)
+                .height(coverHeight)
         )
 
         Column(modifier = Modifier.weight(1f)) {
@@ -156,8 +159,9 @@ private fun PortraitExpandedHeader(
     maxWidth: androidx.compose.ui.unit.Dp,
     modifier: Modifier = Modifier
 ) {
+    val coverAspectRatio = LocalBoxArtStyle.current.aspectRatio
     val coverWidth = maxWidth * 0.4f
-    val coverHeight = coverWidth * 1.4f
+    val coverHeight = coverWidth / coverAspectRatio
 
     Column(
         modifier = modifier.fillMaxWidth(),

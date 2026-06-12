@@ -13,6 +13,7 @@ import com.nendo.argosy.data.emulator.EmulatorRegistry
 import com.nendo.argosy.data.launcher.SteamLaunchers
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.repository.GameRepository
+import com.nendo.argosy.data.repository.PlatformRepository
 import com.nendo.argosy.data.repository.SteamIgdbResolver
 import com.nendo.argosy.data.remote.github.EmulatorUpdateRepository
 import com.nendo.argosy.data.remote.github.FetchReleaseResult
@@ -61,7 +62,8 @@ class SteamSettingsDelegate @Inject constructor(
     private val steamIgdbResolver: SteamIgdbResolver,
     private val preferencesRepository: UserPreferencesRepository,
     private val steamPathResolver: SteamPathResolver,
-    private val gameRepository: GameRepository
+    private val gameRepository: GameRepository,
+    private val platformRepository: PlatformRepository
 ) {
     private val _state = MutableStateFlow(SteamSettingsState())
     val state: StateFlow<SteamSettingsState> = _state.asStateFlow()
@@ -151,6 +153,11 @@ class SteamSettingsDelegate @Inject constructor(
             val prefs = preferencesRepository.userPreferences.first()
             val volumes = withContext(Dispatchers.IO) { steamPathResolver.getAvailableVolumes() }
             val installedByVolume = withContext(Dispatchers.IO) { loadInstalledSteamSummary(volumes) }
+            val resolvedSteamPath = withContext(Dispatchers.IO) { steamPathResolver.getResolvedSteamBase() }
+            val steamPlatform = withContext(Dispatchers.IO) {
+                platformRepository.getById(com.nendo.argosy.data.platform.LocalPlatformIds.STEAM)
+            }
+            val customRomPath = steamPlatform?.customRomPath
 
             _state.update {
                 it.copy(
@@ -161,7 +168,9 @@ class SteamSettingsDelegate @Inject constructor(
                     notInstalledLaunchers = notInstalledLaunchers,
                     steamInstallVolume = prefs.steamInstallVolume,
                     availableVolumes = volumes,
-                    installedGamesByVolume = installedByVolume
+                    installedGamesByVolume = installedByVolume,
+                    steamInstallPath = resolvedSteamPath,
+                    steamInstallPathIsCustom = !customRomPath.isNullOrBlank()
                 )
             }
 

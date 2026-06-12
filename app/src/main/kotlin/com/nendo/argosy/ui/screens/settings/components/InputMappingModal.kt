@@ -770,7 +770,9 @@ private val MAPPABLE_AXES = listOf(
     MotionEvent.AXIS_HAT_X,
     MotionEvent.AXIS_HAT_Y,
     MotionEvent.AXIS_LTRIGGER,
-    MotionEvent.AXIS_RTRIGGER
+    MotionEvent.AXIS_RTRIGGER,
+    MotionEvent.AXIS_BRAKE,
+    MotionEvent.AXIS_GAS
 )
 
 private fun detectAnalogInput(event: MotionEvent): InputSource.AnalogDirection? {

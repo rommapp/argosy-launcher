@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -70,16 +71,13 @@ import com.nendo.argosy.ui.common.rememberFileImageModel
 import com.nendo.argosy.ui.components.AlphabetSidebar
 import com.nendo.argosy.ui.components.GameCard
 import com.nendo.argosy.ui.screens.home.HomeGameUi
+import com.nendo.argosy.ui.theme.LocalBoxArtStyle
 import com.nendo.argosy.ui.util.touchOnly
 import kotlin.math.abs
 
 private val CARD_WIDTH = 100.dp
-private val CARD_HEIGHT = 140.dp
 private val FOCUSED_CARD_WIDTH = 140.dp
-private val FOCUSED_CARD_HEIGHT = 196.dp
 private val CARD_SPACING = 12.dp
-
-private val GRID_CARD_SIZE = 100.dp
 
 @Composable
 fun DualHomeLowerScreen(
@@ -107,6 +105,9 @@ fun DualHomeLowerScreen(
     val listState = rememberLazyListState()
     val screenWidthDp = LocalConfiguration.current.screenWidthDp.dp
     val centerPadding = (screenWidthDp - FOCUSED_CARD_WIDTH) / 2
+    val coverAspectRatio = LocalBoxArtStyle.current.aspectRatio
+    val regularCardHeight = CARD_WIDTH / coverAspectRatio
+    val focusedCardHeight = FOCUSED_CARD_WIDTH / coverAspectRatio
 
     val currentSelectedIndex by rememberUpdatedState(selectedIndex)
     val currentGames by rememberUpdatedState(games)
@@ -213,7 +214,7 @@ fun DualHomeLowerScreen(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(FOCUSED_CARD_HEIGHT + 16.dp),
+                .height(focusedCardHeight + 16.dp),
             contentAlignment = Alignment.Center
         ) {
             LazyRow(
@@ -237,7 +238,7 @@ fun DualHomeLowerScreen(
                 itemsIndexed(games, key = { _, game -> game.id }) { index, game ->
                     val isSelected = index == selectedIndex
                     val cardWidth = if (isSelected) FOCUSED_CARD_WIDTH else CARD_WIDTH
-                    val cardHeight = if (isSelected) FOCUSED_CARD_HEIGHT else CARD_HEIGHT
+                    val cardHeight = if (isSelected) focusedCardHeight else regularCardHeight
                     Box(
                         modifier = Modifier
                             .size(width = cardWidth, height = cardHeight)
@@ -515,6 +516,7 @@ fun DualHomeLibraryGrid(
 ) {
     val gridState = rememberLazyGridState()
     val gameCount = gridItems.count { it is DualLibraryGridItem.Game }
+    val coverAspectRatio = LocalBoxArtStyle.current.aspectRatio
 
     val targetGridIndex = gridItems.indexOfFirst {
         it is DualLibraryGridItem.Game && it.gameIndex == focusedIndex
@@ -576,7 +578,8 @@ fun DualHomeLibraryGrid(
                             is DualLibraryGridItem.Game -> {
                                 Box(
                                     modifier = Modifier
-                                        .size(GRID_CARD_SIZE)
+                                        .fillMaxWidth()
+                                        .aspectRatio(coverAspectRatio)
                                         .touchOnly { onGameTapped(item.gameIndex) }
                                 ) {
                                     GameCard(
@@ -838,9 +841,10 @@ private fun ViewAllCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val cardHeight = CARD_WIDTH / LocalBoxArtStyle.current.aspectRatio
     Box(
         modifier = modifier
-            .size(width = CARD_WIDTH, height = CARD_HEIGHT)
+            .size(width = CARD_WIDTH, height = cardHeight)
             .clip(RoundedCornerShape(8.dp))
             .then(
                 if (isFocused) {

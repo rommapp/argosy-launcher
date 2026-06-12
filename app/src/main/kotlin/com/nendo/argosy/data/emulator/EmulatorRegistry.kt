@@ -325,16 +325,16 @@ object EmulatorRegistry {
             packageName = "com.retroarch",
             displayName = "RetroArch",
             supportedPlatforms = setOf(
-                "nes", "snes", "n64", "gc", "gb", "gbc", "gba", "nds", "3ds",
+                "nes", "snes", "n64", "gc", "wii", "gb", "gbc", "gba", "nds", "3ds",
                 "genesis", "sms", "sg1000", "gg", "scd", "32x",
                 "psx", "psp", "saturn", "dreamcast",
                 "tg16", "tgcd", "pcfx", "3do",
                 "atari2600", "atari5200", "atari7800", "atari8bit", "lynx", "jaguar",
                 "ngp", "ngpc", "neogeo", "neogeocd",
                 "msx", "msx2", "coleco",
-                "wonderswan", "wsc",
+                "wonderswan", "wsc", "pokemini",
                 "arcade", "supergrafx",
-                "c64", "vic20", "dos", "zx", "pc9800", "amstradcpc"
+                "c64", "vic20", "dos", "zx", "pc9800", "amstradcpc", "pico8"
             ),
             launchAction = Intent.ACTION_MAIN,
             launchConfig = LaunchConfig.RetroArch(),
@@ -345,16 +345,16 @@ object EmulatorRegistry {
             packageName = "com.retroarch.aarch64",
             displayName = "RetroArch (64-bit)",
             supportedPlatforms = setOf(
-                "nes", "snes", "n64", "gc", "gb", "gbc", "gba", "nds", "3ds",
+                "nes", "snes", "n64", "gc", "wii", "gb", "gbc", "gba", "nds", "3ds",
                 "genesis", "sms", "sg1000", "gg", "scd", "32x",
                 "psx", "psp", "saturn", "dreamcast",
                 "tg16", "tgcd", "pcfx", "3do",
                 "atari2600", "atari5200", "atari7800", "atari8bit", "lynx", "jaguar",
                 "ngp", "ngpc", "neogeo", "neogeocd",
                 "msx", "msx2", "coleco",
-                "wonderswan", "wsc",
+                "wonderswan", "wsc", "pokemini",
                 "arcade", "supergrafx",
-                "c64", "vic20", "dos", "zx", "pc9800", "amstradcpc"
+                "c64", "vic20", "dos", "zx", "pc9800", "amstradcpc", "pico8"
             ),
             launchAction = Intent.ACTION_MAIN,
             launchConfig = LaunchConfig.RetroArch(),
@@ -676,6 +676,14 @@ object EmulatorRegistry {
             releaseSource = ReleaseSource.GitHub("PCSX2/pcsx2")
         ),
         EmulatorDef(
+            id = "psx2",
+            packageName = "com.izzy2lost.psx2",
+            displayName = "PSX2",
+            supportedPlatforms = setOf("ps2"),
+            downloadUrl = "https://github.com/izzy2lost/PSX2/releases",
+            releaseSource = ReleaseSource.GitHub("izzy2lost/PSX2")
+        ),
+        EmulatorDef(
             id = "ppsspp",
             packageName = "org.ppsspp.ppsspp",
             displayName = "PPSSPP",
@@ -735,7 +743,7 @@ object EmulatorRegistry {
             id = "flycast",
             packageName = "com.flycast.emulator",
             displayName = "Flycast",
-            supportedPlatforms = setOf("dreamcast", "arcade"),
+            supportedPlatforms = setOf("dreamcast", "naomi", "atomiswave"),
             launchConfig = LaunchConfig.Custom(
                 activityClass = "com.flycast.emulator.MainActivity"
             ),
@@ -909,14 +917,14 @@ object EmulatorRegistry {
 
     fun getRecommendedEmulators(): Map<String, List<String>> = mapOf(
         "psx" to listOf("builtin", "duckstation", "retroarch", "retroarch_64"),
-        "ps2" to listOf("nethersx2", "armsx2", "pcsx2"),
+        "ps2" to listOf("nethersx2", "armsx2", "psx2", "pcsx2"),
         "psp" to listOf("builtin", "ppsspp_gold", "ppsspp", "retroarch", "retroarch_64"),
         "vita" to listOf("vita3k-zx", "vita3k"),
         "n64" to listOf("builtin", "mupen64plus_fz", "retroarch", "retroarch_64"),
         "nds" to listOf("builtin", "drastic", "melonds", "melondualds", "retroarch", "retroarch_64"),
         "3ds" to listOf("azahar", "citra_mmj", "borked3ds", "citra", "retroarch", "retroarch_64"),
         "gc" to listOf("dolphin", "dolphin_handheld", "retroarch", "retroarch_64"),
-        "wii" to listOf("dolphin", "dolphin_handheld"),
+        "wii" to listOf("dolphin", "dolphin_handheld", "retroarch", "retroarch_64"),
         "wiiu" to listOf("cemu", "cemu_dualscreen"),
         "switch" to listOf("eden", "citron", "sudachi", "ryujinx", "yuzu", "strato", "skyline"),
         "gba" to listOf("builtin", "pizza_boy_gba", "linkboy", "retroarch", "retroarch_64"),
@@ -945,11 +953,13 @@ object EmulatorRegistry {
         "ngpc" to listOf("retroarch", "retroarch_64"),
         "wonderswan" to listOf("builtin", "retroarch", "retroarch_64"),
         "wsc" to listOf("builtin", "retroarch", "retroarch_64"),
+        "pokemini" to listOf("builtin", "retroarch", "retroarch_64"),
         "xbox360" to listOf("ax360e", "ax360e_free"),
         "steam" to listOf("gamehub", "gamehub_lite", "gamenative"),
         "c64" to listOf("retroarch", "retroarch_64"),
         "vic20" to listOf("retroarch", "retroarch_64"),
-        "pc9800" to listOf("retroarch", "retroarch_64")
+        "pc9800" to listOf("retroarch", "retroarch_64"),
+        "pico8" to listOf("builtin", "retroarch", "retroarch_64")
     )
 
     fun getPreferredCore(platformId: String): String? {
@@ -995,9 +1005,11 @@ object EmulatorRegistry {
         "msx2" to "bluemsx",
         "wonderswan" to "mednafen_wswan",
         "wsc" to "mednafen_wswan",
+        "pokemini" to "pokemini",
         "c64" to "vice_x64",
         "vic20" to "vice_xvic",
-        "pc9800" to "np2kai"
+        "pc9800" to "np2kai",
+        "pico8" to "fake08"
     )
 
     fun getRetroArchCorePatterns(): Map<String, List<String>> = mapOf(
@@ -1006,6 +1018,7 @@ object EmulatorRegistry {
         "n64" to listOf("mupen64plus_next", "parallel_n64"),
         "gc" to listOf("dolphin"),
         "ngc" to listOf("dolphin"),
+        "wii" to listOf("dolphin"),
         "gb" to listOf("gambatte", "mgba", "sameboy", "gearboy", "tgbdual"),
         "gbc" to listOf("gambatte", "mgba", "sameboy", "gearboy", "tgbdual"),
         "gba" to listOf("mgba", "vba", "gpsp"),
@@ -1041,6 +1054,8 @@ object EmulatorRegistry {
         "msx2" to listOf("bluemsx", "fmsx"),
         "wonderswan" to listOf("mednafen_wswan"),
         "wsc" to listOf("mednafen_wswan"),
+        "pokemini" to listOf("pokemini"),
+        "pico8" to listOf("fake08", "retro8"),
         "c64" to listOf("vice_x64", "vice_x64sc"),
         "vic20" to listOf("vice_xvic"),
         "pc9800" to listOf("np2kai")
@@ -1210,6 +1225,9 @@ object EmulatorRegistry {
         "wsc" to listOf(
             RetroArchCore("mednafen_wswan", "Mednafen WonderSwan")
         ),
+        "pokemini" to listOf(
+            RetroArchCore("pokemini", "PokeMini")
+        ),
         "c64" to listOf(
             RetroArchCore("vice_x64", "VICE x64", saveDirName = "VICE x64"),
             RetroArchCore("vice_x64sc", "VICE x64 (Accurate)", saveDirName = "VICE x64sc")
@@ -1233,6 +1251,10 @@ object EmulatorRegistry {
         ),
         "pc9800" to listOf(
             RetroArchCore("np2kai", "Neko Project II Kai")
+        ),
+        "pico8" to listOf(
+            RetroArchCore("fake08", "FAKE-08"),
+            RetroArchCore("retro8", "Retro8")
         )
     )
 
@@ -1260,6 +1282,21 @@ object EmulatorRegistry {
      */
     fun getRetroArchSaveDirName(coreId: String): String =
         coreSaveDirByCoreId[coreId] ?: coreId
+
+    private val libretroHostEmulators = setOf("builtin", "retroarch", "retroarch_64")
+
+    /**
+     * Server-side save emulator label: for libretro hosts (built-in + RetroArch) the libretro core
+     * slug, matching RomM's EmulatorJS naming. Other emulators keep their own id.
+     */
+    fun toServerEmulator(emulatorId: String, coreId: String?): String {
+        if (emulatorId !in libretroHostEmulators) return emulatorId
+        val core = coreId ?: return emulatorId
+        return when (core) {
+            "mupen64plus_next_gles2", "mupen64plus_next_gles3" -> "mupen64plus_next"
+            else -> core
+        }
+    }
 
     private val emulatorFamilies = listOf(
         EmulatorFamily(
@@ -1402,6 +1439,13 @@ object EmulatorRegistry {
             downloadUrl = "https://github.com/ARMSX2/ARMSX2/releases"
         ),
         EmulatorFamily(
+            baseId = "psx2",
+            displayNamePrefix = "PSX2",
+            packagePatterns = listOf("com.izzy2lost.*"),
+            supportedPlatforms = setOf("ps2"),
+            downloadUrl = "https://github.com/izzy2lost/PSX2/releases"
+        ),
+        EmulatorFamily(
             baseId = "duckstation",
             displayNamePrefix = "DuckStation",
             packagePatterns = listOf("com.github.stenzek.duckstation*"),
@@ -1447,9 +1491,9 @@ object EmulatorRegistry {
                 "atari2600", "atari5200", "atari7800", "atari8bit", "lynx", "jaguar",
                 "ngp", "ngpc", "neogeo", "neogeocd",
                 "msx", "msx2", "coleco",
-                "wonderswan", "wsc",
+                "wonderswan", "wsc", "pokemini",
                 "arcade", "supergrafx",
-                "c64", "vic20", "dos", "zx", "pc9800", "amstradcpc"
+                "c64", "vic20", "dos", "zx", "pc9800", "amstradcpc", "pico8"
             ),
             launchAction = Intent.ACTION_MAIN,
             launchConfig = LaunchConfig.RetroArch(),

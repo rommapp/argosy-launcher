@@ -42,6 +42,9 @@ data class ExtractedFolderRom(
             if (nestedChd != null) return nestedChd.absolutePath
             if (allDiscFiles.isNotEmpty()) return allDiscFiles.first().absolutePath
 
+            val realFiles = allFiles.filter { !it.name.startsWith("._") }
+            if (realFiles.size == 1) return realFiles[0].absolutePath
+
             return gameFolder.absolutePath
         }
 }

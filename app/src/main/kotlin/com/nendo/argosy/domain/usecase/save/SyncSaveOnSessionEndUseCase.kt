@@ -4,6 +4,7 @@ import com.nendo.argosy.data.emulator.EmulatorResolver
 import com.nendo.argosy.data.emulator.SavePathRegistry
 import com.nendo.argosy.data.local.dao.EmulatorConfigDao
 import com.nendo.argosy.data.local.dao.GameDao
+import com.nendo.argosy.data.preferences.PersistedSession
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.remote.romm.RomMRepository
 import com.nendo.argosy.data.repository.SaveSyncRepository
@@ -59,12 +60,18 @@ class SyncSaveOnSessionEndUseCase @Inject constructor(
         val packageToResolve = emulatorConfig?.packageName ?: emulatorPackage
         val emulatorId = emulatorResolver.resolveEmulatorId(packageToResolve) ?: return false
 
-        return SavePathRegistry.canSyncWithSettings(
-            emulatorId,
-            prefs.saveSyncEnabled,
-            prefs.experimentalFolderSaveSync
-        )
+        return SavePathRegistry.canSyncWithSettings(emulatorId, prefs.saveSyncEnabled)
     }
+
+    suspend operator fun invoke(session: PersistedSession): Result =
+        invoke(
+            gameId = session.gameId,
+            emulatorPackage = session.emulatorPackage,
+            sessionStartTime = session.startTime.toEpochMilli(),
+            coreName = session.coreName,
+            isHardcore = session.isHardcore,
+            channelName = session.channelName,
+        )
 
     suspend operator fun invoke(
         gameId: Long,
@@ -99,18 +106,18 @@ class SyncSaveOnSessionEndUseCase @Inject constructor(
         }
         Logger.debug(TAG, "[SaveSync] SESSION gameId=$gameId | Resolved emulator | emulatorId=$emulatorId, configPackage=${emulatorConfig?.packageName}, launchPackage=$emulatorPackage")
 
-        var titleId = game.titleId
+        val saveIdForLookup = game.saveId ?: game.titleId
         var savePath = saveSyncRepository.discoverSavePath(
             emulatorId = emulatorId,
             gameTitle = game.title,
             platformSlug = game.platformSlug,
             romPath = game.localPath,
-            cachedTitleId = titleId,
+            cachedSaveId = saveIdForLookup,
             coreName = coreName,
             emulatorPackage = emulatorPackage,
             gameId = gameId
         )
-        Logger.debug(TAG, "[SaveSync] SESSION gameId=$gameId | Initial path discovery | savePath=$savePath, cachedTitleId=$titleId")
+        Logger.debug(TAG, "[SaveSync] SESSION gameId=$gameId | Initial path discovery | savePath=$savePath, cachedSaveId=$saveIdForLookup")
 
         if (savePath == null) {
             Logger.info(TAG, "[SaveSync] SESSION gameId=$gameId | Result=NO_SAVE_FOUND | No save path discovered")
@@ -190,5 +197,4 @@ class SyncSaveOnSessionEndUseCase @Inject constructor(
             }
         }
     }
-
 }

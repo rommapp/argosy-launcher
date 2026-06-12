@@ -59,6 +59,7 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
@@ -73,6 +74,7 @@ class SettingsViewModel @Inject constructor(
     internal val hapticManager: HapticFeedbackManager,
     internal val platformRepository: PlatformRepository,
     internal val libretroSettingsRepo: LibretroSettingsRepository,
+    internal val touchLayoutRepository: com.nendo.argosy.data.repository.TouchLayoutRepository,
     internal val launchArgsRepo: com.nendo.argosy.data.repository.LaunchArgsRepository,
     internal val installedAppResolver: com.nendo.argosy.data.platform.InstalledAppResolver,
     internal val emulatorConfigRepo: EmulatorConfigRepository,
@@ -102,6 +104,7 @@ class SettingsViewModel @Inject constructor(
     val raDelegate: RASettingsDelegate,
     val permissionsDelegate: PermissionsSettingsDelegate,
     val biosDelegate: BiosSettingsDelegate,
+    val driversDelegate: com.nendo.argosy.ui.screens.settings.delegates.DriversSettingsDelegate,
     internal val androidGameScanner: AndroidGameScanner,
     internal val modalResetSignal: ModalResetSignal,
     internal val gradientColorExtractor: GradientColorExtractor,
@@ -185,6 +188,7 @@ class SettingsViewModel @Inject constructor(
         routeObservePlatformLibretroSettings(this)
         routeLoadAvailablePlatformsForLibretro(this)
         loadSettings()
+        driversDelegate.loadGpuInfo()
         raDelegate.initialize(viewModelScope)
         displayDelegate.loadPreviewGame(viewModelScope)
         displayDelegate.observeScreenCapturePermission(viewModelScope)
@@ -206,6 +210,15 @@ class SettingsViewModel @Inject constructor(
     fun checkStoragePermission() = storageDelegate.checkAllFilesAccess()
     fun requestStoragePermission() = storageDelegate.requestAllFilesAccess(viewModelScope)
 
+    fun reloadDrivers(force: Boolean = false) = driversDelegate.loadDrivers(viewModelScope, force)
+    fun downloadDriverArtifact(artifact: com.nendo.argosy.ui.screens.settings.DriverArtifactUi) =
+        driversDelegate.downloadArtifact(viewModelScope, artifact)
+    fun openDriverPicker(index: Int) = driversDelegate.openPicker(index)
+    fun dismissDriverPicker() = driversDelegate.dismissPicker()
+    fun moveDriverPickerFocus(delta: Int) = driversDelegate.movePickerReleaseFocus(delta)
+    fun downloadSelectedDriverRelease() = driversDelegate.downloadFocusedPickerRelease(viewModelScope)
+    fun dismissDriverDownload() = driversDelegate.dismissActiveDownload()
+
     fun showEmulatorPicker(config: PlatformEmulatorConfig) = routeShowEmulatorPicker(this, config)
 
     fun dismissEmulatorPicker() = emulatorDelegate.dismissEmulatorPicker()
@@ -224,6 +237,21 @@ class SettingsViewModel @Inject constructor(
         _uiState.update { it.copy(platformDetail = it.platformDetail.copy(builtinEnteredFromPlatform = true)) }
         emulatorDelegate.navigateToCoreOptions(viewModelScope)
     }
+    fun openPlatformDetailById(platformId: Long) {
+        viewModelScope.launch {
+            val platforms = kotlinx.coroutines.withTimeoutOrNull(5000) {
+                uiState.map { it.emulators.platforms }.first { it.isNotEmpty() }
+            } ?: return@launch
+            val index = platforms.indexOfFirst { it.platform.id == platformId }
+            if (index < 0) {
+                navigateToSection(SettingsSection.PLATFORMS)
+                return@launch
+            }
+            _uiState.update { it.copy(platformDetail = it.platformDetail.copy(enteredExternally = true)) }
+            navigateToPlatformDetail(index)
+        }
+    }
+
     fun navigateToPlatformDetail(platformIndex: Int) {
         _uiState.update { it.copy(
             currentSection = SettingsSection.PLATFORM_DETAIL,
@@ -373,6 +401,9 @@ class SettingsViewModel @Inject constructor(
     fun cycleLaunchArgsMimeType(direction: Int = 1) = routeCycleLaunchArgsMimeType(this, direction)
     fun resetLaunchArgsFocused() = routeResetLaunchArgsFocused(this)
     fun resetAllLaunchArgs() = routeResetAllLaunchArgs(this)
+    fun openLaunchArgsCustomExtras() = routeOpenLaunchArgsCustomExtras(this)
+    fun closeLaunchArgsCustomExtras() = routeCloseLaunchArgsCustomExtras(this)
+    fun saveLaunchArgsCustomExtras(raw: String) = routeSaveLaunchArgsCustomExtras(this, raw)
 
     fun openAppPickerModal(platformId: Long) = routeOpenAppPickerModal(this, platformId)
     fun closeAppPickerModal() = routeCloseAppPickerModal(this)
@@ -391,6 +422,19 @@ class SettingsViewModel @Inject constructor(
     fun getControllerOrder() = inputConfigRepository.observeControllerOrder()
     fun showInputMappingModal() = routeShowInputMappingModal(this)
     fun hideInputMappingModal() = routeHideInputMappingModal(this)
+    fun setTouchEnabled(enabled: Boolean) = routeSetTouchEnabled(this, enabled)
+    fun setTouchOpacityLandscape(value: Float) = routeSetTouchOpacityLandscape(this, value)
+    fun setTouchOpacityPortrait(value: Float) = routeSetTouchOpacityPortrait(this, value)
+    fun setTouchSizeScale(value: Float) = routeSetTouchSizeScale(this, value)
+    fun setTouchHaptic(enabled: Boolean) = routeSetTouchHaptic(this, enabled)
+    fun setTouchFadeOnIdle(enabled: Boolean) = routeSetTouchFadeOnIdle(this, enabled)
+    fun setTouchSwapHanded(enabled: Boolean) = routeSetTouchSwapHanded(this, enabled)
+    fun setTouchLockOrientation(enabled: Boolean) = routeSetTouchLockOrientation(this, enabled)
+    fun setTouchMirror180(enabled: Boolean) = routeSetTouchMirror180(this, enabled)
+    fun setTouchColouredFaceButtons(enabled: Boolean) = routeSetTouchColouredFaceButtons(this, enabled)
+    fun setTouchGenesis6Button(enabled: Boolean) = routeSetTouchGenesis6Button(this, enabled)
+    fun showTouchLayoutEditor() = routeShowTouchLayoutEditor(this)
+    fun hideTouchLayoutEditor() = routeHideTouchLayoutEditor(this)
     fun getConnectedControllers() = inputConfigRepository.getConnectedControllers()
 
     suspend fun getControllerMapping(
@@ -531,6 +575,28 @@ class SettingsViewModel @Inject constructor(
     fun moveSavePathModalButtonFocus(delta: Int) = emulatorDelegate.moveSavePathModalButtonFocus(delta)
 
     fun confirmSavePathModalSelection() = routeConfirmSavePathModalSelection(this)
+
+    fun openMemcardPicker(config: PlatformEmulatorConfig) {
+        val emulatorId = config.effectiveEmulatorId ?: return
+        emulatorDelegate.showMemcardPicker(
+            scope = viewModelScope,
+            emulatorId = emulatorId,
+            emulatorName = config.effectiveEmulatorName ?: emulatorId,
+            emulatorPackage = config.effectiveEmulatorPackage,
+            platformName = config.platform.name
+        )
+    }
+    fun dismissMemcardPicker() = emulatorDelegate.dismissMemcardPicker()
+    fun moveMemcardPickerFocus(delta: Int) = emulatorDelegate.moveMemcardPickerFocus(delta)
+    fun confirmMemcardSelection(cardPath: String) =
+        emulatorDelegate.confirmMemcardSelection(viewModelScope, cardPath) { loadSettings() }
+    fun handleMemcardPickerItemTap(index: Int) {
+        val info = uiState.value.emulators.memcardPickerInfo ?: return
+        val card = info.cards.getOrNull(index) ?: return
+        confirmMemcardSelection(card.path)
+    }
+    fun resetMemcardSelection(emulatorId: String) =
+        emulatorDelegate.clearMemcardSelection(viewModelScope, emulatorId) { loadSettings() }
     fun forceCheckEmulatorUpdates() = routeForceCheckEmulatorUpdates(this)
     fun triggerEmulatorUpdate(emulatorId: String) = emulatorDelegate.triggerUpdateForEmulator(emulatorId, viewModelScope)
     fun selectUpdateModalVariant() = emulatorDelegate.selectUpdateModalVariant()
@@ -572,6 +638,10 @@ class SettingsViewModel @Inject constructor(
     fun setAddGameAppId(appId: String) = steamDelegate.setAddGameAppId(appId)
     fun confirmAddSteamGame() = steamDelegate.confirmAddSteamGame(context, viewModelScope)
     fun cycleSteamInstallVolume(direction: Int = 1) = steamDelegate.cycleSteamInstallVolume(viewModelScope, direction)
+    fun openSteamInstallPathPicker() =
+        storageDelegate.openPlatformFolderPicker(viewModelScope, com.nendo.argosy.data.platform.LocalPlatformIds.STEAM)
+    fun resetSteamInstallPath() =
+        storageDelegate.resetPlatformToGlobal(viewModelScope, com.nendo.argosy.data.platform.LocalPlatformIds.STEAM)
 
     // Legacy Steam methods (used by GameDataSection/routers)
     fun scanSteamLauncher(packageName: String) = steamDelegate.scanSteamLauncher(context, viewModelScope, packageName)
@@ -642,6 +712,8 @@ class SettingsViewModel @Inject constructor(
     fun cycleGlowColorMode(direction: Int = 1) = displayDelegate.cycleGlowColorMode(viewModelScope, direction)
     fun cycleSystemIconPosition(direction: Int = 1) = displayDelegate.cycleSystemIconPosition(viewModelScope, direction)
     fun cycleSystemIconPadding(direction: Int = 1) = displayDelegate.cycleSystemIconPadding(viewModelScope, direction)
+    fun cyclePlatformIndicatorStyle(direction: Int = 1) = displayDelegate.cyclePlatformIndicatorStyle(viewModelScope, direction)
+    fun cyclePlatformIndicatorContent(direction: Int = 1) = displayDelegate.cyclePlatformIndicatorContent(viewModelScope, direction)
     fun cycleBoxArtInnerEffect(direction: Int = 1) = displayDelegate.cycleBoxArtInnerEffect(viewModelScope, direction)
     fun cycleBoxArtInnerEffectThickness(direction: Int = 1) = displayDelegate.cycleBoxArtInnerEffectThickness(viewModelScope, direction)
     fun cycleDefaultView() = displayDelegate.cycleDefaultView(viewModelScope)
@@ -882,6 +954,14 @@ class SettingsViewModel @Inject constructor(
 
     fun checkForUpdates() = routeCheckForUpdates(this)
     fun downloadAndInstallUpdate(context: android.content.Context) = routeDownloadAndInstallUpdate(this, context)
+
+    fun writeSystemizeScript() {
+        _uiState.update { it.copy(systemizeResult = com.nendo.argosy.util.SystemizeScript.write(context)) }
+    }
+
+    fun dismissSystemizeDialog() {
+        _uiState.update { it.copy(systemizeResult = null) }
+    }
 
     fun startRommConfig() = routeStartRommConfig(this)
     fun cancelRommConfig() = routeCancelRommConfig(this)

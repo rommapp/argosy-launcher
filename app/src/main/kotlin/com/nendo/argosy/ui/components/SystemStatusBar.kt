@@ -25,6 +25,7 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import com.nendo.argosy.ui.theme.ALauncherColors
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
@@ -156,7 +157,7 @@ private fun BatteryIcon(
 ) {
     val fillColor = when {
         isCharging -> Color(0xFF4CAF50)
-        level <= 20 -> Color(0xFFE53935)
+        level <= 20 -> ALauncherColors.DifficultyRed
         else -> color
     }
 

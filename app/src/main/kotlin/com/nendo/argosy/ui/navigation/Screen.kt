@@ -22,12 +22,14 @@ sealed class Screen(val route: String) {
         fun createRoute(type: String, category: String) = "virtual/$type/${java.net.URLEncoder.encode(category, "UTF-8")}"
     }
     data object Downloads : Screen("downloads")
+    data object SaveSync : Screen("save_sync")
     data object Apps : Screen("apps")
-    data object Settings : Screen("settings?section={section}&action={action}") {
-        fun createRoute(section: String? = null, action: String? = null): String {
+    data object Settings : Screen("settings?section={section}&action={action}&platformId={platformId}") {
+        fun createRoute(section: String? = null, action: String? = null, platformId: Long? = null): String {
             val params = mutableListOf<String>()
             if (section != null) params.add("section=$section")
             if (action != null) params.add("action=$action")
+            if (platformId != null) params.add("platformId=$platformId")
             return if (params.isEmpty()) "settings" else "settings?${params.joinToString("&")}"
         }
     }
@@ -67,6 +69,7 @@ sealed class Screen(val route: String) {
         const val ROUTE_LAUNCH = "launch"
         const val ROUTE_SETTINGS = "settings"
         const val ROUTE_DOWNLOADS = "downloads"
+        const val ROUTE_SAVE_SYNC = "save_sync"
         const val ROUTE_APPS = "apps"
         const val ROUTE_SEARCH = "search"
         const val ROUTE_MANAGE_PINS = "manage_pins"

@@ -21,9 +21,12 @@ internal class ModalInputRouter(private val viewModel: SettingsViewModel) {
         ) return null
 
         interceptGpuDriverPrompt(state, method)?.let { return it }
+        interceptDriverPicker(state, method)?.let { return it }
+        interceptDriverDownload(state, method)?.let { return it }
         interceptAppPickerModal(state, method)?.let { return it }
         interceptLaunchArgsModal(state, method)?.let { return it }
         interceptSavePathModal(state, method)?.let { return it }
+        interceptMemcardPicker(state, method)?.let { return it }
         interceptPlatformSettingsModal(state, method)?.let { return it }
         interceptSoundPicker(state, method)?.let { return it }
         interceptRegionPicker(state, method)?.let { return it }
@@ -58,6 +61,29 @@ internal class ModalInputRouter(private val viewModel: SettingsViewModel) {
         }
     }
 
+    private fun interceptDriverDownload(state: SettingsUiState, method: InputMethod): InputResult? {
+        val download = state.drivers.activeDownload ?: return null
+        val terminal = download.isComplete || download.error != null
+        return when (method) {
+            InputMethod.CONFIRM, InputMethod.BACK -> if (terminal) {
+                viewModel.dismissDriverDownload(); InputResult.HANDLED
+            } else InputResult.HANDLED
+            else -> InputResult.HANDLED
+        }
+    }
+
+    private fun interceptDriverPicker(state: SettingsUiState, method: InputMethod): InputResult? {
+        if (state.drivers.pickerGroupIndex == null) return null
+        if (state.drivers.activeDownload != null) return null
+        return when (method) {
+            InputMethod.UP -> { viewModel.moveDriverPickerFocus(-1); InputResult.HANDLED }
+            InputMethod.DOWN -> { viewModel.moveDriverPickerFocus(1); InputResult.HANDLED }
+            InputMethod.CONFIRM -> { viewModel.downloadSelectedDriverRelease(); InputResult.HANDLED }
+            InputMethod.BACK -> { viewModel.dismissDriverPicker(); InputResult.HANDLED }
+            else -> InputResult.HANDLED
+        }
+    }
+
     private fun interceptAppPickerModal(state: SettingsUiState, method: InputMethod): InputResult? {
         if (!state.emulators.showAppPickerModal) return null
         return when (method) {
@@ -74,6 +100,7 @@ internal class ModalInputRouter(private val viewModel: SettingsViewModel) {
     private fun interceptLaunchArgsModal(state: SettingsUiState, method: InputMethod): InputResult? {
         if (!state.emulators.showLaunchArgsModal) return null
         val modal = state.emulators.launchArgsModalState ?: return null
+        if (modal.showCustomExtrasInput) return InputResult.HANDLED
         val rows = launchArgsModalRows(modal)
         val focusedRow = rows.getOrNull(modal.focusIndex)
         val isCycleable = focusedRow is LaunchArgsRow.DataBinding ||
@@ -97,6 +124,7 @@ internal class ModalInputRouter(private val viewModel: SettingsViewModel) {
                     is LaunchArgsRow.ClipDataBinding -> viewModel.cycleLaunchArgsClipDataBinding()
                     is LaunchArgsRow.Flag -> viewModel.toggleLaunchArgsFlag(focusedRow.bit)
                     is LaunchArgsRow.MimeType -> viewModel.cycleLaunchArgsMimeType()
+                    is LaunchArgsRow.CustomExtras -> viewModel.openLaunchArgsCustomExtras()
                     is LaunchArgsRow.LockedBinding -> {}
                     null -> {}
                 }
@@ -129,6 +157,22 @@ internal class ModalInputRouter(private val viewModel: SettingsViewModel) {
             InputMethod.RIGHT -> { viewModel.moveSavePathModalButtonFocus(-1); InputResult.HANDLED }
             InputMethod.CONFIRM -> { viewModel.confirmSavePathModalSelection(); InputResult.HANDLED }
             InputMethod.BACK -> { viewModel.dismissSavePathModal(); InputResult.HANDLED }
+            else -> InputResult.HANDLED
+        }
+    }
+
+    private fun interceptMemcardPicker(state: SettingsUiState, method: InputMethod): InputResult? {
+        if (!state.emulators.showMemcardPicker) return null
+        return when (method) {
+            InputMethod.UP -> { viewModel.moveMemcardPickerFocus(-1); InputResult.HANDLED }
+            InputMethod.DOWN -> { viewModel.moveMemcardPickerFocus(1); InputResult.HANDLED }
+            InputMethod.CONFIRM -> {
+                val info = state.emulators.memcardPickerInfo
+                val card = info?.cards?.getOrNull(state.emulators.memcardPickerFocusIndex)
+                if (card != null) viewModel.confirmMemcardSelection(card.path)
+                InputResult.HANDLED
+            }
+            InputMethod.BACK -> { viewModel.dismissMemcardPicker(); InputResult.HANDLED }
             else -> InputResult.HANDLED
         }
     }

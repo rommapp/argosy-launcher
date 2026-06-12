@@ -79,6 +79,9 @@ interface CollectionDao {
     @Query("SELECT gameId FROM collection_games WHERE collectionId = :collectionId")
     suspend fun getGameIdsInCollection(collectionId: Long): List<Long>
 
+    @Query("SELECT gameId FROM collection_games WHERE collectionId = :collectionId ORDER BY addedAt DESC")
+    fun observeGameIdsInCollection(collectionId: Long): Flow<List<Long>>
+
     @Query("DELETE FROM collection_games WHERE collectionId = :collectionId")
     suspend fun clearCollectionGames(collectionId: Long)
 
@@ -114,6 +117,9 @@ interface CollectionDao {
     @Query("SELECT * FROM collections WHERE type = :type ORDER BY name ASC")
     fun observeByType(type: CollectionType): Flow<List<CollectionEntity>>
 
+    @Query("SELECT * FROM collections WHERE type IN (:types) ORDER BY name ASC")
+    fun observeByTypes(types: List<CollectionType>): Flow<List<CollectionEntity>>
+
     @Query("SELECT * FROM collections WHERE type = :type ORDER BY name ASC")
     suspend fun getAllByType(type: CollectionType): List<CollectionEntity>
 
@@ -132,4 +138,14 @@ interface CollectionDao {
         ORDER BY g.sortTitle ASC
     """)
     fun observeGamesByTypeAndName(type: CollectionType, name: String): Flow<List<GameEntity>>
+
+    @Query("""
+        SELECT g.id FROM games g
+        INNER JOIN collection_games cg ON g.id = cg.gameId
+        INNER JOIN collections c ON cg.collectionId = c.id
+        INNER JOIN platforms p ON g.platformId = p.id
+        WHERE c.type = :type AND c.name = :name AND p.syncEnabled = 1
+        ORDER BY g.sortTitle ASC
+    """)
+    fun observeGameIdsByTypeAndName(type: CollectionType, name: String): Flow<List<Long>>
 }

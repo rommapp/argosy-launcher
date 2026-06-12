@@ -74,9 +74,13 @@ class MigrateStorageUseCase @Inject constructor(
                     val newFile = File(newPath, relativePath)
 
                     newFile.parentFile?.mkdirs()
-                    oldFile.copyTo(newFile, overwrite = true)
+                    if (newFile.exists()) newFile.deleteRecursively()
+                    val copied = oldFile.copyRecursively(newFile, overwrite = true)
+                    if (!copied) {
+                        throw java.io.IOException("Recursive copy failed: ${oldFile.absolutePath} -> ${newFile.absolutePath}")
+                    }
                     gameRepository.updateLocalPath(game.id, newFile.absolutePath)
-                    oldFile.delete()
+                    oldFile.deleteRecursively()
                     migrated++
                     Log.d(TAG, "Migration: success for ${game.title}")
                 } else {

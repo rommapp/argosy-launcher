@@ -59,8 +59,8 @@ class SaveChannelDelegate @Inject constructor(
 
         scope.launch {
             val activeSaveTimestamp = gameRepository.getActiveSaveTimestamp(gameId)
-            val entries = savesDelegate.loadInitialEntries()
-            val saveSlots = savesDelegate.buildSaveSlots(entries, activeChannel, isDeviceAware)
+            val localEntries = savesDelegate.loadLocalEntries()
+            val localSlots = savesDelegate.buildSaveSlots(localEntries, activeChannel, isDeviceAware)
 
             val states = statesDelegate.loadInitialStates(
                 emulatorId = emulatorId,
@@ -72,7 +72,7 @@ class SaveChannelDelegate @Inject constructor(
 
             _state.update {
                 it.copy(
-                    saveSlots = saveSlots,
+                    saveSlots = localSlots,
                     statesEntries = states,
                     supportsStates = stateConfigExists,
                     selectedTab = SaveTab.SAVES,
@@ -81,7 +81,24 @@ class SaveChannelDelegate @Inject constructor(
                     saveFocusColumn = SaveFocusColumn.SLOTS,
                     focusIndex = 0,
                     activeSaveTimestamp = activeSaveTimestamp,
-                    isLoading = false
+                    isLoading = false,
+                    isLoadingServer = true
+                )
+            }
+            savesDelegate.updateHistoryForFocusedSlot()
+
+            val fullEntries = savesDelegate.loadInitialEntries()
+            val fullSlots = savesDelegate.buildSaveSlots(fullEntries, activeChannel, isDeviceAware)
+            val focusedKey = _state.value.saveSlots.getOrNull(_state.value.selectedSlotIndex)?.slotKey
+            val restoredIndex = fullSlots.indexOfFirst { it.slotKey == focusedKey }
+                .takeIf { it >= 0 }
+                ?: _state.value.selectedSlotIndex.coerceIn(0, (fullSlots.size - 1).coerceAtLeast(0))
+
+            _state.update {
+                it.copy(
+                    saveSlots = fullSlots,
+                    selectedSlotIndex = restoredIndex,
+                    isLoadingServer = false
                 )
             }
             savesDelegate.updateHistoryForFocusedSlot()

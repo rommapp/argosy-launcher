@@ -18,9 +18,12 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.nendo.argosy.BuildConfig
 import com.nendo.argosy.data.preferences.BoxArtBorderStyle
+import com.nendo.argosy.data.preferences.BoxArtGlowStrength
 import com.nendo.argosy.data.preferences.BoxArtInnerEffect
 import com.nendo.argosy.data.preferences.BoxArtOuterEffect
 import com.nendo.argosy.data.preferences.GlowColorMode
+import com.nendo.argosy.data.preferences.PlatformIndicatorContent
+import com.nendo.argosy.data.preferences.PlatformIndicatorStyle
 import com.nendo.argosy.data.preferences.SystemIconPosition
 import com.nendo.argosy.data.preferences.ThemeMode
 import com.nendo.argosy.ui.components.FooterStyleConfig
@@ -176,7 +179,7 @@ private val LightSemanticColors = SemanticColors(
 val LocalLauncherTheme = staticCompositionLocalOf {
     LauncherThemeConfig(
         isDarkTheme = true,
-        focusGlowColor = ALauncherColors.FocusGlow,
+        focusGlowColor = ALauncherColors.Cyan.copy(alpha = 0.4f),
         overlayLight = Color.Black.copy(alpha = 0.3f),
         overlayDark = Color.Black.copy(alpha = 0.7f),
         semanticColors = DarkSemanticColors
@@ -189,8 +192,8 @@ data class BoxArtStyleConfig(
     val borderThicknessDp: Dp = 2.dp,
     val borderStyle: BoxArtBorderStyle = BoxArtBorderStyle.SOLID,
     val glassBorderTintAlpha: Float = 0f,
-    val glowAlpha: Float = 0.4f,
-    val isShadow: Boolean = false,
+    val glowAlpha: Float = BoxArtGlowStrength.MEDIUM.alpha,
+    val isShadow: Boolean = BoxArtGlowStrength.MEDIUM.isShadow,
     val outerEffect: BoxArtOuterEffect = BoxArtOuterEffect.GLOW,
     val outerEffectThicknessPx: Float = 16f,
     val glowColorMode: GlowColorMode = GlowColorMode.AUTO,
@@ -199,7 +202,9 @@ data class BoxArtStyleConfig(
     val innerEffect: BoxArtInnerEffect = BoxArtInnerEffect.SHADOW,
     val innerEffectThicknessPx: Float = 4f,
     val systemIconPosition: SystemIconPosition = SystemIconPosition.TOP_LEFT,
-    val systemIconPaddingDp: Dp = 8.dp
+    val systemIconPaddingDp: Dp = 8.dp,
+    val platformIndicatorStyle: PlatformIndicatorStyle = PlatformIndicatorStyle.TAB,
+    val platformIndicatorContent: PlatformIndicatorContent = PlatformIndicatorContent.NAME
 )
 
 val LocalBoxArtStyle = staticCompositionLocalOf { BoxArtStyleConfig() }
@@ -302,7 +307,9 @@ fun ProvideArgosyThemeLocals(
         innerEffect = themeState.boxArtInnerEffect,
         innerEffectThicknessPx = themeState.boxArtInnerEffectThickness.px,
         systemIconPosition = themeState.systemIconPosition,
-        systemIconPaddingDp = themeState.systemIconPadding.dp.dp
+        systemIconPaddingDp = themeState.systemIconPadding.dp.dp,
+        platformIndicatorStyle = themeState.platformIndicatorStyle,
+        platformIndicatorContent = themeState.platformIndicatorContent
     )
 
     val footerStyle = FooterStyleConfig(

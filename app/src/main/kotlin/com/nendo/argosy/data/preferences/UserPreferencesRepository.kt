@@ -6,7 +6,6 @@ import com.nendo.argosy.core.input.SoundType
 import com.nendo.argosy.util.LogLevel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.map
 import java.time.Instant
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -87,7 +86,6 @@ class UserPreferencesRepository @Inject constructor(
             soundConfigs = controls.soundConfigs,
             betaUpdatesEnabled = app.betaUpdatesEnabled,
             saveSyncEnabled = sync.saveSyncEnabled,
-            experimentalFolderSaveSync = sync.experimentalFolderSaveSync,
             stateCacheEnabled = sync.stateCacheEnabled,
             saveCacheLimit = sync.saveCacheLimit,
             fileLoggingEnabled = app.fileLoggingEnabled,
@@ -110,6 +108,8 @@ class UserPreferencesRepository @Inject constructor(
             gradientAdvancedMode = display.gradientAdvancedMode,
             systemIconPosition = display.systemIconPosition,
             systemIconPadding = display.systemIconPadding,
+            platformIndicatorStyle = display.platformIndicatorStyle,
+            platformIndicatorContent = display.platformIndicatorContent,
             defaultView = display.defaultView,
             recommendedGameIds = app.recommendedGameIds,
             lastRecommendationGeneration = app.lastRecommendationGeneration,
@@ -203,6 +203,8 @@ class UserPreferencesRepository @Inject constructor(
     suspend fun setGradientAdvancedMode(enabled: Boolean) = displayPrefs.setGradientAdvancedMode(enabled)
     suspend fun setSystemIconPosition(position: SystemIconPosition) = displayPrefs.setSystemIconPosition(position)
     suspend fun setSystemIconPadding(padding: SystemIconPadding) = displayPrefs.setSystemIconPadding(padding)
+    suspend fun setPlatformIndicatorStyle(style: PlatformIndicatorStyle) = displayPrefs.setPlatformIndicatorStyle(style)
+    suspend fun setPlatformIndicatorContent(content: PlatformIndicatorContent) = displayPrefs.setPlatformIndicatorContent(content)
     suspend fun setDefaultView(view: DefaultView) = displayPrefs.setDefaultView(view)
     suspend fun setVideoWallpaperEnabled(enabled: Boolean) = displayPrefs.setVideoWallpaperEnabled(enabled)
     suspend fun setVideoWallpaperDelaySeconds(seconds: Int) = displayPrefs.setVideoWallpaperDelaySeconds(seconds)
@@ -246,7 +248,6 @@ class UserPreferencesRepository @Inject constructor(
     suspend fun setSyncFilterDeleteOrphans(delete: Boolean) = syncPrefs.setSyncFilterDeleteOrphans(delete)
     suspend fun setSyncScreenshotsEnabled(enabled: Boolean) = syncPrefs.setSyncScreenshotsEnabled(enabled)
     suspend fun setSaveSyncEnabled(enabled: Boolean) = syncPrefs.setSaveSyncEnabled(enabled)
-    suspend fun setExperimentalFolderSaveSync(enabled: Boolean) = syncPrefs.setExperimentalFolderSaveSync(enabled)
     suspend fun setSaveCacheLimit(limit: Int) = syncPrefs.setSaveCacheLimit(limit)
     suspend fun setSaveDebugLoggingEnabled(enabled: Boolean) = syncPrefs.setSaveDebugLoggingEnabled(enabled)
     suspend fun setImageCachePath(path: String?) = syncPrefs.setImageCachePath(path)
@@ -359,6 +360,18 @@ class UserPreferencesRepository @Inject constructor(
     suspend fun setBuiltinCustomStatePath(path: String?) = builtinPrefs.setBuiltinCustomStatePath(path)
     suspend fun setBuiltinMigrationComplete() = builtinPrefs.setBuiltinMigrationComplete()
     suspend fun setArchitectureOverride(abi: String?) = builtinPrefs.setArchitectureOverride(abi)
+    suspend fun setTouchControlsShowWhenNoGamepad(enabled: Boolean) = builtinPrefs.setTouchControlsShowWhenNoGamepad(enabled)
+    suspend fun setTouchControlsOpacityLandscape(opacity: Float) = builtinPrefs.setTouchControlsOpacityLandscape(opacity)
+    suspend fun setTouchControlsOpacityPortrait(opacity: Float) = builtinPrefs.setTouchControlsOpacityPortrait(opacity)
+    suspend fun setTouchControlsSizeScale(scale: Float) = builtinPrefs.setTouchControlsSizeScale(scale)
+    suspend fun setTouchControlsHaptic(enabled: Boolean) = builtinPrefs.setTouchControlsHaptic(enabled)
+    suspend fun setTouchControlsFadeOnIdle(enabled: Boolean) = builtinPrefs.setTouchControlsFadeOnIdle(enabled)
+    suspend fun setTouchControlsSwapHanded(enabled: Boolean) = builtinPrefs.setTouchControlsSwapHanded(enabled)
+    suspend fun setTouchControlsLockOrientation(enabled: Boolean) = builtinPrefs.setTouchControlsLockOrientation(enabled)
+    suspend fun setTouchControlsMirror180(enabled: Boolean) = builtinPrefs.setTouchControlsMirror180(enabled)
+    suspend fun setTouchControlsAllowLongPressEdit(enabled: Boolean) = builtinPrefs.setTouchControlsAllowLongPressEdit(enabled)
+    suspend fun setTouchControlsColouredFaceButtons(enabled: Boolean) = builtinPrefs.setTouchControlsColouredFaceButtons(enabled)
+    suspend fun setTouchControlsGenesis6Button(enabled: Boolean) = builtinPrefs.setTouchControlsGenesis6Button(enabled)
     fun getArchitectureOverride(): Flow<String?> = builtinPrefs.getArchitectureOverride()
     fun getBuiltinEmulatorSettings(): Flow<BuiltinEmulatorSettings> = builtinPrefs.getBuiltinEmulatorSettings()
     fun getBuiltinCoreSelections(): Flow<Map<String, String>> = builtinPrefs.getBuiltinCoreSelections()
@@ -366,27 +379,7 @@ class UserPreferencesRepository @Inject constructor(
 
     // --- Session delegates ---
 
-    data class PersistedSession(
-        val gameId: Long,
-        val emulatorPackage: String,
-        val startTime: Instant,
-        val coreName: String?,
-        val isHardcore: Boolean,
-        val channelName: String? = null
-    )
-
-    val activeSessionFlow: Flow<PersistedSession?> = sessionPrefs.activeSessionFlow.map { session ->
-        session?.let {
-            PersistedSession(
-                gameId = it.gameId,
-                emulatorPackage = it.emulatorPackage,
-                startTime = it.startTime,
-                coreName = it.coreName,
-                isHardcore = it.isHardcore,
-                channelName = it.channelName
-            )
-        }
-    }
+    val activeSessionFlow: Flow<PersistedSession?> = sessionPrefs.activeSessionFlow
 
     suspend fun persistActiveSession(
         gameId: Long,
@@ -399,17 +392,7 @@ class UserPreferencesRepository @Inject constructor(
 
     suspend fun clearActiveSession() = sessionPrefs.clearActiveSession()
 
-    suspend fun getPersistedSession(): PersistedSession? {
-        val session = sessionPrefs.getPersistedSession() ?: return null
-        return PersistedSession(
-            gameId = session.gameId,
-            emulatorPackage = session.emulatorPackage,
-            startTime = session.startTime,
-            coreName = session.coreName,
-            isHardcore = session.isHardcore,
-            channelName = session.channelName
-        )
-    }
+    suspend fun getPersistedSession(): PersistedSession? = sessionPrefs.getPersistedSession()
 }
 
 data class BuiltinEmulatorSettings(
@@ -441,7 +424,19 @@ data class BuiltinEmulatorSettings(
     val autoRestoreStateMode: String = "restore",
     val customSavePath: String? = null,
     val customStatePath: String? = null,
-    val architectureOverride: String? = null
+    val architectureOverride: String? = null,
+    val showTouchControlsWhenNoGamepad: Boolean = true,
+    val touchControlsOpacityLandscape: Float = 0.45f,
+    val touchControlsOpacityPortrait: Float = 1.0f,
+    val touchControlsSizeScale: Float = 1.0f,
+    val touchControlsHaptic: Boolean = true,
+    val touchControlsFadeOnIdle: Boolean = false,
+    val touchControlsSwapHanded: Boolean = false,
+    val touchControlsLockOrientation: Boolean = false,
+    val touchControlsMirror180: Boolean = false,
+    val touchControlsAllowLongPressEdit: Boolean = false,
+    val touchControlsColouredFaceButtons: Boolean = false,
+    val touchControlsGenesis6Button: Boolean = false
 ) {
     val shaderConfig: com.swordfish.libretrodroid.ShaderConfig
         get() = when (shader) {
@@ -533,7 +528,6 @@ data class UserPreferences(
     val soundConfigs: Map<SoundType, SoundConfig> = emptyMap(),
     val betaUpdatesEnabled: Boolean = false,
     val saveSyncEnabled: Boolean = false,
-    val experimentalFolderSaveSync: Boolean = false,
     val stateCacheEnabled: Boolean = true,
     val saveCacheLimit: Int = 10,
     val backgroundBlur: Int = 0,
@@ -562,6 +556,8 @@ data class UserPreferences(
     val gradientAdvancedMode: Boolean = false,
     val systemIconPosition: SystemIconPosition = SystemIconPosition.TOP_LEFT,
     val systemIconPadding: SystemIconPadding = SystemIconPadding.MEDIUM,
+    val platformIndicatorStyle: PlatformIndicatorStyle = PlatformIndicatorStyle.TAB,
+    val platformIndicatorContent: PlatformIndicatorContent = PlatformIndicatorContent.NAME,
     val defaultView: DefaultView = DefaultView.HOME,
     val recommendedGameIds: List<Long> = emptyList(),
     val lastRecommendationGeneration: Instant? = null,
@@ -697,11 +693,33 @@ enum class BoxArtGlowStrength(val alpha: Float, val isShadow: Boolean = false) {
 }
 
 enum class SystemIconPosition {
-    OFF, TOP_LEFT, TOP_RIGHT;
+    OFF, TOP_LEFT, TOP_RIGHT, BOTTOM_LEFT, BOTTOM_RIGHT;
 
     companion object {
+        // Cycleable corner positions only. OFF is reserved as an internal sentinel
+        // (BoxArtShapes carve-out gating) and is reached via PlatformIndicatorStyle.OFF.
+        val CORNERS: List<SystemIconPosition> = listOf(TOP_LEFT, TOP_RIGHT, BOTTOM_LEFT, BOTTOM_RIGHT)
+
         fun fromString(value: String?): SystemIconPosition =
             entries.find { it.name == value } ?: TOP_LEFT
+    }
+}
+
+enum class PlatformIndicatorStyle {
+    OFF, TAB, SPINE;
+
+    companion object {
+        fun fromString(value: String?): PlatformIndicatorStyle =
+            entries.find { it.name == value } ?: TAB
+    }
+}
+
+enum class PlatformIndicatorContent {
+    NAME, ICON, NAME_AND_ICON;
+
+    companion object {
+        fun fromString(value: String?): PlatformIndicatorContent =
+            entries.find { it.name == value } ?: NAME
     }
 }
 

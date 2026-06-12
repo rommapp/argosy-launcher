@@ -80,7 +80,14 @@ data class InGameControlsState(
     val fastForwardMode: com.nendo.argosy.data.local.entity.FastForwardMode =
         com.nendo.argosy.data.local.entity.FastForwardMode.HOLD,
     val fastForwardPreservePitch: Boolean = false,
-    val controllerOrderCount: Int = 0
+    val controllerOrderCount: Int = 0,
+    val touchEnabled: Boolean = true,
+    val touchOpacityLandscape: Float = 0.45f,
+    val touchOpacityPortrait: Float = 1.0f,
+    val touchSizeScale: Float = 1.0f,
+    val touchHaptic: Boolean = true,
+    val touchLockOrientation: Boolean = false,
+    val touchGenesis6Button: Boolean = false
 )
 
 sealed class InGameControlsAction {
@@ -95,6 +102,10 @@ sealed class InGameControlsAction {
     data object ShowControllerOrder : InGameControlsAction()
     data object ShowInputMapping : InGameControlsAction()
     data object ShowHotkeys : InGameControlsAction()
+    data class SetTouchEnabled(val enabled: Boolean) : InGameControlsAction()
+    data class SetTouchHaptic(val enabled: Boolean) : InGameControlsAction()
+    data class SetTouchLockOrientation(val enabled: Boolean) : InGameControlsAction()
+    data class SetTouchGenesis6Button(val enabled: Boolean) : InGameControlsAction()
 }
 
 data class InGameModalCallbacks(
@@ -127,6 +138,10 @@ internal sealed class InGameControlsItem(
     data object LimitHotkeysToPlayer1 : InGameControlsItem("limitHotkeys", "hotkeys")
     data object ToggleFastForward : InGameControlsItem("toggleFastForward", "hotkeys")
     data object PreserveFastForwardPitch : InGameControlsItem("preserveFastForwardPitch", "hotkeys")
+    data object TouchEnabled : InGameControlsItem("touchEnabled", "touchControls")
+    data object TouchHaptic : InGameControlsItem("touchHaptic", "touchControls")
+    data object TouchLockOrientation : InGameControlsItem("touchLockOrientation", "touchControls")
+    data object TouchGenesis6Button : InGameControlsItem("touchGenesis6Button", "touchControls")
 
     companion object {
         val ALL = listOf(
@@ -141,7 +156,12 @@ internal sealed class InGameControlsItem(
             Hotkeys,
             LimitHotkeysToPlayer1,
             ToggleFastForward,
-            PreserveFastForwardPitch
+            PreserveFastForwardPitch,
+            Header("touchControlsHeader", "touchControls", "Touch Controls"),
+            TouchEnabled,
+            TouchHaptic,
+            TouchLockOrientation,
+            TouchGenesis6Button
         )
     }
 }
@@ -235,6 +255,14 @@ fun InGameSettingsScreen(
             }
             InGameControlsItem.PreserveFastForwardPitch ->
                 action(InGameControlsAction.SetFastForwardPreservePitch(!state.fastForwardPreservePitch))
+            InGameControlsItem.TouchEnabled ->
+                action(InGameControlsAction.SetTouchEnabled(!state.touchEnabled))
+            InGameControlsItem.TouchHaptic ->
+                action(InGameControlsAction.SetTouchHaptic(!state.touchHaptic))
+            InGameControlsItem.TouchLockOrientation ->
+                action(InGameControlsAction.SetTouchLockOrientation(!state.touchLockOrientation))
+            InGameControlsItem.TouchGenesis6Button ->
+                action(InGameControlsAction.SetTouchGenesis6Button(!state.touchGenesis6Button))
             else -> {}
         }
     }
@@ -574,6 +602,38 @@ private fun InGameControlsSection(
                     isEnabled = state.fastForwardPreservePitch,
                     isFocused = isFocused(item),
                     onToggle = { onAction(InGameControlsAction.SetFastForwardPreservePitch(it)) }
+                )
+
+                InGameControlsItem.TouchEnabled -> SwitchPreference(
+                    title = "Show touch controls when no gamepad",
+                    subtitle = "Display an on-screen overlay when no controller is connected",
+                    isEnabled = state.touchEnabled,
+                    isFocused = isFocused(item),
+                    onToggle = { onAction(InGameControlsAction.SetTouchEnabled(it)) }
+                )
+
+                InGameControlsItem.TouchHaptic -> SwitchPreference(
+                    title = "Haptic feedback",
+                    subtitle = "Vibrate briefly on touch",
+                    isEnabled = state.touchHaptic,
+                    isFocused = isFocused(item),
+                    onToggle = { onAction(InGameControlsAction.SetTouchHaptic(it)) }
+                )
+
+                InGameControlsItem.TouchLockOrientation -> SwitchPreference(
+                    title = "Lock orientation in-game",
+                    subtitle = "Don't auto-rotate during play",
+                    isEnabled = state.touchLockOrientation,
+                    isFocused = isFocused(item),
+                    onToggle = { onAction(InGameControlsAction.SetTouchLockOrientation(it)) }
+                )
+
+                InGameControlsItem.TouchGenesis6Button -> SwitchPreference(
+                    title = "Genesis 6-button mode",
+                    subtitle = "Show six face buttons for Genesis / Mega Drive",
+                    isEnabled = state.touchGenesis6Button,
+                    isFocused = isFocused(item),
+                    onToggle = { onAction(InGameControlsAction.SetTouchGenesis6Button(it)) }
                 )
             }
         }

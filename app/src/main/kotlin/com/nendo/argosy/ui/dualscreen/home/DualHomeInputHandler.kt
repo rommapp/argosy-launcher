@@ -3,6 +3,7 @@ package com.nendo.argosy.ui.dualscreen.home
 import com.nendo.argosy.ui.input.GamepadEvent
 import com.nendo.argosy.ui.input.InputHandler
 import com.nendo.argosy.ui.input.InputResult
+import com.nendo.argosy.ui.screens.home.HomeGameUi
 
 class DualHomeInputHandler(
     private val viewModel: DualHomeViewModel,
@@ -18,6 +19,14 @@ class DualHomeInputHandler(
     private val onLaunchApp: (String) -> Unit,
     private val onLaunchAppAlternate: (String) -> Unit = {}
 ) : InputHandler {
+
+    private fun confirmGame(game: HomeGameUi) {
+        if (game.isSteamGame && !game.isPlayable) {
+            onSelectGame(game.id)
+        } else {
+            onBroadcastDirectAction(if (game.isPlayable) "PLAY" else "DOWNLOAD", game.id)
+        }
+    }
 
     fun handleForViewMode(): InputResult {
         if (viewModel.forwardingMode.value != ForwardingMode.NONE) {
@@ -155,8 +164,7 @@ class DualHomeInputHandler(
                 } else {
                     val game = state.selectedGame
                     if (game != null) {
-                        val action = if (game.isPlayable) "PLAY" else "DOWNLOAD"
-                        onBroadcastDirectAction(action, game.id)
+                        confirmGame(game)
                         InputResult.HANDLED
                     } else InputResult.UNHANDLED
                 }
@@ -249,10 +257,7 @@ class DualHomeInputHandler(
             }
             com.nendo.argosy.ui.input.GamepadEvent.Confirm -> {
                 val game = viewModel.focusedCollectionGame()
-                if (game != null) {
-                    val action = if (game.isPlayable) "PLAY" else "DOWNLOAD"
-                    onBroadcastDirectAction(action, game.id)
-                }
+                if (game != null) confirmGame(game)
                 InputResult.HANDLED
             }
             com.nendo.argosy.ui.input.GamepadEvent.ContextMenu -> {
@@ -329,10 +334,7 @@ class DualHomeInputHandler(
             com.nendo.argosy.ui.input.GamepadEvent.Confirm -> {
                 val state = viewModel.uiState.value
                 val game = state.libraryGames.getOrNull(state.libraryFocusedIndex)
-                if (game != null) {
-                    val action = if (game.isPlayable) "PLAY" else "DOWNLOAD"
-                    onBroadcastDirectAction(action, game.id)
-                }
+                if (game != null) confirmGame(game)
                 InputResult.HANDLED
             }
             com.nendo.argosy.ui.input.GamepadEvent.ContextMenu -> {
@@ -354,7 +356,14 @@ class DualHomeInputHandler(
                 InputResult.HANDLED
             }
             com.nendo.argosy.ui.input.GamepadEvent.SecondaryAction -> {
-                viewModel.toggleFilterOverlay()
+                val isViewingHidden = viewModel.uiState.value.activeFilters.source == "HIDDEN"
+                if (isViewingHidden) {
+                    val state = viewModel.uiState.value
+                    val game = state.libraryGames.getOrNull(state.libraryFocusedIndex)
+                    if (game != null) onBroadcastDirectAction("UNHIDE", game.id)
+                } else {
+                    viewModel.toggleFilterOverlay()
+                }
                 InputResult.HANDLED
             }
             com.nendo.argosy.ui.input.GamepadEvent.Menu,

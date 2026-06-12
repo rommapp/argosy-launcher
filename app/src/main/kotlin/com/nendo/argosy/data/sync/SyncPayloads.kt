@@ -5,10 +5,13 @@ import com.squareup.moshi.Moshi
 import javax.inject.Inject
 import javax.inject.Singleton
 
+enum class QueueSource { NEGOTIATE, DIRECT, CHANNEL_CACHE }
+
 @JsonClass(generateAdapter = true)
 data class SaveFilePayload(
     val emulatorId: String,
-    val channelName: String? = null
+    val channelName: String? = null,
+    val source: QueueSource = QueueSource.DIRECT
 )
 
 @JsonClass(generateAdapter = true)

@@ -5,7 +5,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.nendo.argosy.data.cache.ImageCacheManager
 import com.nendo.argosy.data.download.ZipExtractor
-import com.nendo.argosy.data.emulator.EdenContentManager
 import com.nendo.argosy.data.emulator.EmulatorDetector
 import com.nendo.argosy.data.emulator.EmulatorRegistry
 import com.nendo.argosy.data.emulator.LaunchConfig
@@ -94,7 +93,6 @@ class GameDetailViewModel @Inject constructor(
     private val modalResetSignal: ModalResetSignal,
     private val titleIdDownloadObserver: com.nendo.argosy.data.emulator.TitleIdDownloadObserver,
     private val displayAffinityHelper: com.nendo.argosy.util.DisplayAffinityHelper,
-    private val edenContentManager: EdenContentManager,
     val pickerModalDelegate: PickerModalDelegate,
     private val achievementDelegate: AchievementDelegate,
     private val downloadDelegate: DownloadDelegate,
@@ -180,6 +178,11 @@ class GameDetailViewModel @Inject constructor(
         viewModelScope.launch {
             gameLaunchDelegate.syncOverlayState.collect { overlayState ->
                 _uiState.update { it.copy(syncOverlayState = overlayState) }
+            }
+        }
+        viewModelScope.launch {
+            gameLaunchDelegate.memcardPickerState.collect { pickerState ->
+                _uiState.update { it.copy(memcardPickerState = pickerState) }
             }
         }
         viewModelScope.launch {
@@ -359,11 +362,8 @@ class GameDetailViewModel @Inject constructor(
                 val game = _uiState.value.game ?: return
                 downloadDelegate.downloadUpdateFile(
                     viewModelScope, currentGameId, selection.file,
-                    game.title, game.platformSlug, game.coverPath
+                    game.title, game.platformSlug, game.coverPath, game.rommFileName
                 )
-            }
-            is PickerSelection.ApplyUpdate -> {
-                applyUpdateToEmulator(selection.file)
             }
             is PickerSelection.Variant -> {
                 gameLaunchDelegate.launchSimple(
@@ -480,13 +480,7 @@ class GameDetailViewModel @Inject constructor(
                 saveManagement.loadSaveStatusInfo(gameId, emulatorId!!, game.activeSaveChannel, game.activeSaveTimestamp)
             } else null
 
-            val emulatorIdForEden = emulatorResolver.getEmulatorIdForGame(gameId, game.platformId, game.platformSlug)
-            val isEdenGame = emulatorIdForEden == "eden"
-            val edenApplied = if (isEdenGame && game.localPath != null) {
-                val gameDir = java.io.File(game.localPath).parent
-                gameDir != null && edenContentManager.isDirectoryRegistered(gameDir)
-            } else false
-            val (updateFilesUi, dlcFilesUi) = loadUpdateAndDlcFiles(gameId, game.platformSlug, game.localPath, edenApplied)
+            val (updateFilesUi, dlcFilesUi) = loadUpdateAndDlcFiles(gameId, game.platformSlug, game.localPath)
 
             variantScanner.scanForVariants(game)
             val hasVariants = gameFileDao.getVariantsForGame(gameId).isNotEmpty()
@@ -524,12 +518,12 @@ class GameDetailViewModel @Inject constructor(
                     saveStatusInfo = saveStatusInfo,
                     updateFiles = updateFilesUi,
                     dlcFiles = dlcFilesUi,
-                    isEdenGame = isEdenGame,
                     hasVariants = hasVariants,
                     siblingGameIds = siblingIds,
                     currentGameIndex = currentIndex,
                     isPrivate = isPrivate,
-                    hasSocialAccount = hasSocial
+                    hasSocialAccount = hasSocial,
+                    syncScreenshotsEnabled = prefs.syncScreenshotsEnabled
                 )
             }
 
@@ -687,7 +681,7 @@ class GameDetailViewModel @Inject constructor(
     }
 
     private suspend fun loadUpdateAndDlcFiles(
-        gameId: Long, platformSlug: String, localPath: String?, edenApplied: Boolean = false
+        gameId: Long, platformSlug: String, localPath: String?
     ): Pair<List<UpdateFileUi>, List<UpdateFileUi>> {
         val remoteFiles = gameFileDao.getFilesForGame(gameId)
 
@@ -704,7 +698,7 @@ class GameDetailViewModel @Inject constructor(
             UpdateFileUi(
                 fileName = file.fileName, filePath = file.filePath,
                 sizeBytes = file.fileSize, type = UpdateFileType.UPDATE,
-                isDownloaded = downloaded, isAppliedToEmulator = downloaded && edenApplied,
+                isDownloaded = downloaded,
                 gameFileId = file.id, rommFileId = file.rommFileId, romId = file.romId
             )
         }
@@ -714,7 +708,7 @@ class GameDetailViewModel @Inject constructor(
             UpdateFileUi(
                 fileName = file.fileName, filePath = file.filePath,
                 sizeBytes = file.fileSize, type = UpdateFileType.DLC,
-                isDownloaded = downloaded, isAppliedToEmulator = downloaded && edenApplied,
+                isDownloaded = downloaded,
                 gameFileId = file.id, rommFileId = file.rommFileId, romId = file.romId
             )
         }
@@ -725,7 +719,7 @@ class GameDetailViewModel @Inject constructor(
                 .map { file ->
                     UpdateFileUi(fileName = file.name, filePath = file.absolutePath,
                         sizeBytes = file.length(), type = UpdateFileType.UPDATE,
-                        isDownloaded = true, isAppliedToEmulator = edenApplied)
+                        isDownloaded = true)
                 }
         } else emptyList()
 
@@ -735,7 +729,7 @@ class GameDetailViewModel @Inject constructor(
                 .map { file ->
                     UpdateFileUi(fileName = file.name, filePath = file.absolutePath,
                         sizeBytes = file.length(), type = UpdateFileType.DLC,
-                        isDownloaded = true, isAppliedToEmulator = edenApplied)
+                        isDownloaded = true)
                 }
         } else emptyList()
 
@@ -754,7 +748,7 @@ class GameDetailViewModel @Inject constructor(
 
     fun downloadUpdateFile(file: UpdateFileUi) {
         val game = _uiState.value.game ?: return
-        downloadDelegate.downloadUpdateFile(viewModelScope, currentGameId, file, game.title, game.platformSlug, game.coverPath)
+        downloadDelegate.downloadUpdateFile(viewModelScope, currentGameId, file, game.title, game.platformSlug, game.coverPath, game.rommFileName)
     }
 
     fun dismissExtractionPrompt() = downloadDelegate.dismissExtractionPrompt()
@@ -838,21 +832,25 @@ class GameDetailViewModel @Inject constructor(
     fun handlePlayOption(action: com.nendo.argosy.ui.screens.gamedetail.modals.PlayOptionAction) {
         playOptionsDelegate.dismissPlayOptions()
         viewModelScope.launch {
-            val launchMode = when (action) {
+            when (action) {
                 is com.nendo.argosy.ui.screens.gamedetail.modals.PlayOptionAction.Resume ->
-                    com.nendo.argosy.libretro.LaunchMode.RESUME
-                is com.nendo.argosy.ui.screens.gamedetail.modals.PlayOptionAction.NewCasual ->
-                    com.nendo.argosy.libretro.LaunchMode.NEW_CASUAL
-                is com.nendo.argosy.ui.screens.gamedetail.modals.PlayOptionAction.NewHardcore ->
-                    com.nendo.argosy.libretro.LaunchMode.NEW_HARDCORE
+                    launchWithMode(com.nendo.argosy.libretro.LaunchMode.RESUME, skipPreLaunchSync = false)
+                is com.nendo.argosy.ui.screens.gamedetail.modals.PlayOptionAction.ResumeNoSync ->
+                    launchWithMode(com.nendo.argosy.libretro.LaunchMode.RESUME, skipPreLaunchSync = true)
                 is com.nendo.argosy.ui.screens.gamedetail.modals.PlayOptionAction.ResumeHardcore ->
-                    com.nendo.argosy.libretro.LaunchMode.RESUME_HARDCORE
+                    launchWithMode(com.nendo.argosy.libretro.LaunchMode.RESUME_HARDCORE, skipPreLaunchSync = false)
+                is com.nendo.argosy.ui.screens.gamedetail.modals.PlayOptionAction.NewCasual ->
+                    launchWithMode(com.nendo.argosy.libretro.LaunchMode.NEW_CASUAL, skipPreLaunchSync = false)
+                is com.nendo.argosy.ui.screens.gamedetail.modals.PlayOptionAction.NewHardcore ->
+                    launchWithMode(com.nendo.argosy.libretro.LaunchMode.NEW_HARDCORE, skipPreLaunchSync = false)
             }
-            launchWithMode(launchMode)
         }
     }
 
-    private suspend fun launchWithMode(launchMode: com.nendo.argosy.libretro.LaunchMode) {
+    private suspend fun launchWithMode(
+        launchMode: com.nendo.argosy.libretro.LaunchMode,
+        skipPreLaunchSync: Boolean
+    ) {
         if (launchMode == com.nendo.argosy.libretro.LaunchMode.NEW_CASUAL ||
             launchMode == com.nendo.argosy.libretro.LaunchMode.NEW_HARDCORE) {
             gameRepository.updateActiveSaveChannel(currentGameId, null)
@@ -865,12 +863,26 @@ class GameDetailViewModel @Inject constructor(
             }
         }
 
-        gameLaunchDelegate.launchSimple(
-            scope = viewModelScope,
-            gameId = currentGameId,
-            launchMode = launchMode,
-            callbacks = makeLaunchCallbacks()
-        )
+        val isResume = launchMode == com.nendo.argosy.libretro.LaunchMode.RESUME ||
+            launchMode == com.nendo.argosy.libretro.LaunchMode.RESUME_HARDCORE
+        if (isResume) {
+            val callbacks = makeLaunchCallbacks()
+            gameLaunchDelegate.launchGame(
+                scope = viewModelScope,
+                gameId = currentGameId,
+                skipPreLaunchSync = skipPreLaunchSync,
+                overrideLaunchMode = launchMode,
+                onLaunch = callbacks.onLaunch,
+                onLaunchFailed = { callbacks.onLaunchFailed() }
+            )
+        } else {
+            gameLaunchDelegate.launchSimple(
+                scope = viewModelScope,
+                gameId = currentGameId,
+                launchMode = launchMode,
+                callbacks = makeLaunchCallbacks()
+            )
+        }
     }
 
     private fun makeLaunchCallbacks(): com.nendo.argosy.ui.screens.common.LaunchResultCallbacks =
@@ -906,14 +918,23 @@ class GameDetailViewModel @Inject constructor(
             isMultiDisc = state.game?.isMultiDisc == true,
             hasVariants = state.hasVariants,
             isSteamGame = state.game?.isSteamGame == true,
-            hasUpdates = state.updateFiles.isNotEmpty() || state.dlcFiles.isNotEmpty()
+            hasUpdates = state.updateFiles.isNotEmpty() || state.dlcFiles.isNotEmpty(),
+            platformSlug = state.game?.platformSlug
         )
     }
 
-    fun handleMoreOptionAction(action: MoreOptionAction, onBack: () -> Unit) {
+    fun handleMoreOptionAction(
+        action: MoreOptionAction,
+        onBack: () -> Unit,
+        onNavigateToPlatformSettings: (Long) -> Unit = {}
+    ) {
         val isAndroidApp = _uiState.value.game?.isAndroidApp == true
         when (action) {
             MoreOptionAction.ManageSaves -> showSaveCacheDialog()
+            MoreOptionAction.PlatformSettings -> {
+                toggleMoreOptions()
+                _uiState.value.game?.platformId?.let(onNavigateToPlatformSettings)
+            }
             MoreOptionAction.RatingsStatus -> showRatingsStatusMenu()
             MoreOptionAction.RateGame -> showRatingPicker(RatingType.OPINION)
             MoreOptionAction.SetDifficulty -> showRatingPicker(RatingType.DIFFICULTY)
@@ -949,7 +970,10 @@ class GameDetailViewModel @Inject constructor(
         }
     }
 
-    fun confirmOptionSelection(onBack: () -> Unit) {
+    fun confirmOptionSelection(
+        onBack: () -> Unit,
+        onNavigateToPlatformSettings: (Long) -> Unit = {}
+    ) {
         val state = _uiState.value
         val action = moreOptionsDelegate.resolveOptionAction(
             downloadStatus = state.downloadStatus,
@@ -964,7 +988,7 @@ class GameDetailViewModel @Inject constructor(
             platformSlug = state.game?.platformSlug
         )
         if (action != null) {
-            handleMoreOptionAction(action, onBack)
+            handleMoreOptionAction(action, onBack, onNavigateToPlatformSettings)
         } else {
             toggleMoreOptions()
         }
@@ -1112,22 +1136,48 @@ class GameDetailViewModel @Inject constructor(
         saveManagement.confirmMigrateChannel(viewModelScope, currentGameId, game.platformId, game.platformSlug, ::handleSaveStatusChanged)
     }
 
+    fun syncSavesNow() {
+        if (_uiState.value.isSyncingSaves) return
+        val game = _uiState.value.game ?: return
+        saveManagement.syncCurrentChannel(
+            scope = viewModelScope,
+            gameId = currentGameId,
+            platformId = game.platformId,
+            platformSlug = game.platformSlug,
+            channelName = _uiState.value.saveChannel.activeChannel,
+            onLoadingChange = { syncing -> _uiState.update { it.copy(isSyncingSaves = syncing) } },
+            onSyncStatusChanged = ::handleSaveStatusChanged
+        )
+    }
+
     fun dismissDeleteLegacyConfirmation() = saveManagement.saveChannelDelegate.dismissDeleteLegacyConfirmation()
 
     fun confirmDeleteLegacyChannel() = saveManagement.saveChannelDelegate.confirmDeleteLegacyChannel(viewModelScope)
 
     private fun handleSaveStatusChanged(event: SaveStatusEvent) {
-        val currentStatus = _uiState.value.saveStatusInfo?.status ?: com.nendo.argosy.ui.screens.gamedetail.components.SaveSyncStatus.NO_SAVE
         _uiState.update { state ->
             state.copy(
                 saveChannel = state.saveChannel.copy(activeChannel = event.channelName),
                 saveStatusInfo = SaveStatusInfo(
-                    status = currentStatus,
+                    status = state.saveStatusInfo?.status ?: com.nendo.argosy.ui.screens.gamedetail.components.SaveSyncStatus.NO_SAVE,
                     channelName = event.channelName,
                     activeSaveTimestamp = event.timestamp,
                     lastSyncTime = if (event.timestamp != null) null else state.saveStatusInfo?.lastSyncTime
                 )
             )
+        }
+        viewModelScope.launch {
+            val state = _uiState.value
+            val game = state.game ?: return@launch
+            val emulatorId = emulatorResolver.getEmulatorIdForGame(currentGameId, game.platformId, game.platformSlug)
+                ?: return@launch
+            val fresh = saveManagement.loadSaveStatusInfo(
+                currentGameId, emulatorId, event.channelName,
+                event.timestamp ?: state.saveStatusInfo?.activeSaveTimestamp
+            )
+            if (fresh != null) {
+                _uiState.update { it.copy(saveStatusInfo = fresh) }
+            }
         }
     }
 
@@ -1175,12 +1225,19 @@ class GameDetailViewModel @Inject constructor(
                 gameTitle = game.title,
                 platformSlug = game.platformSlug,
                 coverPath = game.coverPath,
-                expectedSizeBytes = file.fileSize
+                expectedSizeBytes = file.fileSize,
+                gameFolderName = game.rommFileName
             )
             notificationManager.showSuccess("Downloading ${file.fileName}")
         }
     }
     fun dismissDiscPicker() = pickerModalDelegate.dismissDiscPicker()
+
+    fun selectMemcard(cardPath: String) = gameLaunchDelegate.selectMemcard(viewModelScope, cardPath)
+    fun dismissMemcardPicker() = gameLaunchDelegate.dismissMemcardPicker()
+    fun setMemcardPickerFocusIndex(index: Int) {
+        _uiState.update { it.copy(memcardPickerFocusIndex = index) }
+    }
     fun navigateDiscPicker(direction: Int) = pickerModalDelegate.moveDiscPickerFocus(direction)
     fun selectFocusedDisc() = pickerModalDelegate.confirmDiscSelection()
 
@@ -1220,39 +1277,7 @@ class GameDetailViewModel @Inject constructor(
     }
 
     private fun confirmUpdatesSelection() {
-        pickerModalDelegate.confirmUpdatesSelection(_uiState.value.updateFiles, _uiState.value.dlcFiles, _uiState.value.isEdenGame)
-    }
-
-    fun applyUpdateToEmulator(file: UpdateFileUi) {
-        viewModelScope.launch {
-            val game = gameRepository.getById(currentGameId) ?: return@launch
-            val localPath = game.localPath ?: return@launch
-            val gameDir = java.io.File(localPath).parent ?: return@launch
-            val success = edenContentManager.registerDirectory(gameDir)
-            if (success) {
-                markAllFilesAsApplied()
-                notificationManager.showSuccess("Applied to Eden. Restart Eden to load changes.")
-            } else {
-                notificationManager.showError("Failed to register directory with Eden")
-            }
-        }
-    }
-
-    fun applyAllUpdatesToEmulator() {
-        applyUpdateToEmulator(_uiState.value.updateFiles.firstOrNull() ?: _uiState.value.dlcFiles.firstOrNull() ?: return)
-    }
-
-    private fun markAllFilesAsApplied() {
-        _uiState.update { state ->
-            state.copy(
-                updateFiles = state.updateFiles.map {
-                    if (it.isDownloaded) it.copy(isAppliedToEmulator = true) else it
-                },
-                dlcFiles = state.dlcFiles.map {
-                    if (it.isDownloaded) it.copy(isAppliedToEmulator = true) else it
-                }
-            )
-        }
+        pickerModalDelegate.confirmUpdatesSelection(_uiState.value.updateFiles, _uiState.value.dlcFiles)
     }
 
     fun installAllUpdatesAndDlc() { pickerModalDelegate.dismissUpdatesPicker(); playGame() }
@@ -1322,12 +1347,18 @@ class GameDetailViewModel @Inject constructor(
     // --- Menu ---
 
     private fun menuLayoutState(): MenuLayoutState {
-        val game = _uiState.value.game
+        val state = _uiState.value
+        val game = state.game
+        val saveStatus = state.saveStatusInfo?.status
+        val hasSaveSync = saveStatus != null &&
+            saveStatus != com.nendo.argosy.ui.screens.gamedetail.components.SaveSyncStatus.NO_SAVE &&
+            saveStatus != com.nendo.argosy.ui.screens.gamedetail.components.SaveSyncStatus.NOT_CONFIGURED
         return MenuLayoutState(
             hasDescription = !game?.description.isNullOrBlank(),
             hasScreenshots = game?.screenshots?.isNotEmpty() == true,
             hasAchievements = game?.achievements?.isNotEmpty() == true,
-            hasSocialAccount = _uiState.value.hasSocialAccount
+            hasSocialAccount = state.hasSocialAccount,
+            hasSaveSync = hasSaveSync
         )
     }
 
@@ -1350,6 +1381,7 @@ class GameDetailViewModel @Inject constructor(
         val state = menuLayoutState()
         when (menuLayout.itemAtFocusIndex(_uiState.value.menuFocusIndex, state)) {
             MenuItem.Play -> primaryAction()
+            MenuItem.Saves -> syncSavesNow()
             MenuItem.Favorite -> toggleFavorite()
             MenuItem.Privacy -> togglePrivacy()
             MenuItem.Options -> toggleMoreOptions()
@@ -1478,6 +1510,7 @@ class GameDetailViewModel @Inject constructor(
 
     fun createInputHandler(
         onBack: () -> Unit,
+        onNavigateToPlatformSettings: (Long) -> Unit = {},
         onSnapUp: () -> Boolean = { false },
         onSnapDown: () -> Boolean = { false },
         onSectionLeft: () -> Unit = {},
@@ -1648,7 +1681,7 @@ class GameDetailViewModel @Inject constructor(
                 state.showAddToCollectionModal -> confirmCollectionSelection()
                 state.showRatingsStatusMenu -> confirmRatingsStatusSelection()
                 state.showPlayOptions -> confirmPlayOptionSelection()
-                state.showMoreOptions -> confirmOptionSelection(onBack)
+                state.showMoreOptions -> confirmOptionSelection(onBack, onNavigateToPlatformSettings)
                 else -> executeMenuAction()
             }
             return InputResult.HANDLED
@@ -1713,11 +1746,6 @@ class GameDetailViewModel @Inject constructor(
         override fun onSecondaryAction(): InputResult {
             val state = _uiState.value
             val saveState = state.saveChannel
-            val pickerState = pickerModalDelegate.state.value
-            if (pickerState.showUpdatesPicker && state.isEdenGame) {
-                val hasUnapplied = (state.updateFiles + state.dlcFiles).any { it.isDownloaded && !it.isAppliedToEmulator }
-                if (hasUnapplied) { applyAllUpdatesToEmulator(); return InputResult.HANDLED }
-            }
             if (saveState.isVisible && !saveState.showRestoreConfirmation && !saveState.showRenameDialog && !saveState.showDeleteConfirmation && !saveState.showMigrateConfirmation && !saveState.showDeleteLegacyConfirmation) {
                 saveChannelSecondaryAction(); return InputResult.HANDLED
             }

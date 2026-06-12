@@ -143,6 +143,10 @@ internal fun routeObserveDelegateStates(vm: SettingsViewModel) {
     vm.biosDelegate.state.onEach { bios ->
         vm._uiState.update { it.copy(bios = bios) }
     }.launchIn(vm.viewModelScope)
+
+    vm.driversDelegate.state.onEach { drivers ->
+        vm._uiState.update { it.copy(drivers = drivers) }
+    }.launchIn(vm.viewModelScope)
 }
 
 internal fun routeObserveDelegateEvents(vm: SettingsViewModel) {
@@ -334,7 +338,7 @@ internal fun routeLoadSettings(vm: SettingsViewModel) {
                     }
                 }
                 isUserSavePathOverride -> userSaveConfig?.savePathPattern
-                else -> savePathConfig.defaultPaths.firstOrNull()
+                else -> SavePathRegistry.resolvePathWithPackage(savePathConfig, emulatorPackage).firstOrNull()
             }
 
             val extensionOptions = EmulatorRegistry.getExtensionOptionsForPlatform(platform.slug)
@@ -402,6 +406,8 @@ internal fun routeLoadSettings(vm: SettingsViewModel) {
             gradientAdvancedMode = prefs.gradientAdvancedMode,
             systemIconPosition = prefs.systemIconPosition,
             systemIconPadding = prefs.systemIconPadding,
+            platformIndicatorStyle = prefs.platformIndicatorStyle,
+            platformIndicatorContent = prefs.platformIndicatorContent,
             defaultView = prefs.defaultView,
             videoWallpaperEnabled = prefs.videoWallpaperEnabled,
             videoWallpaperDelaySeconds = prefs.videoWallpaperDelaySeconds,
@@ -560,13 +566,31 @@ internal fun routeLoadSettings(vm: SettingsViewModel) {
                 else -> com.nendo.argosy.data.emulator.StatePathRegistry.getConfig(emulatorIdForStateCheck) != null
             }
 
+            val saveConfigForMemcard = if (config.platform.slug == "ps2") {
+                val effectiveSaveConfigIdMc = emulatorId?.let { id ->
+                    val pkg = config.effectiveEmulatorPackage
+                    pkg?.let { SavePathRegistry.getConfigByPackage(it) }?.emulatorId
+                        ?: SavePathRegistry.getConfig(id)?.emulatorId
+                }
+                effectiveSaveConfigIdMc?.let { vm.emulatorDelegate.getEmulatorSaveConfig(it) }
+            } else null
+
+            val folderMemcardCount = if (config.platform.slug == "ps2" && emulatorId != null) {
+                vm.emulatorDelegate.listPs2FolderMemcardsForEmulator(
+                    emulatorId = emulatorId,
+                    emulatorPackage = config.effectiveEmulatorPackage
+                ).size
+            } else -1
+
             platformEmulatorInfoMap[config.platform.id] = StorageSettingsDelegate.PlatformEmulatorInfo(
                 supportsStatePath = supportsStatePath,
                 emulatorId = emulatorId,
                 effectiveSavePath = config.effectiveSavePath,
                 isUserSavePathOverride = config.isUserSavePathOverride,
                 effectiveStatePath = statePath,
-                isUserStatePathOverride = isUserStatePathOverride
+                isUserStatePathOverride = isUserStatePathOverride,
+                folderMemcardCount = folderMemcardCount,
+                selectedMemcardPath = saveConfigForMemcard?.selectedMemcardPath
             )
         }
         vm.storageDelegate.setPendingEmulatorInfo(platformEmulatorInfoMap)
@@ -577,7 +601,6 @@ internal fun routeLoadSettings(vm: SettingsViewModel) {
             totalPlatforms = platforms.count { it.gameCount > 0 },
             totalGames = platforms.sumOf { it.gameCount },
             saveSyncEnabled = prefs.saveSyncEnabled,
-            experimentalFolderSaveSync = prefs.experimentalFolderSaveSync,
             saveCacheLimit = prefs.saveCacheLimit,
             pendingUploadsCount = vm.saveCacheDao.countNeedingRemoteSync(),
             imageCachePath = prefs.imageCachePath,
@@ -628,7 +651,18 @@ internal fun routeLoadSettings(vm: SettingsViewModel) {
                     fastForwardMode = builtinSettings.fastForwardMode,
                     fastForwardPreservePitch = builtinSettings.fastForwardPreservePitch,
                     analogAsDpad = builtinSettings.analogAsDpad,
-                    dpadAsAnalog = builtinSettings.dpadAsAnalog
+                    dpadAsAnalog = builtinSettings.dpadAsAnalog,
+                    touchEnabled = builtinSettings.showTouchControlsWhenNoGamepad,
+                    touchOpacityLandscape = builtinSettings.touchControlsOpacityLandscape,
+                    touchOpacityPortrait = builtinSettings.touchControlsOpacityPortrait,
+                    touchSizeScale = builtinSettings.touchControlsSizeScale,
+                    touchHaptic = builtinSettings.touchControlsHaptic,
+                    touchFadeOnIdle = builtinSettings.touchControlsFadeOnIdle,
+                    touchSwapHanded = builtinSettings.touchControlsSwapHanded,
+                    touchLockOrientation = builtinSettings.touchControlsLockOrientation,
+                    touchMirror180 = builtinSettings.touchControlsMirror180,
+                    touchColouredFaceButtons = builtinSettings.touchControlsColouredFaceButtons,
+                    touchGenesis6Button = builtinSettings.touchControlsGenesis6Button
                 )
             )
         }

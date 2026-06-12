@@ -103,6 +103,7 @@ internal fun routeConfirm(vm: SettingsViewModel): InputResult {
                 MainSettingsItem.Platforms -> vm.navigateToSection(SettingsSection.PLATFORMS)
                 MainSettingsItem.BuiltinEmulator -> vm.navigateToSection(SettingsSection.BUILTIN_EMULATOR)
                 MainSettingsItem.Bios -> vm.navigateToSection(SettingsSection.BIOS)
+                MainSettingsItem.Drivers -> vm.navigateToSection(SettingsSection.DRIVERS)
                 MainSettingsItem.Permissions -> vm.navigateToSection(SettingsSection.PERMISSIONS)
                 MainSettingsItem.About -> vm.navigateToSection(SettingsSection.ABOUT)
                 MainSettingsItem.Social -> vm.navigateToSection(SettingsSection.SOCIAL)
@@ -118,7 +119,7 @@ internal fun routeConfirm(vm: SettingsViewModel): InputResult {
             val item = steamItemAtFocusIndex(state.focusedIndex, state.steam)
             when (item) {
                 SteamItem.GnInstall -> {} // handled by click
-                SteamItem.InstallPath -> vm.cycleSteamInstallVolume()
+                SteamItem.InstallPath -> vm.openSteamInstallPathPicker()
                 SteamItem.SyncLibrary -> vm.syncSteamLibrary()
                 SteamItem.AddManual -> vm.showAddSteamGameDialog()
                 SteamItem.Disconnect -> vm.disconnectSteam()
@@ -185,6 +186,7 @@ internal fun routeConfirm(vm: SettingsViewModel): InputResult {
         SettingsSection.PLATFORM_DETAIL -> routePlatformDetailConfirm(vm, state)
         SettingsSection.BIOS -> routeBiosConfirm(vm, state)
         SettingsSection.PERMISSIONS -> routePermissionsConfirm(vm, state)
+        SettingsSection.DRIVERS -> InputResult.HANDLED
         SettingsSection.ABOUT -> routeAboutConfirm(vm, state)
         SettingsSection.BUILTIN_VIDEO -> InputResult.HANDLED
         SettingsSection.BUILTIN_CONTROLS -> InputResult.HANDLED
@@ -378,6 +380,8 @@ private fun routeBoxArtConfirm(vm: SettingsViewModel, state: SettingsUiState): I
         BoxArtItem.HueDistance -> vm.cycleGradientHueDistance(1)
         BoxArtItem.SaturationBoost -> vm.cycleGradientSaturationBump(1)
         BoxArtItem.BrightnessClamp -> vm.cycleGradientValueClamp(1)
+        BoxArtItem.IndicatorStyle -> vm.cyclePlatformIndicatorStyle()
+        BoxArtItem.IndicatorContent -> vm.cyclePlatformIndicatorContent()
         BoxArtItem.IconPos -> vm.cycleSystemIconPosition()
         BoxArtItem.IconPad -> vm.cycleSystemIconPadding()
         BoxArtItem.OuterEffect -> vm.cycleBoxArtOuterEffect()
@@ -535,6 +539,7 @@ private fun routeAboutConfirm(vm: SettingsViewModel, state: SettingsUiState): In
             vm.setAppAffinityEnabled(!state.appAffinityEnabled)
             return InputResult.handled(SoundType.TOGGLE)
         }
+        AboutItem.SystemizeHelper -> vm.writeSystemizeScript()
         else -> {}
     }
     return InputResult.HANDLED
@@ -565,7 +570,9 @@ private fun routeFramePickerConfirm(vm: SettingsViewModel, state: SettingsUiStat
 internal fun routeNavigateBack(vm: SettingsViewModel): Boolean {
     val state = vm._uiState.value
     return when {
+        state.systemizeResult != null -> { vm.dismissSystemizeDialog(); true }
         state.emulators.showSavePathModal -> { vm.dismissSavePathModal(); true }
+        state.emulators.showMemcardPicker -> { vm.dismissMemcardPicker(); true }
         state.storage.platformSettingsModalId != null -> { vm.closePlatformSettingsModal(); true }
         state.steam.showAddGameDialog -> { vm.dismissAddSteamGameDialog(); true }
         state.sounds.showSoundPicker -> { vm.dismissSoundPicker(); true }
@@ -648,6 +655,7 @@ internal fun routeNavigateBack(vm: SettingsViewModel): Boolean {
         state.currentSection == SettingsSection.PLATFORM_DETAIL && state.platformDetail.showRemoveConfirm -> {
             vm._uiState.update { it.copy(platformDetail = it.platformDetail.copy(showRemoveConfirm = false)) }; true
         }
+        state.currentSection == SettingsSection.PLATFORM_DETAIL && state.platformDetail.enteredExternally -> false
         state.currentSection == SettingsSection.PLATFORM_DETAIL -> {
             val platformFocusIndex = state.platformDetail.platformIndex
             vm._uiState.update { it.copy(
@@ -665,6 +673,9 @@ internal fun routeNavigateBack(vm: SettingsViewModel): Boolean {
 internal fun routeMoveFocus(vm: SettingsViewModel, delta: Int) {
     if (vm._uiState.value.emulators.showSavePathModal) {
         vm.emulatorDelegate.moveSavePathModalFocus(delta); return
+    }
+    if (vm._uiState.value.emulators.showMemcardPicker) {
+        vm.emulatorDelegate.moveMemcardPickerFocus(delta); return
     }
     if (vm._uiState.value.storage.platformSettingsModalId != null) {
         vm.storageDelegate.movePlatformSettingsFocus(delta); return
@@ -746,6 +757,7 @@ private fun computeMaxFocusIndex(
     SettingsSection.FRAME_PICKER -> com.nendo.argosy.ui.screens.settings.sections.framePickerMaxFocusIndex(vm.getFrameRegistry())
     SettingsSection.BIOS -> biosMaxFocusIndex(state.bios.platformGroups, state.bios.expandedPlatformIndex)
     SettingsSection.PERMISSIONS -> permissionsMaxFocusIndex(state.permissions)
+    SettingsSection.DRIVERS -> (state.drivers.groups.size - 1).coerceAtLeast(0)
     SettingsSection.ABOUT -> aboutMaxFocusIndex(state.fileLoggingPath != null)
     SettingsSection.SOCIAL -> com.nendo.argosy.ui.screens.settings.sections.socialMaxFocusIndex(state.social)
 }
@@ -777,6 +789,7 @@ private fun routePlatformDetailConfirm(vm: SettingsViewModel, state: SettingsUiS
         PlatformDetailItem.RomPath -> vm.openPlatformFolderPicker(config.platform.id)
         // RetroArch owns its own save/state paths via retroarch.cfg; rows are read-only for RA.
         PlatformDetailItem.SavePath -> if (!config.effectiveEmulatorIsRetroArch) vm.launchSavePathPicker(config.platform.id)
+        PlatformDetailItem.MemoryCard -> vm.openMemcardPicker(config)
         PlatformDetailItem.StatePath -> if (!config.effectiveEmulatorIsRetroArch) vm.launchStatePathPicker(config.platform.id)
         PlatformDetailItem.SyncToggle -> {
             val currentSync = state.storage.platformConfigs

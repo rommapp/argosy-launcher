@@ -200,7 +200,7 @@ class AndroidGameScanner @Inject constructor(
                 gameDao.update(updated)
 
                 if (details != null) {
-                    queueImageCaching(existing.id, details)
+                    queueImageCaching(existing.id, updated.title, details)
                 }
                 return ProcessResult.UPDATED
             }
@@ -228,23 +228,26 @@ class AndroidGameScanner @Inject constructor(
 
         val gameId = gameDao.insert(game)
 
-        // Prefer Play Store cover over app icon
+        imageCacheManager.queueAppIconCache(gameId, app.packageName)
         if (details?.coverUrl != null) {
             imageCacheManager.queueCoverCacheByGameId(details.coverUrl, gameId)
+            details.screenshotUrls.firstOrNull()?.let { url ->
+                imageCacheManager.queueBackgroundCacheByGameId(url, gameId, game.title)
+            }
             if (details.screenshotUrls.isNotEmpty()) {
                 imageCacheManager.queueScreenshotCacheByGameId(gameId, details.screenshotUrls)
             }
-        } else {
-            // Fall back to app icon only if no Play Store cover
-            imageCacheManager.queueAppIconCache(gameId, app.packageName)
         }
 
         return ProcessResult.ADDED
     }
 
-    private fun queueImageCaching(gameId: Long, details: PlayStoreAppDetails) {
+    private fun queueImageCaching(gameId: Long, gameTitle: String, details: PlayStoreAppDetails) {
         details.coverUrl?.let { url ->
             imageCacheManager.queueCoverCacheByGameId(url, gameId)
+        }
+        details.screenshotUrls.firstOrNull()?.let { url ->
+            imageCacheManager.queueBackgroundCacheByGameId(url, gameId, gameTitle)
         }
         if (details.screenshotUrls.isNotEmpty()) {
             imageCacheManager.queueScreenshotCacheByGameId(gameId, details.screenshotUrls)
@@ -266,6 +269,39 @@ class AndroidGameScanner @Inject constructor(
         }
     }
 
+    suspend fun relinkInstalledRommAndroidApps(): Int = withContext(Dispatchers.IO) {
+        val candidates = gameDao.getByPlatform(LocalPlatformIds.ANDROID)
+            .filter { it.packageName == null && it.source != GameSource.ANDROID_APP }
+        if (candidates.isEmpty()) return@withContext 0
+
+        val installedByName = appsRepository.getInstalledApps(includeSystemApps = false)
+            .filter { !isEmulatorPackage(it.packageName) }
+            .filter { appCategoryDao.getByPackageName(it.packageName)?.isGame != false }
+            .groupBy { matchKey(it.label) }
+
+        var relinked = 0
+        for (game in candidates) {
+            val key = matchKey(game.title)
+            if (key.isEmpty()) continue
+            val match = installedByName[key]?.singleOrNull() ?: continue
+            if (gameDao.getByPackageName(match.packageName) != null) continue
+            gameDao.update(
+                game.copy(
+                    packageName = match.packageName,
+                    source = GameSource.ANDROID_APP,
+                    localPath = null
+                )
+            )
+            relinked++
+            Log.d(TAG, "Relinked Android game '${game.title}' -> ${match.packageName}")
+        }
+        if (relinked > 0) updatePlatformGameCount()
+        relinked
+    }
+
+    private fun matchKey(title: String): String =
+        createSortTitle(title).replace(Regex("[^a-z0-9]"), "")
+
     suspend fun syncInstalledStatus() = withContext(Dispatchers.IO) {
         val androidGames = gameDao.getBySource(GameSource.ANDROID_APP)
         val installedPackages = appsRepository.getInstalledApps().map { it.packageName }.toSet()
@@ -273,8 +309,19 @@ class AndroidGameScanner @Inject constructor(
         for (game in androidGames) {
             val packageName = game.packageName ?: continue
             if (packageName !in installedPackages) {
-                Log.d(TAG, "Removing uninstalled game: ${game.title}")
-                gameDao.delete(game)
+                if (game.rommId != null) {
+                    Log.d(TAG, "Reverting uninstalled RomM game to downloadable: ${game.title}")
+                    gameDao.update(
+                        game.copy(
+                            source = GameSource.ROMM_REMOTE,
+                            packageName = null,
+                            localPath = null
+                        )
+                    )
+                } else {
+                    Log.d(TAG, "Removing uninstalled game: ${game.title}")
+                    gameDao.delete(game)
+                }
             }
         }
 
@@ -302,7 +349,7 @@ class AndroidGameScanner @Inject constructor(
                         backgroundPath = details.screenshotUrls.firstOrNull() ?: game.backgroundPath
                     )
                     gameDao.update(updated)
-                    queueImageCaching(game.id, details)
+                    queueImageCaching(game.id, updated.title, details)
                     refreshedCount++
                     Log.d(TAG, "Refreshed metadata for: ${game.title}")
                 }

@@ -146,7 +146,9 @@ class ApkInstallManager @Inject constructor(
                     )
                     gameDao.update(updatedGame)
 
-                    imageCacheManager.queueAppIconCache(pending.gameId, packageName)
+                    if (game.coverPath.isNullOrBlank()) {
+                        imageCacheManager.queueAppIconCache(pending.gameId, packageName)
+                    }
 
                     Log.d(TAG, "Game ${game.title} updated with package $packageName")
                 }

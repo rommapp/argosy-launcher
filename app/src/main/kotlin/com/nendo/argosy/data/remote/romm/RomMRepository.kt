@@ -59,6 +59,18 @@ class RomMRepository @Inject constructor(
 
     suspend fun checkConnection(retryCount: Int = 2) = connectionManager.checkConnection(retryCount)
 
+    fun getCurrentDeviceId(): String? = connectionManager.getDeviceId()
+
+    suspend fun getRegisteredDevices(): List<RomMDevice> {
+        val api = connectionManager.getApi() ?: return emptyList()
+        return try {
+            val response = api.getDevices()
+            if (response.isSuccessful) response.body().orEmpty() else emptyList()
+        } catch (_: Exception) {
+            emptyList()
+        }
+    }
+
     // --- API Client ---
 
     fun buildMediaUrlPublic(path: String): String = apiClient.buildMediaUrl(path)
@@ -70,6 +82,12 @@ class RomMRepository @Inject constructor(
         fileName: String,
         rangeHeader: String? = null
     ): RomMResult<DownloadResponse> = apiClient.downloadRom(romId, fileName, rangeHeader)
+
+    suspend fun downloadRomFile(
+        fileId: Long,
+        fileName: String,
+        rangeHeader: String? = null
+    ): RomMResult<DownloadResponse> = apiClient.downloadRomFile(fileId, fileName, rangeHeader)
 
     suspend fun getCurrentUser(): RomMResult<RomMUser> = apiClient.getCurrentUser()
 
@@ -99,6 +117,8 @@ class RomMRepository @Inject constructor(
     // --- Collections ---
 
     suspend fun syncCollections(): RomMResult<Unit> = collectionSyncService.syncCollections()
+
+    suspend fun syncAutoCollections(): RomMResult<Unit> = collectionSyncService.syncAutoCollections()
 
     suspend fun syncFavorites(): RomMResult<Unit> = collectionSyncService.syncFavorites()
 

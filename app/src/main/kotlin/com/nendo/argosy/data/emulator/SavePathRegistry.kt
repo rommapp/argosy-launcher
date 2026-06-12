@@ -55,7 +55,7 @@ object SavePathRegistry {
         "m64pro_fzx_plus" to SavePathConfig(
             emulatorId = "m64pro_fzx_plus",
             defaultPaths = listOf(
-                "/storage/emulated/0/Android/data/com.m64.fx.plus.emulate/files/GameData"
+                "{extStorage}/Android/data/com.m64.fx.plus.emulate/files/GameData"
             ),
             saveExtensions = listOf("sra", "eep", "fla", "mpk"),
             usesGameIdSubfolder = true
@@ -84,17 +84,61 @@ object SavePathRegistry {
             usesGciFormat = true,
             supported = true
         ),
-        // RetroArch dolphin-emu core uses GCI folder structure
-        "retroarch_dolphin" to SavePathConfig(
-            emulatorId = "retroarch_dolphin",
+        "retroarch_ngc" to SavePathConfig(
+            emulatorId = "retroarch_ngc",
             defaultPaths = listOf(
                 "{extStorage}/RetroArch/saves/dolphin-emu/User/GC",
-                "{extStorage}/Android/data/com.retroarch/files/saves/dolphin-emu/User/GC",
+                "{extStorage}/Android/data/com.retroarch/files/saves/dolphin-emu/User/GC"
+            ),
+            saveExtensions = listOf("gci"),
+            usesGciFormat = true,
+        ),
+        "retroarch_64_ngc" to SavePathConfig(
+            emulatorId = "retroarch_64_ngc",
+            defaultPaths = listOf(
+                "{extStorage}/RetroArch/saves/dolphin-emu/User/GC",
                 "{extStorage}/Android/data/com.retroarch.aarch64/files/saves/dolphin-emu/User/GC"
             ),
             saveExtensions = listOf("gci"),
             usesGciFormat = true,
-            supported = true
+        ),
+
+        "retroarch_psp" to SavePathConfig(
+            emulatorId = "retroarch_psp",
+            defaultPaths = listOf(
+                "{extStorage}/RetroArch/saves/PPSSPP/PSP/SAVEDATA",
+                "{extStorage}/Android/data/com.retroarch/files/saves/PPSSPP/PSP/SAVEDATA"
+            ),
+            saveExtensions = listOf("*"),
+            usesFolderBasedSaves = true,
+        ),
+        "retroarch_64_psp" to SavePathConfig(
+            emulatorId = "retroarch_64_psp",
+            defaultPaths = listOf(
+                "{extStorage}/RetroArch/saves/PPSSPP/PSP/SAVEDATA",
+                "{extStorage}/Android/data/com.retroarch.aarch64/files/saves/PPSSPP/PSP/SAVEDATA"
+            ),
+            saveExtensions = listOf("*"),
+            usesFolderBasedSaves = true,
+        ),
+
+        "retroarch_3ds" to SavePathConfig(
+            emulatorId = "retroarch_3ds",
+            defaultPaths = listOf(
+                "{extStorage}/RetroArch/saves/Citra/sdmc/Nintendo 3DS",
+                "{extStorage}/Android/data/com.retroarch/files/saves/Citra/sdmc/Nintendo 3DS"
+            ),
+            saveExtensions = listOf("*"),
+            usesFolderBasedSaves = true,
+        ),
+        "retroarch_64_3ds" to SavePathConfig(
+            emulatorId = "retroarch_64_3ds",
+            defaultPaths = listOf(
+                "{extStorage}/RetroArch/saves/Citra/sdmc/Nintendo 3DS",
+                "{extStorage}/Android/data/com.retroarch.aarch64/files/saves/Citra/sdmc/Nintendo 3DS"
+            ),
+            saveExtensions = listOf("*"),
+            usesFolderBasedSaves = true,
         ),
 
         // Wii - NAND folder-based saves (game ID as hex)
@@ -338,7 +382,7 @@ object SavePathRegistry {
         "ppsspp" to SavePathConfig(
             emulatorId = "ppsspp",
             defaultPaths = listOf(
-                "{extStorage}/PSP/SAVEDATA",
+                "{anyStorage}/PSP/SAVEDATA",
                 "{extStorage}/Android/data/org.ppsspp.ppsspp/files/PSP/SAVEDATA"
             ),
             saveExtensions = listOf("*"),
@@ -347,7 +391,7 @@ object SavePathRegistry {
         "ppsspp_gold" to SavePathConfig(
             emulatorId = "ppsspp_gold",
             defaultPaths = listOf(
-                "{extStorage}/PSP/SAVEDATA",
+                "{anyStorage}/PSP/SAVEDATA",
                 "{extStorage}/Android/data/org.ppsspp.ppssppgold/files/PSP/SAVEDATA"
             ),
             saveExtensions = listOf("*"),
@@ -471,6 +515,15 @@ object SavePathRegistry {
             defaultPaths = listOf("{filesDir}/${AppPaths.LIBRETRO_SAVES_SUBDIR}"),
             saveExtensions = listOf("srm"),
             usesInternalStorage = true
+        ),
+
+        "${BUILTIN_EMULATOR_ID}_psp" to SavePathConfig(
+            emulatorId = BUILTIN_EMULATOR_ID,
+            defaultPaths = listOf("{filesDir}/${AppPaths.LIBRETRO_SAVES_SUBDIR}/PSP/SAVEDATA"),
+            saveExtensions = listOf("*"),
+            usesFolderBasedSaves = true,
+            usesInternalStorage = true,
+            supported = true
         )
     )
 
@@ -536,13 +589,10 @@ object SavePathRegistry {
 
     fun canSyncWithSettings(
         emulatorId: String,
-        saveSyncEnabled: Boolean,
-        experimentalFolderSaveSync: Boolean
+        saveSyncEnabled: Boolean
     ): Boolean {
         if (!saveSyncEnabled) return false
-        val config = getConfig(emulatorId) ?: return false
-        if (config.usesFolderBasedSaves && !experimentalFolderSaveSync) return false
-        return true
+        return getConfig(emulatorId) != null
     }
 
     fun getRetroArchCore(platformId: String): String? {
@@ -565,25 +615,31 @@ object SavePathRegistry {
         path: String,
         packageName: String? = null,
         core: String? = null,
-        filesDir: String? = null
-    ): String {
-        var result = path.replace("{extStorage}", getExternalStoragePath())
-        if (packageName != null) {
-            result = result.replace("{package}", packageName)
+        filesDir: String? = null,
+        externalStorageRoots: List<String>? = null
+    ): List<String> {
+        val results = when {
+            path.contains("{anyStorage}") -> {
+                val roots = externalStorageRoots?.takeIf { it.isNotEmpty() } ?: listOf(getExternalStoragePath())
+                roots.map { path.replace("{anyStorage}", it) }.distinct()
+            }
+            path.contains("{extStorage}") -> listOf(path.replace("{extStorage}", getExternalStoragePath()))
+            else -> listOf(path)
         }
-        if (core != null) {
-            result = result.replace("{core}", core)
+        return results.map { p ->
+            var r = p
+            if (packageName != null) r = r.replace("{package}", packageName)
+            if (core != null) r = r.replace("{core}", core)
+            if (filesDir != null) r = r.replace("{filesDir}", filesDir)
+            r
         }
-        if (filesDir != null) {
-            result = result.replace("{filesDir}", filesDir)
-        }
-        return result
     }
 
     fun resolvePath(
         config: SavePathConfig,
         platformId: String,
-        filesDir: String? = null
+        filesDir: String? = null,
+        externalStorageRoots: List<String>? = null
     ): List<String> {
         val canonical = PlatformDefinitions.getCanonicalSlug(platformId)
         val core = if (config.usesCore) {
@@ -592,13 +648,13 @@ object SavePathRegistry {
             null
         }
 
-        val paths = config.defaultPaths.map { path ->
-            expandPath(path, core = core, filesDir = filesDir)
+        val paths = config.defaultPaths.flatMap { path ->
+            expandPath(path, core = core, filesDir = filesDir, externalStorageRoots = externalStorageRoots)
         }
 
         if (core != null) {
-            val withoutCore = config.defaultPaths.map { path ->
-                expandPath(path.replace("/{core}", "").replace("{core}", ""), filesDir = filesDir)
+            val withoutCore = config.defaultPaths.flatMap { path ->
+                expandPath(path.replace("/{core}", "").replace("{core}", ""), filesDir = filesDir, externalStorageRoots = externalStorageRoots)
             }
             return paths + withoutCore
         }
@@ -608,14 +664,16 @@ object SavePathRegistry {
 
     fun resolvePathWithPackage(
         config: SavePathConfig,
-        emulatorPackage: String?
+        emulatorPackage: String?,
+        filesDir: String? = null,
+        externalStorageRoots: List<String>? = null
     ): List<String> {
         val packageName = if (config.usesPackageTemplate) {
             emulatorPackage ?: EmulatorRegistry.getById(config.emulatorId)?.packageName
         } else null
 
-        return config.defaultPaths.map { path ->
-            expandPath(path, packageName = packageName)
+        return config.defaultPaths.flatMap { path ->
+            expandPath(path, packageName = packageName, filesDir = filesDir, externalStorageRoots = externalStorageRoots)
         }
     }
 }

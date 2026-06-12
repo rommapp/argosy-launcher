@@ -23,6 +23,7 @@ import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
+import io.mockk.verify
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import org.junit.After
@@ -32,6 +33,7 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
+import java.util.UUID
 
 class GameLauncherTest {
 
@@ -54,18 +56,23 @@ class GameLauncherTest {
     private lateinit var coreOptionResolver: CoreOptionResolver
     private lateinit var coreSystemDataManager: CoreSystemDataManager
     private lateinit var gameFileDao: GameFileDao
+    private lateinit var emulatorSaveConfigRepository: com.nendo.argosy.data.repository.EmulatorSaveConfigRepository
+    private lateinit var saveHandlerRegistry: com.nendo.argosy.data.sync.platform.PlatformSaveHandlerRegistry
 
     private lateinit var launcher: GameLauncher
 
     @Before
     fun setup() {
-        mockkStatic("androidx.core.content.FileProvider")
-        every {
-            FileProvider.getUriForFile(any<Context>(), any<String>(), any<java.io.File>())
-        } returns Uri.parse("content://test/file")
-
+        mockkStatic(FileProvider::class)
         context = mockk(relaxed = true)
         every { context.packageName } returns "com.nendo.argosy"
+        val testUri = mockk<Uri>(relaxed = true)
+        every { testUri.toString() } returns "content://test/file"
+        every { testUri.scheme } returns "content"
+        every { testUri.authority } returns "com.nendo.argosy.fileprovider"
+        every {
+            FileProvider.getUriForFile(context, "com.nendo.argosy.fileprovider", any())
+        } returns testUri
         gameDao = mockk(relaxed = true)
         gameDiscDao = mockk(relaxed = true)
         emulatorConfigDao = mockk(relaxed = true)
@@ -81,6 +88,8 @@ class GameLauncherTest {
         coreOptionResolver = mockk(relaxed = true)
         coreSystemDataManager = mockk(relaxed = true)
         gameFileDao = mockk(relaxed = true)
+        emulatorSaveConfigRepository = mockk(relaxed = true)
+        saveHandlerRegistry = mockk(relaxed = true)
 
         every { userPreferencesRepository.userPreferences } returns flowOf(UserPreferences())
         every { userPreferencesRepository.getBuiltinCoreSelections() } returns flowOf(emptyMap())
@@ -104,13 +113,15 @@ class GameLauncherTest {
             userPreferencesRepository = userPreferencesRepository,
             coreOptionResolver = coreOptionResolver,
             coreSystemDataManager = coreSystemDataManager,
-            gameFileDao = gameFileDao
+            gameFileDao = gameFileDao,
+            emulatorSaveConfigRepository = emulatorSaveConfigRepository,
+            saveHandlerRegistry = saveHandlerRegistry
         )
     }
 
     @After
     fun teardown() {
-        io.mockk.unmockkStatic("androidx.core.content.FileProvider")
+        io.mockk.unmockkStatic(FileProvider::class)
     }
 
     // -----------------------------------------------------------------------
@@ -166,7 +177,7 @@ class GameLauncherTest {
     }
 
     private fun romFile(extension: String = "nes"): String {
-        val file = tempFolder.newFile("game.$extension")
+        val file = tempFolder.newFile("game-${UUID.randomUUID()}.$extension")
         return file.absolutePath
     }
 
@@ -270,6 +281,52 @@ class GameLauncherTest {
         }
 
         coVerify(exactly = 0) { emulatorDetector.getByPackage(retroarch.packageName) }
+    }
+
+    @Test
+    fun `fileUriString extras use absolute path for m3u files`() = runTest {
+        val m3uPath = romFile("m3u")
+        val game = createGame(localPath = m3uPath, platformSlug = "psx")
+        coEvery { gameDao.getById(1L) } returns game
+        coEvery { variantResolver.getVariantOptions(game) } returns null
+
+        val duckstation = EmulatorRegistry.getById("duckstation")!!
+        coEvery { emulatorConfigDao.getByGameId(1L) } returns createConfig(
+            gameId = 1L,
+            packageName = duckstation.packageName,
+            displayName = duckstation.displayName
+        )
+        stubDetectorWith(installedEmulator(duckstation))
+        every { emulatorDetector.getByPackage(duckstation.packageName) } returns duckstation
+
+        launcher.launch(1L)
+
+        verify(exactly = 0) {
+            FileProvider.getUriForFile(any(), any(), match { it.extension.equals("m3u", ignoreCase = true) })
+        }
+    }
+
+    @Test
+    fun `fileUriString extras use content uri string for non m3u files`() = runTest {
+        val cuePath = romFile("cue")
+        val game = createGame(localPath = cuePath, platformSlug = "psx")
+        coEvery { gameDao.getById(1L) } returns game
+        coEvery { variantResolver.getVariantOptions(game) } returns null
+
+        val duckstation = EmulatorRegistry.getById("duckstation")!!
+        coEvery { emulatorConfigDao.getByGameId(1L) } returns createConfig(
+            gameId = 1L,
+            packageName = duckstation.packageName,
+            displayName = duckstation.displayName
+        )
+        stubDetectorWith(installedEmulator(duckstation))
+        every { emulatorDetector.getByPackage(duckstation.packageName) } returns duckstation
+
+        launcher.launch(1L)
+
+        verify(exactly = 1) {
+            FileProvider.getUriForFile(any(), any(), match { it.extension.equals("cue", ignoreCase = true) })
+        }
     }
 
     // -----------------------------------------------------------------------

@@ -25,6 +25,8 @@ import com.nendo.argosy.data.preferences.GlowColorMode
 import com.nendo.argosy.data.preferences.DefaultView
 import com.nendo.argosy.data.preferences.GridDensity
 import com.nendo.argosy.data.preferences.SyncFilterPreferences
+import com.nendo.argosy.data.preferences.PlatformIndicatorContent
+import com.nendo.argosy.data.preferences.PlatformIndicatorStyle
 import com.nendo.argosy.data.preferences.SystemIconPadding
 import com.nendo.argosy.data.preferences.SystemIconPosition
 import com.nendo.argosy.data.preferences.ThemeMode
@@ -71,6 +73,7 @@ enum class SettingsSection {
     PLATFORM_DETAIL,
     SOCIAL,
     PERMISSIONS,
+    DRIVERS,
     ABOUT
 }
 
@@ -185,6 +188,8 @@ data class DisplayState(
     val gradientAdvancedMode: Boolean = false,
     val systemIconPosition: SystemIconPosition = SystemIconPosition.TOP_LEFT,
     val systemIconPadding: SystemIconPadding = SystemIconPadding.MEDIUM,
+    val platformIndicatorStyle: PlatformIndicatorStyle = PlatformIndicatorStyle.TAB,
+    val platformIndicatorContent: PlatformIndicatorContent = PlatformIndicatorContent.NAME,
     val defaultView: DefaultView = DefaultView.HOME,
     val videoWallpaperEnabled: Boolean = false,
     val videoWallpaperDelaySeconds: Int = 3,
@@ -285,7 +290,10 @@ data class EmulatorState(
     val showLaunchArgsModal: Boolean = false,
     val launchArgsModalState: LaunchArgsModalState? = null,
     val showAppPickerModal: Boolean = false,
-    val appPickerModalState: AppPickerModalState? = null
+    val appPickerModalState: AppPickerModalState? = null,
+    val showMemcardPicker: Boolean = false,
+    val memcardPickerInfo: MemcardPickerInfo? = null,
+    val memcardPickerFocusIndex: Int = 0
 ) {
     val assignedUpdatesAvailable: Int
         get() = platforms.count { config ->
@@ -303,7 +311,7 @@ data class AppPickerModalState(
     val platformId: Long,
     val platformName: String,
     val platformSlug: String,
-    val apps: List<com.nendo.argosy.data.platform.InstalledApp> = emptyList(),
+    val apps: List<com.nendo.argosy.data.platform.LaunchableApp> = emptyList(),
     val focusIndex: Int = 0
 )
 
@@ -323,7 +331,8 @@ data class LaunchArgsModalState(
     /** Opaque data binding (scheme URI, game ID) -- not user-cycleable. */
     val dataBindingLocked: Boolean = false,
     /** Non-path extras (title ID array) -- not user-cycleable. */
-    val extraBindingLocked: Boolean = false
+    val extraBindingLocked: Boolean = false,
+    val showCustomExtrasInput: Boolean = false
 )
 
 sealed class UpdateModalState {
@@ -344,6 +353,7 @@ data class PlatformContext(
 data class PlatformDetailState(
     val platformIndex: Int = 0,
     val builtinEnteredFromPlatform: Boolean = false,
+    val enteredExternally: Boolean = false,
     val showRemoveConfirm: Boolean = false,
     val totalGames: Int = 0,
     val downloadedGames: Int = 0,
@@ -453,7 +463,19 @@ data class BuiltinControlsState(
     val showStickMappings: Boolean = false,
     val showDpadAsAnalog: Boolean = false,
     val showRumble: Boolean = true,
-    val showResetAll: Boolean = false
+    val showResetAll: Boolean = false,
+    val touchEnabled: Boolean = true,
+    val touchOpacityLandscape: Float = 0.45f,
+    val touchOpacityPortrait: Float = 1.0f,
+    val touchSizeScale: Float = 1.0f,
+    val touchHaptic: Boolean = true,
+    val touchFadeOnIdle: Boolean = false,
+    val touchSwapHanded: Boolean = false,
+    val touchLockOrientation: Boolean = false,
+    val touchMirror180: Boolean = false,
+    val touchColouredFaceButtons: Boolean = false,
+    val touchGenesis6Button: Boolean = false,
+    val showTouchLayoutEditorModal: Boolean = false
 )
 
 enum class CoreChipStatus {
@@ -535,6 +557,14 @@ data class SavePathModalInfo(
     val isUserOverride: Boolean
 )
 
+data class MemcardPickerInfo(
+    val emulatorId: String,
+    val emulatorName: String,
+    val platformName: String,
+    val cards: List<com.nendo.argosy.data.sync.platform.MemcardInfo>,
+    val selectedCardPath: String?
+)
+
 data class PlatformStorageConfig(
     val platformId: Long,
     val platformName: String,
@@ -553,7 +583,9 @@ data class PlatformStorageConfig(
     val effectiveStatePath: String? = null,
     val customStatePath: String? = null,
     val isUserStatePathOverride: Boolean = false,
-    val supportsStatePath: Boolean = false
+    val supportsStatePath: Boolean = false,
+    val folderMemcardCount: Int = -1,
+    val selectedMemcardPath: String? = null
 )
 
 data class StorageState(
@@ -637,7 +669,6 @@ data class SyncSettingsState(
     val totalGames: Int = 0,
     val totalPlatforms: Int = 0,
     val saveSyncEnabled: Boolean = false,
-    val experimentalFolderSaveSync: Boolean = false,
     val saveCacheLimit: Int = 10,
     val pendingUploadsCount: Int = 0,
     val hasStoragePermission: Boolean = false,
@@ -681,6 +712,11 @@ data class SteamSettingsState(
     val steamInstallVolume: String? = null,
     val availableVolumes: List<com.nendo.argosy.data.steam.SteamInstallVolume> = emptyList(),
     val installedGamesByVolume: Map<String, Int> = emptyMap(),
+
+    // Steam install path (resolved from Steam platform's customRomPath, or default <romsRoot>/steam)
+    val steamInstallPath: String? = null,
+    // True when the Steam platform row has a non-null customRomPath (user-overridden)
+    val steamInstallPathIsCustom: Boolean = false,
 
     // Steam connection
     val connectionState: com.nendo.argosy.data.steam.SteamConnectionState =
@@ -851,6 +887,56 @@ data class BiosState(
     }
 }
 
+data class DriverGroupUi(
+    val name: String,
+    val repoPath: String,
+    val sort: Int,
+    val useTagName: Boolean,
+    val releases: List<DriverReleaseUi>,
+    val error: String? = null,
+    val expanded: Boolean = false
+)
+
+data class DriverReleaseUi(
+    val title: String,
+    val tagName: String,
+    val body: String,
+    val prerelease: Boolean,
+    val isLatestStable: Boolean,
+    val artifacts: List<DriverArtifactUi>
+)
+
+data class DriverArtifactUi(
+    val name: String,
+    val downloadUrl: String,
+    val size: Long
+)
+
+data class DriversState(
+    val groups: List<DriverGroupUi> = emptyList(),
+    val isLoading: Boolean = false,
+    val gpuModel: String? = null,
+    val recommendedDriver: String = "Unsupported",
+    val activeDownload: DriverDownloadState? = null,
+    val downloadedFiles: List<String> = emptyList(),
+    val pickerGroupIndex: Int? = null,
+    val pickerReleaseFocusIndex: Int = 0
+) {
+    val summary: String get() = when {
+        isLoading && groups.isEmpty() -> "Checking drivers..."
+        gpuModel.isNullOrBlank() -> "GPU not detected"
+        else -> "Adreno drivers for ${gpuModel.orEmpty()}"
+    }
+}
+
+data class DriverDownloadState(
+    val artifactName: String,
+    val downloaded: Long,
+    val total: Long,
+    val isComplete: Boolean = false,
+    val error: String? = null
+)
+
 enum class SocialAuthStatus {
     NOT_LINKED,
     AWAITING_AUTH,
@@ -884,6 +970,7 @@ data class SettingsUiState(
     val currentSection: SettingsSection = SettingsSection.MAIN,
     val focusedIndex: Int = 0,
     val parentFocusIndex: Int = 0,
+    val systemizeResult: com.nendo.argosy.util.SystemizeWriteResult? = null,
     val colorFocusIndex: Int = 0,
     val display: DisplayState = DisplayState(),
     val controls: ControlsState = ControlsState(),
@@ -903,6 +990,7 @@ data class SettingsUiState(
     val retroAchievements: RASettingsState = RASettingsState(),
     val android: AndroidSettingsState = AndroidSettingsState(),
     val bios: BiosState = BiosState(),
+    val drivers: DriversState = DriversState(),
     val social: SocialState = SocialState(),
     val permissions: PermissionsState = PermissionsState(),
     val launchFolderPicker: Boolean = false,

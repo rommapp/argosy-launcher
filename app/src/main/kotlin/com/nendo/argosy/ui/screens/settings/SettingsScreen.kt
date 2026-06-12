@@ -58,6 +58,7 @@ import com.nendo.argosy.ui.screens.settings.components.SoundPickerPopup
 import com.nendo.argosy.ui.screens.settings.delegates.BuiltinNavigationTarget
 import com.nendo.argosy.ui.screens.settings.sections.AboutSection
 import com.nendo.argosy.ui.screens.settings.sections.BiosSection
+import com.nendo.argosy.ui.screens.settings.sections.DriversSection
 import com.nendo.argosy.ui.screens.settings.sections.AmbientLedSection
 import com.nendo.argosy.ui.screens.settings.sections.BoxArtSection
 import com.nendo.argosy.ui.screens.settings.sections.ControlsSection
@@ -95,6 +96,7 @@ fun SettingsScreen(
     onBack: () -> Unit,
     initialSection: String? = null,
     initialAction: String? = null,
+    initialPlatformId: Long? = null,
     onNavigate: (String) -> Unit = {},
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
@@ -102,10 +104,12 @@ fun SettingsScreen(
     val imageCacheProgress by viewModel.imageCacheProgress.collectAsState()
     val context = LocalContext.current
 
-    LaunchedEffect(initialSection, initialAction) {
+    LaunchedEffect(initialSection, initialAction, initialPlatformId) {
         if (initialSection != null) {
             val section = SettingsSection.entries.find { it.name.equals(initialSection, ignoreCase = true) }
-            if (section != null) {
+            if (section == SettingsSection.PLATFORM_DETAIL && initialPlatformId != null) {
+                viewModel.openPlatformDetailById(initialPlatformId)
+            } else if (section != null) {
                 viewModel.navigateToSection(section)
                 kotlinx.coroutines.delay(300)
                 when (initialAction) {
@@ -429,6 +433,7 @@ fun SettingsScreen(
                         SettingsSection.SHADER_STACK -> "SHADER CHAIN"
                         SettingsSection.FRAME_PICKER -> "SELECT FRAME"
                         SettingsSection.PERMISSIONS -> "PERMISSIONS"
+                        SettingsSection.DRIVERS -> "GPU DRIVERS"
                         SettingsSection.ABOUT -> "ABOUT"
                         SettingsSection.SOCIAL -> "SOCIAL"
                     },
@@ -503,6 +508,7 @@ fun SettingsScreen(
                     SettingsSection.SHADER_STACK -> ShaderStackSection(viewModel.shaderChainManager)
                     SettingsSection.FRAME_PICKER -> FrameSection(uiState, viewModel)
                     SettingsSection.PERMISSIONS -> PermissionsSection(uiState, viewModel)
+                    SettingsSection.DRIVERS -> DriversSection(uiState, viewModel)
                     SettingsSection.ABOUT -> AboutSection(uiState, viewModel)
                     SettingsSection.SOCIAL -> SocialSection(uiState, viewModel, onNavigate)
                 }
@@ -985,7 +991,7 @@ private fun getFilePathFromUri(context: Context, uri: Uri): String? {
 private fun SettingsFooter(uiState: SettingsUiState, shaderStack: ShaderStackState) {
     if (uiState.emulators.showSavePathModal || uiState.emulators.showEmulatorPicker ||
         uiState.emulators.updateModal != null || uiState.emulators.showLaunchArgsModal ||
-        uiState.emulators.showAppPickerModal) {
+        uiState.emulators.showAppPickerModal || uiState.emulators.showMemcardPicker) {
         return
     }
     if (shaderStack.showShaderPicker) {

@@ -19,7 +19,6 @@ data class UpdateFileUi(
     val sizeBytes: Long,
     val type: UpdateFileType = UpdateFileType.UPDATE,
     val isDownloaded: Boolean = true,
-    val isAppliedToEmulator: Boolean = false,
     val gameFileId: Long? = null,
     val rommFileId: Long? = null,
     val romId: Long? = null
@@ -101,7 +100,8 @@ data class GameDetailUi(
     val isHidden: Boolean = false,
     val titleId: String? = null,
     val igdbId: Long? = null,
-    val steamAppId: Long? = null
+    val steamAppId: Long? = null,
+    val rommFileName: String? = null
 )
 
 sealed class LaunchEvent {
@@ -138,6 +138,7 @@ sealed class MoreOptionAction {
     data object ChangeEmulator : MoreOptionAction()
     data object ChangeSteamLauncher : MoreOptionAction()
     data object ChangeCore : MoreOptionAction()
+    data object PlatformSettings : MoreOptionAction()
     data object SelectDisc : MoreOptionAction()
     data object SelectVariant : MoreOptionAction()
     data object UpdatesDlc : MoreOptionAction()
@@ -190,9 +191,13 @@ data class GameDetailUiState(
     val syncState: SyncState = SyncState.Idle,
     val isSyncing: Boolean = false,
     val syncOverlayState: SyncOverlayState? = null,
+    val memcardPickerState: com.nendo.argosy.ui.screens.common.MemcardPickerState? = null,
+    val memcardPickerFocusIndex: Int = 0,
     val hardcoreConflictFocusIndex: Int = 0,
     val saveChannel: SaveChannelState = SaveChannelState(),
+    val syncScreenshotsEnabled: Boolean = false,
     val saveStatusInfo: SaveStatusInfo? = null,
+    val isSyncingSaves: Boolean = false,
     val showPermissionModal: Boolean = false,
     val permissionModalType: PermissionModalType = PermissionModalType.STORAGE,
     val focusedScreenshotIndex: Int = 0,
@@ -208,7 +213,6 @@ data class GameDetailUiState(
     val showCreateCollectionDialog: Boolean = false,
     val showAchievementList: Boolean = false,
     val achievementListFocusIndex: Int = 0,
-    val isEdenGame: Boolean = false,
     val hasVariants: Boolean = false,
     val hasSocialAccount: Boolean = false,
     val isPrivate: Boolean = false

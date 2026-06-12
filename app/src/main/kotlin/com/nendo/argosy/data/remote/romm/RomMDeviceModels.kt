@@ -9,7 +9,9 @@ data class RomMDeviceRegistration(
     @Json(name = "platform") val platform: String = "android",
     @Json(name = "client") val client: String = "argosy",
     @Json(name = "client_version") val clientVersion: String,
-    @Json(name = "hostname") val hostname: String? = null
+    @Json(name = "hostname") val hostname: String? = null,
+    @Json(name = "sync_mode") val syncMode: String? = null,
+    @Json(name = "sync_config") val syncConfig: Map<String, Any>? = null
 )
 
 @JsonClass(generateAdapter = true)

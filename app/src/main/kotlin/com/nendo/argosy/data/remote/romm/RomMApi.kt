@@ -73,6 +73,14 @@ interface RomMApi {
         @Header("Range") range: String? = null
     ): Response<ResponseBody>
 
+    @Streaming
+    @GET("api/roms/{fileId}/files/content/{fileName}")
+    suspend fun downloadRomFile(
+        @Path("fileId") fileId: Long,
+        @Path("fileName", encoded = true) fileName: String,
+        @Header("Range") range: String? = null
+    ): Response<ResponseBody>
+
     @PUT("api/roms/{id}/props")
     suspend fun updateRomUserProps(
         @Path("id") romId: Long,
@@ -83,6 +91,14 @@ interface RomMApi {
     suspend fun getCollections(
         @Query("is_favorite") isFavorite: Boolean? = null
     ): Response<List<RomMCollection>>
+
+    @GET("api/collections/virtual")
+    suspend fun getVirtualCollections(
+        @Query("type") type: String
+    ): Response<List<RomMAutoCollection>>
+
+    @GET("api/collections/smart")
+    suspend fun getSmartCollections(): Response<List<RomMAutoCollection>>
 
     @Multipart
     @POST("api/collections")
@@ -183,10 +199,9 @@ interface RomMApi {
     ): Response<List<Long>>
 
     @Streaming
-    @GET("api/saves/{id}/content/{fileName}")
+    @GET("api/saves/{id}/content")
     suspend fun downloadSaveContent(
-        @Path("id") saveId: Long,
-        @Path("fileName", encoded = true) fileName: String
+        @Path("id") saveId: Long
     ): Response<ResponseBody>
 
     // Device endpoints (RomM 4.7.0+)
@@ -232,10 +247,9 @@ interface RomMApi {
     ): Response<RomMSave>
 
     @Streaming
-    @GET("api/saves/{id}/content/{fileName}")
+    @GET("api/saves/{id}/content")
     suspend fun downloadSaveContentWithDevice(
         @Path("id") saveId: Long,
-        @Path("fileName", encoded = true) fileName: String,
         @Query("device_id") deviceId: String,
         @Query("optimistic") optimistic: Boolean = true
     ): Response<ResponseBody>
@@ -270,4 +284,31 @@ interface RomMApi {
         @Path("id") firmwareId: Long,
         @Path("fileName", encoded = true) fileName: String
     ): Response<ResponseBody>
+
+    @POST("api/play-sessions")
+    suspend fun ingestPlaySessions(
+        @Body body: RomMPlaySessionIngestPayload
+    ): Response<RomMPlaySessionIngestResponse>
+
+    @POST("api/sync/negotiate")
+    suspend fun negotiateSync(
+        @Body body: RomMSyncNegotiatePayload
+    ): Response<RomMSyncNegotiateResponse>
+
+    @POST("api/sync/sessions/{id}/complete")
+    suspend fun completeSyncSession(
+        @Path("id") sessionId: Long,
+        @Body body: RomMSyncCompletePayload
+    ): Response<RomMSyncCompleteResponse>
+
+    @GET("api/sync/sessions")
+    suspend fun listSyncSessions(
+        @Query("device_id") deviceId: String? = null,
+        @Query("limit") limit: Int = 50
+    ): Response<List<RomMSyncSession>>
+
+    @GET("api/sync/sessions/{id}")
+    suspend fun getSyncSession(
+        @Path("id") sessionId: Long
+    ): Response<RomMSyncSession>
 }

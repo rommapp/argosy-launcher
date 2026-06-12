@@ -2,6 +2,7 @@ package com.nendo.argosy.data.emulator
 
 import android.content.Context
 import com.nendo.argosy.data.storage.FileAccessLayer
+import com.nendo.argosy.data.storage.StoragePathUtils
 import com.nendo.argosy.util.AesXts
 import com.nendo.argosy.util.Logger
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -55,7 +56,7 @@ class SwitchKeyManager @Inject constructor(
 
     fun findProdKeysPath(emulatorPackage: String): String? {
         val candidates = listOf(
-            "/storage/emulated/0/Android/data/$emulatorPackage/files/keys/prod.keys",
+            "${StoragePathUtils.primaryExternalRoot}/Android/data/$emulatorPackage/files/keys/prod.keys",
             "${context.filesDir.absolutePath}/bios/switch/prod.keys"
         )
         return candidates.firstOrNull { fal.exists(it) && fal.canRead(it) }?.also {

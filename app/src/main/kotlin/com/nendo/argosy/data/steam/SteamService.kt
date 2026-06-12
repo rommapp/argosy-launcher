@@ -187,7 +187,21 @@ class SteamService : Service() {
         com.nendo.argosy.data.sync.SyncNotificationChannel.create(this)
         val notification = buildNotification(status)
         try {
-            startForeground(NOTIFICATION_ID, notification)
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                startForeground(
+                    NOTIFICATION_ID,
+                    notification,
+                    android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
+                )
+            } else if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+                startForeground(
+                    NOTIFICATION_ID,
+                    notification,
+                    android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
+                )
+            } else {
+                startForeground(NOTIFICATION_ID, notification)
+            }
         } catch (e: Exception) {
             Log.w(TAG, "Failed to promote to foreground: ${e.message}")
         }

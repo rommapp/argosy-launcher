@@ -112,8 +112,8 @@ class TitleIdDownloadObserver @Inject constructor(
             return false
         }
 
-        Logger.info(TAG, "Extracted title ID for game $gameId: ${result.titleId} (fromBinary=${result.fromBinary})")
-        gameDao.setTitleIdWithLock(gameId, result.titleId, result.fromBinary)
+        Logger.info(TAG, "Extracted title ID for game $gameId: ${result.titleId} (saveId=${result.saveId}, fromBinary=${result.fromBinary})")
+        gameDao.setTitleAndSaveIdWithLock(gameId, result.titleId, result.saveId, result.fromBinary)
         return true
     }
 }

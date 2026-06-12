@@ -44,23 +44,25 @@ class RestoreCachedSaveUseCase @Inject constructor(
             gameTitle = game.title,
             platformSlug = game.platformSlug,
             romPath = game.localPath,
-            cachedTitleId = game.titleId,
+            cachedSaveId = game.saveId ?: game.titleId,
             coreName = coreName,
             emulatorPackage = emulatorPackage,
             gameId = gameId
         ) ?: saveSyncRepository.constructSavePath(
-            emulatorId, game.title, game.platformSlug, game.localPath, coreName
+            emulatorId, game.title, game.platformSlug, game.localPath, coreName, game.saveId ?: game.titleId
         ) ?: return Result.Error("Cannot determine save location")
 
-        if (!saveSyncRepository.clearSavesForTitle(targetPath, game.platformSlug, game.titleId)) {
+        if (!saveSyncRepository.clearSavesForTitle(targetPath, game.platformSlug, game.saveId ?: game.titleId)) {
             return Result.Error("Failed to clear existing save at target path")
         }
 
+        var cachedHash: String? = null
         val restoreSuccess = when (entry.source) {
             UnifiedSaveEntry.Source.LOCAL,
             UnifiedSaveEntry.Source.BOTH -> {
                 val cacheId = entry.localCacheId
                     ?: return Result.Error("No local cache ID")
+                cachedHash = saveCacheManager.getCacheById(cacheId)?.contentHash
                 saveCacheManager.restoreSave(cacheId, targetPath)
             }
             UnifiedSaveEntry.Source.SERVER -> {
@@ -81,9 +83,28 @@ class RestoreCachedSaveUseCase @Inject constructor(
             return Result.Error("Failed to restore save")
         }
 
-        // Switch to the target entry's channel context
+        val restoredContentHash = when (entry.source) {
+            UnifiedSaveEntry.Source.LOCAL,
+            UnifiedSaveEntry.Source.BOTH -> cachedHash ?: saveCacheManager.calculateLocalSaveHash(targetPath)
+            UnifiedSaveEntry.Source.SERVER -> null
+        }
+
         val targetChannel = entry.channelName
+            ?: com.nendo.argosy.data.repository.SaveSyncApiClient.AUTOSAVE_SLOT_NAME
         gameDao.updateActiveSaveChannel(gameId, targetChannel)
+
+        if (game.rommId != null) {
+            saveSyncRepository.markRestored(
+                gameId = gameId,
+                rommId = game.rommId,
+                emulatorId = emulatorId,
+                channelName = targetChannel,
+                localPath = targetPath,
+                rommSaveId = entry.serverSaveId,
+                serverTimestamp = entry.timestamp,
+                contentHash = restoredContentHash
+            )
+        }
 
         // Track which server save this device is now on (persists for offline case)
         if (entry.serverSaveId != null) {
@@ -122,11 +143,11 @@ class RestoreCachedSaveUseCase @Inject constructor(
             gameTitle = game.title,
             platformSlug = game.platformSlug,
             romPath = game.localPath,
-            cachedTitleId = game.titleId,
+            cachedSaveId = game.saveId ?: game.titleId,
             coreName = coreName,
             emulatorPackage = emulatorPackage,
             gameId = gameId
         ) ?: return true
-        return saveSyncRepository.clearSavesForTitle(targetPath, game.platformSlug, game.titleId)
+        return saveSyncRepository.clearSavesForTitle(targetPath, game.platformSlug, game.saveId ?: game.titleId)
     }
 }

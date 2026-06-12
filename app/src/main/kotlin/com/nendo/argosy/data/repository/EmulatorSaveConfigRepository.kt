@@ -78,4 +78,31 @@ class EmulatorSaveConfigRepository @Inject constructor(
             emulatorSaveConfigDao.delete(emulatorId)
         }
     }
+
+    suspend fun setMemcardPath(emulatorId: String, cardPath: String) {
+        val existing = emulatorSaveConfigDao.getByEmulator(emulatorId)
+        val base = existing ?: EmulatorSaveConfigEntity(
+            emulatorId = emulatorId,
+            savePathPattern = "",
+            isAutoDetected = true
+        )
+        emulatorSaveConfigDao.upsert(
+            base.copy(
+                selectedMemcardPath = cardPath,
+                lastVerifiedAt = Instant.now()
+            )
+        )
+    }
+
+    suspend fun clearMemcardPath(emulatorId: String) {
+        val existing = emulatorSaveConfigDao.getByEmulator(emulatorId) ?: return
+        val hasOtherState = existing.isUserOverride ||
+            existing.isUserStateOverride ||
+            existing.statePathPattern != null
+        if (hasOtherState) {
+            emulatorSaveConfigDao.upsert(existing.copy(selectedMemcardPath = null))
+        } else {
+            emulatorSaveConfigDao.delete(emulatorId)
+        }
+    }
 }

@@ -25,6 +25,7 @@ data class DownloadQueueEntity(
     val fileCategory: String? = null,
     val fileName: String,
     val gameTitle: String,
+    val gameFolderName: String? = null,
     val platformSlug: String,
     val coverPath: String?,
     val bytesDownloaded: Long,

@@ -62,6 +62,7 @@ data class RomMRom(
 
     @Json(name = "tags") val tags: List<String>? = null,
     @Json(name = "siblings") val siblings: List<RomMSibling>? = null,
+    @Json(name = "sibling_roms") val siblingRoms: List<RomMSibling>? = null,
     @Json(name = "multi") val multi: Boolean = false,
     @Json(name = "has_multiple_files") val hasMultipleFiles: Boolean = false,
     @Json(name = "has_simple_single_file") val hasSimpleSingleFile: Boolean = true,
@@ -69,6 +70,7 @@ data class RomMRom(
     @Json(name = "files") val files: List<RomMRomFile>? = null,
     @Json(name = "youtube_video_id") val youtubeVideoId: String? = null
 ) {
+    val effectiveSiblings: List<RomMSibling> get() = siblingRoms ?: siblings ?: emptyList()
     val genres: List<String>? get() = metadatum?.genres
     val companies: List<String>? get() = metadatum?.companies
     val firstReleaseDateMillis: Long? get() = metadatum?.firstReleaseDate
@@ -95,13 +97,16 @@ data class RomMRom(
     val isFolderRom: Boolean
         get() = multi || hasMultipleFiles || hasNestedSingleFile
 
+    val needsServerBuiltZipExtraction: Boolean
+        get() = hasMultipleFiles || (multi && !hasNestedSingleFile && !hasSimpleSingleFile)
+
     val isFolderMultiDisc: Boolean
         get() = hasMultipleFiles && files?.any { it.isDiscVariant } == true
 
     val hasDiscSiblings: Boolean
-        get() = isFolderMultiDisc || (isDiscVariant && siblings?.any { sibling ->
+        get() = isFolderMultiDisc || (isDiscVariant && effectiveSiblings.any { sibling ->
             sibling.fileNameNoExt.contains(DISC_TAG_REGEX)
-        } == true)
+        })
 
     companion object {
         private val DISC_TAG_REGEX = Regex("Disc \\d+", RegexOption.IGNORE_CASE)
@@ -112,7 +117,7 @@ data class RomMRom(
 @JsonClass(generateAdapter = true)
 data class RomMSibling(
     @Json(name = "id") val id: Long,
-    @Json(name = "name") val name: String,
+    @Json(name = "name") val name: String? = null,
     @Json(name = "fs_name_no_tags") val fileNameNoTags: String,
     @Json(name = "fs_name_no_ext") val fileNameNoExt: String
 ) {
@@ -222,16 +227,25 @@ data class RomMTokenResponse(
 
 @JsonClass(generateAdapter = true)
 data class RomMHeartbeatResponse(
-    @Json(name = "SYSTEM") val system: RomMSystem? = null
+    @Json(name = "SYSTEM") val system: RomMSystem? = null,
+    @Json(name = "METADATA_SOURCES") val metadataSources: RomMMetadataSources? = null
 ) {
     val version: String?
         get() = system?.version
+
+    val libretroApiEnabled: Boolean?
+        get() = metadataSources?.libretroApiEnabled
 }
 
 @JsonClass(generateAdapter = true)
 data class RomMSystem(
     @Json(name = "VERSION") val version: String? = null,
     @Json(name = "SHOW_SETUP_WIZARD") val showSetupWizard: Boolean = false
+)
+
+@JsonClass(generateAdapter = true)
+data class RomMMetadataSources(
+    @Json(name = "LIBRETRO_API_ENABLED") val libretroApiEnabled: Boolean? = null
 )
 
 @JsonClass(generateAdapter = true)
@@ -259,6 +273,13 @@ data class RomMCollection(
     @Json(name = "is_public") val isPublic: Boolean = false,
     @Json(name = "created_at") val createdAt: String? = null,
     @Json(name = "updated_at") val updatedAt: String? = null
+)
+
+@JsonClass(generateAdapter = true)
+data class RomMAutoCollection(
+    @Json(name = "name") val name: String,
+    @Json(name = "description") val description: String? = null,
+    @Json(name = "rom_ids") val romIds: List<Long> = emptyList()
 )
 
 @JsonClass(generateAdapter = true)

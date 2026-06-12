@@ -13,6 +13,7 @@ import com.nendo.argosy.data.local.dao.GameDiscDao
 import com.nendo.argosy.data.local.dao.GameFileDao
 import com.nendo.argosy.data.local.dao.PlatformDao
 import com.nendo.argosy.data.local.dao.SearchCandidate
+import com.nendo.argosy.data.local.dao.getByIdsChunked
 import com.nendo.argosy.data.local.entity.GameEntity
 import com.nendo.argosy.data.local.entity.GameListItem
 import com.nendo.argosy.data.model.GameSource
@@ -268,19 +269,81 @@ class GameRepository @Inject constructor(
         }
 
         val startTime = System.currentTimeMillis()
-        val gamesWithPaths = gameDao.getGamesWithLocalPath()
+        val gamesWithPaths = gameDao.getGamesWithLocalPathInfo()
         var invalidated = 0
-        for (game in gamesWithPaths) {
-            val path = game.localPath ?: continue
-            if (!isGamePathValid(path, game.platformSlug)) {
-                gameDao.clearLocalPath(game.id)
+        for (info in gamesWithPaths) {
+            val path = info.localPath ?: continue
+            if (!isGamePathValid(path, info.platformSlug)) {
+                gameDao.clearLocalPath(info.id)
                 invalidated++
-                Log.d(TAG, "Invalidated: ${game.title} (path no longer valid: $path)")
+                Log.d(TAG, "Invalidated game ${info.id}: path no longer valid ($path)")
             }
         }
         val elapsed = System.currentTimeMillis() - startTime
         Log.d(TAG, "Validation complete: checked ${gamesWithPaths.size} games, $invalidated invalidated in ${elapsed}ms")
         invalidated
+    }
+
+    suspend fun repairFolderRomPointers(): Int = withContext(Dispatchers.IO) {
+        if (!isStorageReady()) {
+            Log.w(TAG, "repairFolderRomPointers: storage not ready, skipping")
+            return@withContext 0
+        }
+
+        val startTime = System.currentTimeMillis()
+        val gamesWithPaths = gameDao.getGamesWithLocalPathInfo()
+        var repaired = 0
+        for (info in gamesWithPaths) {
+            val path = info.localPath ?: continue
+            val file = File(path)
+            if (!file.isDirectory) continue
+            val inner = findPrimaryRomInFolder(file, info.platformSlug) ?: continue
+            gameDao.updateLocalPath(info.id, inner.absolutePath, info.source)
+            repaired++
+            Log.i(TAG, "Repaired folder-rom pointer for game ${info.id}: $path -> ${inner.absolutePath}")
+        }
+        val elapsed = System.currentTimeMillis() - startTime
+        if (repaired > 0) Log.i(TAG, "Repaired $repaired folder-rom pointers in ${elapsed}ms")
+        repaired
+    }
+
+    suspend fun repairVariantFilePointers(): Int = withContext(Dispatchers.IO) {
+        if (!isStorageReady()) {
+            Log.w(TAG, "repairVariantFilePointers: storage not ready, skipping")
+            return@withContext 0
+        }
+
+        val startTime = System.currentTimeMillis()
+        val missing = gameFileDao.getMissingFilesWithGameInfo()
+        if (missing.isEmpty()) return@withContext 0
+
+        var repaired = 0
+        for (entry in missing) {
+            val platformDir = getDownloadDir(entry.platformSlug)
+            val folderCandidates = buildList {
+                entry.rommFileName?.takeIf { it.isNotBlank() }?.let { add(it) }
+                add(entry.gameTitle)
+            }.distinct()
+            val categoryCandidates = listOf(entry.category, entry.category.lowercase(), "extcontent")
+                .distinct()
+
+            val found = folderCandidates.firstNotNullOfOrNull { folderName ->
+                val gameFolder = File(platformDir, folderName)
+                if (!gameFolder.isDirectory) return@firstNotNullOfOrNull null
+                categoryCandidates.firstNotNullOfOrNull { category ->
+                    val categoryFolder = File(gameFolder, category)
+                    val candidate = File(categoryFolder, entry.fileName)
+                    candidate.takeIf { it.isFile }
+                }
+            } ?: continue
+
+            gameFileDao.updateLocalPath(entry.fileId, found.absolutePath, Instant.now())
+            repaired++
+            Log.i(TAG, "Repaired variant pointer for file ${entry.fileId} (${entry.fileName}) -> ${found.absolutePath}")
+        }
+        val elapsed = System.currentTimeMillis() - startTime
+        if (repaired > 0) Log.i(TAG, "Repaired $repaired variant file pointers in ${elapsed}ms")
+        repaired
     }
 
     suspend fun recoverDownloadPaths(): Int = withContext(Dispatchers.IO) {
@@ -383,9 +446,8 @@ class GameRepository @Inject constructor(
     }
 
     suspend fun getDownloadedGamesSize(): Long = withContext(Dispatchers.IO) {
-        val gamesWithPaths = gameDao.getGamesWithLocalPath()
-        gamesWithPaths.sumOf { game ->
-            game.localPath?.let { path ->
+        gameDao.getGamesWithLocalPathInfo().sumOf { info ->
+            info.localPath?.let { path ->
                 val file = File(path)
                 if (file.exists()) file.length() else 0L
             } ?: 0L
@@ -393,7 +455,7 @@ class GameRepository @Inject constructor(
     }
 
     suspend fun getDownloadedGamesCount(): Int = withContext(Dispatchers.IO) {
-        gameDao.getGamesWithLocalPath().size
+        gameDao.getGamesWithLocalPathIds().size
     }
 
     suspend fun getAvailableStorageBytes(): Long = withContext(Dispatchers.IO) {
@@ -407,12 +469,19 @@ class GameRepository @Inject constructor(
         }
     }
 
-    suspend fun getGamesWithLocalPaths() = withContext(Dispatchers.IO) {
-        gameDao.getGamesWithLocalPath()
+    suspend fun getGamesWithLocalPaths(): List<GameEntity> = withContext(Dispatchers.IO) {
+        gameDao.getByIdsChunked(gameDao.getGamesWithLocalPathIds())
     }
 
-    suspend fun getGamesWithLocalPathsForPlatform(platformId: Long) = withContext(Dispatchers.IO) {
-        gameDao.getGamesWithLocalPath().filter { it.platformId == platformId }
+    suspend fun getGamesWithLocalPathInfo() = withContext(Dispatchers.IO) {
+        gameDao.getGamesWithLocalPathInfo()
+    }
+
+    suspend fun getGamesWithLocalPathsForPlatform(platformId: Long): List<GameEntity> = withContext(Dispatchers.IO) {
+        val ids = gameDao.getGamesWithLocalPathInfo()
+            .filter { it.platformId == platformId }
+            .map { it.id }
+        gameDao.getByIdsChunked(ids)
     }
 
     suspend fun getDownloadDirForPlatform(platformSlug: String): File = withContext(Dispatchers.IO) {
@@ -430,15 +499,16 @@ class GameRepository @Inject constructor(
 
     suspend fun getPlatformBreakdowns(): List<PlatformStats> = withContext(Dispatchers.IO) {
         val platforms = platformDao.observeAllPlatforms().first()
-        val allGames = gameDao.observeAll().first()
+        val storageInfo = gameDao.getAllStorageInfo()
+        val byPlatform = storageInfo.groupBy { it.platformId }
 
         platforms.mapNotNull { platform ->
-            val platformGames = allGames.filter { game -> game.platformId == platform.id }
+            val platformGames = byPlatform[platform.id] ?: return@mapNotNull null
             if (platformGames.isEmpty()) return@mapNotNull null
 
-            val downloadedGames = platformGames.filter { game -> game.localPath != null }
-            val downloadedSize = downloadedGames.sumOf { game ->
-                game.localPath?.let { path ->
+            val downloadedGames = platformGames.filter { it.localPath != null }
+            val downloadedSize = downloadedGames.sumOf { info ->
+                info.localPath?.let { path ->
                     val file = File(path)
                     if (file.exists()) file.length() else 0L
                 } ?: 0L
@@ -606,7 +676,7 @@ class GameRepository @Inject constructor(
     fun observeRecentlyPlayed(limit: Int = 20): Flow<List<GameEntity>> =
         gameDao.observeRecentlyPlayed(limit)
 
-    suspend fun getFavorites(): List<GameEntity> = gameDao.getFavorites()
+    suspend fun getFavorites(): List<GameEntity> = hydrateByIds(gameDao.getFavoriteIds())
 
     suspend fun getRandomGame(): GameEntity? = gameDao.getRandomGame()
 
@@ -614,6 +684,12 @@ class GameRepository @Inject constructor(
         gameDao.getSearchCandidates()
 
     suspend fun getByIds(ids: List<Long>): List<GameEntity> = gameDao.getByIds(ids)
+
+    private suspend fun hydrateByIds(ids: List<Long>): List<GameEntity> {
+        if (ids.isEmpty()) return emptyList()
+        val byId = gameDao.getByIdsChunked(ids).associateBy { it.id }
+        return ids.mapNotNull { byId[it] }
+    }
 
     suspend fun updateUserRating(gameId: Long, rating: Int) =
         gameDao.updateUserRating(gameId, rating)
@@ -699,10 +775,16 @@ class GameRepository @Inject constructor(
     ): List<GameEntity> = gameDao.getByPlatformSorted(platformId, limit)
 
     suspend fun getAllSortedByTitle(): List<GameEntity> =
-        gameDao.getAllSortedByTitle()
+        hydrateByIds(gameDao.getAllSortedByTitleIds())
+
+    suspend fun getHiddenSortedByTitle(): List<GameEntity> =
+        hydrateByIds(gameDao.getHiddenSortedByTitleIds())
 
     suspend fun getByPlatform(platformId: Long): List<GameEntity> =
         gameDao.getByPlatform(platformId)
+
+    suspend fun getHiddenByPlatform(platformId: Long): List<GameEntity> =
+        gameDao.getHiddenByPlatform(platformId)
 
     suspend fun countDownloadedByPlatform(platformId: Long): Int =
         gameDao.countDownloadedByPlatform(platformId)

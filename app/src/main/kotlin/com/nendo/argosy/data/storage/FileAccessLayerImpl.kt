@@ -124,6 +124,7 @@ class FileAccessLayerImpl @Inject constructor(
         if (androidDataAccessor.isAltAccessSupported() && isRestrictedPath(path)) {
             androidDataAccessor.listFiles(path)?.forEach { file ->
                 val info = file.toFileInfo()
+                    .let { it.copy(path = androidDataAccessor.normalizePathForDisplay(it.path)) }
                 byName.putIfAbsent(info.name, info)
             }
         }
@@ -220,19 +221,26 @@ class FileAccessLayerImpl @Inject constructor(
         }
 
         if (isRestrictedPath(path)) {
-            val (volumeId, relativePath) = extractVolumeAndPath(path) ?: return false
-            managedStorageAccessor.openOutputStreamAtPath(volumeId, relativePath)?.use { stream ->
-                stream.write(data)
-                return true
+            extractVolumeAndPath(path)?.let { (volumeId, relativePath) ->
+                managedStorageAccessor.openOutputStreamAtPath(volumeId, relativePath)?.let { stream ->
+                    return try {
+                        stream.use { it.write(data) }
+                        true
+                    } catch (e: Exception) {
+                        Logger.error(TAG, "writeBytes: managed-storage write failed | path=$path", e)
+                        false
+                    }
+                }
             }
         }
 
         return try {
             val file = File(path)
-            file.parentFile?.mkdirs()
+            if (!ensureParentDirectory(file)) return false
             file.writeBytes(data)
             true
         } catch (e: Exception) {
+            Logger.error(TAG, "writeBytes: direct write failed | path=$path", e)
             false
         }
     }
@@ -260,16 +268,18 @@ class FileAccessLayerImpl @Inject constructor(
         }
 
         if (isRestrictedPath(path)) {
-            val (volumeId, relativePath) = extractVolumeAndPath(path) ?: return null
-            val stream = managedStorageAccessor.openOutputStreamAtPath(volumeId, relativePath)
-            if (stream != null) return stream
+            extractVolumeAndPath(path)?.let { (volumeId, relativePath) ->
+                val stream = managedStorageAccessor.openOutputStreamAtPath(volumeId, relativePath)
+                if (stream != null) return stream
+            }
         }
 
         return try {
             val file = File(path)
-            file.parentFile?.mkdirs()
+            if (!ensureParentDirectory(file)) return null
             file.outputStream()
         } catch (e: Exception) {
+            Logger.error(TAG, "getOutputStream: direct open failed | path=$path", e)
             null
         }
     }
@@ -279,9 +289,12 @@ class FileAccessLayerImpl @Inject constructor(
             return androidDataAccessor.copyFile(source, dest)
         }
         return try {
-            File(source).copyTo(File(dest), overwrite = true)
+            val destFile = File(dest)
+            if (!ensureParentDirectory(destFile)) return false
+            File(source).copyTo(destFile, overwrite = true)
             true
         } catch (e: Exception) {
+            Logger.error(TAG, "copyFile: direct copy failed | source=$source, dest=$dest", e)
             false
         }
     }
@@ -291,8 +304,11 @@ class FileAccessLayerImpl @Inject constructor(
             return androidDataAccessor.copyDirectory(source, dest)
         }
         return try {
-            File(source).copyRecursively(File(dest), overwrite = true)
+            val destFile = File(dest)
+            if (!ensureParentDirectory(destFile)) return false
+            File(source).copyRecursively(destFile, overwrite = true)
         } catch (e: Exception) {
+            Logger.error(TAG, "copyDirectory: direct copy failed | source=$source, dest=$dest", e)
             false
         }
     }
@@ -308,6 +324,8 @@ class FileAccessLayerImpl @Inject constructor(
         return androidDataAccessor.isRestrictedAndroidPath(path)
     }
 
+    override fun externalStorageRoots(): List<String> = androidDataAccessor.getAllStorageRoots()
+
     override fun normalizeForDisplay(path: String): String {
         return androidDataAccessor.normalizePathForDisplay(path)
     }
@@ -318,6 +336,30 @@ class FileAccessLayerImpl @Inject constructor(
 
     private fun extractVolumeAndPath(path: String): Pair<String, String>? {
         return StoragePathUtils.extractVolumeAndPath(path)
+    }
+
+    private fun ensureParentDirectory(file: File): Boolean {
+        val parent = file.parentFile ?: return true
+        if (parent.isDirectory) return true
+
+        val privateRoot = context.filesDir.absolutePath
+        var cursor: File? = parent
+        while (cursor != null && !cursor.isDirectory) {
+            if (cursor.exists()) {
+                if (cursor.absolutePath.startsWith("$privateRoot/")) {
+                    Logger.warn(TAG, "ensureParentDirectory: cleaning stale non-directory in app private dir to unblock mkdirs | blocker=${cursor.absolutePath}, target=${file.absolutePath}")
+                    if (!cursor.delete()) {
+                        Logger.error(TAG, "ensureParentDirectory: delete failed | blocker=${cursor.absolutePath}")
+                        return false
+                    }
+                } else {
+                    Logger.error(TAG, "ensureParentDirectory: invalid write: path component is not a directory and lives outside the app's private dir (refusing to auto-delete) | blocker=${cursor.absolutePath}, target=${file.absolutePath}")
+                    return false
+                }
+            }
+            cursor = cursor.parentFile
+        }
+        return parent.mkdirs() || parent.isDirectory
     }
 
     private fun File.toFileInfo(): FileInfo = FileInfo(

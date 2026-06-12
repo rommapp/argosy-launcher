@@ -26,13 +26,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import com.nendo.argosy.ui.components.Modal
+import com.nendo.argosy.ui.theme.ALauncherColors
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.util.clickableNoFocus
 
-private val goldColor = Color(0xFFFFD700)
-
 sealed class PlayOptionAction {
     data object Resume : PlayOptionAction()
+    data object ResumeNoSync : PlayOptionAction()
     data object NewCasual : PlayOptionAction()
     data object NewHardcore : PlayOptionAction()
     data object ResumeHardcore : PlayOptionAction()
@@ -46,6 +46,7 @@ fun PlayOptionsModal(
     hasRASupport: Boolean,
     isRALoggedIn: Boolean,
     isOnline: Boolean,
+    canSkipSync: Boolean = false,
     onAction: (PlayOptionAction) -> Unit,
     onDismiss: () -> Unit
 ) {
@@ -69,11 +70,22 @@ fun PlayOptionsModal(
                 )
             }
 
+            if (hasSaves && canSkipSync) {
+                val idx = currentIndex++
+                PlayOptionRow(
+                    icon = Icons.Default.PlayArrow,
+                    label = "Play without syncing",
+                    subtext = "Skip the pre-launch save sync check",
+                    isFocused = focusIndex == idx,
+                    onClick = { onAction(PlayOptionAction.ResumeNoSync) }
+                )
+            }
+
             if (hasHardcoreSave) {
                 val idx = currentIndex++
                 PlayOptionRow(
                     icon = Icons.Default.EmojiEvents,
-                    iconTint = goldColor,
+                    iconTint = ALauncherColors.StarGold,
                     label = "Hardcore",
                     isFocused = focusIndex == idx,
                     onClick = { onAction(PlayOptionAction.ResumeHardcore) }
@@ -99,7 +111,7 @@ fun PlayOptionsModal(
             val hardcoreIdx = currentIndex++
             PlayOptionRow(
                 icon = Icons.Default.EmojiEvents,
-                iconTint = if (isOnline) goldColor else null,
+                iconTint = if (isOnline) ALauncherColors.StarGold else null,
                 label = "Hardcore",
                 subtext = if (isOnline) "Online-only, no save states or cheats" else "Requires internet connection",
                 isFocused = focusIndex == hardcoreIdx,

@@ -9,7 +9,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
 
-data class InstalledApp(
+data class LaunchableApp(
     val packageName: String,
     val displayName: String,
     val icon: Drawable?
@@ -19,7 +19,7 @@ data class InstalledApp(
 class InstalledAppResolver @Inject constructor(
     @ApplicationContext private val context: Context
 ) {
-    fun getLaunchableUserApps(): List<InstalledApp> {
+    fun getLaunchableUserApps(): List<LaunchableApp> {
         val pm = context.packageManager
         val intent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)
         val resolveInfos = pm.queryIntentActivities(intent, 0)
@@ -31,7 +31,7 @@ class InstalledAppResolver @Inject constructor(
             .filter { !EmulatorRegistry.isKnownPackage(it.activityInfo.applicationInfo.packageName) }
             .distinctBy { it.activityInfo.applicationInfo.packageName }
             .map { info ->
-                InstalledApp(
+                LaunchableApp(
                     packageName = info.activityInfo.applicationInfo.packageName,
                     displayName = info.loadLabel(pm).toString(),
                     icon = runCatching { info.loadIcon(pm) }.getOrNull()

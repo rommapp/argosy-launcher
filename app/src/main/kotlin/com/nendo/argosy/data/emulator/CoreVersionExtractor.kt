@@ -1,6 +1,7 @@
 package com.nendo.argosy.data.emulator
 
 import android.util.Log
+import com.nendo.argosy.data.storage.StoragePathUtils
 import java.io.File
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -16,19 +17,22 @@ sealed class VersionValidationResult {
 @Singleton
 class CoreVersionExtractor @Inject constructor() {
 
-    private val retroArchInfoPaths = listOf(
-        "/storage/emulated/0/RetroArch/info",
-        "/storage/emulated/0/Android/data/com.retroarch/files/info",
-        "/storage/emulated/0/Android/data/com.retroarch.aarch64/files/info"
-    )
+    private val primaryRoot: String get() = StoragePathUtils.primaryExternalRoot
+
+    private val retroArchInfoPaths: List<String>
+        get() = listOf(
+            "$primaryRoot/RetroArch/info",
+            "$primaryRoot/Android/data/com.retroarch/files/info",
+            "$primaryRoot/Android/data/com.retroarch.aarch64/files/info"
+        )
 
     fun getRetroArchCoreVersion(coreName: String, packageName: String? = null): String? {
         val infoFileName = "${coreName}_libretro_android.info"
 
         val searchPaths = if (packageName != null) {
             val packageSpecificPath = when (packageName) {
-                "com.retroarch" -> "/storage/emulated/0/Android/data/com.retroarch/files/info"
-                "com.retroarch.aarch64" -> "/storage/emulated/0/Android/data/com.retroarch.aarch64/files/info"
+                "com.retroarch" -> "$primaryRoot/Android/data/com.retroarch/files/info"
+                "com.retroarch.aarch64" -> "$primaryRoot/Android/data/com.retroarch.aarch64/files/info"
                 else -> null
             }
             if (packageSpecificPath != null) {

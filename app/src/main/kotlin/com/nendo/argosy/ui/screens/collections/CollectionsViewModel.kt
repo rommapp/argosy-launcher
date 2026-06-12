@@ -36,6 +36,7 @@ data class CollectionsUiState(
     val collections: List<CollectionWithCount> = emptyList(),
     val genres: List<CategoryWithCount> = emptyList(),
     val gameModes: List<CategoryWithCount> = emptyList(),
+    val series: List<CategoryWithCount> = emptyList(),
     val isLoading: Boolean = true,
     val isRefreshing: Boolean = false,
     val focusedSection: CollectionSection = CollectionSection.MY_COLLECTIONS,
@@ -50,7 +51,11 @@ data class CollectionsUiState(
     val totalCollectionItems: Int
         get() = collections.size + 1
 
-    val browseByItems: List<String> = listOf("Genres", "Game Modes")
+    val browseByItems: List<String> = buildList {
+        add("Genres")
+        add("Game Modes")
+        if (series.isNotEmpty()) add("Series")
+    }
 
     val isNewCollectionItemFocused: Boolean
         get() = focusedSection == CollectionSection.MY_COLLECTIONS && focusedIndex == collections.size
@@ -69,6 +74,13 @@ data class CollectionsUiState(
     val focusedOption: CollectionOption?
         get() = availableOptions.getOrNull(optionsFocusedIndex)
 }
+
+private data class CollectionData(
+    val collections: List<CollectionWithCount>,
+    val genres: List<CategoryWithCount>,
+    val gameModes: List<CategoryWithCount>,
+    val series: List<CategoryWithCount>
+)
 
 private data class DialogState(
     val showCreate: Boolean,
@@ -152,10 +164,11 @@ class CollectionsViewModel @Inject constructor(
         val dataFlow = combine(
             getCollectionsUseCase(),
             getVirtualCollectionCategoriesUseCase.getGenres(),
-            getVirtualCollectionCategoriesUseCase.getGameModes()
-        ) { collections, genres, gameModes ->
-            Log.d("CollectionsVM", "dataFlow: collections=${collections.size}, genres=${genres.size}, modes=${gameModes.size}")
-            Triple(collections, genres, gameModes)
+            getVirtualCollectionCategoriesUseCase.getGameModes(),
+            getVirtualCollectionCategoriesUseCase.getSeries()
+        ) { collections, genres, gameModes, series ->
+            Log.d("CollectionsVM", "dataFlow: collections=${collections.size}, genres=${genres.size}, modes=${gameModes.size}, series=${series.size}")
+            CollectionData(collections, genres, gameModes, series)
         }
         val focusFlow = combine(_focusedSection, _focusedIndex) { section, index ->
             section to index
@@ -170,9 +183,10 @@ class CollectionsViewModel @Inject constructor(
         }
         combine(dataFlow, focusFlow, dialogFlow, miscFlow) { data, focus, dialogs, misc ->
             CollectionsUiState(
-                collections = data.first,
-                genres = data.second,
-                gameModes = data.third,
+                collections = data.collections,
+                genres = data.genres,
+                gameModes = data.gameModes,
+                series = data.series,
                 isLoading = false,
                 isRefreshing = misc.first,
                 focusedSection = focus.first,
@@ -359,6 +373,14 @@ class CollectionsViewModel @Inject constructor(
             return InputResult.HANDLED
         }
 
+        override fun onLeft(): InputResult {
+            val state = uiState.value
+            if (state.showCreateDialog || state.showDeleteDialog || state.showOptionsModal) {
+                return InputResult.HANDLED
+            }
+            return InputResult.UNHANDLED
+        }
+
         override fun onConfirm(): InputResult {
             val state = uiState.value
             if (state.showCreateDialog || state.showDeleteDialog) {
@@ -377,9 +399,10 @@ class CollectionsViewModel @Inject constructor(
                     }
                 }
                 CollectionSection.BROWSE_BY -> {
-                    when (state.focusedIndex) {
-                        0 -> onVirtualBrowseClick("genres")
-                        1 -> onVirtualBrowseClick("modes")
+                    when (state.browseByItems.getOrNull(state.focusedIndex)) {
+                        "Genres" -> onVirtualBrowseClick("genres")
+                        "Game Modes" -> onVirtualBrowseClick("modes")
+                        "Series" -> onVirtualBrowseClick("series")
                     }
                 }
             }

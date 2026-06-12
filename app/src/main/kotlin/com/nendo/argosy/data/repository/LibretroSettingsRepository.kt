@@ -139,4 +139,27 @@ class LibretroSettingsRepository @Inject constructor(
 
     suspend fun setBuiltinCoreForPlatform(platformSlug: String, coreId: String) =
         builtinPrefs.setBuiltinCoreForPlatform(platformSlug, coreId)
+
+    suspend fun setTouchControlsShowWhenNoGamepad(enabled: Boolean) =
+        builtinPrefs.setTouchControlsShowWhenNoGamepad(enabled)
+    suspend fun setTouchControlsOpacityLandscape(opacity: Float) =
+        builtinPrefs.setTouchControlsOpacityLandscape(opacity)
+    suspend fun setTouchControlsOpacityPortrait(opacity: Float) =
+        builtinPrefs.setTouchControlsOpacityPortrait(opacity)
+    suspend fun setTouchControlsSizeScale(scale: Float) =
+        builtinPrefs.setTouchControlsSizeScale(scale)
+    suspend fun setTouchControlsHaptic(enabled: Boolean) =
+        builtinPrefs.setTouchControlsHaptic(enabled)
+    suspend fun setTouchControlsFadeOnIdle(enabled: Boolean) =
+        builtinPrefs.setTouchControlsFadeOnIdle(enabled)
+    suspend fun setTouchControlsSwapHanded(enabled: Boolean) =
+        builtinPrefs.setTouchControlsSwapHanded(enabled)
+    suspend fun setTouchControlsLockOrientation(enabled: Boolean) =
+        builtinPrefs.setTouchControlsLockOrientation(enabled)
+    suspend fun setTouchControlsMirror180(enabled: Boolean) =
+        builtinPrefs.setTouchControlsMirror180(enabled)
+    suspend fun setTouchControlsColouredFaceButtons(enabled: Boolean) =
+        builtinPrefs.setTouchControlsColouredFaceButtons(enabled)
+    suspend fun setTouchControlsGenesis6Button(enabled: Boolean) =
+        builtinPrefs.setTouchControlsGenesis6Button(enabled)
 }

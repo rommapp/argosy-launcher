@@ -571,8 +571,8 @@ private fun PermissionsStep(
         ) {
             PermissionCard(
                 icon = Icons.Default.Folder,
-                title = "Manage Storage",
-                description = "Required to download games and sync saves.",
+                title = "Manage Storage (Required)",
+                description = "Required to browse folders, download games, and sync saves.",
                 isGranted = hasStorage,
                 isFocused = focusedIndex == 0,
                 onClick = onRequestStorage
@@ -607,14 +607,23 @@ private fun PermissionsStep(
         FocusableButton(
             text = "Continue",
             isFocused = focusedIndex == 4,
+            enabled = hasStorage,
             onClick = onContinue
         )
         Spacer(modifier = Modifier.height(Dimens.spacingSm))
         Text(
-            text = "You can grant skipped permissions later in Settings.",
+            text = if (hasStorage) {
+                "You can grant the other permissions later in Settings."
+            } else {
+                "Grant storage access to continue. The others are optional and can be granted later in Settings."
+            },
             style = MaterialTheme.typography.bodySmall,
             textAlign = TextAlign.Center,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            color = if (hasStorage) {
+                MaterialTheme.colorScheme.onSurfaceVariant
+            } else {
+                MaterialTheme.colorScheme.error
+            }
         )
     }
 }

@@ -13,6 +13,7 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -62,6 +63,7 @@ import com.nendo.argosy.ui.screens.gamedetail.modals.RatingPickerModal
 import com.nendo.argosy.ui.screens.gamedetail.modals.StatusPickerModal
 import com.nendo.argosy.ui.screens.gamedetail.modals.UpdatesPickerModal
 import com.nendo.argosy.ui.theme.ALauncherColors
+import com.nendo.argosy.ui.theme.LocalBoxArtStyle
 import com.nendo.argosy.ui.util.touchOnly
 import com.nendo.argosy.util.formatPlayTime
 import java.io.File
@@ -82,6 +84,7 @@ fun DualGameDetailUpperScreen(
     onSaveNameTextChange: (String) -> Unit = {},
     onSaveNameConfirm: () -> Unit = {},
     onDiscSelect: (Int) -> Unit = {},
+    onModalSteamInstallSelect: (Int) -> Unit = {},
     onModalDismiss: () -> Unit = {},
     footerHints: @Composable () -> Unit,
     modifier: Modifier = Modifier
@@ -171,9 +174,7 @@ fun DualGameDetailUpperScreen(
             ActiveModal.UPDATES_DLC -> UpdatesPickerModal(
                 files = state.updateFiles + state.dlcFiles,
                 focusIndex = state.updatesPickerFocusIndex,
-                isEdenGame = state.isEdenGame,
                 onDownload = {},
-                onApplyAll = {},
                 onDismiss = onModalDismiss
             )
             ActiveModal.DISC_PICKER -> DualDiscPickerContent(
@@ -182,8 +183,72 @@ fun DualGameDetailUpperScreen(
                 onSelect = onDiscSelect,
                 onDismiss = onModalDismiss
             )
+            ActiveModal.STEAM_INSTALL -> DualSteamInstallPickerContent(
+                optionNames = state.steamInstallOptionNames,
+                focusIndex = state.steamInstallFocusIndex,
+                onSelect = onModalSteamInstallSelect,
+                onDismiss = onModalDismiss
+            )
             ActiveModal.VARIANT_PICKER -> {}
             ActiveModal.NONE -> {}
+        }
+    }
+}
+
+@Composable
+internal fun DualSteamInstallPickerContent(
+    optionNames: List<String>,
+    focusIndex: Int,
+    onSelect: (Int) -> Unit,
+    onDismiss: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black.copy(alpha = 0.6f))
+            .touchOnly { onDismiss() },
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth(0.6f)
+                .clip(RoundedCornerShape(16.dp))
+                .background(MaterialTheme.colorScheme.surface)
+                .touchOnly { }
+                .padding(24.dp)
+        ) {
+            Text(
+                text = "INSTALL LOCATION",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.padding(bottom = 16.dp)
+            )
+
+            LazyColumn(
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+                contentPadding = PaddingValues(vertical = 4.dp)
+            ) {
+                item {
+                    EmulatorPickerItem(
+                        name = "Download via Argosy",
+                        version = null,
+                        isSelected = focusIndex == 0,
+                        isCurrent = false,
+                        onClick = { onSelect(0) }
+                    )
+                }
+                itemsIndexed(optionNames, key = { _, n -> n }) { index, name ->
+                    val itemIndex = index + 1
+                    EmulatorPickerItem(
+                        name = "Mark as Installed",
+                        version = "Managed by $name",
+                        isSelected = focusIndex == itemIndex,
+                        isCurrent = false,
+                        onClick = { onSelect(itemIndex) }
+                    )
+                }
+            }
         }
     }
 }
@@ -271,9 +336,10 @@ private fun GameInfoDisplay(
                 AsyncImage(
                     model = File(state.coverPath),
                     contentDescription = state.title,
-                    contentScale = ContentScale.Fit,
+                    contentScale = ContentScale.Crop,
                     modifier = Modifier
                         .width(160.dp)
+                        .aspectRatio(LocalBoxArtStyle.current.aspectRatio)
                         .clip(RoundedCornerShape(8.dp)),
                     onError = { /* Show empty space instead of broken image */ }
                 )
@@ -358,7 +424,7 @@ private fun GameInfoDisplay(
                         Icon(
                             imageVector = Icons.Filled.EmojiEvents,
                             contentDescription = null,
-                            tint = Color(0xFFFFD700),
+                            tint = ALauncherColors.StarGold,
                             modifier = Modifier.size(24.dp)
                         )
                         Text(

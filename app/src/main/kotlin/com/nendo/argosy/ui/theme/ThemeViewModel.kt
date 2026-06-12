@@ -15,6 +15,8 @@ import com.nendo.argosy.data.preferences.BoxArtInnerEffectThickness
 import com.nendo.argosy.data.preferences.BoxArtOuterEffect
 import com.nendo.argosy.data.preferences.BoxArtOuterEffectThickness
 import com.nendo.argosy.data.preferences.GlowColorMode
+import com.nendo.argosy.data.preferences.PlatformIndicatorContent
+import com.nendo.argosy.data.preferences.PlatformIndicatorStyle
 import com.nendo.argosy.data.preferences.SystemIconPadding
 import com.nendo.argosy.data.preferences.SystemIconPosition
 import com.nendo.argosy.data.preferences.ThemeMode
@@ -51,6 +53,8 @@ data class ThemeState(
     val gradientPreset: GradientPreset = GradientPreset.BALANCED,
     val systemIconPosition: SystemIconPosition = SystemIconPosition.TOP_LEFT,
     val systemIconPadding: SystemIconPadding = SystemIconPadding.MEDIUM,
+    val platformIndicatorStyle: PlatformIndicatorStyle = PlatformIndicatorStyle.TAB,
+    val platformIndicatorContent: PlatformIndicatorContent = PlatformIndicatorContent.NAME,
     val useAccentColorFooter: Boolean = false,
     val uiScale: Int = 100
 )
@@ -129,6 +133,8 @@ fun UserPreferences.toThemeState(): ThemeState = ThemeState(
     gradientPreset = gradientPreset,
     systemIconPosition = systemIconPosition,
     systemIconPadding = systemIconPadding,
+    platformIndicatorStyle = platformIndicatorStyle,
+    platformIndicatorContent = platformIndicatorContent,
     useAccentColorFooter = useAccentColorFooter,
     uiScale = uiScale
 )

@@ -18,8 +18,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import com.nendo.argosy.ui.util.clickableNoFocus
 import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.gestures.detectDragGestures
-import kotlin.math.abs
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.layout.Arrangement
@@ -89,6 +89,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
+import com.nendo.argosy.ui.theme.ALauncherColors
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.CompositingStrategy
@@ -117,6 +118,7 @@ import com.nendo.argosy.ui.components.GameCardWithNewBadge
 import com.nendo.argosy.ui.components.InputButton
 import com.nendo.argosy.ui.components.SubtleFooterBar
 import com.nendo.argosy.ui.components.DiscPickerModal
+import com.nendo.argosy.ui.components.MemcardPickerModal
 import com.nendo.argosy.ui.components.SyncOverlay
 import com.nendo.argosy.ui.components.SystemStatusBar
 import com.nendo.argosy.ui.components.YouTubeVideoPlayer
@@ -258,7 +260,7 @@ fun HomeScreen(
     val returningFromGame by argosyViewModel.returningFromGame.collectAsState()
 
     val modalBlur by animateDpAsState(
-        targetValue = if (uiState.showGameMenu || uiState.syncOverlayState != null || uiState.changelogEntry != null || uiState.discPickerState != null) Motion.blurRadiusModal else 0.dp,
+        targetValue = if (uiState.showGameMenu || uiState.syncOverlayState != null || uiState.changelogEntry != null || uiState.discPickerState != null || uiState.memcardPickerState != null) Motion.blurRadiusModal else 0.dp,
         animationSpec = Motion.focusSpringDp,
         label = "modalBlur"
     )
@@ -295,6 +297,16 @@ fun HomeScreen(
             onFocusChange = { viewModel.setDiscPickerFocusIndex(it) },
             onSelect = { viewModel.selectDisc(it) },
             onDismiss = { viewModel.dismissDiscPicker() }
+        )
+    }
+
+    val memcardPickerInputHandler = remember(viewModel) {
+        com.nendo.argosy.ui.input.MemcardPickerInputHandler(
+            getCards = { uiState.memcardPickerState?.cards ?: emptyList() },
+            getFocusIndex = { uiState.memcardPickerFocusIndex },
+            onFocusChange = { viewModel.setMemcardPickerFocusIndex(it) },
+            onSelect = { viewModel.selectMemcard(it) },
+            onDismiss = { viewModel.dismissMemcardPicker() }
         )
     }
 
@@ -368,6 +380,22 @@ fun HomeScreen(
     DisposableEffect(uiState.discPickerState) {
         onDispose {
             if (uiState.discPickerState != null) {
+                inputDispatcher.popModal()
+            }
+        }
+    }
+
+    val showMemcardPicker = uiState.memcardPickerState != null
+    LaunchedEffect(showMemcardPicker) {
+        if (showMemcardPicker) {
+            viewModel.setMemcardPickerFocusIndex(0)
+            inputDispatcher.pushModal(memcardPickerInputHandler)
+        }
+    }
+
+    DisposableEffect(showMemcardPicker) {
+        onDispose {
+            if (showMemcardPicker) {
                 inputDispatcher.popModal()
             }
         }
@@ -562,31 +590,38 @@ fun HomeScreen(
                 }
             }
 
-        val edgeThreshold = with(LocalDensity.current) { 80.dp.toPx() }
+        val edgeThresholdPx = with(LocalDensity.current) { 80.dp.toPx() }
 
-        val swipeGestureModifier = Modifier.pointerInput(Unit) {
-            var totalDragX = 0f
-            var totalDragY = 0f
-            var startX = 0f
-            detectDragGestures(
-                onDragStart = { offset ->
-                    totalDragX = 0f
-                    totalDragY = 0f
-                    startX = offset.x
-                },
-                onDragEnd = {
-                    when {
-                        startX < edgeThreshold && totalDragX > swipeThreshold -> currentOnDrawerToggle()
-                        totalDragY < -swipeThreshold && abs(totalDragY) > abs(totalDragX) -> viewModel.nextRow()
-                        totalDragY > swipeThreshold && abs(totalDragY) > abs(totalDragX) -> viewModel.previousRow()
-                    }
-                },
-                onDrag = { _, dragAmount ->
-                    totalDragX += dragAmount.x
-                    totalDragY += dragAmount.y
-                }
-            )
-        }
+        val swipeGestureModifier = Modifier
+            .pointerInput(Unit) {
+                var totalDragY = 0f
+                detectVerticalDragGestures(
+                    onDragStart = { totalDragY = 0f },
+                    onDragEnd = {
+                        when {
+                            totalDragY < -swipeThreshold -> viewModel.nextRow()
+                            totalDragY > swipeThreshold -> viewModel.previousRow()
+                        }
+                    },
+                    onVerticalDrag = { _, dragAmount -> totalDragY += dragAmount }
+                )
+            }
+            .pointerInput(Unit) {
+                var totalDragX = 0f
+                var startX = 0f
+                detectHorizontalDragGestures(
+                    onDragStart = { offset ->
+                        totalDragX = 0f
+                        startX = offset.x
+                    },
+                    onDragEnd = {
+                        if (startX < edgeThresholdPx && totalDragX > swipeThreshold) {
+                            currentOnDrawerToggle()
+                        }
+                    },
+                    onHorizontalDrag = { _, dragAmount -> totalDragX += dragAmount }
+                )
+            }
 
         val configuration = LocalConfiguration.current
         val screenWidth = configuration.screenWidthDp.dp
@@ -597,7 +632,10 @@ fun HomeScreen(
         val focusScale = 1.8f
         val railHeight = cardHeight * focusScale + 16.dp
 
-        Box(modifier = Modifier.fillMaxSize()) {
+        Box(modifier = Modifier
+            .fillMaxSize()
+            .then(swipeGestureModifier)
+        ) {
             Box(modifier = Modifier.align(Alignment.TopCenter)) {
                 HomeHeader(
                     uiState = uiState,
@@ -606,12 +644,6 @@ fun HomeScreen(
                     headerOffset = videoModeHeaderOffset
                 )
             }
-
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .then(swipeGestureModifier)
-            )
 
             Column(
                 modifier = Modifier
@@ -847,6 +879,16 @@ fun HomeScreen(
                 focusIndex = uiState.discPickerFocusIndex,
                 onSelectDisc = viewModel::selectDisc,
                 onDismiss = viewModel::dismissDiscPicker
+            )
+        }
+
+        uiState.memcardPickerState?.let { pickerState ->
+            MemcardPickerModal(
+                cards = pickerState.cards,
+                focusIndex = uiState.memcardPickerFocusIndex,
+                selectedCardPath = null,
+                onSelectCard = viewModel::selectMemcard,
+                onDismiss = viewModel::dismissMemcardPicker
             )
         }
 
@@ -1139,7 +1181,7 @@ private fun GameInfo(
                         Icon(
                             imageVector = Icons.Default.Star,
                             contentDescription = null,
-                            tint = textColorOverride ?: Color(0xFFFFD700),
+                            tint = textColorOverride ?: ALauncherColors.StarGold,
                             modifier = Modifier.size(Dimens.iconXs)
                         )
                         Text(
@@ -1157,7 +1199,7 @@ private fun GameInfo(
                         Icon(
                             imageVector = Icons.Default.Whatshot,
                             contentDescription = null,
-                            tint = textColorOverride ?: Color(0xFFE53935),
+                            tint = textColorOverride ?: ALauncherColors.DifficultyRed,
                             modifier = Modifier.size(Dimens.iconXs)
                         )
                         Text(
@@ -1175,7 +1217,7 @@ private fun GameInfo(
                         Icon(
                             imageVector = Icons.Filled.EmojiEvents,
                             contentDescription = null,
-                            tint = textColorOverride ?: Color(0xFFFFB300),
+                            tint = textColorOverride ?: ALauncherColors.TrophyAmber,
                             modifier = Modifier.size(Dimens.iconXs)
                         )
                         Text(
@@ -1201,7 +1243,7 @@ private fun GameRail(
     showPlatformBadge: Boolean,
     repairedCoverPaths: Map<Long, String> = emptyMap(),
     onCoverLoadFailed: ((Long, String) -> Unit)? = null,
-    onCoverLoaded: ((Long, String) -> Unit)? = null,
+    onCoverLoaded: ((Long, android.graphics.Bitmap) -> Unit)? = null,
     onItemTap: (Int) -> Unit = {},
     onItemLongPress: (Int) -> Unit = {},
     isVideoPreviewActive: Boolean = false,

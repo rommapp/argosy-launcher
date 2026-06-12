@@ -346,10 +346,10 @@ class RetroArchConfigParserTest {
     }
 
     @Test
-    fun `parseFile defaults sortByCore to true when sort_savefiles_enable is absent`() {
+    fun `parseFile defaults sortByCore to false when sort_savefiles_enable is absent`() {
         val cfg = writeCfg("""savefile_directory = "/sdcard/RetroArch/saves"""")
         val parsed = parser.parseFile(cfg)
-        assertTrue("absent sort_savefiles_enable should default to true", parsed.sortByCore)
+        assertFalse("absent sort_savefiles_enable should default to false, matching RetroArch (savefiles flat unless opted in)", parsed.sortByCore)
         assertFalse(parsed.sortByContentDirectory)
     }
 

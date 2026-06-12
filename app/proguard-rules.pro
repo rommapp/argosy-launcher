@@ -13,6 +13,7 @@
     <init>(...);
 }
 -keepnames @com.squareup.moshi.JsonClass class *
+-keepclassmembers enum * { <fields>; }
 
 # Room
 -keep class * extends androidx.room.RoomDatabase

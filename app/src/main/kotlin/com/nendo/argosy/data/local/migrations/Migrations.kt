@@ -1598,6 +1598,104 @@ object Migration_108_109 : Migration(108, 109) {
 
 object Migration_109_110 : Migration(109, 110) {
     override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE emulator_save_config ADD COLUMN selectedMemcardPath TEXT")
+    }
+}
+
+object Migration_110_111 : Migration(110, 111) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS pending_conflicts (
+                id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                gameId INTEGER NOT NULL,
+                rommSaveId INTEGER,
+                fileName TEXT NOT NULL,
+                slot TEXT,
+                emulator TEXT,
+                localUpdatedAt INTEGER,
+                serverUpdatedAt INTEGER,
+                localHash TEXT,
+                serverHash TEXT,
+                reason TEXT NOT NULL DEFAULT '',
+                discoveredAt INTEGER NOT NULL,
+                dismissed INTEGER NOT NULL DEFAULT 0
+            )
+            """.trimIndent()
+        )
+        db.execSQL(
+            "CREATE UNIQUE INDEX IF NOT EXISTS index_pending_conflicts_gameId_rommSaveId ON pending_conflicts(gameId, rommSaveId)"
+        )
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS index_pending_conflicts_dismissed ON pending_conflicts(dismissed)"
+        )
+    }
+}
+
+object Migration_111_112 : Migration(111, 112) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE save_sync ADD COLUMN lastSyncDeviceId TEXT")
+        db.execSQL("ALTER TABLE save_sync ADD COLUMN lastSyncDeviceName TEXT")
+    }
+}
+
+object Migration_112_113 : Migration(112, 113) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE pending_sync_queue ADD COLUMN sessionId INTEGER")
+        db.execSQL("CREATE INDEX IF NOT EXISTS index_pending_sync_queue_sessionId ON pending_sync_queue(sessionId)")
+    }
+}
+
+object Migration_113_114 : Migration(113, 114) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE games ADD COLUMN saveId TEXT")
+        db.execSQL("UPDATE games SET saveId = titleId WHERE titleId IS NOT NULL")
+    }
+}
+
+object Migration_114_115 : Migration(114, 115) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE download_queue ADD COLUMN gameFolderName TEXT")
+    }
+}
+
+object Migration_115_116 : Migration(115, 116) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS touch_layout_overrides (
+                platformSlug TEXT NOT NULL,
+                orientation TEXT NOT NULL,
+                schemaVersion INTEGER NOT NULL,
+                layoutJson TEXT NOT NULL,
+                updatedAt INTEGER NOT NULL,
+                PRIMARY KEY (platformSlug, orientation)
+            )
+            """.trimIndent()
+        )
+    }
+}
+
+object Migration_116_117 : Migration(116, 117) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE save_sync ADD COLUMN userSelectedRestorePoint INTEGER NOT NULL DEFAULT 0")
+    }
+}
+
+object Migration_117_118 : Migration(117, 118) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE save_sync ADD COLUMN userSelectedRestorePointAt INTEGER")
+    }
+}
+
+object Migration_118_119 : Migration(118, 119) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE emulator_launch_args ADD COLUMN customExtras TEXT")
+    }
+}
+
+object Migration_119_120 : Migration(119, 120) {
+    override fun migrate(db: SupportSQLiteDatabase) {
         db.execSQL(
             """
             CREATE TABLE IF NOT EXISTS quaypass_encounters (

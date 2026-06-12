@@ -9,8 +9,15 @@ data class SaveSlotItem(
     val saveCount: Int,
     val latestTimestamp: Long?,
     val isCreateAction: Boolean = false,
-    val isMigrationCandidate: Boolean = false
-)
+    val isMigrationCandidate: Boolean = false,
+    val isArchivedBucket: Boolean = false
+) {
+    val slotKey: String get() = channelName ?: when {
+        isCreateAction -> "__new_slot__"
+        isArchivedBucket -> "__archived__"
+        else -> "__none__"
+    }
+}
 
 data class SaveHistoryItem(
     val cacheId: Long,
@@ -22,5 +29,10 @@ data class SaveHistoryItem(
     val isActiveRestorePoint: Boolean,
     val isLatest: Boolean,
     val isHardcore: Boolean,
-    val isRollback: Boolean
-)
+    val isRollback: Boolean,
+    val isArchival: Boolean = false,
+    val serverSaveId: Long? = null
+) {
+    val historyKey: String get() =
+        if (cacheId >= 0) "c$cacheId" else "s${serverSaveId ?: timestamp}"
+}

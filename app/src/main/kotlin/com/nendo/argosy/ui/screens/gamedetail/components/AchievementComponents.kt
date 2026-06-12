@@ -32,9 +32,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.nendo.argosy.core.game.AchievementUi
+import com.nendo.argosy.ui.theme.ALauncherColors
 import com.nendo.argosy.ui.theme.Dimens
 
-private val goldColor = Color(0xFFFFD700)
 private val bronzeColor = Color(0xFFCD7F32)
 
 @Composable
@@ -43,7 +43,7 @@ fun AchievementRow(achievement: AchievementUi) {
     val lockedColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
 
     val accentColor = when {
-        achievement.isUnlockedHardcore -> goldColor
+        achievement.isUnlockedHardcore -> ALauncherColors.StarGold
         achievement.isUnlocked -> bronzeColor
         else -> lockedColor
     }
@@ -67,14 +67,14 @@ fun AchievementRow(achievement: AchievementUi) {
                 .then(
                     if (achievement.isUnlockedHardcore) {
                         Modifier
-                            .shadow(4.dp, badgeShape, spotColor = goldColor.copy(alpha = 0.5f))
+                            .shadow(4.dp, badgeShape, spotColor = ALauncherColors.StarGold.copy(alpha = 0.5f))
                             .border(
                                 width = 2.dp,
                                 brush = Brush.linearGradient(
                                     colors = listOf(
-                                        goldColor,
+                                        ALauncherColors.StarGold,
                                         Color(0xFFFFF8DC),
-                                        goldColor
+                                        ALauncherColors.StarGold
                                     )
                                 ),
                                 shape = badgeShape

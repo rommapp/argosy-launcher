@@ -3,6 +3,7 @@ package com.nendo.argosy.domain.usecase.collection
 import com.nendo.argosy.data.local.dao.CollectionDao
 import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.dao.PinnedCollectionDao
+import com.nendo.argosy.data.local.entity.CollectionType
 import com.nendo.argosy.domain.model.PinnedCollection
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -54,16 +55,18 @@ class GetPinnedCollectionsUseCase @Inject constructor(
     }
 
     private suspend fun countGamesInCategory(type: CategoryType, name: String): Int {
-        val games = gameDao.getAllGames()
-        return games.count { game ->
-            when (type) {
-                CategoryType.GENRE -> {
-                    game.genre?.split(",")?.any { it.trim().equals(name, ignoreCase = true) } == true
-                }
-                CategoryType.GAME_MODE -> {
-                    game.gameModes?.split(",")?.any { it.trim().equals(name, ignoreCase = true) } == true
-                }
+        if (type == CategoryType.SERIES) {
+            val collection = collectionDao.getByTypeAndName(CollectionType.SERIES, name) ?: return 0
+            return collectionDao.getGameCountInCollection(collection.id)
+        }
+        val infos = gameDao.getAllCategoryInfo()
+        return infos.count { info ->
+            val field = when (type) {
+                CategoryType.GENRE -> info.genre
+                CategoryType.GAME_MODE -> info.gameModes
+                CategoryType.SERIES -> null
             }
+            field?.split(",")?.any { it.trim().equals(name, ignoreCase = true) } == true
         }
     }
 }

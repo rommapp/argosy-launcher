@@ -37,6 +37,15 @@ interface SaveSyncDao {
     @Query("SELECT * FROM save_sync WHERE syncStatus IN (:statuses)")
     suspend fun getByStatuses(vararg statuses: String): List<SaveSyncEntity>
 
+    @Query("""
+        SELECT * FROM save_sync
+        WHERE gameId = :gameId
+          AND syncStatus = :status
+          AND IFNULL(channelName, '') = IFNULL(:channelName, '')
+        LIMIT 1
+    """)
+    suspend fun getByGameStatusAndChannel(gameId: Long, status: String, channelName: String?): SaveSyncEntity?
+
     @Query("SELECT * FROM save_sync WHERE syncStatus = 'SERVER_NEWER' OR syncStatus = 'CONFLICT'")
     suspend fun getPendingDownloads(): List<SaveSyncEntity>
 
@@ -92,11 +101,23 @@ interface SaveSyncDao {
     @Query("UPDATE save_sync SET lastUploadedHash = :hash WHERE id = :id")
     suspend fun updateLastUploadedHash(id: Long, hash: String)
 
+    @Query("UPDATE save_sync SET userSelectedRestorePoint = 1, userSelectedRestorePointAt = :nowMs WHERE id = :id")
+    suspend fun setUserSelectedRestorePoint(id: Long, nowMs: Long)
+
+    @Query("UPDATE save_sync SET userSelectedRestorePoint = 0, userSelectedRestorePointAt = NULL WHERE id = :id AND userSelectedRestorePoint = 1")
+    suspend fun clearUserSelectedRestorePoint(id: Long)
+
+    @Query("UPDATE save_sync SET userSelectedRestorePoint = 0, userSelectedRestorePointAt = NULL WHERE gameId = :gameId AND userSelectedRestorePoint = 1")
+    suspend fun clearUserSelectedRestorePointForGame(gameId: Long)
+
     @Query("DELETE FROM save_sync WHERE id = :id")
     suspend fun deleteById(id: Long)
 
     @Query("SELECT DISTINCT gameId FROM save_sync")
     suspend fun getAllGameIds(): List<Long>
+
+    @Query("SELECT * FROM save_sync WHERE localSavePath IS NOT NULL")
+    suspend fun getAllWithLocalPath(): List<SaveSyncEntity>
 
     // UPDATE OR REPLACE: when rewriting emulatorId would collide with an
     // existing row on the unique (gameId, emulatorId, channelName) index,
@@ -105,6 +126,9 @@ interface SaveSyncDao {
     // for both the old and the new emulator under the same channel.
     @Query("UPDATE OR REPLACE save_sync SET emulatorId = :newEmulatorId WHERE gameId = :gameId AND emulatorId != :newEmulatorId")
     suspend fun rekeyEmulatorForGame(gameId: Long, newEmulatorId: String): Int
+
+    @Query("SELECT * FROM save_sync WHERE emulatorId = 'default' OR emulatorId = ''")
+    suspend fun getStaleDefaultEmulatorRows(): List<SaveSyncEntity>
 
     @Query("DELETE FROM save_sync WHERE gameId IN (SELECT id FROM games WHERE platformId = :platformId)")
     suspend fun deleteByPlatform(platformId: Long)
@@ -117,4 +141,27 @@ interface SaveSyncDao {
 
     @Query("SELECT COUNT(*) FROM save_sync WHERE localSavePath IS NOT NULL")
     suspend fun countWithPaths(): Int
+
+    @Query("SELECT * FROM save_sync ORDER BY lastSyncedAt DESC, gameId ASC")
+    fun observeAll(): Flow<List<SaveSyncEntity>>
+
+    @Query("UPDATE save_sync SET lastSyncDeviceId = :deviceId, lastSyncDeviceName = :deviceName WHERE id = :id")
+    suspend fun updateDeviceTag(id: Long, deviceId: String?, deviceName: String?)
+
+    @Query("""
+        SELECT lastSyncDeviceId AS deviceId,
+               lastSyncDeviceName AS deviceName,
+               COUNT(DISTINCT gameId) AS saveCount,
+               MAX(lastSyncedAt) AS latestSyncAt
+        FROM save_sync
+        GROUP BY lastSyncDeviceId
+    """)
+    fun observeSaveCountsByDevice(): Flow<List<SaveCountByDevice>>
 }
+
+data class SaveCountByDevice(
+    val deviceId: String?,
+    val deviceName: String?,
+    val saveCount: Int,
+    val latestSyncAt: java.time.Instant?
+)

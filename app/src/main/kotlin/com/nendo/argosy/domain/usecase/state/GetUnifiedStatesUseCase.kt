@@ -9,6 +9,11 @@ import com.nendo.argosy.data.local.entity.StateCacheEntity
 import com.nendo.argosy.data.repository.SaveSyncRepository
 import com.nendo.argosy.data.repository.StateCacheManager
 import com.nendo.argosy.domain.model.UnifiedStateEntry
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 import javax.inject.Inject
 
 class GetUnifiedStatesUseCase @Inject constructor(
@@ -73,23 +78,36 @@ class GetUnifiedStatesUseCase @Inject constructor(
         val localStates = stateCacheManager.getByGameAndEmulator(gameId, emulatorId)
         val localByRommId = localStates.filter { it.rommSaveId != null }.associateBy { it.rommSaveId }
 
-        for (serverState in serverStates) {
-            if (localByRommId[serverState.id] != null) continue
-
+        val toFetch = serverStates.filter { serverState ->
+            if (localByRommId[serverState.id] != null) return@filter false
             val parsed = stateCacheManager.parseStateFileName(serverState.fileName)
-            if (channelName != null && parsed.channelName != channelName) continue
-
-            stateCacheManager.downloadStateFromRomM(
-                rommStateId = serverState.id,
-                fileName = serverState.fileName,
-                api = api,
-                gameId = gameId,
-                platformSlug = platformSlug,
-                emulatorId = emulatorId,
-                coreId = coreId,
-                serverState = serverState
-            )
+            channelName == null || parsed.channelName == channelName
         }
+        if (toFetch.isEmpty()) return
+
+        val gate = Semaphore(MAX_PARALLEL_STATE_DOWNLOADS)
+        coroutineScope {
+            toFetch.map { serverState ->
+                async {
+                    gate.withPermit {
+                        stateCacheManager.downloadStateFromRomM(
+                            rommStateId = serverState.id,
+                            fileName = serverState.fileName,
+                            api = api,
+                            gameId = gameId,
+                            platformSlug = platformSlug,
+                            emulatorId = emulatorId,
+                            coreId = coreId,
+                            serverState = serverState
+                        )
+                    }
+                }
+            }.awaitAll()
+        }
+    }
+
+    companion object {
+        private const val MAX_PARALLEL_STATE_DOWNLOADS = 4
     }
 
     private fun buildSlotList(

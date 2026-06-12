@@ -17,6 +17,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import com.nendo.argosy.ui.theme.ALauncherColors
 import androidx.compose.ui.unit.dp
 import com.nendo.argosy.ui.components.CenteredModal
 import com.nendo.argosy.ui.theme.Dimens
@@ -34,7 +35,7 @@ fun RatingPickerModal(
     val title = if (isRating) "RATE GAME" else "SET DIFFICULTY"
     val filledIcon = if (isRating) Icons.Default.Star else Icons.Default.Whatshot
     val outlineIcon = if (isRating) Icons.Default.StarOutline else Icons.Outlined.Whatshot
-    val filledColor = if (isRating) Color(0xFFFFD700) else Color(0xFFE53935)
+    val filledColor = if (isRating) ALauncherColors.StarGold else ALauncherColors.DifficultyRed
     val outlineColor = Color.White.copy(alpha = 0.4f)
 
     CenteredModal(

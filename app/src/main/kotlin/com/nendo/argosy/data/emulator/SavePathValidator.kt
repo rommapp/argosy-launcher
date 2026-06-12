@@ -11,6 +11,7 @@ import javax.inject.Singleton
 
 @Singleton
 class SavePathValidator @Inject constructor(
+    @dagger.hilt.android.qualifiers.ApplicationContext private val context: android.content.Context,
     private val emulatorSaveConfigDao: EmulatorSaveConfigDao,
     private val fileAccessLayer: FileAccessLayer,
     private val saveHandlerRegistry: PlatformSaveHandlerRegistry
@@ -86,7 +87,7 @@ class SavePathValidator @Inject constructor(
             } ?: basePath
             listOf(effectivePath)
         } else {
-            SavePathRegistry.resolvePathWithPackage(config, emulatorPackage)
+            SavePathRegistry.resolvePathWithPackage(config, emulatorPackage, context.filesDir.absolutePath)
         }
     }
 
@@ -94,7 +95,7 @@ class SavePathValidator @Inject constructor(
         if (!hasFileAccessPermission()) return false
 
         val config = SavePathRegistry.getConfigIncludingUnsupported(emulatorId) ?: return false
-        val resolvedPaths = SavePathRegistry.resolvePathWithPackage(config, emulatorPackage)
+        val resolvedPaths = SavePathRegistry.resolvePathWithPackage(config, emulatorPackage, context.filesDir.absolutePath)
         val roots = resolvedPaths.mapNotNull { packageDataRoot(it) }.distinct()
 
         return roots.any { root ->

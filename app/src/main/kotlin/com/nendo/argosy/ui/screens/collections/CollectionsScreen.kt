@@ -192,6 +192,18 @@ fun CollectionsScreen(
                     onClick = { onVirtualBrowseClick("modes") }
                 )
             }
+
+            if (uiState.series.isNotEmpty()) {
+                item {
+                    BrowseByRow(
+                        icon = Icons.Default.Style,
+                        label = "Series",
+                        count = uiState.series.size,
+                        isFocused = !hasDialogOpen && uiState.focusedSection == CollectionSection.BROWSE_BY && uiState.focusedIndex == 2,
+                        onClick = { onVirtualBrowseClick("series") }
+                    )
+                }
+            }
         }
 
         Box(modifier = Modifier.align(Alignment.BottomCenter)) {

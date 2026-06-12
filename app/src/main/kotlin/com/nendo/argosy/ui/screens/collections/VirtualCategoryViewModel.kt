@@ -87,6 +87,7 @@ class VirtualCategoryViewModel @Inject constructor(
     private val categoryType = when (type) {
         "genres" -> CategoryType.GENRE
         "modes" -> CategoryType.GAME_MODE
+        "series" -> CategoryType.SERIES
         else -> CategoryType.GENRE
     }
 

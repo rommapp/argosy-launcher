@@ -48,6 +48,59 @@ class SaveSyncEntityManager @Inject constructor(
         }
     }
 
+    suspend fun markRestored(
+        gameId: Long,
+        rommId: Long,
+        emulatorId: String,
+        channelName: String?,
+        localPath: String,
+        rommSaveId: Long?,
+        serverTimestamp: Instant?,
+        contentHash: String? = null
+    ) {
+        val existing = if (channelName != null) {
+            saveSyncDao.getByGameEmulatorAndChannel(gameId, emulatorId, channelName)
+                ?: saveSyncDao.getByGameAndEmulatorWithDefault(gameId, emulatorId, channelName)
+        } else {
+            saveSyncDao.getByGameAndEmulator(gameId, emulatorId)
+        }
+        val now = Instant.now()
+        saveSyncDao.upsert(
+            SaveSyncEntity(
+                id = existing?.id ?: 0,
+                gameId = gameId,
+                rommId = rommId,
+                emulatorId = emulatorId,
+                channelName = channelName,
+                rommSaveId = rommSaveId ?: existing?.rommSaveId,
+                localSavePath = localPath,
+                localUpdatedAt = now,
+                serverUpdatedAt = serverTimestamp ?: existing?.serverUpdatedAt,
+                lastSyncedAt = now,
+                lastUploadedHash = contentHash ?: existing?.lastUploadedHash,
+                syncStatus = SaveSyncEntity.STATUS_SYNCED,
+                userSelectedRestorePoint = existing?.userSelectedRestorePoint ?: false,
+                userSelectedRestorePointAt = existing?.userSelectedRestorePointAt
+            )
+        )
+    }
+
+    suspend fun markUserSelectedRestorePoint(gameId: Long, emulatorId: String, channelName: String?) {
+        val row = if (channelName != null) {
+            saveSyncDao.getByGameEmulatorAndChannel(gameId, emulatorId, channelName)
+                ?: saveSyncDao.getByGameAndEmulatorWithDefault(gameId, emulatorId, channelName)
+        } else {
+            saveSyncDao.getByGameAndEmulator(gameId, emulatorId)
+        }
+        if (row != null) {
+            saveSyncDao.setUserSelectedRestorePoint(row.id, Instant.now().toEpochMilli())
+        }
+    }
+
+    suspend fun clearUserSelectedRestorePointForGame(gameId: Long) {
+        saveSyncDao.clearUserSelectedRestorePointForGame(gameId)
+    }
+
     suspend fun createOrUpdateSyncEntity(
         gameId: Long,
         rommId: Long,
@@ -72,7 +125,12 @@ class SaveSyncEntityManager @Inject constructor(
             localUpdatedAt = localUpdatedAt ?: existing?.localUpdatedAt,
             serverUpdatedAt = existing?.serverUpdatedAt,
             lastSyncedAt = existing?.lastSyncedAt,
-            syncStatus = existing?.syncStatus ?: SaveSyncEntity.STATUS_PENDING_UPLOAD
+            lastUploadedHash = existing?.lastUploadedHash,
+            syncStatus = existing?.syncStatus ?: SaveSyncEntity.STATUS_PENDING_UPLOAD,
+            lastSyncDeviceId = existing?.lastSyncDeviceId,
+            lastSyncDeviceName = existing?.lastSyncDeviceName,
+            userSelectedRestorePoint = existing?.userSelectedRestorePoint ?: false,
+            userSelectedRestorePointAt = existing?.userSelectedRestorePointAt
         )
         saveSyncDao.upsert(entity)
         return entity

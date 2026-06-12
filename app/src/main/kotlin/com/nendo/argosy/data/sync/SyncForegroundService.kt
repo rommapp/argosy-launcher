@@ -119,7 +119,13 @@ class SyncForegroundService : Service() {
         maxProgress: Int
     ) {
         val notification = buildNotification(contentText, progress, maxProgress)
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            startForeground(
+                NOTIFICATION_ID,
+                notification,
+                ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
+            )
+        } else if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
             startForeground(
                 NOTIFICATION_ID,
                 notification,

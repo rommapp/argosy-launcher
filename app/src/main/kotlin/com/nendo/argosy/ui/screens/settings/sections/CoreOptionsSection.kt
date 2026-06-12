@@ -75,7 +75,7 @@ internal fun createCoreOptionsLayout(
     isInstalled: Boolean
 ) = SettingsLayout<CoreOptionItem, Unit>(
     allItems = items,
-    isFocusable = { it.isFocusable },
+    isFocusable = { item -> item.isFocusable && !(item is CoreOptionItem.Option && !isInstalled) },
     visibleWhen = { _, _ -> true },
     disabledBehavior = { item ->
         if (item is CoreOptionItem.Option && !isInstalled) DisabledBehavior.LOCKED

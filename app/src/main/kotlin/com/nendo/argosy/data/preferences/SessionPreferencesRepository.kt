@@ -35,20 +35,7 @@ class SessionPreferencesRepository @Inject constructor(
     }
 
     val activeSessionFlow: Flow<PersistedSession?> = dataStore.data.map { prefs ->
-        val gameId = prefs[Keys.ACTIVE_SESSION_GAME_ID]?.toLongOrNull() ?: return@map null
-        val emulator = prefs[Keys.ACTIVE_SESSION_EMULATOR] ?: return@map null
-        val startTime = prefs[Keys.ACTIVE_SESSION_START_TIME]?.let {
-            try { Instant.parse(it) } catch (_: Exception) { null }
-        } ?: return@map null
-
-        PersistedSession(
-            gameId = gameId,
-            emulatorPackage = emulator,
-            startTime = startTime,
-            coreName = prefs[Keys.ACTIVE_SESSION_CORE_NAME],
-            isHardcore = prefs[Keys.ACTIVE_SESSION_IS_HARDCORE] ?: false,
-            channelName = prefs[Keys.ACTIVE_SESSION_CHANNEL_NAME]
-        )
+        prefs.toPersistedSession()
     }
 
     suspend fun persistActiveSession(
@@ -83,20 +70,22 @@ class SessionPreferencesRepository @Inject constructor(
     }
 
     suspend fun getPersistedSession(): PersistedSession? {
-        val prefs = dataStore.data.first()
-        val gameId = prefs[Keys.ACTIVE_SESSION_GAME_ID]?.toLongOrNull() ?: return null
-        val emulator = prefs[Keys.ACTIVE_SESSION_EMULATOR] ?: return null
-        val startTime = prefs[Keys.ACTIVE_SESSION_START_TIME]?.let {
-            try { Instant.parse(it) } catch (_: Exception) { null }
-        } ?: return null
+        return dataStore.data.first().toPersistedSession()
+    }
 
+    private fun Preferences.toPersistedSession(): PersistedSession? {
+        val gameId = this[Keys.ACTIVE_SESSION_GAME_ID]?.toLongOrNull() ?: return null
+        val emulator = this[Keys.ACTIVE_SESSION_EMULATOR] ?: return null
+        val startTime = this[Keys.ACTIVE_SESSION_START_TIME]?.let {
+            runCatching { Instant.parse(it) }.getOrNull()
+        } ?: return null
         return PersistedSession(
             gameId = gameId,
             emulatorPackage = emulator,
             startTime = startTime,
-            coreName = prefs[Keys.ACTIVE_SESSION_CORE_NAME],
-            isHardcore = prefs[Keys.ACTIVE_SESSION_IS_HARDCORE] ?: false,
-            channelName = prefs[Keys.ACTIVE_SESSION_CHANNEL_NAME]
+            coreName = this[Keys.ACTIVE_SESSION_CORE_NAME],
+            isHardcore = this[Keys.ACTIVE_SESSION_IS_HARDCORE] ?: false,
+            channelName = this[Keys.ACTIVE_SESSION_CHANNEL_NAME]
         )
     }
 }

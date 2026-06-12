@@ -24,6 +24,7 @@ data class TitleIdResult(
     val titleId: String,
     val fromBinary: Boolean,
     val rawSerial: String = titleId,
+    val saveId: String = titleId,
     val usage: SaveUsage = SaveUsage.FOLDER_EXACT
 ) {
     enum class SaveUsage { FOLDER_EXACT, FOLDER_PREFIX, FILE_EXACT, FILE_PREFIX }
@@ -67,12 +68,13 @@ class TitleIdExtractor @Inject constructor(
         Logger.debug(
             TAG,
             "[SaveSync] DETECT | sigil hit | file=${romFile.name}, platform=$platformId, " +
-                "titleId=${r.titleId}, raw=${r.rawSerial}, source=${r.source}, usage=${r.usage}"
+                "titleId=${r.titleId}, raw=${r.rawSerial}, saveId=${r.saveId}, source=${r.source}, usage=${r.usage}"
         )
         return TitleIdResult(
             titleId = r.titleId,
             fromBinary = r.source == SigilResult.Source.Binary,
             rawSerial = r.rawSerial,
+            saveId = r.saveId.ifBlank { r.titleId },
             usage = when (r.usage) {
                 SigilResult.Usage.FolderExact  -> TitleIdResult.SaveUsage.FOLDER_EXACT
                 SigilResult.Usage.FolderPrefix -> TitleIdResult.SaveUsage.FOLDER_PREFIX

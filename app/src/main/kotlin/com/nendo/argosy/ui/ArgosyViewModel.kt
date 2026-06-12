@@ -106,6 +106,7 @@ data class DrawerState(
     val rommConnecting: Boolean = false,
     val socialConnected: Boolean = false,
     val downloadCount: Int = 0,
+    val saveSyncAttentionCount: Int = 0,
     val emulatorUpdatesAvailable: Int = 0,
     val currentTab: DrawerTab = DrawerTab.NAVIGATION,
     val navFocusIndex: Int = 0,
@@ -153,6 +154,7 @@ class ArgosyViewModel @Inject constructor(
     val gamepadInputHandler: GamepadInputHandler,
     val hapticManager: HapticFeedbackManager,
     val soundManager: SoundFeedbackManager,
+    val imageCacheManager: com.nendo.argosy.data.cache.ImageCacheManager,
     val notificationManager: NotificationManager,
     downloadNotificationObserver: DownloadNotificationObserver,
     syncNotificationObserver: SyncNotificationObserver,
@@ -165,6 +167,7 @@ class ArgosyViewModel @Inject constructor(
     private val libretroMigrationUseCase: LibretroMigrationUseCase,
     private val emulatorUpdateManager: EmulatorUpdateManager,
     private val syncCoordinator: com.nendo.argosy.data.sync.SyncCoordinator,
+    private val syncConflictNotifier: com.nendo.argosy.data.sync.SyncConflictNotifier,
     private val socialSyncCoordinator: com.nendo.argosy.data.sync.SocialSyncCoordinator,
     private val syncQueueManager: SyncQueueManager,
     private val brightnessController: BrightnessController,
@@ -177,7 +180,8 @@ class ArgosyViewModel @Inject constructor(
     private val netplayPreflightChecker: NetplayPreflightChecker,
     private val netplayJoinService: com.nendo.argosy.data.netplay.NetplayJoinService,
     private val launchGameUseCase: LaunchGameUseCase,
-    private val homeLibraryDelegate: com.nendo.argosy.ui.screens.home.delegates.HomeLibraryDelegate
+    private val homeLibraryDelegate: com.nendo.argosy.ui.screens.home.delegates.HomeLibraryDelegate,
+    private val pendingConflictDao: com.nendo.argosy.data.local.dao.PendingConflictDao
 ) : ViewModel() {
 
     val netplayJoinState: StateFlow<com.nendo.argosy.data.netplay.NetplayJoinState> get() = netplayJoinService.state
@@ -242,12 +246,13 @@ class ArgosyViewModel @Inject constructor(
     }
 
     private fun observeConnectionForSync() {
+        syncConflictNotifier.start()
         viewModelScope.launch {
             var wasConnected = false
             romMRepository.connectionState.collect { state ->
                 val isConnected = state is ConnectionState.Connected
                 if (isConnected && !wasConnected) {
-                    syncCoordinator.processQueue()
+                    syncCoordinator.reconcileAll()
                 }
                 wasConnected = isConnected
             }
@@ -331,6 +336,9 @@ class ArgosyViewModel @Inject constructor(
                 _startupStatus.value = "Checking emulators..."
                 runBuiltinEmulatorMigration()
                 emulatorUpdateManager.checkIfNeeded()
+
+                gameRepository.repairFolderRomPointers()
+                gameRepository.repairVariantFilePointers()
 
                 runWeeklyIntegrityCheckIfDue()
 
@@ -439,18 +447,21 @@ class ArgosyViewModel @Inject constructor(
     private val _drawerModal = MutableStateFlow<DrawerModal>(DrawerModal.None)
 
     val drawerUiState: StateFlow<DrawerState> = combine(
-        romMRepository.connectionState,
-        downloadManager.state,
-        emulatorUpdateManager.assignedUpdateCount,
-        _drawerTab,
-        _navFocusIndex,
-        _friendsFocusIndex,
-        socialRepository.friends,
-        socialRepository.friendCode,
-        _drawerModal,
-        socialRepository.connectionState,
-        steamContentManager.activeDownload,
-        steamContentManager.downloadQueue
+        listOf(
+            romMRepository.connectionState,
+            downloadManager.state,
+            emulatorUpdateManager.assignedUpdateCount,
+            _drawerTab,
+            _navFocusIndex,
+            _friendsFocusIndex,
+            socialRepository.friends,
+            socialRepository.friendCode,
+            _drawerModal,
+            socialRepository.connectionState,
+            steamContentManager.activeDownload,
+            steamContentManager.downloadQueue,
+            pendingConflictDao.getOpenCountFlow()
+        )
     ) { values ->
         val connection = values[0] as ConnectionState
         val downloads = values[1] as DownloadQueueState
@@ -466,6 +477,7 @@ class ArgosyViewModel @Inject constructor(
         val steamActiveDownload = values[10] as com.nendo.argosy.data.steam.SteamDownloadProgress?
         @Suppress("UNCHECKED_CAST")
         val steamQueue = values[11] as List<com.nendo.argosy.data.steam.QueuedSteamDownload>
+        val saveSyncAttentionCount = values[12] as Int
 
         val steamActive = steamActiveDownload != null
         val steamQueued = steamQueue.size
@@ -484,6 +496,7 @@ class ArgosyViewModel @Inject constructor(
             rommConnecting = connection is ConnectionState.Connecting,
             socialConnected = socialConnection is SocialConnectionState.Connected,
             downloadCount = downloadCount,
+            saveSyncAttentionCount = saveSyncAttentionCount,
             emulatorUpdatesAvailable = emulatorUpdateCount,
             currentTab = tab,
             navFocusIndex = navIndex,
@@ -506,6 +519,7 @@ class ArgosyViewModel @Inject constructor(
         DrawerItem(Screen.Collections.route, "Collections"),
         DrawerItem(Screen.Library.route, "Library"),
         DrawerItem(Screen.Downloads.route, "Downloads"),
+        DrawerItem(Screen.SaveSync.route, "Save Sync"),
         DrawerItem(Screen.Apps.route, "Apps"),
         DrawerItem(Screen.Settings.route, "Settings")
     )

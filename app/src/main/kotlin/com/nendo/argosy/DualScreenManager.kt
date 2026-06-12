@@ -85,7 +85,6 @@ class DualScreenManager(
     internal val sessionStateStore: SessionStateStore,
     internal val preferencesRepository: UserPreferencesRepository,
     internal val syncPreferencesRepository: com.nendo.argosy.data.preferences.SyncPreferencesRepository,
-    private val edenContentManager: com.nendo.argosy.data.emulator.EdenContentManager,
     private val notificationManager: com.nendo.argosy.core.notification.NotificationManager,
     internal val emulatorConfigDao: com.nendo.argosy.data.local.dao.EmulatorConfigDao,
     internal val configureEmulatorUseCase: com.nendo.argosy.domain.usecase.game.ConfigureEmulatorUseCase,
@@ -213,6 +212,19 @@ class DualScreenManager(
     )
     val dualCollectionShowcase: StateFlow<DualCollectionShowcaseState> =
         _dualCollectionShowcase
+
+    init {
+        scope.launch {
+            preferencesRepository.userPreferences.collect { prefs ->
+                _dualScreenShowcase.update {
+                    it.copy(
+                        useGameBackground = prefs.useGameBackground,
+                        customWallpaperPath = prefs.customBackgroundPath
+                    )
+                }
+            }
+        }
+    }
 
     private val _dualSyncOverlay = MutableStateFlow<com.nendo.argosy.ui.screens.common.SyncOverlayState?>(null)
     val dualSyncOverlay: StateFlow<com.nendo.argosy.ui.screens.common.SyncOverlayState?> = _dualSyncOverlay
@@ -496,10 +508,14 @@ class DualScreenManager(
     }
 
     fun onGameSelected(showcase: DualHomeShowcaseState) {
-        val gameId = showcase.gameId
+        val withWallpaper = showcase.copy(
+            useGameBackground = _dualScreenShowcase.value.useGameBackground,
+            customWallpaperPath = _dualScreenShowcase.value.customWallpaperPath
+        )
+        val gameId = withWallpaper.gameId
         if (gameId > 0) {
             scope.launch(Dispatchers.IO) {
-                val validated = validateShowcaseImagePaths(showcase)
+                val validated = validateShowcaseImagePaths(withWallpaper)
                 _dualScreenShowcase.value = validated
                 val entity = gameDao.getById(gameId) ?: return@launch
                 val rommId = entity.rommId
@@ -508,7 +524,7 @@ class DualScreenManager(
                 fetchAchievementsUseCase(gameId = gameId, rommId = rommId, raId = raId)
             }
         } else {
-            _dualScreenShowcase.value = showcase
+            _dualScreenShowcase.value = withWallpaper
         }
     }
 
@@ -627,7 +643,8 @@ class DualScreenManager(
         when (type) {
             ActiveModal.EMULATOR, ActiveModal.CORE, ActiveModal.COLLECTION,
             ActiveModal.SAVE_NAME, ActiveModal.UPDATES_DLC,
-            ActiveModal.DISC_PICKER, ActiveModal.VARIANT_PICKER -> return
+            ActiveModal.DISC_PICKER, ActiveModal.VARIANT_PICKER,
+            ActiveModal.STEAM_INSTALL -> return
             else -> handleDualModalOpen(type, value, statusSelected, statusCurrent)
         }
         refocusMain()
@@ -680,21 +697,8 @@ class DualScreenManager(
                 modalType = ActiveModal.UPDATES_DLC,
                 updateFiles = updateFiles,
                 dlcFiles = dlcFiles,
-                updatesPickerFocusIndex = 0,
-                isEdenGame = false
+                updatesPickerFocusIndex = 0
             )
-        }
-        val currentGameId = _dualGameDetailState.value?.gameId ?: -1L
-        if (currentGameId > 0) {
-            scope.launch(Dispatchers.IO) {
-                val game = gameDao.getById(currentGameId) ?: return@launch
-                val emId = emulatorResolver.getEmulatorIdForGame(
-                    currentGameId, game.platformId, game.platformSlug
-                )
-                if (emId == "eden") {
-                    _dualGameDetailState.update { s -> s?.copy(isEdenGame = true) }
-                }
-            }
         }
         refocusMain()
     }
@@ -708,6 +712,37 @@ class DualScreenManager(
             )
         }
         refocusMain()
+    }
+
+    fun openSteamInstallModal(names: List<String>, packages: List<String>) {
+        _dualGameDetailState.update { state ->
+            state?.copy(
+                modalType = ActiveModal.STEAM_INSTALL,
+                steamInstallOptionNames = names,
+                steamInstallOptionPackages = packages,
+                steamInstallFocusIndex = 0
+            )
+        }
+        refocusMain()
+    }
+
+    fun openSteamChooserForHome(gameId: Long) {
+        scope.launch(Dispatchers.IO) {
+            val game = gameDao.getById(gameId) ?: return@launch
+            if (game.steamAppId == null) return@launch
+            val options = com.nendo.argosy.data.launcher.SteamLaunchers.getMarkOptions(appContext)
+            _dualGameDetailState.value = DualGameDetailUpperState(
+                gameId = gameId,
+                title = game.title,
+                coverPath = game.coverPath,
+                modalType = ActiveModal.STEAM_INSTALL,
+                steamInstallOptionNames = options.map { it.displayName },
+                steamInstallOptionPackages = options.map { it.launcherPackage },
+                steamInstallFocusIndex = 0,
+                isHomeChooser = true
+            )
+            refocusMain()
+        }
     }
 
     fun onModalClose() {
@@ -732,6 +767,10 @@ class DualScreenManager(
             }
             ActiveModal.COLLECTION -> {
                 toggleDualCollectionAtFocus()
+                return
+            }
+            ActiveModal.STEAM_INSTALL -> {
+                confirmDualSteamInstallSelection()
                 return
             }
             else -> {}
@@ -761,6 +800,7 @@ class DualScreenManager(
             "REFRESH_METADATA" -> handleDualRefresh(gameId)
             "DELETE" -> handleDualDelete(gameId)
             "HIDE" -> handleDualHide(gameId)
+            "UNHIDE" -> handleDualUnhide(gameId)
             "SAVE_SWITCH_CHANNEL" -> handleSaveSwitchChannel(gameId, channelName)
             "SAVE_SET_RESTORE_POINT" -> handleSaveSetRestorePoint(gameId, channelName, timestamp ?: 0L)
             "DOWNLOAD_UPDATE_FILE" -> {
@@ -774,37 +814,14 @@ class DualScreenManager(
                             gameId = gameId, gameFileId = fileId, rommFileId = rommFileId,
                             fileName = gameFile.fileName, category = gameFile.category,
                             gameTitle = game.title, platformSlug = game.platformSlug,
-                            coverPath = game.coverPath, expectedSizeBytes = gameFile.fileSize
+                            coverPath = game.coverPath, expectedSizeBytes = gameFile.fileSize,
+                            gameFolderName = game.rommFileName
                         )
                     }
                 }
             }
             "SELECT_DISC" -> handleSelectDisc(gameId)
             "PLAY_DISC" -> handleDualPlayDisc(gameId, channelName)
-            "INSTALL_UPDATE_FILE" -> {
-                Log.d("UpdatesDLC", "handleDirectAction: INSTALL_UPDATE_FILE gameId=$gameId")
-                scope.launch(Dispatchers.IO) {
-                    val game = gameDao.getById(gameId)
-                    Log.d("UpdatesDLC", "INSTALL: game=${game?.title}, localPath=${game?.localPath}")
-                    if (game == null) return@launch
-                    val localPath = game.localPath ?: return@launch
-                    val gameDir = java.io.File(localPath).parent ?: return@launch
-                    Log.d("UpdatesDLC", "INSTALL: registering dir=$gameDir with Eden")
-                    val success = edenContentManager.registerDirectory(gameDir)
-                    Log.d("UpdatesDLC", "INSTALL: Eden registerDirectory result=$success")
-                    if (success) {
-                        _dualGameDetailState.update { s ->
-                            s?.copy(
-                                updateFiles = s.updateFiles.map { it.copy(isAppliedToEmulator = true) },
-                                dlcFiles = s.dlcFiles.map { it.copy(isAppliedToEmulator = true) }
-                            )
-                        }
-                        notificationManager.showSuccess("Applied to Eden. Restart Eden to load changes.")
-                    } else {
-                        notificationManager.showError("Failed to register directory with Eden")
-                    }
-                }
-            }
         }
     }
 
@@ -845,6 +862,11 @@ class DualScreenManager(
             }
             "collection_create" -> _dualGameDetailState.update { s -> s?.copy(showCreateDialog = true) }
             "disc_focus" -> _dualGameDetailState.update { s -> s?.copy(discPickerFocusIndex = intValue) }
+            "steam_install_focus" -> _dualGameDetailState.update { s -> s?.copy(steamInstallFocusIndex = intValue) }
+            "steam_install_confirm" -> {
+                setDualSteamInstallFocus(intValue)
+                confirmDualSteamInstallSelection()
+            }
         }
     }
 
@@ -1032,6 +1054,11 @@ class DualScreenManager(
 
     fun dismissDualModal() {
         Log.d("UpdatesDLC", "dismissDualModal called, current modal=${_dualGameDetailState.value?.modalType}", Exception("stacktrace"))
+        if (_dualGameDetailState.value?.isHomeChooser == true) {
+            _dualGameDetailState.value = null
+            companionHost?.refocusSelf()
+            return
+        }
         companionHost?.onModalResult(
             dismissed = true, type = _dualGameDetailState.value?.modalType?.name,
             value = 0, statusSelected = null, selectedIndex = -1,
@@ -1182,10 +1209,21 @@ class DualScreenManager(
         _dualGameDetailState.update { it?.copy(saveNameText = text) }
     }
 
+    private fun isReservedSaveSlotName(name: String): Boolean =
+        com.nendo.argosy.data.repository.SaveSyncApiClient.equalsNormalized(
+            name, com.nendo.argosy.data.repository.SaveSyncApiClient.AUTOSAVE_SLOT_NAME
+        ) || com.nendo.argosy.data.repository.SaveSyncApiClient.equalsNormalized(
+            name, com.nendo.argosy.data.repository.SaveSyncApiClient.DEFAULT_SAVE_NAME
+        )
+
     fun confirmDualSaveName() {
         val state = _dualGameDetailState.value ?: return
         val name = state.saveNameText.trim()
         if (name.isBlank()) return
+        if (isReservedSaveSlotName(name)) {
+            notificationManager.showError("'$name' is a reserved name")
+            return
+        }
         val gameId = state.gameId
 
         when (state.saveNamePromptAction) {
@@ -1208,6 +1246,57 @@ class DualScreenManager(
         val disc = state.discPickerOptions.getOrNull(index) ?: return
         _dualGameDetailState.update { it?.copy(modalType = ActiveModal.NONE) }
         handleDualPlayDisc(state.gameId, disc.filePath)
+    }
+
+    fun setDualSteamInstallFocus(index: Int) {
+        _dualGameDetailState.update { state ->
+            state?.copy(steamInstallFocusIndex = index)
+        }
+    }
+
+    fun moveDualSteamInstallFocus(delta: Int) {
+        _dualGameDetailState.update { state ->
+            val max = state?.steamInstallOptionNames?.size ?: 0
+            state?.copy(
+                steamInstallFocusIndex = (state.steamInstallFocusIndex + delta)
+                    .coerceIn(0, max)
+            )
+        }
+    }
+
+    fun confirmDualSteamInstallSelection() {
+        val state = _dualGameDetailState.value ?: return
+        val index = state.steamInstallFocusIndex
+        val gameId = state.gameId
+        val homeChooser = state.isHomeChooser
+        if (homeChooser) {
+            _dualGameDetailState.value = null
+        } else {
+            companionHost?.onModalResult(
+                dismissed = false, type = ActiveModal.STEAM_INSTALL.name,
+                value = 0, statusSelected = null, selectedIndex = index,
+                collectionToggleId = -1, collectionCreateName = null
+            )
+            _dualGameDetailState.update { it?.copy(modalType = ActiveModal.NONE) }
+        }
+        scope.launch(Dispatchers.IO) {
+            val game = gameDao.getById(gameId) ?: return@launch
+            val steamAppId = game.steamAppId ?: return@launch
+            if (index == 0) {
+                if (game.isExternallyManaged) gameDao.setSteamLauncher(gameId, null)
+                steamContentManager.queueDownloadOptimistic(steamAppId, game.title, game.coverPath)
+            } else {
+                val launcherPackage = state.steamInstallOptionPackages.getOrNull(index - 1)
+                    ?: return@launch
+                gameDao.setSteamLauncher(gameId, launcherPackage)
+            }
+            if (homeChooser) {
+                companionHost?.refocusSelf()
+            } else {
+                _swappedGameDetailViewModel?.loadGame(gameId)
+            }
+            companionHost?.onDirectActionResult("STEAM_INSTALL_DONE", gameId)
+        }
     }
 
     // --- Game Actions ---
@@ -1310,11 +1399,28 @@ class DualScreenManager(
         scope.launch(Dispatchers.IO) {
             val game = gameDao.getById(gameId) ?: return@launch
             if (game.steamAppId != null) {
+                if (isSteamGameInstalled(game)) {
+                    handleDualPlay(gameId)
+                    return@launch
+                }
                 steamContentManager.queueDownloadOptimistic(game.steamAppId, game.title, game.coverPath)
             } else {
                 gameActionsDelegate.queueDownload(gameId)
             }
         }
+    }
+
+    private suspend fun isSteamGameInstalled(
+        game: com.nendo.argosy.data.local.entity.GameEntity
+    ): Boolean {
+        val launcher = game.steamLauncher
+            ?.let { com.nendo.argosy.data.launcher.SteamLaunchers.getByPackage(it) }
+            ?: com.nendo.argosy.data.launcher.SteamLaunchers.getPreferred(appContext)
+        if (launcher?.isInstalled(appContext) != true) return false
+        if (game.isExternallyManaged) return true
+        val localPath = game.localPath ?: return false
+        return downloadFileStatusRepository.pathExists(localPath) &&
+            downloadFileStatusRepository.isDownloadComplete(localPath)
     }
 
     private fun handleDualRefresh(gameId: Long) {
@@ -1341,14 +1447,16 @@ class DualScreenManager(
         _swappedGameDetailViewModel?.onDeleteStarted()
         scope.launch(Dispatchers.IO) {
             val game = gameDao.getById(gameId) ?: return@launch
-            if (game.source == GameSource.ANDROID_APP) {
-                val uninstall = Intent(Intent.ACTION_DELETE).apply {
-                    data = Uri.parse("package:${game.packageName}")
-                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            when {
+                game.source == GameSource.ANDROID_APP -> {
+                    val uninstall = Intent(Intent.ACTION_DELETE).apply {
+                        data = Uri.parse("package:${game.packageName}")
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    }
+                    activityContext.startActivity(uninstall)
                 }
-                activityContext.startActivity(uninstall)
-            } else {
-                gameActionsDelegate.deleteLocalFile(gameId)
+                game.isExternallyManaged -> gameDao.setSteamLauncher(gameId, null)
+                else -> gameActionsDelegate.deleteLocalFile(gameId)
             }
             companionHost?.onDirectActionResult("DELETE_DONE", gameId)
             _swappedGameDetailViewModel?.loadGame(gameId)
@@ -1366,6 +1474,13 @@ class DualScreenManager(
         }
     }
 
+    private fun handleDualUnhide(gameId: Long) {
+        scope.launch(Dispatchers.IO) {
+            gameActionsDelegate.unhideGame(gameId)
+            companionHost?.onDirectActionResult("UNHIDE_DONE", gameId)
+        }
+    }
+
     // --- Save Operations ---
 
     private fun handleSaveSwitchChannel(gameId: Long, channelName: String?) {
@@ -1379,7 +1494,7 @@ class DualScreenManager(
             gameDao.updateActiveSaveTimestamp(gameId, null)
 
             if (emulatorId != null) {
-                val entries = getUnifiedSavesUseCase(gameId)
+                val entries = getUnifiedSavesUseCase(gameId, expandHistory = true)
                 val latestForChannel = entries
                     .filter { it.channelName == channelName }
                     .maxByOrNull { it.timestamp }
@@ -1422,7 +1537,7 @@ class DualScreenManager(
             gameDao.updateActiveSaveTimestamp(gameId, timestamp)
 
             if (emulatorId != null) {
-                val entries = getUnifiedSavesUseCase(gameId)
+                val entries = getUnifiedSavesUseCase(gameId, expandHistory = true)
                 val targetEntry = entries.find {
                     it.channelName == channelName &&
                         it.timestamp.toEpochMilli() == timestamp
@@ -1482,6 +1597,7 @@ class DualScreenManager(
     }
 
     private fun broadcastUnifiedSaves(gameId: Long) {
+        if (!sessionStateStore.isSaveSyncEnabled()) return
         scope.launch(Dispatchers.Default) {
             try {
                 val game = gameDao.getById(gameId)
@@ -1498,7 +1614,7 @@ class DualScreenManager(
         scope.launch(Dispatchers.IO) {
             try {
                 val game = gameDao.getById(gameId)
-                val fullEntries = getUnifiedSavesUseCase(gameId)
+                val fullEntries = getUnifiedSavesUseCase(gameId, expandHistory = true)
                 val fullData = fullEntries.map { it.toSaveEntryData() }
                 deliverSaves(gameId, fullData, game?.activeSaveChannel, game?.activeSaveTimestamp, syncing = false)
             } catch (e: Exception) {
@@ -1537,6 +1653,11 @@ class DualScreenManager(
 
     fun resyncCompanionState() {
         broadcastForegroundState(true)
+        if (_dualGameDetailState.value?.isHomeChooser == true) {
+            _dualGameDetailState.value = null
+            companionHost?.onOverlayClosed()
+            return
+        }
         val detailState = _dualGameDetailState.value
         if (detailState?.modalType != null &&
             detailState.modalType != ActiveModal.NONE
@@ -1617,6 +1738,7 @@ class DualScreenManager(
             steamContentManager = steamContentManager,
             displayAffinityHelper = displayAffinityHelper,
             downloadFileStatusRepository = downloadFileStatusRepository,
+            sessionStateStore = sessionStateStore,
             context = appContext
         )
         vm.loadGame(gameId)

@@ -43,9 +43,8 @@ import com.nendo.argosy.ui.screens.settings.RASettingsState
 import com.nendo.argosy.ui.screens.settings.SettingsUiState
 import com.nendo.argosy.ui.screens.settings.SettingsViewModel
 import com.nendo.argosy.ui.screens.settings.components.SectionHeader
+import com.nendo.argosy.ui.theme.ALauncherColors
 import com.nendo.argosy.ui.theme.Dimens
-
-private val goldColor = Color(0xFFFFD700)
 
 @Composable
 fun RASettingsSection(
@@ -112,7 +111,7 @@ private fun RALoggedInContent(
                 Icon(
                     imageVector = Icons.Default.EmojiEvents,
                     contentDescription = null,
-                    tint = goldColor,
+                    tint = ALauncherColors.StarGold,
                     modifier = Modifier.size(32.dp)
                 )
                 Spacer(modifier = Modifier.width(Dimens.spacingMd))
@@ -125,7 +124,7 @@ private fun RALoggedInContent(
                     Text(
                         text = raState.username ?: "Unknown",
                         style = MaterialTheme.typography.titleMedium,
-                        color = goldColor
+                        color = ALauncherColors.StarGold
                     )
                 }
                 Icon(
@@ -205,7 +204,7 @@ private fun RALoggedOutContent(
                 Icon(
                     imageVector = Icons.Default.EmojiEvents,
                     contentDescription = null,
-                    tint = goldColor.copy(alpha = 0.6f),
+                    tint = ALauncherColors.StarGold.copy(alpha = 0.6f),
                     modifier = Modifier.size(32.dp)
                 )
                 Spacer(modifier = Modifier.width(Dimens.spacingMd))
@@ -268,7 +267,7 @@ private fun RALoginForm(
             modifier = Modifier
                 .fillMaxWidth()
                 .background(
-                    goldColor.copy(alpha = 0.1f),
+                    ALauncherColors.StarGold.copy(alpha = 0.1f),
                     RoundedCornerShape(Dimens.radiusMd)
                 )
                 .padding(Dimens.spacingMd),
@@ -277,14 +276,14 @@ private fun RALoginForm(
             Icon(
                 imageVector = Icons.Default.EmojiEvents,
                 contentDescription = null,
-                tint = goldColor,
+                tint = ALauncherColors.StarGold,
                 modifier = Modifier.size(24.dp)
             )
             Spacer(modifier = Modifier.width(Dimens.spacingSm))
             Text(
                 text = "RetroAchievements Login",
                 style = MaterialTheme.typography.titleMedium,
-                color = goldColor
+                color = ALauncherColors.StarGold
             )
         }
 

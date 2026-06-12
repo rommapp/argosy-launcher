@@ -102,6 +102,7 @@ data class GameEntity(
     val titleIdLocked: Boolean = false,
     val storeEnrichStatus: Int = 0,
     val titleIdCandidates: String? = null,
+    val saveId: String? = null,
     val youtubeVideoId: String? = null,
 
     val cheatsFetched: Boolean = false,

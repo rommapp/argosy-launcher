@@ -1,0 +1,259 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://argosy.local/design-system/tokens.schema.json",
+  "title": "Argosy Design Tokens",
+  "description": "Source of truth for all design tokens. Generators emit Kotlin constants, CSS custom properties, and TypeScript types from this file. Holds constants only; derivations live in Theme.kt.",
+  "type": "object",
+  "required": ["color", "dimension", "typography", "motion", "input", "enums", "components"],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": { "type": "string" },
+    "color":      { "$ref": "#/$defs/colorRoot" },
+    "dimension":  { "$ref": "#/$defs/dimensionRoot" },
+    "typography": { "$ref": "#/$defs/typographyRoot" },
+    "motion":     { "$ref": "#/$defs/motionRoot" },
+    "input":      { "$ref": "#/$defs/inputRoot" },
+    "enums":      { "$ref": "#/$defs/enumsRoot" },
+    "components": { "$ref": "#/$defs/componentsRoot" }
+  },
+  "$defs": {
+    "hex": {
+      "type": "string",
+      "pattern": "^#[0-9A-Fa-f]{6}([0-9A-Fa-f]{2})?$",
+      "description": "#RRGGBB or #RRGGBBAA"
+    },
+    "colorWithAlpha": {
+      "type": "object",
+      "required": ["color", "alpha"],
+      "additionalProperties": false,
+      "properties": {
+        "color": { "$ref": "#/$defs/hex" },
+        "alpha": { "type": "number", "minimum": 0, "maximum": 1 }
+      }
+    },
+    "colorValue": {
+      "oneOf": [
+        { "$ref": "#/$defs/hex" },
+        { "$ref": "#/$defs/colorWithAlpha" }
+      ]
+    },
+    "modePair": {
+      "type": "object",
+      "required": ["dark", "light"],
+      "additionalProperties": false,
+      "properties": {
+        "dark":  { "$ref": "#/$defs/colorValue" },
+        "light": { "$ref": "#/$defs/colorValue" }
+      }
+    },
+    "colorOrModePair": {
+      "oneOf": [
+        { "$ref": "#/$defs/colorValue" },
+        { "$ref": "#/$defs/modePair" }
+      ]
+    },
+    "schemeSlots": {
+      "type": "object",
+      "required": ["primary", "secondary", "tertiary", "surface", "surfaceVariant", "background", "onSurface", "outline", "outlineVariant"],
+      "additionalProperties": false,
+      "properties": {
+        "primary":          { "$ref": "#/$defs/colorValue" },
+        "secondary":        { "$ref": "#/$defs/colorValue" },
+        "tertiary":         { "$ref": "#/$defs/colorValue" },
+        "surface":          { "$ref": "#/$defs/colorValue" },
+        "surfaceVariant":   { "$ref": "#/$defs/colorValue" },
+        "background":       { "$ref": "#/$defs/colorValue" },
+        "onSurface":        { "$ref": "#/$defs/colorValue" },
+        "outline":          { "$ref": "#/$defs/colorValue" },
+        "outlineVariant":   { "$ref": "#/$defs/colorValue" }
+      }
+    },
+    "semanticSlots": {
+      "type": "object",
+      "required": ["success", "warning", "info"],
+      "additionalProperties": false,
+      "properties": {
+        "success": { "$ref": "#/$defs/colorValue" },
+        "warning": { "$ref": "#/$defs/colorValue" },
+        "info":    { "$ref": "#/$defs/colorValue" }
+      }
+    },
+    "colorRoot": {
+      "type": "object",
+      "required": ["scheme", "semantic", "domain", "accentPresets"],
+      "additionalProperties": false,
+      "properties": {
+        "scheme": {
+          "type": "object",
+          "required": ["dark", "light", "debugOverrides"],
+          "additionalProperties": false,
+          "properties": {
+            "dark":            { "$ref": "#/$defs/schemeSlots" },
+            "light":           { "$ref": "#/$defs/schemeSlots" },
+            "debugOverrides":  {
+              "type": "object",
+              "required": ["dark", "light"],
+              "additionalProperties": false,
+              "properties": {
+                "dark":  { "type": "object", "properties": { "primary": { "$ref": "#/$defs/colorValue" } }, "required": ["primary"] },
+                "light": { "type": "object", "properties": { "primary": { "$ref": "#/$defs/colorValue" } }, "required": ["primary"] }
+              }
+            }
+          }
+        },
+        "semantic": {
+          "type": "object",
+          "required": ["dark", "light"],
+          "additionalProperties": false,
+          "properties": {
+            "dark":  { "$ref": "#/$defs/semanticSlots" },
+            "light": { "$ref": "#/$defs/semanticSlots" }
+          }
+        },
+        "domain": {
+          "type": "object",
+          "description": "Narrow-purpose colors where hue carries meaning. Values may be flat or { dark, light } pairs.",
+          "additionalProperties": {
+            "oneOf": [
+              { "$ref": "#/$defs/colorOrModePair" },
+              {
+                "type": "object",
+                "additionalProperties": { "$ref": "#/$defs/colorOrModePair" }
+              }
+            ]
+          }
+        },
+        "accentPresets": {
+          "type": "array",
+          "description": "Unnamed (dark, light) pairs for the accent-color picker.",
+          "items": {
+            "type": "object",
+            "required": ["dark", "light"],
+            "additionalProperties": false,
+            "properties": {
+              "dark":  { "$ref": "#/$defs/hex" },
+              "light": { "$ref": "#/$defs/hex" }
+            }
+          }
+        }
+      }
+    },
+    "scaledDimension": {
+      "type": "object",
+      "required": ["base", "floor"],
+      "additionalProperties": false,
+      "properties": {
+        "base":  { "type": "integer", "minimum": 0 },
+        "floor": { "type": "integer", "minimum": 0 }
+      },
+      "description": "Scaled dp value: base * uiScale, never below floor."
+    },
+    "dimensionRoot": {
+      "type": "object",
+      "required": ["spacing", "radius", "border", "icon", "dot", "layout", "elevation", "uiScale"],
+      "additionalProperties": false,
+      "properties": {
+        "spacing": {
+          "type": "object",
+          "additionalProperties": { "$ref": "#/$defs/scaledDimension" }
+        },
+        "radius":  { "type": "object", "additionalProperties": { "type": "integer", "minimum": 0 } },
+        "border":  { "type": "object", "additionalProperties": { "type": "integer", "minimum": 0 } },
+        "icon":    { "type": "object", "additionalProperties": { "type": "integer", "minimum": 0 } },
+        "dot":     { "type": "object", "additionalProperties": { "type": "integer", "minimum": 0 } },
+        "layout":  { "type": "object", "additionalProperties": { "type": "integer", "minimum": 0 } },
+        "elevation": { "type": "object", "additionalProperties": { "type": "integer", "minimum": 0 } },
+        "uiScale": {
+          "type": "object",
+          "required": ["min", "max", "default", "step"],
+          "additionalProperties": false,
+          "properties": {
+            "min":     { "type": "integer", "minimum": 1 },
+            "max":     { "type": "integer", "minimum": 1 },
+            "default": { "type": "integer", "minimum": 1 },
+            "step":    { "type": "integer", "minimum": 1 }
+          }
+        }
+      }
+    },
+    "textStyle": {
+      "type": "object",
+      "required": ["fontSize", "lineHeight", "fontWeight"],
+      "additionalProperties": false,
+      "properties": {
+        "fontFamily":    { "type": "string", "enum": ["SansSerif", "Serif", "Monospace", "Cursive"] },
+        "fontSize":      { "type": "number", "minimum": 1 },
+        "lineHeight":    { "type": "number", "minimum": 1 },
+        "fontWeight":    { "type": "integer", "minimum": 100, "maximum": 900 },
+        "letterSpacing": { "type": "number" }
+      }
+    },
+    "typographyRoot": {
+      "type": "object",
+      "additionalProperties": { "$ref": "#/$defs/textStyle" }
+    },
+    "springSpec": {
+      "type": "object",
+      "required": ["dampingRatio", "stiffness"],
+      "additionalProperties": false,
+      "properties": {
+        "dampingRatio": { "type": "number" },
+        "stiffness":    { "type": "number" }
+      }
+    },
+    "motionRoot": {
+      "type": "object",
+      "required": ["spring", "tween"],
+      "additionalProperties": false,
+      "properties": {
+        "spring": {
+          "type": "object",
+          "additionalProperties": { "$ref": "#/$defs/springSpec" }
+        },
+        "tween": {
+          "type": "object",
+          "description": "Named durations in milliseconds.",
+          "additionalProperties": { "type": "integer", "minimum": 0 }
+        }
+      }
+    },
+    "inputRoot": {
+      "type": "object",
+      "required": ["debounce", "scrollPaddingPercent"],
+      "additionalProperties": false,
+      "properties": {
+        "debounce": {
+          "type": "object",
+          "additionalProperties": { "type": "integer", "minimum": 0 }
+        },
+        "scrollPaddingPercent": { "type": "number", "minimum": 0, "maximum": 1 }
+      }
+    },
+    "enumDef": {
+      "type": "object",
+      "required": ["type", "values"],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["dp", "px", "alpha", "aspectRatio", "alpha+shadow", "marker"],
+          "description": "How the values should be interpreted by consumers."
+        },
+        "values": {
+          "description": "For 'marker' type: an array of names. Otherwise an object keyed by name."
+        }
+      }
+    },
+    "enumsRoot": {
+      "type": "object",
+      "additionalProperties": { "$ref": "#/$defs/enumDef" }
+    },
+    "componentsRoot": {
+      "type": "object",
+      "description": "Per-component default values. Enum-typed defaults reference an enums.<EnumName> entry by member name.",
+      "additionalProperties": {
+        "type": "object"
+      }
+    }
+  }
+}

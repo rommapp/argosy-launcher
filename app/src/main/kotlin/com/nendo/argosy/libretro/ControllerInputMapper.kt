@@ -97,6 +97,11 @@ class ControllerInputMapper : KeyMapper {
         return results
     }
 
+    fun hasAnalogMappingForAxis(device: InputDevice, axis: Int): Boolean {
+        val mapping = extendedMappings[getControllerId(device)] ?: return false
+        return mapping.keys.any { it is InputSource.AnalogDirection && it.axis == axis }
+    }
+
     fun getMappedButtonsForController(controllerId: String): Set<Int> {
         val mapping = extendedMappings[controllerId] ?: return emptySet()
         return mapping.entries

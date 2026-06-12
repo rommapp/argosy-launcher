@@ -47,7 +47,7 @@ fun SteamDownloadLocationModal(
         LazyColumn(state = listState) {
             item {
                 SteamLocationRow(
-                    label = "Install to SD",
+                    label = "Download via Argosy",
                     subtitle = null,
                     isFocused = focusIndex == 0,
                     onClick = onDownloadToSd

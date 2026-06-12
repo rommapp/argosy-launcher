@@ -191,6 +191,16 @@ fun NavGraph(
             )
         }
 
+        composable(Screen.SaveSync.route) {
+            com.nendo.argosy.ui.screens.savesync.SaveSyncScreen(
+                onBack = navigateToDefault,
+                onDrawerToggle = onDrawerToggle,
+                onNavigateToGame = { gameId ->
+                    navController.navigate(Screen.GameDetail.createRoute(gameId))
+                }
+            )
+        }
+
         composable(
             route = Screen.Apps.route,
             deepLinks = listOf(navDeepLink { uriPattern = "argosy://apps" })
@@ -213,15 +223,23 @@ fun NavGraph(
                     type = NavType.StringType
                     nullable = true
                     defaultValue = null
+                },
+                navArgument("platformId") {
+                    type = NavType.LongType
+                    defaultValue = -1L
                 }
             )
         ) { backStackEntry ->
             val section = backStackEntry.arguments?.getString("section")
             val action = backStackEntry.arguments?.getString("action")
+            val platformId = backStackEntry.arguments?.getLong("platformId")?.takeIf { it >= 0 }
             SettingsScreen(
-                onBack = navigateToDefault,
+                onBack = {
+                    if (platformId != null) navController.popBackStack() else navigateToDefault()
+                },
                 initialSection = section,
                 initialAction = action,
+                initialPlatformId = platformId,
                 onNavigate = { route -> navController.navigate(route) }
             )
         }
@@ -237,6 +255,11 @@ fun NavGraph(
                 onBack = { navController.popBackStack() },
                 onNavigateToLaunch = { id, channelName, discId ->
                     navController.navigate(Screen.Launch.createRoute(id, channelName, discId))
+                },
+                onNavigateToPlatformSettings = { platformId ->
+                    navController.navigate(
+                        Screen.Settings.createRoute(section = "platform_detail", platformId = platformId)
+                    )
                 }
             )
         }

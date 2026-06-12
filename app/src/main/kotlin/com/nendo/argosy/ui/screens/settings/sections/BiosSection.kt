@@ -238,12 +238,18 @@ fun BiosSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                 }
 
                 is BiosItem.FirmwareFile -> {
+                    val isThisDownloading = bios.isDownloading &&
+                        bios.downloadingFileName == item.firmware.fileName
                     ExpandedChildItem(
                         title = item.firmware.fileName,
-                        value = if (item.firmware.isDownloaded) "Downloaded" else formatFileSize(item.firmware.fileSizeBytes),
+                        value = when {
+                            item.firmware.isDownloaded -> "Downloaded"
+                            isThisDownloading -> "Downloading..."
+                            else -> formatFileSize(item.firmware.fileSizeBytes)
+                        },
                         isFocused = isFocused(item),
                         onClick = {
-                            if (!item.firmware.isDownloaded) {
+                            if (!item.firmware.isDownloaded && !isThisDownloading) {
                                 viewModel.downloadSingleBios(item.firmware.rommId)
                             }
                         }

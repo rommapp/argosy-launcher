@@ -63,6 +63,7 @@ class VirtualBrowserViewModel @Inject constructor(
     private val categoryType = when (type) {
         "genres" -> CategoryType.GENRE
         "modes" -> CategoryType.GAME_MODE
+        "series" -> CategoryType.SERIES
         else -> CategoryType.GENRE
     }
 
@@ -76,6 +77,7 @@ class VirtualBrowserViewModel @Inject constructor(
                 val categories = when (type) {
                     "genres" -> getVirtualCollectionCategoriesUseCase.getGenres()
                     "modes" -> getVirtualCollectionCategoriesUseCase.getGameModes()
+                    "series" -> getVirtualCollectionCategoriesUseCase.getSeries()
                     else -> flowOf(emptyList())
                 }.stateIn(viewModelScope).value
                 categories.filter { isPinnedUseCase.isVirtualPinned(categoryType, it.name) }.map { it.name }.toSet()
@@ -88,6 +90,7 @@ class VirtualBrowserViewModel @Inject constructor(
         when (type) {
             "genres" -> getVirtualCollectionCategoriesUseCase.getGenres()
             "modes" -> getVirtualCollectionCategoriesUseCase.getGameModes()
+            "series" -> getVirtualCollectionCategoriesUseCase.getSeries()
             else -> flowOf(emptyList())
         },
         _focusedIndex,
@@ -99,6 +102,7 @@ class VirtualBrowserViewModel @Inject constructor(
             title = when (type) {
                 "genres" -> "Genres"
                 "modes" -> "Game Modes"
+                "series" -> "Series"
                 else -> "Browse"
             },
             categories = categories,

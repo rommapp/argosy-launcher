@@ -1,6 +1,7 @@
 package com.nendo.argosy.data.emulator
 
 import com.nendo.argosy.data.platform.PlatformDefinitions
+import com.nendo.argosy.data.storage.StoragePathUtils
 
 private const val BUILTIN_EMULATOR_ID = "argosy.builtin.libretro"
 
@@ -85,7 +86,24 @@ object BiosPathRegistry {
         "fcd403db69f54290b51035d82f835e7b" to "lynxboot.img",
 
         // Neo Geo (kept as-is, usually a zip)
-        "dffb72f116d36d025068b23970a4f6df" to "neogeo.zip"
+        "dffb72f116d36d025068b23970a4f6df" to "neogeo.zip",
+
+        // Amiga - PUAE (Kickstart filenames per libretro PUAE docs)
+        "0b8442c311caa54fb12ec88eaaa9facf" to "kick31034.A1000",
+        "1fa1f93d3d7b51271dd1356b8b2b45a9" to "kick32034.A1000",
+        "85ad74194e87c08904327de1a9443b7a" to "kick33180.A500",
+        "82a21c1890cae844b3df741f2762d48d" to "kick34005.A500",
+        "dc10d7bdd1b6f450773dfb558477c230" to "kick37175.A500",
+        "465646c9b6729f77eea5314d1f057951" to "kick37350.A600",
+        "e40a5dfb3d017ba8779faba30cbd1c8e" to "kick40063.A600",
+        "b7cc148386aa631136f510cd28e42fc3" to "kick39106.A1200",
+        "646773759326fbac3b2311fd8c8793ee" to "kick40068.A1200",
+        "9b8bdd5a3fd32c2a5a6f5b1aefc799a5" to "kick39106.A4000",
+        "9bdedde6a4f33555b4a270c8ca53297d" to "kick40068.A4000",
+        "89da1838a24460e4b93f4f0c5d92d48d" to "kick34005.CDTV",
+        "5f8924d013dd57a89cf349f4cdedc6b1" to "kick40060.CD32",
+        "bb72565701b1b6faece07d68ea5da639" to "kick40060.CD32.ext",
+        "f2f241bf094168cfb9e7805dc2856433" to "kick40060.CD32"
     )
 
     fun getRetroArchBiosName(md5Hash: String?): String? {
@@ -150,96 +168,116 @@ object BiosPathRegistry {
         "switch" to listOf(
             BiosRequirement("switch", "prod.keys", null, "Switch Production Keys", isRequired = true),
             BiosRequirement("switch", "firmware.zip", null, "Switch Firmware", isRequired = true)
+        ),
+        "amiga" to listOf(
+            BiosRequirement("amiga", "kick34005.A500", "82a21c1890cae844b3df741f2762d48d", "Kickstart v1.3 rev 34.005 (A500)", isRequired = false),
+            BiosRequirement("amiga", "kick37175.A500", "dc10d7bdd1b6f450773dfb558477c230", "Kickstart v2.04 rev 37.175 (A500+)", isRequired = false),
+            BiosRequirement("amiga", "kick40063.A600", "e40a5dfb3d017ba8779faba30cbd1c8e", "Kickstart v3.1 rev 40.063 (A600)", isRequired = false),
+            BiosRequirement("amiga", "kick39106.A1200", "b7cc148386aa631136f510cd28e42fc3", "Kickstart v3.0 rev 39.106 (A1200)", isRequired = false),
+            BiosRequirement("amiga", "kick40068.A1200", "646773759326fbac3b2311fd8c8793ee", "Kickstart v3.1 rev 40.068 (A1200)", isRequired = false),
+            BiosRequirement("amiga", "kick40068.A4000", "9bdedde6a4f33555b4a270c8ca53297d", "Kickstart v3.1 rev 40.068 (A4000)", isRequired = false)
+        ),
+        "amigacd32" to listOf(
+            BiosRequirement("amigacd32", "kick40060.CD32", "5f8924d013dd57a89cf349f4cdedc6b1", "CD32 Kickstart v3.1 rev 40.060", isRequired = false),
+            BiosRequirement("amigacd32", "kick40060.CD32.ext", "bb72565701b1b6faece07d68ea5da639", "CD32 extended ROM rev 40.060", isRequired = false)
+        ),
+        "cdtv" to listOf(
+            BiosRequirement("cdtv", "kick34005.CDTV", "89da1838a24460e4b93f4f0c5d92d48d", "CDTV extended ROM v1.00", isRequired = false)
         )
     )
 
-    private val emulatorBiosPaths: Map<String, BiosPathConfig> = mapOf(
+    private val primaryRoot: String get() = StoragePathUtils.primaryExternalRoot
+
+    private val emulatorBiosPaths: Map<String, BiosPathConfig> by lazy {
+        mapOf(
         "retroarch" to BiosPathConfig(
             emulatorId = "retroarch",
             defaultPaths = listOf(
-                "/storage/emulated/0/RetroArch/system",
-                "/storage/emulated/0/Android/data/com.retroarch/files/system"
+                "$primaryRoot/RetroArch/system",
+                "$primaryRoot/Android/data/com.retroarch/files/system"
             ),
             supportedPlatforms = setOf(
                 "psx", "saturn", "scd", "dreamcast", "dc", "neogeo",
-                "3do", "nds", "gba", "tgcd", "pcfx", "lynx", "arcade"
+                "3do", "nds", "gba", "tgcd", "pcfx", "lynx", "arcade",
+                "amiga", "amigacd32", "cdtv"
             )
         ),
         "retroarch_64" to BiosPathConfig(
             emulatorId = "retroarch_64",
             defaultPaths = listOf(
-                "/storage/emulated/0/RetroArch/system",
-                "/storage/emulated/0/Android/data/com.retroarch.aarch64/files/system"
+                "$primaryRoot/RetroArch/system",
+                "$primaryRoot/Android/data/com.retroarch.aarch64/files/system"
             ),
             supportedPlatforms = setOf(
                 "psx", "saturn", "scd", "dreamcast", "dc", "neogeo",
-                "3do", "nds", "gba", "tgcd", "pcfx", "lynx", "arcade"
+                "3do", "nds", "gba", "tgcd", "pcfx", "lynx", "arcade",
+                "amiga", "amigacd32", "cdtv"
             )
         ),
         "duckstation" to BiosPathConfig(
             emulatorId = "duckstation",
             defaultPaths = listOf(
-                "/storage/emulated/0/Android/data/com.github.stenzek.duckstation/files/bios"
+                "$primaryRoot/Android/data/com.github.stenzek.duckstation/files/bios"
             ),
             supportedPlatforms = setOf("psx")
         ),
         "melonds" to BiosPathConfig(
             emulatorId = "melonds",
             defaultPaths = listOf(
-                "/storage/emulated/0/melonDS/bios",
-                "/storage/emulated/0/Android/data/me.magnum.melonds/files/bios"
+                "$primaryRoot/melonDS/bios",
+                "$primaryRoot/Android/data/me.magnum.melonds/files/bios"
             ),
             supportedPlatforms = setOf("nds")
         ),
         "melondualds" to BiosPathConfig(
             emulatorId = "melondualds",
             defaultPaths = listOf(
-                "/storage/emulated/0/melonDS/bios",
-                "/storage/emulated/0/Android/data/me.magnum.melondualds/files/bios"
+                "$primaryRoot/melonDS/bios",
+                "$primaryRoot/Android/data/me.magnum.melondualds/files/bios"
             ),
             supportedPlatforms = setOf("nds")
         ),
         "flycast" to BiosPathConfig(
             emulatorId = "flycast",
             defaultPaths = listOf(
-                "/storage/emulated/0/Android/data/com.flycast.emulator/files/data",
-                "/storage/emulated/0/Flycast/data"
+                "$primaryRoot/Android/data/com.flycast.emulator/files/data",
+                "$primaryRoot/Flycast/data"
             ),
-            supportedPlatforms = setOf("dreamcast", "dc", "arcade")
+            supportedPlatforms = setOf("dreamcast", "naomi", "atomiswave")
         ),
         "redream" to BiosPathConfig(
             emulatorId = "redream",
             defaultPaths = listOf(
-                "/storage/emulated/0/Android/data/io.recompiled.redream/files"
+                "$primaryRoot/Android/data/io.recompiled.redream/files"
             ),
             supportedPlatforms = setOf("dreamcast", "dc")
         ),
         "saturn_emu" to BiosPathConfig(
             emulatorId = "saturn_emu",
             defaultPaths = listOf(
-                "/storage/emulated/0/Android/data/com.explusalpha.SaturnEmu/files"
+                "$primaryRoot/Android/data/com.explusalpha.SaturnEmu/files"
             ),
             supportedPlatforms = setOf("saturn")
         ),
         "pizza_boy_gba" to BiosPathConfig(
             emulatorId = "pizza_boy_gba",
             defaultPaths = listOf(
-                "/storage/emulated/0/PizzaBoyGBA",
-                "/storage/emulated/0/Android/data/it.dbtecno.pizzaboygba/files"
+                "$primaryRoot/PizzaBoyGBA",
+                "$primaryRoot/Android/data/it.dbtecno.pizzaboygba/files"
             ),
             supportedPlatforms = setOf("gba")
         ),
         "nethersx2" to BiosPathConfig(
             emulatorId = "nethersx2",
             defaultPaths = listOf(
-                "/storage/emulated/0/Android/data/xyz.aethersx2.android/files/bios"
+                "$primaryRoot/Android/data/xyz.aethersx2.android/files/bios"
             ),
             supportedPlatforms = setOf("ps2")
         ),
         "eden" to BiosPathConfig(
             emulatorId = "eden",
             defaultPaths = listOf(
-                "/storage/emulated/0/Android/data/dev.eden.eden_emulator/files"
+                "$primaryRoot/Android/data/dev.eden.eden_emulator/files"
             ),
             supportedPlatforms = setOf("switch")
         ),
@@ -248,10 +286,12 @@ object BiosPathRegistry {
             defaultPaths = emptyList(), // Paths set dynamically via getBuiltInSystemDir()
             supportedPlatforms = setOf(
                 "psx", "saturn", "scd", "dreamcast", "dc", "neogeo",
-                "gba", "tgcd", "lynx", "3do", "intellivision"
+                "gba", "tgcd", "lynx", "3do", "intellivision",
+                "amiga", "amigacd32", "cdtv"
             )
         )
-    )
+        )
+    }
 
     private val platformsWithBios: Set<String> = platformBiosFiles.keys
 
@@ -304,6 +344,6 @@ object BiosPathRegistry {
     )
 
     fun getEdenDataPath(packageName: String): String {
-        return "/storage/emulated/0/Android/data/$packageName/files"
+        return "$primaryRoot/Android/data/$packageName/files"
     }
 }

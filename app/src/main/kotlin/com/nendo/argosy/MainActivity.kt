@@ -12,6 +12,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
+import androidx.core.view.doOnAttach
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
@@ -25,6 +26,7 @@ import com.nendo.argosy.data.cache.ImageCacheManager
 import com.nendo.argosy.data.emulator.EmulatorResolver
 import com.nendo.argosy.data.local.dao.DownloadQueueDao
 import com.nendo.argosy.data.local.dao.GameDao
+import com.nendo.argosy.data.preferences.UserPreferences
 import com.nendo.argosy.data.repository.CollectionRepository
 import com.nendo.argosy.data.repository.PlatformRepository
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
@@ -59,6 +61,8 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 private const val TAG = "MainActivity"
+internal fun shouldInitializeScreenCapture(prefs: UserPreferences): Boolean =
+    prefs.ambientLedEnabled && prefs.ambientLedScreenEnabled
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -71,7 +75,9 @@ class MainActivity : ComponentActivity() {
     @Inject lateinit var downloadQueueDao: DownloadQueueDao
     @Inject lateinit var downloadQueueRepository: com.nendo.argosy.data.repository.DownloadQueueRepository
     @Inject lateinit var gamepadInputHandler: GamepadInputHandler
+    @Inject lateinit var triggerAxisKeyEmitter: com.nendo.argosy.ui.input.TriggerAxisKeyEmitter
     @Inject lateinit var imageCacheManager: ImageCacheManager
+    @Inject lateinit var androidGameScanner: com.nendo.argosy.data.scanner.AndroidGameScanner
     @Inject lateinit var romMRepository: RomMRepository
     @Inject lateinit var preferencesRepository: UserPreferencesRepository
     @Inject lateinit var syncPreferencesRepository: com.nendo.argosy.data.preferences.SyncPreferencesRepository
@@ -89,7 +95,6 @@ class MainActivity : ComponentActivity() {
     @Inject lateinit var fetchAchievementsUseCase: FetchAchievementsUseCase
     @Inject lateinit var gameFileDao: com.nendo.argosy.data.local.dao.GameFileDao
     @Inject lateinit var downloadManagerInstance: com.nendo.argosy.data.download.DownloadManager
-    @Inject lateinit var edenContentManager: com.nendo.argosy.data.emulator.EdenContentManager
     @Inject lateinit var notificationManager: com.nendo.argosy.core.notification.NotificationManager
     @Inject lateinit var emulatorConfigDao: com.nendo.argosy.data.local.dao.EmulatorConfigDao
     @Inject lateinit var steamDownloadQueueDao: com.nendo.argosy.data.local.dao.SteamDownloadQueueDao
@@ -163,6 +168,9 @@ class MainActivity : ComponentActivity() {
     fun updateDualSaveNameText(text: String) = dualScreenManager.updateDualSaveNameText(text)
     fun confirmDualSaveName() = dualScreenManager.confirmDualSaveName()
     fun selectDualDisc(index: Int) = dualScreenManager.selectDualDisc(index)
+    fun setDualSteamInstallFocus(index: Int) = dualScreenManager.setDualSteamInstallFocus(index)
+    fun moveDualSteamInstallFocus(delta: Int) = dualScreenManager.moveDualSteamInstallFocus(delta)
+    fun confirmDualSteamInstallSelection() = dualScreenManager.confirmDualSteamInstallSelection()
 
     // --- Screen Capture ---
 
@@ -210,7 +218,11 @@ class MainActivity : ComponentActivity() {
         }
 
         enableEdgeToEdge()
-        hideSystemUI()
+        installSystemBarsWatchdog()
+        // Defer the first hide until decor attach so the WindowInsetsController is wired.
+        // An immediate call from onCreate races against initial layout on cold start and
+        // routinely no-ops, leaving the system bars on screen until first focus change.
+        window.decorView.doOnAttach { hideSystemUI() }
 
         discordPresenceManager.init(this)
 
@@ -247,7 +259,6 @@ class MainActivity : ComponentActivity() {
                 sessionStateStore = sessionStateStore,
                 preferencesRepository = preferencesRepository,
                 syncPreferencesRepository = syncPreferencesRepository,
-                edenContentManager = edenContentManager,
                 notificationManager = notificationManager,
                 emulatorConfigDao = emulatorConfigDao,
                 configureEmulatorUseCase = configureEmulatorUseCase,
@@ -435,6 +446,8 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun dispatchGenericMotionEvent(event: MotionEvent): Boolean {
+        triggerAxisKeyEmitter.emit(event).forEach { dispatchKeyEvent(it) }
+
         if (!dualScreenManager.claimInput(event)) return true
         if (dualScreenManager.swappedIsGameActive.value && !isOverlayFocused) {
             val emulatorDispatcher = dualScreenManager.emulatorMotionDispatcher
@@ -557,8 +570,14 @@ class MainActivity : ComponentActivity() {
             val prefs = preferencesRepository.preferences.first()
             displayAffinityHelper.dualScreenEnabled = prefs.dualScreenEnabled
             sessionStateStore.setDualScreenEnabled(prefs.dualScreenEnabled)
+            sessionStateStore.setSaveSyncEnabled(prefs.saveSyncEnabled)
             dualScreenManager.setDualScreenDevice(displayAffinityHelper.hasSecondaryDisplay)
             imageCacheManager.setCustomCachePath(prefs.imageCachePath)
+
+            if (imageCacheManager.needsLegacyCacheDirsMigration()) {
+                Log.i(TAG, "Migrating cover cache out of purgeable cacheDir to persistent storage")
+                imageCacheManager.migrateLegacyCacheDirs()
+            }
 
             if (imageCacheManager.needsFlatToShardedMigration()) {
                 Log.i(TAG, "Migrating flat image cache to sharded directories")
@@ -572,10 +591,16 @@ class MainActivity : ComponentActivity() {
 
             imageCacheManager.resumePendingCache()
             imageCacheManager.resumePendingCoverCache()
+            imageCacheManager.recoverMissingCovers()
             imageCacheManager.resumePendingLogoCache()
             imageCacheManager.resumePendingBadgeCache()
 
-            if (prefs.ambientLedEnabled) {
+            val relinked = androidGameScanner.relinkInstalledRommAndroidApps()
+            if (relinked > 0) {
+                Log.i(TAG, "Relinked $relinked installed RomM Android games to their packages")
+            }
+
+            if (shouldInitializeScreenCapture(prefs)) {
                 if (screenCaptureManager.hasPermission.value && !screenCaptureManager.isCapturing.value) {
                     screenCaptureManager.startCapture()
                 } else if (!screenCaptureManager.hasPermission.value && !screenCapturePromptedThisSession) {
@@ -620,5 +645,20 @@ class MainActivity : ComponentActivity() {
                 WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
         }
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+    }
+
+    private fun installSystemBarsWatchdog() {
+        androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(window.decorView) { _, insets ->
+            if (insets.isVisible(WindowInsetsCompat.Type.systemBars())) {
+                // Hide inline rather than via View.post — posting delays the request to the
+                // next UI tick, which is enough for the bars to stay drawn between insets
+                // dispatch and the post running.
+                WindowInsetsControllerCompat(window, window.decorView)
+                    .hide(WindowInsetsCompat.Type.systemBars())
+            }
+            insets
+        }
+        // Force a synchronous insets pass so the listener fires immediately after install.
+        androidx.core.view.ViewCompat.requestApplyInsets(window.decorView)
     }
 }

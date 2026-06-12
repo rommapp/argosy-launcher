@@ -535,6 +535,10 @@ class FirstRunViewModel @Inject constructor(
     }
 
     fun proceedFromPermissions() {
+        if (!_uiState.value.hasStoragePermission) {
+            hapticManager.vibrate(HapticPattern.BOUNDARY_HIT)
+            return
+        }
         nextStep()
     }
 

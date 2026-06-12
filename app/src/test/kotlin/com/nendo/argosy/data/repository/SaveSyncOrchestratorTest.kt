@@ -10,6 +10,7 @@ import com.nendo.argosy.data.local.entity.SaveSyncEntity
 import com.nendo.argosy.data.local.entity.SyncType
 import com.nendo.argosy.data.local.entity.SyncPriority
 import com.nendo.argosy.data.model.GameSource
+import com.nendo.argosy.data.preferences.SyncPreferencesRepository
 import com.nendo.argosy.data.preferences.UserPreferences
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.remote.romm.RomMSave
@@ -33,6 +34,7 @@ class SaveSyncOrchestratorTest {
     private lateinit var emulatorResolver: EmulatorResolver
     private lateinit var savePathResolver: SavePathResolver
     private lateinit var userPreferencesRepository: UserPreferencesRepository
+    private lateinit var syncPreferencesRepository: SyncPreferencesRepository
     private lateinit var syncQueueManager: SyncQueueManager
     private lateinit var mockApiClient: SaveSyncApiClient
     private lateinit var apiClient: dagger.Lazy<SaveSyncApiClient>
@@ -58,6 +60,7 @@ class SaveSyncOrchestratorTest {
         emulatorResolver = mockk(relaxed = true)
         savePathResolver = mockk(relaxed = true)
         userPreferencesRepository = mockk(relaxed = true)
+        syncPreferencesRepository = mockk(relaxed = true)
         syncQueueManager = SyncQueueManager()
         mockApiClient = mockk(relaxed = true)
         apiClient = dagger.Lazy { mockApiClient }
@@ -74,6 +77,7 @@ class SaveSyncOrchestratorTest {
             emulatorResolver = emulatorResolver,
             savePathResolver = savePathResolver,
             userPreferencesRepository = userPreferencesRepository,
+            syncPreferencesRepository = syncPreferencesRepository,
             syncQueueManager = syncQueueManager,
             apiClient = apiClient,
             payloadCodec = com.nendo.argosy.data.sync.SyncPayloadCodec(com.squareup.moshi.Moshi.Builder().build())
@@ -90,7 +94,7 @@ class SaveSyncOrchestratorTest {
             updatedAt = "2025-01-15T12:00:00Z"
         )
         coEvery { mockApiClient.checkSavesForGame(1L, 200L) } returns listOf(serverSave)
-        coEvery { mockApiClient.downloadSave(any(), any(), any(), any()) } returns SaveSyncResult.Success()
+        coEvery { mockApiClient.downloadSave(any(), any(), any(), any(), any()) } returns SaveSyncResult.Success()
 
         orchestrator.syncSavesForNewDownload(1L, 200L, "yuzu")
 
@@ -105,7 +109,7 @@ class SaveSyncOrchestratorTest {
             updatedAt = "2025-01-15T12:00:00Z"
         )
         coEvery { mockApiClient.checkSavesForGame(1L, 200L) } returns listOf(serverSave)
-        coEvery { mockApiClient.downloadSave(any(), any(), any(), any()) } returns SaveSyncResult.Success()
+        coEvery { mockApiClient.downloadSave(any(), any(), any(), any(), any()) } returns SaveSyncResult.Success()
 
         orchestrator.syncSavesForNewDownload(1L, 200L, "yuzu")
 
@@ -120,7 +124,7 @@ class SaveSyncOrchestratorTest {
             updatedAt = "2025-01-15T12:00:00Z"
         )
         coEvery { mockApiClient.checkSavesForGame(1L, 200L) } returns listOf(serverSave)
-        coEvery { mockApiClient.downloadSave(any(), any(), any(), any()) } returns SaveSyncResult.Success()
+        coEvery { mockApiClient.downloadSave(any(), any(), any(), any(), any()) } returns SaveSyncResult.Success()
 
         orchestrator.syncSavesForNewDownload(1L, 200L, "yuzu")
 
@@ -133,12 +137,12 @@ class SaveSyncOrchestratorTest {
         val channel1 = makeServerSave(id = 2L, fileName = "checkpoint.srm")
         val channel2 = makeServerSave(id = 3L, fileName = "backup.srm")
         coEvery { mockApiClient.checkSavesForGame(1L, 200L) } returns listOf(latestSave, channel1, channel2)
-        coEvery { mockApiClient.downloadSave(any(), any(), any(), any()) } returns SaveSyncResult.Success()
+        coEvery { mockApiClient.downloadSave(any(), any(), any(), any(), any()) } returns SaveSyncResult.Success()
 
         orchestrator.syncSavesForNewDownload(1L, 200L, "yuzu")
 
         coVerify(exactly = 3) { saveSyncDao.upsert(any()) }
-        coVerify(exactly = 3) { mockApiClient.downloadSave(any(), any(), any(), any()) }
+        coVerify(exactly = 3) { mockApiClient.downloadSave(any(), any(), any(), any(), any()) }
     }
 
     @Test
@@ -146,13 +150,13 @@ class SaveSyncOrchestratorTest {
         val save1 = makeServerSave(id = 1L, fileName = "Pok\u00e9mon Violet.srm")
         val save2 = makeServerSave(id = 2L, fileName = "checkpoint.srm")
         coEvery { mockApiClient.checkSavesForGame(1L, 200L) } returns listOf(save1, save2)
-        coEvery { mockApiClient.downloadSave(1L, "yuzu", null, skipBackup = true) } returns SaveSyncResult.Error("network error")
-        coEvery { mockApiClient.downloadSave(1L, "yuzu", "checkpoint", skipBackup = true) } returns SaveSyncResult.Success()
+        coEvery { mockApiClient.downloadSave(1L, "yuzu", null, skipBackup = true, knownServerSaveId = any()) } returns SaveSyncResult.Error("network error")
+        coEvery { mockApiClient.downloadSave(1L, "yuzu", "checkpoint", skipBackup = true, knownServerSaveId = any()) } returns SaveSyncResult.Success()
 
         orchestrator.syncSavesForNewDownload(1L, 200L, "yuzu")
 
         coVerify(exactly = 2) { saveSyncDao.upsert(any()) }
-        coVerify(exactly = 2) { mockApiClient.downloadSave(any(), any(), any(), any()) }
+        coVerify(exactly = 2) { mockApiClient.downloadSave(any(), any(), any(), any(), any()) }
     }
 
     @Test
@@ -172,7 +176,7 @@ class SaveSyncOrchestratorTest {
         val entity1 = makeSyncEntity(id = 1L, gameId = 1L)
         val entity2 = makeSyncEntity(id = 2L, gameId = 1L, channelName = "slot1")
         coEvery { saveSyncDao.getPendingDownloads() } returns listOf(entity1, entity2)
-        coEvery { mockApiClient.downloadSave(any(), any(), any()) } returns SaveSyncResult.Success()
+        coEvery { mockApiClient.downloadSave(any(), any(), any(), any(), any()) } returns SaveSyncResult.Success()
 
         val result = orchestrator.downloadPendingServerSaves()
 
@@ -183,7 +187,7 @@ class SaveSyncOrchestratorTest {
     fun `downloadPendingServerSaves download failure does not count as success`() = runTest {
         val entity = makeSyncEntity(id = 1L, gameId = 1L)
         coEvery { saveSyncDao.getPendingDownloads() } returns listOf(entity)
-        coEvery { mockApiClient.downloadSave(any(), any(), any()) } returns SaveSyncResult.Error("failed")
+        coEvery { mockApiClient.downloadSave(any(), any(), any(), any(), any()) } returns SaveSyncResult.Error("failed")
 
         val result = orchestrator.downloadPendingServerSaves()
 
@@ -197,7 +201,30 @@ class SaveSyncOrchestratorTest {
         val result = orchestrator.downloadPendingServerSaves()
 
         assertEquals(0, result)
-        coVerify(exactly = 0) { mockApiClient.downloadSave(any(), any(), any()) }
+        coVerify(exactly = 0) { mockApiClient.downloadSave(any(), any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun `downloadPendingServerSaves NeedsHardcoreResolution parks row and drops from queue`() = runTest {
+        val entity = makeSyncEntity(id = 1L, gameId = 1L)
+        coEvery { saveSyncDao.getPendingDownloads() } returns listOf(entity)
+        coEvery { mockApiClient.downloadSave(any(), any(), any(), any(), any()) } returns
+            SaveSyncResult.NeedsHardcoreResolution(
+                tempFilePath = "/tmp/save",
+                gameId = 1L,
+                gameName = testGame.title,
+                emulatorId = "yuzu",
+                targetPath = "/storage/saves/save.srm",
+                isFolderBased = false,
+                channelName = null
+            )
+
+        val result = orchestrator.downloadPendingServerSaves()
+
+        assertEquals(0, result)
+        assertEquals(emptyList<com.nendo.argosy.data.sync.SyncOperation>(),
+            syncQueueManager.state.value.operations.filter { it.gameId == 1L })
+        coVerify { saveSyncDao.upsert(match { it.id == 1L && it.syncStatus == SaveSyncEntity.STATUS_NEEDS_HARDCORE_RESOLUTION }) }
     }
 
     // --- helpers ---

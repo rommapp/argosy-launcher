@@ -7,6 +7,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.nendo.argosy.data.local.dao.EmulatorConfigDao
 import com.nendo.argosy.data.local.entity.CollectionEntity
+import com.nendo.argosy.data.preferences.SessionStateStore
 import com.nendo.argosy.data.repository.CollectionRepository
 import com.nendo.argosy.data.repository.DownloadQueueRepository
 import com.nendo.argosy.data.repository.GameRepository
@@ -57,6 +58,7 @@ class DualGameDetailViewModel(
     private val steamContentManager: com.nendo.argosy.data.steam.SteamContentManager? = null,
     private val displayAffinityHelper: DisplayAffinityHelper,
     private val downloadFileStatusRepository: com.nendo.argosy.data.repository.DownloadFileStatusRepository,
+    private val sessionStateStore: SessionStateStore,
     private val context: Context
 ) : ViewModel() {
 
@@ -150,6 +152,14 @@ class DualGameDetailViewModel(
 
     private val _discPickerFocusIndex = MutableStateFlow(0)
     val discPickerFocusIndex: StateFlow<Int> = _discPickerFocusIndex.asStateFlow()
+
+    private val _steamInstallOptions =
+        MutableStateFlow<List<com.nendo.argosy.data.launcher.SteamLaunchers.MarkOption>>(emptyList())
+    val steamInstallOptions: StateFlow<List<com.nendo.argosy.data.launcher.SteamLaunchers.MarkOption>> =
+        _steamInstallOptions.asStateFlow()
+
+    private val _steamInstallFocusIndex = MutableStateFlow(0)
+    val steamInstallFocusIndex: StateFlow<Int> = _steamInstallFocusIndex.asStateFlow()
 
     private var downloadObserverJob: Job? = null
     private var steamDownloadObserverJob: Job? = null
@@ -267,7 +277,8 @@ class DualGameDetailViewModel(
             }
             ActiveModal.EMULATOR, ActiveModal.CORE, ActiveModal.COLLECTION,
             ActiveModal.SAVE_NAME, ActiveModal.UPDATES_DLC,
-            ActiveModal.DISC_PICKER, ActiveModal.VARIANT_PICKER -> return
+            ActiveModal.DISC_PICKER, ActiveModal.VARIANT_PICKER,
+            ActiveModal.STEAM_INSTALL -> return
             ActiveModal.NONE -> return
         }
         _activeModal.value = ActiveModal.NONE
@@ -299,6 +310,7 @@ class DualGameDetailViewModel(
 
             val isDownloaded = when {
                 game.source == GameSource.ANDROID_APP -> true
+                game.steamAppId != null && game.isExternallyManaged -> true
                 game.steamAppId != null && game.localPath != null ->
                     downloadFileStatusRepository.isDownloadComplete(game.localPath)
                 else -> game.localPath != null
@@ -353,6 +365,9 @@ class DualGameDetailViewModel(
                 userDifficulty = game.userDifficulty,
                 screenshots = screenshots,
                 currentTab = DualGameDetailTab.OPTIONS,
+                availableTabs = DualGameDetailTab.entries.filterNot {
+                    it == DualGameDetailTab.SAVES && !sessionStateStore.isSaveSyncEnabled()
+                },
                 isFavorite = game.isFavorite,
                 isLoading = false,
                 achievementCount = game.achievementCount,
@@ -370,7 +385,8 @@ class DualGameDetailViewModel(
                 selectedCoreId = selectedCoreId,
                 activeChannel = activeChannel,
                 activeSaveTimestamp = activeSaveTimestamp,
-                isMultiDisc = game.isMultiDisc
+                isMultiDisc = game.isMultiDisc,
+                isHidden = game.isHidden
             )
             _uiState.value = newState
             _visibleOptions.value = newState.visibleOptions()
@@ -545,7 +561,7 @@ class DualGameDetailViewModel(
                 )
             }
 
-        if (activeChannel != null && slotItems.none { it.channelName == activeChannel }) {
+        if (activeChannel != null && slotItems.none { it.channelName.equals(activeChannel, ignoreCase = true) }) {
             slotItems.add(
                 SaveSlotItem(
                     channelName = activeChannel,
@@ -579,10 +595,21 @@ class DualGameDetailViewModel(
         _selectedSlotIndex.value = restoredIndex ?: 0
         _selectedHistoryIndex.value = 0
 
+        val channelEntries = entries.filter { it.channelName == activeChannel }
+        val hasSynced = channelEntries.any { it.source == "BOTH" || it.source == "SERVER" }
+        val hasLocal = channelEntries.any { it.source == "LOCAL" || it.source == "BOTH" }
+        val statusName = when {
+            channelEntries.isEmpty() -> null
+            hasSynced -> "SYNCED"
+            hasLocal -> "LOCAL_ONLY"
+            else -> null
+        }
+
         _uiState.update {
             it.copy(
                 activeChannel = activeChannel,
-                activeSaveTimestamp = activeSaveTimestamp
+                activeSaveTimestamp = activeSaveTimestamp,
+                saveSyncStatusName = statusName
             )
         }
         updateHistoryForFocusedSlot(activeSaveTimestamp)
@@ -700,23 +727,26 @@ class DualGameDetailViewModel(
     }
 
     fun setTab(tab: DualGameDetailTab) {
+        if (tab !in _uiState.value.availableTabs) return
         _uiState.update { it.copy(currentTab = tab) }
         resetSelectionForTab(tab)
     }
 
     fun nextTab() {
-        val entries = DualGameDetailTab.entries
+        val entries = _uiState.value.availableTabs
         val current = _uiState.value.currentTab
-        val next = entries[(current.ordinal + 1) % entries.size]
+        val currentIdx = entries.indexOf(current).coerceAtLeast(0)
+        val next = entries[(currentIdx + 1) % entries.size]
         setTab(next)
     }
 
     fun previousTab() {
-        val entries = DualGameDetailTab.entries
+        val entries = _uiState.value.availableTabs
         val current = _uiState.value.currentTab
+        val currentIdx = entries.indexOf(current).coerceAtLeast(0)
         val prev = entries[
-            if (current.ordinal == 0) entries.size - 1
-            else current.ordinal - 1
+            if (currentIdx == 0) entries.size - 1
+            else currentIdx - 1
         ]
         setTab(prev)
     }
@@ -990,7 +1020,7 @@ class DualGameDetailViewModel(
             UpdateFileUi(
                 fileName = file.fileName, filePath = file.filePath,
                 sizeBytes = file.fileSize, type = UpdateFileType.UPDATE,
-                isDownloaded = downloaded, isAppliedToEmulator = false,
+                isDownloaded = downloaded,
                 gameFileId = file.id, rommFileId = file.rommFileId,
                 romId = file.romId
             )
@@ -1001,7 +1031,7 @@ class DualGameDetailViewModel(
             UpdateFileUi(
                 fileName = file.fileName, filePath = file.filePath,
                 sizeBytes = file.fileSize, type = UpdateFileType.DLC,
-                isDownloaded = downloaded, isAppliedToEmulator = false,
+                isDownloaded = downloaded,
                 gameFileId = file.id, rommFileId = file.rommFileId,
                 romId = file.romId
             )
@@ -1014,7 +1044,7 @@ class DualGameDetailViewModel(
                     UpdateFileUi(
                         fileName = file.name, filePath = file.absolutePath,
                         sizeBytes = file.length(), type = UpdateFileType.UPDATE,
-                        isDownloaded = true, isAppliedToEmulator = false
+                        isDownloaded = true
                     )
                 }
         } else emptyList()
@@ -1026,7 +1056,7 @@ class DualGameDetailViewModel(
                     UpdateFileUi(
                         fileName = file.name, filePath = file.absolutePath,
                         sizeBytes = file.length(), type = UpdateFileType.DLC,
-                        isDownloaded = true, isAppliedToEmulator = false
+                        isDownloaded = true
                     )
                 }
         } else emptyList()
@@ -1094,6 +1124,26 @@ class DualGameDetailViewModel(
         _activeModal.value = ActiveModal.NONE
         _discPickerOptions.value = emptyList()
         _discPickerFocusIndex.value = 0
+    }
+
+    fun steamMarkOptions(): List<com.nendo.argosy.data.launcher.SteamLaunchers.MarkOption> =
+        com.nendo.argosy.data.launcher.SteamLaunchers.getMarkOptions(context)
+
+    fun openSteamInstallModal(options: List<com.nendo.argosy.data.launcher.SteamLaunchers.MarkOption>) {
+        _steamInstallOptions.value = options
+        _steamInstallFocusIndex.value = 0
+        _activeModal.value = ActiveModal.STEAM_INSTALL
+    }
+
+    fun moveSteamInstallFocus(delta: Int) {
+        val max = _steamInstallOptions.value.size
+        _steamInstallFocusIndex.update { (it + delta).coerceIn(0, max) }
+    }
+
+    fun dismissSteamInstallModal() {
+        _activeModal.value = ActiveModal.NONE
+        _steamInstallOptions.value = emptyList()
+        _steamInstallFocusIndex.value = 0
     }
 
 }

@@ -39,7 +39,7 @@ class RetroArchSaveHandlerTest {
     ): SaveContext = SaveContext(
         config = mockk(relaxed = true) { every { this@mockk.saveExtensions } returns saveExtensions },
         romPath = romPath,
-        titleId = null,
+        saveId = null,
         emulatorPackage = null,
         gameId = 1L,
         gameTitle = gameTitle,

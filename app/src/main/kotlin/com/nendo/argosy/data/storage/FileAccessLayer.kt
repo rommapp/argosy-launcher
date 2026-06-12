@@ -59,6 +59,7 @@ interface FileAccessLayer {
     // Utilities
     fun isRestrictedPath(path: String): Boolean
     fun normalizeForDisplay(path: String): String
+    fun externalStorageRoots(): List<String>
 
     // Escape hatch for third-party APIs requiring File
     fun getTransformedFile(path: String): File

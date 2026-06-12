@@ -53,7 +53,6 @@ sealed class PickerSelection {
     data class SteamLauncher(val launcher: com.nendo.argosy.data.launcher.SteamLauncher?) : PickerSelection()
     data class Disc(val discPath: String) : PickerSelection()
     data class UpdateFile(val file: UpdateFileUi) : PickerSelection()
-    data class ApplyUpdate(val file: UpdateFileUi) : PickerSelection()
     data class Variant(val variantFileId: Long?) : PickerSelection()
 }
 
@@ -332,16 +331,13 @@ class PickerModalDelegate @Inject constructor(
         }
     }
 
-    fun confirmUpdatesSelection(updateFiles: List<UpdateFileUi>, dlcFiles: List<UpdateFileUi>, isEdenGame: Boolean) {
+    fun confirmUpdatesSelection(updateFiles: List<UpdateFileUi>, dlcFiles: List<UpdateFileUi>) {
         val state = _state.value
         val allFiles = updateFiles + dlcFiles
         val focusedFile = allFiles.getOrNull(state.updatesPickerFocusIndex) ?: return
 
-        when {
-            !focusedFile.isDownloaded && focusedFile.gameFileId != null ->
-                _selection.value = PickerSelection.UpdateFile(focusedFile)
-            focusedFile.isDownloaded && !focusedFile.isAppliedToEmulator && isEdenGame ->
-                _selection.value = PickerSelection.ApplyUpdate(focusedFile)
+        if (!focusedFile.isDownloaded && focusedFile.gameFileId != null) {
+            _selection.value = PickerSelection.UpdateFile(focusedFile)
         }
     }
 

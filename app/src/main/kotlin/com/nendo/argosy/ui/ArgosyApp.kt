@@ -27,6 +27,7 @@ import androidx.compose.ui.draw.blur
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import android.content.Intent
+import com.nendo.argosy.ui.util.doubleTapNoFocus
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import com.nendo.argosy.libretro.LibretroActivity
@@ -73,6 +74,7 @@ import com.nendo.argosy.DualScreenManager
 import com.nendo.argosy.ui.dualscreen.gamedetail.ActiveModal
 import com.nendo.argosy.ui.dualscreen.gamedetail.DualGameDetailInputHandler
 import com.nendo.argosy.ui.dualscreen.gamedetail.DualGameDetailUpperScreen
+import com.nendo.argosy.ui.dualscreen.gamedetail.DualSteamInstallPickerContent
 import com.nendo.argosy.ui.dualscreen.gamedetail.GameDetailOption
 import com.nendo.argosy.ui.dualscreen.gamedetail.DualGameDetailUpperState
 import com.nendo.argosy.ui.dualscreen.home.DualCollectionShowcase
@@ -561,6 +563,7 @@ fun ArgosyApp(
                     ActiveModal.EMULATOR -> activity?.moveDualEmulatorFocus(-1)
                     ActiveModal.CORE -> activity?.moveDualCoreFocus(-1)
                     ActiveModal.COLLECTION -> activity?.moveDualCollectionFocus(-1)
+                    ActiveModal.STEAM_INSTALL -> activity?.moveDualSteamInstallFocus(-1)
                     else -> {}
                 }
                 return InputResult.HANDLED
@@ -573,6 +576,7 @@ fun ArgosyApp(
                     ActiveModal.EMULATOR -> activity?.moveDualEmulatorFocus(1)
                     ActiveModal.CORE -> activity?.moveDualCoreFocus(1)
                     ActiveModal.COLLECTION -> activity?.moveDualCollectionFocus(1)
+                    ActiveModal.STEAM_INSTALL -> activity?.moveDualSteamInstallFocus(1)
                     else -> {}
                 }
                 return InputResult.HANDLED
@@ -586,6 +590,7 @@ fun ArgosyApp(
                     ActiveModal.EMULATOR -> activity?.confirmDualEmulatorSelection()
                     ActiveModal.CORE -> activity?.confirmDualCoreSelection()
                     ActiveModal.COLLECTION -> activity?.toggleDualCollectionAtFocus()
+                    ActiveModal.STEAM_INSTALL -> activity?.confirmDualSteamInstallSelection()
                     ActiveModal.SAVE_NAME -> activity?.confirmDualSaveName()
                     else -> {}
                 }
@@ -807,6 +812,15 @@ fun ArgosyApp(
                                 openDrawer()
                             }
                         }
+                        GamepadEvent.Left -> {
+                            if (!input.isRepeat &&
+                                !isDrawerOpen &&
+                                !isQuickSettingsOpen &&
+                                !quickMenuState.isVisible
+                            ) {
+                                openDrawer()
+                            }
+                        }
                         GamepadEvent.LeftStickClick -> {
                             if (quickMenuState.isVisible) {
                                 closeQuickMenu()
@@ -869,7 +883,8 @@ fun ArgosyApp(
         LocalGamepadInputHandler provides viewModel.gamepadInputHandler,
         LocalABIconsSwapped provides uiState.abIconsSwapped,
         LocalXYIconsSwapped provides uiState.xyIconsSwapped,
-        LocalSwapStartSelect provides uiState.swapStartSelect
+        LocalSwapStartSelect provides uiState.swapStartSelect,
+        com.nendo.argosy.ui.common.LocalImageCacheManager provides viewModel.imageCacheManager
     ) {
         if (uiState.isLoading) {
             AppSplashScreen(status = uiState.startupStatus)
@@ -891,6 +906,7 @@ fun ArgosyApp(
                     .fillMaxSize()
                     .focusRequester(rootFocusRequester)
                     .focusable()
+                    .doubleTapNoFocus { openQuickMenu() }
             ) {
                 LaunchedEffect(Unit) {
                     rootFocusRequester.requestFocus()
@@ -950,7 +966,7 @@ fun ArgosyApp(
                 // Dual-screen mode: show showcase on upper display when companion is active
                 if (showDualOverlay) {
                     val detailState = gameDetailUpperState
-                    if (detailState != null) {
+                    if (detailState != null && !detailState.isHomeChooser) {
                         DualGameDetailUpperScreen(
                             state = detailState,
                             onModalRatingSelect = { value ->
@@ -1002,6 +1018,12 @@ fun ArgosyApp(
                             },
                             onDiscSelect = { index ->
                                 activity?.selectDualDisc(index)
+                            },
+                            onModalSteamInstallSelect = { index ->
+                                activity?.let { a ->
+                                    a.setDualSteamInstallFocus(index)
+                                    a.confirmDualSteamInstallSelection()
+                                }
                             },
                             onModalDismiss = {
                                 activity?.dismissDualModal()
@@ -1073,6 +1095,20 @@ fun ArgosyApp(
                                 )
                             },
                             modifier = Modifier.blur(contentBlur)
+                        )
+                    }
+
+                    if (detailState?.isHomeChooser == true &&
+                        detailState.modalType == ActiveModal.STEAM_INSTALL
+                    ) {
+                        DualSteamInstallPickerContent(
+                            optionNames = detailState.steamInstallOptionNames,
+                            focusIndex = detailState.steamInstallFocusIndex,
+                            onSelect = { index ->
+                                activity?.setDualSteamInstallFocus(index)
+                                activity?.confirmDualSteamInstallSelection()
+                            },
+                            onDismiss = { activity?.dismissDualModal() }
                         )
                     }
 
@@ -1225,6 +1261,13 @@ fun ArgosyApp(
                                         items.map { it.id },
                                         items.map { it.name },
                                         items.map { it.isInCollection }
+                                    )
+                                },
+                                onBroadcastSteamInstallModalOpen = { vm ->
+                                    val options = vm.steamInstallOptions.value
+                                    dualScreenManager.openSteamInstallModal(
+                                        options.map { it.displayName },
+                                        options.map { it.launcherPackage }
                                     )
                                 },
                                 onBroadcastSaveNamePrompt = { actionType, cacheId ->
@@ -1427,8 +1470,20 @@ fun ArgosyApp(
                                 val gameId = vm.uiState.value.gameId
                                 when (option) {
                                     GameDetailOption.PLAY -> {
-                                        val type = if (vm.uiState.value.isPlayable) "PLAY" else "DOWNLOAD"
-                                        dualScreenManager.handleDirectAction(type, gameId, vm.uiState.value.activeChannel)
+                                        when {
+                                            vm.uiState.value.isPlayable ->
+                                                dualScreenManager.handleDirectAction("PLAY", gameId, vm.uiState.value.activeChannel)
+                                            vm.uiState.value.isSteamGame && vm.steamMarkOptions().isNotEmpty() -> {
+                                                vm.openSteamInstallModal(vm.steamMarkOptions())
+                                                val options = vm.steamInstallOptions.value
+                                                dualScreenManager.openSteamInstallModal(
+                                                    options.map { it.displayName },
+                                                    options.map { it.launcherPackage }
+                                                )
+                                            }
+                                            else ->
+                                                dualScreenManager.handleDirectAction("DOWNLOAD", gameId, vm.uiState.value.activeChannel)
+                                        }
                                     }
                                     GameDetailOption.RATING -> {
                                         vm.openRatingPicker()
@@ -1496,9 +1551,12 @@ fun ArgosyApp(
                                         dualScreenManager.handleDirectAction("SELECT_DISC", gameId)
                                     }
                                     GameDetailOption.REFRESH_METADATA,
-                                    GameDetailOption.DELETE,
-                                    GameDetailOption.HIDE -> {
+                                    GameDetailOption.DELETE -> {
                                         dualScreenManager.handleDirectAction(option.name, gameId)
+                                    }
+                                    GameDetailOption.HIDE -> {
+                                        val action = if (vm.uiState.value.isHidden) "UNHIDE" else "HIDE"
+                                        dualScreenManager.handleDirectAction(action, gameId)
                                     }
                                 }
                             },
@@ -1541,7 +1599,8 @@ fun ArgosyApp(
                     navController.navigate(Screen.GameDetail.createRoute(gameId)) {
                         launchSingleTop = true
                     }
-                }
+                },
+                closeQuickMenu = closeQuickMenu
             )
 
             // Quick Settings Panel (right-side drawer)

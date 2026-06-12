@@ -1,8 +1,11 @@
 package com.nendo.argosy.ui.screens.settings.delegates
 
+import android.content.Context
 import android.os.Build
 import android.os.Environment
 import android.util.Log
+import com.nendo.argosy.core.notification.NotificationManager
+import com.nendo.argosy.core.notification.showError
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.repository.DatabaseAdminRepository
 import com.nendo.argosy.data.repository.PlatformRepository
@@ -13,6 +16,8 @@ import com.nendo.argosy.domain.usecase.MigrateStorageUseCase
 import com.nendo.argosy.domain.usecase.PurgePlatformUseCase
 import com.nendo.argosy.domain.usecase.sync.SyncPlatformUseCase
 import com.nendo.argosy.libretro.LibretroCoreRegistry
+import dagger.hilt.android.qualifiers.ApplicationContext
+import java.io.File
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import com.nendo.argosy.ui.screens.settings.PlatformMigrationInfo
@@ -33,6 +38,7 @@ import javax.inject.Inject
 private const val TAG = "StorageSettingsDelegate"
 
 class StorageSettingsDelegate @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val preferencesRepository: UserPreferencesRepository,
     private val gameRepository: GameRepository,
     private val platformRepository: PlatformRepository,
@@ -42,7 +48,8 @@ class StorageSettingsDelegate @Inject constructor(
     private val syncPlatformUseCase: SyncPlatformUseCase,
     private val platformSyncQueue: com.nendo.argosy.data.sync.PlatformSyncQueue,
     private val databaseAdminRepository: DatabaseAdminRepository,
-    private val managedStorageAccessor: ManagedStorageAccessor
+    private val managedStorageAccessor: ManagedStorageAccessor,
+    private val notificationManager: NotificationManager
 ) {
     private val _state = MutableStateFlow(StorageState())
     val state: StateFlow<StorageState> = _state.asStateFlow()
@@ -131,6 +138,7 @@ class StorageSettingsDelegate @Inject constructor(
     }
 
     fun setStoragePath(uriString: String) {
+        if (rejectIfPrivateAppPath(uriString)) return
         val currentState = _state.value
         if (currentState.downloadedGamesCount > 0 && currentState.romStoragePath.isNotBlank()) {
             _showMigrationDialog.value = true
@@ -138,6 +146,31 @@ class StorageSettingsDelegate @Inject constructor(
         } else {
             applyStoragePath(uriString)
         }
+    }
+
+    private val privateAppPathRoots: List<String> by lazy {
+        listOfNotNull(
+            context.filesDir,
+            context.cacheDir,
+            context.getExternalFilesDir(null),
+            context.externalCacheDir
+        ).map { it.canonicalPath } + listOfNotNull(
+            runCatching { context.dataDir.canonicalPath }.getOrNull()
+        )
+    }
+
+    private fun rejectIfPrivateAppPath(path: String): Boolean {
+        val canonical = runCatching { File(path).canonicalPath }.getOrNull() ?: path
+        val isPrivate = privateAppPathRoots.any { root ->
+            canonical == root || canonical.startsWith("$root/")
+        }
+        if (isPrivate) {
+            Log.w(TAG, "Rejected private app path for ROM storage: $path")
+            notificationManager.showError(
+                "GameNative cannot read Argosy's private folders. Pick a public location."
+            )
+        }
+        return isPrivate
     }
 
     fun confirmMigration(scope: CoroutineScope) {
@@ -237,7 +270,9 @@ class StorageSettingsDelegate @Inject constructor(
                     effectiveSavePath = info?.effectiveSavePath,
                     isUserSavePathOverride = info?.isUserSavePathOverride ?: false,
                     effectiveStatePath = info?.effectiveStatePath,
-                    isUserStatePathOverride = info?.isUserStatePathOverride ?: false
+                    isUserStatePathOverride = info?.isUserStatePathOverride ?: false,
+                    folderMemcardCount = info?.folderMemcardCount ?: -1,
+                    selectedMemcardPath = info?.selectedMemcardPath
                 )
             }
 
@@ -309,6 +344,7 @@ class StorageSettingsDelegate @Inject constructor(
     }
 
     fun setPlatformPath(scope: CoroutineScope, platformId: Long, newPath: String) {
+        if (rejectIfPrivateAppPath(newPath)) return
         scope.launch {
             val platform = platformRepository.getById(platformId) ?: return@launch
             val globalPath = _state.value.romStoragePath
@@ -552,7 +588,9 @@ class StorageSettingsDelegate @Inject constructor(
         val effectiveSavePath: String? = null,
         val isUserSavePathOverride: Boolean = false,
         val effectiveStatePath: String? = null,
-        val isUserStatePathOverride: Boolean = false
+        val isUserStatePathOverride: Boolean = false,
+        val folderMemcardCount: Int = -1,
+        val selectedMemcardPath: String? = null
     )
 
     fun updatePlatformEmulatorInfo(platformInfoMap: Map<Long, PlatformEmulatorInfo>) {

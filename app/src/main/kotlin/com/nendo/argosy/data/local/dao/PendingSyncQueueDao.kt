@@ -123,4 +123,19 @@ interface PendingSyncQueueDao {
 
     @Query("DELETE FROM pending_sync_queue")
     suspend fun deleteAll()
+
+    @Query("SELECT DISTINCT sessionId FROM pending_sync_queue WHERE sessionId IS NOT NULL")
+    suspend fun distinctSessions(): List<Long>
+
+    @Query("SELECT COUNT(*) FROM pending_sync_queue WHERE sessionId = :sessionId AND status IN ('PENDING', 'IN_PROGRESS')")
+    suspend fun countActiveBySession(sessionId: Long): Int
+
+    @Query("SELECT COUNT(*) FROM pending_sync_queue WHERE sessionId = :sessionId AND status = 'COMPLETED'")
+    suspend fun countCompletedBySession(sessionId: Long): Int
+
+    @Query("SELECT COUNT(*) FROM pending_sync_queue WHERE sessionId = :sessionId AND status = 'FAILED'")
+    suspend fun countFailedBySession(sessionId: Long): Int
+
+    @Query("DELETE FROM pending_sync_queue WHERE sessionId = :sessionId")
+    suspend fun deleteBySession(sessionId: Long)
 }

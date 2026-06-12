@@ -34,8 +34,8 @@ android {
         applicationId = "com.nendo.argosy"
         minSdk = 26
         targetSdk = 35
-        versionCode = 252
-        versionName = "1.2.1"
+        versionCode = 283
+        versionName = "1.10.7"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -68,6 +68,7 @@ android {
             "\"${envString("QUAYPASS_SERVER_PUBKEYS")}\""
         )
         buildConfigField("int", "DOLPHIN_SYS_VERSION", "2")
+        buildConfigField("int", "PPSSPP_SYS_VERSION", "1")
     }
 
     signingConfigs {

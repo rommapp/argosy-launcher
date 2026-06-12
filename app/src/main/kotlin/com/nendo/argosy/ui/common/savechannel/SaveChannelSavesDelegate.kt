@@ -3,6 +3,7 @@ package com.nendo.argosy.ui.common.savechannel
 import com.nendo.argosy.data.emulator.TitleIdDownloadObserver
 import com.nendo.argosy.data.repository.GameRepository
 import com.nendo.argosy.data.repository.SaveCacheManager
+import com.nendo.argosy.data.repository.SaveSyncApiClient
 import com.nendo.argosy.data.repository.SaveSyncRepository
 import com.nendo.argosy.data.repository.StateCacheManager
 import com.nendo.argosy.data.sync.SyncCoordinator
@@ -47,23 +48,26 @@ class SaveChannelSavesDelegate @Inject constructor(
         val slotItems = mutableListOf<SaveSlotItem>()
         val legacyNames = mutableListOf<String>()
 
-        val autoSaves = channelGroups[null] ?: emptyList()
-        slotItems.add(
-            SaveSlotItem(
-                channelName = null,
-                displayName = "Auto Save",
-                isActive = activeChannel == null,
-                saveCount = autoSaves.size,
-                latestTimestamp = autoSaves.maxByOrNull {
-                    it.timestamp
-                }?.timestamp?.toEpochMilli()
-            )
-        )
+        val archivalSaves = (channelGroups[null] ?: emptyList()).filter { it.isArchival }
 
         val namedChannels = channelGroups.filterKeys { it != null }
             .toSortedMap(compareBy { it?.lowercase() })
 
-        namedChannels.forEach { (name, saves) ->
+        val autosaveSaves = namedChannels[SaveSyncApiClient.AUTOSAVE_SLOT_NAME] ?: emptyList()
+        val effectiveActiveChannel = activeChannel ?: SaveSyncApiClient.AUTOSAVE_SLOT_NAME
+        slotItems.add(
+            SaveSlotItem(
+                channelName = SaveSyncApiClient.AUTOSAVE_SLOT_NAME,
+                displayName = "Autosave",
+                isActive = effectiveActiveChannel.equals(SaveSyncApiClient.AUTOSAVE_SLOT_NAME, ignoreCase = true),
+                saveCount = autosaveSaves.size,
+                latestTimestamp = autosaveSaves.maxByOrNull { it.timestamp }?.timestamp?.toEpochMilli()
+            )
+        )
+
+        namedChannels.filterKeys {
+            !it.equals(SaveSyncApiClient.AUTOSAVE_SLOT_NAME, ignoreCase = true)
+        }.forEach { (name, saves) ->
             val isUserCreated = saves.any { it.isUserCreatedSlot }
 
             if (isDeviceAwareMode && !isUserCreated) {
@@ -95,7 +99,7 @@ class SaveChannelSavesDelegate @Inject constructor(
             }
         }
 
-        if (activeChannel != null && slotItems.none { it.channelName == activeChannel }) {
+        if (activeChannel != null && slotItems.none { it.channelName.equals(activeChannel, ignoreCase = true) }) {
             slotItems.add(
                 SaveSlotItem(
                     channelName = activeChannel,
@@ -103,6 +107,21 @@ class SaveChannelSavesDelegate @Inject constructor(
                     isActive = true,
                     saveCount = 0,
                     latestTimestamp = null
+                )
+            )
+        }
+
+        if (archivalSaves.isNotEmpty()) {
+            slotItems.add(
+                SaveSlotItem(
+                    channelName = null,
+                    displayName = "Archived",
+                    isActive = false,
+                    saveCount = archivalSaves.size,
+                    latestTimestamp = archivalSaves.maxByOrNull {
+                        it.timestamp
+                    }?.timestamp?.toEpochMilli(),
+                    isArchivedBucket = true
                 )
             )
         }
@@ -133,20 +152,24 @@ class SaveChannelSavesDelegate @Inject constructor(
         val channelName = slot.channelName
         val activeChannel = state.activeChannel
         val activeSaveTimestamp = state.activeSaveTimestamp
-        val isActiveChannel = channelName == activeChannel
+        val activeSaveCacheId = state.activeSaveCacheId
+        val isActiveChannel = !slot.isArchivedBucket && channelName == activeChannel
 
-        val filtered = holder.rawEntries
-            .filter { it.channelName == channelName }
-            .sortedByDescending { it.timestamp }
+        val filtered = if (slot.isArchivedBucket) {
+            holder.rawEntries.filter { it.isArchival }
+        } else {
+            holder.rawEntries.filter { it.channelName == channelName && !it.isArchival }
+        }.sortedByDescending { it.timestamp }
 
         val history = filtered.mapIndexed { i, entry ->
-            val isApplied = isActiveChannel && if (activeSaveTimestamp != null) {
-                entry.timestamp.toEpochMilli() == activeSaveTimestamp
-            } else {
-                i == 0
+            val isApplied = isActiveChannel && when {
+                activeSaveCacheId != null -> entry.localCacheId == activeSaveCacheId
+                activeSaveTimestamp != null -> entry.timestamp.toEpochMilli() == activeSaveTimestamp
+                else -> i == 0
             }
             SaveHistoryItem(
                 cacheId = entry.localCacheId ?: -1,
+                serverSaveId = entry.serverSaveId,
                 timestamp = entry.timestamp.toEpochMilli(),
                 size = entry.size,
                 channelName = entry.channelName,
@@ -156,7 +179,8 @@ class SaveChannelSavesDelegate @Inject constructor(
                 isActiveRestorePoint = isApplied,
                 isLatest = i == 0,
                 isHardcore = entry.isHardcore,
-                isRollback = entry.isRollback
+                isRollback = entry.isRollback,
+                isArchival = entry.isArchival
             )
         }
 
@@ -261,6 +285,10 @@ class SaveChannelSavesDelegate @Inject constructor(
                     }
                     return
                 }
+                if (slot.isArchivedBucket) {
+                    focusHistoryColumn()
+                    return
+                }
                 activateSlot(scope, slot, emulatorId, onSaveStatusChanged, onRestored)
             }
             SaveFocusColumn.HISTORY -> {
@@ -291,7 +319,7 @@ class SaveChannelSavesDelegate @Inject constructor(
             gameRepository.updateActiveSaveChannel(currentGameId, channelName)
             gameRepository.updateActiveSaveTimestamp(currentGameId, null)
             _state.update {
-                it.copy(activeChannel = channelName, activeSaveTimestamp = null)
+                it.copy(activeChannel = channelName, activeSaveTimestamp = null, activeSaveCacheId = null)
             }
             onSaveStatusChanged(
                 SaveStatusEvent(channelName = channelName, timestamp = null)
@@ -308,9 +336,15 @@ class SaveChannelSavesDelegate @Inject constructor(
                 )
             }
 
-            val entry = holder.rawEntries
-                .filter { it.channelName == channelName }
-                .maxByOrNull { it.timestamp }
+            val candidates = holder.rawEntries.filter { it.channelName == channelName }
+            val entry = candidates.maxByOrNull { it.timestamp }
+            com.nendo.argosy.util.SaveDebugLogger.logChannelLatestPick(
+                gameId = currentGameId,
+                channel = channelName,
+                pickedCacheId = entry?.localCacheId,
+                candidateCount = candidates.size,
+                candidateIds = candidates.mapNotNull { it.localCacheId }
+            )
 
             if (entry != null) {
                 val entryTimestamp = entry.timestamp.toEpochMilli()
@@ -321,12 +355,13 @@ class SaveChannelSavesDelegate @Inject constructor(
                     is RestoreCachedSaveUseCase.Result.RestoredAndSynced -> {
                         gameRepository.updateActiveSaveApplied(currentGameId, true)
                         gameRepository.updateActiveSaveTimestamp(currentGameId, entryTimestamp)
+                        saveSyncRepository.markUserSelectedRestorePoint(currentGameId, emulatorId, channelName)
                         onSaveStatusChanged(
                             SaveStatusEvent(channelName = channelName, timestamp = entryTimestamp)
                         )
                         val label = channelName ?: "Auto Save"
                         notificationManager.showSuccess("Using save slot: $label")
-                        _state.update { it.copy(isVisible = false) }
+                        _state.update { it.copy(isVisible = false, activeSaveCacheId = entry.localCacheId) }
                         onRestored()
                     }
                     is RestoreCachedSaveUseCase.Result.Error -> {
@@ -354,7 +389,8 @@ class SaveChannelSavesDelegate @Inject constructor(
     private fun findEntryForHistoryItem(item: SaveHistoryItem): UnifiedSaveEntry? {
         return holder.rawEntries.firstOrNull {
             it.channelName == item.channelName &&
-                it.timestamp.toEpochMilli() == item.timestamp
+                it.timestamp.toEpochMilli() == item.timestamp &&
+                it.isArchival == item.isArchival
         }
     }
 
@@ -388,6 +424,15 @@ class SaveChannelSavesDelegate @Inject constructor(
         val isRestoringLatest = entry.isLatest
 
         scope.launch {
+            com.nendo.argosy.util.SaveDebugLogger.logRestoreEntryPicked(
+                gameId = currentGameId,
+                channel = targetChannel,
+                localCacheId = entry.localCacheId,
+                serverSaveId = entry.serverSaveId,
+                entryTimestamp = entry.timestamp,
+                source = entry.source.name,
+                isLatest = entry.isLatest
+            )
             val game = gameRepository.getById(currentGameId)
 
             if (emulatorPackage != null && state.supportsStates) {
@@ -419,18 +464,18 @@ class SaveChannelSavesDelegate @Inject constructor(
                 }
             }
 
-            val newTimestamp = if (isRestoringLatest) null else targetTimestamp
-            gameRepository.updateActiveSaveTimestamp(currentGameId, newTimestamp)
+            gameRepository.updateActiveSaveTimestamp(currentGameId, targetTimestamp)
             _state.update {
                 it.copy(
                     showRestoreConfirmation = false,
                     isVisible = false,
                     activeChannel = targetChannel,
-                    activeSaveTimestamp = newTimestamp
+                    activeSaveTimestamp = targetTimestamp,
+                    activeSaveCacheId = entry.localCacheId
                 )
             }
             onSaveStatusChanged(
-                SaveStatusEvent(channelName = targetChannel, timestamp = newTimestamp)
+                SaveStatusEvent(channelName = targetChannel, timestamp = targetTimestamp)
             )
 
             titleIdDownloadObserver.extractTitleIdForGame(currentGameId)
@@ -440,6 +485,7 @@ class SaveChannelSavesDelegate @Inject constructor(
             )) {
                 is RestoreCachedSaveUseCase.Result.Restored -> {
                     gameRepository.updateActiveSaveApplied(currentGameId, true)
+                    saveSyncRepository.markUserSelectedRestorePoint(currentGameId, emulatorId, targetChannel)
                     val msg = if (targetChannel != null) {
                         "Restored to $targetChannel"
                     } else "Save restored"
@@ -448,6 +494,7 @@ class SaveChannelSavesDelegate @Inject constructor(
                 }
                 is RestoreCachedSaveUseCase.Result.RestoredAndSynced -> {
                     gameRepository.updateActiveSaveApplied(currentGameId, true)
+                    saveSyncRepository.markUserSelectedRestorePoint(currentGameId, emulatorId, targetChannel)
                     val msg = if (targetChannel != null) {
                         "Restored to $targetChannel and synced"
                     } else "Save restored and synced"
@@ -513,6 +560,10 @@ class SaveChannelSavesDelegate @Inject constructor(
         _state.update { it.copy(renameText = text) }
     }
 
+    private fun isReservedSlotName(name: String): Boolean =
+        SaveSyncApiClient.equalsNormalized(name, SaveSyncApiClient.AUTOSAVE_SLOT_NAME) ||
+            SaveSyncApiClient.equalsNormalized(name, SaveSyncApiClient.DEFAULT_SAVE_NAME)
+
     fun confirmRename(scope: CoroutineScope) {
         val state = _state.value
         val entry = state.renameEntry
@@ -520,6 +571,11 @@ class SaveChannelSavesDelegate @Inject constructor(
 
         if (newName.isBlank()) {
             notificationManager.showError("Slot name cannot be empty")
+            return
+        }
+
+        if (isReservedSlotName(newName)) {
+            notificationManager.showError("'$newName' is a reserved name")
             return
         }
 
@@ -572,7 +628,8 @@ class SaveChannelSavesDelegate @Inject constructor(
                     renameEntry = null,
                     renameText = "",
                     activeChannel = name,
-                    activeSaveTimestamp = null
+                    activeSaveTimestamp = null,
+                    activeSaveCacheId = null
                 )
             }
             refreshEntries()
@@ -698,7 +755,7 @@ class SaveChannelSavesDelegate @Inject constructor(
                 gameRepository.updateActiveSaveChannel(currentGameId, null)
                 gameRepository.updateActiveSaveTimestamp(currentGameId, null)
                 _state.update {
-                    it.copy(activeChannel = null, activeSaveTimestamp = null)
+                    it.copy(activeChannel = null, activeSaveTimestamp = null, activeSaveCacheId = null)
                 }
                 onSaveStatusChanged(
                     SaveStatusEvent(channelName = null, timestamp = null)
@@ -851,7 +908,7 @@ class SaveChannelSavesDelegate @Inject constructor(
         scope.launch {
             _state.update { it.copy(isSyncing = true) }
 
-            val entries = getUnifiedSavesUseCase(currentGameId)
+            val entries = getUnifiedSavesUseCase(currentGameId, expandHistory = true)
             holder.rawEntries = entries
 
             val serverEntries = entries.filter {
@@ -866,7 +923,7 @@ class SaveChannelSavesDelegate @Inject constructor(
                 )
             }
 
-            val updated = getUnifiedSavesUseCase(currentGameId)
+            val updated = getUnifiedSavesUseCase(currentGameId, expandHistory = true)
             holder.rawEntries = updated
             val saveSlots = buildSaveSlots(
                 updated, state.activeChannel, state.isDeviceAwareMode
@@ -885,7 +942,7 @@ class SaveChannelSavesDelegate @Inject constructor(
 
     suspend fun refreshEntries() {
         val state = _state.value
-        val entries = getUnifiedSavesUseCase(currentGameId)
+        val entries = getUnifiedSavesUseCase(currentGameId, expandHistory = true)
         holder.rawEntries = entries
         val saveSlots = buildSaveSlots(
             entries, state.activeChannel, state.isDeviceAwareMode
@@ -898,7 +955,13 @@ class SaveChannelSavesDelegate @Inject constructor(
     }
 
     suspend fun loadInitialEntries(): List<UnifiedSaveEntry> {
-        val entries = getUnifiedSavesUseCase(currentGameId)
+        val entries = getUnifiedSavesUseCase(currentGameId, expandHistory = true)
+        holder.rawEntries = entries
+        return entries
+    }
+
+    suspend fun loadLocalEntries(): List<UnifiedSaveEntry> {
+        val entries = getUnifiedSavesUseCase.localOnly(currentGameId)
         holder.rawEntries = entries
         return entries
     }

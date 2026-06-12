@@ -26,6 +26,15 @@ interface SaveCacheDao {
     @Query("SELECT * FROM save_cache WHERE gameId = :gameId AND contentHash = :hash LIMIT 1")
     suspend fun getByGameAndHash(gameId: Long, hash: String): SaveCacheEntity?
 
+    @Query("""
+        SELECT * FROM save_cache
+        WHERE gameId = :gameId
+          AND ((channelName IS NULL AND :channelName IS NULL) OR channelName = :channelName)
+          AND contentHash = :hash
+        ORDER BY cachedAt ASC
+    """)
+    suspend fun getAllByGameChannelAndHash(gameId: Long, channelName: String?, hash: String): List<SaveCacheEntity>
+
     @Query("SELECT * FROM save_cache WHERE gameId = :gameId AND slotName = :slotName LIMIT 1")
     suspend fun getByGameAndSlot(gameId: Long, slotName: String): SaveCacheEntity?
 
@@ -56,6 +65,9 @@ interface SaveCacheDao {
 
     @Query("SELECT COUNT(*) FROM save_cache WHERE gameId = :gameId")
     suspend fun countByGame(gameId: Long): Int
+
+    @Query("SELECT COUNT(*) FROM save_cache WHERE gameId = :gameId AND cachedAt >= :sinceMillis")
+    suspend fun countByGameSince(gameId: Long, sinceMillis: Long): Int
 
     @Insert
     suspend fun insert(entity: SaveCacheEntity): Long
@@ -89,6 +101,9 @@ interface SaveCacheDao {
 
     @Query("SELECT * FROM save_cache WHERE gameId = :gameId ORDER BY cachedAt DESC LIMIT 1")
     suspend fun getMostRecent(gameId: Long): SaveCacheEntity?
+
+    @Query("SELECT * FROM save_cache WHERE gameId = :gameId AND saveSize = :size AND cachedAt >= :fileMtime ORDER BY cachedAt DESC LIMIT 1")
+    suspend fun findUnchangedSinceMtime(gameId: Long, size: Long, fileMtime: Instant): SaveCacheEntity?
 
     @Query("SELECT * FROM save_cache WHERE gameId = :gameId AND cachedAt = :timestamp LIMIT 1")
     suspend fun getByTimestamp(gameId: Long, timestamp: Long): SaveCacheEntity?
@@ -145,6 +160,16 @@ interface SaveCacheDao {
     @Query("SELECT COUNT(*) FROM save_cache WHERE needsRemoteSync = 1")
     suspend fun countNeedingRemoteSync(): Int
 
+    @Query("""
+        SELECT EXISTS(
+            SELECT 1 FROM save_cache
+            WHERE gameId = :gameId
+              AND needsRemoteSync = 1
+              AND IFNULL(channelName, '') = IFNULL(:channelName, '')
+        )
+    """)
+    suspend fun hasNeedingRemoteSync(gameId: Long, channelName: String?): Boolean
+
     @Query("SELECT COUNT(*) FROM save_cache WHERE needsRemoteSync = 1")
     fun observeNeedingRemoteSyncCount(): Flow<Int>
 
@@ -153,6 +178,9 @@ interface SaveCacheDao {
 
     @Query("UPDATE save_cache SET rommSaveId = :rommSaveId WHERE id = :id")
     suspend fun updateRommSaveId(id: Long, rommSaveId: Long)
+
+    @Query("UPDATE save_cache SET contentHash = :contentHash WHERE id = :id")
+    suspend fun updateContentHash(id: Long, contentHash: String)
 
     @Query("UPDATE save_cache SET cachedAt = :cachedAt WHERE id = :id")
     suspend fun updateCachedAt(id: Long, cachedAt: Instant)

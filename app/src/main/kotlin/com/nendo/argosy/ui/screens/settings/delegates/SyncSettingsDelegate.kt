@@ -73,7 +73,6 @@ class SyncSettingsDelegate @Inject constructor(
                 it.copy(
                     syncFilters = prefs.syncFilters,
                     saveSyncEnabled = prefs.saveSyncEnabled,
-                    experimentalFolderSaveSync = prefs.experimentalFolderSaveSync,
                     saveCacheLimit = prefs.saveCacheLimit,
                     hasStoragePermission = hasStoragePermission,
                     hasNotificationPermission = hasNotificationPermission,

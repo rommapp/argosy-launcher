@@ -4,6 +4,7 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.nendo.argosy.data.local.entity.FastForwardMode
@@ -48,6 +49,18 @@ class BuiltinEmulatorPreferencesRepository @Inject constructor(
         val BUILTIN_CUSTOM_STATE_PATH = stringPreferencesKey("builtin_custom_state_path")
         val BUILTIN_MIGRATION_V1 = booleanPreferencesKey("builtin_migration_v2")
         val BUILTIN_ARCHITECTURE_OVERRIDE = stringPreferencesKey("builtin_architecture_override")
+        val TOUCH_SHOW_WHEN_NO_GAMEPAD = booleanPreferencesKey("builtin_touch_show_when_no_gamepad")
+        val TOUCH_OPACITY_LANDSCAPE = floatPreferencesKey("builtin_touch_opacity_landscape")
+        val TOUCH_OPACITY_PORTRAIT = floatPreferencesKey("builtin_touch_opacity_portrait")
+        val TOUCH_SIZE_SCALE = floatPreferencesKey("builtin_touch_size_scale")
+        val TOUCH_HAPTIC = booleanPreferencesKey("builtin_touch_haptic")
+        val TOUCH_FADE_ON_IDLE = booleanPreferencesKey("builtin_touch_fade_on_idle")
+        val TOUCH_SWAP_HANDED = booleanPreferencesKey("builtin_touch_swap_handed")
+        val TOUCH_LOCK_ORIENTATION = booleanPreferencesKey("builtin_touch_lock_orientation")
+        val TOUCH_MIRROR_180 = booleanPreferencesKey("builtin_touch_mirror_180")
+        val TOUCH_ALLOW_LONG_PRESS_EDIT = booleanPreferencesKey("builtin_touch_allow_long_press_edit")
+        val TOUCH_COLOURED_FACE_BUTTONS = booleanPreferencesKey("builtin_touch_coloured_face_buttons")
+        val TOUCH_GENESIS_6_BUTTON = booleanPreferencesKey("builtin_touch_genesis_6_button")
     }
 
     fun isBuiltinLibretroEnabled(): Flow<Boolean> = dataStore.data.map { prefs ->
@@ -84,7 +97,19 @@ class BuiltinEmulatorPreferencesRepository @Inject constructor(
             autoRestoreStateMode = prefs[Keys.BUILTIN_AUTO_RESTORE_STATE_MODE] ?: "restore",
             customSavePath = prefs[Keys.BUILTIN_CUSTOM_SAVE_PATH],
             customStatePath = prefs[Keys.BUILTIN_CUSTOM_STATE_PATH],
-            architectureOverride = prefs[Keys.BUILTIN_ARCHITECTURE_OVERRIDE]
+            architectureOverride = prefs[Keys.BUILTIN_ARCHITECTURE_OVERRIDE],
+            showTouchControlsWhenNoGamepad = prefs[Keys.TOUCH_SHOW_WHEN_NO_GAMEPAD] ?: true,
+            touchControlsOpacityLandscape = prefs[Keys.TOUCH_OPACITY_LANDSCAPE] ?: 0.45f,
+            touchControlsOpacityPortrait = prefs[Keys.TOUCH_OPACITY_PORTRAIT] ?: 1.0f,
+            touchControlsSizeScale = prefs[Keys.TOUCH_SIZE_SCALE] ?: 1.0f,
+            touchControlsHaptic = prefs[Keys.TOUCH_HAPTIC] ?: true,
+            touchControlsFadeOnIdle = prefs[Keys.TOUCH_FADE_ON_IDLE] ?: false,
+            touchControlsSwapHanded = prefs[Keys.TOUCH_SWAP_HANDED] ?: false,
+            touchControlsLockOrientation = prefs[Keys.TOUCH_LOCK_ORIENTATION] ?: false,
+            touchControlsMirror180 = prefs[Keys.TOUCH_MIRROR_180] ?: false,
+            touchControlsAllowLongPressEdit = prefs[Keys.TOUCH_ALLOW_LONG_PRESS_EDIT] ?: false,
+            touchControlsColouredFaceButtons = prefs[Keys.TOUCH_COLOURED_FACE_BUTTONS] ?: false,
+            touchControlsGenesis6Button = prefs[Keys.TOUCH_GENESIS_6_BUTTON] ?: false
         )
     }
 
@@ -244,6 +269,54 @@ class BuiltinEmulatorPreferencesRepository @Inject constructor(
 
     suspend fun setBuiltinMigrationComplete() {
         dataStore.edit { it[Keys.BUILTIN_MIGRATION_V1] = true }
+    }
+
+    suspend fun setTouchControlsShowWhenNoGamepad(enabled: Boolean) {
+        dataStore.edit { it[Keys.TOUCH_SHOW_WHEN_NO_GAMEPAD] = enabled }
+    }
+
+    suspend fun setTouchControlsOpacityLandscape(opacity: Float) {
+        dataStore.edit { it[Keys.TOUCH_OPACITY_LANDSCAPE] = opacity.coerceIn(0.2f, 1.0f) }
+    }
+
+    suspend fun setTouchControlsOpacityPortrait(opacity: Float) {
+        dataStore.edit { it[Keys.TOUCH_OPACITY_PORTRAIT] = opacity.coerceIn(0.5f, 1.0f) }
+    }
+
+    suspend fun setTouchControlsSizeScale(scale: Float) {
+        dataStore.edit { it[Keys.TOUCH_SIZE_SCALE] = scale.coerceIn(0.7f, 1.4f) }
+    }
+
+    suspend fun setTouchControlsHaptic(enabled: Boolean) {
+        dataStore.edit { it[Keys.TOUCH_HAPTIC] = enabled }
+    }
+
+    suspend fun setTouchControlsFadeOnIdle(enabled: Boolean) {
+        dataStore.edit { it[Keys.TOUCH_FADE_ON_IDLE] = enabled }
+    }
+
+    suspend fun setTouchControlsSwapHanded(enabled: Boolean) {
+        dataStore.edit { it[Keys.TOUCH_SWAP_HANDED] = enabled }
+    }
+
+    suspend fun setTouchControlsLockOrientation(enabled: Boolean) {
+        dataStore.edit { it[Keys.TOUCH_LOCK_ORIENTATION] = enabled }
+    }
+
+    suspend fun setTouchControlsMirror180(enabled: Boolean) {
+        dataStore.edit { it[Keys.TOUCH_MIRROR_180] = enabled }
+    }
+
+    suspend fun setTouchControlsAllowLongPressEdit(enabled: Boolean) {
+        dataStore.edit { it[Keys.TOUCH_ALLOW_LONG_PRESS_EDIT] = enabled }
+    }
+
+    suspend fun setTouchControlsColouredFaceButtons(enabled: Boolean) {
+        dataStore.edit { it[Keys.TOUCH_COLOURED_FACE_BUTTONS] = enabled }
+    }
+
+    suspend fun setTouchControlsGenesis6Button(enabled: Boolean) {
+        dataStore.edit { it[Keys.TOUCH_GENESIS_6_BUTTON] = enabled }
     }
 
     fun getArchitectureOverride(): Flow<String?> = dataStore.data.map { prefs ->

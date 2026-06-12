@@ -107,7 +107,9 @@ data class DualHomeShowcaseState(
     val releaseYear: Int? = null,
     val titleId: String? = null,
     val isFavorite: Boolean = false,
-    val isDownloaded: Boolean = true
+    val isDownloaded: Boolean = true,
+    val useGameBackground: Boolean = true,
+    val customWallpaperPath: String? = null
 )
 
 @Composable
@@ -116,13 +118,19 @@ fun DualHomeUpperScreen(
     footerHints: @Composable () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val effectiveBackgroundPath = if (state.useGameBackground) {
+        state.backgroundPath ?: state.coverPath
+    } else {
+        state.customWallpaperPath
+    }
+
     Box(
         modifier = modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
     ) {
         Crossfade(
-            targetState = state.backgroundPath ?: state.coverPath,
+            targetState = effectiveBackgroundPath,
             animationSpec = tween(300),
             label = "hero-bg"
         ) { bgPath ->

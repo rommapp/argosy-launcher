@@ -31,6 +31,10 @@ class GetVirtualCollectionCategoriesUseCase @Inject constructor(
         return getCategoriesByType(CollectionType.GAME_MODE)
     }
 
+    fun getSeries(): Flow<List<CategoryWithCount>> {
+        return getCategoriesByType(CollectionType.SERIES)
+    }
+
     private fun getCategoriesByType(type: CollectionType): Flow<List<CategoryWithCount>> {
         return collectionDao.observeByType(type)
             .flatMapLatest { collections ->

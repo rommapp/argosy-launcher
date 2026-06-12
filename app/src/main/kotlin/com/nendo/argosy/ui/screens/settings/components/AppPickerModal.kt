@@ -26,7 +26,7 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.drawable.toBitmap
-import com.nendo.argosy.data.platform.InstalledApp
+import com.nendo.argosy.data.platform.LaunchableApp
 import com.nendo.argosy.ui.components.Modal
 import com.nendo.argosy.ui.screens.settings.AppPickerModalState
 import com.nendo.argosy.ui.theme.Dimens
@@ -101,7 +101,7 @@ fun AppPickerModal(
 
 @Composable
 private fun AppRow(
-    app: InstalledApp,
+    app: LaunchableApp,
     isFocused: Boolean,
     onClick: () -> Unit
 ) {
@@ -140,7 +140,7 @@ private fun AppRow(
 }
 
 @Composable
-private fun AppIcon(app: InstalledApp, modifier: Modifier = Modifier) {
+private fun AppIcon(app: LaunchableApp, modifier: Modifier = Modifier) {
     val icon = app.icon
     if (icon != null) {
         val density = LocalDensity.current

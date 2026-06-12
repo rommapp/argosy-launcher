@@ -30,8 +30,8 @@ import com.nendo.argosy.ui.components.NavigationPreference
 import com.nendo.argosy.ui.screens.settings.components.SectionPaneLayout
 import com.nendo.argosy.ui.components.SliderPreference
 import com.nendo.argosy.ui.components.SwitchPreference
-import com.nendo.argosy.ui.components.colorIntToHue
-import com.nendo.argosy.ui.components.hueToColorInt
+import com.nendo.argosy.ui.theme.colorIntToHue
+import com.nendo.argosy.ui.theme.hueToColorInt
 import com.nendo.argosy.core.input.SoundType
 import com.nendo.argosy.ui.screens.settings.DisplayState
 import com.nendo.argosy.ui.screens.settings.SettingsUiState

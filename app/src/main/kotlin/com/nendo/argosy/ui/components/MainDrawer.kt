@@ -5,6 +5,7 @@ import com.nendo.argosy.ui.util.clickableNoFocus
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -22,6 +23,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Apps
+import androidx.compose.material.icons.filled.CloudSync
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.FeaturedPlayList
 import androidx.compose.material.icons.filled.Groups
@@ -99,6 +101,7 @@ fun MainDrawer(
                         currentRoute = currentRoute,
                         focusedIndex = drawerState.navFocusIndex,
                         downloadCount = drawerState.downloadCount,
+                        saveSyncAttentionCount = drawerState.saveSyncAttentionCount,
                         emulatorUpdatesAvailable = drawerState.emulatorUpdatesAvailable,
                         onNavigate = onNavigate,
                         modifier = Modifier.weight(1f)
@@ -210,6 +213,7 @@ private fun NavigationContent(
     currentRoute: String?,
     focusedIndex: Int,
     downloadCount: Int,
+    saveSyncAttentionCount: Int,
     emulatorUpdatesAvailable: Int,
     onNavigate: (String) -> Unit,
     modifier: Modifier = Modifier
@@ -235,9 +239,11 @@ private fun NavigationContent(
                     )
                 }
 
-                val badge = if (item.route == Screen.Downloads.route && downloadCount > 0) {
-                    downloadCount
-                } else null
+                val badge = when {
+                    item.route == Screen.Downloads.route && downloadCount > 0 -> downloadCount
+                    item.route == Screen.SaveSync.route && saveSyncAttentionCount > 0 -> saveSyncAttentionCount
+                    else -> null
+                }
 
                 DrawerMenuItem(
                     item = item,
@@ -596,14 +602,16 @@ private fun DrawerMenuItem(
         if (badge != null) {
             Box(
                 modifier = Modifier
-                    .size(Dimens.iconMd)
-                    .background(MaterialTheme.colorScheme.primary, CircleShape),
+                    .defaultMinSize(minWidth = Dimens.iconMd, minHeight = Dimens.iconMd)
+                    .background(MaterialTheme.colorScheme.primary, CircleShape)
+                    .padding(horizontal = Dimens.spacingXs),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
                     text = badge.toString(),
                     style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onPrimary
+                    color = MaterialTheme.colorScheme.onPrimary,
+                    maxLines = 1
                 )
             }
             Spacer(modifier = Modifier.width(Dimens.spacingSm))
@@ -616,6 +624,7 @@ private fun getIconForRoute(route: String): ImageVector = when (route) {
     Screen.Social.route -> Icons.Default.Groups
     Screen.Library.route -> Icons.Default.VideoLibrary
     Screen.Downloads.route -> Icons.Default.Download
+    Screen.SaveSync.route -> Icons.Default.CloudSync
     Screen.Apps.route -> Icons.Default.Apps
     Screen.Settings.route -> Icons.Default.Settings
     else -> Icons.Default.Apps

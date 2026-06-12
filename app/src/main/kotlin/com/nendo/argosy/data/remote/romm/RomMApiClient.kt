@@ -30,7 +30,8 @@ class RomMApiClient @Inject constructor(
         orderBy: String = "name",
         orderDir: String = "asc",
         limit: Int = 100,
-        offset: Int = 0
+        offset: Int = 0,
+        includeFiles: Boolean = false
     ): Map<String, String> {
         return buildMap {
             platformId?.let {
@@ -42,6 +43,9 @@ class RomMApiClient @Inject constructor(
             put("order_dir", orderDir)
             put("limit", limit.toString())
             put("offset", offset.toString())
+            if (includeFiles) {
+                put("with_files", "true")
+            }
         }
     }
 
@@ -69,28 +73,45 @@ class RomMApiClient @Inject constructor(
         val currentApi = api ?: return RomMResult.Error("Not connected")
         return try {
             val response = currentApi.downloadRom(romId, fileName, rangeHeader)
-            if (response.isSuccessful) {
-                val body = response.body()
-                if (body != null) {
-                    val isPartial = response.code() == 206
-                    RomMResult.Success(DownloadResponse(body, isPartial))
-                } else {
-                    RomMResult.Error("Empty response body")
-                }
-            } else {
-                val code = response.code()
-                val message = when (code) {
-                    400 -> "Bad request - try resyncing (HTTP 400)"
-                    401, 403 -> "Authentication failed (HTTP $code)"
-                    404 -> "ROM not found on server - try resyncing"
-                    500, 502, 503 -> "Server error (HTTP $code)"
-                    else -> "Download failed (HTTP $code)"
-                }
-                RomMResult.Error(message, code)
-            }
+            interpretDownloadResponse(response, "ROM")
         } catch (e: Exception) {
             RomMResult.Error(e.message ?: "Download failed")
         }
+    }
+
+    suspend fun downloadRomFile(
+        fileId: Long,
+        fileName: String,
+        rangeHeader: String? = null
+    ): RomMResult<DownloadResponse> {
+        val currentApi = api ?: return RomMResult.Error("Not connected")
+        return try {
+            val response = currentApi.downloadRomFile(fileId, fileName, rangeHeader)
+            interpretDownloadResponse(response, "File")
+        } catch (e: Exception) {
+            RomMResult.Error(e.message ?: "Download failed")
+        }
+    }
+
+    private fun interpretDownloadResponse(
+        response: retrofit2.Response<okhttp3.ResponseBody>,
+        kind: String
+    ): RomMResult<DownloadResponse> {
+        if (response.isSuccessful) {
+            val body = response.body()
+                ?: return RomMResult.Error("Empty response body")
+            val isPartial = response.code() == 206
+            return RomMResult.Success(DownloadResponse(body, isPartial))
+        }
+        val code = response.code()
+        val message = when (code) {
+            400 -> "Bad request - try resyncing (HTTP 400)"
+            401, 403 -> "Authentication failed (HTTP $code)"
+            404 -> "$kind not found on server - try resyncing"
+            500, 502, 503 -> "Server error (HTTP $code)"
+            else -> "Download failed (HTTP $code)"
+        }
+        return RomMResult.Error(message, code)
     }
 
     suspend fun getCurrentUser(): RomMResult<RomMUser> {
@@ -140,13 +161,17 @@ class RomMApiClient @Inject constructor(
                         ?: platformDao.getBySlug(remote.slug)
                     val platformDef = PlatformDefinitions.getBySlug(remote.slug)
                     val logoUrl = remote.logoUrl?.let { buildMediaUrl(it) }
-                    val normalizedName = remote.displayName ?: remote.name
+                    val derivedNames = PlatformDefinitions.getAliasDisplayName(remote.slug)
+                        ?: PlatformDefinitions.deriveDisplayName(remote.slug)
+                        ?: PlatformDefinitions.deriveDisplayName(remote.fsSlug)
+                    val normalizedName = remote.displayName ?: derivedNames?.first ?: remote.name
+                    val resolvedShortName = derivedNames?.second ?: platformDef?.shortName ?: normalizedName
                     PlatformEntity(
                         id = remote.id,
                         slug = remote.slug,
                         fsSlug = remote.fsSlug,
                         name = normalizedName,
-                        shortName = platformDef?.shortName ?: normalizedName,
+                        shortName = resolvedShortName,
                         romExtensions = platformDef?.extensions?.joinToString(",") ?: "",
                         gameCount = remote.romCount,
                         isVisible = existing?.isVisible ?: true,

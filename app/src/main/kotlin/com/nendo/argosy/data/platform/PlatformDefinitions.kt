@@ -110,6 +110,8 @@ object PlatformDefinitions {
         "segapico" to "pico",
         "sega_pico" to "pico",
         "sega-pico" to "pico",
+        "pico-8" to "pico8",
+        "pico_8" to "pico8",
         // Sony
         "ps" to "psx",
         "ps1" to "psx",
@@ -147,6 +149,11 @@ object PlatformDefinitions {
         "playstationportable" to "psp",
         "playstation_portable" to "psp",
         "playstation-portable" to "psp",
+        "psp-minis" to "psp",
+        "psp_minis" to "psp",
+        "pspminis" to "psp",
+        "playstation-portable-minis" to "psp",
+        "playstation_portable_minis" to "psp",
         // Microsoft
         "originalxbox" to "xbox",
         "original-xbox" to "xbox",
@@ -549,13 +556,24 @@ object PlatformDefinitions {
 
     fun getAll(): List<PlatformDef> = platforms
 
-    fun getBySlug(slug: String): PlatformDef? = platformMap[slug.lowercase()]
+    fun getBySlug(slug: String): PlatformDef? {
+        val lower = slug.lowercase()
+        return platformMap[slugAliases[lower] ?: lower]
+    }
 
     fun isAlias(slug: String): Boolean = slugAliases.containsKey(slug.lowercase())
 
     fun getCanonicalSlug(slug: String): String {
         val lower = slug.lowercase()
-        return slugAliases[lower] ?: lower
+        slugAliases[lower]?.let { return it }
+        if (platformMap.containsKey(lower)) return lower
+        val sep = lower.indexOfFirst { it == '-' || it == '_' }
+        if (sep > 0) {
+            val prefix = lower.substring(0, sep)
+            slugAliases[prefix]?.let { return it }
+            if (platformMap.containsKey(prefix)) return prefix
+        }
+        return lower
     }
 
     fun getSlugsForCanonical(slug: String): Set<String> {
@@ -563,6 +581,34 @@ object PlatformDefinitions {
         val aliases = slugAliases.filterValues { it == canonical }.keys
         return aliases + canonical
     }
+
+    fun getAliasDisplayName(slug: String): Pair<String, String>? =
+        aliasDisplayNames[slug.lowercase()]
+
+    fun deriveDisplayName(slug: String?): Pair<String, String>? {
+        if (slug.isNullOrBlank()) return null
+        val lower = slug.lowercase()
+        val sep = lower.indexOfFirst { it == '-' || it == '_' }
+        if (sep <= 0 || sep >= lower.length - 1) return null
+        val prefix = lower.substring(0, sep)
+        val canonical = slugAliases[prefix] ?: prefix
+        val parentDef = platformMap[canonical] ?: return null
+        val suffix = lower.substring(sep + 1)
+            .split('-', '_')
+            .filter { it.isNotEmpty() }
+            .joinToString(" ") { it.replaceFirstChar { c -> c.titlecase() } }
+        if (suffix.isEmpty()) return null
+        val combined = "${parentDef.shortName} $suffix"
+        return combined to combined
+    }
+
+    private val aliasDisplayNames: Map<String, Pair<String, String>> = mapOf(
+        "mame" to ("MAME" to "MAME"),
+        "fbneo" to ("FB Neo" to "FBNeo"),
+        "fba" to ("FB Alpha" to "FBA"),
+        "naomi2" to ("NAOMI 2" to "NAOMI 2"),
+        "hikaru" to ("Hikaru" to "Hikaru")
+    )
 
     fun getPlatformsForExtension(extension: String): List<PlatformDef> =
         extensionMap[extension.lowercase()] ?: emptyList()

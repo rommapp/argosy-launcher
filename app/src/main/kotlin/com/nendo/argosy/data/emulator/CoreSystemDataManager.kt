@@ -20,25 +20,34 @@ class CoreSystemDataManager @Inject constructor(
     suspend fun ensureCoreSystemData(coreId: String, systemDir: File): Boolean {
         return when (coreId) {
             "dolphin" -> ensureDolphinSysData(systemDir)
+            "ppsspp" -> ensurePpssppSysData(systemDir)
             else -> true
         }
     }
 
     fun needsSystemData(coreId: String, systemDir: File): Boolean {
         return when (coreId) {
-            "dolphin" -> {
-                val versionFile = File(systemDir, "$DOLPHIN_SYS_PATH/.argosy_version")
-                if (!versionFile.exists()) return true
-                val installed = versionFile.readText().trim().toIntOrNull()
-                installed != BuildConfig.DOLPHIN_SYS_VERSION
-            }
+            "dolphin" -> isVersionStale(
+                File(systemDir, "$DOLPHIN_SYS_PATH/$VERSION_MARKER"),
+                BuildConfig.DOLPHIN_SYS_VERSION
+            )
+            "ppsspp" -> isVersionStale(
+                File(systemDir, "$PPSSPP_SYS_PATH/$VERSION_MARKER"),
+                BuildConfig.PPSSPP_SYS_VERSION
+            )
             else -> false
         }
     }
 
+    private fun isVersionStale(versionFile: File, expected: Int): Boolean {
+        if (!versionFile.exists()) return true
+        val installed = versionFile.readText().trim().toIntOrNull()
+        return installed != expected
+    }
+
     private suspend fun ensureDolphinSysData(systemDir: File): Boolean = withContext(Dispatchers.IO) {
         val targetDir = File(systemDir, DOLPHIN_SYS_PATH)
-        val versionFile = File(targetDir, ".argosy_version")
+        val versionFile = File(targetDir, VERSION_MARKER)
         val currentVersion = BuildConfig.DOLPHIN_SYS_VERSION
 
         if (versionFile.exists()) {
@@ -58,6 +67,31 @@ class CoreSystemDataManager @Inject constructor(
         versionFile.parentFile?.mkdirs()
         versionFile.writeText(currentVersion.toString())
         Logger.info(TAG, "Dolphin Sys data installed successfully")
+        true
+    }
+
+    private suspend fun ensurePpssppSysData(systemDir: File): Boolean = withContext(Dispatchers.IO) {
+        val targetDir = File(systemDir, PPSSPP_SYS_PATH)
+        val versionFile = File(targetDir, VERSION_MARKER)
+        val currentVersion = BuildConfig.PPSSPP_SYS_VERSION
+
+        if (versionFile.exists()) {
+            val installed = versionFile.readText().trim().toIntOrNull()
+            if (installed == currentVersion) return@withContext true
+        }
+
+        Logger.info(TAG, "Downloading PPSSPP assets (version $currentVersion)")
+
+        try {
+            downloadAndExtract(PPSSPP_SYS_URL, systemDir)
+        } catch (e: Exception) {
+            Logger.error(TAG, "Failed to download PPSSPP assets: ${e.message}")
+            return@withContext false
+        }
+
+        versionFile.parentFile?.mkdirs()
+        versionFile.writeText(currentVersion.toString())
+        Logger.info(TAG, "PPSSPP assets installed successfully")
         true
     }
 
@@ -98,9 +132,13 @@ class CoreSystemDataManager @Inject constructor(
 
     companion object {
         private const val TAG = "CoreSystemData"
+        private const val VERSION_MARKER = ".argosy_version"
         private const val DOLPHIN_SYS_URL =
             "https://buildbot.libretro.com/assets/system/Dolphin.zip"
         private const val DOLPHIN_SYS_PATH = "dolphin-emu/Sys"
+        private const val PPSSPP_SYS_URL =
+            "https://buildbot.libretro.com/assets/system/PPSSPP.zip"
+        private const val PPSSPP_SYS_PATH = "PPSSPP"
         private const val CONNECT_TIMEOUT_MS = 30_000
         private const val READ_TIMEOUT_MS = 60_000
     }

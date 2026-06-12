@@ -157,5 +157,17 @@ object ControllerDetector {
         return DetectionResult(null, null, null, DetectionSource.UNKNOWN)
     }
 
+    fun isAnyGamepadConnected(): Boolean {
+        val deviceIds = InputDevice.getDeviceIds()
+        for (deviceId in deviceIds) {
+            val device = InputDevice.getDevice(deviceId) ?: continue
+            val sources = device.sources
+            if (sources and InputDevice.SOURCE_GAMEPAD == InputDevice.SOURCE_GAMEPAD ||
+                sources and InputDevice.SOURCE_JOYSTICK == InputDevice.SOURCE_JOYSTICK
+            ) return true
+        }
+        return false
+    }
+
     fun getDetectedLayout(): DetectedLayout? = detectFromActiveGamepad().layout
 }

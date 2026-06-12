@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 110,
-    "identityHash": "3c1707c6af8922485ff48b4f4776d55e",
+    "identityHash": "7e93c2985fdb9d47cf6867f4ee4e67aa",
     "entities": [
       {
         "tableName": "platforms",
@@ -962,7 +962,7 @@
       },
       {
         "tableName": "emulator_save_config",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `emulatorId` TEXT NOT NULL, `savePathPattern` TEXT NOT NULL, `isAutoDetected` INTEGER NOT NULL, `isUserOverride` INTEGER NOT NULL, `lastVerifiedAt` INTEGER, `statePathPattern` TEXT, `isUserStateOverride` INTEGER NOT NULL)",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `emulatorId` TEXT NOT NULL, `savePathPattern` TEXT NOT NULL, `isAutoDetected` INTEGER NOT NULL, `isUserOverride` INTEGER NOT NULL, `lastVerifiedAt` INTEGER, `statePathPattern` TEXT, `isUserStateOverride` INTEGER NOT NULL, `selectedMemcardPath` TEXT)",
         "fields": [
           {
             "fieldPath": "id",
@@ -1009,6 +1009,11 @@
             "columnName": "isUserStateOverride",
             "affinity": "INTEGER",
             "notNull": true
+          },
+          {
+            "fieldPath": "selectedMemcardPath",
+            "columnName": "selectedMemcardPath",
+            "affinity": "TEXT"
           }
         ],
         "primaryKey": {
@@ -3602,137 +3607,11 @@
             ]
           }
         ]
-      },
-      {
-        "tableName": "quaypass_encounters",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`credentialFingerprint` TEXT NOT NULL, `username` TEXT NOT NULL, `displayName` TEXT, `avatarColor` TEXT, `avatarBlobBase64` TEXT, `greeting` TEXT, `lastGameTitle` TEXT, `lastGamePlatform` TEXT, `lastGamePlaytimeMinutes` INTEGER, `lastGameIgdbId` INTEGER, `encounteredAt` INTEGER NOT NULL, `seenByUser` INTEGER NOT NULL, PRIMARY KEY(`credentialFingerprint`))",
-        "fields": [
-          {
-            "fieldPath": "credentialFingerprint",
-            "columnName": "credentialFingerprint",
-            "affinity": "TEXT",
-            "notNull": true
-          },
-          {
-            "fieldPath": "username",
-            "columnName": "username",
-            "affinity": "TEXT",
-            "notNull": true
-          },
-          {
-            "fieldPath": "displayName",
-            "columnName": "displayName",
-            "affinity": "TEXT"
-          },
-          {
-            "fieldPath": "avatarColor",
-            "columnName": "avatarColor",
-            "affinity": "TEXT"
-          },
-          {
-            "fieldPath": "avatarBlobBase64",
-            "columnName": "avatarBlobBase64",
-            "affinity": "TEXT"
-          },
-          {
-            "fieldPath": "greeting",
-            "columnName": "greeting",
-            "affinity": "TEXT"
-          },
-          {
-            "fieldPath": "lastGameTitle",
-            "columnName": "lastGameTitle",
-            "affinity": "TEXT"
-          },
-          {
-            "fieldPath": "lastGamePlatform",
-            "columnName": "lastGamePlatform",
-            "affinity": "TEXT"
-          },
-          {
-            "fieldPath": "lastGamePlaytimeMinutes",
-            "columnName": "lastGamePlaytimeMinutes",
-            "affinity": "INTEGER"
-          },
-          {
-            "fieldPath": "lastGameIgdbId",
-            "columnName": "lastGameIgdbId",
-            "affinity": "INTEGER"
-          },
-          {
-            "fieldPath": "encounteredAt",
-            "columnName": "encounteredAt",
-            "affinity": "INTEGER",
-            "notNull": true
-          },
-          {
-            "fieldPath": "seenByUser",
-            "columnName": "seenByUser",
-            "affinity": "INTEGER",
-            "notNull": true
-          }
-        ],
-        "primaryKey": {
-          "autoGenerate": false,
-          "columnNames": [
-            "credentialFingerprint"
-          ]
-        },
-        "indices": [
-          {
-            "name": "index_quaypass_encounters_encounteredAt",
-            "unique": false,
-            "columnNames": [
-              "encounteredAt"
-            ],
-            "orders": [],
-            "createSql": "CREATE INDEX IF NOT EXISTS `index_quaypass_encounters_encounteredAt` ON `${TABLE_NAME}` (`encounteredAt`)"
-          },
-          {
-            "name": "index_quaypass_encounters_seenByUser",
-            "unique": false,
-            "columnNames": [
-              "seenByUser"
-            ],
-            "orders": [],
-            "createSql": "CREATE INDEX IF NOT EXISTS `index_quaypass_encounters_seenByUser` ON `${TABLE_NAME}` (`seenByUser`)"
-          }
-        ]
-      },
-      {
-        "tableName": "quaypass_daily_stats",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`date` TEXT NOT NULL, `encounterCount` INTEGER NOT NULL, `ticketsEarned` INTEGER NOT NULL, PRIMARY KEY(`date`))",
-        "fields": [
-          {
-            "fieldPath": "date",
-            "columnName": "date",
-            "affinity": "TEXT",
-            "notNull": true
-          },
-          {
-            "fieldPath": "encounterCount",
-            "columnName": "encounterCount",
-            "affinity": "INTEGER",
-            "notNull": true
-          },
-          {
-            "fieldPath": "ticketsEarned",
-            "columnName": "ticketsEarned",
-            "affinity": "INTEGER",
-            "notNull": true
-          }
-        ],
-        "primaryKey": {
-          "autoGenerate": false,
-          "columnNames": [
-            "date"
-          ]
-        }
       }
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '3c1707c6af8922485ff48b4f4776d55e')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '7e93c2985fdb9d47cf6867f4ee4e67aa')"
     ]
   }
 }

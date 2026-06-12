@@ -113,9 +113,12 @@ class SyncCoordinatorChannelConflictTest {
             stateCacheManager = stateCacheManager,
             syncQueueManager = syncQueueManager,
             syncPreferencesRepository = mockk(relaxed = true) {
-                every { preferences } returns kotlinx.coroutines.flow.MutableStateFlow(SyncPreferences())
+                every { preferences } returns kotlinx.coroutines.flow.MutableStateFlow(SyncPreferences(saveSyncEnabled = true))
             },
-            payloadCodec = SyncPayloadCodec(com.squareup.moshi.Moshi.Builder().build())
+            payloadCodec = SyncPayloadCodec(com.squareup.moshi.Moshi.Builder().build()),
+            strategySelector = mockk(relaxed = true),
+            pendingConflictDao = mockk(relaxed = true),
+            reconcileEffectApplier = mockk(relaxed = true)
         )
 
         coordinator.processQueue()
@@ -124,7 +127,7 @@ class SyncCoordinatorChannelConflictTest {
             saveCacheDao.clearDirtyFlagForChannel(1L, "slot1", excludeId = -1)
         }
         coVerify(exactly = 0) {
-            mockSyncRepo.uploadCacheEntry(any(), any(), any(), any(), any(), any(), any())
+            mockSyncRepo.uploadCacheEntry(any(), any(), any(), any(), any(), any(), any(), any())
         }
 
         cacheFile.delete()
@@ -144,7 +147,7 @@ class SyncCoordinatorChannelConflictTest {
             mockSyncRepo.checkForConflict(1L, "retroarch", "slot1")
         } returns null
         coEvery {
-            mockSyncRepo.uploadCacheEntry(any(), any(), any(), any(), any(), any(), any())
+            mockSyncRepo.uploadCacheEntry(any(), any(), any(), any(), any(), any(), any(), any())
         } returns SaveSyncResult.Success(rommSaveId = 42L)
 
         coordinator = SyncCoordinator(
@@ -159,9 +162,12 @@ class SyncCoordinatorChannelConflictTest {
             stateCacheManager = stateCacheManager,
             syncQueueManager = syncQueueManager,
             syncPreferencesRepository = mockk(relaxed = true) {
-                every { preferences } returns kotlinx.coroutines.flow.MutableStateFlow(SyncPreferences())
+                every { preferences } returns kotlinx.coroutines.flow.MutableStateFlow(SyncPreferences(saveSyncEnabled = true))
             },
-            payloadCodec = SyncPayloadCodec(com.squareup.moshi.Moshi.Builder().build())
+            payloadCodec = SyncPayloadCodec(com.squareup.moshi.Moshi.Builder().build()),
+            strategySelector = mockk(relaxed = true),
+            pendingConflictDao = mockk(relaxed = true),
+            reconcileEffectApplier = mockk(relaxed = true)
         )
 
         coordinator.processQueue()
@@ -174,7 +180,8 @@ class SyncCoordinatorChannelConflictTest {
                 channelName = "slot1",
                 cacheFile = cacheFile,
                 contentHash = "hash123",
-                overwrite = false
+                overwrite = false,
+                uploadedCacheId = 10L
             )
         }
 
@@ -195,7 +202,7 @@ class SyncCoordinatorChannelConflictTest {
             mockSyncRepo.checkForConflict(1L, "retroarch", "slot1")
         } returns null
         coEvery {
-            mockSyncRepo.uploadCacheEntry(any(), any(), any(), any(), any(), any(), any())
+            mockSyncRepo.uploadCacheEntry(any(), any(), any(), any(), any(), any(), any(), any())
         } returns SaveSyncResult.Conflict(
             gameId = 1L,
             localTimestamp = Instant.now(),
@@ -214,9 +221,12 @@ class SyncCoordinatorChannelConflictTest {
             stateCacheManager = stateCacheManager,
             syncQueueManager = syncQueueManager,
             syncPreferencesRepository = mockk(relaxed = true) {
-                every { preferences } returns kotlinx.coroutines.flow.MutableStateFlow(SyncPreferences())
+                every { preferences } returns kotlinx.coroutines.flow.MutableStateFlow(SyncPreferences(saveSyncEnabled = true))
             },
-            payloadCodec = SyncPayloadCodec(com.squareup.moshi.Moshi.Builder().build())
+            payloadCodec = SyncPayloadCodec(com.squareup.moshi.Moshi.Builder().build()),
+            strategySelector = mockk(relaxed = true),
+            pendingConflictDao = mockk(relaxed = true),
+            reconcileEffectApplier = mockk(relaxed = true)
         )
 
         coordinator.processQueue()
@@ -224,6 +234,47 @@ class SyncCoordinatorChannelConflictTest {
         coVerify {
             saveCacheDao.clearDirtyFlagForChannel(1L, "slot1", excludeId = -1)
         }
+
+        cacheFile.delete()
+    }
+
+    @Test
+    fun `processQueue skips save work when saveSyncEnabled is false`() = runTest {
+        val cacheFile = File.createTempFile("test_cache", ".zip").apply {
+            writeBytes(byteArrayOf(1, 2, 3))
+            deleteOnExit()
+        }
+
+        val dirtyCache = makeDirtyChannelCache("slot1")
+        coEvery { saveCacheDao.getNeedingRemoteSync() } returns listOf(dirtyCache)
+        every { mockCacheManager.getCacheFile(dirtyCache) } returns cacheFile
+
+        coordinator = SyncCoordinator(
+            pendingSyncQueueDao = pendingSyncQueueDao,
+            saveCacheDao = saveCacheDao,
+            saveSyncDao = mockk(relaxed = true),
+            emulatorSaveConfigDao = mockk(relaxed = true),
+            gameDao = gameDao,
+            romMRepository = romMRepository,
+            saveSyncRepository = saveSyncRepository,
+            saveCacheManager = saveCacheManager,
+            stateCacheManager = stateCacheManager,
+            syncQueueManager = syncQueueManager,
+            syncPreferencesRepository = mockk(relaxed = true) {
+                every { preferences } returns kotlinx.coroutines.flow.MutableStateFlow(SyncPreferences(saveSyncEnabled = false))
+            },
+            payloadCodec = SyncPayloadCodec(com.squareup.moshi.Moshi.Builder().build()),
+            strategySelector = mockk(relaxed = true),
+            pendingConflictDao = mockk(relaxed = true),
+            reconcileEffectApplier = mockk(relaxed = true)
+        )
+
+        coordinator.processQueue()
+
+        coVerify(exactly = 0) { saveCacheDao.getNeedingRemoteSync() }
+        coVerify(exactly = 0) { mockSyncRepo.uploadCacheEntry(any(), any(), any(), any(), any(), any(), any(), any()) }
+        coVerify(exactly = 0) { mockSyncRepo.downloadPendingServerSaves() }
+        coVerify(exactly = 0) { mockSyncRepo.rekeySaveSyncToLocalEmulators() }
 
         cacheFile.delete()
     }

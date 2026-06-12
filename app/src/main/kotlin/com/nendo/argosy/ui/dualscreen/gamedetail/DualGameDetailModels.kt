@@ -20,7 +20,7 @@ enum class DualGameDetailTab {
     OPTIONS
 }
 
-enum class ActiveModal { NONE, RATING, DIFFICULTY, STATUS, EMULATOR, CORE, COLLECTION, SAVE_NAME, UPDATES_DLC, DISC_PICKER, VARIANT_PICKER }
+enum class ActiveModal { NONE, RATING, DIFFICULTY, STATUS, EMULATOR, CORE, COLLECTION, SAVE_NAME, UPDATES_DLC, DISC_PICKER, VARIANT_PICKER, STEAM_INSTALL }
 
 enum class GameDetailOption {
     PLAY,
@@ -61,6 +61,7 @@ data class DualGameDetailUiState(
     val isPlayable: Boolean = false,
     val userDifficulty: Int = 0,
     val currentTab: DualGameDetailTab = DualGameDetailTab.OPTIONS,
+    val availableTabs: List<DualGameDetailTab> = DualGameDetailTab.entries,
     val isFavorite: Boolean = false,
     val isLoading: Boolean = true,
     val achievementCount: Int = 0,
@@ -76,13 +77,15 @@ data class DualGameDetailUiState(
     val saveFocusColumn: SaveFocusColumn = SaveFocusColumn.SLOTS,
     val activeChannel: String? = null,
     val activeSaveTimestamp: Long? = null,
+    val saveSyncStatusName: String? = null,
     val hasMultipleCores: Boolean = false,
     val selectedCoreName: String? = null,
     val selectedCoreId: String? = null,
     val downloadProgress: Float? = null,
     val downloadState: String? = null,
     val isDeleting: Boolean = false,
-    val isMultiDisc: Boolean = false
+    val isMultiDisc: Boolean = false,
+    val isHidden: Boolean = false
 )
 
 fun DualGameDetailUiState.visibleOptions(): List<GameDetailOption> {
@@ -144,11 +147,14 @@ data class DualGameDetailUpperState(
     val updateFiles: List<UpdateFileUi> = emptyList(),
     val dlcFiles: List<UpdateFileUi> = emptyList(),
     val updatesPickerFocusIndex: Int = 0,
-    val isEdenGame: Boolean = false,
     val focusedStateEntry: UnifiedStateEntry? = null,
     val statePreviewScreenshotPath: String? = null,
     val discPickerOptions: List<DiscOption> = emptyList(),
-    val discPickerFocusIndex: Int = 0
+    val discPickerFocusIndex: Int = 0,
+    val steamInstallOptionNames: List<String> = emptyList(),
+    val steamInstallOptionPackages: List<String> = emptyList(),
+    val steamInstallFocusIndex: Int = 0,
+    val isHomeChooser: Boolean = false
 )
 
 data class SaveEntryData(

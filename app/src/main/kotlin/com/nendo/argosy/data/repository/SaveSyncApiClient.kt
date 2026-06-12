@@ -6,9 +6,11 @@ import com.nendo.argosy.data.emulator.SavePathConfig
 import com.nendo.argosy.data.local.dao.EmulatorConfigDao
 import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.dao.SaveSyncDao
+import com.nendo.argosy.data.local.dao.getByIdsChunked
 import com.nendo.argosy.data.local.entity.GameEntity
 import com.nendo.argosy.data.local.entity.SaveSyncEntity
 import com.nendo.argosy.data.remote.romm.RomMApi
+import com.nendo.argosy.data.remote.romm.RomMCapabilities
 import com.nendo.argosy.data.remote.romm.RomMDeleteSavesRequest
 import com.nendo.argosy.data.remote.romm.RomMSave
 import com.nendo.argosy.data.storage.FileAccessLayer
@@ -49,6 +51,7 @@ class SaveSyncApiClient @Inject constructor(
 ) {
     private var api: RomMApi? = null
     private var deviceId: String? = null
+    private var capabilities: RomMCapabilities = RomMCapabilities.NONE
 
     fun setApi(api: RomMApi?) {
         this.api = api
@@ -62,18 +65,19 @@ class SaveSyncApiClient @Inject constructor(
 
     fun getDeviceId(): String? = deviceId
 
+    fun setCapabilities(caps: RomMCapabilities) {
+        capabilities = caps
+    }
+
+    fun getCapabilities(): RomMCapabilities = capabilities
+
     internal fun getHandler(
         config: SavePathConfig?,
         platformSlug: String,
         emulatorId: String
     ): PlatformSaveHandler = saveHandlerRegistry.getHandler(config, platformSlug, emulatorId)
 
-    internal suspend fun isFolderSaveSyncEnabled(): Boolean {
-        val prefs = userPreferencesRepository.preferences.first()
-        return prefs.saveSyncEnabled && prefs.experimentalFolderSaveSync
-    }
-
-    internal suspend fun resolveEmulatorForGame(game: GameEntity): String? {
+    suspend fun resolveEmulatorForGame(game: GameEntity): String? {
         val gameConfig = emulatorConfigDao.getByGameId(game.id)
         if (gameConfig?.packageName != null) {
             val resolved = emulatorResolver.resolveEmulatorId(gameConfig.packageName)
@@ -92,10 +96,18 @@ class SaveSyncApiClient @Inject constructor(
             }
         }
 
+        emulatorResolver.ensureDetected()
+
+        val preferred = emulatorResolver.getPreferredEmulator(game.platformSlug)
+        if (preferred != null) {
+            Logger.debug(TAG, "[SaveSync] DISCOVER gameId=${game.id} | Using preferred emulator for platform=${game.platformSlug} | emulatorId=${preferred.def.id}")
+            return preferred.def.id
+        }
+
         val installedEmulators = emulatorResolver.getInstalledForPlatform(game.platformSlug)
         if (installedEmulators.isNotEmpty()) {
             val emulatorId = installedEmulators.first().def.id
-            Logger.debug(TAG, "[SaveSync] DISCOVER gameId=${game.id} | Using first installed emulator for platform=${game.platformSlug} | emulatorId=$emulatorId, installed=${installedEmulators.map { it.def.id }}")
+            Logger.debug(TAG, "[SaveSync] DISCOVER gameId=${game.id} | Falling back to first installed for platform=${game.platformSlug} | emulatorId=$emulatorId, installed=${installedEmulators.map { it.def.id }}")
             return emulatorId
         }
 
@@ -159,7 +171,20 @@ class SaveSyncApiClient @Inject constructor(
             return@withContext emptyList()
         }
 
-        response.body() ?: emptyList()
+        val saves = response.body() ?: emptyList()
+        adoptServerHashes(gameId, saves)
+        saves
+    }
+
+    private suspend fun adoptServerHashes(gameId: Long, serverSaves: List<RomMSave>) {
+        if (serverSaves.isEmpty() || !capabilities.trustsServerHash) return
+        val hashByServerId = serverSaves.associate { it.id to it.contentHash }
+        saveSyncDao.getByGame(gameId).forEach { row ->
+            val hash = row.rommSaveId?.let { hashByServerId[it] } ?: return@forEach
+            if (row.lastUploadedHash != hash) {
+                saveSyncDao.updateLastUploadedHash(row.id, hash)
+            }
+        }
     }
 
     suspend fun checkForServerUpdates(platformId: Long): List<SaveSyncEntity> = withContext(Dispatchers.IO) {
@@ -180,8 +205,7 @@ class SaveSyncApiClient @Inject constructor(
         val serverSaves = response.body() ?: return@withContext emptyList()
         val updatedEntities = mutableListOf<SaveSyncEntity>()
 
-        val downloadedGames = gameDao.getGamesWithLocalPath()
-            .filter { it.rommId != null }
+        val downloadedGames = gameDao.getByIdsChunked(gameDao.getDownloadedRommGameIds())
 
         for (serverSave in serverSaves) {
             if (isStateShapedSave(serverSave)) continue
@@ -200,6 +224,9 @@ class SaveSyncApiClient @Inject constructor(
             val serverTime = parseTimestamp(serverSave.updatedAt)
 
             if (existing == null || serverTime.isAfter(existing.serverUpdatedAt)) {
+                val uploaderDeviceSync = serverSave.deviceSyncs
+                    ?.filter { !it.isCurrent }
+                    ?.maxByOrNull { it.lastSyncedAt ?: "" }
                 val entity = SaveSyncEntity(
                     id = existing?.id ?: 0,
                     gameId = game.id,
@@ -211,7 +238,10 @@ class SaveSyncApiClient @Inject constructor(
                     localUpdatedAt = existing?.localUpdatedAt,
                     serverUpdatedAt = serverTime,
                     lastSyncedAt = existing?.lastSyncedAt,
-                    syncStatus = conflictDetector.determineSyncStatus(existing?.localUpdatedAt, serverTime)
+                    syncStatus = conflictDetector.determineSyncStatus(existing?.localUpdatedAt, serverTime),
+                    lastUploadedHash = existing?.lastUploadedHash,
+                    lastSyncDeviceId = uploaderDeviceSync?.deviceId ?: existing?.lastSyncDeviceId,
+                    lastSyncDeviceName = uploaderDeviceSync?.deviceName ?: existing?.lastSyncDeviceName
                 )
                 saveSyncDao.upsert(entity)
                 if (entity.syncStatus == SaveSyncEntity.STATUS_SERVER_NEWER) {
@@ -225,7 +255,7 @@ class SaveSyncApiClient @Inject constructor(
 
     suspend fun checkForAllServerUpdates(): List<SaveSyncEntity> = withContext(Dispatchers.IO) {
         if (api == null) return@withContext emptyList()
-        val downloadedGames = gameDao.getGamesWithLocalPath().filter { it.rommId != null }
+        val downloadedGames = gameDao.getByIdsChunked(gameDao.getDownloadedRommGameIds())
         val platformIds = downloadedGames.map { it.platformId }.distinct()
 
         val allUpdates = mutableListOf<SaveSyncEntity>()
@@ -240,8 +270,9 @@ class SaveSyncApiClient @Inject constructor(
         emulatorId: String,
         channelName: String? = null,
         forceOverwrite: Boolean = false,
-        isHardcore: Boolean = false
-    ): SaveSyncResult = saveUploader.get().uploadSave(gameId, emulatorId, channelName, forceOverwrite, isHardcore)
+        isHardcore: Boolean = false,
+        uploadedCacheId: Long? = null
+    ): SaveSyncResult = saveUploader.get().uploadSave(gameId, emulatorId, channelName, forceOverwrite, isHardcore, uploadedCacheId)
 
     suspend fun uploadCacheEntry(
         gameId: Long,
@@ -250,15 +281,17 @@ class SaveSyncApiClient @Inject constructor(
         channelName: String,
         cacheFile: File,
         contentHash: String?,
-        overwrite: Boolean = false
-    ): SaveSyncResult = saveUploader.get().uploadCacheEntry(gameId, rommId, emulatorId, channelName, cacheFile, contentHash, overwrite)
+        overwrite: Boolean = false,
+        uploadedCacheId: Long? = null
+    ): SaveSyncResult = saveUploader.get().uploadCacheEntry(gameId, rommId, emulatorId, channelName, cacheFile, contentHash, overwrite, uploadedCacheId)
 
     suspend fun downloadSave(
         gameId: Long,
         emulatorId: String,
         channelName: String? = null,
-        skipBackup: Boolean = false
-    ): SaveSyncResult = saveDownloader.get().downloadSave(gameId, emulatorId, channelName, skipBackup)
+        skipBackup: Boolean = false,
+        knownServerSaveId: Long? = null
+    ): SaveSyncResult = saveDownloader.get().downloadSave(gameId, emulatorId, channelName, skipBackup, knownServerSaveId)
 
     suspend fun downloadSaveById(
         serverSaveId: Long,
@@ -312,13 +345,25 @@ class SaveSyncApiClient @Inject constructor(
         titleId: String?
     ): Boolean = withContext(Dispatchers.IO) {
         val handler = saveHandlerRegistry.getFolderHandler(platformSlug)
-        if (handler == null || titleId.isNullOrBlank()) {
+        if (handler == null) {
             return@withContext clearSaveAtPath(targetPath)
         }
+        if (titleId.isNullOrBlank()) {
+            Logger.warn(TAG, "clearSavesForTitle: refusing to clear $targetPath -- folder-based platform=$platformSlug requires a titleId to scope the delete")
+            return@withContext false
+        }
 
-        val parentPath = File(targetPath).parent ?: return@withContext clearSaveAtPath(targetPath)
-        val matches = handler.findAllSaveFoldersByTitleId(parentPath, titleId)
-        if (matches.isEmpty()) return@withContext clearSaveAtPath(targetPath)
+        val matchesAtTarget = handler.findAllSaveFoldersBySaveId(targetPath, titleId)
+        val (parentPath, matches) = if (matchesAtTarget.isNotEmpty()) {
+            targetPath to matchesAtTarget
+        } else {
+            val p = File(targetPath).parent ?: return@withContext true
+            p to handler.findAllSaveFoldersBySaveId(p, titleId)
+        }
+        if (matches.isEmpty()) {
+            Logger.debug(TAG, "clearSavesForTitle: no prefix matches for titleId=$titleId at parent=$parentPath, nothing to clear")
+            return@withContext true
+        }
 
         Logger.debug(TAG, "clearSavesForTitle: deleting ${matches.size} folder(s) | titleId=$titleId, parent=$parentPath")
         var allOk = true
@@ -333,7 +378,7 @@ class SaveSyncApiClient @Inject constructor(
         gameTitle: String,
         platformSlug: String,
         romPath: String? = null,
-        cachedTitleId: String? = null,
+        cachedSaveId: String? = null,
         coreName: String? = null,
         emulatorPackage: String? = null,
         gameId: Long? = null
@@ -342,11 +387,10 @@ class SaveSyncApiClient @Inject constructor(
         gameTitle = gameTitle,
         platformSlug = platformSlug,
         romPath = romPath,
-        cachedTitleId = cachedTitleId,
+        cachedSaveId = cachedSaveId,
         coreName = coreName,
         emulatorPackage = emulatorPackage,
-        gameId = gameId,
-        isFolderSaveSyncEnabled = isFolderSaveSyncEnabled()
+        gameId = gameId
     )
 
     suspend fun constructSavePath(
@@ -354,8 +398,9 @@ class SaveSyncApiClient @Inject constructor(
         gameTitle: String,
         platformSlug: String,
         romPath: String?,
-        coreName: String? = null
-    ): String? = savePathResolver.constructSavePath(emulatorId, gameTitle, platformSlug, romPath, coreName)
+        coreName: String? = null,
+        cachedSaveId: String? = null
+    ): String? = savePathResolver.constructSavePath(emulatorId, gameTitle, platformSlug, romPath, coreName, cachedSaveId)
 
     internal suspend fun <T> withRetry(
         maxAttempts: Int = 3,
@@ -412,9 +457,26 @@ class SaveSyncApiClient @Inject constructor(
 
     companion object {
         private const val TAG = "SaveSyncApiClient"
-        internal const val DEFAULT_SAVE_NAME = "argosy-latest"
+        const val DEFAULT_SAVE_NAME = "argosy-latest"
+        const val AUTOSAVE_SLOT_NAME = "autosave"
         internal const val MIN_VALID_SAVE_SIZE_BYTES = 100L
         internal const val AUTOCLEANUP_LIMIT = 10
+
+        fun computeUploadFileName(localSavePath: String?, channelName: String?, romBaseName: String?): String {
+            val baseName = when {
+                channelName == null || channelName.equals(AUTOSAVE_SLOT_NAME, ignoreCase = true) ->
+                    romBaseName ?: DEFAULT_SAVE_NAME
+                else -> channelName
+            }
+            val ext = localSavePath?.let { java.io.File(it) }?.let { file ->
+                when {
+                    file.isDirectory -> "zip"
+                    file.extension.equals("gci", ignoreCase = true) -> "zip"
+                    else -> file.extension
+                }
+            } ?: "zip"
+            return if (ext.isNotEmpty()) "$baseName.$ext" else baseName
+        }
         internal val TIMESTAMP_ONLY_PATTERN = Regex("""^\d{4}-\d{2}-\d{2}[_-]\d{2}[_-]\d{2}[_-]\d{2}$""")
         internal val ROMM_TIMESTAMP_TAG = Regex("""^\[\d{4}-\d{2}-\d{2}[ _]\d{2}-\d{2}-\d{2}(-\d+)?\]$""")
         internal val SWITCH_EMULATOR_IDS = setOf(
@@ -473,6 +535,7 @@ class SaveSyncApiClient @Inject constructor(
         internal fun isLatestSaveFileName(fileName: String, romBaseName: String?): Boolean {
             val baseName = File(fileName).nameWithoutExtension
             if (baseName.equals(DEFAULT_SAVE_NAME, ignoreCase = true)) return true
+            if (baseName.equals(AUTOSAVE_SLOT_NAME, ignoreCase = true)) return true
             if (romBaseName == null) return false
             if (equalsNormalized(baseName, romBaseName)) return true
             if (startsWithNormalized(baseName, romBaseName)) {

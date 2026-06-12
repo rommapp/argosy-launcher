@@ -7,7 +7,9 @@ import androidx.room.PrimaryKey
 enum class CollectionType {
     REGULAR,
     GENRE,
-    GAME_MODE
+    GAME_MODE,
+    SERIES,
+    SMART
 }
 
 @Entity(

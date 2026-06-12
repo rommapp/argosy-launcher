@@ -10,7 +10,8 @@ import java.time.Instant
     indices = [
         Index("priority", "createdAt"),
         Index("gameId"),
-        Index("status")
+        Index("status"),
+        Index("sessionId")
     ]
 )
 data class PendingSyncQueueEntity(
@@ -26,7 +27,8 @@ data class PendingSyncQueueEntity(
     val maxRetries: Int = 3,
     val lastError: String? = null,
     val createdAt: Instant = Instant.now(),
-    val updatedAt: Instant = Instant.now()
+    val updatedAt: Instant = Instant.now(),
+    val sessionId: Long? = null
 )
 
 enum class SyncType {

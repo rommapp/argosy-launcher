@@ -59,6 +59,7 @@ class StorageSettingsDelegateTest {
         managedStorageAccessor = mockk(relaxed = true)
 
         delegate = StorageSettingsDelegate(
+            context = mockk(relaxed = true),
             preferencesRepository = preferencesRepository,
             gameRepository = gameRepository,
             platformRepository = platformRepository,
@@ -68,7 +69,8 @@ class StorageSettingsDelegateTest {
             syncPlatformUseCase = syncPlatformUseCase,
             platformSyncQueue = platformSyncQueue,
             databaseAdminRepository = databaseAdminRepository,
-            managedStorageAccessor = managedStorageAccessor
+            managedStorageAccessor = managedStorageAccessor,
+            notificationManager = mockk(relaxed = true)
         )
     }
 

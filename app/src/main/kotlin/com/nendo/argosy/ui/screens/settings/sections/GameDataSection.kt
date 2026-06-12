@@ -514,7 +514,7 @@ private fun GameDataContent(
 }
 
 @Composable
-private fun AddSteamGameDialog(uiState: SettingsUiState, viewModel: SettingsViewModel) {
+internal fun AddSteamGameDialog(uiState: SettingsUiState, viewModel: SettingsViewModel) {
     val selectedLauncherName = uiState.steam.selectedLauncherPackage?.let { pkg ->
         uiState.steam.installedLaunchers.find { it.packageName == pkg }?.displayName
     }

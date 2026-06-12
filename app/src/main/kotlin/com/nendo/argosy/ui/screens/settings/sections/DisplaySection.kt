@@ -20,13 +20,13 @@ import com.nendo.argosy.ui.components.HueSliderPreference
 import com.nendo.argosy.ui.components.NavigationPreference
 import com.nendo.argosy.ui.components.SliderPreference
 import com.nendo.argosy.ui.components.SwitchPreference
-import com.nendo.argosy.ui.components.colorIntToHue
-import com.nendo.argosy.ui.components.hueToColorInt
 import com.nendo.argosy.ui.screens.settings.DisplayState
 import com.nendo.argosy.ui.screens.settings.SettingsUiState
 import com.nendo.argosy.ui.screens.settings.SettingsViewModel
 import com.nendo.argosy.ui.screens.settings.menu.SettingsLayout
 import com.nendo.argosy.ui.theme.Dimens
+import com.nendo.argosy.ui.theme.colorIntToHue
+import com.nendo.argosy.ui.theme.hueToColorInt
 
 internal sealed class DisplayItem(
     val key: String,

@@ -90,7 +90,8 @@ class HomeLibraryDelegate @Inject constructor(
     private val emulatorDetector: EmulatorDetector,
     private val notificationManager: NotificationManager,
     private val repairImageCacheUseCase: com.nendo.argosy.domain.usecase.cache.RepairImageCacheUseCase,
-    private val downloadFileStatusRepository: DownloadFileStatusRepository
+    private val downloadFileStatusRepository: DownloadFileStatusRepository,
+    private val steamPathResolver: com.nendo.argosy.data.steam.SteamPathResolver
 ) {
     private val _state = MutableStateFlow(LibraryState())
     val state: StateFlow<LibraryState> = _state.asStateFlow()
@@ -142,6 +143,7 @@ class HomeLibraryDelegate @Inject constructor(
         var favorites = gameRepository.getFavorites()
         val androidGames = gameRepository.getByPlatformSorted(LocalPlatformIds.ANDROID, limit = PLATFORM_GAMES_LIMIT)
         val steamGames = gameRepository.getByPlatformSorted(LocalPlatformIds.STEAM, limit = PLATFORM_GAMES_LIMIT)
+            .let { if (installedOnly) filterSteamInstalled(it) else it }
 
         val newThreshold = Instant.now().minus(NEW_GAME_THRESHOLD_HOURS, ChronoUnit.HOURS)
         var recentlyPlayed = gameRepository.getRecentlyPlayed(RECENT_GAMES_CANDIDATE_POOL)
@@ -362,6 +364,7 @@ class HomeLibraryDelegate @Inject constructor(
     }
 
     suspend fun loadPlatforms() {
+        val installedOnly = preferencesRepository.userPreferences.first().installedOnlyHome
         val allPlatforms = platformRepository.getPlatformsWithGames()
         val platforms = allPlatforms.filter { it.id != LocalPlatformIds.STEAM && it.id != LocalPlatformIds.ANDROID }
         cachedPlatformDisplayNames = allPlatforms.associate { it.id to it.getDisplayName() }
@@ -369,6 +372,7 @@ class HomeLibraryDelegate @Inject constructor(
         val androidGames = gameRepository.getByPlatformSorted(LocalPlatformIds.ANDROID, limit = PLATFORM_GAMES_LIMIT)
         val androidGameUis = androidGames.map { it.toUi() }
         val steamGames = gameRepository.getByPlatformSorted(LocalPlatformIds.STEAM, limit = PLATFORM_GAMES_LIMIT)
+            .let { if (installedOnly) filterSteamInstalled(it) else it }
         val steamGameUis = steamGames.map { it.toUi() }
         _state.update {
             it.copy(
@@ -480,7 +484,9 @@ class HomeLibraryDelegate @Inject constructor(
                 RefreshResult(gameUis.map { it.id }, isEmpty = gameUis.isEmpty())
             }
             HomeRow.Steam -> {
+                val installedOnly = preferencesRepository.userPreferences.first().installedOnlyHome
                 val games = gameRepository.getByPlatformSorted(LocalPlatformIds.STEAM, limit = PLATFORM_GAMES_LIMIT)
+                    .let { if (installedOnly) filterSteamInstalled(it) else it }
                 val gameUis = games.map { it.toUi() }
                 _state.update { it.copy(steamGames = gameUis) }
                 RefreshResult(gameUis.map { it.id }, isEmpty = gameUis.isEmpty())
@@ -533,8 +539,8 @@ class HomeLibraryDelegate @Inject constructor(
         gradientExtractionDelegate.extractForVisibleGames(scope, requests, focusedIndex)
     }
 
-    fun extractGradientForGame(scope: CoroutineScope, gameId: Long, coverPath: String, isFocused: Boolean) {
-        gradientExtractionDelegate.extractForGame(scope, gameId, coverPath, prioritize = isFocused)
+    fun extractGradientForGame(scope: CoroutineScope, gameId: Long, bitmap: android.graphics.Bitmap, isFocused: Boolean) {
+        gradientExtractionDelegate.extractForGame(scope, gameId, bitmap, prioritize = isFocused)
     }
 
     fun repairCoverImage(scope: CoroutineScope, gameId: Long, failedPath: String) {
@@ -594,16 +600,16 @@ class HomeLibraryDelegate @Inject constructor(
 
     private fun validateInstalledGamesInBackground(scope: CoroutineScope) {
         scope.launch(Dispatchers.IO) {
-            val gamesWithPaths = gameRepository.getGamesWithLocalPaths()
-            val staleGames = gamesWithPaths.filter { game ->
-                game.source != GameSource.STEAM &&
-                game.source != GameSource.ANDROID_APP &&
-                game.localPath != null &&
-                !downloadFileStatusRepository.pathExists(game.localPath)
+            val gamesWithPaths = gameRepository.getGamesWithLocalPathInfo()
+            val staleIds = gamesWithPaths.mapNotNull { info ->
+                val path = info.localPath ?: return@mapNotNull null
+                if (info.source == GameSource.STEAM || info.source == GameSource.ANDROID_APP) return@mapNotNull null
+                if (downloadFileStatusRepository.pathExists(path)) return@mapNotNull null
+                info.id
             }
-            if (staleGames.isEmpty()) return@launch
-            staleGames.forEach { game ->
-                gameRepository.validateAndDiscoverGame(game.id)
+            if (staleIds.isEmpty()) return@launch
+            staleIds.forEach { id ->
+                gameRepository.validateAndDiscoverGame(id)
             }
         }
     }
@@ -660,6 +666,9 @@ class HomeLibraryDelegate @Inject constructor(
         platformDisplayName = cachedPlatformDisplayNames[platformId],
         gradientColors = gradientExtractionDelegate.getGradient(id)
     )
+
+    private suspend fun filterSteamInstalled(games: List<GameEntity>): List<GameEntity> =
+        games.filter { steamPathResolver.isGameInstalled(it) }
 }
 
 data class RefreshResult(

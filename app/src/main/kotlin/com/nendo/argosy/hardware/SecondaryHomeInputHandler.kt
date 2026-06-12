@@ -16,6 +16,7 @@ import com.nendo.argosy.ui.dualscreen.home.ForwardingMode
 import com.nendo.argosy.hardware.CompanionScreen
 import com.nendo.argosy.ui.input.GamepadEvent
 import com.nendo.argosy.ui.input.InputResult
+import com.nendo.argosy.ui.screens.home.HomeGameUi
 import com.nendo.argosy.ui.screens.secondaryhome.SecondaryHomeViewModel
 
 class SecondaryHomeInputHandler(
@@ -320,6 +321,14 @@ class SecondaryHomeInputHandler(
             GameDetailOption.PLAY -> {
                 if (vm.uiState.value.isPlayable) {
                     broadcasts.broadcastDirectAction("PLAY", gameId, vm.uiState.value.activeChannel)
+                } else if (vm.uiState.value.isSteamGame) {
+                    val options = vm.steamMarkOptions()
+                    if (options.isEmpty()) {
+                        broadcasts.broadcastDirectAction("DOWNLOAD", gameId)
+                    } else {
+                        vm.openSteamInstallModal(options)
+                        broadcasts.broadcastSteamInstallModalOpen(vm)
+                    }
                 } else {
                     broadcasts.broadcastDirectAction("DOWNLOAD", gameId)
                 }
@@ -385,6 +394,14 @@ class SecondaryHomeInputHandler(
             GameDetailOption.HIDE -> {
                 broadcasts.broadcastDirectAction("HIDE", gameId)
             }
+        }
+    }
+
+    private fun confirmGame(game: HomeGameUi) {
+        if (game.isSteamGame && !game.isPlayable) {
+            broadcasts.openSteamChooserForHome(game.id)
+        } else {
+            broadcasts.broadcastDirectAction(if (game.isPlayable) "PLAY" else "DOWNLOAD", game.id)
         }
     }
 
@@ -501,8 +518,7 @@ class SecondaryHomeInputHandler(
                 } else {
                     val game = state.selectedGame
                     if (game != null) {
-                        val action = if (game.isPlayable) "PLAY" else "DOWNLOAD"
-                        broadcasts.broadcastDirectAction(action, game.id)
+                        confirmGame(game)
                         InputResult.HANDLED
                     } else InputResult.UNHANDLED
                 }
@@ -592,10 +608,7 @@ class SecondaryHomeInputHandler(
             }
             GamepadEvent.Confirm -> {
                 val game = dualHomeViewModel.focusedCollectionGame()
-                if (game != null) {
-                    val action = if (game.isPlayable) "PLAY" else "DOWNLOAD"
-                    broadcasts.broadcastDirectAction(action, game.id)
-                }
+                if (game != null) confirmGame(game)
                 InputResult.HANDLED
             }
             GamepadEvent.ContextMenu -> {
@@ -669,10 +682,7 @@ class SecondaryHomeInputHandler(
             GamepadEvent.Confirm -> {
                 val s = dualHomeViewModel.uiState.value
                 val game = s.libraryGames.getOrNull(s.libraryFocusedIndex)
-                if (game != null) {
-                    val action = if (game.isPlayable) "PLAY" else "DOWNLOAD"
-                    broadcasts.broadcastDirectAction(action, game.id)
-                }
+                if (game != null) confirmGame(game)
                 InputResult.HANDLED
             }
             GamepadEvent.ContextMenu -> {
@@ -774,6 +784,37 @@ class SecondaryHomeInputHandler(
                     }
                     GamepadEvent.Back -> {
                         vm.dismissPicker()
+                        broadcasts.broadcastModalClose()
+                    }
+                    else -> {}
+                }
+                return InputResult.HANDLED
+            }
+            ActiveModal.STEAM_INSTALL -> {
+                when (event) {
+                    GamepadEvent.Up -> {
+                        vm.moveSteamInstallFocus(-1)
+                        broadcasts.broadcastInlineUpdate(
+                            "steam_install_focus",
+                            vm.steamInstallFocusIndex.value
+                        )
+                    }
+                    GamepadEvent.Down -> {
+                        vm.moveSteamInstallFocus(1)
+                        broadcasts.broadcastInlineUpdate(
+                            "steam_install_focus",
+                            vm.steamInstallFocusIndex.value
+                        )
+                    }
+                    GamepadEvent.Confirm -> {
+                        val idx = vm.steamInstallFocusIndex.value
+                        vm.dismissSteamInstallModal()
+                        broadcasts.broadcastModalConfirmResult(
+                            ActiveModal.STEAM_INSTALL, idx, null
+                        )
+                    }
+                    GamepadEvent.Back -> {
+                        vm.dismissSteamInstallModal()
                         broadcasts.broadcastModalClose()
                     }
                     else -> {}
@@ -934,30 +975,13 @@ class SecondaryHomeInputHandler(
                         val allFiles = vm.updateFiles.value + vm.dlcFiles.value
                         val idx = vm.updatesPickerFocusIndex.value
                         val file = allFiles.getOrNull(idx)
-                        Log.d("UpdatesDLC", "Confirm: idx=$idx, file=${file?.fileName}, downloaded=${file?.isDownloaded}, applied=${file?.isAppliedToEmulator}, gameFileId=${file?.gameFileId}")
-                        if (file != null) {
+                        if (file != null && !file.isDownloaded && file.gameFileId != null) {
                             val gameId = vm.uiState.value.gameId
-                            when {
-                                !file.isDownloaded && file.gameFileId != null -> {
-                                    Log.d("UpdatesDLC", "Confirm: broadcasting DOWNLOAD_UPDATE_FILE gameId=$gameId fileId=${file.gameFileId}")
-                                    broadcasts.broadcastDirectAction(
-                                        "DOWNLOAD_UPDATE_FILE",
-                                        gameId,
-                                        file.gameFileId.toString()
-                                    )
-                                }
-                                file.isDownloaded && !file.isAppliedToEmulator -> {
-                                    Log.d("UpdatesDLC", "Confirm: broadcasting INSTALL_UPDATE_FILE gameId=$gameId fileId=${file.gameFileId}")
-                                    broadcasts.broadcastDirectAction(
-                                        "INSTALL_UPDATE_FILE",
-                                        gameId,
-                                        file.gameFileId?.toString()
-                                    )
-                                }
-                                else -> {
-                                    Log.d("UpdatesDLC", "Confirm: no action for file state")
-                                }
-                            }
+                            broadcasts.broadcastDirectAction(
+                                "DOWNLOAD_UPDATE_FILE",
+                                gameId,
+                                file.gameFileId.toString()
+                            )
                         }
                     }
                     GamepadEvent.SecondaryAction -> {
@@ -966,26 +990,12 @@ class SecondaryHomeInputHandler(
                         val downloadable = allFiles.filter {
                             !it.isDownloaded && it.gameFileId != null
                         }
-                        Log.d("UpdatesDLC", "SecondaryAction: ${downloadable.size} downloadable, ${allFiles.count { it.isDownloaded && !it.isAppliedToEmulator }} installable")
-                        if (downloadable.isNotEmpty()) {
-                            for (file in downloadable) {
-                                broadcasts.broadcastDirectAction(
-                                    "DOWNLOAD_UPDATE_FILE",
-                                    gameId,
-                                    file.gameFileId.toString()
-                                )
-                            }
-                        } else {
-                            val installable = allFiles.filter {
-                                it.isDownloaded && !it.isAppliedToEmulator
-                            }
-                            for (file in installable) {
-                                broadcasts.broadcastDirectAction(
-                                    "INSTALL_UPDATE_FILE",
-                                    gameId,
-                                    file.gameFileId?.toString()
-                                )
-                            }
+                        for (file in downloadable) {
+                            broadcasts.broadcastDirectAction(
+                                "DOWNLOAD_UPDATE_FILE",
+                                gameId,
+                                file.gameFileId.toString()
+                            )
                         }
                     }
                     GamepadEvent.Back -> {

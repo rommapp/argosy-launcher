@@ -124,7 +124,7 @@ class DownloadGameUseCase @Inject constructor(
                     platformSlug = game.platformSlug,
                     coverPath = game.coverPath,
                     expectedSizeBytes = expectedSize,
-                    isMultiFileRom = rom.isFolderRom
+                    isMultiFileRom = rom.needsServerBuiltZipExtraction
                 )
                 DownloadResult.Queued
             }

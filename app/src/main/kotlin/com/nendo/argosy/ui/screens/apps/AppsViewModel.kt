@@ -358,28 +358,44 @@ class AppsViewModel @Inject constructor(
     }
 
     private suspend fun fetchMetadataForApp(gameId: Long, packageName: String) {
-        try {
-            val details = playStoreService.getAppDetails(packageName).getOrNull() ?: return
-            val game = gameRepository.getById(gameId) ?: return
-            val updated = game.copy(
-                description = details.description ?: game.description,
-                developer = details.developer ?: game.developer,
-                genre = details.genre ?: game.genre,
-                rating = details.ratingPercent ?: game.rating,
-                screenshotPaths = details.screenshotUrls.takeIf { it.isNotEmpty() }
-                    ?.joinToString(",") ?: game.screenshotPaths,
-                backgroundPath = details.screenshotUrls.firstOrNull() ?: game.backgroundPath
-            )
-            gameRepository.update(updated)
-
-            details.coverUrl?.let { url ->
-                imageCacheManager.queueCoverCacheByGameId(url, gameId)
-            }
-            if (details.screenshotUrls.isNotEmpty()) {
-                imageCacheManager.queueScreenshotCacheByGameId(gameId, details.screenshotUrls)
-            }
+        val details = try {
+            playStoreService.getAppDetails(packageName).getOrNull()
         } catch (_: Exception) {
-            // Silently fail - metadata fetch is best-effort
+            null
+        }
+
+        if (details != null) {
+            try {
+                val game = gameRepository.getById(gameId)
+                if (game != null) {
+                    val updated = game.copy(
+                        description = details.description ?: game.description,
+                        developer = details.developer ?: game.developer,
+                        genre = details.genre ?: game.genre,
+                        rating = details.ratingPercent ?: game.rating,
+                        screenshotPaths = details.screenshotUrls.takeIf { it.isNotEmpty() }
+                            ?.joinToString(",") ?: game.screenshotPaths,
+                        backgroundPath = details.screenshotUrls.firstOrNull() ?: game.backgroundPath
+                    )
+                    gameRepository.update(updated)
+
+                    details.screenshotUrls.firstOrNull()?.let { url ->
+                        imageCacheManager.queueBackgroundCacheByGameId(url, gameId, game.title)
+                    }
+                    if (details.screenshotUrls.isNotEmpty()) {
+                        imageCacheManager.queueScreenshotCacheByGameId(gameId, details.screenshotUrls)
+                    }
+                }
+            } catch (_: Exception) {
+                // Silently fail - metadata update is best-effort
+            }
+        }
+
+        // Prefer Play Store cover; fall back to launcher app icon so non-game apps still get cover art.
+        if (details?.coverUrl != null) {
+            imageCacheManager.queueCoverCacheByGameId(details.coverUrl, gameId)
+        } else {
+            imageCacheManager.queueAppIconCache(gameId, packageName)
         }
     }
 
@@ -570,12 +586,23 @@ class AppsViewModel @Inject constructor(
 
         override fun onLeft(): InputResult {
             val state = _uiState.value
-            when {
-                state.showContextMenu -> return InputResult.UNHANDLED
-                state.isReorderMode -> moveAppInReorderMode(FocusDirection.LEFT)
-                else -> moveFocus(FocusDirection.LEFT)
+            return when {
+                state.showContextMenu -> InputResult.HANDLED
+                state.isReorderMode -> {
+                    moveAppInReorderMode(FocusDirection.LEFT)
+                    InputResult.HANDLED
+                }
+                state.apps.isEmpty() -> InputResult.UNHANDLED
+                else -> {
+                    val cols = state.columnsCount.coerceAtLeast(1)
+                    if (state.focusedIndex % cols == 0) {
+                        InputResult.UNHANDLED
+                    } else {
+                        moveFocus(FocusDirection.LEFT)
+                        InputResult.HANDLED
+                    }
+                }
             }
-            return InputResult.HANDLED
         }
 
         override fun onRight(): InputResult {

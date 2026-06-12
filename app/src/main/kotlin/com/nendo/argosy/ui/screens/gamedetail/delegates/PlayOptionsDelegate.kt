@@ -84,6 +84,7 @@ class PlayOptionsDelegate @Inject constructor(
             var optionCount = 1
 
             if (state.hasCasualSaves) optionCount++
+            if (state.hasCasualSaves && state.isOnline) optionCount++
             if (state.hasHardcoreSave) optionCount++
             if (state.hasRASupport && state.isRALoggedIn) optionCount++
 
@@ -99,12 +100,14 @@ class PlayOptionsDelegate @Inject constructor(
 
         var currentIdx = 0
         val resumeIdx = if (state.hasCasualSaves) currentIdx++ else -1
+        val resumeNoSyncIdx = if (state.hasCasualSaves && state.isOnline) currentIdx++ else -1
         val resumeHardcoreIdx = if (state.hasHardcoreSave) currentIdx++ else -1
         val newCasualIdx = currentIdx++
         val newHardcoreIdx = if (state.hasRASupport && state.isRALoggedIn) currentIdx else -1
 
         return when (focusIndex) {
             resumeIdx -> PlayOptionAction.Resume
+            resumeNoSyncIdx -> PlayOptionAction.ResumeNoSync
             resumeHardcoreIdx -> PlayOptionAction.ResumeHardcore
             newCasualIdx -> PlayOptionAction.NewCasual
             newHardcoreIdx -> {

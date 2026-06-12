@@ -110,14 +110,18 @@ import com.swordfish.libretrodroid.Variable
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.File
 import javax.inject.Inject
 
 @AndroidEntryPoint
 class LibretroActivity : ComponentActivity() {
+    @Inject lateinit var triggerAxisKeyEmitter: com.nendo.argosy.ui.input.TriggerAxisKeyEmitter
     @Inject lateinit var playSessionTracker: PlaySessionTracker
     @Inject lateinit var preferencesRepository: UserPreferencesRepository
+    @Inject lateinit var touchLayoutRepository: com.nendo.argosy.data.repository.TouchLayoutRepository
     @Inject lateinit var inputConfigRepository: InputConfigRepository
     @Inject lateinit var cheatDao: CheatDao
     @Inject lateinit var gameDao: GameDao
@@ -202,6 +206,16 @@ class LibretroActivity : ComponentActivity() {
     private var corePath: String = ""
     private var resolvedCoreId: String? = null
 
+    private var isGamepadConnectedState by mutableStateOf(false)
+    private var currentOrientationState by mutableStateOf(android.content.res.Configuration.ORIENTATION_LANDSCAPE)
+    private var currentRotationState by mutableStateOf(0)
+    private var touchSettingsState by mutableStateOf(com.nendo.argosy.data.preferences.BuiltinEmulatorSettings())
+    private var inputDeviceListener: android.hardware.input.InputManager.InputDeviceListener? = null
+    private var splitColumn: android.widget.LinearLayout? = null
+    private var touchEditMode by mutableStateOf(false)
+    private var baselineRotation: Int = 0
+    private var orientationEventListener: android.view.OrientationEventListener? = null
+
     private val isAnyMenuOpen: Boolean
         get() = menuVisible || cheatsMenuVisible || settingsVisible || shaderChainEditorVisible || frameEditorVisible || autoRestorePromptVisible || stateManagerVisible ||
             netplay.isAnyDialogVisible
@@ -211,6 +225,22 @@ class LibretroActivity : ComponentActivity() {
         Log.d(TAG, "onCreate: savedInstanceState=${savedInstanceState != null}")
         enableEdgeToEdge()
         enterImmersiveMode()
+        currentOrientationState = resources.configuration.orientation
+        currentRotationState = windowManager.defaultDisplay.rotation
+        baselineRotation = currentRotationState
+        isGamepadConnectedState = com.nendo.argosy.core.input.ControllerDetector.isAnyGamepadConnected()
+        registerGamepadDetection()
+        registerOrientationListener()
+
+        onBackPressedDispatcher.addCallback(this, object : androidx.activity.OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                if (isAnyMenuOpen) {
+                    activeMenuHandler?.onBack()
+                } else {
+                    showMenu()
+                }
+            }
+        })
 
         com.nendo.argosy.DualScreenManagerHolder.instance?.let { dsm ->
             dsm.emulatorKeyDispatcher = { event -> dispatchKeyEvent(event) }
@@ -263,13 +293,31 @@ class LibretroActivity : ComponentActivity() {
 
         val game = kotlinx.coroutines.runBlocking { gameDao.getById(gameId) }
         platformId = game?.platformId ?: -1L
-        platformSlug = game?.platformSlug ?: ""
+        platformSlug = intent.getStringExtra(EXTRA_PLATFORM_SLUG)?.takeIf { it.isNotBlank() }
+            ?: game?.platformSlug ?: ""
         activeSaveChannel = game?.activeSaveChannel
 
         initializeSaveState(savesDir, statesDir, activeSaveChannel)
         val globalSettings = kotlinx.coroutines.runBlocking {
             preferencesRepository.getBuiltinEmulatorSettings().first()
         }
+        touchSettingsState = globalSettings
+        var lastLockOrientation = globalSettings.touchControlsLockOrientation
+        var lastShow = globalSettings.showTouchControlsWhenNoGamepad
+        lifecycleScope.launch {
+            preferencesRepository.getBuiltinEmulatorSettings().collect {
+                touchSettingsState = it
+                if (it.touchControlsLockOrientation != lastLockOrientation) {
+                    lastLockOrientation = it.touchControlsLockOrientation
+                    applyOrientationLock(it.touchControlsLockOrientation)
+                }
+                if (it.showTouchControlsWhenNoGamepad != lastShow) {
+                    lastShow = it.showTouchControlsWhenNoGamepad
+                    splitColumn?.let { col -> applyPortraitSplit(col) }
+                }
+            }
+        }
+        applyOrientationLock(globalSettings.touchControlsLockOrientation)
         val settings = kotlinx.coroutines.runBlocking {
             effectiveLibretroSettingsResolver.getEffectiveSettings(platformId, platformSlug)
         }
@@ -575,8 +623,27 @@ class LibretroActivity : ComponentActivity() {
     }
 
     private fun buildContentView() {
+        val splitColumn = android.widget.LinearLayout(this).apply {
+            orientation = android.widget.LinearLayout.VERTICAL
+            addView(
+                retroView,
+                android.widget.LinearLayout.LayoutParams(
+                    android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
+                    0,
+                    1f
+                )
+            )
+            addView(
+                android.widget.Space(this@LibretroActivity),
+                android.widget.LinearLayout.LayoutParams(
+                    android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
+                    0,
+                    0f
+                )
+            )
+        }
         val container = FrameLayout(this).apply {
-            addView(retroView, FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT)
+            addView(splitColumn, FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT)
             addView(
                 ComposeView(this@LibretroActivity).apply {
                     setContent { InGameOverlay() }
@@ -587,6 +654,8 @@ class LibretroActivity : ComponentActivity() {
         }
 
         setContentView(container)
+        this.splitColumn = splitColumn
+        applyPortraitSplit(splitColumn)
 
         container.post {
             videoSettings.setScreenSize(container.width, container.height)
@@ -599,6 +668,21 @@ class LibretroActivity : ComponentActivity() {
         }
     }
 
+    private fun applyPortraitSplit(column: android.widget.LinearLayout) {
+        val portrait = currentOrientationState == android.content.res.Configuration.ORIENTATION_PORTRAIT
+        val overlayWouldShow = touchSettingsState.showTouchControlsWhenNoGamepad && !isGamepadConnectedState
+        val splitWanted = portrait && overlayWouldShow
+        val retroParams = retroView.layoutParams as android.widget.LinearLayout.LayoutParams
+        val spacer = column.getChildAt(1)
+        val spacerParams = spacer.layoutParams as android.widget.LinearLayout.LayoutParams
+        retroParams.weight = 1f
+        spacerParams.weight = if (splitWanted) 1f else 0f
+        retroView.layoutParams = retroParams
+        spacer.layoutParams = spacerParams
+        column.requestLayout()
+    }
+
+
     @androidx.compose.runtime.Composable
     private fun InGameOverlay() {
         ALauncherTheme {
@@ -608,6 +692,19 @@ class LibretroActivity : ComponentActivity() {
                 LocalXYIconsSwapped provides swapXY,
                 LocalSwapStartSelect provides swapStartSelect
             ) {
+                com.nendo.argosy.libretro.touch.OnScreenControlsHost(
+                    retroView = retroView,
+                    platformSlug = platformSlug,
+                    orientation = currentOrientationState,
+                    isGamepadConnected = isGamepadConnectedState,
+                    settings = touchSettingsState,
+                    rotationKey = currentRotationState,
+                    baselineRotation = baselineRotation,
+                    editMode = touchEditMode,
+                    repository = touchLayoutRepository,
+                    onExitEdit = { exitTouchEditMode() },
+                    onKey = { action, kc -> dispatchTouchKey(action, kc) }
+                )
                 if (menuVisible) {
                     val quality = if (netplay.inSession && netplay.role != null) {
                         NetplayQualityInfo(
@@ -635,7 +732,8 @@ class LibretroActivity : ComponentActivity() {
                         isInNetplaySession = netplay.inSession,
                         netplayRole = netplay.role,
                         netplaySessionIsReserved = netplay.sessionIsReserved,
-                        netplayQuality = quality
+                        netplayQuality = quality,
+                        touchControlsVisible = touchSettingsState.showTouchControlsWhenNoGamepad && !isGamepadConnectedState
                     )
                 }
                 if (netplay.modePickerVisible) {
@@ -917,7 +1015,14 @@ class LibretroActivity : ComponentActivity() {
                 limitHotkeysToPlayer1 = limitHotkeysToPlayer1,
                 fastForwardMode = videoSettings.fastForwardMode,
                 fastForwardPreservePitch = videoSettings.fastForwardPreservePitch,
-                controllerOrderCount = inputConfig.controllerOrderCount
+                controllerOrderCount = inputConfig.controllerOrderCount,
+                touchEnabled = touchSettingsState.showTouchControlsWhenNoGamepad,
+                touchOpacityLandscape = touchSettingsState.touchControlsOpacityLandscape,
+                touchOpacityPortrait = touchSettingsState.touchControlsOpacityPortrait,
+                touchSizeScale = touchSettingsState.touchControlsSizeScale,
+                touchHaptic = touchSettingsState.touchControlsHaptic,
+                touchLockOrientation = touchSettingsState.touchControlsLockOrientation,
+                touchGenesis6Button = touchSettingsState.touchControlsGenesis6Button
             ),
             onControlsAction = ::handleControlsAction,
             modalCallbacks = buildModalCallbacks(),
@@ -1059,9 +1164,21 @@ class LibretroActivity : ComponentActivity() {
                 menuVisible = false
                 cheatsMenuVisible = true
             }
+            InGameMenuAction.CustomizeTouchControls -> {
+                enterTouchEditMode()
+            }
             InGameMenuAction.Quit -> {
                 performAutoSaveState()
-                finish()
+                lifecycleScope.launch {
+                    try {
+                        withContext(kotlinx.coroutines.NonCancellable) {
+                            playSessionTracker.cacheCurrentSessionForQuit()
+                        }
+                    } catch (e: Exception) {
+                        Log.w(TAG, "Pre-quit save cache failed", e)
+                    }
+                    finish()
+                }
             }
             InGameMenuAction.OpenToFriends -> {
                 hideMenu()
@@ -1111,7 +1228,7 @@ class LibretroActivity : ComponentActivity() {
             statesSupported = false
             return
         }
-        if (platformSlug in PLATFORMS_WITHOUT_STATE_SUPPORT) {
+        if (com.nendo.argosy.data.platform.PlatformDefinitions.getCanonicalSlug(platformSlug) in PLATFORMS_WITHOUT_STATE_SUPPORT) {
             statesSupported = false
             Log.d(TAG, "State support disabled for platform=$platformSlug")
             return
@@ -1331,6 +1448,18 @@ class LibretroActivity : ComponentActivity() {
             InGameControlsAction.ShowControllerOrder,
             InGameControlsAction.ShowInputMapping,
             InGameControlsAction.ShowHotkeys -> {}
+            is InGameControlsAction.SetTouchEnabled -> {
+                lifecycleScope.launch { preferencesRepository.setTouchControlsShowWhenNoGamepad(action.enabled) }
+            }
+            is InGameControlsAction.SetTouchHaptic -> {
+                lifecycleScope.launch { preferencesRepository.setTouchControlsHaptic(action.enabled) }
+            }
+            is InGameControlsAction.SetTouchLockOrientation -> {
+                lifecycleScope.launch { preferencesRepository.setTouchControlsLockOrientation(action.enabled) }
+            }
+            is InGameControlsAction.SetTouchGenesis6Button -> {
+                lifecycleScope.launch { preferencesRepository.setTouchControlsGenesis6Button(action.enabled) }
+            }
         }
     }
 
@@ -1345,6 +1474,22 @@ class LibretroActivity : ComponentActivity() {
 
     private fun hideMenu() {
         menuVisible = false
+        if (!netplay.inSession) {
+            retroView.suppressAutoResume = false
+            retroView.resumeEmulation()
+        }
+    }
+
+    fun enterTouchEditMode() {
+        menuVisible = false
+        settingsVisible = false
+        retroView.pauseEmulation()
+        retroView.suppressAutoResume = true
+        touchEditMode = true
+    }
+
+    private fun exitTouchEditMode() {
+        touchEditMode = false
         if (!netplay.inSession) {
             retroView.suppressAutoResume = false
             retroView.resumeEmulation()
@@ -1384,6 +1529,18 @@ class LibretroActivity : ComponentActivity() {
         return super.dispatchKeyEvent(event)
     }
 
+    fun dispatchTouchKey(action: Int, keyCode: Int) {
+        if (isAnyMenuOpen) return
+        val event = KeyEvent(action, keyCode)
+        if (action == KeyEvent.ACTION_DOWN) {
+            if (hotkeyDispatcher.onKeyDown(keyCode, null)) return
+            retroView.onKeyDown(keyCode, event)
+        } else {
+            hotkeyDispatcher.onKeyUp(keyCode)
+            retroView.onKeyUp(keyCode, event)
+        }
+    }
+
     override fun onKeyDown(keyCode: Int, event: KeyEvent): Boolean {
         if (isAnyMenuOpen) return super.onKeyDown(keyCode, event)
 
@@ -1393,7 +1550,14 @@ class LibretroActivity : ComponentActivity() {
         if (shouldFilterShoulderButton(keyCode)) return true
 
         val handled = retroView.onKeyDown(keyCode, event)
-        return handled || super.onKeyDown(keyCode, event)
+        if (handled) return true
+
+        if (keyCode == KeyEvent.KEYCODE_BACK) {
+            showMenu()
+            return true
+        }
+
+        return super.onKeyDown(keyCode, event)
     }
 
     override fun onKeyUp(keyCode: Int, event: KeyEvent): Boolean {
@@ -1407,6 +1571,11 @@ class LibretroActivity : ComponentActivity() {
     }
 
     override fun onGenericMotionEvent(event: MotionEvent): Boolean {
+        val device = event.device
+        triggerAxisKeyEmitter.emit(event) { axis ->
+            device != null && inputMapper.hasAnalogMappingForAxis(device, axis)
+        }.forEach { dispatchKeyEvent(it) }
+
         if (isAnyMenuOpen) {
             if (gamepadInputBridge.handleMotionEvent(event)) return true
             return super.onGenericMotionEvent(event)
@@ -1453,6 +1622,7 @@ class LibretroActivity : ComponentActivity() {
                 // guest session SRAM is ephemeral and must not touch the persistent file
                 saveStateManager.saveSram(retroView)
             }
+            captureTouchBackdrop()
             if (isFinishing) {
                 retroView.destroyNative()
             }
@@ -1461,8 +1631,95 @@ class LibretroActivity : ComponentActivity() {
         super.onPause()
     }
 
+    private fun applyOrientationLock(locked: Boolean) {
+        requestedOrientation = if (!locked) {
+            android.content.pm.ActivityInfo.SCREEN_ORIENTATION_FULL_SENSOR
+        } else if (currentOrientationState == android.content.res.Configuration.ORIENTATION_PORTRAIT) {
+            android.content.pm.ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+        } else {
+            android.content.pm.ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
+        }
+    }
+
+    private fun captureTouchBackdrop() {
+        if (platformSlug.isBlank()) return
+        val bmp = try { retroView.captureRawFrame() } catch (_: Exception) { null } ?: return
+        val orientation = currentOrientationState
+        val ctx = applicationContext
+        lifecycleScope.launch(Dispatchers.IO) {
+            try {
+                com.nendo.argosy.libretro.touch.TouchBackdropCache.save(ctx, platformSlug, orientation, bmp)
+            } finally {
+                bmp.recycle()
+            }
+        }
+    }
+
+    override fun onConfigurationChanged(newConfig: android.content.res.Configuration) {
+        super.onConfigurationChanged(newConfig)
+        currentOrientationState = newConfig.orientation
+        currentRotationState = windowManager.defaultDisplay.rotation
+        splitColumn?.let { applyPortraitSplit(it) }
+    }
+
+    private fun registerGamepadDetection() {
+        val im = getSystemService(android.hardware.input.InputManager::class.java) ?: return
+        val listener = object : android.hardware.input.InputManager.InputDeviceListener {
+            override fun onInputDeviceAdded(deviceId: Int) {
+                val connected = com.nendo.argosy.core.input.ControllerDetector.isAnyGamepadConnected()
+                if (connected != isGamepadConnectedState) {
+                    isGamepadConnectedState = connected
+                    splitColumn?.let { applyPortraitSplit(it) }
+                }
+            }
+            override fun onInputDeviceRemoved(deviceId: Int) {
+                val connected = com.nendo.argosy.core.input.ControllerDetector.isAnyGamepadConnected()
+                if (connected != isGamepadConnectedState) {
+                    isGamepadConnectedState = connected
+                    splitColumn?.let { applyPortraitSplit(it) }
+                }
+            }
+            override fun onInputDeviceChanged(deviceId: Int) {
+                val connected = com.nendo.argosy.core.input.ControllerDetector.isAnyGamepadConnected()
+                if (connected != isGamepadConnectedState) {
+                    isGamepadConnectedState = connected
+                    splitColumn?.let { applyPortraitSplit(it) }
+                }
+            }
+        }
+        inputDeviceListener = listener
+        im.registerInputDeviceListener(listener, null)
+    }
+
+    private fun unregisterGamepadDetection() {
+        val l = inputDeviceListener ?: return
+        getSystemService(android.hardware.input.InputManager::class.java)?.unregisterInputDeviceListener(l)
+        inputDeviceListener = null
+    }
+
+    private fun registerOrientationListener() {
+        val listener = object : android.view.OrientationEventListener(this) {
+            override fun onOrientationChanged(orientation: Int) {
+                if (orientation == android.view.OrientationEventListener.ORIENTATION_UNKNOWN) return
+                val rot = windowManager.defaultDisplay.rotation
+                if (rot != currentRotationState) currentRotationState = rot
+            }
+        }
+        if (listener.canDetectOrientation()) {
+            listener.enable()
+            orientationEventListener = listener
+        }
+    }
+
+    private fun unregisterOrientationListener() {
+        orientationEventListener?.disable()
+        orientationEventListener = null
+    }
+
     override fun onDestroy() {
         Log.d(TAG, "onDestroy: isFinishing=$isFinishing, isChangingConfigurations=$isChangingConfigurations")
+        unregisterGamepadDetection()
+        unregisterOrientationListener()
         audioController.abandonAudioFocus()
         com.nendo.argosy.DualScreenManagerHolder.instance?.let { dsm ->
             dsm.emulatorKeyDispatcher = null
@@ -1494,8 +1751,9 @@ class LibretroActivity : ComponentActivity() {
 
         if (!isL1R1 && !isL2R2) return false
 
-        if (isL1R1 && platformSlug in PLATFORMS_WITHOUT_SHOULDERS) return true
-        if (isL2R2 && platformSlug !in PLATFORMS_WITH_L2_R2) return true
+        val canonicalPlatform = com.nendo.argosy.data.platform.PlatformDefinitions.getCanonicalSlug(platformSlug)
+        if (isL1R1 && canonicalPlatform in PLATFORMS_WITHOUT_SHOULDERS) return true
+        if (isL2R2 && canonicalPlatform !in PLATFORMS_WITH_L2_R2) return true
 
         return false
     }
@@ -1508,6 +1766,7 @@ class LibretroActivity : ComponentActivity() {
         const val EXTRA_SYSTEM_DIR = "system_dir"
         const val EXTRA_GAME_NAME = "game_name"
         const val EXTRA_GAME_ID = "game_id"
+        const val EXTRA_PLATFORM_SLUG = "platform_slug"
         const val EXTRA_CORE_NAME = "core_name"
         const val EXTRA_CORE_VAR_KEYS = "core_var_keys"
         const val EXTRA_CORE_VAR_VALUES = "core_var_values"

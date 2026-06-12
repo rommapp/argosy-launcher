@@ -98,6 +98,9 @@ class GameActionsDelegate @Inject constructor(
                 details.coverUrl?.let { url ->
                     imageCacheManager.queueCoverCacheByGameId(url, gameId)
                 }
+                details.screenshotUrls.firstOrNull()?.let { url ->
+                    imageCacheManager.queueBackgroundCacheByGameId(url, gameId, game.title)
+                }
                 if (details.screenshotUrls.isNotEmpty()) {
                     imageCacheManager.queueScreenshotCacheByGameId(gameId, details.screenshotUrls)
                 }

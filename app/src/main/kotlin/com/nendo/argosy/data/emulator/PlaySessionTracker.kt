@@ -198,8 +198,6 @@ class PlaySessionTracker @Inject constructor(
         val orphaned = preferencesRepository.getPersistedSession() ?: return
         Logger.warn(TAG, "[SaveSync] ORPHAN gameId=${orphaned.gameId} | Detected orphaned session from ${orphaned.startTime}")
 
-        // Log the orphaned play session before attempting save recovery.
-        // Recover emulator foreground time from UsageStats since per-process tracking was lost.
         val endTime = Instant.now()
         val sessionDuration = Duration.between(orphaned.startTime, endTime)
         if (sessionDuration.seconds >= MIN_PLAY_SECONDS_FOR_COMPLETION) {
@@ -267,7 +265,7 @@ class PlaySessionTracker @Inject constructor(
                 gameTitle = game.title,
                 platformSlug = game.platformSlug,
                 romPath = game.localPath,
-                cachedTitleId = game.titleId,
+                cachedSaveId = game.saveId ?: game.titleId,
                 coreName = orphaned.coreName,
                 emulatorPackage = orphaned.emulatorPackage,
                 gameId = orphaned.gameId
@@ -300,14 +298,7 @@ class PlaySessionTracker @Inject constructor(
 
                 // Sync to RomM after caching
                 if (cacheResult !is SaveCacheManager.CacheResult.Duplicate) {
-                    val syncResult = syncSaveOnSessionEndUseCase.get()(
-                        orphaned.gameId,
-                        orphaned.emulatorPackage,
-                        orphaned.startTime.toEpochMilli(),
-                        orphaned.coreName,
-                        orphaned.isHardcore,
-                        channelName = orphaned.channelName
-                    )
+                    val syncResult = syncSaveOnSessionEndUseCase.get()(orphaned)
                     when (syncResult) {
                         is SyncSaveOnSessionEndUseCase.Result.Uploaded -> {
                             Logger.info(TAG, "[SaveSync] ORPHAN gameId=${orphaned.gameId} | Synced to RomM")
@@ -574,7 +565,7 @@ class PlaySessionTracker @Inject constructor(
                 gameTitle = game.title,
                 platformSlug = game.platformSlug,
                 romPath = game.localPath,
-                cachedTitleId = game.titleId,
+                cachedSaveId = game.saveId ?: game.titleId,
                 coreName = coreName,
                 emulatorPackage = emulatorPackage,
                 gameId = gameId
@@ -779,8 +770,6 @@ class PlaySessionTracker @Inject constructor(
     }
 
     private suspend fun syncAndCacheSave(session: ActiveSession): SaveCacheManager.CacheResult? {
-        // Clear mid-game dirty flags before caching/uploading to prevent
-        // SyncCoordinator from racing to upload stale mid-game entries
         saveCacheDao.clearAllDirtyFlags(session.gameId)
 
         val cacheResult = cacheCurrentSave(session)
@@ -801,7 +790,12 @@ class PlaySessionTracker @Inject constructor(
 
         if (result is SyncSaveOnSessionEndUseCase.Result.Uploaded) {
             val activeChannel = if (session.isHardcore) null else session.channelName
-            linkCacheToServer(session.gameId, activeChannel, result)
+            val uploadedCacheId = when (cacheResult) {
+                is SaveCacheManager.CacheResult.Created -> cacheResult.cacheId
+                is SaveCacheManager.CacheResult.Duplicate -> cacheResult.cacheId
+                else -> null
+            }
+            linkCacheToServer(session.gameId, activeChannel, result, uploadedCacheId)
         }
 
         handleSaveSyncResult(session, game, result)
@@ -811,15 +805,29 @@ class PlaySessionTracker @Inject constructor(
     private suspend fun linkCacheToServer(
         gameId: Long,
         channelName: String?,
-        uploadResult: SyncSaveOnSessionEndUseCase.Result.Uploaded
+        uploadResult: SyncSaveOnSessionEndUseCase.Result.Uploaded,
+        uploadedCacheId: Long?
     ) {
         val rommSaveId = uploadResult.rommSaveId ?: return
 
-        val cacheEntry = if (channelName != null) {
-            saveCacheDao.getMostRecentInChannel(gameId, channelName)
-        } else {
-            saveCacheDao.getMostRecent(gameId)
-        } ?: return
+        val cacheEntry = uploadedCacheId?.let { saveCacheDao.getById(it) }
+            ?: run {
+                Logger.warn(TAG, "[SaveSync] SESSION gameId=$gameId | linkCacheToServer: no uploadedCacheId, skipping metadata link to avoid clobbering an unrelated cache")
+                com.nendo.argosy.util.SaveDebugLogger.logLinkCache(
+                    gameId = gameId,
+                    channel = channelName,
+                    cacheId = null,
+                    rommSaveId = rommSaveId,
+                    serverTimestamp = uploadResult.serverTimestamp,
+                    method = "skipped:noUploadedCacheId"
+                )
+                if (channelName != null) {
+                    saveCacheDao.clearDirtyFlagForChannel(gameId, channelName, excludeId = -1)
+                } else {
+                    saveCacheDao.clearAllDirtyFlags(gameId)
+                }
+                return
+            }
 
         saveCacheDao.updateRommSaveId(cacheEntry.id, rommSaveId)
 
@@ -828,6 +836,15 @@ class PlaySessionTracker @Inject constructor(
             saveCacheDao.updateCachedAt(cacheEntry.id, serverTimestamp)
             gameDao.updateActiveSaveTimestamp(gameId, serverTimestamp.toEpochMilli())
         }
+
+        com.nendo.argosy.util.SaveDebugLogger.logLinkCache(
+            gameId = gameId,
+            channel = channelName,
+            cacheId = cacheEntry.id,
+            rommSaveId = rommSaveId,
+            serverTimestamp = serverTimestamp,
+            method = "byUploadedCacheId"
+        )
 
         if (channelName != null) {
             saveCacheDao.clearDirtyFlagForChannel(gameId, channelName, excludeId = -1)
@@ -951,6 +968,42 @@ class PlaySessionTracker @Inject constructor(
         scope.launch { endSession(skipSaveSync = skipSaveSync) }
     }
 
+    /** Cache the current session's save to local Room with needsRemoteSync=true, synchronously. Called from the in-game Quit handler so the save is persisted before libretro core teardown begins -- teardown can be slow enough on some cores (PSP shader cache, etc.) to trigger an OS-imposed process kill, taking endSession's coroutine with it. The upload itself is handled later by SaveSyncQueuer / the sync coordinator off the queued row. */
+    suspend fun cacheCurrentSessionForQuit(): SaveCacheManager.CacheResult? {
+        val session = _activeSession.value ?: return null
+        val game = gameDao.getById(session.gameId) ?: return null
+        val emulatorId = emulatorResolver.resolveEmulatorId(session.emulatorPackage)
+            ?: return null
+        val savePath = saveSyncRepository.get().discoverSavePath(
+            emulatorId = emulatorId,
+            gameTitle = game.title,
+            platformSlug = game.platformSlug,
+            romPath = game.localPath,
+            cachedSaveId = game.saveId ?: game.titleId,
+            coreName = session.coreName,
+            emulatorPackage = session.emulatorPackage,
+            gameId = session.gameId
+        ) ?: return null
+        val activeChannel = if (session.isHardcore) null else session.channelName
+        return try {
+            saveCacheManager.get().cacheCurrentSave(
+                gameId = session.gameId,
+                emulatorId = emulatorId,
+                savePath = savePath,
+                channelName = activeChannel,
+                isLocked = false,
+                isHardcore = session.isHardcore,
+                skipDuplicateCheck = false,
+                needsRemoteSync = true
+            ).also { result ->
+                Logger.debug(TAG, "[SaveSync] QUIT gameId=${session.gameId} | Pre-quit cache result=${result::class.simpleName}")
+            }
+        } catch (e: Exception) {
+            Logger.error(TAG, "[SaveSync] QUIT gameId=${session.gameId} | Pre-quit cache failed", e)
+            SaveCacheManager.CacheResult.Failed
+        }
+    }
+
     fun forceStopService() {
         GameSessionService.stop(application)
         scope.launch { clearSessionAndBroadcast() }
@@ -987,7 +1040,7 @@ class PlaySessionTracker @Inject constructor(
                 gameTitle = game.title,
                 platformSlug = game.platformSlug,
                 romPath = game.localPath,
-                cachedTitleId = game.titleId,
+                cachedSaveId = game.saveId ?: game.titleId,
                 coreName = session.coreName,
                 emulatorPackage = session.emulatorPackage,
                 gameId = session.gameId

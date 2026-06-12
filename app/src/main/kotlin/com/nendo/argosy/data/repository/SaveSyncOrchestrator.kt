@@ -2,12 +2,14 @@ package com.nendo.argosy.data.repository
 
 import com.nendo.argosy.data.emulator.EmulatorResolver
 import com.nendo.argosy.data.local.dao.GameDao
+import com.nendo.argosy.data.local.dao.getByIdsChunked
 import com.nendo.argosy.data.local.dao.PendingSyncQueueDao
 import com.nendo.argosy.data.local.dao.SaveSyncDao
 import com.nendo.argosy.data.local.entity.PendingSyncQueueEntity
 import com.nendo.argosy.data.local.entity.SaveSyncEntity
 import com.nendo.argosy.data.local.entity.SyncPriority
 import com.nendo.argosy.data.local.entity.SyncType
+import com.nendo.argosy.data.preferences.SyncPreferencesRepository
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.sync.SaveFilePayload
 import com.nendo.argosy.data.sync.SyncPayloadCodec
@@ -33,6 +35,7 @@ class SaveSyncOrchestrator @Inject constructor(
     private val emulatorResolver: EmulatorResolver,
     private val savePathResolver: SavePathResolver,
     private val userPreferencesRepository: UserPreferencesRepository,
+    private val syncPreferencesRepository: SyncPreferencesRepository,
     private val syncQueueManager: SyncQueueManager,
     private val apiClient: dagger.Lazy<SaveSyncApiClient>,
     private val payloadCodec: SyncPayloadCodec
@@ -55,7 +58,7 @@ class SaveSyncOrchestrator @Inject constructor(
     }
 
     suspend fun scanAndQueueLocalChanges(): Int = withContext(Dispatchers.IO) {
-        val downloadedGames = gameDao.getGamesWithLocalPath().filter { it.rommId != null }
+        val downloadedGames = gameDao.getByIdsChunked(gameDao.getDownloadedRommGameIds())
         var queued = 0
         val client = apiClient.get()
 
@@ -63,18 +66,16 @@ class SaveSyncOrchestrator @Inject constructor(
             val emulatorId = client.resolveEmulatorForGame(game) ?: continue
             val emulatorPackage = emulatorResolver.getEmulatorPackageForGame(game.id, game.platformId, game.platformSlug)
             val coreName = client.resolveCoreForGame(game)
-            val folderSyncEnabled = isFolderSaveSyncEnabled()
 
             val savePath = savePathResolver.discoverSavePath(
                 emulatorId = emulatorId,
                 gameTitle = game.title,
                 platformSlug = game.platformSlug,
                 romPath = game.localPath,
-                cachedTitleId = game.titleId,
+                cachedSaveId = game.saveId ?: game.titleId,
                 coreName = coreName,
                 emulatorPackage = emulatorPackage,
-                gameId = game.id,
-                isFolderSaveSyncEnabled = folderSyncEnabled
+                gameId = game.id
             ) ?: continue
 
             val localFile = File(savePath)
@@ -106,11 +107,22 @@ class SaveSyncOrchestrator @Inject constructor(
             return@withContext 0
         }
 
-        for (syncEntity in pendingDownloads) {
-            val game = gameDao.getById(syncEntity.gameId) ?: continue
+        val actionable = pendingDownloads.mapNotNull { entity ->
+            val game = gameDao.getById(entity.gameId) ?: return@mapNotNull null
+            if (game.localPath == null) {
+                Logger.debug(TAG, "downloadPendingServerSaves: skipping non-installed gameId=${entity.gameId} silently")
+                return@mapNotNull null
+            }
+            entity to game
+        }
+        if (actionable.isEmpty()) {
+            return@withContext 0
+        }
+
+        for ((entity, game) in actionable) {
             syncQueueManager.addOperation(
                 SyncOperation(
-                    gameId = syncEntity.gameId,
+                    gameId = entity.gameId,
                     gameName = game.title,
                     coverPath = game.coverPath,
                     direction = SyncDirection.DOWNLOAD,
@@ -122,18 +134,23 @@ class SaveSyncOrchestrator @Inject constructor(
         var downloaded = 0
         val client = apiClient.get()
 
-        for (syncEntity in pendingDownloads) {
+        for ((syncEntity, _) in actionable) {
             syncQueueManager.updateOperation(syncEntity.gameId) { it.copy(status = SyncStatus.IN_PROGRESS) }
 
-            when (val result = client.downloadSave(syncEntity.gameId, syncEntity.emulatorId, syncEntity.channelName)) {
+            when (val result = client.downloadSave(syncEntity.gameId, syncEntity.emulatorId, syncEntity.channelName, knownServerSaveId = syncEntity.rommSaveId)) {
                 is SaveSyncResult.Success -> {
                     syncQueueManager.completeOperation(syncEntity.gameId)
                     downloaded++
                 }
                 is SaveSyncResult.NoSaveFound,
                 is SaveSyncResult.NotConfigured -> {
-                    syncQueueManager.completeOperation(syncEntity.gameId)
+                    syncQueueManager.removeOperation(syncEntity.gameId)
                     Logger.debug(TAG, "downloadPendingServerSaves: skipping gameId=${syncEntity.gameId} | result=$result")
+                }
+                is SaveSyncResult.NeedsHardcoreResolution -> {
+                    saveSyncDao.upsert(syncEntity.copy(syncStatus = SaveSyncEntity.STATUS_NEEDS_HARDCORE_RESOLUTION))
+                    syncQueueManager.removeOperation(syncEntity.gameId)
+                    Logger.info(TAG, "downloadPendingServerSaves: gameId=${syncEntity.gameId} needs hardcore resolution; parked row as ${SaveSyncEntity.STATUS_NEEDS_HARDCORE_RESOLUTION} and dropped from bulk queue")
                 }
                 is SaveSyncResult.Error -> {
                     syncQueueManager.completeOperation(syncEntity.gameId, result.message)
@@ -158,14 +175,21 @@ class SaveSyncOrchestrator @Inject constructor(
         val game = gameDao.getById(gameId) ?: return@withContext
         val romBaseName = game.localPath?.let { File(it).nameWithoutExtension }
 
+        val canonicalEmulatorId = if (emulatorId.isBlank() || emulatorId == "default") {
+            client.resolveEmulatorForGame(game) ?: run {
+                Logger.warn(TAG, "syncSavesForNewDownload: cannot resolve canonical emulator for gameId=$gameId; skipping")
+                return@withContext
+            }
+        } else emulatorId
+
         for (serverSave in serverSaves) {
             val channelName = SaveSyncApiClient.parseServerChannelNameForSync(serverSave.fileName, romBaseName)
             val serverTime = SaveSyncApiClient.parseTimestamp(serverSave.updatedAt)
 
             val existing = if (channelName != null) {
-                saveSyncDao.getByGameEmulatorAndChannel(gameId, emulatorId, channelName)
+                saveSyncDao.getByGameEmulatorAndChannel(gameId, canonicalEmulatorId, channelName)
             } else {
-                saveSyncDao.getByGameEmulatorAndNullChannel(gameId, emulatorId)
+                saveSyncDao.getByGameEmulatorAndNullChannel(gameId, canonicalEmulatorId)
             }
 
             saveSyncDao.upsert(
@@ -173,28 +197,117 @@ class SaveSyncOrchestrator @Inject constructor(
                     id = existing?.id ?: 0,
                     gameId = gameId,
                     rommId = rommId,
-                    emulatorId = emulatorId,
+                    emulatorId = canonicalEmulatorId,
                     channelName = channelName,
                     rommSaveId = serverSave.id,
                     localSavePath = existing?.localSavePath,
                     localUpdatedAt = existing?.localUpdatedAt,
                     serverUpdatedAt = serverTime,
                     lastSyncedAt = existing?.lastSyncedAt,
-                    syncStatus = SaveSyncEntity.STATUS_SERVER_NEWER
+                    syncStatus = SaveSyncEntity.STATUS_SERVER_NEWER,
+                    lastUploadedHash = existing?.lastUploadedHash,
+                    lastSyncDeviceId = existing?.lastSyncDeviceId,
+                    lastSyncDeviceName = existing?.lastSyncDeviceName
                 )
             )
 
-            val result = client.downloadSave(gameId, emulatorId, channelName, skipBackup = true)
+            val result = client.downloadSave(gameId, canonicalEmulatorId, channelName, skipBackup = true, knownServerSaveId = serverSave.id)
             if (result is SaveSyncResult.Error) {
                 Logger.error(TAG, "syncSavesForNewDownload: failed '${serverSave.fileName}': ${result.message}")
             }
         }
     }
 
-    private suspend fun isFolderSaveSyncEnabled(): Boolean {
+    suspend fun forceSaveCheck(): ForceSaveCheckResult = withContext(Dispatchers.IO) {
         val prefs = userPreferencesRepository.preferences.first()
-        return prefs.saveSyncEnabled && prefs.experimentalFolderSaveSync
+        if (!prefs.saveSyncEnabled) return@withContext ForceSaveCheckResult(0, 0, "Save sync disabled")
+
+        val client = apiClient.get()
+        val downloadedIds = gameDao.getDownloadedRommGameIds()
+        val downloadedGames = gameDao.getByIdsChunked(downloadedIds)
+        var inspected = 0
+        var queued = 0
+
+        for (game in downloadedGames) {
+            val rommId = game.rommId ?: continue
+            val emulatorId = client.resolveEmulatorForGame(game) ?: continue
+            val romBaseName = game.localPath?.let { File(it).nameWithoutExtension }
+            val heldHashByRow = saveSyncDao.getByGame(game.id).associate { it.id to it.lastUploadedHash }
+            val serverSaves = client.checkSavesForGame(game.id, rommId)
+            if (serverSaves.isEmpty()) continue
+            inspected++
+
+            val firstTimeForGame = heldHashByRow.isEmpty()
+
+            val latestPerChannel = serverSaves
+                .filter { !SaveSyncApiClient.isStateShapedSave(it) }
+                .groupBy { save ->
+                    save.slot ?: SaveSyncApiClient.parseServerChannelNameForSync(save.fileName, romBaseName)
+                }
+                .mapValues { (_, saves) ->
+                    saves.maxByOrNull { SaveSyncApiClient.parseTimestamp(it.updatedAt) }
+                }
+                .values
+                .filterNotNull()
+
+            for (latest in latestPerChannel) {
+                val channelName = latest.slot ?: SaveSyncApiClient.parseServerChannelNameForSync(latest.fileName, romBaseName)
+                val existing = if (channelName != null) {
+                    saveSyncDao.getByGameEmulatorAndChannel(game.id, emulatorId, channelName)
+                } else {
+                    saveSyncDao.getByGameEmulatorAndNullChannel(game.id, emulatorId)
+                }
+                val serverTime = SaveSyncApiClient.parseTimestamp(latest.updatedAt)
+                val localPresent = existing?.localSavePath?.let { File(it).exists() } == true
+                if (existing != null && localPresent) {
+                    val heldHash = heldHashByRow[existing.id]
+                    val hashKnown = heldHash != null && latest.contentHash != null
+                    if (hashKnown) {
+                        if (heldHash == latest.contentHash) continue
+                    } else if (existing.rommSaveId == latest.id && existing.serverUpdatedAt == serverTime) {
+                        continue
+                    }
+                }
+
+                val isActiveChannel = channelName == null ||
+                    channelName.equals(SaveSyncApiClient.AUTOSAVE_SLOT_NAME, ignoreCase = true) ||
+                    channelName.equals(SaveSyncApiClient.DEFAULT_SAVE_NAME, ignoreCase = true)
+                val shouldDownload = firstTimeForGame || isActiveChannel
+                val status = if (shouldDownload) SaveSyncEntity.STATUS_SERVER_NEWER else SaveSyncEntity.STATUS_SYNCED
+
+                saveSyncDao.upsert(
+                    SaveSyncEntity(
+                        id = existing?.id ?: 0,
+                        gameId = game.id,
+                        rommId = rommId,
+                        emulatorId = emulatorId,
+                        channelName = channelName,
+                        rommSaveId = latest.id,
+                        localSavePath = existing?.localSavePath,
+                        localUpdatedAt = existing?.localUpdatedAt,
+                        serverUpdatedAt = serverTime,
+                        lastSyncedAt = existing?.lastSyncedAt,
+                        syncStatus = status,
+                        lastUploadedHash = existing?.lastUploadedHash,
+                        lastSyncDeviceId = existing?.lastSyncDeviceId,
+                        lastSyncDeviceName = existing?.lastSyncDeviceName
+                    )
+                )
+                if (shouldDownload) queued++
+            }
+        }
+        val downloaded = downloadPendingServerSaves()
+        syncPreferencesRepository.setLastNegotiateAt(Instant.now())
+        Logger.info(TAG, "forceSaveCheck: inspected=$inspected queued=$queued downloaded=$downloaded")
+        ForceSaveCheckResult(inspected = inspected, queued = queued, message = null, downloaded = downloaded)
     }
+
+    data class ForceSaveCheckResult(
+        val inspected: Int,
+        val queued: Int,
+        val message: String?,
+        val downloaded: Int = 0
+    )
 
     companion object {
         private const val TAG = "SaveSyncOrchestrator"

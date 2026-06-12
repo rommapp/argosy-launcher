@@ -20,8 +20,14 @@ data class RomMSave(
     @Json(name = "created_at") val createdAt: String? = null,
     @Json(name = "slot") val slot: String? = null,
     @Json(name = "device_syncs") val deviceSyncs: List<RomMDeviceSync>? = null,
-    @Json(name = "screenshot") val screenshot: RomMScreenshot? = null
+    @Json(name = "screenshot") val screenshot: RomMScreenshot? = null,
+    @Json(name = "content_hash") val contentHash: String? = null,
+    @Json(name = "origin_device_id") val originDeviceId: String? = null
 )
+
+/** Name of the device that created the save, resolved from the per-save sync list; null until the origin device's name is known. */
+fun RomMSave.originDeviceName(): String? =
+    originDeviceId?.let { id -> deviceSyncs?.firstOrNull { it.deviceId == id }?.deviceName }
 
 @JsonClass(generateAdapter = true)
 data class RomMScreenshot(

@@ -28,8 +28,8 @@ class GetCollectionsUseCase @Inject constructor(
 ) {
     @OptIn(ExperimentalCoroutinesApi::class)
     operator fun invoke(): Flow<List<CollectionWithCount>> {
-        return collectionDao.observeByType(CollectionType.REGULAR)
-            .onStart { Log.d("GetCollectionsUC", "observeByType(REGULAR): starting") }
+        return collectionDao.observeByTypes(listOf(CollectionType.REGULAR, CollectionType.SMART))
+            .onStart { Log.d("GetCollectionsUC", "observeByTypes(REGULAR, SMART): starting") }
             .flatMapLatest { collections ->
                 val filtered = collections.filter {
                     it.name.isNotBlank() && it.name.lowercase() != "favorites"

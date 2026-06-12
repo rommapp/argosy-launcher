@@ -20,7 +20,8 @@ data class ConflictInfo(
     val localTimestamp: Instant,
     val serverTimestamp: Instant,
     val isHashConflict: Boolean,
-    val serverDeviceName: String? = null
+    val serverDeviceName: String? = null,
+    val serverSaveId: Long? = null
 )
 
 data class SyncOperation(
@@ -99,6 +100,18 @@ class SyncQueueManager @Inject constructor() {
         }
     }
 
+    fun removeOperation(gameId: Long) {
+        _state.update { state ->
+            val updatedOps = state.operations.filterNot { it.gameId == gameId }
+            val current = updatedOps.find { it.status == SyncStatus.IN_PROGRESS }
+            state.copy(
+                operations = updatedOps,
+                currentOperation = current,
+                isActive = updatedOps.any { it.status != SyncStatus.COMPLETED && it.status != SyncStatus.FAILED }
+            )
+        }
+    }
+
     fun clearCompletedOperations() {
         _state.update { state ->
             val remaining = state.operations.filter {
@@ -116,7 +129,9 @@ class SyncQueueManager @Inject constructor() {
     }
 
     suspend fun awaitResolution(gameId: Long): ConflictResolution {
-        return conflictResolutions.first { it.containsKey(gameId) }[gameId]!!
+        val resolved = conflictResolutions.first { it.containsKey(gameId) }[gameId]!!
+        conflictResolutions.update { it - gameId }
+        return resolved
     }
 
     fun resolveConflict(gameId: Long, resolution: ConflictResolution) {

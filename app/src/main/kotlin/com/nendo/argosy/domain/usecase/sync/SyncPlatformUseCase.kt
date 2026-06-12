@@ -1,7 +1,6 @@
 package com.nendo.argosy.domain.usecase.sync
 
 import com.nendo.argosy.data.local.dao.PlatformDao
-import com.nendo.argosy.data.platform.PlatformDefinitions
 import com.nendo.argosy.data.remote.romm.RomMRepository
 import com.nendo.argosy.data.remote.romm.SyncResult
 import com.nendo.argosy.core.notification.NotificationManager
@@ -33,16 +32,11 @@ class SyncPlatformUseCase @Inject constructor(
         }
 
         val platform = platformDao.getById(platformId)
-        val allPlatforms = if (platform != null) {
-            val relatedSlugs = PlatformDefinitions.getSlugsForCanonical(platform.slug)
-            platformDao.getAllBySlugs(relatedSlugs)
-        } else {
-            listOf(platform).filterNotNull()
+        if (platform == null) {
+            Logger.info(TAG, "invoke: platform $platformId not found")
+            return SyncPlatformResult.Error("Platform not found")
         }
-
-        val platformIds = allPlatforms.map { it.id }
-        val canonicalSlug = platform?.slug?.let { PlatformDefinitions.getCanonicalSlug(it) }
-        Logger.info(TAG, "invoke: syncing ${platformIds.size} platform(s) for canonical slug '$canonicalSlug': $platformIds")
+        Logger.info(TAG, "invoke: syncing platform ${platform.id} (slug='${platform.slug}')")
 
         notificationManager.showPersistent(
             title = "Syncing $platformName",
@@ -52,33 +46,21 @@ class SyncPlatformUseCase @Inject constructor(
 
         return try {
             withContext(NonCancellable) {
-                var totalAdded = 0
-                var totalUpdated = 0
-                var totalDeleted = 0
-                val allErrors = mutableListOf<String>()
+                val result = romMRepository.syncPlatform(platformId)
 
-                for (id in platformIds) {
-                    val result = romMRepository.syncPlatform(id)
-
-                    if (result.errors.singleOrNull() == "Sync already in progress") {
-                        notificationManager.dismissByKey(NOTIFICATION_KEY)
-                        return@withContext SyncPlatformResult.Error("Sync already in progress")
-                    }
-
-                    totalAdded += result.gamesAdded
-                    totalUpdated += result.gamesUpdated
-                    totalDeleted += result.gamesDeleted
-                    allErrors.addAll(result.errors)
+                if (result.errors.singleOrNull() == "Sync already in progress") {
+                    notificationManager.dismissByKey(NOTIFICATION_KEY)
+                    return@withContext SyncPlatformResult.Error("Sync already in progress")
                 }
 
                 val subtitle = buildString {
-                    append("$totalAdded added, $totalUpdated updated")
-                    if (totalDeleted > 0) {
-                        append(", $totalDeleted removed")
+                    append("${result.gamesAdded} added, ${result.gamesUpdated} updated")
+                    if (result.gamesDeleted > 0) {
+                        append(", ${result.gamesDeleted} removed")
                     }
                 }
 
-                if (allErrors.isEmpty()) {
+                if (result.errors.isEmpty()) {
                     notificationManager.completePersistent(
                         key = NOTIFICATION_KEY,
                         title = "$platformName synced",
@@ -89,18 +71,12 @@ class SyncPlatformUseCase @Inject constructor(
                     notificationManager.completePersistent(
                         key = NOTIFICATION_KEY,
                         title = "Sync completed with errors",
-                        subtitle = allErrors.firstOrNull() ?: "Unknown error",
+                        subtitle = result.errors.firstOrNull() ?: "Unknown error",
                         type = NotificationType.ERROR
                     )
                 }
 
-                SyncPlatformResult.Success(SyncResult(
-                    platformsSynced = platformIds.size,
-                    gamesAdded = totalAdded,
-                    gamesUpdated = totalUpdated,
-                    gamesDeleted = totalDeleted,
-                    errors = allErrors
-                ))
+                SyncPlatformResult.Success(result)
             }
         } catch (e: Exception) {
             Logger.error(TAG, "invoke: exception", e)

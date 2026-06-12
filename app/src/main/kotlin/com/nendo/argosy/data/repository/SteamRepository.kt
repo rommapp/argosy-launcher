@@ -46,7 +46,7 @@ class SteamRepository @Inject constructor(
     private val api: SteamStoreApi by lazy { createApi() }
 
     private val cacheDir: File by lazy {
-        File(context.cacheDir, "steam").also { it.mkdirs() }
+        File(context.filesDir, "steam").also { it.mkdirs() }
     }
 
     private fun createApi(): SteamStoreApi {
@@ -272,8 +272,9 @@ class SteamRepository @Inject constructor(
                         ?: appData.background
                         ?: appData.backgroundRaw
 
-                    val libraryCapsuleUrl = "https://steamcdn-a.akamaihd.net/steam/apps/$steamAppId/library_600x900.jpg"
-                    val coverPath = cacheCoverImage(steamAppId, libraryCapsuleUrl)
+                    val existingCover = game.coverPath
+                        ?.takeIf { it.startsWith("/") && File(it).exists() }
+                    val coverPath = existingCover ?: resolveSteamCover(steamAppId, appData)
 
                     gameDao.update(
                         game.copy(
@@ -315,37 +316,44 @@ class SteamRepository @Inject constructor(
         steamAppId: Long,
         appData: SteamAppData
     ): String? {
-        val cover = game.coverPath ?: return null
-        if (!cover.startsWith("https://")) return null
+        val cover = game.coverPath
+        val valid = cover != null && cover.startsWith("/") && File(cover).exists()
+        if (valid) return null
+        if (cover != null && cover.startsWith("https://") && !isCoverUrl404(cover)) return null
+        Log.d(TAG, "Re-resolving cover for ${game.title}")
+        return resolveSteamCover(steamAppId, appData)
+    }
 
-        val is404 = try {
-            val conn = URL(cover).openConnection() as java.net.HttpURLConnection
-            conn.requestMethod = "HEAD"
-            conn.connectTimeout = 5000
-            conn.readTimeout = 5000
-            val code = conn.responseCode
-            conn.disconnect()
-            code == 404
-        } catch (e: Exception) {
-            true
-        }
-
-        if (!is404) return null
-
-        val fallbackUrl = appData.headerImage ?: appData.capsuleImage ?: return null
-        Log.d(TAG, "Cover 404 for ${game.title}, replacing with Store API fallback")
-        return try {
-            val file = File(cacheDir, "cover_$steamAppId.jpg")
-            URL(fallbackUrl).openStream().use { input ->
-                FileOutputStream(file).use { output ->
-                    input.copyTo(output)
+    private fun resolveSteamCover(steamAppId: Long, appData: SteamAppData): String? {
+        val file = File(cacheDir, "cover_$steamAppId.jpg")
+        val candidates = listOfNotNull(
+            "https://steamcdn-a.akamaihd.net/steam/apps/$steamAppId/library_600x900.jpg",
+            appData.headerImage,
+            appData.capsuleImage
+        )
+        for (url in candidates) {
+            try {
+                URL(url).openStream().use { input ->
+                    FileOutputStream(file).use { output -> input.copyTo(output) }
                 }
+                if (file.exists() && file.length() > 0) return file.absolutePath
+            } catch (e: Exception) {
+                Log.d(TAG, "Cover candidate unavailable for $steamAppId: $url")
             }
-            file.absolutePath
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to download fallback cover for ${game.title}", e)
-            null
         }
+        return null
+    }
+
+    private fun isCoverUrl404(url: String): Boolean = try {
+        val conn = URL(url).openConnection() as java.net.HttpURLConnection
+        conn.requestMethod = "HEAD"
+        conn.connectTimeout = 5000
+        conn.readTimeout = 5000
+        val code = conn.responseCode
+        conn.disconnect()
+        code == 404
+    } catch (e: Exception) {
+        true
     }
 
     private suspend fun cacheCoverImage(steamAppId: Long, imageUrl: String?): String? {

@@ -4,6 +4,7 @@ import com.nendo.argosy.data.local.dao.CollectionDao
 import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.entity.CollectionEntity
 import com.nendo.argosy.data.local.entity.CollectionGameEntity
+import com.nendo.argosy.data.local.entity.CollectionType
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.sync.SyncCoordinator
 import com.nendo.argosy.util.Logger
@@ -310,6 +311,73 @@ class RomMCollectionSyncService @Inject constructor(
         } catch (e: Exception) {
             Logger.info(TAG, "syncCollections: failed: ${e.message}")
             RomMResult.Error(e.message ?: "Failed to sync collections")
+        }
+    }
+
+    suspend fun syncAutoCollections(): RomMResult<Unit> = withContext(Dispatchers.IO) {
+        val currentApi = api ?: return@withContext RomMResult.Error("Not connected")
+        if (!connectionManager.isConnected()) {
+            return@withContext RomMResult.Error("Not connected")
+        }
+
+        try {
+            val rommIdToGameId = gameDao.getRommIdMappings().associate { it.rommId to it.id }
+
+            val virtualResponse = currentApi.getVirtualCollections("collection")
+            if (virtualResponse.isSuccessful) {
+                syncAutoType(CollectionType.SERIES, virtualResponse.body() ?: emptyList(), rommIdToGameId)
+            } else {
+                Logger.warn(TAG, "syncAutoCollections: virtual fetch failed ${virtualResponse.code()}")
+            }
+
+            val smartResponse = currentApi.getSmartCollections()
+            if (smartResponse.isSuccessful) {
+                syncAutoType(CollectionType.SMART, smartResponse.body() ?: emptyList(), rommIdToGameId)
+            } else {
+                Logger.warn(TAG, "syncAutoCollections: smart fetch failed ${smartResponse.code()}")
+            }
+
+            RomMResult.Success(Unit)
+        } catch (e: Exception) {
+            Logger.info(TAG, "syncAutoCollections: failed: ${e.message}")
+            RomMResult.Error(e.message ?: "Failed to sync auto collections")
+        }
+    }
+
+    private suspend fun syncAutoType(
+        type: CollectionType,
+        remote: List<RomMAutoCollection>,
+        rommIdToGameId: Map<Long, Long>
+    ) {
+        val keptNames = mutableSetOf<String>()
+        for (rc in remote) {
+            val gameIds = rc.romIds.mapNotNull { rommIdToGameId[it] }.toSet()
+            if (gameIds.isEmpty()) continue
+            keptNames.add(rc.name)
+
+            val existing = collectionDao.getByTypeAndName(type, rc.name)
+            val collectionId = existing?.id ?: collectionDao.insertCollection(
+                CollectionEntity(
+                    name = rc.name,
+                    description = rc.description,
+                    type = type,
+                    isUserCreated = false
+                )
+            )
+
+            val current = collectionDao.getGameIdsInCollection(collectionId).toSet()
+            for (gameId in gameIds - current) {
+                collectionDao.addGameToCollection(CollectionGameEntity(collectionId = collectionId, gameId = gameId))
+            }
+            for (gameId in current - gameIds) {
+                collectionDao.removeGameFromCollection(collectionId, gameId)
+            }
+        }
+
+        for (existing in collectionDao.getAllByType(type)) {
+            if (existing.name !in keptNames) {
+                collectionDao.deleteCollection(existing)
+            }
         }
     }
 

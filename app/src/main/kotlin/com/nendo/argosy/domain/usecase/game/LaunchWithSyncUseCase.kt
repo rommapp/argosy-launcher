@@ -7,6 +7,7 @@ import com.nendo.argosy.data.local.dao.EmulatorConfigDao
 import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.remote.romm.RomMRepository
+import com.nendo.argosy.data.repository.PreLaunchSyncResult
 import com.nendo.argosy.data.repository.SaveSyncRepository
 import com.nendo.argosy.data.repository.SaveSyncResult
 import com.nendo.argosy.domain.model.SyncProgress
@@ -60,36 +61,34 @@ class LaunchWithSyncUseCase @Inject constructor(
             return@flow
         }
 
-        if (!SavePathRegistry.canSyncWithSettings(
-                emulatorId,
-                prefs.saveSyncEnabled,
-                prefs.experimentalFolderSaveSync
-            )
-        ) {
+        if (!SavePathRegistry.canSyncWithSettings(emulatorId, prefs.saveSyncEnabled)) {
             emit(SyncState.Skipped)
             return@flow
         }
 
         emit(SyncState.CheckingConnection)
 
-        val syncResult = saveSyncRepository.preLaunchSync(gameId, game.rommId, emulatorId)
+        val syncResult = saveSyncRepository.preLaunchSyncForGame(gameId, game.rommId, emulatorId, channelName = null)
 
         when (syncResult) {
-            is SaveSyncRepository.PreLaunchSyncResult.NoConnection -> {
+            is PreLaunchSyncResult.NoConnection -> {
                 emit(SyncState.Skipped)
             }
-            is SaveSyncRepository.PreLaunchSyncResult.NoServerSave -> {
+            is PreLaunchSyncResult.NoServerSave -> {
                 emit(SyncState.Complete)
             }
-            is SaveSyncRepository.PreLaunchSyncResult.LocalIsNewer -> {
+            is PreLaunchSyncResult.LocalIsNewer -> {
                 emit(SyncState.Complete)
             }
-            is SaveSyncRepository.PreLaunchSyncResult.LocalModified -> {
-                emit(SyncState.LocalModified(gameId, syncResult.localSavePath, syncResult.channelName))
+            is PreLaunchSyncResult.LocalModified -> {
+                emit(SyncState.LocalModified(gameId, syncResult.localSavePath, syncResult.channelName, syncResult.serverSaveId))
             }
-            is SaveSyncRepository.PreLaunchSyncResult.ServerIsNewer -> {
+            is PreLaunchSyncResult.ServerIsNewer -> {
                 emit(SyncState.Downloading)
-                val downloadResult = saveSyncRepository.downloadSave(gameId, emulatorId, syncResult.channelName)
+                val downloadResult = saveSyncRepository.downloadSave(
+                    gameId, emulatorId, syncResult.channelName,
+                    knownServerSaveId = syncResult.serverSaveId
+                )
                 when (downloadResult) {
                     is SaveSyncResult.Success -> {
                         emit(SyncState.Complete)
@@ -108,12 +107,21 @@ class LaunchWithSyncUseCase @Inject constructor(
         }
     }
 
-    fun invokeWithProgress(gameId: Long, channelName: String? = null): Flow<SyncProgress> = flow {
+    fun invokeWithProgress(
+        gameId: Long,
+        channelName: String? = null,
+        skipPreLaunchSync: Boolean = false
+    ): Flow<SyncProgress> = flow {
         if (channelName != null) {
             val currentChannel = gameDao.getActiveSaveChannel(gameId)
             if (currentChannel != channelName) {
                 gameDao.updateActiveSaveChannel(gameId, channelName)
             }
+        }
+
+        if (skipPreLaunchSync) {
+            emit(SyncProgress.Skipped)
+            return@flow
         }
 
         val prefs = preferencesRepository.userPreferences.first()
@@ -149,12 +157,7 @@ class LaunchWithSyncUseCase @Inject constructor(
             return@flow
         }
 
-        if (!SavePathRegistry.canSyncWithSettings(
-                emulatorId,
-                prefs.saveSyncEnabled,
-                prefs.experimentalFolderSaveSync
-            )
-        ) {
+        if (!SavePathRegistry.canSyncWithSettings(emulatorId, prefs.saveSyncEnabled)) {
             emit(SyncProgress.Skipped)
             return@flow
         }
@@ -172,27 +175,32 @@ class LaunchWithSyncUseCase @Inject constructor(
 
         titleIdDownloadObserver.extractTitleIdForGame(gameId)
 
-        val syncResult = saveSyncRepository.preLaunchSync(gameId, game.rommId, emulatorId)
+        saveSyncRepository.crossEmulatorMigrateIfNeeded(gameId, emulatorId)
+
+        val syncResult = saveSyncRepository.preLaunchSyncForGame(gameId, game.rommId, emulatorId, channelName)
 
         when (syncResult) {
-            is SaveSyncRepository.PreLaunchSyncResult.NoConnection -> {
+            is PreLaunchSyncResult.NoConnection -> {
                 emit(SyncProgress.PreLaunch.Connecting(channelName, success = false))
                 emit(SyncProgress.Skipped)
             }
-            is SaveSyncRepository.PreLaunchSyncResult.NoServerSave -> {
+            is PreLaunchSyncResult.NoServerSave -> {
                 emit(SyncProgress.PreLaunch.Downloading(channelName, success = true))
                 emit(SyncProgress.PreLaunch.Launching(channelName))
             }
-            is SaveSyncRepository.PreLaunchSyncResult.LocalIsNewer -> {
+            is PreLaunchSyncResult.LocalIsNewer -> {
                 emit(SyncProgress.PreLaunch.Downloading(channelName, success = true))
                 emit(SyncProgress.PreLaunch.Launching(channelName))
             }
-            is SaveSyncRepository.PreLaunchSyncResult.LocalModified -> {
-                emit(SyncProgress.LocalModified(gameId, syncResult.localSavePath, syncResult.channelName))
+            is PreLaunchSyncResult.LocalModified -> {
+                emit(SyncProgress.LocalModified(gameId, syncResult.localSavePath, syncResult.channelName, syncResult.serverSaveId))
             }
-            is SaveSyncRepository.PreLaunchSyncResult.ServerIsNewer -> {
+            is PreLaunchSyncResult.ServerIsNewer -> {
                 emit(SyncProgress.PreLaunch.Downloading(channelName))
-                val downloadResult = saveSyncRepository.downloadSave(gameId, emulatorId, syncResult.channelName)
+                val downloadResult = saveSyncRepository.downloadSave(
+                    gameId, emulatorId, syncResult.channelName,
+                    knownServerSaveId = syncResult.serverSaveId
+                )
                 when (downloadResult) {
                     is SaveSyncResult.Success -> {
                         emit(SyncProgress.PreLaunch.Downloading(channelName, success = true))

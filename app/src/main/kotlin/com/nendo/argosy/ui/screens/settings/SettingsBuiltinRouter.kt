@@ -417,6 +417,69 @@ internal fun routeHideInputMappingModal(vm: SettingsViewModel) {
     vm._uiState.update { it.copy(builtinControls = it.builtinControls.copy(showInputMappingModal = false)) }
 }
 
+internal fun routeSetTouchEnabled(vm: SettingsViewModel, enabled: Boolean) {
+    vm._uiState.update { it.copy(builtinControls = it.builtinControls.copy(touchEnabled = enabled)) }
+    vm.viewModelScope.launch { vm.libretroSettingsRepo.setTouchControlsShowWhenNoGamepad(enabled) }
+}
+
+internal fun routeSetTouchOpacityLandscape(vm: SettingsViewModel, value: Float) {
+    vm._uiState.update { it.copy(builtinControls = it.builtinControls.copy(touchOpacityLandscape = value)) }
+    vm.viewModelScope.launch { vm.libretroSettingsRepo.setTouchControlsOpacityLandscape(value) }
+}
+
+internal fun routeSetTouchOpacityPortrait(vm: SettingsViewModel, value: Float) {
+    vm._uiState.update { it.copy(builtinControls = it.builtinControls.copy(touchOpacityPortrait = value)) }
+    vm.viewModelScope.launch { vm.libretroSettingsRepo.setTouchControlsOpacityPortrait(value) }
+}
+
+internal fun routeSetTouchSizeScale(vm: SettingsViewModel, value: Float) {
+    vm._uiState.update { it.copy(builtinControls = it.builtinControls.copy(touchSizeScale = value)) }
+    vm.viewModelScope.launch { vm.libretroSettingsRepo.setTouchControlsSizeScale(value) }
+}
+
+internal fun routeSetTouchHaptic(vm: SettingsViewModel, enabled: Boolean) {
+    vm._uiState.update { it.copy(builtinControls = it.builtinControls.copy(touchHaptic = enabled)) }
+    vm.viewModelScope.launch { vm.libretroSettingsRepo.setTouchControlsHaptic(enabled) }
+}
+
+internal fun routeSetTouchFadeOnIdle(vm: SettingsViewModel, enabled: Boolean) {
+    vm._uiState.update { it.copy(builtinControls = it.builtinControls.copy(touchFadeOnIdle = enabled)) }
+    vm.viewModelScope.launch { vm.libretroSettingsRepo.setTouchControlsFadeOnIdle(enabled) }
+}
+
+internal fun routeSetTouchSwapHanded(vm: SettingsViewModel, enabled: Boolean) {
+    vm._uiState.update { it.copy(builtinControls = it.builtinControls.copy(touchSwapHanded = enabled)) }
+    vm.viewModelScope.launch { vm.libretroSettingsRepo.setTouchControlsSwapHanded(enabled) }
+}
+
+internal fun routeSetTouchLockOrientation(vm: SettingsViewModel, enabled: Boolean) {
+    vm._uiState.update { it.copy(builtinControls = it.builtinControls.copy(touchLockOrientation = enabled)) }
+    vm.viewModelScope.launch { vm.libretroSettingsRepo.setTouchControlsLockOrientation(enabled) }
+}
+
+internal fun routeSetTouchMirror180(vm: SettingsViewModel, enabled: Boolean) {
+    vm._uiState.update { it.copy(builtinControls = it.builtinControls.copy(touchMirror180 = enabled)) }
+    vm.viewModelScope.launch { vm.libretroSettingsRepo.setTouchControlsMirror180(enabled) }
+}
+
+internal fun routeSetTouchColouredFaceButtons(vm: SettingsViewModel, enabled: Boolean) {
+    vm._uiState.update { it.copy(builtinControls = it.builtinControls.copy(touchColouredFaceButtons = enabled)) }
+    vm.viewModelScope.launch { vm.libretroSettingsRepo.setTouchControlsColouredFaceButtons(enabled) }
+}
+
+internal fun routeSetTouchGenesis6Button(vm: SettingsViewModel, enabled: Boolean) {
+    vm._uiState.update { it.copy(builtinControls = it.builtinControls.copy(touchGenesis6Button = enabled)) }
+    vm.viewModelScope.launch { vm.libretroSettingsRepo.setTouchControlsGenesis6Button(enabled) }
+}
+
+internal fun routeShowTouchLayoutEditor(vm: SettingsViewModel) {
+    vm._uiState.update { it.copy(builtinControls = it.builtinControls.copy(showTouchLayoutEditorModal = true)) }
+}
+
+internal fun routeHideTouchLayoutEditor(vm: SettingsViewModel) {
+    vm._uiState.update { it.copy(builtinControls = it.builtinControls.copy(showTouchLayoutEditorModal = false)) }
+}
+
 internal fun routeShowHotkeysModal(vm: SettingsViewModel) {
     vm._uiState.update { it.copy(builtinControls = it.builtinControls.copy(showHotkeysModal = true)) }
 }

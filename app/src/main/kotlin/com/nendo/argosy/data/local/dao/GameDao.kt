@@ -63,6 +63,15 @@ interface GameDao {
     @Query("SELECT * FROM games WHERE isHidden = 0 ORDER BY sortTitle ASC")
     suspend fun getAllSortedByTitle(): List<GameEntity>
 
+    @Query("SELECT id FROM games WHERE isHidden = 0 ORDER BY sortTitle ASC")
+    suspend fun getAllSortedByTitleIds(): List<Long>
+
+    @Query("SELECT * FROM games WHERE isHidden = 1 ORDER BY sortTitle ASC")
+    suspend fun getHiddenSortedByTitle(): List<GameEntity>
+
+    @Query("SELECT id FROM games WHERE isHidden = 1 ORDER BY sortTitle ASC")
+    suspend fun getHiddenSortedByTitleIds(): List<Long>
+
     @Query("SELECT * FROM games WHERE source = :source AND isHidden = 0 ORDER BY sortTitle ASC")
     fun observeBySource(source: GameSource): Flow<List<GameEntity>>
 
@@ -127,6 +136,18 @@ interface GameDao {
     """)
     suspend fun getSyncEnabledGamesForCategories(): List<GameCategoryInfo>
 
+    @Query("SELECT id, genre, gameModes FROM games WHERE isHidden = 0")
+    fun observeAllCategoryInfo(): Flow<List<GameCategoryInfo>>
+
+    @Query("SELECT id, genre, gameModes FROM games WHERE isHidden = 0")
+    suspend fun getAllCategoryInfo(): List<GameCategoryInfo>
+
+    @Query("SELECT id, platformId, platformSlug, source, localPath FROM games WHERE localPath IS NOT NULL")
+    suspend fun getGamesWithLocalPathInfo(): List<GameLocalPathInfo>
+
+    @Query("SELECT id, platformId, localPath FROM games WHERE isHidden = 0")
+    suspend fun getAllStorageInfo(): List<GameStorageInfo>
+
     @Query("SELECT id, platformId, platformSlug, title, sortTitle, localPath, source, coverPath, isFavorite, isHidden, isMultiDisc, rommId, steamAppId, packageName, steamLauncher, playCount, playTimeMinutes, lastPlayed, genre, gameModes, rating, userRating, userDifficulty, releaseYear, addedAt FROM games WHERE platformId = :platformId ORDER BY sortTitle ASC")
     fun observeByPlatformListIncludingHidden(platformId: Long): Flow<List<GameListItem>>
 
@@ -161,6 +182,9 @@ interface GameDao {
 
     @Query("SELECT * FROM games WHERE isFavorite = 1 AND isHidden = 0 ORDER BY (source = 'ROMM_REMOTE') ASC, sortTitle ASC")
     suspend fun getFavorites(): List<GameEntity>
+
+    @Query("SELECT id FROM games WHERE isFavorite = 1 AND isHidden = 0 ORDER BY (source = 'ROMM_REMOTE') ASC, sortTitle ASC")
+    suspend fun getFavoriteIds(): List<Long>
 
     @Query("SELECT rommId FROM games WHERE isFavorite = 1 AND rommId IS NOT NULL")
     suspend fun getFavoriteRommIds(): List<Long>
@@ -213,6 +237,9 @@ interface GameDao {
 
     @Query("SELECT * FROM games WHERE rommId = :rommId")
     suspend fun getByRommId(rommId: Long): GameEntity?
+
+    @Query("SELECT id, rommId FROM games WHERE rommId IS NOT NULL")
+    suspend fun getRommIdMappings(): List<RommIdMapping>
 
     @Query("SELECT * FROM games WHERE igdbId = :igdbId")
     suspend fun getByIgdbId(igdbId: Long): GameEntity?
@@ -295,11 +322,26 @@ interface GameDao {
     @Query("SELECT * FROM games WHERE platformId = :platformId AND isHidden = 0 ORDER BY sortTitle ASC")
     suspend fun getByPlatform(platformId: Long): List<GameEntity>
 
+    @Query("SELECT * FROM games WHERE platformId = :platformId AND isHidden = 1 ORDER BY sortTitle ASC")
+    suspend fun getHiddenByPlatform(platformId: Long): List<GameEntity>
+
     @Query("SELECT COUNT(*) FROM games")
     suspend fun countAll(): Int
 
     @Query("SELECT * FROM games WHERE localPath IS NOT NULL")
     suspend fun getGamesWithLocalPath(): List<GameEntity>
+
+    @Query("SELECT id FROM games WHERE localPath IS NOT NULL")
+    suspend fun getGamesWithLocalPathIds(): List<Long>
+
+    @Query("SELECT id FROM games WHERE localPath IS NOT NULL AND rommId IS NOT NULL")
+    suspend fun getDownloadedRommGameIds(): List<Long>
+
+    @Query("SELECT id FROM games")
+    suspend fun getAllGameIds(): List<Long>
+
+    @Query("SELECT id, coverPath, backgroundPath, cachedScreenshotPaths FROM games")
+    suspend fun getAllImageCacheInfo(): List<GameImageCacheInfo>
 
     @Query("SELECT * FROM games WHERE rommId IS NOT NULL AND localPath IS NULL")
     suspend fun getGamesWithRommIdButNoPath(): List<GameEntity>
@@ -350,8 +392,11 @@ interface GameDao {
     """)
     suspend fun getLocalGamesNeedingGradients(): List<GradientExtractionCandidate>
 
-    @Query("SELECT * FROM games WHERE coverPath LIKE 'http%' AND rommId IS NOT NULL")
+    @Query("SELECT * FROM games WHERE coverPath LIKE 'http%'")
     suspend fun getGamesWithUncachedCovers(): List<GameEntity>
+
+    @Query("SELECT * FROM games WHERE coverPath IS NULL OR coverPath = ''")
+    suspend fun getGamesWithMissingCovers(): List<GameEntity>
 
     @Query("SELECT COUNT(*) FROM games WHERE coverPath IS NOT NULL AND rommId IS NOT NULL")
     suspend fun countGamesWithCovers(): Int
@@ -513,6 +558,15 @@ interface GameDao {
 
     @Query("UPDATE games SET titleId = :titleId, titleIdLocked = :locked WHERE id = :gameId")
     suspend fun setTitleIdWithLock(gameId: Long, titleId: String?, locked: Boolean)
+
+    @Query("UPDATE games SET titleId = :titleId, saveId = :saveId, titleIdLocked = :locked WHERE id = :gameId")
+    suspend fun setTitleAndSaveIdWithLock(gameId: Long, titleId: String?, saveId: String?, locked: Boolean)
+
+    @Query("UPDATE games SET saveId = :saveId WHERE id = :gameId")
+    suspend fun setSaveId(gameId: Long, saveId: String?)
+
+    @Query("SELECT saveId FROM games WHERE id = :gameId")
+    suspend fun getSaveId(gameId: Long): String?
 
     @Query("SELECT titleIdLocked FROM games WHERE id = :gameId")
     suspend fun isTitleIdLocked(gameId: Long): Boolean
@@ -695,3 +749,36 @@ data class GradientExtractionCandidate(
     val id: Long,
     val coverPath: String?
 )
+
+data class GameLocalPathInfo(
+    val id: Long,
+    val platformId: Long,
+    val platformSlug: String,
+    val source: GameSource,
+    val localPath: String?
+)
+
+data class GameStorageInfo(
+    val id: Long,
+    val platformId: Long,
+    val localPath: String?
+)
+
+data class GameImageCacheInfo(
+    val id: Long,
+    val coverPath: String?,
+    val backgroundPath: String?,
+    val cachedScreenshotPaths: String?
+)
+
+data class RommIdMapping(
+    val id: Long,
+    val rommId: Long
+)
+
+private const val ID_FETCH_BATCH_SIZE = 100
+
+suspend fun GameDao.getByIdsChunked(ids: List<Long>): List<GameEntity> {
+    if (ids.isEmpty()) return emptyList()
+    return ids.chunked(ID_FETCH_BATCH_SIZE).flatMap { getByIds(it) }
+}

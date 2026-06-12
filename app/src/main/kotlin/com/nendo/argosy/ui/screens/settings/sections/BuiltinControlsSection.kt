@@ -57,10 +57,24 @@ internal sealed class BuiltinControlsItem(
     data object PreserveFastForwardPitch : BuiltinControlsItem("preserveFastForwardPitch", "hotkeys")
     data object ResetAllToGlobal : BuiltinControlsItem("resetAllToGlobal", "hotkeys", { it.showResetAll })
 
+    data object TouchEnabled : BuiltinControlsItem("touchEnabled", "touchControls")
+    data object TouchOpacityLandscape : BuiltinControlsItem("touchOpacityLandscape", "touchControls", { it.touchEnabled })
+    data object TouchOpacityPortrait : BuiltinControlsItem("touchOpacityPortrait", "touchControls", { it.touchEnabled })
+    data object TouchSizeScale : BuiltinControlsItem("touchSizeScale", "touchControls", { it.touchEnabled })
+    data object TouchHaptic : BuiltinControlsItem("touchHaptic", "touchControls", { it.touchEnabled })
+    data object TouchFadeOnIdle : BuiltinControlsItem("touchFadeOnIdle", "touchControls", { it.touchEnabled })
+    data object TouchSwapHanded : BuiltinControlsItem("touchSwapHanded", "touchControls", { it.touchEnabled })
+    data object TouchLockOrientation : BuiltinControlsItem("touchLockOrientation", "touchControls")
+    data object TouchMirror180 : BuiltinControlsItem("touchMirror180", "touchControls", { it.touchEnabled })
+    data object TouchColouredFaceButtons : BuiltinControlsItem("touchColouredFaceButtons", "touchControls", { it.touchEnabled })
+    data object TouchGenesis6Button : BuiltinControlsItem("touchGenesis6Button", "touchControls")
+    data object TouchCustomizeLayouts : BuiltinControlsItem("touchCustomizeLayouts", "touchControls", { it.touchEnabled })
+
     companion object {
         private val ControllersHeader = Header("controllersHeader", "controllers", "Controllers")
         private val SticksHeader = Header("sticksHeader", "sticks", "Analog Sticks") { it.showStickMappings }
         private val HotkeysHeader = Header("hotkeysHeader", "hotkeys", "Hotkeys")
+        private val TouchHeader = Header("touchControlsHeader", "touchControls", "Touch Controls")
 
         val ALL: List<BuiltinControlsItem> = listOf(
             ControllersHeader,
@@ -75,7 +89,20 @@ internal sealed class BuiltinControlsItem(
             LimitHotkeysToPlayer1,
             ToggleFastForward,
             PreserveFastForwardPitch,
-            ResetAllToGlobal
+            ResetAllToGlobal,
+            TouchHeader,
+            TouchEnabled,
+            TouchOpacityLandscape,
+            TouchOpacityPortrait,
+            TouchSizeScale,
+            TouchHaptic,
+            TouchFadeOnIdle,
+            TouchSwapHanded,
+            TouchLockOrientation,
+            TouchMirror180,
+            TouchColouredFaceButtons,
+            TouchGenesis6Button,
+            TouchCustomizeLayouts
         )
     }
 }
@@ -90,6 +117,7 @@ private val builtinControlsLayout = SettingsLayout<BuiltinControlsItem, BuiltinC
             "controllers" -> "Controllers"
             "sticks" -> "Analog Sticks"
             "hotkeys" -> "Hotkeys"
+            "touchControls" -> "Touch Controls"
             else -> null
         }
     }
@@ -278,6 +306,98 @@ fun BuiltinControlsSection(
                     )
                 }
 
+                BuiltinControlsItem.TouchEnabled -> SwitchPreference(
+                    title = "Show touch controls when no gamepad",
+                    subtitle = "Display an on-screen overlay when no controller is connected",
+                    isEnabled = controlsState.touchEnabled,
+                    isFocused = isFocused(item),
+                    onToggle = { viewModel.setTouchEnabled(it) }
+                )
+                BuiltinControlsItem.TouchOpacityLandscape -> SwitchPreference(
+                    title = "Landscape opacity",
+                    subtitle = "Currently ${(controlsState.touchOpacityLandscape * 100).toInt()}%",
+                    isEnabled = controlsState.touchOpacityLandscape > 0.5f,
+                    isFocused = isFocused(item),
+                    onToggle = {
+                        viewModel.setTouchOpacityLandscape(if (it) 0.7f else 0.4f)
+                    }
+                )
+                BuiltinControlsItem.TouchOpacityPortrait -> SwitchPreference(
+                    title = "Portrait opacity",
+                    subtitle = "Currently ${(controlsState.touchOpacityPortrait * 100).toInt()}%",
+                    isEnabled = controlsState.touchOpacityPortrait > 0.7f,
+                    isFocused = isFocused(item),
+                    onToggle = {
+                        viewModel.setTouchOpacityPortrait(if (it) 1.0f else 0.7f)
+                    }
+                )
+                BuiltinControlsItem.TouchSizeScale -> SwitchPreference(
+                    title = "Button size",
+                    subtitle = "Currently ${(controlsState.touchSizeScale * 100).toInt()}%",
+                    isEnabled = controlsState.touchSizeScale > 1.0f,
+                    isFocused = isFocused(item),
+                    onToggle = {
+                        viewModel.setTouchSizeScale(if (it) 1.2f else 1.0f)
+                    }
+                )
+                BuiltinControlsItem.TouchHaptic -> SwitchPreference(
+                    title = "Haptic feedback",
+                    subtitle = "Vibrate briefly on touch",
+                    isEnabled = controlsState.touchHaptic,
+                    isFocused = isFocused(item),
+                    onToggle = { viewModel.setTouchHaptic(it) }
+                )
+                BuiltinControlsItem.TouchFadeOnIdle -> SwitchPreference(
+                    title = "Fade after inactivity",
+                    subtitle = "Dim controls after 5s without input",
+                    isEnabled = controlsState.touchFadeOnIdle,
+                    isFocused = isFocused(item),
+                    onToggle = { viewModel.setTouchFadeOnIdle(it) }
+                )
+                BuiltinControlsItem.TouchSwapHanded -> SwitchPreference(
+                    title = "Swap left/right inputs",
+                    subtitle = "Mirror the layout horizontally",
+                    isEnabled = controlsState.touchSwapHanded,
+                    isFocused = isFocused(item),
+                    onToggle = { viewModel.setTouchSwapHanded(it) }
+                )
+                BuiltinControlsItem.TouchLockOrientation -> SwitchPreference(
+                    title = "Lock orientation in-game",
+                    subtitle = "Don't auto-rotate during play",
+                    isEnabled = controlsState.touchLockOrientation,
+                    isFocused = isFocused(item),
+                    onToggle = { viewModel.setTouchLockOrientation(it) }
+                )
+                BuiltinControlsItem.TouchMirror180 -> SwitchPreference(
+                    title = "Mirror controls on 180° flip",
+                    subtitle = "Keep controls on the same physical side when phone flips",
+                    isEnabled = controlsState.touchMirror180,
+                    isFocused = isFocused(item),
+                    onToggle = { viewModel.setTouchMirror180(it) }
+                )
+                BuiltinControlsItem.TouchColouredFaceButtons -> SwitchPreference(
+                    title = "Coloured PSX face buttons",
+                    subtitle = "Tint △ □ ○ ✕ with their canonical colours",
+                    isEnabled = controlsState.touchColouredFaceButtons,
+                    isFocused = isFocused(item),
+                    onToggle = { viewModel.setTouchColouredFaceButtons(it) }
+                )
+                BuiltinControlsItem.TouchGenesis6Button -> SwitchPreference(
+                    title = "Genesis 6-button mode",
+                    subtitle = "Show all six buttons for Genesis / Mega Drive",
+                    isEnabled = controlsState.touchGenesis6Button,
+                    isFocused = isFocused(item),
+                    onToggle = { viewModel.setTouchGenesis6Button(it) }
+                )
+
+                BuiltinControlsItem.TouchCustomizeLayouts -> NavigationPreference(
+                    icon = Icons.Default.Gamepad,
+                    title = "Customize layouts…",
+                    subtitle = "Drag and resize touch controls per platform",
+                    isFocused = isFocused(item),
+                    onClick = { viewModel.showTouchLayoutEditor() }
+                )
+
                 else -> {}
             }
         }
@@ -314,6 +434,13 @@ fun BuiltinControlsSection(
                 onClearHotkey = { action -> viewModel.clearHotkey(action) },
                 onSetHoldMs = { action, holdMs -> viewModel.setHotkeyHoldMs(action, holdMs) },
                 onDismiss = { viewModel.hideHotkeysModal() }
+            )
+        }
+
+        if (controlsState.showTouchLayoutEditorModal) {
+            com.nendo.argosy.ui.screens.touchlayout.TouchLayoutEditorModal(
+                repository = viewModel.touchLayoutRepository,
+                onDismiss = { viewModel.hideTouchLayoutEditor() }
             )
         }
     }

@@ -76,6 +76,7 @@ import com.nendo.argosy.ui.screens.gamedetail.components.menuLayout
 import com.nendo.argosy.ui.screens.gamedetail.components.ScreenshotViewerOverlay
 import com.nendo.argosy.ui.screens.gamedetail.components.ScreenshotsSection
 import com.nendo.argosy.ui.components.DiscPickerModal
+import com.nendo.argosy.ui.components.MemcardPickerModal
 import com.nendo.argosy.ui.screens.gamedetail.modals.CorePickerModal
 import com.nendo.argosy.ui.screens.gamedetail.modals.EmulatorPickerModal
 import com.nendo.argosy.ui.screens.gamedetail.modals.ExtractionFailedModal
@@ -108,6 +109,7 @@ fun GameDetailScreen(
     gameId: Long,
     onBack: () -> Unit,
     onNavigateToLaunch: (gameId: Long, channelName: String?, discId: Long?) -> Unit = { _, _, _ -> },
+    onNavigateToPlatformSettings: (platformId: Long) -> Unit = {},
     viewModel: GameDetailViewModel = hiltViewModel(),
     argosyViewModel: ArgosyViewModel = hiltViewModel()
 ) {
@@ -172,6 +174,14 @@ fun GameDetailScreen(
     val hasDescription by remember { derivedStateOf { uiState.game?.description?.isNotEmpty() == true } }
     val hasScreenshots by remember { derivedStateOf { uiState.game?.screenshots?.isNotEmpty() == true } }
     val hasAchievements by remember { derivedStateOf { uiState.game?.achievements?.isNotEmpty() == true } }
+    val hasSaveSync by remember {
+        derivedStateOf {
+            val s = uiState.saveStatusInfo?.status
+            s != null &&
+                s != com.nendo.argosy.ui.screens.gamedetail.components.SaveSyncStatus.NO_SAVE &&
+                s != com.nendo.argosy.ui.screens.gamedetail.components.SaveSyncStatus.NOT_CONFIGURED
+        }
+    }
     val screenshotCount by remember { derivedStateOf { uiState.game?.screenshots?.size ?: 0 } }
     val achievementColumnCount by remember { derivedStateOf { uiState.game?.achievements?.chunked(3)?.size ?: 0 } }
 
@@ -184,6 +194,7 @@ fun GameDetailScreen(
     val inputHandler = remember(onBack, uiState.menuFocusIndex, screenshotCount, achievementColumnCount) {
         viewModel.createInputHandler(
             onBack = onBack,
+            onNavigateToPlatformSettings = onNavigateToPlatformSettings,
             onSnapUp = {
                 viewModel.moveMenuFocus(-1)
                 true
@@ -197,7 +208,8 @@ fun GameDetailScreen(
                     hasDescription = hasDescription,
                     hasScreenshots = hasScreenshots,
                     hasAchievements = hasAchievements,
-                    hasSocialAccount = uiState.hasSocialAccount
+                    hasSocialAccount = uiState.hasSocialAccount,
+                    hasSaveSync = hasSaveSync
                 )
                 when (menuLayout.itemAtFocusIndex(uiState.menuFocusIndex, layoutState)) {
                     MenuItem.Screenshots -> if (screenshotCount > 0) {
@@ -218,7 +230,8 @@ fun GameDetailScreen(
                     hasDescription = hasDescription,
                     hasScreenshots = hasScreenshots,
                     hasAchievements = hasAchievements,
-                    hasSocialAccount = uiState.hasSocialAccount
+                    hasSocialAccount = uiState.hasSocialAccount,
+                    hasSaveSync = hasSaveSync
                 )
                 when (menuLayout.itemAtFocusIndex(uiState.menuFocusIndex, layoutState)) {
                     MenuItem.Screenshots -> if (screenshotCount > 0) {
@@ -241,7 +254,8 @@ fun GameDetailScreen(
                     hasDescription = hasDescription,
                     hasScreenshots = hasScreenshots,
                     hasAchievements = hasAchievements,
-                    hasSocialAccount = uiState.hasSocialAccount
+                    hasSocialAccount = uiState.hasSocialAccount,
+                    hasSaveSync = hasSaveSync
                 )
                 menuLayout.itemAtFocusIndex(uiState.menuFocusIndex, layoutState) == MenuItem.Screenshots
             }
@@ -319,6 +333,32 @@ fun GameDetailScreen(
         }
     }
 
+    val memcardPickerInputHandler = remember(viewModel) {
+        com.nendo.argosy.ui.input.MemcardPickerInputHandler(
+            getCards = { uiState.memcardPickerState?.cards ?: emptyList() },
+            getFocusIndex = { uiState.memcardPickerFocusIndex },
+            onFocusChange = { viewModel.setMemcardPickerFocusIndex(it) },
+            onSelect = { viewModel.selectMemcard(it) },
+            onDismiss = { viewModel.dismissMemcardPicker() }
+        )
+    }
+
+    val showMemcardPicker = uiState.memcardPickerState != null
+    LaunchedEffect(showMemcardPicker) {
+        if (showMemcardPicker) {
+            viewModel.setMemcardPickerFocusIndex(0)
+            inputDispatcher.pushModal(memcardPickerInputHandler)
+        }
+    }
+
+    DisposableEffect(showMemcardPicker) {
+        onDispose {
+            if (showMemcardPicker) {
+                inputDispatcher.popModal()
+            }
+        }
+    }
+
     Box(modifier = Modifier.fillMaxSize()) {
         if (uiState.isLoading || game == null) {
             GameDetailSkeleton()
@@ -335,6 +375,7 @@ fun GameDetailScreen(
                 onScreenshotPositioned = { screenshotTopY = it },
                 onAchievementPositioned = { achievementTopY = it },
                 onBack = onBack,
+                onNavigateToPlatformSettings = onNavigateToPlatformSettings,
                 localModifiedFocusIndex = localModifiedFocusIndex
             )
         }
@@ -354,6 +395,7 @@ private fun GameDetailContent(
     onScreenshotPositioned: (Int) -> Unit,
     onAchievementPositioned: (Int) -> Unit,
     onBack: () -> Unit,
+    onNavigateToPlatformSettings: (Long) -> Unit,
     localModifiedFocusIndex: Int
 ) {
     val coroutineScope = rememberCoroutineScope()
@@ -395,11 +437,17 @@ private fun GameDetailContent(
     val headerScrollThreshold = 200
     val isHeaderCollapsed = scrollState.value > headerScrollThreshold
 
+    val contentHasSaveSync = uiState.saveStatusInfo?.status?.let {
+        it != com.nendo.argosy.ui.screens.gamedetail.components.SaveSyncStatus.NO_SAVE &&
+            it != com.nendo.argosy.ui.screens.gamedetail.components.SaveSyncStatus.NOT_CONFIGURED
+    } ?: false
+
     val menuLayoutState = MenuLayoutState(
         hasDescription = !game.description.isNullOrBlank(),
         hasScreenshots = game.screenshots.isNotEmpty(),
         hasAchievements = game.achievements.isNotEmpty(),
-        hasSocialAccount = uiState.hasSocialAccount
+        hasSocialAccount = uiState.hasSocialAccount,
+        hasSaveSync = contentHasSaveSync
     )
 
     val menuDisplayState = GameDetailMenuState(
@@ -414,6 +462,7 @@ private fun GameDetailContent(
         downloadProgress = uiState.downloadProgress,
         isFavorite = game.isFavorite,
         saveStatus = uiState.saveStatusInfo,
+        isSyncingSaves = uiState.isSyncingSaves,
         downloadSizeBytes = uiState.downloadSizeBytes,
         isPrivate = uiState.isPrivate
     )
@@ -541,6 +590,7 @@ private fun GameDetailContent(
                             onItemClick = { item ->
                                 when (item) {
                                     MenuItem.Play -> viewModel.primaryAction()
+                                    MenuItem.Saves -> viewModel.syncSavesNow()
                                     MenuItem.Favorite -> viewModel.toggleFavorite()
                                     MenuItem.Privacy -> viewModel.togglePrivacy()
                                     MenuItem.Options -> viewModel.toggleMoreOptions()
@@ -602,6 +652,8 @@ private fun GameDetailContent(
                                         onScreenshotPositioned(y)
                                     },
                                     isActive = focusedItem == MenuItem.Screenshots,
+                                    gameId = game.id,
+                                    cacheEnabled = uiState.syncScreenshotsEnabled,
                                     onSectionFocus = {
                                         viewModel.setMenuFocusIndex(menuLayout.focusIndexOf(MenuItem.Screenshots, menuLayoutState))
                                     }
@@ -669,6 +721,7 @@ private fun GameDetailContent(
                                 uiState.downloadStatus == GameDownloadStatus.PAUSED -> "Paused"
                                 else -> "Play"
                             })
+                            MenuItem.Saves -> add(InputButton.A to if (uiState.isSyncingSaves) "Syncing..." else "Sync")
                             MenuItem.Favorite -> add(InputButton.A to if (game.isFavorite) "Unfavorite" else "Favorite")
                             MenuItem.Privacy -> add(InputButton.A to if (uiState.isPrivate) "Make Public" else "Make Private")
                             MenuItem.Options -> add(InputButton.A to "Options")
@@ -702,7 +755,7 @@ private fun GameDetailContent(
             }
         }
 
-        GameDetailModals(game = game, uiState = uiState, viewModel = viewModel, onBack = onBack, localModifiedFocusIndex = localModifiedFocusIndex)
+        GameDetailModals(game = game, uiState = uiState, viewModel = viewModel, onBack = onBack, onNavigateToPlatformSettings = onNavigateToPlatformSettings, localModifiedFocusIndex = localModifiedFocusIndex)
 
         AchievementListOverlay(
             visible = uiState.showAchievementList,
@@ -715,6 +768,7 @@ private fun GameDetailContent(
 
 @Composable
 private fun GameDetailModals(
+    onNavigateToPlatformSettings: (Long) -> Unit,
     game: GameDetailUi,
     uiState: GameDetailUiState,
     viewModel: GameDetailViewModel,
@@ -734,7 +788,7 @@ private fun GameDetailModals(
             isDownloaded = uiState.downloadStatus == GameDownloadStatus.DOWNLOADED,
             hasVariants = uiState.hasVariants,
             updateCount = uiState.updateFiles.size + uiState.dlcFiles.size,
-            onAction = { action -> viewModel.handleMoreOptionAction(action, onBack) },
+            onAction = { action -> viewModel.handleMoreOptionAction(action, onBack, onNavigateToPlatformSettings) },
             onDismiss = viewModel::toggleMoreOptions
         )
     }
@@ -751,6 +805,7 @@ private fun GameDetailModals(
             hasRASupport = uiState.hasRASupport,
             isRALoggedIn = uiState.isRALoggedIn,
             isOnline = uiState.isOnline,
+            canSkipSync = uiState.isOnline,
             onAction = viewModel::handlePlayOption,
             onDismiss = viewModel::dismissPlayOptions
         )
@@ -777,9 +832,7 @@ private fun GameDetailModals(
         UpdatesPickerModal(
             files = uiState.updateFiles + uiState.dlcFiles,
             focusIndex = pickerState.updatesPickerFocusIndex,
-            isEdenGame = uiState.isEdenGame,
             onDownload = viewModel::downloadUpdateFile,
-            onApplyAll = viewModel::applyAllUpdatesToEmulator,
             onDismiss = viewModel.pickerModalDelegate::dismissUpdatesPicker
         )
     }
@@ -836,6 +889,16 @@ private fun GameDetailModals(
             focusIndex = pickerState.discPickerFocusIndex,
             onSelectDisc = viewModel.pickerModalDelegate::selectDisc,
             onDismiss = viewModel.pickerModalDelegate::dismissDiscPicker
+        )
+    }
+
+    uiState.memcardPickerState?.let { pickerState ->
+        MemcardPickerModal(
+            cards = pickerState.cards,
+            focusIndex = uiState.memcardPickerFocusIndex,
+            selectedCardPath = null,
+            onSelectCard = viewModel::selectMemcard,
+            onDismiss = viewModel::dismissMemcardPicker
         )
     }
 

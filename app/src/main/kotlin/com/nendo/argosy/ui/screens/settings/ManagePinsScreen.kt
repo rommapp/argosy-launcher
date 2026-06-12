@@ -204,6 +204,7 @@ private fun PinRow(
         is PinnedCollection.Virtual -> when (pin.type) {
             CategoryType.GENRE -> Icons.Default.Category to "Genre"
             CategoryType.GAME_MODE -> Icons.Default.Category to "Game Mode"
+            CategoryType.SERIES -> Icons.Default.Category to "Series"
         }
     }
 

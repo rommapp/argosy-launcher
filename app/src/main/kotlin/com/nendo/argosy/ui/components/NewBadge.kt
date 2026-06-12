@@ -10,6 +10,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import com.nendo.argosy.ui.theme.ALauncherColors
 import androidx.compose.ui.graphics.Outline
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.Shape
@@ -74,7 +75,7 @@ fun NewBadge(
     width: Dp = 40.dp,
     height: Dp = 28.dp,
     rotation: Float = 15f,
-    backgroundColor: Color = Color(0xFFE53935),
+    backgroundColor: Color = ALauncherColors.DifficultyRed,
     textColor: Color = Color.White
 ) {
     Box(

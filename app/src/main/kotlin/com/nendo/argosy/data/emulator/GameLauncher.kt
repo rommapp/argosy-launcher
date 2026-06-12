@@ -48,6 +48,12 @@ sealed class LaunchResult {
     data class Success(val intent: Intent, val discId: Long? = null, val alreadyLaunched: Boolean = false) : LaunchResult()
     data class SelectDisc(val gameId: Long, val discs: List<DiscOption>) : LaunchResult()
     data class SelectVariant(val gameId: Long, val variants: List<VariantOption>) : LaunchResult()
+    data class SelectMemcard(
+        val gameId: Long,
+        val emulatorId: String,
+        val platformName: String,
+        val cards: List<com.nendo.argosy.data.sync.platform.MemcardInfo>
+    ) : LaunchResult()
     data class NoEmulator(val platformSlug: String) : LaunchResult()
     data class NoRomFile(val gamePath: String?) : LaunchResult()
     data class NoSteamLauncher(val launcherPackage: String) : LaunchResult()
@@ -75,7 +81,9 @@ class GameLauncher @Inject constructor(
     private val userPreferencesRepository: UserPreferencesRepository,
     private val coreOptionResolver: CoreOptionResolver,
     private val coreSystemDataManager: CoreSystemDataManager,
-    private val gameFileDao: GameFileDao
+    private val gameFileDao: GameFileDao,
+    private val emulatorSaveConfigRepository: com.nendo.argosy.data.repository.EmulatorSaveConfigRepository,
+    private val saveHandlerRegistry: com.nendo.argosy.data.sync.platform.PlatformSaveHandlerRegistry
 ) {
     private val shellAmAvailable: Boolean by lazy {
         try {
@@ -163,6 +171,8 @@ class GameLauncher @Inject constructor(
             }
 
         Logger.debug(TAG, "Emulator resolved: ${emulator.displayName} (${emulator.packageName})")
+
+        ps2MemcardGate(gameId, game, emulator)?.let { return it }
 
         if (emulator.id == "eden" && ZipExtractor.isNswPlatform(game.platformSlug)) {
             migrateToExtcontent(game)
@@ -424,6 +434,11 @@ class GameLauncher @Inject constructor(
         val selectedCoreId = resolveBuiltinCoreId(game)
         var corePath = libretroCoreMgr.getCorePathForPlatform(game.platformSlug, selectedCoreId)
         if (corePath == null) {
+            if (!com.nendo.argosy.util.NetworkUtils.isOnline(context)) {
+                lastCoreDownloadError = "Built-in core for ${game.platformSlug} isn't installed yet. Connect to a network so Argosy can download it, then try again."
+                Logger.error(TAG, "[BuiltIn] Core missing for ${game.platformSlug} (selected=$selectedCoreId) and device is offline; aborting launch")
+                return null
+            }
             Logger.info(TAG, "[BuiltIn] Core not downloaded for ${game.platformSlug} (selected=$selectedCoreId), attempting download...")
             val downloadResult = libretroCoreMgr.downloadCoreForPlatform(game.platformSlug, selectedCoreId)
             corePath = downloadResult.getOrElse { err ->
@@ -463,6 +478,7 @@ class GameLauncher @Inject constructor(
             putExtra(LibretroActivity.EXTRA_SYSTEM_DIR, systemDir.absolutePath)
             putExtra(LibretroActivity.EXTRA_GAME_NAME, game.title)
             putExtra(LibretroActivity.EXTRA_GAME_ID, game.id)
+            putExtra(LibretroActivity.EXTRA_PLATFORM_SLUG, game.platformSlug)
             putExtra(LibretroActivity.EXTRA_CORE_NAME, coreName)
             putExtra(LibretroActivity.EXTRA_CORE_VAR_KEYS, coreVariables.map { it.key }.toTypedArray())
             putExtra(LibretroActivity.EXTRA_CORE_VAR_VALUES, coreVariables.map { it.value }.toTypedArray())
@@ -470,6 +486,27 @@ class GameLauncher @Inject constructor(
             effectiveStatePath?.let { putExtra(LibretroActivity.EXTRA_STATES_DIR, it) }
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
+    }
+
+    private suspend fun ps2MemcardGate(gameId: Long, game: GameEntity, emulator: EmulatorDef): LaunchResult? {
+        if (game.platformSlug != "ps2") return null
+        val emulatorId = emulator.id
+        val userConfig = emulatorSaveConfigRepository.getByEmulator(emulatorId)
+        if (userConfig?.selectedMemcardPath != null) return null
+        val basePathOverride = if (userConfig?.isUserOverride == true) userConfig.savePathPattern else null
+        val cards = saveHandlerRegistry.listPs2FolderMemcardsForEmulator(
+            emulatorId = emulatorId,
+            emulatorPackage = emulator.packageName,
+            basePathOverride = basePathOverride
+        )
+        if (cards.size <= 1) return null
+        Logger.info(TAG, "[Launch] PS2 memcard gate triggered | gameId=$gameId, cards=${cards.size}")
+        return LaunchResult.SelectMemcard(
+            gameId = gameId,
+            emulatorId = emulatorId,
+            platformName = game.platformSlug,
+            cards = cards
+        )
     }
 
     private suspend fun resolveEmulator(game: GameEntity): EmulatorDef? {
@@ -680,16 +717,52 @@ class GameLauncher @Inject constructor(
             result = rewriteBindings(result, romFile, dataBinding, extraBinding, clipDataBinding)
         }
 
+        val customExtras = parseCustomExtras(override.customExtras)
+        if (customExtras.isNotEmpty()) {
+            result = result.copy(extras = result.extras + customExtras)
+        }
+
         return result
+    }
+
+    private fun parseCustomExtras(raw: String?): List<ResolvedExtra> {
+        if (raw.isNullOrBlank()) return emptyList()
+        val tokens = raw.trim().split(Regex("\\s+"))
+        val extras = mutableListOf<ResolvedExtra>()
+        var i = 0
+        while (i < tokens.size) {
+            when (tokens[i]) {
+                "-e", "--es" -> if (i + 2 < tokens.size) {
+                    extras.add(ResolvedExtra.StringExtra(tokens[i + 1], tokens[i + 2]))
+                    i += 3
+                } else i = tokens.size
+                "--ez" -> if (i + 2 < tokens.size) {
+                    extras.add(ResolvedExtra.BoolExtra(tokens[i + 1], tokens[i + 2].toBoolean()))
+                    i += 3
+                } else i = tokens.size
+                else -> i++
+            }
+        }
+        return extras
     }
 
     private fun parseBindingFormat(name: String): RomBindingFormat? =
         runCatching { RomBindingFormat.valueOf(name) }.getOrNull()
 
+    private val primaryRootSlash: String by lazy { "${StoragePathUtils.primaryExternalRoot}/" }
+
     private fun isPathOpaqueToOtherApps(path: String): Boolean {
         if (!path.startsWith("/storage/")) return false
-        val tail = path.removePrefix("/storage/")
-        return !(tail.startsWith("emulated/0/") || tail.startsWith("self/primary/"))
+        val canonical = StoragePathUtils.canonicalize(path)
+        if (canonical.startsWith(primaryRootSlash)) {
+            // Primary external is readable to other apps EXCEPT cross-app /Android/data/<pkg>
+            // and /Android/obb/<pkg>, which scoped storage seals off on Android 11+.
+            val rel = canonical.removePrefix(primaryRootSlash)
+            return rel.startsWith("Android/data/") || rel.startsWith("Android/obb/")
+        }
+        // Any other mount under /storage/ (SD card UUID, USB OTG, secondary users) is opaque
+        // to other apps via raw paths.
+        return true
     }
 
     private fun rewriteBindings(
@@ -705,7 +778,7 @@ class GameLauncher @Inject constructor(
         val needsContentUri = isPathOpaqueToOtherApps(absolutePath)
         fun upgradeIfOpaque(b: RomBindingFormat?): RomBindingFormat? =
             if (b == RomBindingFormat.ABSOLUTE_PATH && needsContentUri) {
-                Logger.warn(TAG, "ROM at $absolutePath is on a secondary external mount; upgrading ABSOLUTE_PATH → FILE_PROVIDER")
+                Logger.warn(TAG, "ROM at $absolutePath is opaque to other apps; upgrading ABSOLUTE_PATH → FILE_PROVIDER")
                 RomBindingFormat.FILE_PROVIDER
             } else b
 
@@ -832,7 +905,8 @@ class GameLauncher @Inject constructor(
     ): EffectiveLaunchCommand? {
         val retroArchPackage = emulator.packageName
         val dataDir = "/data/data/$retroArchPackage"
-        val externalDir = "/storage/emulated/0/Android/data/$retroArchPackage/files"
+        val primaryRoot = StoragePathUtils.primaryExternalRoot
+        val externalDir = "$primaryRoot/Android/data/$retroArchPackage/files"
         val configPath = "$externalDir/retroarch.cfg"
 
         Logger.debug(TAG, "RetroArch: package=$retroArchPackage, activity=${config.activityClass}")
@@ -878,7 +952,7 @@ class GameLauncher @Inject constructor(
                 ResolvedExtra.StringExtra("CONFIGFILE", configPath),
                 ResolvedExtra.StringExtra("IME", "com.android.inputmethod.latin/.LatinIME"),
                 ResolvedExtra.StringExtra("DATADIR", dataDir),
-                ResolvedExtra.StringExtra("SDCARD", "/storage/emulated/0"),
+                ResolvedExtra.StringExtra("SDCARD", primaryRoot),
                 ResolvedExtra.StringExtra("EXTERNAL", externalDir)
             ),
             intentFlags = baseFlags or grantFlag,
@@ -1029,9 +1103,14 @@ class GameLauncher @Inject constructor(
                     resolvedExtras += ResolvedExtra.UriExtra(key, uri)
                 }
                 is ExtraValue.FileUriString -> {
-                    val uri = getFileUri(romFile)
-                    fileUri = uri
-                    resolvedExtras += ResolvedExtra.StringExtra(key, uri.toString())
+                    val value = if (romFile.extension.equals("m3u", ignoreCase = true)) {
+                        // Playlist files (.m3u) often rely on relative sibling paths.
+                        // Passing content:// as a string can prevent emulators from resolving those entries.
+                        romFile.absolutePath
+                    } else {
+                        getFileUri(romFile).also { fileUri = it }.toString()
+                    }
+                    resolvedExtras += ResolvedExtra.StringExtra(key, value)
                 }
                 is ExtraValue.Platform -> resolvedExtras += ResolvedExtra.StringExtra(key, platformSlug)
                 is ExtraValue.Literal -> resolvedExtras += ResolvedExtra.StringExtra(key, extraValue.value)

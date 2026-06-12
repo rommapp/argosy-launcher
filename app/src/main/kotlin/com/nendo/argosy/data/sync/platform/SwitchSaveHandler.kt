@@ -68,11 +68,11 @@ class SwitchSaveHandler @Inject constructor(
                     if (basePath == null) {
                         return@withContext ExtractResult(false, null, "No base path for Switch saves")
                     }
-                    val titleId = context.titleId
-                    if (titleId == null) {
-                        return@withContext ExtractResult(false, null, "No title ID for Switch save")
+                    val saveId = context.saveId
+                    if (saveId == null) {
+                        return@withContext ExtractResult(false, null, "No save ID for Switch save")
                     }
-                    constructSavePath(basePath, titleId, context.emulatorPackage)
+                    constructSavePath(basePath, saveId, context.emulatorPackage)
                 }
 
             val targetFolder = File(targetPath)
@@ -101,7 +101,7 @@ class SwitchSaveHandler @Inject constructor(
         }
 
     private fun resolveBasePathInternal(config: SavePathConfig, emulatorPackage: String?): String? {
-        val resolvedPaths = SavePathRegistry.resolvePathWithPackage(config, emulatorPackage)
+        val resolvedPaths = SavePathRegistry.resolvePathWithPackage(config, emulatorPackage, context.filesDir.absolutePath)
         return resolvedPaths.firstOrNull { fal.exists(it) && fal.isDirectory(it) }
             ?: resolvedPaths.firstOrNull()
     }
@@ -192,7 +192,7 @@ class SwitchSaveHandler @Inject constructor(
         val basePath = if (basePathOverride != null) {
             resolveOverrideSaveBase(basePathOverride)
         } else {
-            val resolvedPaths = SavePathRegistry.resolvePathWithPackage(config, emulatorPackage)
+            val resolvedPaths = SavePathRegistry.resolvePathWithPackage(config, emulatorPackage, context.filesDir.absolutePath)
             resolvedPaths.firstOrNull { fal.exists(it) && fal.isDirectory(it) }
                 ?: resolvedPaths.firstOrNull()
         } ?: return null
@@ -273,38 +273,38 @@ class SwitchSaveHandler @Inject constructor(
         return zeroProfilePath
     }
 
-    override fun findSaveFolderByTitleId(basePath: String, titleId: String): String? {
+    override fun findSaveFolderBySaveId(basePath: String, saveId: String): String? {
         if (!fal.exists(basePath) || !fal.isDirectory(basePath)) {
-            Logger.debug(TAG, "findSaveFolderByTitleId: base path does not exist | path=$basePath")
+            Logger.debug(TAG, "findSaveFolderBySaveId: base path does not exist | path=$basePath")
             return null
         }
 
-        val normalizedTitleId = titleId.uppercase()
-        Logger.debug(TAG, "findSaveFolderByTitleId: scanning | path=$basePath, titleId=$normalizedTitleId")
+        val normalizedSaveId = saveId.uppercase()
+        Logger.debug(TAG, "findSaveFolderBySaveId: scanning | path=$basePath, saveId=$normalizedSaveId")
 
         var bestMatchPath: String? = null
         var bestModTime = 0L
 
         val topLevelFolders = fal.listFiles(basePath)
-        Logger.debug(TAG, "findSaveFolderByTitleId: top-level folders=${topLevelFolders?.map { it.name }}")
+        Logger.debug(TAG, "findSaveFolderBySaveId: top-level folders=${topLevelFolders?.map { it.name }}")
 
         topLevelFolders?.forEach { userFolder ->
             if (!userFolder.isDirectory) return@forEach
 
-            // Skip device save folders (titleId directly under /save/) - we only support nested structure
-            if (userFolder.name.equals(normalizedTitleId, ignoreCase = true)) {
-                Logger.debug(TAG, "findSaveFolderByTitleId: skipping device save format | path=${userFolder.path}")
+            // Skip device save folders (saveId directly under /save/) - we only support nested structure
+            if (userFolder.name.equals(normalizedSaveId, ignoreCase = true)) {
+                Logger.debug(TAG, "findSaveFolderBySaveId: skipping device save format | path=${userFolder.path}")
                 return@forEach
             }
 
             // Only process valid user folders (16 hex chars, typically 0000000000000000)
             if (!isValidUserFolderId(userFolder.name)) {
-                Logger.debug(TAG, "findSaveFolderByTitleId: skipping non-user folder | name=${userFolder.name}")
+                Logger.debug(TAG, "findSaveFolderBySaveId: skipping non-user folder | name=${userFolder.name}")
                 return@forEach
             }
 
             val userChildren = fal.listFiles(userFolder.path)
-            Logger.debug(TAG, "findSaveFolderByTitleId: userFolder=${userFolder.name}, children=${userChildren?.map { it.name }}")
+            Logger.debug(TAG, "findSaveFolderBySaveId: userFolder=${userFolder.name}, children=${userChildren?.map { it.name }}")
 
             userChildren?.forEach { profileFolder ->
                 if (!profileFolder.isDirectory) return@forEach
@@ -313,14 +313,14 @@ class SwitchSaveHandler @Inject constructor(
                     return@forEach
                 }
                 val profileChildren = fal.listFiles(profileFolder.path)
-                Logger.debug(TAG, "findSaveFolderByTitleId: profileFolder=${profileFolder.name}, children=${profileChildren?.map { it.name }}")
+                Logger.debug(TAG, "findSaveFolderBySaveId: profileFolder=${profileFolder.name}, children=${profileChildren?.map { it.name }}")
 
                 val nestedSaveFolder = profileChildren?.firstOrNull {
-                    it.isDirectory && it.name.equals(normalizedTitleId, ignoreCase = true)
+                    it.isDirectory && it.name.equals(normalizedSaveId, ignoreCase = true)
                 }
                 if (nestedSaveFolder != null) {
                     val modTime = findNewestFileTime(nestedSaveFolder.path)
-                    Logger.debug(TAG, "findSaveFolderByTitleId: found nested match | path=${nestedSaveFolder.path}, modTime=$modTime")
+                    Logger.debug(TAG, "findSaveFolderBySaveId: found nested match | path=${nestedSaveFolder.path}, modTime=$modTime")
                     if (bestMatchPath == null || modTime > bestModTime) {
                         bestModTime = modTime
                         bestMatchPath = nestedSaveFolder.path
@@ -330,23 +330,23 @@ class SwitchSaveHandler @Inject constructor(
         }
 
         if (bestMatchPath != null) {
-            Logger.debug(TAG, "findSaveFolderByTitleId: found | path=$bestMatchPath")
+            Logger.debug(TAG, "findSaveFolderBySaveId: found | path=$bestMatchPath")
         }
         return bestMatchPath
     }
 
     fun constructSavePath(
         baseDir: String,
-        titleId: String,
+        saveId: String,
         emulatorPackage: String? = null
     ): String {
-        val normalizedTitleId = titleId.uppercase()
-        val profileFolder = if (isDeviceSave(normalizedTitleId)) {
+        val normalizedSaveId = saveId.uppercase()
+        val profileFolder = if (isDeviceSave(normalizedSaveId)) {
             findOrCreateZeroProfileFolder(baseDir)
         } else {
             findActiveProfileFolder(baseDir, emulatorPackage)
         }
-        return "$profileFolder/$normalizedTitleId"
+        return "$profileFolder/$normalizedSaveId"
     }
 
     private fun findNewestFileTime(folderPath: String): Long {

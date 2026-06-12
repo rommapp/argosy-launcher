@@ -8,6 +8,7 @@ import com.nendo.argosy.data.storage.FileAccessLayer
 import com.nendo.argosy.data.storage.FileAccessLayerImpl
 import com.nendo.argosy.data.sync.SaveSyncQueuer
 import com.nendo.argosy.data.sync.SaveSyncQueuerImpl
+import com.nendo.argosy.hardware.AyaneoLEDController
 import com.nendo.argosy.hardware.LEDController
 import com.nendo.argosy.hardware.OdinLEDController
 import com.squareup.moshi.Moshi
@@ -45,8 +46,10 @@ abstract class AppModule {
 
         @Provides
         @Singleton
-        fun provideLEDController(): LEDController {
-            return OdinLEDController()
+        fun provideLEDController(@ApplicationContext context: Context): LEDController {
+            val isAyaneo = android.os.Build.MANUFACTURER.equals("AYANEO", ignoreCase = true) ||
+                android.os.Build.BRAND.equals("AYANEO", ignoreCase = true)
+            return if (isAyaneo) AyaneoLEDController(context) else OdinLEDController()
         }
     }
 }

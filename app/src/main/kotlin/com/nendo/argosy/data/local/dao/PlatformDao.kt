@@ -74,7 +74,7 @@ interface PlatformDao {
     @Query("SELECT * FROM platforms WHERE syncEnabled = 1 ORDER BY sortOrder ASC, name ASC")
     suspend fun getSyncEnabledPlatforms(): List<PlatformEntity>
 
-    @Query("SELECT * FROM platforms WHERE gameCount > 0 OR syncEnabled = 0 ORDER BY sortOrder ASC, name ASC")
+    @Query("SELECT * FROM platforms ORDER BY sortOrder ASC, name ASC")
     fun observeConfigurablePlatforms(): Flow<List<PlatformEntity>>
 
     @Query("DELETE FROM platforms WHERE id = :id")

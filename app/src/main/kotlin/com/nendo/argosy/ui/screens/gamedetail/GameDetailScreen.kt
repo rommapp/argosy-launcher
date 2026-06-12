@@ -109,6 +109,7 @@ fun GameDetailScreen(
     gameId: Long,
     onBack: () -> Unit,
     onNavigateToLaunch: (gameId: Long, channelName: String?, discId: Long?) -> Unit = { _, _, _ -> },
+    onNavigateToPlatformSettings: (platformId: Long) -> Unit = {},
     viewModel: GameDetailViewModel = hiltViewModel(),
     argosyViewModel: ArgosyViewModel = hiltViewModel()
 ) {
@@ -193,6 +194,7 @@ fun GameDetailScreen(
     val inputHandler = remember(onBack, uiState.menuFocusIndex, screenshotCount, achievementColumnCount) {
         viewModel.createInputHandler(
             onBack = onBack,
+            onNavigateToPlatformSettings = onNavigateToPlatformSettings,
             onSnapUp = {
                 viewModel.moveMenuFocus(-1)
                 true
@@ -373,6 +375,7 @@ fun GameDetailScreen(
                 onScreenshotPositioned = { screenshotTopY = it },
                 onAchievementPositioned = { achievementTopY = it },
                 onBack = onBack,
+                onNavigateToPlatformSettings = onNavigateToPlatformSettings,
                 localModifiedFocusIndex = localModifiedFocusIndex
             )
         }
@@ -392,6 +395,7 @@ private fun GameDetailContent(
     onScreenshotPositioned: (Int) -> Unit,
     onAchievementPositioned: (Int) -> Unit,
     onBack: () -> Unit,
+    onNavigateToPlatformSettings: (Long) -> Unit,
     localModifiedFocusIndex: Int
 ) {
     val coroutineScope = rememberCoroutineScope()
@@ -751,7 +755,7 @@ private fun GameDetailContent(
             }
         }
 
-        GameDetailModals(game = game, uiState = uiState, viewModel = viewModel, onBack = onBack, localModifiedFocusIndex = localModifiedFocusIndex)
+        GameDetailModals(game = game, uiState = uiState, viewModel = viewModel, onBack = onBack, onNavigateToPlatformSettings = onNavigateToPlatformSettings, localModifiedFocusIndex = localModifiedFocusIndex)
 
         AchievementListOverlay(
             visible = uiState.showAchievementList,
@@ -764,6 +768,7 @@ private fun GameDetailContent(
 
 @Composable
 private fun GameDetailModals(
+    onNavigateToPlatformSettings: (Long) -> Unit,
     game: GameDetailUi,
     uiState: GameDetailUiState,
     viewModel: GameDetailViewModel,
@@ -783,7 +788,7 @@ private fun GameDetailModals(
             isDownloaded = uiState.downloadStatus == GameDownloadStatus.DOWNLOADED,
             hasVariants = uiState.hasVariants,
             updateCount = uiState.updateFiles.size + uiState.dlcFiles.size,
-            onAction = { action -> viewModel.handleMoreOptionAction(action, onBack) },
+            onAction = { action -> viewModel.handleMoreOptionAction(action, onBack, onNavigateToPlatformSettings) },
             onDismiss = viewModel::toggleMoreOptions
         )
     }

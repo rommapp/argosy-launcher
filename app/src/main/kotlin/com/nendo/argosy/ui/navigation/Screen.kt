@@ -24,11 +24,12 @@ sealed class Screen(val route: String) {
     data object Downloads : Screen("downloads")
     data object SaveSync : Screen("save_sync")
     data object Apps : Screen("apps")
-    data object Settings : Screen("settings?section={section}&action={action}") {
-        fun createRoute(section: String? = null, action: String? = null): String {
+    data object Settings : Screen("settings?section={section}&action={action}&platformId={platformId}") {
+        fun createRoute(section: String? = null, action: String? = null, platformId: Long? = null): String {
             val params = mutableListOf<String>()
             if (section != null) params.add("section=$section")
             if (action != null) params.add("action=$action")
+            if (platformId != null) params.add("platformId=$platformId")
             return if (params.isEmpty()) "settings" else "settings?${params.joinToString("&")}"
         }
     }

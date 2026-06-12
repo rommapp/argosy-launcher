@@ -56,11 +56,13 @@ class RestoreCachedSaveUseCase @Inject constructor(
             return Result.Error("Failed to clear existing save at target path")
         }
 
+        var cachedHash: String? = null
         val restoreSuccess = when (entry.source) {
             UnifiedSaveEntry.Source.LOCAL,
             UnifiedSaveEntry.Source.BOTH -> {
                 val cacheId = entry.localCacheId
                     ?: return Result.Error("No local cache ID")
+                cachedHash = saveCacheManager.getCacheById(cacheId)?.contentHash
                 saveCacheManager.restoreSave(cacheId, targetPath)
             }
             UnifiedSaveEntry.Source.SERVER -> {
@@ -81,6 +83,12 @@ class RestoreCachedSaveUseCase @Inject constructor(
             return Result.Error("Failed to restore save")
         }
 
+        val restoredContentHash = when (entry.source) {
+            UnifiedSaveEntry.Source.LOCAL,
+            UnifiedSaveEntry.Source.BOTH -> cachedHash ?: saveCacheManager.calculateLocalSaveHash(targetPath)
+            UnifiedSaveEntry.Source.SERVER -> null
+        }
+
         val targetChannel = entry.channelName
             ?: com.nendo.argosy.data.repository.SaveSyncApiClient.AUTOSAVE_SLOT_NAME
         gameDao.updateActiveSaveChannel(gameId, targetChannel)
@@ -93,7 +101,8 @@ class RestoreCachedSaveUseCase @Inject constructor(
                 channelName = targetChannel,
                 localPath = targetPath,
                 rommSaveId = entry.serverSaveId,
-                serverTimestamp = entry.timestamp
+                serverTimestamp = entry.timestamp,
+                contentHash = restoredContentHash
             )
         }
 

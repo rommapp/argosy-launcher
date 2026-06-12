@@ -91,6 +91,38 @@ class SaveSyncEntityManagerMarkRestoredTest {
     }
 
     @Test
+    fun `markRestored records restored content hash over stale upload hash`() = runTest {
+        val existing = SaveSyncEntity(
+            id = 42L,
+            gameId = 7L,
+            rommId = 100L,
+            emulatorId = "mgba",
+            channelName = "slot1",
+            syncStatus = SaveSyncEntity.STATUS_SERVER_NEWER,
+            lastUploadedHash = "old-hash"
+        )
+        coEvery {
+            saveSyncDao.getByGameEmulatorAndChannel(7L, "mgba", "slot1")
+        } returns existing
+        val captured = slot<SaveSyncEntity>()
+        coEvery { saveSyncDao.upsert(capture(captured)) } returns 1L
+
+        manager.markRestored(
+            gameId = 7L,
+            rommId = 100L,
+            emulatorId = "mgba",
+            channelName = "slot1",
+            localPath = "/storage/saves/g.srm",
+            rommSaveId = 555L,
+            serverTimestamp = null,
+            contentHash = "restored-hash"
+        )
+
+        assertEquals("restored-hash", captured.captured.lastUploadedHash)
+        assertEquals(SaveSyncEntity.STATUS_SYNCED, captured.captured.syncStatus)
+    }
+
+    @Test
     fun `markRestored preserves existing rommSaveId when caller passes null`() = runTest {
         val existing = SaveSyncEntity(
             id = 42L,

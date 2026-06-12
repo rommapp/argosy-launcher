@@ -11,6 +11,7 @@ import com.nendo.argosy.data.local.entity.SaveSyncEntity
 import com.nendo.argosy.data.model.GameSource
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.remote.romm.RomMApi
+import com.nendo.argosy.data.remote.romm.RomMCapabilities
 import com.nendo.argosy.data.remote.romm.RomMDeviceSync
 import com.nendo.argosy.data.remote.romm.RomMSave
 import com.nendo.argosy.data.sync.SaveArchiver
@@ -139,6 +140,35 @@ class SaveSyncConflictResolverTest {
     }
 
     @Test
+    fun `checkForConflict local content matching server hash returns null despite stale row`() = runTest {
+        val syncEntity = makeSyncEntity(lastUploadedHash = "old_hash")
+        setupConflictCheckMocks(
+            syncEntity,
+            deviceSyncs = listOf(RomMDeviceSync(deviceId = "device-1", isCurrent = false)),
+            contentHash = "restored_hash"
+        )
+        every { mockApiClient.getCapabilities() } returns RomMCapabilities.from("4.9.0")
+        coEvery { mockCacheManager.calculateLocalSaveHash(any()) } returns "restored_hash"
+
+        val result = resolver.checkForConflict(1L, "retroarch", null)
+
+        assertNull(result)
+    }
+
+    @Test
+    fun `checkForConflict ignores server hash when server below trust floor`() = runTest {
+        val syncEntity = makeSyncEntity(lastUploadedHash = "old_hash")
+        setupConflictCheckMocks(syncEntity, contentHash = "restored_hash")
+        every { mockApiClient.getCapabilities() } returns RomMCapabilities.NONE
+        coEvery { mockCacheManager.calculateLocalSaveHash(any()) } returns "restored_hash"
+
+        val result = resolver.checkForConflict(1L, "retroarch", null)
+
+        assertNotNull(result)
+        assertTrue(result!!.isHashConflict)
+    }
+
+    @Test
     fun `checkForConflict device not current returns ConflictInfo`() = runTest {
         val syncEntity = makeSyncEntity()
         setupConflictCheckMocks(
@@ -194,7 +224,8 @@ class SaveSyncConflictResolverTest {
         fileName: String = "argosy-latest.srm",
         updatedAt: String = "2025-01-15T12:00:00Z",
         slot: String? = null,
-        deviceSyncs: List<RomMDeviceSync>? = emptyList()
+        deviceSyncs: List<RomMDeviceSync>? = emptyList(),
+        contentHash: String? = null
     ) = RomMSave(
         id = id,
         romId = 100L,
@@ -205,7 +236,8 @@ class SaveSyncConflictResolverTest {
         updatedAt = updatedAt,
         slot = slot,
         fileNameNoExt = File(fileName).nameWithoutExtension,
-        deviceSyncs = deviceSyncs
+        deviceSyncs = deviceSyncs,
+        contentHash = contentHash
     )
 
     private fun makeSyncEntity(
@@ -226,7 +258,8 @@ class SaveSyncConflictResolverTest {
 
     private fun setupConflictCheckMocks(
         syncEntity: SaveSyncEntity,
-        deviceSyncs: List<RomMDeviceSync>? = emptyList()
+        deviceSyncs: List<RomMDeviceSync>? = emptyList(),
+        contentHash: String? = null
     ) {
         val localFile = File.createTempFile("test_save", ".srm").apply {
             writeBytes(byteArrayOf(1, 2, 3))
@@ -235,7 +268,7 @@ class SaveSyncConflictResolverTest {
         val entityWithRealPath = syncEntity.copy(
             localSavePath = localFile.absolutePath
         )
-        val serverSave = makeServerSave(deviceSyncs = deviceSyncs)
+        val serverSave = makeServerSave(deviceSyncs = deviceSyncs, contentHash = contentHash)
         coEvery { mockApiClient.checkSavesForGame(1L, 100L) } returns listOf(serverSave)
         coEvery { saveSyncDao.getByGameAndEmulatorWithDefault(any(), any(), any()) } returns entityWithRealPath
     }

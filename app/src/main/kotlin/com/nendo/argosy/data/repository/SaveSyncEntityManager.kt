@@ -55,7 +55,8 @@ class SaveSyncEntityManager @Inject constructor(
         channelName: String?,
         localPath: String,
         rommSaveId: Long?,
-        serverTimestamp: Instant?
+        serverTimestamp: Instant?,
+        contentHash: String? = null
     ) {
         val existing = if (channelName != null) {
             saveSyncDao.getByGameEmulatorAndChannel(gameId, emulatorId, channelName)
@@ -76,7 +77,7 @@ class SaveSyncEntityManager @Inject constructor(
                 localUpdatedAt = now,
                 serverUpdatedAt = serverTimestamp ?: existing?.serverUpdatedAt,
                 lastSyncedAt = now,
-                lastUploadedHash = existing?.lastUploadedHash,
+                lastUploadedHash = contentHash ?: existing?.lastUploadedHash,
                 syncStatus = SaveSyncEntity.STATUS_SYNCED,
                 userSelectedRestorePoint = existing?.userSelectedRestorePoint ?: false,
                 userSelectedRestorePointAt = existing?.userSelectedRestorePointAt

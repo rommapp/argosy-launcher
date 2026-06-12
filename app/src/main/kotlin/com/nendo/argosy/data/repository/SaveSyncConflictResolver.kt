@@ -270,6 +270,12 @@ class SaveSyncConflictResolver @Inject constructor(
             return@withContext SyncAnalysis.InSync
         }
 
+        val serverHash = serverSave.contentHash?.takeIf { client.getCapabilities().trustsServerHash }
+        if (serverHash != null && localHash != null && localHash == serverHash) {
+            Logger.debug(TAG, "[SaveSync] analyzeChannel gameId=$gameId | Local content matches server hash, in sync despite stale sync row")
+            return@withContext SyncAnalysis.InSync
+        }
+
         val isHashConflict = syncEntity?.lastUploadedHash != null
             && localHash != null
             && localHash != syncEntity.lastUploadedHash

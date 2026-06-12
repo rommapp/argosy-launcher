@@ -59,6 +59,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
@@ -230,6 +231,21 @@ class SettingsViewModel @Inject constructor(
         _uiState.update { it.copy(platformDetail = it.platformDetail.copy(builtinEnteredFromPlatform = true)) }
         emulatorDelegate.navigateToCoreOptions(viewModelScope)
     }
+    fun openPlatformDetailById(platformId: Long) {
+        viewModelScope.launch {
+            val platforms = kotlinx.coroutines.withTimeoutOrNull(5000) {
+                uiState.map { it.emulators.platforms }.first { it.isNotEmpty() }
+            } ?: return@launch
+            val index = platforms.indexOfFirst { it.platform.id == platformId }
+            if (index < 0) {
+                navigateToSection(SettingsSection.PLATFORMS)
+                return@launch
+            }
+            _uiState.update { it.copy(platformDetail = it.platformDetail.copy(enteredExternally = true)) }
+            navigateToPlatformDetail(index)
+        }
+    }
+
     fun navigateToPlatformDetail(platformIndex: Int) {
         _uiState.update { it.copy(
             currentSection = SettingsSection.PLATFORM_DETAIL,
@@ -944,6 +960,14 @@ class SettingsViewModel @Inject constructor(
 
     fun checkForUpdates() = routeCheckForUpdates(this)
     fun downloadAndInstallUpdate(context: android.content.Context) = routeDownloadAndInstallUpdate(this, context)
+
+    fun writeSystemizeScript() {
+        _uiState.update { it.copy(systemizeResult = com.nendo.argosy.util.SystemizeScript.write(context)) }
+    }
+
+    fun dismissSystemizeDialog() {
+        _uiState.update { it.copy(systemizeResult = null) }
+    }
 
     fun startRommConfig() = routeStartRommConfig(this)
     fun cancelRommConfig() = routeCancelRommConfig(this)

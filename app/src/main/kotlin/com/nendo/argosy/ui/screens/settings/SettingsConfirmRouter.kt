@@ -539,6 +539,7 @@ private fun routeAboutConfirm(vm: SettingsViewModel, state: SettingsUiState): In
             vm.setAppAffinityEnabled(!state.appAffinityEnabled)
             return InputResult.handled(SoundType.TOGGLE)
         }
+        AboutItem.SystemizeHelper -> vm.writeSystemizeScript()
         else -> {}
     }
     return InputResult.HANDLED
@@ -569,6 +570,7 @@ private fun routeFramePickerConfirm(vm: SettingsViewModel, state: SettingsUiStat
 internal fun routeNavigateBack(vm: SettingsViewModel): Boolean {
     val state = vm._uiState.value
     return when {
+        state.systemizeResult != null -> { vm.dismissSystemizeDialog(); true }
         state.emulators.showSavePathModal -> { vm.dismissSavePathModal(); true }
         state.emulators.showMemcardPicker -> { vm.dismissMemcardPicker(); true }
         state.storage.platformSettingsModalId != null -> { vm.closePlatformSettingsModal(); true }
@@ -653,6 +655,7 @@ internal fun routeNavigateBack(vm: SettingsViewModel): Boolean {
         state.currentSection == SettingsSection.PLATFORM_DETAIL && state.platformDetail.showRemoveConfirm -> {
             vm._uiState.update { it.copy(platformDetail = it.platformDetail.copy(showRemoveConfirm = false)) }; true
         }
+        state.currentSection == SettingsSection.PLATFORM_DETAIL && state.platformDetail.enteredExternally -> false
         state.currentSection == SettingsSection.PLATFORM_DETAIL -> {
             val platformFocusIndex = state.platformDetail.platformIndex
             vm._uiState.update { it.copy(

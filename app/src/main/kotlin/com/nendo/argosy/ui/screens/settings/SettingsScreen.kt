@@ -96,16 +96,19 @@ fun SettingsScreen(
     onBack: () -> Unit,
     initialSection: String? = null,
     initialAction: String? = null,
+    initialPlatformId: Long? = null,
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val imageCacheProgress by viewModel.imageCacheProgress.collectAsState()
     val context = LocalContext.current
 
-    LaunchedEffect(initialSection, initialAction) {
+    LaunchedEffect(initialSection, initialAction, initialPlatformId) {
         if (initialSection != null) {
             val section = SettingsSection.entries.find { it.name.equals(initialSection, ignoreCase = true) }
-            if (section != null) {
+            if (section == SettingsSection.PLATFORM_DETAIL && initialPlatformId != null) {
+                viewModel.openPlatformDetailById(initialPlatformId)
+            } else if (section != null) {
                 viewModel.navigateToSection(section)
                 kotlinx.coroutines.delay(300)
                 when (initialAction) {

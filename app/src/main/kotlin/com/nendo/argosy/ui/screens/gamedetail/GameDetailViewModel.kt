@@ -918,14 +918,23 @@ class GameDetailViewModel @Inject constructor(
             isMultiDisc = state.game?.isMultiDisc == true,
             hasVariants = state.hasVariants,
             isSteamGame = state.game?.isSteamGame == true,
-            hasUpdates = state.updateFiles.isNotEmpty() || state.dlcFiles.isNotEmpty()
+            hasUpdates = state.updateFiles.isNotEmpty() || state.dlcFiles.isNotEmpty(),
+            platformSlug = state.game?.platformSlug
         )
     }
 
-    fun handleMoreOptionAction(action: MoreOptionAction, onBack: () -> Unit) {
+    fun handleMoreOptionAction(
+        action: MoreOptionAction,
+        onBack: () -> Unit,
+        onNavigateToPlatformSettings: (Long) -> Unit = {}
+    ) {
         val isAndroidApp = _uiState.value.game?.isAndroidApp == true
         when (action) {
             MoreOptionAction.ManageSaves -> showSaveCacheDialog()
+            MoreOptionAction.PlatformSettings -> {
+                toggleMoreOptions()
+                _uiState.value.game?.platformId?.let(onNavigateToPlatformSettings)
+            }
             MoreOptionAction.RatingsStatus -> showRatingsStatusMenu()
             MoreOptionAction.RateGame -> showRatingPicker(RatingType.OPINION)
             MoreOptionAction.SetDifficulty -> showRatingPicker(RatingType.DIFFICULTY)
@@ -961,7 +970,10 @@ class GameDetailViewModel @Inject constructor(
         }
     }
 
-    fun confirmOptionSelection(onBack: () -> Unit) {
+    fun confirmOptionSelection(
+        onBack: () -> Unit,
+        onNavigateToPlatformSettings: (Long) -> Unit = {}
+    ) {
         val state = _uiState.value
         val action = moreOptionsDelegate.resolveOptionAction(
             downloadStatus = state.downloadStatus,
@@ -976,7 +988,7 @@ class GameDetailViewModel @Inject constructor(
             platformSlug = state.game?.platformSlug
         )
         if (action != null) {
-            handleMoreOptionAction(action, onBack)
+            handleMoreOptionAction(action, onBack, onNavigateToPlatformSettings)
         } else {
             toggleMoreOptions()
         }
@@ -1498,6 +1510,7 @@ class GameDetailViewModel @Inject constructor(
 
     fun createInputHandler(
         onBack: () -> Unit,
+        onNavigateToPlatformSettings: (Long) -> Unit = {},
         onSnapUp: () -> Boolean = { false },
         onSnapDown: () -> Boolean = { false },
         onSectionLeft: () -> Unit = {},
@@ -1668,7 +1681,7 @@ class GameDetailViewModel @Inject constructor(
                 state.showAddToCollectionModal -> confirmCollectionSelection()
                 state.showRatingsStatusMenu -> confirmRatingsStatusSelection()
                 state.showPlayOptions -> confirmPlayOptionSelection()
-                state.showMoreOptions -> confirmOptionSelection(onBack)
+                state.showMoreOptions -> confirmOptionSelection(onBack, onNavigateToPlatformSettings)
                 else -> executeMenuAction()
             }
             return InputResult.HANDLED

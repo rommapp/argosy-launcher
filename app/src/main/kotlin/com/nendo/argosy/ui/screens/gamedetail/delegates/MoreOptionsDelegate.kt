@@ -50,21 +50,24 @@ class MoreOptionsDelegate @Inject constructor(
         isMultiDisc: Boolean,
         hasVariants: Boolean,
         isSteamGame: Boolean,
-        hasUpdates: Boolean
+        hasUpdates: Boolean,
+        platformSlug: String?
     ) {
         val canTrackProgress = isRommGame || isAndroidApp
         val isEmulatedGame = !isSteamGame && !isAndroidApp
         val isDownloaded = downloadStatus == GameDownloadStatus.DOWNLOADED
+        val usesTitleId = platformSlug in TITLE_ID_PLATFORMS
 
-        var optionCount = 1  // Hide (always present)
+        var optionCount = 2
         if (canManageSaves) optionCount++
-        if (canTrackProgress) optionCount += 2  // Ratings & Status + Refresh
+        if (canTrackProgress) optionCount += 2
         if (isSteamGame || isEmulatedGame) optionCount++
         if (hasMultipleCores && isEmulatedGame) optionCount++
+        if (isEmulatedGame) optionCount++
+        if (usesTitleId && isEmulatedGame) optionCount++
         if (isMultiDisc) optionCount++
         if (hasVariants && isEmulatedGame) optionCount++
         if (hasUpdates) optionCount++
-        optionCount++  // Add to Collection (always present)
         if (isDownloaded || isAndroidApp) optionCount++
 
         val maxIndex = optionCount - 1
@@ -89,7 +92,7 @@ class MoreOptionsDelegate @Inject constructor(
         val canTrackProgress = isRommGame || isAndroidApp
         val isEmulatedGame = !isSteamGame && !isAndroidApp
         val isDownloaded = downloadStatus == GameDownloadStatus.DOWNLOADED
-        val usesTitleId = platformSlug in setOf("switch", "wiiu", "3ds", "vita", "psvita", "psp", "wii", "ps2")
+        val usesTitleId = platformSlug in TITLE_ID_PLATFORMS
         val index = _state.value.moreOptionsFocusIndex
 
         var currentIdx = 0
@@ -97,6 +100,7 @@ class MoreOptionsDelegate @Inject constructor(
         val ratingsStatusIdx = if (canTrackProgress) currentIdx++ else -1
         val emulatorOrLauncherIdx = if (isSteamGame || isEmulatedGame) currentIdx++ else -1
         val coreIdx = if (hasMultipleCores && isEmulatedGame) currentIdx++ else -1
+        val platformSettingsIdx = if (isEmulatedGame) currentIdx++ else -1
         val titleIdIdx = if (usesTitleId && isEmulatedGame) currentIdx++ else -1
         val discIdx = if (isMultiDisc) currentIdx++ else -1
         val variantIdx = if (hasVariants && isEmulatedGame) currentIdx++ else -1
@@ -111,6 +115,7 @@ class MoreOptionsDelegate @Inject constructor(
             ratingsStatusIdx -> MoreOptionAction.RatingsStatus
             emulatorOrLauncherIdx -> if (isSteamGame) MoreOptionAction.ChangeSteamLauncher else MoreOptionAction.ChangeEmulator
             coreIdx -> MoreOptionAction.ChangeCore
+            platformSettingsIdx -> MoreOptionAction.PlatformSettings
             titleIdIdx -> MoreOptionAction.RefreshTitleId
             discIdx -> MoreOptionAction.SelectDisc
             variantIdx -> MoreOptionAction.SelectVariant
@@ -121,5 +126,9 @@ class MoreOptionsDelegate @Inject constructor(
             hideIdx -> MoreOptionAction.ToggleHide
             else -> null
         }
+    }
+
+    companion object {
+        val TITLE_ID_PLATFORMS = setOf("switch", "wiiu", "3ds", "vita", "psvita", "psp", "wii", "ps2")
     }
 }

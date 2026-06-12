@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.size
 import com.nendo.argosy.ui.screens.settings.components.SectionPaneLayout
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.filled.HealthAndSafety
 import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material.icons.outlined.Article
 import androidx.compose.material3.Icon
@@ -35,6 +36,7 @@ import com.nendo.argosy.ui.screens.settings.SettingsUiState
 import com.nendo.argosy.ui.screens.settings.SettingsViewModel
 import com.nendo.argosy.ui.screens.settings.components.SectionHeader
 import com.nendo.argosy.ui.screens.settings.dialogs.LicensesDialog
+import com.nendo.argosy.ui.screens.settings.dialogs.SystemizeResultDialog
 import com.nendo.argosy.ui.screens.settings.menu.SettingsLayout
 import com.nendo.argosy.ui.theme.Dimens
 
@@ -46,7 +48,7 @@ internal sealed class AboutItem(
     val visibleWhen: (AboutLayoutState) -> Boolean = { true }
 ) {
     val isFocusable: Boolean get() = when (this) {
-        is Header, VersionInfo, SectionSpacer -> false
+        is Header, VersionInfo, SectionSpacer, SystemSpacer -> false
         else -> true
     }
 
@@ -54,6 +56,8 @@ internal sealed class AboutItem(
     data object VersionInfo : AboutItem("versionInfo", "version")
     data object CheckUpdates : AboutItem("checkUpdates", "version")
     data object BetaUpdates : AboutItem("betaUpdates", "version")
+    data object SystemSpacer : AboutItem("systemSpacer", "system")
+    data object SystemizeHelper : AboutItem("systemizeHelper", "system")
     data object SectionSpacer : AboutItem("spacer", "debug")
     data object FileLogging : AboutItem("fileLogging", "debug")
     data object LogLevel : AboutItem(
@@ -70,10 +74,12 @@ internal sealed class AboutItem(
 
     companion object {
         private val VersionHeader = Header("versionHeader", "version", "VERSION")
+        private val SystemHeader = Header("systemHeader", "system", "SYSTEM APP")
         private val DebugHeader = Header("debugHeader", "debug", "DEBUG")
 
         val ALL: List<AboutItem> = listOf(
             VersionHeader, VersionInfo, CheckUpdates, BetaUpdates,
+            SystemSpacer, SystemHeader, SystemizeHelper,
             SectionSpacer, DebugHeader, FileLogging, LogLevel, SaveDebugLogging
         )
     }
@@ -87,6 +93,7 @@ private val aboutLayout = SettingsLayout<AboutItem, AboutLayoutState>(
     sectionTitle = {
         when (it) {
             "version" -> "VERSION"
+            "system" -> "SYSTEM APP"
             "debug" -> "DEBUG"
             else -> null
         }
@@ -120,6 +127,10 @@ fun AboutSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
 
     if (showLicensesDialog) {
         LicensesDialog(onDismiss = { showLicensesDialog = false })
+    }
+
+    uiState.systemizeResult?.let { result ->
+        SystemizeResultDialog(result = result, onDismiss = { viewModel.dismissSystemizeDialog() })
     }
 
     SectionPaneLayout(
@@ -179,6 +190,16 @@ fun AboutSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                     isEnabled = uiState.betaUpdatesEnabled,
                     isFocused = isFocused(item),
                     onToggle = { viewModel.setBetaUpdatesEnabled(it) }
+                )
+
+                AboutItem.SystemSpacer -> Spacer(modifier = Modifier.height(Dimens.spacingMd))
+
+                AboutItem.SystemizeHelper -> ActionPreference(
+                    icon = Icons.Default.HealthAndSafety,
+                    title = "Stop Crashes on Heavy Emulators",
+                    subtitle = "Argosy can be force-closed when a demanding emulator uses most of the RAM. On a rooted device, this writes a script that makes Argosy a system app so it is no longer killed.",
+                    isFocused = isFocused(item),
+                    onClick = { viewModel.writeSystemizeScript() }
                 )
 
                 AboutItem.SectionSpacer -> Spacer(modifier = Modifier.height(Dimens.spacingMd))

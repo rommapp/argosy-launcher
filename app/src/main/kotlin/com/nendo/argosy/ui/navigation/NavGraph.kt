@@ -219,15 +219,23 @@ fun NavGraph(
                     type = NavType.StringType
                     nullable = true
                     defaultValue = null
+                },
+                navArgument("platformId") {
+                    type = NavType.LongType
+                    defaultValue = -1L
                 }
             )
         ) { backStackEntry ->
             val section = backStackEntry.arguments?.getString("section")
             val action = backStackEntry.arguments?.getString("action")
+            val platformId = backStackEntry.arguments?.getLong("platformId")?.takeIf { it >= 0 }
             SettingsScreen(
-                onBack = navigateToDefault,
+                onBack = {
+                    if (platformId != null) navController.popBackStack() else navigateToDefault()
+                },
                 initialSection = section,
-                initialAction = action
+                initialAction = action,
+                initialPlatformId = platformId
             )
         }
 
@@ -242,6 +250,11 @@ fun NavGraph(
                 onBack = { navController.popBackStack() },
                 onNavigateToLaunch = { id, channelName, discId ->
                     navController.navigate(Screen.Launch.createRoute(id, channelName, discId))
+                },
+                onNavigateToPlatformSettings = { platformId ->
+                    navController.navigate(
+                        Screen.Settings.createRoute(section = "platform_detail", platformId = platformId)
+                    )
                 }
             )
         }

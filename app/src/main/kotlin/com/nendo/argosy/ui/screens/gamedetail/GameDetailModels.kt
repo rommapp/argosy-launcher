@@ -138,6 +138,7 @@ sealed class MoreOptionAction {
     data object ChangeEmulator : MoreOptionAction()
     data object ChangeSteamLauncher : MoreOptionAction()
     data object ChangeCore : MoreOptionAction()
+    data object PlatformSettings : MoreOptionAction()
     data object SelectDisc : MoreOptionAction()
     data object SelectVariant : MoreOptionAction()
     data object UpdatesDlc : MoreOptionAction()

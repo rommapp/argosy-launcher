@@ -354,6 +354,7 @@ data class PlatformContext(
 data class PlatformDetailState(
     val platformIndex: Int = 0,
     val builtinEnteredFromPlatform: Boolean = false,
+    val enteredExternally: Boolean = false,
     val showRemoveConfirm: Boolean = false,
     val totalGames: Int = 0,
     val downloadedGames: Int = 0,
@@ -972,6 +973,7 @@ data class SettingsUiState(
     val currentSection: SettingsSection = SettingsSection.MAIN,
     val focusedIndex: Int = 0,
     val parentFocusIndex: Int = 0,
+    val systemizeResult: com.nendo.argosy.util.SystemizeWriteResult? = null,
     val colorFocusIndex: Int = 0,
     val display: DisplayState = DisplayState(),
     val controls: ControlsState = ControlsState(),

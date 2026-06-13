@@ -182,7 +182,13 @@ class RomMApiClient @Inject constructor(
                         customRomPath = existing?.customRomPath
                     )
                 }
-                entities.forEach { platformDao.insert(it) }
+                entities.forEach { entity ->
+                    if (platformDao.getById(entity.id) == null) {
+                        platformDao.insert(entity)
+                    } else {
+                        platformDao.update(entity)
+                    }
+                }
                 RomMResult.Success(entities.sortedBy { it.sortOrder })
             } else {
                 RomMResult.Error("Failed to fetch platforms", response.code())

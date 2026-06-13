@@ -38,10 +38,10 @@ interface PlatformDao {
     @Query("SELECT * FROM platforms WHERE gameCount > 0 AND isVisible = 1 AND syncEnabled = 1 ORDER BY sortOrder ASC, name ASC")
     suspend fun getPlatformsWithGames(): List<PlatformEntity>
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insert(platform: PlatformEntity)
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertAll(platforms: List<PlatformEntity>)
 
     @Update

@@ -1,11 +1,7 @@
 package com.nendo.argosy.ui.screens.quaypass
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -13,15 +9,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -33,26 +22,22 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
-import coil.compose.AsyncImage
 import com.nendo.argosy.data.quaypass.ble.QuayPassAvatar
+import com.nendo.argosy.ui.components.FooterBar
+import com.nendo.argosy.ui.components.InputButton
 import com.nendo.argosy.ui.input.LocalInputDispatcher
 import com.nendo.argosy.ui.input.QuayPassAvatarCustomizerInputHandler
 import com.nendo.argosy.ui.navigation.Screen
-import com.nendo.argosy.ui.quaypass.avatar.AvatarCategory
-import com.nendo.argosy.ui.quaypass.avatar.AvatarPartRequest
-import com.nendo.argosy.ui.quaypass.avatar.QuayPassAvatarPalette
 import com.nendo.argosy.ui.quaypass.avatar.QuayPassAvatarRenderer
+import com.nendo.argosy.ui.quaypass.avatar.QuayPassPartPricing
 import com.nendo.argosy.ui.quaypass.avatar.colorIndexFor
 import com.nendo.argosy.ui.quaypass.avatar.partIndexFor
-import com.nendo.argosy.ui.util.clickableNoFocus
 
 @Composable
 fun QuayPassAvatarCustomizerScreen(
@@ -77,6 +62,7 @@ fun QuayPassAvatarCustomizerScreen(
         QuayPassAvatarCustomizerInputHandler(
             onSectionStep = { viewModel.stepSection(it) },
             onAdjustWithinSection = { viewModel.adjustWithinSection(it) },
+            onPageStep = { viewModel.pageStep(it) },
             onConfirm = { viewModel.confirmFocused() },
             onBack = { viewModel.cancel() }
         )
@@ -98,23 +84,55 @@ fun QuayPassAvatarCustomizerScreen(
         modifier = Modifier.fillMaxSize(),
         color = MaterialTheme.colorScheme.background
     ) {
-        Row(modifier = Modifier.fillMaxSize()) {
-            PreviewPane(
-                avatar = state.avatar,
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxHeight()
-                    .padding(24.dp)
-            )
-            OptionsPane(
-                state = state,
-                viewModel = viewModel,
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxHeight()
-            )
+        Column(modifier = Modifier.fillMaxSize()) {
+            Row(modifier = Modifier.weight(1f).fillMaxWidth()) {
+                PreviewPane(
+                    avatar = state.avatar,
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight()
+                        .padding(24.dp)
+                )
+                OptionsPane(
+                    state = state,
+                    viewModel = viewModel,
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight()
+                )
+            }
+            FooterBar(hints = footerHints(state))
         }
     }
+
+    state.pendingPurchase?.let { request ->
+        PartPurchaseModal(
+            request = request,
+            balance = state.ticketBalance,
+            onConfirm = { viewModel.confirmPurchase(request) },
+            onDismiss = { viewModel.dismissPurchase() }
+        )
+    }
+}
+
+private fun footerHints(state: CustomizerState): List<Pair<InputButton, String>> = buildList {
+    val focused = state.focusedSection
+    val locked = focused == CustomizerSection.Parts &&
+        !QuayPassPartPricing.isUnlocked(
+            state.selectedCategory,
+            state.avatar.partIndexFor(state.selectedCategory),
+            state.ownedParts
+        )
+    if (locked) {
+        add(InputButton.A to "Unlock ${QuayPassPartPricing.costFor(state.selectedCategory, state.avatar.partIndexFor(state.selectedCategory))}")
+    } else {
+        add(InputButton.A to "Select")
+    }
+    add(InputButton.B to "Back")
+    add(InputButton.DPAD_VERTICAL to "Section")
+    add(InputButton.DPAD_HORIZONTAL to "Adjust")
+    add(InputButton.LB_RB to "Page")
+    add(InputButton.SELECT to "${state.ticketBalance} tickets")
 }
 
 @Composable
@@ -142,6 +160,7 @@ private fun OptionsPane(
     viewModel: QuayPassAvatarCustomizerViewModel,
     modifier: Modifier = Modifier
 ) {
+    val usesGrid = state.selectedCategory.usesGrid(viewModel.partCatalog)
     Column(modifier = modifier) {
         val scrollState = rememberScrollState()
 
@@ -150,6 +169,7 @@ private fun OptionsPane(
                 CustomizerSection.Category -> 0
                 CustomizerSection.Parts -> 0
                 CustomizerSection.Color -> scrollState.maxValue / 2
+                CustomizerSection.Toggles -> scrollState.maxValue
                 CustomizerSection.Actions -> scrollState.maxValue
             }
             scrollState.animateScrollTo(target)
@@ -172,14 +192,31 @@ private fun OptionsPane(
             Spacer(Modifier.height(4.dp))
 
             SectionLabel(state.selectedCategory.displayName(), focused = state.focusedSection == CustomizerSection.Parts)
-            PartCarousel(
-                category = state.selectedCategory,
-                selectedIndex = state.avatar.partIndexFor(state.selectedCategory),
-                indices = viewModel.partCatalog.forCategory(state.selectedCategory),
-                avatar = state.avatar,
-                isSectionFocused = state.focusedSection == CustomizerSection.Parts,
-                onSelect = { viewModel.selectPartIndex(state.selectedCategory, it) }
-            )
+            val indices = viewModel.partCatalog.forCategory(state.selectedCategory)
+            val selectedIndex = state.avatar.partIndexFor(state.selectedCategory)
+            if (usesGrid) {
+                PartGrid(
+                    category = state.selectedCategory,
+                    selectedIndex = selectedIndex,
+                    indices = indices,
+                    avatar = state.avatar,
+                    ownedParts = state.ownedParts,
+                    page = state.gridPage,
+                    pageCount = state.selectedCategory.pageCount(viewModel.partCatalog),
+                    isSectionFocused = state.focusedSection == CustomizerSection.Parts,
+                    onSelect = { viewModel.selectPartIndex(state.selectedCategory, it) }
+                )
+            } else {
+                PartCarousel(
+                    category = state.selectedCategory,
+                    selectedIndex = selectedIndex,
+                    indices = indices,
+                    avatar = state.avatar,
+                    ownedParts = state.ownedParts,
+                    isSectionFocused = state.focusedSection == CustomizerSection.Parts,
+                    onSelect = { viewModel.selectPartIndex(state.selectedCategory, it) }
+                )
+            }
 
             if (state.selectedCategory.isTintable()) {
                 Spacer(Modifier.height(4.dp))
@@ -191,6 +228,15 @@ private fun OptionsPane(
                     onSelect = { viewModel.selectColor(state.selectedCategory, it) }
                 )
             }
+
+            Spacer(Modifier.height(4.dp))
+            SectionLabel("Toggles", focused = state.focusedSection == CustomizerSection.Toggles)
+            ToggleRow(
+                state = state,
+                isSectionFocused = state.focusedSection == CustomizerSection.Toggles,
+                onFlip = { viewModel.setFlipHair(it) },
+                onMole = { viewModel.setMoleEnabled(it) }
+            )
         }
 
         Row(
@@ -218,258 +264,3 @@ private fun OptionsPane(
     }
 }
 
-@Composable
-private fun SectionLabel(text: String, focused: Boolean) {
-    Text(
-        text = text.uppercase(),
-        style = MaterialTheme.typography.labelMedium,
-        fontWeight = if (focused) FontWeight.Bold else FontWeight.Medium,
-        color = if (focused) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-    )
-}
-
-@Composable
-private fun ActionButton(
-    label: String,
-    isSectionFocused: Boolean,
-    isFocused: Boolean,
-    modifier: Modifier = Modifier,
-    isPrimary: Boolean = false,
-    onClick: () -> Unit
-) {
-    val highlight = isSectionFocused && isFocused
-    val container = when {
-        highlight && isPrimary -> MaterialTheme.colorScheme.primary
-        highlight -> MaterialTheme.colorScheme.primaryContainer
-        isPrimary -> MaterialTheme.colorScheme.primary.copy(alpha = 0.85f)
-        else -> Color.Transparent
-    }
-    val content = when {
-        highlight && isPrimary -> MaterialTheme.colorScheme.onPrimary
-        highlight -> MaterialTheme.colorScheme.onPrimaryContainer
-        isPrimary -> MaterialTheme.colorScheme.onPrimary
-        else -> MaterialTheme.colorScheme.onSurface
-    }
-    Button(
-        onClick = onClick,
-        modifier = modifier.height(44.dp),
-        colors = androidx.compose.material3.ButtonDefaults.buttonColors(
-            containerColor = container,
-            contentColor = content
-        ),
-        shape = RoundedCornerShape(12.dp)
-    ) { Text(label) }
-}
-
-@Composable
-private fun CategoryTabRow(
-    selected: AvatarCategory,
-    isSectionFocused: Boolean,
-    onSelect: (AvatarCategory) -> Unit
-) {
-    val listState = rememberLazyListState()
-    LaunchedEffect(selected) {
-        val idx = AvatarCategory.entries.indexOf(selected)
-        if (idx >= 0) listState.animateScrollToItem(idx)
-    }
-    LazyRow(
-        state = listState,
-        contentPadding = PaddingValues(vertical = 4.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        items(AvatarCategory.entries.toTypedArray()) { category ->
-            val isSelected = category == selected
-            val highlight = isSectionFocused && isSelected
-            Box(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(
-                        when {
-                            highlight -> MaterialTheme.colorScheme.primary
-                            isSelected -> MaterialTheme.colorScheme.primaryContainer
-                            else -> MaterialTheme.colorScheme.surfaceVariant
-                        }
-                    )
-                    .clickableNoFocus { onSelect(category) }
-                    .padding(horizontal = 12.dp, vertical = 8.dp)
-            ) {
-                Text(
-                    text = category.displayName(),
-                    style = MaterialTheme.typography.labelLarge,
-                    color = when {
-                        highlight -> MaterialTheme.colorScheme.onPrimary
-                        isSelected -> MaterialTheme.colorScheme.onPrimaryContainer
-                        else -> MaterialTheme.colorScheme.onSurfaceVariant
-                    }
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun PartCarousel(
-    category: AvatarCategory,
-    selectedIndex: Int,
-    indices: List<Int>,
-    avatar: QuayPassAvatar,
-    isSectionFocused: Boolean,
-    onSelect: (Int) -> Unit
-) {
-    val listState = rememberLazyListState()
-    val displayIndices = remember(category, indices) {
-        if (category in OPTIONAL_CATEGORIES) listOf(0) + indices.filter { it != 0 } else indices
-    }
-    LaunchedEffect(selectedIndex, displayIndices) {
-        val pos = displayIndices.indexOf(selectedIndex).coerceAtLeast(0)
-        listState.animateScrollToItem(pos)
-    }
-    LazyRow(
-        state = listState,
-        contentPadding = PaddingValues(vertical = 4.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        items(displayIndices) { index ->
-            PartThumbnail(
-                isSelected = selectedIndex == index,
-                isSectionFocused = isSectionFocused,
-                onClick = { onSelect(index) }
-            ) {
-                if (index == 0 && category in OPTIONAL_CATEGORIES) {
-                    Text(
-                        text = "None",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                } else {
-                    AsyncImage(
-                        model = avatar.toThumbnailRequest(category, index),
-                        contentDescription = null,
-                        modifier = Modifier.size(56.dp)
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun PartThumbnail(
-    isSelected: Boolean,
-    isSectionFocused: Boolean,
-    onClick: () -> Unit,
-    content: @Composable () -> Unit
-) {
-    val borderColor = when {
-        isSectionFocused && isSelected -> MaterialTheme.colorScheme.primary
-        isSelected -> MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
-        else -> Color.Transparent
-    }
-    Box(
-        modifier = Modifier
-            .size(72.dp)
-            .clip(RoundedCornerShape(12.dp))
-            .background(MaterialTheme.colorScheme.surfaceVariant)
-            .border(
-                width = if (isSectionFocused && isSelected) 3.dp else 2.dp,
-                color = borderColor,
-                shape = RoundedCornerShape(12.dp)
-            )
-            .clickableNoFocus(onClick = onClick),
-        contentAlignment = Alignment.Center
-    ) {
-        content()
-    }
-}
-
-@Composable
-private fun ColorSwatchRow(
-    palette: List<Color>,
-    selected: Int,
-    isSectionFocused: Boolean,
-    onSelect: (Int) -> Unit
-) {
-    val listState = rememberLazyListState()
-    LaunchedEffect(selected) {
-        listState.animateScrollToItem(selected.coerceAtLeast(0))
-    }
-    LazyRow(
-        state = listState,
-        contentPadding = PaddingValues(vertical = 4.dp),
-        horizontalArrangement = Arrangement.spacedBy(6.dp)
-    ) {
-        items(palette.size) { i ->
-            val isSelected = i == selected
-            val highlight = isSectionFocused && isSelected
-            Box(
-                modifier = Modifier
-                    .size(36.dp)
-                    .clip(CircleShape)
-                    .background(palette[i])
-                    .border(
-                        width = when {
-                            highlight -> 3.dp
-                            isSelected -> 2.dp
-                            else -> 1.dp
-                        },
-                        color = when {
-                            highlight -> MaterialTheme.colorScheme.primary
-                            isSelected -> MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
-                            else -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f)
-                        },
-                        shape = CircleShape
-                    )
-                    .clickableNoFocus { onSelect(i) }
-            )
-        }
-    }
-}
-
-private val OPTIONAL_CATEGORIES = setOf(
-    AvatarCategory.Wrinkles,
-    AvatarCategory.Makeup,
-    AvatarCategory.Mustache,
-    AvatarCategory.Goatee,
-    AvatarCategory.Glasses,
-    AvatarCategory.Hat
-)
-
-private fun AvatarCategory.displayName(): String = when (this) {
-    AvatarCategory.Face -> "Face"
-    AvatarCategory.Wrinkles -> "Wrinkles"
-    AvatarCategory.Makeup -> "Makeup"
-    AvatarCategory.Eyes -> "Eyes"
-    AvatarCategory.Eyebrows -> "Brows"
-    AvatarCategory.Nose -> "Nose"
-    AvatarCategory.Mouth -> "Mouth"
-    AvatarCategory.Mustache -> "Mustache"
-    AvatarCategory.Goatee -> "Goatee"
-    AvatarCategory.Hair -> "Hair"
-    AvatarCategory.Glasses -> "Glasses"
-    AvatarCategory.Hat -> "Hat"
-}
-
-private fun QuayPassAvatar.toThumbnailRequest(category: AvatarCategory, index: Int): AvatarPartRequest =
-    AvatarPartRequest(
-        category = category,
-        index = index,
-        skin = QuayPassAvatarPalette.skinAt(skinColor),
-        hair = QuayPassAvatarPalette.hairAt(hairColor),
-        eyebrow = QuayPassAvatarPalette.hairAt(eyebrowColor),
-        eye = QuayPassAvatarPalette.eyeAt(eyeColor),
-        mouth = QuayPassAvatarPalette.mouthAt(mouthColor),
-        facialHair = QuayPassAvatarPalette.hairAt(facialHairColor),
-        glasses = QuayPassAvatarPalette.accessoryAt(glassesColor),
-        hat = QuayPassAvatarPalette.accessoryAt(hatColor)
-    )
-
-private fun paletteFor(category: AvatarCategory): List<Color> = when (category) {
-    AvatarCategory.Face -> QuayPassAvatarPalette.skin
-    AvatarCategory.Hair -> QuayPassAvatarPalette.hair
-    AvatarCategory.Eyes -> QuayPassAvatarPalette.eye
-    AvatarCategory.Eyebrows -> QuayPassAvatarPalette.hair
-    AvatarCategory.Mouth -> QuayPassAvatarPalette.mouth
-    AvatarCategory.Mustache, AvatarCategory.Goatee -> QuayPassAvatarPalette.hair
-    AvatarCategory.Glasses, AvatarCategory.Hat -> QuayPassAvatarPalette.accessory
-    else -> QuayPassAvatarPalette.skin
-}

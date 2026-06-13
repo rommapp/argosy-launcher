@@ -3,6 +3,7 @@ package com.nendo.argosy.ui.input
 class QuayPassAvatarCustomizerInputHandler(
     private val onSectionStep: (Int) -> Unit,
     private val onAdjustWithinSection: (Int) -> Unit,
+    private val onPageStep: (Int) -> Unit,
     private val onConfirm: () -> Unit,
     private val onBack: () -> Unit
 ) : InputHandler {
@@ -24,6 +25,16 @@ class QuayPassAvatarCustomizerInputHandler(
 
     override fun onRight(): InputResult {
         onAdjustWithinSection(1)
+        return InputResult.HANDLED
+    }
+
+    override fun onPrevSection(): InputResult {
+        onPageStep(-1)
+        return InputResult.HANDLED
+    }
+
+    override fun onNextSection(): InputResult {
+        onPageStep(1)
         return InputResult.HANDLED
     }
 

@@ -3,11 +3,15 @@ package com.nendo.argosy.ui.screens.quaypass
 import android.util.Base64
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.nendo.argosy.data.local.dao.QuayPassOwnedPartDao
+import com.nendo.argosy.data.local.entity.QuayPassOwnedPartEntity
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.quaypass.ble.QuayPassAvatar
 import com.nendo.argosy.data.quaypass.ble.QuayPassAvatarCodec
+import com.nendo.argosy.data.social.ArgosSocialService
 import com.nendo.argosy.ui.quaypass.avatar.AvatarCategory
 import com.nendo.argosy.ui.quaypass.avatar.QuayPassAvatarPartCatalog
+import com.nendo.argosy.ui.quaypass.avatar.QuayPassPartPricing
 import com.nendo.argosy.ui.quaypass.avatar.colorIndexFor
 import com.nendo.argosy.ui.quaypass.avatar.partIndexFor
 import com.nendo.argosy.ui.quaypass.avatar.withColor
@@ -17,13 +21,21 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.time.Instant
 import javax.inject.Inject
+
+const val GRID_COLUMNS = 4
+const val GRID_PAGE_SIZE = 16
+const val GRID_THRESHOLD = 16
 
 @HiltViewModel
 class QuayPassAvatarCustomizerViewModel @Inject constructor(
     private val preferencesRepository: UserPreferencesRepository,
+    private val ownedPartDao: QuayPassOwnedPartDao,
+    private val socialService: ArgosSocialService,
     val partCatalog: QuayPassAvatarPartCatalog
 ) : ViewModel() {
 
@@ -41,20 +53,42 @@ class QuayPassAvatarCustomizerViewModel @Inject constructor(
 
     init {
         viewModelScope.launch { loadInitial() }
+        viewModelScope.launch {
+            ownedPartDao.observeOwnedKeys().collect { keys ->
+                _state.update { it.copy(ownedParts = keys.toSet()) }
+            }
+        }
+        viewModelScope.launch {
+            preferencesRepository.userPreferences
+                .map { it.quayPassTicketBalance }
+                .collect { balance -> _state.update { it.copy(ticketBalance = balance) } }
+        }
     }
 
     private suspend fun loadInitial() {
         val prefs = preferencesRepository.userPreferences.first()
         val avatar = decodeAvatar(prefs.quayPassAvatarBytes) ?: defaultAvatar()
-        _state.update { CustomizerState(avatar = avatar, selectedCategory = AvatarCategory.Hair) }
+        _state.update {
+            it.copy(
+                avatar = avatar,
+                selectedCategory = AvatarCategory.Hair,
+                gridPage = pageForSelected(AvatarCategory.Hair, avatar)
+            )
+        }
     }
 
     fun selectCategory(category: AvatarCategory) {
-        _state.update { it.copy(selectedCategory = category) }
+        _state.update {
+            it.copy(
+                selectedCategory = category,
+                gridPage = pageForSelected(category, it.avatar),
+                toggleFocus = 0
+            )
+        }
     }
 
     fun selectPartIndex(category: AvatarCategory, index: Int) {
-        _state.update { it.copy(avatar = it.avatar.withPart(category, index)) }
+        applyPart(category, index)
     }
 
     fun selectColor(category: AvatarCategory, colorIndex: Int) {
@@ -71,6 +105,14 @@ class QuayPassAvatarCustomizerViewModel @Inject constructor(
 
     fun setMoleEnabled(enabled: Boolean) {
         _state.update { it.copy(avatar = it.avatar.copy(moleEnabled = enabled)) }
+    }
+
+    fun pageStep(direction: Int) {
+        _state.update { current ->
+            if (!current.selectedCategory.usesGrid(partCatalog)) return@update current
+            val pages = current.selectedCategory.pageCount(partCatalog)
+            current.copy(gridPage = (current.gridPage + direction).mod(pages))
+        }
     }
 
     fun save() {
@@ -98,23 +140,66 @@ class QuayPassAvatarCustomizerViewModel @Inject constructor(
             CustomizerSection.Category -> stepCategory(direction)
             CustomizerSection.Parts -> stepPart(direction)
             CustomizerSection.Color -> stepColor(direction)
+            CustomizerSection.Toggles -> stepToggleFocus(direction)
             CustomizerSection.Actions -> stepActionFocus(direction)
         }
     }
 
     fun confirmFocused() {
         val current = _state.value
-        if (current.focusedSection == CustomizerSection.Actions) {
-            if (current.actionFocus == 1) save()
+        when (current.focusedSection) {
+            CustomizerSection.Toggles -> toggleFocused()
+            CustomizerSection.Actions -> if (current.actionFocus == 1) save()
+            else -> Unit
         }
+    }
+
+    fun requestPurchaseFocused() {
+        val pending = _state.value.pendingPurchase ?: return
+        confirmPurchase(pending)
+    }
+
+    fun confirmPurchase(request: PurchaseRequest) {
+        viewModelScope.launch {
+            val key = QuayPassPartPricing.partKey(request.category, request.index)
+            ownedPartDao.upsert(QuayPassOwnedPartEntity(partKey = key, acquiredAt = Instant.now(), synced = false))
+            _state.update {
+                it.copy(avatar = it.avatar.withPart(request.category, request.index), pendingPurchase = null)
+            }
+            socialService.purchaseQuayPassPart(key)
+        }
+    }
+
+    fun dismissPurchase() {
+        _state.update { it.copy(pendingPurchase = null) }
+    }
+
+    private fun applyPart(category: AvatarCategory, index: Int) {
+        val s = _state.value
+        if (!QuayPassPartPricing.isUnlocked(category, index, s.ownedParts)) {
+            _state.update {
+                it.copy(
+                    pendingPurchase = PurchaseRequest(
+                        category = category,
+                        index = index,
+                        cost = QuayPassPartPricing.costFor(category, index)
+                    )
+                )
+            }
+            return
+        }
+        _state.update { it.copy(avatar = it.avatar.withPart(category, index)) }
     }
 
     private fun stepCategory(direction: Int) {
         _state.update {
             val cats = AvatarCategory.entries
-            val currentIdx = cats.indexOf(it.selectedCategory)
-            val nextIdx = ((currentIdx + direction) % cats.size + cats.size) % cats.size
-            it.copy(selectedCategory = cats[nextIdx])
+            val next = cats[(cats.indexOf(it.selectedCategory) + direction).mod(cats.size)]
+            it.copy(
+                selectedCategory = next,
+                gridPage = pageForSelected(next, it.avatar),
+                toggleFocus = 0
+            )
         }
     }
 
@@ -124,15 +209,35 @@ class QuayPassAvatarCustomizerViewModel @Inject constructor(
         if (parts.isEmpty()) return
         val current = s.avatar.partIndexFor(s.selectedCategory)
         val currentIdx = parts.indexOf(current).coerceAtLeast(0)
-        val next = parts[((currentIdx + direction) % parts.size + parts.size) % parts.size]
-        _state.update { it.copy(avatar = it.avatar.withPart(s.selectedCategory, next)) }
+        val next = parts[(currentIdx + direction).mod(parts.size)]
+        applyPart(s.selectedCategory, next)
+        if (_state.value.selectedCategory.usesGrid(partCatalog)) {
+            _state.update { it.copy(gridPage = next.gridPageWithin(parts)) }
+        }
     }
 
     private fun stepColor(direction: Int) {
         val s = _state.value
         val current = s.avatar.colorIndexFor(s.selectedCategory)
-        val next = ((current + direction) % 16 + 16) % 16
+        val next = (current + direction).mod(16)
         _state.update { it.copy(avatar = it.avatar.withColor(s.selectedCategory, next)) }
+    }
+
+    private fun stepToggleFocus(direction: Int) {
+        _state.update {
+            val count = toggleCount(it.selectedCategory)
+            if (count <= 1) return@update it
+            it.copy(toggleFocus = (it.toggleFocus + direction).mod(count))
+        }
+    }
+
+    private fun toggleFocused() {
+        val s = _state.value
+        when (visibleToggles(s.selectedCategory).getOrNull(s.toggleFocus)) {
+            CustomizerToggle.FlipHair -> setFlipHair(!s.avatar.flipHair)
+            CustomizerToggle.Mole -> setMoleEnabled(!s.avatar.moleEnabled)
+            null -> Unit
+        }
     }
 
     private fun stepActionFocus(direction: Int) {
@@ -145,10 +250,22 @@ class QuayPassAvatarCustomizerViewModel @Inject constructor(
         add(CustomizerSection.Category)
         add(CustomizerSection.Parts)
         if (category.isTintable()) add(CustomizerSection.Color)
+        add(CustomizerSection.Toggles)
         add(CustomizerSection.Actions)
     }
 
+    private fun pageForSelected(category: AvatarCategory, avatar: QuayPassAvatar): Int {
+        if (!category.usesGrid(partCatalog)) return 0
+        return avatar.partIndexFor(category).gridPageWithin(partCatalog.forCategory(category))
+    }
+
+    private fun toggleCount(category: AvatarCategory): Int = visibleToggles(category).size
+
     fun cancel(): Boolean {
+        if (_state.value.pendingPurchase != null) {
+            dismissPurchase()
+            return true
+        }
         _events.tryEmit(Event.Cancelled)
         return true
     }
@@ -175,12 +292,38 @@ class QuayPassAvatarCustomizerViewModel @Inject constructor(
     )
 }
 
-enum class CustomizerSection { Category, Parts, Color, Actions }
+enum class CustomizerSection { Category, Parts, Color, Toggles, Actions }
+
+enum class CustomizerToggle { FlipHair, Mole }
+
+data class PurchaseRequest(val category: AvatarCategory, val index: Int, val cost: Int)
 
 data class CustomizerState(
     val avatar: QuayPassAvatar = QuayPassAvatar(),
     val selectedCategory: AvatarCategory = AvatarCategory.Face,
     val focusedSection: CustomizerSection = CustomizerSection.Category,
-    val actionFocus: Int = 1
+    val actionFocus: Int = 1,
+    val toggleFocus: Int = 0,
+    val gridPage: Int = 0,
+    val ownedParts: Set<String> = emptySet(),
+    val ticketBalance: Int = 0,
+    val pendingPurchase: PurchaseRequest? = null
 )
 
+fun visibleToggles(category: AvatarCategory): List<CustomizerToggle> = buildList {
+    if (category == AvatarCategory.Hair) add(CustomizerToggle.FlipHair)
+    add(CustomizerToggle.Mole)
+}
+
+fun AvatarCategory.usesGrid(catalog: QuayPassAvatarPartCatalog): Boolean =
+    catalog.forCategory(this).size > GRID_THRESHOLD
+
+fun AvatarCategory.pageCount(catalog: QuayPassAvatarPartCatalog): Int {
+    val size = catalog.forCategory(this).size
+    return if (size == 0) 1 else (size + GRID_PAGE_SIZE - 1) / GRID_PAGE_SIZE
+}
+
+private fun Int.gridPageWithin(indices: List<Int>): Int {
+    val pos = indices.indexOf(this).coerceAtLeast(0)
+    return pos / GRID_PAGE_SIZE
+}

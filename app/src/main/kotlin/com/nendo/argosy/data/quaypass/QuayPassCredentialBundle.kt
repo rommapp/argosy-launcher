@@ -1,8 +1,10 @@
 package com.nendo.argosy.data.quaypass
 
-import android.util.Base64
 import android.util.Log
+import androidx.annotation.VisibleForTesting
 import com.nendo.argosy.BuildConfig
+import java.util.Base64
+import org.bouncycastle.asn1.ASN1ObjectIdentifier
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo
 import org.bouncycastle.crypto.params.Ed25519PublicKeyParameters
 import org.bouncycastle.crypto.signers.Ed25519Signer
@@ -45,6 +47,9 @@ data class QuayPassCredentialBundle(
 
         const val SERVER_SIG_LEN: Int = 64
 
+        private val OID_ED25519 = ASN1ObjectIdentifier("1.3.101.112")
+        private val OID_EC_PUBLIC_KEY = ASN1ObjectIdentifier("1.2.840.10045.2.1")
+
         fun parseAndVerify(bytes: ByteArray): QuayPassCredentialBundle? {
             if (bytes.size < MIN_BYTES) return null
             val signedBody = bytes.copyOfRange(0, bytes.size - SERVER_SIG_LEN)
@@ -76,39 +81,51 @@ data class QuayPassCredentialBundle(
         }
 
         fun parseAndVerifyBase64(base64: String): QuayPassCredentialBundle? = try {
-            parseAndVerify(Base64.decode(base64, Base64.NO_WRAP))
+            parseAndVerify(Base64.getDecoder().decode(base64))
         } catch (_: Throwable) {
             null
         }
 
-        /** Verifies signature against any of the trusted server pubkeys in BuildConfig. */
-        fun verifyServerSignature(signedBody: ByteArray, signature: ByteArray): Boolean {
+        @VisibleForTesting
+        internal var trustedServerPubKeysOverride: List<ByteArray>? = null
+
+        private fun trustedServerPubKeys(): List<ByteArray> {
+            trustedServerPubKeysOverride?.let { return it }
             val pubKeysRaw = BuildConfig.QUAYPASS_SERVER_PUBKEYS
             if (pubKeysRaw.isBlank()) {
                 Log.w(TAG, "QUAYPASS_SERVER_PUBKEYS empty; cannot verify credential")
-                return false
+                return emptyList()
             }
-            for (rawPub in pubKeysRaw.split(",").map { it.trim() }.filter { it.isNotEmpty() }) {
-                val pubBytes = try {
-                    Base64.decode(rawPub, Base64.NO_WRAP)
-                } catch (_: Throwable) {
-                    continue
-                }
-                if (verifyEd25519(pubBytes, signedBody, signature)) return true
+            return pubKeysRaw.split(",").mapNotNull { entry ->
+                val trimmed = entry.trim()
+                if (trimmed.isEmpty()) null
+                else runCatching { Base64.getDecoder().decode(trimmed) }.getOrNull()
             }
-            return false
         }
 
-        /** Verifies a peer payload signature using the algorithm declared in its credential. */
+        /** Verifies the signature against any trusted server pubkey. */
+        fun verifyServerSignature(signedBody: ByteArray, signature: ByteArray): Boolean =
+            trustedServerPubKeys().any { verifyEd25519(it, signedBody, signature) }
+
+        /** Verifies a peer payload signature, deriving the algorithm from the key's own SPKI. */
         fun verifyPeerSignature(
             pubkeyAlg: Int,
             pubKeyEncoded: ByteArray,
             data: ByteArray,
             sig: ByteArray
-        ): Boolean = when (pubkeyAlg) {
-            ALG_ED25519 -> verifyEd25519(pubKeyEncoded, data, sig)
-            ALG_EC_P256 -> verifyEcP256(pubKeyEncoded, data, sig)
-            else -> false
+        ): Boolean {
+            val oid = try {
+                SubjectPublicKeyInfo.getInstance(pubKeyEncoded).algorithm.algorithm
+            } catch (_: Throwable) {
+                return false
+            }
+            return when {
+                oid == OID_ED25519 && pubkeyAlg == ALG_ED25519 ->
+                    verifyEd25519(pubKeyEncoded, data, sig)
+                oid == OID_EC_PUBLIC_KEY && pubkeyAlg == ALG_EC_P256 ->
+                    verifyEcP256(pubKeyEncoded, data, sig)
+                else -> false
+            }
         }
 
         internal fun verifyEcP256(

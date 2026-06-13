@@ -1,6 +1,6 @@
 package com.nendo.argosy.data.quaypass.ble
 
-import android.util.Base64
+import java.util.Base64
 import com.nendo.argosy.data.quaypass.QuayPassCredentialBundle
 import com.upokecenter.cbor.CBORObject
 import java.nio.ByteBuffer
@@ -92,7 +92,7 @@ object QuayPassWireFormat {
             put(textBytes)
         }.array()
 
-        val credentialBytes = Base64.decode(credentialBytesBase64, Base64.NO_WRAP)
+        val credentialBytes = Base64.getDecoder().decode(credentialBytesBase64)
 
         val signedInput = ByteBuffer.allocate(2 + profileBody.size + 2 + credentialBytes.size).apply {
             putShort(profileBody.size.toShort())
@@ -128,7 +128,7 @@ object QuayPassWireFormat {
 
         val buf = ByteBuffer.wrap(signedInput)
         val profileLen = buf.short.toInt() and 0xFFFF
-        if (profileLen <= 0 || buf.remaining() < profileLen + 2) {
+        if (profileLen < MIN_PROFILE_BODY_BYTES || buf.remaining() < profileLen + 2) {
             return DecodeResult.Failure(DecodeResult.Reason.BAD_LENGTHS)
         }
         val profileBody = ByteArray(profileLen).also { buf.get(it) }
@@ -158,11 +158,13 @@ object QuayPassWireFormat {
         }
         val nonce = ByteArray(QuayPassConfig.NONCE_BYTES).also { pb.get(it) }
         val timestampSecs = pb.long
-        val timestampInstant = Instant.ofEpochSecond(timestampSecs)
-        val drift = now.epochSecond - timestampSecs
-        if (drift > QuayPassConfig.FRESHNESS_WINDOW_SECS || drift < -QuayPassConfig.FRESHNESS_WINDOW_SECS) {
+        val nowSecs = now.epochSecond
+        if (timestampSecs < nowSecs - QuayPassConfig.FRESHNESS_WINDOW_SECS ||
+            timestampSecs > nowSecs + QuayPassConfig.FRESHNESS_WINDOW_SECS
+        ) {
             return DecodeResult.Failure(DecodeResult.Reason.TIMESTAMP_OUT_OF_WINDOW)
         }
+        val timestampInstant = Instant.ofEpochSecond(timestampSecs)
         val avatarBytes = ByteArray(QuayPassConfig.AVATAR_BLOCK_BYTES).also { pb.get(it) }
         val avatar = QuayPassAvatarCodec.decode(avatarBytes)
 
@@ -303,9 +305,10 @@ object QuayPassWireFormat {
     private const val KEY_GAME_MINUTES = "gm"
     private const val KEY_GAME_IGDB_ID = "gi"
 
+    private const val MIN_PROFILE_BODY_BYTES =
+        1 + 1 + QuayPassConfig.NONCE_BYTES + QuayPassConfig.TIMESTAMP_BYTES +
+            QuayPassConfig.AVATAR_BLOCK_BYTES + 2
+
     private const val MIN_VALID_BYTES =
-        2 + (1 + 1 + QuayPassConfig.NONCE_BYTES + QuayPassConfig.TIMESTAMP_BYTES +
-            QuayPassConfig.AVATAR_BLOCK_BYTES + 2) +
-            2 + 32 +
-            QuayPassConfig.SIGNATURE_BYTES
+        2 + MIN_PROFILE_BODY_BYTES + 2 + 32 + QuayPassConfig.SIGNATURE_BYTES
 }

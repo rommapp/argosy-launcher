@@ -271,3 +271,32 @@ dependencies {
     androidTestImplementation(libs.androidx.ui.test.junit4)
     androidTestImplementation(libs.room.testing)
 }
+
+val verifyQuayPassReleaseConfig = tasks.register("verifyQuayPassReleaseConfig") {
+    doLast {
+        if (envString("QUAYPASS_SERVER_PUBKEYS").isBlank()) {
+            throw GradleException(
+                "QUAYPASS_SERVER_PUBKEYS is empty. A release build cannot verify QuayPass " +
+                    "credentials and would ship the feature permanently dark. Set it in .env " +
+                    "or the build environment."
+            )
+        }
+    }
+}
+
+val checkQuayPassPlaceholderAssets = tasks.register("checkQuayPassPlaceholderAssets") {
+    doLast {
+        val devOnly = file("src/main/assets/quaypass/avatar/README.DEV_ONLY.md")
+        if (devOnly.exists()) {
+            logger.warn(
+                "WARNING: QuayPass placeholder avatar assets are present " +
+                    "(README.DEV_ONLY.md). These are dev-only and must be replaced with " +
+                    "commissioned art before a public release."
+            )
+        }
+    }
+}
+
+tasks.matching { it.name == "assembleRelease" || it.name == "bundleRelease" }.configureEach {
+    dependsOn(verifyQuayPassReleaseConfig, checkQuayPassPlaceholderAssets)
+}

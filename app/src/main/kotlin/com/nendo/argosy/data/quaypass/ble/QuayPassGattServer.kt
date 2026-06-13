@@ -180,6 +180,7 @@ class QuayPassGattServer(
 
     private fun checkRateLimit(deviceAddress: String): Boolean {
         val now = System.currentTimeMillis() / 1000
+        recentWritesByPeer.entries.removeAll { now - it.value >= QuayPassConfig.PER_PEER_WRITE_RATE_LIMIT_SECS }
         val last = recentWritesByPeer[deviceAddress] ?: 0
         if (now - last < QuayPassConfig.PER_PEER_WRITE_RATE_LIMIT_SECS) {
             return false

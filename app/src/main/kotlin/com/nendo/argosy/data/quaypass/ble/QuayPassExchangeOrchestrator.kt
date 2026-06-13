@@ -60,7 +60,10 @@ class QuayPassExchangeOrchestrator @Inject constructor(
             Log.v(TAG, "Decode failure: ${result.reason}")
             return false
         }
-        val profile = (result as DecodeResult.Success).profile
+        return record((result as DecodeResult.Success).profile, now)
+    }
+
+    suspend fun record(profile: InboundProfile, now: Instant = Instant.now()): Boolean {
         val nowSecs = now.epochSecond
 
         if (cooldownStore.isWithinCooldown(profile.credentialFingerprint, nowSecs)) {

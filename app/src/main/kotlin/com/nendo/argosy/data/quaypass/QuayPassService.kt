@@ -172,9 +172,13 @@ class QuayPassService @Inject constructor(
             application = application,
             getOurProfileBytes = { cachedOurBytes.get() },
             onPeerProfileWritten = { bytes ->
-                val verified = QuayPassWireFormat.decode(bytes) is DecodeResult.Success
-                if (verified) scope.launch { orchestrator.processInbound(bytes) }
-                verified
+                when (val result = QuayPassWireFormat.decode(bytes)) {
+                    is DecodeResult.Success -> {
+                        scope.launch { orchestrator.record(result.profile) }
+                        true
+                    }
+                    is DecodeResult.Failure -> false
+                }
             }
         ).also { it.start() }
         advertiser = QuayPassAdvertiser(application).also { it.start() }

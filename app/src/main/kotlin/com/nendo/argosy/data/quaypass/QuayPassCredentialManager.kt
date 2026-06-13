@@ -39,6 +39,9 @@ class QuayPassCredentialManager @Inject constructor(
     private val mutex = Mutex()
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
+    @Volatile
+    private var lastRefreshAttemptMillis = 0L
+
     private val okHttp by lazy {
         OkHttpClient.Builder()
             .addInterceptor(
@@ -81,12 +84,17 @@ class QuayPassCredentialManager @Inject constructor(
         if (cred != null && expires != null && now < expires - REFRESH_THRESHOLD_SECONDS) {
             return StoredCredential(cred, Instant.ofEpochSecond(expires))
         }
-        val refreshed = doRefresh(installId)
-        if (refreshed != null) return refreshed
-        if (cred != null && expires != null && now < expires) {
-            return StoredCredential(cred, Instant.ofEpochSecond(expires))
+        val cachedValid = if (cred != null && expires != null && now < expires) {
+            StoredCredential(cred, Instant.ofEpochSecond(expires))
+        } else {
+            null
         }
-        return null
+        val nowMillis = System.currentTimeMillis()
+        if (cachedValid != null && nowMillis - lastRefreshAttemptMillis < REFRESH_RETRY_COOLDOWN_MS) {
+            return cachedValid
+        }
+        lastRefreshAttemptMillis = nowMillis
+        return doRefresh(installId) ?: cachedValid
     }
 
     suspend fun refreshIfNeeded() {
@@ -212,6 +220,7 @@ class QuayPassCredentialManager @Inject constructor(
 
     companion object {
         private const val TAG = "QuayPassCredentialManager"
-        private const val REFRESH_THRESHOLD_SECONDS = 7L * 24 * 60 * 60 // 7 days
+        private const val REFRESH_THRESHOLD_SECONDS = 7L * 24 * 60 * 60
+        private const val REFRESH_RETRY_COOLDOWN_MS = 5L * 60 * 1000
     }
 }

@@ -135,6 +135,9 @@ class SettingsViewModel @Inject constructor(
     internal val _requestNotificationPermissionEvent = MutableSharedFlow<Unit>()
     val requestNotificationPermissionEvent: SharedFlow<Unit> = _requestNotificationPermissionEvent.asSharedFlow()
 
+    internal val _requestBlePermissionEvent = MutableSharedFlow<Unit>()
+    val requestBlePermissionEvent: SharedFlow<Unit> = _requestBlePermissionEvent.asSharedFlow()
+
     internal val _requestScreenCapturePermissionEvent = MutableSharedFlow<Unit>()
     val requestScreenCapturePermissionEvent: SharedFlow<Unit> = _requestScreenCapturePermissionEvent.asSharedFlow()
 
@@ -1371,6 +1374,25 @@ class SettingsViewModel @Inject constructor(
             preferencesRepository.setQuayPassEnabled(enabled)
         }
         return true
+    }
+
+    /**
+     * Begins enabling QuayPass: requests BLE runtime permissions first (the
+     * service cannot scan/advertise without them on Android 12+). Returns false
+     * if the avatar is not configured so the caller can route to the customizer.
+     */
+    fun requestEnableQuayPass(): Boolean {
+        if (!_uiState.value.social.quayPassAvatarConfigured) {
+            return false
+        }
+        viewModelScope.launch { _requestBlePermissionEvent.emit(Unit) }
+        return true
+    }
+
+    fun onBlePermissionResult(granted: Boolean) {
+        if (granted) {
+            viewModelScope.launch { preferencesRepository.setQuayPassEnabled(true) }
+        }
     }
 
     fun setDiscordRichPresence(enabled: Boolean) {

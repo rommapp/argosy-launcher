@@ -143,7 +143,10 @@ object QuayPassWireFormat {
         if (credential.isExpired(now)) {
             return DecodeResult.Failure(DecodeResult.Reason.CREDENTIAL_EXPIRED)
         }
-        if (!QuayPassCredentialBundle.verifyEd25519(credential.pubkey, signedInput, signature)) {
+        if (!QuayPassCredentialBundle.verifyPeerSignature(
+                credential.pubkeyAlg, credential.pubkey, signedInput, signature
+            )
+        ) {
             return DecodeResult.Failure(DecodeResult.Reason.PEER_SIGNATURE_INVALID)
         }
 

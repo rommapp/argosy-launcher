@@ -28,6 +28,7 @@ xz = "1.10"
 zstdJni = "1.5.6-8"
 javasteam = "1.8.1"
 spongycastle = "1.58.0.0"
+bouncycastle = "1.80"
 protobuf = "4.30.2"
 upokecenterCbor = "4.5.4"
 
@@ -100,6 +101,7 @@ zstd-jni = { group = "com.github.luben", name = "zstd-jni", version.ref = "zstdJ
 javasteam = { group = "io.github.joshuatam", name = "javasteam", version.ref = "javasteam" }
 javasteam-depotdownloader = { group = "io.github.joshuatam", name = "javasteam-depotdownloader", version.ref = "javasteam" }
 spongycastle = { group = "com.madgag.spongycastle", name = "prov", version.ref = "spongycastle" }
+bouncycastle = { group = "org.bouncycastle", name = "bcprov-jdk18on", version.ref = "bouncycastle" }
 protobuf-java = { group = "com.google.protobuf", name = "protobuf-java", version.ref = "protobuf" }
 
 # CBOR (BLE wire format text section)

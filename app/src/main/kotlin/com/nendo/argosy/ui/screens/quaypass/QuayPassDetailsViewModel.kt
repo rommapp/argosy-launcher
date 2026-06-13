@@ -14,7 +14,8 @@ import javax.inject.Inject
 
 data class QuayPassDetailsState(
     val avatarConfigured: Boolean = false,
-    val enabled: Boolean = false
+    val enabled: Boolean = false,
+    val greeting: String = ""
 )
 
 @HiltViewModel
@@ -23,7 +24,13 @@ class QuayPassDetailsViewModel @Inject constructor(
 ) : ViewModel() {
 
     val state: StateFlow<QuayPassDetailsState> = preferencesRepository.userPreferences
-        .map { QuayPassDetailsState(it.quayPassAvatarConfigured, it.quayPassEnabled) }
+        .map {
+            QuayPassDetailsState(
+                avatarConfigured = it.quayPassAvatarConfigured,
+                enabled = it.quayPassEnabled,
+                greeting = it.quayPassGreeting ?: ""
+            )
+        }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), QuayPassDetailsState())
 
     fun enableQuayPass() {
@@ -33,5 +40,9 @@ class QuayPassDetailsViewModel @Inject constructor(
                 preferencesRepository.setQuayPassEnabled(true)
             }
         }
+    }
+
+    fun setGreeting(greeting: String) {
+        viewModelScope.launch { preferencesRepository.setQuayPassGreeting(greeting) }
     }
 }

@@ -66,19 +66,27 @@ class QuayPassCredentialManager @Inject constructor(
         return state[Keys.CLIENT_INSTALL_ID] != null
     }
 
-    /** Returns a non-expired credential, refreshing inline if expired or missing. */
+    /**
+     * Returns a usable credential. Refreshes inline once inside the refresh
+     * window, but falls back to the cached credential whenever it is still
+     * unexpired so the BLE exchange keeps working fully offline until the
+     * credential actually lapses.
+     */
     suspend fun getValidCredential(): StoredCredential? = mutex.withLock {
         val state = dataStore.data.first()
         val installId = state[Keys.CLIENT_INSTALL_ID] ?: return null
         val cred = state[Keys.CREDENTIAL]
         val expires = state[Keys.CREDENTIAL_EXPIRES_AT]
-        if (cred != null && expires != null) {
-            val now = Instant.now().epochSecond
-            if (now < expires - REFRESH_THRESHOLD_SECONDS) {
-                return StoredCredential(cred, Instant.ofEpochSecond(expires))
-            }
+        val now = Instant.now().epochSecond
+        if (cred != null && expires != null && now < expires - REFRESH_THRESHOLD_SECONDS) {
+            return StoredCredential(cred, Instant.ofEpochSecond(expires))
         }
-        return doRefresh(installId)
+        val refreshed = doRefresh(installId)
+        if (refreshed != null) return refreshed
+        if (cred != null && expires != null && now < expires) {
+            return StoredCredential(cred, Instant.ofEpochSecond(expires))
+        }
+        return null
     }
 
     suspend fun refreshIfNeeded() {

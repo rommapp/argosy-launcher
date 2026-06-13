@@ -99,9 +99,6 @@ class QuayPassGattClient(private val application: Application) {
             val writeChar = service.getCharacteristic(QuayPassConfig.CHARACTERISTIC_WRITE_UUID)
                 ?: return@withTimeoutOrNull null
 
-            gatt.readCharacteristic(readChar)
-            val theirProfile = readChannel.receive()
-
             val writeOk = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 gatt.writeCharacteristic(
                     writeChar,
@@ -116,9 +113,10 @@ class QuayPassGattClient(private val application: Application) {
                     gatt.writeCharacteristic(writeChar)
                 }
             }
-            if (writeOk) writeChannel.receive()
+            if (!writeOk || !writeChannel.receive()) return@withTimeoutOrNull null
 
-            theirProfile
+            gatt.readCharacteristic(readChar)
+            readChannel.receive()
         } catch (t: Throwable) {
             Log.w(TAG, "Exchange failed", t)
             null

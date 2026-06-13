@@ -3,6 +3,9 @@ package com.nendo.argosy.data.quaypass
 import android.util.Base64
 import android.util.Log
 import com.nendo.argosy.BuildConfig
+import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo
+import org.bouncycastle.crypto.params.Ed25519PublicKeyParameters
+import org.bouncycastle.crypto.signers.Ed25519Signer
 import java.nio.ByteBuffer
 import java.security.KeyFactory
 import java.security.Signature
@@ -96,18 +99,46 @@ data class QuayPassCredentialBundle(
             return false
         }
 
+        /** Verifies a peer payload signature using the algorithm declared in its credential. */
+        fun verifyPeerSignature(
+            pubkeyAlg: Int,
+            pubKeyEncoded: ByteArray,
+            data: ByteArray,
+            sig: ByteArray
+        ): Boolean = when (pubkeyAlg) {
+            ALG_ED25519 -> verifyEd25519(pubKeyEncoded, data, sig)
+            ALG_EC_P256 -> verifyEcP256(pubKeyEncoded, data, sig)
+            else -> false
+        }
+
+        internal fun verifyEcP256(
+            pubKeyEncoded: ByteArray,
+            data: ByteArray,
+            sigP1363: ByteArray
+        ): Boolean = try {
+            val keyFactory = KeyFactory.getInstance("EC")
+            val pub = keyFactory.generatePublic(X509EncodedKeySpec(pubKeyEncoded))
+            val verifier = Signature.getInstance("SHA256withECDSA")
+            verifier.initVerify(pub)
+            verifier.update(data)
+            verifier.verify(EcdsaP1363.toDer(sigP1363))
+        } catch (_: Throwable) {
+            false
+        }
+
         internal fun verifyEd25519(
             pubKeyEncoded: ByteArray,
             data: ByteArray,
             sig: ByteArray
         ): Boolean = try {
-            val keyFactory = KeyFactory.getInstance("Ed25519")
-            val pub = keyFactory.generatePublic(X509EncodedKeySpec(pubKeyEncoded))
-            val verifier = Signature.getInstance("Ed25519")
-            verifier.initVerify(pub)
-            verifier.update(data)
-            verifier.verify(sig)
-        } catch (_: Throwable) {
+            val spki = SubjectPublicKeyInfo.getInstance(pubKeyEncoded)
+            val pub = Ed25519PublicKeyParameters(spki.publicKeyData.bytes, 0)
+            val verifier = Ed25519Signer()
+            verifier.init(false, pub)
+            verifier.update(data, 0, data.size)
+            verifier.verifySignature(sig)
+        } catch (t: Throwable) {
+            Log.w(TAG, "Ed25519 verify error: ${t.javaClass.simpleName}: ${t.message}")
             false
         }
 

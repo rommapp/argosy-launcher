@@ -162,6 +162,12 @@ fun SettingsScreen(
         viewModel.onNotificationPermissionResult(granted)
     }
 
+    val blePermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestMultiplePermissions()
+    ) { results ->
+        viewModel.onBlePermissionResult(results.values.all { it })
+    }
+
     val inputDispatcher = LocalInputDispatcher.current
     val inputHandler = remember(onBack) {
         viewModel.createInputHandler(onBack = onBack)
@@ -247,6 +253,22 @@ fun SettingsScreen(
                 notificationPermissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
             } else {
                 viewModel.onNotificationPermissionResult(true)
+            }
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        viewModel.requestBlePermissionEvent.collect {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                blePermissionLauncher.launch(
+                    arrayOf(
+                        android.Manifest.permission.BLUETOOTH_SCAN,
+                        android.Manifest.permission.BLUETOOTH_ADVERTISE,
+                        android.Manifest.permission.BLUETOOTH_CONNECT
+                    )
+                )
+            } else {
+                viewModel.onBlePermissionResult(true)
             }
         }
     }

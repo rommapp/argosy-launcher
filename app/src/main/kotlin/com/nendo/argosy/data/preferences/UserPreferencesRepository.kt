@@ -169,7 +169,8 @@ class UserPreferencesRepository @Inject constructor(
             quayPassAvatarConfigured = sync.quayPassAvatarConfigured,
             quayPassAvatarUpdatedAt = sync.quayPassAvatarUpdatedAt,
             quayPassAvatarSyncPending = sync.quayPassAvatarSyncPending,
-            quayPassAnnouncementSeen = sync.quayPassAnnouncementSeen
+            quayPassAnnouncementSeen = sync.quayPassAnnouncementSeen,
+            quayPassGreeting = sync.quayPassGreeting
         )
     }
 
@@ -278,6 +279,7 @@ class UserPreferencesRepository @Inject constructor(
     suspend fun clearQuayPassAvatar() = syncPrefs.clearQuayPassAvatar()
     suspend fun setQuayPassAvatarSyncPending(pending: Boolean) = syncPrefs.setQuayPassAvatarSyncPending(pending)
     suspend fun setQuayPassAnnouncementSeen(seen: Boolean) = syncPrefs.setQuayPassAnnouncementSeen(seen)
+    suspend fun setQuayPassGreeting(greeting: String) = syncPrefs.setQuayPassGreeting(greeting)
 
     // --- Controls delegates ---
 
@@ -617,7 +619,8 @@ data class UserPreferences(
     val quayPassAvatarConfigured: Boolean = false,
     val quayPassAvatarUpdatedAt: Instant? = null,
     val quayPassAvatarSyncPending: Boolean = false,
-    val quayPassAnnouncementSeen: Boolean = false
+    val quayPassAnnouncementSeen: Boolean = false,
+    val quayPassGreeting: String? = null
 ) {
     val isSocialLinked: Boolean get() = socialSessionToken != null
 }

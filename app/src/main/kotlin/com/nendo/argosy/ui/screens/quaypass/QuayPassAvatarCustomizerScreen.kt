@@ -145,8 +145,6 @@ private fun OptionsPane(
     Column(modifier = modifier) {
         val scrollState = rememberScrollState()
 
-        // Auto-scroll the option column when the focused section changes,
-        // so the user can always see what gamepad nav is targeting.
         LaunchedEffect(state.focusedSection) {
             val target = when (state.focusedSection) {
                 CustomizerSection.Category -> 0

@@ -17,7 +17,7 @@ import java.util.concurrent.ConcurrentHashMap
 class QuayPassGattServer(
     private val application: Application,
     private val getOurProfileBytes: () -> ByteArray?,
-    private val onPeerProfileWritten: (ByteArray) -> Unit
+    private val onPeerProfileWritten: (ByteArray) -> Boolean
 ) {
 
     private val bluetoothManager by lazy {
@@ -28,6 +28,7 @@ class QuayPassGattServer(
     private val connectedDevices = ConcurrentHashMap<String, Long>()
     private val recentWritesByPeer = ConcurrentHashMap<String, Long>()
     private val pendingWriteBuffers = ConcurrentHashMap<String, ByteArray>()
+    private val verifiedReaders = ConcurrentHashMap.newKeySet<String>()
 
     @SuppressLint("MissingPermission")
     fun start() {
@@ -66,6 +67,7 @@ class QuayPassGattServer(
         connectedDevices.clear()
         recentWritesByPeer.clear()
         pendingWriteBuffers.clear()
+        verifiedReaders.clear()
         Log.d(TAG, "GATT server stopped")
     }
 
@@ -84,6 +86,7 @@ class QuayPassGattServer(
                 BluetoothProfile.STATE_DISCONNECTED -> {
                     connectedDevices.remove(device.address)
                     pendingWriteBuffers.remove(device.address)
+                    verifiedReaders.remove(device.address)
                 }
             }
         }
@@ -97,6 +100,10 @@ class QuayPassGattServer(
         ) {
             if (characteristic.uuid != QuayPassConfig.CHARACTERISTIC_PROFILE_UUID) {
                 gattServer?.sendResponse(device, requestId, BluetoothGatt.GATT_FAILURE, 0, null)
+                return
+            }
+            if (!verifiedReaders.contains(device.address)) {
+                gattServer?.sendResponse(device, requestId, BluetoothGatt.GATT_SUCCESS, offset, ByteArray(0))
                 return
             }
             val data = getOurProfileBytes() ?: ByteArray(0)
@@ -151,7 +158,9 @@ class QuayPassGattServer(
 
             if (!preparedWrite) {
                 pendingWriteBuffers.remove(device.address)
-                onPeerProfileWritten(combined)
+                if (onPeerProfileWritten(combined)) {
+                    verifiedReaders.add(device.address)
+                }
             }
 
             if (responseNeeded) {
@@ -162,8 +171,8 @@ class QuayPassGattServer(
         @SuppressLint("MissingPermission")
         override fun onExecuteWrite(device: BluetoothDevice, requestId: Int, execute: Boolean) {
             val accumulated = pendingWriteBuffers.remove(device.address)
-            if (execute && accumulated != null) {
-                onPeerProfileWritten(accumulated)
+            if (execute && accumulated != null && onPeerProfileWritten(accumulated)) {
+                verifiedReaders.add(device.address)
             }
             gattServer?.sendResponse(device, requestId, BluetoothGatt.GATT_SUCCESS, 0, null)
         }

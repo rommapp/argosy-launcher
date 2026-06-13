@@ -13,8 +13,11 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.util.Log
 import androidx.core.content.ContextCompat
+import com.nendo.argosy.data.emulator.PlaySessionTracker
+import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.entity.GameEntity
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
+import com.nendo.argosy.data.quaypass.ble.DecodeResult
 import com.nendo.argosy.data.quaypass.ble.OutboundProfile
 import com.nendo.argosy.data.quaypass.ble.QuayPassAdvertiser
 import com.nendo.argosy.data.quaypass.ble.QuayPassExchangeOrchestrator
@@ -22,11 +25,14 @@ import com.nendo.argosy.data.quaypass.ble.QuayPassGattClient
 import com.nendo.argosy.data.quaypass.ble.QuayPassGattServer
 import com.nendo.argosy.data.quaypass.ble.QuayPassScanReceiver
 import com.nendo.argosy.data.quaypass.ble.QuayPassScanner
+import com.nendo.argosy.data.quaypass.ble.QuayPassWireFormat
 import com.nendo.argosy.data.quaypass.ble.colorOnlyAvatar
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -45,7 +51,9 @@ class QuayPassService @Inject constructor(
     private val application: Application,
     private val preferencesRepository: UserPreferencesRepository,
     private val credentialManager: QuayPassCredentialManager,
-    private val orchestrator: QuayPassExchangeOrchestrator
+    private val orchestrator: QuayPassExchangeOrchestrator,
+    private val playSessionTracker: PlaySessionTracker,
+    private val gameDao: GameDao
 ) {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -66,6 +74,7 @@ class QuayPassService @Inject constructor(
     private val cachedOurBytes = AtomicReference<ByteArray?>(null)
     private var cachedLastGame: GameEntity? = null
     private var shouldBeRunning = false
+    private var reEncodeJob: Job? = null
 
     private val bluetoothStateReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
@@ -103,6 +112,16 @@ class QuayPassService @Inject constructor(
                 .distinctUntilChanged()
                 .collect {
                     if (_isRunning.value) refreshOurBytes()
+                }
+        }
+
+        scope.launch {
+            playSessionTracker.activeSession
+                .map { it?.gameId }
+                .distinctUntilChanged()
+                .collect { gameId ->
+                    val game = gameId?.let { gameDao.getById(it) }
+                    if (game != null) updateLastGame(game)
                 }
         }
     }
@@ -153,19 +172,34 @@ class QuayPassService @Inject constructor(
             application = application,
             getOurProfileBytes = { cachedOurBytes.get() },
             onPeerProfileWritten = { bytes ->
-                scope.launch { orchestrator.processInbound(bytes) }
+                val verified = QuayPassWireFormat.decode(bytes) is DecodeResult.Success
+                if (verified) scope.launch { orchestrator.processInbound(bytes) }
+                verified
             }
         ).also { it.start() }
         advertiser = QuayPassAdvertiser(application).also { it.start() }
         scanner = QuayPassScanner(application).also { it.start() }
 
         scope.launch { refreshOurBytes() }
+        startReEncodeLoop()
 
         _isRunning.value = true
         Log.i(TAG, "QuayPass service started")
     }
 
+    private fun startReEncodeLoop() {
+        reEncodeJob?.cancel()
+        reEncodeJob = scope.launch {
+            while (isActive) {
+                delay(RE_ENCODE_INTERVAL_MS)
+                if (_isRunning.value) refreshOurBytes()
+            }
+        }
+    }
+
     private suspend fun stop() {
+        reEncodeJob?.cancel()
+        reEncodeJob = null
         advertiser?.stop()
         scanner?.stop()
         gattServer?.stop()
@@ -196,7 +230,7 @@ class QuayPassService @Inject constructor(
         val profile = OutboundProfile(
             username = username,
             displayName = prefs.socialDisplayName,
-            greeting = null,
+            greeting = prefs.quayPassGreeting,
             lastGameTitle = cachedLastGame?.title,
             lastGamePlatform = cachedLastGame?.platformSlug,
             lastGamePlaytimeMinutes = cachedLastGame?.playTimeMinutes,
@@ -235,6 +269,8 @@ class QuayPassService @Inject constructor(
 
     companion object {
         private const val TAG = "QuayPassService"
+        private val RE_ENCODE_INTERVAL_MS =
+            com.nendo.argosy.data.quaypass.ble.QuayPassConfig.FRESHNESS_WINDOW_SECS * 1000 / 3
 
         @Volatile
         private var instance: QuayPassService? = null

@@ -240,6 +240,9 @@ dependencies {
     // Steam (JavaSteam)
     implementation(libs.bundles.steam)
 
+    // QuayPass credential Ed25519 verification (Conscrypt lacks an Ed25519 KeyFactory)
+    implementation(libs.bouncycastle)
+
     // argosy-sigil — title id / serial extraction (replaces in-tree :libchdr +
     // Iso9660Utils + AesXts + ZArchiveReader + GameCubeHeaderParser.parseRomHeader)
     implementation(project(":sigil"))

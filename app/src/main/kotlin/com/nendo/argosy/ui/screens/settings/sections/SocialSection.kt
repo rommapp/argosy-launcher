@@ -250,10 +250,14 @@ fun SocialSection(
                             isEnabled = social.quayPassEnabled,
                             isFocused = isFocused(item),
                             onToggle = { requested ->
-                                if (requested && !social.quayPassAvatarConfigured) {
-                                    onNavigate(com.nendo.argosy.ui.navigation.Screen.QuayPassAvatarEditor.route)
+                                if (requested) {
+                                    if (!social.quayPassAvatarConfigured) {
+                                        onNavigate(com.nendo.argosy.ui.navigation.Screen.QuayPassAvatarEditor.route)
+                                    } else {
+                                        viewModel.requestEnableQuayPass()
+                                    }
                                 } else {
-                                    viewModel.setQuayPassEnabled(requested)
+                                    viewModel.setQuayPassEnabled(false)
                                 }
                             }
                         )

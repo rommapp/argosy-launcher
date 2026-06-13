@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application>
+        <receiver
+            android:name="com.nendo.argosy.debug.QuayPassTestHarness"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.nendo.argosy.debug.QUAYPASS_DUMP_PUBKEY" />
+                <action android:name="com.nendo.argosy.debug.QUAYPASS_DUMP_STATE" />
+                <action android:name="com.nendo.argosy.debug.QUAYPASS_SEED" />
+                <action android:name="com.nendo.argosy.debug.QUAYPASS_CLEAR_KEY" />
+                <action android:name="com.nendo.argosy.debug.QUAYPASS_VERIFY" />
+            </intent-filter>
+        </receiver>
+    </application>
+</manifest>

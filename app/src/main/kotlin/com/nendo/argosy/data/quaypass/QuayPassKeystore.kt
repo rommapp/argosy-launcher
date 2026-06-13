@@ -46,6 +46,7 @@ class QuayPassKeystore @Inject constructor(
         return generateKey()
     }
 
+    /** Signs with the install key; both algorithms return a fixed 64-byte signature. */
     fun sign(data: ByteArray): ByteArray {
         val privateKey = getPrivateKey()
         val info = getOrCreateKeyInfo()
@@ -56,7 +57,11 @@ class QuayPassKeystore @Inject constructor(
         val signer = Signature.getInstance(sigAlg)
         signer.initSign(privateKey)
         signer.update(data)
-        return signer.sign()
+        val raw = signer.sign()
+        return when (info.algorithm) {
+            Algorithm.ED25519 -> raw
+            Algorithm.EC_P256 -> EcdsaP1363.fromDer(raw, P256_COMPONENT_BYTES)
+        }
     }
 
     @Synchronized
@@ -77,9 +82,8 @@ class QuayPassKeystore @Inject constructor(
         if (!ks.containsAlias(KEY_ALIAS)) {
             generateKey()
         }
-        val entry = ks.getEntry(KEY_ALIAS, null) as? KeyStore.PrivateKeyEntry
-            ?: error("QuayPass private key entry missing or wrong type")
-        return entry.privateKey
+        return ks.getKey(KEY_ALIAS, null) as? PrivateKey
+            ?: error("QuayPass private key missing or wrong type")
     }
 
     private fun generateKey(): KeyInfo {
@@ -101,23 +105,28 @@ class QuayPassKeystore @Inject constructor(
                 val builder = KeyGenParameterSpec.Builder(
                     KEY_ALIAS,
                     KeyProperties.PURPOSE_SIGN or KeyProperties.PURPOSE_VERIFY
-                ).setDigests(KeyProperties.DIGEST_SHA256)
+                )
 
                 when (alg) {
                     Algorithm.ED25519 ->
-                        builder.setAlgorithmParameterSpec(
-                            java.security.spec.NamedParameterSpec("Ed25519")
-                        )
+                        builder
+                            .setAlgorithmParameterSpec(
+                                java.security.spec.ECGenParameterSpec("ed25519")
+                            )
+                            .setDigests(KeyProperties.DIGEST_NONE)
                     Algorithm.EC_P256 ->
-                        builder.setAlgorithmParameterSpec(
-                            java.security.spec.ECGenParameterSpec("secp256r1")
-                        )
+                        builder
+                            .setAlgorithmParameterSpec(
+                                java.security.spec.ECGenParameterSpec("secp256r1")
+                            )
+                            .setDigests(KeyProperties.DIGEST_SHA256)
                 }
                 if (sb && Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
                     builder.setIsStrongBoxBacked(true)
                 }
                 gen.initialize(builder.build())
                 val pair: KeyPair = gen.generateKeyPair()
+                trySign(alg)
                 Log.i(TAG, "Generated QuayPass keypair via $label")
                 return KeyInfo(
                     publicKey = pair.public,
@@ -128,6 +137,7 @@ class QuayPassKeystore @Inject constructor(
             } catch (t: Throwable) {
                 lastError = t
                 Log.w(TAG, "QuayPass keypair attempt failed ($label): ${t.message}")
+                runCatching { openKeystore().deleteEntry(KEY_ALIAS) }
             }
         }
 
@@ -144,6 +154,7 @@ class QuayPassKeystore @Inject constructor(
                 .build()
             gen.initialize(spec)
             val pair = gen.generateKeyPair()
+            trySign(Algorithm.EC_P256)
             Log.w(TAG, "Generated QuayPass keypair in software (no hardware backing available)")
             return KeyInfo(
                 publicKey = pair.public,
@@ -159,11 +170,25 @@ class QuayPassKeystore @Inject constructor(
         }
     }
 
+    private fun trySign(alg: Algorithm) {
+        val key = openKeystore().getKey(KEY_ALIAS, null) as? PrivateKey
+            ?: error("generated key not retrievable")
+        val signer = Signature.getInstance(
+            when (alg) {
+                Algorithm.ED25519 -> "Ed25519"
+                Algorithm.EC_P256 -> "SHA256withECDSA"
+            }
+        )
+        signer.initSign(key)
+        signer.update(ByteArray(32))
+        signer.sign()
+    }
+
     private fun inferBackingFromExisting(): KeyBacking = KeyBacking.UNKNOWN
 
     private fun inferAlgorithmFromKey(pub: PublicKey): Algorithm =
         when (pub.algorithm.uppercase()) {
-            "ED25519" -> Algorithm.ED25519
+            "ED25519", "EDDSA", "1.3.101.112" -> Algorithm.ED25519
             else -> Algorithm.EC_P256
         }
 
@@ -171,5 +196,6 @@ class QuayPassKeystore @Inject constructor(
         private const val TAG = "QuayPassKeystore"
         private const val ANDROID_KEYSTORE = "AndroidKeyStore"
         private const val KEY_ALIAS = "quaypass_install_v1"
+        private const val P256_COMPONENT_BYTES = 32
     }
 }

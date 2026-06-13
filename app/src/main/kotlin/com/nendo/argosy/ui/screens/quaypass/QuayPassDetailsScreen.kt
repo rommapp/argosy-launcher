@@ -19,6 +19,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -44,8 +45,15 @@ fun QuayPassDetailsScreen(
     val state by viewModel.state.collectAsState()
     val inputDispatcher = LocalInputDispatcher.current
     var focusIndex by remember { mutableIntStateOf(0) }
+    var showGreeting by remember { mutableStateOf(false) }
 
-    val buttons = buildButtons(state, onEditAvatar, onClose, viewModel::enableQuayPass)
+    val buttons = buildButtons(
+        state = state,
+        onEditAvatar = onEditAvatar,
+        onClose = onClose,
+        onEnable = viewModel::enableQuayPass,
+        onEditGreeting = { showGreeting = true }
+    )
 
     val handler = remember(buttons) {
         QuayPassDetailsInputHandler(
@@ -130,6 +138,17 @@ fun QuayPassDetailsScreen(
             }
         }
     }
+
+    if (showGreeting) {
+        GreetingEditModal(
+            initial = state.greeting,
+            onSubmit = {
+                viewModel.setGreeting(it)
+                showGreeting = false
+            },
+            onDismiss = { showGreeting = false }
+        )
+    }
 }
 
 private data class DetailsButton(
@@ -142,7 +161,8 @@ private fun buildButtons(
     state: QuayPassDetailsState,
     onEditAvatar: () -> Unit,
     onClose: () -> Unit,
-    onEnable: () -> Unit
+    onEnable: () -> Unit,
+    onEditGreeting: () -> Unit
 ): List<DetailsButton> = buildList {
     when {
         !state.avatarConfigured -> add(DetailsButton("Build my Mii", isPrimary = true, action = onEditAvatar))
@@ -150,6 +170,7 @@ private fun buildButtons(
     }
     if (state.avatarConfigured) {
         add(DetailsButton("Edit avatar", isPrimary = false, action = onEditAvatar))
+        add(DetailsButton("Greeting", isPrimary = false, action = onEditGreeting))
     }
     add(DetailsButton(if (state.enabled) "Done" else "Maybe later", isPrimary = false, action = onClose))
 }

@@ -51,7 +51,8 @@ data class SyncPreferences(
     val quayPassAvatarConfigured: Boolean = false,
     val quayPassAvatarUpdatedAt: Instant? = null,
     val quayPassAvatarSyncPending: Boolean = false,
-    val quayPassAnnouncementSeen: Boolean = false
+    val quayPassAnnouncementSeen: Boolean = false,
+    val quayPassGreeting: String? = null
 )
 
 @Singleton
@@ -106,6 +107,7 @@ class SyncPreferencesRepository @Inject constructor(
         val QUAYPASS_AVATAR_UPDATED_AT = stringPreferencesKey("quaypass_avatar_updated_at")
         val QUAYPASS_AVATAR_SYNC_PENDING = booleanPreferencesKey("quaypass_avatar_sync_pending")
         val QUAYPASS_ANNOUNCEMENT_SEEN = booleanPreferencesKey("quaypass_announcement_seen")
+        val QUAYPASS_GREETING = stringPreferencesKey("quaypass_greeting")
         val LAST_NEGOTIATE_AT = stringPreferencesKey("last_negotiate_at")
     }
 
@@ -158,6 +160,14 @@ class SyncPreferencesRepository @Inject constructor(
 
     suspend fun setQuayPassAnnouncementSeen(seen: Boolean) {
         dataStore.edit { it[Keys.QUAYPASS_ANNOUNCEMENT_SEEN] = seen }
+    }
+
+    suspend fun setQuayPassGreeting(greeting: String) {
+        dataStore.edit {
+            val trimmed = greeting.trim()
+            if (trimmed.isEmpty()) it.remove(Keys.QUAYPASS_GREETING)
+            else it[Keys.QUAYPASS_GREETING] = trimmed
+        }
     }
 
     val preferences: Flow<SyncPreferences> = dataStore.data.map { prefs ->
@@ -213,7 +223,8 @@ class SyncPreferencesRepository @Inject constructor(
             quayPassAvatarConfigured = prefs[Keys.QUAYPASS_AVATAR_CONFIGURED] ?: false,
             quayPassAvatarUpdatedAt = prefs[Keys.QUAYPASS_AVATAR_UPDATED_AT]?.let { Instant.parse(it) },
             quayPassAvatarSyncPending = prefs[Keys.QUAYPASS_AVATAR_SYNC_PENDING] ?: false,
-            quayPassAnnouncementSeen = prefs[Keys.QUAYPASS_ANNOUNCEMENT_SEEN] ?: false
+            quayPassAnnouncementSeen = prefs[Keys.QUAYPASS_ANNOUNCEMENT_SEEN] ?: false,
+            quayPassGreeting = prefs[Keys.QUAYPASS_GREETING]
         )
     }
 

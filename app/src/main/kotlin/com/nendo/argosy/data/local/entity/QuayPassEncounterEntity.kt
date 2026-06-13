@@ -25,5 +25,7 @@ data class QuayPassEncounterEntity(
     val lastGamePlaytimeMinutes: Int?,
     val lastGameIgdbId: Long?,
     val encounteredAt: Instant,
-    val seenByUser: Boolean = false
+    val seenByUser: Boolean = false,
+    val accountId: String? = null,
+    val reported: Boolean = false
 )

@@ -1727,3 +1727,19 @@ object Migration_119_120 : Migration(119, 120) {
         )
     }
 }
+
+object Migration_120_121 : Migration(120, 121) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE quaypass_encounters ADD COLUMN accountId TEXT")
+        db.execSQL("ALTER TABLE quaypass_encounters ADD COLUMN reported INTEGER NOT NULL DEFAULT 0")
+        db.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS quaypass_owned_parts (
+                partKey TEXT NOT NULL PRIMARY KEY,
+                acquiredAt INTEGER NOT NULL,
+                synced INTEGER NOT NULL DEFAULT 0
+            )
+            """.trimIndent()
+        )
+    }
+}

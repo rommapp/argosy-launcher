@@ -109,6 +109,9 @@ class ArgosSocialService @Inject constructor(
         ) : IncomingMessage()
         data class FriendRemoved(val userId: String) : IncomingMessage()
         data class FriendCodeData(val code: String, val url: String) : IncomingMessage()
+        data class QuayPassBalance(val balance: Int) : IncomingMessage()
+        data class QuayPassPartPurchased(val partKey: String, val success: Boolean, val balance: Int) : IncomingMessage()
+        data class QuayPassOwnedParts(val parts: List<String>) : IncomingMessage()
         data class FriendsData(val friends: List<Friend>) : IncomingMessage()
         data class SharedCollections(val collections: List<CollectionSummary>) : IncomingMessage()
         data class SavedCollections(val collections: List<CollectionSummary>) : IncomingMessage()
@@ -297,6 +300,28 @@ class ArgosSocialService @Inject constructor(
                             fromUserId = fromUser.getString("id"),
                             fromUsername = fromUser.getString("username")
                         )
+                    } else null
+                }
+
+                MessageTypes.QUAYPASS_BALANCE -> {
+                    if (payload != null) IncomingMessage.QuayPassBalance(payload.optInt("balance", 0)) else null
+                }
+
+                MessageTypes.QUAYPASS_PART_PURCHASED -> {
+                    if (payload != null) {
+                        IncomingMessage.QuayPassPartPurchased(
+                            partKey = payload.optString("part_key", ""),
+                            success = payload.optBoolean("success", false),
+                            balance = payload.optInt("balance", 0)
+                        )
+                    } else null
+                }
+
+                MessageTypes.QUAYPASS_OWNED_PARTS -> {
+                    if (payload != null) {
+                        val arr = payload.optJSONArray("parts")
+                        val parts = if (arr != null) (0 until arr.length()).map { arr.getString(it) } else emptyList()
+                        IncomingMessage.QuayPassOwnedParts(parts)
                     } else null
                 }
 
@@ -848,6 +873,24 @@ class ArgosSocialService @Inject constructor(
     fun sendQuayPassAvatar(bytesBase64: String): Boolean {
         return send(MessageTypes.SET_QUAYPASS_AVATAR, mapOf("avatar" to bytesBase64))
     }
+
+    fun reportQuayPassEncounter(peerAccountId: String, fingerprint: String, encounteredAtEpoch: Long): Boolean {
+        return send(
+            MessageTypes.REPORT_QUAYPASS_ENCOUNTER,
+            mapOf(
+                "peer_account_id" to peerAccountId,
+                "credential_fingerprint" to fingerprint,
+                "encountered_at" to encounteredAtEpoch
+            )
+        )
+    }
+
+    fun requestQuayPassBalance(): Boolean = send(MessageTypes.GET_QUAYPASS_BALANCE, emptyMap())
+
+    fun requestQuayPassOwnedParts(): Boolean = send(MessageTypes.GET_QUAYPASS_OWNED_PARTS, emptyMap())
+
+    fun purchaseQuayPassPart(partKey: String): Boolean =
+        send(MessageTypes.PURCHASE_QUAYPASS_PART, mapOf("part_key" to partKey))
 
     fun sendPresence(status: PresenceStatus, gameIgdbId: Int? = null, gameTitle: String? = null, deviceName: String? = null): Boolean {
         return send(MessageTypes.SET_PRESENCE, mapOf(

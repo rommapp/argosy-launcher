@@ -86,7 +86,9 @@ class QuayPassExchangeOrchestrator @Inject constructor(
             lastGamePlaytimeMinutes = profile.lastGamePlaytimeMinutes,
             lastGameIgdbId = profile.lastGameIgdbId,
             encounteredAt = now,
-            seenByUser = false
+            seenByUser = false,
+            accountId = profile.credentialBundle.accountId.toString(),
+            reported = false
         )
         encounterDao.upsert(entity)
 

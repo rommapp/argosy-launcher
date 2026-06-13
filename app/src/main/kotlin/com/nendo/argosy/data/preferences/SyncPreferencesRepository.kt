@@ -52,7 +52,8 @@ data class SyncPreferences(
     val quayPassAvatarUpdatedAt: Instant? = null,
     val quayPassAvatarSyncPending: Boolean = false,
     val quayPassAnnouncementSeen: Boolean = false,
-    val quayPassGreeting: String? = null
+    val quayPassGreeting: String? = null,
+    val quayPassTicketBalance: Int = 0
 )
 
 @Singleton
@@ -108,6 +109,7 @@ class SyncPreferencesRepository @Inject constructor(
         val QUAYPASS_AVATAR_SYNC_PENDING = booleanPreferencesKey("quaypass_avatar_sync_pending")
         val QUAYPASS_ANNOUNCEMENT_SEEN = booleanPreferencesKey("quaypass_announcement_seen")
         val QUAYPASS_GREETING = stringPreferencesKey("quaypass_greeting")
+        val QUAYPASS_TICKET_BALANCE = intPreferencesKey("quaypass_ticket_balance")
         val LAST_NEGOTIATE_AT = stringPreferencesKey("last_negotiate_at")
     }
 
@@ -170,6 +172,10 @@ class SyncPreferencesRepository @Inject constructor(
         }
     }
 
+    suspend fun setQuayPassTicketBalance(balance: Int) {
+        dataStore.edit { it[Keys.QUAYPASS_TICKET_BALANCE] = balance.coerceAtLeast(0) }
+    }
+
     val preferences: Flow<SyncPreferences> = dataStore.data.map { prefs ->
         SyncPreferences(
             rommBaseUrl = prefs[Keys.ROMM_URL],
@@ -224,7 +230,8 @@ class SyncPreferencesRepository @Inject constructor(
             quayPassAvatarUpdatedAt = prefs[Keys.QUAYPASS_AVATAR_UPDATED_AT]?.let { Instant.parse(it) },
             quayPassAvatarSyncPending = prefs[Keys.QUAYPASS_AVATAR_SYNC_PENDING] ?: false,
             quayPassAnnouncementSeen = prefs[Keys.QUAYPASS_ANNOUNCEMENT_SEEN] ?: false,
-            quayPassGreeting = prefs[Keys.QUAYPASS_GREETING]
+            quayPassGreeting = prefs[Keys.QUAYPASS_GREETING],
+            quayPassTicketBalance = prefs[Keys.QUAYPASS_TICKET_BALANCE] ?: 0
         )
     }
 

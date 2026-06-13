@@ -59,6 +59,7 @@ fun QuayPassPlazaScreen(
 ) {
     val encounters by viewModel.encounters.collectAsState()
     val running by viewModel.isServiceRunning.collectAsState()
+    val ticketBalance by viewModel.ticketBalance.collectAsState()
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
     val inputDispatcher = LocalInputDispatcher.current
@@ -108,11 +109,18 @@ fun QuayPassPlazaScreen(
                     .weight(1f)
                     .padding(16.dp)
             ) {
-                Text(
-                    text = "Plaza",
-                    style = MaterialTheme.typography.headlineMedium,
-                    fontWeight = FontWeight.SemiBold
-                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Plaza",
+                        style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    TicketBalanceChip(ticketBalance)
+                }
                 Text(
                     text = if (running) "Listening for nearby travelers..." else "QuayPass is offline",
                     style = MaterialTheme.typography.bodySmall,

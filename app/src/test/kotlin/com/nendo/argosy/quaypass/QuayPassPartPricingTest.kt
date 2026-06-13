@@ -1,7 +1,7 @@
 package com.nendo.argosy.quaypass
 
-import com.nendo.argosy.ui.quaypass.avatar.AvatarCategory
-import com.nendo.argosy.ui.quaypass.avatar.QuayPassPartPricing
+import com.nendo.argosy.data.quaypass.ble.AvatarCategory
+import com.nendo.argosy.data.quaypass.ble.QuayPassPartPricing
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test

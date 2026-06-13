@@ -35,9 +35,9 @@ import com.nendo.argosy.ui.input.LocalInputDispatcher
 import com.nendo.argosy.ui.input.QuayPassAvatarCustomizerInputHandler
 import com.nendo.argosy.ui.navigation.Screen
 import com.nendo.argosy.ui.quaypass.avatar.QuayPassAvatarRenderer
-import com.nendo.argosy.ui.quaypass.avatar.QuayPassPartPricing
-import com.nendo.argosy.ui.quaypass.avatar.colorIndexFor
-import com.nendo.argosy.ui.quaypass.avatar.partIndexFor
+import com.nendo.argosy.data.quaypass.ble.QuayPassPartPricing
+import com.nendo.argosy.data.quaypass.ble.colorIndexFor
+import com.nendo.argosy.data.quaypass.ble.partIndexFor
 
 @Composable
 fun QuayPassAvatarCustomizerScreen(

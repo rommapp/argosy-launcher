@@ -1,4 +1,4 @@
-package com.nendo.argosy.ui.quaypass.avatar
+package com.nendo.argosy.data.quaypass.ble
 
 /**
  * Single source of truth for avatar part costs. Dormant for now: every part is

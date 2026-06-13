@@ -9,6 +9,7 @@ import coil.fetch.FetchResult
 import coil.fetch.Fetcher
 import coil.fetch.SourceResult
 import coil.request.Options
+import com.nendo.argosy.data.quaypass.ble.AvatarCategory
 import com.nendo.argosy.ui.quaypass.avatar.QuayPassAvatarPalette.toAvatarHex
 import okio.Buffer
 

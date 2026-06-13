@@ -36,10 +36,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.nendo.argosy.data.quaypass.ble.QuayPassAvatar
-import com.nendo.argosy.ui.quaypass.avatar.AvatarCategory
+import com.nendo.argosy.data.quaypass.ble.AvatarCategory
 import com.nendo.argosy.ui.quaypass.avatar.AvatarPartRequest
 import com.nendo.argosy.ui.quaypass.avatar.QuayPassAvatarPalette
-import com.nendo.argosy.ui.quaypass.avatar.QuayPassPartPricing
+import com.nendo.argosy.data.quaypass.ble.QuayPassPartPricing
 import com.nendo.argosy.ui.util.clickableNoFocus
 
 val OPTIONAL_CATEGORIES = setOf(

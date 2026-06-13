@@ -25,7 +25,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.nendo.argosy.ui.quaypass.avatar.AvatarCategory
+import com.nendo.argosy.data.quaypass.ble.AvatarCategory
 import com.nendo.argosy.ui.util.clickableNoFocus
 
 @Composable

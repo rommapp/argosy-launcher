@@ -10,6 +10,7 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.Dp
 import coil.compose.AsyncImage
+import com.nendo.argosy.data.quaypass.ble.AvatarCategory
 import coil.request.ImageRequest
 import com.nendo.argosy.data.quaypass.ble.QuayPassAvatar
 

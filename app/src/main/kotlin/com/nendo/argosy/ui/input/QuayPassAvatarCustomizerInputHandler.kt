@@ -4,8 +4,8 @@ class QuayPassAvatarCustomizerInputHandler(
     private val onSectionStep: (Int) -> Unit,
     private val onAdjustWithinSection: (Int) -> Unit,
     private val onPageStep: (Int) -> Unit,
-    private val onConfirm: () -> Unit,
-    private val onBack: () -> Unit
+    private val onConfirmPressed: () -> Unit,
+    private val onBackPressed: () -> Unit
 ) : InputHandler {
 
     override fun onUp(): InputResult {
@@ -39,12 +39,12 @@ class QuayPassAvatarCustomizerInputHandler(
     }
 
     override fun onConfirm(): InputResult {
-        onConfirm()
+        onConfirmPressed()
         return InputResult.HANDLED
     }
 
     override fun onBack(): InputResult {
-        onBack()
+        onBackPressed()
         return InputResult.HANDLED
     }
 }

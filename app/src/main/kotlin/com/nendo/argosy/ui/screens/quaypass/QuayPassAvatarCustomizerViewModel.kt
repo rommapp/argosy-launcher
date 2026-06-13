@@ -71,8 +71,8 @@ class QuayPassAvatarCustomizerViewModel @Inject constructor(
         _state.update {
             it.copy(
                 avatar = avatar,
-                selectedCategory = AvatarCategory.Hair,
-                gridPage = pageForSelected(AvatarCategory.Hair, avatar)
+                selectedCategory = AvatarCategory.Face,
+                gridPage = pageForSelected(AvatarCategory.Face, avatar)
             )
         }
     }

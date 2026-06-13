@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
+import com.nendo.argosy.data.quaypass.ble.AvatarCategory
 import com.nendo.argosy.data.quaypass.ble.QuayPassAvatar
 import com.nendo.argosy.ui.components.FooterBar
 import com.nendo.argosy.ui.components.InputButton
@@ -63,8 +64,8 @@ fun QuayPassAvatarCustomizerScreen(
             onSectionStep = { viewModel.stepSection(it) },
             onAdjustWithinSection = { viewModel.adjustWithinSection(it) },
             onPageStep = { viewModel.pageStep(it) },
-            onConfirm = { viewModel.confirmFocused() },
-            onBack = { viewModel.cancel() }
+            onConfirmPressed = { viewModel.confirmFocused() },
+            onBackPressed = { viewModel.cancel() }
         )
     }
 

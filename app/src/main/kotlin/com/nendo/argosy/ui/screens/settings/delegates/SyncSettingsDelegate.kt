@@ -517,7 +517,6 @@ class SyncSettingsDelegate @Inject constructor(
             platformRepository.updateSyncEnabled(platformId, newEnabled)
 
             _state.update { state ->
-                // Update the master list
                 val updatedAllPlatforms = state.platformFiltersAllPlatforms.map { item ->
                     if (item.id == platformId) item.copy(syncEnabled = newEnabled) else item
                 }
@@ -528,7 +527,6 @@ class SyncSettingsDelegate @Inject constructor(
                     enabledPlatformCount = enabledCount
                 )
             }
-            // Re-apply filters to ensure view remains consistent (e.g. removing disabled items if in ENABLED mode)
             applyPlatformFilters()
         }
     }

@@ -828,7 +828,6 @@ private fun PlatformSelectStep(
         }
     }
 
-    // Scroll to top when the filtered list criteria changes (e.g. search, sort, filter)
     LaunchedEffect(searchQuery, filterMode, sortMode) {
         if (platforms.isNotEmpty()) {
             listState.scrollToItem(0)

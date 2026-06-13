@@ -3,7 +3,6 @@ package com.nendo.argosy.util
 import com.nendo.argosy.data.local.entity.PlatformEntity
 import com.nendo.argosy.ui.screens.settings.PlatformFilterItem
 
-// Concrete public methods to avoid kotlinc type-inference hang with generic call sites.
 object PlatformFilterLogic {
     enum class SortMode {
         DEFAULT,

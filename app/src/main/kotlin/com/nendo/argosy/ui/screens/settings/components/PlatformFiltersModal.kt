@@ -75,7 +75,6 @@ fun PlatformFiltersModal(
         focusedIndex = focusIndex
     )
 
-    // Scroll to top when the filtered list criteria changes (search, sort, filter)
     LaunchedEffect(searchQuery, filterMode, sortMode) {
         if (platforms.isNotEmpty()) {
             listState.scrollToItem(0)

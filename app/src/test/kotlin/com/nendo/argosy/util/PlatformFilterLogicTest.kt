@@ -56,7 +56,6 @@ class PlatformFilterLogicTest {
             platforms, "", PlatformFilterLogic.FilterMode.ALL, PlatformFilterLogic.SortMode.MOST_GAMES
         )
         assertEquals(listOf(500, 300, 200, 150, 120, 0, 0), most.map { it.gameCount })
-        // Tied zeros should be alphabetical
         assertEquals("Atari 2600", most[5].name)
         assertEquals("Sega Genesis", most[6].name)
 
@@ -126,7 +125,6 @@ class PlatformFilterLogicTest {
         assertEquals(0, noMatch.size)
     }
 
-    // PlatformFilterItem uses the same underlying logic — just verify the wiring
     @Test
     fun `filterItems wires romCount and syncEnabled correctly`() {
         val items = listOf(

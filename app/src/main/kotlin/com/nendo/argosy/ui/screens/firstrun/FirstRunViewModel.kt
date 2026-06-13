@@ -304,10 +304,8 @@ class FirstRunViewModel @Inject constructor(
 
             val platform = currentAll[platformIndex]
             val newEnabled = !platform.syncEnabled
-            // Update repository
             platformRepository.updateSyncEnabled(platformId, newEnabled)
 
-            // Update local state in-memory
             val updatedAll = currentAll.toMutableList()
             updatedAll[platformIndex] = platform.copy(syncEnabled = newEnabled)
 
@@ -322,12 +320,10 @@ class FirstRunViewModel @Inject constructor(
             val allEnabled = currentAll.all { it.syncEnabled }
             val newState = !allEnabled
 
-            // Update repository
             currentAll.forEach { platform ->
                 platformRepository.updateSyncEnabled(platform.id, newState)
             }
 
-            // Update local state
             val updatedAll = currentAll.map { it.copy(syncEnabled = newState) }
 
             _uiState.update { it.copy(platformsAll = updatedAll) }

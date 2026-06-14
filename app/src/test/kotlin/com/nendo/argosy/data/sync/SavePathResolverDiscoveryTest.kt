@@ -8,6 +8,7 @@ import com.nendo.argosy.data.emulator.TitleIdExtractor
 import com.nendo.argosy.data.emulator.TitleIdResult
 import com.nendo.argosy.data.local.dao.EmulatorSaveConfigDao
 import com.nendo.argosy.data.local.dao.GameDao
+import com.nendo.argosy.data.local.entity.EmulatorSaveConfigEntity
 import com.nendo.argosy.data.local.entity.GameEntity
 import com.nendo.argosy.data.model.GameSource
 import com.nendo.argosy.data.storage.AndroidDataAccessor
@@ -209,6 +210,37 @@ class SavePathResolverDiscoveryTest {
         )
 
         assertNull(result)
+    }
+
+    @Test
+    fun `savesBesideRom discovers the save in the ROM folder`() = runTest {
+        coEvery { emulatorSaveConfigDao.getByEmulator("builtin") } returns
+            EmulatorSaveConfigEntity(emulatorId = "builtin", savePathPattern = "", isAutoDetected = true, savesBesideRom = true)
+        val romDir = File(tempDir, "roms/gba").apply { mkdirs() }
+        val romFile = File(romDir, "Zelda.gba").apply { writeBytes(byteArrayOf(0)) }
+        val saveFile = File(romDir, "Zelda.srm").apply { writeBytes(byteArrayOf(1)) }
+
+        val result = resolver.discoverSavePath(
+            emulatorId = "builtin", gameTitle = "Zelda", platformSlug = "gba",
+            romPath = romFile.absolutePath, gameId = 1L,
+        )
+
+        assertEquals(saveFile.absolutePath, result)
+    }
+
+    @Test
+    fun `savesBesideRom constructs the restore target beside the ROM with the ROM name`() = runTest {
+        coEvery { emulatorSaveConfigDao.getByEmulator("builtin") } returns
+            EmulatorSaveConfigEntity(emulatorId = "builtin", savePathPattern = "", isAutoDetected = true, savesBesideRom = true)
+        val romDir = File(tempDir, "roms/gba").apply { mkdirs() }
+        val romFile = File(romDir, "Zelda.gba").apply { writeBytes(byteArrayOf(0)) }
+
+        val result = resolver.constructSavePath(
+            emulatorId = "builtin", gameTitle = "Zelda", platformSlug = "gba",
+            romPath = romFile.absolutePath,
+        )
+
+        assertEquals(File(romDir, "Zelda.srm").absolutePath, result)
     }
 
     private fun rommGame(): GameEntity = GameEntity(

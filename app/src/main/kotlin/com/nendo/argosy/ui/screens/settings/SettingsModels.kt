@@ -555,7 +555,9 @@ data class SavePathModalInfo(
     val emulatorName: String,
     val platformName: String,
     val savePath: String?,
-    val isUserOverride: Boolean
+    val isUserOverride: Boolean,
+    val savesBesideRom: Boolean = false,
+    val besideRomSupported: Boolean = false
 )
 
 data class MemcardPickerInfo(

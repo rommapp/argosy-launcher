@@ -33,6 +33,21 @@ class EmulatorSaveConfigRepository @Inject constructor(
         )
     }
 
+    suspend fun setSavesBesideRom(emulatorId: String, enabled: Boolean) {
+        val existing = emulatorSaveConfigDao.getByEmulator(emulatorId)
+        val base = existing ?: EmulatorSaveConfigEntity(
+            emulatorId = emulatorId,
+            savePathPattern = "",
+            isAutoDetected = true
+        )
+        emulatorSaveConfigDao.upsert(
+            base.copy(
+                savesBesideRom = enabled,
+                lastVerifiedAt = Instant.now()
+            )
+        )
+    }
+
     suspend fun resetSavePath(emulatorId: String) {
         val existing = emulatorSaveConfigDao.getByEmulator(emulatorId) ?: return
         if (existing.isUserStateOverride && existing.statePathPattern != null) {

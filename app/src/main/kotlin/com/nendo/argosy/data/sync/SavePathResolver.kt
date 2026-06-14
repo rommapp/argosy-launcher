@@ -106,10 +106,13 @@ class SavePathResolver @Inject constructor(
         val effectiveEmulatorId = config.emulatorId
         val userConfig = emulatorSaveConfigDao.getByEmulator(effectiveEmulatorId)
         val isRetroArch = effectiveEmulatorId == "retroarch" || effectiveEmulatorId == "retroarch_64"
-        val savePathOverrideForLog = if (userConfig?.isUserOverride == true) userConfig.savePathPattern else null
+        val besideRomBaseDir = if (userConfig?.savesBesideRom == true && romPath != null) File(romPath).parent else null
+        val overrideBaseDir = besideRomBaseDir
+            ?: userConfig?.takeIf { it.isUserOverride }?.savePathPattern
+        val savePathOverrideForLog = overrideBaseDir
         val selectedMemcardForLog = userConfig?.selectedMemcardPath
 
-        if (userConfig?.isUserOverride == true && !isRetroArch) {
+        if (overrideBaseDir != null && !isRetroArch) {
             if (config.usesFolderBasedSaves && (romPath != null || cachedSaveId != null)) {
                 onDecision("override+folder", selectedMemcardForLog, savePathOverrideForLog)
                 return@withContext discoverFolderSavePath(
@@ -120,27 +123,27 @@ class SavePathResolver @Inject constructor(
                     emulatorPackage = emulatorPackage,
                     gameId = gameId,
                     gameTitle = gameTitle,
-                    basePathOverride = userConfig.savePathPattern,
-                    selectedMemcardPath = userConfig.selectedMemcardPath
+                    basePathOverride = overrideBaseDir,
+                    selectedMemcardPath = userConfig?.selectedMemcardPath
                 )
             }
             if (config.usesGciFormat && romPath != null) {
-                val gciSave = discoverGciSavePath(config, romPath, userConfig.savePathPattern)
+                val gciSave = discoverGciSavePath(config, romPath, overrideBaseDir)
                 if (gciSave != null) {
-                    Logger.debug(TAG, "discoverSavePath: GCI save found (user override) at $gciSave")
+                    Logger.debug(TAG, "discoverSavePath: GCI save found (override) at $gciSave")
                     onDecision("override+gci", selectedMemcardForLog, savePathOverrideForLog)
                     return@withContext gciSave
                 }
             }
             if (romPath != null) {
-                val savePath = findSaveByRomName(userConfig.savePathPattern, romPath, config.saveExtensions)
+                val savePath = findSaveByRomName(overrideBaseDir, romPath, config.saveExtensions)
                 if (savePath != null) {
                     onDecision("override+romName", selectedMemcardForLog, savePathOverrideForLog)
                     return@withContext savePath
                 }
             }
             onDecision("override+title", selectedMemcardForLog, savePathOverrideForLog)
-            return@withContext findSaveInPath(userConfig.savePathPattern, gameTitle, config.saveExtensions)
+            return@withContext findSaveInPath(overrideBaseDir, gameTitle, config.saveExtensions)
         }
 
         if (config.usesFolderBasedSaves && (romPath != null || cachedSaveId != null)) {
@@ -520,9 +523,10 @@ class SavePathResolver @Inject constructor(
         }
 
         val userConfig = emulatorSaveConfigDao.getByEmulator(emulatorId)
-        val baseDir = if (userConfig?.isUserOverride == true) {
-            val userPath = userConfig.savePathPattern
-            if (directoryExists(userPath) || saveArchiver.getFileForPath(userPath).mkdirs()) userPath else null
+        val besideRomDir = if (userConfig?.savesBesideRom == true && romPath != null) File(romPath).parent else null
+        val overridePath = besideRomDir ?: userConfig?.takeIf { it.isUserOverride }?.savePathPattern
+        val baseDir = if (overridePath != null) {
+            if (directoryExists(overridePath) || saveArchiver.getFileForPath(overridePath).mkdirs()) overridePath else null
         } else {
             null
         } ?: run {
@@ -533,6 +537,11 @@ class SavePathResolver @Inject constructor(
             resolvedPaths.firstOrNull { directoryExists(it) }
                 ?: resolvedPaths.firstOrNull()
         } ?: return null
+
+        if (besideRomDir != null && romPath != null && !config.usesFolderBasedSaves) {
+            val extension = config.saveExtensions.firstOrNull { it != "*" } ?: "sav"
+            return "$baseDir/${File(romPath).nameWithoutExtension}.$extension"
+        }
 
         if (config.usesFolderBasedSaves && cachedSaveId != null) {
             saveHandlerRegistry.getFolderHandler(platformSlug)?.constructSavePath(baseDir, cachedSaveId)?.let {

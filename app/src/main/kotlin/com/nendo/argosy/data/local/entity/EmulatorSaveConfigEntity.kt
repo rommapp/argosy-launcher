@@ -21,5 +21,6 @@ data class EmulatorSaveConfigEntity(
     val lastVerifiedAt: Instant? = null,
     val statePathPattern: String? = null,
     val isUserStateOverride: Boolean = false,
-    val selectedMemcardPath: String? = null
+    val selectedMemcardPath: String? = null,
+    val savesBesideRom: Boolean = false
 )

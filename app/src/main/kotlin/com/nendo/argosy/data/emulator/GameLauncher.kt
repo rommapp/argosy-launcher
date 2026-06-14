@@ -470,7 +470,9 @@ class GameLauncher @Inject constructor(
         val builtinSettings = userPreferencesRepository.getBuiltinEmulatorSettings().first()
         // Per-platform builtin save/state overrides (Video & Performance in platform context).
         val platformLibretroOverride = platformLibretroSettingsDao.getByPlatformId(game.platformId)
-        val effectiveSavePath = platformLibretroOverride?.savePath ?: builtinSettings.customSavePath
+        val builtinBesideRom = emulatorSaveConfigRepository.getByEmulator("builtin")?.savesBesideRom == true
+        val effectiveSavePath = if (builtinBesideRom) romFile.parent
+            else platformLibretroOverride?.savePath ?: builtinSettings.customSavePath
         val effectiveStatePath = platformLibretroOverride?.statePath ?: builtinSettings.customStatePath
         return Intent(context, LibretroActivity::class.java).apply {
             putExtra(LibretroActivity.EXTRA_ROM_PATH, romFile.absolutePath)

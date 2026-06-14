@@ -21,6 +21,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.nendo.argosy.ui.components.Modal
+import com.nendo.argosy.ui.components.SwitchPreference
 import com.nendo.argosy.ui.screens.settings.SavePathModalInfo
 import com.nendo.argosy.ui.screens.settings.sections.formatStoragePath
 import com.nendo.argosy.ui.theme.Dimens
@@ -32,7 +33,8 @@ fun SavePathModal(
     buttonFocusIndex: Int,
     onDismiss: () -> Unit,
     onChangeSavePath: () -> Unit,
-    onResetSavePath: () -> Unit
+    onResetSavePath: () -> Unit,
+    onToggleBesideRom: () -> Unit = {}
 ) {
     Modal(
         title = "${info.platformName} - ${info.emulatorName}",
@@ -57,11 +59,26 @@ fun SavePathModal(
             onReset = if (info.isUserOverride) onResetSavePath else null
         )
 
+        if (info.besideRomSupported) {
+            val besideRomSubtitle = if (info.emulatorId == "builtin") {
+                "Store saves in each game's folder."
+            } else {
+                "Look for saves in each game's folder. Set your emulator to save next to the ROM as well."
+            }
+            SwitchPreference(
+                title = "Save beside ROM",
+                subtitle = besideRomSubtitle,
+                isEnabled = info.savesBesideRom,
+                isFocused = focusIndex == 1,
+                onToggle = { onToggleBesideRom() }
+            )
+        }
+
         SavePathOptionItem(
             label = "State Path",
             path = null,
             isCustom = false,
-            isFocused = focusIndex == 1,
+            isFocused = false,
             buttonFocusIndex = 0,
             onClick = { },
             enabled = false

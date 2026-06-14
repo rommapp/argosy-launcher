@@ -118,7 +118,7 @@ import com.nendo.argosy.data.local.entity.SteamLicenseEntity
         PendingConflictEntity::class,
         com.nendo.argosy.data.local.entity.TouchLayoutOverrideEntity::class
     ],
-    version = 119,
+    version = 120,
     exportSchema = true
 )
 @TypeConverters(Converters::class)

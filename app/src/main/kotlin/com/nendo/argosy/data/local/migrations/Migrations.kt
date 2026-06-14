@@ -1693,3 +1693,9 @@ object Migration_118_119 : Migration(118, 119) {
         db.execSQL("ALTER TABLE emulator_launch_args ADD COLUMN customExtras TEXT")
     }
 }
+
+object Migration_119_120 : Migration(119, 120) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE emulator_save_config ADD COLUMN savesBesideRom INTEGER NOT NULL DEFAULT 0")
+    }
+}

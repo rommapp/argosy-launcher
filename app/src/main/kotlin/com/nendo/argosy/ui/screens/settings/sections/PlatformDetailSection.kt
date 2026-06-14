@@ -596,7 +596,8 @@ fun PlatformDetailSection(
                 buttonFocusIndex = emulators.savePathModalButtonIndex,
                 onDismiss = { viewModel.dismissSavePathModal() },
                 onChangeSavePath = onLaunchSavePathPicker,
-                onResetSavePath = { viewModel.resetEmulatorSavePath(emulators.savePathModalInfo.emulatorId) }
+                onResetSavePath = { viewModel.resetEmulatorSavePath(emulators.savePathModalInfo.emulatorId) },
+                onToggleBesideRom = { viewModel.toggleSavesBesideRom() }
             )
         }
         if (emulators.showVariantPicker && emulators.variantPickerInfo != null) {

@@ -189,7 +189,8 @@ fun EmulatorsSection(
                 onChangeSavePath = onLaunchSavePathPicker,
                 onResetSavePath = {
                     viewModel.resetEmulatorSavePath(emulators.savePathModalInfo.emulatorId)
-                }
+                },
+                onToggleBesideRom = { viewModel.toggleSavesBesideRom() }
             )
         }
 

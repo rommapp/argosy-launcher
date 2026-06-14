@@ -565,6 +565,7 @@ class SettingsViewModel @Inject constructor(
     fun showSavePathModal(config: PlatformEmulatorConfig) = routeShowSavePathModal(this, config)
 
     fun dismissSavePathModal() = emulatorDelegate.dismissSavePathModal()
+    fun toggleSavesBesideRom() = emulatorDelegate.toggleSavesBesideRom(viewModelScope)
     fun moveSavePathModalFocus(delta: Int) = emulatorDelegate.moveSavePathModalFocus(delta)
     fun moveSavePathModalButtonFocus(delta: Int) = emulatorDelegate.moveSavePathModalButtonFocus(delta)
 

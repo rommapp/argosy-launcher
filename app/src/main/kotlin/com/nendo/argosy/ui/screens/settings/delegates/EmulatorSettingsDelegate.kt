@@ -324,27 +324,44 @@ class EmulatorSettingsDelegate @Inject constructor(
     }
 
     fun showSavePathModal(
+        scope: CoroutineScope,
         emulatorId: String,
         emulatorName: String,
         platformName: String,
         savePath: String?,
         isUserOverride: Boolean
     ) {
-        _state.update {
-            it.copy(
-                showSavePathModal = true,
-                savePathModalInfo = SavePathModalInfo(
-                    emulatorId = emulatorId,
-                    emulatorName = emulatorName,
-                    platformName = platformName,
-                    savePath = savePath,
-                    isUserOverride = isUserOverride
-                ),
-                savePathModalFocusIndex = 0,
-                savePathModalButtonIndex = 0
-            )
+        scope.launch {
+            val config = emulatorSaveConfigRepository.getByEmulator(emulatorId)
+            val besideRomSupported = emulatorId != "retroarch" && emulatorId != "retroarch_64"
+            _state.update {
+                it.copy(
+                    showSavePathModal = true,
+                    savePathModalInfo = SavePathModalInfo(
+                        emulatorId = emulatorId,
+                        emulatorName = emulatorName,
+                        platformName = platformName,
+                        savePath = savePath,
+                        isUserOverride = isUserOverride,
+                        savesBesideRom = config?.savesBesideRom == true,
+                        besideRomSupported = besideRomSupported
+                    ),
+                    savePathModalFocusIndex = 0,
+                    savePathModalButtonIndex = 0
+                )
+            }
+            soundManager.play(SoundType.OPEN_MODAL)
         }
-        soundManager.play(SoundType.OPEN_MODAL)
+    }
+
+    fun toggleSavesBesideRom(scope: CoroutineScope) {
+        val info = _state.value.savePathModalInfo ?: return
+        if (!info.besideRomSupported) return
+        scope.launch {
+            val enabled = !info.savesBesideRom
+            emulatorSaveConfigRepository.setSavesBesideRom(info.emulatorId, enabled)
+            _state.update { it.copy(savePathModalInfo = it.savePathModalInfo?.copy(savesBesideRom = enabled)) }
+        }
     }
 
     fun dismissSavePathModal() {
@@ -361,9 +378,9 @@ class EmulatorSettingsDelegate @Inject constructor(
 
     fun moveSavePathModalFocus(delta: Int) {
         _state.update { state ->
-            val maxIndex = 0 // Only Save Path is focusable; State Path disabled until save states supported
+            val maxIndex = if (state.savePathModalInfo?.besideRomSupported == true) 1 else 0
             val newIndex = (state.savePathModalFocusIndex + delta).coerceIn(0, maxIndex)
-            state.copy(savePathModalFocusIndex = newIndex)
+            state.copy(savePathModalFocusIndex = newIndex, savePathModalButtonIndex = 0)
         }
     }
 
@@ -456,6 +473,11 @@ class EmulatorSettingsDelegate @Inject constructor(
     ) {
         val state = _state.value
         if (!state.showSavePathModal) return
+
+        if (state.savePathModalFocusIndex == 1) {
+            toggleSavesBesideRom(scope)
+            return
+        }
 
         when (state.savePathModalButtonIndex) {
             0 -> {

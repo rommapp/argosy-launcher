@@ -576,6 +576,15 @@ object PlatformDefinitions {
         return lower
     }
 
+    private val pico8NamePattern = Regex("pico[-_ ]?8", RegexOption.IGNORE_CASE)
+
+    fun resolveImportSlug(slug: String, name: String?): String {
+        if (slug.equals("pico", ignoreCase = true) && name != null && pico8NamePattern.containsMatchIn(name)) {
+            return "pico8"
+        }
+        return slug
+    }
+
     fun getSlugsForCanonical(slug: String): Set<String> {
         val canonical = getCanonicalSlug(slug)
         val aliases = slugAliases.filterValues { it == canonical }.keys

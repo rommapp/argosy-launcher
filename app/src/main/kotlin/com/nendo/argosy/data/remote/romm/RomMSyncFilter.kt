@@ -38,7 +38,8 @@ object RomMSyncFilter {
     private fun passesExtensionFilter(rom: RomMRom, extension: String?): Boolean {
         if (extension == null) return true
 
-        val platformDef = PlatformDefinitions.getBySlug(rom.platformSlug) ?: return true
+        val effectiveSlug = PlatformDefinitions.resolveImportSlug(rom.platformSlug, rom.platformName)
+        val platformDef = PlatformDefinitions.getBySlug(effectiveSlug) ?: return true
         if (platformDef.extensions.isEmpty()) return true
 
         return extension in platformDef.extensions

@@ -293,7 +293,8 @@ class RomMLibrarySyncService @Inject constructor(
     private suspend fun syncPlatformMetadata(remote: RomMPlatform) {
         val platformId = remote.id
         val existing = platformDao.getById(platformId)
-        val platformDef = PlatformDefinitions.getBySlug(remote.slug)
+        val effectiveSlug = PlatformDefinitions.resolveImportSlug(remote.slug, remote.displayName ?: remote.name)
+        val platformDef = PlatformDefinitions.getBySlug(effectiveSlug)
 
         val logoUrl = remote.logoUrl?.let { apiClient.buildMediaUrl(it) }
         val derivedNames = PlatformDefinitions.getAliasDisplayName(remote.slug)
@@ -303,7 +304,7 @@ class RomMLibrarySyncService @Inject constructor(
         val resolvedShortName = derivedNames?.second ?: platformDef?.shortName ?: normalizedName
         val entity = PlatformEntity(
             id = platformId,
-            slug = remote.slug,
+            slug = effectiveSlug,
             fsSlug = remote.fsSlug,
             name = normalizedName,
             shortName = resolvedShortName,
@@ -329,14 +330,14 @@ class RomMLibrarySyncService @Inject constructor(
 
         remote.firmware?.let { firmware ->
             if (firmware.isNotEmpty()) {
-                biosRepository.syncPlatformFirmware(platformId, remote.slug, firmware)
+                biosRepository.syncPlatformFirmware(platformId, effectiveSlug, firmware)
             }
         }
     }
 
     private suspend fun syncRom(rom: RomMRom): Pair<Boolean, GameEntity> {
         val platformId = rom.platformId
-        val platformSlug = rom.platformSlug
+        val platformSlug = PlatformDefinitions.resolveImportSlug(rom.platformSlug, rom.platformName)
         val existing = gameDao.getByRommId(rom.id)
 
         val migrationSources = if (existing == null && rom.igdbId != null) {

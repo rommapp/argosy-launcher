@@ -156,10 +156,11 @@ class RomMApiClient @Inject constructor(
             if (response.isSuccessful) {
                 val platforms = response.body() ?: emptyList()
                 val entities = platforms.map { remote ->
+                    val effectiveSlug = PlatformDefinitions.resolveImportSlug(remote.slug, remote.displayName ?: remote.name)
                     val existing = platformDao.getById(remote.id)
                         ?: platformDao.getBySlugAndFsSlug(remote.slug, remote.fsSlug)
                         ?: platformDao.getBySlug(remote.slug)
-                    val platformDef = PlatformDefinitions.getBySlug(remote.slug)
+                    val platformDef = PlatformDefinitions.getBySlug(effectiveSlug)
                     val logoUrl = remote.logoUrl?.let { buildMediaUrl(it) }
                     val derivedNames = PlatformDefinitions.getAliasDisplayName(remote.slug)
                         ?: PlatformDefinitions.deriveDisplayName(remote.slug)
@@ -168,7 +169,7 @@ class RomMApiClient @Inject constructor(
                     val resolvedShortName = derivedNames?.second ?: platformDef?.shortName ?: normalizedName
                     PlatformEntity(
                         id = remote.id,
-                        slug = remote.slug,
+                        slug = effectiveSlug,
                         fsSlug = remote.fsSlug,
                         name = normalizedName,
                         shortName = resolvedShortName,

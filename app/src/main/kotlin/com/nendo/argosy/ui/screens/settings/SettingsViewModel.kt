@@ -994,6 +994,8 @@ class SettingsViewModel @Inject constructor(
 
     fun loginToRA() = routeLoginToRA(this)
     fun logoutFromRA() = routeLogoutFromRA(this)
+    fun setRAProxyEnabled(enabled: Boolean) = routeSetRAProxyEnabled(this, enabled)
+    fun setRAProxyAddress(address: String) = raDelegate.setProxyAddress(viewModelScope, address)
 
     fun handleConfirm(): InputResult = routeConfirm(this)
 

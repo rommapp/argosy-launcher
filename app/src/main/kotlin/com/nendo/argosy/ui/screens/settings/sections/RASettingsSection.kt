@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -39,6 +40,9 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import com.nendo.argosy.ui.components.ActionPreference
 import com.nendo.argosy.ui.components.FocusedScroll
+import com.nendo.argosy.ui.components.SwitchPreference
+import com.nendo.argosy.ui.screens.settings.RA_PROXY_FIELD_INDEX
+import com.nendo.argosy.ui.screens.settings.RA_PROXY_TOGGLE_INDEX
 import com.nendo.argosy.ui.screens.settings.RASettingsState
 import com.nendo.argosy.ui.screens.settings.SettingsUiState
 import com.nendo.argosy.ui.screens.settings.SettingsViewModel
@@ -75,6 +79,7 @@ fun RASettingsSection(
             )
         } else {
             RALoggedOutContent(
+                raState = raState,
                 focusedIndex = uiState.focusedIndex,
                 viewModel = viewModel,
                 listState = listState
@@ -174,11 +179,14 @@ private fun RALoggedInContent(
                 onClick = { viewModel.logoutFromRA() }
             )
         }
+
+        raProxyItems(raState, focusedIndex, viewModel)
     }
 }
 
 @Composable
 private fun RALoggedOutContent(
+    raState: RASettingsState,
     focusedIndex: Int,
     viewModel: SettingsViewModel,
     listState: androidx.compose.foundation.lazy.LazyListState
@@ -232,6 +240,57 @@ private fun RALoggedOutContent(
                 subtitle = "Sign in with your RetroAchievements account",
                 isFocused = focusedIndex == 0,
                 onClick = { viewModel.showRALoginForm() }
+            )
+        }
+
+        raProxyItems(raState, focusedIndex, viewModel)
+    }
+}
+
+private fun LazyListScope.raProxyItems(
+    raState: RASettingsState,
+    focusedIndex: Int,
+    viewModel: SettingsViewModel
+) {
+    item {
+        Spacer(modifier = Modifier.height(Dimens.spacingMd))
+        SectionHeader("OFFLINE PROXY")
+    }
+    item {
+        SwitchPreference(
+            title = "RetroAchievements proxy",
+            subtitle = "Route achievements through a local RAOfflineProxy",
+            isEnabled = raState.proxyEnabled,
+            isFocused = focusedIndex == RA_PROXY_TOGGLE_INDEX,
+            onToggle = { viewModel.setRAProxyEnabled(it) }
+        )
+    }
+    if (raState.proxyEnabled) {
+        item {
+            val inputShape = RoundedCornerShape(Dimens.radiusMd)
+            val focusRequester = remember { FocusRequester() }
+            LaunchedEffect(raState.focusField) {
+                if (raState.focusField == RA_PROXY_FIELD_INDEX) {
+                    focusRequester.requestFocus()
+                    viewModel.clearRAFocusField()
+                }
+            }
+            OutlinedTextField(
+                value = raState.proxyAddress,
+                onValueChange = { viewModel.setRAProxyAddress(it) },
+                label = { Text("Proxy address") },
+                placeholder = { Text("127.0.0.1:8080") },
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
+                shape = inputShape,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .focusRequester(focusRequester)
+                    .then(
+                        if (focusedIndex == RA_PROXY_FIELD_INDEX)
+                            Modifier.background(MaterialTheme.colorScheme.primaryContainer, inputShape)
+                        else Modifier
+                    )
             )
         }
     }

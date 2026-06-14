@@ -50,6 +50,8 @@ class UserPreferencesRepository @Inject constructor(
             rommDeviceClientVersion = sync.rommDeviceClientVersion,
             raUsername = sync.raUsername,
             raToken = sync.raToken,
+            raProxyEnabled = sync.raProxyEnabled,
+            raProxyAddress = sync.raProxyAddress,
             romStoragePath = storage.romStoragePath,
             themeMode = display.themeMode,
             primaryColor = display.primaryColor,
@@ -230,6 +232,7 @@ class UserPreferencesRepository @Inject constructor(
     suspend fun clearRommDeviceId() = syncPrefs.clearRommDeviceId()
     suspend fun setRACredentials(username: String, token: String) = syncPrefs.setRACredentials(username, token)
     suspend fun clearRACredentials() = syncPrefs.clearRACredentials()
+    suspend fun setRAProxy(enabled: Boolean, address: String) = syncPrefs.setRAProxy(enabled, address)
     suspend fun setLastRommSyncTime(time: Instant) = syncPrefs.setLastRommSyncTime(time)
     suspend fun setLastFavoritesSyncTime(time: Instant) = syncPrefs.setLastFavoritesSyncTime(time)
     suspend fun setLastFavoritesCheckTime(time: Instant) = syncPrefs.setLastFavoritesCheckTime(time)
@@ -486,6 +489,8 @@ data class UserPreferences(
     val rommDeviceClientVersion: String? = null,
     val raUsername: String? = null,
     val raToken: String? = null,
+    val raProxyEnabled: Boolean = false,
+    val raProxyAddress: String = "",
     val romStoragePath: String? = null,
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
     val primaryColor: Int? = null,

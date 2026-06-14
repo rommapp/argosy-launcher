@@ -22,6 +22,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.sync.withLock
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
@@ -57,9 +58,32 @@ class RetroAchievementsRepository @Inject constructor(
     private val prefsRepository: UserPreferencesRepository,
     private val payloadCodec: com.nendo.argosy.data.sync.SyncPayloadCodec
 ) {
-    private val api: RAApi by lazy { createApi() }
+    @Volatile private var cachedApi: RAApi? = null
+    @Volatile private var cachedBaseUrl: String? = null
 
-    private fun createApi(): RAApi {
+    private suspend fun api(): RAApi {
+        val baseUrl = resolveBaseUrl()
+        cachedApi?.let { if (cachedBaseUrl == baseUrl) return it }
+        return createApi(baseUrl).also {
+            cachedApi = it
+            cachedBaseUrl = baseUrl
+        }
+    }
+
+    private suspend fun resolveBaseUrl(): String {
+        val prefs = prefsRepository.userPreferences.first()
+        if (!prefs.raProxyEnabled) return RAApi.BASE_URL
+        return normalizeProxyBaseUrl(prefs.raProxyAddress) ?: RAApi.BASE_URL
+    }
+
+    private fun normalizeProxyBaseUrl(raw: String): String? {
+        val trimmed = raw.trim()
+        if (trimmed.isEmpty()) return null
+        val withScheme = if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) trimmed else "http://$trimmed"
+        return withScheme.toHttpUrlOrNull()?.toString()
+    }
+
+    private fun createApi(baseUrl: String): RAApi {
         val moshi = Moshi.Builder().build()
 
         val client = OkHttpClient.Builder()
@@ -74,7 +98,7 @@ class RetroAchievementsRepository @Inject constructor(
             .build()
 
         return Retrofit.Builder()
-            .baseUrl(RAApi.BASE_URL)
+            .baseUrl(baseUrl)
             .client(client)
             .addConverterFactory(MoshiConverterFactory.create(moshi))
             .build()
@@ -114,7 +138,7 @@ class RetroAchievementsRepository @Inject constructor(
     }
 
     suspend fun resolveGameId(hash: String): Long? {
-        val response = api.resolveGameId(hash = hash)
+        val response = api().resolveGameId(hash = hash)
         if (!response.isSuccessful) {
             throw Exception("resolveGameId failed: HTTP ${response.code()}")
         }
@@ -127,7 +151,7 @@ class RetroAchievementsRepository @Inject constructor(
     suspend fun login(username: String, password: String): RALoginResult {
         Logger.debug(TAG, "Logging in to RetroAchievements")
         return try {
-            val response = api.login(username = username, password = password)
+            val response = api().login(username = username, password = password)
 
             if (!response.isSuccessful) {
                 Logger.error(TAG, "Login failed: HTTP ${response.code()}")
@@ -179,7 +203,7 @@ class RetroAchievementsRepository @Inject constructor(
         val hardcoreInt = if (forHardcoreMode) 1 else 0
 
         return try {
-            val response = api.awardAchievement(
+            val response = api().awardAchievement(
                 username = credentials.username,
                 token = credentials.token,
                 achievementId = achievementRaId,
@@ -270,7 +294,7 @@ class RetroAchievementsRepository @Inject constructor(
             val hardcoreInt = if (payload.forHardcoreMode) 1 else 0
 
             try {
-                val response = api.awardAchievement(
+                val response = api().awardAchievement(
                     username = credentials.username,
                     token = credentials.token,
                     achievementId = payload.achievementRaId,
@@ -315,7 +339,7 @@ class RetroAchievementsRepository @Inject constructor(
         Logger.debug(TAG, "Starting RA session for game $gameRaId")
 
         return try {
-            val response = api.startSession(
+            val response = api().startSession(
                 username = credentials.username,
                 token = credentials.token,
                 gameId = gameRaId,
@@ -354,7 +378,7 @@ class RetroAchievementsRepository @Inject constructor(
         val credentials = getCredentials() ?: return false
 
         return try {
-            val response = api.ping(
+            val response = api().ping(
                 username = credentials.username,
                 token = credentials.token,
                 gameId = gameRaId,
@@ -372,7 +396,7 @@ class RetroAchievementsRepository @Inject constructor(
         val credentials = getCredentials() ?: return null
 
         return try {
-            val response = api.getGameInfo(
+            val response = api().getGameInfo(
                 username = credentials.username,
                 token = credentials.token,
                 gameId = gameRaId
@@ -558,13 +582,13 @@ class RetroAchievementsRepository @Inject constructor(
 
             Logger.debug(TAG, "fetchUnlocksFresh: calling RA Connect r=unlocks game=$gameRaId")
             try {
-                val casualResponse = api.getUnlocks(
+                val casualResponse = api().getUnlocks(
                     username = credentials.username,
                     token = credentials.token,
                     gameId = gameRaId,
                     hardcore = 0
                 )
-                val hardcoreResponse = api.getUnlocks(
+                val hardcoreResponse = api().getUnlocks(
                     username = credentials.username,
                     token = credentials.token,
                     gameId = gameRaId,

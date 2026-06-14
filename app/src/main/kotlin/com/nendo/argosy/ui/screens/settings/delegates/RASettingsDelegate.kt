@@ -1,6 +1,7 @@
 package com.nendo.argosy.ui.screens.settings.delegates
 
 import android.util.Log
+import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.repository.RALoginResult
 import com.nendo.argosy.data.repository.RetroAchievementsRepository
 import com.nendo.argosy.ui.screens.settings.RASettingsState
@@ -8,6 +9,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -15,7 +17,8 @@ import javax.inject.Inject
 private const val TAG = "RASettingsDelegate"
 
 class RASettingsDelegate @Inject constructor(
-    private val raRepository: RetroAchievementsRepository
+    private val raRepository: RetroAchievementsRepository,
+    private val prefsRepository: UserPreferencesRepository
 ) {
     private val _state = MutableStateFlow(RASettingsState())
     val state: StateFlow<RASettingsState> = _state.asStateFlow()
@@ -27,10 +30,13 @@ class RASettingsDelegate @Inject constructor(
     fun initialize(scope: CoroutineScope) {
         scope.launch {
             val credentials = raRepository.getCredentials()
+            val prefs = prefsRepository.userPreferences.first()
             _state.update {
                 it.copy(
                     isLoggedIn = credentials != null,
-                    username = credentials?.username
+                    username = credentials?.username,
+                    proxyEnabled = prefs.raProxyEnabled,
+                    proxyAddress = prefs.raProxyAddress
                 )
             }
         }
@@ -80,6 +86,16 @@ class RASettingsDelegate @Inject constructor(
 
     fun setFocusField(index: Int) {
         _state.update { it.copy(focusField = index) }
+    }
+
+    fun setProxyEnabled(scope: CoroutineScope, enabled: Boolean) {
+        _state.update { it.copy(proxyEnabled = enabled) }
+        scope.launch { prefsRepository.setRAProxy(enabled, _state.value.proxyAddress) }
+    }
+
+    fun setProxyAddress(scope: CoroutineScope, address: String) {
+        _state.update { it.copy(proxyAddress = address) }
+        scope.launch { prefsRepository.setRAProxy(_state.value.proxyEnabled, address) }
     }
 
     fun login(scope: CoroutineScope, onFocusReset: () -> Unit) {

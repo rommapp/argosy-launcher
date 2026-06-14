@@ -150,10 +150,12 @@ internal fun routeConfirm(vm: SettingsViewModel): InputResult {
                     2 -> vm.loginToRA()
                     3 -> vm.hideRALoginForm()
                 }
-            } else if (ra.isLoggedIn) {
-                if (state.focusedIndex == 0) vm.logoutFromRA()
             } else {
-                if (state.focusedIndex == 0) vm.showRALoginForm()
+                when (state.focusedIndex) {
+                    0 -> if (ra.isLoggedIn) vm.logoutFromRA() else vm.showRALoginForm()
+                    RA_PROXY_TOGGLE_INDEX -> vm.setRAProxyEnabled(!ra.proxyEnabled)
+                    RA_PROXY_FIELD_INDEX -> vm.raDelegate.setFocusField(RA_PROXY_FIELD_INDEX)
+                }
             }
             InputResult.HANDLED
         }
@@ -736,7 +738,11 @@ private fun computeMaxFocusIndex(
     }
     SettingsSection.SYNC_SETTINGS -> syncSettingsMaxFocusIndex()
     SettingsSection.STEAM_SETTINGS -> steamMaxFocusIndex(state.steam)
-    SettingsSection.RETRO_ACHIEVEMENTS -> if (state.retroAchievements.showLoginForm) 3 else 0
+    SettingsSection.RETRO_ACHIEVEMENTS -> when {
+        state.retroAchievements.showLoginForm -> 3
+        state.retroAchievements.proxyEnabled -> RA_PROXY_FIELD_INDEX
+        else -> RA_PROXY_TOGGLE_INDEX
+    }
     SettingsSection.STORAGE -> createStorageLayoutInfo(
     ).let { it.layout.maxFocusIndex(it.state) }
     SettingsSection.INTERFACE -> interfaceMaxFocusIndex(InterfaceLayoutState.from(state))

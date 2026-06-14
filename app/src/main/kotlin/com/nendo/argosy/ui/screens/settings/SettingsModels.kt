@@ -814,6 +814,9 @@ data class PermissionsState(
     }
 }
 
+const val RA_PROXY_TOGGLE_INDEX = 1
+const val RA_PROXY_FIELD_INDEX = 2
+
 data class RASettingsState(
     val isLoggedIn: Boolean = false,
     val username: String? = null,
@@ -824,7 +827,9 @@ data class RASettingsState(
     val loginPassword: String = "",
     val loginError: String? = null,
     val focusField: Int? = null,
-    val pendingAchievementsCount: Int = 0
+    val pendingAchievementsCount: Int = 0,
+    val proxyEnabled: Boolean = false,
+    val proxyAddress: String = ""
 )
 
 data class BiosFirmwareItem(

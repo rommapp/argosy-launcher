@@ -21,6 +21,8 @@ data class SyncPreferences(
     val rommDeviceClientVersion: String? = null,
     val raUsername: String? = null,
     val raToken: String? = null,
+    val raProxyEnabled: Boolean = false,
+    val raProxyAddress: String = "",
     val lastRommSync: Instant? = null,
     val lastFavoritesSync: Instant? = null,
     val lastFavoritesCheck: Instant? = null,
@@ -60,6 +62,8 @@ class SyncPreferencesRepository @Inject constructor(
         val ROMM_DEVICE_CLIENT_VERSION = stringPreferencesKey("romm_device_client_version")
         val RA_USERNAME = stringPreferencesKey("ra_username")
         val RA_TOKEN = stringPreferencesKey("ra_token")
+        val RA_PROXY_ENABLED = booleanPreferencesKey("ra_proxy_enabled")
+        val RA_PROXY_ADDRESS = stringPreferencesKey("ra_proxy_address")
         val LAST_ROMM_SYNC = stringPreferencesKey("last_romm_sync")
         val LAST_FAVORITES_SYNC = stringPreferencesKey("last_favorites_sync")
         val LAST_FAVORITES_CHECK = stringPreferencesKey("last_favorites_check")
@@ -127,6 +131,8 @@ class SyncPreferencesRepository @Inject constructor(
             rommDeviceClientVersion = prefs[Keys.ROMM_DEVICE_CLIENT_VERSION],
             raUsername = prefs[Keys.RA_USERNAME],
             raToken = prefs[Keys.RA_TOKEN],
+            raProxyEnabled = prefs[Keys.RA_PROXY_ENABLED] ?: false,
+            raProxyAddress = prefs[Keys.RA_PROXY_ADDRESS] ?: "",
             lastRommSync = prefs[Keys.LAST_ROMM_SYNC]?.let { Instant.parse(it) },
             lastFavoritesSync = prefs[Keys.LAST_FAVORITES_SYNC]?.let { Instant.parse(it) },
             lastFavoritesCheck = prefs[Keys.LAST_FAVORITES_CHECK]?.let { Instant.parse(it) },
@@ -228,6 +234,13 @@ class SyncPreferencesRepository @Inject constructor(
         dataStore.edit { prefs ->
             prefs.remove(Keys.RA_USERNAME)
             prefs.remove(Keys.RA_TOKEN)
+        }
+    }
+
+    suspend fun setRAProxy(enabled: Boolean, address: String) {
+        dataStore.edit { prefs ->
+            prefs[Keys.RA_PROXY_ENABLED] = enabled
+            prefs[Keys.RA_PROXY_ADDRESS] = address
         }
     }
 

@@ -7,6 +7,7 @@ import com.nendo.argosy.data.local.dao.EmulatorConfigDao
 import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.dao.GameDiscDao
 import com.nendo.argosy.data.download.DownloadState
+import com.nendo.argosy.data.platform.PlatformDefinitions
 import com.nendo.argosy.data.remote.romm.RomMRepository
 import com.nendo.argosy.data.remote.romm.RomMResult
 import com.nendo.argosy.data.repository.GameRepository
@@ -110,7 +111,7 @@ class DownloadGameUseCase @Inject constructor(
                 }
 
                 val ext = fileName.substringAfterLast('.', "").lowercase()
-                if (ext in INVALID_ROM_EXTENSIONS) {
+                if (ext in INVALID_ROM_EXTENSIONS && !isPico8Cart(fileName, game.platformSlug)) {
                     return DownloadResult.Error("Invalid ROM file type: .$ext")
                 }
 
@@ -160,7 +161,7 @@ class DownloadGameUseCase @Inject constructor(
                 val fileName = rom.fileName ?: disc.fileName
 
                 val ext = fileName.substringAfterLast('.', "").lowercase()
-                if (ext in INVALID_ROM_EXTENSIONS) continue
+                if (ext in INVALID_ROM_EXTENSIONS && !isPico8Cart(fileName, platformSlug)) continue
 
                 downloadManager.enqueueDiscDownload(
                     gameId = gameId,
@@ -223,6 +224,13 @@ class DownloadGameUseCase @Inject constructor(
         if (currentExt == preferredExt.lowercase()) return fileName
 
         return fileName.replaceAfterLast('.', preferredExt)
+    }
+
+    private fun isPico8Cart(fileName: String, platformSlug: String): Boolean {
+        val lower = fileName.lowercase()
+        return lower.endsWith(".p8.png") ||
+            (PlatformDefinitions.getCanonicalSlug(platformSlug) == "pico8" &&
+                lower.substringAfterLast('.', "") == "png")
     }
 
     companion object {

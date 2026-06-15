@@ -556,8 +556,8 @@ class SavePathResolver @Inject constructor(
         }
 
         val extension = config.saveExtensions.firstOrNull { it != "*" } ?: "sav"
-        val sanitizedName = sanitizeFileName(gameTitle)
-        val fileName = "$sanitizedName.$extension"
+        val baseName = if (romPath != null) File(romPath).nameWithoutExtension else sanitizeFileName(gameTitle)
+        val fileName = "$baseName.$extension"
 
         return "$baseDir/$fileName"
     }

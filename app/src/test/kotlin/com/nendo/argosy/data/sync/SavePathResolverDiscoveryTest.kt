@@ -243,6 +243,19 @@ class SavePathResolverDiscoveryTest {
         assertEquals(File(romDir, "Zelda.srm").absolutePath, result)
     }
 
+    @Test
+    fun `constructSavePath names the flat save after the ROM base name not the game title`() = runTest {
+        val romDir = File(tempDir, "roms/gba").apply { mkdirs() }
+        val romFile = File(romDir, "Zelda (USA).gba").apply { writeBytes(byteArrayOf(0)) }
+
+        val result = resolver.constructSavePath(
+            emulatorId = "builtin", gameTitle = "Zelda", platformSlug = "gba",
+            romPath = romFile.absolutePath,
+        )
+
+        assertEquals("Zelda (USA).srm", result?.let { File(it).name })
+    }
+
     private fun rommGame(): GameEntity = GameEntity(
         id = 1L, platformId = 10L, platformSlug = "switch",
         title = "BOTW", sortTitle = "botw",

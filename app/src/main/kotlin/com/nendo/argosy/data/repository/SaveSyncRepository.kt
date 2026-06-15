@@ -323,9 +323,9 @@ class SaveSyncRepository @Inject constructor(
             return@withContext PreLaunchSyncResult.NoConnection
         }
 
-        val active = serverSaves.firstOrNull { save ->
-            save.slot != null && SaveSyncApiClient.equalsNormalized(save.slot, effectiveChannel)
-        }
+        val active = serverSaves
+            .filter { save -> save.slot != null && SaveSyncApiClient.equalsNormalized(save.slot, effectiveChannel) }
+            .maxByOrNull { SaveSyncApiClient.parseTimestamp(it.updatedAt) }
         val localDirty = saveCacheDao.hasNeedingRemoteSync(gameId, channelName)
 
         if (active == null) {
@@ -335,7 +335,11 @@ class SaveSyncRepository @Inject constructor(
         }
 
         val ourSync = active.deviceSyncs?.firstOrNull { it.deviceId == myDeviceId }
-        val serverHasNewer = ourSync?.isCurrent != true
+        val serverHash = active.contentHash?.takeIf { apiClient.getCapabilities().trustsServerHash }
+        val contentMatchesLastSync = serverHash != null &&
+            existing?.lastUploadedHash != null &&
+            serverHash == existing.lastUploadedHash
+        val serverHasNewer = !contentMatchesLastSync && ourSync?.isCurrent != true
 
         val decision: PreLaunchSyncResult = when {
             !serverHasNewer -> PreLaunchSyncResult.LocalIsNewer
@@ -352,7 +356,7 @@ class SaveSyncRepository @Inject constructor(
             )
         }
 
-        Logger.debug(PRE_LAUNCH_TAG, "[SaveSync] PRE_LAUNCH gameId=$gameId channel=$effectiveChannel | serverIsCurrent=${ourSync?.isCurrent == true} serverHasNewer=$serverHasNewer localDirty=$localDirty | decision=${decision::class.simpleName} serverSaveId=${active.id}")
+        Logger.debug(PRE_LAUNCH_TAG, "[SaveSync] PRE_LAUNCH gameId=$gameId channel=$effectiveChannel | serverIsCurrent=${ourSync?.isCurrent == true} contentMatchesLastSync=$contentMatchesLastSync serverHasNewer=$serverHasNewer localDirty=$localDirty | decision=${decision::class.simpleName} serverSaveId=${active.id}")
         decision
     }
 

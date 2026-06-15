@@ -258,6 +258,9 @@ class SaveDownloader @Inject constructor(
                     if (serverTimestamp != null && cachedMatch.cachedAt != serverTimestamp) {
                         saveCacheDao.updateCachedAt(cachedMatch.id, serverTimestamp)
                     }
+                    if (serverTimestamp != null) {
+                        gameDao.updateActiveSaveTimestamp(gameId, serverTimestamp.toEpochMilli())
+                    }
                     Logger.info(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | Complete (cache-hit) | path=$preDownloadTargetPath")
                     return@withContext SaveSyncResult.Success(rommSaveId = serverSave.id, serverTimestamp = serverTimestamp)
                 }

@@ -88,6 +88,7 @@ class SyncCoordinatorProcessQueueTest {
             pendingConflictDao = pendingConflictDao,
             conflictAutoResolver = conflictAutoResolver,
             saveSyncRepository = Lazy { saveSyncRepository },
+            saveCacheManager = Lazy { saveCacheManager },
             payloadCodec = payloadCodec
         )
         coordinator = SyncCoordinator(
@@ -106,6 +107,7 @@ class SyncCoordinatorProcessQueueTest {
             strategySelector = strategySelector,
             pendingConflictDao = pendingConflictDao,
             reconcileEffectApplier = effectApplier,
+            saveRecoveryGate = mockk(relaxed = true),
         )
     }
 

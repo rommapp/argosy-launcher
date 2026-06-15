@@ -63,6 +63,7 @@ class ReconcileEffectApplierTest {
             pendingConflictDao = pendingConflictDao,
             conflictAutoResolver = conflictAutoResolver,
             saveSyncRepository = dagger.Lazy { saveSyncRepository },
+            saveCacheManager = dagger.Lazy { mockk(relaxed = true) },
             payloadCodec = SyncPayloadCodec(com.squareup.moshi.Moshi.Builder().build())
         )
     }

@@ -206,6 +206,7 @@ class SaveSyncOrchestrator @Inject constructor(
                     lastSyncedAt = existing?.lastSyncedAt,
                     syncStatus = SaveSyncEntity.STATUS_SERVER_NEWER,
                     lastUploadedHash = existing?.lastUploadedHash,
+                    localContentHash = existing?.localContentHash,
                     lastSyncDeviceId = existing?.lastSyncDeviceId,
                     lastSyncDeviceName = existing?.lastSyncDeviceName
                 )
@@ -289,6 +290,7 @@ class SaveSyncOrchestrator @Inject constructor(
                         lastSyncedAt = existing?.lastSyncedAt,
                         syncStatus = status,
                         lastUploadedHash = existing?.lastUploadedHash,
+                        localContentHash = existing?.localContentHash,
                         lastSyncDeviceId = existing?.lastSyncDeviceId,
                         lastSyncDeviceName = existing?.lastSyncDeviceName
                     )

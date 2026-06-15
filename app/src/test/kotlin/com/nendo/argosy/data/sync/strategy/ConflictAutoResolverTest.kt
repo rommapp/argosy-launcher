@@ -95,7 +95,8 @@ class ConflictAutoResolverTest {
             rommId = 100L,
             emulatorId = "mgba",
             syncStatus = SaveSyncEntity.STATUS_SYNCED,
-            lastUploadedHash = "anchor-hash"
+            lastUploadedHash = "anchor-hash",
+            localContentHash = "anchor-hash"
         )
 
         val result = resolver.classify(op(serverHash = "server-hash-newer"), clientHash = "anchor-hash")
@@ -112,7 +113,8 @@ class ConflictAutoResolverTest {
             rommId = 100L,
             emulatorId = "mgba",
             syncStatus = SaveSyncEntity.STATUS_SYNCED,
-            lastUploadedHash = "anchor-hash"
+            lastUploadedHash = "anchor-hash",
+            localContentHash = "anchor-hash"
         )
 
         val result = resolver.classify(op(serverHash = "anchor-hash"), clientHash = "local-changed")
@@ -130,7 +132,8 @@ class ConflictAutoResolverTest {
             rommId = 100L,
             emulatorId = "mgba",
             syncStatus = SaveSyncEntity.STATUS_SYNCED,
-            lastUploadedHash = "anchor-hash"
+            lastUploadedHash = "anchor-hash",
+            localContentHash = "anchor-hash"
         )
 
         val result = resolver.classify(op(serverHash = "different-server"), clientHash = "different-local")

@@ -220,7 +220,7 @@ class SaveUploader @Inject constructor(
                 )
             }
 
-            if (syncEntity?.lastUploadedHash == contentHash) {
+            if (syncEntity?.localContentHash == contentHash) {
                 Logger.debug(TAG, "[SaveSync] UPLOAD gameId=$gameId | Skipped - content unchanged (hash=$contentHash)")
                 if (prepared.isTemporary) fileToUpload.delete()
                 tempTrailerFile?.delete()
@@ -236,7 +236,8 @@ class SaveUploader @Inject constructor(
                 saveSyncDao.upsert(
                     syncEntity.copy(
                         localUpdatedAt = localMtime ?: syncEntity.localUpdatedAt,
-                        lastSyncedAt = Instant.now()
+                        lastSyncedAt = Instant.now(),
+                        localContentHash = contentHash
                     )
                 )
                 return@withContext SaveSyncResult.Success(noOp = true)
@@ -356,6 +357,7 @@ class SaveUploader @Inject constructor(
                         lastSyncedAt = Instant.now(),
                         syncStatus = SaveSyncEntity.STATUS_SYNCED,
                         lastUploadedHash = serverSave.contentHash?.takeIf { client.getCapabilities().trustsServerHash },
+                        localContentHash = contentHash,
                         lastSyncDeviceId = serverSave.originDeviceId ?: currentDeviceSync?.deviceId ?: deviceId ?: syncEntity?.lastSyncDeviceId,
                         lastSyncDeviceName = serverSave.originDeviceName() ?: currentDeviceSync?.deviceName ?: syncEntity?.lastSyncDeviceName,
                         userSelectedRestorePoint = false
@@ -526,6 +528,12 @@ class SaveUploader @Inject constructor(
                     uploadedCacheId = uploadedCacheId,
                     serverSave = serverSave
                 )
+                saveSyncDao.getByGameEmulatorAndChannel(gameId, resolvedEmulatorId, channelName)?.let { row ->
+                    saveSyncDao.updateLocalContentHash(row.id, saveArchiver.calculateContentHash(cacheFile))
+                    serverSave.contentHash?.takeIf { client.getCapabilities().trustsServerHash }?.let {
+                        saveSyncDao.updateLastUploadedHash(row.id, it)
+                    }
+                }
                 clearUserSelectedRestorePointIfSet(gameId, resolvedEmulatorId, channelName)
                 SaveSyncResult.Success(rommSaveId = serverSave.id, serverTimestamp = serverTime)
             } else {

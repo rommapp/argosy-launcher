@@ -77,7 +77,8 @@ class SaveSyncEntityManager @Inject constructor(
                 localUpdatedAt = now,
                 serverUpdatedAt = serverTimestamp ?: existing?.serverUpdatedAt,
                 lastSyncedAt = now,
-                lastUploadedHash = contentHash ?: existing?.lastUploadedHash,
+                lastUploadedHash = existing?.lastUploadedHash,
+                localContentHash = contentHash ?: existing?.localContentHash,
                 syncStatus = SaveSyncEntity.STATUS_SYNCED,
                 userSelectedRestorePoint = existing?.userSelectedRestorePoint ?: false,
                 userSelectedRestorePointAt = existing?.userSelectedRestorePointAt
@@ -126,6 +127,7 @@ class SaveSyncEntityManager @Inject constructor(
             serverUpdatedAt = existing?.serverUpdatedAt,
             lastSyncedAt = existing?.lastSyncedAt,
             lastUploadedHash = existing?.lastUploadedHash,
+            localContentHash = existing?.localContentHash,
             syncStatus = existing?.syncStatus ?: SaveSyncEntity.STATUS_PENDING_UPLOAD,
             lastSyncDeviceId = existing?.lastSyncDeviceId,
             lastSyncDeviceName = existing?.lastSyncDeviceName,

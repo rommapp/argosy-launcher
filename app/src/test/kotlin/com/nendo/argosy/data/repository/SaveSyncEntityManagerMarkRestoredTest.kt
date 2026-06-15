@@ -91,7 +91,7 @@ class SaveSyncEntityManagerMarkRestoredTest {
     }
 
     @Test
-    fun `markRestored records restored content hash over stale upload hash`() = runTest {
+    fun `markRestored records restored content hash as client anchor and preserves server hash`() = runTest {
         val existing = SaveSyncEntity(
             id = 42L,
             gameId = 7L,
@@ -118,7 +118,8 @@ class SaveSyncEntityManagerMarkRestoredTest {
             contentHash = "restored-hash"
         )
 
-        assertEquals("restored-hash", captured.captured.lastUploadedHash)
+        assertEquals("restored-hash", captured.captured.localContentHash)
+        assertEquals("old-hash", captured.captured.lastUploadedHash)
         assertEquals(SaveSyncEntity.STATUS_SYNCED, captured.captured.syncStatus)
     }
 

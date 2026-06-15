@@ -40,6 +40,7 @@ class ReconcileEffectApplier @Inject constructor(
     private val pendingConflictDao: PendingConflictDao,
     private val conflictAutoResolver: ConflictAutoResolver,
     private val saveSyncRepository: Lazy<SaveSyncRepository>,
+    private val saveCacheManager: Lazy<com.nendo.argosy.data.repository.SaveCacheManager>,
     private val payloadCodec: SyncPayloadCodec
 ) {
 
@@ -68,7 +69,7 @@ class ReconcileEffectApplier @Inject constructor(
                 saveSyncDao.getByGameAndEmulator(gid, emu)
             }
         }
-        val clientHash = existing?.lastUploadedHash
+        val clientHash = existing?.localSavePath?.let { saveCacheManager.get().calculateLocalSaveHash(it) }
         val localTime = resolveLocalTimeFromEntity(existing, fallback = null)
 
         return when (val res = conflictAutoResolver.classify(op, clientHash)) {
@@ -177,6 +178,7 @@ class ReconcileEffectApplier @Inject constructor(
                 lastSyncedAt = existing?.lastSyncedAt,
                 syncStatus = SaveSyncEntity.STATUS_SERVER_NEWER,
                 lastUploadedHash = existing?.lastUploadedHash,
+                localContentHash = existing?.localContentHash,
                 lastSyncDeviceId = existing?.lastSyncDeviceId,
                 lastSyncDeviceName = existing?.lastSyncDeviceName
             )

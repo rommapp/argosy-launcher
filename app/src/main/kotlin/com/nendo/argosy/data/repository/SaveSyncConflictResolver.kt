@@ -262,11 +262,11 @@ class SaveSyncConflictResolver @Inject constructor(
         }
 
         val localHash = saveCacheManager.get().calculateLocalSaveHash(localPath)
-        val hashMatchesLastUpload = syncEntity?.lastUploadedHash != null
+        val localMatchesAnchor = syncEntity?.localContentHash != null
             && localHash != null
-            && localHash == syncEntity.lastUploadedHash
+            && localHash == syncEntity.localContentHash
 
-        if (hashMatchesLastUpload) {
+        if (localMatchesAnchor) {
             return@withContext SyncAnalysis.InSync
         }
 
@@ -276,9 +276,13 @@ class SaveSyncConflictResolver @Inject constructor(
             return@withContext SyncAnalysis.InSync
         }
 
-        val isHashConflict = syncEntity?.lastUploadedHash != null
+        val localChangedSinceUpload = syncEntity?.localContentHash != null
             && localHash != null
-            && localHash != syncEntity.lastUploadedHash
+            && localHash != syncEntity.localContentHash
+        val serverChangedSinceUpload = serverHash != null
+            && syncEntity?.lastUploadedHash != null
+            && serverHash != syncEntity.lastUploadedHash
+        val isHashConflict = localChangedSinceUpload && serverChangedSinceUpload
 
         val deviceId = client.getDeviceId()
         val deviceSyncEntry = deviceId?.let { devId ->
@@ -295,8 +299,13 @@ class SaveSyncConflictResolver @Inject constructor(
             ?.maxByOrNull { it.lastSyncedAt ?: "" }
             ?.deviceName
 
+        val haveTrustedHashes = serverHash != null &&
+            syncEntity?.lastUploadedHash != null &&
+            syncEntity.localContentHash != null
+        val isConflict = if (haveTrustedHashes) isHashConflict else isServerNewer
+
         when {
-            isServerNewer || isHashConflict -> SyncAnalysis.Conflict(
+            isConflict -> SyncAnalysis.Conflict(
                 ConflictInfo(
                     gameId = gameId,
                     gameName = game.title,

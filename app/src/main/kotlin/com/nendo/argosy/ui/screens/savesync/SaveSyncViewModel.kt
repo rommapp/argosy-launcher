@@ -432,11 +432,12 @@ class SaveSyncViewModel @Inject constructor(
     }
 
     private fun effectiveChannelLabel(channelName: String?, game: GameEntity): String {
-        if (channelName.isNullOrBlank()) return "Default"
-        if (channelName.equals(SaveSyncApiClient.DEFAULT_SAVE_NAME, ignoreCase = true)) return "Default"
-        if (channelName.equals(game.title, ignoreCase = true)) return "Default"
+        if (channelName.isNullOrBlank()) return "Archived"
+        if (channelName.equals(SaveSyncApiClient.AUTOSAVE_SLOT_NAME, ignoreCase = true)) return "Autosave"
+        if (channelName.equals(SaveSyncApiClient.DEFAULT_SAVE_NAME, ignoreCase = true)) return "Autosave"
+        if (channelName.equals(game.title, ignoreCase = true)) return "Autosave"
         val romBaseName = game.localPath?.let { File(it).nameWithoutExtension }
-        if (romBaseName != null && channelName.equals(romBaseName, ignoreCase = true)) return "Default"
+        if (romBaseName != null && channelName.equals(romBaseName, ignoreCase = true)) return "Autosave"
         return channelName
     }
 }

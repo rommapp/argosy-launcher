@@ -46,6 +46,7 @@ class SyncCoordinatorApplyPlanTest {
     private lateinit var strategySelector: SaveSyncStrategySelector
     private lateinit var fakeStrategy: SaveSyncStrategy
     private lateinit var mockSaveSyncRepository: SaveSyncRepository
+    private lateinit var mockSaveCacheManager: com.nendo.argosy.data.repository.SaveCacheManager
 
     private lateinit var coordinator: SyncCoordinator
 
@@ -87,6 +88,7 @@ class SyncCoordinatorApplyPlanTest {
 
         mockSaveSyncRepository = mockk(relaxed = true)
         coEvery { mockSaveSyncRepository.resolveEmulatorForGame(any()) } returns "mgba"
+        mockSaveCacheManager = mockk(relaxed = true)
         val payloadCodec = SyncPayloadCodec(com.squareup.moshi.Moshi.Builder().build())
         val effectApplier = ReconcileEffectApplier(
             pendingSyncQueueDao = pendingSyncQueueDao,
@@ -95,6 +97,7 @@ class SyncCoordinatorApplyPlanTest {
             pendingConflictDao = pendingConflictDao,
             conflictAutoResolver = conflictAutoResolver,
             saveSyncRepository = dagger.Lazy { mockSaveSyncRepository },
+            saveCacheManager = dagger.Lazy { mockSaveCacheManager },
             payloadCodec = payloadCodec
         )
         coordinator = SyncCoordinator(
@@ -112,7 +115,8 @@ class SyncCoordinatorApplyPlanTest {
             payloadCodec = payloadCodec,
             strategySelector = strategySelector,
             pendingConflictDao = pendingConflictDao,
-            reconcileEffectApplier = effectApplier
+            reconcileEffectApplier = effectApplier,
+            saveRecoveryGate = mockk(relaxed = true)
         )
 
         every { strategySelector.current() } returns fakeStrategy
@@ -311,22 +315,25 @@ class SyncCoordinatorApplyPlanTest {
     // --- conflict entity hash propagation ---
 
     @Test
-    fun `conflict entity carries localHash from save_sync row and serverHash from plan op`() = runTest {
+    fun `conflict entity carries current local file hash and serverHash from plan op`() = runTest {
         coEvery { conflictAutoResolver.classify(any(), any()) } returns ConflictAutoResolver.Resolution.AsIs
         coEvery { saveSyncDao.getByGameEmulatorAndChannel(game.id, "mgba", "autosave") } returns SaveSyncEntity(
             gameId = game.id,
             rommId = 100L,
             emulatorId = "mgba",
             channelName = "autosave",
+            localSavePath = "/storage/saves/g.srm",
             syncStatus = SaveSyncEntity.STATUS_SYNCED,
-            lastUploadedHash = "local-anchor"
+            lastUploadedHash = "server-anchor",
+            localContentHash = "client-anchor"
         )
+        coEvery { mockSaveCacheManager.calculateLocalSaveHash("/storage/saves/g.srm") } returns "live-local"
         val captured = slot<PendingConflictEntity>()
         coEvery { pendingConflictDao.upsert(capture(captured)) } returns 1L
 
         runWith(listOf(op(ReconcileAction.CONFLICT, saveId = 555L)))
 
-        assertEquals("local-anchor", captured.captured.localHash)
+        assertEquals("live-local", captured.captured.localHash)
         assertEquals("srv-hash", captured.captured.serverHash)
     }
 

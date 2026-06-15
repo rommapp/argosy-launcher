@@ -41,18 +41,20 @@ class ConflictAutoResolver @Inject constructor(
 
         val syncRow = gameId?.let { gid ->
             operation.emulator?.takeIf { it.isNotBlank() }?.let { emu ->
-                saveSyncDao.getByGameAndEmulator(gid, emu)
+                operation.slot?.let { saveSyncDao.getByGameEmulatorAndChannel(gid, emu, it) }
+                    ?: saveSyncDao.getByGameAndEmulator(gid, emu)
             }
         }
-        val lastUploadedHash = syncRow?.lastUploadedHash
+        val localAnchor = syncRow?.localContentHash
+        val serverAnchor = syncRow?.lastUploadedHash
 
-        if (lastUploadedHash != null && clientHash != null) {
-            if (clientHash == lastUploadedHash && clientHash != operation.serverContentHash) {
-                Logger.debug(TAG, "rule 3: local unchanged since last upload -> KEEP_SERVER")
+        if (localAnchor != null && clientHash != null && serverAnchor != null) {
+            if (clientHash == localAnchor && operation.serverContentHash != null && operation.serverContentHash != serverAnchor) {
+                Logger.debug(TAG, "rule 3: local unchanged, server moved -> KEEP_SERVER")
                 return Resolution.KeepServer("local-unchanged")
             }
-            if (operation.serverContentHash == lastUploadedHash && clientHash != lastUploadedHash) {
-                Logger.debug(TAG, "rule 4: server unchanged since last upload -> KEEP_LOCAL")
+            if (operation.serverContentHash == serverAnchor && clientHash != localAnchor) {
+                Logger.debug(TAG, "rule 4: server unchanged, local moved -> KEEP_LOCAL")
                 return Resolution.KeepLocal("server-unchanged")
             }
         }

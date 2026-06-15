@@ -250,6 +250,7 @@ class SaveDownloader @Inject constructor(
                             lastSyncedAt = Instant.now(),
                             syncStatus = SaveSyncEntity.STATUS_SYNCED,
                             lastUploadedHash = serverSave.contentHash?.takeIf { client.getCapabilities().trustsServerHash },
+                            localContentHash = saveCacheManager.get().calculateLocalSaveHash(preDownloadTargetPath),
                             lastSyncDeviceId = serverSave.originDeviceId ?: currentDeviceSync?.deviceId ?: deviceId ?: syncEntity.lastSyncDeviceId,
                             lastSyncDeviceName = serverSave.originDeviceName() ?: currentDeviceSync?.deviceName ?: syncEntity.lastSyncDeviceName
                         )
@@ -632,6 +633,7 @@ class SaveDownloader @Inject constructor(
                     lastSyncedAt = Instant.now(),
                     syncStatus = SaveSyncEntity.STATUS_SYNCED,
                     lastUploadedHash = serverSave.contentHash?.takeIf { client.getCapabilities().trustsServerHash },
+                    localContentHash = saveCacheManager.get().calculateLocalSaveHash(targetPath),
                     lastSyncDeviceId = serverSave.originDeviceId ?: completedUploaderSync?.deviceId ?: syncEntity.lastSyncDeviceId,
                     lastSyncDeviceName = serverSave.originDeviceName() ?: completedUploaderSync?.deviceName ?: syncEntity.lastSyncDeviceName
                 )

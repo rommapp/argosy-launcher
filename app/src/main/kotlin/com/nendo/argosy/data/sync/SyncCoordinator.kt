@@ -50,11 +50,13 @@ class SyncCoordinator @Inject constructor(
     private val payloadCodec: SyncPayloadCodec,
     private val strategySelector: SaveSyncStrategySelector,
     private val pendingConflictDao: PendingConflictDao,
-    private val reconcileEffectApplier: ReconcileEffectApplier
+    private val reconcileEffectApplier: ReconcileEffectApplier,
+    private val saveRecoveryGate: SaveRecoveryGate
 ) {
     companion object {
         private const val TAG = "SyncCoordinator"
         private val NEGOTIATE_COOLDOWN: Duration = Duration.ofMinutes(5)
+        private const val ORPHAN_RECOVERY_TIMEOUT_MS = 10_000L
     }
 
     private val mutex = Mutex()
@@ -464,6 +466,9 @@ class SyncCoordinator @Inject constructor(
     }
 
     private suspend fun processDirtySaveCaches(): Int {
+        kotlinx.coroutines.withTimeoutOrNull(ORPHAN_RECOVERY_TIMEOUT_MS) { saveRecoveryGate.await() }
+            ?: Logger.warn(TAG, "processDirtySaveCaches: orphan-recovery gate timed out, draining anyway")
+
         val dirtySaves = saveCacheDao.getNeedingRemoteSync()
         if (dirtySaves.isEmpty()) return 0
 

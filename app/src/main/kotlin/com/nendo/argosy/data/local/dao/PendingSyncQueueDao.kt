@@ -52,6 +52,9 @@ interface PendingSyncQueueDao {
     @Query("DELETE FROM pending_sync_queue WHERE gameId = :gameId AND syncType = :syncType")
     suspend fun deleteByGameAndType(gameId: Long, syncType: SyncType)
 
+    @Query("DELETE FROM pending_sync_queue WHERE gameId = :gameId AND syncType = :syncType AND status IN ('PENDING', 'IN_PROGRESS')")
+    suspend fun deleteActiveByGameAndType(gameId: Long, syncType: SyncType)
+
     @Query("""
         UPDATE pending_sync_queue
         SET status = 'IN_PROGRESS', updatedAt = :now

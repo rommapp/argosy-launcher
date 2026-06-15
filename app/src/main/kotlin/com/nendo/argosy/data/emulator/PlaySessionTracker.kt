@@ -90,6 +90,7 @@ class PlaySessionTracker @Inject constructor(
     private val gameDao: GameDao,
     private val playSessionDao: PlaySessionDao,
     private val saveCacheDao: SaveCacheDao,
+    private val pendingSyncQueueDao: com.nendo.argosy.data.local.dao.PendingSyncQueueDao,
     private val syncSaveOnSessionEndUseCase: dagger.Lazy<SyncSaveOnSessionEndUseCase>,
     private val syncStatesOnSessionEndUseCase: dagger.Lazy<SyncStatesOnSessionEndUseCase>,
     private val saveCacheManager: dagger.Lazy<SaveCacheManager>,
@@ -101,7 +102,8 @@ class PlaySessionTracker @Inject constructor(
     private val emulatorResolver: EmulatorResolver,
     private val notificationManager: NotificationManager,
     private val fileAccessLayer: FileAccessLayer,
-    private val socialRepository: dagger.Lazy<SocialRepository>
+    private val socialRepository: dagger.Lazy<SocialRepository>,
+    private val saveRecoveryGate: com.nendo.argosy.data.sync.SaveRecoveryGate
 ) {
     companion object {
         private const val TAG = "PlaySessionTracker"
@@ -192,6 +194,7 @@ class PlaySessionTracker @Inject constructor(
     suspend fun checkOrphanedSession() {
         if (!endingSession.compareAndSet(false, true)) {
             Logger.debug(TAG, "[SaveSync] ORPHAN | Skipping orphan check, endSession is handling recovery")
+            saveRecoveryGate.markComplete()
             return
         }
         try {
@@ -331,6 +334,7 @@ class PlaySessionTracker @Inject constructor(
         }
         } finally {
             endingSession.set(false)
+            saveRecoveryGate.markComplete()
         }
     }
 
@@ -796,6 +800,7 @@ class PlaySessionTracker @Inject constructor(
                 else -> null
             }
             linkCacheToServer(session.gameId, activeChannel, result, uploadedCacheId)
+            pendingSyncQueueDao.deleteActiveByGameAndType(session.gameId, com.nendo.argosy.data.local.entity.SyncType.SAVE_FILE)
         }
 
         handleSaveSyncResult(session, game, result)
@@ -968,7 +973,7 @@ class PlaySessionTracker @Inject constructor(
         scope.launch { endSession(skipSaveSync = skipSaveSync) }
     }
 
-    /** Cache the current session's save to local Room with needsRemoteSync=true, synchronously. Called from the in-game Quit handler so the save is persisted before libretro core teardown begins -- teardown can be slow enough on some cores (PSP shader cache, etc.) to trigger an OS-imposed process kill, taking endSession's coroutine with it. The upload itself is handled later by SaveSyncQueuer / the sync coordinator off the queued row. */
+    /** Cache the current session's save to local Room with needsRemoteSync=true, synchronously. Called from the in-game Quit handler so the save is persisted before libretro core teardown begins -- teardown can be slow enough on some cores (PSP shader cache, etc.) to trigger an OS-imposed process kill, taking endSession's coroutine with it. The upload itself is handled later by the sync coordinator draining the dirty cache row. */
     suspend fun cacheCurrentSessionForQuit(): SaveCacheManager.CacheResult? {
         val session = _activeSession.value ?: return null
         val game = gameDao.getById(session.gameId) ?: return null

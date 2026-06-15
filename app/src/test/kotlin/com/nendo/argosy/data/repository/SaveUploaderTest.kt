@@ -138,7 +138,8 @@ class SaveUploaderTest {
             rommSaveId = 555L,
             localSavePath = preparedFile.absolutePath,
             syncStatus = SaveSyncEntity.STATUS_SYNCED,
-            lastUploadedHash = "deadbeef"
+            lastUploadedHash = "deadbeef",
+            localContentHash = "deadbeef"
         )
         coEvery {
             saveSyncDao.getByGameAndEmulatorWithDefault(gameId, emulatorId, SaveSyncApiClient.DEFAULT_SAVE_NAME)
@@ -290,7 +291,8 @@ class SaveUploaderTest {
             rommSaveId = 555L,
             localSavePath = preparedFile.absolutePath,
             syncStatus = SaveSyncEntity.STATUS_SYNCED,
-            lastUploadedHash = "shared-hash"
+            lastUploadedHash = "shared-hash",
+            localContentHash = "shared-hash"
         )
         every { saveArchiver.calculateContentHash(any()) } returns "shared-hash"
         coEvery { saveCacheDao.getByGameAndHash(gameId, "shared-hash") } returns channelBCache

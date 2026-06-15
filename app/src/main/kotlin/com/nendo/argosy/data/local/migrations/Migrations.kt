@@ -1699,3 +1699,54 @@ object Migration_119_120 : Migration(119, 120) {
         db.execSQL("ALTER TABLE emulator_save_config ADD COLUMN savesBesideRom INTEGER NOT NULL DEFAULT 0")
     }
 }
+
+object Migration_120_121 : Migration(120, 121) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE save_sync ADD COLUMN localContentHash TEXT")
+
+        db.execSQL(
+            """
+            UPDATE save_sync
+            SET rommSaveId = COALESCE(rommSaveId, (
+                    SELECT s.rommSaveId FROM save_sync s
+                    WHERE s.gameId = save_sync.gameId AND s.emulatorId = save_sync.emulatorId
+                      AND (s.channelName IS NULL OR s.channelName = 'argosy-latest')
+                    ORDER BY COALESCE(s.lastSyncedAt, 0) DESC, s.id DESC LIMIT 1)),
+                lastUploadedHash = COALESCE(lastUploadedHash, (
+                    SELECT s.lastUploadedHash FROM save_sync s
+                    WHERE s.gameId = save_sync.gameId AND s.emulatorId = save_sync.emulatorId
+                      AND (s.channelName IS NULL OR s.channelName = 'argosy-latest')
+                    ORDER BY COALESCE(s.lastSyncedAt, 0) DESC, s.id DESC LIMIT 1)),
+                localSavePath = COALESCE(localSavePath, (
+                    SELECT s.localSavePath FROM save_sync s
+                    WHERE s.gameId = save_sync.gameId AND s.emulatorId = save_sync.emulatorId
+                      AND (s.channelName IS NULL OR s.channelName = 'argosy-latest')
+                    ORDER BY COALESCE(s.lastSyncedAt, 0) DESC, s.id DESC LIMIT 1))
+            WHERE save_sync.channelName = 'autosave'
+              AND EXISTS (SELECT 1 FROM save_sync s
+                    WHERE s.gameId = save_sync.gameId AND s.emulatorId = save_sync.emulatorId
+                      AND (s.channelName IS NULL OR s.channelName = 'argosy-latest'))
+            """.trimIndent()
+        )
+
+        db.execSQL(
+            """
+            DELETE FROM save_sync
+            WHERE (channelName IS NULL OR channelName = 'argosy-latest')
+              AND EXISTS (SELECT 1 FROM save_sync s
+                    WHERE s.gameId = save_sync.gameId AND s.emulatorId = save_sync.emulatorId
+                      AND s.channelName = 'autosave')
+            """.trimIndent()
+        )
+
+        db.execSQL(
+            """
+            UPDATE save_sync SET channelName = 'autosave'
+            WHERE channelName = 'argosy-latest'
+              AND NOT EXISTS (SELECT 1 FROM save_sync s
+                    WHERE s.gameId = save_sync.gameId AND s.emulatorId = save_sync.emulatorId
+                      AND s.channelName = 'autosave')
+            """.trimIndent()
+        )
+    }
+}

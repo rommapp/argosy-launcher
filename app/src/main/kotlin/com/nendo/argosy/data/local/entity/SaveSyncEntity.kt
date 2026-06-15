@@ -29,6 +29,8 @@ data class SaveSyncEntity(
     val lastSyncError: String? = null,
     /** Server-verified content hash (RomM >= 4.9 only) of the held file, set from upload/download/fetch reconcile; null = none or pre-4.9. Never store a locally-computed hash here. */
     val lastUploadedHash: String? = null,
+    /** Client-computed hash of the last-synced local file (this device's hash space). Used only for local change detection; never sent to the server. */
+    val localContentHash: String? = null,
     /** Server file timestamp at the moment we detected a corrupt download.
      * Subsequent sync attempts skip the download while the server's
      * timestamp matches; cleared automatically when it changes. */

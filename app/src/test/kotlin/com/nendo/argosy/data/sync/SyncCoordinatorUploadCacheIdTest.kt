@@ -86,6 +86,7 @@ class SyncCoordinatorUploadCacheIdTest {
             pendingConflictDao = pendingConflictDao,
             conflictAutoResolver = conflictAutoResolver,
             saveSyncRepository = Lazy { saveSyncRepository },
+            saveCacheManager = Lazy { saveCacheManager },
             payloadCodec = payloadCodec
         )
         coordinator = SyncCoordinator(
@@ -104,6 +105,7 @@ class SyncCoordinatorUploadCacheIdTest {
             strategySelector = strategySelector,
             pendingConflictDao = pendingConflictDao,
             reconcileEffectApplier = effectApplier,
+            saveRecoveryGate = mockk(relaxed = true),
         )
     }
 

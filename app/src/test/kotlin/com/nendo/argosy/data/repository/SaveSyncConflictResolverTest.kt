@@ -116,8 +116,8 @@ class SaveSyncConflictResolverTest {
     }
 
     @Test
-    fun `checkForConflict local hash matches last upload returns null`() = runTest {
-        val syncEntity = makeSyncEntity(lastUploadedHash = "matching_hash")
+    fun `checkForConflict local matches client anchor returns null`() = runTest {
+        val syncEntity = makeSyncEntity(localContentHash = "matching_hash")
         setupConflictCheckMocks(syncEntity)
         coEvery { mockCacheManager.calculateLocalSaveHash(any()) } returns "matching_hash"
 
@@ -127,10 +127,23 @@ class SaveSyncConflictResolverTest {
     }
 
     @Test
-    fun `checkForConflict local hash differs returns ConflictInfo`() = runTest {
-        val syncEntity = makeSyncEntity(lastUploadedHash = "old_hash")
-        setupConflictCheckMocks(syncEntity)
-        coEvery { mockCacheManager.calculateLocalSaveHash(any()) } returns "new_local_hash"
+    fun `checkForConflict local changed but server unchanged is not a conflict`() = runTest {
+        val syncEntity = makeSyncEntity(lastUploadedHash = "server_anchor", localContentHash = "anchor_local")
+        setupConflictCheckMocks(syncEntity, contentHash = "server_anchor")
+        every { mockApiClient.getCapabilities() } returns RomMCapabilities.from("4.9.0")
+        coEvery { mockCacheManager.calculateLocalSaveHash(any()) } returns "new_local"
+
+        val result = resolver.checkForConflict(1L, "retroarch", null)
+
+        assertNull(result)
+    }
+
+    @Test
+    fun `checkForConflict both sides changed returns ConflictInfo`() = runTest {
+        val syncEntity = makeSyncEntity(lastUploadedHash = "server_anchor", localContentHash = "anchor_local")
+        setupConflictCheckMocks(syncEntity, contentHash = "server_new")
+        every { mockApiClient.getCapabilities() } returns RomMCapabilities.from("4.9.0")
+        coEvery { mockCacheManager.calculateLocalSaveHash(any()) } returns "new_local"
 
         val result = resolver.checkForConflict(1L, "retroarch", null)
 
@@ -157,15 +170,18 @@ class SaveSyncConflictResolverTest {
 
     @Test
     fun `checkForConflict ignores server hash when server below trust floor`() = runTest {
-        val syncEntity = makeSyncEntity(lastUploadedHash = "old_hash")
-        setupConflictCheckMocks(syncEntity, contentHash = "restored_hash")
+        val syncEntity = makeSyncEntity(lastUploadedHash = "old_hash", localContentHash = "anchor_local")
+        setupConflictCheckMocks(
+            syncEntity,
+            deviceSyncs = listOf(RomMDeviceSync(deviceId = "device-1", isCurrent = false)),
+            contentHash = "restored_hash"
+        )
         every { mockApiClient.getCapabilities() } returns RomMCapabilities.NONE
         coEvery { mockCacheManager.calculateLocalSaveHash(any()) } returns "restored_hash"
 
         val result = resolver.checkForConflict(1L, "retroarch", null)
 
         assertNotNull(result)
-        assertTrue(result!!.isHashConflict)
     }
 
     @Test
@@ -242,7 +258,8 @@ class SaveSyncConflictResolverTest {
 
     private fun makeSyncEntity(
         localSavePath: String? = null,
-        lastUploadedHash: String? = null
+        lastUploadedHash: String? = null,
+        localContentHash: String? = null
     ) = SaveSyncEntity(
         id = 1L,
         gameId = 1L,
@@ -253,7 +270,8 @@ class SaveSyncConflictResolverTest {
         localUpdatedAt = Instant.parse("2025-01-14T12:00:00Z"),
         serverUpdatedAt = Instant.parse("2025-01-15T12:00:00Z"),
         syncStatus = SaveSyncEntity.STATUS_SYNCED,
-        lastUploadedHash = lastUploadedHash
+        lastUploadedHash = lastUploadedHash,
+        localContentHash = localContentHash
     )
 
     private fun setupConflictCheckMocks(

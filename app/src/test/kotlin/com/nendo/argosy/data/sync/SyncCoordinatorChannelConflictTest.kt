@@ -118,7 +118,8 @@ class SyncCoordinatorChannelConflictTest {
             payloadCodec = SyncPayloadCodec(com.squareup.moshi.Moshi.Builder().build()),
             strategySelector = mockk(relaxed = true),
             pendingConflictDao = mockk(relaxed = true),
-            reconcileEffectApplier = mockk(relaxed = true)
+            reconcileEffectApplier = mockk(relaxed = true),
+            saveRecoveryGate = mockk(relaxed = true)
         )
 
         coordinator.processQueue()
@@ -167,7 +168,8 @@ class SyncCoordinatorChannelConflictTest {
             payloadCodec = SyncPayloadCodec(com.squareup.moshi.Moshi.Builder().build()),
             strategySelector = mockk(relaxed = true),
             pendingConflictDao = mockk(relaxed = true),
-            reconcileEffectApplier = mockk(relaxed = true)
+            reconcileEffectApplier = mockk(relaxed = true),
+            saveRecoveryGate = mockk(relaxed = true)
         )
 
         coordinator.processQueue()
@@ -226,7 +228,8 @@ class SyncCoordinatorChannelConflictTest {
             payloadCodec = SyncPayloadCodec(com.squareup.moshi.Moshi.Builder().build()),
             strategySelector = mockk(relaxed = true),
             pendingConflictDao = mockk(relaxed = true),
-            reconcileEffectApplier = mockk(relaxed = true)
+            reconcileEffectApplier = mockk(relaxed = true),
+            saveRecoveryGate = mockk(relaxed = true)
         )
 
         coordinator.processQueue()
@@ -266,7 +269,8 @@ class SyncCoordinatorChannelConflictTest {
             payloadCodec = SyncPayloadCodec(com.squareup.moshi.Moshi.Builder().build()),
             strategySelector = mockk(relaxed = true),
             pendingConflictDao = mockk(relaxed = true),
-            reconcileEffectApplier = mockk(relaxed = true)
+            reconcileEffectApplier = mockk(relaxed = true),
+            saveRecoveryGate = mockk(relaxed = true)
         )
 
         coordinator.processQueue()

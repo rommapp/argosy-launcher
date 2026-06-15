@@ -138,6 +138,7 @@ class SyncSaveOnSessionEndUseCase @Inject constructor(
             Instant.ofEpochMilli(saveFile.lastModified())
         }
         val activeChannel = channelName ?: game.activeSaveChannel
+            ?: if (isHardcore) null else com.nendo.argosy.data.repository.SaveSyncApiClient.AUTOSAVE_SLOT_NAME
         Logger.debug(TAG, "[SaveSync] SESSION gameId=$gameId | Save ready for upload | path=$savePath, size=${saveSize}bytes, modified=$localModified, channel=$activeChannel")
 
         saveSyncRepository.createOrUpdateSyncEntity(

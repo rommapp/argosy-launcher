@@ -15,15 +15,19 @@ import android.widget.FrameLayout
 import androidx.activity.ComponentActivity
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
@@ -140,6 +144,8 @@ class LibretroActivity : ComponentActivity() {
     @Inject lateinit var frameRegistry: FrameRegistry
 
     private var coreLoadedSuccessfully = false
+    @Volatile private var coreDestroyed = false
+    private var autoSaveStateCaptured = false
     private lateinit var retroView: GLRetroView
     private val portResolver = ControllerPortResolver()
     private val inputMapper = ControllerInputMapper()
@@ -160,6 +166,7 @@ class LibretroActivity : ComponentActivity() {
     private var coreName: String? = null
     private var activeSaveChannel: String? = null
     private var menuVisible by mutableStateOf(false)
+    private var isClosing by mutableStateOf(false)
     private var cheatsMenuVisible by mutableStateOf(false)
     private var settingsVisible by mutableStateOf(false)
     private var shaderChainEditorVisible by mutableStateOf(false)
@@ -218,7 +225,7 @@ class LibretroActivity : ComponentActivity() {
 
     private val isAnyMenuOpen: Boolean
         get() = menuVisible || cheatsMenuVisible || settingsVisible || shaderChainEditorVisible || frameEditorVisible || autoRestorePromptVisible || stateManagerVisible ||
-            netplay.isAnyDialogVisible
+            isClosing || netplay.isAnyDialogVisible
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -946,6 +953,37 @@ class LibretroActivity : ComponentActivity() {
                             .padding(bottom = 24.dp)
                     )
                 }
+
+                if (isClosing) {
+                    ClosingSaveOverlay()
+                }
+            }
+        }
+    }
+
+    @androidx.compose.runtime.Composable
+    private fun ClosingSaveOverlay() {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = 0.85f))
+                .pointerInput(Unit) {
+                    awaitPointerEventScope {
+                        while (true) { awaitPointerEvent().changes.forEach { it.consume() } }
+                    }
+                },
+            contentAlignment = Alignment.Center
+        ) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(20.dp)
+            ) {
+                CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+                Text(
+                    text = "Validating save contents",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = Color.White
+                )
             }
         }
     }
@@ -1168,14 +1206,21 @@ class LibretroActivity : ComponentActivity() {
                 enterTouchEditMode()
             }
             InGameMenuAction.Quit -> {
-                performAutoSaveState()
+                menuVisible = false
+                isClosing = true
                 lifecycleScope.launch {
-                    try {
-                        withContext(kotlinx.coroutines.NonCancellable) {
+                    withContext(kotlinx.coroutines.Dispatchers.IO + kotlinx.coroutines.NonCancellable) {
+                        performAutoSaveState()
+                        try {
                             playSessionTracker.cacheCurrentSessionForQuit()
+                        } catch (e: Exception) {
+                            Log.w(TAG, "Pre-quit save cache failed", e)
                         }
-                    } catch (e: Exception) {
-                        Log.w(TAG, "Pre-quit save cache failed", e)
+                        if (!isGuestJoinedSession) {
+                            saveStateManager.saveSram(retroView)
+                        }
+                        coreDestroyed = true
+                        retroView.destroyNative()
                     }
                     finish()
                 }
@@ -1211,10 +1256,12 @@ class LibretroActivity : ComponentActivity() {
 
     private fun performAutoSaveState() {
         if (isGuestJoinedSession) return
-        if (hardcoreMode || !coreLoadedSuccessfully || !statesSupported || !autoSaveEnabled) return
+        if (coreDestroyed || hardcoreMode || !coreLoadedSuccessfully || !statesSupported || !autoSaveEnabled) return
+        if (autoSaveStateCaptured) return
         try {
             val bitmap = try { retroView.captureRawFrame() } catch (_: Exception) { null }
             val stateData = retroView.serializeState()
+            autoSaveStateCaptured = true
             saveStateManager.performSlotSave(SaveStateManager.AUTO_SLOT, stateData, bitmap)
             bitmap?.recycle()
             Log.d(TAG, "Auto-saved state on close")
@@ -1588,6 +1635,7 @@ class LibretroActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
+        autoSaveStateCaptured = false
         enterImmersiveMode()
         retroView.onResume()
     }
@@ -1618,12 +1666,14 @@ class LibretroActivity : ComponentActivity() {
         if (::netplay.isInitialized) netplay.gracefullyEndIfActive()
         if (coreLoadedSuccessfully) {
             performAutoSaveState()
-            if (!isGuestJoinedSession) {
-                // guest session SRAM is ephemeral and must not touch the persistent file
+            if (!isGuestJoinedSession && !coreDestroyed) {
                 saveStateManager.saveSram(retroView)
             }
-            captureTouchBackdrop()
-            if (isFinishing) {
+            if (!coreDestroyed) {
+                captureTouchBackdrop()
+            }
+            if (isFinishing && !coreDestroyed) {
+                coreDestroyed = true
                 retroView.destroyNative()
             }
             retroView.onPause()
@@ -1718,6 +1768,7 @@ class LibretroActivity : ComponentActivity() {
 
     override fun onDestroy() {
         Log.d(TAG, "onDestroy: isFinishing=$isFinishing, isChangingConfigurations=$isChangingConfigurations")
+        coreDestroyed = true
         unregisterGamepadDetection()
         unregisterOrientationListener()
         audioController.abandonAudioFocus()

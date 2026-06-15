@@ -120,6 +120,7 @@ class GLRetroView(
     private var isNativeResumed = false
     var suppressAutoResume = false
     private var isAborted = false
+    @Volatile private var isDestroyed = false
     private var previewModeEnabled = false
 
     private val retroGLEventsSubject = MutableSharedFlow<GLRetroEvents>(1)
@@ -367,6 +368,8 @@ class GLRetroView(
     }
 
     fun destroyNative() {
+        if (isDestroyed) return
+        isDestroyed = true
         runOnGLThread {
             LibretroDroid.destroy()
         }
@@ -565,7 +568,7 @@ class GLRetroView(
 
     private fun catchExceptions(block: () -> Unit) {
         try {
-            if (isAborted) return
+            if (isAborted || isDestroyed) return
             block()
         } catch (e: RetroException) {
             GlobalScope.launch {

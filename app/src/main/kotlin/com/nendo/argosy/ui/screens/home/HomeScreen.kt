@@ -63,6 +63,7 @@ import androidx.compose.material.icons.filled.Whatshot
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import com.nendo.argosy.ui.common.AlwaysCrossfadeFactory
 import com.nendo.argosy.ui.common.rememberFileImageModel
 import com.nendo.argosy.ui.components.GameTitle
 import com.nendo.argosy.ui.icons.InputIcons
@@ -528,43 +529,36 @@ fun HomeScreen(
                     .fillMaxSize()
                     .graphicsLayer { alpha = backgroundAlpha }
             ) {
-                AnimatedContent(
-                    targetState = effectiveBackgroundPath,
-                    transitionSpec = {
-                        fadeIn(tween(300)) togetherWith fadeOut(tween(300))
-                    },
-                    label = "background"
-                ) { backgroundPath ->
-                    if (backgroundPath != null) {
-                        AsyncImage(
-                            model = ImageRequest.Builder(LocalContext.current)
-                                .data(rememberFileImageModel(backgroundPath))
-                                .size(640, 360)
-                                .build(),
-                            contentDescription = null,
-                            contentScale = ContentScale.Crop,
-                            colorFilter = ColorFilter.colorMatrix(saturationMatrix),
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .let {
-                                    val totalBlur = backgroundBlurDp + combinedBlur
-                                    if (totalBlur > 0.dp) it.blur(totalBlur) else it
-                                }
-                        )
-                    }
-                    Box(
+                if (effectiveBackgroundPath != null) {
+                    AsyncImage(
+                        model = ImageRequest.Builder(LocalContext.current)
+                            .data(rememberFileImageModel(effectiveBackgroundPath))
+                            .size(640, 360)
+                            .transitionFactory(AlwaysCrossfadeFactory(380))
+                            .build(),
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        colorFilter = ColorFilter.colorMatrix(saturationMatrix),
                         modifier = Modifier
                             .fillMaxSize()
-                            .background(
-                                Brush.verticalGradient(
-                                    colors = listOf(
-                                        overlayBaseColor.copy(alpha = overlayAlphaTop),
-                                        overlayBaseColor.copy(alpha = overlayAlphaBottom)
-                                    )
-                                )
-                            )
+                            .let {
+                                val totalBlur = backgroundBlurDp + combinedBlur
+                                if (totalBlur > 0.dp) it.blur(totalBlur) else it
+                            }
                     )
                 }
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            Brush.verticalGradient(
+                                colors = listOf(
+                                    overlayBaseColor.copy(alpha = overlayAlphaTop),
+                                    overlayBaseColor.copy(alpha = overlayAlphaBottom)
+                                )
+                            )
+                        )
+                )
             }
 
             if (uiState.isVideoPreviewLoading || uiState.isVideoPreviewActive) {

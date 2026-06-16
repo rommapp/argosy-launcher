@@ -231,7 +231,10 @@ class LibretroCoreManager @Inject constructor(
                         latestVersion = version,
                         installedAt = Instant.now(),
                         lastCheckedAt = Instant.now(),
-                        updateAvailable = false
+                        updateAvailable = false,
+                        installedHash = computeFileHash(targetFile),
+                        installedSize = fileSize,
+                        corrupt = false
                     )
                 )
 
@@ -278,6 +281,17 @@ class LibretroCoreManager @Inject constructor(
 
         return NetplayCoreResolution.Unresolvable
     }
+
+    suspend fun verifyDownloadedCore(coreInfo: LibretroCoreRegistry.CoreInfo): Boolean? =
+        withContext(Dispatchers.IO) {
+            val file = File(downloadedCoresDir, coreInfo.fileName)
+            if (!file.exists()) return@withContext null
+            val baseline = coreVersionDao.getByCoreId(coreInfo.coreId)?.installedHash
+                ?: return@withContext null
+            val intact = computeFileHash(file).equals(baseline, ignoreCase = true)
+            coreVersionDao.setCorrupt(coreInfo.coreId, !intact)
+            intact
+        }
 
     private fun computeFileHash(file: File): String {
         val digest = MessageDigest.getInstance("SHA-256")

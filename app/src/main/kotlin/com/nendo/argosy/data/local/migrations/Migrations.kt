@@ -1771,3 +1771,11 @@ object Migration_121_122 : Migration(121, 122) {
         )
     }
 }
+
+object Migration_122_123 : Migration(122, 123) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE core_versions ADD COLUMN installedHash TEXT")
+        db.execSQL("ALTER TABLE core_versions ADD COLUMN installedSize INTEGER")
+        db.execSQL("ALTER TABLE core_versions ADD COLUMN corrupt INTEGER")
+    }
+}

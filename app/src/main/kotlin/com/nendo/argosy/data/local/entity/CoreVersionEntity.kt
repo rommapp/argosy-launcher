@@ -12,5 +12,8 @@ data class CoreVersionEntity(
     val latestVersion: String? = null,
     val installedAt: Instant? = null,
     val lastCheckedAt: Instant? = null,
-    val updateAvailable: Boolean = false
+    val updateAvailable: Boolean = false,
+    val installedHash: String? = null,
+    val installedSize: Long? = null,
+    val corrupt: Boolean? = null
 )

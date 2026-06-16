@@ -72,8 +72,14 @@ class CoreUpdateCheckWorker @AssistedInject constructor(
 
             Logger.info(TAG, "Checking ${downloadedCores.size} downloaded cores")
             var updatesFound = 0
+            var corruptFound = 0
 
             for (coreInfo in downloadedCores) {
+                if (coreManager.verifyDownloadedCore(coreInfo) == false) {
+                    corruptFound++
+                    Logger.warn(TAG, "Core ${coreInfo.displayName} failed integrity check")
+                }
+
                 val latestVersion = fetchLatestVersion(coreInfo.fileName)
                 if (latestVersion == null) {
                     Logger.warn(TAG, "Failed to check version for ${coreInfo.displayName}")
@@ -97,7 +103,7 @@ class CoreUpdateCheckWorker @AssistedInject constructor(
                 )
             }
 
-            Logger.info(TAG, "Core update check complete | checked=${downloadedCores.size} | updates=$updatesFound")
+            Logger.info(TAG, "Core update check complete | checked=${downloadedCores.size} | updates=$updatesFound | corrupt=$corruptFound")
             Result.success()
         } catch (e: Exception) {
             Logger.error(TAG, "Core update check failed", e)

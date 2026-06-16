@@ -69,6 +69,11 @@ fun InGameFrameScreen(
                 currentOnDismiss.value()
                 return InputResult.HANDLED
             }
+
+            override fun onContextMenu(): InputResult {
+                if (!isOffline) manager.downloadSelectedFrame()
+                return InputResult.HANDLED
+            }
         }
     }
 
@@ -128,11 +133,16 @@ fun InGameFrameScreen(
         )
 
         FooterBar(
-            hints = buildFrameFooterHints(),
+            hints = buildFrameFooterHints(
+                canDownload = manager.installRefresh.let {
+                    !isOffline && !manager.selectedFrameInstalled && !manager.isDownloading
+                }
+            ),
             onHintClick = { button ->
                 when (button) {
                     InputButton.A -> currentOnConfirm.value()
                     InputButton.B -> currentOnDismiss.value()
+                    InputButton.X -> manager.downloadSelectedFrame()
                     InputButton.DPAD_HORIZONTAL -> {}
                     else -> {}
                 }
@@ -189,7 +199,9 @@ private fun FrameInfoBar(
         "No Frame"
     }
 
-    val isInstalled = frameId == null || manager.isFrameInstalled(frameId)
+    val isInstalled = manager.installRefresh.let {
+        frameId == null || manager.isFrameInstalled(frameId)
+    }
 
     Surface(
         modifier = modifier
@@ -230,10 +242,11 @@ private fun FrameInfoBar(
     }
 }
 
-private fun buildFrameFooterHints(): List<Pair<InputButton, String>> {
-    return listOf(
-        InputButton.DPAD_HORIZONTAL to "Change",
-        InputButton.A to "Select",
-        InputButton.B to "Cancel"
-    )
+private fun buildFrameFooterHints(canDownload: Boolean): List<Pair<InputButton, String>> {
+    return buildList {
+        add(InputButton.DPAD_HORIZONTAL to "Change")
+        add(InputButton.A to "Select")
+        if (canDownload) add(InputButton.X to "Download")
+        add(InputButton.B to "Cancel")
+    }
 }

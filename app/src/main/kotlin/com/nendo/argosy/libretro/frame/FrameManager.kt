@@ -40,6 +40,9 @@ class FrameManager(
     var downloadingFrameId by mutableStateOf<String?>(null)
         private set
 
+    var installRefresh by mutableStateOf(0)
+        private set
+
     private var previewJob: Job? = null
 
     val availableFrames: List<FrameRegistry.FrameEntry>
@@ -112,6 +115,9 @@ class FrameManager(
                 downloadingFrameId = null
                 if (result.isSuccess) {
                     frameRegistry.invalidateInstalledCache()
+                    installRefresh++
+                    onFrameChanged?.invoke(selectedFrameId)
+                    renderPreview()
                 }
                 onComplete(result.isSuccess)
             }
@@ -124,6 +130,20 @@ class FrameManager(
                 selectFrame(entry.id)
             }
         }
+    }
+
+    val selectedFrameInstalled: Boolean
+        get() {
+            val id = selectedFrameId ?: return true
+            return id in frameRegistry.getInstalledIds()
+        }
+
+    fun downloadSelectedFrame() {
+        if (isDownloading) return
+        val id = selectedFrameId ?: return
+        if (id in frameRegistry.getInstalledIds()) return
+        val entry = availableFrames.find { it.id == id } ?: return
+        downloadAndSelectFrame(entry)
     }
 
     fun loadCurrentFrameBitmap(): Bitmap? {

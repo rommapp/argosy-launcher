@@ -1170,8 +1170,7 @@ class LibretroActivity : ComponentActivity() {
             InGameMenuAction.Resume -> hideMenu()
             InGameMenuAction.QuickSave -> {
                 val stateData = try { retroView.serializeState() } catch (_: Exception) { null }
-                val bitmap = try { retroView.captureRawFrame() } catch (_: Exception) { null }
-                inGameMessage = if (stateData != null && saveStateManager.performQuickSave(stateData, bitmap)) {
+                inGameMessage = if (stateData != null && saveStateManager.performQuickSave(stateData, pendingSaveScreenshot)) {
                     "State saved"
                 } else {
                     "Failed to save state"
@@ -1188,7 +1187,6 @@ class LibretroActivity : ComponentActivity() {
             }
             InGameMenuAction.ManageStates -> {
                 menuVisible = false
-                pendingSaveScreenshot = try { retroView.captureRawFrame() } catch (_: Exception) { null }
                 stateManagerSlots = saveStateManager.getSlotInfoList()
                 stateManagerFocusIndex = 0
                 stateManagerShowDelete = false
@@ -1265,11 +1263,9 @@ class LibretroActivity : ComponentActivity() {
         if (coreDestroyed || hardcoreMode || !coreLoadedSuccessfully || !statesSupported || !autoSaveEnabled) return
         if (autoSaveStateCaptured) return
         try {
-            val bitmap = try { retroView.captureRawFrame() } catch (_: Exception) { null }
             val stateData = retroView.serializeState()
             autoSaveStateCaptured = true
-            saveStateManager.performSlotSave(SaveStateManager.AUTO_SLOT, stateData, bitmap)
-            bitmap?.recycle()
+            saveStateManager.performSlotSave(SaveStateManager.AUTO_SLOT, stateData, pendingSaveScreenshot)
             Log.d(TAG, "Auto-saved state on close")
         } catch (e: Exception) {
             Log.w(TAG, "Auto-save state failed", e)
@@ -1517,6 +1513,8 @@ class LibretroActivity : ComponentActivity() {
     }
 
     private fun showMenu() {
+        pendingSaveScreenshot?.recycle()
+        pendingSaveScreenshot = try { retroView.captureRawFrame() } catch (_: Exception) { null }
         if (!netplay.inSession) {
             retroView.pauseEmulation()
             retroView.suppressAutoResume = true
@@ -1527,6 +1525,8 @@ class LibretroActivity : ComponentActivity() {
 
     private fun hideMenu() {
         menuVisible = false
+        pendingSaveScreenshot?.recycle()
+        pendingSaveScreenshot = null
         if (!netplay.inSession) {
             retroView.suppressAutoResume = false
             retroView.resumeEmulation()

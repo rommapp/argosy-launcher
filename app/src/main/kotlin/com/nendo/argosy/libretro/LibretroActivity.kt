@@ -1217,6 +1217,11 @@ class LibretroActivity : ComponentActivity() {
                         } catch (e: Exception) {
                             Log.w(TAG, "Pre-quit save cache failed", e)
                         }
+                        try {
+                            playSessionTracker.cacheCurrentSessionStatesForQuit()
+                        } catch (e: Exception) {
+                            Log.w(TAG, "Pre-quit state cache failed", e)
+                        }
                         if (!isGuestJoinedSession) {
                             saveStateManager.saveSram(retroView)
                         }

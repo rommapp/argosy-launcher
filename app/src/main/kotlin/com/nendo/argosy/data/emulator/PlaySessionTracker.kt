@@ -1040,6 +1040,19 @@ class PlaySessionTracker @Inject constructor(
         }
     }
 
+    /** Cache the current session's save STATES into local Room synchronously, before core teardown.
+     * Mirrors [cacheCurrentSessionForQuit]: local cache only, uploads deferred to the sync coordinator,
+     * so states survive an OS process kill during teardown instead of dying with endSession's coroutine. */
+    suspend fun cacheCurrentSessionStatesForQuit() {
+        val session = _activeSession.value ?: return
+        val result = syncStatesOnSessionEndUseCase.get()(
+            session.gameId,
+            session.emulatorPackage,
+            queueUploads = false
+        )
+        Logger.debug(TAG, "[StateSync] QUIT gameId=${session.gameId} | Pre-quit state cache result=${result::class.simpleName}")
+    }
+
     fun forceStopService() {
         GameSessionService.stop(application)
         scope.launch { clearSessionAndBroadcast() }

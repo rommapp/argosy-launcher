@@ -29,7 +29,8 @@ class SyncStatesOnSessionEndUseCase @Inject constructor(
 ) {
     suspend operator fun invoke(
         gameId: Long,
-        emulatorPackage: String
+        emulatorPackage: String,
+        queueUploads: Boolean = true
     ): StateSyncResult {
         val prefs = preferencesRepository.userPreferences.first()
         if (!prefs.stateCacheEnabled) {
@@ -126,10 +127,10 @@ class SyncStatesOnSessionEndUseCase @Inject constructor(
 
         Log.d(TAG, "Cached $cachedCount states for game $gameId")
 
-        val queuedCount = if (prefs.saveSyncEnabled && game.rommId != null) {
+        val queuedCount = if (queueUploads && prefs.saveSyncEnabled && game.rommId != null) {
             queueStatesForUpload(gameId, game.rommId, emulatorId)
         } else {
-            Log.d(TAG, "State cloud sync skipped: saveSyncEnabled=${prefs.saveSyncEnabled}, rommId=${game.rommId}")
+            Log.d(TAG, "State cloud sync skipped: queueUploads=$queueUploads, saveSyncEnabled=${prefs.saveSyncEnabled}, rommId=${game.rommId}")
             0
         }
 

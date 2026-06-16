@@ -88,7 +88,8 @@ class CoreUpdateCheckWorker @AssistedInject constructor(
 
                 val existing = coreVersionDao.getByCoreId(coreInfo.coreId)
                 val updateAvailable = existing?.installedVersion != null &&
-                    existing.installedVersion != latestVersion
+                    existing.installedVersion != latestVersion &&
+                    existing.blockedVersion != latestVersion
 
                 if (updateAvailable) {
                     updatesFound++

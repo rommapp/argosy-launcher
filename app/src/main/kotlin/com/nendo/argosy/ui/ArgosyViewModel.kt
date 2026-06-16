@@ -174,6 +174,7 @@ class ArgosyViewModel @Inject constructor(
     private val socialRepository: SocialRepository,
     private val steamContentManager: com.nendo.argosy.data.steam.SteamContentManager,
     val steamDownloadPromptController: com.nendo.argosy.data.steam.SteamDownloadPromptController,
+    val coreCrashController: com.nendo.argosy.libretro.CoreCrashController,
     private val netplayPreflightChecker: NetplayPreflightChecker,
     private val netplayJoinService: com.nendo.argosy.data.netplay.NetplayJoinService,
     private val launchGameUseCase: LaunchGameUseCase,

@@ -173,7 +173,10 @@ class LibretroCoreManager @Inject constructor(
         }
     }
 
-    suspend fun downloadCore(coreInfo: LibretroCoreRegistry.CoreInfo): Result<File> =
+    suspend fun downloadCore(
+        coreInfo: LibretroCoreRegistry.CoreInfo,
+        onProgress: ((Float) -> Unit)? = null
+    ): Result<File> =
         withContext(Dispatchers.IO) {
             runCatching {
                 val targetFile = File(downloadedCoresDir, coreInfo.fileName)
@@ -202,7 +205,19 @@ class LibretroCoreManager @Inject constructor(
                 val version = connection.getHeaderField("Last-Modified")
                     ?: connection.contentLengthLong.toString()
 
-                connection.inputStream.use { input ->
+                val zipLength = connection.contentLengthLong
+                val countingInput = object : java.io.FilterInputStream(connection.inputStream) {
+                    private var read = 0L
+                    override fun read(b: ByteArray, off: Int, len: Int): Int {
+                        val n = super.read(b, off, len)
+                        if (n > 0 && zipLength > 0) {
+                            read += n
+                            onProgress?.invoke((read.toFloat() / zipLength).coerceIn(0f, 1f))
+                        }
+                        return n
+                    }
+                }
+                countingInput.use { input ->
                     ZipInputStream(input).use { zip ->
                         val entry = zip.nextEntry
                         if (entry != null && entry.name == coreInfo.fileName) {
@@ -312,6 +327,37 @@ class LibretroCoreManager @Inject constructor(
 
     suspend fun getCoreHistory(coreId: String): List<CoreVersionHistoryEntity> =
         withContext(Dispatchers.IO) { coreVersionHistoryDao.getByCore(coreId) }
+
+    suspend fun rollbackToHistory(coreId: String, history: CoreVersionHistoryEntity): Boolean =
+        withContext(Dispatchers.IO) {
+            val coreInfo = LibretroCoreRegistry.getCoreById(coreId) ?: return@withContext false
+            val archived = File(File(coreHistoryDir, coreId), history.fileName)
+            if (!archived.exists()) return@withContext false
+            val crashedVersion = coreVersionDao.getByCoreId(coreId)?.installedVersion
+            val target = File(downloadedCoresDir, coreInfo.fileName)
+            archived.copyTo(target, overwrite = true)
+            target.setExecutable(true)
+            coreVersionDao.upsert(
+                CoreVersionEntity(
+                    coreId = coreId,
+                    installedVersion = history.version,
+                    latestVersion = history.version,
+                    installedAt = Instant.now(),
+                    lastCheckedAt = Instant.now(),
+                    updateAvailable = false,
+                    installedHash = history.hash,
+                    installedSize = history.size,
+                    corrupt = false,
+                    blockedVersion = crashedVersion
+                )
+            )
+            true
+        }
+
+    suspend fun blockInstalledVersion(coreId: String) = withContext(Dispatchers.IO) {
+        val installed = coreVersionDao.getByCoreId(coreId)?.installedVersion ?: return@withContext
+        coreVersionDao.setBlockedVersion(coreId, installed)
+    }
 
     suspend fun verifyDownloadedCore(coreInfo: LibretroCoreRegistry.CoreInfo): Boolean? =
         withContext(Dispatchers.IO) {

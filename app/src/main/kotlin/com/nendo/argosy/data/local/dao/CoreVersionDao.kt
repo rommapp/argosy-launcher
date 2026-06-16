@@ -43,6 +43,9 @@ interface CoreVersionDao {
     @Query("SELECT * FROM core_versions WHERE corrupt = 1")
     suspend fun getCorrupted(): List<CoreVersionEntity>
 
+    @Query("UPDATE core_versions SET blockedVersion = :version WHERE coreId = :coreId")
+    suspend fun setBlockedVersion(coreId: String, version: String?)
+
     @Query("DELETE FROM core_versions WHERE coreId = :coreId")
     suspend fun delete(coreId: String)
 

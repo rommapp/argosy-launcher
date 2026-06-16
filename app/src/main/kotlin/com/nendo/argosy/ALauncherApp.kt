@@ -23,7 +23,7 @@ import com.nendo.argosy.data.sync.SyncServiceController
 import com.nendo.argosy.data.update.UpdateCheckWorker
 import com.nendo.argosy.data.emulator.PlaySessionTracker
 import com.nendo.argosy.data.preferences.BuiltinEmulatorPreferencesRepository
-import com.nendo.argosy.libretro.CoreCrashDetector
+import com.nendo.argosy.libretro.CoreCrashController
 import com.nendo.argosy.libretro.CoreUpdateCheckWorker
 import com.nendo.argosy.libretro.CompatCoreCache
 import com.nendo.argosy.libretro.LibretroBuildbot
@@ -80,7 +80,7 @@ class ArgosyApp : Application(), Configuration.Provider, ImageLoaderFactory {
     lateinit var playSessionTracker: PlaySessionTracker
 
     @Inject
-    lateinit var coreCrashDetector: CoreCrashDetector
+    lateinit var coreCrashController: CoreCrashController
 
     @Inject
     lateinit var builtinPrefs: BuiltinEmulatorPreferencesRepository
@@ -117,12 +117,7 @@ class ArgosyApp : Application(), Configuration.Provider, ImageLoaderFactory {
             compatCoreCache.evictStale()
         }
         appScope.launch {
-            coreCrashDetector.detect()?.let {
-                android.util.Log.w(
-                    "CoreCrash",
-                    "Built-in core '${it.coreId}' likely crashed (reason=${it.reason}) in game ${it.gameId}"
-                )
-            }
+            coreCrashController.runBootDetection()
             playSessionTracker.checkOrphanedSession()
         }
         appScope.launch { gameDao.resetAllActiveSaveApplied() }

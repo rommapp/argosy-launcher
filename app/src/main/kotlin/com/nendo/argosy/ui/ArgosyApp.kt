@@ -46,6 +46,7 @@ import com.nendo.argosy.ui.components.NetplayJoinModal
 import com.nendo.argosy.ui.input.NetplayJoinInputHandler
 import com.nendo.argosy.data.netplay.NetplayJoinState
 import com.nendo.argosy.data.netplay.VerifySubState
+import com.nendo.argosy.ui.components.CoreCrashModal
 import com.nendo.argosy.ui.components.SaveConflictModal
 import com.nendo.argosy.ui.components.ScreenDimmerOverlay
 import com.nendo.argosy.ui.components.rememberScreenDimmerState
@@ -131,6 +132,9 @@ fun ArgosyApp(
     val saveConflictButtonIndex by viewModel.saveConflictButtonIndex.collectAsState()
     val backgroundConflictInfo by viewModel.backgroundConflictInfo.collectAsState()
     val backgroundConflictButtonIndex by viewModel.backgroundConflictButtonIndex.collectAsState()
+    val coreCrashPrompt by viewModel.coreCrashController.prompt.collectAsState()
+    val coreCrashFocusIndex by viewModel.coreCrashController.focusIndex.collectAsState()
+    val coreCrashDownloading by viewModel.coreCrashController.downloading.collectAsState()
     val netplayInvitePrompt by viewModel.netplayInvitePrompt.collectAsState()
     val netplayInviteFocusIndex by viewModel.netplayInviteFocusIndex.collectAsState()
     val netplayJoinState by viewModel.netplayJoinState.collectAsState()
@@ -644,9 +648,37 @@ fun ArgosyApp(
 
     val steamDownloadPrompt by viewModel.steamDownloadPromptController.prompt.collectAsState()
 
-    LaunchedEffect(saveConflictInfo, backgroundConflictInfo, dualModalActive, isDualConflictMode, netplayInvitePrompt, netplayJoinModalActive, netplayJoinNeedsInput, steamDownloadPrompt, resumeCount) {
+    val coreCrashInputHandler = remember(viewModel) {
+        object : InputHandler {
+            override fun onUp(): InputResult { viewModel.coreCrashController.moveFocus(-1); return InputResult.HANDLED }
+            override fun onDown(): InputResult { viewModel.coreCrashController.moveFocus(1); return InputResult.HANDLED }
+            override fun onLeft(): InputResult { viewModel.coreCrashController.moveFocus(-1); return InputResult.HANDLED }
+            override fun onRight(): InputResult { viewModel.coreCrashController.moveFocus(1); return InputResult.HANDLED }
+            override fun onConfirm(): InputResult {
+                viewModel.coreCrashController.confirmFocused()
+                return InputResult.handled(SoundType.CLOSE_MODAL)
+            }
+            override fun onBack(): InputResult {
+                viewModel.coreCrashController.dismiss()
+                return InputResult.handled(SoundType.CLOSE_MODAL)
+            }
+            override fun onMenu() = InputResult.HANDLED
+            override fun onSelect() = InputResult.HANDLED
+            override fun onPrevSection() = InputResult.HANDLED
+            override fun onNextSection() = InputResult.HANDLED
+            override fun onPrevTrigger() = InputResult.HANDLED
+            override fun onNextTrigger() = InputResult.HANDLED
+            override fun onSecondaryAction() = InputResult.HANDLED
+            override fun onContextMenu() = InputResult.HANDLED
+            override fun onLeftStickClick() = InputResult.HANDLED
+            override fun onRightStickClick() = InputResult.HANDLED
+        }
+    }
+
+    LaunchedEffect(coreCrashPrompt, saveConflictInfo, backgroundConflictInfo, dualModalActive, isDualConflictMode, netplayInvitePrompt, netplayJoinModalActive, netplayJoinNeedsInput, steamDownloadPrompt, resumeCount) {
         inputDispatcher.setCriticalHandler(
             when {
+                coreCrashPrompt != null -> coreCrashInputHandler
                 saveConflictInfo != null && !isDualConflictMode -> saveConflictInputHandler
                 backgroundConflictInfo != null -> backgroundConflictInputHandler
                 else -> null
@@ -1667,6 +1699,19 @@ fun ArgosyApp(
                     onKeepLocal = { viewModel.resolveBackgroundConflict(ConflictResolution.KEEP_LOCAL) },
                     onKeepServer = { viewModel.resolveBackgroundConflict(ConflictResolution.KEEP_SERVER) },
                     onSkip = { viewModel.resolveBackgroundConflict(ConflictResolution.SKIP) }
+                )
+            }
+
+            coreCrashPrompt?.let { prompt ->
+                CoreCrashModal(
+                    prompt = prompt,
+                    focusedIndex = coreCrashFocusIndex,
+                    downloading = coreCrashDownloading,
+                    onSelect = { index ->
+                        viewModel.coreCrashController.setFocus(index)
+                        viewModel.coreCrashController.confirmFocused()
+                    },
+                    onDismiss = { viewModel.coreCrashController.dismiss() }
                 )
             }
 

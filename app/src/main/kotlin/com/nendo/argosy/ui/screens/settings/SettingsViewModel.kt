@@ -228,7 +228,20 @@ class SettingsViewModel @Inject constructor(
     fun navigateToCoreManagement() = emulatorDelegate.navigateToCoreManagement(viewModelScope)
     fun navigateToCoreOptions() = emulatorDelegate.navigateToCoreOptions(viewModelScope)
     fun navigateToCoreOptionsForPlatform() {
-        _uiState.update { it.copy(platformDetail = it.platformDetail.copy(builtinEnteredFromPlatform = true)) }
+        val s = _uiState.value
+        val currentSlug = s.emulators.platforms.getOrNull(s.platformDetail.platformIndex)?.platform?.slug
+        val targetIndex = s.builtinVideo.availablePlatforms
+            .indexOfFirst { it.platformSlug == currentSlug }
+            .takeIf { it >= 0 } ?: s.coreOptions.platformContextIndex
+        _uiState.update {
+            it.copy(
+                platformDetail = it.platformDetail.copy(builtinEnteredFromPlatform = true),
+                coreOptions = it.coreOptions.copy(
+                    platformContextIndex = targetIndex,
+                    selectedCoreIndex = 0
+                )
+            )
+        }
         emulatorDelegate.navigateToCoreOptions(viewModelScope)
     }
     fun openPlatformDetailById(platformId: Long) {

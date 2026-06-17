@@ -725,6 +725,7 @@ class SettingsViewModel @Inject constructor(
     fun navigateToAmbientLed() = routeNavigateToAmbientLed(this)
 
     fun cycleBoxArtShape(direction: Int = 1) = displayDelegate.cycleBoxArtShape(viewModelScope, direction)
+    fun toggleBoxArtNativeAspectRatio() = displayDelegate.toggleBoxArtNativeAspectRatio(viewModelScope)
     fun cycleBoxArtCornerRadius(direction: Int = 1) = displayDelegate.cycleBoxArtCornerRadius(viewModelScope, direction)
     fun cycleBoxArtBorderThickness(direction: Int = 1) = displayDelegate.cycleBoxArtBorderThickness(viewModelScope, direction)
     fun cycleBoxArtBorderStyle(direction: Int = 1) = displayDelegate.cycleBoxArtBorderStyle(viewModelScope, direction)

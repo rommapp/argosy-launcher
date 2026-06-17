@@ -188,6 +188,7 @@ val LocalLauncherTheme = staticCompositionLocalOf {
 
 data class BoxArtStyleConfig(
     val aspectRatio: Float = 3f / 4f,
+    val nativeAspectRatio: Boolean = false,
     val cornerRadiusDp: Dp = 8.dp,
     val borderThicknessDp: Dp = 2.dp,
     val borderStyle: BoxArtBorderStyle = BoxArtBorderStyle.SOLID,
@@ -293,6 +294,7 @@ fun ProvideArgosyThemeLocals(
 
     val boxArtStyle = BoxArtStyleConfig(
         aspectRatio = themeState.boxArtShape.aspectRatio,
+        nativeAspectRatio = themeState.boxArtNativeAspectRatio,
         cornerRadiusDp = themeState.boxArtCornerRadius.dp.dp,
         borderThicknessDp = themeState.boxArtBorderThickness.dp.dp,
         borderStyle = themeState.boxArtBorderStyle,

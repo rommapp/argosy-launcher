@@ -96,6 +96,7 @@ class UserPreferencesRepository @Inject constructor(
             saveDebugLoggingEnabled = sync.saveDebugLoggingEnabled,
             saveWatcherEnabled = sync.saveWatcherEnabled,
             boxArtShape = display.boxArtShape,
+            boxArtNativeAspectRatio = display.boxArtNativeAspectRatio,
             boxArtCornerRadius = display.boxArtCornerRadius,
             boxArtBorderThickness = display.boxArtBorderThickness,
             boxArtBorderStyle = display.boxArtBorderStyle,
@@ -185,6 +186,7 @@ class UserPreferencesRepository @Inject constructor(
     suspend fun setCustomBackgroundPath(path: String?) = displayPrefs.setCustomBackgroundPath(path)
     suspend fun setUseAccentColorFooter(use: Boolean) = displayPrefs.setUseAccentColorFooter(use)
     suspend fun setBoxArtShape(shape: BoxArtShape) = displayPrefs.setBoxArtShape(shape)
+    suspend fun setBoxArtNativeAspectRatio(enabled: Boolean) = displayPrefs.setBoxArtNativeAspectRatio(enabled)
     suspend fun setBoxArtCornerRadius(radius: BoxArtCornerRadius) = displayPrefs.setBoxArtCornerRadius(radius)
     suspend fun setBoxArtBorderThickness(thickness: BoxArtBorderThickness) = displayPrefs.setBoxArtBorderThickness(thickness)
     suspend fun setBoxArtBorderStyle(style: BoxArtBorderStyle) = displayPrefs.setBoxArtBorderStyle(style)
@@ -535,6 +537,7 @@ data class UserPreferences(
     val saveDebugLoggingEnabled: Boolean = false,
     val saveWatcherEnabled: Boolean = false,
     val boxArtShape: BoxArtShape = BoxArtShape.STANDARD,
+    val boxArtNativeAspectRatio: Boolean = false,
     val boxArtCornerRadius: BoxArtCornerRadius = BoxArtCornerRadius.MEDIUM,
     val boxArtBorderThickness: BoxArtBorderThickness = BoxArtBorderThickness.MEDIUM,
     val boxArtBorderStyle: BoxArtBorderStyle = BoxArtBorderStyle.GLASS,

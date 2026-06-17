@@ -53,6 +53,7 @@ internal sealed class BoxArtItem(
         : BoxArtItem(key, section, visibleWhen)
 
     data object Shape : BoxArtItem("shape", "styling")
+    data object NativeAspect : BoxArtItem("nativeAspect", "styling")
     data object CornerRadius : BoxArtItem("cornerRadius", "styling")
     data object BorderThickness : BoxArtItem("borderThickness", "styling")
     data object BorderStyle : BoxArtItem("borderStyle", "styling")
@@ -179,7 +180,7 @@ internal sealed class BoxArtItem(
 
         val ALL: List<BoxArtItem> = listOf(
             StylingHeader,
-            Shape, CornerRadius, BorderThickness, BorderStyle, GlassTint,
+            Shape, NativeAspect, CornerRadius, BorderThickness, BorderStyle, GlassTint,
             GradientPresetItem, GradientAdvanced,
             GradientHeader,
             SampleGrid, SampleRadius, MinSaturation, MinBrightness,
@@ -259,6 +260,12 @@ fun BoxArtSection(
                         value = display.boxArtShape.displayName,
                         isFocused = isFocused(item),
                         onClick = { viewModel.cycleBoxArtShape() }
+                    )
+                    BoxArtItem.NativeAspect -> CyclePreference(
+                        title = "Native Aspect Ratio",
+                        value = if (display.boxArtNativeAspectRatio) "On" else "Off",
+                        isFocused = isFocused(item),
+                        onClick = { viewModel.toggleBoxArtNativeAspectRatio() }
                     )
                     BoxArtItem.CornerRadius -> CyclePreference(
                         title = "Corner Radius",

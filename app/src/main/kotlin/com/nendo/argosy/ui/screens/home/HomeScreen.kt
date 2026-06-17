@@ -64,6 +64,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import com.nendo.argosy.ui.common.AlwaysCrossfadeFactory
+import com.nendo.argosy.ui.common.rememberCoverAspectRatio
 import com.nendo.argosy.ui.common.rememberFileImageModel
 import com.nendo.argosy.ui.components.GameTitle
 import com.nendo.argosy.ui.icons.InputIcons
@@ -1293,10 +1294,16 @@ private fun GameRail(
 
             when (item) {
                 is HomeRowItem.Game -> {
+                    val itemCardWidth = if (boxArtStyle.nativeAspectRatio) {
+                        val coverPath = repairedCoverPaths[item.game.id] ?: item.game.coverPath
+                        cardHeight * rememberCoverAspectRatio(coverPath, boxArtStyle.aspectRatio)
+                    } else {
+                        cardWidth
+                    }
                     GameCardWithNewBadge(
                         game = item.game,
                         isFocused = isFocused,
-                        cardWidth = cardWidth,
+                        cardWidth = itemCardWidth,
                         cardHeight = cardHeight,
                         focusScale = focusScale,
                         scaleFromBottom = true,

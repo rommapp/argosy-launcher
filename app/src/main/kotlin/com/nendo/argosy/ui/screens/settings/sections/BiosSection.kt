@@ -293,7 +293,7 @@ fun BiosSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
 }
 
 @Composable
-private fun DistributeResultModal(
+internal fun DistributeResultModal(
     results: List<DistributeResultItem>,
     onDismiss: () -> Unit
 ) {

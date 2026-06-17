@@ -1034,33 +1034,6 @@ class SettingsViewModel @Inject constructor(
     fun downloadAllBios() = biosDelegate.downloadAllBios(viewModelScope)
     fun distributeAllBios() = biosDelegate.distributeAllBios(viewModelScope)
 
-    fun distributeBiosForPlatformWithNotification(platformSlug: String) {
-        val config = _uiState.value.emulators.platforms
-            .find { it.platform.slug == platformSlug }
-        val platformName = config?.platform?.name ?: platformSlug
-        viewModelScope.launch {
-            val results = biosRepository.distributeAllBiosToEmulatorsDetailed()
-            val platformTotal = results.sumOf { result ->
-                result.platformResults[platformSlug] ?: 0
-            }
-            if (platformTotal > 0) {
-                notificationManager.show(
-                    title = "BIOS Installed",
-                    subtitle = "$platformTotal file${if (platformTotal > 1) "s" else ""} copied for $platformName",
-                    type = com.nendo.argosy.core.notification.NotificationType.SUCCESS,
-                    duration = com.nendo.argosy.core.notification.NotificationDuration.MEDIUM
-                )
-            } else {
-                notificationManager.show(
-                    title = "BIOS Install",
-                    subtitle = "No files to copy for $platformName",
-                    type = com.nendo.argosy.core.notification.NotificationType.INFO,
-                    duration = com.nendo.argosy.core.notification.NotificationDuration.SHORT
-                )
-            }
-            loadPlatformDetailStats(_uiState.value.platformDetail.platformIndex)
-        }
-    }
     fun openBiosFolderPicker() = biosDelegate.openFolderPicker(viewModelScope)
     fun toggleBiosPlatformExpanded(index: Int) = biosDelegate.togglePlatformExpanded(index)
     fun downloadBiosForPlatform(platformSlug: String) = biosDelegate.downloadBiosForPlatform(platformSlug, viewModelScope)

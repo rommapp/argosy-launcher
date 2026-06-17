@@ -385,7 +385,7 @@ fun PlatformDetailSection(
                         }
                         "info_bios_status" -> {
                             val status = when {
-                                detail.biosDownloaded >= detail.biosTotal -> "All installed"
+                                detail.biosDownloaded >= detail.biosTotal -> "All downloaded"
                                 detail.biosDownloaded > 0 -> "${detail.biosDownloaded} of ${detail.biosTotal} downloaded"
                                 else -> "Not downloaded"
                             }
@@ -540,7 +540,7 @@ fun PlatformDetailSection(
                     title = "Install to Emulator",
                     subtitle = "Copy BIOS to ${config.effectiveEmulatorName ?: "emulator"}",
                     isFocused = isFocused(item),
-                    onClick = { viewModel.distributeBiosForPlatformWithNotification(config.platform.slug) }
+                    onClick = { viewModel.distributeAllBios() }
                 )
                 PlatformDetailItem.BiosCopy -> ActionPreference(
                     title = "Copy to...",
@@ -552,7 +552,13 @@ fun PlatformDetailSection(
             }
         }
 
-        // Remove files confirmation
+        if (uiState.bios.showDistributeResultModal) {
+            DistributeResultModal(
+                results = uiState.bios.distributeResults,
+                onDismiss = { viewModel.dismissDistributeResultModal() }
+            )
+        }
+
         if (detail.showRemoveConfirm) {
             com.nendo.argosy.ui.components.CenteredModal(
                 title = "Remove Local Files",

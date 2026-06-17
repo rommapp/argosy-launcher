@@ -806,7 +806,7 @@ private fun routePlatformDetailConfirm(vm: SettingsViewModel, state: SettingsUiS
         PlatformDetailItem.SyncNow -> vm.syncPlatform(config.platform.id, config.platform.getDisplayName())
         PlatformDetailItem.RemoveFiles -> vm.requestRemoveLocalFiles()
         PlatformDetailItem.BiosDownload -> vm.downloadBiosForPlatform(config.platform.slug)
-        PlatformDetailItem.BiosInstall -> vm.distributeBiosForPlatformWithNotification(config.platform.slug)
+        PlatformDetailItem.BiosInstall -> vm.distributeAllBios()
         PlatformDetailItem.BiosCopy -> vm.launchBiosCopyPicker(config.platform.slug)
         else -> {}
     }

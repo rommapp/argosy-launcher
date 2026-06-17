@@ -31,7 +31,6 @@ import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan
-import androidx.compose.foundation.lazy.staggeredgrid.items as staggeredItems
 import androidx.compose.foundation.lazy.staggeredgrid.rememberLazyStaggeredGridState
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -579,43 +578,35 @@ fun DualHomeLibraryGrid(
                         horizontalArrangement = Arrangement.spacedBy(10.dp),
                         verticalItemSpacing = 10.dp
                     ) {
-                        staggeredItems(
-                            count = gridItems.size,
-                            key = { i ->
-                                when (val item = gridItems[i]) {
-                                    is DualLibraryGridItem.Header -> "header-${item.label}"
-                                    is DualLibraryGridItem.Game -> item.game.id
+                        gridItems.forEachIndexed { _, gridItem ->
+                            when (gridItem) {
+                                is DualLibraryGridItem.Header -> item(
+                                    key = "header-${gridItem.label}",
+                                    span = StaggeredGridItemSpan.FullLine
+                                ) {
+                                    DualSectionDivider(label = gridItem.label)
                                 }
-                            },
-                            span = { i ->
-                                when (gridItems[i]) {
-                                    is DualLibraryGridItem.Header -> StaggeredGridItemSpan.FullLine
-                                    is DualLibraryGridItem.Game -> StaggeredGridItemSpan.SingleLane
-                                }
-                            }
-                        ) { index ->
-                            when (val item = gridItems[index]) {
-                                is DualLibraryGridItem.Header -> {
-                                    DualSectionDivider(label = item.label)
-                                }
-                                is DualLibraryGridItem.Game -> {
-                                    val coverPath = repairedCoverPaths[item.game.id] ?: item.game.coverPath
+                                is DualLibraryGridItem.Game -> item(
+                                    key = gridItem.game.id,
+                                    span = StaggeredGridItemSpan.SingleLane
+                                ) {
+                                    val coverPath = repairedCoverPaths[gridItem.game.id] ?: gridItem.game.coverPath
                                     val ratio = rememberCoverAspectRatio(coverPath, coverAspectRatio)
                                     Box(
                                         modifier = Modifier
                                             .fillMaxWidth()
                                             .aspectRatio(ratio)
-                                            .touchOnly { onGameTapped(item.gameIndex) }
+                                            .touchOnly { onGameTapped(gridItem.gameIndex) }
                                     ) {
                                         GameCard(
-                                            game = item.game,
-                                            isFocused = item.gameIndex == focusedIndex,
+                                            game = gridItem.game,
+                                            isFocused = gridItem.gameIndex == focusedIndex,
                                             modifier = Modifier.fillMaxSize(),
                                             focusScale = 1f,
                                             showPlatformBadge = false,
                                             onCoverLoadFailed = onCoverLoadFailed,
-                                            coverPathOverride = repairedCoverPaths[item.game.id],
-                                            downloadIndicator = item.game.downloadIndicator
+                                            coverPathOverride = repairedCoverPaths[gridItem.game.id],
+                                            downloadIndicator = gridItem.game.downloadIndicator
                                         )
                                     }
                                 }

@@ -31,7 +31,6 @@ import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan
-import androidx.compose.foundation.lazy.staggeredgrid.items as staggeredItems
 import androidx.compose.foundation.lazy.staggeredgrid.rememberLazyStaggeredGridState
 import androidx.compose.foundation.layout.aspectRatio
 import com.nendo.argosy.ui.common.rememberCoverAspectRatio
@@ -959,39 +958,31 @@ private fun LibraryMasonryGrid(
         verticalItemSpacing = gridSpacing,
         modifier = Modifier.fillMaxSize()
     ) {
-        staggeredItems(
-            count = uiState.gridItems.size,
-            key = { i ->
-                when (val item = uiState.gridItems[i]) {
-                    is LibraryGridItem.Header -> "header-${item.label}"
-                    is LibraryGridItem.Game -> item.game.id
+        uiState.gridItems.forEachIndexed { _, gridItem ->
+            when (gridItem) {
+                is LibraryGridItem.Header -> item(
+                    key = "header-${gridItem.label}",
+                    span = StaggeredGridItemSpan.FullLine
+                ) {
+                    SectionDivider(label = gridItem.label)
                 }
-            },
-            span = { i ->
-                when (uiState.gridItems[i]) {
-                    is LibraryGridItem.Header -> StaggeredGridItemSpan.FullLine
-                    is LibraryGridItem.Game -> StaggeredGridItemSpan.SingleLane
-                }
-            }
-        ) { index ->
-            when (val item = uiState.gridItems[index]) {
-                is LibraryGridItem.Header -> {
-                    SectionDivider(label = item.label)
-                }
-                is LibraryGridItem.Game -> {
-                    val isFocused = item.gameIndex == uiState.focusedIndex
-                    val coverPath = uiState.repairedCoverPaths[item.game.id] ?: item.game.coverPath
+                is LibraryGridItem.Game -> item(
+                    key = gridItem.game.id,
+                    span = StaggeredGridItemSpan.SingleLane
+                ) {
+                    val isFocused = gridItem.gameIndex == uiState.focusedIndex
+                    val coverPath = uiState.repairedCoverPaths[gridItem.game.id] ?: gridItem.game.coverPath
                     val ratio = rememberCoverAspectRatio(coverPath, fallbackAspectRatio)
                     LibraryGameCard(
-                        game = item.game,
+                        game = gridItem.game,
                         isFocused = isFocused,
                         showFocus = !uiState.isTouchMode || uiState.hasSelectedGame,
                         cardHeight = null,
                         showPlatformBadge = uiState.currentPlatformIndex < 0,
-                        coverPathOverride = uiState.repairedCoverPaths[item.game.id],
+                        coverPathOverride = uiState.repairedCoverPaths[gridItem.game.id],
                         onCoverLoadFailed = viewModel::repairCoverImage,
-                        onClick = { viewModel.handleItemTap(item.gameIndex, onGameSelect) },
-                        onLongClick = { viewModel.handleItemLongPress(item.gameIndex) },
+                        onClick = { viewModel.handleItemTap(gridItem.gameIndex, onGameSelect) },
+                        onLongClick = { viewModel.handleItemLongPress(gridItem.gameIndex) },
                         modifier = Modifier
                             .aspectRatio(ratio)
                             .zIndex(if (isFocused) 1f else 0f)

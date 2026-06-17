@@ -945,6 +945,33 @@ private fun LibraryMasonryGrid(
             }
     }
 
+    // Feed the real on-screen cover positions to the view model so D-pad
+    // navigation can resolve directions spatially over the masonry layout.
+    val currentGridItems by rememberUpdatedState(uiState.gridItems)
+    LaunchedEffect(staggeredState) {
+        snapshotFlow { staggeredState.layoutInfo.visibleItemsInfo }
+            .collect { visible ->
+                val items = currentGridItems
+                viewModel.setMasonryCells(
+                    visible.mapNotNull { info ->
+                        val gridItem = items.getOrNull(info.index)
+                        if (gridItem is LibraryGridItem.Game) {
+                            FocusCellBounds(
+                                gameIndex = gridItem.gameIndex,
+                                left = info.offset.x,
+                                top = info.offset.y,
+                                right = info.offset.x + info.size.width,
+                                bottom = info.offset.y + info.size.height
+                            )
+                        } else null
+                    }
+                )
+            }
+    }
+    DisposableEffect(Unit) {
+        onDispose { viewModel.setMasonryCells(emptyList()) }
+    }
+
     LazyVerticalStaggeredGrid(
         columns = StaggeredGridCells.Fixed(columnsCount),
         state = staggeredState,

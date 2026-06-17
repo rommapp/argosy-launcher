@@ -378,8 +378,6 @@ fun LibraryScreen(
                                         bottomPadding = cardHeight,
                                         headerHeightPx = headerHeightPx,
                                         footerHeightPx = footerHeightPx,
-                                        isProgrammaticScroll = isProgrammaticScroll,
-                                        onProgrammaticScroll = { isProgrammaticScroll = it },
                                         onGameSelect = onGameSelect
                                     )
                                 } else {
@@ -873,13 +871,14 @@ private fun LibraryMasonryGrid(
     bottomPadding: Dp,
     headerHeightPx: Int,
     footerHeightPx: Int,
-    isProgrammaticScroll: Boolean,
-    onProgrammaticScroll: (Boolean) -> Unit,
     onGameSelect: (Long) -> Unit
 ) {
     val initialIndex = remember { viewModel.gameIndexToGridIndex(uiState.focusedIndex) }
     val staggeredState = rememberLazyStaggeredGridState(initialFirstVisibleItemIndex = initialIndex)
-    val programmaticScroll by rememberUpdatedState(isProgrammaticScroll)
+    // Local flag so the centering effect and the scroll listener read the same
+    // snapshot value with no recomposition lag (otherwise programmatic scrolls
+    // briefly look like user scrolls and wrongly flip the grid into touch mode).
+    var isProgrammaticScroll by remember { mutableStateOf(false) }
 
     LaunchedEffect(uiState.currentPlatformIndex) {
         staggeredState.scrollToItem(0)
@@ -904,12 +903,12 @@ private fun LibraryMasonryGrid(
         val effectiveHeight = viewportHeight - headerHeightPx - footerHeightPx
         val centeringOffset = (effectiveHeight - itemHeight) / 2
 
-        onProgrammaticScroll(true)
+        isProgrammaticScroll = true
         staggeredState.animateScrollToItem(
             index = gridIndex,
             scrollOffset = -centeringOffset
         )
-        onProgrammaticScroll(false)
+        isProgrammaticScroll = false
     }
 
     LaunchedEffect(uiState.sectionJumpTrigger) {
@@ -928,18 +927,18 @@ private fun LibraryMasonryGrid(
         val effectiveHeight = viewportHeight - headerHeightPx - footerHeightPx
         val centeringOffset = if (itemHeight > 0) (effectiveHeight - itemHeight) / 2 else 0
 
-        onProgrammaticScroll(true)
+        isProgrammaticScroll = true
         staggeredState.animateScrollToItem(
             index = gridIndex,
             scrollOffset = -centeringOffset
         )
-        onProgrammaticScroll(false)
+        isProgrammaticScroll = false
     }
 
     LaunchedEffect(staggeredState) {
         snapshotFlow { staggeredState.isScrollInProgress }
             .collect { isScrolling ->
-                if (isScrolling && !programmaticScroll) {
+                if (isScrolling && !isProgrammaticScroll) {
                     viewModel.enterTouchMode()
                 }
             }

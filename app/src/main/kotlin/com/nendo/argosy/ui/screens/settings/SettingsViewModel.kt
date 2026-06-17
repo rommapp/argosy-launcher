@@ -934,8 +934,32 @@ class SettingsViewModel @Inject constructor(
     fun confirmBuiltinPathMigration() = routeConfirmBuiltinPathMigration(this)
     fun cancelBuiltinPathMigration() = routeCancelBuiltinPathMigration(this)
     fun skipBuiltinPathMigration() = routeSkipBuiltinPathMigration(this)
-    fun togglePlatformSync(platformId: Long, enabled: Boolean) =
+    fun togglePlatformSync(platformId: Long, enabled: Boolean) {
         storageDelegate.togglePlatformSync(viewModelScope, platformId, enabled)
+        _uiState.update { state ->
+            state.copy(
+                emulators = state.emulators.copy(
+                    platforms = state.emulators.platforms.map { cfg ->
+                        if (cfg.platform.id == platformId) {
+                            cfg.copy(platform = cfg.platform.copy(syncEnabled = enabled))
+                        } else {
+                            cfg
+                        }
+                    }
+                )
+            )
+        }
+    }
+
+    fun focusIndexForPlatform(platformId: Long?): Int {
+        val focusable = com.nendo.argosy.ui.screens.settings.sections.EmulatorsItem
+            .buildItems(_uiState.value.emulators.platforms)
+            .filter { it.isFocusable }
+        return focusable.indexOfFirst {
+            it is com.nendo.argosy.ui.screens.settings.sections.EmulatorsItem.PlatformItem &&
+                it.config.platform.id == platformId
+        }.coerceAtLeast(0)
+    }
     fun enablePlatformAndReload(platformId: Long) {
         storageDelegate.togglePlatformSync(viewModelScope, platformId, true)
         viewModelScope.launch {

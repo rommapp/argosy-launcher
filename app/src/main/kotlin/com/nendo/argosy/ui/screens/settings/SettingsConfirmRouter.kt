@@ -659,10 +659,11 @@ internal fun routeNavigateBack(vm: SettingsViewModel): Boolean {
         }
         state.currentSection == SettingsSection.PLATFORM_DETAIL && state.platformDetail.enteredExternally -> false
         state.currentSection == SettingsSection.PLATFORM_DETAIL -> {
-            val platformFocusIndex = state.platformDetail.platformIndex
+            val toggledId = state.emulators.platforms
+                .getOrNull(state.platformDetail.platformIndex)?.platform?.id
             vm._uiState.update { it.copy(
                 currentSection = SettingsSection.PLATFORMS,
-                focusedIndex = 1 + platformFocusIndex
+                focusedIndex = vm.focusIndexForPlatform(toggledId)
             ) }; true
         }
         state.currentSection != SettingsSection.MAIN -> {

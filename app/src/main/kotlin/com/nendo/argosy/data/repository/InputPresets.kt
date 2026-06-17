@@ -263,9 +263,110 @@ object MappingPlatforms {
         )
     )
 
+    val DS = MappingPlatform(
+        id = "nds",
+        displayName = "Nintendo DS",
+        buttons = listOf(
+            RetroButton.A, RetroButton.B, RetroButton.X, RetroButton.Y,
+            RetroButton.L, RetroButton.R,
+            RetroButton.START, RetroButton.SELECT
+        ) + DPAD
+    )
+
+    val GAMECUBE = MappingPlatform(
+        id = "gamecube",
+        displayName = "GameCube",
+        buttons = listOf(
+            RetroButton.A, RetroButton.B, RetroButton.X, RetroButton.Y,
+            RetroButton.L, RetroButton.R, RetroButton.L2,
+            RetroButton.START
+        ) + DPAD,
+        buttonLabels = mapOf(
+            RetroButton.L2 to "Z",
+            RetroButton.START to "Start"
+        )
+    )
+
+    val WII = MappingPlatform(
+        id = "wii",
+        displayName = "Wii",
+        buttons = listOf(
+            RetroButton.A, RetroButton.B, RetroButton.X, RetroButton.Y,
+            RetroButton.L, RetroButton.R,
+            RetroButton.START, RetroButton.SELECT
+        ) + DPAD,
+        buttonLabels = mapOf(
+            RetroButton.X to "1",
+            RetroButton.Y to "2",
+            RetroButton.L to "C",
+            RetroButton.R to "Z",
+            RetroButton.START to "+",
+            RetroButton.SELECT to "-"
+        )
+    )
+
+    val WII_CLASSIC = MappingPlatform(
+        id = "wii-classic",
+        displayName = "Wii Classic",
+        buttons = listOf(
+            RetroButton.A, RetroButton.B, RetroButton.X, RetroButton.Y,
+            RetroButton.L, RetroButton.R, RetroButton.L2, RetroButton.R2,
+            RetroButton.START, RetroButton.SELECT
+        ) + DPAD,
+        buttonLabels = mapOf(
+            RetroButton.L2 to "ZL",
+            RetroButton.R2 to "ZR",
+            RetroButton.START to "+",
+            RetroButton.SELECT to "-"
+        )
+    )
+
+    val PCE = MappingPlatform(
+        id = "pce",
+        displayName = "PC Engine",
+        buttons = listOf(
+            RetroButton.B, RetroButton.Y,
+            RetroButton.START, RetroButton.SELECT
+        ) + DPAD,
+        buttonLabels = mapOf(
+            RetroButton.B to "I",
+            RetroButton.Y to "II",
+            RetroButton.START to "Run"
+        )
+    )
+
+    val NEOGEO = MappingPlatform(
+        id = "neogeo",
+        displayName = "Neo Geo",
+        buttons = listOf(
+            RetroButton.B, RetroButton.A, RetroButton.Y, RetroButton.X,
+            RetroButton.START, RetroButton.SELECT
+        ) + DPAD,
+        buttonLabels = mapOf(
+            RetroButton.B to "A",
+            RetroButton.A to "B",
+            RetroButton.Y to "C",
+            RetroButton.X to "D"
+        )
+    )
+
+    val COMPUTER = MappingPlatform(
+        id = "computer",
+        displayName = "Computer",
+        buttons = listOf(
+            RetroButton.B, RetroButton.A,
+            RetroButton.START, RetroButton.SELECT
+        ) + DPAD,
+        buttonLabels = mapOf(
+            RetroButton.B to "1",
+            RetroButton.A to "2"
+        )
+    )
+
     val ALL = listOf(
         UNIVERSAL, NES, GB, SNES, GBA, N64, PSX, GENESIS, THREEDO,
-        SATURN, ARCADE6, VECTREX, INTV, ATARI_SINGLE, ATARI_5200
+        SATURN, ARCADE6, VECTREX, INTV, ATARI_SINGLE, ATARI_5200,
+        DS, GAMECUBE, WII, WII_CLASSIC, PCE, NEOGEO, COMPUTER
     )
 
     fun getByIndex(index: Int): MappingPlatform = ALL[index.coerceIn(0, ALL.lastIndex)]
@@ -303,20 +404,30 @@ object MappingPlatforms {
 
         "gba" -> GBA
 
-        "snes", "satellaview", "vb",
-        "tg16", "supergrafx", "tgcd", "pcfx" -> SNES
+        "snes", "satellaview", "vb" -> SNES
+
+        "tg16", "pce", "turbografx16", "pcengine",
+        "supergrafx", "tgcd", "pcfx" -> PCE
 
         "n64", "n64dd" -> N64
 
         "psx", "ps2", "psp", "vita",
-        "gc", "wii", "dc",
-        "nds", "dsi", "3ds", "n3ds",
         "jaguar", "jaguarcd" -> PSX
+
+        "nds", "dsi", "3ds", "n3ds" -> DS
+
+        "gc", "ngc", "gamecube" -> GAMECUBE
+
+        "wii" -> WII
 
         "3do" -> THREEDO
 
-        "genesis", "scd", "32x", "pico",
-        "neogeo" -> GENESIS
+        "genesis", "scd", "32x", "pico" -> GENESIS
+
+        "neogeo" -> NEOGEO
+
+        "c64", "amiga", "amigacd32", "cdtv",
+        "msx", "msx2", "zx", "amstradcpc" -> COMPUTER
 
         else -> UNIVERSAL
     }

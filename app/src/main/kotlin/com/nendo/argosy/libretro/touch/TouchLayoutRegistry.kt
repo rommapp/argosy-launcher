@@ -37,10 +37,11 @@ object TouchLayoutRegistry {
             "vita" -> psxLike(true, false, shoulderPair = true)
             "dreamcast", "dc" -> dreamcast()
             "n64", "n64dd" -> n64()
-            "gc", "ngc", "gamecube", "wii" -> psxLike(true, false, shoulderPair = true)
-            "nds", "ds", "dsi" -> psxLike(false, false, shoulderPair = true)
+            "gc", "ngc", "gamecube" -> gamecube()
+            "wii" -> wii()
+            "nds", "ds", "dsi" -> snes()
             "arcade", "cps1", "cps2", "cps3", "neogeocd" -> arcade6()
-            "neogeo" -> genesis(false)
+            "neogeo" -> neoGeo()
             "genesis", "megadrive", "scd", "segacd", "32x", "pico" -> genesis(genesis6Button)
             "vectrex" -> vectrex()
             "intellivision" -> intellivision()
@@ -165,6 +166,55 @@ object TouchLayoutRegistry {
             analog = if (dualStick) AnalogConfig.LeftAndRight else AnalogConfig.LeftOnly
         )
     }
+
+    private fun gamecube(): TouchLayoutSpec = TouchLayoutSpec(
+        dpad = DpadStyle.EightWay,
+        face = FaceShape.Diamond4,
+        faceSlots = listOf(
+            slot(RetroButton.Y, "Y"),
+            slot(RetroButton.X, "X"),
+            slot(RetroButton.B, "B"),
+            slot(RetroButton.A, "A")
+        ),
+        shoulders = ShoulderShape.TopPairPlusZ,
+        shoulderSlots = listOf(
+            slot(RetroButton.L, "L"),
+            slot(RetroButton.R, "R"),
+            slot(RetroButton.L2, "Z")
+        ),
+        system = listOf(slot(RetroButton.START, "Start")),
+        analog = AnalogConfig.LeftAndRight
+    )
+
+    private fun wii(): TouchLayoutSpec = TouchLayoutSpec(
+        dpad = DpadStyle.EightWay,
+        face = FaceShape.Diamond4,
+        faceSlots = listOf(
+            slot(RetroButton.Y, "2"),
+            slot(RetroButton.X, "1"),
+            slot(RetroButton.B, "B"),
+            slot(RetroButton.A, "A")
+        ),
+        shoulders = ShoulderShape.TopPair,
+        shoulderSlots = listOf(slot(RetroButton.L, "C"), slot(RetroButton.R, "Z")),
+        system = listOf(slot(RetroButton.SELECT, "-"), slot(RetroButton.START, "+")),
+        analog = AnalogConfig.LeftOnly
+    )
+
+    private fun neoGeo(): TouchLayoutSpec = TouchLayoutSpec(
+        dpad = DpadStyle.EightWay,
+        face = FaceShape.Diamond4,
+        faceSlots = listOf(
+            slot(RetroButton.Y, "C"),
+            slot(RetroButton.X, "D"),
+            slot(RetroButton.B, "A"),
+            slot(RetroButton.A, "B")
+        ),
+        shoulders = ShoulderShape.None,
+        shoulderSlots = emptyList(),
+        system = listOf(slot(RetroButton.SELECT, "Select"), slot(RetroButton.START, "Start")),
+        analog = AnalogConfig.None
+    )
 
     private fun dreamcast(): TouchLayoutSpec = TouchLayoutSpec(
         dpad = DpadStyle.EightWay,

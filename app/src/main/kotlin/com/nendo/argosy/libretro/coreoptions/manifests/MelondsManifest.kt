@@ -116,7 +116,7 @@ object MelondsManifest : CoreOptionManifest {
             key = "melonds_touch_mode",
             displayName = "Touch Mode",
             values = listOf("Mouse", "Touch", "Joystick", "disabled"),
-            defaultValue = "Mouse",
+            defaultValue = "Touch",
             description = "Selects the input device used for the DS touch screen"
         ),
         CoreOptionDef(

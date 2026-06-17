@@ -20,6 +20,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import com.nendo.argosy.data.platform.PlatformWeightRegistry
+import com.nendo.argosy.data.repository.MappingPlatforms
 import com.nendo.argosy.libretro.LibretroCoreRegistry
 import com.nendo.argosy.libretro.coreoptions.CoreControlManifestRegistry
 import com.nendo.argosy.ui.components.NavigationPreference
@@ -416,6 +417,11 @@ fun BuiltinControlsSection(
         if (controlsState.showInputMappingModal) {
             InputMappingModal(
                 controllers = viewModel.getConnectedControllers(),
+                lockedPlatformIndex = if (!isGlobal && platformSlug != null) {
+                    MappingPlatforms.indexForPlatformSlug(platformSlug)
+                } else {
+                    null
+                },
                 onGetMapping = { controller, platformId ->
                     viewModel.getControllerMapping(controller, platformId)
                 },

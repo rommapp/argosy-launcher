@@ -1,5 +1,6 @@
 package com.nendo.argosy.libretro
 
+import com.nendo.argosy.data.local.entity.CoreInputMode
 import com.nendo.argosy.data.local.entity.HotkeyAction
 import com.nendo.argosy.libretro.ui.NetplayMenuRole
 import com.swordfish.libretrodroid.GLRetroView
@@ -18,10 +19,12 @@ class HotkeyDispatcher(
     private val onRewindChanged: (Boolean) -> Unit,
     private val onResetGame: () -> Unit,
     private val onAutoSaveState: () -> Unit,
+    private val onCycleCoreOption: (String, Int, List<String>) -> Unit,
+    private val onSendCoreInput: (Int, CoreInputMode) -> Unit,
     private val onQuit: () -> Unit
 ) {
-    fun dispatch(action: HotkeyAction): Boolean {
-        when (action) {
+    fun dispatch(config: HotkeyManager.HotkeyConfig): Boolean {
+        when (config.action) {
             HotkeyAction.IN_GAME_MENU -> {
                 onShowMenu()
                 hotkeyManager.clearState()
@@ -88,6 +91,18 @@ class HotkeyDispatcher(
                     return true
                 }
                 onResetGame()
+                hotkeyManager.clearState()
+                return true
+            }
+            HotkeyAction.CYCLE_CORE_OPTION -> {
+                val key = config.coreOptionKey ?: return true
+                onCycleCoreOption(key, config.coreOptionDirection, config.coreOptionValues)
+                hotkeyManager.clearState()
+                return true
+            }
+            HotkeyAction.SEND_CORE_INPUT -> {
+                val retropadId = config.coreInputRetropadId ?: return true
+                onSendCoreInput(retropadId, config.coreInputMode)
                 hotkeyManager.clearState()
                 return true
             }

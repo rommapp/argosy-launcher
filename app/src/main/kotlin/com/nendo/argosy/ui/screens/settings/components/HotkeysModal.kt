@@ -20,7 +20,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
@@ -35,7 +34,6 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -46,9 +44,12 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.nendo.argosy.ui.input.LocalGamepadInputHandler
+import com.nendo.argosy.data.local.entity.CoreInputMode
 import com.nendo.argosy.data.local.entity.HotkeyAction
 import com.nendo.argosy.data.local.entity.HotkeyEntity
+import com.nendo.argosy.data.local.entity.HotkeyScopeType
 import com.nendo.argosy.libretro.HotkeyManager
+import com.nendo.argosy.libretro.coreoptions.CoreControlDef
 import com.nendo.argosy.ui.components.FocusedScroll
 import com.nendo.argosy.ui.components.InputButton
 import com.nendo.argosy.ui.components.Modal
@@ -68,10 +69,43 @@ private val HOTKEY_ACTIONS = listOf(
 
 private val HOLD_DELAY_CYCLE = listOf(0L, 1000L, 2000L, 3000L)
 
+private sealed interface RecordTarget {
+    val label: String
+
+    data class System(val action: HotkeyAction) : RecordTarget {
+        override val label get() = getActionDisplayName(action)
+    }
+
+    data class Core(val def: CoreControlDef) : RecordTarget {
+        override val label get() = def.label
+    }
+}
+
+private sealed interface MenuRow {
+    val focusable: Boolean
+
+    data class Header(val title: String, val dimmed: Boolean) : MenuRow {
+        override val focusable get() = false
+    }
+
+    data class Placeholder(val text: String) : MenuRow {
+        override val focusable get() = false
+    }
+
+    data class System(val action: HotkeyAction, val combo: List<Int>, val holdMs: Long, val conflicting: Boolean) : MenuRow {
+        override val focusable get() = true
+    }
+
+    data class Core(val def: CoreControlDef, val boundEntity: HotkeyEntity?) : MenuRow {
+        override val focusable get() = true
+    }
+}
+
 private sealed class HotkeysState {
     data class ActionList(val focusedIndex: Int = 0) : HotkeysState()
     data class Recording(
-        val action: HotkeyAction,
+        val target: RecordTarget,
+        val returnFocusIndex: Int,
         val heldKeys: Set<Int> = emptySet(),
         val progress: Float = 0f,
         val isComplete: Boolean = false
@@ -84,31 +118,53 @@ fun HotkeysModal(
     onSaveHotkey: suspend (HotkeyAction, List<Int>) -> Unit,
     onClearHotkey: suspend (HotkeyAction) -> Unit,
     onSetHoldMs: suspend (HotkeyAction, Long) -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    coreId: String? = null,
+    coreName: String? = null,
+    coreControls: List<CoreControlDef> = emptyList(),
+    onSaveCoreControl: suspend (Int, CoreInputMode, List<Int>) -> Unit = { _, _, _ -> },
+    onClearCoreBind: suspend (Long) -> Unit = {}
 ) {
     var state by remember { mutableStateOf<HotkeysState>(HotkeysState.ActionList()) }
     val scope = rememberCoroutineScope()
     val gamepadInputHandler = LocalGamepadInputHandler.current
 
-    fun getComboForAction(action: HotkeyAction): List<Int> {
-        val entity = hotkeys.find { it.action == action } ?: return emptyList()
-        return parseComboJson(entity.buttonComboJson)
-    }
-
-    fun getHoldMsForAction(action: HotkeyAction): Long {
-        return hotkeys.find { it.action == action }?.holdMs ?: 0L
-    }
-
     val conflictingActions = remember(hotkeys) { findConflictingActions(hotkeys) }
 
+    val rows = remember(hotkeys, coreControls, coreId, coreName, conflictingActions) {
+        buildRows(hotkeys, coreControls, coreId, coreName, conflictingActions)
+    }
+    val focusableRows = remember(rows) { rows.filter { it.focusable } }
+
     fun cycleHoldDelay(action: HotkeyAction) {
-        val currentHoldMs = getHoldMsForAction(action)
-        val currentIdx = HOLD_DELAY_CYCLE.indexOf(currentHoldMs).coerceAtLeast(0)
+        val current = hotkeys.find { it.action == action }?.holdMs ?: 0L
+        val currentIdx = HOLD_DELAY_CYCLE.indexOf(current).coerceAtLeast(0)
         val nextHoldMs = HOLD_DELAY_CYCLE[(currentIdx + 1) % HOLD_DELAY_CYCLE.size]
         scope.launch { onSetHoldMs(action, nextHoldMs) }
     }
 
-    DisposableEffect(state, gamepadInputHandler, hotkeys) {
+    fun startRecording(focusableIndex: Int) {
+        val target = when (val row = focusableRows.getOrNull(focusableIndex)) {
+            is MenuRow.System -> RecordTarget.System(row.action)
+            is MenuRow.Core -> RecordTarget.Core(row.def)
+            else -> return
+        }
+        state = HotkeysState.Recording(target = target, returnFocusIndex = focusableIndex)
+    }
+
+    fun clearBind(focusableIndex: Int) {
+        when (val row = focusableRows.getOrNull(focusableIndex)) {
+            is MenuRow.System -> scope.launch { onClearHotkey(row.action) }
+            is MenuRow.Core -> row.boundEntity?.let { entity -> scope.launch { onClearCoreBind(entity.id) } }
+            else -> {}
+        }
+    }
+
+    fun cycleHoldDelayAt(focusableIndex: Int) {
+        (focusableRows.getOrNull(focusableIndex) as? MenuRow.System)?.let { cycleHoldDelay(it.action) }
+    }
+
+    DisposableEffect(state, gamepadInputHandler, focusableRows) {
         val listener: (KeyEvent) -> Boolean = { event ->
             val device = event.device
 
@@ -117,29 +173,16 @@ fun HotkeysModal(
                     if (event.action == KeyEvent.ACTION_DOWN) {
                         when (event.keyCode) {
                             KeyEvent.KEYCODE_BUTTON_B, KeyEvent.KEYCODE_BACK -> onDismiss()
-                            KeyEvent.KEYCODE_BUTTON_A -> {
-                                val action = HOTKEY_ACTIONS.getOrNull(currentState.focusedIndex)
-                                if (action != null) {
-                                    state = HotkeysState.Recording(action = action)
-                                }
-                            }
-                            KeyEvent.KEYCODE_BUTTON_Y -> {
-                                val action = HOTKEY_ACTIONS.getOrNull(currentState.focusedIndex)
-                                if (action != null) {
-                                    scope.launch { onClearHotkey(action) }
-                                }
-                            }
-                            KeyEvent.KEYCODE_BUTTON_X -> {
-                                val action = HOTKEY_ACTIONS.getOrNull(currentState.focusedIndex)
-                                if (action != null) cycleHoldDelay(action)
-                            }
+                            KeyEvent.KEYCODE_BUTTON_A -> startRecording(currentState.focusedIndex)
+                            KeyEvent.KEYCODE_BUTTON_Y -> clearBind(currentState.focusedIndex)
+                            KeyEvent.KEYCODE_BUTTON_X -> cycleHoldDelayAt(currentState.focusedIndex)
                             KeyEvent.KEYCODE_DPAD_UP -> {
                                 if (currentState.focusedIndex > 0) {
                                     state = currentState.copy(focusedIndex = currentState.focusedIndex - 1)
                                 }
                             }
                             KeyEvent.KEYCODE_DPAD_DOWN -> {
-                                if (currentState.focusedIndex < HOTKEY_ACTIONS.size - 1) {
+                                if (currentState.focusedIndex < focusableRows.size - 1) {
                                     state = currentState.copy(focusedIndex = currentState.focusedIndex + 1)
                                 }
                             }
@@ -150,9 +193,7 @@ fun HotkeysModal(
                     if (!currentState.isComplete) {
                         if (event.action == KeyEvent.ACTION_DOWN) {
                             if (event.keyCode == KeyEvent.KEYCODE_BUTTON_B || event.keyCode == KeyEvent.KEYCODE_BACK) {
-                                state = HotkeysState.ActionList(
-                                    focusedIndex = HOTKEY_ACTIONS.indexOf(currentState.action)
-                                )
+                                state = HotkeysState.ActionList(focusedIndex = currentState.returnFocusIndex)
                             } else if (device != null && isGamepadDevice(device) && isRecordableKey(event.keyCode)) {
                                 val newKeys = currentState.heldKeys + event.keyCode
                                 if (newKeys.size <= 3) {
@@ -161,8 +202,7 @@ fun HotkeysModal(
                             }
                         } else if (event.action == KeyEvent.ACTION_UP) {
                             if (isRecordableKey(event.keyCode) && event.keyCode in currentState.heldKeys) {
-                                val newKeys = currentState.heldKeys - event.keyCode
-                                state = currentState.copy(heldKeys = newKeys)
+                                state = currentState.copy(heldKeys = currentState.heldKeys - event.keyCode)
                             }
                         }
                     }
@@ -179,33 +219,30 @@ fun HotkeysModal(
     }
 
     when (val currentState = state) {
-        is HotkeysState.ActionList -> ActionListContent(
-            hotkeys = hotkeys,
+        is HotkeysState.ActionList -> MenuListContent(
+            rows = rows,
+            focusableRows = focusableRows,
             focusedIndex = currentState.focusedIndex,
-            getComboForAction = ::getComboForAction,
-            getHoldMsForAction = ::getHoldMsForAction,
-            conflictingActions = conflictingActions,
-            onSelectAction = { action -> state = HotkeysState.Recording(action = action) },
-            onCycleHoldDelay = ::cycleHoldDelay,
+            onSelect = ::startRecording,
+            onCycleHoldDelay = ::cycleHoldDelayAt,
             onDismiss = onDismiss
         )
         is HotkeysState.Recording -> RecordingContent(
-            action = currentState.action,
+            title = currentState.target.label,
             heldKeys = currentState.heldKeys,
             isComplete = currentState.isComplete,
             onComplete = { keys ->
                 scope.launch {
-                    onSaveHotkey(currentState.action, keys.toList())
+                    when (val target = currentState.target) {
+                        is RecordTarget.System -> onSaveHotkey(target.action, keys.toList())
+                        is RecordTarget.Core -> onSaveCoreControl(target.def.retropadId, target.def.mode, keys.toList())
+                    }
                     delay(500)
-                    state = HotkeysState.ActionList(
-                        focusedIndex = HOTKEY_ACTIONS.indexOf(currentState.action)
-                    )
+                    state = HotkeysState.ActionList(focusedIndex = currentState.returnFocusIndex)
                 }
             },
             onCancel = {
-                state = HotkeysState.ActionList(
-                    focusedIndex = HOTKEY_ACTIONS.indexOf(currentState.action)
-                )
+                state = HotkeysState.ActionList(focusedIndex = currentState.returnFocusIndex)
             },
             onUpdateComplete = { complete ->
                 state = currentState.copy(isComplete = complete)
@@ -214,20 +251,58 @@ fun HotkeysModal(
     }
 }
 
-@Composable
-private fun ActionListContent(
+private fun buildRows(
     hotkeys: List<HotkeyEntity>,
+    coreControls: List<CoreControlDef>,
+    coreId: String?,
+    coreName: String?,
+    conflictingActions: Set<HotkeyAction>
+): List<MenuRow> = buildList {
+    add(MenuRow.Header("System Hotkeys", dimmed = false))
+    HOTKEY_ACTIONS.forEach { action ->
+        val entity = hotkeys.find { it.action == action }
+        add(
+            MenuRow.System(
+                action = action,
+                combo = entity?.let { parseComboJson(it.buttonComboJson) } ?: emptyList(),
+                holdMs = entity?.holdMs ?: 0L,
+                conflicting = action in conflictingActions
+            )
+        )
+    }
+
+    if (coreId != null) {
+        val coreBinds = hotkeys.filter {
+            it.scopeType == HotkeyScopeType.CORE && it.scopeKey == coreId &&
+                it.action == HotkeyAction.SEND_CORE_INPUT
+        }
+        val controlRows = coreControls.map { def ->
+            MenuRow.Core(def, coreBinds.find { it.coreInputRetropadId == def.retropadId })
+        }
+        val headerTitle = coreName?.let { "Core Hotkeys — $it" } ?: "Core Hotkeys"
+        add(MenuRow.Header(headerTitle, dimmed = controlRows.isEmpty()))
+        if (controlRows.isEmpty()) {
+            add(MenuRow.Placeholder("-- no settings available --"))
+        } else {
+            addAll(controlRows)
+        }
+    }
+}
+
+@Composable
+private fun MenuListContent(
+    rows: List<MenuRow>,
+    focusableRows: List<MenuRow>,
     focusedIndex: Int,
-    getComboForAction: (HotkeyAction) -> List<Int>,
-    getHoldMsForAction: (HotkeyAction) -> Long,
-    conflictingActions: Set<HotkeyAction>,
-    onSelectAction: (HotkeyAction) -> Unit,
-    onCycleHoldDelay: (HotkeyAction) -> Unit,
+    onSelect: (Int) -> Unit,
+    onCycleHoldDelay: (Int) -> Unit,
     onDismiss: () -> Unit
 ) {
     val listState = rememberLazyListState()
+    val focusedRow = focusableRows.getOrNull(focusedIndex)
+    val focusedRowPosition = focusedRow?.let { rows.indexOf(it) } ?: 0
 
-    FocusedScroll(listState = listState, focusedIndex = focusedIndex)
+    FocusedScroll(listState = listState, focusedIndex = focusedRowPosition)
 
     Modal(
         title = "Hotkeys",
@@ -248,26 +323,67 @@ private fun ActionListContent(
                 .heightIn(max = 400.dp),
             verticalArrangement = Arrangement.spacedBy(Dimens.spacingXs)
         ) {
-            itemsIndexed(HOTKEY_ACTIONS) { index, action ->
-                val combo = getComboForAction(action)
-                val holdMs = getHoldMsForAction(action)
-                HotkeyRow(
-                    action = action,
-                    combo = combo,
-                    holdMs = holdMs,
-                    isFocused = index == focusedIndex,
-                    isConflicting = action in conflictingActions,
-                    onClick = { onSelectAction(action) },
-                    onSecondaryClick = { onCycleHoldDelay(action) }
-                )
+            itemsIndexed(rows) { _, row ->
+                when (row) {
+                    is MenuRow.Header -> SectionHeaderRow(row.title, row.dimmed)
+                    is MenuRow.Placeholder -> PlaceholderRow(row.text)
+                    is MenuRow.System -> {
+                        val fIndex = focusableRows.indexOf(row)
+                        HotkeyRow(
+                            title = getActionDisplayName(row.action),
+                            combo = row.combo,
+                            holdMs = row.holdMs,
+                            isFocused = fIndex == focusedIndex,
+                            isConflicting = row.conflicting,
+                            onClick = { onSelect(fIndex) },
+                            onSecondaryClick = { onCycleHoldDelay(fIndex) }
+                        )
+                    }
+                    is MenuRow.Core -> {
+                        val fIndex = focusableRows.indexOf(row)
+                        HotkeyRow(
+                            title = row.def.label,
+                            combo = row.boundEntity?.let { parseComboJson(it.buttonComboJson) } ?: emptyList(),
+                            holdMs = 0L,
+                            isFocused = fIndex == focusedIndex,
+                            isConflicting = false,
+                            onClick = { onSelect(fIndex) },
+                            onSecondaryClick = {}
+                        )
+                    }
+                }
             }
         }
     }
 }
 
 @Composable
+private fun SectionHeaderRow(title: String, dimmed: Boolean) {
+    Text(
+        text = title,
+        style = MaterialTheme.typography.labelMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = if (dimmed) 0.4f else 1f),
+        modifier = Modifier.padding(
+            top = Dimens.spacingSm,
+            bottom = Dimens.spacingXs,
+            start = Dimens.spacingXs
+        )
+    )
+}
+
+@Composable
+private fun PlaceholderRow(text: String) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
+        modifier = Modifier.padding(horizontal = Dimens.spacingMd, vertical = Dimens.spacingSm)
+    )
+}
+
+@Composable
 private fun HotkeyRow(
-    action: HotkeyAction,
+    title: String,
     combo: List<Int>,
     holdMs: Long,
     isFocused: Boolean,
@@ -305,7 +421,7 @@ private fun HotkeyRow(
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
-            text = getActionDisplayName(action),
+            text = title,
             style = MaterialTheme.typography.bodyMedium,
             color = contentColor
         )
@@ -360,7 +476,7 @@ private fun HotkeyRow(
 
 @Composable
 private fun RecordingContent(
-    action: HotkeyAction,
+    title: String,
     heldKeys: Set<Int>,
     isComplete: Boolean,
     onComplete: (Set<Int>) -> Unit,
@@ -405,7 +521,7 @@ private fun RecordingContent(
 
     Modal(
         title = "Recording Hotkey",
-        subtitle = getActionDisplayName(action),
+        subtitle = title,
         baseWidth = 350.dp,
         onDismiss = onCancel,
         footerHints = listOf(InputButton.B to "Cancel")
@@ -487,17 +603,14 @@ private fun getActionDisplayName(action: HotkeyAction): String {
         HotkeyAction.FAST_FORWARD -> "Fast Forward"
         HotkeyAction.REWIND -> "Rewind"
         HotkeyAction.QUICK_SUSPEND -> "Quick Suspend"
+        HotkeyAction.CYCLE_CORE_OPTION -> "Cycle Core Option"
+        HotkeyAction.SEND_CORE_INPUT -> "Core Input"
     }
 }
 
-/**
- * A binding is conflicting when two or more hotkeys map to the same combo and
- * cannot be resolved by the tap-vs-hold split in [HotkeyManager.onKeyDown].
- * Legal pairs: exactly one instant (holdMs == 0) and one hold (holdMs > 0)
- * sharing a combo. Anything else (2+ instant, 2+ hold, or 3+ total) is flagged.
- */
 private fun findConflictingActions(hotkeys: List<HotkeyEntity>): Set<HotkeyAction> {
     val grouped = hotkeys
+        .filter { it.action != HotkeyAction.CYCLE_CORE_OPTION && it.action != HotkeyAction.SEND_CORE_INPUT }
         .filter { it.buttonComboJson.isNotBlank() }
         .mapNotNull { entity ->
             val combo = parseComboJson(entity.buttonComboJson)

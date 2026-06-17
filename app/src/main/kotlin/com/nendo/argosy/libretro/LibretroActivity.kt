@@ -111,7 +111,9 @@ import com.swordfish.libretrodroid.GLRetroView
 import com.swordfish.libretrodroid.GLRetroViewData
 import com.swordfish.libretrodroid.LibretroDroid
 import com.swordfish.libretrodroid.Variable
+import com.nendo.argosy.libretro.coreoptions.CoreControlManifestRegistry
 import com.nendo.argosy.libretro.coreoptions.CoreOptionManifestRegistry
+import com.nendo.argosy.data.local.entity.CoreInputMode
 import com.nendo.argosy.data.local.entity.CoreOptionOverrideEntity
 import com.nendo.argosy.ui.screens.settings.CoreOptionViewItem
 import dagger.hilt.android.AndroidEntryPoint
@@ -364,6 +366,7 @@ class LibretroActivity : ComponentActivity() {
             portResolver = portResolver,
             inputMapper = inputMapper,
             platformSlug = platformSlug,
+            coreId = resolvedCoreId,
             limitHotkeysToPlayer1 = limitHotkeysToPlayer1,
             scope = lifecycleScope
         )
@@ -632,6 +635,8 @@ class LibretroActivity : ComponentActivity() {
             getNetplayRole = { netplay.role },
             onShowMenu = ::showMenu,
             onAutoSaveState = ::performAutoSaveState,
+            onCycleCoreOption = { key, direction, values -> cycleCoreOption(key, direction, values) },
+            onSendCoreInput = ::sendCoreInput,
             onQuit = ::finish
         )
     }
@@ -1059,18 +1064,32 @@ class LibretroActivity : ComponentActivity() {
         }
     }
 
-    private fun cycleCoreOption(optionKey: String, direction: Int) {
+    private fun cycleCoreOption(optionKey: String, direction: Int) =
+        cycleCoreOption(optionKey, direction, emptyList())
+
+    private fun cycleCoreOption(optionKey: String, direction: Int, explicitValues: List<String>) {
         val coreId = resolvedCoreId ?: return
         val def = CoreOptionManifestRegistry.getManifest(coreId)
             ?.options?.firstOrNull { it.key == optionKey } ?: return
-        if (def.values.isEmpty()) return
+        val rotation = explicitValues.filter { it in def.values }.takeIf { it.isNotEmpty() } ?: def.values
+        if (rotation.isEmpty()) return
         val current = coreOptionOverrides[optionKey] ?: def.defaultValue
-        val currentIndex = def.values.indexOf(current).coerceAtLeast(0)
-        val newValue = def.values[(currentIndex + direction).mod(def.values.size)]
+        val currentIndex = rotation.indexOf(current).coerceAtLeast(0)
+        val newValue = rotation[(currentIndex + direction).mod(rotation.size)]
         coreOptionOverrides = coreOptionOverrides + (optionKey to newValue)
         if (::retroView.isInitialized) retroView.updateVariables(Variable(optionKey, newValue))
         lifecycleScope.launch(Dispatchers.IO) {
             coreOptionsRepository.upsert(CoreOptionOverrideEntity(coreId, optionKey, newValue))
+        }
+    }
+
+    private fun sendCoreInput(retropadId: Int, @Suppress("UNUSED_PARAMETER") mode: CoreInputMode) {
+        if (!::retroView.isInitialized) return
+        val keyCode = ControllerInputMapper.retroButtonToAndroidKeyCode(retropadId)
+        retroView.sendKeyEvent(KeyEvent.ACTION_DOWN, keyCode, 0)
+        lifecycleScope.launch {
+            delay(CORE_INPUT_PULSE_MS)
+            retroView.sendKeyEvent(KeyEvent.ACTION_UP, keyCode, 0)
         }
     }
 
@@ -1188,6 +1207,25 @@ class LibretroActivity : ComponentActivity() {
             },
             onSetHotkeyHoldMs = { action, holdMs ->
                 repo.setHotkeyHoldMs(action, holdMs)
+                inputConfig.refreshHotkeys()
+            },
+            coreId = resolvedCoreId,
+            coreName = resolvedCoreId?.let { LibretroCoreRegistry.getCoreById(it)?.displayName },
+            coreControls = resolvedCoreId?.let { CoreControlManifestRegistry.getManifest(it)?.controls } ?: emptyList(),
+            onSaveCoreControl = { retropadId, mode, keyCodes ->
+                resolvedCoreId?.let { coreId ->
+                    repo.setCoreControlHotkey(
+                        id = null,
+                        keyCodes = keyCodes,
+                        retropadId = retropadId,
+                        mode = mode,
+                        coreId = coreId
+                    )
+                    inputConfig.refreshHotkeys()
+                }
+            },
+            onClearCoreBind = { id ->
+                repo.deleteHotkeyById(id)
                 inputConfig.refreshHotkeys()
             }
         )
@@ -1883,6 +1921,8 @@ class LibretroActivity : ComponentActivity() {
 
     companion object {
         private const val TAG = "LibretroActivity"
+
+        private const val CORE_INPUT_PULSE_MS = 50L
 
         const val EXTRA_ROM_PATH = "rom_path"
         const val EXTRA_CORE_PATH = "core_path"

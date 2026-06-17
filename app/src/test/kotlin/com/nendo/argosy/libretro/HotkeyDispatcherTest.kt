@@ -37,9 +37,19 @@ class HotkeyDispatcherTest {
             onRewindChanged = {},
             onResetGame = {},
             onAutoSaveState = {},
+            onCycleCoreOption = { _, _, _ -> },
+            onSendCoreInput = { _, _ -> },
             onQuit = {}
         )
     }
+
+    private fun config(action: HotkeyAction) = HotkeyManager.HotkeyConfig(
+        action = action,
+        keyCodes = setOf(1),
+        controllerId = null,
+        isEnabled = true,
+        holdMs = 0
+    )
 
     @Test
     fun quickSave_offline_performs_save() {
@@ -47,7 +57,7 @@ class HotkeyDispatcherTest {
         val saveStateManager: SaveStateManager = mockk(relaxed = true)
         every { saveStateManager.performQuickSave(any(), any()) } returns true
         val dispatcher = build(false, null, toastSink = toasts, saveStateManager = saveStateManager)
-        dispatcher.dispatch(HotkeyAction.QUICK_SAVE)
+        dispatcher.dispatch(config(HotkeyAction.QUICK_SAVE))
         verify(exactly = 1) { saveStateManager.performQuickSave(any(), any()) }
         assertEquals(listOf("State saved"), toasts)
     }
@@ -58,7 +68,7 @@ class HotkeyDispatcherTest {
         val saveStateManager: SaveStateManager = mockk(relaxed = true)
         every { saveStateManager.performQuickSave(any(), any()) } returns true
         val dispatcher = build(true, NetplayMenuRole.Host, toastSink = toasts, saveStateManager = saveStateManager)
-        dispatcher.dispatch(HotkeyAction.QUICK_SAVE)
+        dispatcher.dispatch(config(HotkeyAction.QUICK_SAVE))
         verify(exactly = 1) { saveStateManager.performQuickSave(any(), any()) }
         assertEquals(listOf("State saved"), toasts)
     }
@@ -68,7 +78,7 @@ class HotkeyDispatcherTest {
         val toasts = mutableListOf<String>()
         val saveStateManager: SaveStateManager = mockk(relaxed = true)
         val dispatcher = build(true, NetplayMenuRole.Guest, toastSink = toasts, saveStateManager = saveStateManager)
-        dispatcher.dispatch(HotkeyAction.QUICK_SAVE)
+        dispatcher.dispatch(config(HotkeyAction.QUICK_SAVE))
         verify(exactly = 0) { saveStateManager.performQuickSave(any(), any()) }
         assertEquals(listOf("Save states disabled during netplay"), toasts)
     }
@@ -78,7 +88,7 @@ class HotkeyDispatcherTest {
         val toasts = mutableListOf<String>()
         val saveStateManager: SaveStateManager = mockk(relaxed = true)
         val dispatcher = build(true, NetplayMenuRole.Host, toastSink = toasts, saveStateManager = saveStateManager)
-        dispatcher.dispatch(HotkeyAction.QUICK_LOAD)
+        dispatcher.dispatch(config(HotkeyAction.QUICK_LOAD))
         verify(exactly = 0) { saveStateManager.performQuickLoad(any()) }
         assertEquals(listOf("Save states disabled during netplay"), toasts)
     }
@@ -88,7 +98,7 @@ class HotkeyDispatcherTest {
         val toasts = mutableListOf<String>()
         val saveStateManager: SaveStateManager = mockk(relaxed = true)
         val dispatcher = build(true, NetplayMenuRole.Guest, toastSink = toasts, saveStateManager = saveStateManager)
-        dispatcher.dispatch(HotkeyAction.QUICK_LOAD)
+        dispatcher.dispatch(config(HotkeyAction.QUICK_LOAD))
         verify(exactly = 0) { saveStateManager.performQuickLoad(any()) }
         assertEquals(listOf("Save states disabled during netplay"), toasts)
     }
@@ -98,7 +108,7 @@ class HotkeyDispatcherTest {
         val toasts = mutableListOf<String>()
         val saveStateManager: SaveStateManager = mockk(relaxed = true)
         val dispatcher = build(true, NetplayMenuRole.Host, hardcore = true, toastSink = toasts, saveStateManager = saveStateManager)
-        dispatcher.dispatch(HotkeyAction.QUICK_SAVE)
+        dispatcher.dispatch(config(HotkeyAction.QUICK_SAVE))
         verify(exactly = 0) { saveStateManager.performQuickSave(any(), any()) }
         assertEquals(listOf("Save states disabled in Hardcore mode"), toasts)
     }

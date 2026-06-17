@@ -19,6 +19,7 @@ class InputConfigCoordinator(
     private val portResolver: ControllerPortResolver,
     private val inputMapper: ControllerInputMapper,
     private val platformSlug: String,
+    private val coreId: String?,
     private val limitHotkeysToPlayer1: Boolean,
     private val scope: CoroutineScope
 ) {
@@ -67,7 +68,7 @@ class InputConfigCoordinator(
 
             inputConfigRepository.initializeDefaultHotkeys()
             val hotkeys = inputConfigRepository.getEnabledHotkeys()
-            hotkeyManager.setHotkeys(hotkeys)
+            hotkeyManager.setHotkeys(resolveScopedHotkeys(hotkeys))
             hotkeyList = inputConfigRepository.getHotkeys()
             hotkeyManager.setPlatformMappedButtons(platformKeyCodes)
             hotkeyManager.setLimitToPlayer1(limitHotkeysToPlayer1)
@@ -104,8 +105,16 @@ class InputConfigCoordinator(
     suspend fun refreshHotkeys() {
         hotkeyList = inputConfigRepository.getHotkeys()
         val enabledHotkeys = inputConfigRepository.getEnabledHotkeys()
-        hotkeyManager.setHotkeys(enabledHotkeys)
+        hotkeyManager.setHotkeys(resolveScopedHotkeys(enabledHotkeys))
     }
+
+    private fun resolveScopedHotkeys(hotkeys: List<HotkeyEntity>): List<HotkeyEntity> =
+        HotkeyScopeResolver.resolve(
+            all = hotkeys,
+            platformSlug = platformSlug,
+            coreId = coreId,
+            parseCombo = inputConfigRepository::parseHotkeyCombo
+        )
 
     companion object {
         private const val TAG = "InputConfigCoordinator"

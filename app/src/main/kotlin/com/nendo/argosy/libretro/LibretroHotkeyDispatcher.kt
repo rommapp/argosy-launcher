@@ -1,5 +1,6 @@
 package com.nendo.argosy.libretro
 
+import com.nendo.argosy.data.local.entity.CoreInputMode
 import com.nendo.argosy.data.local.entity.FastForwardMode
 import com.nendo.argosy.data.local.entity.HotkeyAction
 import com.nendo.argosy.libretro.ui.NetplayMenuRole
@@ -25,6 +26,8 @@ class LibretroHotkeyDispatcher(
     private val getNetplayRole: () -> NetplayMenuRole?,
     private val onShowMenu: () -> Unit,
     private val onAutoSaveState: () -> Unit,
+    private val onCycleCoreOption: (String, Int, List<String>) -> Unit,
+    private val onSendCoreInput: (Int, CoreInputMode) -> Unit,
     private val onQuit: () -> Unit
 ) {
     var isFastForwarding: Boolean = false
@@ -46,11 +49,13 @@ class LibretroHotkeyDispatcher(
         onRewindChanged = ::handleRewindRequest,
         onResetGame = ::handleResetRequest,
         onAutoSaveState = onAutoSaveState,
+        onCycleCoreOption = onCycleCoreOption,
+        onSendCoreInput = onSendCoreInput,
         onQuit = onQuit
     )
 
     init {
-        hotkeyManager.setDispatch { action -> inner.dispatch(action) }
+        hotkeyManager.setDispatch { config -> inner.dispatch(config) }
     }
 
     fun onKeyDown(keyCode: Int, controllerId: String?): Boolean {

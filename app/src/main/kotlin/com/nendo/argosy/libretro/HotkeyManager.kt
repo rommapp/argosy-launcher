@@ -2,6 +2,7 @@ package com.nendo.argosy.libretro
 
 import android.os.SystemClock
 import android.view.KeyEvent
+import com.nendo.argosy.data.local.entity.CoreInputMode
 import com.nendo.argosy.data.local.entity.HotkeyAction
 import com.nendo.argosy.data.local.entity.HotkeyEntity
 import com.nendo.argosy.data.repository.InputConfigRepository
@@ -17,19 +18,16 @@ class HotkeyManager(
 ) {
     private var hotkeys: List<HotkeyConfig> = emptyList()
     private val pressedKeys = mutableSetOf<Int>()
-    private var triggeredAction: HotkeyAction? = null
+    private var triggeredConfig: HotkeyConfig? = null
     private var limitToPlayer1 = true
     private var player1ControllerId: String? = null
     private var platformMappedButtons: Set<Int> = emptySet()
-    private var dispatchCallback: ((HotkeyAction) -> Unit)? = null
+    private var dispatchCallback: ((HotkeyConfig) -> Unit)? = null
 
-    // Pending combo state — used when a combo has a hold variant, an instant+hold
-    // pair, or any hold-only hotkey. Instant actions that share a combo with a hold
-    // variant are deferred so we can distinguish tap vs hold on release.
     private var pendingHoldJob: Job? = null
     private var pendingComboKeyCodes: Set<Int> = emptySet()
-    private var pendingInstantAction: HotkeyAction? = null
-    private var pendingHoldAction: HotkeyAction? = null
+    private var pendingInstant: HotkeyConfig? = null
+    private var pendingHold: HotkeyConfig? = null
     private var pendingHoldMs: Long = 0
     private var pendingComboStartTime: Long = 0
     private var holdHasFired: Boolean = false
@@ -39,7 +37,12 @@ class HotkeyManager(
         val keyCodes: Set<Int>,
         val controllerId: String?,
         val isEnabled: Boolean,
-        val holdMs: Long
+        val holdMs: Long,
+        val coreOptionKey: String? = null,
+        val coreOptionDirection: Int = 1,
+        val coreOptionValues: List<String> = emptyList(),
+        val coreInputRetropadId: Int? = null,
+        val coreInputMode: CoreInputMode = CoreInputMode.PULSE
     )
 
     fun setHotkeys(entities: List<HotkeyEntity>) {
@@ -49,7 +52,12 @@ class HotkeyManager(
                 keyCodes = parseComboJson(entity.buttonComboJson).toSet(),
                 controllerId = entity.controllerId,
                 isEnabled = entity.isEnabled,
-                holdMs = entity.holdMs
+                holdMs = entity.holdMs,
+                coreOptionKey = entity.coreOptionKey,
+                coreOptionDirection = entity.coreOptionDirection,
+                coreOptionValues = entity.coreOptionValuesJson?.let { parseStringListJson(it) } ?: emptyList(),
+                coreInputRetropadId = entity.coreInputRetropadId,
+                coreInputMode = entity.coreInputMode
             )
         }
     }
@@ -72,11 +80,11 @@ class HotkeyManager(
      * via [onKeyDown]'s return value so the existing synchronous call path keeps
      * working.
      */
-    fun setDispatch(callback: (HotkeyAction) -> Unit) {
+    fun setDispatch(callback: (HotkeyConfig) -> Unit) {
         dispatchCallback = callback
     }
 
-    fun onKeyDown(keyCode: Int, controllerId: String?): HotkeyAction? {
+    fun onKeyDown(keyCode: Int, controllerId: String?): HotkeyConfig? {
         if (!isHotkeyKey(keyCode)) return null
 
         if (limitToPlayer1 && player1ControllerId != null && controllerId != player1ControllerId) {
@@ -85,7 +93,7 @@ class HotkeyManager(
 
         val alreadyPressed = pressedKeys.toSet()
         pressedKeys.add(keyCode)
-        triggeredAction = null
+        triggeredConfig = null
 
         val newlyMatched = hotkeys.filter { hotkey ->
             if (!hotkey.isEnabled) return@filter false
@@ -104,8 +112,8 @@ class HotkeyManager(
 
         return when {
             holdHotkey == null && instantHotkey != null -> {
-                triggeredAction = instantHotkey.action
-                instantHotkey.action
+                triggeredConfig = instantHotkey
+                instantHotkey
             }
             holdHotkey != null -> {
                 startPending(holdHotkey, instantHotkey)
@@ -117,8 +125,8 @@ class HotkeyManager(
 
     private fun startPending(holdHotkey: HotkeyConfig, instantHotkey: HotkeyConfig?) {
         cancelPending()
-        pendingInstantAction = instantHotkey?.action
-        pendingHoldAction = holdHotkey.action
+        pendingInstant = instantHotkey
+        pendingHold = holdHotkey
         pendingComboKeyCodes = holdHotkey.keyCodes
         pendingHoldMs = holdHotkey.holdMs
         pendingComboStartTime = SystemClock.elapsedRealtime()
@@ -128,13 +136,10 @@ class HotkeyManager(
         if (launchScope != null) {
             pendingHoldJob = launchScope.launch {
                 delay(holdHotkey.holdMs)
-                // Re-check inside the scope -- the combo might have been released.
-                if (pressedKeys.containsAll(pendingComboKeyCodes) &&
-                    pendingHoldAction == holdHotkey.action
-                ) {
+                if (pressedKeys.containsAll(pendingComboKeyCodes) && pendingHold == holdHotkey) {
                     holdHasFired = true
-                    triggeredAction = holdHotkey.action
-                    dispatchCallback?.invoke(holdHotkey.action)
+                    triggeredConfig = holdHotkey
+                    dispatchCallback?.invoke(holdHotkey)
                 }
             }
         }
@@ -147,38 +152,36 @@ class HotkeyManager(
 
     private fun clearPending() {
         cancelPending()
-        pendingInstantAction = null
-        pendingHoldAction = null
+        pendingInstant = null
+        pendingHold = null
         pendingComboKeyCodes = emptySet()
         pendingHoldMs = 0
         pendingComboStartTime = 0
         holdHasFired = false
     }
 
-    fun onKeyUp(keyCode: Int): HotkeyAction? {
+    fun onKeyUp(keyCode: Int): HotkeyConfig? {
         val wasInCombo = keyCode in pendingComboKeyCodes
         pressedKeys.remove(keyCode)
 
-        // Pending combo broken before hold timer fired — decide whether tap wins.
-        if (wasInCombo && !holdHasFired && pendingHoldAction != null) {
+        if (wasInCombo && !holdHasFired && pendingHold != null) {
             val elapsed = SystemClock.elapsedRealtime() - pendingComboStartTime
-            val instantAction = pendingInstantAction
-            val tapQualifies = instantAction != null && elapsed < TAP_THRESHOLD_MS
+            val instant = pendingInstant
+            val tapQualifies = instant != null && elapsed < TAP_THRESHOLD_MS
             clearPending()
             if (tapQualifies) {
-                triggeredAction = instantAction
-                dispatchCallback?.invoke(instantAction!!)
-                return instantAction
+                triggeredConfig = instant
+                dispatchCallback?.invoke(instant!!)
+                return instant
             }
-            // 200ms <= elapsed < holdMs: discard both (nothing fires).
         }
 
-        val action = triggeredAction
+        val config = triggeredConfig
         if (pressedKeys.isEmpty()) {
-            triggeredAction = null
+            triggeredConfig = null
             clearPending()
         }
-        return action
+        return config
     }
 
     fun isHotkeyActive(action: HotkeyAction): Boolean {
@@ -186,11 +189,11 @@ class HotkeyManager(
         return hotkey.keyCodes.isNotEmpty() && pressedKeys.containsAll(hotkey.keyCodes)
     }
 
-    fun getTriggeredAction(): HotkeyAction? = triggeredAction
+    fun getTriggeredAction(): HotkeyAction? = triggeredConfig?.action
 
     fun clearState() {
         pressedKeys.clear()
-        triggeredAction = null
+        triggeredConfig = null
         clearPending()
     }
 
@@ -200,6 +203,19 @@ class HotkeyManager(
             val jsonArray = JSONArray(jsonStr)
             for (i in 0 until jsonArray.length()) {
                 result.add(jsonArray.getInt(i))
+            }
+            result
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
+
+    private fun parseStringListJson(jsonStr: String): List<String> {
+        return try {
+            val result = mutableListOf<String>()
+            val jsonArray = JSONArray(jsonStr)
+            for (i in 0 until jsonArray.length()) {
+                result.add(jsonArray.getString(i))
             }
             result
         } catch (e: Exception) {

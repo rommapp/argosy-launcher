@@ -1804,3 +1804,15 @@ object Migration_123_124 : Migration(123, 124) {
         db.execSQL("ALTER TABLE core_versions ADD COLUMN blockedVersion TEXT")
     }
 }
+
+object Migration_124_125 : Migration(124, 125) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE hotkeys ADD COLUMN coreOptionKey TEXT")
+        db.execSQL("ALTER TABLE hotkeys ADD COLUMN coreOptionDirection INTEGER NOT NULL DEFAULT 1")
+        db.execSQL("ALTER TABLE hotkeys ADD COLUMN coreOptionValuesJson TEXT")
+        db.execSQL("ALTER TABLE hotkeys ADD COLUMN coreInputRetropadId INTEGER")
+        db.execSQL("ALTER TABLE hotkeys ADD COLUMN coreInputMode TEXT NOT NULL DEFAULT 'PULSE'")
+        db.execSQL("ALTER TABLE hotkeys ADD COLUMN scopeType TEXT NOT NULL DEFAULT 'GLOBAL'")
+        db.execSQL("ALTER TABLE hotkeys ADD COLUMN scopeKey TEXT")
+    }
+}

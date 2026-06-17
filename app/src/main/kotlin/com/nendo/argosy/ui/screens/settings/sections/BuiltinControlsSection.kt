@@ -20,6 +20,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import com.nendo.argosy.data.platform.PlatformWeightRegistry
+import com.nendo.argosy.libretro.LibretroCoreRegistry
+import com.nendo.argosy.libretro.coreoptions.CoreControlManifestRegistry
 import com.nendo.argosy.ui.components.NavigationPreference
 import com.nendo.argosy.ui.components.SwitchPreference
 import com.nendo.argosy.ui.screens.gamedetail.components.OptionItem
@@ -428,12 +430,24 @@ fun BuiltinControlsSection(
         }
 
         if (controlsState.showHotkeysModal) {
+            val coreInfo = if (!isGlobal && platformSlug != null) {
+                LibretroCoreRegistry.getDefaultCoreForPlatform(platformSlug)
+            } else {
+                null
+            }
             HotkeysModal(
                 hotkeys = hotkeys,
                 onSaveHotkey = { action, keyCodes -> viewModel.saveHotkey(action, keyCodes) },
                 onClearHotkey = { action -> viewModel.clearHotkey(action) },
                 onSetHoldMs = { action, holdMs -> viewModel.setHotkeyHoldMs(action, holdMs) },
-                onDismiss = { viewModel.hideHotkeysModal() }
+                onDismiss = { viewModel.hideHotkeysModal() },
+                coreId = coreInfo?.coreId,
+                coreName = coreInfo?.displayName,
+                coreControls = coreInfo?.let { CoreControlManifestRegistry.getManifest(it.coreId)?.controls } ?: emptyList(),
+                onSaveCoreControl = { retropadId, mode, keyCodes ->
+                    coreInfo?.let { viewModel.saveCoreControlHotkey(it.coreId, retropadId, mode, keyCodes) }
+                },
+                onClearCoreBind = { id -> viewModel.deleteCoreBind(id) }
             )
         }
 

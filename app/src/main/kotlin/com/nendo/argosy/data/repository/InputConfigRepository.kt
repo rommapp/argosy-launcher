@@ -7,8 +7,10 @@ import com.nendo.argosy.data.local.dao.ControllerOrderDao
 import com.nendo.argosy.data.local.dao.HotkeyDao
 import com.nendo.argosy.data.local.entity.ControllerMappingEntity
 import com.nendo.argosy.data.local.entity.ControllerOrderEntity
+import com.nendo.argosy.data.local.entity.CoreInputMode
 import com.nendo.argosy.data.local.entity.HotkeyAction
 import com.nendo.argosy.data.local.entity.HotkeyEntity
+import com.nendo.argosy.data.local.entity.HotkeyScopeType
 import com.nendo.argosy.libretro.HotkeyManager
 import com.nendo.argosy.core.input.ControllerDetector
 import com.nendo.argosy.core.input.DetectedLayout
@@ -342,6 +344,78 @@ class InputConfigRepository @Inject constructor(
         hotkeyDao.deleteByAction(action)
     }
 
+    suspend fun deleteHotkeyById(id: Long) = withContext(Dispatchers.IO) {
+        hotkeyDao.deleteById(id)
+    }
+
+    suspend fun getCoreScopedHotkeys(coreId: String): List<HotkeyEntity> = withContext(Dispatchers.IO) {
+        (hotkeyDao.getAllByAction(HotkeyAction.CYCLE_CORE_OPTION) +
+            hotkeyDao.getAllByAction(HotkeyAction.SEND_CORE_INPUT))
+            .filter { it.scopeType == HotkeyScopeType.CORE && it.scopeKey == coreId }
+    }
+
+    suspend fun setCoreControlHotkey(
+        id: Long?,
+        keyCodes: List<Int>,
+        retropadId: Int,
+        mode: CoreInputMode,
+        coreId: String,
+        controllerId: String? = null,
+        holdMs: Long = 0,
+        enabled: Boolean = true
+    ): Long = withContext(Dispatchers.IO) {
+        val comboJson = encodeComboJson(HotkeyManager.canonicalizeCombo(keyCodes))
+        hotkeyDao.upsertReturningId(
+            HotkeyEntity(
+                id = id ?: 0,
+                action = HotkeyAction.SEND_CORE_INPUT,
+                buttonComboJson = comboJson,
+                controllerId = controllerId,
+                isEnabled = enabled,
+                holdMs = holdMs,
+                coreInputRetropadId = retropadId,
+                coreInputMode = mode,
+                scopeType = HotkeyScopeType.CORE,
+                scopeKey = coreId
+            )
+        )
+    }
+
+    suspend fun setCoreOptionHotkey(
+        id: Long?,
+        keyCodes: List<Int>,
+        coreOptionKey: String,
+        coreOptionDirection: Int,
+        coreOptionValues: List<String>,
+        coreId: String,
+        scopeType: HotkeyScopeType = HotkeyScopeType.CORE,
+        scopeKey: String? = coreId,
+        controllerId: String? = null,
+        holdMs: Long = 0,
+        enabled: Boolean = true
+    ): Long = withContext(Dispatchers.IO) {
+        val comboJson = encodeComboJson(HotkeyManager.canonicalizeCombo(keyCodes))
+        val valuesJson = if (coreOptionValues.isEmpty()) null else encodeStringListJson(coreOptionValues)
+        hotkeyDao.upsertReturningId(
+            HotkeyEntity(
+                id = id ?: 0,
+                action = HotkeyAction.CYCLE_CORE_OPTION,
+                buttonComboJson = comboJson,
+                controllerId = controllerId,
+                isEnabled = enabled,
+                holdMs = holdMs,
+                coreOptionKey = coreOptionKey,
+                coreOptionDirection = coreOptionDirection,
+                coreOptionValuesJson = valuesJson,
+                scopeType = scopeType,
+                scopeKey = scopeKey
+            )
+        )
+    }
+
+    fun parseCoreOptionValues(entity: HotkeyEntity): List<String> =
+        entity.coreOptionValuesJson?.let { parseStringListJson(it) } ?: emptyList()
+
     suspend fun clearAllHotkeys() = withContext(Dispatchers.IO) {
         hotkeyDao.deleteAll()
     }
@@ -456,6 +530,28 @@ class InputConfigRepository @Inject constructor(
         val jsonArray = JSONArray()
         for (keyCode in keyCodes) {
             jsonArray.put(keyCode)
+        }
+        return jsonArray.toString()
+    }
+
+    private fun parseStringListJson(jsonStr: String): List<String> {
+        return try {
+            val result = mutableListOf<String>()
+            val jsonArray = JSONArray(jsonStr)
+            for (i in 0 until jsonArray.length()) {
+                result.add(jsonArray.getString(i))
+            }
+            result
+        } catch (e: Exception) {
+            Logger.error(TAG, "Failed to parse string list JSON: ${e.message}")
+            emptyList()
+        }
+    }
+
+    private fun encodeStringListJson(values: List<String>): String {
+        val jsonArray = JSONArray()
+        for (value in values) {
+            jsonArray.put(value)
         }
         return jsonArray.toString()
     }

@@ -493,6 +493,25 @@ class SettingsViewModel @Inject constructor(
         inputConfigRepository.setHotkeyHoldMs(action, holdMs)
     }
 
+    suspend fun saveCoreControlHotkey(
+        coreId: String,
+        retropadId: Int,
+        mode: com.nendo.argosy.data.local.entity.CoreInputMode,
+        keyCodes: List<Int>
+    ) {
+        inputConfigRepository.setCoreControlHotkey(
+            id = null,
+            keyCodes = keyCodes,
+            retropadId = retropadId,
+            mode = mode,
+            coreId = coreId
+        )
+    }
+
+    suspend fun deleteCoreBind(id: Long) {
+        inputConfigRepository.deleteHotkeyById(id)
+    }
+
     fun setBuiltinBlackFrameInsertion(enabled: Boolean) = routeSetBuiltinBlackFrameInsertion(this, enabled)
     fun cycleBuiltinShader(direction: Int) = routeCycleBuiltinShader(this, direction)
 

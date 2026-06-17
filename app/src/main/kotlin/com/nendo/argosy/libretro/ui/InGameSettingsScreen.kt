@@ -2,7 +2,9 @@ package com.nendo.argosy.libretro.ui
 
 import android.view.InputDevice
 import com.nendo.argosy.data.local.entity.ControllerOrderEntity
+import com.nendo.argosy.data.local.entity.CoreInputMode
 import com.nendo.argosy.data.local.entity.HotkeyAction
+import com.nendo.argosy.libretro.coreoptions.CoreControlDef
 import com.nendo.argosy.data.local.entity.HotkeyEntity
 import com.nendo.argosy.data.repository.ControllerInfo
 import com.nendo.argosy.data.repository.InputSource
@@ -121,7 +123,12 @@ data class InGameModalCallbacks(
     val onApplyPreset: suspend (ControllerInfo, String) -> Unit,
     val onSaveHotkey: suspend (HotkeyAction, List<Int>) -> Unit,
     val onClearHotkey: suspend (HotkeyAction) -> Unit,
-    val onSetHotkeyHoldMs: suspend (HotkeyAction, Long) -> Unit
+    val onSetHotkeyHoldMs: suspend (HotkeyAction, Long) -> Unit,
+    val coreId: String? = null,
+    val coreName: String? = null,
+    val coreControls: List<CoreControlDef> = emptyList(),
+    val onSaveCoreControl: suspend (Int, CoreInputMode, List<Int>) -> Unit = { _, _, _ -> },
+    val onClearCoreBind: suspend (Long) -> Unit = {}
 )
 
 internal sealed class InGameControlsItem(
@@ -505,7 +512,12 @@ fun InGameSettingsScreen(
                 onSaveHotkey = modalCallbacks.onSaveHotkey,
                 onClearHotkey = modalCallbacks.onClearHotkey,
                 onSetHoldMs = modalCallbacks.onSetHotkeyHoldMs,
-                onDismiss = { showHotkeysModal = false }
+                onDismiss = { showHotkeysModal = false },
+                coreId = modalCallbacks.coreId,
+                coreName = modalCallbacks.coreName,
+                coreControls = modalCallbacks.coreControls,
+                onSaveCoreControl = modalCallbacks.onSaveCoreControl,
+                onClearCoreBind = modalCallbacks.onClearCoreBind
             )
         }
     }

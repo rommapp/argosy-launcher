@@ -28,8 +28,17 @@ interface HotkeyDao {
     @Query("SELECT * FROM hotkeys WHERE action = :action AND (controllerId IS NULL OR controllerId = :controllerId) LIMIT 1")
     suspend fun getByActionAndController(action: HotkeyAction, controllerId: String?): HotkeyEntity?
 
+    @Query("SELECT * FROM hotkeys WHERE action = :action")
+    suspend fun getAllByAction(action: HotkeyAction): List<HotkeyEntity>
+
     @Upsert
     suspend fun upsert(hotkey: HotkeyEntity)
+
+    @Upsert
+    suspend fun upsertReturningId(hotkey: HotkeyEntity): Long
+
+    @Query("DELETE FROM hotkeys WHERE id = :id")
+    suspend fun deleteById(id: Long)
 
     @Query("UPDATE hotkeys SET buttonComboJson = :buttonComboJson, isEnabled = :isEnabled WHERE action = :action AND (controllerId IS NULL AND :controllerId IS NULL OR controllerId = :controllerId)")
     suspend fun updateCombo(action: HotkeyAction, controllerId: String?, buttonComboJson: String, isEnabled: Boolean)

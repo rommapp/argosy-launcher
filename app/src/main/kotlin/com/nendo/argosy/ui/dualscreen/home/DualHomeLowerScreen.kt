@@ -28,6 +28,11 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
+import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
+import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
+import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan
+import androidx.compose.foundation.lazy.staggeredgrid.items as staggeredItems
+import androidx.compose.foundation.lazy.staggeredgrid.rememberLazyStaggeredGridState
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
@@ -67,6 +72,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.nendo.argosy.hardware.CompanionAppBar
+import com.nendo.argosy.ui.common.rememberCoverAspectRatio
 import com.nendo.argosy.ui.common.rememberFileImageModel
 import com.nendo.argosy.ui.components.AlphabetSidebar
 import com.nendo.argosy.ui.components.GameCard
@@ -105,7 +111,8 @@ fun DualHomeLowerScreen(
     val listState = rememberLazyListState()
     val screenWidthDp = LocalConfiguration.current.screenWidthDp.dp
     val centerPadding = (screenWidthDp - FOCUSED_CARD_WIDTH) / 2
-    val coverAspectRatio = LocalBoxArtStyle.current.aspectRatio
+    val boxArtStyle = LocalBoxArtStyle.current
+    val coverAspectRatio = boxArtStyle.aspectRatio
     val regularCardHeight = CARD_WIDTH / coverAspectRatio
     val focusedCardHeight = FOCUSED_CARD_WIDTH / coverAspectRatio
 
@@ -237,8 +244,11 @@ fun DualHomeLowerScreen(
             ) {
                 itemsIndexed(games, key = { _, game -> game.id }) { index, game ->
                     val isSelected = index == selectedIndex
-                    val cardWidth = if (isSelected) FOCUSED_CARD_WIDTH else CARD_WIDTH
                     val cardHeight = if (isSelected) focusedCardHeight else regularCardHeight
+                    val cardWidth = if (boxArtStyle.nativeAspectRatio) {
+                        val coverPath = repairedCoverPaths[game.id] ?: game.coverPath
+                        cardHeight * rememberCoverAspectRatio(coverPath, coverAspectRatio)
+                    } else if (isSelected) FOCUSED_CARD_WIDTH else CARD_WIDTH
                     Box(
                         modifier = Modifier
                             .size(width = cardWidth, height = cardHeight)
@@ -515,19 +525,31 @@ fun DualHomeLibraryGrid(
     modifier: Modifier = Modifier
 ) {
     val gridState = rememberLazyGridState()
+    val staggeredState = rememberLazyStaggeredGridState()
     val gameCount = gridItems.count { it is DualLibraryGridItem.Game }
-    val coverAspectRatio = LocalBoxArtStyle.current.aspectRatio
+    val boxArtStyle = LocalBoxArtStyle.current
+    val nativeAspect = boxArtStyle.nativeAspectRatio
+    val coverAspectRatio = boxArtStyle.aspectRatio
 
     val targetGridIndex = gridItems.indexOfFirst {
         it is DualLibraryGridItem.Game && it.gameIndex == focusedIndex
     }.coerceAtLeast(0)
 
-    LaunchedEffect(targetGridIndex) {
+    LaunchedEffect(targetGridIndex, nativeAspect) {
         if (gridItems.isNotEmpty() && targetGridIndex in gridItems.indices) {
-            val viewportHeight = gridState.layoutInfo.viewportSize.height
-            val itemHeight = gridState.layoutInfo.visibleItemsInfo.firstOrNull()?.size?.height ?: 0
-            val centerOffset = if (itemHeight > 0) (viewportHeight - itemHeight) / 2 else 0
-            gridState.animateScrollToItem(targetGridIndex, -centerOffset)
+            if (nativeAspect) {
+                val viewportHeight = staggeredState.layoutInfo.viewportSize.height
+                val itemHeight = staggeredState.layoutInfo.visibleItemsInfo
+                    .firstOrNull { it.index == targetGridIndex }?.size?.height
+                    ?: staggeredState.layoutInfo.visibleItemsInfo.firstOrNull()?.size?.height ?: 0
+                val centerOffset = if (itemHeight > 0) (viewportHeight - itemHeight) / 2 else 0
+                staggeredState.animateScrollToItem(targetGridIndex, -centerOffset)
+            } else {
+                val viewportHeight = gridState.layoutInfo.viewportSize.height
+                val itemHeight = gridState.layoutInfo.visibleItemsInfo.firstOrNull()?.size?.height ?: 0
+                val centerOffset = if (itemHeight > 0) (viewportHeight - itemHeight) / 2 else 0
+                gridState.animateScrollToItem(targetGridIndex, -centerOffset)
+            }
         }
     }
 
@@ -548,6 +570,59 @@ fun DualHomeLibraryGrid(
             )
 
             Row(modifier = Modifier.weight(1f)) {
+                if (nativeAspect) {
+                    LazyVerticalStaggeredGrid(
+                        columns = StaggeredGridCells.Fixed(columns),
+                        state = staggeredState,
+                        modifier = Modifier.weight(1f),
+                        contentPadding = PaddingValues(12.dp),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        verticalItemSpacing = 10.dp
+                    ) {
+                        staggeredItems(
+                            count = gridItems.size,
+                            key = { i ->
+                                when (val item = gridItems[i]) {
+                                    is DualLibraryGridItem.Header -> "header-${item.label}"
+                                    is DualLibraryGridItem.Game -> item.game.id
+                                }
+                            },
+                            span = { i ->
+                                when (gridItems[i]) {
+                                    is DualLibraryGridItem.Header -> StaggeredGridItemSpan.FullLine
+                                    is DualLibraryGridItem.Game -> StaggeredGridItemSpan.SingleLane
+                                }
+                            }
+                        ) { index ->
+                            when (val item = gridItems[index]) {
+                                is DualLibraryGridItem.Header -> {
+                                    DualSectionDivider(label = item.label)
+                                }
+                                is DualLibraryGridItem.Game -> {
+                                    val coverPath = repairedCoverPaths[item.game.id] ?: item.game.coverPath
+                                    val ratio = rememberCoverAspectRatio(coverPath, coverAspectRatio)
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .aspectRatio(ratio)
+                                            .touchOnly { onGameTapped(item.gameIndex) }
+                                    ) {
+                                        GameCard(
+                                            game = item.game,
+                                            isFocused = item.gameIndex == focusedIndex,
+                                            modifier = Modifier.fillMaxSize(),
+                                            focusScale = 1f,
+                                            showPlatformBadge = false,
+                                            onCoverLoadFailed = onCoverLoadFailed,
+                                            coverPathOverride = repairedCoverPaths[item.game.id],
+                                            downloadIndicator = item.game.downloadIndicator
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                } else {
                 LazyVerticalGrid(
                     columns = GridCells.Fixed(columns),
                     state = gridState,
@@ -596,6 +671,7 @@ fun DualHomeLibraryGrid(
                             }
                         }
                     }
+                }
                 }
 
                 if (sectionLabels.size >= 3) {

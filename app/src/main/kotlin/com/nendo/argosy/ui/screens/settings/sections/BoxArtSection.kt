@@ -31,6 +31,7 @@ import com.nendo.argosy.data.preferences.PlatformIndicatorContent
 import com.nendo.argosy.data.preferences.PlatformIndicatorStyle
 import com.nendo.argosy.data.preferences.SystemIconPadding
 import com.nendo.argosy.data.preferences.SystemIconPosition
+import com.nendo.argosy.ui.common.rememberCoverAspectRatio
 import com.nendo.argosy.ui.components.CyclePreference
 import com.nendo.argosy.ui.components.GameCard
 import com.nendo.argosy.ui.screens.home.HomeGameUi
@@ -53,7 +54,6 @@ internal sealed class BoxArtItem(
         : BoxArtItem(key, section, visibleWhen)
 
     data object Shape : BoxArtItem("shape", "styling")
-    data object NativeAspect : BoxArtItem("nativeAspect", "styling")
     data object CornerRadius : BoxArtItem("cornerRadius", "styling")
     data object BorderThickness : BoxArtItem("borderThickness", "styling")
     data object BorderStyle : BoxArtItem("borderStyle", "styling")
@@ -180,7 +180,7 @@ internal sealed class BoxArtItem(
 
         val ALL: List<BoxArtItem> = listOf(
             StylingHeader,
-            Shape, NativeAspect, CornerRadius, BorderThickness, BorderStyle, GlassTint,
+            Shape, CornerRadius, BorderThickness, BorderStyle, GlassTint,
             GradientPresetItem, GradientAdvanced,
             GradientHeader,
             SampleGrid, SampleRadius, MinSaturation, MinBrightness,
@@ -260,12 +260,6 @@ fun BoxArtSection(
                         value = display.boxArtShape.displayName,
                         isFocused = isFocused(item),
                         onClick = { viewModel.cycleBoxArtShape() }
-                    )
-                    BoxArtItem.NativeAspect -> CyclePreference(
-                        title = "Native Aspect Ratio",
-                        value = if (display.boxArtNativeAspectRatio) "On" else "Off",
-                        isFocused = isFocused(item),
-                        onClick = { viewModel.toggleBoxArtNativeAspectRatio() }
                     )
                     BoxArtItem.CornerRadius -> CyclePreference(
                         title = "Corner Radius",
@@ -425,6 +419,8 @@ fun BoxArtSection(
         ) {
             val currentStyle = LocalBoxArtStyle.current
             val previewBoxArtStyle = BoxArtStyleConfig(
+                aspectRatio = display.boxArtShape.aspectRatio,
+                nativeAspectRatio = display.boxArtShape.isNative,
                 cornerRadiusDp = display.boxArtCornerRadius.dp.dp,
                 borderThicknessDp = display.boxArtBorderThickness.dp.dp,
                 borderStyle = display.boxArtBorderStyle,
@@ -477,13 +473,19 @@ fun BoxArtSection(
                 isDownloaded = false
             )
 
+            val previewAspect = if (display.boxArtShape.isNative) {
+                rememberCoverAspectRatio(previewGame.coverPath, display.boxArtShape.aspectRatio)
+            } else {
+                display.boxArtShape.aspectRatio
+            }
+
             CompositionLocalProvider(LocalBoxArtStyle provides previewBoxArtStyle) {
                 GameCard(
                     game = previewGame,
                     isFocused = true,
                     modifier = Modifier
                         .width(Dimens.gameCardWidth)
-                        .aspectRatio(display.boxArtShape.aspectRatio)
+                        .aspectRatio(previewAspect)
                 )
             }
 

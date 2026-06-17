@@ -285,14 +285,6 @@ class DisplaySettingsDelegate @Inject constructor(
         }
     }
 
-    fun toggleBoxArtNativeAspectRatio(scope: CoroutineScope) {
-        val next = !_state.value.boxArtNativeAspectRatio
-        scope.launch {
-            preferencesRepository.setBoxArtNativeAspectRatio(next)
-            _state.update { it.copy(boxArtNativeAspectRatio = next) }
-        }
-    }
-
     fun cycleBoxArtCornerRadius(scope: CoroutineScope, direction: Int = 1) {
         val next = cycleEnum(_state.value.boxArtCornerRadius, direction)
         scope.launch {

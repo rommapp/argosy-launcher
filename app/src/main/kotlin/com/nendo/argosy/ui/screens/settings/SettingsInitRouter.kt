@@ -392,7 +392,6 @@ internal fun routeLoadSettings(vm: SettingsViewModel) {
             customBackgroundPath = prefs.customBackgroundPath,
             useAccentColorFooter = prefs.useAccentColorFooter,
             boxArtShape = prefs.boxArtShape,
-            boxArtNativeAspectRatio = prefs.boxArtNativeAspectRatio,
             boxArtCornerRadius = prefs.boxArtCornerRadius,
             boxArtBorderThickness = prefs.boxArtBorderThickness,
             boxArtBorderStyle = prefs.boxArtBorderStyle,

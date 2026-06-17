@@ -27,7 +27,6 @@ data class DisplayPreferences(
     val customBackgroundPath: String? = null,
     val useAccentColorFooter: Boolean = false,
     val boxArtShape: BoxArtShape = BoxArtShape.STANDARD,
-    val boxArtNativeAspectRatio: Boolean = false,
     val boxArtCornerRadius: BoxArtCornerRadius = BoxArtCornerRadius.MEDIUM,
     val boxArtBorderThickness: BoxArtBorderThickness = BoxArtBorderThickness.MEDIUM,
     val boxArtBorderStyle: BoxArtBorderStyle = BoxArtBorderStyle.GLASS,
@@ -85,7 +84,6 @@ class DisplayPreferencesRepository @Inject constructor(
         val CUSTOM_BACKGROUND_PATH = stringPreferencesKey("custom_background_path")
         val USE_ACCENT_COLOR_FOOTER = booleanPreferencesKey("use_accent_color_footer")
         val BOX_ART_SHAPE = stringPreferencesKey("box_art_shape")
-        val BOX_ART_NATIVE_ASPECT_RATIO = booleanPreferencesKey("box_art_native_aspect_ratio")
         val BOX_ART_CORNER_RADIUS = stringPreferencesKey("box_art_corner_radius")
         val BOX_ART_BORDER_THICKNESS = stringPreferencesKey("box_art_border_thickness")
         val BOX_ART_BORDER_STYLE = stringPreferencesKey("box_art_border_style")
@@ -140,7 +138,6 @@ class DisplayPreferencesRepository @Inject constructor(
             customBackgroundPath = prefs[Keys.CUSTOM_BACKGROUND_PATH],
             useAccentColorFooter = prefs[Keys.USE_ACCENT_COLOR_FOOTER] ?: false,
             boxArtShape = BoxArtShape.fromString(prefs[Keys.BOX_ART_SHAPE]),
-            boxArtNativeAspectRatio = prefs[Keys.BOX_ART_NATIVE_ASPECT_RATIO] ?: false,
             boxArtCornerRadius = BoxArtCornerRadius.fromString(prefs[Keys.BOX_ART_CORNER_RADIUS]),
             boxArtBorderThickness = BoxArtBorderThickness.fromString(prefs[Keys.BOX_ART_BORDER_THICKNESS]),
             boxArtBorderStyle = BoxArtBorderStyle.fromString(prefs[Keys.BOX_ART_BORDER_STYLE]),
@@ -242,10 +239,6 @@ class DisplayPreferencesRepository @Inject constructor(
 
     suspend fun setBoxArtShape(shape: BoxArtShape) {
         dataStore.edit { it[Keys.BOX_ART_SHAPE] = shape.name }
-    }
-
-    suspend fun setBoxArtNativeAspectRatio(enabled: Boolean) {
-        dataStore.edit { it[Keys.BOX_ART_NATIVE_ASPECT_RATIO] = enabled }
     }
 
     suspend fun setBoxArtCornerRadius(radius: BoxArtCornerRadius) {

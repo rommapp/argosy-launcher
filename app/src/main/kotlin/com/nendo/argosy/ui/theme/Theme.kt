@@ -294,7 +294,7 @@ fun ProvideArgosyThemeLocals(
 
     val boxArtStyle = BoxArtStyleConfig(
         aspectRatio = themeState.boxArtShape.aspectRatio,
-        nativeAspectRatio = themeState.boxArtNativeAspectRatio,
+        nativeAspectRatio = themeState.boxArtShape.isNative,
         cornerRadiusDp = themeState.boxArtCornerRadius.dp.dp,
         borderThicknessDp = themeState.boxArtBorderThickness.dp.dp,
         borderStyle = themeState.boxArtBorderStyle,

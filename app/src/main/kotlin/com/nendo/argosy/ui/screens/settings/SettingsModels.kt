@@ -175,7 +175,6 @@ data class DisplayState(
     val customBackgroundPath: String? = null,
     val useAccentColorFooter: Boolean = false,
     val boxArtShape: BoxArtShape = BoxArtShape.STANDARD,
-    val boxArtNativeAspectRatio: Boolean = false,
     val boxArtCornerRadius: BoxArtCornerRadius = BoxArtCornerRadius.MEDIUM,
     val boxArtBorderThickness: BoxArtBorderThickness = BoxArtBorderThickness.MEDIUM,
     val boxArtBorderStyle: BoxArtBorderStyle = BoxArtBorderStyle.SOLID,

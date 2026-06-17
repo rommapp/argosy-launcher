@@ -369,7 +369,6 @@ private fun routeHomeScreenConfirm(vm: SettingsViewModel, state: SettingsUiState
 private fun routeBoxArtConfirm(vm: SettingsViewModel, state: SettingsUiState): InputResult {
     when (boxArtItemAtFocusIndex(state.focusedIndex, state.display)) {
         BoxArtItem.Shape -> vm.cycleBoxArtShape()
-        BoxArtItem.NativeAspect -> vm.toggleBoxArtNativeAspectRatio()
         BoxArtItem.CornerRadius -> vm.cycleBoxArtCornerRadius()
         BoxArtItem.BorderThickness -> vm.cycleBoxArtBorderThickness()
         BoxArtItem.BorderStyle -> vm.cycleBoxArtBorderStyle()

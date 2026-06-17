@@ -410,6 +410,7 @@ class GameLaunchDelegate @Inject constructor(
                 val discText = result.missingDiscNumbers.joinToString(", ")
                 notificationManager.showError("Missing discs: $discText. View game details to repair.")
             }
+            is LaunchResult.MissingBios -> notificationManager.showError("Missing BIOS for ${result.platformSlug}. Install it in Settings before launching.")
             is LaunchResult.NoScummVMGameId -> notificationManager.showError("Missing .scummvm file for ${result.gameName}")
             is LaunchResult.NoAndroidApp -> notificationManager.showError("Android app not installed: ${result.packageName}")
             is LaunchResult.Error -> notificationManager.showError(result.message)

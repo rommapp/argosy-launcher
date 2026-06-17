@@ -60,6 +60,7 @@ sealed class LaunchResult {
     data class NoAndroidApp(val packageName: String) : LaunchResult()
     data class NoCore(val platformSlug: String, val reason: String? = null) : LaunchResult()
     data class MissingDiscs(val missingDiscNumbers: List<Int>) : LaunchResult()
+    data class MissingBios(val platformSlug: String) : LaunchResult()
     data class NoScummVMGameId(val gameName: String) : LaunchResult()
     data class Error(val message: String) : LaunchResult()
 }
@@ -173,6 +174,8 @@ class GameLauncher @Inject constructor(
         Logger.debug(TAG, "Emulator resolved: ${emulator.displayName} (${emulator.packageName})")
 
         ps2MemcardGate(gameId, game, emulator)?.let { return it }
+
+        biosGate(game, emulator)?.let { return it }
 
         if (emulator.id == "eden" && ZipExtractor.isNswPlatform(game.platformSlug)) {
             migrateToExtcontent(game)
@@ -509,6 +512,33 @@ class GameLauncher @Inject constructor(
             platformName = game.platformSlug,
             cards = cards
         )
+    }
+
+    private val mandatoryBios: Map<String, List<List<String>>> = mapOf(
+        "saturn" to listOf(listOf("sega_101.bin", "mpr-17933.bin")),
+        "3do" to listOf(listOf("panafz10.bin", "panafz1.bin", "goldstar.bin")),
+        "tgcd" to listOf(listOf("syscard3.pcd")),
+        "scd" to listOf(listOf("bios_CD_U.bin", "bios_CD_E.bin", "bios_CD_J.bin")),
+        "segacd" to listOf(listOf("bios_CD_U.bin", "bios_CD_E.bin", "bios_CD_J.bin"))
+    )
+
+    private suspend fun biosGate(game: GameEntity, emulator: EmulatorDef): LaunchResult? {
+        if (!emulator.launchConfig.isInProcess) return null
+        val requirements = mandatoryBios[game.platformSlug.lowercase()] ?: return null
+        return try {
+            biosRepository.distributeBiosToEmulator(game.platformSlug, EmulatorRegistry.BUILTIN_PACKAGE)
+            val systemDir = biosRepository.getLibretroSystemDir()
+            val unmet = requirements.any { group -> group.none { File(systemDir, it).exists() } }
+            if (unmet) {
+                Logger.warn(TAG, "[Launch] BIOS gate: ${game.platformSlug} missing required firmware")
+                LaunchResult.MissingBios(game.platformSlug)
+            } else {
+                null
+            }
+        } catch (e: Exception) {
+            Logger.warn(TAG, "BIOS gate check failed, allowing launch", e)
+            null
+        }
     }
 
     private suspend fun resolveEmulator(game: GameEntity): EmulatorDef? {

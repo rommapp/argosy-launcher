@@ -1036,7 +1036,10 @@ class SettingsViewModel @Inject constructor(
 
     fun openBiosFolderPicker() = biosDelegate.openFolderPicker(viewModelScope)
     fun toggleBiosPlatformExpanded(index: Int) = biosDelegate.togglePlatformExpanded(index)
-    fun downloadBiosForPlatform(platformSlug: String) = biosDelegate.downloadBiosForPlatform(platformSlug, viewModelScope)
+    fun downloadBiosForPlatform(platformSlug: String) =
+        biosDelegate.downloadBiosForPlatform(platformSlug, viewModelScope) {
+            loadPlatformDetailStats(_uiState.value.platformDetail.platformIndex)
+        }
     fun downloadSingleBios(rommId: Long) = biosDelegate.downloadSingleBios(rommId, viewModelScope)
     fun onBiosFolderSelected(path: String) = biosDelegate.onBiosFolderSelected(path, viewModelScope)
 

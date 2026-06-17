@@ -531,7 +531,11 @@ fun PlatformDetailSection(
                 PlatformDetailItem.BiosStatus -> {} // rendered as InfoItem
                 PlatformDetailItem.BiosDownload -> ActionPreference(
                     title = "Download All",
-                    subtitle = "${detail.biosTotal - detail.biosDownloaded} files",
+                    subtitle = if (uiState.bios.isDownloading) {
+                        uiState.bios.downloadingFileName?.let { "Downloading $it..." } ?: "Downloading..."
+                    } else {
+                        "${detail.biosTotal - detail.biosDownloaded} files"
+                    },
                     isFocused = isFocused(item),
                     icon = Icons.Default.Download,
                     onClick = { viewModel.downloadBiosForPlatform(config.platform.slug) }

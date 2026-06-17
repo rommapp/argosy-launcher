@@ -135,7 +135,7 @@ class BiosSettingsDelegate @Inject constructor(
         }
     }
 
-    fun downloadBiosForPlatform(platformSlug: String, scope: CoroutineScope) {
+    fun downloadBiosForPlatform(platformSlug: String, scope: CoroutineScope, onComplete: () -> Unit = {}) {
         if (_state.value.isDownloading) return
         scope.launch {
             _state.update { it.copy(isDownloading = true, downloadProgress = 0f) }
@@ -170,6 +170,7 @@ class BiosSettingsDelegate @Inject constructor(
             }
 
             loadBiosState()
+            onComplete()
         }
     }
 

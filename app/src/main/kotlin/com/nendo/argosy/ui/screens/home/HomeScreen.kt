@@ -64,6 +64,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import com.nendo.argosy.ui.common.AlwaysCrossfadeFactory
+import com.nendo.argosy.ui.common.coverSizeWithin
 import com.nendo.argosy.ui.common.rememberCoverAspectRatio
 import com.nendo.argosy.ui.common.rememberFileImageModel
 import com.nendo.argosy.ui.components.GameTitle
@@ -99,6 +100,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -1294,17 +1296,18 @@ private fun GameRail(
 
             when (item) {
                 is HomeRowItem.Game -> {
-                    val itemCardWidth = if (boxArtStyle.nativeAspectRatio) {
+                    val itemSize = if (boxArtStyle.nativeAspectRatio) {
                         val coverPath = repairedCoverPaths[item.game.id] ?: item.game.coverPath
-                        cardHeight * rememberCoverAspectRatio(coverPath, boxArtStyle.aspectRatio)
+                        val ratio = rememberCoverAspectRatio(coverPath, boxArtStyle.aspectRatio)
+                        coverSizeWithin(cardWidth, cardHeight, ratio)
                     } else {
-                        cardWidth
+                        DpSize(cardWidth, cardHeight)
                     }
                     GameCardWithNewBadge(
                         game = item.game,
                         isFocused = isFocused,
-                        cardWidth = itemCardWidth,
-                        cardHeight = cardHeight,
+                        cardWidth = itemSize.width,
+                        cardHeight = itemSize.height,
                         focusScale = focusScale,
                         scaleFromBottom = true,
                         downloadIndicator = downloadIndicators[item.game.id] ?: GameDownloadIndicator.NONE,

@@ -7,6 +7,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.DpSize
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -49,6 +51,23 @@ fun rememberCoverAspectRatio(path: String?, fallback: Float): Float {
     }
 
     return ratio
+}
+
+/**
+ * Fits a cover with the given [ratio] (width / height) inside the box defined by
+ * [maxWidth] x [maxHeight], preserving the native ratio. The returned size never
+ * exceeds the box in either dimension, so callers can keep a fixed footprint
+ * (e.g. carousels with a focus zoom) while still showing covers at their real
+ * proportions instead of cropping them.
+ */
+fun coverSizeWithin(maxWidth: Dp, maxHeight: Dp, ratio: Float): DpSize {
+    if (ratio <= 0f) return DpSize(maxWidth, maxHeight)
+    val boxRatio = maxWidth / maxHeight
+    return if (ratio >= boxRatio) {
+        DpSize(maxWidth, maxWidth / ratio)
+    } else {
+        DpSize(maxHeight * ratio, maxHeight)
+    }
 }
 
 private fun decodeAspectRatio(path: String): Float? {

@@ -67,10 +67,12 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.nendo.argosy.hardware.CompanionAppBar
+import com.nendo.argosy.ui.common.coverSizeWithin
 import com.nendo.argosy.ui.common.rememberCoverAspectRatio
 import com.nendo.argosy.ui.common.rememberFileImageModel
 import com.nendo.argosy.ui.components.AlphabetSidebar
@@ -243,14 +245,18 @@ fun DualHomeLowerScreen(
             ) {
                 itemsIndexed(games, key = { _, game -> game.id }) { index, game ->
                     val isSelected = index == selectedIndex
-                    val cardHeight = if (isSelected) focusedCardHeight else regularCardHeight
-                    val cardWidth = if (boxArtStyle.nativeAspectRatio) {
+                    val maxCardWidth = if (isSelected) FOCUSED_CARD_WIDTH else CARD_WIDTH
+                    val maxCardHeight = if (isSelected) focusedCardHeight else regularCardHeight
+                    val cardSize = if (boxArtStyle.nativeAspectRatio) {
                         val coverPath = repairedCoverPaths[game.id] ?: game.coverPath
-                        cardHeight * rememberCoverAspectRatio(coverPath, coverAspectRatio)
-                    } else if (isSelected) FOCUSED_CARD_WIDTH else CARD_WIDTH
+                        val ratio = rememberCoverAspectRatio(coverPath, coverAspectRatio)
+                        coverSizeWithin(maxCardWidth, maxCardHeight, ratio)
+                    } else {
+                        DpSize(maxCardWidth, maxCardHeight)
+                    }
                     Box(
                         modifier = Modifier
-                            .size(width = cardWidth, height = cardHeight)
+                            .size(cardSize)
                             .touchOnly {
                                 onGameTapped(index)
                                 onGameSelected(game.id)

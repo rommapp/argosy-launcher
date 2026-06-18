@@ -1816,3 +1816,25 @@ object Migration_124_125 : Migration(124, 125) {
         db.execSQL("ALTER TABLE hotkeys ADD COLUMN scopeKey TEXT")
     }
 }
+
+object Migration_125_126 : Migration(125, 126) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS game_core_option_overrides (
+                gameId INTEGER NOT NULL,
+                coreId TEXT NOT NULL,
+                optionKey TEXT NOT NULL,
+                value TEXT NOT NULL,
+                PRIMARY KEY (gameId, coreId, optionKey),
+                FOREIGN KEY (gameId) REFERENCES games(id) ON DELETE CASCADE
+            )
+            """.trimIndent()
+        )
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS index_game_core_option_overrides_gameId " +
+                "ON game_core_option_overrides (gameId)"
+        )
+        db.execSQL("ALTER TABLE games ADD COLUMN perGameSettingsEnabled INTEGER NOT NULL DEFAULT 0")
+    }
+}

@@ -205,6 +205,9 @@ fun InGameSettingsScreen(
     coreOptionsSupported: Boolean,
     onCoreOptionCycle: (String, Int) -> Unit,
     onCoreOptionReset: (String) -> Unit,
+    perGameSettingsSupported: Boolean = false,
+    perGameSettingsEnabled: Boolean = false,
+    onTogglePerGameSettings: (Boolean) -> Unit = {},
     modalCallbacks: InGameModalCallbacks,
     onDismiss: () -> Unit
 ): InputHandler {
@@ -227,6 +230,9 @@ fun InGameSettingsScreen(
     val currentCoreOptionsSupported = rememberUpdatedState(coreOptionsSupported)
     val currentOnCoreOptionCycle = rememberUpdatedState(onCoreOptionCycle)
     val currentOnCoreOptionReset = rememberUpdatedState(onCoreOptionReset)
+    val currentPerGameSupported = rememberUpdatedState(perGameSettingsSupported)
+    val currentPerGameEnabled = rememberUpdatedState(perGameSettingsEnabled)
+    val currentOnTogglePerGame = rememberUpdatedState(onTogglePerGameSettings)
 
     val controlsVisibility = remember(platformSlug) {
         InGameControlsVisibility(
@@ -244,7 +250,10 @@ fun InGameSettingsScreen(
     fun getMaxFocusIndex(): Int = when (currentTab) {
         InGameSettingsTab.VIDEO -> maxVideoFocusIndex
         InGameSettingsTab.CONTROLS -> controlsMaxFocusIndex
-        InGameSettingsTab.CORE_OPTIONS -> (currentCoreOptions.value.size - 1).coerceAtLeast(0)
+        InGameSettingsTab.CORE_OPTIONS -> {
+            val offset = if (currentPerGameSupported.value) 1 else 0
+            (currentCoreOptions.value.size - 1 + offset).coerceAtLeast(0)
+        }
     }
 
     fun getSettingAtIndex(index: Int): LibretroSettingDef? = when (currentTab) {
@@ -256,8 +265,11 @@ fun InGameSettingsScreen(
     fun isTabEnabled(tab: InGameSettingsTab): Boolean =
         tab != InGameSettingsTab.CORE_OPTIONS || currentCoreOptionsSupported.value
 
-    fun coreOptionKeyAt(index: Int): String? =
-        currentCoreOptions.value.getOrNull(index)?.key
+    fun coreOptionKeyAt(index: Int): String? {
+        val offset = if (currentPerGameSupported.value) 1 else 0
+        if (offset == 1 && index == 0) return null
+        return currentCoreOptions.value.getOrNull(index - offset)?.key
+    }
 
     fun handleControlsConfirm() {
         val item = controlsLayout.itemAtFocusIndex(focusedIndex, controlsVisibility) ?: return
@@ -326,7 +338,11 @@ fun InGameSettingsScreen(
 
             override fun onLeft(): InputResult {
                 if (currentTab == InGameSettingsTab.CORE_OPTIONS) {
-                    coreOptionKeyAt(focusedIndex)?.let { currentOnCoreOptionCycle.value(it, -1) }
+                    if (currentPerGameSupported.value && focusedIndex == 0) {
+                        currentOnTogglePerGame.value(false)
+                    } else {
+                        coreOptionKeyAt(focusedIndex)?.let { currentOnCoreOptionCycle.value(it, -1) }
+                    }
                     return InputResult.HANDLED
                 }
                 val setting = getSettingAtIndex(focusedIndex) ?: return InputResult.HANDLED
@@ -339,7 +355,11 @@ fun InGameSettingsScreen(
 
             override fun onRight(): InputResult {
                 if (currentTab == InGameSettingsTab.CORE_OPTIONS) {
-                    coreOptionKeyAt(focusedIndex)?.let { currentOnCoreOptionCycle.value(it, 1) }
+                    if (currentPerGameSupported.value && focusedIndex == 0) {
+                        currentOnTogglePerGame.value(true)
+                    } else {
+                        coreOptionKeyAt(focusedIndex)?.let { currentOnCoreOptionCycle.value(it, 1) }
+                    }
                     return InputResult.HANDLED
                 }
                 val setting = getSettingAtIndex(focusedIndex) ?: return InputResult.HANDLED
@@ -363,14 +383,21 @@ fun InGameSettingsScreen(
                     }
                     InGameSettingsTab.CONTROLS -> handleControlsConfirm()
                     InGameSettingsTab.CORE_OPTIONS ->
-                        coreOptionKeyAt(focusedIndex)?.let { currentOnCoreOptionCycle.value(it, 1) }
+                        if (currentPerGameSupported.value && focusedIndex == 0) {
+                            currentOnTogglePerGame.value(!currentPerGameEnabled.value)
+                        } else {
+                            coreOptionKeyAt(focusedIndex)?.let { currentOnCoreOptionCycle.value(it, 1) }
+                        }
                 }
                 return InputResult.HANDLED
             }
 
             override fun onSecondaryAction(): InputResult {
                 if (currentTab != InGameSettingsTab.CORE_OPTIONS) return InputResult.UNHANDLED
-                val option = currentCoreOptions.value.getOrNull(focusedIndex) ?: return InputResult.HANDLED
+                if (currentPerGameSupported.value && focusedIndex == 0) return InputResult.HANDLED
+                val offset = if (currentPerGameSupported.value) 1 else 0
+                val option = currentCoreOptions.value.getOrNull(focusedIndex - offset)
+                    ?: return InputResult.HANDLED
                 if (option.isOverridden) currentOnCoreOptionReset.value(option.key)
                 return InputResult.HANDLED
             }
@@ -465,7 +492,10 @@ fun InGameSettingsScreen(
                                 focusedIndex = focusedIndex,
                                 onCycle = { onCoreOptionCycle(it, 1) },
                                 onReset = onCoreOptionReset,
-                                listState = coreOptionsListState
+                                listState = coreOptionsListState,
+                                perGameToggleVisible = perGameSettingsSupported,
+                                perGameEnabled = perGameSettingsEnabled,
+                                onTogglePerGame = onTogglePerGameSettings
                             )
                         }
                     }

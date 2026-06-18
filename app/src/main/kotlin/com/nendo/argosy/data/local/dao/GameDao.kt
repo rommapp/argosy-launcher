@@ -289,6 +289,9 @@ interface GameDao {
     @Query("UPDATE games SET isHidden = :hidden WHERE id = :gameId")
     suspend fun updateHidden(gameId: Long, hidden: Boolean)
 
+    @Query("UPDATE games SET perGameSettingsEnabled = :enabled WHERE id = :gameId")
+    suspend fun setPerGameSettingsEnabled(gameId: Long, enabled: Boolean)
+
     @Query("UPDATE games SET steamLauncher = :launcherPackage WHERE id = :gameId")
     suspend fun setSteamLauncher(gameId: Long, launcherPackage: String?)
 

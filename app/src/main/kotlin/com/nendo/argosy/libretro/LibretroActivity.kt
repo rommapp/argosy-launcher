@@ -115,6 +115,7 @@ import com.nendo.argosy.libretro.coreoptions.CoreControlManifestRegistry
 import com.nendo.argosy.libretro.coreoptions.CoreOptionManifestRegistry
 import com.nendo.argosy.data.local.entity.CoreInputMode
 import com.nendo.argosy.data.local.entity.CoreOptionOverrideEntity
+import com.nendo.argosy.data.local.entity.GameCoreOptionOverrideEntity
 import com.nendo.argosy.ui.screens.settings.CoreOptionViewItem
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.delay
@@ -224,6 +225,8 @@ class LibretroActivity : ComponentActivity() {
     private var currentRotationState by mutableStateOf(0)
     private var touchSettingsState by mutableStateOf(com.nendo.argosy.data.preferences.BuiltinEmulatorSettings())
     private var coreOptionOverrides by mutableStateOf<Map<String, String>>(emptyMap())
+    private var gameCoreOptionOverrides by mutableStateOf<Map<String, String>>(emptyMap())
+    private var perGameSettingsEnabled by mutableStateOf(false)
     private var inputDeviceListener: android.hardware.input.InputManager.InputDeviceListener? = null
     private var splitColumn: android.widget.LinearLayout? = null
     private var touchEditMode by mutableStateOf(false)
@@ -310,6 +313,7 @@ class LibretroActivity : ComponentActivity() {
         platformSlug = intent.getStringExtra(EXTRA_PLATFORM_SLUG)?.takeIf { it.isNotBlank() }
             ?: game?.platformSlug ?: ""
         activeSaveChannel = game?.activeSaveChannel
+        perGameSettingsEnabled = game?.perGameSettingsEnabled == true
 
         initializeSaveState(savesDir, statesDir, activeSaveChannel)
         val globalSettings = kotlinx.coroutines.runBlocking {
@@ -1040,25 +1044,36 @@ class LibretroActivity : ComponentActivity() {
         val coreId = resolvedCoreId ?: return
         if (CoreOptionManifestRegistry.getManifest(coreId) == null) return
         lifecycleScope.launch {
-            coreOptionOverrides = withContext(Dispatchers.IO) {
-                coreOptionsRepository.getOverridesForCore(coreId)
+            val (global, perGame) = withContext(Dispatchers.IO) {
+                val g = coreOptionsRepository.getOverridesForCore(coreId)
                     .associate { it.optionKey to it.value }
+                val pg = if (gameId != -1L) {
+                    coreOptionsRepository.getOverridesForGame(gameId, coreId)
+                        .associate { it.optionKey to it.value }
+                } else {
+                    emptyMap()
+                }
+                g to pg
             }
+            coreOptionOverrides = global
+            gameCoreOptionOverrides = perGame
         }
     }
 
     private fun buildCoreOptionItems(): List<CoreOptionViewItem> {
         val coreId = resolvedCoreId ?: return emptyList()
         val manifest = CoreOptionManifestRegistry.getManifest(coreId) ?: return emptyList()
+        val perGame = perGameSettingsEnabled && gameId != -1L
         return manifest.options.map { def ->
-            val overrideValue = coreOptionOverrides[def.key]
+            val gameOverride = if (perGame) gameCoreOptionOverrides[def.key] else null
+            val globalOverride = coreOptionOverrides[def.key]
             CoreOptionViewItem(
                 key = def.key,
                 displayName = def.displayName,
                 description = def.description,
                 values = def.values,
-                currentValue = overrideValue ?: def.defaultValue,
-                isOverridden = overrideValue != null,
+                currentValue = gameOverride ?: globalOverride ?: def.defaultValue,
+                isOverridden = if (perGame) gameOverride != null else globalOverride != null,
                 valueLabels = def.valueLabels
             )
         }
@@ -1073,13 +1088,25 @@ class LibretroActivity : ComponentActivity() {
             ?.options?.firstOrNull { it.key == optionKey } ?: return
         val rotation = explicitValues.filter { it in def.values }.takeIf { it.isNotEmpty() } ?: def.values
         if (rotation.isEmpty()) return
-        val current = coreOptionOverrides[optionKey] ?: def.defaultValue
+        val perGame = perGameSettingsEnabled && gameId != -1L
+        val current = (if (perGame) gameCoreOptionOverrides[optionKey] else null)
+            ?: coreOptionOverrides[optionKey] ?: def.defaultValue
         val currentIndex = rotation.indexOf(current).coerceAtLeast(0)
         val newValue = rotation[(currentIndex + direction).mod(rotation.size)]
-        coreOptionOverrides = coreOptionOverrides + (optionKey to newValue)
+        if (perGame) {
+            gameCoreOptionOverrides = gameCoreOptionOverrides + (optionKey to newValue)
+        } else {
+            coreOptionOverrides = coreOptionOverrides + (optionKey to newValue)
+        }
         if (::retroView.isInitialized) retroView.updateVariables(Variable(optionKey, newValue))
         lifecycleScope.launch(Dispatchers.IO) {
-            coreOptionsRepository.upsert(CoreOptionOverrideEntity(coreId, optionKey, newValue))
+            if (perGame) {
+                coreOptionsRepository.upsertForGame(
+                    GameCoreOptionOverrideEntity(gameId, coreId, optionKey, newValue)
+                )
+            } else {
+                coreOptionsRepository.upsert(CoreOptionOverrideEntity(coreId, optionKey, newValue))
+            }
         }
     }
 
@@ -1097,10 +1124,37 @@ class LibretroActivity : ComponentActivity() {
         val coreId = resolvedCoreId ?: return
         val def = CoreOptionManifestRegistry.getManifest(coreId)
             ?.options?.firstOrNull { it.key == optionKey } ?: return
-        coreOptionOverrides = coreOptionOverrides - optionKey
-        if (::retroView.isInitialized) retroView.updateVariables(Variable(optionKey, def.defaultValue))
+        val perGame = perGameSettingsEnabled && gameId != -1L
+        if (perGame) {
+            gameCoreOptionOverrides = gameCoreOptionOverrides - optionKey
+            val fallback = coreOptionOverrides[optionKey] ?: def.defaultValue
+            if (::retroView.isInitialized) retroView.updateVariables(Variable(optionKey, fallback))
+            lifecycleScope.launch(Dispatchers.IO) {
+                coreOptionsRepository.deleteForGame(gameId, coreId, optionKey)
+            }
+        } else {
+            coreOptionOverrides = coreOptionOverrides - optionKey
+            if (::retroView.isInitialized) retroView.updateVariables(Variable(optionKey, def.defaultValue))
+            lifecycleScope.launch(Dispatchers.IO) {
+                coreOptionsRepository.delete(coreId, optionKey)
+            }
+        }
+    }
+
+    private fun applyPerGameSettingsToggle(enabled: Boolean) {
+        if (gameId == -1L) return
+        perGameSettingsEnabled = enabled
+        val coreId = resolvedCoreId
+        val manifest = coreId?.let { CoreOptionManifestRegistry.getManifest(it) }
+        if (manifest != null && ::retroView.isInitialized) {
+            manifest.options.forEach { def ->
+                val gameOverride = if (enabled) gameCoreOptionOverrides[def.key] else null
+                val effective = gameOverride ?: coreOptionOverrides[def.key] ?: def.defaultValue
+                retroView.updateVariables(Variable(def.key, effective))
+            }
+        }
         lifecycleScope.launch(Dispatchers.IO) {
-            coreOptionsRepository.delete(coreId, optionKey)
+            gameDao.setPerGameSettingsEnabled(gameId, enabled)
         }
     }
 
@@ -1149,6 +1203,11 @@ class LibretroActivity : ComponentActivity() {
             } ?: false,
             onCoreOptionCycle = ::cycleCoreOption,
             onCoreOptionReset = ::resetCoreOption,
+            perGameSettingsSupported = gameId != -1L && resolvedCoreId?.let {
+                CoreOptionManifestRegistry.getManifest(it) != null
+            } ?: false,
+            perGameSettingsEnabled = perGameSettingsEnabled,
+            onTogglePerGameSettings = ::applyPerGameSettingsToggle,
             modalCallbacks = buildModalCallbacks(),
             onDismiss = {
                 settingsVisible = false
@@ -1620,12 +1679,12 @@ class LibretroActivity : ComponentActivity() {
     }
 
     private fun showMenu() {
-        pendingSaveScreenshot?.recycle()
-        pendingSaveScreenshot = try { retroView.captureRawFrame() } catch (_: Exception) { null }
         if (!netplay.inSession) {
             retroView.pauseEmulation()
             retroView.suppressAutoResume = true
         }
+        pendingSaveScreenshot?.recycle()
+        pendingSaveScreenshot = try { retroView.captureRawFrame() } catch (_: Exception) { null }
         menuFocusIndex = 0
         menuVisible = true
     }

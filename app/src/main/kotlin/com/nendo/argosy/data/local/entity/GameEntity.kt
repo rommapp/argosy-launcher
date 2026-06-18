@@ -119,6 +119,8 @@ data class GameEntity(
 
     val fileSizeBytes: Long? = null,
 
+    val perGameSettingsEnabled: Boolean = false,
+
     val syncDirty: Boolean = false
 ) {
     val effectiveRaId: Long? get() = if (raIdVerified) verifiedRaId else (verifiedRaId ?: raId)

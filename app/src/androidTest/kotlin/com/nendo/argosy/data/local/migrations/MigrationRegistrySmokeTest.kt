@@ -11,7 +11,7 @@ import org.junit.runner.RunWith
 
 private const val TEST_DB = "alauncher-migration-test.db"
 private const val FIRST_VALIDATED_VERSION = 6
-private const val CURRENT_VERSION = 107
+private const val CURRENT_VERSION = 126
 
 @RunWith(AndroidJUnit4::class)
 class MigrationRegistrySmokeTest {

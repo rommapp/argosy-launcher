@@ -9,6 +9,7 @@ import com.nendo.argosy.data.local.dao.AppCategoryDao
 import com.nendo.argosy.data.local.dao.CheatDao
 import com.nendo.argosy.data.local.dao.CollectionDao
 import com.nendo.argosy.data.local.dao.CoreOptionOverrideDao
+import com.nendo.argosy.data.local.dao.GameCoreOptionOverrideDao
 import com.nendo.argosy.data.local.dao.ControllerMappingDao
 import com.nendo.argosy.data.local.dao.ControllerOrderDao
 import com.nendo.argosy.data.local.dao.CoreVersionDao
@@ -192,6 +193,10 @@ object DatabaseModule {
     @Provides
     fun provideCoreOptionOverrideDao(database: ALauncherDatabase): CoreOptionOverrideDao =
         database.coreOptionOverrideDao()
+
+    @Provides
+    fun provideGameCoreOptionOverrideDao(database: ALauncherDatabase): GameCoreOptionOverrideDao =
+        database.gameCoreOptionOverrideDao()
 
     @Provides
     fun provideSteamAccountDao(database: ALauncherDatabase): SteamAccountDao =

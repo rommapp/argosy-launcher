@@ -467,7 +467,10 @@ class GameLauncher @Inject constructor(
             return null
         }
 
-        val coreVariables = coreOptionResolver.resolveVariables(coreName)
+        val coreVariables = coreOptionResolver.resolveVariables(
+            coreName,
+            gameId = game.id.takeIf { game.perGameSettingsEnabled }
+        )
 
         Logger.info(TAG, "[BuiltIn] Launching: rom=${romFile.name}, core=$coreName, romSize=${romFile.length()}b, coreVars=${coreVariables.size}")
         val builtinSettings = userPreferencesRepository.getBuiltinEmulatorSettings().first()

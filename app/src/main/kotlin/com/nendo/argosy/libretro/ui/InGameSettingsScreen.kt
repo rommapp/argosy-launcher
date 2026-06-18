@@ -77,6 +77,8 @@ enum class InGameSettingsTab(val label: String) {
 }
 
 data class InGameControlsState(
+    val gameSpecificControls: Boolean = false,
+    val supportsGameSpecificControls: Boolean = false,
     val rumbleEnabled: Boolean = true,
     val analogAsDpad: Boolean = false,
     val dpadAsAnalog: Boolean = false,
@@ -95,6 +97,7 @@ data class InGameControlsState(
 )
 
 sealed class InGameControlsAction {
+    data class SetGameSpecificControls(val enabled: Boolean) : InGameControlsAction()
     data class SetRumble(val enabled: Boolean) : InGameControlsAction()
     data class SetAnalogAsDpad(val enabled: Boolean) : InGameControlsAction()
     data class SetDpadAsAnalog(val enabled: Boolean) : InGameControlsAction()
@@ -138,6 +141,7 @@ internal sealed class InGameControlsItem(
     val isFocusable: Boolean get() = this !is Header
 
     class Header(key: String, section: String, val title: String) : InGameControlsItem(key, section)
+    data object GameSpecificControls : InGameControlsItem("gameSpecificControls", "controllers")
     data object ControllerOrder : InGameControlsItem("controllerOrder", "controllers")
     data object InputMapping : InGameControlsItem("inputMapping", "controllers")
     data object Rumble : InGameControlsItem("rumble", "controllers")
@@ -155,6 +159,7 @@ internal sealed class InGameControlsItem(
     companion object {
         val ALL = listOf(
             Header("controllersHeader", "controllers", "Controllers"),
+            GameSpecificControls,
             ControllerOrder,
             InputMapping,
             Rumble,
@@ -177,7 +182,8 @@ internal sealed class InGameControlsItem(
 
 internal data class InGameControlsVisibility(
     val hasAnalogStick: Boolean,
-    val hasRumble: Boolean
+    val hasRumble: Boolean,
+    val hasGame: Boolean
 )
 
 private val controlsLayout = SettingsLayout<InGameControlsItem, InGameControlsVisibility>(
@@ -187,6 +193,7 @@ private val controlsLayout = SettingsLayout<InGameControlsItem, InGameControlsVi
         when (item) {
             InGameControlsItem.Rumble -> visibility.hasRumble
             InGameControlsItem.DpadAsAnalog -> visibility.hasAnalogStick
+            InGameControlsItem.GameSpecificControls -> visibility.hasGame
             else -> true
         }
     },
@@ -234,10 +241,11 @@ fun InGameSettingsScreen(
     val currentPerGameEnabled = rememberUpdatedState(perGameSettingsEnabled)
     val currentOnTogglePerGame = rememberUpdatedState(onTogglePerGameSettings)
 
-    val controlsVisibility = remember(platformSlug) {
+    val controlsVisibility = remember(platformSlug, controlsState.supportsGameSpecificControls) {
         InGameControlsVisibility(
             hasAnalogStick = platformSlug != null && PlatformWeightRegistry.hasAnalogStick(platformSlug),
-            hasRumble = platformSlug != null && PlatformWeightRegistry.hasRumble(platformSlug)
+            hasRumble = platformSlug != null && PlatformWeightRegistry.hasRumble(platformSlug),
+            hasGame = controlsState.supportsGameSpecificControls
         )
     }
     val maxVideoFocusIndex = remember(platformSlug, canEnableBFI) {
@@ -276,6 +284,7 @@ fun InGameSettingsScreen(
         val state = currentControlsState.value
         val action = currentOnControlsAction.value
         when (item) {
+            InGameControlsItem.GameSpecificControls -> action(InGameControlsAction.SetGameSpecificControls(!state.gameSpecificControls))
             InGameControlsItem.Rumble -> action(InGameControlsAction.SetRumble(!state.rumbleEnabled))
             InGameControlsItem.ControllerOrder -> showControllerOrderModal = true
             InGameControlsItem.InputMapping -> showInputMappingModal = true
@@ -620,6 +629,18 @@ private fun InGameControlsSection(
                         )
                     )
                 }
+
+                InGameControlsItem.GameSpecificControls -> SwitchPreference(
+                    title = "Game-specific controls",
+                    subtitle = if (state.gameSpecificControls) {
+                        "Remaps apply to this game only"
+                    } else {
+                        "Using your global controller mapping"
+                    },
+                    isEnabled = state.gameSpecificControls,
+                    isFocused = isFocused(item),
+                    onToggle = { onAction(InGameControlsAction.SetGameSpecificControls(it)) }
+                )
 
                 InGameControlsItem.Rumble -> SwitchPreference(
                     title = "Rumble",

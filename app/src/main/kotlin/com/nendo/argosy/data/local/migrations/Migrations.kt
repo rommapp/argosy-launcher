@@ -1869,3 +1869,9 @@ object Migration_126_127 : Migration(126, 127) {
         )
     }
 }
+
+object Migration_127_128 : Migration(127, 128) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE games ADD COLUMN perGameControlsEnabled INTEGER NOT NULL DEFAULT 0")
+    }
+}

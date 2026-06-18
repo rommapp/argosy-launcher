@@ -229,6 +229,7 @@ class LibretroActivity : ComponentActivity() {
     private var coreOptionOverrides by mutableStateOf<Map<String, String>>(emptyMap())
     private var gameCoreOptionOverrides by mutableStateOf<Map<String, String>>(emptyMap())
     private var perGameSettingsEnabled by mutableStateOf(false)
+    private var perGameControlsEnabled by mutableStateOf(false)
     private var inputDeviceListener: android.hardware.input.InputManager.InputDeviceListener? = null
     private var splitColumn: android.widget.LinearLayout? = null
     private var touchEditMode by mutableStateOf(false)
@@ -316,6 +317,7 @@ class LibretroActivity : ComponentActivity() {
             ?: game?.platformSlug ?: ""
         activeSaveChannel = game?.activeSaveChannel
         perGameSettingsEnabled = game?.perGameSettingsEnabled == true
+        perGameControlsEnabled = game?.perGameControlsEnabled == true
 
         initializeSaveState(savesDir, statesDir, activeSaveChannel)
         val globalSettings = kotlinx.coroutines.runBlocking {
@@ -1162,6 +1164,17 @@ class LibretroActivity : ComponentActivity() {
         }
     }
 
+    private fun applyPerGameControlsToggle(enabled: Boolean) {
+        if (gameId == -1L) return
+        perGameControlsEnabled = enabled
+        if (::inputConfig.isInitialized) {
+            inputConfig.setGameId(perGameMappingId)
+        }
+        lifecycleScope.launch(Dispatchers.IO) {
+            gameDao.setPerGameControlsEnabled(gameId, enabled)
+        }
+    }
+
     @androidx.compose.runtime.Composable
     private fun buildSettingsScreen(): InputHandler {
         return InGameSettingsScreen(
@@ -1185,6 +1198,8 @@ class LibretroActivity : ComponentActivity() {
             canEnableBFI = canEnableBFI,
             menuWrapMode = menuWrapMode,
             controlsState = InGameControlsState(
+                gameSpecificControls = perGameControlsEnabled,
+                supportsGameSpecificControls = gameId != -1L,
                 rumbleEnabled = videoSettings.currentRumbleEnabled,
                 analogAsDpad = videoSettings.currentAnalogAsDpad,
                 dpadAsAnalog = videoSettings.currentDpadAsAnalog,
@@ -1642,6 +1657,7 @@ class LibretroActivity : ComponentActivity() {
 
     private fun handleControlsAction(action: InGameControlsAction) {
         when (action) {
+            is InGameControlsAction.SetGameSpecificControls -> applyPerGameControlsToggle(action.enabled)
             is InGameControlsAction.SetRumble -> {
                 videoSettings.currentRumbleEnabled = action.enabled
                 if (action.enabled) {
@@ -1839,7 +1855,7 @@ class LibretroActivity : ComponentActivity() {
         get() = LibretroCoreRegistry.isHardwareRendered(resolvedCoreId)
 
     private val perGameMappingId: Long?
-        get() = gameId.takeIf { perGameSettingsEnabled && it != -1L }
+        get() = gameId.takeIf { perGameControlsEnabled && it != -1L }
 
     private fun saveResumeStateAndTeardown() {
         hwCoreTornDownForBackground = true

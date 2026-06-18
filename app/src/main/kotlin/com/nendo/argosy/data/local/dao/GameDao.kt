@@ -292,6 +292,9 @@ interface GameDao {
     @Query("UPDATE games SET perGameSettingsEnabled = :enabled WHERE id = :gameId")
     suspend fun setPerGameSettingsEnabled(gameId: Long, enabled: Boolean)
 
+    @Query("UPDATE games SET perGameControlsEnabled = :enabled WHERE id = :gameId")
+    suspend fun setPerGameControlsEnabled(gameId: Long, enabled: Boolean)
+
     @Query("UPDATE games SET steamLauncher = :launcherPackage WHERE id = :gameId")
     suspend fun setSteamLauncher(gameId: Long, launcherPackage: String?)
 

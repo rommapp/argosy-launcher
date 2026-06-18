@@ -20,7 +20,7 @@ class InputConfigCoordinator(
     private val inputMapper: ControllerInputMapper,
     private val platformSlug: String,
     private val coreId: String?,
-    private val gameId: Long?,
+    private var gameId: Long?,
     private val limitHotkeysToPlayer1: Boolean,
     private val scope: CoroutineScope
 ) {
@@ -91,6 +91,12 @@ class InputConfigCoordinator(
         if (order.isNotEmpty()) {
             hotkeyManager.setPlayer1ControllerId(order.first().controllerId)
         }
+    }
+
+    fun setGameId(newGameId: Long?) {
+        if (gameId == newGameId) return
+        gameId = newGameId
+        scope.launch { refreshInputMappings() }
     }
 
     suspend fun refreshInputMappings() {

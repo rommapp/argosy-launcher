@@ -120,6 +120,7 @@ data class GameEntity(
     val fileSizeBytes: Long? = null,
 
     val perGameSettingsEnabled: Boolean = false,
+    val perGameControlsEnabled: Boolean = false,
 
     val syncDirty: Boolean = false
 ) {

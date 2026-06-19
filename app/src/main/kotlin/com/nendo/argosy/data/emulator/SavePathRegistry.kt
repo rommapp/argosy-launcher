@@ -559,7 +559,10 @@ object SavePathRegistry {
 
     private val packagePrefixToConfigId = mapOf(
         "org.dolphinemu.mmjr" to "dolphin_mmjr",
-        "org.dolphinemu" to "dolphin"
+        "org.dolphinemu" to "dolphin",
+        "dev.eden" to "eden",
+        "dev.legacy.eden" to "eden",
+        "org.eden" to "eden"
     )
 
     fun getConfig(emulatorId: String): SavePathConfig? {

@@ -338,6 +338,8 @@ object BiosPathRegistry {
 
     val EDEN_PACKAGES = listOf(
         "dev.eden.eden_emulator",
+        "dev.eden.eden_emulator.nightly",
+        "dev.eden.eden_emulator.relWithDebInfo",
         "dev.eden.eden_emulator.debug",
         "dev.legacy.eden",
         "org.eden.emulator"

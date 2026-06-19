@@ -19,6 +19,7 @@ import com.nendo.argosy.core.notification.NotificationType
 import com.nendo.argosy.ui.input.InputHandler
 import com.nendo.argosy.ui.input.InputResult
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -44,7 +45,12 @@ data class VirtualCategoryUiState(
     val isRefreshing: Boolean = false,
     val focusedIndex: Int = 0,
     val isPinned: Boolean = false,
-    val downloadAllProgress: DownloadAllProgress = DownloadAllProgress()
+    val downloadAllProgress: DownloadAllProgress = DownloadAllProgress(),
+    val sectionLabels: List<String> = emptyList(),
+    val currentSectionLabel: String = "",
+    val isSearchActive: Boolean = false,
+    val searchQuery: String = "",
+    val overlayLetter: String? = null
 ) {
     val focusedGame: CollectionGameUi?
         get() = games.getOrNull(focusedIndex)
@@ -56,7 +62,12 @@ data class VirtualCategoryUiState(
         get() = downloadableGamesCount > 0 &&
                 !downloadAllProgress.isActive &&
                 !downloadAllProgress.isOnCooldown
+
+    val showSectionSidebar: Boolean
+        get() = !isSearchActive && sectionLabels.size > 1
 }
+
+private data class CategorySearchState(val active: Boolean = false, val query: String = "")
 
 @HiltViewModel
 class VirtualCategoryViewModel @Inject constructor(
@@ -68,16 +79,22 @@ class VirtualCategoryViewModel @Inject constructor(
     private val unpinCollectionUseCase: UnpinCollectionUseCase,
     private val refreshAllCollectionsUseCase: RefreshAllCollectionsUseCase,
     private val downloadGameUseCase: DownloadGameUseCase,
-    private val notificationManager: NotificationManager
+    private val notificationManager: NotificationManager,
+    private val positions: VirtualBrowsePositions
 ) : ViewModel() {
 
     private val type: String = checkNotNull(savedStateHandle["type"])
     private val category: String = URLDecoder.decode(checkNotNull(savedStateHandle["category"]), "UTF-8")
-    private val _focusedIndex = MutableStateFlow(0)
+    private val stickyKey = "cat:$type:$category"
+    private val _focusedIndex = MutableStateFlow(positions.get(stickyKey))
     private val _isPinned = MutableStateFlow(false)
     private val _isRefreshing = MutableStateFlow(false)
     private val _downloadAllProgress = MutableStateFlow(DownloadAllProgress())
+    private val _search = MutableStateFlow(CategorySearchState())
+    private val _overlayLetter = MutableStateFlow<String?>(null)
+    private var preSearchIndex = 0
     private var lastRefreshTime = 0L
+    private var overlayJob: Job? = null
 
     companion object {
         private const val REFRESH_DEBOUNCE_MS = 30_000L
@@ -102,45 +119,116 @@ class VirtualCategoryViewModel @Inject constructor(
         }
     }
 
-    val uiState: StateFlow<VirtualCategoryUiState> = combine(
+    private val core = combine(
         getGamesByCategoryUseCase(categoryType, category),
         platformRepository.observeAllPlatforms(),
         _focusedIndex,
-        combine(_isPinned, _isRefreshing, _downloadAllProgress) { a, b, c -> Triple(a, b, c) }
-    ) { games, platforms, focusedIndex, (isPinned, isRefreshing, downloadProgress) ->
+        combine(_isPinned, _isRefreshing, _downloadAllProgress) { a, b, c -> Triple(a, b, c) },
+        _search
+    ) { games, platforms, focusedIndex, (isPinned, isRefreshing, downloadProgress), search ->
         val platformMap = platforms.associate { it.id to it.getDisplayName() }
-        val gamesUi = games.map { game ->
-            game.toCollectionGameUi(platformMap[game.platformId] ?: "Unknown")
+        val sorted = games
+            .map { game -> game.toCollectionGameUi(platformMap[game.platformId] ?: "Unknown") }
+            .sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.title })
+        val visible = if (search.query.isBlank()) {
+            sorted
+        } else {
+            sorted.filter { it.title.contains(search.query, ignoreCase = true) }
         }
+        val clamped = focusedIndex.coerceIn(0, (visible.size - 1).coerceAtLeast(0))
         VirtualCategoryUiState(
             type = type,
             categoryName = category,
-            games = gamesUi,
+            games = visible,
             isLoading = false,
             isRefreshing = isRefreshing,
-            focusedIndex = focusedIndex.coerceIn(0, (gamesUi.size - 1).coerceAtLeast(0)),
+            focusedIndex = clamped,
             isPinned = isPinned,
-            downloadAllProgress = downloadProgress
+            downloadAllProgress = downloadProgress,
+            sectionLabels = if (search.active) emptyList() else visible.map { sectionLabelFor(it.title) }.distinct(),
+            currentSectionLabel = visible.getOrNull(clamped)?.let { sectionLabelFor(it.title) } ?: "",
+            isSearchActive = search.active,
+            searchQuery = search.query
         )
+    }
+
+    val uiState: StateFlow<VirtualCategoryUiState> = combine(core, _overlayLetter) { state, overlay ->
+        state.copy(overlayLetter = overlay)
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
         initialValue = VirtualCategoryUiState(type = type, categoryName = category)
     )
 
+    private fun sectionLabelFor(name: String): String {
+        val first = name.trim().firstOrNull()?.uppercaseChar() ?: '#'
+        return if (first in 'A'..'Z') first.toString() else "#"
+    }
+
+    private fun setFocus(index: Int) {
+        _focusedIndex.value = index
+        if (!_search.value.active) positions.set(stickyKey, index)
+    }
+
     fun moveUp() {
-        val currentIndex = _focusedIndex.value
-        if (currentIndex > 0) {
-            _focusedIndex.value = currentIndex - 1
-        }
+        val current = uiState.value.focusedIndex
+        if (current > 0) setFocus(current - 1)
     }
 
     fun moveDown() {
+        val current = uiState.value.focusedIndex
+        if (current < uiState.value.games.size - 1) setFocus(current + 1)
+    }
+
+    fun jumpToSection(label: String) {
         val state = uiState.value
-        val currentIndex = _focusedIndex.value
-        if (currentIndex < state.games.size - 1) {
-            _focusedIndex.value = currentIndex + 1
+        val target = state.games.indexOfFirst { sectionLabelFor(it.title) == label }
+        if (target < 0) return
+        setFocus(target)
+        showLetterOverlay(label)
+    }
+
+    fun jumpToNextSection() {
+        val labels = uiState.value.sectionLabels
+        if (labels.isEmpty()) return
+        val current = labels.indexOf(uiState.value.currentSectionLabel)
+        val next = if (current < 0 || current >= labels.lastIndex) 0 else current + 1
+        jumpToSection(labels[next])
+    }
+
+    fun jumpToPreviousSection() {
+        val labels = uiState.value.sectionLabels
+        if (labels.isEmpty()) return
+        val current = labels.indexOf(uiState.value.currentSectionLabel)
+        val prev = if (current <= 0) labels.lastIndex else current - 1
+        jumpToSection(labels[prev])
+    }
+
+    private fun showLetterOverlay(label: String) {
+        overlayJob?.cancel()
+        _overlayLetter.value = label
+        overlayJob = viewModelScope.launch {
+            delay(600)
+            _overlayLetter.value = null
         }
+    }
+
+    fun openSearch() {
+        if (_search.value.active) return
+        preSearchIndex = uiState.value.focusedIndex
+        _focusedIndex.value = 0
+        _search.value = CategorySearchState(active = true, query = "")
+    }
+
+    fun closeSearch() {
+        if (!_search.value.active) return
+        _search.value = CategorySearchState(active = false, query = "")
+        _focusedIndex.value = preSearchIndex
+    }
+
+    fun setSearchQuery(query: String) {
+        _search.value = _search.value.copy(query = query)
+        _focusedIndex.value = 0
     }
 
     fun togglePin() {
@@ -242,6 +330,10 @@ class VirtualCategoryViewModel @Inject constructor(
             if (uiState.value.downloadAllProgress.isActive) {
                 return InputResult.HANDLED
             }
+            if (uiState.value.isSearchActive) {
+                closeSearch()
+                return InputResult.HANDLED
+            }
             onBack()
             return InputResult.HANDLED
         }
@@ -254,11 +346,32 @@ class VirtualCategoryViewModel @Inject constructor(
 
         override fun onContextMenu(): InputResult {
             if (uiState.value.downloadAllProgress.isActive) return InputResult.HANDLED
+            openSearch()
+            return InputResult.HANDLED
+        }
+
+        override fun onMenu(): InputResult {
+            if (uiState.value.downloadAllProgress.isActive) return InputResult.HANDLED
             refresh()
             return InputResult.HANDLED
         }
 
+        override fun onPrevTrigger(): InputResult {
+            if (uiState.value.downloadAllProgress.isActive) return InputResult.HANDLED
+            if (uiState.value.sectionLabels.isEmpty()) return InputResult.UNHANDLED
+            jumpToPreviousSection()
+            return InputResult.HANDLED
+        }
+
+        override fun onNextTrigger(): InputResult {
+            if (uiState.value.downloadAllProgress.isActive) return InputResult.HANDLED
+            if (uiState.value.sectionLabels.isEmpty()) return InputResult.UNHANDLED
+            jumpToNextSection()
+            return InputResult.HANDLED
+        }
+
         override fun onSelect(): InputResult {
+            if (uiState.value.downloadAllProgress.isActive) return InputResult.HANDLED
             if (uiState.value.canDownloadAll) {
                 showDownloadAllModal()
                 return InputResult.HANDLED

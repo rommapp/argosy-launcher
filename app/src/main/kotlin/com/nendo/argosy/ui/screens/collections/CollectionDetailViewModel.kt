@@ -21,6 +21,8 @@ import com.nendo.argosy.ui.input.InputHandler
 import com.nendo.argosy.ui.input.InputResult
 import com.nendo.argosy.ui.screens.collections.dialogs.CollectionOption
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -78,13 +80,21 @@ data class CollectionDetailUiState(
     val showDeleteDialog: Boolean = false,
     val showRemoveGameDialog: Boolean = false,
     val gameToRemove: CollectionGameUi? = null,
-    val isPinned: Boolean = false
+    val isPinned: Boolean = false,
+    val sectionLabels: List<String> = emptyList(),
+    val currentSectionLabel: String = "",
+    val isSearchActive: Boolean = false,
+    val searchQuery: String = "",
+    val overlayLetter: String? = null
 ) {
     val focusedGame: CollectionGameUi?
         get() = games.getOrNull(focusedIndex)
 
     val downloadableGamesCount: Int
         get() = games.count { !it.isDownloaded && it.rommId != null }
+
+    val showSectionSidebar: Boolean
+        get() = !isSearchActive && sectionLabels.size > 1
 }
 
 @HiltViewModel
@@ -98,10 +108,12 @@ class CollectionDetailViewModel @Inject constructor(
     private val unpinCollectionUseCase: UnpinCollectionUseCase,
     private val refreshAllCollectionsUseCase: RefreshAllCollectionsUseCase,
     private val downloadGameUseCase: DownloadGameUseCase,
-    private val notificationManager: NotificationManager
+    private val notificationManager: NotificationManager,
+    private val positions: VirtualBrowsePositions
 ) : ViewModel() {
 
     private val collectionId: Long = checkNotNull(savedStateHandle["collectionId"])
+    private val stickyKey = "col:$collectionId"
 
     private data class ModalState(
         val focusedIndex: Int = 0,
@@ -112,12 +124,17 @@ class CollectionDetailViewModel @Inject constructor(
         val showRemoveGameDialog: Boolean = false,
         val gameToRemove: CollectionGameUi? = null,
         val isPinned: Boolean = false,
-        val isRefreshing: Boolean = false
+        val isRefreshing: Boolean = false,
+        val searchActive: Boolean = false,
+        val searchQuery: String = ""
     )
 
-    private val _modalState = MutableStateFlow(ModalState())
+    private val _modalState = MutableStateFlow(ModalState(focusedIndex = positions.get(stickyKey)))
     private val _refreshTrigger = MutableStateFlow(0)
+    private val _overlayLetter = MutableStateFlow<String?>(null)
+    private var preSearchIndex = 0
     private var lastRefreshTime = 0L
+    private var overlayJob: Job? = null
 
     companion object {
         private const val REFRESH_DEBOUNCE_MS = 30_000L
@@ -135,7 +152,7 @@ class CollectionDetailViewModel @Inject constructor(
     }
 
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
-    val uiState: StateFlow<CollectionDetailUiState> = _refreshTrigger.flatMapLatest {
+    private val core = _refreshTrigger.flatMapLatest {
         combine(
             collectionRepository.observeCollectionById(collectionId),
             collectionRepository.observeGamesInCollection(collectionId),
@@ -143,43 +160,118 @@ class CollectionDetailViewModel @Inject constructor(
             _modalState
         ) { collection, games, platforms, modalState ->
             val platformMap = platforms.associate { it.id to it.getDisplayName() }
-            val gamesUi = games.map { game ->
-                game.toCollectionGameUi(platformMap[game.platformId] ?: "Unknown")
+            val sorted = games
+                .map { game -> game.toCollectionGameUi(platformMap[game.platformId] ?: "Unknown") }
+                .sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.title })
+            val visible = if (modalState.searchQuery.isBlank()) {
+                sorted
+            } else {
+                sorted.filter { it.title.contains(modalState.searchQuery, ignoreCase = true) }
             }
+            val clamped = modalState.focusedIndex.coerceIn(0, (visible.size - 1).coerceAtLeast(0))
             CollectionDetailUiState(
                 collection = collection,
-                games = gamesUi,
+                games = visible,
                 isLoading = false,
                 isRefreshing = modalState.isRefreshing,
-                focusedIndex = modalState.focusedIndex.coerceIn(0, (gamesUi.size - 1).coerceAtLeast(0)),
+                focusedIndex = clamped,
                 showOptionsModal = modalState.showOptionsModal,
                 optionsModalFocusIndex = modalState.optionsModalFocusIndex,
                 showEditDialog = modalState.showEditDialog,
                 showDeleteDialog = modalState.showDeleteDialog,
                 showRemoveGameDialog = modalState.showRemoveGameDialog,
                 gameToRemove = modalState.gameToRemove,
-                isPinned = modalState.isPinned
+                isPinned = modalState.isPinned,
+                sectionLabels = if (modalState.searchActive) emptyList() else visible.map { sectionLabelFor(it.title) }.distinct(),
+                currentSectionLabel = visible.getOrNull(clamped)?.let { sectionLabelFor(it.title) } ?: "",
+                isSearchActive = modalState.searchActive,
+                searchQuery = modalState.searchQuery
             )
         }
+    }
+
+    val uiState: StateFlow<CollectionDetailUiState> = combine(core, _overlayLetter) { state, overlay ->
+        state.copy(overlayLetter = overlay)
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
         initialValue = CollectionDetailUiState()
     )
 
+    private fun sectionLabelFor(name: String): String {
+        val first = name.trim().firstOrNull()?.uppercaseChar() ?: '#'
+        return if (first in 'A'..'Z') first.toString() else "#"
+    }
+
+    private fun setFocus(index: Int) {
+        _modalState.value = _modalState.value.copy(focusedIndex = index)
+        if (!_modalState.value.searchActive) positions.set(stickyKey, index)
+    }
+
     fun moveUp() {
-        val currentIndex = _modalState.value.focusedIndex
-        if (currentIndex > 0) {
-            _modalState.value = _modalState.value.copy(focusedIndex = currentIndex - 1)
-        }
+        val current = uiState.value.focusedIndex
+        if (current > 0) setFocus(current - 1)
     }
 
     fun moveDown() {
+        val current = uiState.value.focusedIndex
+        if (current < uiState.value.games.size - 1) setFocus(current + 1)
+    }
+
+    fun jumpToSection(label: String) {
         val state = uiState.value
-        val currentIndex = _modalState.value.focusedIndex
-        if (currentIndex < state.games.size - 1) {
-            _modalState.value = _modalState.value.copy(focusedIndex = currentIndex + 1)
+        val target = state.games.indexOfFirst { sectionLabelFor(it.title) == label }
+        if (target < 0) return
+        setFocus(target)
+        showLetterOverlay(label)
+    }
+
+    fun jumpToNextSection() {
+        val labels = uiState.value.sectionLabels
+        if (labels.isEmpty()) return
+        val current = labels.indexOf(uiState.value.currentSectionLabel)
+        val next = if (current < 0 || current >= labels.lastIndex) 0 else current + 1
+        jumpToSection(labels[next])
+    }
+
+    fun jumpToPreviousSection() {
+        val labels = uiState.value.sectionLabels
+        if (labels.isEmpty()) return
+        val current = labels.indexOf(uiState.value.currentSectionLabel)
+        val prev = if (current <= 0) labels.lastIndex else current - 1
+        jumpToSection(labels[prev])
+    }
+
+    private fun showLetterOverlay(label: String) {
+        overlayJob?.cancel()
+        _overlayLetter.value = label
+        overlayJob = viewModelScope.launch {
+            delay(600)
+            _overlayLetter.value = null
         }
+    }
+
+    fun openSearch() {
+        if (_modalState.value.searchActive) return
+        preSearchIndex = uiState.value.focusedIndex
+        _modalState.value = _modalState.value.copy(
+            searchActive = true,
+            searchQuery = "",
+            focusedIndex = 0
+        )
+    }
+
+    fun closeSearch() {
+        if (!_modalState.value.searchActive) return
+        _modalState.value = _modalState.value.copy(
+            searchActive = false,
+            searchQuery = "",
+            focusedIndex = preSearchIndex
+        )
+    }
+
+    fun setSearchQuery(query: String) {
+        _modalState.value = _modalState.value.copy(searchQuery = query, focusedIndex = 0)
     }
 
     fun showOptionsModal() {
@@ -414,6 +506,10 @@ class CollectionDetailViewModel @Inject constructor(
                     hideOptionsModal()
                     return InputResult.HANDLED
                 }
+                state.isSearchActive -> {
+                    closeSearch()
+                    return InputResult.HANDLED
+                }
                 else -> {
                     onBack()
                     return InputResult.HANDLED
@@ -423,17 +519,44 @@ class CollectionDetailViewModel @Inject constructor(
 
         override fun onContextMenu(): InputResult {
             val state = uiState.value
-            if (state.showOptionsModal) return InputResult.HANDLED
+            if (hasDialogOpen(state) || state.showOptionsModal) return InputResult.HANDLED
+            openSearch()
+            return InputResult.HANDLED
+        }
+
+        override fun onMenu(): InputResult {
+            val state = uiState.value
+            if (hasDialogOpen(state) || state.showOptionsModal) return InputResult.HANDLED
             refresh()
             return InputResult.HANDLED
         }
 
+        override fun onPrevTrigger(): InputResult {
+            val state = uiState.value
+            if (hasDialogOpen(state) || state.showOptionsModal) return InputResult.HANDLED
+            if (state.sectionLabels.isEmpty()) return InputResult.UNHANDLED
+            jumpToPreviousSection()
+            return InputResult.HANDLED
+        }
+
+        override fun onNextTrigger(): InputResult {
+            val state = uiState.value
+            if (hasDialogOpen(state) || state.showOptionsModal) return InputResult.HANDLED
+            if (state.sectionLabels.isEmpty()) return InputResult.UNHANDLED
+            jumpToNextSection()
+            return InputResult.HANDLED
+        }
+
         override fun onSelect(): InputResult {
+            val state = uiState.value
+            if (hasDialogOpen(state)) return InputResult.UNHANDLED
             showOptionsModal()
             return InputResult.HANDLED
         }
 
         override fun onSecondaryAction(): InputResult {
+            val state = uiState.value
+            if (hasDialogOpen(state) || state.showOptionsModal) return InputResult.HANDLED
             togglePin()
             return InputResult.HANDLED
         }

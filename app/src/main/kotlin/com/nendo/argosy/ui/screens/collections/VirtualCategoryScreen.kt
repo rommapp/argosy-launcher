@@ -6,6 +6,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -19,7 +21,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Category
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -27,6 +31,8 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -35,11 +41,16 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
+import com.nendo.argosy.ui.components.AlphabetSidebar
 import com.nendo.argosy.ui.components.FooterBar
 import com.nendo.argosy.ui.components.InputButton
 import com.nendo.argosy.ui.input.LocalInputDispatcher
@@ -95,7 +106,12 @@ fun VirtualCategoryScreen(
             VirtualCategoryHeader(
                 categoryName = uiState.categoryName,
                 gameCount = uiState.games.size,
-                onBack = onBack
+                isSearchActive = uiState.isSearchActive,
+                searchQuery = uiState.searchQuery,
+                onBack = { if (uiState.isSearchActive) viewModel.closeSearch() else onBack() },
+                onSearchOpen = { viewModel.openSearch() },
+                onSearchChange = { viewModel.setSearchQuery(it) },
+                onSearchClose = { viewModel.closeSearch() }
             )
 
             when {
@@ -115,30 +131,46 @@ fun VirtualCategoryScreen(
                     EmptyVirtualCategory()
                 }
                 else -> {
-                    LazyColumn(
-                        state = listState,
-                        contentPadding = PaddingValues(
-                            start = Dimens.spacingLg,
-                            end = Dimens.spacingLg,
-                            top = Dimens.spacingSm,
-                            bottom = 80.dp
-                        ),
-                        verticalArrangement = Arrangement.spacedBy(Dimens.spacingMd)
-                    ) {
-                        itemsIndexed(uiState.games, key = { _, g -> g.id }) { index, game ->
-                            WideGameCard(
-                                title = game.title,
-                                platformDisplayName = game.platformDisplayName,
-                                coverPath = game.coverPath,
-                                developer = game.developer,
-                                releaseYear = game.releaseYear,
-                                genre = game.genre,
-                                userRating = game.userRating,
-                                userDifficulty = game.userDifficulty,
-                                achievementCount = game.achievementCount,
-                                playTimeMinutes = game.playTimeMinutes,
-                                isFocused = uiState.focusedIndex == index,
-                                onClick = { onGameClick(game.id) }
+                    Box(modifier = Modifier.fillMaxSize()) {
+                        LazyColumn(
+                            state = listState,
+                            modifier = Modifier.fillMaxSize(),
+                            contentPadding = PaddingValues(
+                                start = Dimens.spacingLg,
+                                end = if (uiState.showSectionSidebar) Dimens.spacingLg + 44.dp else Dimens.spacingLg,
+                                top = Dimens.spacingSm,
+                                bottom = 80.dp
+                            ),
+                            verticalArrangement = Arrangement.spacedBy(Dimens.spacingMd)
+                        ) {
+                            itemsIndexed(uiState.games, key = { _, g -> g.id }) { index, game ->
+                                WideGameCard(
+                                    title = game.title,
+                                    platformDisplayName = game.platformDisplayName,
+                                    coverPath = game.coverPath,
+                                    developer = game.developer,
+                                    releaseYear = game.releaseYear,
+                                    genre = game.genre,
+                                    userRating = game.userRating,
+                                    userDifficulty = game.userDifficulty,
+                                    achievementCount = game.achievementCount,
+                                    playTimeMinutes = game.playTimeMinutes,
+                                    isFocused = uiState.focusedIndex == index,
+                                    onClick = { onGameClick(game.id) }
+                                )
+                            }
+                        }
+
+                        if (uiState.showSectionSidebar) {
+                            AlphabetSidebar(
+                                availableLetters = uiState.sectionLabels,
+                                currentLetter = uiState.currentSectionLabel,
+                                onLetterClick = { viewModel.jumpToSection(it) },
+                                modifier = Modifier
+                                    .align(Alignment.CenterEnd)
+                                    .fillMaxHeight(),
+                                topPadding = Dimens.spacingSm,
+                                bottomPadding = 80.dp
                             )
                         }
                     }
@@ -148,17 +180,50 @@ fun VirtualCategoryScreen(
 
         FooterBar(
             modifier = Modifier.align(Alignment.BottomCenter),
-            hints = buildList {
-                add(InputButton.DPAD to "Navigate")
-                add(InputButton.A to "Open")
-                add(InputButton.B to "Back")
-                add(InputButton.Y to if (uiState.isPinned) "Unpin" else "Pin")
-                add(InputButton.X to if (uiState.isRefreshing) "Refreshing..." else "Refresh")
-                if (uiState.canDownloadAll) {
-                    add(InputButton.SELECT to "Download All (${uiState.downloadableGamesCount})")
+            hints = if (uiState.isSearchActive) {
+                listOf(
+                    InputButton.A to "Open",
+                    InputButton.B to "Close Search"
+                )
+            } else {
+                buildList {
+                    add(InputButton.DPAD to "Navigate")
+                    add(InputButton.A to "Open")
+                    add(InputButton.B to "Back")
+                    add(InputButton.X to "Search")
+                    add(InputButton.Y to if (uiState.isPinned) "Unpin" else "Pin")
+                    if (uiState.sectionLabels.size > 1) {
+                        add(InputButton.LT_RT to "Jump")
+                    }
+                    add(InputButton.START to if (uiState.isRefreshing) "Refreshing..." else "Refresh")
+                    if (uiState.canDownloadAll) {
+                        add(InputButton.SELECT to "Download All (${uiState.downloadableGamesCount})")
+                    }
                 }
             }
         )
+
+        uiState.overlayLetter?.let { letter ->
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(96.dp)
+                        .clip(RoundedCornerShape(Dimens.radiusLg))
+                        .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.9f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = letter,
+                        style = MaterialTheme.typography.displayMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                        textAlign = TextAlign.Center
+                    )
+                }
+            }
+        }
 
         if (uiState.downloadAllProgress.isActive) {
             DownloadAllModal(
@@ -232,7 +297,12 @@ private fun DownloadAllModal(
 private fun VirtualCategoryHeader(
     categoryName: String,
     gameCount: Int,
-    onBack: () -> Unit
+    isSearchActive: Boolean,
+    searchQuery: String,
+    onBack: () -> Unit,
+    onSearchOpen: () -> Unit,
+    onSearchChange: (String) -> Unit,
+    onSearchClose: () -> Unit
 ) {
     Row(
         modifier = Modifier
@@ -250,17 +320,49 @@ private fun VirtualCategoryHeader(
 
         Spacer(modifier = Modifier.width(Dimens.spacingSm))
 
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = categoryName,
-                style = MaterialTheme.typography.titleLarge,
-                color = MaterialTheme.colorScheme.onSurface
+        if (isSearchActive) {
+            val focusRequester = remember { FocusRequester() }
+            LaunchedEffect(Unit) { focusRequester.requestFocus() }
+            TextField(
+                value = searchQuery,
+                onValueChange = onSearchChange,
+                modifier = Modifier
+                    .weight(1f)
+                    .focusRequester(focusRequester),
+                placeholder = { Text("Search $categoryName") },
+                singleLine = true,
+                colors = TextFieldDefaults.colors(
+                    focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant
+                )
             )
-            Text(
-                text = "$gameCount games",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            IconButton(onClick = onSearchClose) {
+                Icon(
+                    Icons.Default.Close,
+                    contentDescription = "Close search",
+                    tint = MaterialTheme.colorScheme.onSurface
+                )
+            }
+        } else {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = categoryName,
+                    style = MaterialTheme.typography.titleLarge,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    text = "$gameCount games",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            IconButton(onClick = onSearchOpen) {
+                Icon(
+                    Icons.Default.Search,
+                    contentDescription = "Search",
+                    tint = MaterialTheme.colorScheme.onSurface
+                )
+            }
         }
     }
 }

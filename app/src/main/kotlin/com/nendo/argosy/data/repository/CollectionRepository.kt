@@ -32,6 +32,12 @@ class CollectionRepository @Inject constructor(
     suspend fun getAllByType(type: CollectionType): List<CollectionEntity> =
         collectionDao.getAllByType(type)
 
+    fun observeGameIdsByTypeAndNames(type: CollectionType, names: List<String>): Flow<List<Long>> =
+        collectionDao.observeGameIdsByTypeAndNames(type, names)
+
+    suspend fun getNamesWithGamesByType(type: CollectionType): List<String> =
+        collectionDao.getNamesWithGamesByType(type)
+
     suspend fun getGamesInCollection(collectionId: Long): List<GameEntity> {
         val ids = collectionDao.getGameIdsInCollection(collectionId)
         val byId = gameDao.getByIdsChunked(ids).associateBy { it.id }

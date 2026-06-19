@@ -18,6 +18,7 @@ import com.nendo.argosy.data.repository.GameRepository
 import com.nendo.argosy.data.repository.PlatformRepository
 import com.nendo.argosy.data.remote.playstore.PlayStoreService
 import com.nendo.argosy.data.update.ApkInstallManager
+import com.nendo.argosy.data.local.entity.CollectionType
 import com.nendo.argosy.data.local.entity.GameEntity
 import com.nendo.argosy.data.local.entity.GameListItem
 import com.nendo.argosy.data.local.entity.getDisplayName
@@ -71,6 +72,9 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -79,8 +83,10 @@ enum class FilterCategory(val label: String) {
     SORT("Sort"),
     SEARCH("Search"),
     SOURCE("Source"),
+    PLATFORM("Platform"),
     GENRE("Genre"),
-    PLAYERS("Players")
+    PLAYERS("Players"),
+    SERIES("Series")
 }
 
 enum class SourceFilter(val label: String) {
@@ -93,16 +99,20 @@ enum class SourceFilter(val label: String) {
 data class ActiveFilters(
     val searchQuery: String = "",
     val source: SourceFilter = SourceFilter.ALL,
+    val platforms: Set<String> = emptySet(),
     val genres: Set<String> = emptySet(),
     val players: Set<String> = emptySet(),
+    val series: Set<String> = emptySet(),
     val sort: ActiveSort = ActiveSort()
 ) {
     val activeCount: Int
         get() = listOf(
             if (searchQuery.isNotEmpty()) 1 else 0,
             if (source != SourceFilter.ALL) 1 else 0,
+            platforms.size,
             genres.size,
             players.size,
+            series.size,
             if (sort.option != SortOption.TITLE) 1 else 0
         ).sum()
 
@@ -113,8 +123,10 @@ data class ActiveFilters(
                 searchQuery.isNotEmpty() -> "\"$searchQuery\""
                 source != SourceFilter.ALL -> source.label
                 sort.option != SortOption.TITLE -> sort.option.label
+                platforms.isNotEmpty() -> platforms.first()
                 genres.isNotEmpty() -> genres.first()
                 players.isNotEmpty() -> players.first()
+                series.isNotEmpty() -> series.first()
                 else -> "All Games"
             }
             else -> "$activeCount filters"
@@ -122,8 +134,10 @@ data class ActiveFilters(
 }
 
 data class FilterOptions(
+    val platforms: List<String> = emptyList(),
     val genres: List<String> = emptyList(),
-    val players: List<String> = emptyList()
+    val players: List<String> = emptyList(),
+    val series: List<String> = emptyList()
 )
 
 enum class LibraryFilter(val label: String) {
@@ -242,8 +256,10 @@ data class LibraryUiState(
                     "${filter.label} ($hiddenGameCount)"
                 else filter.label
             }
+            FilterCategory.PLATFORM -> filterOptions.platforms
             FilterCategory.GENRE -> filterOptions.genres
             FilterCategory.PLAYERS -> filterOptions.players
+            FilterCategory.SERIES -> filterOptions.series
         }
 
     val isCurrentCategoryMultiSelect: Boolean
@@ -264,8 +280,10 @@ data class LibraryUiState(
             }
             FilterCategory.SEARCH -> emptySet()
             FilterCategory.SOURCE -> emptySet()
+            FilterCategory.PLATFORM -> activeFilters.platforms
             FilterCategory.GENRE -> activeFilters.genres
             FilterCategory.PLAYERS -> activeFilters.players
+            FilterCategory.SERIES -> activeFilters.series
         }
 
     val currentCategoryActiveCount: Int
@@ -273,8 +291,10 @@ data class LibraryUiState(
             FilterCategory.SORT -> if (activeFilters.sort.option != SortOption.TITLE) 1 else 0
             FilterCategory.SEARCH -> if (activeFilters.searchQuery.isNotEmpty()) 1 else 0
             FilterCategory.SOURCE -> if (activeFilters.source != SourceFilter.ALL) 1 else 0
+            FilterCategory.PLATFORM -> activeFilters.platforms.size
             FilterCategory.GENRE -> activeFilters.genres.size
             FilterCategory.PLAYERS -> activeFilters.players.size
+            FilterCategory.SERIES -> activeFilters.series.size
         }
 
     val availableCategories: List<FilterCategory>
@@ -283,8 +303,10 @@ data class LibraryUiState(
                 FilterCategory.SORT -> true
                 FilterCategory.SEARCH -> true
                 FilterCategory.SOURCE -> true
+                FilterCategory.PLATFORM -> filterOptions.platforms.isNotEmpty()
                 FilterCategory.GENRE -> filterOptions.genres.isNotEmpty()
                 FilterCategory.PLAYERS -> filterOptions.players.isNotEmpty()
+                FilterCategory.SERIES -> filterOptions.series.isNotEmpty()
             }
         }
 }
@@ -516,7 +538,10 @@ class LibraryViewModel @Inject constructor(
                         platforms = platformUis,
                         currentPlatformIndex = newPlatformIndex,
                         focusedIndex = newGameIndex,
-                        isLoading = false
+                        isLoading = false,
+                        filterOptions = state.filterOptions.copy(
+                            platforms = platforms.map { it.getDisplayName() }.sorted()
+                        )
                     )
                 }
 
@@ -563,13 +588,16 @@ class LibraryViewModel @Inject constructor(
                 .distinct()
                 .sorted()
 
-            Log.d(TAG, "loadFilterOptions: genres=${genres.size}, players=${players.size}")
+            val series = collectionRepository.getNamesWithGamesByType(CollectionType.SERIES)
+
+            Log.d(TAG, "loadFilterOptions: genres=${genres.size}, players=${players.size}, series=${series.size}")
 
             _uiState.update { state ->
                 state.copy(
-                    filterOptions = FilterOptions(
+                    filterOptions = state.filterOptions.copy(
                         genres = genres,
-                        players = players
+                        players = players,
+                        series = series
                     )
                 )
             }
@@ -607,21 +635,33 @@ class LibraryViewModel @Inject constructor(
                 }
             }
 
-            baseFlow
+            val seriesIdsFlow = if (filters.series.isEmpty()) {
+                flowOf<Set<Long>?>(null)
+            } else {
+                collectionRepository.observeGameIdsByTypeAndNames(CollectionType.SERIES, filters.series.toList())
+                    .map<List<Long>, Set<Long>?> { it.toSet() }
+            }
+
+            val source = combine(baseFlow, seriesIdsFlow) { games, seriesIds -> games to seriesIds }
+
+            source
                 .catch { e ->
                     Log.e(TAG, "Error loading games, retrying: ${e.message}")
                     kotlinx.coroutines.delay(100)
-                    emitAll(baseFlow)
+                    emitAll(source)
                 }
-                .collectLatest { games ->
+                .collectLatest { (games, seriesIds) ->
                     val filteredGames = games.filter { game ->
                         val matchesSearch = filters.searchQuery.isEmpty() ||
                             game.title.contains(filters.searchQuery, ignoreCase = true)
+                        val matchesPlatform = filters.platforms.isEmpty() ||
+                            cachedPlatformDisplayNames[game.platformId] in filters.platforms
                         val matchesGenre = filters.genres.isEmpty() ||
                             filters.genres.contains(game.genre)
                         val matchesPlayers = filters.players.isEmpty() ||
                             game.gameModes?.split(",")?.map { it.trim() }?.any { it in filters.players } == true
-                        matchesSearch && matchesGenre && matchesPlayers
+                        val matchesSeries = seriesIds == null || game.id in seriesIds
+                        matchesSearch && matchesPlatform && matchesGenre && matchesPlayers && matchesSeries
                     }
 
                     val sections = computeSections(filteredGames, filters.sort)
@@ -953,6 +993,12 @@ class LibraryViewModel @Inject constructor(
                 val source = SourceFilter.entries.getOrElse(optionIndex) { SourceFilter.ALL }
                 state.activeFilters.copy(source = source)
             }
+            FilterCategory.PLATFORM -> {
+                val platform = options.getOrNull(optionIndex) ?: return
+                val current = state.activeFilters.platforms
+                val updated = if (platform in current) current - platform else current + platform
+                state.activeFilters.copy(platforms = updated)
+            }
             FilterCategory.GENRE -> {
                 val genre = options.getOrNull(optionIndex) ?: return
                 val currentGenres = state.activeFilters.genres
@@ -964,6 +1010,12 @@ class LibraryViewModel @Inject constructor(
                 val currentPlayers = state.activeFilters.players
                 val newPlayers = if (player in currentPlayers) currentPlayers - player else currentPlayers + player
                 state.activeFilters.copy(players = newPlayers)
+            }
+            FilterCategory.SERIES -> {
+                val series = options.getOrNull(optionIndex) ?: return
+                val current = state.activeFilters.series
+                val updated = if (series in current) current - series else current + series
+                state.activeFilters.copy(series = updated)
             }
         }
 
@@ -979,8 +1031,10 @@ class LibraryViewModel @Inject constructor(
             FilterCategory.SORT -> state.activeFilters.copy(sort = ActiveSort())
             FilterCategory.SEARCH -> state.activeFilters.copy(searchQuery = "")
             FilterCategory.SOURCE -> state.activeFilters.copy(source = SourceFilter.ALL)
+            FilterCategory.PLATFORM -> state.activeFilters.copy(platforms = emptySet())
             FilterCategory.GENRE -> state.activeFilters.copy(genres = emptySet())
             FilterCategory.PLAYERS -> state.activeFilters.copy(players = emptySet())
+            FilterCategory.SERIES -> state.activeFilters.copy(series = emptySet())
         }
 
         _uiState.update { it.copy(activeFilters = newFilters) }

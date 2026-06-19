@@ -1038,8 +1038,10 @@ private fun FilterMenuOverlay(
                         FilterCategory.SORT -> uiState.activeFilters.sort.option != com.nendo.argosy.data.model.SortOption.TITLE
                         FilterCategory.SEARCH -> uiState.activeFilters.searchQuery.isNotEmpty()
                         FilterCategory.SOURCE -> uiState.activeFilters.source != SourceFilter.ALL
+                        FilterCategory.PLATFORM -> uiState.activeFilters.platforms.isNotEmpty()
                         FilterCategory.GENRE -> uiState.activeFilters.genres.isNotEmpty()
                         FilterCategory.PLAYERS -> uiState.activeFilters.players.isNotEmpty()
+                        FilterCategory.SERIES -> uiState.activeFilters.series.isNotEmpty()
                     }
 
                     Box(

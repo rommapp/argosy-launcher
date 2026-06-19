@@ -148,4 +148,23 @@ interface CollectionDao {
         ORDER BY g.sortTitle ASC
     """)
     fun observeGameIdsByTypeAndName(type: CollectionType, name: String): Flow<List<Long>>
+
+    @Query("""
+        SELECT DISTINCT g.id FROM games g
+        INNER JOIN collection_games cg ON g.id = cg.gameId
+        INNER JOIN collections c ON cg.collectionId = c.id
+        INNER JOIN platforms p ON g.platformId = p.id
+        WHERE c.type = :type AND c.name IN (:names) AND p.syncEnabled = 1
+    """)
+    fun observeGameIdsByTypeAndNames(type: CollectionType, names: List<String>): Flow<List<Long>>
+
+    @Query("""
+        SELECT DISTINCT c.name FROM collections c
+        INNER JOIN collection_games cg ON c.id = cg.collectionId
+        INNER JOIN games g ON cg.gameId = g.id
+        INNER JOIN platforms p ON g.platformId = p.id
+        WHERE c.type = :type AND p.syncEnabled = 1
+        ORDER BY c.name ASC
+    """)
+    suspend fun getNamesWithGamesByType(type: CollectionType): List<String>
 }

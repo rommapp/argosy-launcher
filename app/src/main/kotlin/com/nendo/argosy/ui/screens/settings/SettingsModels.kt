@@ -542,7 +542,9 @@ data class CoreOptionsState(
     val coresForCurrentPlatform: List<CoreOptionsCoreContext> = emptyList(),
     val selectedCoreIndex: Int = 0,
     val options: List<CoreOptionViewItem> = emptyList(),
-    val overrides: Map<String, String> = emptyMap()
+    val overrides: Map<String, String> = emptyMap(),
+    val isDownloading: Boolean = false,
+    val downloadingCoreId: String? = null
 ) {
     val currentPlatformContext: PlatformContext? get() =
         if (platformContextIndex in availablePlatforms.indices)

@@ -865,10 +865,14 @@ internal fun routeSelectCoreForPlatform(vm: SettingsViewModel) {
 }
 
 internal fun routeDownloadCoreWithNotification(vm: SettingsViewModel, coreId: String) {
+    if (vm._uiState.value.coreOptions.isDownloading) return
     vm.viewModelScope.launch {
         val coreInfo = LibretroCoreRegistry.getCoreById(coreId) ?: return@launch
         vm._uiState.update {
-            it.copy(coreManagement = it.coreManagement.copy(isDownloading = true, downloadingCoreId = coreId))
+            it.copy(
+                coreManagement = it.coreManagement.copy(isDownloading = true, downloadingCoreId = coreId),
+                coreOptions = it.coreOptions.copy(isDownloading = true, downloadingCoreId = coreId)
+            )
         }
 
         val notificationKey = "core_download_$coreId"
@@ -890,6 +894,7 @@ internal fun routeDownloadCoreWithNotification(vm: SettingsViewModel, coreId: St
                 )
                 vm.emulatorDelegate.updateCoreCounts()
                 vm.loadCoreManagementState(preserveFocus = true)
+                refreshCoreOptionsInstallState(vm)
             },
             onFailure = { error ->
                 vm.notificationManager.completePersistent(
@@ -902,7 +907,10 @@ internal fun routeDownloadCoreWithNotification(vm: SettingsViewModel, coreId: St
         )
 
         vm._uiState.update {
-            it.copy(coreManagement = it.coreManagement.copy(isDownloading = false, downloadingCoreId = null))
+            it.copy(
+                coreManagement = it.coreManagement.copy(isDownloading = false, downloadingCoreId = null),
+                coreOptions = it.coreOptions.copy(isDownloading = false, downloadingCoreId = null)
+            )
         }
     }
 }

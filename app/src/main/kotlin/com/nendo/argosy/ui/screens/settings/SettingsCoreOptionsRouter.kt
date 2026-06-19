@@ -143,6 +143,28 @@ internal fun routeResetAllCoreOptions(vm: SettingsViewModel) {
     }
 }
 
+internal suspend fun refreshCoreOptionsInstallState(vm: SettingsViewModel) {
+    val state = vm._uiState.value.coreOptions
+    val platforms = state.availablePlatforms
+    if (platforms.isEmpty()) return
+
+    val platform = platforms[state.platformContextIndex.coerceIn(platforms.indices)]
+    val cores = buildCoreContexts(vm, platform.platformSlug)
+    val coreIndex = state.selectedCoreIndex.coerceIn(0, (cores.size - 1).coerceAtLeast(0))
+    val optionItems = loadOptionsForCore(vm, cores.getOrNull(coreIndex)?.coreId)
+
+    vm._uiState.update {
+        it.copy(
+            coreOptions = it.coreOptions.copy(
+                coresForCurrentPlatform = cores,
+                selectedCoreIndex = coreIndex,
+                options = optionItems.first,
+                overrides = optionItems.second
+            )
+        )
+    }
+}
+
 private fun buildCoreContexts(
     vm: SettingsViewModel,
     platformSlug: String

@@ -154,15 +154,22 @@ fun CoreOptionsSection(
                 }
 
                 is CoreOptionItem.DownloadCore -> {
+                    val isDownloadingThis = coreState.isDownloading &&
+                        coreState.downloadingCoreId == selectedCore?.coreId
                     val title = if (isInstalled) "Redownload Core" else "Download Core"
-                    val subtitle = if (isInstalled) "Reinstall if core is corrupt or outdated"
-                                   else "Download the core to enable changing settings"
+                    val subtitle = when {
+                        isDownloadingThis -> "Downloading..."
+                        isInstalled -> "Reinstall if core is corrupt or outdated"
+                        else -> "Download the core to enable changing settings"
+                    }
                     ActionPreference(
                         title = title,
                         subtitle = subtitle,
                         isFocused = isFocused,
                         onClick = {
-                            selectedCore?.let { viewModel.downloadCoreWithNotification(it.coreId) }
+                            if (!isDownloadingThis) {
+                                selectedCore?.let { viewModel.downloadCoreWithNotification(it.coreId) }
+                            }
                         }
                     )
                 }

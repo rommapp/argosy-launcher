@@ -781,8 +781,12 @@ class SecondaryHomeActivity :
             if (launchIntent != null) {
                 launchedExternalApp = true
                 launchIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                if (options != null) startActivity(launchIntent, options)
-                else startActivity(launchIntent)
+                if (options != null) {
+                    startActivity(launchIntent, options)
+                } else {
+                    startActivity(launchIntent)
+                    if (::dsm.isInitialized) dsm.onForeignAppLaunchedOnSecondary(packageName)
+                }
             }
         } catch (_: Exception) {
             launchedExternalApp = false

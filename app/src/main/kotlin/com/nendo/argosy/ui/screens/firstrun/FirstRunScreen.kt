@@ -10,6 +10,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -35,6 +36,7 @@ import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material3.Button
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -57,16 +59,19 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusManager
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.SoftwareKeyboardController
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.nendo.argosy.ui.components.QrCodeWithOverlay
-import com.nendo.argosy.ui.screens.settings.RomMAuthMethod
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -208,8 +213,8 @@ fun FirstRunScreen(
                     }
                 } else RommLoginStep(
                     url = uiState.rommUrl,
+                    urlCommitted = uiState.rommUrlCommitted,
                     pairingCode = uiState.rommPairingCode,
-                    authMethod = uiState.rommAuthMethod,
                     devicePairing = uiState.rommDevicePairing,
                     deviceUserCode = uiState.rommDeviceUserCode,
                     deviceVerificationUrl = uiState.rommDeviceVerificationUrl,
@@ -221,8 +226,9 @@ fun FirstRunScreen(
                     onUrlChange = viewModel::setRommUrl,
                     onPairingCodeChange = viewModel::setRommPairingCode,
                     onClearPairingCode = { viewModel.clearRommPairingCode() },
-                    onCodeComplete = { viewModel.setFocusedIndex(3) },
-                    onToggleAuthMethod = { viewModel.toggleRommAuthMethod() },
+                    onCodeComplete = { viewModel.setFocusedIndex(1) },
+                    onCommitUrl = { viewModel.commitUrl() },
+                    onEditUrl = { viewModel.editUrl() },
                     onConnect = { viewModel.connectToRomm() },
                     onScan = { viewModel.showScanner() },
                     onCancelPairing = { viewModel.cancelDevicePairing() },
@@ -385,8 +391,8 @@ private fun WelcomeStep(isFocused: Boolean, onGetStarted: () -> Unit) {
 @Composable
 private fun RommLoginStep(
     url: String,
+    urlCommitted: Boolean,
     pairingCode: String,
-    authMethod: RomMAuthMethod,
     devicePairing: Boolean,
     deviceUserCode: String?,
     deviceVerificationUrl: String?,
@@ -399,7 +405,8 @@ private fun RommLoginStep(
     onPairingCodeChange: (String) -> Unit,
     onClearPairingCode: () -> Unit,
     onCodeComplete: () -> Unit,
-    onToggleAuthMethod: () -> Unit,
+    onCommitUrl: () -> Unit,
+    onEditUrl: () -> Unit,
     onConnect: () -> Unit,
     onScan: () -> Unit,
     onCancelPairing: () -> Unit,
@@ -422,14 +429,9 @@ private fun RommLoginStep(
     val focusManager: FocusManager = LocalFocusManager.current
     val keyboard: SoftwareKeyboardController? = LocalSoftwareKeyboardController.current
 
-    val isDevice = authMethod == RomMAuthMethod.DEVICE
     val normalizedCode = pairingCode.replace("-", "").replace(" ", "")
     val codeComplete = normalizedCode.length == 8
-    val canConnect = !isConnecting && url.isNotBlank() && (isDevice || codeComplete)
-
-    val connectIndex = if (isDevice) 2 else 3
-    val scanIndex = if (!isDevice && hasCamera) 4 else -1
-    val backIndex = if (isDevice) 3 else if (hasCamera) 5 else 4
+    var wasUrlFocused by remember { mutableStateOf(false) }
 
     LaunchedEffect(rommFocusField) {
         when (rommFocusField) {
@@ -441,8 +443,95 @@ private fun RommLoginStep(
         }
     }
 
+    if (!urlCommitted) {
+        LaunchedEffect(focusedIndex) {
+            if (focusedIndex != 0) {
+                keyboard?.hide()
+                focusManager.clearFocus()
+            }
+        }
+        StepColumn {
+            StepHeader(title = "Rom Manager Login")
+            Spacer(modifier = Modifier.height(Dimens.spacingLg))
+
+            OutlinedTextField(
+                value = url,
+                onValueChange = onUrlChange,
+                label = { Text("Server URL") },
+                placeholder = { Text("https://romm.example.com") },
+                singleLine = true,
+                shape = inputShape,
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Go),
+                keyboardActions = KeyboardActions(
+                    onGo = {
+                        if (!isConnecting && url.isNotBlank()) {
+                            keyboard?.hide()
+                            focusManager.clearFocus()
+                            onCommitUrl()
+                        }
+                    }
+                ),
+                modifier = Modifier
+                    .fillMaxWidth(0.8f)
+                    .focusRequester(urlFocusRequester)
+                    .onFocusChanged { fs ->
+                        if (wasUrlFocused && !fs.isFocused && url.isNotBlank()) {
+                            onCommitUrl()
+                        }
+                        wasUrlFocused = fs.isFocused
+                    }
+                    .then(
+                        if (focusedIndex == 0)
+                            Modifier
+                                .border(2.dp, MaterialTheme.colorScheme.primary, inputShape)
+                                .background(MaterialTheme.colorScheme.primaryContainer, inputShape)
+                        else Modifier
+                    )
+            )
+            Spacer(modifier = Modifier.height(Dimens.spacingMd))
+
+            Text(
+                text = "Enter your RomM server address and we'll detect how to sign in.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth(0.8f)
+            )
+
+            if (error != null) {
+                Spacer(modifier = Modifier.height(Dimens.spacingMd))
+                Text(
+                    text = error,
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodyMedium,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth(0.8f)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(Dimens.spacingLg))
+
+            Row {
+                FocusableButton(
+                    text = if (isConnecting) "Checking..." else "Continue",
+                    isFocused = focusedIndex == 1,
+                    enabled = !isConnecting && url.isNotBlank(),
+                    onClick = onCommitUrl
+                )
+                Spacer(modifier = Modifier.width(Dimens.spacingMd))
+                FocusableOutlinedButton(
+                    text = "Back",
+                    isFocused = focusedIndex == 2,
+                    enabled = !isConnecting,
+                    onClick = onBack
+                )
+            }
+        }
+        return
+    }
+
     LaunchedEffect(codeComplete) {
-        if (codeComplete && !isDevice) {
+        if (codeComplete) {
             keyboard?.hide()
             focusManager.clearFocus()
             onCodeComplete()
@@ -450,73 +539,47 @@ private fun RommLoginStep(
     }
 
     StepColumn {
-        StepHeader(title = "Rom Manager Login")
-        Spacer(modifier = Modifier.height(Dimens.spacingLg))
+        StepHeader(title = "Enter pairing code")
+        Spacer(modifier = Modifier.height(Dimens.spacingSm))
 
-        OutlinedTextField(
-            value = url,
-            onValueChange = onUrlChange,
-            label = { Text("Server URL") },
-            placeholder = { Text("https://romm.example.com") },
-            singleLine = true,
-            shape = inputShape,
-            modifier = Modifier
-                .fillMaxWidth(0.8f)
-                .focusRequester(urlFocusRequester)
-                .then(
-                    if (focusedIndex == 0)
-                        Modifier.background(MaterialTheme.colorScheme.primaryContainer, inputShape)
-                    else Modifier
-                )
+        Text(
+            text = url,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth(0.8f)
         )
         Spacer(modifier = Modifier.height(Dimens.spacingMd))
 
-        FocusableOutlinedButton(
-            text = if (isDevice) "Use a pairing code instead" else "Use device pairing instead",
-            isFocused = focusedIndex == 1,
-            enabled = !isConnecting,
-            onClick = onToggleAuthMethod
+        Text(
+            text = "Create an API token in the RomM web UI, then enter the 8-character code.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth(0.8f)
         )
-        Spacer(modifier = Modifier.height(Dimens.spacingMd))
+        Spacer(modifier = Modifier.height(Dimens.spacingSm))
 
-        if (isDevice) {
-            Text(
-                text = "Scan a QR code with your phone to pair this device. Requires RomM 5.0 or newer.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth(0.8f)
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
+        ) {
+            com.nendo.argosy.ui.screens.settings.components.PairingCodeInput(
+                code = pairingCode,
+                onCodeChange = onPairingCodeChange,
+                isFocused = focusedIndex == 0,
+                focusRequester = pairingCodeFocusRequester
             )
-        } else {
-            Text(
-                text = "Create an API token in the RomM web UI, then click Connect to enter the code.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth(0.8f)
-            )
-            Spacer(modifier = Modifier.height(Dimens.spacingSm))
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
-            ) {
-                com.nendo.argosy.ui.screens.settings.components.PairingCodeInput(
-                    code = pairingCode,
-                    onCodeChange = onPairingCodeChange,
-                    isFocused = focusedIndex == 2,
-                    focusRequester = pairingCodeFocusRequester
-                )
-                if (pairingCode.isNotEmpty()) {
-                    IconButton(
-                        onClick = onClearPairingCode,
-                        modifier = Modifier.size(32.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Clear,
-                            contentDescription = "Clear code",
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
+            if (pairingCode.isNotEmpty()) {
+                IconButton(
+                    onClick = onClearPairingCode,
+                    modifier = Modifier.size(32.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Clear,
+                        contentDescription = "Clear code",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
             }
         }
@@ -535,31 +598,26 @@ private fun RommLoginStep(
         Spacer(modifier = Modifier.height(Dimens.spacingLg))
 
         Row {
-            FocusableOutlinedButton(
-                text = "Back",
-                isFocused = focusedIndex == backIndex,
-                enabled = !isConnecting,
-                onClick = onBack
+            FocusableButton(
+                text = if (isConnecting) "Connecting..." else "Connect",
+                isFocused = focusedIndex == 1,
+                enabled = !isConnecting && codeComplete,
+                onClick = onConnect
             )
             Spacer(modifier = Modifier.width(Dimens.spacingMd))
-            FocusableButton(
-                text = when {
-                    isConnecting && isDevice -> "Generating code..."
-                    isConnecting -> "Connecting..."
-                    isDevice -> "Pair Device"
-                    else -> "Connect"
-                },
-                isFocused = focusedIndex == connectIndex,
-                enabled = canConnect,
-                onClick = onConnect
+            FocusableOutlinedButton(
+                text = "Edit URL",
+                isFocused = focusedIndex == 2,
+                enabled = !isConnecting,
+                onClick = onEditUrl
             )
         }
 
-        if (!isDevice && hasCamera) {
+        if (hasCamera) {
             Spacer(modifier = Modifier.height(Dimens.spacingSm))
             FocusableOutlinedButton(
                 text = "Scan QR Code",
-                isFocused = focusedIndex == scanIndex,
+                isFocused = focusedIndex == 3,
                 enabled = !isConnecting,
                 onClick = onScan
             )
@@ -588,7 +646,7 @@ private fun DevicePairingStep(
         Spacer(modifier = Modifier.height(Dimens.spacingLg))
 
         verificationUrl?.let { url ->
-            QrCodeWithOverlay(data = url, size = 240.dp)
+            QrCodeWithOverlay(data = url, size = 180.dp)
             Spacer(modifier = Modifier.height(Dimens.spacingMd))
         }
 
@@ -624,7 +682,7 @@ private fun DevicePairingStep(
         Spacer(modifier = Modifier.height(Dimens.spacingLg))
 
         FocusableOutlinedButton(
-            text = "Cancel",
+            text = "Back",
             isFocused = true,
             enabled = true,
             onClick = onCancel
@@ -1386,17 +1444,17 @@ private fun FocusableOutlinedButton(
     onClick: () -> Unit,
     enabled: Boolean = true
 ) {
-    val containerColor = if (isFocused) {
-        MaterialTheme.colorScheme.primaryContainer
-    } else {
-        MaterialTheme.colorScheme.surface
-    }
+    val containerColor = if (isFocused) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface
+    val contentColor = if (isFocused) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
+    val borderColor = if (isFocused) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline
 
     OutlinedButton(
         onClick = onClick,
         enabled = enabled,
+        border = BorderStroke(if (isFocused) 2.dp else 1.dp, borderColor),
         colors = ButtonDefaults.outlinedButtonColors(
-            containerColor = containerColor
+            containerColor = containerColor,
+            contentColor = contentColor
         )
     ) {
         Text(text)

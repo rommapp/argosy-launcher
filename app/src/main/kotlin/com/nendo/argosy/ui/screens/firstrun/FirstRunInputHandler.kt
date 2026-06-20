@@ -23,11 +23,13 @@ class FirstRunInputHandler(
     }
 
     override fun onLeft(): InputResult {
-        return if (viewModel.moveButtonFocus(-1)) InputResult.HANDLED else InputResult.UNHANDLED
+        viewModel.moveButtonFocus(-1)
+        return InputResult.HANDLED
     }
 
     override fun onRight(): InputResult {
-        return if (viewModel.moveButtonFocus(1)) InputResult.HANDLED else InputResult.UNHANDLED
+        viewModel.moveButtonFocus(1)
+        return InputResult.HANDLED
     }
 
     override fun onConfirm(): InputResult {

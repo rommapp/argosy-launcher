@@ -1,7 +1,6 @@
 package com.nendo.argosy
 
 import android.hardware.display.DisplayManager
-import android.app.ActivityManager
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
@@ -139,72 +138,12 @@ class DualScreenManager(
     }
 
     fun teardownCompanion() {
-        clearForeignAppWatch()
         companionLaunchJob?.cancel()
         companionLaunchJob = null
         companionWatchdogJob?.cancel()
         _isCompanionActive.value = false
         CompanionGuardService.stop(appContext)
         companionHost?.finishCompanion()
-    }
-
-    private var foreignAppUid = -1
-    private var foreignAppImportanceListener: ActivityManager.OnUidImportanceListener? = null
-
-    fun onForeignAppLaunchedOnSecondary(packageName: String) {
-        clearForeignAppWatch()
-        if (!canReclaimCompanion()) return
-        val uid = try {
-            appContext.packageManager.getPackageUid(packageName, 0)
-        } catch (e: Exception) {
-            return
-        }
-        val am = appContext.getSystemService(ActivityManager::class.java) ?: return
-        val listener = ActivityManager.OnUidImportanceListener { changedUid, importance ->
-            if (changedUid == foreignAppUid &&
-                importance > ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND
-            ) {
-                onForeignAppLeftForeground()
-            }
-        }
-        try {
-            am.addOnUidImportanceListener(
-                listener,
-                ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND
-            )
-            foreignAppUid = uid
-            foreignAppImportanceListener = listener
-        } catch (e: SecurityException) {
-            Log.w(TAG, "Foreign-app importance listener denied (needs usage access)", e)
-        }
-    }
-
-    private fun onForeignAppLeftForeground() {
-        clearForeignAppWatch()
-        if (!canReclaimCompanion()) return
-        ensureCompanionLaunched()
-    }
-
-    private fun canReclaimCompanion(): Boolean {
-        if (!displayAffinityHelper.dualScreenEnabled) return false
-        if (sessionStateStore.hasActiveSession()) return false
-        return isArgosyHomeApp()
-    }
-
-    private fun isArgosyHomeApp(): Boolean {
-        val resolved = appContext.packageManager.resolveActivity(
-            Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME),
-            PackageManager.MATCH_DEFAULT_ONLY
-        )
-        return resolved?.activityInfo?.packageName == appContext.packageName
-    }
-
-    private fun clearForeignAppWatch() {
-        foreignAppImportanceListener?.let {
-            appContext.getSystemService(ActivityManager::class.java)?.removeOnUidImportanceListener(it)
-        }
-        foreignAppImportanceListener = null
-        foreignAppUid = -1
     }
 
     /**
@@ -1835,6 +1774,9 @@ class DualScreenManager(
         sessionStateStore.setArgosyForeground(isForeground)
         companionHost?.onForegroundChanged(isForeground)
         if (isForeground) {
+            if (!_isCompanionActive.value && displayAffinityHelper.hasSecondaryDisplay) {
+                ensureCompanionLaunched()
+            }
             val isWizard = sessionStateStore.isWizardActive()
             if (isWizard) companionHost?.onWizardStateChanged(true)
             scope.launch {

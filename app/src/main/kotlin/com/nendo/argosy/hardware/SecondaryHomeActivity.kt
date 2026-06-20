@@ -363,10 +363,13 @@ class SecondaryHomeActivity :
 
     override fun onForegroundChanged(isForeground: Boolean) {
         isArgosyForeground = isForeground
-        if (isForeground && isGameActive &&
-            !dsm.sessionStateStore.hasActiveSession()
-        ) {
-            onSessionEnded()
+        if (isForeground && isGameActive) {
+            val outOfGame = if (isShowcaseRole) {
+                !dsm.sessionStateStore.hasActiveSession()
+            } else {
+                true
+            }
+            if (outOfGame) onSessionEnded()
         }
         isInitialized = true
     }

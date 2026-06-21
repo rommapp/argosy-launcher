@@ -266,7 +266,12 @@ class RomMConnectionManager @Inject constructor(
                     deviceAuthApi = tempApi
                     deviceAuthBaseUrl = normalizedUrl
                     Logger.info(TAG, "beginDeviceAuth: init ok at $normalizedUrl, userCode=${body.userCode}")
-                    return RomMResult.Success(body)
+                    return RomMResult.Success(
+                        body.copy(
+                            verificationUrl = absolutizeUrl(body.verificationUrl, normalizedUrl),
+                            verificationUrlComplete = absolutizeUrl(body.verificationUrlComplete, normalizedUrl)
+                        )
+                    )
                 } else {
                     lastError = when (initResponse.code()) {
                         429 -> "Too many attempts, try again later"
@@ -464,6 +469,12 @@ class RomMConnectionManager @Inject constructor(
         } catch (e: Exception) {
             Logger.error(TAG, "Device registration error: ${e.message}")
         }
+    }
+
+    private fun absolutizeUrl(value: String, base: String): String {
+        if (value.isBlank()) return value
+        if (value.startsWith("http://") || value.startsWith("https://")) return value
+        return base.trimEnd('/') + "/" + value.trimStart('/')
     }
 
     private fun buildUrlsToTry(url: String): List<String> {

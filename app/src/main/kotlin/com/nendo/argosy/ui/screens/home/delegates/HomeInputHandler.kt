@@ -31,6 +31,7 @@ interface HomeInputActions {
     fun setNavigationContext(gameIds: List<Long>)
     fun scrollToFirst(): Boolean
     fun navigateToContinuePlaying(): Boolean
+    fun syncFromRomm()
 }
 
 class HomeInputHandler(
@@ -108,7 +109,11 @@ class HomeInputHandler(
                         }
                     }
                     is HomeRowItem.ViewAll -> actions.navigateToLibrary(item.platformId, item.sourceFilter)
-                    null -> { }
+                    null -> {
+                        val isPinnedRow = state.currentRow is HomeRow.PinnedRegular ||
+                            state.currentRow is HomeRow.PinnedVirtual
+                        if (state.isRommConfigured && !isPinnedRow) actions.syncFromRomm()
+                    }
                 }
             }
         }

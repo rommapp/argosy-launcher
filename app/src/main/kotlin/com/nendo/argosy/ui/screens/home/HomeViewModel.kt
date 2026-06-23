@@ -651,7 +651,7 @@ class HomeViewModel @Inject constructor(
 
     // --- Public API: Sync & Changelog ---
 
-    fun syncFromRomm() = syncDelegate.syncFromRomm(viewModelScope) { refreshRecentGames() }
+    override fun syncFromRomm() = syncDelegate.syncFromRomm(viewModelScope) { refreshRecentGames() }
     fun dismissChangelog() = syncDelegate.dismissChangelog(viewModelScope)
     fun handleChangelogAction(action: RequiredAction): RequiredAction = syncDelegate.handleChangelogAction(viewModelScope, action)
 

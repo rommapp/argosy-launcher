@@ -27,6 +27,7 @@ import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Devices
 import androidx.compose.material.icons.filled.Home
@@ -354,6 +355,7 @@ private fun ContextMenuItem(
 ) {
     val (icon, label) = when (item) {
         AppContextMenuItem.APP_INFO -> Icons.Default.Info to "App Info"
+        AppContextMenuItem.OPEN_ON_TOP -> Icons.Default.ArrowUpward to "Open on Top Screen"
         AppContextMenuItem.TOGGLE_HOME -> if (isOnHome) {
             Icons.Default.Home to "Remove from Home"
         } else {

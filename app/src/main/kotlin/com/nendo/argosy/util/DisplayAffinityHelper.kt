@@ -67,10 +67,14 @@ class DisplayAffinityHelper @Inject constructor(
         else Display.DEFAULT_DISPLAY
     }
 
-    fun getActivityOptions(forEmulator: Boolean, rolesSwapped: Boolean = false): Bundle? {
-        if (!hasSecondaryDisplay) return null
+    fun getActivityOptions(
+        forEmulator: Boolean,
+        rolesSwapped: Boolean = false,
+        overrideDisplayId: Int? = null
+    ): Bundle? {
+        if (overrideDisplayId == null && !hasSecondaryDisplay) return null
 
-        val targetDisplayId = if (forEmulator) {
+        val targetDisplayId = overrideDisplayId ?: if (forEmulator) {
             if (rolesSwapped) secondaryDisplayId ?: return null
             else Display.DEFAULT_DISPLAY
         } else {

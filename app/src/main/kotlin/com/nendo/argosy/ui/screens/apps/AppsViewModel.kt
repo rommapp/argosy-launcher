@@ -47,6 +47,7 @@ data class AppUi(
 
 enum class AppContextMenuItem {
     APP_INFO,
+    OPEN_ON_TOP,
     TOGGLE_HOME,
     TOGGLE_SECONDARY_HOME,
     TOGGLE_VISIBILITY,
@@ -76,6 +77,9 @@ data class AppsUiState(
     val contextMenuItems: List<AppContextMenuItem>
         get() = buildList {
             add(AppContextMenuItem.APP_INFO)
+            if (hasSecondaryDisplay) {
+                add(AppContextMenuItem.OPEN_ON_TOP)
+            }
             add(AppContextMenuItem.TOGGLE_HOME)
             if (hasSecondaryDisplay) {
                 add(AppContextMenuItem.TOGGLE_SECONDARY_HOME)
@@ -252,6 +256,9 @@ class AppsViewModel @Inject constructor(
                 viewModelScope.launch {
                     _events.emit(AppsEvent.OpenAppInfo(app.packageName))
                 }
+            }
+            AppContextMenuItem.OPEN_ON_TOP -> {
+                launchApp(app.packageName, overrideDisplayId = android.view.Display.DEFAULT_DISPLAY)
             }
             AppContextMenuItem.TOGGLE_HOME -> {
                 toggleHomeStatus(app.packageName, app.label, app.isOnHome)
@@ -535,13 +542,17 @@ class AppsViewModel @Inject constructor(
         showContextMenu()
     }
 
-    private fun launchApp(packageName: String) {
+    private fun launchApp(packageName: String, overrideDisplayId: Int? = null) {
         val intent = appsRepository.getLaunchIntent(packageName) ?: return
         viewModelScope.launch {
             val prefs = preferencesRepository.preferences.first()
-            val options = if (prefs.appAffinityEnabled) {
-                displayAffinityHelper.getActivityOptions(forEmulator = false)
-            } else null
+            val options = when {
+                overrideDisplayId != null ->
+                    displayAffinityHelper.getActivityOptions(forEmulator = false, overrideDisplayId = overrideDisplayId)
+                prefs.appAffinityEnabled ->
+                    displayAffinityHelper.getActivityOptions(forEmulator = false)
+                else -> null
+            }
             _events.emit(AppsEvent.Launch(intent, options))
         }
     }

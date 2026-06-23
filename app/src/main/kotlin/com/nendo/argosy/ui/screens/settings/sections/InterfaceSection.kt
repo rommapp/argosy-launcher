@@ -321,6 +321,7 @@ fun InterfaceSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
 
                 InterfaceItem.DisplayRoles -> CyclePreference(
                     title = "Display Roles",
+                    subtitle = "Which physical display is the main vs companion screen; Swapped flips top and bottom",
                     value = display.displayRoleOverride.displayName,
                     isFocused = isFocused(item),
                     onClick = { viewModel.cycleDisplayRoleOverride() }

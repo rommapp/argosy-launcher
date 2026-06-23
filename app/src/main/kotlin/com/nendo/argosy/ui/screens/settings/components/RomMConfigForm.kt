@@ -11,18 +11,25 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
@@ -55,6 +62,8 @@ fun RomMConfigForm(uiState: SettingsUiState, viewModel: SettingsViewModel) {
     }
 
     val inputShape = RoundedCornerShape(Dimens.radiusMd)
+    val keyboard = LocalSoftwareKeyboardController.current
+    var wasUrlFocused by remember { mutableStateOf(false) }
     val urlFocusRequester = remember { FocusRequester() }
     val pairingCodeFocusRequester = remember { FocusRequester() }
     val usernameFocusRequester = remember { FocusRequester() }
@@ -91,9 +100,24 @@ fun RomMConfigForm(uiState: SettingsUiState, viewModel: SettingsViewModel) {
             placeholder = { Text("https://romm.example.com") },
             singleLine = true,
             shape = inputShape,
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Go),
+            keyboardActions = KeyboardActions(
+                onGo = {
+                    if (!uiState.server.rommConnecting && uiState.server.rommConfigUrl.isNotBlank()) {
+                        keyboard?.hide()
+                        viewModel.commitRommUrl()
+                    }
+                }
+            ),
             modifier = Modifier
                 .fillMaxWidth()
                 .focusRequester(urlFocusRequester)
+                .onFocusChanged { fs ->
+                    if (wasUrlFocused && !fs.isFocused && uiState.server.rommConfigUrl.isNotBlank()) {
+                        viewModel.commitRommUrl()
+                    }
+                    wasUrlFocused = fs.isFocused
+                }
                 .then(
                     if (uiState.focusedIndex == 0)
                         Modifier.background(MaterialTheme.colorScheme.primaryContainer, inputShape)

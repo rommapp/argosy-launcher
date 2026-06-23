@@ -2,6 +2,7 @@ package com.nendo.argosy.ui.screens.settings.delegates
 
 import android.util.Log
 import com.nendo.argosy.data.remote.romm.DeviceAuthPoll
+import com.nendo.argosy.data.remote.romm.RomMCapabilities
 import com.nendo.argosy.data.remote.romm.RomMRepository
 import com.nendo.argosy.data.remote.romm.RomMResult
 import com.nendo.argosy.ui.screens.settings.ConnectionStatus
@@ -154,6 +155,30 @@ class ServerSettingsDelegate @Inject constructor(
 
     fun setRommFocusField(index: Int) {
         _state.update { it.copy(rommFocusField = index) }
+    }
+
+    /** Probes the entered URL and auto-selects the version-appropriate auth method, mirroring the first-run wizard. */
+    fun commitRommUrl(scope: CoroutineScope) {
+        val state = _state.value
+        if (state.rommConnecting || state.rommConfigUrl.isBlank()) return
+        scope.launch {
+            _state.update { it.copy(rommConnecting = true, rommConfigError = null) }
+            when (val result = romMRepository.connect(state.rommConfigUrl)) {
+                is RomMResult.Success -> {
+                    val method = if (romMRepository.isVersionAtLeast(RomMCapabilities.DEVICE_AUTH_MIN_VERSION)) {
+                        RomMAuthMethod.DEVICE
+                    } else {
+                        RomMAuthMethod.PAIRING_CODE
+                    }
+                    _state.update {
+                        it.copy(rommConnecting = false, rommAuthMethod = method, rommConfigError = null)
+                    }
+                }
+                is RomMResult.Error -> {
+                    _state.update { it.copy(rommConnecting = false, rommConfigError = result.message) }
+                }
+            }
+        }
     }
 
     fun connectToRomm(scope: CoroutineScope, onSuccess: suspend () -> Unit) {

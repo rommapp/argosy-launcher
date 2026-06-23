@@ -651,9 +651,10 @@ class LibraryViewModel @Inject constructor(
                     emitAll(source)
                 }
                 .collectLatest { (games, seriesIds) ->
+                    val normalizedQuery = com.nendo.argosy.util.SearchNormalizer.normalize(filters.searchQuery)
                     val filteredGames = games.filter { game ->
                         val matchesSearch = filters.searchQuery.isEmpty() ||
-                            game.title.contains(filters.searchQuery, ignoreCase = true)
+                            com.nendo.argosy.util.SearchNormalizer.normalize(game.title).contains(normalizedQuery)
                         val matchesPlatform = filters.platforms.isEmpty() ||
                             cachedPlatformDisplayNames[game.platformId] in filters.platforms
                         val matchesGenre = filters.genres.isEmpty() ||

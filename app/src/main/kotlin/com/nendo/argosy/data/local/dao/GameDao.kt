@@ -271,7 +271,7 @@ interface GameDao {
     @Query("SELECT * FROM games WHERE sortTitle = :sortTitle AND platformId = :platformId LIMIT 1")
     suspend fun getBySortTitleAndPlatform(sortTitle: String, platformId: Long): GameEntity?
 
-    @Query("SELECT * FROM games WHERE title LIKE '%' || :query || '%' AND isHidden = 0 ORDER BY sortTitle ASC")
+    @Query("SELECT * FROM games WHERE searchTitle LIKE '%' || :query || '%' AND isHidden = 0 ORDER BY sortTitle ASC")
     fun search(query: String): Flow<List<GameEntity>>
 
     @Upsert
@@ -639,10 +639,10 @@ interface GameDao {
 
     @Query("""
         SELECT * FROM games
-        WHERE title LIKE '%' || :query || '%'
+        WHERE searchTitle LIKE '%' || :query || '%'
         AND isHidden = 0
         ORDER BY
-            CASE WHEN title LIKE :query || '%' THEN 0 ELSE 1 END,
+            CASE WHEN searchTitle LIKE :query || '%' THEN 0 ELSE 1 END,
             CASE WHEN rating IS NULL THEN 1 ELSE 0 END,
             rating DESC,
             sortTitle ASC

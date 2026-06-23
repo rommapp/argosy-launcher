@@ -5,6 +5,7 @@ import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
 import com.nendo.argosy.data.model.GameSource
+import com.nendo.argosy.util.SearchNormalizer
 import java.time.Instant
 
 @Entity(
@@ -38,6 +39,7 @@ data class GameEntity(
     val platformSlug: String = "",
     val title: String,
     val sortTitle: String,
+    val searchTitle: String = SearchNormalizer.normalize(title),
 
     val localPath: String?,
     val rommId: Long?,

@@ -166,7 +166,8 @@ class CollectionDetailViewModel @Inject constructor(
             val visible = if (modalState.searchQuery.isBlank()) {
                 sorted
             } else {
-                sorted.filter { it.title.contains(modalState.searchQuery, ignoreCase = true) }
+                val q = com.nendo.argosy.util.SearchNormalizer.normalize(modalState.searchQuery)
+                sorted.filter { com.nendo.argosy.util.SearchNormalizer.normalize(it.title).contains(q) }
             }
             val clamped = modalState.focusedIndex.coerceIn(0, (visible.size - 1).coerceAtLeast(0))
             CollectionDetailUiState(

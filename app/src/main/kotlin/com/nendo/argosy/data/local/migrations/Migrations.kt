@@ -2,6 +2,7 @@ package com.nendo.argosy.data.local.migrations
 
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
+import com.nendo.argosy.util.SearchNormalizer
 
 object Migration_1_2 : Migration(1, 2) {
     override fun migrate(db: SupportSQLiteDatabase) {
@@ -1873,5 +1874,23 @@ object Migration_126_127 : Migration(126, 127) {
 object Migration_127_128 : Migration(127, 128) {
     override fun migrate(db: SupportSQLiteDatabase) {
         db.execSQL("ALTER TABLE games ADD COLUMN perGameControlsEnabled INTEGER NOT NULL DEFAULT 0")
+    }
+}
+
+object Migration_128_129 : Migration(128, 129) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE games ADD COLUMN searchTitle TEXT NOT NULL DEFAULT ''")
+        db.query("SELECT id, title FROM games").use { cursor ->
+            val idIdx = cursor.getColumnIndexOrThrow("id")
+            val titleIdx = cursor.getColumnIndexOrThrow("title")
+            while (cursor.moveToNext()) {
+                val id = cursor.getLong(idIdx)
+                val title = cursor.getString(titleIdx) ?: ""
+                db.execSQL(
+                    "UPDATE games SET searchTitle = ? WHERE id = ?",
+                    arrayOf<Any>(SearchNormalizer.normalize(title), id)
+                )
+            }
+        }
     }
 }

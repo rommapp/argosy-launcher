@@ -116,7 +116,8 @@ class VirtualBrowserViewModel @Inject constructor(
         val visible = if (search.query.isBlank()) {
             sorted
         } else {
-            sorted.filter { it.name.contains(search.query, ignoreCase = true) }
+            val q = com.nendo.argosy.util.SearchNormalizer.normalize(search.query)
+            sorted.filter { com.nendo.argosy.util.SearchNormalizer.normalize(it.name).contains(q) }
         }
         val clamped = focusedIndex.coerceIn(0, (visible.size - 1).coerceAtLeast(0))
         VirtualBrowserUiState(

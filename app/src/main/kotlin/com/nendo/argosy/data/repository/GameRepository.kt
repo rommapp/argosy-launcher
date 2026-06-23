@@ -748,7 +748,8 @@ class GameRepository @Inject constructor(
 
     suspend fun update(game: GameEntity) = gameDao.update(game)
 
-    fun search(query: String): Flow<List<GameEntity>> = gameDao.search(query)
+    fun search(query: String): Flow<List<GameEntity>> =
+        gameDao.search(com.nendo.argosy.util.SearchNormalizer.normalize(query))
 
     suspend fun getDistinctGenres(): List<String> = gameDao.getDistinctGenres()
 
@@ -846,7 +847,7 @@ class GameRepository @Inject constructor(
         gameDao.getBySteamAppId(steamAppId)
 
     fun searchForQuickMenu(query: String, limit: Int = 10): Flow<List<GameEntity>> =
-        gameDao.searchForQuickMenu(query, limit)
+        gameDao.searchForQuickMenu(com.nendo.argosy.util.SearchNormalizer.normalize(query), limit)
 
     suspend fun getLocalGamesNeedingGradients(): List<com.nendo.argosy.data.local.dao.GradientExtractionCandidate> =
         gameDao.getLocalGamesNeedingGradients()

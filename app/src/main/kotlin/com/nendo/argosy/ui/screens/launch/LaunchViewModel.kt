@@ -107,15 +107,10 @@ class LaunchViewModel @Inject constructor(
 
     fun handleSessionEnd(onComplete: () -> Unit, force: Boolean = false) {
         if (!hasLaunchedEmulator) return
-        // Gate on the activity actually pausing; LifecycleRegistry replays ON_RESUME on first observer attach.
         if (!force && !wasBackgroundedSinceLaunch) return
-        gameLaunchDelegate.handleSessionEnd(
-            scope = viewModelScope,
-            onSyncComplete = {
-                _isSessionEnded.value = true
-                onComplete()
-            }
-        )
+        gameLaunchDelegate.endSessionInBackground()
+        _isSessionEnded.value = true
+        onComplete()
     }
 
     fun selectDisc(discPath: String) {

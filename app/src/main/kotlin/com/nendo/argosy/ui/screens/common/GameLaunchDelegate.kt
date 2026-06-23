@@ -31,6 +31,8 @@ import com.nendo.argosy.libretro.LaunchMode
 import com.nendo.argosy.core.notification.NotificationManager
 import com.nendo.argosy.core.notification.showError
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -142,6 +144,14 @@ class GameLaunchDelegate @Inject constructor(
     // could spawn a second LibretroActivity while the first is still
     // dlopen'ing the core (the core .so is single-instance per process).
     private val launchInFlight = java.util.concurrent.atomic.AtomicBoolean(false)
+
+    private val sessionEndScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+    /** Ends the session off the UI critical path (save/play-time/sync on the process scope, emulator killed if required) so the caller can return Home immediately. */
+    fun endSessionInBackground() {
+        playSessionTracker.activeSession.value?.let { forceStopIfVita3K(sessionEndScope, it) }
+        playSessionTracker.endSessionInBackground()
+    }
 
     private var _onLaunchFailed: (() -> Unit)? = null
 

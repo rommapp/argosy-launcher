@@ -4,6 +4,7 @@ import android.content.Context
 import com.nendo.argosy.data.local.dao.EmulatorConfigDao
 import com.nendo.argosy.data.local.dao.EmulatorLaunchArgsDao
 import com.nendo.argosy.data.local.dao.GameDao
+import com.nendo.argosy.data.local.dao.PlatformDao
 import com.nendo.argosy.data.local.dao.GameDiscDao
 import com.nendo.argosy.data.local.dao.GameFileDao
 import com.nendo.argosy.data.local.dao.PlatformLibretroSettingsDao
@@ -42,6 +43,7 @@ class GameLauncherTest {
 
     private lateinit var context: Context
     private lateinit var gameDao: GameDao
+    private lateinit var platformDao: PlatformDao
     private lateinit var gameDiscDao: GameDiscDao
     private lateinit var emulatorConfigDao: EmulatorConfigDao
     private lateinit var emulatorLaunchArgsDao: EmulatorLaunchArgsDao
@@ -74,6 +76,7 @@ class GameLauncherTest {
             FileProvider.getUriForFile(context, "com.nendo.argosy.fileprovider", any())
         } returns testUri
         gameDao = mockk(relaxed = true)
+        platformDao = mockk(relaxed = true)
         gameDiscDao = mockk(relaxed = true)
         emulatorConfigDao = mockk(relaxed = true)
         emulatorLaunchArgsDao = mockk(relaxed = true)
@@ -100,6 +103,7 @@ class GameLauncherTest {
         launcher = GameLauncher(
             context = context,
             gameDao = gameDao,
+            platformDao = platformDao,
             gameDiscDao = gameDiscDao,
             emulatorConfigDao = emulatorConfigDao,
             emulatorLaunchArgsDao = emulatorLaunchArgsDao,

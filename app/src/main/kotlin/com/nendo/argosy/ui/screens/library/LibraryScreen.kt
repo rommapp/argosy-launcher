@@ -28,6 +28,12 @@ import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
+import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
+import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
+import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan
+import androidx.compose.foundation.lazy.staggeredgrid.rememberLazyStaggeredGridState
+import androidx.compose.foundation.layout.aspectRatio
+import com.nendo.argosy.ui.common.rememberCoverAspectRatio
 import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -361,6 +367,20 @@ fun LibraryScreen(
                                 val columnWidth = (maxWidth - totalSpacing - sidebarWidth) / columnsCount
                                 val cardHeight = columnWidth / aspectRatio
 
+                                if (boxArtStyle.nativeAspectRatio) {
+                                    LibraryMasonryGrid(
+                                        uiState = uiState,
+                                        viewModel = viewModel,
+                                        columnsCount = columnsCount,
+                                        gridSpacing = gridSpacing,
+                                        sidebarWidth = sidebarWidth,
+                                        fallbackAspectRatio = aspectRatio,
+                                        bottomPadding = cardHeight,
+                                        headerHeightPx = headerHeightPx,
+                                        footerHeightPx = footerHeightPx,
+                                        onGameSelect = onGameSelect
+                                    )
+                                } else {
                                 LazyVerticalGrid(
                                     columns = GridCells.Fixed(columnsCount),
                                     state = gridState,
@@ -410,6 +430,7 @@ fun LibraryScreen(
                                             }
                                         }
                                     }
+                                }
                                 }
 
                                 if (uiState.showSectionSidebar) {
@@ -831,13 +852,180 @@ private fun LibraryHeader(
     }
 }
 
+/**
+ * Masonry variant of the library grid used when "Native Aspect Ratio" is on.
+ * Each cover keeps its real proportions (resolved from the image bounds) so the
+ * grid flows Pinterest-style instead of forcing every card into a fixed shape.
+ * Focus navigation still runs through the regular reading-order navigator; the
+ * focused card is scrolled to its real position via the staggered layout info.
+ */
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun LibraryMasonryGrid(
+    uiState: LibraryUiState,
+    viewModel: LibraryViewModel,
+    columnsCount: Int,
+    gridSpacing: Dp,
+    sidebarWidth: Dp,
+    fallbackAspectRatio: Float,
+    bottomPadding: Dp,
+    headerHeightPx: Int,
+    footerHeightPx: Int,
+    onGameSelect: (Long) -> Unit
+) {
+    val initialIndex = remember { viewModel.gameIndexToGridIndex(uiState.focusedIndex) }
+    val staggeredState = rememberLazyStaggeredGridState(initialFirstVisibleItemIndex = initialIndex)
+    // Local flag so the centering effect and the scroll listener read the same
+    // snapshot value with no recomposition lag (otherwise programmatic scrolls
+    // briefly look like user scrolls and wrongly flip the grid into touch mode).
+    var isProgrammaticScroll by remember { mutableStateOf(false) }
+
+    LaunchedEffect(uiState.currentPlatformIndex) {
+        staggeredState.scrollToItem(0)
+    }
+
+    LaunchedEffect(uiState.games.size) {
+        if (uiState.games.isNotEmpty() && uiState.focusedIndex > 0) {
+            staggeredState.scrollToItem(viewModel.gameIndexToGridIndex(uiState.focusedIndex))
+        }
+    }
+
+    LaunchedEffect(uiState.focusedIndex, uiState.lastFocusMove) {
+        if (uiState.lastFocusMove == null || uiState.games.isEmpty()) return@LaunchedEffect
+
+        val layoutInfo = staggeredState.layoutInfo
+        val viewportHeight = layoutInfo.viewportSize.height
+        if (viewportHeight == 0) return@LaunchedEffect
+
+        val gridIndex = viewModel.gameIndexToGridIndex(uiState.focusedIndex)
+        val focusedItem = layoutInfo.visibleItemsInfo.firstOrNull { it.index == gridIndex }
+        val itemHeight = focusedItem?.size?.height ?: 0
+        val effectiveHeight = viewportHeight - headerHeightPx - footerHeightPx
+        val centeringOffset = (effectiveHeight - itemHeight) / 2
+
+        isProgrammaticScroll = true
+        staggeredState.animateScrollToItem(
+            index = gridIndex,
+            scrollOffset = -centeringOffset
+        )
+        isProgrammaticScroll = false
+    }
+
+    LaunchedEffect(uiState.sectionJumpTrigger) {
+        if (uiState.sectionJumpTrigger == 0 || uiState.games.isEmpty()) return@LaunchedEffect
+
+        val gridIndex = viewModel.gameIndexToGridIndex(uiState.focusedIndex)
+        val layoutInfo = staggeredState.layoutInfo
+        val viewportHeight = layoutInfo.viewportSize.height
+        if (viewportHeight == 0) {
+            staggeredState.scrollToItem(gridIndex)
+            return@LaunchedEffect
+        }
+
+        val focusedItem = layoutInfo.visibleItemsInfo.firstOrNull { it.index == gridIndex }
+        val itemHeight = focusedItem?.size?.height ?: 0
+        val effectiveHeight = viewportHeight - headerHeightPx - footerHeightPx
+        val centeringOffset = if (itemHeight > 0) (effectiveHeight - itemHeight) / 2 else 0
+
+        isProgrammaticScroll = true
+        staggeredState.animateScrollToItem(
+            index = gridIndex,
+            scrollOffset = -centeringOffset
+        )
+        isProgrammaticScroll = false
+    }
+
+    LaunchedEffect(staggeredState) {
+        snapshotFlow { staggeredState.isScrollInProgress }
+            .collect { isScrolling ->
+                if (isScrolling && !isProgrammaticScroll) {
+                    viewModel.enterTouchMode()
+                }
+            }
+    }
+
+    // Feed the real on-screen cover positions to the view model so D-pad
+    // navigation can resolve directions spatially over the masonry layout.
+    val currentGridItems by rememberUpdatedState(uiState.gridItems)
+    LaunchedEffect(staggeredState) {
+        snapshotFlow { staggeredState.layoutInfo.visibleItemsInfo }
+            .collect { visible ->
+                val items = currentGridItems
+                viewModel.setMasonryCells(
+                    visible.mapNotNull { info ->
+                        val gridItem = items.getOrNull(info.index)
+                        if (gridItem is LibraryGridItem.Game) {
+                            FocusCellBounds(
+                                gameIndex = gridItem.gameIndex,
+                                left = info.offset.x,
+                                top = info.offset.y,
+                                right = info.offset.x + info.size.width,
+                                bottom = info.offset.y + info.size.height
+                            )
+                        } else null
+                    }
+                )
+            }
+    }
+    DisposableEffect(Unit) {
+        onDispose { viewModel.setMasonryCells(emptyList()) }
+    }
+
+    LazyVerticalStaggeredGrid(
+        columns = StaggeredGridCells.Fixed(columnsCount),
+        state = staggeredState,
+        contentPadding = PaddingValues(
+            start = gridSpacing,
+            end = gridSpacing + sidebarWidth,
+            top = Dimens.headerHeightLg,
+            bottom = bottomPadding + gridSpacing
+        ),
+        horizontalArrangement = Arrangement.spacedBy(gridSpacing),
+        verticalItemSpacing = gridSpacing,
+        modifier = Modifier.fillMaxSize()
+    ) {
+        uiState.gridItems.forEachIndexed { _, gridItem ->
+            when (gridItem) {
+                is LibraryGridItem.Header -> item(
+                    key = "header-${gridItem.label}",
+                    span = StaggeredGridItemSpan.FullLine
+                ) {
+                    SectionDivider(label = gridItem.label)
+                }
+                is LibraryGridItem.Game -> item(
+                    key = gridItem.game.id,
+                    span = StaggeredGridItemSpan.SingleLane
+                ) {
+                    val isFocused = gridItem.gameIndex == uiState.focusedIndex
+                    val coverPath = uiState.repairedCoverPaths[gridItem.game.id] ?: gridItem.game.coverPath
+                    val ratio = rememberCoverAspectRatio(coverPath, fallbackAspectRatio)
+                    LibraryGameCard(
+                        game = gridItem.game,
+                        isFocused = isFocused,
+                        showFocus = !uiState.isTouchMode || uiState.hasSelectedGame,
+                        cardHeight = null,
+                        showPlatformBadge = uiState.currentPlatformIndex < 0,
+                        coverPathOverride = uiState.repairedCoverPaths[gridItem.game.id],
+                        onCoverLoadFailed = viewModel::repairCoverImage,
+                        onClick = { viewModel.handleItemTap(gridItem.gameIndex, onGameSelect) },
+                        onLongClick = { viewModel.handleItemLongPress(gridItem.gameIndex) },
+                        modifier = Modifier
+                            .aspectRatio(ratio)
+                            .zIndex(if (isFocused) 1f else 0f)
+                    )
+                }
+            }
+        }
+    }
+}
+
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun LibraryGameCard(
     game: LibraryGameUi,
     isFocused: Boolean,
     showFocus: Boolean,
-    cardHeight: Dp,
+    cardHeight: Dp?,
     showPlatformBadge: Boolean = true,
     coverPathOverride: String? = null,
     onCoverLoadFailed: ((Long, String) -> Unit)? = null,
@@ -870,7 +1058,7 @@ private fun LibraryGameCard(
         saturationOverride = saturation,
         modifier = modifier
             .fillMaxWidth()
-            .height(cardHeight)
+            .then(if (cardHeight != null) Modifier.height(cardHeight) else Modifier)
             .combinedClickable(
                 onClick = onClick,
                 onLongClick = onLongClick,

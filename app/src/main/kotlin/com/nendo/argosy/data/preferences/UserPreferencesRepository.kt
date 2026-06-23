@@ -780,7 +780,11 @@ enum class GlowColorMode {
 enum class BoxArtShape(val aspectRatio: Float, val displayName: String) {
     TALL(2f / 3f, "2:3"),
     STANDARD(3f / 4f, "3:4"),
-    SQUARE(1f, "1:1");
+    SQUARE(1f, "1:1"),
+    NATIVE(3f / 4f, "Native");
+
+    /** Whether covers should use their real image proportions instead of [aspectRatio]. */
+    val isNative: Boolean get() = this == NATIVE
 
     companion object {
         fun fromString(value: String?): BoxArtShape =

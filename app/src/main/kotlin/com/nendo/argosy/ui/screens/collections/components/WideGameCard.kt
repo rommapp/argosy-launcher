@@ -49,6 +49,7 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import coil.compose.AsyncImage
+import com.nendo.argosy.ui.common.rememberCoverAspectRatio
 import com.nendo.argosy.ui.common.rememberFileImageModel
 import com.nendo.argosy.ui.components.GameTitle
 import com.nendo.argosy.ui.theme.Dimens
@@ -89,10 +90,15 @@ fun WideGameCard(
                 horizontalArrangement = Arrangement.spacedBy(Dimens.spacingMd)
             ) {
                 val boxArtStyle = LocalBoxArtStyle.current
+                val coverAspectRatio = if (boxArtStyle.nativeAspectRatio) {
+                    rememberCoverAspectRatio(coverPath, boxArtStyle.aspectRatio)
+                } else {
+                    boxArtStyle.aspectRatio
+                }
                 Box(
                     modifier = Modifier
                         .width(80.dp)
-                        .aspectRatio(boxArtStyle.aspectRatio)
+                        .aspectRatio(coverAspectRatio)
                         .clip(RoundedCornerShape(Dimens.radiusMd))
                         .background(MaterialTheme.colorScheme.surface)
                 ) {

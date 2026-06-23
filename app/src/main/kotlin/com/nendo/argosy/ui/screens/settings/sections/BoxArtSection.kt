@@ -31,6 +31,7 @@ import com.nendo.argosy.data.preferences.PlatformIndicatorContent
 import com.nendo.argosy.data.preferences.PlatformIndicatorStyle
 import com.nendo.argosy.data.preferences.SystemIconPadding
 import com.nendo.argosy.data.preferences.SystemIconPosition
+import com.nendo.argosy.ui.common.rememberCoverAspectRatio
 import com.nendo.argosy.ui.components.CyclePreference
 import com.nendo.argosy.ui.components.GameCard
 import com.nendo.argosy.ui.screens.home.HomeGameUi
@@ -418,6 +419,8 @@ fun BoxArtSection(
         ) {
             val currentStyle = LocalBoxArtStyle.current
             val previewBoxArtStyle = BoxArtStyleConfig(
+                aspectRatio = display.boxArtShape.aspectRatio,
+                nativeAspectRatio = display.boxArtShape.isNative,
                 cornerRadiusDp = display.boxArtCornerRadius.dp.dp,
                 borderThicknessDp = display.boxArtBorderThickness.dp.dp,
                 borderStyle = display.boxArtBorderStyle,
@@ -470,13 +473,19 @@ fun BoxArtSection(
                 isDownloaded = false
             )
 
+            val previewAspect = if (display.boxArtShape.isNative) {
+                rememberCoverAspectRatio(previewGame.coverPath, display.boxArtShape.aspectRatio)
+            } else {
+                display.boxArtShape.aspectRatio
+            }
+
             CompositionLocalProvider(LocalBoxArtStyle provides previewBoxArtStyle) {
                 GameCard(
                     game = previewGame,
                     isFocused = true,
                     modifier = Modifier
                         .width(Dimens.gameCardWidth)
-                        .aspectRatio(display.boxArtShape.aspectRatio)
+                        .aspectRatio(previewAspect)
                 )
             }
 

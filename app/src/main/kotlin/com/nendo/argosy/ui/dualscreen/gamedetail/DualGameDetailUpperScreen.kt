@@ -55,6 +55,7 @@ import coil.compose.AsyncImage
 import com.nendo.argosy.data.emulator.DiscOption
 import androidx.compose.material3.OutlinedTextField
 import com.nendo.argosy.domain.model.UnifiedStateEntry
+import com.nendo.argosy.ui.common.rememberCoverAspectRatio
 import com.nendo.argosy.ui.common.rememberFileImageModel
 import com.nendo.argosy.ui.components.GameTitle
 import com.nendo.argosy.ui.screens.collections.dialogs.CreateCollectionDialog
@@ -341,13 +342,19 @@ private fun GameInfoDisplay(
         ) {
             // Cover art
             if (state.coverPath != null) {
+                val boxArtStyle = LocalBoxArtStyle.current
+                val coverAspectRatio = if (boxArtStyle.nativeAspectRatio) {
+                    rememberCoverAspectRatio(state.coverPath, boxArtStyle.aspectRatio)
+                } else {
+                    boxArtStyle.aspectRatio
+                }
                 AsyncImage(
                     model = File(state.coverPath),
                     contentDescription = state.title,
                     contentScale = ContentScale.Crop,
                     modifier = Modifier
                         .width(160.dp)
-                        .aspectRatio(LocalBoxArtStyle.current.aspectRatio)
+                        .aspectRatio(coverAspectRatio)
                         .clip(RoundedCornerShape(8.dp)),
                     onError = { /* Show empty space instead of broken image */ }
                 )

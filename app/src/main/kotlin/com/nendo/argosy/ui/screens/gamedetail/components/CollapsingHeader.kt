@@ -39,6 +39,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import com.nendo.argosy.ui.common.rememberCoverAspectRatio
 import com.nendo.argosy.ui.common.rememberFileImageModel
 import com.nendo.argosy.ui.components.GameTitle
 import com.nendo.argosy.ui.screens.gamedetail.GameDetailUi
@@ -128,7 +129,12 @@ private fun LandscapeExpandedHeader(
     game: GameDetailUi,
     modifier: Modifier = Modifier
 ) {
-    val coverAspectRatio = LocalBoxArtStyle.current.aspectRatio
+    val boxArtStyle = LocalBoxArtStyle.current
+    val coverAspectRatio = if (boxArtStyle.nativeAspectRatio) {
+        rememberCoverAspectRatio(game.coverPath, boxArtStyle.aspectRatio)
+    } else {
+        boxArtStyle.aspectRatio
+    }
     val coverHeight = EXPANDED_COVER_WIDTH / coverAspectRatio
 
     Row(
@@ -159,7 +165,12 @@ private fun PortraitExpandedHeader(
     maxWidth: androidx.compose.ui.unit.Dp,
     modifier: Modifier = Modifier
 ) {
-    val coverAspectRatio = LocalBoxArtStyle.current.aspectRatio
+    val boxArtStyle = LocalBoxArtStyle.current
+    val coverAspectRatio = if (boxArtStyle.nativeAspectRatio) {
+        rememberCoverAspectRatio(game.coverPath, boxArtStyle.aspectRatio)
+    } else {
+        boxArtStyle.aspectRatio
+    }
     val coverWidth = maxWidth * 0.4f
     val coverHeight = coverWidth / coverAspectRatio
 

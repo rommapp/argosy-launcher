@@ -157,6 +157,15 @@ sealed interface LibraryGridItem {
     data class Game(val game: LibraryGameUi, val gameIndex: Int) : LibraryGridItem
 }
 
+/** Viewport-relative bounds of a focusable cover, used for spatial D-pad navigation in masonry mode. */
+data class FocusCellBounds(
+    val gameIndex: Int,
+    val left: Int,
+    val top: Int,
+    val right: Int,
+    val bottom: Int
+)
+
 data class LibraryGameUi(
     val id: Long,
     val title: String,
@@ -889,6 +898,15 @@ class LibraryViewModel @Inject constructor(
 
     fun resetStickyColumn() { gridNav.resetStickyColumn() }
 
+    /**
+     * Geometry of the currently laid-out covers, pushed by the masonry grid. When
+     * present, D-pad navigation is resolved spatially (the masonry layout does not
+     * follow the reading-order rows the [GridFocusNavigator] assumes).
+     */
+    @Volatile private var masonryCells: List<FocusCellBounds> = emptyList()
+
+    fun setMasonryCells(cells: List<FocusCellBounds>) { masonryCells = cells }
+
     fun moveFocus(direction: FocusMove): Boolean {
         val state = _uiState.value
         if (state.games.isEmpty()) return false
@@ -899,17 +917,75 @@ class LibraryViewModel @Inject constructor(
             FocusMove.LEFT -> GridDirection.LEFT
             FocusMove.RIGHT -> GridDirection.RIGHT
         }
-        val rows = GridFocusNavigator.buildGridRows(
-            state.gridItems, state.columnsCount,
-            isHeader = { it is LibraryGridItem.Header },
-            gameIndex = { (it as LibraryGridItem.Game).gameIndex }
-        )
-        val newIndex = gridNav.navigate(gridDirection, state.focusedIndex, rows) ?: return false
+        val newIndex = if (masonryCells.isNotEmpty()) {
+            navigateMasonry(gridDirection, state.focusedIndex, state.columnsCount, state.games.size)
+        } else {
+            val rows = GridFocusNavigator.buildGridRows(
+                state.gridItems, state.columnsCount,
+                isHeader = { it is LibraryGridItem.Header },
+                gameIndex = { (it as LibraryGridItem.Game).gameIndex }
+            )
+            gridNav.navigate(gridDirection, state.focusedIndex, rows)
+        } ?: return false
 
         _uiState.update { it.copy(focusedIndex = newIndex, lastFocusMove = direction, isTouchMode = false) }
         updateCurrentSectionFromFocus()
         extractGradientsForVisibleGames(newIndex)
         return true
+    }
+
+    /**
+     * Resolves a D-pad move using the real on-screen positions of the masonry
+     * covers: pick the nearest cell in the pressed direction, preferring cells
+     * that overlap the current one on the perpendicular axis (same row / column).
+     * Falls back to a reading-order row jump for vertical moves onto covers that
+     * are not laid out yet (just off-screen).
+     */
+    private fun navigateMasonry(
+        direction: GridDirection,
+        currentIndex: Int,
+        columns: Int,
+        gamesCount: Int
+    ): Int? {
+        val cells = masonryCells
+        val cur = cells.find { it.gameIndex == currentIndex } ?: return null
+        val cx = (cur.left + cur.right) / 2f
+        val cy = (cur.top + cur.bottom) / 2f
+        fun cxOf(c: FocusCellBounds) = (c.left + c.right) / 2f
+        fun cyOf(c: FocusCellBounds) = (c.top + c.bottom) / 2f
+        fun vOverlap(c: FocusCellBounds) = c.top < cur.bottom && c.bottom > cur.top
+        fun hOverlap(c: FocusCellBounds) = c.left < cur.right && c.right > cur.left
+        val others = cells.filter { it.gameIndex != currentIndex }
+
+        val pick = when (direction) {
+            GridDirection.LEFT, GridDirection.RIGHT -> {
+                val inDir = others.filter {
+                    if (direction == GridDirection.LEFT) cxOf(it) < cx - 1f else cxOf(it) > cx + 1f
+                }
+                inDir.minWithOrNull(
+                    compareByDescending<FocusCellBounds> { vOverlap(it) }
+                        .thenBy { kotlin.math.abs(cxOf(it) - cx) }
+                        .thenBy { kotlin.math.abs(cyOf(it) - cy) }
+                )
+            }
+            GridDirection.UP, GridDirection.DOWN -> {
+                val inDir = others.filter {
+                    if (direction == GridDirection.UP) cyOf(it) < cy - 1f else cyOf(it) > cy + 1f
+                }
+                inDir.minWithOrNull(
+                    compareByDescending<FocusCellBounds> { hOverlap(it) }
+                        .thenBy { kotlin.math.abs(cyOf(it) - cy) }
+                        .thenBy { kotlin.math.abs(cxOf(it) - cx) }
+                )
+            }
+        }
+        if (pick != null) return pick.gameIndex
+
+        return when (direction) {
+            GridDirection.DOWN -> (currentIndex + columns).takeIf { it < gamesCount }
+            GridDirection.UP -> (currentIndex - columns).takeIf { it >= 0 }
+            else -> null
+        }
     }
 
     fun setFilter(filter: LibraryFilter) {

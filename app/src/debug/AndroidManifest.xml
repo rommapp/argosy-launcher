@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application>
+        <receiver
+            android:name=".debugtools.DebugSeedReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.nendo.argosy.DEBUG_SEED_ROMM" />
+            </intent-filter>
+        </receiver>
+    </application>
+</manifest>

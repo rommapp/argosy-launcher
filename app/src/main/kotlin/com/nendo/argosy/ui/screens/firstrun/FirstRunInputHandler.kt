@@ -52,7 +52,7 @@ class FirstRunInputHandler(
     override fun onBack(): InputResult {
         val state = viewModel.uiState.value
         if (state.currentStep == FirstRunStep.WELCOME) {
-            return InputResult.UNHANDLED
+            return InputResult.HANDLED
         }
         if (state.currentStep == FirstRunStep.PLATFORM_SELECT) {
             if (state.platformSortMenuOpen) {
@@ -76,6 +76,17 @@ class FirstRunInputHandler(
             viewModel.toggleAllPlatforms()
             return InputResult.HANDLED
         }
-        return InputResult.UNHANDLED
+        return InputResult.HANDLED
     }
+
+    override fun onMenu() = InputResult.HANDLED
+    override fun onSelect() = InputResult.HANDLED
+    override fun onSecondaryAction() = InputResult.HANDLED
+    override fun onPrevSection() = InputResult.HANDLED
+    override fun onNextSection() = InputResult.HANDLED
+    override fun onPrevTrigger() = InputResult.HANDLED
+    override fun onNextTrigger() = InputResult.HANDLED
+    override fun onLeftStickClick() = InputResult.HANDLED
+    override fun onRightStickClick() = InputResult.HANDLED
+    override fun onLongConfirm() = InputResult.HANDLED
 }

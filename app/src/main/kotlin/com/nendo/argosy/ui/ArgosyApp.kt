@@ -319,7 +319,8 @@ fun ArgosyApp(
 
     // Synchronous drawer toggle - subscription must happen immediately, not via LaunchedEffect
     val openDrawer = remember(drawerInputHandler) {
-        {
+        wizardGuard@{
+            if (uiState.isFirstRun) return@wizardGuard
             inputDispatcher.subscribeDrawer(drawerInputHandler)
             viewModel.setDrawerOpen(true)
             val parentRoute = navController.previousBackStackEntry?.destination?.route
@@ -351,7 +352,8 @@ fun ArgosyApp(
     }
 
     val openQuickSettings = remember(quickSettingsInputHandler) {
-        {
+        wizardGuard@{
+            if (uiState.isFirstRun) return@wizardGuard
             inputDispatcher.subscribeDrawer(quickSettingsInputHandler)
             viewModel.setQuickSettingsOpen(true)
             viewModel.soundManager.play(SoundType.OPEN_MODAL)
@@ -387,7 +389,8 @@ fun ArgosyApp(
     }
 
     val openQuickMenu = remember(quickMenuInputHandler) {
-        {
+        wizardGuard@{
+            if (uiState.isFirstRun) return@wizardGuard
             if (isDrawerOpen) closeDrawer()
             if (isQuickSettingsOpen) closeQuickSettings()
             inputDispatcher.subscribeDrawer(quickMenuInputHandler)

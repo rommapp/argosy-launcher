@@ -43,6 +43,9 @@ data class ExtractedFolderRom(
             if (allDiscFiles.isNotEmpty()) return allDiscFiles.first().absolutePath
 
             val realFiles = allFiles.filter { !it.name.startsWith("._") }
+            realFiles.filter { it.parentFile?.absolutePath == gameFolder.absolutePath }
+                .maxByOrNull { it.length() }
+                ?.let { return it.absolutePath }
             if (realFiles.size == 1) return realFiles[0].absolutePath
 
             return gameFolder.absolutePath
@@ -510,8 +513,10 @@ object ZipExtractor {
         archiveFilePath: File,
         gameTitle: String,
         platformDir: File,
+        platformSlug: String,
         onProgress: ((bytesWritten: Long, totalBytes: Long) -> Unit)? = null
     ): ExtractedFolderRom {
+        val validExtensions = PlatformDefinitions.getBySlug(platformSlug)?.extensions ?: emptySet()
         val sanitizedTitle = sanitizeFileName(gameTitle)
         val gameFolder = File(platformDir, sanitizedTitle)
 
@@ -536,8 +541,8 @@ object ZipExtractor {
         gameFolder.mkdirs()
 
         val extractionResult = when {
-            isSevenZFile(actualArchiveFile) -> extractSevenZInternal(actualArchiveFile, gameFolder, onProgress)
-            else -> extractZipInternal(actualArchiveFile, gameFolder, onProgress)
+            isSevenZFile(actualArchiveFile) -> extractSevenZInternal(actualArchiveFile, gameFolder, validExtensions, onProgress)
+            else -> extractZipInternal(actualArchiveFile, gameFolder, validExtensions, onProgress)
         }
 
         if (actualArchiveFile != archiveFilePath && actualArchiveFile.exists()) {
@@ -589,6 +594,7 @@ object ZipExtractor {
     private fun extractZipInternal(
         zipFile: File,
         gameFolder: File,
+        validExtensions: Set<String>,
         onProgress: ((bytesWritten: Long, totalBytes: Long) -> Unit)?
     ): RawExtractionResult {
         val allFiles = mutableListOf<File>()
@@ -639,7 +645,7 @@ object ZipExtractor {
                 }
 
                 allFiles.add(targetFile)
-                classifyExtractedFile(fileName, ext, isRootFile, targetFile, rootDiscFiles, { primaryFile = it }, { existingM3u = it }) {
+                classifyExtractedFile(fileName, ext, isRootFile, targetFile, rootDiscFiles, validExtensions, { primaryFile = it }, { existingM3u = it }) {
                     primaryFile == null
                 }
             }
@@ -651,6 +657,7 @@ object ZipExtractor {
     private fun extractSevenZInternal(
         sevenZFile: File,
         gameFolder: File,
+        validExtensions: Set<String>,
         onProgress: ((bytesWritten: Long, totalBytes: Long) -> Unit)?
     ): RawExtractionResult {
         val allFiles = mutableListOf<File>()
@@ -704,7 +711,7 @@ object ZipExtractor {
                     }
 
                     allFiles.add(targetFile)
-                    classifyExtractedFile(fileName, ext, isRootFile, targetFile, rootDiscFiles, { primaryFile = it }, { existingM3u = it }) {
+                    classifyExtractedFile(fileName, ext, isRootFile, targetFile, rootDiscFiles, validExtensions, { primaryFile = it }, { existingM3u = it }) {
                         primaryFile == null
                     }
                 }
@@ -723,6 +730,7 @@ object ZipExtractor {
         isRootFile: Boolean,
         targetFile: File,
         rootDiscFiles: MutableList<File>,
+        validExtensions: Set<String>,
         setPrimaryFile: (File) -> Unit,
         setExistingM3u: (File) -> Unit,
         isPrimaryFileNull: () -> Boolean
@@ -732,7 +740,7 @@ object ZipExtractor {
             isMacOsResourceFork -> { }
             extension == "m3u" && isRootFile -> setExistingM3u(targetFile)
             extension in DISC_EXTENSIONS && isRootFile -> rootDiscFiles.add(targetFile)
-            isPrimaryFileNull() && isGameFile(extension) && isRootFile -> setPrimaryFile(targetFile)
+            isPrimaryFileNull() && extension in validExtensions && isRootFile -> setPrimaryFile(targetFile)
         }
     }
 
@@ -786,26 +794,6 @@ object ZipExtractor {
         }
 
         return true
-    }
-
-    private fun isGameFile(extension: String): Boolean {
-        val gameExtensions = setOf(
-            // Nintendo Switch
-            "xci", "nsp", "nca", "nro", "nsz", "xcz",
-            // Nintendo 3DS
-            "3ds", "cci", "cxi", "cia",
-            // Nintendo DS
-            "nds", "dsi",
-            // Nintendo Wii/WiiU
-            "wbfs", "wua", "wud", "wux", "wup", "rpx", "iso", "ciso", "wia", "rvz",
-            // PlayStation
-            "chd", "cue", "bin", "img", "mdf", "pbp", "vpk",
-            // Sega
-            "gdi", "cdi",
-            // General
-            "zip", "7z"
-        )
-        return extension in gameExtensions
     }
 
     private fun sanitizeFileName(name: String): String {

@@ -5,6 +5,7 @@ import android.util.Log
 import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.dao.PlatformDao
 import com.nendo.argosy.data.model.GameSource
+import com.nendo.argosy.data.model.VariantCategory
 import com.nendo.argosy.data.platform.PlatformDef
 import com.nendo.argosy.data.platform.PlatformDefinitions
 import kotlinx.coroutines.Dispatchers
@@ -125,6 +126,7 @@ class RomScanner @Inject constructor(
             )
 
             when {
+                file.isDirectory && file.name.lowercase() in VariantCategory.CATEGORY_FOLDER_NAMES -> { }
                 file.isDirectory -> scanRecursive(file, errors, onRomFound)
                 file.isFile -> tryParseRom(file, directory)?.let { (sortTitle, platformId, localPath) ->
                     try {

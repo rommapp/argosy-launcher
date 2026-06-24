@@ -993,6 +993,7 @@ class DownloadManager @Inject constructor(
                         archiveFilePath = targetFile,
                         gameTitle = gameTitle,
                         platformDir = platformDir,
+                        platformSlug = platformSlug,
                         onProgress = onExtractionProgress
                     )
                 } catch (e: java.util.zip.ZipException) {
@@ -1313,11 +1314,17 @@ class DownloadManager @Inject constructor(
                 }
             )
 
-            if (discId != null) {
-                gameDiscDao.updateLocalPath(discId, finalPath)
-                m3uManager.generateM3uIfComplete(gameId)
-            } else {
-                gameDao.updateLocalPath(gameId, finalPath, GameSource.ROMM_SYNCED)
+            when {
+                discId != null -> {
+                    gameDiscDao.updateLocalPath(discId, finalPath)
+                    m3uManager.generateM3uIfComplete(gameId)
+                }
+                queueEntry.gameFileId != null -> {
+                    gameFileDao.updateLocalPath(queueEntry.gameFileId, finalPath, Instant.now())
+                }
+                else -> {
+                    gameDao.updateLocalPath(gameId, finalPath, GameSource.ROMM_SYNCED)
+                }
             }
             downloadQueueDao.deleteByGameId(gameId)
 

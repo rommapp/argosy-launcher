@@ -18,6 +18,7 @@ import com.nendo.argosy.data.local.entity.GameEntity
 import com.nendo.argosy.data.local.entity.GameFileEntity
 import com.nendo.argosy.data.local.entity.GameListItem
 import com.nendo.argosy.data.model.GameSource
+import com.nendo.argosy.data.model.VariantCategory
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.remote.romm.RomMRepository
 import com.nendo.argosy.data.remote.romm.RomMResult
@@ -296,16 +297,33 @@ class GameRepository @Inject constructor(
         var repaired = 0
         for (info in gamesWithPaths) {
             val path = info.localPath ?: continue
-            val file = File(path)
-            if (!file.isDirectory) continue
-            val inner = findPrimaryRomInFolder(file, info.platformSlug) ?: continue
-            gameDao.updateLocalPath(info.id, inner.absolutePath, info.source)
+            val rebased = rebaseToFolderBase(info.id, info.platformSlug, info.source, path) ?: continue
             repaired++
-            Log.i(TAG, "Repaired folder-rom pointer for game ${info.id}: $path -> ${inner.absolutePath}")
+            Log.i(TAG, "Repaired rom pointer for game ${info.id}: $path -> $rebased")
         }
         val elapsed = System.currentTimeMillis() - startTime
-        if (repaired > 0) Log.i(TAG, "Repaired $repaired folder-rom pointers in ${elapsed}ms")
+        if (repaired > 0) Log.i(TAG, "Repaired $repaired rom pointers in ${elapsed}ms")
         repaired
+    }
+
+    private suspend fun rebaseToFolderBase(
+        gameId: Long,
+        platformSlug: String,
+        source: GameSource,
+        localPath: String
+    ): String? {
+        val file = File(localPath)
+        val gameFolder = when {
+            file.isDirectory -> file
+            platformSlug !in VariantCategory.VARIANT_EXCLUDED_PLATFORMS &&
+                file.parentFile?.name?.lowercase() in VariantCategory.CATEGORY_FOLDER_NAMES ->
+                file.parentFile?.parentFile
+            else -> return null
+        } ?: return null
+        val base = findPrimaryRomInFolder(gameFolder, platformSlug) ?: return null
+        if (base.absolutePath == localPath) return null
+        gameDao.updateLocalPath(gameId, base.absolutePath, source)
+        return base.absolutePath
     }
 
     suspend fun repairVariantFilePointers(): Int = withContext(Dispatchers.IO) {
@@ -415,6 +433,9 @@ class GameRepository @Inject constructor(
 
         if (game.localPath != null) {
             if (isGamePathValid(game.localPath, game.platformSlug)) {
+                if (!File(game.localPath).isDirectory) {
+                    rebaseToFolderBase(game.id, game.platformSlug, game.source, game.localPath)
+                }
                 return@withContext true
             }
             gameDao.clearLocalPath(gameId)

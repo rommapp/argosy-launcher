@@ -1781,7 +1781,8 @@ class GameLauncher @Inject constructor(
                 val extracted = ZipExtractor.extractFolderRom(
                     archiveFilePath = romFile,
                     gameTitle = gameTitle,
-                    platformDir = cacheDir
+                    platformDir = cacheDir,
+                    platformSlug = game.platformSlug
                 )
                 File(extracted.launchPath)
             } else {

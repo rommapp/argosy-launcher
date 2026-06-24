@@ -62,13 +62,3 @@ tools/
 
 # Wiki (separate repo)
 wiki/
-
-# Local Vue design scratch
-vue-design/
-
-# Design system local notes and build output
-design-system-docs/dist/
-design-system-docs/composables/
-design-system-docs/AUDIT.md
-design-system-docs/DATA_LAYER_FINDINGS.md
-design-system-docs/STORE_INVENTORY.md

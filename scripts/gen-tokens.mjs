@@ -10,20 +10,11 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.resolve(__dirname, "..");
 const TOKENS_PATH = path.join(REPO, "design-system-docs/tokens.json");
 const KOTLIN_OUT = path.join(REPO, "app/src/main/kotlin/com/nendo/argosy/ui/theme/generated");
-const DIST_OUT = path.join(REPO, "design-system-docs/dist");
 
 const HEADER_KT = `// AUTO-GENERATED. DO NOT EDIT.
 // Source: design-system-docs/tokens.json
 // Run: node scripts/gen-tokens.mjs
 `;
-
-const HEADER_CSS = `/* AUTO-GENERATED. DO NOT EDIT.
- * Source: design-system-docs/tokens.json
- * Run: node scripts/gen-tokens.mjs
- */
-`;
-
-const HEADER_TS = HEADER_CSS;
 
 // ---------- color helpers ----------
 
@@ -454,123 +445,6 @@ function emitComponentDefaults(components, enums) {
   return out.join("\n");
 }
 
-// ---------- CSS / TS emitters ----------
-
-function dpToCssLength(dp) {
-  // <= 2 stays px (hairlines, borders); anything larger goes to rem.
-  if (dp <= 2) return `${dp}px`;
-  return `${dp / 16}rem`;
-}
-
-function emitCss(tokens) {
-  const lines = [HEADER_CSS, `:root {`];
-
-  // colors
-  for (const mode of ["dark", "light"]) {
-    for (const [slot, value] of Object.entries(tokens.color.scheme[mode])) {
-      lines.push(`  --color-scheme-${mode}-${kebab(slot)}: ${colorToCss(value)};`);
-    }
-  }
-  for (const mode of ["dark", "light"]) {
-    lines.push(`  --color-scheme-debug-${mode}-primary: ${colorToCss(tokens.color.scheme.debugOverrides[mode].primary)};`);
-  }
-  for (const mode of ["dark", "light"]) {
-    for (const [slot, value] of Object.entries(tokens.color.semantic[mode])) {
-      lines.push(`  --color-semantic-${mode}-${kebab(slot)}: ${colorToCss(value)};`);
-    }
-  }
-  for (const [key, value] of Object.entries(tokens.color.domain)) {
-    if (isColorValue(value)) {
-      lines.push(`  --color-domain-${kebab(key)}: ${colorToCss(value)};`);
-    } else if (isModePair(value)) {
-      lines.push(`  --color-domain-${kebab(key)}-dark: ${colorToCss(value.dark)};`);
-      lines.push(`  --color-domain-${kebab(key)}-light: ${colorToCss(value.light)};`);
-    } else {
-      for (const [subKey, subValue] of Object.entries(value)) {
-        if (isColorValue(subValue)) {
-          lines.push(`  --color-domain-${kebab(key)}-${kebab(subKey)}: ${colorToCss(subValue)};`);
-        } else if (isModePair(subValue)) {
-          lines.push(`  --color-domain-${kebab(key)}-${kebab(subKey)}-dark: ${colorToCss(subValue.dark)};`);
-          lines.push(`  --color-domain-${kebab(key)}-${kebab(subKey)}-light: ${colorToCss(subValue.light)};`);
-        }
-      }
-    }
-  }
-
-  // dimensions
-  for (const [name, { base }] of Object.entries(tokens.dimension.spacing)) {
-    lines.push(`  --space-${name}: ${dpToCssLength(base)};`);
-  }
-  for (const [name, value] of Object.entries(tokens.dimension.radius)) {
-    lines.push(`  --radius-${name}: ${dpToCssLength(value)};`);
-  }
-  for (const [name, value] of Object.entries(tokens.dimension.border)) {
-    lines.push(`  --border-${name}: ${dpToCssLength(value)};`);
-  }
-  for (const [name, value] of Object.entries(tokens.dimension.icon)) {
-    lines.push(`  --icon-${name}: ${dpToCssLength(value)};`);
-  }
-  for (const [name, value] of Object.entries(tokens.dimension.dot)) {
-    lines.push(`  --dot-${name}: ${dpToCssLength(value)};`);
-  }
-  for (const [name, value] of Object.entries(tokens.dimension.layout)) {
-    lines.push(`  --layout-${kebab(name)}: ${dpToCssLength(value)};`);
-  }
-  for (const [name, value] of Object.entries(tokens.dimension.elevation)) {
-    lines.push(`  --elevation-${name}: ${dpToCssLength(value)};`);
-  }
-
-  // typography (no -family var; consume `fontFamily` field directly per style)
-  for (const [name, style] of Object.entries(tokens.typography)) {
-    lines.push(`  --font-${kebab(name)}-size: ${style.fontSize / 16}rem;`);
-    lines.push(`  --font-${kebab(name)}-line-height: ${style.lineHeight / 16}rem;`);
-    lines.push(`  --font-${kebab(name)}-weight: ${style.fontWeight};`);
-    if (style.letterSpacing !== undefined) {
-      lines.push(`  --font-${kebab(name)}-tracking: ${style.letterSpacing}px;`);
-    }
-  }
-
-  // motion (ms only on CSS side; springs are app-specific)
-  for (const [name, ms] of Object.entries(tokens.motion.tween)) {
-    lines.push(`  --motion-tween-${kebab(name)}: ${ms}ms;`);
-  }
-
-  // input
-  for (const [name, ms] of Object.entries(tokens.input.debounce)) {
-    lines.push(`  --input-debounce-${kebab(name)}: ${ms}ms;`);
-  }
-  lines.push(`  --input-scroll-padding-percent: ${tokens.input.scrollPaddingPercent};`);
-
-  // component scalars
-  for (const [comp, fields] of Object.entries(tokens.components)) {
-    for (const [field, value] of Object.entries(fields)) {
-      if (typeof value === "number") {
-        lines.push(`  --component-${kebab(comp)}-${kebab(field)}: ${value};`);
-      } else if (typeof value === "boolean") {
-        lines.push(`  --component-${kebab(comp)}-${kebab(field)}: ${value ? 1 : 0};`);
-      } else if (typeof value === "string") {
-        lines.push(`  --component-${kebab(comp)}-${kebab(field)}: "${value}";`);
-      }
-    }
-  }
-
-  lines.push(`}`);
-  lines.push(``);
-
-  return lines.join("\n");
-}
-
-function emitTs(tokens) {
-  const json = JSON.stringify(tokens, null, 2);
-  return [
-    HEADER_TS,
-    `export const tokens = ${json} as const;`,
-    ``,
-    `export type Tokens = typeof tokens;`,
-    ``,
-  ].join("\n");
-}
-
 // ---------- main ----------
 
 async function main() {
@@ -578,7 +452,6 @@ async function main() {
   const tokens = JSON.parse(raw);
 
   await fs.mkdir(KOTLIN_OUT, { recursive: true });
-  await fs.mkdir(DIST_OUT, { recursive: true });
 
   const writes = [
     [path.join(KOTLIN_OUT, "ColorTokens.kt"),       emitColorTokens(tokens.color)],
@@ -587,8 +460,6 @@ async function main() {
     [path.join(KOTLIN_OUT, "MotionTokens.kt"),      emitMotionTokens(tokens.motion)],
     [path.join(KOTLIN_OUT, "InputTokens.kt"),       emitInputTokens(tokens.input)],
     [path.join(KOTLIN_OUT, "ComponentDefaults.kt"), emitComponentDefaults(tokens.components, tokens.enums)],
-    [path.join(DIST_OUT, "tokens.css"),             emitCss(tokens)],
-    [path.join(DIST_OUT, "tokens.ts"),              emitTs(tokens)],
   ];
 
   for (const [outPath, content] of writes) {

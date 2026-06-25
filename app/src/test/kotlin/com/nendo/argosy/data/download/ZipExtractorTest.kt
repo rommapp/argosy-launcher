@@ -300,7 +300,7 @@ class ZipExtractorTest {
         val zipFile = File(tempDir, "game.zip")
         createTestZip(zipFile, mapOf("game.xci" to "game content"))
 
-        val result = ZipExtractor.extractFolderRom(zipFile, "Test Game", tempDir)
+        val result = ZipExtractor.extractFolderRom(zipFile, "Test Game", tempDir, "switch")
 
         assertNotNull(result.primaryFile)
         assertEquals("game.xci", result.primaryFile?.name)
@@ -318,7 +318,7 @@ class ZipExtractorTest {
             "Game (Disc 2).cue" to "cue2"
         ))
 
-        val result = ZipExtractor.extractFolderRom(zipFile, "Multi Disc Game", tempDir)
+        val result = ZipExtractor.extractFolderRom(zipFile, "Multi Disc Game", tempDir, "psx")
 
         assertNotNull(result.m3uFile)
         assertEquals("Multi Disc Game.m3u", result.m3uFile?.name)
@@ -336,7 +336,7 @@ class ZipExtractorTest {
             "Game.m3u" to "Game (Disc 1).chd\nGame (Disc 2).chd"
         ))
 
-        val result = ZipExtractor.extractFolderRom(zipFile, "Multi Disc Game", tempDir)
+        val result = ZipExtractor.extractFolderRom(zipFile, "Multi Disc Game", tempDir, "psx")
 
         assertNotNull(result.m3uFile)
         assertEquals("Game.m3u", result.m3uFile?.name)
@@ -347,7 +347,7 @@ class ZipExtractorTest {
         val zipFile = File(tempDir, "game.zip")
         createTestZip(zipFile, mapOf("Game.chd" to "single disc"))
 
-        val result = ZipExtractor.extractFolderRom(zipFile, "Single Disc Game", tempDir)
+        val result = ZipExtractor.extractFolderRom(zipFile, "Single Disc Game", tempDir, "psx")
 
         assertNull(result.m3uFile)
         assertEquals(1, result.discFiles.size)
@@ -362,7 +362,7 @@ class ZipExtractorTest {
             "dlc/dlc_pack.nsp" to "dlc"
         ))
 
-        val result = ZipExtractor.extractFolderRom(zipFile, "NSW Game", tempDir)
+        val result = ZipExtractor.extractFolderRom(zipFile, "NSW Game", tempDir, "switch")
 
         val updateFolder = File(result.gameFolder, "update")
         val dlcFolder = File(result.gameFolder, "dlc")
@@ -380,7 +380,7 @@ class ZipExtractorTest {
             "extras/bonus.chd" to "bonus content"
         ))
 
-        val result = ZipExtractor.extractFolderRom(zipFile, "Game With Extras", tempDir)
+        val result = ZipExtractor.extractFolderRom(zipFile, "Game With Extras", tempDir, "psx")
 
         assertNull(result.m3uFile)
         assertEquals(1, result.discFiles.size)
@@ -395,7 +395,7 @@ class ZipExtractorTest {
             "Disc 2.chd" to "disc2"
         ))
 
-        val result = ZipExtractor.extractFolderRom(zipFile, "Multi Disc", tempDir)
+        val result = ZipExtractor.extractFolderRom(zipFile, "Multi Disc", tempDir, "psx")
 
         assertTrue(result.launchPath.endsWith(".m3u"))
     }
@@ -405,7 +405,7 @@ class ZipExtractorTest {
         val zipFile = File(tempDir, "game.zip")
         createTestZip(zipFile, mapOf("game.nsp" to "switch game"))
 
-        val result = ZipExtractor.extractFolderRom(zipFile, "NSW Game", tempDir)
+        val result = ZipExtractor.extractFolderRom(zipFile, "NSW Game", tempDir, "switch")
 
         assertTrue(result.launchPath.endsWith(".nsp"))
     }
@@ -415,7 +415,7 @@ class ZipExtractorTest {
         val zipFile = File(tempDir, "tetris.zip")
         createTestZip(zipFile, mapOf("Tetris/tetris.nes" to "nes rom bytes"))
 
-        val result = ZipExtractor.extractFolderRom(zipFile, "Tetris", tempDir)
+        val result = ZipExtractor.extractFolderRom(zipFile, "Tetris", tempDir, "nes")
 
         assertNull(result.primaryFile)
         assertTrue(result.discFiles.isEmpty())
@@ -430,7 +430,7 @@ class ZipExtractorTest {
         val zipFile = File(tempDir, "mario.zip")
         createTestZip(zipFile, mapOf("Super Mario World/smw.sfc" to "snes rom bytes"))
 
-        val result = ZipExtractor.extractFolderRom(zipFile, "Super Mario World", tempDir)
+        val result = ZipExtractor.extractFolderRom(zipFile, "Super Mario World", tempDir, "snes")
 
         assertTrue(
             "launchPath should end with .sfc but was ${result.launchPath}",
@@ -443,7 +443,7 @@ class ZipExtractorTest {
         val zipFile = File(tempDir, "advance.zip")
         createTestZip(zipFile, mapOf("metroid.gba" to "gba rom bytes"))
 
-        val result = ZipExtractor.extractFolderRom(zipFile, "Metroid Fusion", tempDir)
+        val result = ZipExtractor.extractFolderRom(zipFile, "Metroid Fusion", tempDir, "gba")
 
         assertTrue(
             "launchPath should end with .gba but was ${result.launchPath}",

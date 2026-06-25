@@ -323,14 +323,15 @@ data class LibraryUiState(
 private const val TAG = "LibraryVM"
 
 sealed class LibraryEvent {
-    data class NavigateToLaunch(val gameId: Long, val channelName: String? = null) : LibraryEvent()
-    data class LaunchIntent(val intent: Intent) : LibraryEvent()
+    data class LaunchIntent(val intent: Intent, val options: android.os.Bundle? = null) : LibraryEvent()
 }
 
 @HiltViewModel
 class LibraryViewModel @Inject constructor(
+    @dagger.hilt.android.qualifiers.ApplicationContext private val context: android.content.Context,
     private val platformRepository: PlatformRepository,
     private val gameRepository: GameRepository,
+    private val displayAffinityHelper: com.nendo.argosy.util.DisplayAffinityHelper,
     private val collectionRepository: CollectionRepository,
     private val gameNavigationContext: GameNavigationContext,
     private val notificationManager: NotificationManager,
@@ -358,6 +359,8 @@ class LibraryViewModel @Inject constructor(
 
     private val _events = MutableSharedFlow<LibraryEvent>()
     val events: SharedFlow<LibraryEvent> = _events.asSharedFlow()
+
+    private val sessionStateStore by lazy { com.nendo.argosy.data.preferences.SessionStateStore(context) }
 
     private var gamesJob: Job? = null
     private var pendingInitialPlatformId: Long? = null
@@ -571,8 +574,6 @@ class LibraryViewModel @Inject constructor(
     }
 
     fun onResume() {
-        // Fallback session end handling in case Android killed Argosy while emulator was running
-        // (normal flow goes through LaunchScreen, but if app was killed, user returns here directly)
         gameLaunchDelegate.handleSessionEnd(viewModelScope)
 
         if (romMRepository.isConnected()) {
@@ -1292,9 +1293,19 @@ class LibraryViewModel @Inject constructor(
     }
 
     fun launchGame(gameId: Long, channelName: String? = null) {
-        viewModelScope.launch {
-            _events.emit(LibraryEvent.NavigateToLaunch(gameId, channelName))
-        }
+        gameLaunchDelegate.launchGame(
+            scope = viewModelScope,
+            gameId = gameId,
+            channelName = channelName,
+            onLaunch = { intent ->
+                viewModelScope.launch {
+                    val options = displayAffinityHelper.getActivityOptions(
+                        forEmulator = true, rolesSwapped = sessionStateStore.isRolesSwapped()
+                    )
+                    _events.emit(LibraryEvent.LaunchIntent(intent, options))
+                }
+            }
+        )
     }
 
     fun downloadGame(gameId: Long) {

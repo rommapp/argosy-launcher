@@ -108,7 +108,6 @@ import kotlinx.coroutines.launch
 fun GameDetailScreen(
     gameId: Long,
     onBack: () -> Unit,
-    onNavigateToLaunch: (gameId: Long, channelName: String?, discId: Long?) -> Unit = { _, _, _ -> },
     onNavigateToPlatformSettings: (platformId: Long) -> Unit = {},
     viewModel: GameDetailViewModel = hiltViewModel(),
     argosyViewModel: ArgosyViewModel = hiltViewModel()
@@ -139,12 +138,18 @@ fun GameDetailScreen(
         viewModel.loadGame(gameId)
     }
 
+    val pendingLaunch by argosyViewModel.pendingLaunch.collectAsState()
+    LaunchedEffect(pendingLaunch, uiState.game?.id) {
+        val pending = pendingLaunch ?: return@LaunchedEffect
+        if (pending.gameId == gameId && uiState.game?.id == gameId) {
+            argosyViewModel.consumePendingLaunch()
+            viewModel.playGame(discId = pending.discId)
+        }
+    }
+
     LaunchedEffect(Unit) {
         viewModel.launchEvents.collectLatest { event ->
             when (event) {
-                is LaunchEvent.NavigateToLaunch -> {
-                    onNavigateToLaunch(event.gameId, event.channelName, event.discId)
-                }
                 is LaunchEvent.LaunchIntent -> {
                     try {
                         if (!event.intent.getBooleanExtra("argosy.already_launched", false)) {
@@ -412,23 +417,7 @@ private fun GameDetailContent(
         label = "modalBlur"
     )
 
-    val isTransitioningToGame by argosyViewModel.isTransitioningToGame.collectAsState()
-    val returningFromGame by argosyViewModel.returningFromGame.collectAsState()
-
-    val gameTransitionBlur by animateDpAsState(
-        targetValue = if (isTransitioningToGame || returningFromGame) Motion.blurRadiusModal else 0.dp,
-        animationSpec = Motion.focusSpringDp,
-        label = "gameTransitionBlur"
-    )
-
-    LaunchedEffect(returningFromGame) {
-        if (returningFromGame) {
-            delay(350)
-            argosyViewModel.clearReturningFlag()
-        }
-    }
-
-    val combinedBlur = maxOf(modalBlur, gameTransitionBlur)
+    val combinedBlur = modalBlur
 
     var descriptionTopY by remember { mutableIntStateOf(0) }
     var screenshotTopY by remember { mutableIntStateOf(0) }

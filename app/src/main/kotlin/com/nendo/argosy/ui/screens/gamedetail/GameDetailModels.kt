@@ -105,11 +105,6 @@ data class GameDetailUi(
 )
 
 sealed class LaunchEvent {
-    data class NavigateToLaunch(
-        val gameId: Long,
-        val channelName: String? = null,
-        val discId: Long? = null
-    ) : LaunchEvent()
     data class LaunchIntent(val intent: Intent, val options: android.os.Bundle? = null) : LaunchEvent()
     data object NavigateBack : LaunchEvent()
 }

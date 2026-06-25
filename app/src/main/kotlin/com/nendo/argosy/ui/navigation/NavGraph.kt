@@ -22,7 +22,6 @@ import com.nendo.argosy.ui.screens.downloads.DownloadsScreen
 import com.nendo.argosy.ui.screens.firstrun.FirstRunScreen
 import com.nendo.argosy.ui.screens.gamedetail.GameDetailScreen
 import com.nendo.argosy.ui.screens.home.HomeScreen
-import com.nendo.argosy.ui.screens.launch.LaunchScreen
 import com.nendo.argosy.ui.screens.library.LibraryScreen
 import com.nendo.argosy.ui.screens.doodle.DoodleScreen
 import com.nendo.argosy.ui.screens.search.SearchScreen
@@ -39,7 +38,6 @@ fun NavGraph(
     startDestination: String,
     defaultView: DefaultView,
     onDrawerToggle: () -> Unit,
-    onSetReturningFromGame: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val navigateToDefault = remember(defaultView) {
@@ -81,9 +79,6 @@ fun NavGraph(
                 onNavigateToLibrary = { platformId, sourceFilter ->
                     navController.navigate(Screen.Library.createRoute(platformId, sourceFilter))
                 },
-                onNavigateToLaunch = { gameId, channelName ->
-                    navController.navigate(Screen.Launch.createRoute(gameId, channelName))
-                },
                 onNavigateToDefault = navigateToDefault,
                 onDrawerToggle = onDrawerToggle,
                 onChangelogAction = { action ->
@@ -116,9 +111,6 @@ fun NavGraph(
                 initialSource = source,
                 onGameSelect = { gameId ->
                     navController.navigate(Screen.GameDetail.createRoute(gameId))
-                },
-                onNavigateToLaunch = { gameId, channelName ->
-                    navController.navigate(Screen.Launch.createRoute(gameId, channelName))
                 },
                 onNavigateToDefault = navigateToDefault,
                 onDrawerToggle = onDrawerToggle
@@ -248,42 +240,10 @@ fun NavGraph(
             GameDetailScreen(
                 gameId = gameId,
                 onBack = { navController.popBackStack() },
-                onNavigateToLaunch = { id, channelName, discId ->
-                    navController.navigate(Screen.Launch.createRoute(id, channelName, discId))
-                },
                 onNavigateToPlatformSettings = { platformId ->
                     navController.navigate(
                         Screen.Settings.createRoute(section = "platform_detail", platformId = platformId)
                     )
-                }
-            )
-        }
-
-        composable(
-            route = Screen.Launch.route,
-            arguments = listOf(
-                navArgument("gameId") { type = NavType.LongType },
-                navArgument("channelName") {
-                    type = NavType.StringType
-                    nullable = true
-                    defaultValue = null
-                },
-                navArgument("discId") {
-                    type = NavType.LongType
-                    defaultValue = -1L
-                }
-            )
-        ) { backStackEntry ->
-            val gameId = backStackEntry.arguments?.getLong("gameId") ?: return@composable
-            val channelName = backStackEntry.arguments?.getString("channelName")
-            val discId = backStackEntry.arguments?.getLong("discId")?.takeIf { it != -1L }
-            LaunchScreen(
-                gameId = gameId,
-                channelName = channelName,
-                discId = discId,
-                onLaunchComplete = {
-                    onSetReturningFromGame()
-                    navController.popBackStack()
                 }
             )
         }

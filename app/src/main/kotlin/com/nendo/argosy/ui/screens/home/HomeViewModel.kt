@@ -49,8 +49,10 @@ import javax.inject.Inject
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(
+    @dagger.hilt.android.qualifiers.ApplicationContext private val context: android.content.Context,
     private val savedStateHandle: SavedStateHandle,
     private val gameRepository: GameRepository,
+    private val displayAffinityHelper: com.nendo.argosy.util.DisplayAffinityHelper,
     private val preferencesRepository: UserPreferencesRepository,
     private val notificationManager: NotificationManager,
     private val gameNavigationContext: GameNavigationContext,
@@ -78,6 +80,8 @@ class HomeViewModel @Inject constructor(
 
     private val _events = MutableSharedFlow<HomeEvent>()
     val events: SharedFlow<HomeEvent> = _events.asSharedFlow()
+
+    private val sessionStateStore by lazy { com.nendo.argosy.data.preferences.SessionStateStore(context) }
 
     private var achievementPrefetchJob: Job? = null
     private val achievementPrefetchDebounceMs = 300L
@@ -531,9 +535,19 @@ class HomeViewModel @Inject constructor(
     override fun launchGame(gameId: Long, channelName: String?) {
         videoPreviewDelegate.deactivateVideoPreview()
         saveCurrentState()
-        viewModelScope.launch {
-            _events.emit(HomeEvent.NavigateToLaunch(gameId, channelName))
-        }
+        gameLaunchDelegate.launchGame(
+            scope = viewModelScope,
+            gameId = gameId,
+            channelName = channelName,
+            onLaunch = { intent ->
+                viewModelScope.launch {
+                    val options = displayAffinityHelper.getActivityOptions(
+                        forEmulator = true, rolesSwapped = sessionStateStore.isRolesSwapped()
+                    )
+                    _events.emit(HomeEvent.LaunchIntent(intent, options))
+                }
+            }
+        )
     }
 
     override fun toggleFavorite(gameId: Long) {

@@ -232,7 +232,8 @@ fun ArgosyApp(
                     "play" -> {
                         val gameId = uri.lastPathSegment?.toLongOrNull()
                         if (gameId != null) {
-                            navController.navigate(Screen.Launch.createRoute(gameId)) {
+                            viewModel.initiateGameLaunch(gameId)
+                            navController.navigate(Screen.GameDetail.createRoute(gameId)) {
                                 launchSingleTop = true
                             }
                         }
@@ -1656,7 +1657,6 @@ fun ArgosyApp(
                         startDestination = startDestination,
                         defaultView = uiState.defaultView,
                         onDrawerToggle = { if (isDrawerOpen) closeDrawer() else openDrawer() },
-                        onSetReturningFromGame = { viewModel.setReturningFromGame() },
                         modifier = Modifier.blur(contentBlur)
                     )
                 }

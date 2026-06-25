@@ -100,7 +100,6 @@ import com.nendo.argosy.ui.input.HardcoreConflictInputHandler
 import com.nendo.argosy.ui.input.LocalModifiedInputHandler
 import com.nendo.argosy.ui.input.LocalInputDispatcher
 import com.nendo.argosy.domain.model.SyncProgress
-import com.nendo.argosy.ui.ArgosyViewModel
 import com.nendo.argosy.ui.navigation.Screen
 import com.nendo.argosy.ui.theme.LocalBoxArtStyle
 import com.nendo.argosy.ui.theme.LocalLauncherTheme
@@ -130,19 +129,16 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import kotlin.math.abs
-import kotlinx.coroutines.delay
 
 @Composable
 fun LibraryScreen(
     isDefaultView: Boolean,
     onGameSelect: (Long) -> Unit,
-    onNavigateToLaunch: (gameId: Long, channelName: String?) -> Unit,
     onNavigateToDefault: () -> Unit,
     onDrawerToggle: () -> Unit,
     initialPlatformId: Long? = null,
     initialSource: String? = null,
-    viewModel: LibraryViewModel = hiltViewModel(),
-    argosyViewModel: ArgosyViewModel = hiltViewModel()
+    viewModel: LibraryViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val initialGridIndex = remember { viewModel.gameIndexToGridIndex(uiState.focusedIndex) }
@@ -235,12 +231,9 @@ fun LibraryScreen(
     LaunchedEffect(Unit) {
         viewModel.events.collect { event ->
             when (event) {
-                is LibraryEvent.NavigateToLaunch -> {
-                    onNavigateToLaunch(event.gameId, event.channelName)
-                }
                 is LibraryEvent.LaunchIntent -> {
                     try {
-                        context.startActivity(event.intent)
+                        context.startActivity(event.intent, event.options)
                     } catch (e: Exception) {
                         android.util.Log.e("LibraryScreen", "Failed to start activity", e)
                     }
@@ -274,9 +267,6 @@ fun LibraryScreen(
         }
     }
 
-    val isTransitioningToGame by argosyViewModel.isTransitioningToGame.collectAsState()
-    val returningFromGame by argosyViewModel.returningFromGame.collectAsState()
-
     val showAnyOverlay = uiState.showFilterMenu || uiState.showQuickMenu || uiState.showAddToCollectionModal || uiState.syncOverlayState != null || uiState.discPickerState != null || uiState.memcardPickerState != null
     val modalBlur by animateDpAsState(
         targetValue = if (showAnyOverlay) Motion.blurRadiusModal else 0.dp,
@@ -284,20 +274,7 @@ fun LibraryScreen(
         label = "modalBlur"
     )
 
-    val gameTransitionBlur by animateDpAsState(
-        targetValue = if (isTransitioningToGame || returningFromGame) Motion.blurRadiusModal else 0.dp,
-        animationSpec = Motion.focusSpringDp,
-        label = "gameTransitionBlur"
-    )
-
-    LaunchedEffect(returningFromGame) {
-        if (returningFromGame) {
-            delay(350)
-            argosyViewModel.clearReturningFlag()
-        }
-    }
-
-    val combinedBlur = maxOf(modalBlur, gameTransitionBlur)
+    val combinedBlur = modalBlur
 
     val swipeThreshold = with(LocalDensity.current) { 50.dp.toPx() }
     val edgeThreshold = with(LocalDensity.current) { 80.dp.toPx() }

@@ -811,7 +811,14 @@ class GameDetailViewModel @Inject constructor(
                 }
             }
 
-            _launchEvents.emit(LaunchEvent.NavigateToLaunch(currentGameId, discId = discId))
+            val callbacks = makeLaunchCallbacks()
+            gameLaunchDelegate.launchGame(
+                scope = viewModelScope,
+                gameId = currentGameId,
+                discId = discId,
+                onLaunch = callbacks.onLaunch,
+                onLaunchFailed = { callbacks.onLaunchFailed() }
+            )
         }
     }
 

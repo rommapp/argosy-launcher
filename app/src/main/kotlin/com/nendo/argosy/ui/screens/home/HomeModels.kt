@@ -274,11 +274,7 @@ data class HomeUiState(
 data class BreadcrumbItem(val label: String, val isCurrent: Boolean)
 
 sealed class HomeEvent {
-    data class NavigateToLaunch(
-        val gameId: Long,
-        val channelName: String? = null
-    ) : HomeEvent()
-    data class LaunchIntent(val intent: Intent) : HomeEvent()
+    data class LaunchIntent(val intent: Intent, val options: android.os.Bundle? = null) : HomeEvent()
     data class NavigateToLibrary(
         val platformId: Long? = null,
         val sourceFilter: String? = null

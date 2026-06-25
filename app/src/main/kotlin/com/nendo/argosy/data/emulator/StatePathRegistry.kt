@@ -153,6 +153,18 @@ object StatePathRegistry {
             ),
             maxSlots = 5
         ),
+        "ppsspp_legacy" to StatePathConfig(
+            emulatorId = "ppsspp_legacy",
+            defaultPaths = listOf(
+                "{extStorage}/PSP/PPSSPP_STATE",
+                "{extStorage}/Android/data/org.ppsspp.ppsspplegacy/files/PSP/PPSSPP_STATE"
+            ),
+            slotPattern = StateSlotPattern.SerialAndSlot(
+                separator = "_",
+                extension = "ppst"
+            ),
+            maxSlots = 5
+        ),
 
         "drastic" to StatePathConfig(
             emulatorId = "drastic",

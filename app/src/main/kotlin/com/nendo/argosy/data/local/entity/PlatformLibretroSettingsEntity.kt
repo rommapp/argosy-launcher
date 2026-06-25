@@ -25,6 +25,7 @@ data class PlatformLibretroSettingsEntity(
     val shaderChain: String? = null,
     val filter: String? = null,
     val aspectRatio: String? = null,
+    val portraitPosition: String? = null,
     val rotation: Int? = null,
     val overscanCrop: Int? = null,
     val blackFrameInsertion: Boolean? = null,
@@ -51,6 +52,7 @@ data class PlatformLibretroSettingsEntity(
         shaderChain != null ||
         filter != null ||
         aspectRatio != null ||
+        portraitPosition != null ||
         rotation != null ||
         overscanCrop != null ||
         blackFrameInsertion != null ||

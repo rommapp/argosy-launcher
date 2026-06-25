@@ -34,6 +34,7 @@ class VideoSettingsManager(
     var resolvedCustomShader: ShaderConfig = ShaderConfig.Default
     var currentFilter by mutableStateOf("Auto")
     var currentAspectRatio by mutableStateOf("Core Provided")
+    var currentPortraitPosition by mutableStateOf("Auto")
     var currentRotation by mutableStateOf("Auto")
     var currentOverscanCrop by mutableStateOf("Off")
     var currentBFI by mutableStateOf(false)
@@ -70,6 +71,7 @@ class VideoSettingsManager(
 
     var onRewindToggled: ((enabled: Boolean) -> Unit)? = null
     var onRewindConfigChanged: (() -> Unit)? = null
+    var onPortraitPositionChanged: ((String) -> Unit)? = null
 
     fun applySettings(settings: BuiltinEmulatorSettings) {
         aspectRatioMode = settings.aspectRatio
@@ -83,6 +85,7 @@ class VideoSettingsManager(
         currentShader = settings.shader
         currentFilter = settings.filter
         currentAspectRatio = settings.aspectRatio
+        currentPortraitPosition = settings.portraitPosition
         currentRotation = settings.rotationDisplay
         currentOverscanCrop = settings.overscanCropDisplay
         currentBFI = settings.blackFrameInsertion
@@ -116,6 +119,7 @@ class VideoSettingsManager(
         LibretroSettingDef.Shader -> currentShader
         LibretroSettingDef.Filter -> currentFilter
         LibretroSettingDef.AspectRatio -> currentAspectRatio
+        LibretroSettingDef.PortraitPosition -> currentPortraitPosition
         LibretroSettingDef.Rotation -> currentRotation
         LibretroSettingDef.OverscanCrop -> currentOverscanCrop
         LibretroSettingDef.Frame -> currentFrame?.let {
@@ -140,6 +144,7 @@ class VideoSettingsManager(
         LibretroSettingDef.Shader -> globalSettings.shader
         LibretroSettingDef.Filter -> globalSettings.filter
         LibretroSettingDef.AspectRatio -> globalSettings.aspectRatio
+        LibretroSettingDef.PortraitPosition -> globalSettings.portraitPosition
         LibretroSettingDef.Rotation -> globalSettings.rotationDisplay
         LibretroSettingDef.OverscanCrop -> globalSettings.overscanCropDisplay
         LibretroSettingDef.Frame -> getGlobalFrameForPlatform()?.let {
@@ -171,6 +176,7 @@ class VideoSettingsManager(
             LibretroSettingDef.Shader -> currentShader = globalValue
             LibretroSettingDef.Filter -> currentFilter = globalValue
             LibretroSettingDef.AspectRatio -> currentAspectRatio = globalValue
+            LibretroSettingDef.PortraitPosition -> currentPortraitPosition = globalValue
             LibretroSettingDef.Rotation -> currentRotation = globalValue
             LibretroSettingDef.OverscanCrop -> currentOverscanCrop = globalValue
             LibretroSettingDef.FastForwardEnabled -> currentFastForwardEnabled = globalValue.toBooleanStrictOrNull() ?: true
@@ -219,6 +225,7 @@ class VideoSettingsManager(
                 LibretroSettingDef.Shader -> current.copy(shader = null)
                 LibretroSettingDef.Filter -> current.copy(filter = null)
                 LibretroSettingDef.AspectRatio -> current.copy(aspectRatio = null)
+                LibretroSettingDef.PortraitPosition -> current.copy(portraitPosition = null)
                 LibretroSettingDef.Rotation -> current.copy(rotation = null)
                 LibretroSettingDef.OverscanCrop -> current.copy(overscanCrop = null)
                 LibretroSettingDef.Frame -> current.copy(frame = null)
@@ -257,6 +264,7 @@ class VideoSettingsManager(
             LibretroSettingDef.Shader -> currentShader = newValue
             LibretroSettingDef.Filter -> currentFilter = newValue
             LibretroSettingDef.AspectRatio -> currentAspectRatio = newValue
+            LibretroSettingDef.PortraitPosition -> currentPortraitPosition = newValue
             LibretroSettingDef.Rotation -> currentRotation = newValue
             LibretroSettingDef.OverscanCrop -> currentOverscanCrop = newValue
             LibretroSettingDef.FastForwardEnabled -> currentFastForwardEnabled = newValue.toBooleanStrictOrNull() ?: true
@@ -334,6 +342,9 @@ class VideoSettingsManager(
             LibretroSettingDef.AspectRatio -> {
                 aspectRatioMode = value
                 applyAspectRatio()
+            }
+            LibretroSettingDef.PortraitPosition -> {
+                onPortraitPositionChanged?.invoke(value)
             }
             LibretroSettingDef.Rotation -> {
                 rotationDegrees = parseRotation(value)
@@ -457,6 +468,7 @@ class VideoSettingsManager(
                 LibretroSettingDef.Shader -> current.copy(shader = value)
                 LibretroSettingDef.Filter -> current.copy(filter = value)
                 LibretroSettingDef.AspectRatio -> current.copy(aspectRatio = value)
+                LibretroSettingDef.PortraitPosition -> current.copy(portraitPosition = value)
                 LibretroSettingDef.Rotation -> current.copy(rotation = parseRotation(value))
                 LibretroSettingDef.OverscanCrop -> current.copy(overscanCrop = parseOverscan(value))
                 LibretroSettingDef.Frame -> current.copy(frame = if (value == "None") null else currentFrame)

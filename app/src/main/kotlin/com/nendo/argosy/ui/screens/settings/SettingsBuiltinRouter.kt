@@ -112,6 +112,13 @@ internal fun routeSetBuiltinAspectRatio(vm: SettingsViewModel, value: String) {
     }
 }
 
+internal fun routeSetBuiltinPortraitPosition(vm: SettingsViewModel, value: String) {
+    vm._uiState.update { it.copy(builtinVideo = it.builtinVideo.copy(portraitPosition = value)) }
+    vm.viewModelScope.launch {
+        vm.libretroSettingsRepo.setBuiltinPortraitPosition(value)
+    }
+}
+
 internal fun routeSetBuiltinSkipDuplicateFrames(vm: SettingsViewModel, enabled: Boolean) {
     vm._uiState.update {
         it.copy(builtinVideo = it.builtinVideo.copy(
@@ -536,6 +543,14 @@ internal fun routeCycleBuiltinAspectRatio(vm: SettingsViewModel, direction: Int)
     vm.setBuiltinAspectRatio(options[nextIndex])
 }
 
+internal fun routeCycleBuiltinPortraitPosition(vm: SettingsViewModel, direction: Int) {
+    val options = listOf("Auto", "Top", "Center", "Bottom")
+    val current = vm._uiState.value.builtinVideo.portraitPosition
+    val currentIndex = options.indexOf(current).coerceAtLeast(0)
+    val nextIndex = (currentIndex + direction + options.size) % options.size
+    vm.setBuiltinPortraitPosition(options[nextIndex])
+}
+
 internal fun routeCycleBuiltinFastForwardSpeed(vm: SettingsViewModel, direction: Int) {
     val options = listOf(2, 4, 8)
     val currentDisplay = vm._uiState.value.builtinVideo.fastForwardSpeed
@@ -652,6 +667,7 @@ internal fun routeUpdatePlatformLibretroSetting(vm: SettingsViewModel, setting: 
             LibretroSettingDef.Shader -> current.copy(shader = value)
             LibretroSettingDef.Filter -> current.copy(filter = value)
             LibretroSettingDef.AspectRatio -> current.copy(aspectRatio = value)
+            LibretroSettingDef.PortraitPosition -> current.copy(portraitPosition = value)
             LibretroSettingDef.Rotation -> current.copy(rotation = routeParseRotationValue(value))
             LibretroSettingDef.OverscanCrop -> current.copy(overscanCrop = routeParseOverscanValue(value))
             LibretroSettingDef.Frame -> {
@@ -688,7 +704,7 @@ internal fun routeResetAllPlatformLibretroSettings(vm: SettingsViewModel) {
     vm.viewModelScope.launch {
         val current = vm.libretroSettingsRepo.getByPlatformId(platformContext.platformId) ?: return@launch
         val updated = current.copy(
-            shader = null, filter = null, aspectRatio = null, rotation = null,
+            shader = null, filter = null, aspectRatio = null, portraitPosition = null, rotation = null,
             overscanCrop = null, frame = null, blackFrameInsertion = null, fastForwardEnabled = null, fastForwardSpeed = null,
             rewindEnabled = null, rewindSpeed = null, rewindBufferDuration = null,
             skipDuplicateFrames = null, lowLatencyAudio = null, audioVolume = null, vsync = null

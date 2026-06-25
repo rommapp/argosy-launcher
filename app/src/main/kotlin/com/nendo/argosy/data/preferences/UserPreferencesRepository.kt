@@ -325,6 +325,7 @@ class UserPreferencesRepository @Inject constructor(
     suspend fun setBuiltinFilter(filter: String) = builtinPrefs.setBuiltinFilter(filter)
     suspend fun setBuiltinLibretroEnabled(enabled: Boolean) = builtinPrefs.setBuiltinLibretroEnabled(enabled)
     suspend fun setBuiltinAspectRatio(aspectRatio: String) = builtinPrefs.setBuiltinAspectRatio(aspectRatio)
+    suspend fun setBuiltinPortraitPosition(value: String) = builtinPrefs.setBuiltinPortraitPosition(value)
     suspend fun setBuiltinSkipDuplicateFrames(enabled: Boolean) = builtinPrefs.setBuiltinSkipDuplicateFrames(enabled)
     suspend fun setBuiltinLowLatencyAudio(enabled: Boolean) = builtinPrefs.setBuiltinLowLatencyAudio(enabled)
     suspend fun setBuiltinForceSoftwareTiming(enabled: Boolean) = builtinPrefs.setBuiltinForceSoftwareTiming(enabled)
@@ -391,6 +392,7 @@ data class BuiltinEmulatorSettings(
     val shaderChainJson: String = "",
     val filter: String = "Auto",
     val aspectRatio: String = "Core Provided",
+    val portraitPosition: String = "Auto",
     val skipDuplicateFrames: Boolean = false,
     val lowLatencyAudio: Boolean = true,
     val audioVolume: Int = 100,

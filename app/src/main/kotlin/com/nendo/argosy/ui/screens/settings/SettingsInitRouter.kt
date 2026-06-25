@@ -645,6 +645,7 @@ internal fun routeLoadSettings(vm: SettingsViewModel) {
                     shaderChainJson = builtinSettings.shaderChainJson,
                     filter = builtinSettings.filter,
                     aspectRatio = builtinSettings.aspectRatio,
+                    portraitPosition = builtinSettings.portraitPosition,
                     skipDuplicateFrames = builtinSettings.skipDuplicateFrames,
                     blackFrameInsertion = builtinSettings.blackFrameInsertion,
                     displayRefreshRate = refreshRate,

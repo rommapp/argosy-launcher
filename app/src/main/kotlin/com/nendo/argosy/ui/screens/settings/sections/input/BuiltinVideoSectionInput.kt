@@ -112,6 +112,7 @@ internal class BuiltinVideoSectionInput(
             InputResult.HANDLED
         }
         LibretroSettingDef.AspectRatio -> { viewModel.cycleBuiltinAspectRatio(1); InputResult.HANDLED }
+        LibretroSettingDef.PortraitPosition -> { viewModel.cycleBuiltinPortraitPosition(1); InputResult.HANDLED }
         LibretroSettingDef.Rotation -> { viewModel.cycleBuiltinRotation(1); InputResult.HANDLED }
         LibretroSettingDef.OverscanCrop -> { viewModel.cycleBuiltinOverscanCrop(1); InputResult.HANDLED }
         LibretroSettingDef.FastForwardEnabled -> {
@@ -245,6 +246,7 @@ internal class BuiltinVideoSectionInput(
             InputResult.HANDLED
         }
         LibretroSettingDef.AspectRatio -> { viewModel.cycleBuiltinAspectRatio(direction); InputResult.HANDLED }
+        LibretroSettingDef.PortraitPosition -> { viewModel.cycleBuiltinPortraitPosition(direction); InputResult.HANDLED }
         LibretroSettingDef.Rotation -> { viewModel.cycleBuiltinRotation(direction); InputResult.HANDLED }
         LibretroSettingDef.OverscanCrop -> { viewModel.cycleBuiltinOverscanCrop(direction); InputResult.HANDLED }
         LibretroSettingDef.FastForwardSpeed -> { viewModel.cycleBuiltinFastForwardSpeed(direction); InputResult.HANDLED }

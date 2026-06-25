@@ -33,6 +33,14 @@ sealed class LibretroSettingDef(
         type = SettingType.Cycle(listOf("Core Provided", "4:3", "3:2", "16:9", "Integer", "Stretch"))
     )
 
+    data object PortraitPosition : LibretroSettingDef(
+        key = "portraitPosition",
+        section = "display",
+        title = "Portrait Screen Position",
+        subtitle = "Where the game sits when the screen is vertical",
+        type = SettingType.Cycle(listOf("Auto", "Top", "Center", "Bottom"))
+    )
+
     data object Rotation : LibretroSettingDef(
         key = "rotation",
         section = "display",
@@ -160,6 +168,7 @@ sealed class LibretroSettingDef(
             Filter,
             Frame,
             AspectRatio,
+            PortraitPosition,
             Rotation,
             OverscanCrop,
             BlackFrameInsertion,

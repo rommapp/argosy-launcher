@@ -65,6 +65,9 @@ class LibretroSettingsRepository @Inject constructor(
     suspend fun setBuiltinAspectRatio(aspectRatio: String) =
         builtinPrefs.setBuiltinAspectRatio(aspectRatio)
 
+    suspend fun setBuiltinPortraitPosition(value: String) =
+        builtinPrefs.setBuiltinPortraitPosition(value)
+
     suspend fun setBuiltinSkipDuplicateFrames(enabled: Boolean) =
         builtinPrefs.setBuiltinSkipDuplicateFrames(enabled)
 

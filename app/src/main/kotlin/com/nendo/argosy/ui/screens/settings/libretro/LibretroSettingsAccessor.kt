@@ -37,6 +37,7 @@ class GlobalLibretroSettingsAccessor(
         LibretroSettingDef.Shader -> state.shader
         LibretroSettingDef.Filter -> state.filter
         LibretroSettingDef.AspectRatio -> state.aspectRatio
+        LibretroSettingDef.PortraitPosition -> state.portraitPosition
         LibretroSettingDef.Rotation -> state.rotation
         LibretroSettingDef.OverscanCrop -> state.overscanCrop
         LibretroSettingDef.Frame -> state.framesEnabled.toString()
@@ -133,6 +134,7 @@ class PlatformLibretroSettingsAccessor(
         LibretroSettingDef.Shader -> globalState.shader
         LibretroSettingDef.Filter -> globalState.filter
         LibretroSettingDef.AspectRatio -> globalState.aspectRatio
+        LibretroSettingDef.PortraitPosition -> globalState.portraitPosition
         LibretroSettingDef.Rotation -> globalState.rotation
         LibretroSettingDef.OverscanCrop -> globalState.overscanCrop
         LibretroSettingDef.Frame -> "Auto"
@@ -190,6 +192,7 @@ class PlatformLibretroSettingsAccessor(
             LibretroSettingDef.Shader -> ps.shader
             LibretroSettingDef.Filter -> ps.filter
             LibretroSettingDef.AspectRatio -> ps.aspectRatio
+            LibretroSettingDef.PortraitPosition -> ps.portraitPosition
             LibretroSettingDef.Rotation -> ps.rotation?.toRotationString()
             LibretroSettingDef.OverscanCrop -> ps.overscanCrop?.toOverscanString()
             LibretroSettingDef.Frame -> ps.frame

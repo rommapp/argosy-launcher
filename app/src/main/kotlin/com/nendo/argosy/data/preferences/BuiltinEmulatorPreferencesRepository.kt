@@ -23,6 +23,7 @@ class BuiltinEmulatorPreferencesRepository @Inject constructor(
         val BUILTIN_FILTER = stringPreferencesKey("builtin_filter")
         val BUILTIN_LIBRETRO_ENABLED = booleanPreferencesKey("builtin_libretro_enabled")
         val BUILTIN_ASPECT_RATIO = stringPreferencesKey("builtin_aspect_ratio")
+        val BUILTIN_PORTRAIT_POSITION = stringPreferencesKey("builtin_portrait_position")
         val BUILTIN_SKIP_DUPLICATE_FRAMES = booleanPreferencesKey("builtin_skip_duplicate_frames")
         val BUILTIN_LOW_LATENCY_AUDIO = booleanPreferencesKey("builtin_low_latency_audio")
         val BUILTIN_AUDIO_VOLUME = intPreferencesKey("builtin_audio_volume")
@@ -75,6 +76,7 @@ class BuiltinEmulatorPreferencesRepository @Inject constructor(
             shaderChainJson = prefs[Keys.BUILTIN_SHADER_CHAIN] ?: "",
             filter = prefs[Keys.BUILTIN_FILTER] ?: "Auto",
             aspectRatio = prefs[Keys.BUILTIN_ASPECT_RATIO] ?: "Core Provided",
+            portraitPosition = prefs[Keys.BUILTIN_PORTRAIT_POSITION] ?: "Auto",
             skipDuplicateFrames = prefs[Keys.BUILTIN_SKIP_DUPLICATE_FRAMES] ?: false,
             lowLatencyAudio = prefs[Keys.BUILTIN_LOW_LATENCY_AUDIO] ?: true,
             forceSoftwareTiming = prefs[Keys.BUILTIN_FORCE_SOFTWARE_TIMING] ?: false,
@@ -150,6 +152,10 @@ class BuiltinEmulatorPreferencesRepository @Inject constructor(
 
     suspend fun setBuiltinAspectRatio(aspectRatio: String) {
         dataStore.edit { it[Keys.BUILTIN_ASPECT_RATIO] = aspectRatio }
+    }
+
+    suspend fun setBuiltinPortraitPosition(value: String) {
+        dataStore.edit { it[Keys.BUILTIN_PORTRAIT_POSITION] = value }
     }
 
     suspend fun setBuiltinSkipDuplicateFrames(enabled: Boolean) {

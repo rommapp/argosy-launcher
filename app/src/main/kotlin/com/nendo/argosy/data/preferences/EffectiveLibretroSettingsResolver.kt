@@ -30,6 +30,7 @@ class EffectiveLibretroSettingsResolver @Inject constructor(
             shaderChainJson = effectiveChainJson,
             filter = perPlatform?.filter ?: global.filter,
             aspectRatio = perPlatform?.aspectRatio ?: global.aspectRatio,
+            portraitPosition = perPlatform?.portraitPosition ?: global.portraitPosition,
             rotation = perPlatform?.rotation ?: global.rotation,
             overscanCrop = perPlatform?.overscanCrop ?: global.overscanCrop,
             skipDuplicateFrames = perPlatform?.skipDuplicateFrames ?: global.skipDuplicateFrames,

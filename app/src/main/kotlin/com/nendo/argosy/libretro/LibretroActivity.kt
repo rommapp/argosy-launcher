@@ -233,6 +233,7 @@ class LibretroActivity : ComponentActivity() {
     private var currentOrientationState by mutableStateOf(android.content.res.Configuration.ORIENTATION_LANDSCAPE)
     private var currentRotationState by mutableStateOf(0)
     private var touchSettingsState by mutableStateOf(com.nendo.argosy.data.preferences.BuiltinEmulatorSettings())
+    private var portraitPositionState by mutableStateOf("Auto")
     private var coreOptionOverrides by mutableStateOf<Map<String, String>>(emptyMap())
     private var gameCoreOptionOverrides by mutableStateOf<Map<String, String>>(emptyMap())
     private var perGameSettingsEnabled by mutableStateOf(false)
@@ -534,6 +535,11 @@ class LibretroActivity : ComponentActivity() {
                 setupRewind(settings)
             }
         }
+        portraitPositionState = settings.portraitPosition
+        videoSettings.onPortraitPositionChanged = { value ->
+            portraitPositionState = value
+            splitColumn?.let { applyPortraitSplit(it) }
+        }
     }
 
     private fun detectBFICapability() {
@@ -662,6 +668,14 @@ class LibretroActivity : ComponentActivity() {
         val splitColumn = android.widget.LinearLayout(this).apply {
             orientation = android.widget.LinearLayout.VERTICAL
             addView(
+                android.widget.Space(this@LibretroActivity),
+                android.widget.LinearLayout.LayoutParams(
+                    android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
+                    0,
+                    0f
+                )
+            )
+            addView(
                 retroView,
                 android.widget.LinearLayout.LayoutParams(
                     android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
@@ -707,14 +721,26 @@ class LibretroActivity : ComponentActivity() {
     private fun applyPortraitSplit(column: android.widget.LinearLayout) {
         val portrait = currentOrientationState == android.content.res.Configuration.ORIENTATION_PORTRAIT
         val overlayWouldShow = touchSettingsState.showTouchControlsWhenNoGamepad && !isGamepadConnectedState
-        val splitWanted = portrait && overlayWouldShow
-        val retroParams = retroView.layoutParams as android.widget.LinearLayout.LayoutParams
-        val spacer = column.getChildAt(1)
-        val spacerParams = spacer.layoutParams as android.widget.LinearLayout.LayoutParams
-        retroParams.weight = 1f
-        spacerParams.weight = if (splitWanted) 1f else 0f
-        retroView.layoutParams = retroParams
-        spacer.layoutParams = spacerParams
+        val position = when {
+            !portrait -> "Center"
+            portraitPositionState == "Top" -> "Top"
+            portraitPositionState == "Center" -> "Center"
+            portraitPositionState == "Bottom" -> "Bottom"
+            else -> if (overlayWouldShow) "Top" else "Center"
+        }
+        val (topWeight, bottomWeight) = when (position) {
+            "Top" -> 0f to 1f
+            "Bottom" -> 1f to 0f
+            else -> 0f to 0f
+        }
+        val spacerTop = column.getChildAt(0)
+        val spacerBottom = column.getChildAt(2)
+        (spacerTop.layoutParams as android.widget.LinearLayout.LayoutParams).weight = topWeight
+        (retroView.layoutParams as android.widget.LinearLayout.LayoutParams).weight = 1f
+        (spacerBottom.layoutParams as android.widget.LinearLayout.LayoutParams).weight = bottomWeight
+        spacerTop.layoutParams = spacerTop.layoutParams
+        retroView.layoutParams = retroView.layoutParams
+        spacerBottom.layoutParams = spacerBottom.layoutParams
         column.requestLayout()
     }
 

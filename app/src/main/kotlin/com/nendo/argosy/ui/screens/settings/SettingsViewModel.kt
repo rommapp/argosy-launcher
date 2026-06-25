@@ -381,6 +381,7 @@ class SettingsViewModel @Inject constructor(
     fun setBuiltinLibretroEnabled(enabled: Boolean) = routeSetBuiltinLibretroEnabled(this, enabled)
     fun setBuiltinFilter(value: String) = routeSetBuiltinFilter(this, value)
     fun setBuiltinAspectRatio(value: String) = routeSetBuiltinAspectRatio(this, value)
+    fun setBuiltinPortraitPosition(value: String) = routeSetBuiltinPortraitPosition(this, value)
     fun setBuiltinSkipDuplicateFrames(enabled: Boolean) = routeSetBuiltinSkipDuplicateFrames(this, enabled)
     fun setBuiltinLowLatencyAudio(enabled: Boolean) = routeSetBuiltinLowLatencyAudio(this, enabled)
     fun setBuiltinVSync(enabled: Boolean) = routeSetBuiltinVSync(this, enabled)
@@ -549,6 +550,7 @@ class SettingsViewModel @Inject constructor(
 
     fun cycleBuiltinFilter(direction: Int) = routeCycleBuiltinFilter(this, direction)
     fun cycleBuiltinAspectRatio(direction: Int) = routeCycleBuiltinAspectRatio(this, direction)
+    fun cycleBuiltinPortraitPosition(direction: Int) = routeCycleBuiltinPortraitPosition(this, direction)
     fun cycleBuiltinFastForwardSpeed(direction: Int) = routeCycleBuiltinFastForwardSpeed(this, direction)
     fun cycleBuiltinAudioVolume(direction: Int) = routeCycleBuiltinAudioVolume(this, direction)
     fun cycleBuiltinRotation(direction: Int) = routeCycleBuiltinRotation(this, direction)

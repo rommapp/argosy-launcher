@@ -389,6 +389,7 @@ data class BuiltinVideoState(
     val shaderChainJson: String = "",
     val filter: String = "Auto",
     val aspectRatio: String = "Core Provided",
+    val portraitPosition: String = "Auto",
     val skipDuplicateFrames: Boolean = false,
     val blackFrameInsertion: Boolean = false,
     val displayRefreshRate: Float = 60f,

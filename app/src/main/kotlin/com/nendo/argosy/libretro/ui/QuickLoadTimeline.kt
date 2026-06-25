@@ -140,7 +140,7 @@ fun QuickLoadTimeline(
                 color = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
                 tonalElevation = 8.dp
             ) {
-                Column(modifier = Modifier.padding(20.dp)) {
+                Column(modifier = Modifier.fillMaxHeight().padding(20.dp)) {
                     Text(
                         text = "Quick Load",
                         style = MaterialTheme.typography.titleMedium,
@@ -151,7 +151,7 @@ fun QuickLoadTimeline(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .heightIn(max = 280.dp),
+                            .weight(1f),
                         horizontalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
                         TimelinePreview(

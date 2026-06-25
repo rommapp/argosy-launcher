@@ -22,6 +22,7 @@ data class RomMPlatform(
     @Json(name = "name") val name: String,
     @Json(name = "fs_slug") val fsSlug: String?,
     @Json(name = "rom_count") val romCount: Int,
+    @Json(name = "custom_name") val customName: String? = null,
     @Json(name = "display_name") val displayName: String? = null,
     @Json(name = "url_logo") val logoUrl: String? = null,
     @Json(name = "firmware") val firmware: List<RomMFirmware>? = null

@@ -300,7 +300,8 @@ class RomMLibrarySyncService @Inject constructor(
         val derivedNames = PlatformDefinitions.getAliasDisplayName(remote.slug)
             ?: PlatformDefinitions.deriveDisplayName(remote.slug)
             ?: PlatformDefinitions.deriveDisplayName(remote.fsSlug)
-        val normalizedName = remote.displayName ?: derivedNames?.first ?: remote.name
+        val normalizedName = remote.customName?.takeIf { it.isNotBlank() }
+            ?: remote.displayName ?: derivedNames?.first ?: remote.name
         val resolvedShortName = derivedNames?.second ?: platformDef?.shortName ?: normalizedName
         val entity = PlatformEntity(
             id = platformId,

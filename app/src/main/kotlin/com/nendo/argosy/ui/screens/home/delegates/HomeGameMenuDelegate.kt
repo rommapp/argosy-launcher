@@ -33,6 +33,7 @@ sealed class GameMenuAction {
     data class ViewDetails(val gameId: Long) : GameMenuAction()
     data class AddToCollection(val gameId: Long) : GameMenuAction()
     data class Refresh(val gameId: Long, val isAndroidApp: Boolean) : GameMenuAction()
+    data class ResyncPlatform(val platformId: Long, val platformName: String) : GameMenuAction()
     data class Delete(val gameId: Long) : GameMenuAction()
     data class RemoveFromHome(val gameId: Long) : GameMenuAction()
     data class Hide(val gameId: Long) : GameMenuAction()
@@ -71,27 +72,30 @@ class HomeGameMenuDelegate @Inject constructor(
         _state.update { it.copy(showGameMenu = false) }
     }
 
-    fun moveGameMenuFocus(delta: Int, focusedGame: HomeGameUi?) {
+    fun moveGameMenuFocus(delta: Int, focusedGame: HomeGameUi?, isPlatformRow: Boolean) {
         _state.update {
             val isDownloaded = focusedGame?.isDownloaded == true
             val needsInstall = focusedGame?.needsInstall == true
             val isRommGame = focusedGame?.isRommGame == true
             val isAndroidApp = focusedGame?.isAndroidApp == true
+            val isSyncable = isPlatformRow && focusedGame != null && focusedGame.platformId > 0
             var maxIndex = if (isDownloaded || needsInstall) MENU_INDEX_MAX_DOWNLOADED else MENU_INDEX_MAX_REMOTE
             if (isRommGame || isAndroidApp) maxIndex++
             if (isAndroidApp) maxIndex++
+            if (isSyncable) maxIndex++
             val newIndex = (it.gameMenuFocusIndex + delta).coerceIn(0, maxIndex)
             it.copy(gameMenuFocusIndex = newIndex)
         }
     }
 
-    fun resolveMenuAction(focusIndex: Int, game: HomeGameUi): GameMenuAction {
+    fun resolveMenuAction(focusIndex: Int, game: HomeGameUi, isPlatformRow: Boolean): GameMenuAction {
         var currentIdx = 0
         val playIdx = currentIdx++
         val favoriteIdx = currentIdx++
         val detailsIdx = currentIdx++
         val addToCollectionIdx = currentIdx++
         val refreshIdx = if (game.isRommGame || game.isAndroidApp) currentIdx++ else -1
+        val resyncIdx = if (isPlatformRow && game.platformId > 0) currentIdx++ else -1
         val deleteIdx = if (game.isDownloaded || game.needsInstall) currentIdx++ else -1
         val removeFromHomeIdx = if (game.isAndroidApp) currentIdx++ else -1
         val hideIdx = currentIdx
@@ -102,6 +106,7 @@ class HomeGameMenuDelegate @Inject constructor(
             detailsIdx -> GameMenuAction.ViewDetails(game.id)
             addToCollectionIdx -> GameMenuAction.AddToCollection(game.id)
             refreshIdx -> GameMenuAction.Refresh(game.id, game.isAndroidApp)
+            resyncIdx -> GameMenuAction.ResyncPlatform(game.platformId, game.platformDisplayName)
             deleteIdx -> GameMenuAction.Delete(game.id)
             removeFromHomeIdx -> GameMenuAction.RemoveFromHome(game.id)
             hideIdx -> GameMenuAction.Hide(game.id)

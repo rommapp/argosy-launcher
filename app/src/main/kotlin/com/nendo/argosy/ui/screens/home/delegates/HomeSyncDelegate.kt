@@ -110,4 +110,18 @@ class HomeSyncDelegate @Inject constructor(
         }
         return action
     }
+
+    fun resyncPlatform(
+        scope: CoroutineScope,
+        platformId: Long,
+        platformName: String,
+        onComplete: suspend () -> Unit
+    ) {
+        scope.launch {
+            if (!platformSyncQueue.enqueuePlatform(platformId, platformName)) return@launch
+            platformSyncQueue.busyPlatformIds.first { platformId !in it }
+            onComplete()
+        }
+    }
 }
+

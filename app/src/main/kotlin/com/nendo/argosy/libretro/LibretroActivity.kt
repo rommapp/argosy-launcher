@@ -1461,6 +1461,10 @@ class LibretroActivity : ComponentActivity() {
             InGameMenuAction.CustomizeTouchControls -> {
                 enterTouchEditMode()
             }
+            InGameMenuAction.Reset -> {
+                retroView.reset()
+                hideMenu()
+            }
             InGameMenuAction.Quit -> {
                 menuVisible = false
                 isClosing = true

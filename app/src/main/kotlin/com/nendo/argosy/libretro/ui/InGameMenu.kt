@@ -46,6 +46,7 @@ sealed class InGameMenuAction {
     data object ManageStates : InGameMenuAction()
     data object Settings : InGameMenuAction()
     data object Cheats : InGameMenuAction()
+    data object Reset : InGameMenuAction()
     data object Quit : InGameMenuAction()
     data object OpenToFriends : InGameMenuAction()
     data object InviteFriend : InGameMenuAction()
@@ -140,6 +141,9 @@ fun InGameMenu(
             add("Settings" to InGameMenuAction.Settings)
             if (touchControlsVisible) {
                 add("Touch Controls" to InGameMenuAction.CustomizeTouchControls)
+            }
+            if (!isInNetplaySession) {
+                add("Reset" to InGameMenuAction.Reset)
             }
             add("Quit Game" to InGameMenuAction.Quit)
         }

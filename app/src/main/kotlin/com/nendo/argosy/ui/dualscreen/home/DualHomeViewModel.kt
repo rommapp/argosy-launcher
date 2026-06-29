@@ -608,7 +608,7 @@ class DualHomeViewModel(
     fun toggleFavorite() {
         val game = _uiState.value.selectedGame ?: return
         viewModelScope.launch {
-            gameRepository.updateFavorite(game.id, !game.isFavorite)
+            gameRepository.updateFavoriteWithSync(game.id, !game.isFavorite)
             loadGamesForCurrentSection()
         }
     }

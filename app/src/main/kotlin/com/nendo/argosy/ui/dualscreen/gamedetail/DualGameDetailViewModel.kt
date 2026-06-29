@@ -843,7 +843,7 @@ class DualGameDetailViewModel(
         val newFavorite = !state.isFavorite
         _uiState.update { it.copy(isFavorite = newFavorite) }
         viewModelScope.launch {
-            gameRepository.updateFavorite(state.gameId, newFavorite)
+            gameRepository.updateFavoriteWithSync(state.gameId, newFavorite)
         }
     }
 

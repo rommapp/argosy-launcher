@@ -766,6 +766,15 @@ class GameRepository @Inject constructor(
     suspend fun updateFavorite(gameId: Long, favorite: Boolean) =
         gameDao.updateFavorite(gameId, favorite)
 
+    suspend fun updateFavoriteWithSync(gameId: Long, favorite: Boolean) {
+        val rommId = gameDao.getById(gameId)?.rommId
+        if (rommId != null) {
+            romMRepository.toggleFavoriteWithSync(gameId, rommId, favorite)
+        } else {
+            gameDao.updateFavorite(gameId, favorite)
+        }
+    }
+
     suspend fun updateHidden(gameId: Long, hidden: Boolean) =
         gameDao.updateHidden(gameId, hidden)
 

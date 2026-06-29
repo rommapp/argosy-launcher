@@ -96,32 +96,17 @@ class RomMCollectionSyncService @Inject constructor(
 
             val remoteRommIds = collection.romIds.toSet()
             val localRommIds = gameDao.getFavoriteRommIds().toSet()
-            val prefs = userPreferencesRepository.preferences.first()
-            val isFirstSync = prefs.lastFavoritesSync == null
 
-            if (isFirstSync) {
-                val mergedIds = (remoteRommIds + localRommIds).toList()
-                Logger.info(TAG, "syncFavorites: first sync, merging ${remoteRommIds.size} remote + ${localRommIds.size} local = ${mergedIds.size} total")
+            val mergedIds = (remoteRommIds + localRommIds).toList()
+            Logger.info(TAG, "syncFavorites: merging ${remoteRommIds.size} remote + ${localRommIds.size} local = ${mergedIds.size} total")
 
-                val result = updateFavoritesCollection(collection.id, mergedIds)
-                if (result != null) {
-                    if (mergedIds.isNotEmpty()) {
-                        gameDao.setFavoritesByRommIds(mergedIds)
-                    }
-                    parseTimestamp(result.updatedAt)?.let { userPreferencesRepository.setLastFavoritesSyncTime(it) }
-                    userPreferencesRepository.setLastFavoritesCheckTime(Instant.now())
-                    return RomMResult.Success(Unit)
-                }
-                return RomMResult.Error("Failed to update favorites collection")
+            val result = updateFavoritesCollection(collection.id, mergedIds)
+                ?: return RomMResult.Error("Failed to update favorites collection")
+
+            if (mergedIds.isNotEmpty()) {
+                gameDao.setFavoritesByRommIds(mergedIds)
             }
-
-            if (remoteRommIds.isNotEmpty()) {
-                gameDao.setFavoritesByRommIds(remoteRommIds.toList())
-                gameDao.clearFavoritesNotInRommIds(remoteRommIds.toList())
-            } else {
-                gameDao.clearFavoritesNotInRommIds(emptyList())
-            }
-            parseTimestamp(collection.updatedAt)?.let { userPreferencesRepository.setLastFavoritesSyncTime(it) }
+            parseTimestamp(result.updatedAt)?.let { userPreferencesRepository.setLastFavoritesSyncTime(it) }
             userPreferencesRepository.setLastFavoritesCheckTime(Instant.now())
 
             RomMResult.Success(Unit)

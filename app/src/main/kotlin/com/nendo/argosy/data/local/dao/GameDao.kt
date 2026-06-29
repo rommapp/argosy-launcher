@@ -192,9 +192,6 @@ interface GameDao {
     @Query("UPDATE games SET isFavorite = 1 WHERE rommId IN (:rommIds)")
     suspend fun setFavoritesByRommIds(rommIds: List<Long>)
 
-    @Query("UPDATE games SET isFavorite = 0 WHERE rommId IS NOT NULL AND rommId NOT IN (:rommIds)")
-    suspend fun clearFavoritesNotInRommIds(rommIds: List<Long>)
-
     @Query("UPDATE games SET isFavorite = 1 WHERE rommId = :rommId")
     suspend fun setFavoriteByRommId(rommId: Long)
 

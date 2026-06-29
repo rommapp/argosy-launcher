@@ -594,14 +594,17 @@ class HomeViewModel @Inject constructor(
     override fun toggleGameMenu() = gameMenuDelegate.toggleGameMenu()
 
     override fun moveGameMenuFocus(delta: Int) {
-        gameMenuDelegate.moveGameMenuFocus(delta, _uiState.value.focusedGame)
+        val state = _uiState.value
+        val isPlatformRow = state.currentRow is HomeRow.Platform
+        gameMenuDelegate.moveGameMenuFocus(delta, state.focusedGame, isPlatformRow)
     }
 
     override fun confirmGameMenuSelection(onGameSelect: (Long) -> Unit) {
         val state = _uiState.value
         val game = state.focusedGame ?: return
+        val isPlatformRow = state.currentRow is HomeRow.Platform
 
-        when (val action = gameMenuDelegate.resolveMenuAction(state.gameMenuFocusIndex, game)) {
+        when (val action = gameMenuDelegate.resolveMenuAction(state.gameMenuFocusIndex, game, isPlatformRow)) {
             is GameMenuAction.Play -> {
                 toggleGameMenu()
                 when {
@@ -626,6 +629,10 @@ class HomeViewModel @Inject constructor(
                 if (action.isAndroidApp) refreshAndroidGameData(action.gameId)
                 else refreshGameData(action.gameId)
             }
+            is GameMenuAction.ResyncPlatform -> {
+                toggleGameMenu()
+                syncPlatform(action.platformId, action.platformName)
+            }
             is GameMenuAction.Delete -> {
                 toggleGameMenu()
                 deleteLocalFile(action.gameId)
@@ -638,6 +645,12 @@ class HomeViewModel @Inject constructor(
                 toggleGameMenu()
                 hideGame(action.gameId)
             }
+        }
+    }
+
+    fun syncPlatform(platformId: Long, platformName: String) {
+        syncDelegate.resyncPlatform(viewModelScope, platformId, platformName) {
+            refreshCurrentRowInternal()
         }
     }
 

@@ -773,6 +773,7 @@ fun HomeScreen(
             if (focusedGame != null) {
                 GameSelectOverlay(
                     game = focusedGame,
+                    isPlatformRow = uiState.currentRow is HomeRow.Platform,
                     focusIndex = uiState.gameMenuFocusIndex,
                     onDismiss = { viewModel.toggleGameMenu() },
                     onPrimaryAction = {
@@ -794,6 +795,10 @@ fun HomeScreen(
                         viewModel.showAddToCollectionModal(focusedGame.id)
                     },
                     onRefresh = { viewModel.refreshGameData(focusedGame.id) },
+                    onResyncPlatform = {
+                        viewModel.toggleGameMenu()
+                        viewModel.syncPlatform(focusedGame.platformId, focusedGame.platformDisplayName)
+                    },
                     onDelete = {
                         viewModel.toggleGameMenu()
                         viewModel.deleteLocalFile(focusedGame.id)
@@ -1504,6 +1509,7 @@ private fun EmptyState(
 @Composable
 private fun GameSelectOverlay(
     game: HomeGameUi,
+    isPlatformRow: Boolean,
     focusIndex: Int,
     onDismiss: () -> Unit,
     onPrimaryAction: () -> Unit,
@@ -1511,6 +1517,7 @@ private fun GameSelectOverlay(
     onDetails: () -> Unit,
     onAddToCollection: () -> Unit,
     onRefresh: () -> Unit,
+    onResyncPlatform: () -> Unit,
     onDelete: () -> Unit,
     onRemoveFromHome: () -> Unit,
     onHide: () -> Unit
@@ -1540,6 +1547,9 @@ private fun GameSelectOverlay(
         add(MenuEntry(Icons.AutoMirrored.Filled.PlaylistAdd, "Add to Collection", onClick = onAddToCollection))
         if (game.isRommGame || game.isAndroidApp) {
             add(MenuEntry(Icons.Default.Refresh, "Refresh Data", onClick = onRefresh))
+        }
+        if (isPlatformRow && game.platformId > 0) {
+            add(MenuEntry(Icons.Default.Refresh, "Resync Platform", onClick = onResyncPlatform))
         }
     }
     val dangerousOptions = buildList {

@@ -306,6 +306,35 @@ class GameRepository @Inject constructor(
         repaired
     }
 
+    suspend fun repairUnnecessaryM3uPointers(): Int = withContext(Dispatchers.IO) {
+        if (!isStorageReady()) {
+            Log.w(TAG, "repairUnnecessaryM3uPointers: storage not ready, skipping")
+            return@withContext 0
+        }
+
+        var repaired = 0
+        for (info in gameDao.getGamesWithLocalPathInfo()) {
+            val path = info.localPath ?: continue
+            val m3u = File(path)
+            if (!m3u.extension.equals("m3u", ignoreCase = true)) continue
+            if (M3uManager.isMultiDiscContainer(m3u)) continue
+
+            val replacement = M3uManager.parseFirstDisc(m3u)
+            if (replacement == null) {
+                Log.w(TAG, "Unnecessary m3u for game ${info.id} ($path) but no launch target found")
+                continue
+            }
+
+            gameDao.updateLocalPath(info.id, replacement.absolutePath, info.source)
+            gameDao.updateM3uPath(info.id, null)
+            if (m3u.absolutePath != replacement.absolutePath) m3u.delete()
+            repaired++
+            Log.i(TAG, "Repaired unnecessary m3u for game ${info.id} (${info.platformSlug}): $path -> ${replacement.absolutePath}")
+        }
+        if (repaired > 0) Log.i(TAG, "Repaired $repaired unnecessary m3u pointers")
+        repaired
+    }
+
     private suspend fun rebaseToFolderBase(
         gameId: Long,
         platformSlug: String,

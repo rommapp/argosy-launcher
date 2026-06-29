@@ -341,6 +341,10 @@ class GameLauncher @Inject constructor(
                     Logger.debug(TAG, "Generated m3u: ${m3uResult.m3uFile.name}")
                     m3uResult.m3uFile
                 }
+                is M3uResult.SingleDisc -> {
+                    Logger.debug(TAG, "Single runnable disc - launching ${m3uResult.discFile.name} directly")
+                    m3uResult.discFile
+                }
                 is M3uResult.NotApplicable -> {
                     Logger.debug(TAG, "M3u not applicable: ${m3uResult.reason}, falling back to disc 1")
                     File(discs.minByOrNull { it.discNumber }!!.localPath!!)

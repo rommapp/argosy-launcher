@@ -5,6 +5,8 @@ import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.dao.GameDiscDao
 import com.nendo.argosy.data.local.entity.GameDiscEntity
 import com.nendo.argosy.data.local.entity.GameEntity
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.io.File
 import java.nio.charset.Charset
 import javax.inject.Inject
@@ -15,6 +17,7 @@ private const val TAG = "M3uManager"
 sealed class M3uResult {
     data class Valid(val m3uFile: File) : M3uResult()
     data class Generated(val m3uFile: File) : M3uResult()
+    data class SingleDisc(val discFile: File) : M3uResult()
     data class NotApplicable(val reason: String) : M3uResult()
     data class Error(val message: String) : M3uResult()
 }
@@ -26,6 +29,7 @@ class M3uManager @Inject constructor(
 ) {
     companion object {
         private val SUPPORTED_PLATFORMS = setOf("psx", "saturn", "dreamcast", "dc")
+        private val DISC_IMAGE_EXTENSIONS = setOf("cue", "gdi", "chd", "iso", "bin", "img", "mdf", "cdi")
 
         fun supportsM3u(platformSlug: String): Boolean = platformSlug in SUPPORTED_PLATFORMS
 
@@ -39,8 +43,32 @@ class M3uManager @Inject constructor(
 
             return parseM3uLines(m3uFile).mapNotNull { line ->
                 val discFile = File(parentDir, line)
-                if (discFile.exists()) discFile else null
+                if (discFile.isFile) discFile else null
             }
+        }
+
+        fun isMultiDiscContainer(m3uFile: File): Boolean =
+            parseAllDiscs(m3uFile)
+                .filter { it.extension.lowercase() in DISC_IMAGE_EXTENSIONS }
+                .distinctBy { it.absolutePath }
+                .size >= 2
+
+        fun resolveLaunchableFile(discPath: File): File? {
+            if (discPath.isFile) return discPath
+            if (!discPath.isDirectory) return null
+
+            val files = discPath.walkTopDown()
+                .filter { it.isFile && !it.name.startsWith("._") }
+                .sortedBy { it.name }
+                .toList()
+
+            files.firstOrNull { it.extension.lowercase() == "m3u" }
+                ?.let { return parseFirstDisc(it) }
+            files.firstOrNull { it.extension.lowercase() in setOf("cue", "gdi") }
+                ?.let { return it }
+            return files.filter { it.extension.lowercase() == "chd" }.maxByOrNull { it.length() }
+                ?: files.filter { it.extension.lowercase() in setOf("iso", "bin", "img", "cdi") }.maxByOrNull { it.length() }
+                ?: files.maxByOrNull { it.length() }
         }
 
         fun isM3uComplete(m3uFile: File): Boolean {
@@ -50,7 +78,7 @@ class M3uManager @Inject constructor(
             val lines = parseM3uLines(m3uFile)
             if (lines.isEmpty()) return false
 
-            return lines.all { line -> File(parentDir, line).exists() }
+            return lines.all { line -> File(parentDir, line).isFile }
         }
 
         private fun parseM3uLines(m3uFile: File): List<String> {
@@ -141,22 +169,35 @@ class M3uManager @Inject constructor(
         return generateM3u(game, discs)
     }
 
-    private suspend fun generateM3u(game: GameEntity, discs: List<GameDiscEntity>): M3uResult {
+    private suspend fun generateM3u(game: GameEntity, discs: List<GameDiscEntity>): M3uResult = withContext(Dispatchers.IO) {
         val firstDiscPath = discs.firstOrNull { it.localPath != null }?.localPath
-            ?: return M3uResult.Error("No disc paths available")
+            ?: return@withContext M3uResult.Error("No disc paths available")
 
         val parentDir = File(firstDiscPath).parentFile
-            ?: return M3uResult.Error("Could not determine parent directory")
+            ?: return@withContext M3uResult.Error("Could not determine parent directory")
+
+        val launchableFiles = discs
+            .filter { it.localPath != null }
+            .sortedBy { it.discNumber }
+            .mapNotNull { resolveLaunchableFile(File(it.localPath!!)) }
+            .distinctBy { it.absolutePath }
+        when {
+            launchableFiles.isEmpty() -> return@withContext M3uResult.Error("No launchable disc files for game")
+            launchableFiles.size == 1 -> {
+                game.m3uPath?.let { File(it).takeIf(File::isFile)?.delete() }
+                gameDao.updateM3uPath(game.id, null)
+                return@withContext M3uResult.SingleDisc(launchableFiles.first())
+            }
+        }
 
         val m3uFileName = sanitizeFileName(game.title) + ".m3u"
         val m3uFile = File(parentDir, m3uFileName)
 
-        val content = discs
-            .filter { it.localPath != null }
-            .sortedBy { it.discNumber }
-            .joinToString("\n") { File(it.localPath!!).name }
+        val content = launchableFiles.joinToString("\n") {
+            it.relativeToOrNull(parentDir)?.path ?: it.name
+        }
 
-        return try {
+        try {
             m3uFile.writeText(content, Charset.forName("US-ASCII"))
             gameDao.updateM3uPath(game.id, m3uFile.absolutePath)
             Log.d(TAG, "Generated m3u: ${m3uFile.absolutePath}")
@@ -176,6 +217,11 @@ class M3uManager @Inject constructor(
         val m3uDir = m3uFile.parentFile ?: return false
         val lines = parseM3uLines(m3uFile)
 
+        if (lines.size < 2) {
+            Log.d(TAG, "M3u has ${lines.size} entries - a playlist needs at least 2")
+            return false
+        }
+
         if (lines.size != discs.size) {
             Log.d(TAG, "M3u line count (${lines.size}) doesn't match disc count (${discs.size})")
             return false
@@ -183,8 +229,8 @@ class M3uManager @Inject constructor(
 
         for (line in lines) {
             val referencedFile = File(m3uDir, line)
-            if (!referencedFile.exists()) {
-                Log.d(TAG, "Referenced file does not exist: ${referencedFile.absolutePath}")
+            if (!referencedFile.isFile) {
+                Log.d(TAG, "Referenced entry is not a file: ${referencedFile.absolutePath}")
                 return false
             }
         }

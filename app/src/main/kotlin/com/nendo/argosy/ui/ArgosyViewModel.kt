@@ -337,6 +337,7 @@ class ArgosyViewModel @Inject constructor(
 
                 gameRepository.repairFolderRomPointers()
                 gameRepository.repairVariantFilePointers()
+                gameRepository.repairUnnecessaryM3uPointers()
 
                 runWeeklyIntegrityCheckIfDue()
 

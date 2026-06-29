@@ -344,10 +344,11 @@ object SavePathRegistry {
         "nethersx2" to SavePathConfig(
             emulatorId = "nethersx2",
             defaultPaths = listOf(
-                "{extStorage}/Android/data/xyz.aethersx2.android/files/memcards"
+                "{extStorage}/Android/data/{package}/files/memcards"
             ),
             saveExtensions = listOf("*"),
             usesFolderBasedSaves = true,
+            usesPackageTemplate = true,
             supported = true
         ),
         "aethersx2" to SavePathConfig(
@@ -562,7 +563,8 @@ object SavePathRegistry {
         "org.dolphinemu" to "dolphin",
         "dev.eden" to "eden",
         "dev.legacy.eden" to "eden",
-        "org.eden" to "eden"
+        "org.eden" to "eden",
+        "xyz.aethersx2" to "nethersx2"
     )
 
     fun getConfig(emulatorId: String): SavePathConfig? {

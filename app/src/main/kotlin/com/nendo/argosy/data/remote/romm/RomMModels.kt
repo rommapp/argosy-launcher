@@ -99,7 +99,7 @@ data class RomMRom(
         get() = multi || hasMultipleFiles || hasNestedSingleFile
 
     val needsServerBuiltZipExtraction: Boolean
-        get() = hasMultipleFiles || (multi && !hasNestedSingleFile && !hasSimpleSingleFile)
+        get() = (files?.size ?: 0) > 1
 
     val isFolderMultiDisc: Boolean
         get() = hasMultipleFiles && files?.any { it.isDiscVariant } == true

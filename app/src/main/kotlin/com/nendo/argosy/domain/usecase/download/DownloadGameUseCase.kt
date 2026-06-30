@@ -79,30 +79,14 @@ class DownloadGameUseCase @Inject constructor(
                 var fileName: String
                 val expectedSize: Long
 
-                if (rom.isFolderRom) {
-                    // RomM streams the inner file's raw bytes for nested-single-file
-                    // folder roms (one playable file inside a subfolder). Use the
-                    // inner file's own name so the download lands with the right
-                    // extension and the emulator can open it directly. Only the
-                    // true multi-file case gets zipped server-side -- fall back to
-                    // the folder-as-zip naming there.
-                    val nestedSingle = rom.hasNestedSingleFile && !rom.hasMultipleFiles
-                    val mainFile = rom.files
-                        ?.filter { it.category == null && !it.fileName.startsWith(".") }
-                        ?.takeIf { nestedSingle }
-                        ?.maxByOrNull { it.fileSizeBytes }
-                    if (mainFile != null) {
-                        fileName = mainFile.fileName
-                        expectedSize = mainFile.fileSizeBytes
-                    } else {
-                        val folderName = rom.fileName ?: game.title
-                        fileName = if (folderName.contains('.')) folderName
-                            else "$folderName.zip"
-                        expectedSize = rom.fileSize
-                    }
+                if (rom.needsServerBuiltZipExtraction) {
+                    val folderName = rom.fileName ?: game.title
+                    fileName = if (folderName.contains('.')) folderName
+                        else "$folderName.zip"
+                    expectedSize = rom.fileSize
                 } else {
                     val mainFile = rom.files
-                        ?.filter { it.category == null && !it.fileName.startsWith(".") }
+                        ?.filter { !it.fileName.startsWith(".") }
                         ?.maxByOrNull { it.fileSizeBytes }
                     fileName = mainFile?.fileName
                         ?: rom.fileName

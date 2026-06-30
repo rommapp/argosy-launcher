@@ -567,7 +567,7 @@ class GameDetailViewModel @Inject constructor(
                     UpdateFileUi(
                         fileName = file.fileName, filePath = file.filePath,
                         sizeBytes = file.fileSize, type = UpdateFileType.UPDATE,
-                        isDownloaded = file.fileName in localUpdateFileNames,
+                        isDownloaded = file.isLocallyPresent() || file.fileName in localUpdateFileNames,
                         gameFileId = file.id, rommFileId = file.rommFileId, romId = file.romId
                     )
                 }
@@ -576,7 +576,7 @@ class GameDetailViewModel @Inject constructor(
                     UpdateFileUi(
                         fileName = file.fileName, filePath = file.filePath,
                         sizeBytes = file.fileSize, type = UpdateFileType.DLC,
-                        isDownloaded = file.fileName in localDlcFileNames,
+                        isDownloaded = file.isLocallyPresent() || file.fileName in localDlcFileNames,
                         gameFileId = file.id, rommFileId = file.rommFileId, romId = file.romId
                     )
                 }

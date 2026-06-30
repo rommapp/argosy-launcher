@@ -4,6 +4,7 @@ import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
+import java.io.File
 import java.time.Instant
 
 @Entity(
@@ -37,4 +38,6 @@ data class GameFileEntity(
     val isMultiDisc: Boolean = false,
     val m3uPath: String? = null,
     val romHashPrefix: String? = null
-)
+) {
+    fun isLocallyPresent(): Boolean = localPath?.let { File(it).exists() } == true
+}

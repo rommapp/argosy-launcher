@@ -21,6 +21,7 @@ import com.nendo.argosy.data.emulator.EmulatorResolver
 import com.nendo.argosy.data.emulator.M3uManager
 import com.nendo.argosy.DualScreenManagerHolder
 import dagger.hilt.android.qualifiers.ApplicationContext
+import com.nendo.argosy.util.Logger
 import com.nendo.argosy.util.SafeCoroutineScope
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -390,6 +391,11 @@ class DownloadManager @Inject constructor(
         )
 
         val id = downloadQueueDao.insert(entity)
+        Logger.info(
+            TAG,
+            "Enqueue base rom | game=$gameTitle gameId=$gameId rommId=$rommId " +
+                "file=$fileName platform=$platformSlug multiFile=$isMultiFileRom"
+        )
 
         val progress = DownloadProgress(
             id = id,
@@ -493,14 +499,17 @@ class DownloadManager @Inject constructor(
         if (currentState.activeDownloads.any { it.gameFileId == gameFileId }) return
         if (currentState.queue.any { it.gameFileId == gameFileId }) return
 
-        val folderName = gameFolderName ?: gameTitle
-        val platformDir = getDownloadDir(platformSlug)
-        val gameFolder = getGameFolder(platformSlug, folderName)
+        val gameFolder = resolveAddonFolder(gameId, platformSlug, gameFolderName, gameTitle)
         val useExtcontent = ZipExtractor.isNswPlatform(platformSlug) &&
             isEdenEmulator(gameId, platformSlug)
         val categoryFolder = File(gameFolder, if (useExtcontent) "extcontent" else category)
             .apply { mkdirs() }
         val tempFilePath = File(categoryFolder, "${fileName}.tmp").absolutePath
+        Logger.info(
+            TAG,
+            "Enqueue $category | game=$gameTitle gameId=$gameId rommFileId=$rommFileId " +
+                "file=$fileName folder=${gameFolder.name} extcontent=$useExtcontent"
+        )
 
         val entity = DownloadQueueEntity(
             gameId = gameId,
@@ -556,6 +565,23 @@ class DownloadManager @Inject constructor(
             .trim()
             .take(200)
         return File(platformDir, sanitizedTitle).apply { mkdirs() }
+    }
+
+    private suspend fun resolveAddonFolder(
+        gameId: Long,
+        platformSlug: String,
+        gameFolderName: String?,
+        gameTitle: String
+    ): File {
+        val platformDir = getDownloadDir(platformSlug)
+        val baseParent = gameDao.getById(gameId)?.localPath?.let { File(it).parentFile }
+        return if (baseParent != null && baseParent.isDirectory &&
+            baseParent.absolutePath != platformDir.absolutePath
+        ) {
+            baseParent
+        } else {
+            getGameFolder(platformSlug, gameFolderName ?: gameTitle)
+        }
     }
 
     private suspend fun processQueue() {
@@ -677,7 +703,9 @@ class DownloadManager @Inject constructor(
 
                 // Game file downloads (DLC/updates) go to category subfolders
                 val downloadDir = if (progress.isGameFileDownload && progress.fileCategory != null) {
-                    val gameFolder = getGameFolder(progress.platformSlug, progress.gameFolderName ?: progress.gameTitle)
+                    val gameFolder = resolveAddonFolder(
+                        progress.gameId, progress.platformSlug, progress.gameFolderName, progress.gameTitle
+                    )
                     val useExtcontent = ZipExtractor.isNswPlatform(progress.platformSlug) &&
                         isEdenEmulator(progress.gameId, progress.platformSlug)
                     File(gameFolder, if (useExtcontent) "extcontent" else progress.fileCategory)
@@ -713,6 +741,13 @@ class DownloadManager @Inject constructor(
 
                 val rangeHeader = if (existingBytes > 0) "bytes=$existingBytes-" else null
 
+                val endpoint = if (progress.isGameFileDownload) "files/content" else "content"
+                Logger.info(
+                    TAG,
+                    "Download request | game=${progress.gameTitle} gameId=${progress.gameId} " +
+                        "endpoint=$endpoint id=${progress.rommId} file=${progress.fileName} " +
+                        "dir=${downloadDir.name} resume=${rangeHeader != null}"
+                )
                 val downloadCall = if (progress.isGameFileDownload) {
                     romMRepository.downloadRomFile(progress.rommId, progress.fileName, rangeHeader)
                 } else {
@@ -839,12 +874,22 @@ class DownloadManager @Inject constructor(
                                 return@withContext downloadRom(progress.copy(bytesDownloaded = 0))
                             }
                         }
+                        Logger.warn(
+                            TAG,
+                            "Download failed | game=${progress.gameTitle} id=${progress.rommId} " +
+                                "file=${progress.fileName} code=${result.code} msg=${result.message}"
+                        )
                         DownloadResult.Failure(result.message)
                     }
                 }
             } catch (_: CancellationException) {
                 DownloadResult.Cancelled
             } catch (e: Exception) {
+                Logger.warn(
+                    TAG,
+                    "Download error | game=${progress.gameTitle} id=${progress.rommId} file=${progress.fileName}",
+                    e
+                )
                 DownloadResult.Failure(e.message ?: "Unknown error")
             }
         }
@@ -881,9 +926,17 @@ class DownloadManager @Inject constructor(
         Log.d(TAG, "finalizeCompletedFile: path=$finalPath, gameTitle=${progress.gameTitle}")
 
         if (progress.isGameFileDownload && !File(finalPath).exists()) {
-            Log.w(TAG, "finalizeCompletedFile: downloaded file missing at $finalPath; not registering")
+            Logger.warn(
+                TAG,
+                "Download finalize failed | game=${progress.gameTitle} file=${progress.fileName} " +
+                    "missing at $finalPath"
+            )
             return DownloadResult.Failure("Downloaded file not found")
         }
+        Logger.info(
+            TAG,
+            "Download complete | game=${progress.gameTitle} file=${progress.fileName} path=$finalPath"
+        )
 
         when {
             progress.isGameFileDownload && progress.gameFileId != null -> {

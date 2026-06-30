@@ -1060,7 +1060,7 @@ class DualGameDetailViewModel(
         } else emptySet()
 
         val dbUpdates = remoteFiles.filter { it.category == "update" }.map { file ->
-            val downloaded = file.fileName in localUpdateFileNames
+            val downloaded = file.isLocallyPresent() || file.fileName in localUpdateFileNames
             UpdateFileUi(
                 fileName = file.fileName, filePath = file.filePath,
                 sizeBytes = file.fileSize, type = UpdateFileType.UPDATE,
@@ -1071,7 +1071,7 @@ class DualGameDetailViewModel(
         }
 
         val dbDlc = remoteFiles.filter { it.category == "dlc" }.map { file ->
-            val downloaded = file.fileName in localDlcFileNames
+            val downloaded = file.isLocallyPresent() || file.fileName in localDlcFileNames
             UpdateFileUi(
                 fileName = file.fileName, filePath = file.filePath,
                 sizeBytes = file.fileSize, type = UpdateFileType.DLC,

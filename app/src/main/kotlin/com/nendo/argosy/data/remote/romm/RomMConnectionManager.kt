@@ -27,6 +27,7 @@ import javax.inject.Singleton
 
 private const val TAG = "RomMConnectionManager"
 private const val MIN_DEVICE_API_VERSION = "4.7.0"
+private const val DOWNLOAD_STALL_TIMEOUT_SECONDS = 300
 
 private val DEVICE_AUTH_SCOPES = listOf(
     "me.read", "me.write",
@@ -529,8 +530,19 @@ class RomMConnectionManager @Inject constructor(
             chain.proceed(request)
         }
 
+        val downloadTimeoutInterceptor = Interceptor { chain ->
+            if (chain.request().url.encodedPath.contains("/content")) {
+                chain.withReadTimeout(DOWNLOAD_STALL_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+                    .withWriteTimeout(DOWNLOAD_STALL_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+                    .proceed(chain.request())
+            } else {
+                chain.proceed(chain.request())
+            }
+        }
+
         val client = OkHttpClient.Builder()
             .addInterceptor(authInterceptor)
+            .addInterceptor(downloadTimeoutInterceptor)
             .addInterceptor(loggingInterceptor)
             .connectTimeout(30, TimeUnit.SECONDS)
             .readTimeout(60, TimeUnit.SECONDS)

@@ -75,7 +75,7 @@ class RomMApiClient @Inject constructor(
             val response = currentApi.downloadRom(romId, fileName, rangeHeader)
             interpretDownloadResponse(response, "ROM")
         } catch (e: Exception) {
-            RomMResult.Error(e.message ?: "Download failed")
+            RomMResult.Error(downloadErrorMessage(e))
         }
     }
 
@@ -89,8 +89,15 @@ class RomMApiClient @Inject constructor(
             val response = currentApi.downloadRomFile(fileId, fileName, rangeHeader)
             interpretDownloadResponse(response, "File")
         } catch (e: Exception) {
-            RomMResult.Error(e.message ?: "Download failed")
+            RomMResult.Error(downloadErrorMessage(e))
         }
+    }
+
+    private fun downloadErrorMessage(e: Exception): String = when (e) {
+        is java.net.SocketTimeoutException -> "Download timed out - check your connection"
+        is java.net.UnknownHostException -> "Can't reach server - check your connection"
+        is java.io.IOException -> "Network error during download"
+        else -> e.message ?: "Download failed"
     }
 
     private fun interpretDownloadResponse(

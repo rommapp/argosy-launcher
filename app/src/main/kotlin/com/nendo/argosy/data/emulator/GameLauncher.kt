@@ -177,6 +177,27 @@ class GameLauncher @Inject constructor(
 
         romFile = resolveBaseRomFile(game, romFile)
 
+        return launchResolvedRom(
+            game = game,
+            initialRomFile = romFile,
+            forResume = forResume,
+            selectedDiscPath = selectedDiscPath,
+            cacheKey = PRIMARY_CACHE_KEY,
+            isPrimary = true,
+        )
+    }
+
+    private suspend fun launchResolvedRom(
+        game: GameEntity,
+        initialRomFile: File,
+        forResume: Boolean,
+        selectedDiscPath: String?,
+        cacheKey: String,
+        isPrimary: Boolean,
+    ): LaunchResult {
+        val gameId = game.id
+        var romFile = initialRomFile
+
         val emulator = resolveEmulator(game)
             ?: return LaunchResult.NoEmulator(game.platformSlug).also {
                 Logger.warn(TAG, "launch() failed: no emulator found for platform=${game.platformSlug}")
@@ -192,13 +213,10 @@ class GameLauncher @Inject constructor(
             migrateToExtcontent(game)
         }
 
-        // Extract ZIP/7z archives only for the built-in (in-process) emulator. External emulators
-        // such as RetroArch handle archives natively and would receive a wrong file path here.
         if (emulator.launchConfig.isInProcess) {
-            romFile = extractArchiveIfNeeded(romFile, game)
+            romFile = extractArchiveIfNeeded(romFile, game, cacheKey)
         }
 
-        // For m3u files on platforms that don't support m3u launching, prompt for disc selection
         if (romFile.extension.lowercase() == "m3u" && !M3uManager.supportsM3u(game.platformSlug)) {
             val discFiles = M3uManager.parseAllDiscs(romFile)
             if (discFiles.size > 1 && selectedDiscPath == null) {
@@ -212,7 +230,6 @@ class GameLauncher @Inject constructor(
                 Logger.info(TAG, "${game.platformSlug} has ${discFiles.size} discs in m3u - prompting for selection")
                 return LaunchResult.SelectDisc(gameId, discOptions)
             }
-            // Use selected disc or fall back to first disc
             romFile = if (selectedDiscPath != null) {
                 File(selectedDiscPath).also {
                     Logger.info(TAG, "Using selected disc: ${it.name}")
@@ -220,12 +237,10 @@ class GameLauncher @Inject constructor(
             } else {
                 discFiles.firstOrNull() ?: romFile
             }
-        } else {
-            // For m3u files, validate and fall back to disc file if broken
+        } else if (isPrimary) {
             romFile = validateAndResolveLaunchFile(game, romFile)
         }
 
-        // Apply extension preference if needed (lazy rename on launch)
         romFile = applyExtensionPreferenceIfNeeded(game, romFile)
 
         val intent = buildIntent(emulator, romFile, game, forResume)
@@ -284,12 +299,14 @@ class GameLauncher @Inject constructor(
             return LaunchResult.Error("Variant M3U file not found")
         }
 
-        // Single-file variant.
-        val emulator = resolveEmulator(game) ?: return LaunchResult.NoEmulator(game.platformSlug)
-        val intent = buildIntent(emulator, variantFile, game, forResume) ?: return LaunchResult.NoCore(game.platformSlug, lastCoreDownloadError)
-        gameDao.recordPlayStart(game.id, java.time.Instant.now())
-        val alreadyLaunched = intent.getBooleanExtra(EXTRA_ALREADY_LAUNCHED, false)
-        return LaunchResult.Success(intent, alreadyLaunched = alreadyLaunched)
+        return launchResolvedRom(
+            game = game,
+            initialRomFile = variantFile,
+            forResume = forResume,
+            selectedDiscPath = null,
+            cacheKey = variantCacheKey(variant.id),
+            isPrimary = false,
+        )
     }
 
     private suspend fun launchMultiDiscGame(game: GameEntity, requestedDiscId: Long?, forResume: Boolean): LaunchResult {
@@ -1748,8 +1765,8 @@ class GameLauncher @Inject constructor(
         return romFile
     }
 
-    private fun getRomCacheDir(platformSlug: String, gameId: Long): File {
-        return File(context.filesDir, "rom_cache/$platformSlug/$gameId")
+    private fun getRomCacheDir(platformSlug: String, gameId: Long, cacheKey: String): File {
+        return File(context.filesDir, "rom_cache/$platformSlug/$gameId/$cacheKey")
     }
 
     private fun findCachedRom(cacheDir: File): File? {
@@ -1759,7 +1776,7 @@ class GameLauncher @Inject constructor(
             ?.maxByOrNull { it.lastModified() }
     }
 
-    private suspend fun extractArchiveIfNeeded(romFile: File, game: GameEntity): File {
+    private suspend fun extractArchiveIfNeeded(romFile: File, game: GameEntity, cacheKey: String): File {
         if (!ZipExtractor.isArchiveFile(romFile)) {
             return romFile
         }
@@ -1769,7 +1786,7 @@ class GameLauncher @Inject constructor(
             return romFile
         }
 
-        val cacheDir = getRomCacheDir(game.platformSlug, game.id)
+        val cacheDir = getRomCacheDir(game.platformSlug, game.id, cacheKey)
         val cachedRom = findCachedRom(cacheDir)
 
         if (cachedRom != null && cachedRom.exists()) {
@@ -1867,6 +1884,8 @@ class GameLauncher @Inject constructor(
     }
 
     private companion object {
+        const val PRIMARY_CACHE_KEY = "base"
+        fun variantCacheKey(fileId: Long) = "v$fileId"
         val EXTCONTENT_SOURCE_NAMES = setOf(
             "update", "updates", "dlc", "dlcs"
         )

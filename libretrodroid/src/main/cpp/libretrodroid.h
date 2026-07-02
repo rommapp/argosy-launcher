@@ -137,6 +137,7 @@ public:
     int availableDisks();
     int currentDisk();
     void changeDisk(unsigned int index);
+    void changeDisk(unsigned int index, const std::string& path);
 
     void setRumbleEnabled(bool enabled);
     bool isRumbleEnabled() const;

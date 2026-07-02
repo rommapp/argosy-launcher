@@ -127,6 +127,37 @@ void LibretroDroid::changeDisk(unsigned int index) {
     }
 }
 
+void LibretroDroid::changeDisk(unsigned int index, const std::string& path) {
+    auto* diskControl = Environment::getInstance().getRetroDiskControlCallback();
+    if (diskControl == nullptr) {
+        LOGE("Cannot change disk. This platform does not support it.");
+        return;
+    }
+
+    struct retro_system_info system_info {};
+    core->retro_get_system_info(&system_info);
+
+    struct retro_game_info game_info {};
+    game_info.path = Utils::cloneToCString(path);
+    game_info.meta = nullptr;
+    if (system_info.need_fullpath) {
+        game_info.data = nullptr;
+        game_info.size = 0;
+    } else {
+        struct Utils::ReadResult file = Utils::readFileAsBytes(path);
+        game_info.data = file.data;
+        game_info.size = file.size;
+    }
+
+    diskControl->set_eject_state(true);
+    while (diskControl->get_num_images() <= index) {
+        diskControl->add_image_index();
+    }
+    diskControl->replace_image_index(index, &game_info);
+    diskControl->set_image_index(index);
+    diskControl->set_eject_state(false);
+}
+
 void LibretroDroid::updateVariable(const Variable& variable) {
     Environment::getInstance().updateVariable(variable.key, variable.value);
 }

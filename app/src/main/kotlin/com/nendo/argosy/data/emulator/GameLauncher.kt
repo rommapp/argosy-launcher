@@ -217,7 +217,17 @@ class GameLauncher @Inject constructor(
             romFile = extractArchiveIfNeeded(romFile, game, cacheKey)
         }
 
-        if (romFile.extension.lowercase() == "m3u" && !M3uManager.supportsM3u(game.platformSlug)) {
+        var builtInDiscM3u: String? = null
+        if (emulator.launchConfig.isInProcess && romFile.extension.equals("m3u", ignoreCase = true)) {
+            val firstDisc = if (selectedDiscPath != null) File(selectedDiscPath) else M3uManager.parseFirstDisc(romFile)
+            if (firstDisc != null && firstDisc.exists()) {
+                Logger.info(TAG, "Built-in: loading disc ${firstDisc.name} directly instead of m3u ${romFile.name}")
+                builtInDiscM3u = romFile.absolutePath
+                romFile = firstDisc
+            } else {
+                romFile = validateAndResolveLaunchFile(game, romFile)
+            }
+        } else if (romFile.extension.lowercase() == "m3u" && !M3uManager.supportsM3u(game.platformSlug)) {
             val discFiles = M3uManager.parseAllDiscs(romFile)
             if (discFiles.size > 1 && selectedDiscPath == null) {
                 val discOptions = discFiles.mapIndexed { index, file ->
@@ -243,7 +253,7 @@ class GameLauncher @Inject constructor(
 
         romFile = applyExtensionPreferenceIfNeeded(game, romFile)
 
-        val intent = buildIntent(emulator, romFile, game, forResume, variantFileId)
+        val intent = buildIntent(emulator, romFile, game, forResume, variantFileId, builtInDiscM3u)
             ?: return when (emulator.launchConfig) {
                 is LaunchConfig.RetroArch, is LaunchConfig.BuiltIn -> {
                     LaunchResult.NoCore(game.platformSlug, lastCoreDownloadError).also {
@@ -461,7 +471,7 @@ class GameLauncher @Inject constructor(
         return LaunchResult.Success(intent)
     }
 
-    private suspend fun buildBuiltInIntent(romFile: File, game: GameEntity, variantFileId: Long? = null): Intent? {
+    private suspend fun buildBuiltInIntent(romFile: File, game: GameEntity, variantFileId: Long? = null, discM3uPath: String? = null): Intent? {
         Logger.debug(TAG, "[BuiltIn] Preparing launch: rom=${romFile.name}, platform=${game.platformSlug}")
         lastCoreDownloadError = null
 
@@ -514,6 +524,7 @@ class GameLauncher @Inject constructor(
         return Intent(context, LibretroActivity::class.java).apply {
             putExtra(LibretroActivity.EXTRA_ROM_PATH, romFile.absolutePath)
             putExtra(LibretroActivity.EXTRA_VARIANT_FILE_ID, variantFileId ?: -1L)
+            discM3uPath?.let { putExtra(LibretroActivity.EXTRA_DISC_M3U_PATH, it) }
             putExtra(LibretroActivity.EXTRA_CORE_PATH, corePath)
             putExtra(LibretroActivity.EXTRA_SYSTEM_DIR, systemDir.absolutePath)
             putExtra(LibretroActivity.EXTRA_GAME_NAME, game.title)
@@ -638,12 +649,12 @@ class GameLauncher @Inject constructor(
         return emulatorDetector.getPreferredEmulator(game.platformSlug, builtinEnabled)?.def
     }
 
-    private suspend fun buildIntent(emulator: EmulatorDef, romFile: File, game: GameEntity, forResume: Boolean, variantFileId: Long? = null): Intent? {
+    private suspend fun buildIntent(emulator: EmulatorDef, romFile: File, game: GameEntity, forResume: Boolean, variantFileId: Long? = null, discM3uPath: String? = null): Intent? {
         val configType = emulator.launchConfig::class.simpleName
         Logger.debug(TAG, "buildIntent: emulator=${emulator.displayName}, config=$configType, rom=${romFile.name}, forResume=$forResume")
 
         if (emulator.launchConfig.isInProcess) {
-            return buildBuiltInIntent(romFile, game, variantFileId)
+            return buildBuiltInIntent(romFile, game, variantFileId, discM3uPath)
         }
 
         val command = buildEffectiveCommand(emulator, romFile, game, forResume) ?: return null
@@ -1047,20 +1058,23 @@ class GameLauncher @Inject constructor(
      * download will 404 and surface via [lastCoreDownloadError].
      */
     private suspend fun resolveBuiltinCoreId(game: GameEntity): String? {
-        emulatorConfigDao.getByGameId(game.id)?.coreName?.takeIf { it.isNotBlank() }?.let {
-            Logger.debug(TAG, "[BuiltIn] core selection: game override -> $it")
-            return it
+        val validCoreIds = com.nendo.argosy.libretro.LibretroCoreRegistry
+            .getCoresForPlatform(game.platformSlug).map { it.coreId }.toSet()
+
+        fun accept(coreId: String?, source: String): String? {
+            if (coreId.isNullOrBlank()) return null
+            if (coreId !in validCoreIds) {
+                Logger.warn(TAG, "[BuiltIn] ignoring unknown core '$coreId' from $source for ${game.platformSlug}")
+                return null
+            }
+            Logger.debug(TAG, "[BuiltIn] core selection: $source -> $coreId")
+            return coreId
         }
-        emulatorConfigDao.getDefaultForPlatform(game.platformId)?.coreName
-            ?.takeIf { it.isNotBlank() }?.let {
-                Logger.debug(TAG, "[BuiltIn] core selection: platform default -> $it")
-                return it
-            }
-        userPreferencesRepository.getBuiltinCoreSelections().first()[game.platformSlug]
-            ?.takeIf { it.isNotBlank() }?.let {
-                Logger.debug(TAG, "[BuiltIn] core selection: legacy pref -> $it")
-                return it
-            }
+
+        accept(emulatorConfigDao.getByGameId(game.id)?.coreName, "game override")?.let { return it }
+        accept(emulatorConfigDao.getDefaultForPlatform(game.platformId)?.coreName, "platform default")?.let { return it }
+        accept(userPreferencesRepository.getBuiltinCoreSelections().first()[game.platformSlug], "legacy pref")?.let { return it }
+
         val default = com.nendo.argosy.libretro.LibretroCoreRegistry
             .getDefaultCoreForPlatform(game.platformSlug)?.coreId
         Logger.debug(TAG, "[BuiltIn] core selection: registry default -> $default")

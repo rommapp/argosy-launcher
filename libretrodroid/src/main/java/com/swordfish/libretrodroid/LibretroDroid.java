@@ -157,6 +157,7 @@ public class LibretroDroid {
     public static native int availableDisks();
     public static native int currentDisk();
     public static native void changeDisk(int index);
+    public static native void changeDiskWithPath(int index, String path);
 
     public static native void onMotionEvent(int port, int motionSource, float xAxis, float yAxis);
     public static native void onTouchEvent(float xAxis, float yAxis);

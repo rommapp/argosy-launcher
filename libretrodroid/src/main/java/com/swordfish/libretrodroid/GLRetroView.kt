@@ -345,6 +345,7 @@ class GLRetroView(
     fun getAvailableDisks() = runOnGLThread { LibretroDroid.availableDisks() }
     fun getCurrentDisk() = runOnGLThread { LibretroDroid.currentDisk() }
     fun changeDisk(index: Int) = runOnGLThread { LibretroDroid.changeDisk(index) }
+    fun changeDisk(index: Int, path: String) = runOnGLThread { LibretroDroid.changeDiskWithPath(index, path) }
 
     var rewindEnabled: Boolean by Delegates.observable(false) { _, _, value ->
         LibretroDroid.setRewindEnabled(value)

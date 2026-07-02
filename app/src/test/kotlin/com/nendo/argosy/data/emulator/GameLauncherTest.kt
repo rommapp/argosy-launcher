@@ -157,6 +157,7 @@ class GameLauncherTest {
         gameId: Long? = null,
         packageName: String? = null,
         displayName: String? = null,
+        coreName: String? = null,
         isDefault: Boolean = false
     ): EmulatorConfigEntity {
         return EmulatorConfigEntity(
@@ -164,7 +165,7 @@ class GameLauncherTest {
             gameId = gameId,
             packageName = packageName,
             displayName = displayName,
-            coreName = null,
+            coreName = coreName,
             isDefault = isDefault
         )
     }
@@ -495,6 +496,32 @@ class GameLauncherTest {
         val result = launcher.launch(1L)
 
         assertTrue(result is LaunchResult.NoEmulator)
+    }
+
+    @Test
+    fun `unknown built-in core override falls back to registry default`() = runTest {
+        val path = romFile("chd")
+        val game = createGame(localPath = path, platformSlug = "psx", platformId = 14L)
+        coEvery { gameDao.getById(1L) } returns game
+        coEvery { variantResolver.getVariantOptions(game) } returns null
+
+        val builtinDef = EmulatorRegistry.getByPackage(EmulatorRegistry.BUILTIN_PACKAGE)!!
+        coEvery { emulatorConfigDao.getByGameId(1L) } returns createConfig(
+            gameId = 1L,
+            packageName = EmulatorRegistry.BUILTIN_PACKAGE,
+            displayName = "Built-in",
+            coreName = "swanstation"
+        )
+        coEvery { emulatorConfigDao.getDefaultForPlatform(14L) } returns null
+        stubDetectorWith(installedEmulator(builtinDef))
+        every { emulatorDetector.getByPackage(EmulatorRegistry.BUILTIN_PACKAGE) } returns builtinDef
+        every { libretroCoreMgr.isPlatformSupported("psx") } returns true
+        every { libretroCoreMgr.getCorePathForPlatform(any(), any()) } returns "/fake/core.so"
+
+        runCatching { launcher.launch(1L) }
+
+        verify { libretroCoreMgr.getCorePathForPlatform("psx", "pcsx_rearmed") }
+        verify(exactly = 0) { libretroCoreMgr.getCorePathForPlatform("psx", "swanstation") }
     }
 
     @Test

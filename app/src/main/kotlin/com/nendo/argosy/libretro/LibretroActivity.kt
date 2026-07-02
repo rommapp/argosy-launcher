@@ -225,6 +225,8 @@ class LibretroActivity : ComponentActivity() {
     private var quickTimelineEntries by mutableStateOf<List<SaveStateManager.SlotInfo>>(emptyList())
     private var quickTimelineFocusIndex by mutableStateOf(0)
     private var menuDiscCount = 0
+    private var discPaths: List<File> = emptyList()
+    private var currentDiscIndex = 0
     private var discMenuVisible by mutableStateOf(false)
     private var discMenuFocusIndex by mutableStateOf(0)
     private var discMenuCurrentIndex by mutableStateOf(0)
@@ -432,6 +434,8 @@ class LibretroActivity : ComponentActivity() {
         gameName = intent.getStringExtra(EXTRA_GAME_NAME) ?: File(romPath).nameWithoutExtension
         gameId = intent.getLongExtra(EXTRA_GAME_ID, -1L)
         variantFileId = intent.getLongExtra(EXTRA_VARIANT_FILE_ID, -1L)
+        discPaths = intent.getStringExtra(EXTRA_DISC_M3U_PATH)
+            ?.let { M3uManager.parseAllDiscs(File(it)) } ?: emptyList()
         coreName = intent.getStringExtra(EXTRA_CORE_NAME)
         launchMode = LaunchMode.fromString(intent.getStringExtra(LaunchMode.EXTRA_LAUNCH_MODE))
         hardcoreMode = launchMode.isHardcore
@@ -825,7 +829,8 @@ class LibretroActivity : ComponentActivity() {
                         onFocusChange = { discMenuFocusIndex = it },
                         onSelect = { index ->
                             if (index != discMenuCurrentIndex) {
-                                runCatching { retroView.changeDisk(index) }
+                                discPaths.getOrNull(index)?.let { retroView.changeDisk(index, it.absolutePath) }
+                                currentDiscIndex = index
                                 inGameMessage = "Inserted ${discMenuLabels.getOrNull(index) ?: "Disc ${index + 1}"}"
                             }
                             discMenuVisible = false
@@ -1456,10 +1461,8 @@ class LibretroActivity : ComponentActivity() {
         when (action) {
             InGameMenuAction.SwapDisc -> {
                 menuVisible = false
-                discMenuLabels = buildDiscLabels(menuDiscCount)
-                discMenuCurrentIndex = runCatching { retroView.getCurrentDisk() }
-                    .getOrDefault(0)
-                    .coerceIn(0, (menuDiscCount - 1).coerceAtLeast(0))
+                discMenuLabels = discPaths.map { it.nameWithoutExtension }
+                discMenuCurrentIndex = currentDiscIndex.coerceIn(0, (discPaths.size - 1).coerceAtLeast(0))
                 discMenuFocusIndex = discMenuCurrentIndex
                 discMenuVisible = true
             }
@@ -1847,22 +1850,11 @@ class LibretroActivity : ComponentActivity() {
         }
         pendingSaveScreenshot?.recycle()
         pendingSaveScreenshot = try { retroView.captureRawFrame() } catch (_: Exception) { null }
-        menuDiscCount = if (netplay.inSession) 0 else runCatching { retroView.getAvailableDisks() }.getOrDefault(0)
+        menuDiscCount = if (netplay.inSession) 0 else discPaths.size
         val discSwapShown = menuDiscCount > 1
         menuFocusIndex = if (discSwapShown) 1 else 0
         menuQuickHistoryFocused = false
         menuVisible = true
-    }
-
-    private fun buildDiscLabels(count: Int): List<String> {
-        if (count <= 0) return emptyList()
-        val names = runCatching {
-            val file = File(romPath)
-            if (file.extension.equals("m3u", ignoreCase = true)) {
-                M3uManager.parseAllDiscs(file).map { it.nameWithoutExtension }
-            } else emptyList()
-        }.getOrDefault(emptyList())
-        return (0 until count).map { i -> names.getOrNull(i) ?: "Disc ${i + 1}" }
     }
 
     private fun hideMenu() {
@@ -2208,6 +2200,7 @@ class LibretroActivity : ComponentActivity() {
         const val EXTRA_GAME_NAME = "game_name"
         const val EXTRA_GAME_ID = "game_id"
         const val EXTRA_VARIANT_FILE_ID = "variant_file_id"
+        const val EXTRA_DISC_M3U_PATH = "disc_m3u_path"
         const val EXTRA_PLATFORM_SLUG = "platform_slug"
         const val EXTRA_CORE_NAME = "core_name"
         const val EXTRA_CORE_VAR_KEYS = "core_var_keys"

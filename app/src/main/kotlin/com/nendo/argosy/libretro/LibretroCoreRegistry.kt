@@ -152,8 +152,7 @@ object LibretroCoreRegistry {
             displayName = "Beetle PSX HW",
             platforms = setOf("psx", "ps1", "playstation"),
             estimatedSizeBytes = 4_000_000L,
-            requiresBios = listOf("scph5501.bin"),
-            isDefault = true
+            requiresBios = listOf("scph5501.bin")
         ),
         CoreInfo(
             coreId = "pcsx_rearmed",
@@ -161,7 +160,8 @@ object LibretroCoreRegistry {
             displayName = "PCSX ReARMed",
             platforms = setOf("psx", "ps1", "playstation"),
             estimatedSizeBytes = 3_000_000L,
-            requiresBios = listOf("scph5501.bin")
+            requiresBios = listOf("scph5501.bin"),
+            isDefault = true
         ),
 
         // Sony PlayStation 2 has no working built-in core on Android; routed to standalone NetherSX2 / PSX2.

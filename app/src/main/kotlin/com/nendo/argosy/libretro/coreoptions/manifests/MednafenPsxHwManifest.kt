@@ -71,7 +71,8 @@ object MednafenPsxHwManifest : CoreOptionManifest {
             key = "beetle_psx_hw_renderer",
             displayName = "Renderer (Restart)",
             values = listOf("hardware", "hardware_gl", "hardware_vk", "software"),
-            defaultValue = "hardware",
+            defaultValue = "software",
+            coreDefault = "hardware",
             description = "Selects the rendering backend used for graphics output",
             valueLabels = mapOf(
                 "hardware" to "Hardware (Auto)", "hardware_gl" to "Hardware (OpenGL)",

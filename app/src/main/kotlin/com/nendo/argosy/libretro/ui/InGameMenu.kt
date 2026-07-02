@@ -39,6 +39,7 @@ import com.nendo.argosy.ui.input.InputResult
 import com.nendo.argosy.ui.util.clickableNoFocus
 
 sealed class InGameMenuAction {
+    data object SwapDisc : InGameMenuAction()
     data object Resume : InGameMenuAction()
     data object QuickSave : InGameMenuAction()
     data object QuickLoad : InGameMenuAction()
@@ -89,6 +90,7 @@ fun InGameMenu(
     onFocusChange: (Int) -> Unit,
     onAction: (InGameMenuAction) -> Unit,
     isHardcoreMode: Boolean = false,
+    availableDiscs: Int = 0,
     netplaySupported: Boolean = false,
     isInNetplaySession: Boolean = false,
     netplayRole: NetplayMenuRole? = null,
@@ -103,6 +105,7 @@ fun InGameMenu(
         cheatsAvailable,
         statesSupported,
         isHardcoreMode,
+        availableDiscs,
         netplaySupported,
         isInNetplaySession,
         netplayRole,
@@ -111,6 +114,9 @@ fun InGameMenu(
         hasQuickSave
     ) {
         buildList {
+            if (availableDiscs > 1 && !isInNetplaySession) {
+                add("Swap Disc" to InGameMenuAction.SwapDisc)
+            }
             add("Resume" to InGameMenuAction.Resume)
             val showStates = !isHardcoreMode && statesSupported && !isInNetplaySession
             if (showStates) {
@@ -302,6 +308,106 @@ fun InGameMenu(
                                 onClick = { onAction(action) }
                             )
                         }
+                    }
+                }
+            }
+        }
+    }
+
+    return inputHandler
+}
+
+@Composable
+fun DiscMenu(
+    labels: List<String>,
+    currentIndex: Int,
+    focusedIndex: Int,
+    onFocusChange: (Int) -> Unit,
+    onSelect: (Int) -> Unit,
+    onDismiss: () -> Unit
+): InputHandler {
+    val isDarkTheme = isSystemInDarkTheme()
+    val overlayColor = if (isDarkTheme) Color.Black.copy(alpha = 0.7f) else Color.White.copy(alpha = 0.5f)
+
+    val currentFocusedIndex = rememberUpdatedState(focusedIndex)
+    val currentOnFocusChange = rememberUpdatedState(onFocusChange)
+    val currentOnSelect = rememberUpdatedState(onSelect)
+    val currentOnDismiss = rememberUpdatedState(onDismiss)
+
+    val inputHandler = remember(labels) {
+        object : InputHandler {
+            override fun onUp(): InputResult {
+                val idx = currentFocusedIndex.value
+                val newIndex = (idx - 1).coerceAtLeast(0)
+                if (newIndex != idx) currentOnFocusChange.value(newIndex)
+                return InputResult.HANDLED
+            }
+            override fun onDown(): InputResult {
+                val idx = currentFocusedIndex.value
+                val newIndex = (idx + 1).coerceAtMost(labels.lastIndex)
+                if (newIndex != idx) currentOnFocusChange.value(newIndex)
+                return InputResult.HANDLED
+            }
+            override fun onConfirm(): InputResult {
+                currentOnSelect.value(currentFocusedIndex.value)
+                return InputResult.HANDLED
+            }
+            override fun onBack(): InputResult {
+                currentOnDismiss.value()
+                return InputResult.HANDLED
+            }
+        }
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(overlayColor)
+            .focusProperties { canFocus = false },
+        contentAlignment = Alignment.Center
+    ) {
+        val maxHeightDp = (LocalConfiguration.current.screenHeightDp * 0.9f).dp
+        val listState = rememberLazyListState()
+
+        LaunchedEffect(focusedIndex, labels.size) {
+            if (labels.isEmpty()) return@LaunchedEffect
+            listState.animateScrollToItem(focusedIndex.coerceIn(0, labels.lastIndex))
+        }
+
+        Surface(
+            modifier = Modifier
+                .widthIn(max = 300.dp)
+                .heightIn(max = maxHeightDp)
+                .padding(12.dp)
+                .focusProperties { canFocus = false },
+            shape = RoundedCornerShape(16.dp),
+            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
+            tonalElevation = 8.dp
+        ) {
+            Column(
+                modifier = Modifier.padding(20.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Text(
+                    text = "Swap Disc",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                LazyColumn(
+                    state = listState,
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    itemsIndexed(labels, key = { index, _ -> index }) { index, label ->
+                        val text = if (index == currentIndex) "$label  (current)" else label
+                        MenuButton(
+                            text = text,
+                            isFocused = index == focusedIndex,
+                            onClick = { onSelect(index) }
+                        )
                     }
                 }
             }

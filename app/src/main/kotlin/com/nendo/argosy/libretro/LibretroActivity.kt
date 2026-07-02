@@ -72,6 +72,8 @@ import com.nendo.argosy.libretro.ui.cheats.CheatsScreen
 import com.nendo.argosy.libretro.ui.cheats.CheatsTab
 import com.nendo.argosy.libretro.ui.AchievementPopup
 import com.nendo.argosy.libretro.ui.AutoRestorePrompt
+import com.nendo.argosy.data.emulator.M3uManager
+import com.nendo.argosy.libretro.ui.DiscMenu
 import com.nendo.argosy.libretro.ui.InGameMenu
 import com.nendo.argosy.libretro.ui.InGameMenuAction
 import com.nendo.argosy.libretro.ui.NetplayConnectionProgressOverlay
@@ -222,6 +224,11 @@ class LibretroActivity : ComponentActivity() {
     private var quickTimelineVisible by mutableStateOf(false)
     private var quickTimelineEntries by mutableStateOf<List<SaveStateManager.SlotInfo>>(emptyList())
     private var quickTimelineFocusIndex by mutableStateOf(0)
+    private var menuDiscCount = 0
+    private var discMenuVisible by mutableStateOf(false)
+    private var discMenuFocusIndex by mutableStateOf(0)
+    private var discMenuCurrentIndex by mutableStateOf(0)
+    private var discMenuLabels by mutableStateOf<List<String>>(emptyList())
     private var pendingSaveScreenshot: Bitmap? = null
 
     private lateinit var netplay: LibretroNetplayCoordinator
@@ -246,7 +253,7 @@ class LibretroActivity : ComponentActivity() {
     private var orientationEventListener: android.view.OrientationEventListener? = null
 
     private val isAnyMenuOpen: Boolean
-        get() = menuVisible || cheatsMenuVisible || settingsVisible || shaderChainEditorVisible || frameEditorVisible || autoRestorePromptVisible || stateManagerVisible || quickTimelineVisible ||
+        get() = menuVisible || cheatsMenuVisible || settingsVisible || shaderChainEditorVisible || frameEditorVisible || autoRestorePromptVisible || stateManagerVisible || quickTimelineVisible || discMenuVisible ||
             isClosing || netplay.isAnyDialogVisible
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -798,6 +805,7 @@ class LibretroActivity : ComponentActivity() {
                         onFocusChange = { menuFocusIndex = it },
                         onAction = ::handleMenuAction,
                         isHardcoreMode = hardcoreMode,
+                        availableDiscs = menuDiscCount,
                         netplaySupported = netplay.isCoreSupported(),
                         isInNetplaySession = netplay.inSession,
                         netplayRole = netplay.role,
@@ -807,6 +815,27 @@ class LibretroActivity : ComponentActivity() {
                         hasQuickSave = saveStateManager.hasQuickSave,
                         quickHistoryFocused = menuQuickHistoryFocused,
                         onQuickHistoryFocusChange = { menuQuickHistoryFocused = it }
+                    )
+                }
+                if (discMenuVisible) {
+                    activeMenuHandler = DiscMenu(
+                        labels = discMenuLabels,
+                        currentIndex = discMenuCurrentIndex,
+                        focusedIndex = discMenuFocusIndex,
+                        onFocusChange = { discMenuFocusIndex = it },
+                        onSelect = { index ->
+                            if (index != discMenuCurrentIndex) {
+                                runCatching { retroView.changeDisk(index) }
+                                inGameMessage = "Inserted ${discMenuLabels.getOrNull(index) ?: "Disc ${index + 1}"}"
+                            }
+                            discMenuVisible = false
+                            hideMenu()
+                        },
+                        onDismiss = {
+                            discMenuVisible = false
+                            menuFocusIndex = 0
+                            menuVisible = true
+                        }
                     )
                 }
                 if (netplay.modePickerVisible) {
@@ -1425,6 +1454,15 @@ class LibretroActivity : ComponentActivity() {
 
     private fun handleMenuAction(action: InGameMenuAction) {
         when (action) {
+            InGameMenuAction.SwapDisc -> {
+                menuVisible = false
+                discMenuLabels = buildDiscLabels(menuDiscCount)
+                discMenuCurrentIndex = runCatching { retroView.getCurrentDisk() }
+                    .getOrDefault(0)
+                    .coerceIn(0, (menuDiscCount - 1).coerceAtLeast(0))
+                discMenuFocusIndex = discMenuCurrentIndex
+                discMenuVisible = true
+            }
             InGameMenuAction.Resume -> hideMenu()
             InGameMenuAction.QuickSave -> {
                 val stateData = try { retroView.serializeState() } catch (_: Exception) { null }
@@ -1809,9 +1847,22 @@ class LibretroActivity : ComponentActivity() {
         }
         pendingSaveScreenshot?.recycle()
         pendingSaveScreenshot = try { retroView.captureRawFrame() } catch (_: Exception) { null }
-        menuFocusIndex = 0
+        menuDiscCount = if (netplay.inSession) 0 else runCatching { retroView.getAvailableDisks() }.getOrDefault(0)
+        val discSwapShown = menuDiscCount > 1
+        menuFocusIndex = if (discSwapShown) 1 else 0
         menuQuickHistoryFocused = false
         menuVisible = true
+    }
+
+    private fun buildDiscLabels(count: Int): List<String> {
+        if (count <= 0) return emptyList()
+        val names = runCatching {
+            val file = File(romPath)
+            if (file.extension.equals("m3u", ignoreCase = true)) {
+                M3uManager.parseAllDiscs(file).map { it.nameWithoutExtension }
+            } else emptyList()
+        }.getOrDefault(emptyList())
+        return (0 until count).map { i -> names.getOrNull(i) ?: "Disc ${i + 1}" }
     }
 
     private fun hideMenu() {

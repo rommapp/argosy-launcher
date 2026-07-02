@@ -402,13 +402,14 @@ class GameDetailViewModel @Inject constructor(
             val emulatorDef = emulatorConfig?.packageName?.let { emulatorDetector.getByPackage(it) }
                 ?: emulatorDetector.getPreferredEmulator(game.platformSlug, prefs.builtinLibretroEnabled)?.def
             val isCoreSelectable = emulatorDef?.launchConfig?.isCoreSelectable == true
+            val isBuiltInEmulator = emulatorDef?.launchConfig is LaunchConfig.BuiltIn
 
-            val platformCores = EmulatorRegistry.getCoresForPlatform(game.platformSlug)
+            val platformCores = EmulatorRegistry.getSelectableCores(game.platformSlug, isBuiltInEmulator)
             val hasMultipleCores = isCoreSelectable && platformCores.size > 1
 
             val selectedCoreId = gameSpecificConfig?.coreName
                 ?: platformDefaultConfig?.coreName
-                ?: EmulatorRegistry.getDefaultCore(game.platformSlug)?.id
+                ?: EmulatorRegistry.getDefaultSelectableCore(game.platformSlug, isBuiltInEmulator)?.id
             val selectedCoreName = if (isCoreSelectable) {
                 platformCores.find { it.id == selectedCoreId }?.displayName
             } else null
@@ -506,7 +507,7 @@ class GameDetailViewModel @Inject constructor(
                         emulatorName = emulatorName,
                         canPlay = canPlay,
                         isRetroArch = emulatorDef?.launchConfig is LaunchConfig.RetroArch,
-                        isBuiltIn = emulatorDef?.launchConfig is LaunchConfig.BuiltIn,
+                        isBuiltIn = isBuiltInEmulator,
                         hasMultipleCores = hasMultipleCores,
                         selectedCoreName = selectedCoreName,
                         achievements = cachedAchievements,
@@ -1276,7 +1277,7 @@ class GameDetailViewModel @Inject constructor(
         val game = _uiState.value.game ?: return
         if (!game.hasMultipleCores) return
         moreOptionsDelegate.reset()
-        pickerModalDelegate.showCorePicker(game.platformSlug, _uiState.value.selectedCoreId)
+        pickerModalDelegate.showCorePicker(game.platformSlug, _uiState.value.selectedCoreId, game.isBuiltInEmulator)
     }
 
     fun dismissCorePicker() = pickerModalDelegate.dismissCorePicker()

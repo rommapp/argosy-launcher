@@ -1311,6 +1311,29 @@ object EmulatorRegistry {
     fun getDefaultCore(platformId: String): RetroArchCore? =
         getCoresForPlatform(platformId).firstOrNull()
 
+    /**
+     * Cores selectable for a game given its emulator mode: the built-in path can only run
+     * cores from [LibretroCoreRegistry]; external RetroArch uses the curated RetroArch cores.
+     */
+    fun getSelectableCores(platformId: String, isBuiltIn: Boolean): List<RetroArchCore> {
+        val canonical = PlatformDefinitions.getCanonicalSlug(platformId)
+        return if (isBuiltIn) {
+            com.nendo.argosy.libretro.LibretroCoreRegistry.getCoresForPlatform(canonical)
+                .map { RetroArchCore(it.coreId, it.displayName) }
+        } else {
+            platformCores[canonical] ?: emptyList()
+        }
+    }
+
+    fun getDefaultSelectableCore(platformId: String, isBuiltIn: Boolean): RetroArchCore? =
+        if (isBuiltIn) {
+            val canonical = PlatformDefinitions.getCanonicalSlug(platformId)
+            com.nendo.argosy.libretro.LibretroCoreRegistry.getDefaultCoreForPlatform(canonical)
+                ?.let { RetroArchCore(it.coreId, it.displayName) }
+        } else {
+            getSelectableCores(platformId, false).firstOrNull()
+        }
+
     private val retroArchSaveDirByCore: Map<String, String> = mapOf(
         "snes9x2010" to "Snes9x 2010",
         "bsnes2014_accuracy" to "bsnes 2014 Accuracy",

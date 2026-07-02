@@ -120,8 +120,8 @@ class PickerModalDelegate @Inject constructor(
 
     // region Core Picker
 
-    fun showCorePicker(platformSlug: String, selectedCoreId: String?) {
-        val cores = EmulatorRegistry.getCoresForPlatform(platformSlug)
+    fun showCorePicker(platformSlug: String, selectedCoreId: String?, isBuiltIn: Boolean) {
+        val cores = EmulatorRegistry.getSelectableCores(platformSlug, isBuiltIn)
         if (cores.isEmpty()) return
 
         val initialIndex = selectedCoreId?.let { id ->

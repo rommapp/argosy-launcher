@@ -12,9 +12,9 @@ RepoType: git
 Repo: https://github.com/rommapp/argosy-launcher.git
 
 Builds:
-  - versionName: 1.18.0
-    versionCode: 1000298
-    commit: v1.18.0
+  - versionName: 1.19.0
+    versionCode: 1000299
+    commit: v1.19.0
     subdir: app
     submodules: true
     gradle:
@@ -24,12 +24,12 @@ Builds:
     scandelete:
       - libs/maven
     # Produces the armeabi-v7a split. The app overrides the APK versionCode to
-    # (abiCode * 1_000_000 + 298); armeabi-v7a => abiCode 1 => 1000298.
+    # (abiCode * 1_000_000 + 299); armeabi-v7a => abiCode 1 => 1000299.
     # See app/build.gradle.kts (splits { abi } + applicationVariants override).
 
-  - versionName: 1.18.0
-    versionCode: 2000298
-    commit: v1.18.0
+  - versionName: 1.19.0
+    versionCode: 2000299
+    commit: v1.19.0
     subdir: app
     submodules: true
     gradle:
@@ -38,12 +38,12 @@ Builds:
       - allAbis
     scandelete:
       - libs/maven
-    # arm64-v8a split => abiCode 2 => 2000298.
+    # arm64-v8a split => abiCode 2 => 2000299.
 
 AutoUpdateMode: Version
 UpdateCheckMode: Tags ^v[0-9.]+$
 VercodeOperation:
   - "%c + 1000000"
   - "%c + 2000000"
-CurrentVersion: 1.18.0
-CurrentVersionCode: 2000298
+CurrentVersion: 1.19.0
+CurrentVersionCode: 2000299

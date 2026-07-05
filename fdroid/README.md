@@ -116,18 +116,22 @@ Native code that is **fine** (builds from source, no committed blobs): `libretro
 (C++ via CMake/NDK, bundled Oboe source), the `rcheevos` submodule (C), and `sigil`
 (C, above). `submodules: true` handles fetching the submodules.
 
-## Prerequisite in THIS repo — cut a release that contains this work
+## Prerequisite in THIS repo — cut the v1.19.0 release
 
-The recipe currently pins `commit: v1.18.0`, but that tag **predates** both the
-`fastlane/` metadata and the `foss` flavor. F-Droid reads media metadata only from a
-recognized release tag and builds the pinned commit, so before submitting:
+F-Droid reads media metadata only from a recognized release tag and builds the pinned
+commit, and both `fastlane/` and the `foss` flavor were added after `v1.18.0`. So the recipe
+targets a **new `v1.19.0` release** that contains this work:
 
-1. Merge this branch to `main`.
-2. Bump the version and tag a new stable release (e.g. `v1.19.0`) off merged `main` — the
-   tag must contain `fastlane/` and the `foss` flavor.
-3. Repoint the recipe: update `commit`, `versionName`, the two `versionCode` values
-   (`<abi>*1_000_000 + <new base>`), and `CurrentVersion`/`CurrentVersionCode` in
-   `com.nendo.argosy.yml` to the new tag.
+- ✅ Version bumped to `1.19.0` / base versionCode `299` (`app/build.gradle.kts`).
+- ✅ Recipe repointed to `commit: v1.19.0`, versionCodes `1000299`/`2000299`,
+  `CurrentVersion: 1.19.0` / `CurrentVersionCode: 2000299` (`com.nendo.argosy.yml`).
+- ✅ Fastlane changelogs added for the new codes (`299`, `1000299`, `2000299`, `3000299`).
+- ⬜ **Remaining:** merge this branch to `main`, then create and push the `v1.19.0` tag off
+  merged `main` (`git tag v1.19.0 && git push origin v1.19.0`). The tag must contain
+  `fastlane/` and the `foss` flavor — it does once this branch is merged.
+
+If the maintainer folds additional features into `1.19.0` before tagging, update the
+`fastlane/.../changelogs/*299.txt` bodies accordingly; the version numbers already line up.
 
 ## Submission steps (fdroiddata lives on GitLab: gitlab.com/fdroid/fdroiddata)
 

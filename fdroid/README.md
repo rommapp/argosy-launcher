@@ -48,18 +48,46 @@ sees.
 F-Droid clones the source, runs its **scanner**, then builds in isolation. These will
 trip it up:
 
-1. **Prebuilt JARs in `libs/maven/` (hard blocker).**
+1. **Prebuilt JARs in `libs/maven/` (hard blocker — the only real one).**
    `libs/maven/io/github/joshuatam/javasteam*/**.jar` are precompiled binaries committed
    to the repo (force-included via `.gitignore: !libs/maven/**/*.jar`) and consumed
    through the in-tree maven repo declared in `settings.gradle.kts`. The scanner rejects
-   committed binaries **regardless of license** (JavaSteam is MIT). They cannot be
-   `scandelete`d because the Steam feature won't compile without them. Options, best first:
-   - Publish JavaSteam (and `javasteam-depotdownloader`) to a real maven repo (Maven
-     Central / JitPack) and depend on it normally — removes the binaries entirely.
-   - Build JavaSteam from source as part of the F-Droid build.
-   - Add a build flavor that excludes the Steam feature, and package that flavor.
-   - Last resort: `scanignore: [libs/maven]` in the recipe — keeps the binaries but
-     reviewers commonly reject this. Not included in the recipe by default.
+   committed binaries **regardless of license**, so this must go before F-Droid will build.
+
+   **What was found (research):**
+   - Both jars come from one MIT fork: `github.com/joshuatam/JavaSteam` — a multi-module
+     Gradle project whose `javasteam` and `javasteam-depotdownloader` modules produce the
+     two artifacts (group `io.github.joshuatam`, version `1.8.1`). Default branch
+     `gamenative-latest` (the GameNative fork). The base `javasteam` jar is ~16 MB
+     (protobuf-generated Steam classes).
+   - The fork is **NOT on Maven Central** (`io.github.joshuatam` → 404). Upstream
+     `in.dragonbra:javasteam` **is** on Central (latest 1.8.0) but lacks the fork's
+     `depotdownloader` module and any GameNative-specific patches, so a straight swap is
+     not viable.
+   - **JitPack cannot build the fork today**: `com.github.joshuatam:JavaSteam` builds error
+     out on `gamenative-latest` and recent commits, and the fork has **no release tags**.
+   - App-side coupling is **narrow**: only 5 files import the library directly —
+     `data/steam/{SteamService,SteamAuthManager,SteamContentManager,SteamDepotManager}.kt`
+     (+ related). The other ~30 Steam files (Room entities/DAOs, repositories, UI) never
+     touch the library and compile without it. `SteamService` is a concrete Android
+     `Service` (not a Hilt-bound interface), so a flavor swap needs stub classes preserving
+     the public API those 30 files call.
+
+   **Resolution options (none fixable in the fdroiddata recipe alone):**
+   1. **FOSS product flavor without Steam** *(only path fully within this repo; recommended
+      for a first F-Droid release)* — split the app into `full`/`foss` flavors; move the 5
+      library-touching files to `src/full`, add compile-only stubs in `src/foss` that no-op
+      the Steam feature, and drop `bundles.steam` from the `foss` flavor. Package the `foss`
+      flavor. Removes the binaries and the non-free-ish depot downloader entirely.
+   2. **Publish the fork to Maven Central** *(cleanest if keeping Steam; maintainer action)*
+      — the fork already builds with `io.github.joshuatam` + Gradle module metadata, so the
+      publishing infra exists; it just hasn't been pushed to Central. Then delete
+      `libs/maven`, drop the local repo from `settings.gradle.kts`, and depend normally.
+   3. **Build the fork from source in fdroiddata** (submodule/srclib + composite build) —
+      keeps Steam with no publishing, but is fragile: the fork doesn't build on JitPack and
+      pins a rolling branch, so expect build-fixing work and reviewer pushback.
+   4. **Last resort: `scanignore: [libs/maven]`** — keeps the binaries; reviewers commonly
+      reject this. Not in the recipe.
 
 2. **Discord SDK** — an optional local AAR (`app/libs/*.aar`) that is gitignored and
    absent from the repo, so the default build excludes it (`DISCORD_SDK_ENABLED=false`).

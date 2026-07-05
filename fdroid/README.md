@@ -116,22 +116,25 @@ Native code that is **fine** (builds from source, no committed blobs): `libretro
 (C++ via CMake/NDK, bundled Oboe source), the `rcheevos` submodule (C), and `sigil`
 (C, above). `submodules: true` handles fetching the submodules.
 
-## Prerequisite in THIS repo — cut the v1.19.0 release
+## Prerequisite in THIS repo — fold into the v2.0.0 release
 
 F-Droid reads media metadata only from a recognized release tag and builds the pinned
-commit, and both `fastlane/` and the `foss` flavor were added after `v1.18.0`. So the recipe
-targets a **new `v1.19.0` release** that contains this work:
+commit, and both `fastlane/` and the `foss` flavor were added after `v1.18.0`. Rather than
+cut a throwaway `1.19.0`, this work is folded into the **2.0 line** (branch
+`ui-redesign-beta`; betas: `v2.0.0-beta.2` = versionCode 299, `v2.0.0-beta.3` = 301). The
+recipe therefore targets the eventual **`v2.0.0` stable** tag.
 
-- ✅ Version bumped to `1.19.0` / base versionCode `299` (`app/build.gradle.kts`).
-- ✅ Recipe repointed to `commit: v1.19.0`, versionCodes `1000299`/`2000299`,
-  `CurrentVersion: 1.19.0` / `CurrentVersionCode: 2000299` (`com.nendo.argosy.yml`).
-- ✅ Fastlane changelogs added for the new codes (`299`, `1000299`, `2000299`, `3000299`).
-- ⬜ **Remaining:** merge this branch to `main`, then create and push the `v1.19.0` tag off
-  merged `main` (`git tag v1.19.0 && git push origin v1.19.0`). The tag must contain
-  `fastlane/` and the `foss` flavor — it does once this branch is merged.
-
-If the maintainer folds additional features into `1.19.0` before tagging, update the
-`fastlane/.../changelogs/*299.txt` bodies accordingly; the version numbers already line up.
+- ✅ This branch does **not** change `versionCode`/`versionName` (an earlier `1.19.0`/`299`
+  bump was reverted — `299` collides with `v2.0.0-beta.2`). The 2.0 branch owns versioning.
+- ✅ Recipe repointed to `commit: v2.0.0`, `versionName: 2.0.0`. The regex
+  `UpdateCheckMode: Tags ^v[0-9.]+$` excludes `-beta` tags, so only stable `v2.0.0` is built.
+- ⬜ **versionCode is a placeholder** (`1000302`/`2000302`, from an assumed base 302). Set it
+  to `<abi>*1_000_000 + <2.0.0 base versionCode>` once 2.0.0 is tagged. A wrong value fails
+  F-Droid's versionCode check loudly, so it is safe until corrected.
+- ⬜ **Remaining:** merge this branch into the 2.0 line, then tag and push `v2.0.0` off it —
+  the tag must contain `fastlane/` and the `foss` flavor. Add
+  `fastlane/.../changelogs/<2.0.0 codes>.txt` for the release notes (the existing `298`
+  changelogs are 1.18.0 history and are harmless).
 
 ## Submission steps (fdroiddata lives on GitLab: gitlab.com/fdroid/fdroiddata)
 

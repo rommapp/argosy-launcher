@@ -17,7 +17,7 @@ this repo under `fastlane/metadata/android/en-US/` and F-Droid pulls it automati
 |-------|-------|--------|
 | Application ID | `com.nendo.argosy` | `app/build.gradle.kts` |
 | versionName / base versionCode | `1.18.0` / `298` | `app/build.gradle.kts` |
-| License | GPL-3.0 (`LICENSE`) | verify `-only` vs `-or-later`, see below |
+| License | `GPL-3.0-only` (confirmed) | `LICENSE` (verbatim GPLv3, no "or later") |
 | minSdk / targetSdk | 26 / 35 | `app/build.gradle.kts` |
 | Release tag | `v1.18.0` | `git tag` |
 | Submodules | `sigil`, `libretrodroid/.../rcheevos` | `.gitmodules` |
@@ -61,29 +61,40 @@ trip it up:
    - Last resort: `scanignore: [libs/maven]` in the recipe — keeps the binaries but
      reviewers commonly reject this. Not included in the recipe by default.
 
-2. **`sigil` submodule is a separate repo** (`github.com/rommforge/argosy-sigil`,
-   Rust title-ID extraction). Confirm its license is FOSS and F-Droid-compatible, and
-   whether the F-Droid build VM needs a Rust toolchain set up (via `sudo`/`rm` build
-   steps). It builds no committed `.so`, so it must compile at build time.
-
-3. **Network dependency on `api.argosy.dev`** — `TITLEDB_API_URL` and `SOCIAL_API_URL`
-   are hardcoded to the developer's proprietary backend (`app/build.gradle.kts`). The
-   core RomM sync is self-hosted, but if titledb/social features depend on this
-   closed service, reviewers may ask for a **`NonFreeNet`** AntiFeature. Decide and, if
-   needed, add `AntiFeatures: [NonFreeNet]` with a description.
-
-4. **Discord SDK** — an optional local AAR (`app/libs/*.aar`) that is gitignored and
+2. **Discord SDK** — an optional local AAR (`app/libs/*.aar`) that is gitignored and
    absent from the repo, so the default build excludes it (`DISCORD_SDK_ENABLED=false`).
    No action needed **as long as** it is never committed. If it is bundled, it becomes a
    `NonFreeDep`/`NonFreeNet` concern.
 
-5. **License precision** — `LICENSE` is the full GPLv3 text and the README says
-   "GNU General Public License v3.0". Source files carry no per-file headers, so confirm
-   whether the intent is `GPL-3.0-only` (used in the recipe) or `GPL-3.0-or-later`.
+That is the only remaining hard blocker. The items below were investigated and resolved.
+
+## Confirmed (no longer blockers)
+
+- **`sigil` submodule — CONFIRMED FINE.** `github.com/rommforge/argosy-sigil` (pinned at
+  `42ca623`) is a **pure C** ROM serial-ID parser, **MPL-2.0** (FOSS, GPLv3-compatible),
+  built from source via **CMake/NDK** (`bindings/android/.../CMakeLists.txt`,
+  `externalNativeBuild { cmake }`). The tree contains only `.c`/`.h`/CMake source — **no
+  prebuilt `.so`/`.a`/`.jar`**. **No Rust toolchain is needed** (an earlier note here was
+  wrong). `submodules: true` + the F-Droid VM's NDK is all it requires.
+
+- **`api.argosy.dev` — CONFIRMED `NonFreeNet` (added to the recipe).** The social layer
+  (`SOCIAL_API_URL`, `ArgosSocialService`/`SocialRepository`) — friends, activity feed,
+  presence, achievement/session upload, and netplay matchmaking — depends on the
+  proprietary `api.argosy.dev` backend over a persistent WebSocket. It is opt-in (QR-code
+  login) but auto-reconnects on every startup once linked, with no disable short of
+  unlinking. The core launcher and self-hosted RomM sync work without it. `titledb` and
+  `cheats` also point at `api.argosy.dev` but are **build-secret-gated**
+  (`TITLEDB_API_SECRET`/`CHEATSDB_API_SECRET` are empty in a source build →
+  `isConfigured()` false → never contacted), so they are inert in an F-Droid build and are
+  not the trigger. The recipe declares `AntiFeatures: NonFreeNet` with a description.
+
+- **License — CONFIRMED `GPL-3.0-only`.** `LICENSE` is the verbatim GPLv3 text, the README
+  says "GNU General Public License v3.0" (no "or later"), and no source file elects
+  `-or-later` (no SPDX headers). `GPL-3.0-only` in the recipe is correct.
 
 Native code that is **fine** (builds from source, no committed blobs): `libretrodroid`
-(C++ via CMake/NDK, bundled Oboe source), the `rcheevos` submodule (C). `submodules: true`
-handles fetching both.
+(C++ via CMake/NDK, bundled Oboe source), the `rcheevos` submodule (C), and `sigil`
+(C, above). `submodules: true` handles fetching the submodules.
 
 ## Submission steps (after blockers are resolved)
 

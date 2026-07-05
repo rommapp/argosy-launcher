@@ -1,3 +1,5 @@
+AntiFeatures:
+  NonFreeNet: The optional social features (friends, activity feed, presence, and netplay matchmaking) connect to the proprietary api.argosy.dev backend. The core launcher and self-hosted RomM library sync work without it; the service is only contacted after the user signs in via QR code.
 Categories:
   - Games
 License: GPL-3.0-only

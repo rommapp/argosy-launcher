@@ -43,51 +43,43 @@ The changelogs under `fastlane/.../changelogs/` are provided for `1000298`, `200
 `3000298`, and `298` so the "What's New" entry shows regardless of which code a client
 sees.
 
-## Known inclusion blockers — resolve before the build will pass
+## Steam / prebuilt-jar blocker — RESOLVED via a FOSS product flavor
 
-F-Droid clones the source, runs its **scanner**, then builds in isolation. These will
-trip it up:
+The prebuilt `libs/maven/io/github/joshuatam/javasteam*/**.jar` binaries (force-included via
+`.gitignore: !libs/maven/**/*.jar`, consumed through the in-tree maven repo in
+`settings.gradle.kts`) are the one thing F-Droid's scanner rejects **regardless of license**.
 
-1. **Prebuilt JARs in `libs/maven/` (hard blocker — the only real one).**
-   `libs/maven/io/github/joshuatam/javasteam*/**.jar` are precompiled binaries committed
-   to the repo (force-included via `.gitignore: !libs/maven/**/*.jar`) and consumed
-   through the in-tree maven repo declared in `settings.gradle.kts`. The scanner rejects
-   committed binaries **regardless of license**, so this must go before F-Droid will build.
+**What was found (research):** both jars come from one MIT multi-module fork
+`github.com/joshuatam/JavaSteam` (modules `javasteam` + `javasteam-depotdownloader`, group
+`io.github.joshuatam` `1.8.1`, rolling branch `gamenative-latest`; base jar ~16 MB of
+protobuf-generated classes). It is **not on Maven Central** (upstream `in.dragonbra:javasteam`
+is, but lacks the `depotdownloader` module), **JitPack cannot build it** (errors, no tags),
+and app coupling is **narrow** — only 6 files import the library.
 
-   **What was found (research):**
-   - Both jars come from one MIT fork: `github.com/joshuatam/JavaSteam` — a multi-module
-     Gradle project whose `javasteam` and `javasteam-depotdownloader` modules produce the
-     two artifacts (group `io.github.joshuatam`, version `1.8.1`). Default branch
-     `gamenative-latest` (the GameNative fork). The base `javasteam` jar is ~16 MB
-     (protobuf-generated Steam classes).
-   - The fork is **NOT on Maven Central** (`io.github.joshuatam` → 404). Upstream
-     `in.dragonbra:javasteam` **is** on Central (latest 1.8.0) but lacks the fork's
-     `depotdownloader` module and any GameNative-specific patches, so a straight swap is
-     not viable.
-   - **JitPack cannot build the fork today**: `com.github.joshuatam:JavaSteam` builds error
-     out on `gamenative-latest` and recent commits, and the fork has **no release tags**.
-   - App-side coupling is **narrow**: only 5 files import the library directly —
-     `data/steam/{SteamService,SteamAuthManager,SteamContentManager,SteamDepotManager}.kt`
-     (+ related). The other ~30 Steam files (Room entities/DAOs, repositories, UI) never
-     touch the library and compile without it. `SteamService` is a concrete Android
-     `Service` (not a Hilt-bound interface), so a flavor swap needs stub classes preserving
-     the public API those 30 files call.
+**What was implemented (chosen resolution):** a `distribution` flavor dimension with `full`
+and `foss` product flavors (`app/build.gradle.kts`):
 
-   **Resolution options (none fixable in the fdroiddata recipe alone):**
-   1. **FOSS product flavor without Steam** *(only path fully within this repo; recommended
-      for a first F-Droid release)* — split the app into `full`/`foss` flavors; move the 5
-      library-touching files to `src/full`, add compile-only stubs in `src/foss` that no-op
-      the Steam feature, and drop `bundles.steam` from the `foss` flavor. Package the `foss`
-      flavor. Removes the binaries and the non-free-ish depot downloader entirely.
-   2. **Publish the fork to Maven Central** *(cleanest if keeping Steam; maintainer action)*
-      — the fork already builds with `io.github.joshuatam` + Gradle module metadata, so the
-      publishing infra exists; it just hasn't been pushed to Central. Then delete
-      `libs/maven`, drop the local repo from `settings.gradle.kts`, and depend normally.
-   3. **Build the fork from source in fdroiddata** (submodule/srclib + composite build) —
-      keeps Steam with no publishing, but is fragile: the fork doesn't build on JitPack and
-      pins a rolling branch, so expect build-fixing work and reviewer pushback.
-   4. **Last resort: `scanignore: [libs/maven]`** — keeps the binaries; reviewers commonly
-      reject this. Not in the recipe.
+- `full` (default) — unchanged; the Steam-download build for GitHub releases. Keeps
+  `"fullImplementation"(libs.bundles.steam)` and the six library-backed classes, now under
+  `app/src/full/kotlin/.../data/steam/`.
+- `foss` — **no Steam library**. The six library-touching classes (`SteamService`,
+  `SteamAuthManager`, `SteamContentManager`, `SteamDepotManager`, `SteamLibraryManager`,
+  `LicenseSerializer`) have no-op stubs in `app/src/foss/kotlin/.../data/steam/` that
+  reproduce exactly the public API shared code consumes (state flows, control methods,
+  `@Singleton @Inject` constructors, and the shared value types in `SteamModels.kt`). The
+  ~30 other Steam files (Room entities/DAOs, repositories, UI) are unchanged in `src/main`
+  and compile against the stubs, so the Steam settings screens still render but the feature
+  is inert.
+
+The F-Droid recipe therefore builds `assembleFossRelease` (`gradle: [foss]`) and uses
+`scandelete: [libs/maven]` to remove the prebuilt jars before the build — safe because the
+`foss` flavor never references them. This removes the binaries **and** the non-free depot
+downloader from the F-Droid artifact entirely.
+
+*Alternatives not taken (kept for reference):* publish the fork to Maven Central (cleanest if
+keeping Steam, but needs the maintainer's Sonatype credentials); build the fork from source
+in fdroiddata (fragile — JitPack already fails); or `scanignore: [libs/maven]` (reviewers
+reject).
 
 2. **Discord SDK** — an optional local AAR (`app/libs/*.aar`) that is gitignored and
    absent from the repo, so the default build excludes it (`DISCORD_SDK_ENABLED=false`).

@@ -116,15 +116,57 @@ Native code that is **fine** (builds from source, no committed blobs): `libretro
 (C++ via CMake/NDK, bundled Oboe source), the `rcheevos` submodule (C), and `sigil`
 (C, above). `submodules: true` handles fetching the submodules.
 
-## Submission steps (after blockers are resolved)
+## Prerequisite in THIS repo — cut a release that contains this work
 
-1. Ensure the maintainer is aware / not opposed (this repo is the upstream — fine).
-2. Fork `fdroiddata`, create branch `com.nendo.argosy`, copy `com.nendo.argosy.yml`
-   to `metadata/com.nendo.argosy.yml`.
-3. Lint & format: `fdroid lint com.nendo.argosy` and `fdroid rewritemeta com.nendo.argosy`.
-4. Test the build locally (Docker): `fdroid build -v -l com.nendo.argosy`.
-5. Push the branch to trigger fdroiddata CI; fix any scanner/build findings.
-6. Open a merge request titled `New App: com.nendo.argosy`.
+The recipe currently pins `commit: v1.18.0`, but that tag **predates** both the
+`fastlane/` metadata and the `foss` flavor. F-Droid reads media metadata only from a
+recognized release tag and builds the pinned commit, so before submitting:
 
-Reproducible builds are optional but recommended for a new app (see
+1. Merge this branch to `main`.
+2. Bump the version and tag a new stable release (e.g. `v1.19.0`) off merged `main` — the
+   tag must contain `fastlane/` and the `foss` flavor.
+3. Repoint the recipe: update `commit`, `versionName`, the two `versionCode` values
+   (`<abi>*1_000_000 + <new base>`), and `CurrentVersion`/`CurrentVersionCode` in
+   `com.nendo.argosy.yml` to the new tag.
+
+## Submission steps (fdroiddata lives on GitLab: gitlab.com/fdroid/fdroiddata)
+
+Per fdroiddata's `CONTRIBUTING.md`:
+
+1. Confirm the maintainer is aware / not opposed (this repo is the upstream — a formality).
+2. Register on GitLab, **fork** `gitlab.com/fdroid/fdroiddata`, clone your fork:
+   ```shell
+   git clone https://gitlab.com/YOUR_USERNAME/fdroiddata.git
+   cd fdroiddata
+   ```
+3. Create a branch **named after the app id** — do NOT work on `master` (it is protected
+   and you cannot open an MR from it):
+   ```shell
+   git checkout -b com.nendo.argosy
+   ```
+4. Add the recipe as `metadata/com.nendo.argosy.yml` (copy this repo's
+   `fdroid/com.nendo.argosy.yml`). Optionally scaffold instead with
+   `fdroid import --url https://github.com/rommapp/argosy-launcher --subdir app`.
+5. With `fdroidserver` installed (`pip install git+https://gitlab.com/fdroid/fdroiddata.git`),
+   run the local checks:
+   ```shell
+   fdroid readmeta                       # syntax
+   fdroid rewritemeta com.nendo.argosy   # canonical formatting
+   fdroid checkupdates com.nendo.argosy  # fills Auto Name / Current Version
+   fdroid lint com.nendo.argosy          # fix all warnings
+   fdroid build -v -l com.nendo.argosy   # must produce at least one working build
+   ```
+6. Commit with a clear message (the "New App: com.nendo.argosy" convention is common),
+   push the branch to your fork, and check **CI/CD → Pipelines** passes; fix metadata until
+   it does.
+7. Open a **merge request** against fdroiddata from your `com.nendo.argosy` branch and
+   **fill in the MR template**. Squash is on by default. Reply promptly to packager
+   questions.
+
+Do's/don'ts from CONTRIBUTING: one branch per app; keep your fork's `master` up to date;
+never commit to or MR from `master`.
+
+After merge it typically takes ~24–48 h to appear in the client. Autoupdate is already
+configured (`AutoUpdateMode: Version`, `UpdateCheckMode: Tags`), so future `v*` tags build
+automatically. Reproducible builds are optional but recommended for a new app (see
 `AllowedAPKSigningKeys`); consider it once the build passes.

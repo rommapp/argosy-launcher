@@ -1,0 +1,6 @@
+Argosy 1.19.0
+
+- Now available on F-Droid via a Steam-free (FOSS) build
+- Packaging and metadata improvements for reproducible, source-only builds
+
+See the full changelog on GitHub.

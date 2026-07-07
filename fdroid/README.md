@@ -39,9 +39,10 @@ The recipe therefore builds with `-PallAbis` (the flag that enables
 `v*` tag. `UpdateCheckMode: Tags ^v[0-9.]+$` matches stable tags only and skips the
 `-beta` tags.
 
-The changelogs under `fastlane/.../changelogs/` are provided for `1000298`, `2000298`,
-`3000298`, and `298` so the "What's New" entry shows regardless of which code a client
-sees.
+The `fastlane/.../changelogs/` directory is currently empty: the stale 1.18.0 entries were
+removed. At `v2.0.0` tag time, add one `.txt` per published versionCode (named literally,
+e.g. `1000<base>.txt` and `2000<base>.txt`) with the same "What's New" text so the entry
+shows regardless of which ABI a client installs.
 
 ## Steam / prebuilt-jar blocker — RESOLVED via a FOSS product flavor
 
@@ -133,8 +134,8 @@ recipe therefore targets the eventual **`v2.0.0` stable** tag.
   F-Droid's versionCode check loudly, so it is safe until corrected.
 - ⬜ **Remaining:** merge this branch into the 2.0 line, then tag and push `v2.0.0` off it —
   the tag must contain `fastlane/` and the `foss` flavor. Add
-  `fastlane/.../changelogs/<2.0.0 codes>.txt` for the release notes (the existing `298`
-  changelogs are 1.18.0 history and are harmless).
+  `fastlane/.../changelogs/<2.0.0 codes>.txt` for the release notes (the changelogs
+  directory is currently empty).
 
 ## Submission steps (fdroiddata lives on GitLab: gitlab.com/fdroid/fdroiddata)
 

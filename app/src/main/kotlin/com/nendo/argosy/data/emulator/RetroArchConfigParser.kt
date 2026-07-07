@@ -254,7 +254,7 @@ class RetroArchConfigParser @Inject constructor(
         if (config == null && saveDir != null) {
             for (base in baseDirs) {
                 val baseDirFile = File(base)
-                val coreDir = File(base, saveDir)
+                val coreDir = File(base, matchExistingFolder(base, saveDir))
 
                 if (coreDir.exists() && coreDir.isDirectory) {
                     paths.add(coreDir.absolutePath)
@@ -290,9 +290,19 @@ class RetroArchConfigParser @Inject constructor(
             append("/").append(contentDirName)
         }
         if (sortByCore && coreName != null) {
-            append("/").append(coreName)
+            append("/").append(matchExistingFolder(toString(), coreName))
         }
     }
+
+    // RA sorts saves into a per-core folder named after the libretro corename.
+    // Our slug->corename map is incomplete, and the slug only matches RA's folder
+    // on a case-insensitive filesystem, so reuse the real folder name when it
+    // already exists.
+    private fun matchExistingFolder(parent: String, name: String): String =
+        File(parent).listFiles()
+            ?.firstOrNull { it.name.equals(name, ignoreCase = true) && it.isDirectory }
+            ?.name
+            ?: name
 
     private fun getBasePathAlternatives(path: String): List<String> {
         val alternatives = mutableListOf(path)
@@ -396,7 +406,7 @@ class RetroArchConfigParser @Inject constructor(
         if (config == null && coreName != null) {
             for (base in baseDirs) {
                 val statesDir = File(base)
-                val coreDir = File(base, coreName)
+                val coreDir = File(base, matchExistingFolder(base, coreName))
 
                 if (coreDir.exists() && coreDir.isDirectory) {
                     paths.add(coreDir.absolutePath)

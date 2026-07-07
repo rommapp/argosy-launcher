@@ -364,38 +364,52 @@ class GameRepository @Inject constructor(
         val startTime = System.currentTimeMillis()
         val missing = gameFileDao.getMissingFilesWithGameInfo()
         if (missing.isEmpty()) return@withContext 0
+        Log.d(TAG, "repairVariantFilePointers: checking ${missing.size} entries without localPath")
 
         var repaired = 0
-        for (entry in missing) {
-            val platformDir = getDownloadDir(entry.platformSlug)
-            val folderCandidates = buildList {
-                entry.rommFileName?.takeIf { it.isNotBlank() }?.let { add(it) }
-                add(entry.gameTitle)
-            }.distinct()
-            val categoryCandidates = listOf(entry.category, entry.category.lowercase(), "extcontent")
-                .distinct()
+        for ((platformSlug, entries) in missing.groupBy { it.platformSlug }) {
+            val platformDir = getDownloadDir(platformSlug)
+            if (!platformDir.isDirectory) continue
+            val fileIndex by lazy { buildPlatformFileIndex(platformDir) }
+            val folderExists = HashMap<String, Boolean>()
 
-            val found = folderCandidates.firstNotNullOfOrNull { folderName ->
-                val gameFolder = File(platformDir, folderName)
-                if (!gameFolder.isDirectory) return@firstNotNullOfOrNull null
-                categoryCandidates.firstNotNullOfOrNull { category ->
-                    val categoryFolder = File(gameFolder, category)
-                    val candidate = File(categoryFolder, entry.fileName)
-                    candidate.takeIf { it.isFile }
-                }
-            } ?: platformDir.takeIf { it.isDirectory }
-                ?.walkTopDown()
-                ?.maxDepth(6)
-                ?.firstOrNull { it.isFile && it.name == entry.fileName && !it.name.startsWith("._") }
-            ?: continue
+            for (entry in entries) {
+                val folderCandidates = buildList {
+                    entry.rommFileName?.takeIf { it.isNotBlank() }?.let { add(it) }
+                    add(entry.gameTitle)
+                }.distinct()
+                val categoryCandidates = listOf(entry.category, entry.category.lowercase(), "extcontent")
+                    .distinct()
 
-            gameFileDao.updateLocalPath(entry.fileId, found.absolutePath, Instant.now())
-            repaired++
-            Log.i(TAG, "Repaired variant pointer for file ${entry.fileId} (${entry.fileName}) -> ${found.absolutePath}")
+                val found = folderCandidates.firstNotNullOfOrNull { folderName ->
+                    val gameFolder = File(platformDir, folderName)
+                    val exists = folderExists.getOrPut(folderName) { gameFolder.isDirectory }
+                    if (!exists) return@firstNotNullOfOrNull null
+                    categoryCandidates.firstNotNullOfOrNull { category ->
+                        val categoryFolder = File(gameFolder, category)
+                        val candidate = File(categoryFolder, entry.fileName)
+                        candidate.takeIf { it.isFile }
+                    }
+                } ?: fileIndex[entry.fileName]
+                ?: continue
+
+                gameFileDao.updateLocalPath(entry.fileId, found.absolutePath, Instant.now())
+                repaired++
+                Log.i(TAG, "Repaired variant pointer for file ${entry.fileId} (${entry.fileName}) -> ${found.absolutePath}")
+            }
         }
         val elapsed = System.currentTimeMillis() - startTime
-        if (repaired > 0) Log.i(TAG, "Repaired $repaired variant file pointers in ${elapsed}ms")
+        Log.d(TAG, "repairVariantFilePointers: $repaired repaired in ${elapsed}ms")
         repaired
+    }
+
+    private fun buildPlatformFileIndex(platformDir: File): Map<String, File> {
+        val index = HashMap<String, File>()
+        platformDir.walkTopDown()
+            .maxDepth(3)
+            .filter { it.isFile && !it.name.startsWith("._") }
+            .forEach { file -> if (file.name !in index) index[file.name] = file }
+        return index
     }
 
     suspend fun recoverDownloadPaths(): Int = withContext(Dispatchers.IO) {

@@ -666,16 +666,27 @@ object EmulatorRegistry {
             )
         ),
         EmulatorDef(
+            id = "armsx2_refresh",
+            packageName = "com.armsx2",
+            displayName = "ARMSX2",
+            supportedPlatforms = setOf("ps2"),
+            launchConfig = LaunchConfig.Custom(
+                activityClass = "com.armsx2.MainActivity"
+            ),
+            defaultLaunchMethod = LaunchMethod.SHELL,
+            downloadUrl = "https://github.com/ARMSX2/ARMSX2/releases",
+            releaseSource = ReleaseSource.GitHub("ARMSX2/ARMSX2")
+        ),
+        EmulatorDef(
             id = "armsx2",
             packageName = "come.nanodata.armsx2",
-            displayName = "ARMSX2",
+            displayName = "ARMSX2 (Legacy)",
             supportedPlatforms = setOf("ps2"),
             launchConfig = LaunchConfig.Custom(
                 activityClass = "kr.co.iefriends.pcsx2.activities.MainActivity"
             ),
             defaultLaunchMethod = LaunchMethod.SHELL,
-            downloadUrl = "https://github.com/ARMSX2/ARMSX2/releases",
-            releaseSource = ReleaseSource.GitHub("ARMSX2/ARMSX2")
+            downloadUrl = "https://github.com/ARMSX2/ARMSX2/releases"
         ),
         EmulatorDef(
             id = "pcsx2",
@@ -954,7 +965,7 @@ object EmulatorRegistry {
 
     fun getRecommendedEmulators(): Map<String, List<String>> = mapOf(
         "psx" to listOf("builtin", "duckstation", "retroarch", "retroarch_64"),
-        "ps2" to listOf("nethersx2", "armsx2", "psx2", "pcsx2"),
+        "ps2" to listOf("nethersx2", "armsx2_refresh", "armsx2", "psx2", "pcsx2"),
         "psp" to listOf("builtin", "ppsspp", "ppsspp_gold", "ppsspp_legacy", "retroarch", "retroarch_64"),
         "vita" to listOf("vita3k-zx", "vita3k"),
         "n64" to listOf("builtin", "mupen64plus_fz", "retroarch", "retroarch_64"),
@@ -1542,6 +1553,16 @@ object EmulatorRegistry {
                 intentExtras = mapOf("bootPath" to ExtraValue.FileUriString)
             ),
             downloadUrl = "https://github.com/Trixarian/NetherSX2-patch/releases"
+        ),
+        EmulatorFamily(
+            baseId = "armsx2_refresh",
+            displayNamePrefix = "ARMSX2",
+            packagePatterns = listOf("com.armsx2", "com.armsx2.*"),
+            supportedPlatforms = setOf("ps2"),
+            launchConfig = LaunchConfig.Custom(
+                activityClass = "com.armsx2.MainActivity"
+            ),
+            downloadUrl = "https://github.com/ARMSX2/ARMSX2/releases"
         ),
         EmulatorFamily(
             baseId = "armsx2",

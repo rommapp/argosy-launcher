@@ -369,6 +369,15 @@ object SavePathRegistry {
             usesFolderBasedSaves = true,
             supported = true
         ),
+        "armsx2_refresh" to SavePathConfig(
+            emulatorId = "armsx2_refresh",
+            defaultPaths = listOf(
+                "{extStorage}/Android/data/com.armsx2/files/memcards"
+            ),
+            saveExtensions = listOf("*"),
+            usesFolderBasedSaves = true,
+            supported = true
+        ),
         "armsx2" to SavePathConfig(
             emulatorId = "armsx2",
             defaultPaths = listOf(

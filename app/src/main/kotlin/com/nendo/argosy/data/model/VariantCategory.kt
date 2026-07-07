@@ -19,7 +19,8 @@ enum class VariantCategory(
 
     companion object {
         fun fromKey(key: String?): VariantCategory = entries.find { it.key == key } ?: UNKNOWN
-        val VARIANT_EXCLUDED_PLATFORMS = setOf("switch", "3ds", "vita", "psvita", "wiiu")
+        val TITLE_ID_PLATFORMS = setOf("switch", "3ds", "vita", "psvita", "wiiu")
+        val VARIANT_EXCLUDED_PLATFORMS = TITLE_ID_PLATFORMS + setOf("win", "windows", "dos", "steam")
         val CATEGORY_FOLDER_NAMES: Set<String> = entries.map { it.key }.toSet() + "extcontent"
     }
 }

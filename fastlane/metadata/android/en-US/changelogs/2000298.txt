@@ -1,8 +1,0 @@
-Argosy 1.18.0
-
-- New Related Games section on game details with series, franchise, and similar tiers
-- Arcade sub-platforms now split by folder slug with real core routing
-- Sync now captures full genres and collections from RomM metadata
-- Various fixes and refinements
-
-See the full changelog on GitHub.

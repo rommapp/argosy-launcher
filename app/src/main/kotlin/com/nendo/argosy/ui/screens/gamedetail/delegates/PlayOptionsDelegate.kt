@@ -73,8 +73,7 @@ class PlayOptionsDelegate @Inject constructor(
             val hasHardcoreSave = entries.any { it.isHardcore }
             val isRALoggedIn = raRepository.isLoggedIn()
             val isOnline = com.nendo.argosy.util.NetworkUtils.isOnline(context)
-            val defaultToHardcore = userPreferencesRepository.getBuiltinEmulatorSettings()
-                .first().defaultToHardcore
+            val defaultToHardcore = isDefaultToHardcore()
 
             val newState = PlayOptionsState(
                 showPlayOptions = true,
@@ -142,18 +141,33 @@ class PlayOptionsDelegate @Inject constructor(
     fun showFreshGameModeSelection(scope: CoroutineScope, gameId: Long) {
         scope.launch {
             val isOnline = com.nendo.argosy.util.NetworkUtils.isOnline(context)
-            _state.update {
-                it.copy(
-                    showPlayOptions = true,
-                    playOptionsFocusIndex = 0,
-                    hasCasualSaves = false,
-                    hasHardcoreSave = false,
-                    hasRASupport = true,
-                    isRALoggedIn = true,
-                    isOnline = isOnline
-                )
+            val newState = PlayOptionsState(
+                showPlayOptions = true,
+                hasCasualSaves = false,
+                hasHardcoreSave = false,
+                hasRASupport = true,
+                isRALoggedIn = true,
+                isOnline = isOnline
+            )
+            // "Default to Hardcore" pre-focuses New Hardcore (online-only) for a fresh game.
+            val focusIndex = if (isDefaultToHardcore() && isOnline) {
+                visibleActions(newState).indexOf(PlayOptionAction.NewHardcore).coerceAtLeast(0)
+            } else {
+                0
             }
+            _state.value = newState.copy(playOptionsFocusIndex = focusIndex)
             soundManager.play(SoundType.OPEN_MODAL)
         }
     }
+
+    private suspend fun isDefaultToHardcore(): Boolean =
+        userPreferencesRepository.getBuiltinEmulatorSettings().first().defaultToHardcore
+
+    /**
+     * Whether a built-in RESUME launch should default to hardcore. Used by the direct-launch path
+     * (which bypasses the modal). Requires the "Default to Hardcore" setting and a RetroAchievements
+     * login, since hardcore is only meaningful when signed in.
+     */
+    suspend fun shouldDefaultToHardcoreResume(): Boolean =
+        isDefaultToHardcore() && raRepository.isLoggedIn()
 }

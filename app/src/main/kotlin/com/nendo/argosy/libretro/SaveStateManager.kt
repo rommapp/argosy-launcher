@@ -114,6 +114,21 @@ class SaveStateManager(
             return RestoreResult(bytes)
         }
 
+        // An explicit save-management restore must win over the default resume pick. The restore
+        // already wrote the chosen save to the live .srm and set activeSaveApplied (cleared on
+        // session end), so load that as-is instead of re-deriving from the cache -- otherwise the
+        // hardcore path (getLatestHardcoreSave) or the timestamp lookup can silently clobber the
+        // user's choice with a different save.
+        if (launchMode == LaunchMode.RESUME || launchMode == LaunchMode.RESUME_HARDCORE) {
+            val game = gameDao.getById(gameId)
+            val sramFile = getSramFile()
+            if (game?.activeSaveApplied == true && sramFile.exists()) {
+                val bytes = sramFile.readBytes()
+                Log.i(TAG, "Honoring explicit restore (activeSaveApplied): on-disk .srm ${bytes.size} bytes")
+                return RestoreResult(bytes)
+            }
+        }
+
         return when (launchMode) {
             LaunchMode.NEW_HARDCORE, LaunchMode.NEW_CASUAL -> {
                 Log.d(TAG, "New game mode - starting fresh (no save)")

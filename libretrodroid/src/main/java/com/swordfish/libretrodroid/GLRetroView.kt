@@ -551,11 +551,11 @@ class GLRetroView(
             data.gameFileBytes != null -> loadGameFromBytes(data.gameFileBytes!!)
             data.gameVirtualFiles.isNotEmpty() -> loadGameFromVirtualFiles(data.gameVirtualFiles)
         }
-        data.saveRAMState?.let {
+        data.saveRAMState?.let { sram ->
             // A false result means the on-disk SRAM couldn't be applied (e.g. it's larger than
             // the core's save memory -- a cross-core mismatch). Record it so the UI can warn
             // instead of silently booting with a fresh save.
-            if (!LibretroDroid.unserializeSRAM(data.saveRAMState)) {
+            if (!LibretroDroid.unserializeSRAM(sram)) {
                 sramLoadFailed = true
             }
             data.saveRAMState = null

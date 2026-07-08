@@ -1521,6 +1521,12 @@ class LibretroActivity : ComponentActivity() {
                     try {
                         withContext(kotlinx.coroutines.Dispatchers.IO + kotlinx.coroutines.NonCancellable) {
                             performAutoSaveState()
+                            // Flush live SRAM to disk before caching. cacheCurrentSessionForQuit
+                            // reads the .srm off disk, so caching first snapshots the pre-session
+                            // save and that stale cache overwrites the fresh one on next resume.
+                            if (!isGuestJoinedSession) {
+                                saveStateManager.saveSram(retroView)
+                            }
                             try {
                                 playSessionTracker.cacheCurrentSessionForQuit()
                             } catch (e: Exception) {
@@ -1530,9 +1536,6 @@ class LibretroActivity : ComponentActivity() {
                                 playSessionTracker.cacheCurrentSessionStatesForQuit()
                             } catch (e: Exception) {
                                 Log.w(TAG, "Pre-quit state cache failed", e)
-                            }
-                            if (!isGuestJoinedSession) {
-                                saveStateManager.saveSram(retroView)
                             }
                             coreDestroyed = true
                             retroView.destroyNative()

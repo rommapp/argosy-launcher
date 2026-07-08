@@ -87,7 +87,8 @@ class GameLauncher @Inject constructor(
     private val coreSystemDataManager: CoreSystemDataManager,
     private val gameFileDao: GameFileDao,
     private val emulatorSaveConfigRepository: com.nendo.argosy.data.repository.EmulatorSaveConfigRepository,
-    private val saveHandlerRegistry: com.nendo.argosy.data.sync.platform.PlatformSaveHandlerRegistry
+    private val saveHandlerRegistry: com.nendo.argosy.data.sync.platform.PlatformSaveHandlerRegistry,
+    private val libretroStatePathResolver: LibretroStatePathResolver
 ) {
     private val shellAmAvailable: Boolean by lazy {
         try {
@@ -521,7 +522,9 @@ class GameLauncher @Inject constructor(
         val builtinBesideRom = emulatorSaveConfigRepository.getByEmulator("builtin")?.savesBesideRom == true
         val effectiveSavePath = if (builtinBesideRom) romFile.parent
             else platformLibretroOverride?.savePath ?: builtinSettings.customSavePath
-        val effectiveStatePath = platformLibretroOverride?.statePath ?: builtinSettings.customStatePath
+        // Single source of truth for the flat live state dir (mirrors save-path override
+        // precedence). LibretroActivity still layers variant isolation on top of this base.
+        val effectiveStatePath = libretroStatePathResolver.liveStateBaseDir(game.id).absolutePath
         return Intent(context, LibretroActivity::class.java).apply {
             putExtra(LibretroActivity.EXTRA_ROM_PATH, romFile.absolutePath)
             putExtra(LibretroActivity.EXTRA_VARIANT_FILE_ID, variantFileId ?: -1L)
@@ -535,7 +538,7 @@ class GameLauncher @Inject constructor(
             putExtra(LibretroActivity.EXTRA_CORE_VAR_KEYS, coreVariables.map { it.key }.toTypedArray())
             putExtra(LibretroActivity.EXTRA_CORE_VAR_VALUES, coreVariables.map { it.value }.toTypedArray())
             effectiveSavePath?.let { putExtra(LibretroActivity.EXTRA_SAVES_DIR, it) }
-            effectiveStatePath?.let { putExtra(LibretroActivity.EXTRA_STATES_DIR, it) }
+            putExtra(LibretroActivity.EXTRA_STATES_DIR, effectiveStatePath)
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
     }

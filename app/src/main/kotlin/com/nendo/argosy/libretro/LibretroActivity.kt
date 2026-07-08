@@ -636,6 +636,10 @@ class LibretroActivity : ComponentActivity() {
                             Log.i(TAG, "[Startup] First frame rendered - emulation running successfully")
                             Log.d(TAG, "[Startup] gameId=$gameId, core=$coreName, hardcore=$hardcoreMode")
                             checkStateSupport()
+                            if (retroView.sramLoadFailed) {
+                                Log.w(TAG, "[Startup] SRAM failed to load (size mismatch); booting with a fresh save")
+                                inGameMessage = "Failed to load save, using new save instead"
+                            }
                             attemptAutoRestore()
                             netplay.triggerPendingNetplayJoin()
                         }

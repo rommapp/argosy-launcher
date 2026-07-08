@@ -130,6 +130,11 @@ class GLRetroView(
     private val retroGLEventsSubject = MutableSharedFlow<GLRetroEvents>(1)
     private val retroGLIssuesErrors = MutableSharedFlow<Int>(1)
 
+    /** True if the on-disk SRAM couldn't be applied to the core at load (e.g. size mismatch). */
+    @Volatile
+    var sramLoadFailed: Boolean = false
+        private set
+
     private val rumbleEventsSubject = MutableSharedFlow<RumbleEvent>()
 
     private var lifecycle: Lifecycle? = null
@@ -547,7 +552,12 @@ class GLRetroView(
             data.gameVirtualFiles.isNotEmpty() -> loadGameFromVirtualFiles(data.gameVirtualFiles)
         }
         data.saveRAMState?.let {
-            LibretroDroid.unserializeSRAM(data.saveRAMState)
+            // A false result means the on-disk SRAM couldn't be applied (e.g. it's larger than
+            // the core's save memory -- a cross-core mismatch). Record it so the UI can warn
+            // instead of silently booting with a fresh save.
+            if (!LibretroDroid.unserializeSRAM(data.saveRAMState)) {
+                sramLoadFailed = true
+            }
             data.saveRAMState = null
         }
         LibretroDroid.onSurfaceCreated()

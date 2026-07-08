@@ -88,7 +88,8 @@ class GameLauncher @Inject constructor(
     private val gameFileDao: GameFileDao,
     private val emulatorSaveConfigRepository: com.nendo.argosy.data.repository.EmulatorSaveConfigRepository,
     private val saveHandlerRegistry: com.nendo.argosy.data.sync.platform.PlatformSaveHandlerRegistry,
-    private val libretroStatePathResolver: LibretroStatePathResolver
+    private val libretroStatePathResolver: LibretroStatePathResolver,
+    private val notificationManager: com.nendo.argosy.core.notification.NotificationManager
 ) {
     private val shellAmAvailable: Boolean by lazy {
         try {
@@ -1064,11 +1065,13 @@ class GameLauncher @Inject constructor(
     private suspend fun resolveBuiltinCoreId(game: GameEntity): String? {
         val validCoreIds = com.nendo.argosy.libretro.LibretroCoreRegistry
             .getCoresForPlatform(game.platformSlug).map { it.coreId }.toSet()
+        var rejectedCore: String? = null
 
         fun accept(coreId: String?, source: String): String? {
             if (coreId.isNullOrBlank()) return null
             if (coreId !in validCoreIds) {
                 Logger.warn(TAG, "[BuiltIn] ignoring unknown core '$coreId' from $source for ${game.platformSlug}")
+                if (rejectedCore == null) rejectedCore = coreId
                 return null
             }
             Logger.debug(TAG, "[BuiltIn] core selection: $source -> $coreId")
@@ -1082,8 +1085,22 @@ class GameLauncher @Inject constructor(
         val default = com.nendo.argosy.libretro.LibretroCoreRegistry
             .getDefaultCoreForPlatform(game.platformSlug)?.coreId
         Logger.debug(TAG, "[BuiltIn] core selection: registry default -> $default")
+
+        // The configured core isn't available for the built-in player. Tell the user instead of
+        // silently substituting a different core -- a silent swap can also silently break saves
+        // (e.g. a vba_next save opened by mGBA).
+        val rejected = rejectedCore
+        if (rejected != null && default != null) {
+            notificationManager.show(
+                title = "Failed to load ${builtinCoreDisplayName(rejected)}, using ${builtinCoreDisplayName(default)} instead",
+                type = com.nendo.argosy.core.notification.NotificationType.WARNING
+            )
+        }
         return default
     }
+
+    private fun builtinCoreDisplayName(coreId: String): String =
+        com.nendo.argosy.libretro.LibretroCoreRegistry.getCoreById(coreId)?.displayName ?: coreId
 
     private suspend fun resolveCoreName(game: GameEntity): String? {
         val gameConfig = emulatorConfigDao.getByGameId(game.id)

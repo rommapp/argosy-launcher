@@ -124,7 +124,8 @@ class GameLauncherTest {
             gameFileDao = gameFileDao,
             emulatorSaveConfigRepository = emulatorSaveConfigRepository,
             saveHandlerRegistry = saveHandlerRegistry,
-            libretroStatePathResolver = libretroStatePathResolver
+            libretroStatePathResolver = libretroStatePathResolver,
+            notificationManager = mockk(relaxed = true)
         )
     }
 

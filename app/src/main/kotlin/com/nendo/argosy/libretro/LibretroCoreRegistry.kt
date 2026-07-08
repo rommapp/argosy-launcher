@@ -91,6 +91,13 @@ object LibretroCoreRegistry {
             estimatedSizeBytes = 2_000_000L,
             requiresBios = listOf("gba_bios.bin")
         ),
+        CoreInfo(
+            coreId = "vba_next",
+            fileName = "vba_next_libretro_android.so",
+            displayName = "VBA Next",
+            platforms = setOf("gb", "gbc", "gba"),
+            estimatedSizeBytes = 2_000_000L
+        ),
 
         // Nintendo 64
         CoreInfo(

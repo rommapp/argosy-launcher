@@ -415,4 +415,106 @@ class RetroArchConfigParserTest {
         assertEquals("VICE x64sc", EmulatorRegistry.getRetroArchSaveDirName("vice_x64sc"))
         assertEquals("melonDS DS", EmulatorRegistry.getRetroArchSaveDirName("melondsds"))
     }
+
+    // --- Existing on-disk core folder wins over the guessed name ---
+    // Resolver should reuse the folder's real name, not the slug guess (which
+    // only matches on a case-insensitive FS).
+
+    @Test
+    fun `save path snaps sort-by-core folder to existing on-disk name despite case`() {
+        val base = tempFolder.newFolder("saves")
+        File(base, "Gambatte").mkdirs()
+        val config = RetroArchSaveConfig(
+            savefileDirectory = base.absolutePath,
+            savefilesInContentDir = false,
+            sortByContentDirectory = false,
+            sortByCore = true
+        )
+        val paths = parser.resolveSavePathsWithConfig(
+            config = config,
+            contentDirName = null,
+            coreName = "gambatte"
+        )
+        assertTrue(
+            "expected resolver to reuse RetroArch's real 'Gambatte' folder; got $paths",
+            paths.contains("${base.absolutePath}/Gambatte")
+        )
+        assertTrue("must not invent a lowercase 'gambatte' folder", paths.none { it.endsWith("/gambatte") })
+    }
+
+    @Test
+    fun `save path snaps underscored slug to on-disk folder with spaces`() {
+        val base = tempFolder.newFolder("saves-slug")
+        File(base, "Genesis Plus GX").mkdirs()
+        val config = RetroArchSaveConfig(
+            savefileDirectory = base.absolutePath,
+            savefilesInContentDir = false,
+            sortByContentDirectory = false,
+            sortByCore = true
+        )
+        val paths = parser.resolveSavePathsWithConfig(
+            config = config,
+            contentDirName = null,
+            coreName = "genesis_plus_gx"
+        )
+        assertTrue(
+            "unlisted-core slug should snap to the real 'Genesis Plus GX' folder; got $paths",
+            paths.contains("${base.absolutePath}/Genesis Plus GX")
+        )
+    }
+
+    @Test
+    fun `save path leaves core name untouched when no folder exists yet`() {
+        val base = tempFolder.newFolder("saves-fresh")
+        val config = RetroArchSaveConfig(
+            savefileDirectory = base.absolutePath,
+            savefilesInContentDir = false,
+            sortByContentDirectory = false,
+            sortByCore = true
+        )
+        val paths = parser.resolveSavePathsWithConfig(
+            config = config,
+            contentDirName = null,
+            coreName = "Gambatte"
+        )
+        assertTrue(paths.contains("${base.absolutePath}/Gambatte"))
+    }
+
+    @Test
+    fun `null-config save path snaps to existing core folder despite case`() {
+        val base = tempFolder.newFolder("saves-nullcfg")
+        File(base, "Genesis Plus GX").mkdirs()
+        val paths = parser.resolveSavePathsWithConfig(
+            config = null,
+            contentDirName = null,
+            coreName = "genesis plus gx",
+            basePathOverride = base.absolutePath
+        )
+        assertTrue(
+            "config-missing fallback must reuse the real 'Genesis Plus GX' folder; got $paths",
+            paths.contains("${base.absolutePath}/Genesis Plus GX")
+        )
+    }
+
+    @Test
+    fun `state path snaps sort-by-core folder to existing on-disk name despite case`() {
+        val base = tempFolder.newFolder("states")
+        File(base, "Snes9x").mkdirs()
+        val config = RetroArchStateConfig(
+            savestateDirectory = base.absolutePath,
+            savestatesInContentDir = false,
+            sortByContentDirectory = false,
+            sortByCore = true
+        )
+        val paths = parser.resolveStatePathsWithConfig(
+            config = config,
+            contentDirName = null,
+            coreName = "snes9x"
+        )
+        assertTrue(
+            "expected resolver to reuse RetroArch's real 'Snes9x' folder; got $paths",
+            paths.contains("${base.absolutePath}/Snes9x")
+        )
+        assertTrue(paths.none { it.endsWith("/snes9x") })
+    }
 }

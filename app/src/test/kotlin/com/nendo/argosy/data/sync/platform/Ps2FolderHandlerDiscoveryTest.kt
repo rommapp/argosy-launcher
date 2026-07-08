@@ -98,6 +98,54 @@ class Ps2FolderHandlerDiscoveryTest {
     }
 
     @Test
+    fun `finds EU save when saveId already carries the BE prefix`() {
+        val card = File(tempDir, "Mcd001.ps2").apply { mkdirs() }
+        val save = File(card, "BESCES-53133").apply { mkdirs() }
+
+        val result = handler.findSaveFolderBySaveId(tempDir.absolutePath, "BESCES-53133")
+
+        assertEquals(save.absolutePath, result)
+    }
+
+    @Test
+    fun `derives BE prefix from a bare EU serial`() {
+        val card = File(tempDir, "Mcd001.ps2").apply { mkdirs() }
+        val save = File(card, "BESCES-53133").apply { mkdirs() }
+
+        val result = handler.findSaveFolderBySaveId(tempDir.absolutePath, "SCES-53133")
+
+        assertEquals(save.absolutePath, result)
+    }
+
+    @Test
+    fun `derives BI prefix from a bare JP serial`() {
+        val card = File(tempDir, "Mcd001.ps2").apply { mkdirs() }
+        val save = File(card, "BISLPS-25088").apply { mkdirs() }
+
+        val result = handler.findSaveFolderBySaveId(tempDir.absolutePath, "SLPS-25088")
+
+        assertEquals(save.absolutePath, result)
+    }
+
+    @Test
+    fun `constructSavePath preserves the sigil-derived EU folder name`() {
+        val card = File(tempDir, "Mcd001.ps2").apply { mkdirs() }
+
+        val result = handler.constructSavePath(tempDir.absolutePath, "BESCES-53133")
+
+        assertEquals("${card.absolutePath}/BESCES-53133", result)
+    }
+
+    @Test
+    fun `constructSavePath derives territory prefix for a bare EU serial`() {
+        val card = File(tempDir, "Mcd001.ps2").apply { mkdirs() }
+
+        val result = handler.constructSavePath(tempDir.absolutePath, "SCES-53133")
+
+        assertEquals("${card.absolutePath}/BESCES-53133", result)
+    }
+
+    @Test
     fun `returns null when no card contains the save`() {
         File(tempDir, "Mcd001.ps2").apply { mkdirs() }
 

@@ -250,6 +250,9 @@ interface GameDao {
     @Query("SELECT * FROM games WHERE igdbId = :igdbId AND platformId = :platformId")
     suspend fun getAllByIgdbIdAndPlatform(igdbId: Long, platformId: Long): List<GameEntity>
 
+    @Query("SELECT * FROM games WHERE rommFileName = :fileName AND platformId = :platformId AND syncDirty = 0 AND rommId IS NOT NULL")
+    suspend fun getCleanSyncedByFileNameAndPlatform(fileName: String, platformId: Long): List<GameEntity>
+
     @Query("SELECT * FROM games WHERE steamAppId = :steamAppId")
     suspend fun getBySteamAppId(steamAppId: Long): GameEntity?
 

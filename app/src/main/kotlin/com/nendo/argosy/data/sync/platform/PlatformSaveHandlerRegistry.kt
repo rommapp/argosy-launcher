@@ -431,28 +431,33 @@ private class Ps2FolderHandler(
         )
     }
 
-    /**
-     * Normalizes a PS2 disc serial into the on-disk folder form NetherSX2 / PCSX2 use
-     * (`BA` + 4-letter region prefix + `-` + 5-digit serial, e.g. `BASLUS-21050`). Accepts
-     * inputs with or without a leading BA prefix and with `-`/`_` separators stripped.
-     */
+    /** Normalizes a PS2 serial to its memcard folder name (`B` + territory + serial, per sigil ps2.c). */
     private fun toFolderName(serial: String): String {
-        val cleaned = serial.replace("-", "").replace("_", "")
-        val withoutBa = if (cleaned.startsWith(BA_PREFIX, ignoreCase = true)) {
-            cleaned.substring(BA_PREFIX.length)
-        } else cleaned
-        val match = Regex("^([A-Za-z]{4})(\\d+)$").find(withoutBa)
-        return if (match != null) {
-            "$BA_PREFIX${match.groupValues[1].uppercase()}-${match.groupValues[2]}"
+        val cleaned = serial.replace("-", "").replace("_", "").uppercase()
+        val prefixed = Regex("^(B[A-Z])([A-Z]{4})(\\d+)$").find(cleaned)
+        if (prefixed != null) {
+            val (region, code, digits) = prefixed.destructured
+            return "$region$code-$digits"
+        }
+        val bare = Regex("^([A-Z]{4})(\\d+)$").find(cleaned)
+        return if (bare != null) {
+            val (code, digits) = bare.destructured
+            "${territoryPrefixFor(code)}$code-$digits"
+        } else if (cleaned.startsWith(BA_PREFIX)) {
+            cleaned
         } else {
-            "$BA_PREFIX$withoutBa"
+            "$BA_PREFIX$cleaned"
         }
     }
 
+    private fun territoryPrefixFor(code: String): String = when (code[2]) {
+        'E' -> "BE"
+        'P', 'J', 'K' -> "BI"
+        else -> BA_PREFIX
+    }
+
     private fun matchesFolderName(folderName: String, serial: String): Boolean {
-        val stripped = serial.replace("-", "")
-        val baSerial = if (stripped.startsWith(BA_PREFIX, ignoreCase = true)) stripped else "$BA_PREFIX$stripped"
-        val folderStripped = folderName.replace("-", "")
-        return folderStripped.startsWith(baSerial, ignoreCase = true)
+        val expected = toFolderName(serial).replace("-", "")
+        return folderName.replace("-", "").startsWith(expected, ignoreCase = true)
     }
 }

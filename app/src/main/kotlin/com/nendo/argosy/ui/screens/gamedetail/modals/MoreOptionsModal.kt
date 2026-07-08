@@ -74,7 +74,7 @@ fun MoreOptionsModal(
             add(MoreMenuEntry.Option(label = "Change Core", value = game.selectedCoreName ?: "Default", action = MoreOptionAction.ChangeCore))
         }
         if (isEmulatedGame) {
-            add(MoreMenuEntry.Option(Icons.Default.Tune, "Platform Settings", value = game.platformName, action = MoreOptionAction.PlatformSettings))
+            add(MoreMenuEntry.Option(Icons.Default.Tune, "Platform Settings", value = game.platformSlug, action = MoreOptionAction.PlatformSettings))
         }
         if (usesTitleId && isEmulatedGame) {
             add(MoreMenuEntry.Option(Icons.Default.Tag, "Title ID", value = game.titleId ?: "Not detected", action = MoreOptionAction.RefreshTitleId))

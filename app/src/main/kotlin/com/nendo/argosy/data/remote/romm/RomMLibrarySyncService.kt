@@ -10,14 +10,12 @@ import com.nendo.argosy.data.local.dao.FirmwareDao
 import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.dao.GameDiscDao
 import com.nendo.argosy.data.local.dao.GameFileDao
-import com.nendo.argosy.data.local.dao.OrphanedFileDao
 import com.nendo.argosy.data.local.dao.PlatformDao
 import com.nendo.argosy.data.local.dao.PlatformLibretroSettingsDao
 import com.nendo.argosy.data.local.entity.CollectionType
 import com.nendo.argosy.data.local.entity.GameDiscEntity
 import com.nendo.argosy.data.local.entity.GameEntity
 import com.nendo.argosy.data.local.entity.GameFileEntity
-import com.nendo.argosy.data.local.entity.OrphanedFileEntity
 import com.nendo.argosy.data.local.entity.PlatformEntity
 import com.nendo.argosy.data.model.GameSource
 import com.nendo.argosy.data.platform.InstalledAppResolver
@@ -58,7 +56,6 @@ class RomMLibrarySyncService @Inject constructor(
     private val platformLibretroSettingsDao: PlatformLibretroSettingsDao,
     private val firmwareDao: FirmwareDao,
     private val controllerMappingDao: ControllerMappingDao,
-    private val orphanedFileDao: OrphanedFileDao,
     private val collectionDao: CollectionDao,
     private val imageCacheManager: ImageCacheManager,
     private val biosRepository: BiosRepository,
@@ -197,13 +194,20 @@ class RomMLibrarySyncService @Inject constructor(
 
         consolidateMultiDiscGames(api, result.multiDiscGroups)
 
-        gamesDeleted += cleanupInvalidExtensionGames(platformId)
+        if (result.error == null) {
+            realignDirtyGames(platformId)
+        }
+
+        cleanupInvalidExtensionGames(platformId)
         gamesDeleted += cleanupDuplicateGames(platformId)
 
         if (filters.deleteOrphans && result.error == null) {
             val dirtyGames = gameDao.getSyncDirtyGames(platformId, ROMM_SOURCES)
             for (game in dirtyGames) {
-                game.localPath?.let { safeDeleteFile(it) }
+                if (hasLocalContent(game)) {
+                    preserveOrphanedGame(game)
+                    continue
+                }
                 gameDao.delete(game.id)
                 gamesDeleted++
             }
@@ -829,8 +833,48 @@ class RomMLibrarySyncService @Inject constructor(
         }
     }
 
+    private suspend fun realignDirtyGames(platformId: Long) {
+        val dirtyGames = gameDao.getSyncDirtyGames(platformId, ROMM_SOURCES)
+        if (dirtyGames.isEmpty()) return
+
+        var realigned = 0
+        for (game in dirtyGames) {
+            val fileName = game.rommFileName?.takeIf { it.isNotBlank() } ?: continue
+            val successor = gameDao.getCleanSyncedByFileNameAndPlatform(fileName, platformId)
+                .filter { it.id != game.id && it.rommId != game.rommId && it.localPath == null }
+                .singleOrNull() ?: continue
+
+            gameDao.delete(successor.id)
+            gameDao.insert(game.copy(rommId = successor.rommId, syncDirty = false))
+            realigned++
+            Logger.info(
+                TAG,
+                "realignDirtyGames: ${game.title} rommId ${game.rommId} -> ${successor.rommId} matched by fileName"
+            )
+        }
+        if (realigned > 0) {
+            Logger.info(TAG, "realignDirtyGames: $realigned games realigned on platform $platformId")
+        }
+    }
+
+    private suspend fun hasLocalContent(game: GameEntity): Boolean =
+        game.localPath != null ||
+            gameFileDao.getDownloadedCount(game.id) > 0 ||
+            gameDiscDao.getDiscsForGame(game.id).any { it.localPath != null }
+
+    private suspend fun preserveOrphanedGame(game: GameEntity) {
+        val syntheticId = game.rommId?.takeIf { it < 0 } ?: -game.id
+        gameDao.insert(game.copy(rommId = syntheticId, syncDirty = false))
+        if (syntheticId != game.rommId) {
+            Logger.info(
+                TAG,
+                "preserveOrphanedGame: ${game.title} has local content, rommId ${game.rommId} -> $syntheticId"
+            )
+        }
+    }
+
     private suspend fun cleanupInvalidExtensionGames(platformId: Long): Int {
-        var deleted = 0
+        var cleared = 0
         val platformGames = gameDao.getBySources(ROMM_SOURCES, platformId)
 
         for (game in platformGames) {
@@ -842,12 +886,12 @@ class RomMLibrarySyncService @Inject constructor(
             if (platformDef.extensions.isEmpty()) continue
 
             if (extension !in platformDef.extensions) {
-                safeDeleteFile(localPath)
-                gameDao.delete(game.id)
-                deleted++
+                gameDao.clearLocalPath(game.id)
+                cleared++
+                Logger.info(TAG, "cleanupInvalidExtensionGames: cleared invalid pointer for ${game.title}: $localPath")
             }
         }
-        return deleted
+        return cleared
     }
 
     private suspend fun cleanupDuplicateGames(platformId: Long): Int {
@@ -869,7 +913,7 @@ class RomMLibrarySyncService @Inject constructor(
             )
 
             for (game in sorted.drop(1)) {
-                game.localPath?.let { safeDeleteFile(it) }
+                if (hasLocalContent(game)) continue
                 gameDao.delete(game.id)
                 deletedIds.add(game.id)
                 deleted++
@@ -890,7 +934,7 @@ class RomMLibrarySyncService @Inject constructor(
             )
 
             for (game in sorted.drop(1)) {
-                game.localPath?.let { safeDeleteFile(it) }
+                if (hasLocalContent(game)) continue
                 gameDao.delete(game.id)
                 deleted++
             }
@@ -1004,16 +1048,4 @@ class RomMLibrarySyncService @Inject constructor(
         return migrated
     }
 
-    private suspend fun safeDeleteFile(path: String) {
-        try {
-            val file = java.io.File(path)
-            if (file.exists() && !file.delete()) {
-                Logger.warn(TAG, "safeDeleteFile: failed to delete $path, adding to orphan index")
-                orphanedFileDao.insert(OrphanedFileEntity(path = path))
-            }
-        } catch (e: Exception) {
-            Logger.warn(TAG, "safeDeleteFile: error deleting $path: ${e.message}")
-            orphanedFileDao.insert(OrphanedFileEntity(path = path))
-        }
-    }
 }

@@ -34,8 +34,8 @@ android {
         applicationId = "com.nendo.argosy"
         minSdk = 26
         targetSdk = 35
-        versionCode = 300
-        versionName = "1.18.1"
+        versionCode = 303
+        versionName = "1.18.2"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -145,6 +145,26 @@ android {
 
     sourceSets {
         getByName("androidTest").assets.srcDir("$projectDir/schemas")
+    }
+}
+
+// Feed the Compose compiler a stability config for pervasive external types (flows,
+// java.time, ...) and the app's immutable state packages. This short-circuits
+// StabilityInferencer's deep recursion over the UI state graph, which is otherwise the
+// dominant compile hotspot: a cold :app:compileDebugKotlin drops from >42 min to ~12 min.
+// See compose_stability_config.conf for the rationale and safety notes.
+//   -PnoStability     disable the config (to benchmark the compile cost)
+//   -PcomposeMetrics  emit stability metrics/reports under build/compose_metrics
+composeCompiler {
+    if (!project.hasProperty("noStability")) {
+        stabilityConfigurationFiles.add(
+            layout.projectDirectory.file("compose_stability_config.conf")
+        )
+    }
+    if (project.hasProperty("composeMetrics")) {
+        val dir = layout.buildDirectory.dir("compose_metrics")
+        metricsDestination.set(dir)
+        reportsDestination.set(dir)
     }
 }
 

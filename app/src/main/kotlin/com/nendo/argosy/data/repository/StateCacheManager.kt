@@ -62,6 +62,7 @@ class StateCacheManager @Inject constructor(
     private val coreVersionExtractor: CoreVersionExtractor,
     private val retroArchConfigParser: RetroArchConfigParser,
     private val retroArchPathResolver: com.nendo.argosy.data.emulator.RetroArchPathResolver,
+    private val libretroStatePathResolver: com.nendo.argosy.data.emulator.LibretroStatePathResolver,
     private val saveSyncApiClient: SaveSyncApiClient,
     private val payloadCodec: com.nendo.argosy.data.sync.SyncPayloadCodec
 ) {
@@ -134,13 +135,7 @@ class StateCacheManager @Inject constructor(
                 retroArchPathResolver.resolveStateDirectories(req)
             }
             userStateOverride != null -> listOf(userStateOverride)
-            emulatorId == "builtin" -> {
-                val baseDir = AppPaths.libretroStatesDir(context.filesDir)
-                val channelDirs = baseDir.listFiles { f -> f.isDirectory }
-                    ?.map { it.absolutePath }
-                    ?: listOf(File(baseDir, "default").absolutePath)
-                channelDirs
-            }
+            emulatorId == "builtin" -> listOf(libretroStatePathResolver.liveStateBaseDir(gameId).absolutePath)
             else -> StatePathRegistry.resolvePath(config, platformId)
         }
         Log.d(TAG, "Searching ${statePaths.size} paths: $statePaths")
@@ -487,7 +482,12 @@ class StateCacheManager @Inject constructor(
         emulatorId: String? = null,
         coreName: String? = null,
         romPath: String? = null,
+        gameId: Long? = null,
     ): String? {
+        if (emulatorId == "builtin" && gameId != null) {
+            val baseDir = libretroStatePathResolver.liveStateBaseDir(gameId)
+            return libretroStatePathResolver.liveStateFile(baseDir, romBaseName, slotNumber).absolutePath
+        }
         val paths = if (emulatorId != null &&
             com.nendo.argosy.data.emulator.RetroArchPathResolver.isRetroArch(emulatorId)
         ) {
@@ -560,16 +560,17 @@ class StateCacheManager @Inject constructor(
     suspend fun getStatesForChannelAndCore(gameId: Long, channelName: String?, coreId: String?): List<StateCacheEntity> =
         stateCacheDao.getByChannelAndCore(gameId, channelName, coreId)
 
-    suspend fun deleteAutoStateFromDisk(
+    suspend fun deleteAutoResumeStatesFromDisk(
         emulatorId: String,
         romPath: String,
         platformSlug: String,
         emulatorPackage: String?,
-        coreId: String?
+        coreId: String?,
+        gameId: Long? = null,
     ): Boolean = withContext(Dispatchers.IO) {
         val config = StatePathRegistry.getConfig(emulatorId)
         if (config == null) {
-            Log.d(TAG, "deleteAutoStateFromDisk: No state config for emulator: $emulatorId")
+            Log.d(TAG, "deleteAutoResumeStatesFromDisk: No state config for emulator: $emulatorId")
             return@withContext false
         }
 
@@ -590,26 +591,36 @@ class StateCacheManager @Inject constructor(
                 retroArchPathResolver.resolveStateDirectories(req)
             }
             userStateOverride != null -> listOf(userStateOverride)
+            emulatorId == "builtin" && gameId != null ->
+                listOf(libretroStatePathResolver.liveStateBaseDir(gameId).absolutePath)
             else -> StatePathRegistry.resolvePath(config, platformSlug)
         }
 
-        val autoFileName = config.slotPattern.buildFileName(romBaseName, -1)
+        // An explicitly-restored save (or state) must not be overridden by a lingering
+        // auto-resume state, so drop both the auto and resume slots from the live dir.
+        // (resume is built-in-only; deleting a non-existent file elsewhere is a no-op.)
+        val fileNames = listOf(
+            config.slotPattern.buildFileName(romBaseName, -1),
+            com.nendo.argosy.libretro.LibretroStateSlots.fileName(
+                romBaseName, com.nendo.argosy.libretro.LibretroStateSlots.RESUME_SLOT
+            ),
+        )
 
+        var deletedAny = false
         for (path in statePaths) {
             val stateDir = File(path)
             if (!stateDir.exists()) continue
-
-            val autoStateFile = File(stateDir, autoFileName)
-            if (autoStateFile.exists()) {
-                autoStateFile.delete()
-                File("${autoStateFile.absolutePath}.png").takeIf { it.exists() }?.delete()
-                Log.d(TAG, "Deleted auto-state from disk: ${autoStateFile.absolutePath}")
-                return@withContext true
+            for (name in fileNames) {
+                val file = File(stateDir, name)
+                if (file.exists() && file.delete()) {
+                    File("${file.absolutePath}.png").takeIf { it.exists() }?.delete()
+                    Log.d(TAG, "Deleted live state: ${file.absolutePath}")
+                    deletedAny = true
+                }
             }
         }
-
-        Log.d(TAG, "deleteAutoStateFromDisk: No auto-state found for $romBaseName")
-        false
+        if (!deletedAny) Log.d(TAG, "deleteAutoResumeStatesFromDisk: nothing to delete for $romBaseName")
+        deletedAny
     }
 
     suspend fun clearAllCache() = withContext(Dispatchers.IO) {

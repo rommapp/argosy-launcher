@@ -30,6 +30,7 @@ class RestoreCachedStatesUseCase @Inject constructor(
     private val coreVersionExtractor: CoreVersionExtractor,
     private val retroArchConfigParser: RetroArchConfigParser,
     private val retroArchPathResolver: com.nendo.argosy.data.emulator.RetroArchPathResolver,
+    private val libretroStatePathResolver: com.nendo.argosy.data.emulator.LibretroStatePathResolver,
 ) {
     suspend operator fun invoke(
         gameId: Long,
@@ -84,6 +85,7 @@ class RestoreCachedStatesUseCase @Inject constructor(
                 retroArchPathResolver.resolveStateDirectories(req)
             }
             userStateOverride != null -> listOf(userStateOverride)
+            emulatorId == "builtin" -> listOf(libretroStatePathResolver.liveStateBaseDir(gameId).absolutePath)
             else -> StatePathRegistry.resolvePath(config, game.platformSlug)
         }
 

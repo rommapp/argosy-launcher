@@ -63,6 +63,7 @@ class RestoreStateUseCase @Inject constructor(
             emulatorId = emulatorId,
             coreName = currentCoreId,
             romPath = romPath,
+            gameId = cache.gameId,
         ) ?: return RestoreStateResult.Error("Could not determine target path")
 
         val success = stateCacheManager.restoreState(cacheId, targetPath)

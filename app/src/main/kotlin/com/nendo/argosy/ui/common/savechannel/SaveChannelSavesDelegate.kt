@@ -453,12 +453,13 @@ class SaveChannelSavesDelegate @Inject constructor(
                         skipAutoState = true
                     )
                     if (game?.localPath != null) {
-                        stateCacheManager.deleteAutoStateFromDisk(
+                        stateCacheManager.deleteAutoResumeStatesFromDisk(
                             emulatorId = emulatorId,
                             romPath = game.localPath,
                             platformSlug = game.platformSlug,
                             emulatorPackage = emulatorPackage,
-                            coreId = state.currentCoreId
+                            coreId = state.currentCoreId,
+                            gameId = currentGameId
                         )
                     }
                 }

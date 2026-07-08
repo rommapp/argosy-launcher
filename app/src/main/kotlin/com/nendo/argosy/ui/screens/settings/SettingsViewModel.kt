@@ -393,6 +393,7 @@ class SettingsViewModel @Inject constructor(
     fun setBuiltinAutoSaveState(enabled: Boolean) = routeSetBuiltinAutoSaveState(this, enabled)
     fun setBuiltinAutoRestoreState(enabled: Boolean) = routeSetBuiltinAutoRestoreState(this, enabled)
     fun setBuiltinHwCoreSaveStates(enabled: Boolean) = routeSetBuiltinHwCoreSaveStates(this, enabled)
+    fun setBuiltinDefaultToHardcore(enabled: Boolean) = routeSetBuiltinDefaultToHardcore(this, enabled)
     fun setBuiltinSavePath(path: String) = routeSetBuiltinSavePath(this, path)
     fun resetBuiltinSavePath() = routeResetBuiltinSavePath(this)
     fun setBuiltinStatePath(path: String) = routeSetBuiltinStatePath(this, path)

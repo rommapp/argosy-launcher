@@ -159,6 +159,10 @@ internal class BuiltinVideoSectionInput(
             viewModel.setBuiltinHwCoreSaveStates(!videoState.hwCoreSaveStatesEnabled)
             InputResult.handled(SoundType.TOGGLE)
         }
+        LibretroSettingDef.DefaultToHardcore -> {
+            viewModel.setBuiltinDefaultToHardcore(!videoState.defaultToHardcore)
+            InputResult.handled(SoundType.TOGGLE)
+        }
     }
 
     private fun confirmPlatform(

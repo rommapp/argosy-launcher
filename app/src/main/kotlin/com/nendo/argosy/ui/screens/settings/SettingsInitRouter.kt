@@ -672,6 +672,7 @@ internal fun routeLoadSettings(vm: SettingsViewModel) {
                     autoSaveState = builtinSettings.autoSaveState,
                     autoRestoreState = builtinSettings.autoRestoreState,
                     hwCoreSaveStatesEnabled = builtinSettings.hwCoreSaveStatesEnabled,
+                    defaultToHardcore = builtinSettings.defaultToHardcore,
                     savePath = builtinSettings.customSavePath
                         ?: AppPaths.libretroSavesDir(vm.context.filesDir).absolutePath,
                     statePath = builtinSettings.customStatePath

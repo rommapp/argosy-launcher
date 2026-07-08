@@ -2,6 +2,7 @@ package com.nendo.argosy.ui.screens.gamedetail.delegates
 
 import android.content.Context
 import com.nendo.argosy.data.emulator.LaunchResult
+import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.repository.GameRepository
 import com.nendo.argosy.data.repository.RetroAchievementsRepository
 import com.nendo.argosy.data.repository.SaveCacheManager
@@ -18,6 +19,7 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -48,7 +50,8 @@ class PlayOptionsDelegate @Inject constructor(
     private val saveCacheManager: SaveCacheManager,
     private val raRepository: RetroAchievementsRepository,
     private val launchGameUseCase: LaunchGameUseCase,
-    private val soundManager: SoundFeedbackManager
+    private val soundManager: SoundFeedbackManager,
+    private val userPreferencesRepository: UserPreferencesRepository
 ) {
     private val _state = MutableStateFlow(PlayOptionsState())
     val state: StateFlow<PlayOptionsState> = _state.asStateFlow()
@@ -67,20 +70,32 @@ class PlayOptionsDelegate @Inject constructor(
             val hasHardcoreSave = saveCacheManager.hasHardcoreSave(gameId)
             val isRALoggedIn = raRepository.isLoggedIn()
             val isOnline = com.nendo.argosy.util.NetworkUtils.isOnline(context)
+            val defaultToHardcore = userPreferencesRepository.getBuiltinEmulatorSettings()
+                .first().defaultToHardcore
 
-            _state.update {
-                it.copy(
-                    showPlayOptions = true,
-                    playOptionsFocusIndex = 0,
-                    hasCasualSaves = hasCasualSaves,
-                    hasHardcoreSave = hasHardcoreSave,
-                    hasRASupport = hasAchievements,
-                    isRALoggedIn = isRALoggedIn,
-                    isOnline = isOnline
-                )
-            }
+            val newState = PlayOptionsState(
+                showPlayOptions = true,
+                playOptionsFocusIndex = 0,
+                hasCasualSaves = hasCasualSaves,
+                hasHardcoreSave = hasHardcoreSave,
+                hasRASupport = hasAchievements,
+                isRALoggedIn = isRALoggedIn,
+                isOnline = isOnline
+            )
+            _state.value = newState.copy(
+                playOptionsFocusIndex = defaultFocusIndex(newState, defaultToHardcore)
+            )
             soundManager.play(SoundType.OPEN_MODAL)
         }
+    }
+
+    /** With "Default to Hardcore" on, pre-focus the Continue-in-Hardcore row so A launches hardcore. */
+    private fun defaultFocusIndex(state: PlayOptionsState, defaultToHardcore: Boolean): Int {
+        if (!defaultToHardcore || !state.showResumeHardcore) return 0
+        var idx = 0
+        if (state.hasCasualSaves) idx++
+        if (state.hasCasualSaves && state.isOnline) idx++
+        return idx
     }
 
     fun dismissPlayOptions() {

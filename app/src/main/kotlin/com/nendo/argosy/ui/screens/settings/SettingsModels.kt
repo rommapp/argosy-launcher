@@ -407,6 +407,7 @@ data class BuiltinVideoState(
     val autoSaveState: Boolean = true,
     val autoRestoreState: Boolean = true,
     val hwCoreSaveStatesEnabled: Boolean = false,
+    val defaultToHardcore: Boolean = false,
     val savePath: String = "",
     val statePath: String = "",
     val isCustomSavePath: Boolean = false,

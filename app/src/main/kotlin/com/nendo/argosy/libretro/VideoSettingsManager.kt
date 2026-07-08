@@ -137,7 +137,8 @@ class VideoSettingsManager(
         LibretroSettingDef.RewindBufferDuration -> currentRewindBufferDuration
         LibretroSettingDef.AutoSaveState,
         LibretroSettingDef.AutoRestoreState,
-        LibretroSettingDef.HwCoreSaveStates -> ""
+        LibretroSettingDef.HwCoreSaveStates,
+        LibretroSettingDef.DefaultToHardcore -> ""
     }
 
     fun getGlobalVideoSettingValue(setting: LibretroSettingDef): String = when (setting) {
@@ -162,7 +163,8 @@ class VideoSettingsManager(
         LibretroSettingDef.RewindBufferDuration -> globalSettings.rewindBufferDurationDisplay
         LibretroSettingDef.AutoSaveState,
         LibretroSettingDef.AutoRestoreState,
-        LibretroSettingDef.HwCoreSaveStates -> ""
+        LibretroSettingDef.HwCoreSaveStates,
+        LibretroSettingDef.DefaultToHardcore -> ""
     }
 
     private fun getGlobalFrameForPlatform(): String? {
@@ -241,7 +243,8 @@ class VideoSettingsManager(
                 LibretroSettingDef.RewindBufferDuration -> current.copy(rewindBufferDuration = null)
                 LibretroSettingDef.AutoSaveState,
                 LibretroSettingDef.AutoRestoreState,
-                LibretroSettingDef.HwCoreSaveStates -> current
+                LibretroSettingDef.HwCoreSaveStates,
+                LibretroSettingDef.DefaultToHardcore -> current
             }
             if (updated.hasAnyOverrides()) {
                 platformLibretroSettingsDao.upsert(updated)
@@ -397,7 +400,8 @@ class VideoSettingsManager(
             }
             LibretroSettingDef.AutoSaveState,
             LibretroSettingDef.AutoRestoreState,
-            LibretroSettingDef.HwCoreSaveStates -> {
+            LibretroSettingDef.HwCoreSaveStates,
+            LibretroSettingDef.DefaultToHardcore -> {
             }
         }
 
@@ -484,7 +488,8 @@ class VideoSettingsManager(
                 LibretroSettingDef.RewindBufferDuration -> current.copy(rewindBufferDuration = value.removeSuffix("s").toIntOrNull())
                 LibretroSettingDef.AutoSaveState,
                 LibretroSettingDef.AutoRestoreState,
-                LibretroSettingDef.HwCoreSaveStates -> current
+                LibretroSettingDef.HwCoreSaveStates,
+                LibretroSettingDef.DefaultToHardcore -> current
             }
 
             if (updated.hasAnyOverrides()) {

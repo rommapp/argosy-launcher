@@ -125,6 +125,9 @@ class LibretroSettingsRepository @Inject constructor(
     suspend fun setBuiltinHwCoreSaveStates(enabled: Boolean) =
         builtinPrefs.setBuiltinHwCoreSaveStates(enabled)
 
+    suspend fun setBuiltinDefaultToHardcore(enabled: Boolean) =
+        builtinPrefs.setBuiltinDefaultToHardcore(enabled)
+
     suspend fun setBuiltinCustomSavePath(path: String?) =
         builtinPrefs.setBuiltinCustomSavePath(path)
 

@@ -22,28 +22,6 @@ this repo under `fastlane/metadata/android/en-US/` and F-Droid pulls it automati
 | Release tag | `v1.18.0` | `git tag` |
 | Submodules | `sigil`, `libretrodroid/.../rcheevos` | `.gitmodules` |
 
-### Why the versionCodes are `1000298` / `2000298`, not `298`
-
-`app/build.gradle.kts` overrides every APK's versionCode to
-`abiCode * 1_000_000 + baseVersionCode` (`applicationVariants.all { ... }`), with
-abiCodes `armeabi-v7a=1`, `arm64-v8a=2`, universal=3. So the published APKs are:
-
-- armeabi-v7a → **1000298**
-- arm64-v8a → **2000298**
-- universal → 3000298 (intentionally **not** published — a higher code would always
-  win over the per-ABI splits and defeat the split)
-
-The recipe therefore builds with `-PallAbis` (the flag that enables
-`splits { abi }`), ships the two per-ABI blocks, and uses `VercodeOperation`
-(`%c + 1000000`, `%c + 2000000`) so autoupdate regenerates both blocks from each new
-`v*` tag. `UpdateCheckMode: Tags ^v[0-9.]+$` matches stable tags only and skips the
-`-beta` tags.
-
-The `fastlane/.../changelogs/` directory is currently empty: the stale 1.18.0 entries were
-removed. At `v2.0.0` tag time, add one `.txt` per published versionCode (named literally,
-e.g. `1000<base>.txt` and `2000<base>.txt`) with the same "What's New" text so the entry
-shows regardless of which ABI a client installs.
-
 ## Steam / prebuilt-jar blocker — RESOLVED via a FOSS product flavor
 
 The prebuilt `libs/maven/io/github/joshuatam/javasteam*/**.jar` binaries (force-included via
@@ -88,30 +66,6 @@ reject).
    `NonFreeDep`/`NonFreeNet` concern.
 
 That is the only remaining hard blocker. The items below were investigated and resolved.
-
-## Confirmed (no longer blockers)
-
-- **`sigil` submodule — CONFIRMED FINE.** `github.com/rommforge/argosy-sigil` (pinned at
-  `42ca623`) is a **pure C** ROM serial-ID parser, **MPL-2.0** (FOSS, GPLv3-compatible),
-  built from source via **CMake/NDK** (`bindings/android/.../CMakeLists.txt`,
-  `externalNativeBuild { cmake }`). The tree contains only `.c`/`.h`/CMake source — **no
-  prebuilt `.so`/`.a`/`.jar`**. **No Rust toolchain is needed** (an earlier note here was
-  wrong). `submodules: true` + the F-Droid VM's NDK is all it requires.
-
-- **`api.argosy.dev` — CONFIRMED `NonFreeNet` (added to the recipe).** The social layer
-  (`SOCIAL_API_URL`, `ArgosSocialService`/`SocialRepository`) — friends, activity feed,
-  presence, achievement/session upload, and netplay matchmaking — depends on the
-  proprietary `api.argosy.dev` backend over a persistent WebSocket. It is opt-in (QR-code
-  login) but auto-reconnects on every startup once linked, with no disable short of
-  unlinking. The core launcher and self-hosted RomM sync work without it. `titledb` and
-  `cheats` also point at `api.argosy.dev` but are **build-secret-gated**
-  (`TITLEDB_API_SECRET`/`CHEATSDB_API_SECRET` are empty in a source build →
-  `isConfigured()` false → never contacted), so they are inert in an F-Droid build and are
-  not the trigger. The recipe declares `AntiFeatures: NonFreeNet` with a description.
-
-- **License — CONFIRMED `GPL-3.0-only`.** `LICENSE` is the verbatim GPLv3 text, the README
-  says "GNU General Public License v3.0" (no "or later"), and no source file elects
-  `-or-later` (no SPDX headers). `GPL-3.0-only` in the recipe is correct.
 
 Native code that is **fine** (builds from source, no committed blobs): `libretrodroid`
 (C++ via CMake/NDK, bundled Oboe source), the `rcheevos` submodule (C), and `sigil`

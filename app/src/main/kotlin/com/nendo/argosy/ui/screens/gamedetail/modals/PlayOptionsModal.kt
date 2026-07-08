@@ -81,7 +81,7 @@ fun PlayOptionsModal(
                 )
             }
 
-            if (showHardcoreOptions && (hasSaves || hasHardcoreSave)) {
+            if (showHardcoreOptions) {
                 val idx = currentIndex++
                 PlayOptionRow(
                     icon = Icons.Default.EmojiEvents,

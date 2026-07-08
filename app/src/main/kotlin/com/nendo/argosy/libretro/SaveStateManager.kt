@@ -7,6 +7,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.nendo.argosy.data.emulator.EmulatorRegistry
 import com.nendo.argosy.data.local.dao.GameDao
+import com.nendo.argosy.data.local.entity.GameEntity
 import com.nendo.argosy.data.repository.SaveCacheManager
 import com.swordfish.libretrodroid.GLRetroView
 import java.io.File
@@ -114,15 +115,21 @@ class SaveStateManager(
             return RestoreResult(bytes)
         }
 
+        // Resume paths read the game row once and thread it through to restoreResumeSave.
+        val game = if (launchMode == LaunchMode.RESUME || launchMode == LaunchMode.RESUME_HARDCORE) {
+            gameDao.getById(gameId)
+        } else {
+            null
+        }
+
         // An explicit save-management restore must win over the default resume pick. The restore
         // already wrote the chosen save to the live .srm and set activeSaveApplied (cleared on
         // session end), so load that as-is instead of re-deriving from the cache -- otherwise the
         // hardcore path (getLatestHardcoreSave) or the timestamp lookup can silently clobber the
         // user's choice with a different save.
-        if (launchMode == LaunchMode.RESUME || launchMode == LaunchMode.RESUME_HARDCORE) {
-            val game = gameDao.getById(gameId)
+        if (game?.activeSaveApplied == true) {
             val sramFile = getSramFile()
-            if (game?.activeSaveApplied == true && sramFile.exists()) {
+            if (sramFile.exists()) {
                 val bytes = sramFile.readBytes()
                 Log.i(TAG, "Honoring explicit restore (activeSaveApplied): on-disk .srm ${bytes.size} bytes")
                 return RestoreResult(bytes)
@@ -173,15 +180,14 @@ class SaveStateManager(
                     // starting fresh. hardcoreMode is already set from the launch mode, so the
                     // session stays hardcore and saves made from here get tagged hardcore.
                     Log.d(TAG, "No hardcore save; using active save for hardcore session")
-                    restoreResumeSave()
+                    restoreResumeSave(game)
                 }
             }
-            LaunchMode.RESUME -> restoreResumeSave()
+            LaunchMode.RESUME -> restoreResumeSave(game)
         }
     }
 
-    private suspend fun restoreResumeSave(): RestoreResult {
-        val game = gameDao.getById(gameId)
+    private suspend fun restoreResumeSave(game: GameEntity?): RestoreResult {
         val activeSaveTimestamp = game?.activeSaveTimestamp
         val activeChannel = game?.activeSaveChannel
 

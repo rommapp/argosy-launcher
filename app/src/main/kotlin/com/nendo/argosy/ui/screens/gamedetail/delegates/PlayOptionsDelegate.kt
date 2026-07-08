@@ -75,27 +75,34 @@ class PlayOptionsDelegate @Inject constructor(
 
             val newState = PlayOptionsState(
                 showPlayOptions = true,
-                playOptionsFocusIndex = 0,
                 hasCasualSaves = hasCasualSaves,
                 hasHardcoreSave = hasHardcoreSave,
                 hasRASupport = hasAchievements,
                 isRALoggedIn = isRALoggedIn,
                 isOnline = isOnline
             )
-            _state.value = newState.copy(
-                playOptionsFocusIndex = defaultFocusIndex(newState, defaultToHardcore)
-            )
+            // With "Default to Hardcore" on, pre-focus the Continue-in-Hardcore row so A launches
+            // hardcore (falls back to the first row when that option isn't shown).
+            val focusIndex = if (defaultToHardcore) {
+                visibleActions(newState).indexOf(PlayOptionAction.ResumeHardcore).coerceAtLeast(0)
+            } else {
+                0
+            }
+            _state.value = newState.copy(playOptionsFocusIndex = focusIndex)
             soundManager.play(SoundType.OPEN_MODAL)
         }
     }
 
-    /** With "Default to Hardcore" on, pre-focus the Continue-in-Hardcore row so A launches hardcore. */
-    private fun defaultFocusIndex(state: PlayOptionsState, defaultToHardcore: Boolean): Int {
-        if (!defaultToHardcore || !state.showResumeHardcore) return 0
-        var idx = 0
-        if (state.hasCasualSaves) idx++
-        if (state.hasCasualSaves && state.isOnline) idx++
-        return idx
+    /**
+     * The play options shown, in display order -- the single source of truth for the modal's row
+     * layout, its focus bounds, and confirm mapping. Must match [PlayOptionsModal]'s rendering.
+     */
+    private fun visibleActions(state: PlayOptionsState): List<PlayOptionAction> = buildList {
+        if (state.hasCasualSaves) add(PlayOptionAction.Resume)
+        if (state.hasCasualSaves && state.isOnline) add(PlayOptionAction.ResumeNoSync)
+        if (state.showResumeHardcore) add(PlayOptionAction.ResumeHardcore)
+        add(PlayOptionAction.NewCasual)
+        if (state.hardcoreAvailable) add(PlayOptionAction.NewHardcore)
     }
 
     fun dismissPlayOptions() {
@@ -105,42 +112,17 @@ class PlayOptionsDelegate @Inject constructor(
 
     fun movePlayOptionsFocus(delta: Int) {
         _state.update {
-            val state = it
-            var optionCount = 1
-
-            if (state.hasCasualSaves) optionCount++
-            if (state.hasCasualSaves && state.isOnline) optionCount++
-            if (state.showResumeHardcore) optionCount++
-            if (state.hasRASupport && state.isRALoggedIn) optionCount++
-
-            val maxIndex = (optionCount - 1).coerceAtLeast(0)
-            val newIndex = (it.playOptionsFocusIndex + delta).coerceIn(0, maxIndex)
-            it.copy(playOptionsFocusIndex = newIndex)
+            val maxIndex = (visibleActions(it).size - 1).coerceAtLeast(0)
+            it.copy(playOptionsFocusIndex = (it.playOptionsFocusIndex + delta).coerceIn(0, maxIndex))
         }
     }
 
     fun confirmPlayOptionSelection(): PlayOptionAction? {
         val state = _state.value
-        val focusIndex = state.playOptionsFocusIndex
-
-        var currentIdx = 0
-        val resumeIdx = if (state.hasCasualSaves) currentIdx++ else -1
-        val resumeNoSyncIdx = if (state.hasCasualSaves && state.isOnline) currentIdx++ else -1
-        val resumeHardcoreIdx = if (state.showResumeHardcore) currentIdx++ else -1
-        val newCasualIdx = currentIdx++
-        val newHardcoreIdx = if (state.hasRASupport && state.isRALoggedIn) currentIdx else -1
-
-        return when (focusIndex) {
-            resumeIdx -> PlayOptionAction.Resume
-            resumeNoSyncIdx -> PlayOptionAction.ResumeNoSync
-            resumeHardcoreIdx -> PlayOptionAction.ResumeHardcore
-            newCasualIdx -> PlayOptionAction.NewCasual
-            newHardcoreIdx -> {
-                if (!state.isOnline) return null
-                PlayOptionAction.NewHardcore
-            }
-            else -> null
-        }
+        val action = visibleActions(state).getOrNull(state.playOptionsFocusIndex) ?: return null
+        // Hardcore is online-only.
+        if (action == PlayOptionAction.NewHardcore && !state.isOnline) return null
+        return action
     }
 
     suspend fun shouldShowModeSelection(

@@ -35,12 +35,19 @@ class LibretroStatePathResolver @Inject constructor(
 ) {
     suspend fun liveStateBaseDir(gameId: Long): File {
         val platformId = gameDao.getById(gameId)?.platformId
-        val platformOverride = platformId
-            ?.let { platformLibretroSettingsDao.getByPlatformId(it)?.statePath }
-            ?.takeIf { it.isNotBlank() }
-        val custom = userPreferencesRepository.getBuiltinEmulatorSettings().first()
-            .customStatePath?.takeIf { it.isNotBlank() }
-        val base = platformOverride ?: custom ?: AppPaths.libretroStatesDir(context.filesDir).absolutePath
+        val platformOverride = platformId?.let { platformLibretroSettingsDao.getByPlatformId(it)?.statePath }
+        val custom = userPreferencesRepository.getBuiltinEmulatorSettings().first().customStatePath
+        return liveStateBaseDir(platformOverride, custom)
+    }
+
+    /**
+     * Overload for callers ([GameLauncher]) that already hold the resolved per-platform override and
+     * custom paths -- avoids the extra game/platform/prefs lookups the gameId overload performs.
+     */
+    fun liveStateBaseDir(platformStatePath: String?, customStatePath: String?): File {
+        val base = platformStatePath?.takeIf { it.isNotBlank() }
+            ?: customStatePath?.takeIf { it.isNotBlank() }
+            ?: AppPaths.libretroStatesDir(context.filesDir).absolutePath
         return File(base)
     }
 

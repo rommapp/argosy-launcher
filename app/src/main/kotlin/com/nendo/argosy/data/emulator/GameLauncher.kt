@@ -525,7 +525,9 @@ class GameLauncher @Inject constructor(
             else platformLibretroOverride?.savePath ?: builtinSettings.customSavePath
         // Single source of truth for the flat live state dir (mirrors save-path override
         // precedence). LibretroActivity still layers variant isolation on top of this base.
-        val effectiveStatePath = libretroStatePathResolver.liveStateBaseDir(game.id).absolutePath
+        val effectiveStatePath = libretroStatePathResolver
+            .liveStateBaseDir(platformLibretroOverride?.statePath, builtinSettings.customStatePath)
+            .absolutePath
         return Intent(context, LibretroActivity::class.java).apply {
             putExtra(LibretroActivity.EXTRA_ROM_PATH, romFile.absolutePath)
             putExtra(LibretroActivity.EXTRA_VARIANT_FILE_ID, variantFileId ?: -1L)
@@ -1091,16 +1093,15 @@ class GameLauncher @Inject constructor(
         // (e.g. a vba_next save opened by mGBA).
         val rejected = rejectedCore
         if (rejected != null && default != null) {
+            val registry = com.nendo.argosy.libretro.LibretroCoreRegistry
             notificationManager.show(
-                title = "Failed to load ${builtinCoreDisplayName(rejected)}, using ${builtinCoreDisplayName(default)} instead",
+                title = "Failed to load ${registry.displayNameFor(rejected)}, " +
+                    "using ${registry.displayNameFor(default)} instead",
                 type = com.nendo.argosy.core.notification.NotificationType.WARNING
             )
         }
         return default
     }
-
-    private fun builtinCoreDisplayName(coreId: String): String =
-        com.nendo.argosy.libretro.LibretroCoreRegistry.getCoreById(coreId)?.displayName ?: coreId
 
     private suspend fun resolveCoreName(game: GameEntity): String? {
         val gameConfig = emulatorConfigDao.getByGameId(game.id)

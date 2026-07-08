@@ -41,7 +41,7 @@ class CoreCrashController @Inject constructor(
     suspend fun runBootDetection() {
         val crash = crashDetector.detect() ?: return
         val game = gameDao.getById(crash.gameId) ?: return
-        val displayName = LibretroCoreRegistry.getCoreById(crash.coreId)?.displayName ?: crash.coreId
+        val displayName = LibretroCoreRegistry.displayNameFor(crash.coreId)
         history = coreManager.getCoreHistory(crash.coreId)
 
         val options = buildList {

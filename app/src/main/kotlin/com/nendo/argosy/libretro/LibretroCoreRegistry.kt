@@ -512,6 +512,9 @@ object LibretroCoreRegistry {
 
     fun getCoreById(coreId: String): CoreInfo? = cores.find { it.coreId == coreId }
 
+    /** Human-readable name for a core id, falling back to the raw id when the core is unknown. */
+    fun displayNameFor(coreId: String): String = getCoreById(coreId)?.displayName ?: coreId
+
     private val hardwareRenderedCores = setOf(
         "dolphin", "flycast", "mupen64plus_next_gles3", "mupen64plus_next_gles2",
         "parallel_n64", "ppsspp", "mednafen_psx_hw"

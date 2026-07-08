@@ -361,7 +361,16 @@ class SaveChannelSavesDelegate @Inject constructor(
                         )
                         val label = channelName ?: "Auto Save"
                         notificationManager.showSuccess("Using save slot: $label")
-                        _state.update { it.copy(isVisible = false, activeSaveCacheId = entry.localCacheId) }
+                        // Refresh the panel in place so the restored save shows as active,
+                        // rather than closing it. Server restores have a null cacheId, so the
+                        // active marker falls back to the timestamp recorded here.
+                        _state.update {
+                            it.copy(
+                                activeSaveTimestamp = entryTimestamp,
+                                activeSaveCacheId = entry.localCacheId
+                            )
+                        }
+                        refreshEntries()
                         onRestored()
                     }
                     is RestoreCachedSaveUseCase.Result.Error -> {
@@ -469,7 +478,6 @@ class SaveChannelSavesDelegate @Inject constructor(
             _state.update {
                 it.copy(
                     showRestoreConfirmation = false,
-                    isVisible = false,
                     activeChannel = targetChannel,
                     activeSaveTimestamp = targetTimestamp,
                     activeSaveCacheId = entry.localCacheId
@@ -491,6 +499,7 @@ class SaveChannelSavesDelegate @Inject constructor(
                         "Restored to $targetChannel"
                     } else "Save restored"
                     notificationManager.showSuccess(msg)
+                    refreshEntries()
                     onRestored()
                 }
                 is RestoreCachedSaveUseCase.Result.RestoredAndSynced -> {
@@ -500,6 +509,7 @@ class SaveChannelSavesDelegate @Inject constructor(
                         "Restored to $targetChannel and synced"
                     } else "Save restored and synced"
                     notificationManager.showSuccess(msg)
+                    refreshEntries()
                     onRestored()
                 }
                 is RestoreCachedSaveUseCase.Result.Error -> {

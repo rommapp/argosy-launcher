@@ -5,8 +5,8 @@ import com.nendo.argosy.data.emulator.LaunchResult
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.repository.GameRepository
 import com.nendo.argosy.data.repository.RetroAchievementsRepository
-import com.nendo.argosy.data.repository.SaveCacheManager
 import com.nendo.argosy.domain.usecase.game.LaunchGameUseCase
+import com.nendo.argosy.domain.usecase.save.GetUnifiedSavesUseCase
 import com.nendo.argosy.ui.input.SoundFeedbackManager
 import com.nendo.argosy.core.input.SoundType
 import com.nendo.argosy.ui.screens.gamedetail.LaunchEvent
@@ -47,7 +47,7 @@ data class PlayOptionsState(
 class PlayOptionsDelegate @Inject constructor(
     @ApplicationContext private val context: Context,
     private val gameRepository: GameRepository,
-    private val saveCacheManager: SaveCacheManager,
+    private val getUnifiedSavesUseCase: GetUnifiedSavesUseCase,
     private val raRepository: RetroAchievementsRepository,
     private val launchGameUseCase: LaunchGameUseCase,
     private val soundManager: SoundFeedbackManager,
@@ -65,9 +65,12 @@ class PlayOptionsDelegate @Inject constructor(
 
     fun showPlayOptions(scope: CoroutineScope, gameId: Long, hasAchievements: Boolean) {
         scope.launch {
-            val hasCasualSaves = saveCacheManager.getCachesForGameOnce(gameId)
-                .any { !it.isHardcore }
-            val hasHardcoreSave = saveCacheManager.hasHardcoreSave(gameId)
+            // Include server-only cloud saves, not just the local cache: a freshly synced RomM
+            // game has its save on the server only and must still offer Continue (otherwise the
+            // modal shows New Game, which would overwrite the cloud save).
+            val entries = getUnifiedSavesUseCase(gameId, expandHistory = false)
+            val hasCasualSaves = entries.any { !it.isHardcore }
+            val hasHardcoreSave = entries.any { it.isHardcore }
             val isRALoggedIn = raRepository.isLoggedIn()
             val isOnline = com.nendo.argosy.util.NetworkUtils.isOnline(context)
             val defaultToHardcore = userPreferencesRepository.getBuiltinEmulatorSettings()
@@ -131,7 +134,7 @@ class PlayOptionsDelegate @Inject constructor(
         hasAchievements: Boolean
     ): Boolean {
         if (!isBuiltInEmulator || !hasAchievements) return false
-        val hasSaves = saveCacheManager.getCachesForGameOnce(gameId).isNotEmpty()
+        val hasSaves = getUnifiedSavesUseCase(gameId, expandHistory = false).isNotEmpty()
         val isRALoggedIn = raRepository.isLoggedIn()
         return !hasSaves && isRALoggedIn
     }

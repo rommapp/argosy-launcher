@@ -760,7 +760,15 @@ class SaveChannelSavesDelegate @Inject constructor(
         val channelName = entry.channelName ?: return
 
         scope.launch {
-            entry.localCacheId?.let { saveCacheManager.deleteSave(it) }
+            // Delete every copy of the slot -- local cache AND server. Deleting only the local
+            // cache lets a server-only (or synced) save survive and re-sync back on refresh, so the
+            // delete silently no-ops. (Mirrors confirmDeleteLegacyChannel.)
+            val channelEntries = holder.rawEntries.filter { it.channelName == channelName }
+            val serverIds = channelEntries.mapNotNull { it.serverSaveId }
+            if (serverIds.isNotEmpty()) {
+                saveSyncRepository.deleteServerSaves(serverIds)
+            }
+            channelEntries.forEach { e -> e.localCacheId?.let { saveCacheManager.deleteSave(it) } }
 
             if (state.activeChannel == channelName) {
                 gameRepository.updateActiveSaveChannel(currentGameId, null)

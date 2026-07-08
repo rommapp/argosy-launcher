@@ -313,7 +313,11 @@ class SaveUploader @Inject constructor(
             val filePart = MultipartBody.Part.createFormData("saveFile", uploadFileName, requestBody)
 
             val slotForUpload = channelName ?: SaveSyncApiClient.AUTOSAVE_SLOT_NAME
-            val isAutosaveSlot = channelName == null
+            // The autosave channel is represented as either null or the literal "autosave" (a
+            // restore sets the string form); recognize both, else autocleanup is skipped after a
+            // restore and the server-side autosave history grows unbounded.
+            val isAutosaveSlot = channelName == null ||
+                channelName.equals(SaveSyncApiClient.AUTOSAVE_SLOT_NAME, ignoreCase = true)
             val autocleanupEnabled = isAutosaveSlot
             val autocleanupLimit = if (isAutosaveSlot) SaveSyncApiClient.AUTOCLEANUP_LIMIT else null
             val response = if (deviceId != null) {

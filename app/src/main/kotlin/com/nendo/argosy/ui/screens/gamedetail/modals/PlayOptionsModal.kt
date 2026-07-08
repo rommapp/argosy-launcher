@@ -81,12 +81,13 @@ fun PlayOptionsModal(
                 )
             }
 
-            if (hasHardcoreSave) {
+            if (showHardcoreOptions && (hasSaves || hasHardcoreSave)) {
                 val idx = currentIndex++
                 PlayOptionRow(
                     icon = Icons.Default.EmojiEvents,
                     iconTint = ALauncherColors.StarGold,
                     label = "Hardcore",
+                    subtext = if (hasHardcoreSave) null else "Continue this save in hardcore",
                     isFocused = focusIndex == idx,
                     onClick = { onAction(PlayOptionAction.ResumeHardcore) }
                 )

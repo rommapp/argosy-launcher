@@ -30,7 +30,17 @@ data class PlayOptionsState(
     val hasRASupport: Boolean = false,
     val isRALoggedIn: Boolean = false,
     val isOnline: Boolean = false
-)
+) {
+    /** Hardcore requires a RetroAchievements login. */
+    val hardcoreAvailable: Boolean get() = hasRASupport && isRALoggedIn
+
+    /**
+     * Continue-in-hardcore is offered whenever hardcore is available and there is any resumable
+     * save. RESUME_HARDCORE loads the latest hardcore save if present, else falls back to the
+     * active SRAM -- so a casual save can be continued in a hardcore session.
+     */
+    val showResumeHardcore: Boolean get() = hardcoreAvailable && (hasCasualSaves || hasHardcoreSave)
+}
 
 class PlayOptionsDelegate @Inject constructor(
     @ApplicationContext private val context: Context,
@@ -85,7 +95,7 @@ class PlayOptionsDelegate @Inject constructor(
 
             if (state.hasCasualSaves) optionCount++
             if (state.hasCasualSaves && state.isOnline) optionCount++
-            if (state.hasHardcoreSave) optionCount++
+            if (state.showResumeHardcore) optionCount++
             if (state.hasRASupport && state.isRALoggedIn) optionCount++
 
             val maxIndex = (optionCount - 1).coerceAtLeast(0)
@@ -101,7 +111,7 @@ class PlayOptionsDelegate @Inject constructor(
         var currentIdx = 0
         val resumeIdx = if (state.hasCasualSaves) currentIdx++ else -1
         val resumeNoSyncIdx = if (state.hasCasualSaves && state.isOnline) currentIdx++ else -1
-        val resumeHardcoreIdx = if (state.hasHardcoreSave) currentIdx++ else -1
+        val resumeHardcoreIdx = if (state.showResumeHardcore) currentIdx++ else -1
         val newCasualIdx = currentIdx++
         val newHardcoreIdx = if (state.hasRASupport && state.isRALoggedIn) currentIdx else -1
 

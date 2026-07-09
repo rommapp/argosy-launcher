@@ -838,22 +838,11 @@ class GameDetailViewModel @Inject constructor(
                 }
             }
 
-            // "Default to Hardcore": the modal path pre-focuses hardcore; this covers the direct
-            // launch (a built-in game with a save that skips the modal), which otherwise resumes casual.
-            val overrideLaunchMode = if (
-                currentGame.isBuiltInEmulator && playOptionsDelegate.shouldDefaultToHardcoreResume()
-            ) {
-                com.nendo.argosy.libretro.LaunchMode.RESUME_HARDCORE
-            } else {
-                null
-            }
-
             val callbacks = makeLaunchCallbacks()
             gameLaunchDelegate.launchGame(
                 scope = viewModelScope,
                 gameId = currentGameId,
                 discId = discId,
-                overrideLaunchMode = overrideLaunchMode,
                 onLaunch = callbacks.onLaunch,
                 onLaunchFailed = { callbacks.onLaunchFailed() }
             )

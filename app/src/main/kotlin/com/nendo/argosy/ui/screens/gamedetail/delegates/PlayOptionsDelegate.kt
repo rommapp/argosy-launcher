@@ -162,12 +162,4 @@ class PlayOptionsDelegate @Inject constructor(
 
     private suspend fun isDefaultToHardcore(): Boolean =
         userPreferencesRepository.getBuiltinEmulatorSettings().first().defaultToHardcore
-
-    /**
-     * Whether a built-in RESUME launch should default to hardcore. Used by the direct-launch path
-     * (which bypasses the modal). Requires the "Default to Hardcore" setting and a RetroAchievements
-     * login, since hardcore is only meaningful when signed in.
-     */
-    suspend fun shouldDefaultToHardcoreResume(): Boolean =
-        isDefaultToHardcore() && raRepository.isLoggedIn()
 }

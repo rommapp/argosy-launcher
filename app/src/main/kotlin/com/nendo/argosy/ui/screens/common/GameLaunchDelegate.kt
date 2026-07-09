@@ -112,7 +112,8 @@ class GameLaunchDelegate @Inject constructor(
     private val saveSyncRepository: SaveSyncRepository,
     private val saveCacheManager: SaveCacheManager,
     private val variantResolver: com.nendo.argosy.data.emulator.VariantResolver,
-    private val emulatorSaveConfigRepository: com.nendo.argosy.data.repository.EmulatorSaveConfigRepository
+    private val emulatorSaveConfigRepository: com.nendo.argosy.data.repository.EmulatorSaveConfigRepository,
+    private val retroAchievementsRepository: com.nendo.argosy.data.repository.RetroAchievementsRepository
 ) {
     companion object {
         private const val EMULATOR_KILL_DELAY_MS = 500L
@@ -123,6 +124,16 @@ class GameLaunchDelegate @Inject constructor(
         val save = saveCacheManager.getMostRecentInChannel(gameId, activeChannel)
         return save?.isHardcore == true
     }
+
+    /**
+     * "Default to Hardcore": a built-in game resumes in hardcore by default when the setting is on
+     * and RetroAchievements is signed in (hardcore is only meaningful signed in). Centralized here so
+     * every launch entry point -- home, library, game detail, dual-screen -- honors it uniformly.
+     */
+    private suspend fun shouldDefaultToHardcore(emulatorPackage: String?): Boolean =
+        emulatorPackage == EmulatorRegistry.BUILTIN_PACKAGE &&
+            preferencesRepository.getBuiltinEmulatorSettings().first().defaultToHardcore &&
+            retroAchievementsRepository.isLoggedIn()
 
     private val _syncOverlayState = MutableStateFlow<SyncOverlayState?>(null)
     val syncOverlayState: StateFlow<SyncOverlayState?> = _syncOverlayState.asStateFlow()
@@ -350,6 +361,7 @@ class GameLaunchDelegate @Inject constructor(
                     hardcoreConflictChoice == HardcoreConflictChoice.KEEP_HARDCORE -> LaunchMode.RESUME_HARDCORE
                     overrideLaunchMode != null -> overrideLaunchMode
                     isActiveSaveHardcore(gameId) -> LaunchMode.RESUME_HARDCORE
+                    shouldDefaultToHardcore(emulatorPackage) -> LaunchMode.RESUME_HARDCORE
                     else -> null
                 }
 

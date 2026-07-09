@@ -95,7 +95,7 @@ object LibretroCoreRegistry {
             coreId = "vba_next",
             fileName = "vba_next_libretro_android.so",
             displayName = "VBA Next",
-            platforms = setOf("gb", "gbc", "gba"),
+            platforms = setOf("gba"),
             estimatedSizeBytes = 2_000_000L
         ),
 

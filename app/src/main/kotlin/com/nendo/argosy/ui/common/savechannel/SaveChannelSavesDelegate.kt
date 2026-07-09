@@ -361,9 +361,6 @@ class SaveChannelSavesDelegate @Inject constructor(
                         )
                         val label = channelName ?: "Auto Save"
                         notificationManager.showSuccess("Using save slot: $label")
-                        // Refresh the panel in place so the restored save shows as active,
-                        // rather than closing it. Server restores have a null cacheId, so the
-                        // active marker falls back to the timestamp recorded here.
                         _state.update {
                             it.copy(
                                 activeSaveTimestamp = entryTimestamp,

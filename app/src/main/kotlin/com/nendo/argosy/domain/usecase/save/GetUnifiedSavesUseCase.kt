@@ -23,7 +23,8 @@ class GetUnifiedSavesUseCase @Inject constructor(
 ) {
     suspend operator fun invoke(
         gameId: Long,
-        expandHistory: Boolean = false
+        expandHistory: Boolean = false,
+        includeServer: Boolean = true
     ): List<UnifiedSaveEntry> {
         saveCacheManager.dedupeIdenticalCaches(gameId)
         val localCaches = saveCacheManager.getCachesForGameOnce(gameId)
@@ -31,7 +32,7 @@ class GetUnifiedSavesUseCase @Inject constructor(
         val rommId = game?.rommId
         val romBaseName = game?.localPath?.let { File(it).nameWithoutExtension }
 
-        val serverSaves = if (rommId != null) {
+        val serverSaves = if (rommId != null && includeServer) {
             saveSyncRepository.checkSavesForGame(gameId, rommId)
         } else {
             emptyList()

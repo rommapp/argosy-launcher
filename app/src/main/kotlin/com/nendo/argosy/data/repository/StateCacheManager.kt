@@ -596,9 +596,6 @@ class StateCacheManager @Inject constructor(
             else -> StatePathRegistry.resolvePath(config, platformSlug)
         }
 
-        // An explicitly-restored save (or state) must not be overridden by a lingering
-        // auto-resume state, so drop both the auto and resume slots from the live dir.
-        // (resume is built-in-only; deleting a non-existent file elsewhere is a no-op.)
         val fileNames = listOf(
             config.slotPattern.buildFileName(romBaseName, -1),
             com.nendo.argosy.libretro.LibretroStateSlots.fileName(

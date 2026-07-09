@@ -36,7 +36,7 @@ class SaveStateManagerTest {
         )
     }
 
-    private fun game() = GameEntity(
+    private fun game(activeSaveApplied: Boolean = false) = GameEntity(
         id = GAME_ID,
         title = "Sonic Advance",
         sortTitle = "sonic advance",
@@ -45,7 +45,8 @@ class SaveStateManagerTest {
         rommId = null,
         igdbId = null,
         localPath = null,
-        source = GameSource.ROMM_SYNCED
+        source = GameSource.ROMM_SYNCED,
+        activeSaveApplied = activeSaveApplied
     )
 
     private fun cacheEntity(hardcore: Boolean) = SaveCacheEntity(
@@ -89,6 +90,35 @@ class SaveStateManagerTest {
         val result = manager(gameDao, cache).restoreSaveForLaunchMode(LaunchMode.RESUME_HARDCORE)
 
         assertArrayEquals(hardcoreBytes, result.sramData)
+    }
+
+    @Test
+    fun `activeSaveApplied honors the on-disk SRAM over the default resume pick`() = runBlocking {
+        val saves = tempFolder.newFolder("applied-saves")
+        val states = tempFolder.newFolder("applied-states")
+        val restoredBytes = byteArrayOf(7, 7, 7)
+        File(saves, "Sonic Advance.srm").writeBytes(restoredBytes)
+
+        val gameDao = mockk<GameDao>()
+        val cache = mockk<SaveCacheManager>(relaxed = true)
+        coEvery { gameDao.getById(GAME_ID) } returns game(activeSaveApplied = true)
+        coEvery { cache.getLatestHardcoreSave(GAME_ID) } returns cacheEntity(hardcore = true)
+
+        val mgr = SaveStateManager(
+            savesDir = saves,
+            statesDir = states,
+            romPath = File(saves, "Sonic Advance.gba").absolutePath,
+            gameId = GAME_ID,
+            gameDao = gameDao,
+            saveCacheManager = cache
+        )
+        val result = mgr.restoreSaveForLaunchMode(LaunchMode.RESUME_HARDCORE)
+
+        assertArrayEquals(
+            "activeSaveApplied must load the on-disk .srm, not the cache's hardcore save",
+            restoredBytes,
+            result.sramData
+        )
     }
 
     // --- Flat live layout (refactor: channels are cache-only) ---

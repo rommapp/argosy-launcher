@@ -523,8 +523,6 @@ class GameLauncher @Inject constructor(
         val builtinBesideRom = emulatorSaveConfigRepository.getByEmulator("builtin")?.savesBesideRom == true
         val effectiveSavePath = if (builtinBesideRom) romFile.parent
             else platformLibretroOverride?.savePath ?: builtinSettings.customSavePath
-        // Single source of truth for the flat live state dir (mirrors save-path override
-        // precedence). LibretroActivity still layers variant isolation on top of this base.
         val effectiveStatePath = libretroStatePathResolver
             .liveStateBaseDir(platformLibretroOverride?.statePath, builtinSettings.customStatePath)
             .absolutePath
@@ -1088,9 +1086,6 @@ class GameLauncher @Inject constructor(
             .getDefaultCoreForPlatform(game.platformSlug)?.coreId
         Logger.debug(TAG, "[BuiltIn] core selection: registry default -> $default")
 
-        // The configured core isn't available for the built-in player. Tell the user instead of
-        // silently substituting a different core -- a silent swap can also silently break saves
-        // (e.g. a vba_next save opened by mGBA).
         val rejected = rejectedCore
         if (rejected != null && default != null) {
             val registry = com.nendo.argosy.libretro.LibretroCoreRegistry

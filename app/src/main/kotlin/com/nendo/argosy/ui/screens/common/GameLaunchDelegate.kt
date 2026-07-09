@@ -127,11 +127,18 @@ class GameLaunchDelegate @Inject constructor(
 
     /**
      * "Default to Hardcore": a built-in game resumes in hardcore by default when the setting is on
-     * and RetroAchievements is signed in (hardcore is only meaningful signed in). Centralized here so
-     * every launch entry point -- home, library, game detail, dual-screen -- honors it uniformly.
+     * and RetroAchievements is signed in. Centralized here so every launch entry point (home,
+     * library, game detail, dual-screen) honors it uniformly. Requires the game to actually have
+     * achievements: hardcore mode disables save states, rewind, and cheats regardless of whether an
+     * RA session resolves, so forcing it on an achievement-less game only removes features (and its
+     * hardcore-tagged save would then ratchet future resumes into hardcore).
      */
-    private suspend fun shouldDefaultToHardcore(emulatorPackage: String?): Boolean =
+    private suspend fun shouldDefaultToHardcore(
+        emulatorPackage: String?,
+        game: com.nendo.argosy.data.local.entity.GameEntity
+    ): Boolean =
         emulatorPackage == EmulatorRegistry.BUILTIN_PACKAGE &&
+            game.achievementCount > 0 &&
             preferencesRepository.getBuiltinEmulatorSettings().first().defaultToHardcore &&
             retroAchievementsRepository.isLoggedIn()
 
@@ -361,7 +368,7 @@ class GameLaunchDelegate @Inject constructor(
                     hardcoreConflictChoice == HardcoreConflictChoice.KEEP_HARDCORE -> LaunchMode.RESUME_HARDCORE
                     overrideLaunchMode != null -> overrideLaunchMode
                     isActiveSaveHardcore(gameId) -> LaunchMode.RESUME_HARDCORE
-                    shouldDefaultToHardcore(emulatorPackage) -> LaunchMode.RESUME_HARDCORE
+                    shouldDefaultToHardcore(emulatorPackage, game) -> LaunchMode.RESUME_HARDCORE
                     else -> null
                 }
 

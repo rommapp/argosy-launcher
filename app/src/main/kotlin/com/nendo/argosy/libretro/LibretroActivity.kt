@@ -203,6 +203,7 @@ class LibretroActivity : ComponentActivity() {
     private var activeMenuHandler: InputHandler? = null
 
     private var restoredSram: ByteArray? = null
+    private var casualSaveInHardcore: Boolean = false
     private var hardcoreMode by mutableStateOf(false)
     private var launchMode = LaunchMode.RESUME
     private var statesSupported = true
@@ -489,6 +490,7 @@ class LibretroActivity : ComponentActivity() {
             saveStateManager.restoreSaveForLaunchMode(launchMode)
         }
         restoredSram = restoreResult.sramData
+        casualSaveInHardcore = restoreResult.casualSaveInHardcore
         if (restoreResult.switchToHardcore) {
             hardcoreMode = true
         }
@@ -639,6 +641,8 @@ class LibretroActivity : ComponentActivity() {
                             if (retroView.sramLoadFailed) {
                                 Log.w(TAG, "[Startup] SRAM failed to load (size mismatch); booting with a fresh save")
                                 inGameMessage = "Failed to load save, using new save instead"
+                            } else if (casualSaveInHardcore) {
+                                inGameMessage = "Continuing casual save in hardcore"
                             }
                             attemptAutoRestore()
                             netplay.triggerPendingNetplayJoin()
@@ -1525,9 +1529,6 @@ class LibretroActivity : ComponentActivity() {
                     try {
                         withContext(kotlinx.coroutines.Dispatchers.IO + kotlinx.coroutines.NonCancellable) {
                             performAutoSaveState()
-                            // Flush live SRAM to disk before caching. cacheCurrentSessionForQuit
-                            // reads the .srm off disk, so caching first snapshots the pre-session
-                            // save and that stale cache overwrites the fresh one on next resume.
                             if (!isGuestJoinedSession) {
                                 saveStateManager.saveSram(retroView)
                             }

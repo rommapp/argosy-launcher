@@ -63,16 +63,18 @@ class PlayOptionsDelegate @Inject constructor(
         _state.value = PlayOptionsState()
     }
 
+    /**
+     * Opens the play-options modal. Save existence (Continue vs New) comes from the unified
+     * local+server view so a server-only cloud save still offers Continue, but the server fetch is
+     * skipped when offline to avoid the sync client's connect timeout.
+     */
     fun showPlayOptions(scope: CoroutineScope, gameId: Long, hasAchievements: Boolean) {
         scope.launch {
-            // Include server-only cloud saves, not just the local cache: a freshly synced RomM
-            // game has its save on the server only and must still offer Continue (otherwise the
-            // modal shows New Game, which would overwrite the cloud save).
-            val entries = getUnifiedSavesUseCase(gameId, expandHistory = false)
+            val isOnline = com.nendo.argosy.util.NetworkUtils.isOnline(context)
+            val entries = getUnifiedSavesUseCase(gameId, expandHistory = false, includeServer = isOnline)
             val hasCasualSaves = entries.any { !it.isHardcore }
             val hasHardcoreSave = entries.any { it.isHardcore }
             val isRALoggedIn = raRepository.isLoggedIn()
-            val isOnline = com.nendo.argosy.util.NetworkUtils.isOnline(context)
             val defaultToHardcore = isDefaultToHardcore()
 
             val newState = PlayOptionsState(
@@ -83,8 +85,6 @@ class PlayOptionsDelegate @Inject constructor(
                 isRALoggedIn = isRALoggedIn,
                 isOnline = isOnline
             )
-            // With "Default to Hardcore" on, pre-focus the Continue-in-Hardcore row so A launches
-            // hardcore (openModal falls back to the first row when that option isn't shown).
             openModal(newState, PlayOptionAction.ResumeHardcore.takeIf { defaultToHardcore })
         }
     }
@@ -123,7 +123,6 @@ class PlayOptionsDelegate @Inject constructor(
     fun confirmPlayOptionSelection(): PlayOptionAction? {
         val state = _state.value
         val action = visibleActions(state).getOrNull(state.playOptionsFocusIndex) ?: return null
-        // Hardcore is online-only.
         if (action == PlayOptionAction.NewHardcore && !state.isOnline) return null
         return action
     }
@@ -134,9 +133,9 @@ class PlayOptionsDelegate @Inject constructor(
         hasAchievements: Boolean
     ): Boolean {
         if (!isBuiltInEmulator || !hasAchievements) return false
-        // Gate on the cheap RA-login check before the networked unified-saves fetch.
         if (!raRepository.isLoggedIn()) return false
-        return getUnifiedSavesUseCase(gameId, expandHistory = false).isEmpty()
+        val isOnline = com.nendo.argosy.util.NetworkUtils.isOnline(context)
+        return getUnifiedSavesUseCase(gameId, expandHistory = false, includeServer = isOnline).isEmpty()
     }
 
     fun showFreshGameModeSelection(scope: CoroutineScope, gameId: Long) {
@@ -150,7 +149,6 @@ class PlayOptionsDelegate @Inject constructor(
                 isRALoggedIn = true,
                 isOnline = isOnline
             )
-            // "Default to Hardcore" pre-focuses New Hardcore (online-only) for a fresh game.
             openModal(newState, PlayOptionAction.NewHardcore.takeIf { isDefaultToHardcore() && isOnline })
         }
     }

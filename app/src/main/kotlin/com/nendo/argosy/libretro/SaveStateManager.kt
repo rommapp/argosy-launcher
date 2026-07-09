@@ -33,7 +33,8 @@ class SaveStateManager(
 
     data class RestoreResult(
         val sramData: ByteArray?,
-        val switchToHardcore: Boolean = false
+        val switchToHardcore: Boolean = false,
+        val casualSaveInHardcore: Boolean = false
     )
 
     data class SlotInfo(
@@ -94,6 +95,13 @@ class SaveStateManager(
         return slots
     }
 
+    /**
+     * Resolves the SRAM to load for [launchMode], writes it to the live .srm, and returns the bytes
+     * plus mode hints. Two non-obvious rules: an explicit save-management restore (activeSaveApplied)
+     * wins over the default resume pick; and RESUME_HARDCORE falls back to the active save when no
+     * hardcore save exists, because RetroAchievements forbids only save states in hardcore, not SRAM
+     * battery saves (that fallback is flagged casualSaveInHardcore so the UI can surface it).
+     */
     suspend fun restoreSaveForLaunchMode(launchMode: LaunchMode): RestoreResult {
         if (usesExternalMemcard) {
             Log.d(TAG, "External memcard (GCI folder) - skipping flat .srm restore")
@@ -115,18 +123,12 @@ class SaveStateManager(
             return RestoreResult(bytes)
         }
 
-        // Resume paths read the game row once and thread it through to restoreResumeSave.
         val game = if (launchMode == LaunchMode.RESUME || launchMode == LaunchMode.RESUME_HARDCORE) {
             gameDao.getById(gameId)
         } else {
             null
         }
 
-        // An explicit save-management restore must win over the default resume pick. The restore
-        // already wrote the chosen save to the live .srm and set activeSaveApplied (cleared on
-        // session end), so load that as-is instead of re-deriving from the cache -- otherwise the
-        // hardcore path (getLatestHardcoreSave) or the timestamp lookup can silently clobber the
-        // user's choice with a different save.
         if (game?.activeSaveApplied == true) {
             val sramFile = getSramFile()
             if (sramFile.exists()) {
@@ -175,12 +177,13 @@ class SaveStateManager(
                     }
                     RestoreResult(bytes)
                 } else {
-                    // RetroAchievements permits SRAM battery saves in hardcore (only save
-                    // states are disallowed), so fall back to the active save rather than
-                    // starting fresh. hardcoreMode is already set from the launch mode, so the
-                    // session stays hardcore and saves made from here get tagged hardcore.
                     Log.d(TAG, "No hardcore save; using active save for hardcore session")
-                    restoreResumeSave(game)
+                    val fallback = restoreResumeSave(game)
+                    if (fallback.sramData != null && !fallback.switchToHardcore) {
+                        fallback.copy(casualSaveInHardcore = true)
+                    } else {
+                        fallback
+                    }
                 }
             }
             LaunchMode.RESUME -> restoreResumeSave(game)
@@ -379,10 +382,12 @@ class SaveStateManager(
     private fun buildSlotFileName(slotNumber: Int): String =
         LibretroStateSlots.fileName(romBaseName, slotNumber)
 
-    // Live states are now flat under statesDir (mirroring SRAM and external emulators);
-    // channels live only in the cache. One-shot: lift this game's active-channel states
-    // out of the legacy {statesDir}/{channel}/ subdir up to the flat statesDir. Named
-    // channels not migrated here are re-materialized from the cache on channel switch.
+    /**
+     * One-shot migration: live states are now flat under statesDir (mirroring SRAM and external
+     * emulators), with channels living only in the cache. Lifts this game's active-channel states out
+     * of the legacy {statesDir}/{channel}/ subdir up to the flat statesDir; named channels not
+     * migrated here are re-materialized from the cache on channel switch.
+     */
     private fun migrateChannelStatesToFlat() {
         val legacyChannelDir = File(statesDir, channelName ?: "default")
         if (legacyChannelDir == statesDir || !legacyChannelDir.isDirectory) return

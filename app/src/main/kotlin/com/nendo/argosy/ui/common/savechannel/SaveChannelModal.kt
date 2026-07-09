@@ -911,7 +911,7 @@ private fun DeleteConfirmationOverlay(channelName: String) {
             modifier = Modifier.align(Alignment.CenterHorizontally)
         )
         Text(
-            text = "This will remove it from local storage.",
+            text = "This will remove it from the server and local storage. This cannot be undone.",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,

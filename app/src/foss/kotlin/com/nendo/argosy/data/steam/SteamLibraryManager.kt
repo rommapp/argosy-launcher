@@ -12,15 +12,26 @@ import javax.inject.Singleton
  */
 @Singleton
 class SteamLibraryManager @Inject constructor() {
-    val syncState: StateFlow<LibrarySyncState> = MutableStateFlow(LibrarySyncState.Idle)
+    private val _syncState = MutableStateFlow<LibrarySyncState>(LibrarySyncState.Idle)
+    val syncState: StateFlow<LibrarySyncState> = _syncState
 
-    fun forceSync() {}
+    fun forceSync() {
+        reportUnavailable()
+    }
 
-    fun forceSyncWithOverwrite() {}
+    fun forceSyncWithOverwrite() {
+        reportUnavailable()
+    }
 
     suspend fun resetLibrary(): Int = 0
 
-    fun requestLibrarySync() {}
+    fun requestLibrarySync() {
+        reportUnavailable()
+    }
 
     fun cleanup() {}
+
+    private fun reportUnavailable() {
+        _syncState.value = LibrarySyncState.Error("Steam is not available in this build")
+    }
 }

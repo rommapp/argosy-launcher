@@ -84,14 +84,8 @@ class PlayOptionsDelegate @Inject constructor(
                 isOnline = isOnline
             )
             // With "Default to Hardcore" on, pre-focus the Continue-in-Hardcore row so A launches
-            // hardcore (falls back to the first row when that option isn't shown).
-            val focusIndex = if (defaultToHardcore) {
-                visibleActions(newState).indexOf(PlayOptionAction.ResumeHardcore).coerceAtLeast(0)
-            } else {
-                0
-            }
-            _state.value = newState.copy(playOptionsFocusIndex = focusIndex)
-            soundManager.play(SoundType.OPEN_MODAL)
+            // hardcore (openModal falls back to the first row when that option isn't shown).
+            openModal(newState, PlayOptionAction.ResumeHardcore.takeIf { defaultToHardcore })
         }
     }
 
@@ -105,6 +99,13 @@ class PlayOptionsDelegate @Inject constructor(
         if (state.showResumeHardcore) add(PlayOptionAction.ResumeHardcore)
         add(PlayOptionAction.NewCasual)
         if (state.hardcoreAvailable) add(PlayOptionAction.NewHardcore)
+    }
+
+    /** Show the play-options modal, pre-focusing [preferred] if present (else the first row). */
+    private fun openModal(state: PlayOptionsState, preferred: PlayOptionAction?) {
+        val focusIndex = preferred?.let { visibleActions(state).indexOf(it).coerceAtLeast(0) } ?: 0
+        _state.value = state.copy(playOptionsFocusIndex = focusIndex)
+        soundManager.play(SoundType.OPEN_MODAL)
     }
 
     fun dismissPlayOptions() {
@@ -133,9 +134,9 @@ class PlayOptionsDelegate @Inject constructor(
         hasAchievements: Boolean
     ): Boolean {
         if (!isBuiltInEmulator || !hasAchievements) return false
-        val hasSaves = getUnifiedSavesUseCase(gameId, expandHistory = false).isNotEmpty()
-        val isRALoggedIn = raRepository.isLoggedIn()
-        return !hasSaves && isRALoggedIn
+        // Gate on the cheap RA-login check before the networked unified-saves fetch.
+        if (!raRepository.isLoggedIn()) return false
+        return getUnifiedSavesUseCase(gameId, expandHistory = false).isEmpty()
     }
 
     fun showFreshGameModeSelection(scope: CoroutineScope, gameId: Long) {
@@ -150,13 +151,7 @@ class PlayOptionsDelegate @Inject constructor(
                 isOnline = isOnline
             )
             // "Default to Hardcore" pre-focuses New Hardcore (online-only) for a fresh game.
-            val focusIndex = if (isDefaultToHardcore() && isOnline) {
-                visibleActions(newState).indexOf(PlayOptionAction.NewHardcore).coerceAtLeast(0)
-            } else {
-                0
-            }
-            _state.value = newState.copy(playOptionsFocusIndex = focusIndex)
-            soundManager.play(SoundType.OPEN_MODAL)
+            openModal(newState, PlayOptionAction.NewHardcore.takeIf { isDefaultToHardcore() && isOnline })
         }
     }
 

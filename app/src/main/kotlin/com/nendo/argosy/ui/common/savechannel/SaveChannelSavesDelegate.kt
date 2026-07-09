@@ -751,6 +751,18 @@ class SaveChannelSavesDelegate @Inject constructor(
         }
     }
 
+    /**
+     * Delete every copy of a save channel -- local cache entries AND their server saves. Deleting
+     * only the local cache lets a server-only (or synced) save survive and re-sync back on refresh.
+     */
+    private suspend fun deleteChannelEverywhere(channelName: String) {
+        val entries = holder.rawEntries.filter { it.channelName == channelName }
+        entries.mapNotNull { it.serverSaveId }
+            .takeIf { it.isNotEmpty() }
+            ?.let { saveSyncRepository.deleteServerSaves(it) }
+        entries.forEach { entry -> entry.localCacheId?.let { saveCacheManager.deleteSave(it) } }
+    }
+
     fun confirmDeleteChannel(
         scope: CoroutineScope,
         onSaveStatusChanged: (SaveStatusEvent) -> Unit
@@ -760,15 +772,7 @@ class SaveChannelSavesDelegate @Inject constructor(
         val channelName = entry.channelName ?: return
 
         scope.launch {
-            // Delete every copy of the slot -- local cache AND server. Deleting only the local
-            // cache lets a server-only (or synced) save survive and re-sync back on refresh, so the
-            // delete silently no-ops. (Mirrors confirmDeleteLegacyChannel.)
-            val channelEntries = holder.rawEntries.filter { it.channelName == channelName }
-            val serverIds = channelEntries.mapNotNull { it.serverSaveId }
-            if (serverIds.isNotEmpty()) {
-                saveSyncRepository.deleteServerSaves(serverIds)
-            }
-            channelEntries.forEach { e -> e.localCacheId?.let { saveCacheManager.deleteSave(it) } }
+            deleteChannelEverywhere(channelName)
 
             if (state.activeChannel == channelName) {
                 gameRepository.updateActiveSaveChannel(currentGameId, null)
@@ -896,15 +900,7 @@ class SaveChannelSavesDelegate @Inject constructor(
         val channelName = state.deleteLegacyChannelName ?: return
 
         scope.launch {
-            val entries = holder.rawEntries.filter { it.channelName == channelName }
-
-            val serverIds = entries.mapNotNull { it.serverSaveId }
-            if (serverIds.isNotEmpty()) {
-                saveSyncRepository.deleteServerSaves(serverIds)
-            }
-            for (entry in entries) {
-                entry.localCacheId?.let { saveCacheManager.deleteSave(it) }
-            }
+            deleteChannelEverywhere(channelName)
 
             refreshEntries()
             _state.update {

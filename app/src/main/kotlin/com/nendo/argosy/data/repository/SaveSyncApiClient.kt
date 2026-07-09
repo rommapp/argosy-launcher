@@ -463,11 +463,17 @@ class SaveSyncApiClient @Inject constructor(
         internal const val MIN_VALID_SAVE_SIZE_BYTES = 100L
         internal const val AUTOCLEANUP_LIMIT = 10
 
+        /**
+         * The autosave channel is stored as either null or the literal "autosave" (a restore sets
+         * the string form); recognize both so callers do not each re-inline the check.
+         */
+        fun isAutosaveChannel(channelName: String?): Boolean =
+            channelName == null || channelName.equals(AUTOSAVE_SLOT_NAME, ignoreCase = true)
+
         fun computeUploadFileName(localSavePath: String?, channelName: String?, romBaseName: String?): String {
             val baseName = when {
-                channelName == null || channelName.equals(AUTOSAVE_SLOT_NAME, ignoreCase = true) ->
-                    romBaseName ?: DEFAULT_SAVE_NAME
-                else -> channelName
+                isAutosaveChannel(channelName) -> romBaseName ?: DEFAULT_SAVE_NAME
+                else -> channelName ?: DEFAULT_SAVE_NAME
             }
             val ext = localSavePath?.let { java.io.File(it) }?.let { file ->
                 when {

@@ -45,7 +45,6 @@ Built for controllers from the ground up. Navigate the whole library, manage dow
 <li>Local image caching for fast, offline browsing</li>
 <li>Library filtering by genre, player count, franchise, or region</li>
 <li>User ratings synced back to RomM</li>
-<li>Index and launch Steam games installed via GameHub or GameNative</li>
 <li>App launcher, in-app updates, first-run setup wizard, favorites, and hide games</li>
 </ul>
 

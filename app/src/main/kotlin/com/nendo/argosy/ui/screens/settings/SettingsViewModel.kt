@@ -399,7 +399,14 @@ class SettingsViewModel @Inject constructor(
     fun setBuiltinAutoSaveState(enabled: Boolean) = routeSetBuiltinAutoSaveState(this, enabled)
     fun setBuiltinAutoRestoreState(enabled: Boolean) = routeSetBuiltinAutoRestoreState(this, enabled)
     fun setBuiltinHwCoreSaveStates(enabled: Boolean) = routeSetBuiltinHwCoreSaveStates(this, enabled)
-    fun setBuiltinDefaultToHardcore(enabled: Boolean) = routeSetBuiltinDefaultToHardcore(this, enabled)
+    fun setBuiltinDefaultToHardcore(mode: String) = routeSetBuiltinDefaultToHardcore(this, mode)
+    fun cycleRADefaultMode(direction: Int) {
+        val options = listOf("Ask", "Default to Casual", "Default to Hardcore")
+        val current = _uiState.value.retroAchievements.defaultToHardcore
+        val currentIndex = options.indexOf(current).coerceAtLeast(0)
+        val nextIndex = (currentIndex + direction + options.size) % options.size
+        setBuiltinDefaultToHardcore(options[nextIndex])
+    }
     fun setBuiltinSavePath(path: String) = routeSetBuiltinSavePath(this, path)
     fun resetBuiltinSavePath() = routeResetBuiltinSavePath(this)
     fun setBuiltinStatePath(path: String) = routeSetBuiltinStatePath(this, path)

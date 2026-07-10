@@ -192,10 +192,15 @@ internal fun routeSetBuiltinHwCoreSaveStates(vm: SettingsViewModel, enabled: Boo
     }
 }
 
-internal fun routeSetBuiltinDefaultToHardcore(vm: SettingsViewModel, enabled: Boolean) {
-    vm._uiState.update { it.copy(builtinVideo = it.builtinVideo.copy(defaultToHardcore = enabled)) }
+internal fun routeSetBuiltinDefaultToHardcore(vm: SettingsViewModel, mode: String) {
+    vm._uiState.update {
+        it.copy(
+            builtinVideo = it.builtinVideo.copy(defaultToHardcore = mode),
+            retroAchievements = it.retroAchievements.copy(defaultToHardcore = mode)
+        )
+    }
     vm.viewModelScope.launch {
-        vm.libretroSettingsRepo.setBuiltinDefaultToHardcore(enabled)
+        vm.libretroSettingsRepo.setBuiltinDefaultToHardcore(mode)
     }
 }
 

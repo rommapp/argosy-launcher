@@ -40,6 +40,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import com.nendo.argosy.ui.components.ActionPreference
+import com.nendo.argosy.ui.components.CyclePreference
 import com.nendo.argosy.ui.components.FocusedScroll
 import com.nendo.argosy.ui.components.SwitchPreference
 import com.nendo.argosy.ui.screens.settings.RA_PROXY_FIELD_INDEX
@@ -183,7 +184,29 @@ private fun RALoggedInContent(
             )
         }
 
-        raProxyItems(raState, focusedIndex, viewModel)
+        item {
+            val cycleOptions = listOf("Ask", "Default to Casual", "Default to Hardcore")
+            CyclePreference(
+                title = "Play Mode Preference",
+                value = raState.defaultToHardcore,
+                isFocused = focusedIndex == 1,
+                onClick = { viewModel.cycleRADefaultMode(1) },
+                onPrev = { viewModel.cycleRADefaultMode(-1) },
+                options = cycleOptions,
+                onSelect = { index ->
+                    val current = cycleOptions.indexOf(raState.defaultToHardcore).coerceAtLeast(0)
+                    viewModel.cycleRADefaultMode(index - current)
+                },
+                subtitle = when (raState.defaultToHardcore) {
+                    "Ask" -> "Prompt on launch to choose between Casual and Hardcore"
+                    "Default to Casual" -> "Allows save states, cheats, and rewind. Earn softcore achievements."
+                    "Default to Hardcore" -> "Disables save states, cheats, and rewind. Earn hardcore achievements."
+                    else -> "Preferred mode when launching a game"
+                }
+            )
+        }
+
+        raProxyItems(raState, focusedIndex, viewModel, proxyToggleIndex = 2, proxyFieldIndex = 3)
 
         if (raState.canPushToRetroArch) {
             item {
@@ -191,7 +214,7 @@ private fun RALoggedInContent(
                 SectionHeader("RETROARCH")
             }
             item {
-                val pushIndex = if (raState.proxyEnabled) RA_PROXY_FIELD_INDEX + 1 else RA_PROXY_TOGGLE_INDEX + 1
+                val pushIndex = if (raState.proxyEnabled) 4 else 3
                 ActionPreference(
                     icon = Icons.Default.Sync,
                     title = "Push to RetroArch",
@@ -263,14 +286,16 @@ private fun RALoggedOutContent(
             )
         }
 
-        raProxyItems(raState, focusedIndex, viewModel)
+        raProxyItems(raState, focusedIndex, viewModel, proxyToggleIndex = 1, proxyFieldIndex = 2)
     }
 }
 
 private fun LazyListScope.raProxyItems(
     raState: RASettingsState,
     focusedIndex: Int,
-    viewModel: SettingsViewModel
+    viewModel: SettingsViewModel,
+    proxyToggleIndex: Int,
+    proxyFieldIndex: Int
 ) {
     item {
         Spacer(modifier = Modifier.height(Dimens.spacingMd))
@@ -281,7 +306,7 @@ private fun LazyListScope.raProxyItems(
             title = "RetroAchievements proxy",
             subtitle = "Route achievements through a local RAOfflineProxy",
             isEnabled = raState.proxyEnabled,
-            isFocused = focusedIndex == RA_PROXY_TOGGLE_INDEX,
+            isFocused = focusedIndex == proxyToggleIndex,
             onToggle = { viewModel.setRAProxyEnabled(it) }
         )
     }
@@ -290,7 +315,7 @@ private fun LazyListScope.raProxyItems(
             val inputShape = RoundedCornerShape(Dimens.radiusMd)
             val focusRequester = remember { FocusRequester() }
             LaunchedEffect(raState.focusField) {
-                if (raState.focusField == RA_PROXY_FIELD_INDEX) {
+                if (raState.focusField == proxyFieldIndex) {
                     focusRequester.requestFocus()
                     viewModel.clearRAFocusField()
                 }
@@ -307,7 +332,7 @@ private fun LazyListScope.raProxyItems(
                     .fillMaxWidth()
                     .focusRequester(focusRequester)
                     .then(
-                        if (focusedIndex == RA_PROXY_FIELD_INDEX)
+                        if (focusedIndex == proxyFieldIndex)
                             Modifier.background(LocalArgosyTheme.current.focusAccent.copy(alpha = 0.15f), inputShape)
                         else Modifier
                     )

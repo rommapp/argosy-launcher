@@ -167,9 +167,9 @@ sealed class LibretroSettingDef(
     data object DefaultToHardcore : LibretroSettingDef(
         key = "defaultToHardcore",
         section = "saving",
-        title = "Default to Hardcore",
-        subtitle = "When launching a game, default to hardcore instead of casual",
-        type = SettingType.Switch
+        title = "RetroAchievements Mode",
+        subtitle = "Preferred mode when launching a game",
+        type = SettingType.Cycle(listOf("Ask", "Default to Casual", "Default to Hardcore"))
     )
 
     companion object {
@@ -193,8 +193,7 @@ sealed class LibretroSettingDef(
             AudioVolume,
             AutoSaveState,
             AutoRestoreState,
-            HwCoreSaveStates,
-            DefaultToHardcore
+            HwCoreSaveStates
         )
 
         val SECTIONS: Map<String, String> = mapOf(

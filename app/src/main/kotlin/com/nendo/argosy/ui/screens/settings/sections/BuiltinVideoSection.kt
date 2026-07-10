@@ -77,7 +77,6 @@ fun BuiltinVideoSection(
                         LibretroSettingDef.AutoSaveState -> viewModel.setBuiltinAutoSaveState(enabled)
                         LibretroSettingDef.AutoRestoreState -> viewModel.setBuiltinAutoRestoreState(enabled)
                         LibretroSettingDef.HwCoreSaveStates -> viewModel.setBuiltinHwCoreSaveStates(enabled)
-                        LibretroSettingDef.DefaultToHardcore -> viewModel.setBuiltinDefaultToHardcore(enabled)
                         else -> {}
                     }
                 },

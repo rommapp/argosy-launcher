@@ -424,7 +424,7 @@ data class BuiltinVideoState(
     val autoSaveState: Boolean = true,
     val autoRestoreState: Boolean = true,
     val hwCoreSaveStatesEnabled: Boolean = false,
-    val defaultToHardcore: Boolean = false,
+    val defaultToHardcore: String = "Ask",
     val savePath: String = "",
     val statePath: String = "",
     val isCustomSavePath: Boolean = false,
@@ -883,7 +883,8 @@ data class RASettingsState(
     val pendingAchievementsCount: Int = 0,
     val proxyEnabled: Boolean = false,
     val proxyAddress: String = "",
-    val canPushToRetroArch: Boolean = false
+    val canPushToRetroArch: Boolean = false,
+    val defaultToHardcore: String = "Ask"
 )
 
 data class BiosFirmwareItem(

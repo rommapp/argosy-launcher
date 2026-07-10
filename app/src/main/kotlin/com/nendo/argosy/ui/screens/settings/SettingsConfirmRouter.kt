@@ -174,15 +174,25 @@ internal fun routeConfirm(vm: SettingsViewModel): InputResult {
                     3 -> vm.hideRALoginForm()
                 }
             } else {
-                val pushIndex = if (ra.isLoggedIn && ra.canPushToRetroArch) {
-                    if (ra.proxyEnabled) RA_PROXY_FIELD_INDEX + 1 else RA_PROXY_TOGGLE_INDEX + 1
-                } else -1
-                when {
-                    state.focusedIndex == 0 ->
-                        if (ra.isLoggedIn) vm.logoutFromRA() else vm.showRALoginForm()
-                    state.focusedIndex == pushIndex -> vm.pushRACredentialsToRetroArch()
-                    state.focusedIndex == RA_PROXY_TOGGLE_INDEX -> vm.setRAProxyEnabled(!ra.proxyEnabled)
-                    state.focusedIndex == RA_PROXY_FIELD_INDEX -> vm.raDelegate.setFocusField(RA_PROXY_FIELD_INDEX)
+                if (ra.isLoggedIn) {
+                    val pushIndex = if (ra.proxyEnabled) 4 else 3
+                    when (state.focusedIndex) {
+                        0 -> vm.logoutFromRA()
+                        1 -> {
+                            vm.cycleRADefaultMode(1)
+                            return InputResult.handled(SoundType.SELECT)
+                        }
+                        2 -> vm.setRAProxyEnabled(!ra.proxyEnabled)
+                        3 -> if (ra.proxyEnabled) vm.raDelegate.setFocusField(3) else if (ra.canPushToRetroArch) vm.pushRACredentialsToRetroArch()
+                        4 -> if (ra.proxyEnabled && ra.canPushToRetroArch) vm.pushRACredentialsToRetroArch()
+                    }
+                } else {
+                    val pushIndex = -1
+                    when (state.focusedIndex) {
+                        0 -> vm.showRALoginForm()
+                        1 -> vm.setRAProxyEnabled(!ra.proxyEnabled)
+                        2 -> if (ra.proxyEnabled) vm.raDelegate.setFocusField(2)
+                    }
                 }
             }
             InputResult.HANDLED
@@ -898,7 +908,7 @@ private fun computeMaxFocusIndex(
     SettingsSection.RETRO_ACHIEVEMENTS -> when {
         state.retroAchievements.showLoginForm -> 3
         state.retroAchievements.isLoggedIn -> {
-            val lastBeforePush = if (state.retroAchievements.proxyEnabled) RA_PROXY_FIELD_INDEX else RA_PROXY_TOGGLE_INDEX
+            val lastBeforePush = if (state.retroAchievements.proxyEnabled) 3 else 2
             if (state.retroAchievements.canPushToRetroArch) lastBeforePush + 1 else lastBeforePush
         }
         state.retroAchievements.proxyEnabled -> RA_PROXY_FIELD_INDEX

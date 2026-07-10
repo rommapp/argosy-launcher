@@ -79,7 +79,6 @@ class GlobalLibretroSettingsAccessor(
             LibretroSettingDef.AutoSaveState -> state.autoSaveState
             LibretroSettingDef.AutoRestoreState -> state.autoRestoreState
             LibretroSettingDef.HwCoreSaveStates -> state.hwCoreSaveStatesEnabled
-            LibretroSettingDef.DefaultToHardcore -> state.defaultToHardcore
             else -> return
         }
         onToggle(setting, !current)

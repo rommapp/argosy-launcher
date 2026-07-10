@@ -31,6 +31,7 @@ class RASettingsDelegate @Inject constructor(
         scope.launch {
             val credentials = raRepository.getCredentials()
             val prefs = prefsRepository.userPreferences.first()
+            val builtinPrefs = prefsRepository.getBuiltinEmulatorSettings().first()
             val canPush = raRepository.hasWritableRetroArchConfig()
             _state.update {
                 it.copy(
@@ -38,7 +39,8 @@ class RASettingsDelegate @Inject constructor(
                     username = credentials?.username,
                     proxyEnabled = prefs.raProxyEnabled,
                     proxyAddress = prefs.raProxyAddress,
-                    canPushToRetroArch = canPush
+                    canPushToRetroArch = canPush,
+                    defaultToHardcore = builtinPrefs.defaultToHardcore
                 )
             }
         }

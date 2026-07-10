@@ -190,14 +190,24 @@ fun InGameMenu(
             override fun onUp(): InputResult {
                 if (currentQuickHistoryFocused.value) currentOnQuickHistoryFocusChange.value(false)
                 val idx = currentFocusedIndex.value
-                val newIndex = (idx - columns).coerceAtLeast(0)
+                val newIndex = if (columns == 1) {
+                    if (idx <= 0) menuItems.lastIndex else idx - 1
+                } else {
+                    val target = idx - columns
+                    if (target >= 0) target else idx
+                }
                 if (newIndex != idx) currentOnFocusChange.value(newIndex)
                 return InputResult.HANDLED
             }
             override fun onDown(): InputResult {
                 if (currentQuickHistoryFocused.value) currentOnQuickHistoryFocusChange.value(false)
                 val idx = currentFocusedIndex.value
-                val newIndex = (idx + columns).coerceAtMost(menuItems.lastIndex)
+                val newIndex = if (columns == 1) {
+                    if (idx >= menuItems.lastIndex) 0 else idx + 1
+                } else {
+                    val target = idx + columns
+                    if (target <= menuItems.lastIndex) target else idx
+                }
                 if (newIndex != idx) currentOnFocusChange.value(newIndex)
                 return InputResult.HANDLED
             }
@@ -269,6 +279,7 @@ fun InGameMenu(
                 .widthIn(max = if (columns > 1) 560.dp else 300.dp)
                 .heightIn(max = maxHeightDp)
                 .padding(12.dp)
+                .clickableNoFocus {}
                 .focusProperties { canFocus = false },
             shape = RoundedCornerShape(16.dp),
             color = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),

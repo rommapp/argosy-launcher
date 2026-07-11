@@ -461,7 +461,7 @@ data class BuiltinEmulatorSettings(
     val autoRestoreState: Boolean = true,
     val autoRestoreStateMode: String = "restore",
     val hwCoreSaveStatesEnabled: Boolean = false,
-    val defaultToHardcore: String = "Ask",
+    val defaultToHardcore: String = "ask",
     val customSavePath: String? = null,
     val customStatePath: String? = null,
     val architectureOverride: String? = null,

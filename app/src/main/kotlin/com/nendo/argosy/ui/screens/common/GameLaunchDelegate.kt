@@ -139,7 +139,7 @@ class GameLaunchDelegate @Inject constructor(
     ): Boolean =
         emulatorPackage == EmulatorRegistry.BUILTIN_PACKAGE &&
             game.achievementCount > 0 &&
-            preferencesRepository.getBuiltinEmulatorSettings().first().defaultToHardcore == "Default to Hardcore" &&
+            preferencesRepository.getBuiltinEmulatorSettings().first().defaultToHardcore == "hardcore" &&
             retroAchievementsRepository.isLoggedIn()
 
     private val _syncOverlayState = MutableStateFlow<SyncOverlayState?>(null)

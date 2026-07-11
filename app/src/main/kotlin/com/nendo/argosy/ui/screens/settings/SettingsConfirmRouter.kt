@@ -175,7 +175,6 @@ internal fun routeConfirm(vm: SettingsViewModel): InputResult {
                 }
             } else {
                 if (ra.isLoggedIn) {
-                    val pushIndex = if (ra.proxyEnabled) 4 else 3
                     when (state.focusedIndex) {
                         0 -> vm.logoutFromRA()
                         1 -> {
@@ -187,7 +186,6 @@ internal fun routeConfirm(vm: SettingsViewModel): InputResult {
                         4 -> if (ra.proxyEnabled && ra.canPushToRetroArch) vm.pushRACredentialsToRetroArch()
                     }
                 } else {
-                    val pushIndex = -1
                     when (state.focusedIndex) {
                         0 -> vm.showRALoginForm()
                         1 -> vm.setRAProxyEnabled(!ra.proxyEnabled)

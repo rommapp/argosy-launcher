@@ -135,7 +135,7 @@ class PlayOptionsDelegate @Inject constructor(
         if (!isBuiltInEmulator || !hasAchievements) return false
         if (!raRepository.isLoggedIn()) return false
         val pref = userPreferencesRepository.getBuiltinEmulatorSettings().first().defaultToHardcore
-        if (pref != "Ask") return false
+        if (pref != "ask") return false
         val isOnline = com.nendo.argosy.util.NetworkUtils.isOnline(context)
         return getUnifiedSavesUseCase(gameId, expandHistory = false, includeServer = isOnline).isEmpty()
     }
@@ -156,5 +156,5 @@ class PlayOptionsDelegate @Inject constructor(
     }
 
     private suspend fun isDefaultToHardcore(): Boolean =
-        userPreferencesRepository.getBuiltinEmulatorSettings().first().defaultToHardcore == "Default to Hardcore"
+        userPreferencesRepository.getBuiltinEmulatorSettings().first().defaultToHardcore == "hardcore"
 }

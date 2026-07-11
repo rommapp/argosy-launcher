@@ -186,21 +186,27 @@ private fun RALoggedInContent(
 
         item {
             val cycleOptions = listOf("Ask", "Default to Casual", "Default to Hardcore")
+            val tokenOptions = listOf("ask", "casual", "hardcore")
+            val currentLabel = when (raState.defaultToHardcore) {
+                "hardcore" -> "Default to Hardcore"
+                "casual" -> "Default to Casual"
+                else -> "Ask"
+            }
             CyclePreference(
                 title = "Play Mode Preference",
-                value = raState.defaultToHardcore,
+                value = currentLabel,
                 isFocused = focusedIndex == 1,
                 onClick = { viewModel.cycleRADefaultMode(1) },
                 onPrev = { viewModel.cycleRADefaultMode(-1) },
                 options = cycleOptions,
                 onSelect = { index ->
-                    val current = cycleOptions.indexOf(raState.defaultToHardcore).coerceAtLeast(0)
-                    viewModel.cycleRADefaultMode(index - current)
+                    val nextToken = tokenOptions.getOrNull(index) ?: "ask"
+                    viewModel.setBuiltinDefaultToHardcore(nextToken)
                 },
                 subtitle = when (raState.defaultToHardcore) {
-                    "Ask" -> "Prompt on launch to choose between Casual and Hardcore"
-                    "Default to Casual" -> "Allows save states, cheats, and rewind. Earn softcore achievements."
-                    "Default to Hardcore" -> "Disables save states, cheats, and rewind. Earn hardcore achievements."
+                    "ask" -> "Prompt on launch to choose between Casual and Hardcore"
+                    "casual" -> "Allows save states, cheats, and rewind. Earn softcore achievements."
+                    "hardcore" -> "Disables save states, cheats, and rewind. Earn hardcore achievements."
                     else -> "Preferred mode when launching a game"
                 }
             )

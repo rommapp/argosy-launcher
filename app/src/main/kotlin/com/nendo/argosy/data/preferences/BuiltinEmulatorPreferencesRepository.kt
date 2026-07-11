@@ -106,8 +106,12 @@ class BuiltinEmulatorPreferencesRepository @Inject constructor(
                 ?: (prefs[Keys.BUILTIN_AUTO_RESTORE_STATE_MODE] != "off"),
             autoRestoreStateMode = prefs[Keys.BUILTIN_AUTO_RESTORE_STATE_MODE] ?: "restore",
             hwCoreSaveStatesEnabled = prefs[Keys.BUILTIN_HW_CORE_SAVE_STATES] ?: false,
-            defaultToHardcore = prefs[Keys.BUILTIN_DEFAULT_TO_HARDCORE_MODE]
-                ?: if (prefs[Keys.BUILTIN_DEFAULT_TO_HARDCORE] == true) "Default to Hardcore" else "Ask",
+            defaultToHardcore = when (val saved = prefs[Keys.BUILTIN_DEFAULT_TO_HARDCORE_MODE]) {
+                "Default to Hardcore", "hardcore" -> "hardcore"
+                "Default to Casual", "casual" -> "casual"
+                "Ask", "ask" -> "ask"
+                else -> if (prefs[Keys.BUILTIN_DEFAULT_TO_HARDCORE] == true) "hardcore" else "ask"
+            },
             customSavePath = prefs[Keys.BUILTIN_CUSTOM_SAVE_PATH],
             customStatePath = prefs[Keys.BUILTIN_CUSTOM_STATE_PATH],
             architectureOverride = prefs[Keys.BUILTIN_ARCHITECTURE_OVERRIDE],
@@ -288,7 +292,13 @@ class BuiltinEmulatorPreferencesRepository @Inject constructor(
     }
 
     suspend fun setBuiltinDefaultToHardcore(mode: String) {
-        dataStore.edit { it[Keys.BUILTIN_DEFAULT_TO_HARDCORE_MODE] = mode }
+        val token = when (mode) {
+            "Default to Hardcore", "hardcore" -> "hardcore"
+            "Default to Casual", "casual" -> "casual"
+            "Ask", "ask" -> "ask"
+            else -> "ask"
+        }
+        dataStore.edit { it[Keys.BUILTIN_DEFAULT_TO_HARDCORE_MODE] = token }
     }
 
     suspend fun setBuiltinCustomSavePath(path: String?) {

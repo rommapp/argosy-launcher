@@ -4,6 +4,7 @@ import android.util.Log
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.repository.RALoginResult
 import com.nendo.argosy.data.repository.RetroAchievementsRepository
+import com.nendo.argosy.data.repository.LibretroSettingsRepository
 import com.nendo.argosy.ui.screens.settings.RASettingsState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -18,7 +19,8 @@ private const val TAG = "RASettingsDelegate"
 
 class RASettingsDelegate @Inject constructor(
     private val raRepository: RetroAchievementsRepository,
-    private val prefsRepository: UserPreferencesRepository
+    private val prefsRepository: UserPreferencesRepository,
+    private val libretroSettingsRepo: LibretroSettingsRepository
 ) {
     private val _state = MutableStateFlow(RASettingsState())
     val state: StateFlow<RASettingsState> = _state.asStateFlow()
@@ -100,6 +102,11 @@ class RASettingsDelegate @Inject constructor(
     fun setProxyAddress(scope: CoroutineScope, address: String) {
         _state.update { it.copy(proxyAddress = address) }
         scope.launch { prefsRepository.setRAProxy(_state.value.proxyEnabled, address) }
+    }
+
+    fun setDefaultToHardcore(scope: CoroutineScope, mode: String) {
+        _state.update { it.copy(defaultToHardcore = mode) }
+        scope.launch { libretroSettingsRepo.setBuiltinDefaultToHardcore(mode) }
     }
 
     fun login(scope: CoroutineScope, onFocusReset: () -> Unit) {

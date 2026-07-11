@@ -401,7 +401,7 @@ class SettingsViewModel @Inject constructor(
     fun setBuiltinHwCoreSaveStates(enabled: Boolean) = routeSetBuiltinHwCoreSaveStates(this, enabled)
     fun setBuiltinDefaultToHardcore(mode: String) = routeSetBuiltinDefaultToHardcore(this, mode)
     fun cycleRADefaultMode(direction: Int) {
-        val options = listOf("Ask", "Default to Casual", "Default to Hardcore")
+        val options = listOf("ask", "casual", "hardcore")
         val current = _uiState.value.retroAchievements.defaultToHardcore
         val currentIndex = options.indexOf(current).coerceAtLeast(0)
         val nextIndex = (currentIndex + direction + options.size) % options.size

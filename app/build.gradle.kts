@@ -231,7 +231,7 @@ dependencies {
     implementation(libs.coil.svg)
 
     // QR code generation + scanning
-    implementation("com.google.zxing:core:3.5.3")
+    implementation("com.google.zxing:core:3.5.4")
     implementation(libs.bundles.camerax)
 
     // Discord Social SDK (optional AAR -- place in app/libs/)

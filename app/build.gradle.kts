@@ -95,6 +95,20 @@ android {
         }
     }
 
+    flavorDimensions += "distribution"
+    productFlavors {
+        create("full") {
+            dimension = "distribution"
+            isDefault = true
+        }
+        create("foss") {
+            dimension = "distribution"
+            // Steam integration relies on the JavaSteam library, which is only available as a
+            // prebuilt binary (not on Maven Central). The FOSS flavor -- used for the F-Droid
+            // build -- ships without it; see app/src/foss for no-op Steam stubs.
+        }
+    }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
@@ -245,8 +259,9 @@ dependencies {
     implementation(libs.xz)
     implementation(libs.zstd.jni) { artifact { type = "aar" } }
 
-    // Steam (JavaSteam)
-    implementation(libs.bundles.steam)
+    // Steam (JavaSteam) -- prebuilt, non-Maven-Central; limited to the "full" flavor.
+    // The "foss" flavor builds without it (app/src/foss stubs) for F-Droid.
+    "fullImplementation"(libs.bundles.steam)
 
     // argosy-sigil — title id / serial extraction (replaces in-tree :libchdr +
     // Iso9660Utils + AesXts + ZArchiveReader + GameCubeHeaderParser.parseRomHeader)

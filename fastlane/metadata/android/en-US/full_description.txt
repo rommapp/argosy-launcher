@@ -1,0 +1,51 @@
+Argosy Launcher is a gamepad-first Android home screen for retro gaming handhelds. Sync your entire game library from your self-hosted RomM server, download games and BIOS files on demand, track your achievements, and play across devices with automatic save sync — all from a controller-native interface designed for Anbernic, Retroid Pocket, Odin, AYN, and similar devices.
+
+<b>Native RomM client</b>
+First-class integration with RomM. Sync your whole library with rich IGDB metadata: cover art, descriptions, genres, franchises, player counts, and more. Your collection, your server, your handheld.
+
+<b>Automatic downloads</b>
+Download ROMs and BIOS files directly from your RomM server. Games are sorted by platform automatically. Queue multiple downloads and let Argosy handle the rest.
+
+<b>Save sync</b>
+Continue playing across devices. Bidirectional save sync keeps your progress up to date, with conflict detection so you never lose data.
+
+<b>RetroAchievements</b>
+View earned achievements and track your progress, synced from your RomM server.
+
+<b>Collections</b>
+Organize your library your way with custom collections or smart ones like Top Unplayed, Recently Added, and Most Played. Pin favorites to the home screen for quick access.
+
+<b>Gamepad-first design</b>
+Built for controllers from the ground up. Navigate the whole library, manage downloads, and launch games without touching the screen. Full D-pad, analog stick, and button support.
+
+<b>Smart emulator management</b>
+<ul>
+<li>Auto-detects installed emulators and assigns them per platform</li>
+<li>Per-platform RetroArch core selection</li>
+<li>Automatic multi-disc handling with a disc picker</li>
+<li>Works with RetroArch, PPSSPP, DuckStation, AetherSX2, Dolphin, DraStic, melonDS, Mupen64Plus FZ, Pizza Boy, Lime3DS, Azahar, Flycast, Redream, and more</li>
+</ul>
+
+<b>Make it yours</b>
+<ul>
+<li>Video wallpaper: YouTube previews as dynamic backgrounds</li>
+<li>Ambient audio: background music while you browse</li>
+<li>Themes: light, dark, or system-matched</li>
+<li>Background blur, saturation, and opacity controls</li>
+<li>Box art styles, grid density, and navigation sound effects</li>
+</ul>
+
+<b>Quick Menu (L3)</b> — press the left stick anywhere to search, pick a random game, or jump to Most Played, Top Unplayed, Recent, and Favorites.
+
+<b>Quick Settings (R3)</b> — press the right stick anywhere to switch theme, toggle haptics, UI sounds, and background music. On supported Odin, AYN, and Retroid devices it also exposes Performance Mode and Fan Control.
+
+<b>More</b>
+<ul>
+<li>Offline mode with full access to downloaded games and cached metadata</li>
+<li>Local image caching for fast, offline browsing</li>
+<li>Library filtering by genre, player count, franchise, or region</li>
+<li>User ratings synced back to RomM</li>
+<li>App launcher, in-app updates, first-run setup wizard, favorites, and hide games</li>
+</ul>
+
+Requires Android 8.0 (Oreo) or higher. A RomM server is optional and only needed for sync features. Argosy runs on any Android device, but the gamepad-first interface is optimized for handheld gaming and Android TV.

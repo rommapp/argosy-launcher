@@ -1,0 +1,55 @@
+AntiFeatures:
+  NonFreeNet: The optional social features (friends, activity feed, presence, and netplay matchmaking) connect to the proprietary api.argosy.dev backend. The core launcher and self-hosted RomM library sync work without it; the service is only contacted after the user signs in via QR code.
+Categories:
+  - Games
+License: GPL-3.0-only
+AuthorName: nendo
+SourceCode: https://github.com/rommapp/argosy-launcher
+IssueTracker: https://github.com/rommapp/argosy-launcher/issues
+Changelog: https://github.com/rommapp/argosy-launcher/releases
+
+RepoType: git
+Repo: https://github.com/rommapp/argosy-launcher.git
+
+# FIXME (finalize when v2.0.0 stable is tagged with the foss flavor + fastlane merged in):
+# The base versionCode for 2.0.0 is not final yet — beta.3 is 301, so stable will be >= 302.
+# Set BASE below to 2.0.0's app/build.gradle.kts versionCode, then the split codes are
+# armeabi-v7a = 1_000_000 + BASE and arm64-v8a = 2_000_000 + BASE. The 302-based values
+# here are placeholders; a wrong value fails F-Droid's versionCode check loudly (safe).
+Builds:
+  - versionName: 2.0.0
+    versionCode: 1000302
+    commit: v2.0.0
+    subdir: app
+    submodules: true
+    gradle:
+      - foss
+    gradleprops:
+      - allAbis
+    scandelete:
+      - libs/maven
+    # armeabi-v7a split => abiCode 1 => 1_000_000 + BASE (placeholder BASE=302 => 1000302).
+    # See app/build.gradle.kts (splits { abi } + applicationVariants override).
+
+  - versionName: 2.0.0
+    versionCode: 2000302
+    commit: v2.0.0
+    subdir: app
+    submodules: true
+    gradle:
+      - foss
+    gradleprops:
+      - allAbis
+    scandelete:
+      - libs/maven
+    # arm64-v8a split => abiCode 2 => 2_000_000 + BASE (placeholder BASE=302 => 2000302).
+
+# Autoupdate builds future stable tags automatically. The regex excludes -beta tags,
+# so v2.0.0-beta.N are ignored and only v2.0.0 (and later stable v*) are packaged.
+AutoUpdateMode: Version
+UpdateCheckMode: Tags ^v[0-9.]+$
+VercodeOperation:
+  - "%c + 1000000"
+  - "%c + 2000000"
+CurrentVersion: 2.0.0
+CurrentVersionCode: 2000302

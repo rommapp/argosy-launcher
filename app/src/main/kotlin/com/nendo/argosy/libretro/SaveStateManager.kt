@@ -309,7 +309,10 @@ class SaveStateManager(
             val stateFile = getSlotFile(slotNumber)
             if (stateFile.exists()) {
                 val stateData = stateFile.readBytes()
-                retroView.unserializeState(stateData)
+                if (!retroView.unserializePersistedState(stateData)) {
+                    Log.e(TAG, "Core rejected state from slot $slotNumber (${stateData.size} bytes)")
+                    return false
+                }
                 Log.d(TAG, "Loaded state from slot $slotNumber (${stateData.size} bytes)")
                 true
             } else {

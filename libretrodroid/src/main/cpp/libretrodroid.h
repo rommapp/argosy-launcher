@@ -48,6 +48,7 @@
 #include "renderers/es3/imagerendereres3.h"
 #include "utils/rect.h"
 #include "rewindbuffer.h"
+#include "stateloadpolicy.h"
 
 namespace libretrodroid {
 
@@ -73,6 +74,7 @@ public:
     std::pair<int8_t*, size_t> serializeState();
     size_t getSerializeSize();
     bool unserializeState(int8_t *data, size_t size);
+    bool unserializePersistedState(int8_t *data, size_t size);
 
     std::pair<int8_t *, size_t> serializeSRAM();
     jboolean unserializeSRAM(int8_t *data, size_t size);
@@ -183,6 +185,7 @@ public:
     uintptr_t handleGetCurrentFrameBuffer();
 
 private:
+    bool unserializeStateWithPolicy(int8_t *data, size_t size, StateLoadPolicy policy);
     void updateAudioSampleRateMultiplier();
     float findDefaultAspectRatio(const retro_system_av_info &system_av_info);
     void afterGameLoad();

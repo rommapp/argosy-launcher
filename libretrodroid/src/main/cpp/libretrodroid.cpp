@@ -175,17 +175,63 @@ void LibretroDroid::setControllerType(unsigned int port, unsigned int type) {
 }
 
 bool LibretroDroid::unserializeState(int8_t *data, size_t size) {
-    size_t expectedSize = core->retro_serialize_size();
-    if (expectedSize == 0) {
+    return unserializeStateWithPolicy(data, size, StateLoadPolicy::StrictSize);
+}
+
+bool LibretroDroid::unserializePersistedState(int8_t *data, size_t size) {
+    return unserializeStateWithPolicy(data, size, StateLoadPolicy::CoreValidated);
+}
+
+bool LibretroDroid::unserializeStateWithPolicy(
+    int8_t *data,
+    size_t size,
+    StateLoadPolicy policy
+) {
+    const size_t currentSize = core->retro_serialize_size();
+    if (currentSize == 0) {
         LOGE("unserializeState: core reports no serialization support");
         return false;
     }
-    if (size != expectedSize) {
-        LOGE("unserializeState: size mismatch (got %zu, expected %zu)", size, expectedSize);
+    if (size == 0) {
+        LOGE("unserializeState: refusing empty state");
         return false;
     }
-    bool result = core->retro_unserialize(data, size);
-    if (result && video && video->isHWAccelerated()) {
+    if (size != currentSize) {
+        if (policy == StateLoadPolicy::StrictSize) {
+            LOGE(
+                "unserializeState: size mismatch (got %zu, current %zu); strict load rejected",
+                size,
+                currentSize
+            );
+            return false;
+        }
+        LOGW(
+            "unserializeState: persisted state size differs from current core size "
+            "(got %zu, current %zu); attempting core load",
+            size,
+            currentSize
+        );
+    }
+
+    const bool result = attemptStateLoad(
+        data,
+        size,
+        currentSize,
+        policy,
+        [this](const void* stateData, size_t stateSize) {
+            return core->retro_unserialize(stateData, stateSize);
+        }
+    );
+    if (!result) {
+        LOGE(
+            "unserializeState: core rejected state (got %zu, current %zu)",
+            size,
+            currentSize
+        );
+        return false;
+    }
+
+    if (video && video->isHWAccelerated()) {
         auto contextReset = Environment::getInstance().getHwContextReset();
         if (contextReset) {
             video->bindHWContext();
@@ -193,7 +239,7 @@ bool LibretroDroid::unserializeState(int8_t *data, size_t size) {
             video->bindMainContext();
         }
     }
-    return result;
+    return true;
 }
 
 JNIEXPORT jboolean JNICALL LibretroDroid::unserializeSRAM(int8_t* data, size_t size) {

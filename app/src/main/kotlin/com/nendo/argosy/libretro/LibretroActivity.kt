@@ -1865,10 +1865,13 @@ class LibretroActivity : ComponentActivity() {
         if (isGuestJoinedSession) return
         val resumeFile = saveStateManager.getSlotFile(SaveStateManager.RESUME_SLOT)
         if (resumeFile.exists()) {
-            if (!hardcoreMode && statesSupported &&
-                saveStateManager.performSlotLoad(retroView, SaveStateManager.RESUME_SLOT)
-            ) {
-                inGameMessage = "Resumed"
+            if (!hardcoreMode && statesSupported) {
+                if (saveStateManager.performSlotLoad(retroView, SaveStateManager.RESUME_SLOT)) {
+                    inGameMessage = "Resumed"
+                } else {
+                    inGameMessage = "Failed to restore state"
+                    Log.w(TAG, "Failed to restore one-shot resume state")
+                }
             }
             resumeFile.delete()
             return
@@ -1886,6 +1889,9 @@ class LibretroActivity : ComponentActivity() {
         if (saveStateManager.performSlotLoad(retroView, SaveStateManager.AUTO_SLOT)) {
             inGameMessage = "State restored"
             Log.d(TAG, "Auto-restored state from auto slot")
+        } else {
+            inGameMessage = "Failed to restore state"
+            Log.w(TAG, "Failed to auto-restore state from auto slot")
         }
     }
 
@@ -2361,7 +2367,7 @@ class LibretroActivity : ComponentActivity() {
                 if (coreDestroyed || !::retroView.isInitialized) return@runOnUiThread
                 lifecycleScope.launch(Dispatchers.IO) {
                     val ok = try { saveStateManager.performQuickLoad(retroView) } catch (_: Exception) { false }
-                    notifyQuickAction(ok, "State loaded", "No quick save yet")
+                    notifyQuickAction(ok, "State loaded", "Failed to load state")
                 }
             }
         }

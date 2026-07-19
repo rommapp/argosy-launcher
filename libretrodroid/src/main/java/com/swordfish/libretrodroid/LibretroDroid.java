@@ -133,6 +133,7 @@ public class LibretroDroid {
 
     public static native byte[] serializeState();
     public static native boolean unserializeState(byte[] state);
+    public static native boolean unserializePersistedState(byte[] state);
     public static native long getSerializeSize();
 
     public static native byte[] captureRawFrame();
@@ -190,6 +191,12 @@ public class LibretroDroid {
      * @return Number of tests that passed
      */
     public static native int runAchievementTests();
+
+    /**
+     * Run native save-state load policy tests.
+     * @return Number of tests that passed
+     */
+    public static native int runStateLoadPolicyTests();
 
     /**
      * Compute the RetroAchievements hash for a ROM file.

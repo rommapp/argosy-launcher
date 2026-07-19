@@ -44,6 +44,7 @@
 #include "renderers/es3/imagerendereres3.h"
 #include "utils/jnistring.h"
 #include "achievements_test.h"
+#include "stateloadpolicy_test.h"
 #include <rc_hash.h>
 
 namespace libretrodroid {
@@ -181,17 +182,19 @@ JNIEXPORT void JNICALL Java_com_swordfish_libretrodroid_LibretroDroid_setControl
     LibretroDroid::getInstance().setControllerType(port, type);
 }
 
-JNIEXPORT jboolean JNICALL Java_com_swordfish_libretrodroid_LibretroDroid_unserializeState(
+static jboolean unserializeStateFromJava(
     JNIEnv* env,
-    jclass obj,
-    jbyteArray state
+    jbyteArray state,
+    bool persisted
 ) {
     try {
         jboolean isCopy = JNI_FALSE;
         jbyte* data = env->GetByteArrayElements(state, &isCopy);
         jsize size = env->GetArrayLength(state);
 
-        bool result = LibretroDroid::getInstance().unserializeState(data, size);
+        const bool result = persisted
+            ? LibretroDroid::getInstance().unserializePersistedState(data, size)
+            : LibretroDroid::getInstance().unserializeState(data, size);
         env->ReleaseByteArrayElements(state, data, JNI_ABORT);
 
         return result ? JNI_TRUE : JNI_FALSE;
@@ -201,6 +204,22 @@ JNIEXPORT jboolean JNICALL Java_com_swordfish_libretrodroid_LibretroDroid_unseri
         JavaUtils::throwRetroException(env, ERROR_SERIALIZATION);
         return JNI_FALSE;
     }
+}
+
+JNIEXPORT jboolean JNICALL Java_com_swordfish_libretrodroid_LibretroDroid_unserializeState(
+    JNIEnv* env,
+    jclass obj,
+    jbyteArray state
+) {
+    return unserializeStateFromJava(env, state, false);
+}
+
+JNIEXPORT jboolean JNICALL Java_com_swordfish_libretrodroid_LibretroDroid_unserializePersistedState(
+    JNIEnv* env,
+    jclass obj,
+    jbyteArray state
+) {
+    return unserializeStateFromJava(env, state, true);
 }
 
 JNIEXPORT jbyteArray JNICALL Java_com_swordfish_libretrodroid_LibretroDroid_serializeState(
@@ -978,6 +997,13 @@ JNIEXPORT jint JNICALL Java_com_swordfish_libretrodroid_LibretroDroid_runAchieve
     }
 
     return static_cast<jint>(passed);
+}
+
+JNIEXPORT jint JNICALL Java_com_swordfish_libretrodroid_LibretroDroid_runStateLoadPolicyTests(
+    JNIEnv* env,
+    jclass obj
+) {
+    return static_cast<jint>(test::runStateLoadPolicyTests());
 }
 
 JNIEXPORT jstring JNICALL Java_com_swordfish_libretrodroid_LibretroDroid_computeRomHash(

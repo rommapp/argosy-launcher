@@ -19,6 +19,7 @@ class StateLoadPolicyNativeTest {
 
     @Test
     fun runNativeStateLoadPolicyTests() {
-        assertEquals(7, LibretroDroid.runStateLoadPolicyTests())
+        val passed = LibretroDroid.runStateLoadPolicyTests()
+        assertEquals("All native state-load policy tests should pass", 7, passed)
     }
 }

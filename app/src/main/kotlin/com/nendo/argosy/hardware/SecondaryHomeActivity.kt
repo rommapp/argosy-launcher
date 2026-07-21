@@ -789,8 +789,9 @@ class SecondaryHomeActivity :
 
     private fun loadCompanionGameData(gameId: Long) {
         lifecycleScope.launch {
-            companionInGameState = stateManager.loadCompanionGameData(gameId).copy(
-                quickActionsAvailable = dsm.sessionQuickActions != null
+            companionInGameState = stateManager.loadCompanionGameData(gameId).withLiveQuickActionState(
+                quickActionsAvailable = dsm.sessionQuickActions != null,
+                hasQuickSave = dsm.companionHasQuickSave
             )
         }
     }

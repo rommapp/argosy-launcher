@@ -82,7 +82,7 @@ class SaveSyncApiClient @Inject constructor(
         if (gameConfig?.packageName != null) {
             val resolved = emulatorResolver.resolveEmulatorId(gameConfig.packageName)
             if (resolved != null) {
-                Logger.debug(TAG, "[SaveSync] DISCOVER gameId=${game.id} | Resolved emulator from game config | package=${gameConfig.packageName}, emulatorId=$resolved")
+                Logger.verbose(TAG) { "[SaveSync] DISCOVER gameId=${game.id} | Resolved emulator from game config | package=${gameConfig.packageName}, emulatorId=$resolved" }
                 return resolved
             }
         }
@@ -91,7 +91,7 @@ class SaveSyncApiClient @Inject constructor(
         if (platformConfig?.packageName != null) {
             val resolved = emulatorResolver.resolveEmulatorId(platformConfig.packageName)
             if (resolved != null) {
-                Logger.debug(TAG, "[SaveSync] DISCOVER gameId=${game.id} | Resolved emulator from platform default | package=${platformConfig.packageName}, emulatorId=$resolved")
+                Logger.verbose(TAG) { "[SaveSync] DISCOVER gameId=${game.id} | Resolved emulator from platform default | package=${platformConfig.packageName}, emulatorId=$resolved" }
                 return resolved
             }
         }
@@ -100,7 +100,7 @@ class SaveSyncApiClient @Inject constructor(
 
         val preferred = emulatorResolver.getPreferredEmulator(game.platformSlug)
         if (preferred != null) {
-            Logger.debug(TAG, "[SaveSync] DISCOVER gameId=${game.id} | Using preferred emulator for platform=${game.platformSlug} | emulatorId=${preferred.def.id}")
+            Logger.verbose(TAG) { "[SaveSync] DISCOVER gameId=${game.id} | Using preferred emulator for platform=${game.platformSlug} | emulatorId=${preferred.def.id}" }
             return preferred.def.id
         }
 

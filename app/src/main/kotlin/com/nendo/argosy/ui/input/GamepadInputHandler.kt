@@ -168,7 +168,7 @@ class GamepadInputHandler @Inject constructor(
         if (event.action == KeyEvent.ACTION_DOWN) {
             lastInputDevice = event.device
             onActivity?.invoke()
-            android.util.Log.d("GamepadInput", "KeyEvent: keyCode=${event.keyCode}, scanCode=${event.scanCode}, device=${event.device?.name}")
+            com.nendo.argosy.util.Logger.verbose("GamepadInput") { "KeyEvent: keyCode=${event.keyCode}, scanCode=${event.scanCode}, device=${event.device?.name}" }
         }
 
         rawKeyEventListener?.let { listener ->

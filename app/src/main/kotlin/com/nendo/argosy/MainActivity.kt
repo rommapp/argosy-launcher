@@ -48,6 +48,7 @@ import com.nendo.argosy.ui.theme.ALauncherTheme
 import android.view.Display
 import com.nendo.argosy.hardware.SecondaryHomeActivity
 import com.nendo.argosy.util.DisplayAffinityHelper
+import com.nendo.argosy.util.Logger
 import com.nendo.argosy.util.DisplayRoleResolver
 import dagger.hilt.android.AndroidEntryPoint
 import com.nendo.argosy.util.SafeCoroutineScope
@@ -410,7 +411,7 @@ class MainActivity : ComponentActivity() {
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
         if (!dualScreenManager.claimInput(event)) return true
         if (event.action == KeyEvent.ACTION_DOWN && event.repeatCount == 0) {
-            Log.d(TAG, "dispatchKeyEvent: key=${event.keyCode} isHome=$isOnHomeScreen swapped=${dualScreenManager.isRolesSwapped.value} gameOnSecondary=${dualScreenManager.swappedIsGameActive.value} companion=${dualScreenManager.isCompanionActive.value} overlay=$isOverlayFocused")
+            Logger.verbose(TAG) { "dispatchKeyEvent: key=${event.keyCode} isHome=$isOnHomeScreen swapped=${dualScreenManager.isRolesSwapped.value} gameOnSecondary=${dualScreenManager.swappedIsGameActive.value} companion=${dualScreenManager.isCompanionActive.value} overlay=$isOverlayFocused" }
             if (dualScreenManager.handleConflictInput(
                     event.keyCode,
                     sessionStateStore.getSwapAB(),
@@ -423,7 +424,7 @@ class MainActivity : ComponentActivity() {
         if (dualScreenManager.swappedIsGameActive.value && !isOverlayFocused && isGameOnOtherDisplay()) {
             val emulatorDispatcher = dualScreenManager.emulatorKeyDispatcher
             if (emulatorDispatcher != null) {
-                Log.d(TAG, "dispatchKeyEvent: FORWARDING key=${event.keyCode} to emulator")
+                Logger.verbose(TAG) { "dispatchKeyEvent: FORWARDING key=${event.keyCode} to emulator" }
                 return emulatorDispatcher(event)
             }
             return true
@@ -435,7 +436,7 @@ class MainActivity : ComponentActivity() {
             !isOverlayFocused
         ) {
             if (event.action == KeyEvent.ACTION_DOWN && event.repeatCount == 0) {
-                Log.d(TAG, "dispatchKeyEvent: FORWARDING key=${event.keyCode} to companion")
+                Logger.verbose(TAG) { "dispatchKeyEvent: FORWARDING key=${event.keyCode} to companion" }
                 onDimmerActivity?.invoke()
                 dualScreenManager.companionHost?.onForwardKey(
                     event.keyCode,
@@ -463,7 +464,7 @@ class MainActivity : ComponentActivity() {
         }
 
         if (event.action == KeyEvent.ACTION_DOWN && event.repeatCount == 0) {
-            Log.d(TAG, "dispatchKeyEvent: LOCAL handling key=${event.keyCode}")
+            Logger.verbose(TAG) { "dispatchKeyEvent: LOCAL handling key=${event.keyCode}" }
         }
         if (event.action == KeyEvent.ACTION_DOWN) {
             ambientAudioManager.resumeFromSuspend()

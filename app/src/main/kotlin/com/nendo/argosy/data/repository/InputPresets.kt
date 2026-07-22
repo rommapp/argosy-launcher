@@ -722,9 +722,9 @@ object InputPresets {
     }
 
     /**
-     * Whether this platform's console controller uses [keyCode] as a real button under the
-     * default mapping. A single-key hotkey on such a button is shadowed by the console button
-     * on that platform, so the editor warns rather than binding something that silently won't fire.
+     * Whether the default mapping sends [keyCode] to a gameplay-priority button on this platform.
+     * The hotkey editor has no per-controller mapping context, so its warning reflects this
+     * default-layout signal; runtime priority uses each controller's resolved mapping.
      */
     fun keyMapsToConsoleButton(keyCode: Int, platformSlug: String): Boolean {
         val retroButton = DEFAULT_MAPPING[keyCode] ?: return false

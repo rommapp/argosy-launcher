@@ -27,7 +27,13 @@ data class MappingPlatform(
     val id: String,
     val displayName: String,
     val buttons: List<Int>,
-    val buttonLabels: Map<Int, String> = emptyMap()
+    val buttonLabels: Map<Int, String> = emptyMap(),
+    /**
+     * Buttons that retain gameplay priority over a single-button hotkey. Controls that only
+     * duplicate another input route or affect presentation can remain exposed in [buttons]
+     * without shadowing an explicitly configured hotkey.
+     */
+    val hotkeyBlockingButtons: Set<Int> = buttons.toSet()
 )
 
 object MappingPlatforms {
@@ -203,7 +209,13 @@ object MappingPlatforms {
             RetroButton.R2 to "Turbo R",
             RetroButton.L3 to "Darken Solar Sensor",
             RetroButton.R3 to "Brighten Solar Sensor"
-        )
+        ),
+        hotkeyBlockingButtons = setOf(
+            RetroButton.A, RetroButton.B,
+            RetroButton.L, RetroButton.R,
+            RetroButton.L3, RetroButton.R3,
+            RetroButton.START, RetroButton.SELECT
+        ) + DPAD
     )
 
     val N64 = MappingPlatform(
@@ -223,7 +235,12 @@ object MappingPlatforms {
             RetroButton.R2 to "C Buttons (hold)",
             RetroButton.A to "C-Right (C mode)",
             RetroButton.X to "C-Up (C mode)"
-        )
+        ),
+        hotkeyBlockingButtons = setOf(
+            RetroButton.B, RetroButton.Y,
+            RetroButton.L, RetroButton.R, RetroButton.L2,
+            RetroButton.START
+        ) + DPAD
     )
 
     val PSX = MappingPlatform(
@@ -420,7 +437,13 @@ object MappingPlatforms {
             RetroButton.R2 to "Swap Screens",
             RetroButton.L3 to "Close Lid",
             RetroButton.R3 to "Touch Joystick"
-        )
+        ),
+        hotkeyBlockingButtons = setOf(
+            RetroButton.A, RetroButton.B, RetroButton.X, RetroButton.Y,
+            RetroButton.L, RetroButton.R, RetroButton.L2,
+            RetroButton.L3, RetroButton.R3,
+            RetroButton.START, RetroButton.SELECT
+        ) + DPAD
     )
 
     val GAMECUBE = MappingPlatform(
@@ -705,7 +728,7 @@ object InputPresets {
      */
     fun keyMapsToConsoleButton(keyCode: Int, platformSlug: String): Boolean {
         val retroButton = DEFAULT_MAPPING[keyCode] ?: return false
-        return retroButton in MappingPlatforms.profileForSlug(platformSlug).buttons
+        return retroButton in MappingPlatforms.profileForSlug(platformSlug).hotkeyBlockingButtons
     }
 
     fun getPresetNamesForCycling(): List<String> = PRESETS.map { it.name }

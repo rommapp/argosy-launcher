@@ -58,10 +58,9 @@ class InputConfigCoordinator(
             inputMapper.setExtendedMappings(mappings)
             inputMapper.setPortResolver { device -> portResolver.getPort(device) }
 
-            val platformIndex = MappingPlatforms.indexForPlatformSlug(platformSlug)
-            val platformButtons = MappingPlatforms.getByIndex(platformIndex).buttons.toSet()
+            val hotkeyBlockingButtons = MappingPlatforms.profileForSlug(platformSlug).hotkeyBlockingButtons
             val platformKeyCodes = mappings.values.firstOrNull()
-                ?.filter { (_, retroButton) -> retroButton in platformButtons }
+                ?.filter { (_, retroButton) -> retroButton in hotkeyBlockingButtons }
                 ?.keys
                 ?.filterIsInstance<InputSource.Button>()
                 ?.map { it.keyCode }

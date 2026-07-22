@@ -4,6 +4,9 @@ Argosy is a controller-first launcher for emulation handhelds and Android TV.
 PRs are welcome, including AI-assisted ones. What matters is that you own what
 you submit: you've personally reviewed it and understand what it does.
 
+Structural law for coding agents lives in [AGENTS.md](AGENTS.md); this file
+covers the human side of contributing.
+
 ## The laws
 
 These are enforced, not suggested. The `rules` CI check fails PRs that violate
@@ -13,10 +16,11 @@ the mechanically-checkable ones; reviewers enforce the rest.
    gamepad. Touch uses `clickableNoFocus` (ui/util/Modifiers.kt), never plain
    `clickable()`. Gamepad focus is index-driven via `InputHandler`, not Compose
    focus. A component with one input modality is incomplete.
-2. **No inline comments.** Zero `//` inside function bodies, and no single-line
-   `/* */` or mid-body `/** */` standing in for one. Concise KDoc above a
-   declaration for non-obvious public contracts; rationale goes in the PR
-   description, not the diff.
+2. **No inline comments.** Zero `//` inside function bodies, and no
+   single-line `/* */` or `/** */` anywhere - the one-line block form is an
+   inline comment with different delimiters. A KDoc that is genuinely needed
+   (non-obvious public contract) uses the multi-line block form above the
+   declaration; rationale goes in the PR description, not the diff.
 3. **Tokens, not literals.** Dimensions route through `Dimens` / tokens.json.
    No hardcoded `.dp` values in UI code (0.dp excepted).
 4. **Off-main-thread work.** File, network, DB, and blocking native calls run

@@ -11,8 +11,13 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.itemsIndexed
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.itemsIndexed as listItemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -176,30 +181,62 @@ fun InGameMenu(
     val currentQuickHistoryFocused = rememberUpdatedState(quickHistoryFocused)
     val currentOnQuickHistoryFocusChange = rememberUpdatedState(onQuickHistoryFocusChange)
 
-    val inputHandler = remember(menuItems) {
+    val columns = if (LocalConfiguration.current.screenWidthDp >= 600) 2 else 1
+
+    val inputHandler = remember(menuItems, columns) {
         object : InputHandler {
             override fun onUp(): InputResult {
                 if (currentQuickHistoryFocused.value) currentOnQuickHistoryFocusChange.value(false)
                 val idx = currentFocusedIndex.value
-                val newIndex = if (idx <= 0) menuItems.lastIndex else idx - 1
+                val newIndex = if (columns == 1) {
+                    if (idx <= 0) menuItems.lastIndex else idx - 1
+                } else {
+                    val target = idx - columns
+                    if (target >= 0) target else idx
+                }
                 if (newIndex != idx) currentOnFocusChange.value(newIndex)
                 return InputResult.HANDLED
             }
             override fun onDown(): InputResult {
                 if (currentQuickHistoryFocused.value) currentOnQuickHistoryFocusChange.value(false)
                 val idx = currentFocusedIndex.value
-                val newIndex = if (idx >= menuItems.lastIndex) 0 else idx + 1
+                val newIndex = if (columns == 1) {
+                    if (idx >= menuItems.lastIndex) 0 else idx + 1
+                } else {
+                    val target = idx + columns
+                    if (target <= menuItems.lastIndex) target else idx
+                }
                 if (newIndex != idx) currentOnFocusChange.value(newIndex)
                 return InputResult.HANDLED
             }
             override fun onLeft(): InputResult {
-                if (currentQuickHistoryFocused.value) currentOnQuickHistoryFocusChange.value(false)
+                if (currentQuickHistoryFocused.value) {
+                    currentOnQuickHistoryFocusChange.value(false)
+                    return InputResult.HANDLED
+                }
+                if (columns > 1) {
+                    val idx = currentFocusedIndex.value
+                    if (idx % columns != 0) {
+                        val newIndex = idx - 1
+                        val newAction = menuItems.getOrNull(newIndex)?.second
+                        if (newAction == InGameMenuAction.QuickLoad && currentHasQuickSave.value) {
+                            currentOnQuickHistoryFocusChange.value(true)
+                        }
+                        currentOnFocusChange.value(newIndex)
+                    }
+                }
                 return InputResult.HANDLED
             }
             override fun onRight(): InputResult {
-                val action = menuItems.getOrNull(currentFocusedIndex.value)?.second
+                val idx = currentFocusedIndex.value
+                val action = menuItems.getOrNull(idx)?.second
                 if (action == InGameMenuAction.QuickLoad && currentHasQuickSave.value && !currentQuickHistoryFocused.value) {
                     currentOnQuickHistoryFocusChange.value(true)
+                } else if (columns > 1) {
+                    if (idx % columns != columns - 1 && idx + 1 <= menuItems.lastIndex) {
+                        if (currentQuickHistoryFocused.value) currentOnQuickHistoryFocusChange.value(false)
+                        currentOnFocusChange.value(idx + 1)
+                    }
                 }
                 return InputResult.HANDLED
             }
@@ -226,29 +263,24 @@ fun InGameMenu(
         modifier = Modifier
             .fillMaxSize()
             .background(overlayColor)
-            .focusProperties { canFocus = false },
+            .clickableNoFocus { currentOnAction.value(InGameMenuAction.Resume) },
         contentAlignment = Alignment.Center
     ) {
         val maxHeightDp = (LocalConfiguration.current.screenHeightDp * 0.9f).dp
-        val menuListState = rememberLazyListState()
+        val menuGridState = rememberLazyGridState()
 
         LaunchedEffect(focusedIndex, menuItems.size) {
             if (menuItems.isEmpty()) return@LaunchedEffect
             val target = focusedIndex.coerceIn(0, menuItems.lastIndex)
-            val visibleItems = menuListState.layoutInfo.visibleItemsInfo
-            val viewportHeight = menuListState.layoutInfo.viewportEndOffset
-            val avgItemHeight = if (visibleItems.isNotEmpty()) {
-                visibleItems.sumOf { it.size } / visibleItems.size
-            } else 80
-            val targetOffset = (viewportHeight / 2) - (avgItemHeight / 2)
-            menuListState.animateScrollToItem(target, -targetOffset)
+            menuGridState.animateScrollToItem(target)
         }
 
         Surface(
             modifier = Modifier
-                .widthIn(max = 300.dp)
+                .widthIn(max = if (columns > 1) 560.dp else 300.dp)
                 .heightIn(max = maxHeightDp)
                 .padding(12.dp)
+                .clickableNoFocus {}
                 .focusProperties { canFocus = false },
             shape = RoundedCornerShape(16.dp),
             color = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
@@ -296,12 +328,18 @@ fun InGameMenu(
                     }
                 }
 
-                LazyColumn(
-                    state = menuListState,
+                LazyVerticalGrid(
+                    columns = GridCells.Fixed(columns),
+                    state = menuGridState,
                     modifier = Modifier.fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    itemsIndexed(menuItems, key = { _, item -> item.second.toString() }) { index, (label, action) ->
+                    itemsIndexed(
+                        items = menuItems,
+                        key = { _: Int, item: Pair<String, InGameMenuAction> -> item.second.toString() }
+                    ) { index, item ->
+                        val (label, action) = item
                         when {
                             action == InGameMenuAction.QuickLoad && hasQuickSave -> {
                                 QuickLoadRow(
@@ -422,7 +460,7 @@ fun DiscMenu(
                     modifier = Modifier.fillMaxWidth(),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    itemsIndexed(labels, key = { index, _ -> index }) { index, label ->
+                    listItemsIndexed(labels, key = { index, _ -> index }) { index, label ->
                         val text = if (index == currentIndex) "$label  (current)" else label
                         MenuButton(
                             text = text,

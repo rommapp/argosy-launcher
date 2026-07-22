@@ -12,15 +12,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.runtime.remember
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.sp
 import androidx.core.graphics.toColorInt
 import com.nendo.argosy.ui.screens.doodle.DecodedDoodle
-import com.nendo.argosy.ui.screens.doodle.DoodleEncoder
 import com.nendo.argosy.ui.screens.doodle.DoodlePreview
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.generated.ColorTokens
+import com.nendo.argosy.ui.screens.doodle.rememberDecodedDoodle
 
 /**
  * Local user's avatar identity, provided once at the app root so any
@@ -59,9 +58,7 @@ fun SocialAvatar(
         fallbackColor
     }
 
-    val decodedDoodle: DecodedDoodle? = remember(effectiveDoodle) {
-        effectiveDoodle?.let { runCatching { DoodleEncoder.decodeFromBase64(it) }.getOrNull() }
-    }
+    val decodedDoodle: DecodedDoodle? = rememberDecodedDoodle(effectiveDoodle)
 
     Box(modifier = modifier, contentAlignment = Alignment.BottomEnd) {
         if (decodedDoodle != null) {

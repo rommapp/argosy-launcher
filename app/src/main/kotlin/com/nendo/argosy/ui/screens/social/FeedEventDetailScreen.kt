@@ -84,7 +84,6 @@ import com.nendo.argosy.ui.util.parseInlineMarkdown
 import com.nendo.argosy.ui.input.LocalInputDispatcher
 import com.nendo.argosy.util.formatRelativeTime
 import com.nendo.argosy.ui.screens.doodle.CanvasSize
-import com.nendo.argosy.ui.screens.doodle.DoodleEncoder
 import com.nendo.argosy.ui.screens.doodle.DoodlePreview
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -94,6 +93,8 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import com.nendo.argosy.ui.screens.doodle.rememberDecodedDoodle
+import com.nendo.argosy.ui.screens.doodle.feedPixelGap
 
 data class FeedEventDetailUiState(
     val event: FeedEventDto? = null,
@@ -582,26 +583,11 @@ private fun PortraitLayout(
 @Composable
 private fun EventMediaContent(event: FeedEventDto, fillWidth: Boolean = false) {
     when (event.eventType) {
-        FeedEventType.DISCUSSION -> {
-            // Discussion posts are text-only -- no media content
-        }
+        FeedEventType.DISCUSSION -> Unit
         FeedEventType.DOODLE -> {
             val doodleData = event.payload?.get("data") as? String
-            val decodedDoodle = remember(doodleData) {
-                doodleData?.let {
-                    try {
-                        DoodleEncoder.decodeFromBase64(it)
-                    } catch (e: Exception) {
-                        null
-                    }
-                }
-            }
-
-            val pixelGap = when (decodedDoodle?.size ?: CanvasSize.MEDIUM) {
-                CanvasSize.SMALL -> 2f
-                CanvasSize.MEDIUM -> 1f
-                CanvasSize.LARGE -> 0f
-            }
+            val decodedDoodle = rememberDecodedDoodle(doodleData)
+            val pixelGap = (decodedDoodle?.size ?: CanvasSize.MEDIUM).feedPixelGap
 
             val cardModifier = if (fillWidth) {
                 Modifier

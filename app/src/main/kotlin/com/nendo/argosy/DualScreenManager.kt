@@ -438,7 +438,10 @@ class DualScreenManager(
     )
     val swappedCompanionState: StateFlow<com.nendo.argosy.hardware.CompanionInGameState> =
         _swappedCompanionState
-    /** Canonical in both companion modes; updateCompanionHasQuickSave maintains it regardless of screen mode. */
+    /**
+     * Canonical in both companion modes; updateCompanionHasQuickSave
+     * maintains it regardless of screen mode.
+     */
     val companionHasQuickSave: Boolean
         get() = _swappedCompanionState.value.hasQuickSave
 

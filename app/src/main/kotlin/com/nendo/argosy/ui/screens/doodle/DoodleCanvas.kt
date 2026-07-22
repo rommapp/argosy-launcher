@@ -147,6 +147,19 @@ fun DoodleCanvas(
 }
 
 @Composable
+fun rememberDecodedDoodle(data: String?): DecodedDoodle? =
+    androidx.compose.runtime.remember(data) {
+        data?.let { runCatching { DoodleEncoder.decodeFromBase64(it) }.getOrNull() }
+    }
+
+val CanvasSize.feedPixelGap: Float
+    get() = when (this) {
+        CanvasSize.SMALL -> 2f
+        CanvasSize.MEDIUM -> 1f
+        CanvasSize.LARGE -> 0f
+    }
+
+@Composable
 fun DoodlePreview(
     canvasSize: CanvasSize,
     pixels: Map<Pair<Int, Int>, DoodleColor>,

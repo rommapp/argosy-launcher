@@ -84,7 +84,6 @@ import com.nendo.argosy.ui.common.rememberFileImageModel
 import com.nendo.argosy.ui.components.Modal
 import com.nendo.argosy.ui.screens.doodle.GamePickerItem
 import com.nendo.argosy.ui.screens.doodle.CanvasSize
-import com.nendo.argosy.ui.screens.doodle.DoodleEncoder
 import com.nendo.argosy.ui.screens.doodle.DoodlePreview
 import com.nendo.argosy.ui.components.FooterHintsWithState
 import com.nendo.argosy.ui.components.FooterSpacer
@@ -96,6 +95,8 @@ import com.nendo.argosy.ui.navigation.Screen
 import com.nendo.argosy.ui.theme.LocalArgosyTheme
 import com.nendo.argosy.ui.util.clickableNoFocus
 import com.nendo.argosy.util.formatRelativeTime
+import com.nendo.argosy.ui.screens.doodle.rememberDecodedDoodle
+import com.nendo.argosy.ui.screens.doodle.feedPixelGap
 
 @Composable
 fun SocialScreen(
@@ -909,21 +910,8 @@ private fun DoodleCard(
     val body = event.payload?.get("body") as? String
     val displayText = caption?.takeIf { it.isNotBlank() } ?: body
 
-    val decodedDoodle = remember(doodleData) {
-        doodleData?.let {
-            try {
-                DoodleEncoder.decodeFromBase64(it)
-            } catch (e: Exception) {
-                null
-            }
-        }
-    }
-
-    val pixelGap = when (decodedDoodle?.size ?: CanvasSize.MEDIUM) {
-        CanvasSize.SMALL -> 2f
-        CanvasSize.MEDIUM -> 1f
-        CanvasSize.LARGE -> 0f
-    }
+    val decodedDoodle = rememberDecodedDoodle(doodleData)
+    val pixelGap = (decodedDoodle?.size ?: CanvasSize.MEDIUM).feedPixelGap
 
     Card(
         modifier = Modifier

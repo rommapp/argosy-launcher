@@ -64,6 +64,9 @@ object DimensionTokens {
         const val modalWidth = 400
         const val modalWidthLg = 520
         const val modalWidthXl = 575
+        const val menuBreakpointWide = 600
+        const val inGameMenuWidth = 300
+        const val inGameMenuWidthWide = 560
     }
 
     object Elevation {

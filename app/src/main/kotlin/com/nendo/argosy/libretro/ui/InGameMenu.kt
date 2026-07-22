@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
@@ -41,6 +40,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.nendo.argosy.ui.input.InputHandler
 import com.nendo.argosy.ui.input.InputResult
+import com.nendo.argosy.ui.theme.generated.DimensionTokens
 import com.nendo.argosy.ui.util.clickableNoFocus
 
 sealed class InGameMenuAction {
@@ -107,7 +107,8 @@ fun InGameMenu(
     speedrunArmed: Boolean = false,
     hasQuickSave: Boolean = false,
     quickHistoryFocused: Boolean = false,
-    onQuickHistoryFocusChange: (Boolean) -> Unit = {}
+    onQuickHistoryFocusChange: (Boolean) -> Unit = {},
+    twoColumnMenu: Boolean = false
 ): InputHandler {
     val menuItems = remember(
         cheatsAvailable,
@@ -181,7 +182,7 @@ fun InGameMenu(
     val currentQuickHistoryFocused = rememberUpdatedState(quickHistoryFocused)
     val currentOnQuickHistoryFocusChange = rememberUpdatedState(onQuickHistoryFocusChange)
 
-    val columns = if (LocalConfiguration.current.screenWidthDp >= 600) 2 else 1
+    val columns = if (twoColumnMenu && LocalConfiguration.current.screenWidthDp >= DimensionTokens.Layout.menuBreakpointWide) 2 else 1
 
     val inputHandler = remember(menuItems, columns) {
         object : InputHandler {
@@ -204,7 +205,11 @@ fun InGameMenu(
                     if (idx >= menuItems.lastIndex) 0 else idx + 1
                 } else {
                     val target = idx + columns
-                    if (target <= menuItems.lastIndex) target else idx
+                    when {
+                        target <= menuItems.lastIndex -> target
+                        idx < menuItems.lastIndex -> menuItems.lastIndex
+                        else -> idx
+                    }
                 }
                 if (newIndex != idx) currentOnFocusChange.value(newIndex)
                 return InputResult.HANDLED
@@ -272,12 +277,18 @@ fun InGameMenu(
         LaunchedEffect(focusedIndex, menuItems.size) {
             if (menuItems.isEmpty()) return@LaunchedEffect
             val target = focusedIndex.coerceIn(0, menuItems.lastIndex)
-            menuGridState.animateScrollToItem(target)
+            val visibleItems = menuGridState.layoutInfo.visibleItemsInfo
+            val viewportHeight = menuGridState.layoutInfo.viewportEndOffset
+            val avgItemHeight = if (visibleItems.isNotEmpty()) {
+                visibleItems.sumOf { it.size.height } / visibleItems.size
+            } else 80
+            val targetOffset = (viewportHeight / 2) - (avgItemHeight / 2)
+            menuGridState.animateScrollToItem(target, -targetOffset)
         }
 
         Surface(
             modifier = Modifier
-                .widthIn(max = if (columns > 1) 560.dp else 300.dp)
+                .widthIn(max = if (columns > 1) DimensionTokens.Layout.inGameMenuWidthWide.dp else DimensionTokens.Layout.inGameMenuWidth.dp)
                 .heightIn(max = maxHeightDp)
                 .padding(12.dp)
                 .clickableNoFocus {}
@@ -435,7 +446,7 @@ fun DiscMenu(
 
         Surface(
             modifier = Modifier
-                .widthIn(max = 300.dp)
+                .widthIn(max = DimensionTokens.Layout.inGameMenuWidth.dp)
                 .heightIn(max = maxHeightDp)
                 .padding(12.dp)
                 .focusProperties { canFocus = false },

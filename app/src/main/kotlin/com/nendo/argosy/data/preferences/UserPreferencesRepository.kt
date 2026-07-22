@@ -502,7 +502,8 @@ data class BuiltinEmulatorSettings(
     val touchControlsGenesis6Button: Boolean = false,
     val speedrunStartOnReset: Boolean = true,
     val speedrunPanelSide: String = "Right",
-    val speedrunPanelWidthPercent: Int = 30
+    val speedrunPanelWidthPercent: Int = 30,
+    val ingameMenuTwoColumn: Boolean = false
 ) {
     val shaderConfig: com.swordfish.libretrodroid.ShaderConfig
         get() = when (shader) {

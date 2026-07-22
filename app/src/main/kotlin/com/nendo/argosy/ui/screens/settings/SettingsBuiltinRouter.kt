@@ -100,6 +100,13 @@ internal fun routeSetBuiltinLibretroEnabled(vm: SettingsViewModel, enabled: Bool
     }
 }
 
+internal fun routeSetIngameMenuTwoColumn(vm: SettingsViewModel, enabled: Boolean) {
+    vm._uiState.update { it.copy(emulators = it.emulators.copy(ingameMenuTwoColumn = enabled)) }
+    vm.viewModelScope.launch {
+        vm.libretroSettingsRepo.setIngameMenuTwoColumn(enabled)
+    }
+}
+
 internal fun routeSetBuiltinFilter(vm: SettingsViewModel, value: String) {
     vm._uiState.update { it.copy(builtinVideo = it.builtinVideo.copy(filter = value)) }
     vm.viewModelScope.launch {

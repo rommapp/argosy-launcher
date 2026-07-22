@@ -347,6 +347,7 @@ data class EmulatorState(
     val coreUpdatesAvailable: Int = 0,
     val builtinLibretroEnabled: Boolean = true,
     val architectureDisplay: String = "",
+    val ingameMenuTwoColumn: Boolean = false,
     val emulatorUpdateVersions: Map<String, String> = emptyMap(),
     val showVariantPicker: Boolean = false,
     val variantPickerInfo: VariantPickerInfo? = null,

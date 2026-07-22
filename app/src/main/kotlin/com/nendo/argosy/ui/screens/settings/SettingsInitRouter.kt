@@ -560,12 +560,14 @@ internal fun routeLoadSettings(vm: SettingsViewModel) {
         val anchoredPlatformId = vm._uiState.value.emulators.platforms
             .getOrNull(vm._uiState.value.platformDetail.platformIndex)?.platform?.id
         val archOverride = vm.libretroSettingsRepo.getArchitectureOverride().first()
+        val ingameMenuTwoColumn = vm.libretroSettingsRepo.getBuiltinEmulatorSettings().first().ingameMenuTwoColumn
         vm.emulatorDelegate.updateState(EmulatorState(
             platforms = filteredPlatformConfigs,
             installedEmulators = installedEmulators,
             platformSubFocusIndex = currentEmulatorState.platformSubFocusIndex,
             builtinLibretroEnabled = prefs.builtinLibretroEnabled,
             architectureDisplay = architectureAbiToDisplay(archOverride),
+            ingameMenuTwoColumn = ingameMenuTwoColumn,
             emulatorUpdateVersions = currentEmulatorState.emulatorUpdateVersions
         ))
         vm.emulatorDelegate.updateCoreCounts()

@@ -94,6 +94,19 @@ fun BuiltinEmulatorSection(
                     onClick = { viewModel.navigateToCoreOptions() }
                 )
             }
+            item(key = "builtin_two_column_menu") {
+                SwitchPreference(
+                    title = "Two-Column Menu",
+                    subtitle = if (emulators.ingameMenuTwoColumn) {
+                        "In-game menu uses two columns on wide displays"
+                    } else {
+                        "In-game menu uses a single column"
+                    },
+                    isEnabled = emulators.ingameMenuTwoColumn,
+                    isFocused = uiState.focusedIndex == 6,
+                    onToggle = { viewModel.setIngameMenuTwoColumn(it) }
+                )
+            }
         }
     }
 }

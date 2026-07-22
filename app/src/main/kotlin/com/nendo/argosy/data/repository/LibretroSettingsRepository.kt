@@ -149,6 +149,9 @@ class LibretroSettingsRepository @Inject constructor(
     suspend fun setSpeedrunPanelWidthPercent(percent: Int) =
         builtinPrefs.setSpeedrunPanelWidthPercent(percent)
 
+    suspend fun setIngameMenuTwoColumn(enabled: Boolean) =
+        builtinPrefs.setIngameMenuTwoColumn(enabled)
+
     suspend fun setBuiltinAnalogAsDpad(enabled: Boolean) =
         builtinPrefs.setBuiltinAnalogAsDpad(enabled)
 

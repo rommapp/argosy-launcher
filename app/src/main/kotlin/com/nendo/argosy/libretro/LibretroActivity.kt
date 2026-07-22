@@ -1036,7 +1036,8 @@ class LibretroActivity : ComponentActivity() {
                         speedrunArmed = speedrunState.armed,
                         hasQuickSave = saveStateManager.hasQuickSave,
                         quickHistoryFocused = menuQuickHistoryFocused,
-                        onQuickHistoryFocusChange = { menuQuickHistoryFocused = it }
+                        onQuickHistoryFocusChange = { menuQuickHistoryFocused = it },
+                        twoColumnMenu = touchSettingsState.ingameMenuTwoColumn
                     )
                 }
                 if (discMenuVisible) {

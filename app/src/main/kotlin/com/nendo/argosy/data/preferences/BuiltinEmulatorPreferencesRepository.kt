@@ -69,6 +69,7 @@ class BuiltinEmulatorPreferencesRepository @Inject constructor(
         val BUILTIN_SPEEDRUN_START_ON_RESET = booleanPreferencesKey("builtin_speedrun_start_on_reset")
         val BUILTIN_SPEEDRUN_PANEL_SIDE = stringPreferencesKey("builtin_speedrun_panel_side")
         val BUILTIN_SPEEDRUN_PANEL_WIDTH = intPreferencesKey("builtin_speedrun_panel_width")
+        val INGAME_MENU_TWO_COLUMN = booleanPreferencesKey("builtin_ingame_menu_two_column")
     }
 
     fun isBuiltinLibretroEnabled(): Flow<Boolean> = dataStore.data.map { prefs ->
@@ -129,7 +130,8 @@ class BuiltinEmulatorPreferencesRepository @Inject constructor(
             touchControlsGenesis6Button = prefs[Keys.TOUCH_GENESIS_6_BUTTON] ?: false,
             speedrunStartOnReset = prefs[Keys.BUILTIN_SPEEDRUN_START_ON_RESET] ?: true,
             speedrunPanelSide = prefs[Keys.BUILTIN_SPEEDRUN_PANEL_SIDE] ?: "Right",
-            speedrunPanelWidthPercent = prefs[Keys.BUILTIN_SPEEDRUN_PANEL_WIDTH] ?: 30
+            speedrunPanelWidthPercent = prefs[Keys.BUILTIN_SPEEDRUN_PANEL_WIDTH] ?: 30,
+            ingameMenuTwoColumn = prefs[Keys.INGAME_MENU_TWO_COLUMN] ?: false
         )
     }
 
@@ -381,6 +383,10 @@ class BuiltinEmulatorPreferencesRepository @Inject constructor(
 
     suspend fun setSpeedrunPanelWidthPercent(percent: Int) {
         dataStore.edit { it[Keys.BUILTIN_SPEEDRUN_PANEL_WIDTH] = percent.coerceIn(20, 40) }
+    }
+
+    suspend fun setIngameMenuTwoColumn(enabled: Boolean) {
+        dataStore.edit { it[Keys.INGAME_MENU_TWO_COLUMN] = enabled }
     }
 
     fun getArchitectureOverride(): Flow<String?> = dataStore.data.map { prefs ->

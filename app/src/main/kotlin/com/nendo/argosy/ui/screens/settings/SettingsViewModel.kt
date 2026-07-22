@@ -404,6 +404,7 @@ class SettingsViewModel @Inject constructor(
     fun setBuiltinShader(value: String) = routeSetBuiltinShader(this, value)
     fun setBuiltinFramesEnabled(enabled: Boolean) = routeSetBuiltinFramesEnabled(this, enabled)
     fun setBuiltinLibretroEnabled(enabled: Boolean) = routeSetBuiltinLibretroEnabled(this, enabled)
+    fun setIngameMenuTwoColumn(enabled: Boolean) = routeSetIngameMenuTwoColumn(this, enabled)
     fun setBuiltinFilter(value: String) = routeSetBuiltinFilter(this, value)
     fun setBuiltinAspectRatio(value: String) = routeSetBuiltinAspectRatio(this, value)
     fun setBuiltinPortraitPosition(value: String) = routeSetBuiltinPortraitPosition(this, value)

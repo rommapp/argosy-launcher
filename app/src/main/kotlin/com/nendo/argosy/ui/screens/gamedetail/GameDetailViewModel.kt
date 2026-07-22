@@ -116,6 +116,7 @@ class GameDetailViewModel @Inject constructor(
     private val downloadManager: com.nendo.argosy.data.download.DownloadManager,
     private val downloadFileStatusRepository: com.nendo.argosy.data.repository.DownloadFileStatusRepository,
     private val getRelatedGamesUseCase: com.nendo.argosy.domain.usecase.game.GetRelatedGamesUseCase,
+    private val gradientExtractionDelegate: com.nendo.argosy.ui.screens.common.GradientExtractionDelegate,
     private val gameThemeAudio: com.nendo.argosy.ui.audio.GameThemeAudioCoordinator
 ) : ViewModel() {
 
@@ -177,6 +178,18 @@ class GameDetailViewModel @Inject constructor(
 
     init {
         modalResetSignal.signal.onEach { resetAllModals() }.launchIn(viewModelScope)
+
+        viewModelScope.launch {
+            gradientExtractionDelegate.gradients.collect { gradients ->
+                _uiState.update { state ->
+                    state.copy(
+                        relatedGames = state.relatedGames.map { game ->
+                            gradients[game.id]?.let { game.copy(gradientColors = it) } ?: game
+                        }
+                    )
+                }
+            }
+        }
 
         viewModelScope.launch { emulatorDetector.detectEmulators() }
 
@@ -1701,12 +1714,20 @@ class GameDetailViewModel @Inject constructor(
             val platformNames = related.map { it.platformId }.distinct()
                 .mapNotNull { pid -> platformRepository.getById(pid)?.let { pid to it.name } }
                 .toMap()
-            val ui = related.map {
-                it.toHomeGameUi(downloadFileStatusRepository, platformNames[it.platformId])
+            val ui = related.map { item ->
+                val mapped = item.toHomeGameUi(downloadFileStatusRepository, platformNames[item.platformId])
+                gradientExtractionDelegate.getGradient(mapped.id)
+                    ?.let { mapped.copy(gradientColors = it) } ?: mapped
             }
             if (currentGameId == game.id) {
                 _uiState.update { it.copy(relatedGames = ui, relatedFocusIndex = 0) }
             }
+            val requests = related.map {
+                com.nendo.argosy.ui.screens.common.GameGradientRequest(it.id, it.coverPath)
+            }
+            gradientExtractionDelegate.extractForVisibleGames(
+                viewModelScope, requests, focusedIndex = 0, buffer = requests.size
+            )
         }
     }
 

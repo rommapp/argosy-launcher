@@ -123,6 +123,7 @@ fun SettingsScreen(
     initialSection: String? = null,
     initialAction: String? = null,
     initialPlatformId: Long? = null,
+    onNavigateToAvatarEditor: () -> Unit = {},
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -430,6 +431,10 @@ fun SettingsScreen(
             fileBrowserCallback = { path -> viewModel.setPlatformBuiltinStatePath(platformId, path) }
             showFileBrowser = true
         }
+    }
+
+    LaunchedEffect(Unit) {
+        viewModel.avatarEditorEvent.collect { onNavigateToAvatarEditor() }
     }
 
     LaunchedEffect(Unit) {

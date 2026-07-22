@@ -185,6 +185,8 @@ class UserPreferencesRepository @Inject constructor(
             socialUsername = sync.socialUsername,
             socialDisplayName = sync.socialDisplayName,
             socialAvatarColor = sync.socialAvatarColor,
+            socialAvatarDoodle = sync.socialAvatarDoodle,
+            socialAvatarUseDoodle = sync.socialAvatarUseDoodle,
             socialOnlineStatusEnabled = sync.socialOnlineStatusEnabled,
             socialShowNowPlaying = sync.socialShowNowPlaying,
             socialNotifyFriendOnline = sync.socialNotifyFriendOnline,
@@ -326,6 +328,7 @@ class UserPreferencesRepository @Inject constructor(
         avatarColor: String?
     ) = syncPrefs.setSocialCredentials(sessionToken, userId, username, displayName, avatarColor)
     suspend fun clearSocialCredentials() = syncPrefs.clearSocialCredentials()
+    suspend fun setSocialAvatarUseDoodle(enabled: Boolean) = syncPrefs.setSocialAvatarUseDoodle(enabled)
     suspend fun setSocialOnlineStatusEnabled(enabled: Boolean) = syncPrefs.setSocialOnlineStatusEnabled(enabled)
     suspend fun setSocialShowNowPlaying(enabled: Boolean) = syncPrefs.setSocialShowNowPlaying(enabled)
     suspend fun setSocialNotifyFriendOnline(enabled: Boolean) = syncPrefs.setSocialNotifyFriendOnline(enabled)
@@ -701,6 +704,8 @@ data class UserPreferences(
     val socialUsername: String? = null,
     val socialDisplayName: String? = null,
     val socialAvatarColor: String? = null,
+    val socialAvatarDoodle: String? = null,
+    val socialAvatarUseDoodle: Boolean = false,
     val socialOnlineStatusEnabled: Boolean = true,
     val socialShowNowPlaying: Boolean = true,
     val socialNotifyFriendOnline: Boolean = true,

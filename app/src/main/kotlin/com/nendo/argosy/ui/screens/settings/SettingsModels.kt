@@ -1144,6 +1144,8 @@ data class SocialState(
     val username: String? = null,
     val displayName: String? = null,
     val avatarColor: String? = null,
+    val avatarDoodle: String? = null,
+    val avatarUseDoodle: Boolean = false,
     val errorMessage: String? = null,
     val onlineStatusEnabled: Boolean = true,
     val showNowPlaying: Boolean = true,

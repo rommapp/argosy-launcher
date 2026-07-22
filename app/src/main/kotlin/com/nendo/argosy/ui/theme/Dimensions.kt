@@ -39,6 +39,11 @@ object Dimens {
 
     val dotSm: Dp @Composable get() = DimensionTokens.Dot.sm.dp * scale
     val dotLg: Dp @Composable get() = DimensionTokens.Dot.lg.dp * scale
+    val avatarXs: Dp @Composable get() = DimensionTokens.Avatar.xs.dp * scale
+    val avatarSm: Dp @Composable get() = DimensionTokens.Avatar.sm.dp * scale
+    val avatarMd: Dp @Composable get() = DimensionTokens.Avatar.md.dp * scale
+    val avatarLg: Dp @Composable get() = DimensionTokens.Avatar.lg.dp * scale
+    val avatarXl: Dp @Composable get() = DimensionTokens.Avatar.xl.dp * scale
     val iconXs: Dp @Composable get() = DimensionTokens.Icon.xs.dp * scale
     val iconSm: Dp @Composable get() = DimensionTokens.Icon.sm.dp * scale
     val iconMd: Dp @Composable get() = DimensionTokens.Icon.md.dp * scale

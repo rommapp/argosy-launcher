@@ -1010,7 +1010,12 @@ fun ArgosyApp(
         LocalXYIconsSwapped provides uiState.xyIconsSwapped,
         LocalSwapStartSelect provides uiState.swapStartSelect,
         LocalFooterHost provides footerHostController,
-        com.nendo.argosy.ui.common.LocalImageCacheManager provides viewModel.imageCacheManager
+        com.nendo.argosy.ui.common.LocalImageCacheManager provides viewModel.imageCacheManager,
+        com.nendo.argosy.ui.components.friends.LocalUserAvatarState provides
+            com.nendo.argosy.ui.components.friends.LocalUserAvatarInfo(
+                userId = drawerUiState.localUser?.id,
+                doodle = drawerUiState.localAvatarDoodle
+            )
     ) {
         if (uiState.isLoading) {
             AppSplashScreen(status = uiState.startupStatus)

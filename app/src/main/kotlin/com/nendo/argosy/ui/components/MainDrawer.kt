@@ -93,7 +93,8 @@ fun MainDrawer(
         ) {
             DrawerStatusBar(
                 isRommConnected = drawerState.rommConnected,
-                localUser = drawerState.localUser
+                localUser = drawerState.localUser,
+                localAvatarDoodle = drawerState.localAvatarDoodle
             )
             HorizontalDivider(
                 modifier = Modifier.padding(horizontal = Dimens.spacingLg, vertical = Dimens.radiusLg),
@@ -553,7 +554,11 @@ private fun FriendItem(
 }
 
 @Composable
-private fun DrawerStatusBar(isRommConnected: Boolean, localUser: SocialUser?) {
+private fun DrawerStatusBar(
+    isRommConnected: Boolean,
+    localUser: SocialUser?,
+    localAvatarDoodle: String? = null
+) {
     val mutedColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.35f)
     Row(
         modifier = Modifier
@@ -570,7 +575,9 @@ private fun DrawerStatusBar(isRommConnected: Boolean, localUser: SocialUser?) {
                 SocialAvatar(
                     displayName = localUser.displayName,
                     avatarColor = localUser.avatarColor,
-                    size = Dimens.iconLg
+                    size = Dimens.iconLg,
+                    avatarDoodle = localAvatarDoodle,
+                    userId = localUser.id
                 )
             }
             Icon(

@@ -227,7 +227,10 @@ fun NavGraph(
                 },
                 initialSection = section,
                 initialAction = action,
-                initialPlatformId = platformId
+                initialPlatformId = platformId,
+                onNavigateToAvatarEditor = {
+                    navController.navigate(Screen.AvatarDoodle.route)
+                }
             )
         }
 
@@ -284,6 +287,9 @@ fun NavGraph(
                 },
                 onNavigateToSocialSettings = {
                     navController.navigate(Screen.Settings.createRoute(section = "social"))
+                },
+                onNavigateToAvatarEditor = {
+                    navController.navigate(Screen.AvatarDoodle.route)
                 }
             )
         }
@@ -347,6 +353,15 @@ fun NavGraph(
                 initialGameId = initialGameId,
                 initialGameTitle = initialGameTitle,
                 initialGameCoverPath = initialGameCoverPath
+            )
+        }
+
+        composable(Screen.AvatarDoodle.route) {
+            DoodleScreen(
+                onBack = { navController.popBackStack() },
+                onDone = { _, _, _, _, _ -> navController.popBackStack() },
+                avatarMode = true,
+                inputRoute = Screen.AvatarDoodle.route
             )
         }
 

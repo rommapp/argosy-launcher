@@ -28,6 +28,7 @@ fun DoodleCanvas(
     panOffsetY: Float,
     onTap: ((Int, Int) -> Unit)? = null,
     onDrag: ((Int, Int) -> Unit)? = null,
+    showCircleGuide: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     val gridPixels = canvasSize.pixels
@@ -106,6 +107,15 @@ fun DoodleCanvas(
                     color = selectedColor.color.copy(alpha = 0.5f),
                     topLeft = Offset(x * cellSize, y * cellSize),
                     size = Size(cellSize, cellSize)
+                )
+            }
+
+            if (showCircleGuide) {
+                drawCircle(
+                    color = Color.Black.copy(alpha = 0.35f),
+                    radius = baseSize / 2f,
+                    center = Offset(baseSize / 2f, baseSize / 2f),
+                    style = Stroke(width = 2f)
                 )
             }
 

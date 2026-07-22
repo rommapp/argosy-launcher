@@ -46,6 +46,8 @@ import com.nendo.argosy.data.netplay.NetplayPreflightResult
 import com.nendo.argosy.data.social.Friend
 import com.nendo.argosy.data.social.NetplaySession
 import com.nendo.argosy.data.social.PresenceStatus
+import com.nendo.argosy.ui.components.friends.SocialAvatar
+import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.util.clickableNoFocus
 
 sealed class FriendNetplayJoinState {
@@ -152,20 +154,11 @@ private fun FriendCard(
             horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             Box(contentAlignment = Alignment.BottomEnd) {
-                Box(
-                    modifier = Modifier
-                        .size(48.dp)
-                        .clip(CircleShape)
-                        .background(parseColorSafe(friend.avatarColor)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = friend.displayName.take(1).uppercase(),
-                        style = MaterialTheme.typography.titleMedium,
-                        color = Color.White,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
+                SocialAvatar(
+                    displayName = friend.displayName,
+                    avatarColor = friend.avatarColor,
+                    size = Dimens.avatarLg
+                )
 
                 friend.presence?.let { presence ->
                     if (presence != PresenceStatus.OFFLINE) {
@@ -380,12 +373,4 @@ private fun presenceLabel(status: PresenceStatus?): String = when (status) {
     PresenceStatus.AWAY -> "Away"
     PresenceStatus.IN_GAME -> "In Game"
     PresenceStatus.OFFLINE, null -> "Offline"
-}
-
-private fun parseColorSafe(hexColor: String): Color {
-    return try {
-        Color(android.graphics.Color.parseColor(hexColor))
-    } catch (e: Exception) {
-        Color(0xFF6366F1)
-    }
 }

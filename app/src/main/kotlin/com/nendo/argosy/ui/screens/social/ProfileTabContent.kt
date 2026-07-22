@@ -25,7 +25,9 @@ fun ProfileTabContent(
     userProfile: UserProfileData?,
     isLoadingProfile: Boolean,
     focusIndex: Int,
-    listState: LazyListState
+    listState: LazyListState,
+    avatarDoodle: String? = null,
+    onEditAvatar: (() -> Unit)? = null
 ) {
     if (user == null) {
         Box(
@@ -63,7 +65,12 @@ fun ProfileTabContent(
         contentPadding = PaddingValues(horizontal = 24.dp, vertical = 12.dp)
     ) {
         item {
-            AccountInfoCard(user = user, profile = userProfile)
+            AccountInfoCard(
+                user = user,
+                profile = userProfile,
+                avatarDoodle = avatarDoodle,
+                onEditAvatar = onEditAvatar
+            )
         }
 
         if (userProfile != null) {

@@ -160,6 +160,9 @@ class SettingsViewModel @Inject constructor(
     val launchPlatformFolderPicker: SharedFlow<Long> = storageDelegate.launchPlatformFolderPicker
     val launchSavePathPicker: SharedFlow<Unit> = emulatorDelegate.launchSavePathPicker
     val builtinNavigationEvent = emulatorDelegate.builtinNavigationEvent
+
+    private val _avatarEditorEvent = kotlinx.coroutines.flow.MutableSharedFlow<Unit>()
+    val avatarEditorEvent: kotlinx.coroutines.flow.SharedFlow<Unit> = _avatarEditorEvent
     val launchPlatformSavePathPicker: SharedFlow<Long> = storageDelegate.launchSavePathPicker
     val resetPlatformSavePathEvent: SharedFlow<Long> = storageDelegate.resetSavePathEvent
     val launchPlatformStatePathPicker: SharedFlow<Long> = storageDelegate.launchStatePathPicker
@@ -197,6 +200,7 @@ class SettingsViewModel @Inject constructor(
         routeObserveModalResetSignal(this)
         routeObserveConnectionState(this)
         observeSocialConnectionState()
+        observeAvatarPreferences()
         routeObservePlatformLibretroSettings(this)
         routeLoadAvailablePlatformsForLibretro(this)
         loadSettings()
@@ -1529,6 +1533,8 @@ class SettingsViewModel @Inject constructor(
                         username = state.user.username,
                         displayName = state.user.displayName,
                         avatarColor = state.user.avatarColor,
+                        avatarDoodle = prefs.socialAvatarDoodle,
+                        avatarUseDoodle = prefs.socialAvatarUseDoodle,
                         onlineStatusEnabled = prefs.socialOnlineStatusEnabled,
                         showNowPlaying = prefs.socialShowNowPlaying,
                         notifyFriendOnline = prefs.socialNotifyFriendOnline,
@@ -1581,8 +1587,19 @@ class SettingsViewModel @Inject constructor(
                 InputResult.HANDLED
             }
             SocialAuthStatus.CONNECTED -> {
-                val layoutState = com.nendo.argosy.ui.screens.settings.sections.SocialLayoutState(isConnected = true)
+                val layoutState = com.nendo.argosy.ui.screens.settings.sections.SocialLayoutState(
+                    isConnected = true,
+                    hasAvatarDoodle = state.social.avatarDoodle != null
+                )
                 when (com.nendo.argosy.ui.screens.settings.sections.socialItemAtFocusIndex(state.focusedIndex, layoutState)) {
+                    is com.nendo.argosy.ui.screens.settings.sections.SocialItem.EditAvatar -> {
+                        openAvatarEditor()
+                        InputResult.HANDLED
+                    }
+                    is com.nendo.argosy.ui.screens.settings.sections.SocialItem.UseDoodleAvatar -> {
+                        setSocialAvatarUseDoodle(!state.social.avatarUseDoodle)
+                        InputResult.handled(SoundType.TOGGLE)
+                    }
                     is com.nendo.argosy.ui.screens.settings.sections.SocialItem.OnlineStatus -> {
                         setSocialOnlineStatus(!state.social.onlineStatusEnabled)
                         InputResult.handled(SoundType.TOGGLE)
@@ -1673,6 +1690,33 @@ class SettingsViewModel @Inject constructor(
                 authStatus = SocialAuthStatus.NOT_LINKED
             )) }
         }
+    }
+
+    private fun observeAvatarPreferences() {
+        viewModelScope.launch {
+            preferencesRepository.userPreferences.collect { prefs ->
+                _uiState.update {
+                    if (it.social.avatarDoodle == prefs.socialAvatarDoodle &&
+                        it.social.avatarUseDoodle == prefs.socialAvatarUseDoodle
+                    ) it
+                    else it.copy(social = it.social.copy(
+                        avatarDoodle = prefs.socialAvatarDoodle,
+                        avatarUseDoodle = prefs.socialAvatarUseDoodle
+                    ))
+                }
+            }
+        }
+    }
+
+    fun setSocialAvatarUseDoodle(enabled: Boolean) {
+        viewModelScope.launch {
+            preferencesRepository.setSocialAvatarUseDoodle(enabled)
+            _uiState.update { it.copy(social = it.social.copy(avatarUseDoodle = enabled)) }
+        }
+    }
+
+    fun openAvatarEditor() {
+        viewModelScope.launch { _avatarEditorEvent.emit(Unit) }
     }
 
     fun setSocialOnlineStatus(enabled: Boolean) {

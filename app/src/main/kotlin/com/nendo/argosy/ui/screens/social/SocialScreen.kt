@@ -106,10 +106,11 @@ fun SocialScreen(
     onViewProfile: (String) -> Unit = {},
     onNavigateToGameDetail: (Int) -> Unit = {},
     onNavigateToSocialSettings: () -> Unit = {},
+    onNavigateToAvatarEditor: () -> Unit = {},
     viewModel: SocialViewModel = hiltViewModel()
 ) {
     val inputDispatcher = LocalInputDispatcher.current
-    val inputHandler = remember(onBack, onDrawerToggle, onOpenEventDetail, onCreatePost, onViewProfile, onNavigateToGameDetail, onNavigateToSocialSettings) {
+    val inputHandler = remember(onBack, onDrawerToggle, onOpenEventDetail, onCreatePost, onViewProfile, onNavigateToGameDetail, onNavigateToSocialSettings, onNavigateToAvatarEditor) {
         viewModel.createInputHandler(
             onBack = onBack,
             onOpenEventDetail = onOpenEventDetail,
@@ -120,7 +121,8 @@ fun SocialScreen(
             },
             onDrawerToggle = onDrawerToggle,
             onNavigateToGameDetail = onNavigateToGameDetail,
-            onNavigateToSocialSettings = onNavigateToSocialSettings
+            onNavigateToSocialSettings = onNavigateToSocialSettings,
+            onNavigateToAvatarEditor = onNavigateToAvatarEditor
         )
     }
 
@@ -348,7 +350,9 @@ fun SocialScreen(
                                 userProfile = uiState.userProfile,
                                 isLoadingProfile = uiState.isLoadingProfile,
                                 focusIndex = uiState.profileFocusIndex,
-                                listState = profileListState
+                                listState = profileListState,
+                                avatarDoodle = uiState.activeAvatarDoodle,
+                                onEditAvatar = { viewModel.showAvatarModal() }
                             )
                         }
                     }
@@ -379,13 +383,34 @@ fun SocialScreen(
                             add(FooterHintItem(InputButton.Y, "Read All", enabled = uiState.unreadCount > 0))
                         }
                         SocialTab.PROFILE -> {
-                            add(FooterHintItem(InputButton.A, "View Game", enabled = uiState.focusedGameInLibrary))
+                            if (uiState.profileFocusIndex == 0) {
+                                add(FooterHintItem(InputButton.A, "Avatar"))
+                            } else {
+                                add(FooterHintItem(InputButton.A, "View Game", enabled = uiState.focusedGameInLibrary))
+                            }
                             add(FooterHintItem(InputButton.SELECT, "Settings"))
                         }
                     }
                 }
             )
             FooterSpacer()
+        }
+
+        if (uiState.showAvatarModal) {
+            AvatarOptionsModal(
+                options = uiState.avatarModalOptions,
+                focusIndex = uiState.avatarModalFocusIndex,
+                onAction = { option ->
+                    when (option) {
+                        AvatarModalOption.EDIT_DOODLE -> {
+                            viewModel.hideAvatarModal()
+                            onNavigateToAvatarEditor()
+                        }
+                        else -> viewModel.confirmAvatarModalOption(option)
+                    }
+                },
+                onDismiss = { viewModel.hideAvatarModal() }
+            )
         }
 
         if (optionsState.showOptionsModal) {

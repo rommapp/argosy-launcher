@@ -12,20 +12,46 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.runtime.remember
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.sp
 import androidx.core.graphics.toColorInt
+import com.nendo.argosy.ui.screens.doodle.DecodedDoodle
+import com.nendo.argosy.ui.screens.doodle.DoodleEncoder
+import com.nendo.argosy.ui.screens.doodle.DoodlePreview
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.generated.ColorTokens
 
-/** Circular initial-letter avatar used for social users; optional presence dot. */
+/**
+ * Local user's avatar identity, provided once at the app root so any
+ * [SocialAvatar] given a userId resolves the doodle without per-screen plumbing.
+ */
+data class LocalUserAvatarInfo(
+    val userId: String? = null,
+    val doodle: String? = null
+)
+
+val LocalUserAvatarState = androidx.compose.runtime.compositionLocalOf { LocalUserAvatarInfo() }
+
+/**
+ * Circular avatar used for social users; optional presence dot. Renders the
+ * doodle when [avatarDoodle] decodes, otherwise falls back to the initial
+ * letter. When [userId] matches the local user, their doodle is applied
+ * automatically via [LocalUserAvatarState].
+ */
 @Composable
 fun SocialAvatar(
     displayName: String,
     avatarColor: String?,
     size: Dp,
     modifier: Modifier = Modifier,
-    showOnlineDot: Boolean = false
+    showOnlineDot: Boolean = false,
+    avatarDoodle: String? = null,
+    userId: String? = null
 ) {
+    val localAvatar = LocalUserAvatarState.current
+    val effectiveDoodle = avatarDoodle
+        ?: localAvatar.doodle.takeIf { userId != null && userId == localAvatar.userId }
     val fallbackColor = MaterialTheme.colorScheme.primary
     val circleColor = try {
         avatarColor?.let { Color(it.toColorInt()) } ?: fallbackColor
@@ -33,20 +59,35 @@ fun SocialAvatar(
         fallbackColor
     }
 
+    val decodedDoodle: DecodedDoodle? = remember(effectiveDoodle) {
+        effectiveDoodle?.let { runCatching { DoodleEncoder.decodeFromBase64(it) }.getOrNull() }
+    }
+
     Box(modifier = modifier, contentAlignment = Alignment.BottomEnd) {
-        Box(
-            modifier = Modifier
-                .size(size)
-                .clip(CircleShape)
-                .background(circleColor),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = displayName.take(1).uppercase(),
-                style = MaterialTheme.typography.titleSmall,
-                color = Color.White,
-                fontWeight = FontWeight.Bold
+        if (decodedDoodle != null) {
+            DoodlePreview(
+                canvasSize = decodedDoodle.size,
+                pixels = decodedDoodle.pixels,
+                modifier = Modifier
+                    .size(size)
+                    .clip(CircleShape)
             )
+        } else {
+            Box(
+                modifier = Modifier
+                    .size(size)
+                    .clip(CircleShape)
+                    .background(circleColor),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = displayName.take(1).uppercase(),
+                    style = MaterialTheme.typography.titleSmall,
+                    fontSize = (size.value * 0.4f).sp,
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold
+                )
+            }
         }
         if (showOnlineDot) {
             Box(

@@ -24,12 +24,14 @@ sealed class DoodleEvent {
         val gameTitle: String?,
         val gameCoverPath: String?
     ) : DoodleEvent()
+    data object AvatarSaved : DoodleEvent()
     data class Error(val message: String) : DoodleEvent()
 }
 
 @HiltViewModel
 class DoodleViewModel @Inject constructor(
-    private val gameRepository: GameRepository
+    private val gameRepository: GameRepository,
+    private val syncPreferencesRepository: com.nendo.argosy.data.preferences.SyncPreferencesRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(DoodleUiState())
@@ -37,6 +39,25 @@ class DoodleViewModel @Inject constructor(
 
     private val _events = MutableSharedFlow<DoodleEvent>()
     val events = _events.asSharedFlow()
+
+    fun initAvatarMode() {
+        if (_uiState.value.avatarMode) return
+        _uiState.update {
+            it.copy(avatarMode = true, canvasSize = CanvasSize.SMALL, sizeFocusIndex = 0)
+        }
+        viewModelScope.launch {
+            val saved = syncPreferencesRepository.preferences.first().socialAvatarDoodle ?: return@launch
+            val decoded = runCatching { DoodleEncoder.decodeFromBase64(saved) }.getOrNull() ?: return@launch
+            if (decoded.size == CanvasSize.LARGE) return@launch
+            _uiState.update {
+                it.copy(
+                    canvasSize = decoded.size,
+                    sizeFocusIndex = decoded.size.sizeEnum,
+                    pixels = decoded.pixels
+                )
+            }
+        }
+    }
 
     fun moveCursor(dx: Int, dy: Int) {
         _uiState.update { state ->
@@ -177,7 +198,7 @@ class DoodleViewModel @Inject constructor(
                 DoodleSection.PALETTE -> DoodleSection.SIZE
                 DoodleSection.SIZE -> DoodleSection.UNDO
                 DoodleSection.UNDO -> DoodleSection.REDO
-                DoodleSection.REDO -> DoodleSection.GAME
+                DoodleSection.REDO -> if (state.avatarMode) DoodleSection.CANVAS else DoodleSection.GAME
                 DoodleSection.GAME -> DoodleSection.CANVAS
             }
             state.copy(currentSection = next)
@@ -187,7 +208,7 @@ class DoodleViewModel @Inject constructor(
     fun previousSection() {
         _uiState.update { state ->
             val prev = when (state.currentSection) {
-                DoodleSection.CANVAS -> DoodleSection.GAME
+                DoodleSection.CANVAS -> if (state.avatarMode) DoodleSection.REDO else DoodleSection.GAME
                 DoodleSection.PALETTE -> DoodleSection.CANVAS
                 DoodleSection.SIZE -> DoodleSection.PALETTE
                 DoodleSection.UNDO -> DoodleSection.SIZE
@@ -214,7 +235,7 @@ class DoodleViewModel @Inject constructor(
 
     fun moveSizeFocus(dx: Int) {
         _uiState.update { state ->
-            val newIndex = (state.sizeFocusIndex + dx).coerceIn(0, 2)
+            val newIndex = (state.sizeFocusIndex + dx).coerceIn(0, state.maxSizeFocusIndex)
             state.copy(sizeFocusIndex = newIndex)
         }
     }
@@ -405,13 +426,18 @@ class DoodleViewModel @Inject constructor(
         }
         val base64Data = DoodleEncoder.encodeToBase64(state.pixels, state.canvasSize)
         viewModelScope.launch {
-            _events.emit(DoodleEvent.Done(
-                doodleData = base64Data,
-                canvasSize = state.canvasSize.pixels,
-                gameId = state.linkedGameId,
-                gameTitle = state.linkedGameTitle,
-                gameCoverPath = state.linkedGameCoverPath
-            ))
+            if (state.avatarMode) {
+                syncPreferencesRepository.setSocialAvatarDoodle(base64Data)
+                _events.emit(DoodleEvent.AvatarSaved)
+            } else {
+                _events.emit(DoodleEvent.Done(
+                    doodleData = base64Data,
+                    canvasSize = state.canvasSize.pixels,
+                    gameId = state.linkedGameId,
+                    gameTitle = state.linkedGameTitle,
+                    gameCoverPath = state.linkedGameCoverPath
+                ))
+            }
         }
     }
 

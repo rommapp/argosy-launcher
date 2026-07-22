@@ -22,7 +22,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
@@ -74,6 +73,7 @@ import com.nendo.argosy.data.social.FeedEventType
 import com.nendo.argosy.data.social.SocialRepository
 import com.nendo.argosy.ui.components.FooterHints
 import com.nendo.argosy.ui.components.FooterSpacer
+import com.nendo.argosy.ui.components.friends.SocialAvatar
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.components.InputButton
 import com.nendo.argosy.ui.input.InputHandler
@@ -91,6 +91,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -102,7 +103,9 @@ data class FeedEventDetailUiState(
     val commentText: String = "",
     val isCommentInputFocused: Boolean = false,
     val scrollToCommentInput: Boolean = false,
-    val localGameId: Long? = null
+    val localGameId: Long? = null,
+    val localUserId: String? = null,
+    val localAvatarDoodle: String? = null
 ) {
     val focusedComment: FeedComment?
         get() = comments.getOrNull(focusedCommentIndex)
@@ -111,11 +114,25 @@ data class FeedEventDetailUiState(
 @HiltViewModel
 class FeedEventDetailViewModel @Inject constructor(
     private val socialRepository: SocialRepository,
-    private val gameRepository: GameRepository
+    private val gameRepository: GameRepository,
+    syncPreferencesRepository: com.nendo.argosy.data.preferences.SyncPreferencesRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(FeedEventDetailUiState())
     val uiState: StateFlow<FeedEventDetailUiState> = _uiState.asStateFlow()
+
+    init {
+        viewModelScope.launch {
+            syncPreferencesRepository.preferences.collect { prefs ->
+                _uiState.update {
+                    it.copy(
+                        localUserId = prefs.socialUserId,
+                        localAvatarDoodle = prefs.socialAvatarDoodle.takeIf { prefs.socialAvatarUseDoodle }
+                    )
+                }
+            }
+        }
+    }
 
     fun loadEvent(eventId: String) {
         socialRepository.getEvent(eventId)
@@ -131,22 +148,23 @@ class FeedEventDetailViewModel @Inject constructor(
                 val allComments = mergeComments(embeddedComments, realtimeComments)
                 event to allComments
             }.collect { (event, comments) ->
-                val state = _uiState.value
                 val igdbId = event?.igdbId ?: event?.game?.igdbId
-                val localGameId = if (igdbId != null && state.localGameId == null) {
+                val resolvedGameId = if (igdbId != null && _uiState.value.localGameId == null) {
                     gameRepository.getByIgdbId(igdbId.toLong())?.id
                 } else {
-                    state.localGameId
+                    null
                 }
-                _uiState.value = state.copy(
-                    event = event,
-                    isLoading = event == null,
-                    comments = comments,
-                    focusedCommentIndex = state.focusedCommentIndex.coerceIn(
-                        -1, comments.size.coerceAtLeast(1) - 1
-                    ),
-                    localGameId = localGameId
-                )
+                _uiState.update { state ->
+                    state.copy(
+                        event = event,
+                        isLoading = event == null,
+                        comments = comments,
+                        focusedCommentIndex = state.focusedCommentIndex.coerceIn(
+                            -1, comments.size.coerceAtLeast(1) - 1
+                        ),
+                        localGameId = state.localGameId ?: resolvedGameId
+                    )
+                }
             }
         }
     }
@@ -338,6 +356,7 @@ fun FeedEventDetailScreen(
                                 isCommentInputFocused = uiState.isCommentInputFocused,
                                 scrollToCommentInput = uiState.scrollToCommentInput,
                                 localGameId = uiState.localGameId,
+                                localAvatarDoodle = uiState.localAvatarDoodle.takeIf { event.user?.id == uiState.localUserId },
                                 commentFocusRequester = commentFocusRequester,
                                 onCommentTextChange = viewModel::updateCommentText,
                                 onSubmitComment = viewModel::submitComment,
@@ -354,6 +373,7 @@ fun FeedEventDetailScreen(
                                 isCommentInputFocused = uiState.isCommentInputFocused,
                                 scrollToCommentInput = uiState.scrollToCommentInput,
                                 localGameId = uiState.localGameId,
+                                localAvatarDoodle = uiState.localAvatarDoodle.takeIf { event.user?.id == uiState.localUserId },
                                 commentFocusRequester = commentFocusRequester,
                                 onCommentTextChange = viewModel::updateCommentText,
                                 onSubmitComment = viewModel::submitComment,
@@ -394,6 +414,7 @@ private fun LandscapeLayout(
     isCommentInputFocused: Boolean,
     scrollToCommentInput: Boolean,
     localGameId: Long?,
+    localAvatarDoodle: String?,
     commentFocusRequester: FocusRequester,
     onCommentTextChange: (String) -> Unit,
     onSubmitComment: () -> Unit,
@@ -429,7 +450,7 @@ private fun LandscapeLayout(
                 .fillMaxHeight(),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            EventMetadata(event, localGameId, onNavigateToGame, onViewProfile)
+            EventMetadata(event, localGameId, onNavigateToGame, onViewProfile, localAvatarDoodle)
 
             CommentsSection(
                 comments = comments,
@@ -457,6 +478,7 @@ private fun PortraitLayout(
     isCommentInputFocused: Boolean,
     scrollToCommentInput: Boolean,
     localGameId: Long?,
+    localAvatarDoodle: String?,
     commentFocusRequester: FocusRequester,
     onCommentTextChange: (String) -> Unit,
     onSubmitComment: () -> Unit,
@@ -514,7 +536,7 @@ private fun PortraitLayout(
         }
 
         item(key = "metadata") {
-            EventMetadata(event, localGameId, onNavigateToGame, onViewProfile)
+            EventMetadata(event, localGameId, onNavigateToGame, onViewProfile, localAvatarDoodle)
         }
 
         item(key = "comments_header") {
@@ -660,7 +682,8 @@ private fun EventMetadata(
     event: FeedEventDto,
     localGameId: Long? = null,
     onNavigateToGame: (Long) -> Unit = {},
-    onViewProfile: (String) -> Unit = {}
+    onViewProfile: (String) -> Unit = {},
+    localAvatarDoodle: String? = null
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Row(
@@ -668,7 +691,6 @@ private fun EventMetadata(
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             event.user?.let { user ->
-                val userColor = parseColor(user.avatarColor)
                 Row(
                     modifier = Modifier
                         .weight(1f)
@@ -676,19 +698,13 @@ private fun EventMetadata(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .size(40.dp)
-                            .clip(CircleShape)
-                            .background(userColor),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = user.displayName.take(2).uppercase(),
-                            style = MaterialTheme.typography.titleSmall,
-                            color = Color.White
-                        )
-                    }
+                    SocialAvatar(
+                        displayName = user.displayName,
+                        avatarColor = user.avatarColor,
+                        size = Dimens.avatarMd,
+                        avatarDoodle = localAvatarDoodle,
+                        userId = user.id
+                    )
 
                     Column {
                         Text(

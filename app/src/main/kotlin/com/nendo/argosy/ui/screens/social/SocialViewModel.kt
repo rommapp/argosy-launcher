@@ -44,6 +44,12 @@ private const val TAG = "SocialViewModel"
 enum class SocialTab { FEED, FRIENDS, NOTIFICATIONS, PROFILE }
 enum class FeedMode { FRIENDS, COMMUNITY }
 
+enum class AvatarModalOption(val label: String) {
+    EDIT_DOODLE("Edit doodle"),
+    USE_DOODLE("Use doodle"),
+    USE_INITIALS("Use initials")
+}
+
 private const val PROFILE_DISPLAY_SECTIONS = 3
 
 data class SocialUiState(
@@ -79,8 +85,22 @@ data class SocialUiState(
     val communitySearchResults: List<GamePickerItem> = emptyList(),
     val communitySearchFocusIndex: Int = 0,
     val communitySearchFieldFocused: Boolean = true,
-    val joinableFriendIds: Set<String> = emptySet()
+    val joinableFriendIds: Set<String> = emptySet(),
+    val avatarDoodle: String? = null,
+    val avatarUseDoodle: Boolean = false,
+    val showAvatarModal: Boolean = false,
+    val avatarModalFocusIndex: Int = 0
 ) {
+    val activeAvatarDoodle: String?
+        get() = avatarDoodle.takeIf { avatarUseDoodle }
+
+    val avatarModalOptions: List<AvatarModalOption>
+        get() = buildList {
+            add(AvatarModalOption.EDIT_DOODLE)
+            if (avatarDoodle != null && !avatarUseDoodle) add(AvatarModalOption.USE_DOODLE)
+            if (avatarUseDoodle) add(AvatarModalOption.USE_INITIALS)
+        }
+
     val profileFocusCount: Int
         get() = PROFILE_DISPLAY_SECTIONS + (userProfile?.mostPlayed?.size ?: 0)
 
@@ -129,6 +149,7 @@ sealed class SocialLaunchEvent {
 class SocialViewModel @Inject constructor(
     private val socialRepository: SocialRepository,
     private val preferencesRepository: UserPreferencesRepository,
+    private val syncPreferencesRepository: com.nendo.argosy.data.preferences.SyncPreferencesRepository,
     private val gameRepository: GameRepository,
     private val netplayPreflightChecker: NetplayPreflightChecker,
     private val netplayJoinService: com.nendo.argosy.data.netplay.NetplayJoinService,
@@ -289,6 +310,17 @@ class SocialViewModel @Inject constructor(
                         current.focusedEventIndex.coerceIn(0, cs.events.size.coerceAtLeast(1) - 1)
                     } else current.focusedEventIndex
                 )
+            }
+        }
+
+        viewModelScope.launch {
+            syncPreferencesRepository.preferences.collect { prefs ->
+                _uiState.update {
+                    it.copy(
+                        avatarDoodle = prefs.socialAvatarDoodle,
+                        avatarUseDoodle = prefs.socialAvatarUseDoodle
+                    )
+                }
             }
         }
 
@@ -596,6 +628,47 @@ class SocialViewModel @Inject constructor(
         }
     }
 
+    fun showAvatarModal() {
+        _uiState.value = _uiState.value.copy(showAvatarModal = true, avatarModalFocusIndex = 0)
+    }
+
+    fun hideAvatarModal() {
+        _uiState.value = _uiState.value.copy(showAvatarModal = false)
+    }
+
+    fun moveAvatarModalFocus(delta: Int) {
+        _uiState.value = _uiState.value.let { state ->
+            val count = state.avatarModalOptions.size
+            state.copy(avatarModalFocusIndex = (state.avatarModalFocusIndex + delta).mod(count))
+        }
+    }
+
+    fun confirmAvatarModal(onNavigateToAvatarEditor: () -> Unit) {
+        val state = _uiState.value
+        when (val option = state.avatarModalOptions.getOrNull(state.avatarModalFocusIndex)) {
+            AvatarModalOption.EDIT_DOODLE -> {
+                hideAvatarModal()
+                onNavigateToAvatarEditor()
+            }
+            null -> hideAvatarModal()
+            else -> confirmAvatarModalOption(option)
+        }
+    }
+
+    fun confirmAvatarModalOption(option: AvatarModalOption) {
+        when (option) {
+            AvatarModalOption.EDIT_DOODLE -> hideAvatarModal()
+            AvatarModalOption.USE_DOODLE -> {
+                viewModelScope.launch { syncPreferencesRepository.setSocialAvatarUseDoodle(true) }
+                hideAvatarModal()
+            }
+            AvatarModalOption.USE_INITIALS -> {
+                viewModelScope.launch { syncPreferencesRepository.setSocialAvatarUseDoodle(false) }
+                hideAvatarModal()
+            }
+        }
+    }
+
     fun createInputHandler(
         onBack: () -> Unit,
         onOpenEventDetail: (String) -> Unit,
@@ -604,7 +677,8 @@ class SocialViewModel @Inject constructor(
         onShareScreenshot: () -> Unit,
         onDrawerToggle: () -> Unit,
         onNavigateToGameDetail: (Int) -> Unit = {},
-        onNavigateToSocialSettings: () -> Unit = {}
+        onNavigateToSocialSettings: () -> Unit = {},
+        onNavigateToAvatarEditor: () -> Unit = {}
     ): InputHandler = object : InputHandler {
 
         private fun focusedUserName(): String? = _uiState.value.focusedEvent?.user?.displayName
@@ -612,12 +686,16 @@ class SocialViewModel @Inject constructor(
         private fun isCommunityMode(): Boolean = _uiState.value.feedMode == FeedMode.COMMUNITY
         private fun anyModalShowing(): Boolean = with(feedOptionsDelegate.state.value) {
             showOptionsModal || showReportReasonModal
-        } || _uiState.value.showCommunitySearch
+        } || _uiState.value.showCommunitySearch || _uiState.value.showAvatarModal
 
         override fun onUp(): InputResult {
             val delegateState = feedOptionsDelegate.state.value
             val state = _uiState.value
             return when {
+                state.showAvatarModal -> {
+                    moveAvatarModalFocus(-1)
+                    InputResult.HANDLED
+                }
                 state.showCommunitySearch && !state.communitySearchFieldFocused -> {
                     if (state.communitySearchFocusIndex == 0) {
                         focusCommunitySearchField()
@@ -644,6 +722,10 @@ class SocialViewModel @Inject constructor(
             val delegateState = feedOptionsDelegate.state.value
             val state = _uiState.value
             return when {
+                state.showAvatarModal -> {
+                    moveAvatarModalFocus(1)
+                    InputResult.HANDLED
+                }
                 state.showCommunitySearch && state.communitySearchFieldFocused -> {
                     focusCommunitySearchList()
                     InputResult.HANDLED
@@ -677,6 +759,10 @@ class SocialViewModel @Inject constructor(
 
         override fun onConfirm(): InputResult {
             val state = _uiState.value
+            if (state.showAvatarModal) {
+                confirmAvatarModal(onNavigateToAvatarEditor)
+                return InputResult.HANDLED
+            }
             if (state.showCommunitySearch) {
                 if (!state.communitySearchFieldFocused) {
                     val item = state.communitySearchResults.getOrNull(state.communitySearchFocusIndex)
@@ -754,6 +840,10 @@ class SocialViewModel @Inject constructor(
                 }
                 SocialTab.PROFILE -> {
                     val profileState = _uiState.value
+                    if (!profileState.profileFocusOnMostPlayed && profileState.profileFocusIndex == 0) {
+                        showAvatarModal()
+                        return InputResult.HANDLED
+                    }
                     if (profileState.profileFocusOnMostPlayed) {
                         val game = profileState.userProfile?.mostPlayed?.getOrNull(profileState.focusedMostPlayedIndex)
                         if (game != null) {
@@ -773,6 +863,10 @@ class SocialViewModel @Inject constructor(
         }
 
         override fun onBack(): InputResult {
+            if (_uiState.value.showAvatarModal) {
+                hideAvatarModal()
+                return InputResult.HANDLED
+            }
             if (_uiState.value.showCommunitySearch) {
                 hideCommunitySearch()
                 return InputResult.HANDLED

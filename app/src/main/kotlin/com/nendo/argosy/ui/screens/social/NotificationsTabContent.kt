@@ -28,13 +28,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import com.nendo.argosy.data.social.SocialNotification
 import com.nendo.argosy.data.social.SocialUser
+import com.nendo.argosy.ui.components.friends.SocialAvatar
+import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.util.clickableNoFocus
 import com.nendo.argosy.util.formatRelativeTime
 
@@ -176,9 +177,9 @@ private fun ActorAvatarStack(
         return
     }
 
-    Box(modifier = modifier.height(40.dp)) {
+    Box(modifier = modifier.height(Dimens.avatarMd)) {
         displayed.forEachIndexed { index, user ->
-            val avatarSize = if (displayed.size == 1) 40.dp else 32.dp
+            val avatarSize = if (displayed.size == 1) Dimens.avatarMd else Dimens.avatarXs
             Box(
                 modifier = Modifier
                     .offset(x = (index * 14).dp)
@@ -186,20 +187,13 @@ private fun ActorAvatarStack(
                     .size(avatarSize)
                     .clip(CircleShape)
                     .background(MaterialTheme.colorScheme.surface)
-                    .padding(1.dp)
-                    .clip(CircleShape)
-                    .background(parseColorSafe(user.avatarColor)),
+                    .padding(Dimens.borderThin),
                 contentAlignment = Alignment.Center
             ) {
-                Text(
-                    text = user.displayName.take(1).uppercase(),
-                    style = if (displayed.size == 1) {
-                        MaterialTheme.typography.titleSmall
-                    } else {
-                        MaterialTheme.typography.labelSmall
-                    },
-                    color = Color.White,
-                    fontWeight = FontWeight.Bold
+                SocialAvatar(
+                    displayName = user.displayName,
+                    avatarColor = user.avatarColor,
+                    size = avatarSize
                 )
             }
         }
@@ -255,14 +249,6 @@ private fun formatNotificationText(notification: SocialNotification): String {
         "friend_accepted" -> "$actorName accepted your friend request"
         "friend_added" -> "$actorName added you as a friend"
         else -> "New notification"
-    }
-}
-
-private fun parseColorSafe(hexColor: String): Color {
-    return try {
-        Color(android.graphics.Color.parseColor(hexColor))
-    } catch (e: Exception) {
-        Color(0xFF6366F1)
     }
 }
 

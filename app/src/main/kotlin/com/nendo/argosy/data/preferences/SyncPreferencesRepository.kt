@@ -43,6 +43,8 @@ data class SyncPreferences(
     val socialUsername: String? = null,
     val socialDisplayName: String? = null,
     val socialAvatarColor: String? = null,
+    val socialAvatarDoodle: String? = null,
+    val socialAvatarUseDoodle: Boolean = false,
     val socialOnlineStatusEnabled: Boolean = true,
     val socialShowNowPlaying: Boolean = true,
     val socialNotifyFriendOnline: Boolean = true,
@@ -95,6 +97,8 @@ class SyncPreferencesRepository @Inject constructor(
         val SOCIAL_USERNAME = stringPreferencesKey("social_username")
         val SOCIAL_DISPLAY_NAME = stringPreferencesKey("social_display_name")
         val SOCIAL_AVATAR_COLOR = stringPreferencesKey("social_avatar_color")
+        val SOCIAL_AVATAR_DOODLE = stringPreferencesKey("social_avatar_doodle")
+        val SOCIAL_AVATAR_USE_DOODLE = booleanPreferencesKey("social_avatar_use_doodle")
         val SOCIAL_ONLINE_STATUS_ENABLED = booleanPreferencesKey("social_online_status_enabled")
         val SOCIAL_SHOW_NOW_PLAYING = booleanPreferencesKey("social_show_now_playing")
         val SOCIAL_NOTIFY_FRIEND_ONLINE = booleanPreferencesKey("social_notify_friend_online")
@@ -216,6 +220,8 @@ class SyncPreferencesRepository @Inject constructor(
             socialUsername = prefs[Keys.SOCIAL_USERNAME],
             socialDisplayName = prefs[Keys.SOCIAL_DISPLAY_NAME],
             socialAvatarColor = prefs[Keys.SOCIAL_AVATAR_COLOR],
+            socialAvatarDoodle = prefs[Keys.SOCIAL_AVATAR_DOODLE],
+            socialAvatarUseDoodle = prefs[Keys.SOCIAL_AVATAR_USE_DOODLE] ?: false,
             socialOnlineStatusEnabled = prefs[Keys.SOCIAL_ONLINE_STATUS_ENABLED] ?: true,
             socialShowNowPlaying = prefs[Keys.SOCIAL_SHOW_NOW_PLAYING] ?: true,
             socialNotifyFriendOnline = prefs[Keys.SOCIAL_NOTIFY_FRIEND_ONLINE] ?: true,
@@ -455,6 +461,17 @@ class SyncPreferencesRepository @Inject constructor(
             prefs.remove(Keys.SOCIAL_DISPLAY_NAME)
             prefs.remove(Keys.SOCIAL_AVATAR_COLOR)
         }
+    }
+
+    suspend fun setSocialAvatarDoodle(doodle: String) {
+        dataStore.edit { prefs ->
+            prefs[Keys.SOCIAL_AVATAR_DOODLE] = doodle
+            prefs[Keys.SOCIAL_AVATAR_USE_DOODLE] = true
+        }
+    }
+
+    suspend fun setSocialAvatarUseDoodle(enabled: Boolean) {
+        dataStore.edit { it[Keys.SOCIAL_AVATAR_USE_DOODLE] = enabled }
     }
 
     suspend fun setSocialOnlineStatusEnabled(enabled: Boolean) {

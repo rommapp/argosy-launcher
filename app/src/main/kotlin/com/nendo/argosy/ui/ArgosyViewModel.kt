@@ -108,6 +108,7 @@ data class DrawerState(
     val rommConnecting: Boolean = false,
     val socialConnected: Boolean = false,
     val localUser: SocialUser? = null,
+    val localAvatarDoodle: String? = null,
     val downloadCount: Int = 0,
     val saveSyncAttentionCount: Int = 0,
     val emulatorUpdatesAvailable: Int = 0,
@@ -463,7 +464,8 @@ class ArgosyViewModel @Inject constructor(
             socialRepository.connectionState,
             steamContentManager.activeDownload,
             steamContentManager.downloadQueue,
-            pendingConflictDao.getOpenCountFlow()
+            pendingConflictDao.getOpenCountFlow(),
+            preferencesRepository.userPreferences
         )
     ) { values ->
         val connection = values[0] as ConnectionState
@@ -481,6 +483,7 @@ class ArgosyViewModel @Inject constructor(
         @Suppress("UNCHECKED_CAST")
         val steamQueue = values[11] as List<com.nendo.argosy.data.steam.QueuedSteamDownload>
         val saveSyncAttentionCount = values[12] as Int
+        val userPrefs = values[13] as com.nendo.argosy.data.preferences.UserPreferences
 
         val steamActive = steamActiveDownload != null
         val steamQueued = steamQueue.size
@@ -499,6 +502,7 @@ class ArgosyViewModel @Inject constructor(
             rommConnecting = connection is ConnectionState.Connecting,
             socialConnected = socialConnection is SocialConnectionState.Connected,
             localUser = (socialConnection as? SocialConnectionState.Connected)?.user,
+            localAvatarDoodle = userPrefs.socialAvatarDoodle.takeIf { userPrefs.socialAvatarUseDoodle },
             downloadCount = downloadCount,
             saveSyncAttentionCount = saveSyncAttentionCount,
             emulatorUpdatesAvailable = emulatorUpdateCount,

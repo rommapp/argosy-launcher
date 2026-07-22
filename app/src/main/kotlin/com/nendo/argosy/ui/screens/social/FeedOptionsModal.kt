@@ -2,6 +2,7 @@ package com.nendo.argosy.ui.screens.social
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Block
+import androidx.compose.material.icons.filled.Brush
 import androidx.compose.material.icons.filled.Create
 import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material.icons.filled.Person
@@ -91,6 +92,29 @@ fun FeedOptionsModal(
                 label = "Hide Post",
                 isFocused = focusIndex == currentIndex,
                 onClick = { onAction(FeedOption.HIDE_POST) }
+            )
+        }
+    }
+}
+
+@Composable
+fun AvatarOptionsModal(
+    options: List<AvatarModalOption>,
+    focusIndex: Int,
+    onAction: (AvatarModalOption) -> Unit,
+    onDismiss: () -> Unit
+) {
+    Modal(title = "Avatar", onDismiss = onDismiss) {
+        options.forEachIndexed { index, option ->
+            OptionItem(
+                icon = when (option) {
+                    AvatarModalOption.EDIT_DOODLE -> Icons.Default.Create
+                    AvatarModalOption.USE_DOODLE -> Icons.Default.Brush
+                    AvatarModalOption.USE_INITIALS -> Icons.Default.Person
+                },
+                label = option.label,
+                isFocused = focusIndex == index,
+                onClick = { onAction(option) }
             )
         }
     }

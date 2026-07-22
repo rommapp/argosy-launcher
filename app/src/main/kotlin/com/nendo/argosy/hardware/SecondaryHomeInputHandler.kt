@@ -1058,13 +1058,6 @@ class SecondaryHomeInputHandler(
                 }
                 return InputResult.HANDLED
             }
-            ActiveModal.VARIANT_PICKER -> {
-                if (event == GamepadEvent.Back) {
-                    vm.dismissPicker()
-                    broadcasts.broadcastModalClose()
-                }
-                return InputResult.HANDLED
-            }
             ActiveModal.SAVE_NAME, ActiveModal.NONE -> {}
         }
 

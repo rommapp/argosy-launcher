@@ -45,7 +45,6 @@ sealed class LibrarySyncState {
     data object SyncingLicenses : LibrarySyncState()
     data class FetchingPackages(val current: Int, val total: Int) : LibrarySyncState()
     data class FetchingApps(val current: Int, val total: Int) : LibrarySyncState()
-    data class FetchingProtonDbRatings(val current: Int, val total: Int) : LibrarySyncState()
     data class Complete(val gamesAdded: Int, val gamesUpdated: Int) : LibrarySyncState()
     data class Error(val message: String) : LibrarySyncState()
 }

@@ -72,9 +72,9 @@ class SyncLibraryUseCaseTest {
     }
 
     @Test
-    fun `invoke returns error when getLibrarySummary fails`() = runTest {
+    fun `invoke returns error when platform count fails`() = runTest {
         every { romMRepository.isConnected() } returns true
-        coEvery { romMRepository.getLibrarySummary() } returns RomMResult.Error("Network error")
+        coEvery { romMRepository.getPlatformCount() } returns RomMResult.Error("Network error")
 
         val result = useCase()
 
@@ -92,7 +92,7 @@ class SyncLibraryUseCaseTest {
             errors = emptyList()
         )
         every { romMRepository.isConnected() } returns true
-        coEvery { romMRepository.getLibrarySummary() } returns RomMResult.Success(Pair(5, 100))
+        coEvery { romMRepository.getPlatformCount() } returns RomMResult.Success(5)
         coEvery { romMRepository.syncLibrary(any()) } returns syncResult
 
         val result = useCase()
@@ -104,7 +104,7 @@ class SyncLibraryUseCaseTest {
     @Test
     fun `invoke shows persistent notification during sync`() = runTest {
         every { romMRepository.isConnected() } returns true
-        coEvery { romMRepository.getLibrarySummary() } returns RomMResult.Success(Pair(3, 50))
+        coEvery { romMRepository.getPlatformCount() } returns RomMResult.Success(3)
         coEvery { romMRepository.syncLibrary(any()) } returns SyncResult(3, 5, 2, 0, emptyList())
 
         useCase()
@@ -122,7 +122,7 @@ class SyncLibraryUseCaseTest {
     @Test
     fun `invoke completes notification with success on successful sync`() = runTest {
         every { romMRepository.isConnected() } returns true
-        coEvery { romMRepository.getLibrarySummary() } returns RomMResult.Success(Pair(2, 20))
+        coEvery { romMRepository.getPlatformCount() } returns RomMResult.Success(2)
         coEvery { romMRepository.syncLibrary(any()) } returns SyncResult(2, 5, 3, 1, emptyList())
 
         useCase()
@@ -140,7 +140,7 @@ class SyncLibraryUseCaseTest {
     @Test
     fun `invoke completes notification with error when sync has errors`() = runTest {
         every { romMRepository.isConnected() } returns true
-        coEvery { romMRepository.getLibrarySummary() } returns RomMResult.Success(Pair(2, 20))
+        coEvery { romMRepository.getPlatformCount() } returns RomMResult.Success(2)
         coEvery { romMRepository.syncLibrary(any()) } returns SyncResult(2, 5, 3, 0, listOf("Platform1 failed"))
 
         useCase()
@@ -159,7 +159,7 @@ class SyncLibraryUseCaseTest {
     fun `invoke reports progress through callback`() = runTest {
         val progressUpdates = mutableListOf<Triple<Int, Int, String>>()
         every { romMRepository.isConnected() } returns true
-        coEvery { romMRepository.getLibrarySummary() } returns RomMResult.Success(Pair(2, 20))
+        coEvery { romMRepository.getPlatformCount() } returns RomMResult.Success(2)
         coEvery { romMRepository.syncLibrary(any()) } coAnswers {
             val callback = firstArg<(Int, Int, String) -> Unit>()
             callback(1, 2, "Platform 1")
@@ -181,7 +181,7 @@ class SyncLibraryUseCaseTest {
         val syncProgressFlow = MutableStateFlow(SyncProgress())
         every { romMRepository.syncProgress } returns syncProgressFlow
         every { romMRepository.isConnected() } returns true
-        coEvery { romMRepository.getLibrarySummary() } returns RomMResult.Success(Pair(2, 20))
+        coEvery { romMRepository.getPlatformCount() } returns RomMResult.Success(2)
         coEvery { romMRepository.syncLibrary(any()) } coAnswers {
             syncProgressFlow.value = SyncProgress(
                 isSyncing = true,
@@ -209,7 +209,7 @@ class SyncLibraryUseCaseTest {
     @Test
     fun `invoke handles exception and completes notification with error`() = runTest {
         every { romMRepository.isConnected() } returns true
-        coEvery { romMRepository.getLibrarySummary() } returns RomMResult.Success(Pair(2, 20))
+        coEvery { romMRepository.getPlatformCount() } returns RomMResult.Success(2)
         coEvery { romMRepository.syncLibrary(any()) } throws RuntimeException("Unexpected error")
 
         val result = useCase()

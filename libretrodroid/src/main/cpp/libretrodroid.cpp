@@ -23,6 +23,7 @@
 #include <utility>
 #include <vector>
 #include <unordered_set>
+#include <new>
 
 #include "libretrodroid.h"
 #include "utils/libretrodroidexception.h"
@@ -175,17 +176,63 @@ void LibretroDroid::setControllerType(unsigned int port, unsigned int type) {
 }
 
 bool LibretroDroid::unserializeState(int8_t *data, size_t size) {
-    size_t expectedSize = core->retro_serialize_size();
-    if (expectedSize == 0) {
+    return unserializeStateWithPolicy(data, size, StateLoadPolicy::StrictSize);
+}
+
+bool LibretroDroid::unserializePersistedState(int8_t *data, size_t size) {
+    return unserializeStateWithPolicy(data, size, StateLoadPolicy::CoreValidated);
+}
+
+bool LibretroDroid::unserializeStateWithPolicy(
+    int8_t *data,
+    size_t size,
+    StateLoadPolicy policy
+) {
+    const size_t currentSize = core->retro_serialize_size();
+    if (currentSize == 0) {
         LOGE("unserializeState: core reports no serialization support");
         return false;
     }
-    if (size != expectedSize) {
-        LOGE("unserializeState: size mismatch (got %zu, expected %zu)", size, expectedSize);
+    if (size == 0) {
+        LOGE("unserializeState: refusing empty state");
         return false;
     }
-    bool result = core->retro_unserialize(data, size);
-    if (result && video && video->isHWAccelerated()) {
+    if (size != currentSize) {
+        if (policy == StateLoadPolicy::StrictSize) {
+            LOGE(
+                "unserializeState: size mismatch (got %zu, current %zu); strict load rejected",
+                size,
+                currentSize
+            );
+            return false;
+        }
+        LOGW(
+            "unserializeState: persisted state size differs from current core size "
+            "(got %zu, current %zu); attempting core load",
+            size,
+            currentSize
+        );
+    }
+
+    const bool result = attemptStateLoad(
+        data,
+        size,
+        currentSize,
+        policy,
+        [this](const void* stateData, size_t stateSize) {
+            return core->retro_unserialize(stateData, stateSize);
+        }
+    );
+    if (!result) {
+        LOGE(
+            "unserializeState: core rejected state (got %zu, current %zu)",
+            size,
+            currentSize
+        );
+        return false;
+    }
+
+    if (video && video->isHWAccelerated()) {
         auto contextReset = Environment::getInstance().getHwContextReset();
         if (contextReset) {
             video->bindHWContext();
@@ -193,7 +240,7 @@ bool LibretroDroid::unserializeState(int8_t *data, size_t size) {
             video->bindMainContext();
         }
     }
-    return result;
+    return true;
 }
 
 JNIEXPORT jboolean JNICALL LibretroDroid::unserializeSRAM(int8_t* data, size_t size) {
@@ -216,9 +263,18 @@ JNIEXPORT jboolean JNICALL LibretroDroid::unserializeSRAM(int8_t* data, size_t s
 }
 
 std::pair<int8_t*, size_t> LibretroDroid::serializeSRAM() {
+    if (core == nullptr) {
+        return std::pair(nullptr, 0);
+    }
+
     size_t size = core->retro_get_memory_size(RETRO_MEMORY_SAVE_RAM);
+    void* memoryData = core->retro_get_memory_data(RETRO_MEMORY_SAVE_RAM);
+    if (size == 0 || memoryData == nullptr) {
+        return std::pair(nullptr, 0);
+    }
+
     auto* data = new int8_t[size];
-    memcpy(data, (int8_t*) core->retro_get_memory_data(RETRO_MEMORY_SAVE_RAM), size);
+    memcpy(data, memoryData, size);
 
     return std::pair(data, size);
 }
@@ -514,6 +570,13 @@ void LibretroDroid::loadGameFromVirtualFiles(std::vector<VFSFile> virtualFiles) 
 void LibretroDroid::destroy() {
     LOGD("Performing libretrodroid destroy");
 
+    auto contextDestroy = Environment::getInstance().getHwContextDestroy();
+    if (contextDestroy != nullptr && video && video->isHWAccelerated()) {
+        video->bindHWContext();
+        contextDestroy();
+        video->bindMainContext();
+    }
+
     if (core) {
         core->retro_unload_game();
         core->retro_deinit();
@@ -744,9 +807,36 @@ void LibretroDroid::setRewindSpeed(unsigned int speed) {
     rewindSpeed = speed;
 }
 
-void LibretroDroid::initRewindBuffer(int slotCount, int maxStateSize) {
-    rewindBuffer = std::make_unique<RewindBuffer>(slotCount, maxStateSize);
-    rewindTempBuffer.resize(maxStateSize);
+void LibretroDroid::initRewindBuffer(int maxSlots, jlong budgetBytes) {
+    constexpr size_t MIN_SLOTS = 4;
+
+    size_t stateSize = core->retro_serialize_size();
+    if (stateSize == 0 || maxSlots <= 0 || budgetBytes <= 0) {
+        LOGE("Rewind unavailable: stateSize=%zu maxSlots=%d budget=%lld",
+             stateSize, maxSlots, (long long) budgetBytes);
+        return;
+    }
+
+    size_t slots = std::min((size_t) maxSlots, (size_t) budgetBytes / stateSize);
+    if (slots < MIN_SLOTS) {
+        LOGE("Rewind unavailable: state size %zu does not fit budget %lld",
+             stateSize, (long long) budgetBytes);
+        return;
+    }
+
+    try {
+        rewindBuffer = std::make_unique<RewindBuffer>(slots, stateSize);
+        rewindTempBuffer.resize(stateSize);
+    } catch (const std::bad_alloc&) {
+        LOGE("Rewind unavailable: failed to allocate %zu slots of %zu bytes", slots, stateSize);
+        rewindBuffer.reset();
+        rewindTempBuffer.clear();
+        rewindTempBuffer.shrink_to_fit();
+        return;
+    }
+
+    LOGD("Rewind buffer: %zu slots x %zu bytes (%zu MiB), requested %d slots",
+         slots, stateSize, (slots * stateSize) / (1024 * 1024), maxSlots);
 }
 
 void LibretroDroid::destroyRewindBuffer() {

@@ -11,6 +11,8 @@ import com.nendo.argosy.core.notification.NotificationManager
 import com.nendo.argosy.core.notification.NotificationType
 import com.nendo.argosy.data.model.GameSource
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
+import com.nendo.argosy.data.storage.StorageAttributionRepository
+import com.nendo.argosy.data.storage.StorageCategory
 import com.nendo.argosy.util.AppPaths
 import dagger.hilt.android.qualifiers.ApplicationContext
 import `in`.dragonbra.javasteam.steam.handlers.steamapps.SteamApps
@@ -107,7 +109,8 @@ class SteamContentManager @Inject constructor(
     val pathResolver: SteamPathResolver,
     private val progressTracker: SteamProgressTracker,
     private val downloadTracker: SteamDownloadTracker,
-    private val fileAccessLayer: com.nendo.argosy.data.storage.FileAccessLayer
+    private val fileAccessLayer: com.nendo.argosy.data.storage.FileAccessLayer,
+    private val attributionRepository: StorageAttributionRepository
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val heartbeatDispatcher = java.util.concurrent.Executors.newSingleThreadExecutor { r ->
@@ -274,6 +277,7 @@ class SteamContentManager @Inject constructor(
                 }
             }
             steamDownloadQueueDao.updateState(appId, SteamDownloadDbState.COMPLETED.name)
+            attributionRepository.markDirty(StorageCategory.STEAM)
             return
         }
 
@@ -333,6 +337,7 @@ class SteamContentManager @Inject constructor(
                     _downloadState.value = SteamDownloadState.Completed(appId, gameName, finalDir.absolutePath)
                     _activeDownload.value = null
                     Log.d(TAG, "Deploy resume complete: $gameName -> ${finalDir.absolutePath}")
+                    attributionRepository.markDirty(StorageCategory.STEAM)
                 } catch (e: Exception) {
                     Log.e(TAG, "Deploy resume failed for $gameName", e)
                     steamDownloadQueueDao.updateState(appId, SteamDownloadDbState.FAILED.name, e.message)
@@ -346,6 +351,7 @@ class SteamContentManager @Inject constructor(
         Log.w(TAG, "Cannot resume deploy for $gameName: staging gone, final incomplete. Marking as failed.")
         if (finalDir.exists()) finalDir.deleteRecursively()
         steamDownloadQueueDao.updateState(appId, SteamDownloadDbState.FAILED.name, "Deploy interrupted, staging lost")
+        attributionRepository.markDirty(StorageCategory.STEAM)
     }
 
     fun initialize(client: SteamClient, apps: SteamApps, cm: CallbackManager) {
@@ -383,6 +389,34 @@ class SteamContentManager @Inject constructor(
             state is SteamDownloadState.FetchingManifest ||
             state is SteamDownloadState.Validating ||
             state is SteamDownloadState.Moving
+    }
+
+    fun hasBlockingDownloadState(): Boolean =
+        hasActiveSteamDownload() || _downloadState.value is SteamDownloadState.Paused
+
+    /** Deletes staged download data and queue rows together; returns false while a download is active or paused. */
+    suspend fun clearDownloadData(): Boolean = withContext(Dispatchers.IO) {
+        if (hasBlockingDownloadState()) return@withContext false
+        val pending = steamDownloadQueueDao.getPendingDownloads()
+        for (entity in pending) {
+            gameDao.getBySteamAppId(entity.appId)?.let { game ->
+                if (game.localPath?.contains(AppPaths.STEAM_STAGING_DIR) == true) {
+                    gameDao.update(game.copy(localPath = null))
+                }
+            }
+            downloadTracker.clearForApp(entity.appId)
+            steamDownloadQueueDao.deleteByAppId(entity.appId)
+        }
+        steamDownloadQueueDao.clearFinished()
+        val stagingRoot = AppPaths.steamStagingRoot(context.filesDir)
+        if (stagingRoot.exists()) stagingRoot.deleteRecursively()
+        val legacyDownloads = File(context.filesDir, "steam_downloads")
+        if (legacyDownloads.exists()) legacyDownloads.deleteRecursively()
+        _downloadQueue.value = emptyList()
+        _activeDownload.value = null
+        _downloadState.value = SteamDownloadState.Idle
+        attributionRepository.markDirty(StorageCategory.STEAM)
+        true
     }
 
     fun isConnected(): Boolean {
@@ -1103,6 +1137,7 @@ class SteamContentManager @Inject constructor(
                 _activeDownload.value = null
 
                 Log.d(TAG, "Download finalized: $gameName -> ${installDir.absolutePath}")
+                attributionRepository.markDirty(StorageCategory.STEAM)
 
                 // Notify RomM queue that a shared slot freed up
                 downloadManager.get().onExternalSlotFreed()
@@ -1279,6 +1314,7 @@ class SteamContentManager @Inject constructor(
 
             gameDao.update(game.copy(localPath = null))
             Log.d(TAG, "Cleared local path for game: ${game.title}")
+            attributionRepository.markDirty(StorageCategory.STEAM)
             true
         } catch (e: Exception) {
             Log.e(TAG, "Failed to delete game", e)
@@ -1588,6 +1624,7 @@ class SteamContentManager @Inject constructor(
             }
         }
 
+        if (cleaned) attributionRepository.markDirty(StorageCategory.STEAM)
         cleaned
     }
 

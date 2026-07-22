@@ -122,7 +122,7 @@ fun SpeedrunSplitsModal(
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose {
             lifecycleOwner.lifecycle.removeObserver(observer)
-            inputDispatcher.popModal()
+            inputDispatcher.removeModal(inputHandler)
         }
     }
 

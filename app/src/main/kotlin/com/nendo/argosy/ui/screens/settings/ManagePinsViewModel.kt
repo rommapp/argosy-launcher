@@ -2,6 +2,7 @@ package com.nendo.argosy.ui.screens.settings
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.nendo.argosy.core.input.SoundType
 import com.nendo.argosy.domain.model.PinnedCollection
 import com.nendo.argosy.domain.usecase.collection.GetPinnedCollectionsUseCase
 import com.nendo.argosy.domain.usecase.collection.ReorderPinnedCollectionsUseCase
@@ -62,12 +63,14 @@ class ManagePinsViewModel @Inject constructor(
         initialValue = ManagePinsUiState()
     )
 
-    fun moveFocus(delta: Int) {
+    fun moveFocus(delta: Int): Boolean {
         val current = _localState.value
         val pins = uiState.value.pins
-        if (pins.isEmpty()) return
+        if (pins.isEmpty()) return false
         val newIndex = (current.focusedIndex + delta).coerceIn(0, pins.size - 1)
+        if (newIndex == current.focusedIndex) return false
         _localState.value = current.copy(focusedIndex = newIndex)
+        return true
     }
 
     fun setFocusIndex(index: Int) {
@@ -90,13 +93,13 @@ class ManagePinsViewModel @Inject constructor(
         }
     }
 
-    fun moveItem(delta: Int) {
+    fun moveItem(delta: Int): Boolean {
         val current = _localState.value
-        if (!current.isReorderMode) return
-        val pins = current.localPins ?: return
-        val fromIndex = current.reorderingIndex ?: return
+        if (!current.isReorderMode) return false
+        val pins = current.localPins ?: return false
+        val fromIndex = current.reorderingIndex ?: return false
         val toIndex = (fromIndex + delta).coerceIn(0, pins.size - 1)
-        if (fromIndex == toIndex) return
+        if (fromIndex == toIndex) return false
 
         val mutablePins = pins.toMutableList()
         val item = mutablePins.removeAt(fromIndex)
@@ -107,6 +110,7 @@ class ManagePinsViewModel @Inject constructor(
             reorderingIndex = toIndex,
             focusedIndex = toIndex
         )
+        return true
     }
 
     fun confirmReorder() {
@@ -143,22 +147,14 @@ class ManagePinsViewModel @Inject constructor(
     fun createInputHandler(onBack: () -> Unit): InputHandler = object : InputHandler {
         override fun onUp(): InputResult {
             val state = uiState.value
-            if (state.isReorderMode) {
-                moveItem(-1)
-            } else {
-                moveFocus(-1)
-            }
-            return InputResult.HANDLED
+            val moved = if (state.isReorderMode) moveItem(-1) else moveFocus(-1)
+            return if (moved) InputResult.HANDLED else InputResult.handled(SoundType.BOUNDARY)
         }
 
         override fun onDown(): InputResult {
             val state = uiState.value
-            if (state.isReorderMode) {
-                moveItem(1)
-            } else {
-                moveFocus(1)
-            }
-            return InputResult.HANDLED
+            val moved = if (state.isReorderMode) moveItem(1) else moveFocus(1)
+            return if (moved) InputResult.HANDLED else InputResult.handled(SoundType.BOUNDARY)
         }
 
         override fun onConfirm(): InputResult {

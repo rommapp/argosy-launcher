@@ -15,6 +15,7 @@ import com.nendo.argosy.data.repository.PreLaunchSyncResult
 import com.nendo.argosy.data.repository.SaveSyncRepository
 import com.nendo.argosy.data.repository.SaveSyncResult
 import com.nendo.argosy.domain.model.SyncProgress
+import com.nendo.argosy.domain.usecase.state.PreLaunchStateSyncUseCase
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
@@ -39,6 +40,7 @@ class LaunchWithSyncUseCaseTest {
     private val romMRepository = mockk<RomMRepository>(relaxed = true)
     private val saveSyncRepository = mockk<SaveSyncRepository>(relaxed = true)
     private val titleIdDownloadObserver = mockk<TitleIdDownloadObserver>(relaxed = true)
+    private val preLaunchStateSyncUseCase = mockk<PreLaunchStateSyncUseCase>(relaxed = true)
 
     private lateinit var useCase: LaunchWithSyncUseCase
 
@@ -67,7 +69,7 @@ class LaunchWithSyncUseCaseTest {
         useCase = LaunchWithSyncUseCase(
             gameDao, emulatorConfigDao, emulatorResolver,
             preferencesRepository, romMRepository, saveSyncRepository,
-            titleIdDownloadObserver
+            titleIdDownloadObserver, preLaunchStateSyncUseCase
         )
 
         every { preferencesRepository.userPreferences } returns MutableStateFlow(UserPreferences(saveSyncEnabled = true))

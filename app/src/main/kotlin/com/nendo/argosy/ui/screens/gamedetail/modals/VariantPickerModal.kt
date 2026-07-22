@@ -3,6 +3,10 @@ package com.nendo.argosy.ui.screens.gamedetail.modals
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Album
+import androidx.compose.material.icons.filled.CloudOff
+import androidx.compose.material.icons.filled.Download
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -20,6 +24,8 @@ fun VariantPickerModal(
     focusIndex: Int,
     onSelectVariant: (Long?) -> Unit,
     onDownloadVariant: ((Long) -> Unit)? = null,
+    activeFileId: Long? = null,
+    showActiveMarker: Boolean = false,
     onDismiss: () -> Unit
 ) {
     Modal(
@@ -59,13 +65,15 @@ fun VariantPickerModal(
                     val canDownload = !downloaded && variant.fileId != null && onDownloadVariant != null
                     OptionItem(
                         label = label,
-                        value = when {
-                            !downloaded && canDownload -> "Tap to download"
-                            !downloaded -> "Not downloaded"
-                            variant.isMultiDisc -> "Multi-disc"
-                            else -> ""
+                        trailingIcon = when {
+                            !downloaded && canDownload -> Icons.Default.Download
+                            !downloaded -> Icons.Default.CloudOff
+                            variant.isMultiDisc -> Icons.Default.Album
+                            else -> null
                         },
+                        trailingTint = if (!downloaded && canDownload) MaterialTheme.colorScheme.primary else null,
                         isFocused = focusIndex == index,
+                        isSelected = showActiveMarker && downloaded && variant.fileId == activeFileId,
                         isEnabled = downloaded || canDownload,
                         onClick = {
                             if (downloaded) {

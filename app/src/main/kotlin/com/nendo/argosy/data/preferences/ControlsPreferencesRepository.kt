@@ -27,6 +27,7 @@ data class ControlsPreferences(
     val ambientAudioVolume: Int = 50,
     val ambientAudioUri: String? = null,
     val ambientAudioShuffle: Boolean = false,
+    val gameDetailThemeEnabled: Boolean = false,
     val selectLCombo: String = "quick_menu",
     val selectRCombo: String = "quick_settings",
     val menuWrapMode: MenuWrapMode = MenuWrapMode.HARD_STOP
@@ -50,6 +51,7 @@ class ControlsPreferencesRepository @Inject constructor(
         val AMBIENT_AUDIO_VOLUME = intPreferencesKey("ambient_audio_volume")
         val AMBIENT_AUDIO_URI = stringPreferencesKey("ambient_audio_uri")
         val AMBIENT_AUDIO_SHUFFLE = booleanPreferencesKey("ambient_audio_shuffle")
+        val GAME_DETAIL_THEME = booleanPreferencesKey("game_detail_theme")
         val SELECT_L_COMBO = stringPreferencesKey("select_l_combo")
         val SELECT_R_COMBO = stringPreferencesKey("select_r_combo")
         val MENU_WRAP_MODE = stringPreferencesKey("menu_wrap_mode")
@@ -70,6 +72,7 @@ class ControlsPreferencesRepository @Inject constructor(
             ambientAudioVolume = prefs[Keys.AMBIENT_AUDIO_VOLUME] ?: 50,
             ambientAudioUri = prefs[Keys.AMBIENT_AUDIO_URI],
             ambientAudioShuffle = prefs[Keys.AMBIENT_AUDIO_SHUFFLE] ?: false,
+            gameDetailThemeEnabled = prefs[Keys.GAME_DETAIL_THEME] ?: false,
             selectLCombo = prefs[Keys.SELECT_L_COMBO] ?: "quick_menu",
             selectRCombo = prefs[Keys.SELECT_R_COMBO] ?: "quick_settings",
             menuWrapMode = MenuWrapMode.fromString(prefs[Keys.MENU_WRAP_MODE])
@@ -114,6 +117,27 @@ class ControlsPreferencesRepository @Inject constructor(
         }
     }
 
+    /** Repoints custom/romm sound paths under [oldPrefix] to [newPrefix] after a music relocation. */
+    suspend fun rewriteSoundConfigPathPrefix(oldPrefix: String, newPrefix: String) {
+        val old = oldPrefix.trimEnd('/')
+        val new = newPrefix.trimEnd('/')
+        dataStore.edit { prefs ->
+            val current = parseSoundConfigs(prefs[Keys.SOUND_CONFIGS])
+            if (current.isEmpty()) return@edit
+            val updated = current.mapValues { (_, config) ->
+                val path = config.customFilePath
+                if (path != null && path.startsWith("$old/")) {
+                    config.copy(customFilePath = new + path.removePrefix(old))
+                } else {
+                    config
+                }
+            }
+            if (updated != current) {
+                prefs[Keys.SOUND_CONFIGS] = serializeSoundConfigs(updated)
+            }
+        }
+    }
+
     suspend fun setSwapAB(enabled: Boolean) {
         dataStore.edit { it[Keys.SWAP_AB] = enabled }
     }
@@ -153,6 +177,10 @@ class ControlsPreferencesRepository @Inject constructor(
         dataStore.edit { it[Keys.AMBIENT_AUDIO_SHUFFLE] = shuffle }
     }
 
+    suspend fun setGameDetailThemeEnabled(enabled: Boolean) {
+        dataStore.edit { it[Keys.GAME_DETAIL_THEME] = enabled }
+    }
+
     suspend fun setSelectLCombo(value: String) {
         dataStore.edit { it[Keys.SELECT_L_COMBO] = value }
     }
@@ -174,6 +202,10 @@ class ControlsPreferencesRepository @Inject constructor(
                 val soundType = try { SoundType.valueOf(parts[0]) } catch (_: Exception) { return@mapNotNull null }
                 val value = parts[1]
                 val config = when {
+                    value.startsWith("romm:") -> SoundConfig(
+                        presetName = SoundConfig.ROMM_SOURCE,
+                        customFilePath = value.removePrefix("romm:")
+                    )
                     value.startsWith("custom:") -> SoundConfig(customFilePath = value.removePrefix("custom:"))
                     else -> SoundConfig(presetName = value)
                 }
@@ -185,6 +217,8 @@ class ControlsPreferencesRepository @Inject constructor(
     private fun serializeSoundConfigs(configs: Map<SoundType, SoundConfig>): String {
         return configs.entries.joinToString(";") { (type, config) ->
             val value = when {
+                config.customFilePath != null && config.presetName == SoundConfig.ROMM_SOURCE ->
+                    "romm:${config.customFilePath}"
                 config.customFilePath != null -> "custom:${config.customFilePath}"
                 config.presetName != null -> config.presetName
                 else -> return@joinToString ""

@@ -28,7 +28,21 @@ data class CompanionInGameState(
     val isDirty: Boolean = false,
     val currentPanel: CompanionPanel = CompanionPanel.DASHBOARD,
     val isLoaded: Boolean = false,
-    val quickActionsAvailable: Boolean = false
+    val quickActionsAvailable: Boolean = false,
+    val hasQuickSave: Boolean = false
+)
+
+/**
+ * Applies live quick-action state after asynchronously loaded game metadata arrives.
+ * These flags can change while the metadata is being loaded, so the metadata snapshot
+ * must not replace them with their defaults.
+ */
+internal fun CompanionInGameState.withLiveQuickActionState(
+    quickActionsAvailable: Boolean,
+    hasQuickSave: Boolean
+): CompanionInGameState = copy(
+    quickActionsAvailable = quickActionsAvailable,
+    hasQuickSave = hasQuickSave
 )
 
 class CompanionSessionTimer {

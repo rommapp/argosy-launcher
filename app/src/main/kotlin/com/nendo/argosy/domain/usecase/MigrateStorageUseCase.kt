@@ -3,6 +3,8 @@ package com.nendo.argosy.domain.usecase
 import android.util.Log
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.repository.GameRepository
+import com.nendo.argosy.data.storage.StorageAttributionRepository
+import com.nendo.argosy.data.storage.StorageCategory
 import com.nendo.argosy.core.notification.NotificationManager
 import com.nendo.argosy.core.notification.NotificationProgress
 import com.nendo.argosy.core.notification.NotificationType
@@ -23,7 +25,8 @@ data class MigrationResult(
 class MigrateStorageUseCase @Inject constructor(
     private val gameRepository: GameRepository,
     private val preferencesRepository: UserPreferencesRepository,
-    private val notificationManager: NotificationManager
+    private val notificationManager: NotificationManager,
+    private val attributionRepository: StorageAttributionRepository
 ) {
     suspend operator fun invoke(
         oldPath: String,
@@ -111,6 +114,7 @@ class MigrateStorageUseCase @Inject constructor(
             type = if (failed > 0) NotificationType.WARNING else NotificationType.SUCCESS
         )
 
+        attributionRepository.markDirty(StorageCategory.GAMES)
         MigrationResult(migrated, skipped, failed)
     }
 }

@@ -110,6 +110,39 @@ internal fun routeObserveDelegateStates(vm: SettingsViewModel) {
         vm._uiState.update { it.copy(isMigrating = migrating) }
     }.launchIn(vm.viewModelScope)
 
+    vm.attributionDelegate.state.onEach { attribution ->
+        vm._uiState.update { it.copy(attribution = attribution) }
+    }.launchIn(vm.viewModelScope)
+    vm.attributionDelegate.initFlowCollection(vm.viewModelScope)
+
+    vm.storagePlatformGamesDelegate.state.onEach { storagePlatformGames ->
+        vm._uiState.update { state ->
+            val updated = state.copy(storagePlatformGames = storagePlatformGames)
+            if (state.currentSection == SettingsSection.STORAGE_PLATFORM_GAMES) {
+                val maxIndex = com.nendo.argosy.ui.screens.settings.sections
+                    .storagePlatformGamesMaxFocusIndex(
+                        com.nendo.argosy.ui.screens.settings.sections
+                            .createStoragePlatformGamesLayoutInfo(updated)
+                    )
+                val clampedFocus = state.focusedIndex.coerceAtMost(maxIndex).coerceAtLeast(0)
+                val focusedBuckets = storagePlatformGames.games.getOrNull(clampedFocus)?.buckets?.size ?: 0
+                val clampedCategory = storagePlatformGames.highlightedCategoryIndex
+                    .coerceAtMost((focusedBuckets - 1).coerceAtLeast(0))
+                    .coerceAtLeast(0)
+                updated.copy(
+                    focusedIndex = clampedFocus,
+                    storagePlatformGames = storagePlatformGames.copy(highlightedCategoryIndex = clampedCategory)
+                )
+            } else {
+                updated
+            }
+        }
+    }.launchIn(vm.viewModelScope)
+
+    vm.storageCachesDelegate.state.onEach { storageCaches ->
+        vm._uiState.update { it.copy(storageCaches = storageCaches) }
+    }.launchIn(vm.viewModelScope)
+
     vm.syncDelegate.state.onEach { syncSettings ->
         vm._uiState.update { it.copy(syncSettings = syncSettings) }
     }.launchIn(vm.viewModelScope)
@@ -216,11 +249,15 @@ internal fun routeObserveConnectionState(vm: SettingsViewModel) {
         val version = (connectionState as? ConnectionState.Connected)?.version
         val screenshotUpload = (connectionState as? ConnectionState.Connected)
             ?.capabilities?.supportsScreenshotUpload == true
+        val musicApi = (connectionState as? ConnectionState.Connected)
+            ?.capabilities?.supportsMusicApi == true
         vm.serverDelegate.updateState(vm._uiState.value.server.copy(
             connectionStatus = status,
             rommVersion = version,
-            screenshotUploadSupported = screenshotUpload
+            screenshotUploadSupported = screenshotUpload,
+            musicApiSupported = musicApi
         ))
+        vm.soundsDelegate.setMusicApiSupported(musicApi)
     }.launchIn(vm.viewModelScope)
 }
 
@@ -460,6 +497,7 @@ internal fun routeLoadSettings(vm: SettingsViewModel) {
             ambientLedCustomColorHue = prefs.ambientLedCustomColorHue,
             ambientLedTransitionMs = prefs.ambientLedTransitionMs,
             ambientLedScreenEnabled = prefs.ambientLedScreenEnabled,
+            ambientLedAchievementFlash = prefs.ambientLedAchievementFlash,
             ambientLedAvailable = vm.displayDelegate.isAmbientLedAvailable(),
             hasScreenCapturePermission = vm.displayDelegate.hasScreenCapturePermission(),
             hasSecondaryDisplay = vm.displayAffinityHelper.hasSecondaryDisplay,
@@ -496,39 +534,22 @@ internal fun routeLoadSettings(vm: SettingsViewModel) {
         vm.soundsDelegate.updateState(SoundState(
             enabled = prefs.soundEnabled,
             volume = prefs.soundVolume,
-            soundConfigs = prefs.soundConfigs
+            soundConfigs = prefs.soundConfigs,
+            musicApiSupported = (connectionState as? ConnectionState.Connected)
+                ?.capabilities?.supportsMusicApi == true
         ))
 
-        val ambientUri = prefs.ambientAudioUri
-        val isAmbientFolder = ambientUri?.let { uri ->
-            uri.startsWith("/") && java.io.File(uri).isDirectory
-        } ?: false
-        val ambientFileName = ambientUri?.let { uri ->
-            if (uri.startsWith("/")) {
-                uri.substringAfterLast("/")
-            } else {
-                try {
-                    android.net.Uri.parse(uri).let { parsedUri ->
-                        vm.context.contentResolver.query(parsedUri, null, null, null, null)?.use { cursor ->
-                            if (cursor.moveToFirst()) {
-                                val nameIndex = cursor.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME)
-                                if (nameIndex >= 0) cursor.getString(nameIndex) else null
-                            } else null
-                        }
-                    }
-                } catch (e: Exception) {
-                    uri.substringAfterLast("/").substringBefore("?")
-                }
-            }
-        }
         vm.ambientAudioDelegate.updateState(AmbientAudioState(
             enabled = prefs.ambientAudioEnabled,
             volume = prefs.ambientAudioVolume,
-            audioUri = ambientUri,
-            audioFileName = ambientFileName,
-            isFolder = isAmbientFolder,
-            shuffle = prefs.ambientAudioShuffle
+            shuffle = prefs.ambientAudioShuffle,
+            gameDetailThemeEnabled = prefs.gameDetailThemeEnabled,
+            currentTrackName = vm.ambientAudioDelegate.state.value.currentTrackName,
+            playlistEntryCount = vm.ambientAudioDelegate.state.value.playlistEntryCount,
+            musicDirPath = vm.ambientAudioDelegate.state.value.musicDirPath,
+            pendingMusicRelocation = vm.ambientAudioDelegate.state.value.pendingMusicRelocation
         ))
+        vm.ambientAudioDelegate.refreshMusicDirPath(vm.viewModelScope)
 
         val excludedSlugs = setOf("android", "steam")
         val filteredPlatformConfigs = platformConfigs
@@ -568,7 +589,9 @@ internal fun routeLoadSettings(vm: SettingsViewModel) {
             uploadScreenshotsEnabled = prefs.uploadScreenshotsEnabled,
             boxArtCacheEnabled = prefs.boxArtCacheEnabled,
             screenshotUploadSupported = (connectionState as? ConnectionState.Connected)
-                ?.capabilities?.supportsScreenshotUpload == true
+                ?.capabilities?.supportsScreenshotUpload == true,
+            musicApiSupported = (connectionState as? ConnectionState.Connected)
+                ?.capabilities?.supportsMusicApi == true
         ))
 
         vm.storageDelegate.updateState(StorageState(
@@ -580,7 +603,8 @@ internal fun routeLoadSettings(vm: SettingsViewModel) {
             availableSpace = availableSpace,
             screenDimmerEnabled = prefs.screenDimmerEnabled,
             screenDimmerTimeoutMinutes = prefs.screenDimmerTimeoutMinutes,
-            screenDimmerLevel = prefs.screenDimmerLevel
+            screenDimmerLevel = prefs.screenDimmerLevel,
+            weeklyIntegrityCheckEnabled = prefs.weeklyIntegrityCheckEnabled
         ))
         vm.storageDelegate.checkAllFilesAccess()
         val platformEmulatorInfoMap = mutableMapOf<Long, StorageSettingsDelegate.PlatformEmulatorInfo>()
@@ -653,6 +677,7 @@ internal fun routeLoadSettings(vm: SettingsViewModel) {
             totalPlatforms = platforms.count { it.gameCount > 0 },
             totalGames = platforms.sumOf { it.gameCount },
             saveSyncEnabled = prefs.saveSyncEnabled,
+            stateCacheEnabled = prefs.stateCacheEnabled,
             saveCacheLimit = prefs.saveCacheLimit,
             pendingUploadsCount = vm.saveCacheDao.countNeedingRemoteSync(),
             imageCachePath = prefs.imageCachePath,
@@ -693,7 +718,6 @@ internal fun routeLoadSettings(vm: SettingsViewModel) {
                     autoSaveState = builtinSettings.autoSaveState,
                     autoRestoreState = builtinSettings.autoRestoreState,
                     hwCoreSaveStatesEnabled = builtinSettings.hwCoreSaveStatesEnabled,
-                    defaultToHardcore = builtinSettings.defaultToHardcore,
                     savePath = builtinSettings.customSavePath
                         ?: AppPaths.libretroSavesDir(vm.context.filesDir).absolutePath,
                     statePath = builtinSettings.customStatePath

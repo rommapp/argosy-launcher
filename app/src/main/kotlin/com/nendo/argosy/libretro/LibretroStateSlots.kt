@@ -13,6 +13,12 @@ object LibretroStateSlots {
     const val QUICK_SLOT_BASE = 100
     const val QUICK_RING_SIZE = 10
 
+    /** Every slot the built-in core can write, for callers that mean "all states" rather than a range. */
+    val ALL_SLOTS: List<Int> =
+        listOf(RESUME_SLOT, AUTO_SLOT) +
+            (0..MAX_SLOT) +
+            (QUICK_SLOT_BASE until QUICK_SLOT_BASE + QUICK_RING_SIZE)
+
     fun fileName(romBaseName: String, slotNumber: Int): String = when (slotNumber) {
         AUTO_SLOT -> "$romBaseName.state.auto"
         RESUME_SLOT -> "$romBaseName.state.resume"

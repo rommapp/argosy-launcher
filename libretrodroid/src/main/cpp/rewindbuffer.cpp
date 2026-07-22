@@ -23,9 +23,6 @@ namespace libretrodroid {
 RewindBuffer::RewindBuffer(size_t slotCount, size_t maxStateSize)
     : capacity(slotCount), maxSize(maxStateSize) {
     slots.resize(slotCount);
-    for (auto& slot : slots) {
-        slot.reserve(maxStateSize);
-    }
 }
 
 RewindBuffer::~RewindBuffer() {

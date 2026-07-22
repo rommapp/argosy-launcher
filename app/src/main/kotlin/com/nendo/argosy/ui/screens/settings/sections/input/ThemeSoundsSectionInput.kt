@@ -17,18 +17,45 @@ internal class ThemeSoundsSectionInput(
     private fun layoutState() = ThemeSoundsLayoutState.from(viewModel.uiState.value)
 
     override fun onUp(): InputResult {
-        viewModel.moveFocusWrapped(-1, themeSoundsMaxFocusIndex(layoutState()))
-        return InputResult.HANDLED
+        return if (viewModel.moveFocusWrapped(-1, themeSoundsMaxFocusIndex(layoutState()))) {
+            InputResult.HANDLED
+        } else {
+            InputResult.handled(SoundType.BOUNDARY)
+        }
     }
 
     override fun onDown(): InputResult {
-        viewModel.moveFocusWrapped(1, themeSoundsMaxFocusIndex(layoutState()))
-        return InputResult.HANDLED
+        return if (viewModel.moveFocusWrapped(1, themeSoundsMaxFocusIndex(layoutState()))) {
+            InputResult.HANDLED
+        } else {
+            InputResult.handled(SoundType.BOUNDARY)
+        }
     }
 
     override fun onLeft(): InputResult = cycle(-1)
 
     override fun onRight(): InputResult = cycle(1)
+
+    override fun onContextMenu(): InputResult {
+        val state = viewModel.uiState.value
+        val item = themeSoundsItemAtFocusIndex(state.focusedIndex, layoutState())
+        if (item is ThemeSoundsItem.SoundTypeItem) {
+            viewModel.soundManager.play(item.soundType)
+        }
+        return InputResult.handled(SoundType.SILENT)
+    }
+
+    override fun onSecondaryAction(): InputResult {
+        val state = viewModel.uiState.value
+        val item = themeSoundsItemAtFocusIndex(state.focusedIndex, layoutState())
+        if (item is ThemeSoundsItem.SoundTypeItem &&
+            state.sounds.soundConfigs.containsKey(item.soundType)
+        ) {
+            viewModel.resetSoundToDefault(item.soundType)
+            return InputResult.HANDLED
+        }
+        return InputResult.handled(SoundType.SILENT)
+    }
 
     override fun onPrevSection(): InputResult {
         if (viewModel.jumpToPrevSection(themeSoundsSections(layoutState()))) {

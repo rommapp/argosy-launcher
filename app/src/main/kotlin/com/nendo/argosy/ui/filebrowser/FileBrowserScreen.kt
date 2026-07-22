@@ -126,7 +126,7 @@ fun FileBrowserScreen(
 
     DisposableEffect(inputHandler) {
         inputDispatcher.pushModal(inputHandler)
-        onDispose { inputDispatcher.popModal() }
+        onDispose { inputDispatcher.removeModal(inputHandler) }
     }
 
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {

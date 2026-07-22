@@ -5,6 +5,7 @@ import com.nendo.argosy.data.emulator.CoreVersionExtractor
 import com.nendo.argosy.data.emulator.EmulatorDetector
 import com.nendo.argosy.data.emulator.StatePathRegistry
 import com.nendo.argosy.data.local.dao.GameDao
+import com.nendo.argosy.data.local.entity.StateCacheEntity
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.repository.StateCacheManager
 import kotlinx.coroutines.flow.first
@@ -139,7 +140,7 @@ class SyncStatesOnSessionEndUseCase @Inject constructor(
 
     private suspend fun queueStatesForUpload(gameId: Long, rommId: Long, emulatorId: String): Int {
         val pendingStates = stateCacheManager.getByGameAndEmulator(gameId, emulatorId)
-            .filter { it.syncStatus == null || it.rommSaveId == null }
+            .filter { it.syncStatus != StateCacheEntity.STATUS_SYNCED || it.rommSaveId == null }
 
         if (pendingStates.isEmpty()) {
             Log.d(TAG, "[StateSync] QUEUE gameId=$gameId | No states to queue")

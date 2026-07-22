@@ -8,7 +8,10 @@ object PlatformIconAssets {
 
     private val iconFallbacks = mapOf(
         "fbneo" to "arcade",
-        "mame" to "arcade"
+        "mame" to "arcade",
+        "cps1" to "arcade",
+        "cps2" to "arcade",
+        "cps3" to "arcade"
     )
 
     @Volatile private var cached: Set<String>? = null

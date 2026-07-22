@@ -6,6 +6,12 @@ object AppPaths {
 
     const val STEAM_STAGING_DIR = "steam_staging"
 
+    const val SAVE_CACHE_DIR = "save_cache"
+
+    const val STATE_CACHE_DIR = "state_cache"
+
+    const val ROM_CACHE_DIR = "rom_cache"
+
     const val LIBRETRO_SAVES_SUBDIR = "libretro/saves"
 
     const val LIBRETRO_STATES_SUBDIR = "libretro/states"
@@ -24,6 +30,12 @@ object AppPaths {
 
     fun steamStagingDir(filesDir: File, appId: Long): File =
         File(filesDir, "$STEAM_STAGING_DIR/$appId")
+
+    fun saveCacheDir(filesDir: File): File = File(filesDir, SAVE_CACHE_DIR)
+
+    fun stateCacheDir(filesDir: File): File = File(filesDir, STATE_CACHE_DIR)
+
+    fun romCacheDir(filesDir: File): File = File(filesDir, ROM_CACHE_DIR)
 
     fun libretroSavesDir(filesDir: File): File = File(filesDir, LIBRETRO_SAVES_SUBDIR)
 

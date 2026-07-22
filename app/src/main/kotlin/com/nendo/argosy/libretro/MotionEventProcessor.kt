@@ -4,12 +4,19 @@ import android.view.InputDevice
 import android.view.MotionEvent
 import com.swordfish.libretrodroid.GLRetroView
 import kotlin.math.abs
+import kotlin.math.hypot
 
+/**
+ * @param rightStickDeadzone radial deadzone applied to the right stick before it reaches the
+ * core. Platforms that drive digital buttons from the right analog (N64 C buttons) need a
+ * large one so a light flick does not register as a press.
+ */
 class MotionEventProcessor(
     private val inputMapper: ControllerInputMapper,
     private val portResolver: ControllerPortResolver,
     private val videoSettings: VideoSettingsManager,
-    private val getRetroView: () -> GLRetroView
+    private val getRetroView: () -> GLRetroView,
+    private val rightStickDeadzone: Float = 0f
 ) {
     fun processGamepadMotion(event: MotionEvent): Boolean {
         val retroView = getRetroView()
@@ -49,8 +56,21 @@ class MotionEventProcessor(
             if (abs(hatY) > abs(analogY)) analogY = hatY
         }
         retroView.sendMotionEvent(GLRetroView.MOTION_SOURCE_ANALOG_LEFT, analogX, analogY, port)
-        retroView.sendMotionEvent(GLRetroView.MOTION_SOURCE_ANALOG_RIGHT, rStickX, rStickY, port)
+
+        val applied = applyRadialDeadzone(rStickX, rStickY)
+        retroView.sendMotionEvent(GLRetroView.MOTION_SOURCE_ANALOG_RIGHT, applied.first, applied.second, port)
 
         return true
+    }
+
+    private fun applyRadialDeadzone(x: Float, y: Float): Pair<Float, Float> {
+        if (rightStickDeadzone <= 0f) return x to y
+
+        val magnitude = hypot(x, y)
+        if (magnitude <= rightStickDeadzone) return 0f to 0f
+
+        val scaled = (magnitude - rightStickDeadzone) / (1f - rightStickDeadzone)
+        val factor = scaled.coerceIn(0f, 1f) / magnitude
+        return (x * factor) to (y * factor)
     }
 }

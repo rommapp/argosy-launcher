@@ -211,6 +211,67 @@ class SessionStateStore(context: Context) {
     fun getCarouselSelectedIndex(): Int =
         prefs.getInt(KEY_CAROUSEL_SELECTED_INDEX, 0)
 
+    /**
+     * Stable identity of the lower home carousel: which section (by kind and, for
+     * a platform, its id) and which game (by id) were selected, plus the active
+     * home filter context. Restored by identity so a shifting dynamic section list
+     * does not strand the upper and lower screens on different games. Legacy index
+     * fields remain populated for graceful fallback before any id-context exists.
+     */
+    data class CarouselNavContext(
+        val hasContext: Boolean,
+        val sectionKind: String,
+        val platformId: Long,
+        val gameId: Long,
+        val legacySectionIndex: Int,
+        val legacySelectedIndex: Int,
+        val filterSource: String,
+        val filterPlatformId: Long,
+        val filterSearch: String,
+        val sortOption: String,
+        val sortDescending: Boolean,
+        val genres: Set<String>,
+        val players: Set<String>,
+        val franchises: Set<String>
+    )
+
+    fun setCarouselNavContext(ctx: CarouselNavContext) {
+        prefs.edit()
+            .putBoolean(KEY_CAROUSEL_HAS_CONTEXT, ctx.hasContext)
+            .putString(KEY_CAROUSEL_SECTION_KIND, ctx.sectionKind)
+            .putLong(KEY_CAROUSEL_PLATFORM_ID, ctx.platformId)
+            .putLong(KEY_CAROUSEL_GAME_ID, ctx.gameId)
+            .putInt(KEY_CAROUSEL_SECTION_INDEX, ctx.legacySectionIndex)
+            .putInt(KEY_CAROUSEL_SELECTED_INDEX, ctx.legacySelectedIndex)
+            .putString(KEY_CAROUSEL_FILTER_SOURCE, ctx.filterSource)
+            .putLong(KEY_CAROUSEL_FILTER_PLATFORM_ID, ctx.filterPlatformId)
+            .putString(KEY_CAROUSEL_FILTER_SEARCH, ctx.filterSearch)
+            .putString(KEY_CAROUSEL_SORT_OPTION, ctx.sortOption)
+            .putBoolean(KEY_CAROUSEL_SORT_DESC, ctx.sortDescending)
+            .putStringSet(KEY_CAROUSEL_GENRES, ctx.genres)
+            .putStringSet(KEY_CAROUSEL_PLAYERS, ctx.players)
+            .putStringSet(KEY_CAROUSEL_FRANCHISES, ctx.franchises)
+            .apply()
+    }
+
+    fun getCarouselNavContext(): CarouselNavContext =
+        CarouselNavContext(
+            hasContext = prefs.getBoolean(KEY_CAROUSEL_HAS_CONTEXT, false),
+            sectionKind = prefs.getString(KEY_CAROUSEL_SECTION_KIND, "") ?: "",
+            platformId = prefs.getLong(KEY_CAROUSEL_PLATFORM_ID, -1),
+            gameId = prefs.getLong(KEY_CAROUSEL_GAME_ID, -1),
+            legacySectionIndex = prefs.getInt(KEY_CAROUSEL_SECTION_INDEX, 0),
+            legacySelectedIndex = prefs.getInt(KEY_CAROUSEL_SELECTED_INDEX, 0),
+            filterSource = prefs.getString(KEY_CAROUSEL_FILTER_SOURCE, "ALL") ?: "ALL",
+            filterPlatformId = prefs.getLong(KEY_CAROUSEL_FILTER_PLATFORM_ID, -1),
+            filterSearch = prefs.getString(KEY_CAROUSEL_FILTER_SEARCH, "") ?: "",
+            sortOption = prefs.getString(KEY_CAROUSEL_SORT_OPTION, "") ?: "",
+            sortDescending = prefs.getBoolean(KEY_CAROUSEL_SORT_DESC, false),
+            genres = prefs.getStringSet(KEY_CAROUSEL_GENRES, emptySet()) ?: emptySet(),
+            players = prefs.getStringSet(KEY_CAROUSEL_PLAYERS, emptySet()) ?: emptySet(),
+            franchises = prefs.getStringSet(KEY_CAROUSEL_FRANCHISES, emptySet()) ?: emptySet()
+        )
+
     fun setWizardActive(active: Boolean) {
         prefs.edit().putBoolean(KEY_WIZARD_ACTIVE, active).apply()
     }
@@ -244,6 +305,18 @@ class SessionStateStore(context: Context) {
         private const val KEY_DETAIL_GAME_ID = "detail_game_id"
         private const val KEY_CAROUSEL_SECTION_INDEX = "carousel_section_index"
         private const val KEY_CAROUSEL_SELECTED_INDEX = "carousel_selected_index"
+        private const val KEY_CAROUSEL_HAS_CONTEXT = "carousel_has_context"
+        private const val KEY_CAROUSEL_SECTION_KIND = "carousel_section_kind"
+        private const val KEY_CAROUSEL_PLATFORM_ID = "carousel_platform_id"
+        private const val KEY_CAROUSEL_GAME_ID = "carousel_game_id"
+        private const val KEY_CAROUSEL_FILTER_SOURCE = "carousel_filter_source"
+        private const val KEY_CAROUSEL_FILTER_PLATFORM_ID = "carousel_filter_platform_id"
+        private const val KEY_CAROUSEL_FILTER_SEARCH = "carousel_filter_search"
+        private const val KEY_CAROUSEL_SORT_OPTION = "carousel_sort_option"
+        private const val KEY_CAROUSEL_SORT_DESC = "carousel_sort_desc"
+        private const val KEY_CAROUSEL_GENRES = "carousel_filter_genres"
+        private const val KEY_CAROUSEL_PLAYERS = "carousel_filter_players"
+        private const val KEY_CAROUSEL_FRANCHISES = "carousel_filter_franchises"
         private const val KEY_SESSION_START_TIME = "session_start_time"
         private const val KEY_EMULATOR_PACKAGE = "emulator_package"
         private const val KEY_WIZARD_ACTIVE = "wizard_active"

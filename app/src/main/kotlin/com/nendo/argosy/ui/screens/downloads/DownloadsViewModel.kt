@@ -23,6 +23,36 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+data class DownloadGroup(val items: List<DownloadProgress>) {
+    val primary: DownloadProgress
+        get() = items.maxByOrNull { it.totalBytes } ?: items.first()
+
+    val isGroup: Boolean get() = items.size > 1
+
+    /** One synthesized record per game: summed bytes, dominant state, n-of-m label. */
+    val aggregate: DownloadProgress
+        get() {
+            if (!isGroup) return primary
+            val state = when {
+                items.any { it.state == DownloadState.DOWNLOADING } -> DownloadState.DOWNLOADING
+                items.any { it.state == DownloadState.EXTRACTING } -> DownloadState.EXTRACTING
+                items.any { it.state == DownloadState.QUEUED } -> DownloadState.QUEUED
+                items.any { it.state == DownloadState.PAUSED } -> DownloadState.PAUSED
+                items.any { it.state == DownloadState.WAITING_FOR_STORAGE } -> DownloadState.WAITING_FOR_STORAGE
+                items.any { it.state == DownloadState.FAILED } -> DownloadState.FAILED
+                else -> DownloadState.COMPLETED
+            }
+            val done = items.count { it.state == DownloadState.COMPLETED }
+            return primary.copy(
+                bytesDownloaded = items.sumOf { it.bytesDownloaded },
+                totalBytes = items.sumOf { it.totalBytes },
+                bytesPerSecond = items.sumOf { it.bytesPerSecond },
+                state = state,
+                statusMessage = "$done of ${items.size} files"
+            )
+        }
+}
+
 data class DownloadsUiState(
     val downloadState: DownloadQueueState = DownloadQueueState(),
     val focusedDownloadId: Long? = null,
@@ -51,11 +81,45 @@ data class DownloadsUiState(
     val allItems: List<DownloadProgress>
         get() = activeItems + queuedItems + completedItems
 
+    val allGroups: List<DownloadGroup>
+        get() {
+            val byKey = LinkedHashMap<Long, MutableList<DownloadProgress>>()
+            allItems.forEach { p ->
+                byKey.getOrPut(if (p.gameId > 0) p.gameId else -p.id) { mutableListOf() }.add(p)
+            }
+            return byKey.values.map { DownloadGroup(it.toList()) }
+        }
+
+    val activeGroups: List<DownloadGroup>
+        get() = allGroups.filter { g -> g.items.any { it.id in activeDownloadIds } }
+
+    val queuedGroups: List<DownloadGroup>
+        get() {
+            val queuedIds = queuedItems.map { it.id }.toSet()
+            return allGroups.filter { g ->
+                g.items.none { it.id in activeDownloadIds } && g.items.any { it.id in queuedIds }
+            }
+        }
+
+    val completedGroups: List<DownloadGroup>
+        get() {
+            val shown = (activeGroups + queuedGroups).toSet()
+            return allGroups.filter { it !in shown }
+        }
+
+    val orderedGroups: List<DownloadGroup>
+        get() = activeGroups + queuedGroups + completedGroups
+
+    val focusedGroup: DownloadGroup?
+        get() = orderedGroups.firstOrNull { g -> g.items.any { it.id == focusedDownloadId } }
+            ?: orderedGroups.firstOrNull()
+
     val focusedIndex: Int
-        get() = allItems.indexOfFirst { it.id == focusedDownloadId }.takeIf { it >= 0 } ?: 0
+        get() = orderedGroups.indexOfFirst { g -> g.items.any { it.id == focusedDownloadId } }
+            .takeIf { it >= 0 } ?: 0
 
     val focusedItem: DownloadProgress?
-        get() = allItems.find { it.id == focusedDownloadId } ?: allItems.firstOrNull()
+        get() = focusedGroup?.primary
 
     val isFocusedItemCompleted: Boolean
         get() = focusedItem?.let { it.id in completedItems.map { c -> c.id } } ?: false
@@ -270,14 +334,14 @@ class DownloadsViewModel @Inject constructor(
 
     private fun moveFocus(delta: Int): Boolean {
         val currentState = _uiState.value
-        val items = currentState.allItems
-        if (items.isEmpty()) return false
+        val groups = currentState.orderedGroups
+        if (groups.isEmpty()) return false
 
         val currentIndex = currentState.focusedIndex
-        val newIndex = (currentIndex + delta).coerceIn(0, items.size - 1)
+        val newIndex = (currentIndex + delta).coerceIn(0, groups.size - 1)
 
         if (newIndex != currentIndex) {
-            _uiState.value = currentState.copy(focusedDownloadId = items[newIndex].id)
+            _uiState.value = currentState.copy(focusedDownloadId = groups[newIndex].primary.id)
             return true
         }
         return false
@@ -286,22 +350,23 @@ class DownloadsViewModel @Inject constructor(
     private fun isSteamItem(item: DownloadProgress) = item.id < 0
 
     fun toggleFocusedItem() {
-        val item = _uiState.value.focusedItem ?: return
-        android.util.Log.d("DownloadsVM", "toggleFocusedItem: id=${item.id}, state=${item.state}, isSteam=${isSteamItem(item)}")
-        if (isSteamItem(item)) {
-            when (item.state) {
-                DownloadState.DOWNLOADING -> steamContentManager.pauseDownload()
-                DownloadState.PAUSED -> resumeSteamDownload(item)
-                else -> android.util.Log.d("DownloadsVM", "Steam item in unhandled state: ${item.state}")
+        val group = _uiState.value.focusedGroup ?: return
+        for (item in group.items) {
+            if (isSteamItem(item)) {
+                when (item.state) {
+                    DownloadState.DOWNLOADING -> steamContentManager.pauseDownload()
+                    DownloadState.PAUSED -> resumeSteamDownload(item)
+                    else -> {}
+                }
+                continue
             }
-            return
-        }
-        when (item.state) {
-            DownloadState.DOWNLOADING -> downloadManager.pauseDownload(item.rommId)
-            DownloadState.PAUSED, DownloadState.WAITING_FOR_STORAGE, DownloadState.FAILED ->
-                downloadManager.resumeDownload(item.gameId)
-            DownloadState.QUEUED -> downloadManager.pauseDownload(item.rommId)
-            else -> {}
+            when (item.state) {
+                DownloadState.DOWNLOADING -> downloadManager.pauseDownload(item.rommId)
+                DownloadState.PAUSED, DownloadState.WAITING_FOR_STORAGE, DownloadState.FAILED ->
+                    downloadManager.resumeDownload(item.gameId)
+                DownloadState.QUEUED -> downloadManager.pauseDownload(item.rommId)
+                else -> {}
+            }
         }
     }
 
@@ -317,12 +382,14 @@ class DownloadsViewModel @Inject constructor(
     }
 
     fun cancelFocusedItem() {
-        val item = _uiState.value.focusedItem ?: return
-        if (isSteamItem(item)) {
-            steamContentManager.cancelDownload()
-            return
+        val group = _uiState.value.focusedGroup ?: return
+        for (item in group.items) {
+            if (isSteamItem(item)) {
+                steamContentManager.cancelDownload()
+            } else {
+                downloadManager.cancelDownload(item.rommId)
+            }
         }
-        downloadManager.cancelDownload(item.rommId)
     }
 
     fun cancelDownload(rommId: Long) {

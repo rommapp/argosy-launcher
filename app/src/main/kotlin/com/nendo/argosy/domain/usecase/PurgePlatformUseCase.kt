@@ -7,6 +7,8 @@ import com.nendo.argosy.data.local.dao.SaveCacheDao
 import com.nendo.argosy.data.local.dao.SaveSyncDao
 import com.nendo.argosy.data.local.dao.StateCacheDao
 import com.nendo.argosy.data.repository.GameRepository
+import com.nendo.argosy.data.storage.StorageAttributionRepository
+import com.nendo.argosy.data.storage.StorageCategory
 import com.nendo.argosy.core.notification.NotificationManager
 import com.nendo.argosy.core.notification.NotificationProgress
 import com.nendo.argosy.core.notification.NotificationType
@@ -31,7 +33,8 @@ class PurgePlatformUseCase @Inject constructor(
     private val notificationManager: NotificationManager,
     private val saveCacheDao: SaveCacheDao,
     private val stateCacheDao: StateCacheDao,
-    private val saveSyncDao: SaveSyncDao
+    private val saveSyncDao: SaveSyncDao,
+    private val attributionRepository: StorageAttributionRepository
 ) {
     suspend operator fun invoke(
         platformId: Long,
@@ -106,6 +109,7 @@ class PurgePlatformUseCase @Inject constructor(
             type = NotificationType.SUCCESS
         )
 
+        attributionRepository.markDirty(StorageCategory.GAMES)
         PurgeResult(gamesCount, filesDeleted, bytesFreed)
     }
 }

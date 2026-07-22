@@ -49,7 +49,6 @@ import android.view.Display
 import com.nendo.argosy.hardware.SecondaryHomeActivity
 import com.nendo.argosy.util.DisplayAffinityHelper
 import com.nendo.argosy.util.DisplayRoleResolver
-import com.nendo.argosy.util.PermissionHelper
 import dagger.hilt.android.AndroidEntryPoint
 import com.nendo.argosy.util.SafeCoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -83,11 +82,13 @@ class MainActivity : ComponentActivity() {
     @Inject lateinit var preferencesRepository: UserPreferencesRepository
     @Inject lateinit var syncPreferencesRepository: com.nendo.argosy.data.preferences.SyncPreferencesRepository
     @Inject lateinit var ambientAudioManager: AmbientAudioManager
+    @Inject lateinit var bgmPlaylistCoordinator: com.nendo.argosy.ui.audio.BgmPlaylistCoordinator
     @Inject lateinit var ambientLedManager: AmbientLedManager
     @Inject lateinit var screenCaptureManager: ScreenCaptureManager
     @Inject lateinit var displayAffinityHelper: DisplayAffinityHelper
-    @Inject lateinit var permissionHelper: PermissionHelper
+    @Inject lateinit var permissionHelper: com.nendo.argosy.util.PermissionHelper
     @Inject lateinit var gameActionsDelegate: GameActionsDelegate
+    @Inject lateinit var gameThemeAudioCoordinator: com.nendo.argosy.ui.audio.GameThemeAudioCoordinator
     @Inject lateinit var gameLaunchDelegate: GameLaunchDelegate
     @Inject lateinit var saveCacheManager: SaveCacheManager
     @Inject lateinit var getUnifiedSavesUseCase: GetUnifiedSavesUseCase
@@ -107,6 +108,7 @@ class MainActivity : ComponentActivity() {
     @Inject lateinit var presenceManager: com.nendo.argosy.data.social.PresenceManager
     @Inject lateinit var discordPresenceManager: com.nendo.argosy.data.social.discord.DiscordPresenceManager
     @Inject lateinit var gradientExtractionDelegate: com.nendo.argosy.ui.screens.common.GradientExtractionDelegate
+    @Inject lateinit var filePickerFlowUseCase: com.nendo.argosy.domain.usecase.download.FilePickerFlowUseCase
 
     private val sessionStateStore by lazy {
         com.nendo.argosy.data.preferences.SessionStateStore(this)
@@ -161,9 +163,26 @@ class MainActivity : ComponentActivity() {
     fun setDualCoreFocus(index: Int) = dualScreenManager.setDualCoreFocus(index)
     fun moveDualCoreFocus(delta: Int) = dualScreenManager.moveDualCoreFocus(delta)
     fun confirmDualCoreSelection() = dualScreenManager.confirmDualCoreSelection()
+    fun setDualSavePathFocus(index: Int) = dualScreenManager.setDualSavePathFocus(index)
+    fun moveDualSavePathFocus(delta: Int) = dualScreenManager.moveDualSavePathFocus(delta)
+    fun confirmDualSavePathSelection() = dualScreenManager.confirmDualSavePathSelection()
+    fun setDualDisplayTargetFocus(index: Int) = dualScreenManager.setDualDisplayTargetFocus(index)
+    fun moveDualDisplayTargetFocus(delta: Int) = dualScreenManager.moveDualDisplayTargetFocus(delta)
+    fun confirmDualDisplayTargetSelection() = dualScreenManager.confirmDualDisplayTargetSelection()
     fun setDualVariantFocus(index: Int) = dualScreenManager.setDualVariantFocus(index)
     fun moveDualVariantFocus(delta: Int) = dualScreenManager.moveDualVariantFocus(delta)
     fun confirmDualVariantSelection() = dualScreenManager.confirmDualVariantSelection()
+    fun moveDualFilePickerFocus(delta: Int) = dualScreenManager.moveDualFilePickerFocus(delta)
+    fun jumpDualFilePickerGroup(direction: Int) = dualScreenManager.jumpDualFilePickerGroup(direction)
+    fun toggleDualFilePickerRow(row: com.nendo.argosy.data.model.FilePickerRow? = null) =
+        dualScreenManager.toggleDualFilePickerRow(row)
+    fun setDualFilePickerGroupCollapsed(collapse: Boolean) =
+        dualScreenManager.setDualFocusedFilePickerGroupCollapsed(collapse)
+    fun toggleDualFilePickerGroupCollapse(groupKey: String) =
+        dualScreenManager.toggleDualFilePickerGroupCollapse(groupKey)
+    fun moveDualFilePickerButtonFocus(delta: Int) = dualScreenManager.moveDualFilePickerButtonFocus(delta)
+    fun activateDualFilePickerFocused() = dualScreenManager.activateDualFilePickerFocused()
+    fun confirmDualFilePicker() = dualScreenManager.confirmDualFilePicker()
     fun moveDualCollectionFocus(delta: Int) = dualScreenManager.moveDualCollectionFocus(delta)
     fun toggleDualCollectionAtFocus() = dualScreenManager.toggleDualCollectionAtFocus()
     fun showDualCollectionCreateDialog() = dualScreenManager.showDualCollectionCreateDialog()
@@ -274,6 +293,8 @@ class MainActivity : ComponentActivity() {
                 repairImageCacheUseCase = repairImageCacheUseCase,
                 downloadFileStatusRepository = downloadFileStatusRepository,
                 gradientExtractionDelegate = gradientExtractionDelegate,
+                filePickerFlow = filePickerFlowUseCase,
+                gameThemeAudioCoordinator = gameThemeAudioCoordinator,
                 initialRolesSwapped = initialSwapped
             )
             DualScreenManagerHolder.instance = dualScreenManager
@@ -301,6 +322,7 @@ class MainActivity : ComponentActivity() {
         preferencesObserver = MainActivityPreferencesObserver(
             preferencesRepository = preferencesRepository,
             ambientAudioManager = ambientAudioManager,
+            bgmPlaylistCoordinator = bgmPlaylistCoordinator,
             sessionStateStore = sessionStateStore,
             dualScreenManager = dualScreenManager,
             displayAffinityHelper = displayAffinityHelper,
@@ -398,7 +420,7 @@ class MainActivity : ComponentActivity() {
             ) return true
         }
 
-        if (dualScreenManager.swappedIsGameActive.value && !isOverlayFocused) {
+        if (dualScreenManager.swappedIsGameActive.value && !isOverlayFocused && isGameOnOtherDisplay()) {
             val emulatorDispatcher = dualScreenManager.emulatorKeyDispatcher
             if (emulatorDispatcher != null) {
                 Log.d(TAG, "dispatchKeyEvent: FORWARDING key=${event.keyCode} to emulator")
@@ -469,7 +491,7 @@ class MainActivity : ComponentActivity() {
         triggerAxisKeyEmitter.emit(event).forEach { dispatchKeyEvent(it) }
 
         if (!dualScreenManager.claimInput(event)) return true
-        if (dualScreenManager.swappedIsGameActive.value && !isOverlayFocused) {
+        if (dualScreenManager.swappedIsGameActive.value && !isOverlayFocused && isGameOnOtherDisplay()) {
             val emulatorDispatcher = dualScreenManager.emulatorMotionDispatcher
             if (emulatorDispatcher != null) {
                 return emulatorDispatcher(event)
@@ -568,6 +590,13 @@ class MainActivity : ComponentActivity() {
 
     // --- Private Helpers ---
 
+    /** True only when a session's emulator runs on a different display than this activity; a same-display session cannot have focus while we do, so input must never be deferred to it. */
+    private fun isGameOnOtherDisplay(): Boolean {
+        val emulatorDisplay = dualScreenManager.emulatorDisplayId ?: return false
+        val ownDisplay = window.decorView.display?.displayId ?: return false
+        return emulatorDisplay != ownDisplay
+    }
+
     /** Relinks companion input forwarding when input arrives on home but the link is stale (companion marked inactive or overlay focus latched) after a game, sleep/wake, or a foreground app yielding the secondary display. */
     private fun reassertCompanionForwarding() {
         if (!::dualScreenManager.isInitialized) return
@@ -583,13 +612,6 @@ class MainActivity : ComponentActivity() {
     }
 
     /**
-     * Best-effort housekeeping when we come back to the launcher: if a persisted
-     * session exists but the emulator is no longer in the foreground, clear it so
-     * stale state doesn't linger. Does not resume or yield to the emulator -- that
-     * path was too eager and occasionally pulled the user into a phantom session
-     * on cold start.
-     */
-    /**
      * Re-checks localPath for every downloaded game whenever the user returns to
      * the launcher. Catches manual deletions performed outside the app (e.g. via
      * a file manager) so stale "installed" badges clear without requiring a cold
@@ -602,17 +624,33 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    /**
+     * On dual-screen devices the launcher UI returning to the foreground means the
+     * session on this display is over: end it and restore the companion immediately.
+     * Only a session on a different display (swapped roles / per-game display target)
+     * survives, since the game and the launcher UI legitimately coexist there.
+     * Single-screen devices keep the resume-friendly grace: a session whose emulator
+     * was foregrounded within the last 15s stays alive so relaunching resumes it.
+     */
     private fun cleanupStaleSession() {
         activityScope.launch {
             if (!::dualScreenManager.isInitialized) return@launch
             if (dualScreenManager.isLaunchingGame) return@launch
-            if (dualScreenManager.emulatorDisplayId != null) {
-                val emulatorPkg = sessionStateStore.getEmulatorPackage() ?: return@launch
-                if (permissionHelper.isPackageInForeground(this@MainActivity, emulatorPkg, 15_000)) return@launch
+            val emulatorDisplay = dualScreenManager.emulatorDisplayId
+            val ownDisplay = window.decorView.display?.displayId
+            if (emulatorDisplay != null && ownDisplay != null && emulatorDisplay != ownDisplay) return@launch
+            if (!displayAffinityHelper.hasSecondaryDisplay && emulatorDisplay != null) {
+                val emulatorPkg = sessionStateStore.getEmulatorPackage()
+                if (emulatorPkg != null &&
+                    permissionHelper.isPackageInForeground(this@MainActivity, emulatorPkg, 15_000)
+                ) return@launch
             }
-            if (preferencesRepository.getPersistedSession() == null) return@launch
+            if (playSessionTracker.activeSession.value == null &&
+                preferencesRepository.getPersistedSession() == null
+            ) return@launch
 
             dualScreenManager.emulatorDisplayId = null
+            sessionStateStore.clearSession()
             playSessionTracker.endSessionInBackground()
             dualScreenManager.broadcastSessionCleared()
             if (displayAffinityHelper.hasSecondaryDisplay) {

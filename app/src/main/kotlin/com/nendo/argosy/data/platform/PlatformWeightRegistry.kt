@@ -56,6 +56,12 @@ object PlatformWeightRegistry {
     fun supportsCheats(platformSlug: String): Boolean =
         PlatformDefinitions.getCanonicalSlug(platformSlug) !in platformsWithoutCheats
 
+    private val rewindSettings = setOf(
+        LibretroSettingDef.RewindEnabled,
+        LibretroSettingDef.RewindSpeed,
+        LibretroSettingDef.RewindBufferDuration
+    )
+
     fun isSettingVisible(
         setting: LibretroSettingDef,
         platformSlug: String?,
@@ -65,7 +71,7 @@ object PlatformWeightRegistry {
             return false
         }
 
-        if (setting == LibretroSettingDef.RewindEnabled &&
+        if (setting in rewindSettings &&
             platformSlug != null &&
             getWeight(platformSlug) == Weight.HEAVY
         ) {

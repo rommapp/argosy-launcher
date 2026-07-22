@@ -15,12 +15,13 @@ class HotkeyDispatcherTest {
         netplayInSession: Boolean,
         netplayRole: NetplayMenuRole?,
         hardcore: Boolean = false,
+        quickLoadSucceeds: Boolean = true,
         toastSink: MutableList<String> = mutableListOf(),
         saveStateManager: SaveStateManager = mockk(relaxed = true),
         retroView: GLRetroView = mockk(relaxed = true)
     ): HotkeyDispatcher {
         every { saveStateManager.performQuickSave(any(), any()) } returns true
-        every { saveStateManager.performQuickLoad(any()) } returns true
+        every { saveStateManager.performQuickLoad(any()) } returns quickLoadSucceeds
         every { retroView.serializeState() } returns ByteArray(8)
         every { retroView.captureRawFrame() } returns null
         return HotkeyDispatcher(
@@ -106,6 +107,21 @@ class HotkeyDispatcherTest {
         dispatcher.dispatch(config(HotkeyAction.QUICK_LOAD))
         verify(exactly = 0) { saveStateManager.performQuickLoad(any()) }
         assertEquals(listOf("Save states disabled during netplay"), toasts)
+    }
+
+    @Test
+    fun quickLoad_core_rejection_reports_failure() {
+        val toasts = mutableListOf<String>()
+        val dispatcher = build(
+            netplayInSession = false,
+            netplayRole = null,
+            quickLoadSucceeds = false,
+            toastSink = toasts
+        )
+
+        dispatcher.dispatch(config(HotkeyAction.QUICK_LOAD))
+
+        assertEquals(listOf("Failed to load state"), toasts)
     }
 
     @Test

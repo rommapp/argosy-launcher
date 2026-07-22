@@ -192,11 +192,8 @@ internal fun routeSetBuiltinHwCoreSaveStates(vm: SettingsViewModel, enabled: Boo
     }
 }
 
-internal fun routeSetBuiltinDefaultToHardcore(vm: SettingsViewModel, enabled: Boolean) {
-    vm._uiState.update { it.copy(builtinVideo = it.builtinVideo.copy(defaultToHardcore = enabled)) }
-    vm.viewModelScope.launch {
-        vm.libretroSettingsRepo.setBuiltinDefaultToHardcore(enabled)
-    }
+internal fun routeSetBuiltinDefaultToHardcore(vm: SettingsViewModel, mode: String) {
+    vm.raDelegate.setDefaultToHardcore(vm.viewModelScope, mode)
 }
 
 internal fun routeSetBuiltinSavePath(vm: SettingsViewModel, newPath: String) {
@@ -720,8 +717,7 @@ internal fun routeUpdatePlatformLibretroSetting(vm: SettingsViewModel, setting: 
             LibretroSettingDef.RewindBufferDuration -> current.copy(rewindBufferDuration = value?.removeSuffix("s")?.toIntOrNull())
             LibretroSettingDef.AutoSaveState,
             LibretroSettingDef.AutoRestoreState,
-            LibretroSettingDef.HwCoreSaveStates,
-            LibretroSettingDef.DefaultToHardcore -> current
+            LibretroSettingDef.HwCoreSaveStates -> current
         }
 
         if (updated.hasAnyOverrides()) {

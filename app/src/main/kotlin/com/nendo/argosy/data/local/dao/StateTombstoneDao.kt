@@ -25,4 +25,7 @@ interface StateTombstoneDao {
 
     @Query("DELETE FROM state_tombstones WHERE gameId IN (SELECT id FROM games WHERE source IN (:sourceNames))")
     suspend fun deleteByGameSources(sourceNames: List<String>)
+
+    @Query("DELETE FROM state_tombstones")
+    suspend fun deleteAll()
 }

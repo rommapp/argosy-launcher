@@ -33,6 +33,7 @@ import androidx.compose.material.icons.filled.InstallMobile
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.Warning
@@ -67,7 +68,8 @@ data class MenuLayoutState(
     val hasAchievements: Boolean = false,
     val hasSocialAccount: Boolean = false,
     val hasSaveSync: Boolean = false,
-    val hasRelated: Boolean = false
+    val hasRelated: Boolean = false,
+    val hasPerGameSettings: Boolean = false
 )
 
 sealed class MenuItem(
@@ -78,6 +80,7 @@ sealed class MenuItem(
     data object Saves : MenuItem("saves", visibleWhen = { it.hasSaveSync })
     data object Favorite : MenuItem("favorite")
     data object Privacy : MenuItem("privacy", visibleWhen = { it.hasSocialAccount })
+    data object PerGameSettings : MenuItem("per_game_settings", visibleWhen = { it.hasPerGameSettings })
     data object Options : MenuItem("options")
     data object Details : MenuItem("details")
     data object Description : MenuItem("description", visibleWhen = { it.hasDescription })
@@ -86,7 +89,7 @@ sealed class MenuItem(
     data object RelatedGames : MenuItem("related", visibleWhen = { it.hasRelated })
 
     companion object {
-        val ALL = listOf(Play, Saves, Favorite, Privacy, Options, Details, Description, Screenshots, Achievements, RelatedGames)
+        val ALL = listOf(Play, Saves, Favorite, Privacy, PerGameSettings, Options, Details, Description, Screenshots, Achievements, RelatedGames)
     }
 }
 
@@ -180,6 +183,16 @@ fun GameDetailMenu(
                 MenuItem.Privacy -> {
                     PrivacyMenuItem(
                         isPrivate = displayState.isPrivate,
+                        isFocused = isFocused,
+                        isCompact = isCompact,
+                        onClick = { onFocusChange(focusIndex); onItemClick(item) }
+                    )
+                }
+
+                MenuItem.PerGameSettings -> {
+                    IconTextMenuItem(
+                        label = "Per-Game Settings",
+                        icon = Icons.Default.Settings,
                         isFocused = isFocused,
                         isCompact = isCompact,
                         onClick = { onFocusChange(focusIndex); onItemClick(item) }

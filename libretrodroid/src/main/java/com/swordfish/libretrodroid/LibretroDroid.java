@@ -133,6 +133,7 @@ public class LibretroDroid {
 
     public static native byte[] serializeState();
     public static native boolean unserializeState(byte[] state);
+    public static native boolean unserializePersistedState(byte[] state);
     public static native long getSerializeSize();
 
     public static native byte[] captureRawFrame();
@@ -171,7 +172,7 @@ public class LibretroDroid {
     public static native Controller[][] getControllers();
     public static native void setControllerType(int port, int type);
 
-    public static native void initRewindBuffer(int slotCount, int maxStateSize);
+    public static native void initRewindBuffer(int maxSlots, long budgetBytes);
     public static native void clearRewindBuffer();
     public static native void destroyRewindBuffer();
     public static native float getRewindBufferUsage();
@@ -190,6 +191,12 @@ public class LibretroDroid {
      * @return Number of tests that passed
      */
     public static native int runAchievementTests();
+
+    /**
+     * Run native save-state load policy tests.
+     * @return Number of tests that passed
+     */
+    public static native int runStateLoadPolicyTests();
 
     /**
      * Compute the RetroAchievements hash for a ROM file.

@@ -6,8 +6,10 @@ import android.os.Environment
 import android.util.Log
 import com.nendo.argosy.core.notification.NotificationManager
 import com.nendo.argosy.core.notification.showError
+import com.nendo.argosy.core.notification.showSuccess
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.repository.DatabaseAdminRepository
+import com.nendo.argosy.data.repository.HardResetBlocker
 import com.nendo.argosy.data.repository.PlatformRepository
 import com.nendo.argosy.data.repository.GameRepository
 import com.nendo.argosy.data.storage.ManagedStorageAccessor
@@ -18,6 +20,7 @@ import com.nendo.argosy.domain.usecase.sync.SyncPlatformUseCase
 import com.nendo.argosy.libretro.LibretroCoreRegistry
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.File
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import com.nendo.argosy.ui.screens.settings.PlatformMigrationInfo
@@ -48,6 +51,7 @@ class StorageSettingsDelegate @Inject constructor(
     private val syncPlatformUseCase: SyncPlatformUseCase,
     private val platformSyncQueue: com.nendo.argosy.data.sync.PlatformSyncQueue,
     private val databaseAdminRepository: DatabaseAdminRepository,
+    private val saveCacheRepository: com.nendo.argosy.data.repository.SaveCacheRepository,
     private val managedStorageAccessor: ManagedStorageAccessor,
     private val notificationManager: NotificationManager
 ) {
@@ -80,6 +84,9 @@ class StorageSettingsDelegate @Inject constructor(
 
     private val _requestStoragePermissionEvent = MutableSharedFlow<Unit>()
     val requestStoragePermissionEvent: SharedFlow<Unit> = _requestStoragePermissionEvent.asSharedFlow()
+
+    private val _hardResetCompletedEvent = MutableSharedFlow<Unit>()
+    val hardResetCompletedEvent: SharedFlow<Unit> = _hardResetCompletedEvent.asSharedFlow()
 
     fun updateState(newState: StorageState) {
         _state.value = newState
@@ -624,6 +631,13 @@ class StorageSettingsDelegate @Inject constructor(
         }
     }
 
+    fun toggleWeeklyIntegrityCheck(scope: CoroutineScope, enabled: Boolean) {
+        scope.launch {
+            preferencesRepository.setWeeklyIntegrityCheckEnabled(enabled)
+            _state.update { it.copy(weeklyIntegrityCheckEnabled = enabled) }
+        }
+    }
+
     fun toggleScreenDimmer(scope: CoroutineScope) {
         scope.launch {
             val current = _state.value.screenDimmerEnabled
@@ -673,8 +687,13 @@ class StorageSettingsDelegate @Inject constructor(
         }
     }
 
-    fun requestPurgeAll() {
-        _state.update { it.copy(showPurgeAllConfirm = true) }
+    fun requestPurgeAll(scope: CoroutineScope) {
+        scope.launch {
+            val pendingUploads = saveCacheRepository.getPendingSyncCounts().pendingUploads
+            _state.update {
+                it.copy(showPurgeAllConfirm = true, purgeAllPendingUploads = pendingUploads)
+            }
+        }
     }
 
     fun cancelPurgeAll() {
@@ -688,6 +707,59 @@ class StorageSettingsDelegate @Inject constructor(
             _state.update { it.copy(isPurgingAll = false, platformConfigs = emptyList()) }
             refreshCollectionStats(scope)
         }
+    }
+
+    fun requestHardReset(scope: CoroutineScope) {
+        if (_state.value.isHardResetting || _state.value.isPurgingAll) return
+        scope.launch {
+            val pendingUploads = saveCacheRepository.getPendingSyncCounts().pendingUploads
+            _state.update {
+                it.copy(showHardResetModal = true, hardResetPendingUploads = pendingUploads)
+            }
+        }
+    }
+
+    fun cancelHardReset() {
+        if (_state.value.isHardResetting) return
+        _state.update { it.copy(showHardResetModal = false) }
+    }
+
+    fun confirmHardReset(scope: CoroutineScope) {
+        if (_state.value.isHardResetting) return
+        _state.update { it.copy(isHardResetting = true) }
+        scope.launch {
+            try {
+                val blocker = databaseAdminRepository.hardReset()
+                if (blocker != null) {
+                    _state.update { it.copy(isHardResetting = false, showHardResetModal = false) }
+                    notificationManager.showError(hardResetBlockerMessage(blocker))
+                    return@launch
+                }
+                _state.update {
+                    it.copy(
+                        isHardResetting = false,
+                        showHardResetModal = false,
+                        platformConfigs = emptyList()
+                    )
+                }
+                refreshCollectionStats(scope)
+                notificationManager.showSuccess("Hard reset complete - sync to rebuild your library")
+                _hardResetCompletedEvent.emit(Unit)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                _state.update { it.copy(isHardResetting = false, showHardResetModal = false) }
+                notificationManager.showError("Hard reset failed - ${e.message ?: "try again"}")
+            }
+        }
+    }
+
+    private fun hardResetBlockerMessage(blocker: HardResetBlocker): String = when (blocker) {
+        HardResetBlocker.ACTIVE_SESSION -> "Close the running game before resetting"
+        HardResetBlocker.PENDING_UPLOADS -> "Sync pending save uploads before resetting"
+        HardResetBlocker.ACTIVE_DOWNLOADS -> "Cancel game downloads before resetting"
+        HardResetBlocker.EMULATOR_DOWNLOAD -> "Wait for the emulator download to finish first"
+        HardResetBlocker.STEAM_DOWNLOAD -> "Cancel Steam downloads before resetting"
     }
 
     fun testManagedStorageAccess(scope: CoroutineScope) {

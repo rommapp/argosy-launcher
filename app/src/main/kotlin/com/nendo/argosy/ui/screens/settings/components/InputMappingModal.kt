@@ -540,6 +540,7 @@ private fun PlatformMappingContent(
     Modal(
         title = controller.name,
         fillHeight = true,
+        inlineFooterHints = true,
         titleContent = {
             Text(
                 text = controller.name,

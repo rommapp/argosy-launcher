@@ -39,6 +39,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import com.nendo.argosy.data.preferences.SessionStateStore
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import kotlinx.coroutines.flow.first
 import java.time.Instant
@@ -49,6 +50,11 @@ private const val RECENT_PLAYED_THRESHOLD_HOURS = 4L
 private const val RECENT_GAMES_LIMIT = 20
 private const val PLATFORM_GAMES_LIMIT = 20
 private const val LIBRARY_GRID_COLUMNS = 6
+
+private const val SECTION_KIND_RECENT = "RECENT"
+private const val SECTION_KIND_FAVORITES = "FAVORITES"
+private const val SECTION_KIND_PLATFORM = "PLATFORM"
+private const val RESTORE_MAX_DEFERRALS = 8
 
 sealed class DualHomeSection(val title: String) {
     data object Recent : DualHomeSection("Continue Playing")
@@ -185,6 +191,25 @@ class DualHomeViewModel(
     private val pendingCoverRepairs = mutableSetOf<Long>()
     private var letterOverlayJob: kotlinx.coroutines.Job? = null
 
+    private data class PendingRestore(
+        val sectionKind: String,
+        val platformId: Long,
+        val gameId: Long,
+        val filters: DualActiveFilters?,
+        val legacySectionIndex: Int,
+        val legacySelectedIndex: Int,
+        val hasIdentity: Boolean
+    )
+
+    private var pendingRestore: PendingRestore? = null
+    private var restoreDeferrals = 0
+
+    /** Invoked once the lower carousel has settled on its restored section + game. */
+    var onRestoreComplete: (() -> Unit)? = null
+
+    /** Invoked after a touch/scroll selection so the position can be persisted. */
+    var onSelectionPersist: (() -> Unit)? = null
+
     fun startDrawerForwarding() { _forwardingMode.value = ForwardingMode.OVERLAY }
     fun startBackgroundForwarding() { _forwardingMode.value = ForwardingMode.BACKGROUND }
     fun stopDrawerForwarding() { _forwardingMode.value = ForwardingMode.NONE }
@@ -222,7 +247,8 @@ class DualHomeViewModel(
                     isLoading = false
                 )
             }
-            loadGamesForCurrentSection()
+            loadGamesForCurrentSectionSuspend()
+            applyPendingRestore()
         }
     }
 
@@ -249,6 +275,7 @@ class DualHomeViewModel(
                         currentSectionIndex = remapSectionIndex(state.currentSection, updatedSections)
                     )
                 }
+                applyPendingRestore()
             }
         }
     }
@@ -494,35 +521,142 @@ class DualHomeViewModel(
         )
     }
 
+    fun restoreNavContext(ctx: SessionStateStore.CarouselNavContext) {
+        pendingRestore = PendingRestore(
+            sectionKind = ctx.sectionKind,
+            platformId = ctx.platformId,
+            gameId = ctx.gameId,
+            filters = if (ctx.hasContext) ctx.toActiveFilters() else null,
+            legacySectionIndex = ctx.legacySectionIndex,
+            legacySelectedIndex = ctx.legacySelectedIndex,
+            hasIdentity = ctx.hasContext && ctx.sectionKind.isNotEmpty()
+        )
+        restoreDeferrals = 0
+        viewModelScope.launch { applyPendingRestore() }
+    }
+
     fun restorePosition(sectionIndex: Int, selectedIndex: Int) {
-        viewModelScope.launch {
-            val sections = _uiState.value.sections
-            if (sections.isEmpty()) return@launch
-            val coercedSection = sectionIndex.coerceIn(
-                0, sections.size - 1
+        pendingRestore = PendingRestore(
+            sectionKind = "",
+            platformId = -1L,
+            gameId = -1L,
+            filters = null,
+            legacySectionIndex = sectionIndex,
+            legacySelectedIndex = selectedIndex,
+            hasIdentity = false
+        )
+        restoreDeferrals = 0
+        viewModelScope.launch { applyPendingRestore() }
+    }
+
+    private fun SessionStateStore.CarouselNavContext.toActiveFilters(): DualActiveFilters =
+        DualActiveFilters(
+            source = filterSource,
+            genres = genres,
+            players = players,
+            franchises = franchises,
+            searchQuery = filterSearch,
+            platformId = filterPlatformId.takeIf { it > 0 },
+            sort = ActiveSort(
+                option = SortOption.entries.firstOrNull { it.name == sortOption } ?: ActiveSort().option,
+                descending = sortDescending
             )
-            _uiState.update {
-                it.copy(
-                    currentSectionIndex = coercedSection,
-                    selectedIndex = 0
-                )
-            }
-            loadGamesForCurrentSectionSuspend()
-            val games = _uiState.value.games
-            if (games.isNotEmpty()) {
-                val maxIndex = if (_uiState.value.hasMoreGames) {
-                    games.size
-                } else {
-                    games.size - 1
-                }
-                _uiState.update {
-                    it.copy(
-                        selectedIndex = selectedIndex
-                            .coerceIn(0, maxIndex)
-                    )
-                }
-            }
+        )
+
+    private fun resolveRestoreSection(
+        pending: PendingRestore,
+        sections: List<DualHomeSection>
+    ): Int = when (pending.sectionKind) {
+        SECTION_KIND_RECENT -> sections.indexOfFirst { it is DualHomeSection.Recent }
+        SECTION_KIND_FAVORITES -> sections.indexOfFirst { it is DualHomeSection.Favorites }
+        SECTION_KIND_PLATFORM -> sections.indexOfFirst {
+            it is DualHomeSection.Platform && it.id == pending.platformId
         }
+        else -> -1
+    }
+
+    private suspend fun applyPendingRestore() {
+        val pending = pendingRestore ?: return
+        val sections = _uiState.value.sections
+        if (sections.isEmpty()) return
+
+        val resolved = resolveRestoreSection(pending, sections)
+        if (resolved < 0 && pending.hasIdentity && restoreDeferrals < RESTORE_MAX_DEFERRALS) {
+            restoreDeferrals++
+            return
+        }
+        pendingRestore = null
+        restoreDeferrals = 0
+
+        pending.filters?.let { restored ->
+            _uiState.update { it.copy(activeFilters = restored) }
+        }
+
+        when {
+            resolved >= 0 -> applyRestoreToSection(resolved, pending)
+            restoreByGameIdentity(pending, sections) -> Unit
+            else -> applyRestoreToSection(
+                pending.legacySectionIndex.coerceIn(0, sections.size - 1), pending
+            )
+        }
+
+        onRestoreComplete?.invoke()
+    }
+
+    private suspend fun applyRestoreToSection(sectionIndex: Int, pending: PendingRestore) {
+        _uiState.update {
+            it.copy(currentSectionIndex = sectionIndex, selectedIndex = 0)
+        }
+        loadGamesForCurrentSectionSuspend()
+
+        val games = _uiState.value.games
+        if (games.isEmpty()) return
+        val maxIndex = if (_uiState.value.hasMoreGames) games.size else games.size - 1
+        val byId = if (pending.gameId > 0) games.indexOfFirst { it.id == pending.gameId } else -1
+        val target = if (byId >= 0) byId else pending.legacySelectedIndex
+        _uiState.update { it.copy(selectedIndex = target.coerceIn(0, maxIndex)) }
+    }
+
+    private suspend fun restoreByGameIdentity(
+        pending: PendingRestore,
+        sections: List<DualHomeSection>
+    ): Boolean {
+        if (pending.gameId <= 0) return false
+        val game = gameRepository.getById(pending.gameId) ?: return false
+        val platformIndex = sections.indexOfFirst {
+            it is DualHomeSection.Platform && it.id == game.platformId
+        }
+        if (platformIndex < 0) return false
+        applyRestoreToSection(platformIndex, pending)
+        return true
+    }
+
+    fun currentNavContext(): SessionStateStore.CarouselNavContext {
+        val state = _uiState.value
+        val section = state.currentSection
+        val kind = when (section) {
+            is DualHomeSection.Recent -> SECTION_KIND_RECENT
+            is DualHomeSection.Favorites -> SECTION_KIND_FAVORITES
+            is DualHomeSection.Platform -> SECTION_KIND_PLATFORM
+            null -> ""
+        }
+        val filters = state.activeFilters
+        return SessionStateStore.CarouselNavContext(
+            hasContext = section != null,
+            sectionKind = kind,
+            platformId = (section as? DualHomeSection.Platform)?.id ?: -1L,
+            gameId = state.selectedGame?.id ?: -1L,
+            legacySectionIndex = state.currentSectionIndex,
+            legacySelectedIndex = state.selectedIndex,
+            filterSource = filters.source,
+            filterPlatformId = filters.platformId ?: -1L,
+            filterSearch = filters.searchQuery,
+            sortOption = filters.sort.option.name,
+            sortDescending = filters.sort.descending,
+            genres = filters.genres,
+            players = filters.players,
+            franchises = filters.franchises
+        )
     }
 
     fun refresh() {
@@ -548,16 +682,19 @@ class DualHomeViewModel(
             }.takeIf { it >= 0 }
         } ?: 0
 
-    fun nextSection() {
+    fun nextSection(onLoaded: (() -> Unit)? = null) {
         val state = _uiState.value
         if (state.sections.isEmpty()) return
 
         val newIndex = (state.currentSectionIndex + 1) % state.sections.size
         _uiState.update { it.copy(currentSectionIndex = newIndex, selectedIndex = 0) }
-        loadGamesForCurrentSection()
+        viewModelScope.launch {
+            loadGamesForCurrentSectionSuspend()
+            onLoaded?.invoke()
+        }
     }
 
-    fun previousSection() {
+    fun previousSection(onLoaded: (() -> Unit)? = null) {
         val state = _uiState.value
         if (state.sections.isEmpty()) return
 
@@ -567,7 +704,10 @@ class DualHomeViewModel(
             state.currentSectionIndex - 1
         }
         _uiState.update { it.copy(currentSectionIndex = newIndex, selectedIndex = 0) }
-        loadGamesForCurrentSection()
+        viewModelScope.launch {
+            loadGamesForCurrentSectionSuspend()
+            onLoaded?.invoke()
+        }
     }
 
     fun selectNext() {
@@ -587,6 +727,11 @@ class DualHomeViewModel(
 
     fun setSelectedIndex(index: Int) {
         _uiState.update { it.copy(selectedIndex = index.coerceIn(0, maxOf(0, it.games.size - 1))) }
+    }
+
+    fun selectByTouch(index: Int) {
+        setSelectedIndex(index)
+        onSelectionPersist?.invoke()
     }
 
     fun focusAppBar(appCount: Int) {

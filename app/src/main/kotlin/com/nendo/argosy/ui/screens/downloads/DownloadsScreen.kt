@@ -139,9 +139,6 @@ fun DownloadsScreen(
         return
     }
 
-    val activeItems = uiState.activeItems
-    val queuedItems = uiState.queuedItems
-
     Box(modifier = Modifier.fillMaxSize()) {
         LazyColumn(
             state = listState,
@@ -149,9 +146,13 @@ fun DownloadsScreen(
             contentPadding = PaddingValues(start = Dimens.spacingLg, end = Dimens.spacingLg, top = Dimens.spacingLg, bottom = 80.dp),
             verticalArrangement = Arrangement.spacedBy(Dimens.radiusLg)
         ) {
-            if (activeItems.isNotEmpty()) {
-                val hasExtracting = activeItems.any { it.state == DownloadState.EXTRACTING }
-                val totalSpeed = activeItems.sumOf { it.bytesPerSecond }
+            val activeGroups = uiState.activeGroups
+            val queuedGroups = uiState.queuedGroups
+            val completedGroups = uiState.completedGroups
+
+            if (activeGroups.isNotEmpty()) {
+                val hasExtracting = activeGroups.any { it.aggregate.state == DownloadState.EXTRACTING }
+                val totalSpeed = activeGroups.sumOf { it.aggregate.bytesPerSecond }
                 val headerText = when {
                     hasExtracting -> "Extracting"
                     totalSpeed > 0 -> "Downloading"
@@ -159,34 +160,40 @@ fun DownloadsScreen(
                 }
                 val speedText = if (totalSpeed > 0) formatSpeed(totalSpeed) else null
                 item { SectionHeader(headerText, speedText) }
-                itemsIndexed(activeItems, key = { _, d -> d.id }) { index, download ->
-                    DownloadItem(
-                        download = download,
-                        isInActiveList = true,
-                        isFocused = index == uiState.focusedIndex,
-                        availableStorage = state.availableStorageBytes
-                    )
+                itemsIndexed(activeGroups, key = { _, g -> g.primary.id }) { index, group ->
+                    Column {
+                        DownloadItem(
+                            download = group.aggregate,
+                            isInActiveList = true,
+                            isFocused = index == uiState.focusedIndex,
+                            availableStorage = state.availableStorageBytes
+                        )
+                        if (group.isGroup) GroupFileRows(group)
+                    }
                 }
             }
 
-            if (queuedItems.isNotEmpty()) {
+            if (queuedGroups.isNotEmpty()) {
                 item { SectionHeader("Queued") }
-                itemsIndexed(queuedItems, key = { _, d -> d.id }) { index, download ->
-                    DownloadItem(
-                        download = download,
-                        isInActiveList = false,
-                        isFocused = (activeItems.size + index) == uiState.focusedIndex,
-                        availableStorage = state.availableStorageBytes
-                    )
+                itemsIndexed(queuedGroups, key = { _, g -> g.primary.id }) { index, group ->
+                    Column {
+                        DownloadItem(
+                            download = group.aggregate,
+                            isInActiveList = false,
+                            isFocused = (activeGroups.size + index) == uiState.focusedIndex,
+                            availableStorage = state.availableStorageBytes
+                        )
+                        if (group.isGroup) GroupFileRows(group)
+                    }
                 }
             }
 
-            if (uiState.completedItems.isNotEmpty()) {
+            if (completedGroups.isNotEmpty()) {
                 item { SectionHeader("Finished") }
-                val completedStartIndex = activeItems.size + queuedItems.size
-                itemsIndexed(uiState.completedItems, key = { _, d -> d.id }) { index, download ->
+                val completedStartIndex = activeGroups.size + queuedGroups.size
+                itemsIndexed(completedGroups, key = { _, g -> g.primary.id }) { index, group ->
                     CompletedDownloadItem(
-                        download = download,
+                        download = group.aggregate,
                         isFocused = (completedStartIndex + index) == uiState.focusedIndex
                     )
                 }
@@ -230,6 +237,39 @@ fun DownloadsScreen(
                 viewModel.dismissFailedActionDialog()
             }
         )
+    }
+}
+
+@Composable
+private fun GroupFileRows(group: DownloadGroup) {
+    Column(modifier = Modifier.padding(start = Dimens.spacingXl, top = Dimens.spacingXs)) {
+        group.items.forEach { file ->
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth().padding(vertical = 1.dp)
+            ) {
+                Text(
+                    text = file.fileName.ifEmpty { file.gameTitle },
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f)
+                )
+                Text(
+                    text = when (file.state) {
+                        DownloadState.COMPLETED -> "Done"
+                        DownloadState.EXTRACTING -> "Extracting"
+                        DownloadState.DOWNLOADING ->
+                            "${(file.progressPercent * 100).toInt()}%"
+                        DownloadState.FAILED -> "Failed"
+                        else -> "Queued"
+                    },
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
     }
 }
 

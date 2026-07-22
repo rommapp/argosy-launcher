@@ -49,6 +49,7 @@ class BuiltinEmulatorPreferencesRepository @Inject constructor(
         val BUILTIN_AUTO_RESTORE_STATE_MODE = stringPreferencesKey("builtin_auto_restore_state_mode")
         val BUILTIN_HW_CORE_SAVE_STATES = booleanPreferencesKey("builtin_hw_core_save_states")
         val BUILTIN_DEFAULT_TO_HARDCORE = booleanPreferencesKey("builtin_default_to_hardcore")
+        val BUILTIN_DEFAULT_TO_HARDCORE_MODE = stringPreferencesKey("builtin_default_to_hardcore_mode")
         val BUILTIN_CUSTOM_SAVE_PATH = stringPreferencesKey("builtin_custom_save_path")
         val BUILTIN_CUSTOM_STATE_PATH = stringPreferencesKey("builtin_custom_state_path")
         val BUILTIN_MIGRATION_V1 = booleanPreferencesKey("builtin_migration_v2")
@@ -105,7 +106,12 @@ class BuiltinEmulatorPreferencesRepository @Inject constructor(
                 ?: (prefs[Keys.BUILTIN_AUTO_RESTORE_STATE_MODE] != "off"),
             autoRestoreStateMode = prefs[Keys.BUILTIN_AUTO_RESTORE_STATE_MODE] ?: "restore",
             hwCoreSaveStatesEnabled = prefs[Keys.BUILTIN_HW_CORE_SAVE_STATES] ?: false,
-            defaultToHardcore = prefs[Keys.BUILTIN_DEFAULT_TO_HARDCORE] ?: false,
+            defaultToHardcore = when (val saved = prefs[Keys.BUILTIN_DEFAULT_TO_HARDCORE_MODE]) {
+                "Default to Hardcore", "hardcore" -> "hardcore"
+                "Default to Casual", "casual" -> "casual"
+                "Ask", "ask" -> "ask"
+                else -> if (prefs[Keys.BUILTIN_DEFAULT_TO_HARDCORE] == true) "hardcore" else "ask"
+            },
             customSavePath = prefs[Keys.BUILTIN_CUSTOM_SAVE_PATH],
             customStatePath = prefs[Keys.BUILTIN_CUSTOM_STATE_PATH],
             architectureOverride = prefs[Keys.BUILTIN_ARCHITECTURE_OVERRIDE],
@@ -285,8 +291,14 @@ class BuiltinEmulatorPreferencesRepository @Inject constructor(
         dataStore.edit { it[Keys.BUILTIN_HW_CORE_SAVE_STATES] = enabled }
     }
 
-    suspend fun setBuiltinDefaultToHardcore(enabled: Boolean) {
-        dataStore.edit { it[Keys.BUILTIN_DEFAULT_TO_HARDCORE] = enabled }
+    suspend fun setBuiltinDefaultToHardcore(mode: String) {
+        val token = when (mode) {
+            "Default to Hardcore", "hardcore" -> "hardcore"
+            "Default to Casual", "casual" -> "casual"
+            "Ask", "ask" -> "ask"
+            else -> "ask"
+        }
+        dataStore.edit { it[Keys.BUILTIN_DEFAULT_TO_HARDCORE_MODE] = token }
     }
 
     suspend fun setBuiltinCustomSavePath(path: String?) {

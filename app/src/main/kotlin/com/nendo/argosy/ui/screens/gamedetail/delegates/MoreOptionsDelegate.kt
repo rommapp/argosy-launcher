@@ -2,8 +2,12 @@ package com.nendo.argosy.ui.screens.gamedetail.delegates
 
 import com.nendo.argosy.ui.input.SoundFeedbackManager
 import com.nendo.argosy.core.input.SoundType
+import com.nendo.argosy.data.preferences.MenuWrapMode
+import com.nendo.argosy.ui.input.InputDispatcher.Companion.computeWrappedIndex
 import com.nendo.argosy.ui.screens.gamedetail.GameDownloadStatus
 import com.nendo.argosy.ui.screens.gamedetail.MoreOptionAction
+import com.nendo.argosy.ui.screens.gamedetail.MoreOptionsContext
+import com.nendo.argosy.ui.screens.gamedetail.buildMoreOptions
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -20,6 +24,8 @@ class MoreOptionsDelegate @Inject constructor(
 ) {
     private val _state = MutableStateFlow(MoreOptionsState())
     val state: StateFlow<MoreOptionsState> = _state.asStateFlow()
+
+    var menuWrapMode: MenuWrapMode = MenuWrapMode.HARD_STOP
 
     fun reset() {
         _state.value = MoreOptionsState()
@@ -40,97 +46,15 @@ class MoreOptionsDelegate @Inject constructor(
         }
     }
 
-    fun moveOptionsFocus(
-        delta: Int,
-        downloadStatus: GameDownloadStatus,
-        isRommGame: Boolean,
-        isAndroidApp: Boolean,
-        canManageSaves: Boolean,
-        hasMultipleCores: Boolean,
-        isMultiDisc: Boolean,
-        hasVariants: Boolean,
-        isSteamGame: Boolean,
-        hasUpdates: Boolean,
-        platformSlug: String?
-    ) {
-        val canTrackProgress = isRommGame || isAndroidApp
-        val isEmulatedGame = !isSteamGame && !isAndroidApp
-        val isDownloaded = downloadStatus == GameDownloadStatus.DOWNLOADED
-        val usesTitleId = platformSlug in TITLE_ID_PLATFORMS
-
-        var optionCount = 2
-        if (canManageSaves) optionCount++
-        if (canTrackProgress) optionCount += 2
-        if (isSteamGame || isEmulatedGame) optionCount++
-        if (hasMultipleCores && isEmulatedGame) optionCount++
-        if (isEmulatedGame) optionCount += 2
-        if (usesTitleId && isEmulatedGame) optionCount++
-        if (isMultiDisc) optionCount++
-        if (hasVariants && isEmulatedGame) optionCount++
-        if (hasUpdates) optionCount++
-        if (isDownloaded || isAndroidApp) optionCount++
-
-        val maxIndex = optionCount - 1
+    fun moveOptionsFocus(delta: Int, context: MoreOptionsContext) {
+        val maxIndex = buildMoreOptions(context).lastIndex
         _state.update { state ->
-            val newIndex = (state.moreOptionsFocusIndex + delta).coerceIn(0, maxIndex)
+            val newIndex = computeWrappedIndex(state.moreOptionsFocusIndex, delta, maxIndex, menuWrapMode)
             state.copy(moreOptionsFocusIndex = newIndex)
         }
     }
 
-    fun resolveOptionAction(
-        downloadStatus: GameDownloadStatus,
-        isRommGame: Boolean,
-        isAndroidApp: Boolean,
-        canManageSaves: Boolean,
-        hasMultipleCores: Boolean,
-        isMultiDisc: Boolean,
-        hasVariants: Boolean,
-        isSteamGame: Boolean,
-        hasUpdates: Boolean,
-        platformSlug: String?
-    ): MoreOptionAction? {
-        val canTrackProgress = isRommGame || isAndroidApp
-        val isEmulatedGame = !isSteamGame && !isAndroidApp
-        val isDownloaded = downloadStatus == GameDownloadStatus.DOWNLOADED
-        val usesTitleId = platformSlug in TITLE_ID_PLATFORMS
-        val index = _state.value.moreOptionsFocusIndex
+    fun resolveOptionAction(context: MoreOptionsContext): MoreOptionAction? =
+        buildMoreOptions(context).getOrNull(_state.value.moreOptionsFocusIndex)
 
-        var currentIdx = 0
-        val saveCacheIdx = if (canManageSaves) currentIdx++ else -1
-        val ratingsStatusIdx = if (canTrackProgress) currentIdx++ else -1
-        val emulatorOrLauncherIdx = if (isSteamGame || isEmulatedGame) currentIdx++ else -1
-        val coreIdx = if (hasMultipleCores && isEmulatedGame) currentIdx++ else -1
-        val platformSettingsIdx = if (isEmulatedGame) currentIdx++ else -1
-        val speedrunSplitsIdx = if (isEmulatedGame) currentIdx++ else -1
-        val titleIdIdx = if (usesTitleId && isEmulatedGame) currentIdx++ else -1
-        val discIdx = if (isMultiDisc) currentIdx++ else -1
-        val variantIdx = if (hasVariants && isEmulatedGame) currentIdx++ else -1
-        val updatesIdx = if (hasUpdates) currentIdx++ else -1
-        val refreshIdx = if (canTrackProgress) currentIdx++ else -1
-        val addToCollectionIdx = currentIdx++
-        val deleteIdx = if (isDownloaded || isAndroidApp) currentIdx++ else -1
-        val hideIdx = currentIdx
-
-        return when (index) {
-            saveCacheIdx -> MoreOptionAction.ManageSaves
-            ratingsStatusIdx -> MoreOptionAction.RatingsStatus
-            emulatorOrLauncherIdx -> if (isSteamGame) MoreOptionAction.ChangeSteamLauncher else MoreOptionAction.ChangeEmulator
-            coreIdx -> MoreOptionAction.ChangeCore
-            platformSettingsIdx -> MoreOptionAction.PlatformSettings
-            speedrunSplitsIdx -> MoreOptionAction.SpeedrunSplits
-            titleIdIdx -> MoreOptionAction.RefreshTitleId
-            discIdx -> MoreOptionAction.SelectDisc
-            variantIdx -> MoreOptionAction.SelectVariant
-            updatesIdx -> MoreOptionAction.UpdatesDlc
-            refreshIdx -> MoreOptionAction.RefreshData
-            addToCollectionIdx -> MoreOptionAction.AddToCollection
-            deleteIdx -> MoreOptionAction.Delete
-            hideIdx -> MoreOptionAction.ToggleHide
-            else -> null
-        }
-    }
-
-    companion object {
-        val TITLE_ID_PLATFORMS = com.nendo.argosy.data.platform.PlatformDefinitions.TITLE_ID_PLATFORMS
-    }
 }

@@ -28,6 +28,11 @@ data class MissingGameFile(
     val platformSlug: String
 )
 
+data class PlatformLocalPath(
+    val platformId: Long,
+    val localPath: String
+)
+
 @Dao
 interface GameFileDao {
 
@@ -45,6 +50,20 @@ interface GameFileDao {
 
     @Query("SELECT * FROM game_files WHERE rommFileId = :rommFileId")
     suspend fun getByRommFileId(rommFileId: Long): GameFileEntity?
+
+    @Query("SELECT * FROM game_files WHERE gameId = :gameId AND fileName = :fileName")
+    suspend fun getByGameIdAndFileName(gameId: Long, fileName: String): List<GameFileEntity>
+
+    @Query("SELECT * FROM game_files WHERE localPath IS NOT NULL")
+    suspend fun getAllWithLocalPath(): List<GameFileEntity>
+
+    @Query("""
+        SELECT g.platformId AS platformId, gf.localPath AS localPath
+        FROM game_files gf
+        INNER JOIN games g ON gf.gameId = g.id
+        WHERE gf.localPath IS NOT NULL
+    """)
+    suspend fun getAllLocalPathsWithPlatform(): List<PlatformLocalPath>
 
     @Query("SELECT * FROM game_files WHERE id = :id")
     suspend fun getById(id: Long): GameFileEntity?
@@ -102,8 +121,11 @@ interface GameFileDao {
     @Query("UPDATE game_files SET localPath = :localPath, downloadedAt = :downloadedAt WHERE rommFileId = :rommFileId")
     suspend fun updateLocalPathByRommFileId(rommFileId: Long, localPath: String?, downloadedAt: Instant?)
 
-    @Query("UPDATE game_files SET localPath = NULL, downloadedAt = NULL WHERE gameId = :gameId")
-    suspend fun clearLocalPathsByGameId(gameId: Long)
+    @Query("""
+        UPDATE game_files SET localPath = NULL, downloadedAt = NULL
+        WHERE gameId = :gameId AND localPath IS NOT NULL AND localPath NOT LIKE :prefix || '%'
+    """)
+    suspend fun clearLocalPathsByGameIdExcludingPrefix(gameId: Long, prefix: String)
 
     @Query("DELETE FROM game_files WHERE id = :id")
     suspend fun deleteById(id: Long)
@@ -126,6 +148,12 @@ interface GameFileDao {
 
     @Query("UPDATE game_files SET localPath = :newPath WHERE localPath = :oldPath")
     suspend fun updateLocalPathByOldPath(oldPath: String, newPath: String)
+
+    @Query("""
+        UPDATE game_files SET localPath = :newPrefix || SUBSTR(localPath, LENGTH(:oldPrefix) + 1)
+        WHERE localPath LIKE :oldPrefix || '/%'
+    """)
+    suspend fun rewriteLocalPathPrefix(oldPrefix: String, newPrefix: String)
 
     @Query("SELECT * FROM game_files WHERE gameId = :gameId AND isLaunchTarget = 1 ORDER BY category ASC, fileName ASC")
     suspend fun getVariantsForGame(gameId: Long): List<GameFileEntity>

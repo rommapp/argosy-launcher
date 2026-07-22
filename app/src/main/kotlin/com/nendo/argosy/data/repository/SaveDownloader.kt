@@ -212,7 +212,7 @@ class SaveDownloader @Inject constructor(
                 )
             } else discovered
 
-            (retried ?: savePathResolver.constructSavePath(resolvedEmulatorId, game.title, game.platformSlug, game.localPath, preferredCore, game.saveId ?: game.titleId)).also {
+            (retried ?: savePathResolver.constructSavePath(resolvedEmulatorId, game.title, game.platformSlug, game.localPath, preferredCore, game.saveId ?: game.titleId, gameId)).also {
                 Logger.debug(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | File save path | cached=${syncEntity.localSavePath != null}, discovered=${retried != null}, path=$it")
             }
         }

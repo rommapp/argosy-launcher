@@ -64,6 +64,7 @@ fun RatingChip(
             )
             .padding(horizontal = Dimens.radiusLg, vertical = Dimens.radiusSm)
     ) {
+        val isSet = value > 0
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(Dimens.spacingXs)
@@ -71,19 +72,27 @@ fun RatingChip(
             Icon(
                 imageVector = icon,
                 contentDescription = null,
-                tint = iconColor,
+                tint = if (isSet) iconColor else iconColor.copy(alpha = 0.3f),
                 modifier = Modifier.size(Dimens.iconXs)
             )
             Text(
-                text = "$value/10",
+                text = if (isSet) "$value/10" else "--",
                 style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurface
+                color = if (isSet) {
+                    MaterialTheme.colorScheme.onSurface
+                } else {
+                    MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
+                }
             )
         }
         Text(
             text = label,
             style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            color = if (isSet) {
+                MaterialTheme.colorScheme.onSurfaceVariant
+            } else {
+                MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+            }
         )
     }
 }

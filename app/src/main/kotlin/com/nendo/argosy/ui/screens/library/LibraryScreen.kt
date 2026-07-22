@@ -581,7 +581,7 @@ fun LibraryScreen(
         DisposableEffect(uiState.discPickerState) {
             onDispose {
                 if (uiState.discPickerState != null) {
-                    inputDispatcher.popModal()
+                    inputDispatcher.removeModal(discPickerInputHandler)
                 }
             }
         }
@@ -615,7 +615,7 @@ fun LibraryScreen(
         DisposableEffect(uiState.variantPickerState) {
             onDispose {
                 if (uiState.variantPickerState != null) {
-                    inputDispatcher.popModal()
+                    inputDispatcher.removeModal(variantPickerInputHandler)
                 }
             }
         }
@@ -651,7 +651,7 @@ fun LibraryScreen(
         DisposableEffect(showMemcardPicker) {
             onDispose {
                 if (showMemcardPicker) {
-                    inputDispatcher.popModal()
+                    inputDispatcher.removeModal(memcardPickerInputHandler)
                 }
             }
         }
@@ -697,7 +697,7 @@ fun LibraryScreen(
         DisposableEffect(isHardcoreConflict) {
             onDispose {
                 if (isHardcoreConflict) {
-                    inputDispatcher.popModal()
+                    inputDispatcher.removeModal(hardcoreConflictInputHandler)
                 }
             }
         }
@@ -705,7 +705,7 @@ fun LibraryScreen(
         DisposableEffect(isLocalModified) {
             onDispose {
                 if (isLocalModified) {
-                    inputDispatcher.popModal()
+                    inputDispatcher.removeModal(localModifiedInputHandler)
                 }
             }
         }

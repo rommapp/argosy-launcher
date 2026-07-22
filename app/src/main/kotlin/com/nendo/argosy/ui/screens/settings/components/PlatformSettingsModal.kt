@@ -160,7 +160,7 @@ private fun ToggleOptionItem(
 }
 
 @Composable
-private fun PathConfigItem(
+fun PathConfigItem(
     label: String,
     path: String?,
     isCustom: Boolean,

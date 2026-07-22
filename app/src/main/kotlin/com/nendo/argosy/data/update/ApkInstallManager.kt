@@ -99,6 +99,10 @@ class ApkInstallManager @Inject constructor(
             return
         }
 
+        if (game.titleId != expectedPackageName) {
+            gameDao.update(game.copy(titleId = expectedPackageName))
+        }
+
         pendingInstalls[expectedPackageName] = PendingApkInstall(
             gameId = event.gameId,
             apkPath = event.localPath,
@@ -149,6 +153,7 @@ class ApkInstallManager @Inject constructor(
                     }
                     val updatedGame = game.copy(
                         packageName = packageName,
+                        titleId = packageName,
                         source = GameSource.ANDROID_APP,
                         localPath = null,
                         isFavorite = game.isFavorite || holder?.isFavorite == true,
@@ -231,6 +236,10 @@ class ApkInstallManager @Inject constructor(
         if (!apkFile.exists()) return false
 
         val expectedPackageName = getApkPackageName(apkFile) ?: return false
+
+        if (game.titleId != expectedPackageName) {
+            gameDao.update(game.copy(titleId = expectedPackageName))
+        }
 
         pendingInstalls[expectedPackageName] = PendingApkInstall(
             gameId = gameId,

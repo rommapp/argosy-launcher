@@ -40,7 +40,7 @@ class DownloadGameUseCaseTest {
         emulatorConfigDao = mockk(relaxed = true)
         downloadQueueDao = mockk(relaxed = true)
         gameRepository = mockk(relaxed = true)
-        useCase = DownloadGameUseCase(gameDao, gameDiscDao, romMRepository, downloadManager, emulatorConfigDao, downloadQueueDao, gameRepository)
+        useCase = DownloadGameUseCase(gameDao, gameDiscDao, romMRepository, downloadManager, emulatorConfigDao, downloadQueueDao, gameRepository, mockk(relaxed = true))
     }
 
     @Test

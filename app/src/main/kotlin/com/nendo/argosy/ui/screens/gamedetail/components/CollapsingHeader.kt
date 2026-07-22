@@ -315,36 +315,39 @@ private fun TitleSection(
 }
 
 @Composable
+private fun RatingChipContent(game: GameDetailUi) {
+    game.players?.let { players ->
+        MetadataChip(label = "Players", value = players)
+    }
+    game.rating?.let { rating ->
+        CommunityRatingChip(rating = rating)
+    }
+    RatingChip(
+        label = "My Rating",
+        value = game.userRating,
+        icon = Icons.Default.Star,
+        iconColor = ALauncherColors.StarGold
+    )
+    RatingChip(
+        label = "Difficulty",
+        value = game.userDifficulty,
+        icon = Icons.Default.Whatshot,
+        iconColor = ALauncherColors.DifficultyRed
+    )
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
 private fun RatingsRow(
     game: GameDetailUi,
     modifier: Modifier = Modifier
 ) {
-    Row(
+    FlowRow(
         modifier = modifier,
-        horizontalArrangement = Arrangement.spacedBy(Dimens.radiusLg)
+        horizontalArrangement = Arrangement.spacedBy(Dimens.spacingMd),
+        verticalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
     ) {
-        game.players?.let { players ->
-            MetadataChip(label = "Players", value = players)
-        }
-        game.rating?.let { rating ->
-            CommunityRatingChip(rating = rating)
-        }
-        if (game.userRating > 0) {
-            RatingChip(
-                label = "My Rating",
-                value = game.userRating,
-                icon = Icons.Default.Star,
-                iconColor = ALauncherColors.StarGold
-            )
-        }
-        if (game.userDifficulty > 0) {
-            RatingChip(
-                label = "Difficulty",
-                value = game.userDifficulty,
-                icon = Icons.Default.Whatshot,
-                iconColor = ALauncherColors.DifficultyRed
-            )
-        }
+        RatingChipContent(game)
     }
 }
 
@@ -357,28 +360,7 @@ private fun PortraitRatingsColumn(
         modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(Dimens.spacingXs)
     ) {
-        game.players?.let { players ->
-            MetadataChip(label = "Players", value = players)
-        }
-        game.rating?.let { rating ->
-            CommunityRatingChip(rating = rating)
-        }
-        if (game.userRating > 0) {
-            RatingChip(
-                label = "My Rating",
-                value = game.userRating,
-                icon = Icons.Default.Star,
-                iconColor = ALauncherColors.StarGold
-            )
-        }
-        if (game.userDifficulty > 0) {
-            RatingChip(
-                label = "Difficulty",
-                value = game.userDifficulty,
-                icon = Icons.Default.Whatshot,
-                iconColor = ALauncherColors.DifficultyRed
-            )
-        }
+        RatingChipContent(game)
     }
 }
 

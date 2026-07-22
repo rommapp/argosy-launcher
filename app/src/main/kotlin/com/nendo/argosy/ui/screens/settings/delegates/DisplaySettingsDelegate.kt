@@ -772,6 +772,13 @@ class DisplaySettingsDelegate @Inject constructor(
         }
     }
 
+    fun setAmbientLedAchievementFlash(scope: CoroutineScope, enabled: Boolean) {
+        scope.launch {
+            preferencesRepository.setAmbientLedAchievementFlash(enabled)
+            _state.update { it.copy(ambientLedAchievementFlash = enabled) }
+        }
+    }
+
     fun setInstalledOnlyHome(scope: CoroutineScope, enabled: Boolean) {
         scope.launch {
             preferencesRepository.setInstalledOnlyHome(enabled)

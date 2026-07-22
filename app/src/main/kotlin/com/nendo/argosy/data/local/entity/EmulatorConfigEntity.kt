@@ -39,5 +39,6 @@ data class EmulatorConfigEntity(
     val isDefault: Boolean = false,
     val preferredExtension: String? = null,
     val useFileUri: Boolean? = null,
-    val displayTarget: String? = null
+    val displayTarget: String? = null,
+    val savePath: String? = null
 )

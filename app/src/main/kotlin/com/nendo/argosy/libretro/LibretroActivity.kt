@@ -1,6 +1,7 @@
 package com.nendo.argosy.libretro
 
 import android.annotation.SuppressLint
+import android.app.ActivityManager
 import android.content.Intent
 import android.graphics.Bitmap
 import android.os.Bundle
@@ -26,6 +27,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
@@ -62,6 +64,8 @@ import com.nendo.argosy.data.preferences.EffectiveLibretroSettingsResolver
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.repository.InputConfigRepository
 import com.nendo.argosy.data.repository.InputSource
+import com.nendo.argosy.data.repository.MappingPlatforms
+import com.nendo.argosy.data.repository.RetroButton
 import com.nendo.argosy.data.repository.RetroAchievementsRepository
 import com.nendo.argosy.data.netplay.CoreHashCache
 import com.nendo.argosy.data.social.ArgosSocialService
@@ -126,6 +130,8 @@ import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -158,7 +164,6 @@ class LibretroActivity : ComponentActivity() {
 
     private var coreLoadedSuccessfully = false
     @Volatile private var coreDestroyed = false
-    @Volatile private var hwCoreTornDownForBackground = false
     private var autoSaveStateCaptured = false
     private lateinit var retroView: GLRetroView
     private val portResolver = ControllerPortResolver()
@@ -167,6 +172,8 @@ class LibretroActivity : ComponentActivity() {
     private lateinit var hotkeyDispatcher: LibretroHotkeyDispatcher
     private lateinit var motionProcessor: MotionEventProcessor
     private var vibrator: Vibrator? = null
+    private var rewindSetupJob: Job? = null
+    private var rollingSaveJob: Job? = null
     private lateinit var romPath: String
 
     private lateinit var saveStateManager: SaveStateManager
@@ -453,7 +460,8 @@ class LibretroActivity : ComponentActivity() {
             inputMapper = inputMapper,
             portResolver = portResolver,
             videoSettings = videoSettings,
-            getRetroView = { retroView }
+            getRetroView = { retroView },
+            rightStickDeadzone = rightStickDeadzoneForPlatform()
         )
 
         buildContentView()
@@ -532,6 +540,11 @@ class LibretroActivity : ComponentActivity() {
             hardcoreMode = true
         }
         saveStateManager.initializeFromExistingSave(restoreResult.sramData)
+        lifecycleScope.launch {
+            snapshotFlow { saveStateManager.hasQuickSave }.collect { has ->
+                com.nendo.argosy.DualScreenManagerHolder.instance?.updateCompanionHasQuickSave(has)
+            }
+        }
     }
 
     private fun initializeInputHandlers() {
@@ -582,6 +595,8 @@ class LibretroActivity : ComponentActivity() {
             if (enabled && !hardcoreMode) {
                 setupRewind(settings)
             } else if (!enabled) {
+                rewindSetupJob?.cancel()
+                rewindSetupJob = null
                 retroView.rewindEnabled = false
                 retroView.destroyRewindBuffer()
             }
@@ -683,6 +698,7 @@ class LibretroActivity : ComponentActivity() {
                             }
                             attemptAutoRestore()
                             netplay.triggerPendingNetplayJoin()
+                            startRollingSave()
                         }
                     }
                 }
@@ -1594,20 +1610,22 @@ class LibretroActivity : ComponentActivity() {
                     inputConfig.refreshInputMappings()
                 }
             },
-            onSaveHotkey = { action, keyCodes ->
-                repo.setHotkey(action, keyCodes)
+            onSaveHotkey = { action, keyCodes, scopeType, scopeKey ->
+                repo.setHotkey(action, keyCodes, scopeType = scopeType, scopeKey = scopeKey)
                 inputConfig.refreshHotkeys()
             },
-            onClearHotkey = { action ->
-                repo.deleteHotkey(action)
+            onClearHotkey = { action, scopeType, scopeKey ->
+                repo.clearScopedHotkey(action, scopeType, scopeKey)
                 inputConfig.refreshHotkeys()
             },
-            onSetHotkeyHoldMs = { action, holdMs ->
-                repo.setHotkeyHoldMs(action, holdMs)
+            onSetHotkeyHoldMs = { action, holdMs, scopeType, scopeKey ->
+                repo.setHotkeyHoldMs(action, holdMs, scopeType = scopeType, scopeKey = scopeKey)
                 inputConfig.refreshHotkeys()
             },
             coreId = resolvedCoreId,
             coreName = resolvedCoreId?.let { LibretroCoreRegistry.getCoreById(it)?.displayName },
+            platformSlug = platformSlug,
+            platformName = com.nendo.argosy.data.platform.PlatformDefinitions.deriveDisplayName(platformSlug)?.first,
             coreControls = resolvedCoreId?.let { CoreControlManifestRegistry.getManifest(it)?.controls } ?: emptyList(),
             onSaveCoreControl = { retropadId, mode, keyCodes ->
                 resolvedCoreId?.let { coreId ->
@@ -1649,17 +1667,46 @@ class LibretroActivity : ComponentActivity() {
         }
     }
 
+    private fun startRollingSave() {
+        if (!firstFrameRendered || coreDestroyed || isGuestJoinedSession) return
+        if (rollingSaveJob?.isActive == true) return
+        rollingSaveJob = lifecycleScope.launch(Dispatchers.IO) {
+            while (isActive) {
+                delay(ROLLING_SAVE_INTERVAL_MS)
+                if (coreDestroyed) break
+                saveStateManager.saveSram(retroView)
+            }
+        }
+    }
+
+    private fun stopRollingSave() {
+        rollingSaveJob?.cancel()
+        rollingSaveJob = null
+    }
+
+    private fun rewindBudgetBytes(): Long {
+        val activityManager = getSystemService(ACTIVITY_SERVICE) as ActivityManager
+        val memoryInfo = ActivityManager.MemoryInfo()
+        activityManager.getMemoryInfo(memoryInfo)
+        return RewindBudget.budgetBytes(memoryInfo.availMem, LibretroBuildbot.processIs64Bit)
+    }
+
     private fun setupRewind(settings: BuiltinEmulatorSettings) {
-        lifecycleScope.launch {
+        rewindSetupJob?.cancel()
+        rewindSetupJob = lifecycleScope.launch {
             retroView.getGLRetroEvents().collect { event ->
                 if (event is GLRetroView.GLRetroEvents.SurfaceCreated) {
                     val fps = LibretroDroid.getContentFps()
-                    val slotCount = (settings.rewindBufferDuration * fps).toInt()
-                    val maxStateSize = 4 * 1024 * 1024
-                    retroView.initRewindBuffer(slotCount, maxStateSize)
+                    val duration = RewindBudget.durationSeconds(
+                        settings.rewindBufferDuration,
+                        LibretroBuildbot.processIs64Bit
+                    )
+                    val maxSlots = (duration * fps).toInt()
+                    val budget = rewindBudgetBytes()
+                    retroView.initRewindBuffer(maxSlots, budget)
                     retroView.rewindEnabled = true
                     retroView.rewindSpeed = settings.rewindSpeed
-                    Log.d(TAG, "Rewind buffer initialized: $slotCount slots (${settings.rewindBufferDuration}s), speed=${settings.rewindSpeed}x")
+                    Log.d(TAG, "Rewind requested: $maxSlots slots (${duration}s), budget=${budget / (1024 * 1024)}MiB, speed=${settings.rewindSpeed}x")
                     cheatManager.applyAllEnabledCheats(hardcoreMode)
                 }
             }
@@ -1866,10 +1913,13 @@ class LibretroActivity : ComponentActivity() {
         if (isGuestJoinedSession) return
         val resumeFile = saveStateManager.getSlotFile(SaveStateManager.RESUME_SLOT)
         if (resumeFile.exists()) {
-            if (!hardcoreMode && statesSupported &&
-                saveStateManager.performSlotLoad(retroView, SaveStateManager.RESUME_SLOT)
-            ) {
-                inGameMessage = "Resumed"
+            if (!hardcoreMode && statesSupported) {
+                if (saveStateManager.performSlotLoad(retroView, SaveStateManager.RESUME_SLOT)) {
+                    inGameMessage = "Resumed"
+                } else {
+                    inGameMessage = "Failed to restore state"
+                    Log.w(TAG, "Failed to restore one-shot resume state")
+                }
             }
             resumeFile.delete()
             return
@@ -1887,6 +1937,9 @@ class LibretroActivity : ComponentActivity() {
         if (saveStateManager.performSlotLoad(retroView, SaveStateManager.AUTO_SLOT)) {
             inGameMessage = "State restored"
             Log.d(TAG, "Auto-restored state from auto slot")
+        } else {
+            inGameMessage = "Failed to restore state"
+            Log.w(TAG, "Failed to auto-restore state from auto slot")
         }
     }
 
@@ -2203,13 +2256,10 @@ class LibretroActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
-        if (hwCoreTornDownForBackground) {
-            recreate()
-            return
-        }
         autoSaveStateCaptured = false
         enterImmersiveMode()
         retroView.onResume()
+        startRollingSave()
     }
 
     private val isHwCore: Boolean
@@ -2217,24 +2267,6 @@ class LibretroActivity : ComponentActivity() {
 
     private val perGameMappingId: Long?
         get() = gameId.takeIf { perGameControlsEnabled && it != -1L }
-
-    private fun saveResumeStateAndTeardown() {
-        hwCoreTornDownForBackground = true
-        if (!isGuestJoinedSession) {
-            saveStateManager.saveSram(retroView)
-        }
-        if (!hardcoreMode && statesSupported) {
-            try {
-                val stateData = retroView.serializeState()
-                saveStateManager.performSlotSave(SaveStateManager.RESUME_SLOT, stateData, null)
-            } catch (e: Exception) {
-                Log.w(TAG, "Resume-state save failed", e)
-            }
-        }
-        coreDestroyed = true
-        retroView.destroyNative()
-        retroView.onPause()
-    }
 
     override fun onUserLeaveHint() {
         super.onUserLeaveHint()
@@ -2259,6 +2291,7 @@ class LibretroActivity : ComponentActivity() {
     }
 
     override fun onPause() {
+        stopRollingSave()
         if (::netplay.isInitialized) netplay.gracefullyEndIfActive()
         if (isClosing) {
             super.onPause()
@@ -2268,7 +2301,8 @@ class LibretroActivity : ComponentActivity() {
             if (!isFinishing && !coreDestroyed && isHwCore && !isGuestJoinedSession &&
                 !(::netplay.isInitialized && netplay.inSession)
             ) {
-                saveResumeStateAndTeardown()
+                saveStateManager.saveSram(retroView)
+                retroView.onPause()
                 super.onPause()
                 return
             }
@@ -2292,9 +2326,9 @@ class LibretroActivity : ComponentActivity() {
         requestedOrientation = if (!locked) {
             android.content.pm.ActivityInfo.SCREEN_ORIENTATION_FULL_SENSOR
         } else if (currentOrientationState == android.content.res.Configuration.ORIENTATION_PORTRAIT) {
-            android.content.pm.ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+            android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT
         } else {
-            android.content.pm.ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
+            android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
         }
     }
 
@@ -2383,7 +2417,7 @@ class LibretroActivity : ComponentActivity() {
                 if (coreDestroyed || !::retroView.isInitialized) return@runOnUiThread
                 lifecycleScope.launch(Dispatchers.IO) {
                     val ok = try { saveStateManager.performQuickLoad(retroView) } catch (_: Exception) { false }
-                    notifyQuickAction(ok, "State loaded", "No quick save yet")
+                    notifyQuickAction(ok, "State loaded", "Failed to load state")
                 }
             }
         }
@@ -2453,6 +2487,11 @@ class LibretroActivity : ComponentActivity() {
         super.onDestroy()
     }
 
+    private fun rightStickDeadzoneForPlatform(): Float {
+        val canonical = com.nendo.argosy.data.platform.PlatformDefinitions.getCanonicalSlug(platformSlug)
+        return if (canonical in PLATFORMS_WITH_DIGITAL_RIGHT_STICK) DIGITAL_RIGHT_STICK_DEADZONE else 0f
+    }
+
     private fun getControllerId(device: InputDevice): String {
         return "${device.vendorId}:${device.productId}:${device.descriptor}"
     }
@@ -2469,17 +2508,17 @@ class LibretroActivity : ComponentActivity() {
 
         if (!isL1R1 && !isL2R2) return false
 
-        val canonicalPlatform = com.nendo.argosy.data.platform.PlatformDefinitions.getCanonicalSlug(platformSlug)
-        if (isL1R1 && canonicalPlatform in PLATFORMS_WITHOUT_SHOULDERS) return true
-        if (isL2R2 && canonicalPlatform !in PLATFORMS_WITH_L2_R2) return true
-
-        return false
+        val buttons = MappingPlatforms.profileForSlug(platformSlug).buttons
+        if (isL1R1) return RetroButton.L !in buttons && RetroButton.R !in buttons
+        return RetroButton.L2 !in buttons && RetroButton.R2 !in buttons
     }
 
     companion object {
         private const val TAG = "LibretroActivity"
 
         private const val CORE_INPUT_PULSE_MS = 50L
+
+        private const val ROLLING_SAVE_INTERVAL_MS = 30_000L
 
         private const val SPEEDRUN_PANEL_FRACTION_DEFAULT = 0.30f
         private val SPEEDRUN_PANEL_FRACTION_RANGE = 0.20f..0.40f
@@ -2502,23 +2541,9 @@ class LibretroActivity : ComponentActivity() {
         const val ACTION_SHOW_MENU = "com.nendo.argosy.action.SHOW_MENU"
         const val ACTION_QUIT = "com.nendo.argosy.action.QUIT"
 
-        private val PLATFORMS_WITHOUT_SHOULDERS = setOf(
-            "gb", "gbc",
-            "nes", "fds",
-            "sg1000", "sms", "gg",
-            "atari2600", "atari5200", "atari7800",
-            "coleco", "intellivision", "odyssey2", "vectrex"
-        )
-
-        private val PLATFORMS_WITH_L2_R2 = setOf(
-            "psx", "ps1", "playstation",
-            "dreamcast", "dc",
-            "saturn",
-            "gc", "ngc", "gamecube", "wii",
-            "psp",
-            "3do"
-        )
-
         private val PLATFORMS_WITHOUT_STATE_SUPPORT = setOf("psp")
+
+        private const val DIGITAL_RIGHT_STICK_DEADZONE = 0.5f
+        private val PLATFORMS_WITH_DIGITAL_RIGHT_STICK = setOf("n64", "n64dd")
     }
 }

@@ -30,14 +30,14 @@ class SecondaryHomeStateManager(
     private val configureEmulatorUseCase: com.nendo.argosy.domain.usecase.game.ConfigureEmulatorUseCase,
     private val steamContentManager: com.nendo.argosy.data.steam.SteamContentManager? = null,
     private val displayAffinityHelper: DisplayAffinityHelper,
-    private val downloadFileStatusRepository: com.nendo.argosy.data.repository.DownloadFileStatusRepository
+    private val downloadFileStatusRepository: com.nendo.argosy.data.repository.DownloadFileStatusRepository,
+    private val preferencesRepository: com.nendo.argosy.data.preferences.UserPreferencesRepository
 ) {
 
     lateinit var sessionStateStore: SessionStateStore
         private set
 
     data class InitialState(
-        val useDualScreenMode: Boolean,
         val isShowcaseRole: Boolean,
         val isArgosyForeground: Boolean,
         val isGameActive: Boolean,
@@ -49,6 +49,7 @@ class SecondaryHomeStateManager(
         val activeGameId: Long,
         val savedSection: Int,
         val savedSelected: Int,
+        val restoreScheduled: Boolean,
         val restoredScreen: CompanionScreen?,
         val restoredDetailViewModel: DualGameDetailViewModel?,
         val restoredDetailGameId: Long
@@ -71,7 +72,6 @@ class SecondaryHomeStateManager(
         sessionStateStore = SessionStateStore(context)
 
         displayAffinityHelper.dualScreenEnabled = sessionStateStore.isDualScreenEnabled()
-        val useDualScreenMode = displayAffinityHelper.hasSecondaryDisplay
         val resolver = DisplayRoleResolver(displayAffinityHelper, sessionStateStore)
         val isShowcaseRole = resolver.isSwapped
 
@@ -89,10 +89,12 @@ class SecondaryHomeStateManager(
 
         val activeGameId = sessionStateStore.getGameId()
 
-        val savedSection = sessionStateStore.getCarouselSectionIndex()
-        val savedSelected = sessionStateStore.getCarouselSelectedIndex()
-        if (savedSection > 0 || savedSelected > 0) {
-            dualHomeViewModel.restorePosition(savedSection, savedSelected)
+        val navContext = sessionStateStore.getCarouselNavContext()
+        val savedSection = navContext.legacySectionIndex
+        val savedSelected = navContext.legacySelectedIndex
+        val restoreScheduled = navContext.hasContext || savedSection > 0 || savedSelected > 0
+        if (restoreScheduled) {
+            dualHomeViewModel.restoreNavContext(navContext)
         }
 
         val savedScreen = sessionStateStore.getCompanionScreen()
@@ -125,6 +127,7 @@ class SecondaryHomeStateManager(
                 displayAffinityHelper = affinityHelper,
                 downloadFileStatusRepository = downloadFileStatusRepository,
                 sessionStateStore = sessionStateStore,
+                preferencesRepository = preferencesRepository,
                 context = context
             )
             vm.loadGame(savedDetailGameId)
@@ -134,7 +137,6 @@ class SecondaryHomeStateManager(
         }
 
         return InitialState(
-            useDualScreenMode = useDualScreenMode,
             isShowcaseRole = isShowcaseRole,
             isGameActive = isGameActive,
             isArgosyForeground = isArgosyForeground,
@@ -146,6 +148,7 @@ class SecondaryHomeStateManager(
             activeGameId = activeGameId,
             savedSection = savedSection,
             savedSelected = savedSelected,
+            restoreScheduled = restoreScheduled,
             restoredScreen = restoredScreen,
             restoredDetailViewModel = restoredDetailViewModel,
             restoredDetailGameId = restoredDetailGameId
@@ -212,15 +215,12 @@ class SecondaryHomeStateManager(
             displayAffinityHelper = affinityHelper,
             downloadFileStatusRepository = downloadFileStatusRepository,
             sessionStateStore = sessionStateStore,
+            preferencesRepository = preferencesRepository,
             context = context
         )
     }
 
     fun persistCarouselPosition(dualHomeViewModel: DualHomeViewModel) {
-        val state = dualHomeViewModel.uiState.value
-        sessionStateStore.setCarouselPosition(
-            state.currentSectionIndex,
-            state.selectedIndex
-        )
+        sessionStateStore.setCarouselNavContext(dualHomeViewModel.currentNavContext())
     }
 }

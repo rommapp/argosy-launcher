@@ -316,6 +316,9 @@ interface GameDao {
     @Query("SELECT * FROM games WHERE source IN (:sources) AND localPath IS NOT NULL")
     suspend fun getDownloadedBySources(sources: List<GameSource>): List<GameEntity>
 
+    @Query("SELECT * FROM games WHERE platformId = :platformId AND localPath IS NOT NULL AND isHidden = 0 ORDER BY sortTitle ASC")
+    suspend fun getDownloadedGamesByPlatform(platformId: Long): List<GameEntity>
+
     @Query("DELETE FROM games WHERE source IN (:sources)")
     suspend fun deleteBySources(sources: List<GameSource>)
 
@@ -393,6 +396,30 @@ interface GameDao {
 
     @Query("UPDATE games SET coverPath = NULL, gradientColors = NULL WHERE id = :gameId")
     suspend fun clearCoverPath(gameId: Long)
+
+    @Query(
+        """
+        UPDATE games SET
+            originalCoverPath = CASE WHEN coverSetManually = 1 THEN originalCoverPath ELSE coverPath END,
+            coverPath = :path,
+            coverSetManually = 1,
+            gradientColors = NULL
+        WHERE id = :gameId
+        """
+    )
+    suspend fun setManualCover(gameId: Long, path: String)
+
+    @Query(
+        """
+        UPDATE games SET
+            coverPath = originalCoverPath,
+            originalCoverPath = NULL,
+            coverSetManually = 0,
+            gradientColors = NULL
+        WHERE id = :gameId AND coverSetManually = 1
+        """
+    )
+    suspend fun resetManualCover(gameId: Long)
 
     @Query("UPDATE games SET gradientColors = :json WHERE id = :gameId")
     suspend fun updateGradientColors(gameId: Long, json: String)

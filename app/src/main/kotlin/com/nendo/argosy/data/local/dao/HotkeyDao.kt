@@ -5,6 +5,7 @@ import androidx.room.Query
 import androidx.room.Upsert
 import com.nendo.argosy.data.local.entity.HotkeyAction
 import com.nendo.argosy.data.local.entity.HotkeyEntity
+import com.nendo.argosy.data.local.entity.HotkeyScopeType
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -27,6 +28,19 @@ interface HotkeyDao {
 
     @Query("SELECT * FROM hotkeys WHERE action = :action AND (controllerId IS NULL OR controllerId = :controllerId) LIMIT 1")
     suspend fun getByActionAndController(action: HotkeyAction, controllerId: String?): HotkeyEntity?
+
+    @Query(
+        "SELECT * FROM hotkeys WHERE action = :action " +
+            "AND ((:controllerId IS NULL AND controllerId IS NULL) OR controllerId = :controllerId) " +
+            "AND scopeType = :scopeType " +
+            "AND ((:scopeKey IS NULL AND scopeKey IS NULL) OR scopeKey = :scopeKey) LIMIT 1"
+    )
+    suspend fun getByActionControllerAndScope(
+        action: HotkeyAction,
+        controllerId: String?,
+        scopeType: HotkeyScopeType,
+        scopeKey: String?
+    ): HotkeyEntity?
 
     @Query("SELECT * FROM hotkeys WHERE action = :action")
     suspend fun getAllByAction(action: HotkeyAction): List<HotkeyEntity>
@@ -51,6 +65,33 @@ interface HotkeyDao {
 
     @Query("DELETE FROM hotkeys WHERE action = :action AND controllerId = :controllerId")
     suspend fun deleteByActionAndController(action: HotkeyAction, controllerId: String)
+
+    @Query(
+        "DELETE FROM hotkeys WHERE action = :action " +
+            "AND ((:controllerId IS NULL AND controllerId IS NULL) OR controllerId = :controllerId) " +
+            "AND scopeType = :scopeType " +
+            "AND ((:scopeKey IS NULL AND scopeKey IS NULL) OR scopeKey = :scopeKey)"
+    )
+    suspend fun deleteByActionControllerAndScope(
+        action: HotkeyAction,
+        controllerId: String?,
+        scopeType: HotkeyScopeType,
+        scopeKey: String?
+    )
+
+    @Query(
+        "UPDATE hotkeys SET holdMs = :holdMs WHERE action = :action " +
+            "AND ((:controllerId IS NULL AND controllerId IS NULL) OR controllerId = :controllerId) " +
+            "AND scopeType = :scopeType " +
+            "AND ((:scopeKey IS NULL AND scopeKey IS NULL) OR scopeKey = :scopeKey)"
+    )
+    suspend fun updateHoldMsScoped(
+        action: HotkeyAction,
+        controllerId: String?,
+        scopeType: HotkeyScopeType,
+        scopeKey: String?,
+        holdMs: Long
+    )
 
     @Query("DELETE FROM hotkeys")
     suspend fun deleteAll()

@@ -236,6 +236,7 @@ private fun DashboardPanel(
         if (state.quickActionsAvailable) {
             item {
                 QuickActionsRow(
+                    hasQuickSave = state.hasQuickSave,
                     onQuickSave = onQuickSave,
                     onQuickLoad = onQuickLoad,
                     onScreenshot = onScreenshot
@@ -251,6 +252,7 @@ private fun DashboardPanel(
 
 @Composable
 private fun QuickActionsRow(
+    hasQuickSave: Boolean,
     onQuickSave: () -> Unit,
     onQuickLoad: () -> Unit,
     onScreenshot: () -> Unit
@@ -278,6 +280,7 @@ private fun QuickActionsRow(
             QuickActionButton(
                 label = if (loadArmed) "Tap to confirm" else "Load State",
                 accent = loadArmed,
+                enabled = hasQuickSave,
                 modifier = Modifier.weight(1f),
                 onTap = {
                     if (android.os.SystemClock.elapsedRealtime() < loadArmedUntil) {
@@ -297,6 +300,7 @@ private fun QuickActionButton(
     label: String,
     modifier: Modifier = Modifier,
     accent: Boolean = false,
+    enabled: Boolean = true,
     onTap: () -> Unit
 ) {
     val theme = LocalArgosyTheme.current
@@ -304,17 +308,24 @@ private fun QuickActionButton(
         modifier = modifier
             .clip(RoundedCornerShape(Dimens.radiusControl))
             .background(
-                if (accent) theme.focusAccent.copy(alpha = 0.25f)
-                else Color.White.copy(alpha = 0.08f)
+                when {
+                    !enabled -> Color.White.copy(alpha = 0.03f)
+                    accent -> theme.focusAccent.copy(alpha = 0.25f)
+                    else -> Color.White.copy(alpha = 0.08f)
+                }
             )
-            .touchOnly(onTap)
+            .then(if (enabled) Modifier.touchOnly(onTap) else Modifier)
             .padding(vertical = Dimens.spacingMd),
         contentAlignment = Alignment.Center
     ) {
         Text(
             text = label,
             style = MaterialTheme.typography.labelLarge,
-            color = if (accent) theme.focusAccent else Color.White
+            color = when {
+                !enabled -> Color.White.copy(alpha = 0.3f)
+                accent -> theme.focusAccent
+                else -> Color.White
+            }
         )
     }
 }

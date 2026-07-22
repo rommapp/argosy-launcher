@@ -233,6 +233,7 @@ class SaveStateManager(
         }
     }
 
+    @Synchronized
     fun saveSram(retroView: GLRetroView) {
         if (usesExternalMemcard) return
         try {
@@ -309,7 +310,10 @@ class SaveStateManager(
             val stateFile = getSlotFile(slotNumber)
             if (stateFile.exists()) {
                 val stateData = stateFile.readBytes()
-                retroView.unserializeState(stateData)
+                if (!retroView.unserializePersistedState(stateData)) {
+                    Log.e(TAG, "Core rejected state from slot $slotNumber (${stateData.size} bytes)")
+                    return false
+                }
                 Log.d(TAG, "Loaded state from slot $slotNumber (${stateData.size} bytes)")
                 true
             } else {
@@ -364,7 +368,7 @@ class SaveStateManager(
     }
 
     private fun deleteAllStates() {
-        for (slot in RESUME_SLOT..MAX_SLOT) {
+        for (slot in LibretroStateSlots.ALL_SLOTS) {
             val stateFile = getSlotFile(slot)
             val screenshotFile = getSlotScreenshotFile(slot)
             if (stateFile.exists()) {

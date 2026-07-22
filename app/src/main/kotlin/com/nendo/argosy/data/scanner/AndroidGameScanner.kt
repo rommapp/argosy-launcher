@@ -207,11 +207,12 @@ class AndroidGameScanner @Inject constructor(
             return ProcessResult.SKIPPED
         }
 
-        val rommMatch = findUnlinkedRommMatch(app.label)
+        val rommMatch = findUnlinkedRommMatch(app.label, app.packageName)
         if (rommMatch != null) {
             gameDao.update(
                 rommMatch.copy(
                     packageName = app.packageName,
+                    titleId = app.packageName,
                     source = GameSource.ANDROID_APP,
                     localPath = null
                 )
@@ -287,22 +288,25 @@ class AndroidGameScanner @Inject constructor(
             .filter { it.packageName == null && it.source != GameSource.ANDROID_APP }
         if (candidates.isEmpty()) return@withContext 0
 
-        val installedByName = appsRepository.getInstalledApps(includeSystemApps = false)
+        val installedApps = appsRepository.getInstalledApps(includeSystemApps = false)
             .filter { !isEmulatorPackage(it.packageName) }
             .filter { appCategoryDao.getByPackageName(it.packageName)?.isGame != false }
-            .groupBy { matchKey(it.label) }
+        val installedByPackage = installedApps.associateBy { it.packageName }
+        val installedByName = installedApps.groupBy { matchKey(it.label) }
 
         var relinked = 0
         for (game in candidates) {
-            val key = matchKey(game.title)
-            if (key.isEmpty()) continue
-            val match = installedByName[key]?.singleOrNull() ?: continue
+            val byPackage = game.titleId?.let { installedByPackage[it] }
+            val byTitle = matchKey(game.title).takeIf { it.isNotEmpty() }
+                ?.let { installedByName[it]?.singleOrNull() }
+            val match = byPackage ?: byTitle ?: continue
             val holder = gameDao.getByPackageName(match.packageName)
             if (holder != null && (holder.id == game.id || holder.rommId != null)) continue
             if (holder != null) gameDao.delete(holder.id)
             gameDao.update(
                 game.copy(
                     packageName = match.packageName,
+                    titleId = match.packageName,
                     source = GameSource.ANDROID_APP,
                     localPath = null,
                     isFavorite = game.isFavorite || holder?.isFavorite == true,
@@ -323,12 +327,13 @@ class AndroidGameScanner @Inject constructor(
     private fun matchKey(title: String): String =
         createSortTitle(title).replace(Regex("[^a-z0-9]"), "")
 
-    private suspend fun findUnlinkedRommMatch(label: String): GameEntity? {
+    private suspend fun findUnlinkedRommMatch(label: String, packageName: String): GameEntity? {
+        val unlinked = gameDao.getByPlatform(LocalPlatformIds.ANDROID)
+            .filter { it.packageName == null && it.rommId != null }
+        unlinked.firstOrNull { it.titleId == packageName }?.let { return it }
         val key = matchKey(label)
         if (key.isEmpty()) return null
-        return gameDao.getByPlatform(LocalPlatformIds.ANDROID)
-            .filter { it.packageName == null && it.rommId != null }
-            .singleOrNull { matchKey(it.title) == key }
+        return unlinked.singleOrNull { matchKey(it.title) == key }
     }
 
     suspend fun syncInstalledStatus() = withContext(Dispatchers.IO) {

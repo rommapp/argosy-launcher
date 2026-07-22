@@ -64,6 +64,7 @@ data class GameDetailUi(
     val platformSlug: String,
     val platformName: String,
     val coverPath: String?,
+    val coverSetManually: Boolean = false,
     val backgroundPath: String?,
     val boxBackPath: String? = null,
     val boxSpinePath: String? = null,
@@ -127,6 +128,56 @@ enum class RatingType { OPINION, DIFFICULTY }
 
 enum class PermissionModalType { STORAGE, SAF }
 
+data class CoverCandidate(
+    val url: String,
+    val thumbUrl: String? = null,
+    val width: Int? = null,
+    val height: Int? = null
+) {
+    val dimensionLabel: String?
+        get() = if (width != null && height != null) "$width x $height" else null
+}
+
+data class MoreOptionsContext(
+    val isDownloaded: Boolean = false,
+    val isRommGame: Boolean = false,
+    val isAndroidApp: Boolean = false,
+    val isSteamGame: Boolean = false,
+    val canManageSaves: Boolean = false,
+    val isMultiDisc: Boolean = false,
+    val hasVariants: Boolean = false,
+    val hasUpdates: Boolean = false,
+    val hasManageableFiles: Boolean = false,
+    val platformSlug: String? = null,
+    val canSearchCovers: Boolean = false,
+    val coverSetManually: Boolean = false
+)
+
+/**
+ * The focusable option rows, in render order. Single source of truth: the modal renders
+ * these and the delegate indexes into them, so order and visibility cannot drift apart.
+ */
+fun buildMoreOptions(ctx: MoreOptionsContext): List<MoreOptionAction> = buildList {
+    val canTrackProgress = ctx.isRommGame || ctx.isAndroidApp
+    val isEmulatedGame = !ctx.isSteamGame && !ctx.isAndroidApp
+    val usesTitleId = ctx.platformSlug in com.nendo.argosy.data.platform.PlatformDefinitions.TITLE_ID_PLATFORMS
+
+    if (ctx.canManageSaves) add(MoreOptionAction.ManageSaves)
+    if (canTrackProgress) add(MoreOptionAction.RatingsStatus)
+    if (ctx.isSteamGame) add(MoreOptionAction.ChangeSteamLauncher)
+    if (isEmulatedGame) add(MoreOptionAction.SpeedrunSplits)
+    if (usesTitleId && isEmulatedGame) add(MoreOptionAction.RefreshTitleId)
+    if (ctx.isMultiDisc) add(MoreOptionAction.SelectDisc)
+    if (ctx.hasVariants && isEmulatedGame) add(MoreOptionAction.SelectVariant)
+    if ((ctx.hasManageableFiles || ctx.hasUpdates) && ctx.isDownloaded) add(MoreOptionAction.Files)
+    if (canTrackProgress) add(MoreOptionAction.RefreshData)
+    add(MoreOptionAction.AddToCollection)
+    if (ctx.canSearchCovers) add(MoreOptionAction.ChangeCover)
+    if (ctx.coverSetManually) add(MoreOptionAction.ResetCover)
+    if (ctx.isDownloaded || ctx.isAndroidApp) add(MoreOptionAction.Delete)
+    add(MoreOptionAction.ToggleHide)
+}
+
 sealed class MoreOptionAction {
     data object ManageSaves : MoreOptionAction()
     data object RatingsStatus : MoreOptionAction()
@@ -139,11 +190,13 @@ sealed class MoreOptionAction {
     data object PlatformSettings : MoreOptionAction()
     data object SelectDisc : MoreOptionAction()
     data object SelectVariant : MoreOptionAction()
-    data object UpdatesDlc : MoreOptionAction()
+    data object Files : MoreOptionAction()
     data object RefreshData : MoreOptionAction()
     data object AddToCollection : MoreOptionAction()
     data object RefreshTitleId : MoreOptionAction()
     data object SpeedrunSplits : MoreOptionAction()
+    data object ChangeCover : MoreOptionAction()
+    data object ResetCover : MoreOptionAction()
     data object Delete : MoreOptionAction()
     data object ToggleHide : MoreOptionAction()
 }
@@ -166,9 +219,11 @@ data class GameDetailUiState(
     val hasRASupport: Boolean = false,
     val isRALoggedIn: Boolean = false,
     val isOnline: Boolean = false,
+    val canSearchCovers: Boolean = false,
     val isLoading: Boolean = true,
     val isRefreshingGameData: Boolean = false,
     val downloadStatus: GameDownloadStatus = GameDownloadStatus.NOT_DOWNLOADED,
+    val hasManageableFiles: Boolean = false,
     val downloadProgress: Float = 0f,
     val downloadSizeBytes: Long? = null,
     val selectedCoreId: String? = null,
@@ -218,7 +273,9 @@ data class GameDetailUiState(
     val achievementListFocusIndex: Int = 0,
     val hasVariants: Boolean = false,
     val hasSocialAccount: Boolean = false,
-    val isPrivate: Boolean = false
+    val isPrivate: Boolean = false,
+    val perGameSettings: com.nendo.argosy.ui.screens.gamedetail.delegates.PerGameSettingsState =
+        com.nendo.argosy.ui.screens.gamedetail.delegates.PerGameSettingsState()
 ) {
     val hasPreviousGame: Boolean get() = currentGameIndex > 0
     val hasNextGame: Boolean get() = currentGameIndex >= 0 && currentGameIndex < siblingGameIds.size - 1

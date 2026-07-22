@@ -44,6 +44,20 @@ data class RomMRom(
     @Json(name = "igdb_id") val igdbId: Long?,
     @Json(name = "moby_id") val mobyId: Long?,
     @Json(name = "ra_id") val raId: Long? = null,
+    @Json(name = "sgdb_id") val sgdbId: Long? = null,
+    @Json(name = "ss_id") val ssId: Long? = null,
+    @Json(name = "launchbox_id") val launchboxId: Long? = null,
+    @Json(name = "hasheous_id") val hasheousId: Long? = null,
+    @Json(name = "tgdb_id") val tgdbId: Long? = null,
+    @Json(name = "hltb_id") val hltbId: Long? = null,
+    @Json(name = "flashpoint_id") val flashpointId: String? = null,
+    @Json(name = "gamelist_id") val gamelistId: String? = null,
+    @Json(name = "libretro_id") val libretroId: String? = null,
+
+    @Json(name = "crc_hash") val crcHash: String? = null,
+    @Json(name = "md5_hash") val md5Hash: String? = null,
+    @Json(name = "sha1_hash") val sha1Hash: String? = null,
+    @Json(name = "ra_hash") val raHash: String? = null,
 
     @Json(name = "summary") val summary: String?,
     @Json(name = "metadatum") val metadatum: RomMMetadatum? = null,
@@ -71,7 +85,13 @@ data class RomMRom(
     @Json(name = "has_simple_single_file") val hasSimpleSingleFile: Boolean = true,
     @Json(name = "has_nested_single_file") val hasNestedSingleFile: Boolean = false,
     @Json(name = "files") val files: List<RomMRomFile>? = null,
-    @Json(name = "youtube_video_id") val youtubeVideoId: String? = null
+    @Json(name = "youtube_video_id") val youtubeVideoId: String? = null,
+
+    @Json(name = "alternative_names") val alternativeNames: List<String>? = null,
+    @Json(name = "has_manual") val hasManual: Boolean = false,
+    @Json(name = "path_manual") val manualPath: String? = null,
+    @Json(name = "has_soundtrack") val hasSoundtrack: Boolean = false,
+    @Json(name = "is_identified") val isIdentified: Boolean = true
 ) {
     val effectiveSiblings: List<RomMSibling> get() = siblingRoms ?: siblings ?: emptyList()
     val genres: List<String>? get() = metadatum?.genres
@@ -138,7 +158,8 @@ data class RomMSibling(
     @Json(name = "id") val id: Long,
     @Json(name = "name") val name: String? = null,
     @Json(name = "fs_name_no_tags") val fileNameNoTags: String,
-    @Json(name = "fs_name_no_ext") val fileNameNoExt: String
+    @Json(name = "fs_name_no_ext") val fileNameNoExt: String,
+    @Json(name = "is_main_sibling") val isMainSibling: Boolean? = null
 ) {
     val discNumber: Int?
         get() = DISC_NUMBER_REGEX.find(
@@ -162,7 +183,8 @@ data class RomMRomFile(
     @Json(name = "file_path") val filePath: String,
     @Json(name = "file_size_bytes") val fileSizeBytes: Long,
     @Json(name = "full_path") val fullPath: String,
-    @Json(name = "category") val category: String? = null
+    @Json(name = "category") val category: String? = null,
+    @Json(name = "track_meta") val trackMeta: RomMTrackMeta? = null
 ) {
     val discNumber: Int?
         get() = DISC_NUMBER_REGEX.find(
@@ -179,6 +201,20 @@ data class RomMRomFile(
 }
 
 @JsonClass(generateAdapter = true)
+data class RomMTrackMeta(
+    @Json(name = "title") val title: String? = null,
+    @Json(name = "artist") val artist: String? = null,
+    @Json(name = "album") val album: String? = null,
+    @Json(name = "genre") val genre: String? = null,
+    @Json(name = "year") val year: Int? = null,
+    @Json(name = "track") val track: Int? = null,
+    @Json(name = "disc") val disc: Int? = null,
+    @Json(name = "duration_seconds") val durationSeconds: Double? = null,
+    @Json(name = "has_embedded_cover") val hasEmbeddedCover: Boolean = false,
+    @Json(name = "cover_path") val coverPath: String? = null
+)
+
+@JsonClass(generateAdapter = true)
 data class RomMMetadatum(
     @Json(name = "genres") val genres: List<String>? = null,
     @Json(name = "companies") val companies: List<String>? = null,
@@ -186,7 +222,9 @@ data class RomMMetadatum(
     @Json(name = "franchises") val franchises: List<String>? = null,
     @Json(name = "collections") val collections: List<String>? = null,
     @Json(name = "game_modes") val gameModes: List<String>? = null,
-    @Json(name = "average_rating") val averageRating: Float? = null
+    @Json(name = "average_rating") val averageRating: Float? = null,
+    @Json(name = "player_count") val playerCount: String? = null,
+    @Json(name = "age_ratings") val ageRatings: List<String>? = null
 )
 
 @JsonClass(generateAdapter = true)
@@ -246,12 +284,6 @@ data class RomMRARefreshRequest(
 )
 
 @JsonClass(generateAdapter = true)
-data class RomMTokenResponse(
-    @Json(name = "access_token") val accessToken: String,
-    @Json(name = "token_type") val tokenType: String
-)
-
-@JsonClass(generateAdapter = true)
 data class RomMHeartbeatResponse(
     @Json(name = "SYSTEM") val system: RomMSystem? = null,
     @Json(name = "METADATA_SOURCES") val metadataSources: RomMMetadataSources? = null
@@ -261,6 +293,32 @@ data class RomMHeartbeatResponse(
 
     val libretroApiEnabled: Boolean?
         get() = metadataSources?.libretroApiEnabled
+
+    val steamGridDbEnabled: Boolean?
+        get() = metadataSources?.steamGridDbEnabled
+}
+
+@JsonClass(generateAdapter = true)
+data class RomMCoverSearchResult(
+    @Json(name = "name") val name: String? = null,
+    @Json(name = "resources") val resources: List<RomMCoverResource>? = null
+)
+
+/** SteamGridDB grid. Fields beyond thumb/url/type only exist on newer servers. */
+@JsonClass(generateAdapter = true)
+data class RomMCoverResource(
+    @Json(name = "url") val url: String? = null,
+    @Json(name = "thumb") val thumb: String? = null,
+    @Json(name = "type") val type: String? = null,
+    @Json(name = "width") val width: Int? = null,
+    @Json(name = "height") val height: Int? = null,
+    @Json(name = "style") val style: String? = null,
+    @Json(name = "nsfw") val nsfw: Boolean? = null,
+    @Json(name = "humor") val humor: Boolean? = null,
+    @Json(name = "epilepsy") val epilepsy: Boolean? = null
+) {
+    /** SteamGridDB serves full resolution under /grids/; thumbs are the same url under /thumb/. */
+    val fullResUrl: String? get() = url ?: thumb?.replace("/thumb/", "/grid/")
 }
 
 @JsonClass(generateAdapter = true)
@@ -271,7 +329,8 @@ data class RomMSystem(
 
 @JsonClass(generateAdapter = true)
 data class RomMMetadataSources(
-    @Json(name = "LIBRETRO_API_ENABLED") val libretroApiEnabled: Boolean? = null
+    @Json(name = "LIBRETRO_API_ENABLED") val libretroApiEnabled: Boolean? = null,
+    @Json(name = "STEAMGRIDDB_API_ENABLED") val steamGridDbEnabled: Boolean? = null
 )
 
 @JsonClass(generateAdapter = true)

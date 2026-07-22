@@ -79,7 +79,7 @@ suspend fun GameEntity.toHomeGameUi(
         isPlayable = downloaded,
         description = description,
         status = status,
-        titleId = titleId
+        titleId = displayTitleId
     )
 }
 

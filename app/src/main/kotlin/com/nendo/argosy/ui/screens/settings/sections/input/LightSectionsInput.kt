@@ -103,14 +103,6 @@ internal class LightSectionsInput(
                 viewModel.setRommAuthMethod(next)
                 return InputResult.HANDLED
             }
-            val isPassword = state.server.rommAuthMethod == com.nendo.argosy.ui.screens.settings.RomMAuthMethod.PASSWORD
-            if (isPassword && !state.server.rommDevicePairing && (state.focusedIndex == 2 || state.focusedIndex == 3)) {
-                val targetIndex = if (direction < 0) 2 else 3
-                if (state.focusedIndex != targetIndex) {
-                    viewModel.setRommConfigFocusIndex(targetIndex)
-                    return InputResult.HANDLED
-                }
-            }
             return InputResult.UNHANDLED
         }
         val items = buildGameDataItemsFromState(state)

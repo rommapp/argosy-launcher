@@ -26,6 +26,9 @@ object Dimens {
 
     val gameCardWidth: Dp @Composable get() = DimensionTokens.Layout.gameCardWidth.dp * scale
     val gameCardHeight: Dp @Composable get() = DimensionTokens.Layout.gameCardHeight.dp * scale
+    val coverPanelWidth: Dp @Composable get() = DimensionTokens.Layout.coverPanelWidth.dp * scale
+    val storageGameCoverWidth: Dp @Composable get() = DimensionTokens.Layout.storageGameCoverWidth.dp * scale
+    val storageGameCoverHeight: Dp @Composable get() = DimensionTokens.Layout.storageGameCoverHeight.dp * scale
     val settingsItemMinHeight: Dp @Composable get() = DimensionTokens.Layout.settingsItemMinHeight.dp * scale
     val menuRowHeight: Dp @Composable get() = DimensionTokens.Layout.menuRowHeight.dp * scale
     val menuRowHeightLg: Dp @Composable get() = DimensionTokens.Layout.menuRowHeightLg.dp * scale

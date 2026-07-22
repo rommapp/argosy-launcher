@@ -81,6 +81,7 @@ data class DisplayPreferences(
     val ambientLedCustomColorHue: Int = 200,
     val ambientLedTransitionMs: Int = 250,
     val ambientLedScreenEnabled: Boolean = false,
+    val ambientLedAchievementFlash: Boolean = true,
     val screenDimmerEnabled: Boolean = true,
     val screenDimmerTimeoutMinutes: Int = 2,
     val screenDimmerLevel: Int = 50,
@@ -158,6 +159,7 @@ class DisplayPreferencesRepository @Inject constructor(
         val AMBIENT_LED_CUSTOM_COLOR_HUE = intPreferencesKey("ambient_led_custom_color_hue")
         val AMBIENT_LED_TRANSITION_MS = intPreferencesKey("ambient_led_transition_ms")
         val AMBIENT_LED_SCREEN_ENABLED = booleanPreferencesKey("ambient_led_screen_enabled")
+        val AMBIENT_LED_ACHIEVEMENT_FLASH = booleanPreferencesKey("ambient_led_achievement_flash")
         val SCREEN_DIMMER_ENABLED = booleanPreferencesKey("screen_dimmer_enabled")
         val SCREEN_DIMMER_TIMEOUT_MINUTES = intPreferencesKey("screen_dimmer_timeout_minutes")
         val SCREEN_DIMMER_LEVEL = intPreferencesKey("screen_dimmer_level")
@@ -237,6 +239,7 @@ class DisplayPreferencesRepository @Inject constructor(
             ambientLedCustomColorHue = prefs[Keys.AMBIENT_LED_CUSTOM_COLOR_HUE] ?: 200,
             ambientLedTransitionMs = prefs[Keys.AMBIENT_LED_TRANSITION_MS] ?: 250,
             ambientLedScreenEnabled = prefs[Keys.AMBIENT_LED_SCREEN_ENABLED] ?: false,
+            ambientLedAchievementFlash = prefs[Keys.AMBIENT_LED_ACHIEVEMENT_FLASH] ?: true,
             screenDimmerEnabled = prefs[Keys.SCREEN_DIMMER_ENABLED] ?: true,
             screenDimmerTimeoutMinutes = prefs[Keys.SCREEN_DIMMER_TIMEOUT_MINUTES] ?: 2,
             screenDimmerLevel = prefs[Keys.SCREEN_DIMMER_LEVEL] ?: 50,
@@ -508,6 +511,10 @@ class DisplayPreferencesRepository @Inject constructor(
 
     suspend fun setAmbientLedScreenEnabled(enabled: Boolean) {
         dataStore.edit { it[Keys.AMBIENT_LED_SCREEN_ENABLED] = enabled }
+    }
+
+    suspend fun setAmbientLedAchievementFlash(enabled: Boolean) {
+        dataStore.edit { it[Keys.AMBIENT_LED_ACHIEVEMENT_FLASH] = enabled }
     }
 
     suspend fun setScreenDimmerEnabled(enabled: Boolean) {

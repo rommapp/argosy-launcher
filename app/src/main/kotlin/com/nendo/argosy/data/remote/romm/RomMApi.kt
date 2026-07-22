@@ -6,8 +6,6 @@ import okhttp3.ResponseBody
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.DELETE
-import retrofit2.http.Field
-import retrofit2.http.FormUrlEncoded
 import retrofit2.http.GET
 import retrofit2.http.Header
 import retrofit2.http.Multipart
@@ -24,14 +22,6 @@ interface RomMApi {
 
     @GET("api/heartbeat")
     suspend fun heartbeat(): Response<RomMHeartbeatResponse>
-
-    @FormUrlEncoded
-    @POST("api/token")
-    suspend fun login(
-        @Field("username") username: String,
-        @Field("password") password: String,
-        @Field("scope") scope: String = "me.read me.write platforms.read roms.read assets.read assets.write roms.user.read roms.user.write collections.read collections.write"
-    ): Response<RomMTokenResponse>
 
     @POST("api/client-tokens/exchange")
     suspend fun exchangePairingCode(
@@ -57,8 +47,16 @@ interface RomMApi {
         @Body body: RomMRARefreshRequest = RomMRARefreshRequest()
     ): Response<Unit>
 
+    @GET("api/search/cover")
+    suspend fun searchCovers(
+        @Query("search_term") searchTerm: String
+    ): Response<List<RomMCoverSearchResult>>
+
     @GET("api/platforms")
     suspend fun getPlatforms(): Response<List<RomMPlatform>>
+
+    @GET("api/platforms/identifiers")
+    suspend fun getPlatformIdentifiers(): Response<List<Long>>
 
     @GET("api/platforms/{id}")
     suspend fun getPlatform(
@@ -80,7 +78,8 @@ interface RomMApi {
     suspend fun downloadRom(
         @Path("id") romId: Long,
         @Path("fileName", encoded = true) fileName: String,
-        @Header("Range") range: String? = null
+        @Header("Range") range: String? = null,
+        @Query("file_ids") fileIds: String? = null
     ): Response<ResponseBody>
 
     @Streaming
@@ -90,6 +89,17 @@ interface RomMApi {
         @Path("fileName", encoded = true) fileName: String,
         @Header("Range") range: String? = null
     ): Response<ResponseBody>
+
+    @GET("api/music/tracks")
+    suspend fun getMusicTracks(
+        @QueryMap params: Map<String, String>
+    ): Response<RomMMusicTrackPage>
+
+    @GET("api/music/{facet}")
+    suspend fun getMusicFacet(
+        @Path("facet") facet: String,
+        @QueryMap params: Map<String, String>
+    ): Response<RomMMusicFacetPage>
 
     @PUT("api/roms/{id}/props")
     suspend fun updateRomUserProps(

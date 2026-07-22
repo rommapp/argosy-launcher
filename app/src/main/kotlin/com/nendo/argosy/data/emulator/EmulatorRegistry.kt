@@ -331,9 +331,9 @@ object EmulatorRegistry {
                 "atari2600", "atari5200", "atari7800", "atari8bit", "lynx", "jaguar",
                 "ngp", "ngpc", "neogeo", "neogeocd",
                 "msx", "msx2", "coleco",
-                "wonderswan", "wsc", "pokemini",
-                "arcade", "fbneo", "mame", "supergrafx",
-                "c64", "vic20", "dos", "zx", "pc9800", "amstradcpc", "pico8", "scummvm"
+                "wonderswan", "wsc", "pokemini", "gameandwatch",
+                "arcade", "fbneo", "mame", "cps1", "cps2", "cps3", "supergrafx",
+                "c64", "vic20", "amiga", "dos", "zx", "pc9800", "amstradcpc", "pico8", "scummvm"
             ),
             launchAction = Intent.ACTION_MAIN,
             launchConfig = LaunchConfig.RetroArch(),
@@ -351,9 +351,9 @@ object EmulatorRegistry {
                 "atari2600", "atari5200", "atari7800", "atari8bit", "lynx", "jaguar",
                 "ngp", "ngpc", "neogeo", "neogeocd",
                 "msx", "msx2", "coleco",
-                "wonderswan", "wsc", "pokemini",
-                "arcade", "fbneo", "mame", "supergrafx",
-                "c64", "vic20", "dos", "zx", "pc9800", "amstradcpc", "pico8", "scummvm"
+                "wonderswan", "wsc", "pokemini", "gameandwatch",
+                "arcade", "fbneo", "mame", "cps1", "cps2", "cps3", "supergrafx",
+                "c64", "vic20", "amiga", "dos", "zx", "pc9800", "amstradcpc", "pico8", "scummvm"
             ),
             launchAction = Intent.ACTION_MAIN,
             launchConfig = LaunchConfig.RetroArch(),
@@ -798,7 +798,8 @@ object EmulatorRegistry {
             launchConfig = LaunchConfig.Custom(
                 activityClass = "org.uoyabause.android.Yabause",
                 intentExtras = mapOf(
-                    "org.uoyabause.android.FileNameEx" to ExtraValue.FilePath
+                    "org.uoyabause.android.FileNameEx" to ExtraValue.FilePath,
+                    "org.uoyabause.android.FileNameUri" to ExtraValue.FileUriString
                 )
             ),
             downloadUrl = "https://play.google.com/store/apps/details?id=org.devmiyax.yabasanshioro2"
@@ -811,7 +812,8 @@ object EmulatorRegistry {
             launchConfig = LaunchConfig.Custom(
                 activityClass = "org.uoyabause.android.Yabause",
                 intentExtras = mapOf(
-                    "org.uoyabause.android.FileNameEx" to ExtraValue.FilePath
+                    "org.uoyabause.android.FileNameEx" to ExtraValue.FilePath,
+                    "org.uoyabause.android.FileNameUri" to ExtraValue.FileUriString
                 )
             )
         ),
@@ -834,7 +836,7 @@ object EmulatorRegistry {
             id = "fbalpha",
             packageName = "com.bangkokfusion.finalburn",
             displayName = "FinalBurn Alpha",
-            supportedPlatforms = setOf("arcade", "fbneo", "neogeo"),
+            supportedPlatforms = setOf("arcade", "fbneo", "neogeo", "cps1", "cps2", "cps3"),
             downloadUrl = "https://play.google.com/store/apps/details?id=com.bangkokfusion.finalburn"
         ),
 
@@ -991,6 +993,9 @@ object EmulatorRegistry {
         "arcade" to listOf("flycast", "mame4droid", "fbalpha", "retroarch", "retroarch_64"),
         "fbneo" to listOf("fbalpha", "retroarch", "retroarch_64"),
         "mame" to listOf("mame4droid", "retroarch", "retroarch_64"),
+        "cps1" to listOf("fbalpha", "retroarch", "retroarch_64"),
+        "cps2" to listOf("fbalpha", "retroarch", "retroarch_64"),
+        "cps3" to listOf("fbalpha", "retroarch", "retroarch_64"),
         "neogeo" to listOf("fbalpha", "retroarch", "retroarch_64"),
         "dos" to listOf("magic_dosbox", "dosbox_turbo"),
         "scummvm" to listOf("scummvm", "retroarch", "retroarch_64"),
@@ -1005,12 +1010,14 @@ object EmulatorRegistry {
         "wonderswan" to listOf("builtin", "retroarch", "retroarch_64"),
         "wsc" to listOf("builtin", "retroarch", "retroarch_64"),
         "pokemini" to listOf("builtin", "retroarch", "retroarch_64"),
+        "gameandwatch" to listOf("builtin", "retroarch", "retroarch_64"),
         "xbox360" to listOf("ax360e", "ax360e_free"),
         "steam" to listOf("gamehub", "gamehub_lite", "gamenative"),
         "windows" to listOf("gamenative"),
         "pc" to listOf("gamenative"),
         "c64" to listOf("retroarch", "retroarch_64"),
         "vic20" to listOf("retroarch", "retroarch_64"),
+        "amiga" to listOf("builtin", "retroarch", "retroarch_64"),
         "pc9800" to listOf("retroarch", "retroarch_64"),
         "pico8" to listOf("builtin", "picpic", "retroarch", "retroarch_64")
     )
@@ -1055,28 +1062,33 @@ object EmulatorRegistry {
         "arcade" to "fbneo",
         "fbneo" to "fbneo",
         "mame" to "mame2003_plus",
+        "cps1" to "fbneo",
+        "cps2" to "fbneo",
+        "cps3" to "fbneo",
         "dos" to "dosbox_pure",
         "msx" to "bluemsx",
         "msx2" to "bluemsx",
         "wonderswan" to "mednafen_wswan",
         "wsc" to "mednafen_wswan",
         "pokemini" to "pokemini",
+        "gameandwatch" to "gw",
         "c64" to "vice_x64",
         "vic20" to "vice_xvic",
+        "amiga" to "puae",
         "pc9800" to "np2kai",
-        "pico8" to "fake08"
+        "pico8" to "retro8"
     )
 
     fun getRetroArchCorePatterns(): Map<String, List<String>> = mapOf(
         "nes" to listOf("fceumm", "nestopia", "quicknes", "mesen"),
         "snes" to listOf("snes9x", "bsnes", "mesen"),
-        "n64" to listOf("mupen64plus_next", "parallel_n64"),
+        "n64" to listOf("mupen64plus_next_gles3", "mupen64plus_next_gles2", "parallel_n64"),
         "gc" to listOf("dolphin"),
         "ngc" to listOf("dolphin"),
         "wii" to listOf("dolphin"),
         "gb" to listOf("gambatte", "mgba", "sameboy", "gearboy", "tgbdual"),
         "gbc" to listOf("gambatte", "mgba", "sameboy", "gearboy", "tgbdual"),
-        "gba" to listOf("mgba", "vba", "gpsp"),
+        "gba" to listOf("mgba", "vbam", "gpsp"),
         "nds" to listOf("melondsds", "melonds", "desmume"),
         "3ds" to listOf("citra"),
         "genesis" to listOf("genesis_plus_gx", "picodrive"),
@@ -1091,7 +1103,7 @@ object EmulatorRegistry {
         "dc" to listOf("flycast"),
         "tg16" to listOf("mednafen_pce"),
         "tgcd" to listOf("mednafen_pce"),
-        "pcfx" to listOf("pcfx"),
+        "pcfx" to listOf("mednafen_pcfx"),
         "3do" to listOf("opera"),
         "atari2600" to listOf("stella"),
         "atari5200" to listOf("atari800", "a5200"),
@@ -1105,6 +1117,9 @@ object EmulatorRegistry {
         "arcade" to listOf("fbneo", "mame", "fbalpha"),
         "fbneo" to listOf("fbneo", "fbalpha"),
         "mame" to listOf("mame", "mame2003_plus", "mame2010"),
+        "cps1" to listOf("fbneo", "fbalpha2012_cps1"),
+        "cps2" to listOf("fbneo", "fbalpha2012_cps2"),
+        "cps3" to listOf("fbneo", "fbalpha2012_cps3"),
         "amstradcpc" to listOf("cap32", "crocods"),
         "dos" to listOf("dosbox_pure", "dosbox_core", "dosbox_svn"),
         "msx" to listOf("bluemsx", "fmsx"),
@@ -1112,9 +1127,11 @@ object EmulatorRegistry {
         "wonderswan" to listOf("mednafen_wswan"),
         "wsc" to listOf("mednafen_wswan"),
         "pokemini" to listOf("pokemini"),
-        "pico8" to listOf("fake08", "retro8"),
+        "gameandwatch" to listOf("gw", "mamemess"),
+        "pico8" to listOf("retro8"),
         "c64" to listOf("vice_x64", "vice_x64sc"),
         "vic20" to listOf("vice_xvic"),
+        "amiga" to listOf("puae", "puae2021"),
         "pc9800" to listOf("np2kai")
     )
 
@@ -1165,8 +1182,7 @@ object EmulatorRegistry {
             RetroArchCore("desmume2015", "DeSmuME 2015"),
         ),
         "3ds" to listOf(
-            RetroArchCore("citra", "Citra"),
-            RetroArchCore("citra_canary", "Citra Canary")
+            RetroArchCore("citra", "Citra")
         ),
         "genesis" to listOf(
             RetroArchCore("genesis_plus_gx", "Genesis Plus GX"),
@@ -1277,6 +1293,18 @@ object EmulatorRegistry {
             RetroArchCore("mame2003_plus", "MAME 2003-Plus"),
             RetroArchCore("mame2010", "MAME 2010")
         ),
+        "cps1" to listOf(
+            RetroArchCore("fbneo", "FinalBurn Neo"),
+            RetroArchCore("fbalpha2012_cps1", "FB Alpha 2012 CPS-1")
+        ),
+        "cps2" to listOf(
+            RetroArchCore("fbneo", "FinalBurn Neo"),
+            RetroArchCore("fbalpha2012_cps2", "FB Alpha 2012 CPS-2")
+        ),
+        "cps3" to listOf(
+            RetroArchCore("fbneo", "FinalBurn Neo"),
+            RetroArchCore("fbalpha2012_cps3", "FB Alpha 2012 CPS-3")
+        ),
         "msx" to listOf(
             RetroArchCore("bluemsx", "blueMSX"),
             RetroArchCore("fmsx", "fMSX")
@@ -1294,12 +1322,20 @@ object EmulatorRegistry {
         "pokemini" to listOf(
             RetroArchCore("pokemini", "PokeMini")
         ),
+        "gameandwatch" to listOf(
+            RetroArchCore("gw", "Handheld Electronic (GW)"),
+            RetroArchCore("mamemess", "Multi (MAME/MESS)")
+        ),
         "c64" to listOf(
             RetroArchCore("vice_x64", "VICE x64"),
             RetroArchCore("vice_x64sc", "VICE x64 (Accurate)")
         ),
         "vic20" to listOf(
             RetroArchCore("vice_xvic", "VICE VIC-20")
+        ),
+        "amiga" to listOf(
+            RetroArchCore("puae", "PUAE"),
+            RetroArchCore("puae2021", "PUAE 2021")
         ),
         "jaguar" to listOf(
             RetroArchCore("virtualjaguar", "Virtual Jaguar")
@@ -1319,7 +1355,6 @@ object EmulatorRegistry {
             RetroArchCore("np2kai", "Neko Project II Kai")
         ),
         "pico8" to listOf(
-            RetroArchCore("fake08", "FAKE-08"),
             RetroArchCore("retro8", "Retro8")
         )
     )
@@ -1392,6 +1427,9 @@ object EmulatorRegistry {
         "fbneo" to "FinalBurn Neo",
         "fbalpha2012" to "FB Alpha 2012",
         "fbalpha2012_neogeo" to "FB Alpha 2012 Neo Geo",
+        "fbalpha2012_cps1" to "FB Alpha 2012 CPS-1",
+        "fbalpha2012_cps2" to "FB Alpha 2012 CPS-2",
+        "fbalpha2012_cps3" to "FB Alpha 2012 CPS-3",
         "mame2003_plus" to "MAME 2003-Plus",
         "mame2010" to "MAME 2010 (0.139)",
         "cap32" to "Caprice32",
@@ -1399,8 +1437,7 @@ object EmulatorRegistry {
         "vice_x64sc" to "VICE x64sc",
         "vice_xvic" to "VICE xvic",
         "virtualjaguar" to "Virtual Jaguar",
-        "np2kai" to "Neko Project II Kai",
-        "fake08" to "FAKE-08"
+        "np2kai" to "Neko Project II Kai"
     )
 
     /**
@@ -1629,9 +1666,9 @@ object EmulatorRegistry {
                 "atari2600", "atari5200", "atari7800", "atari8bit", "lynx", "jaguar",
                 "ngp", "ngpc", "neogeo", "neogeocd",
                 "msx", "msx2", "coleco",
-                "wonderswan", "wsc", "pokemini",
-                "arcade", "fbneo", "mame", "supergrafx",
-                "c64", "vic20", "dos", "zx", "pc9800", "amstradcpc", "pico8", "scummvm"
+                "wonderswan", "wsc", "pokemini", "gameandwatch",
+                "arcade", "fbneo", "mame", "cps1", "cps2", "cps3", "supergrafx",
+                "c64", "vic20", "amiga", "dos", "zx", "pc9800", "amstradcpc", "pico8", "scummvm"
             ),
             launchAction = Intent.ACTION_MAIN,
             launchConfig = LaunchConfig.RetroArch(),

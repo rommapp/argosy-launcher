@@ -8,6 +8,7 @@ import com.nendo.argosy.data.repository.PlatformRepository
 import com.nendo.argosy.data.local.entity.GameEntity
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.domain.usecase.quickmenu.GetTopUnplayedUseCase
+import com.nendo.argosy.ui.common.displayTitleId
 import com.nendo.argosy.ui.screens.common.LibrarySyncBus
 import com.nendo.argosy.util.FuzzySearch
 import com.nendo.argosy.util.formatPlayTime
@@ -354,7 +355,7 @@ class QuickMenuViewModel @Inject constructor(
             metadata = metadataProvider(),
             metadataType = metadataType,
             isDownloaded = localPath != null,
-            titleId = titleId
+            titleId = displayTitleId
         )
     }
 

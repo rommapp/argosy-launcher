@@ -16,6 +16,8 @@ import com.nendo.argosy.data.local.entity.SocialSyncType
 import com.nendo.argosy.data.preferences.SyncPreferencesRepository
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.social.uploader.RomMPlaySessionUploader
+import com.nendo.argosy.data.storage.StorageAttributionRepository
+import com.nendo.argosy.data.storage.StorageCategory
 import com.nendo.argosy.data.sync.SocialSyncCoordinator
 import com.nendo.argosy.core.event.AchievementUpdateBus
 import androidx.lifecycle.Lifecycle
@@ -32,6 +34,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -62,7 +65,8 @@ class SocialRepository @Inject constructor(
     private val socialSyncCoordinator: Lazy<SocialSyncCoordinator>,
     private val syncPreferencesRepository: SyncPreferencesRepository,
     private val imageCacheManager: ImageCacheManager,
-    private val rommPlaySessionUploader: RomMPlaySessionUploader
+    private val rommPlaySessionUploader: RomMPlaySessionUploader,
+    private val attributionRepository: StorageAttributionRepository
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var hasCompletedInitialSync = false
@@ -1330,6 +1334,13 @@ class SocialRepository @Inject constructor(
                 }
             }
         }
+    }
+
+    /** Deletes cached friend-presence cover thumbnails; they re-download with the next presence event. */
+    suspend fun clearPresenceCovers() = withContext(Dispatchers.IO) {
+        val cacheDir = File(context.cacheDir, "presence_covers")
+        if (cacheDir.exists()) cacheDir.deleteRecursively()
+        attributionRepository.markDirty(StorageCategory.MISC_DOWNLOADS)
     }
 
     private fun saveTempCover(base64: String, friendId: String): String? {

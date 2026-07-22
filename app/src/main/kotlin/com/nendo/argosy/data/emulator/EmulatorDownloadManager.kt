@@ -7,6 +7,8 @@ import android.content.IntentFilter
 import android.os.Build
 import android.util.Log
 import androidx.core.content.FileProvider
+import com.nendo.argosy.data.storage.StorageAttributionRepository
+import com.nendo.argosy.data.storage.StorageCategory
 import com.nendo.argosy.data.update.AppInstaller
 import com.nendo.argosy.core.emulator.EmulatorDownloadState
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -38,7 +40,8 @@ data class EmulatorDownloadProgress(
 class EmulatorDownloadManager @Inject constructor(
     @ApplicationContext private val context: Context,
     private val appInstaller: AppInstaller,
-    private val emulatorUpdateManager: EmulatorUpdateManager
+    private val emulatorUpdateManager: EmulatorUpdateManager,
+    private val attributionRepository: StorageAttributionRepository
 ) {
     private val scope = SafeCoroutineScope(Dispatchers.IO, "EmulatorDownloadManager")
 
@@ -172,6 +175,7 @@ class EmulatorDownloadManager @Inject constructor(
             }
 
             Log.d(TAG, "Downloaded $bytesRead bytes to ${apkFile.absolutePath}")
+            attributionRepository.markDirty(StorageCategory.EMULATOR_APKS)
             apkFile
         } catch (e: Exception) {
             Log.e(TAG, "Download exception", e)
@@ -212,6 +216,7 @@ class EmulatorDownloadManager @Inject constructor(
                 if (apkFile.exists()) {
                     apkFile.delete()
                 }
+                attributionRepository.markDirty(StorageCategory.EMULATOR_APKS)
 
                 pendingInstall = null
 
@@ -271,6 +276,22 @@ class EmulatorDownloadManager @Inject constructor(
     fun cancelDownload() {
         _downloadProgress.value = null
         pendingInstall = null
+    }
+
+    fun hasActiveDownload(): Boolean {
+        val state = _downloadProgress.value?.state
+        return state is EmulatorDownloadState.Downloading || state is EmulatorDownloadState.WaitingForInstall
+    }
+
+    /** Deletes downloaded emulator APKs; returns false while a download or install is in flight. */
+    suspend fun clearApkCache(): Boolean = withContext(Dispatchers.IO) {
+        if (hasActiveDownload()) return@withContext false
+        val cacheDir = File(context.cacheDir, "emulator_apks")
+        if (cacheDir.exists()) {
+            cacheDir.deleteRecursively()
+        }
+        attributionRepository.markDirty(StorageCategory.EMULATOR_APKS)
+        true
     }
 
     fun canInstallPackages(): Boolean = appInstaller.canInstallPackages(context)

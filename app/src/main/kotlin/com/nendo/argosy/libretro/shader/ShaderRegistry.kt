@@ -519,6 +519,13 @@ class ShaderRegistry(private val context: Context) {
         getCustomShadersDir().mkdirs()
     }
 
+    /** Deletes downloaded catalog shaders only; custom shaders are user content and untouched. */
+    fun clearCatalog() {
+        val dir = getCatalogDir()
+        if (dir.exists()) dir.deleteRecursively()
+        invalidateInstalledCache()
+    }
+
     companion object {
         private const val TAG = "ShaderRegistry"
 

@@ -6,6 +6,8 @@ import com.nendo.argosy.data.local.ALauncherDatabase
 import com.nendo.argosy.data.local.migrations.MigrationRegistry
 import com.nendo.argosy.data.local.dao.AchievementDao
 import com.nendo.argosy.data.local.dao.AppCategoryDao
+import com.nendo.argosy.data.local.dao.AudioLoudnessDao
+import com.nendo.argosy.data.local.dao.BgmPlaylistDao
 import com.nendo.argosy.data.local.dao.CheatDao
 import com.nendo.argosy.data.local.dao.CollectionDao
 import com.nendo.argosy.data.local.dao.CoreOptionOverrideDao
@@ -226,4 +228,12 @@ object DatabaseModule {
     @Provides
     fun provideSteamDownloadTrackingDao(database: ALauncherDatabase): SteamDownloadTrackingDao =
         database.steamDownloadTrackingDao()
+
+    @Provides
+    fun provideBgmPlaylistDao(database: ALauncherDatabase): BgmPlaylistDao =
+        database.bgmPlaylistDao()
+
+    @Provides
+    fun provideAudioLoudnessDao(database: ALauncherDatabase): AudioLoudnessDao =
+        database.audioLoudnessDao()
 }

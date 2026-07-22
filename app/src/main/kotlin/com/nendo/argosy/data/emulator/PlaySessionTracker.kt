@@ -322,10 +322,20 @@ class PlaySessionTracker @Inject constructor(
                 Logger.debug(TAG, "[SaveSync] ORPHAN gameId=${orphaned.gameId} | Too short for play session (${sessionDuration.seconds}s)")
             }
             recoverOrphanedSave(orphaned)
+            recoverOrphanedStates(orphaned)
             clearSessionAndBroadcast()
         } finally {
             endingSession.set(false)
             saveRecoveryGate.markComplete()
+        }
+    }
+
+    private suspend fun recoverOrphanedStates(orphaned: PersistedSession) {
+        if (orphaned.variantFileId != null) return
+        try {
+            syncStateData(orphaned.gameId, orphaned.emulatorPackage)
+        } catch (e: Exception) {
+            Logger.error(TAG, "[StateSync] ORPHAN gameId=${orphaned.gameId} | State recovery failed", e)
         }
     }
 
@@ -341,6 +351,7 @@ class PlaySessionTracker @Inject constructor(
         }
 
         recoverOrphanedSave(orphaned)
+        recoverOrphanedStates(orphaned)
         clearSessionAndBroadcast()
         if (stopService) GameSessionService.stop(application)
         return longEnough
@@ -448,12 +459,7 @@ class PlaySessionTracker @Inject constructor(
                 variantFileId = variantFileId
             )
 
-            val displayId = if (sessionStateStore.isRolesSwapped()) {
-                android.view.Display.DEFAULT_DISPLAY + 1
-            } else {
-                android.view.Display.DEFAULT_DISPLAY
-            }
-            DualScreenManagerHolder.instance?.setEmulatorDisplay(displayId)
+            DualScreenManagerHolder.instance?.assignEmulatorDisplayForSessionStart()
 
             broadcastSessionChanged(gameId, channelName, isHardcore)
 
@@ -641,18 +647,26 @@ class PlaySessionTracker @Inject constructor(
 
             val effectiveSkipSaveSync = skipSaveSync || session.isNetplayGuest || session.variantFileId != null
             return try {
-                val cacheResult = coroutineScope {
-                    val saveJob = async {
-                        recordPlayTime(session, Duration.ofMillis(activePlayMs))
-                        markGameIncompleteIfNeeded(session, sessionDuration)
-                        if (!effectiveSkipSaveSync) syncAndCacheSave(session) else null
+                val saveOutcome = runCatching {
+                    coroutineScope {
+                        val saveJob = async {
+                            recordPlayTime(session, Duration.ofMillis(activePlayMs))
+                            markGameIncompleteIfNeeded(session, sessionDuration)
+                            if (!effectiveSkipSaveSync) syncAndCacheSave(session) else null
+                        }
+                        saveJob.await()
                     }
-                    saveJob.await()
                 }
 
                 if (!effectiveSkipSaveSync) {
-                    scope.launch { syncStateData(session) }
+                    try {
+                        syncStateData(session.gameId, session.emulatorPackage)
+                    } catch (e: Exception) {
+                        Logger.error(TAG, "[StateSync] SESSION gameId=${session.gameId} | State sync failed", e)
+                    }
                 }
+
+                val cacheResult = saveOutcome.getOrThrow()
 
                 saveSyncRepository.get().clearSessionOnOlderSave(session.gameId)
                 clearSessionAndBroadcast()
@@ -871,15 +885,12 @@ class PlaySessionTracker @Inject constructor(
         }
     }
 
-    private suspend fun syncStateData(session: ActiveSession) {
-        val result = syncStatesOnSessionEndUseCase.get()(
-            session.gameId,
-            session.emulatorPackage
-        )
+    private suspend fun syncStateData(gameId: Long, emulatorPackage: String) {
+        val result = syncStatesOnSessionEndUseCase.get()(gameId, emulatorPackage)
         when (result) {
-            is StateSyncResult.Cached -> Logger.debug(TAG, "Cached ${result.count} states for game ${session.gameId}")
-            is StateSyncResult.NoStatesFound -> Logger.debug(TAG, "No states found for game ${session.gameId}")
-            is StateSyncResult.NotConfigured -> Logger.debug(TAG, "State caching not configured for game ${session.gameId}")
+            is StateSyncResult.Cached -> Logger.debug(TAG, "Cached ${result.count} states for game $gameId")
+            is StateSyncResult.NoStatesFound -> Logger.debug(TAG, "No states found for game $gameId")
+            is StateSyncResult.NotConfigured -> Logger.debug(TAG, "State caching not configured for game $gameId")
             is StateSyncResult.Error -> Logger.error(TAG, "State sync error: ${result.message}")
         }
     }

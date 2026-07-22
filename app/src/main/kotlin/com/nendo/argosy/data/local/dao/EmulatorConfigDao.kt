@@ -61,8 +61,26 @@ interface EmulatorConfigDao {
     @Query("SELECT displayTarget FROM emulator_configs WHERE platformId = :platformId AND gameId IS NULL AND isDefault = 1")
     suspend fun getDisplayTargetForPlatform(platformId: Long): String?
 
+    @Query("SELECT displayTarget FROM emulator_configs WHERE gameId = :gameId LIMIT 1")
+    suspend fun getDisplayTargetForGame(gameId: Long): String?
+
+    @Query("SELECT savePath FROM emulator_configs WHERE gameId = :gameId LIMIT 1")
+    suspend fun getSavePathForGame(gameId: Long): String?
+
+    @Query("UPDATE emulator_configs SET savePath = :savePath WHERE gameId = :gameId")
+    suspend fun updateSavePathForGame(gameId: Long, savePath: String?)
+
     @Query("UPDATE emulator_configs SET displayTarget = :displayTarget WHERE platformId = :platformId AND gameId IS NULL AND isDefault = 1")
     suspend fun updateDisplayTargetForPlatform(platformId: Long, displayTarget: String?)
+
+    @Query("UPDATE emulator_configs SET displayTarget = :displayTarget WHERE gameId = :gameId")
+    suspend fun updateDisplayTargetForGame(gameId: Long, displayTarget: String?)
+
+    @Query("SELECT preferredExtension FROM emulator_configs WHERE gameId = :gameId LIMIT 1")
+    suspend fun getPreferredExtensionForGame(gameId: Long): String?
+
+    @Query("UPDATE emulator_configs SET preferredExtension = :extension WHERE gameId = :gameId")
+    suspend fun updatePreferredExtensionForGame(gameId: Long, extension: String?)
 
     @Query("DELETE FROM emulator_configs WHERE packageName = :packageName AND gameId IS NULL")
     suspend fun clearPlatformConfigsByPackage(packageName: String)

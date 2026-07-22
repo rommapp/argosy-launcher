@@ -3,13 +3,16 @@ package com.nendo.argosy.domain.usecase.game
 import com.nendo.argosy.data.emulator.EmulatorRegistry
 import com.nendo.argosy.data.emulator.InstalledEmulator
 import com.nendo.argosy.data.local.dao.EmulatorConfigDao
+import com.nendo.argosy.data.local.dao.SaveSyncDao
 import com.nendo.argosy.data.local.entity.EmulatorConfigEntity
 import javax.inject.Inject
 
 class ConfigureEmulatorUseCase @Inject constructor(
-    private val emulatorConfigDao: EmulatorConfigDao
+    private val emulatorConfigDao: EmulatorConfigDao,
+    private val saveSyncDao: SaveSyncDao
 ) {
     suspend fun setForGame(gameId: Long, platformId: Long, platformSlug: String, emulator: InstalledEmulator?) {
+        val hadSavePath = emulatorConfigDao.getByGameId(gameId)?.savePath != null
         emulatorConfigDao.deleteGameOverride(gameId)
 
         if (emulator != null) {
@@ -23,6 +26,7 @@ class ConfigureEmulatorUseCase @Inject constructor(
             )
             emulatorConfigDao.insert(config)
         }
+        if (hadSavePath) saveSyncDao.clearLocalPathsForGame(gameId)
     }
 
     suspend fun setForPlatform(platformId: Long, platformSlug: String, emulator: InstalledEmulator?) {
@@ -55,7 +59,9 @@ class ConfigureEmulatorUseCase @Inject constructor(
     }
 
     suspend fun clearForGame(gameId: Long) {
+        val hadSavePath = emulatorConfigDao.getByGameId(gameId)?.savePath != null
         emulatorConfigDao.deleteGameOverride(gameId)
+        if (hadSavePath) saveSyncDao.clearLocalPathsForGame(gameId)
     }
 
     suspend fun clearForPlatform(platformId: Long) {
@@ -114,6 +120,32 @@ class ConfigureEmulatorUseCase @Inject constructor(
         }
     }
 
+    suspend fun setSavePathForGame(gameId: Long, path: String) {
+        val existing = emulatorConfigDao.getByGameId(gameId)
+        if (existing != null) {
+            emulatorConfigDao.updateSavePathForGame(gameId, path)
+        } else {
+            val config = EmulatorConfigEntity(
+                platformId = null,
+                gameId = gameId,
+                packageName = null,
+                displayName = null,
+                coreName = null,
+                isDefault = false,
+                savePath = path
+            )
+            emulatorConfigDao.insert(config)
+        }
+        saveSyncDao.clearLocalPathsForGame(gameId)
+    }
+
+    suspend fun clearSavePathForGame(gameId: Long) {
+        val existing = emulatorConfigDao.getByGameId(gameId) ?: return
+        if (existing.savePath == null) return
+        emulatorConfigDao.updateSavePathForGame(gameId, null)
+        saveSyncDao.clearLocalPathsForGame(gameId)
+    }
+
     suspend fun getConfigForPlatform(platformId: Long): EmulatorConfigEntity? {
         return emulatorConfigDao.getDefaultForPlatform(platformId)
     }
@@ -155,6 +187,44 @@ class ConfigureEmulatorUseCase @Inject constructor(
                     coreName = null,
                     displayTarget = displayTarget,
                     isDefault = true
+                )
+            )
+        }
+    }
+
+    suspend fun setDisplayTargetForGame(gameId: Long, displayTarget: String?) {
+        val existing = emulatorConfigDao.getByGameId(gameId)
+        if (existing != null) {
+            emulatorConfigDao.updateDisplayTargetForGame(gameId, displayTarget)
+        } else if (displayTarget != null) {
+            emulatorConfigDao.insert(
+                EmulatorConfigEntity(
+                    platformId = null,
+                    gameId = gameId,
+                    packageName = null,
+                    displayName = null,
+                    coreName = null,
+                    displayTarget = displayTarget,
+                    isDefault = false
+                )
+            )
+        }
+    }
+
+    suspend fun setExtensionForGame(gameId: Long, extension: String?) {
+        val existing = emulatorConfigDao.getByGameId(gameId)
+        if (existing != null) {
+            emulatorConfigDao.updatePreferredExtensionForGame(gameId, extension)
+        } else if (extension != null) {
+            emulatorConfigDao.insert(
+                EmulatorConfigEntity(
+                    platformId = null,
+                    gameId = gameId,
+                    packageName = null,
+                    displayName = null,
+                    coreName = null,
+                    preferredExtension = extension,
+                    isDefault = false
                 )
             )
         }

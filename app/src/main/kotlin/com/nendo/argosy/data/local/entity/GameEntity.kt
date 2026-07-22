@@ -56,6 +56,8 @@ data class GameEntity(
     val source: GameSource,
 
     val coverPath: String? = null,
+    val originalCoverPath: String? = null,
+    val coverSetManually: Boolean = false,
     val gradientColors: String? = null,
     val backgroundPath: String? = null,
     val screenshotPaths: String? = null,
@@ -77,6 +79,29 @@ data class GameEntity(
     val franchises: String? = null,
     val genres: String? = null,
     val collections: String? = null,
+    val alternativeNames: String? = null,
+    val ageRatings: String? = null,
+
+    val mobyId: Long? = null,
+    val sgdbId: Long? = null,
+    val ssId: Long? = null,
+    val launchboxId: Long? = null,
+    val hasheousId: Long? = null,
+    val tgdbId: Long? = null,
+    val hltbId: Long? = null,
+    val flashpointId: String? = null,
+    val gamelistId: String? = null,
+    val libretroId: String? = null,
+
+    val crcHash: String? = null,
+    val md5Hash: String? = null,
+    val sha1Hash: String? = null,
+    val raHash: String? = null,
+
+    val hasManual: Boolean = false,
+    val manualPath: String? = null,
+    val remoteHasSoundtrack: Boolean = false,
+    val isIdentified: Boolean = true,
 
     val userRating: Int = 0,
     val userDifficulty: Int = 0,

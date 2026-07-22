@@ -34,5 +34,6 @@ data class DownloadQueueEntity(
     val errorReason: String?,
     val tempFilePath: String?,
     val createdAt: Instant = Instant.now(),
-    val isMultiFileRom: Boolean = false
+    val isMultiFileRom: Boolean = false,
+    val selectedFileIds: String? = null
 )

@@ -1170,8 +1170,45 @@ class ImageCacheManager @Inject constructor(
         return null
     }
 
+    /**
+     * Downloads a user-chosen cover and records it as the manual override, preserving the
+     * previous art so it can be restored. Returns the cached file path, or null on failure.
+     */
+    suspend fun applyManualCover(gameId: Long, url: String): String? = withContext(Dispatchers.IO) {
+        val slug = resolveGamePlatformSlug(gameId)
+        val coverDir = platformDir(slug, "covers")
+        val baseName = "cover_manual_${gameId}_${url.md5Hash()}"
+
+        val bitmap = downloadAndResize(url, 400) ?: return@withContext null
+        val hasTransparency = hasTransparentPixels(bitmap)
+        val cachedFile = File(coverDir, "$baseName.${if (hasTransparency) "png" else "jpg"}")
+        FileOutputStream(cachedFile).use { out ->
+            if (hasTransparency) {
+                bitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
+            } else {
+                bitmap.compress(Bitmap.CompressFormat.JPEG, 85, out)
+            }
+        }
+        bitmap.recycle()
+
+        if (!isValidImageFile(cachedFile)) {
+            cachedFile.delete()
+            Log.w(TAG, "Manual cover download produced an invalid image: $url")
+            return@withContext null
+        }
+
+        gameDao.setManualCover(gameId, cachedFile.absolutePath)
+        _localCoverWritten.tryEmit(gameId to cachedFile.absolutePath)
+        cachedFile.absolutePath
+    }
+
+    suspend fun resetManualCover(gameId: Long) = withContext(Dispatchers.IO) {
+        gameDao.resetManualCover(gameId)
+    }
+
     private suspend fun updateGameCover(rommId: Long, localPath: String) {
         val game = gameDao.getByRommId(rommId) ?: return
+        if (game.coverSetManually) return
         if (game.coverPath?.startsWith("/") == true && File(game.coverPath).exists()) return
         gameDao.updateCoverPath(game.id, localPath)
         _localCoverWritten.tryEmit(game.id to localPath)

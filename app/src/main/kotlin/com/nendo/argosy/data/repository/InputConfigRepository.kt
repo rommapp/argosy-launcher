@@ -344,19 +344,16 @@ class InputConfigRepository @Inject constructor(
         keyCodes: List<Int>,
         controllerId: String? = null,
         enabled: Boolean = true,
-        holdMs: Long = 0
+        holdMs: Long = 0,
+        scopeType: HotkeyScopeType = HotkeyScopeType.GLOBAL,
+        scopeKey: String? = null
     ) = withContext(Dispatchers.IO) {
         val canonicalKeyCodes = HotkeyManager.canonicalizeCombo(keyCodes)
         val comboJson = encodeComboJson(canonicalKeyCodes)
 
-        val existing = hotkeyDao.getByActionAndController(action, controllerId)
+        val existing = hotkeyDao.getByActionControllerAndScope(action, controllerId, scopeType, scopeKey)
         if (existing != null) {
-            hotkeyDao.updateCombo(
-                action = action,
-                controllerId = controllerId,
-                buttonComboJson = comboJson,
-                isEnabled = enabled
-            )
+            hotkeyDao.upsert(existing.copy(buttonComboJson = comboJson, isEnabled = enabled))
         } else {
             hotkeyDao.upsert(
                 HotkeyEntity(
@@ -364,19 +361,32 @@ class InputConfigRepository @Inject constructor(
                     buttonComboJson = comboJson,
                     controllerId = controllerId,
                     isEnabled = enabled,
-                    holdMs = holdMs
+                    holdMs = holdMs,
+                    scopeType = scopeType,
+                    scopeKey = scopeKey
                 )
             )
         }
-        Logger.info(TAG, "Set hotkey for $action: ${canonicalKeyCodes.map { KeyEvent.keyCodeToString(it) }}")
+        Logger.info(TAG, "Set hotkey for $action ($scopeType/${scopeKey ?: "-"}): ${canonicalKeyCodes.map { KeyEvent.keyCodeToString(it) }}")
+    }
+
+    suspend fun clearScopedHotkey(
+        action: HotkeyAction,
+        scopeType: HotkeyScopeType,
+        scopeKey: String?,
+        controllerId: String? = null
+    ) = withContext(Dispatchers.IO) {
+        hotkeyDao.deleteByActionControllerAndScope(action, controllerId, scopeType, scopeKey)
     }
 
     suspend fun setHotkeyHoldMs(
         action: HotkeyAction,
         holdMs: Long,
-        controllerId: String? = null
+        controllerId: String? = null,
+        scopeType: HotkeyScopeType = HotkeyScopeType.GLOBAL,
+        scopeKey: String? = null
     ) = withContext(Dispatchers.IO) {
-        hotkeyDao.updateHoldMs(action, controllerId, holdMs)
+        hotkeyDao.updateHoldMsScoped(action, controllerId, scopeType, scopeKey, holdMs)
     }
 
     suspend fun enableHotkey(action: HotkeyAction, enabled: Boolean) = withContext(Dispatchers.IO) {

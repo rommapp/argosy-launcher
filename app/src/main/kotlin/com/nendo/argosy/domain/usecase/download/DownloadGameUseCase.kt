@@ -34,13 +34,18 @@ class DownloadGameUseCase @Inject constructor(
     private val downloadManager: DownloadManager,
     private val emulatorConfigDao: EmulatorConfigDao,
     private val downloadQueueDao: DownloadQueueDao,
-    private val gameRepository: GameRepository
+    private val gameRepository: GameRepository,
+    private val preferencesRepository: com.nendo.argosy.data.preferences.UserPreferencesRepository
 ) {
-    suspend operator fun invoke(gameId: Long): DownloadResult {
+    suspend operator fun invoke(
+        gameId: Long,
+        selectedFileIds: List<Long>? = null,
+        versionRommId: Long? = null
+    ): DownloadResult {
         val game = gameDao.getById(gameId)
             ?: return DownloadResult.Error("Game not found")
 
-        val rommId = game.rommId
+        val rommId = versionRommId ?: game.rommId
             ?: return DownloadResult.Error("Game not synced from RomM")
 
         // Check if game is already downloaded (validates path and tries discovery)
@@ -76,18 +81,25 @@ class DownloadGameUseCase @Inject constructor(
         return when (val result = romMRepository.getRom(rommId)) {
             is RomMResult.Success -> {
                 val rom = result.data
+                val allFiles = rom.files?.filter { !it.fileName.startsWith(".") } ?: emptyList()
+                val selection = resolveSelection(allFiles, selectedFileIds, game.platformSlug)
+
                 var fileName: String
                 val expectedSize: Long
 
-                if (rom.needsServerBuiltZipExtraction) {
+                if (selection != null && selection.size == 1) {
+                    val only = allFiles.first { it.id == selection.first() }
+                    fileName = only.fileName
+                    expectedSize = only.fileSizeBytes
+                } else if (selection != null || rom.needsServerBuiltZipExtraction) {
                     val folderName = rom.fileName ?: game.title
-                    fileName = if (folderName.contains('.')) folderName
+                    fileName = if (selection == null && folderName.contains('.')) folderName
                         else "$folderName.zip"
-                    expectedSize = rom.fileSize
+                    expectedSize = if (selection != null) {
+                        allFiles.filter { it.id in selection }.sumOf { it.fileSizeBytes }
+                    } else rom.fileSize
                 } else {
-                    val mainFile = rom.files
-                        ?.filter { !it.fileName.startsWith(".") }
-                        ?.maxByOrNull { it.fileSizeBytes }
+                    val mainFile = allFiles.maxByOrNull { it.fileSizeBytes }
                     fileName = mainFile?.fileName
                         ?: rom.fileName
                         ?: "${game.title}.rom"
@@ -109,7 +121,8 @@ class DownloadGameUseCase @Inject constructor(
                     platformSlug = game.platformSlug,
                     coverPath = game.coverPath,
                     expectedSizeBytes = expectedSize,
-                    isMultiFileRom = rom.needsServerBuiltZipExtraction
+                    isMultiFileRom = rom.needsServerBuiltZipExtraction && selection == null,
+                    selectedFileIds = selection
                 )
                 DownloadResult.Queued
             }
@@ -117,6 +130,36 @@ class DownloadGameUseCase @Inject constructor(
                 DownloadResult.Error("Failed to get ROM info: ${result.message}")
             }
         }
+    }
+
+    /**
+     * Explicit picker selection wins; otherwise category defaults trim the file
+     * set. Null means download everything exactly as before.
+     */
+    private suspend fun resolveSelection(
+        allFiles: List<com.nendo.argosy.data.remote.romm.RomMRomFile>,
+        explicit: List<Long>?,
+        platformSlug: String
+    ): List<Long>? {
+        if (explicit != null) {
+            return explicit.filter { id -> allFiles.any { it.id == id } }
+                .takeIf { it.isNotEmpty() }
+        }
+        if (allFiles.size <= 1) return null
+        val defaults = preferencesRepository.getEffectiveDownloadDefaults(platformSlug)
+        val rootLen = allFiles.minOf { it.filePath.length }
+        val selected = allFiles.filter { f ->
+            val cat = f.category
+            when {
+                cat == com.nendo.argosy.data.model.VariantCategory.GAME.key -> true
+                cat == null && f.filePath.length == rootLen -> true
+                cat == null ->
+                    defaults[com.nendo.argosy.data.preferences.DownloadDefaults.OTHER_KEY] ?: false
+                else -> defaults[cat] ?: false
+            }
+        }
+        if (selected.size == allFiles.size || selected.isEmpty()) return null
+        return selected.map { it.id }
     }
 
     private suspend fun downloadMultiDiscGame(

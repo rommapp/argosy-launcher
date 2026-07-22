@@ -87,11 +87,12 @@ import com.nendo.argosy.ui.screens.gamedetail.modals.MissingDiscModal
 import com.nendo.argosy.ui.screens.gamedetail.modals.StatusPickerModal
 import com.nendo.argosy.ui.screens.gamedetail.modals.SteamLauncherPickerModal
 import com.nendo.argosy.ui.screens.gamedetail.modals.MoreOptionsModal
+import com.nendo.argosy.ui.screens.gamedetail.modals.PerGameSettingsModal
 import com.nendo.argosy.ui.screens.gamedetail.modals.PlayOptionsModal
 import com.nendo.argosy.ui.screens.gamedetail.modals.RatingsStatusModal
 import com.nendo.argosy.ui.screens.gamedetail.modals.PermissionRequiredModal
 import com.nendo.argosy.ui.screens.gamedetail.modals.RatingPickerModal
-import com.nendo.argosy.ui.screens.gamedetail.modals.UpdatesPickerModal
+import com.nendo.argosy.ui.screens.gamedetail.modals.FilePickerModal
 import com.nendo.argosy.ui.common.savechannel.SaveChannelModal
 import com.nendo.argosy.ui.components.AddToCollectionModal
 import com.nendo.argosy.ui.components.CollectionItem
@@ -200,6 +201,13 @@ fun GameDetailScreen(
     val screenshotCount by remember { derivedStateOf { uiState.game?.screenshots?.size ?: 0 } }
     val achievementColumnCount by remember { derivedStateOf { uiState.game?.achievements?.chunked(3)?.size ?: 0 } }
     val hasRelated by remember { derivedStateOf { uiState.relatedGames.isNotEmpty() } }
+    val hasPerGameSettings by remember {
+        derivedStateOf {
+            val g = uiState.game
+            g != null && !g.isSteamGame && !g.isAndroidApp &&
+                uiState.downloadStatus == GameDownloadStatus.DOWNLOADED
+        }
+    }
 
     LaunchedEffect(uiState.game?.id) {
         scrollState.scrollTo(0)
@@ -227,7 +235,8 @@ fun GameDetailScreen(
                     hasAchievements = hasAchievements,
                     hasSocialAccount = uiState.hasSocialAccount,
                     hasSaveSync = hasSaveSync,
-                    hasRelated = hasRelated
+                    hasRelated = hasRelated,
+                    hasPerGameSettings = hasPerGameSettings
                 )
                 when (menuLayout.itemAtFocusIndex(uiState.menuFocusIndex, layoutState)) {
                     MenuItem.Screenshots -> if (screenshotCount > 0) {
@@ -251,7 +260,8 @@ fun GameDetailScreen(
                     hasAchievements = hasAchievements,
                     hasSocialAccount = uiState.hasSocialAccount,
                     hasSaveSync = hasSaveSync,
-                    hasRelated = hasRelated
+                    hasRelated = hasRelated,
+                    hasPerGameSettings = hasPerGameSettings
                 )
                 when (menuLayout.itemAtFocusIndex(uiState.menuFocusIndex, layoutState)) {
                     MenuItem.Screenshots -> if (screenshotCount > 0) {
@@ -278,7 +288,8 @@ fun GameDetailScreen(
                     hasAchievements = hasAchievements,
                     hasSocialAccount = uiState.hasSocialAccount,
                     hasSaveSync = hasSaveSync,
-                    hasRelated = hasRelated
+                    hasRelated = hasRelated,
+                    hasPerGameSettings = hasPerGameSettings
                 )
                 menuLayout.itemAtFocusIndex(uiState.menuFocusIndex, layoutState) == MenuItem.Screenshots
             }
@@ -343,7 +354,7 @@ fun GameDetailScreen(
     DisposableEffect(isHardcoreConflict) {
         onDispose {
             if (isHardcoreConflict) {
-                inputDispatcher.popModal()
+                inputDispatcher.removeModal(hardcoreConflictInputHandler)
             }
         }
     }
@@ -351,7 +362,7 @@ fun GameDetailScreen(
     DisposableEffect(isLocalModified) {
         onDispose {
             if (isLocalModified) {
-                inputDispatcher.popModal()
+                inputDispatcher.removeModal(localModifiedInputHandler)
             }
         }
     }
@@ -377,7 +388,7 @@ fun GameDetailScreen(
     DisposableEffect(showMemcardPicker) {
         onDispose {
             if (showMemcardPicker) {
-                inputDispatcher.popModal()
+                inputDispatcher.removeModal(memcardPickerInputHandler)
             }
         }
     }
@@ -403,7 +414,26 @@ fun GameDetailScreen(
     DisposableEffect(showLaunchVariantPicker) {
         onDispose {
             if (showLaunchVariantPicker) {
-                inputDispatcher.popModal()
+                inputDispatcher.removeModal(launchVariantPickerInputHandler)
+            }
+        }
+    }
+
+    val perGameSettingsInputHandler = remember(viewModel, onNavigateToPlatformSettings) {
+        viewModel.createPerGameSettingsInputHandler(onNavigateToPlatformSettings)
+    }
+
+    val showPerGameSettings = uiState.perGameSettings.visible
+    LaunchedEffect(showPerGameSettings) {
+        if (showPerGameSettings) {
+            inputDispatcher.pushModal(perGameSettingsInputHandler)
+        }
+    }
+
+    DisposableEffect(showPerGameSettings) {
+        onDispose {
+            if (showPerGameSettings) {
+                inputDispatcher.removeModal(perGameSettingsInputHandler)
             }
         }
     }
@@ -460,7 +490,8 @@ private fun GameDetailContent(
         uiState.showRatingsStatusMenu || pickerState.hasAnyPickerOpen ||
         uiState.showRatingPicker || uiState.showMissingDiscPrompt || isAnySyncing ||
         uiState.showSaveCacheDialog || uiState.showRenameDialog || uiState.showScreenshotViewer ||
-        uiState.showExtractionFailedPrompt || uiState.showAchievementList
+        uiState.showExtractionFailedPrompt || uiState.showAchievementList ||
+        uiState.perGameSettings.visible
     val modalBlur by animateDpAsState(
         targetValue = if (showAnyOverlay) Motion.blurRadiusModal else 0.dp,
         animationSpec = Motion.focusSpringDp,
@@ -488,7 +519,9 @@ private fun GameDetailContent(
         hasAchievements = game.achievements.isNotEmpty(),
         hasSocialAccount = uiState.hasSocialAccount,
         hasSaveSync = contentHasSaveSync,
-        hasRelated = uiState.relatedGames.isNotEmpty()
+        hasRelated = uiState.relatedGames.isNotEmpty(),
+        hasPerGameSettings = !game.isSteamGame && !game.isAndroidApp &&
+            uiState.downloadStatus == GameDownloadStatus.DOWNLOADED
     )
 
     val menuDisplayState = GameDetailMenuState(
@@ -631,6 +664,7 @@ private fun GameDetailContent(
                                     MenuItem.Saves -> viewModel.syncSavesNow()
                                     MenuItem.Favorite -> viewModel.toggleFavorite()
                                     MenuItem.Privacy -> viewModel.togglePrivacy()
+                                    MenuItem.PerGameSettings -> viewModel.showPerGameSettings()
                                     MenuItem.Options -> viewModel.toggleMoreOptions()
                                     MenuItem.Details -> coroutineScope.launch {
                                         scrollState.animateScrollTo(0)
@@ -784,6 +818,7 @@ private fun GameDetailContent(
                             MenuItem.Saves -> add(InputButton.A to if (uiState.isSyncingSaves) "Syncing..." else "Sync")
                             MenuItem.Favorite -> add(InputButton.A to if (game.isFavorite) "Unfavorite" else "Favorite")
                             MenuItem.Privacy -> add(InputButton.A to if (uiState.isPrivate) "Make Public" else "Make Private")
+                            MenuItem.PerGameSettings -> add(InputButton.A to "Configure")
                             MenuItem.Options -> add(InputButton.A to "Options")
                             MenuItem.Screenshots -> add(InputButton.A to "View")
                             MenuItem.Achievements -> add(InputButton.A to "View All")
@@ -856,8 +891,41 @@ private fun GameDetailModals(
             isDownloaded = uiState.downloadStatus == GameDownloadStatus.DOWNLOADED,
             hasVariants = uiState.hasVariants,
             updateCount = uiState.updateFiles.size + uiState.dlcFiles.size,
+            hasManageableFiles = uiState.hasManageableFiles,
+            canSearchCovers = uiState.canSearchCovers,
             onAction = { action -> viewModel.handleMoreOptionAction(action, onBack, onNavigateToPlatformSettings) },
             onDismiss = viewModel::toggleMoreOptions
+        )
+    }
+
+    AnimatedVisibility(
+        visible = uiState.perGameSettings.visible,
+        enter = fadeIn(),
+        exit = fadeOut()
+    ) {
+        PerGameSettingsModal(
+            gameTitle = game.title,
+            state = uiState.perGameSettings,
+            onEmulatorClick = viewModel::showEmulatorPicker,
+            onCoreClick = viewModel::showCorePicker,
+            onChangeSavePath = viewModel::openPerGameSavePathBrowser,
+            onResetSavePath = viewModel::clearPerGameSavePath,
+            onCycleDisplayTarget = viewModel::cyclePerGameDisplayTarget,
+            onCycleExtension = viewModel::cyclePerGameExtension,
+            onPlatformSettings = {
+                viewModel.dismissPerGameSettings()
+                onNavigateToPlatformSettings(game.platformId)
+            },
+            onDismiss = viewModel::dismissPerGameSettings
+        )
+    }
+
+    if (uiState.perGameSettings.showPathBrowser) {
+        com.nendo.argosy.ui.filebrowser.FileBrowserScreen(
+            mode = com.nendo.argosy.ui.filebrowser.FileBrowserMode.FOLDER_SELECTION,
+            title = "Save Path",
+            onPathSelected = viewModel::setPerGameSavePath,
+            onDismiss = viewModel::dismissPerGameSavePathBrowser
         )
     }
 
@@ -902,15 +970,45 @@ private fun GameDetailModals(
     }
 
     AnimatedVisibility(
-        visible = pickerState.showUpdatesPicker,
+        visible = pickerState.showFilePicker,
         enter = fadeIn(),
         exit = fadeOut()
     ) {
-        UpdatesPickerModal(
-            files = uiState.updateFiles + uiState.dlcFiles,
-            focusIndex = pickerState.updatesPickerFocusIndex,
-            onDownload = viewModel::downloadUpdateFile,
-            onDismiss = viewModel.pickerModalDelegate::dismissUpdatesPicker
+        val fileRows = pickerState.filePickerRows
+        val isSelected = { row: com.nendo.argosy.data.model.FilePickerRow ->
+            row.versionRommId
+                ?.let { it in pickerState.filePickerSelectedVersions }
+                ?: (row.rommFileId in pickerState.filePickerSelected)
+        }
+        val summary = if (pickerState.filePickerManageMode) {
+            val adds = fileRows.filter { !it.isHeader && !it.isLocked && !it.isDownloaded && isSelected(it) }
+            val removes = fileRows.filter { !it.isHeader && !it.isLocked && it.isDownloaded && !isSelected(it) }
+            when {
+                adds.isEmpty() && removes.isEmpty() -> "No changes"
+                else -> buildList {
+                    if (adds.isNotEmpty()) add("+${adds.size} · ${com.nendo.argosy.util.formatBytes(adds.sumOf { it.sizeBytes })}")
+                    if (removes.isNotEmpty()) add("-${removes.size} · ${com.nendo.argosy.util.formatBytes(removes.sumOf { it.sizeBytes })}")
+                }.joinToString("   ")
+            }
+        } else {
+            val selected = fileRows.filter { !it.isHeader && isSelected(it) }
+            "${selected.size} of ${fileRows.count { !it.isHeader }} · ${com.nendo.argosy.util.formatBytes(selected.sumOf { it.sizeBytes })} selected"
+        }
+        FilePickerModal(
+            gameTitle = uiState.game?.title ?: "",
+            title = if (pickerState.filePickerManageMode) "Files" else "Choose files",
+            rows = pickerState.visibleFilePickerRows,
+            selectedIds = pickerState.filePickerSelected,
+            selectedVersionIds = pickerState.filePickerSelectedVersions,
+            focusIndex = pickerState.filePickerFocusIndex,
+            summary = summary,
+            onToggleRow = viewModel::toggleFilePickerRow,
+            onConfirm = viewModel::confirmFilePicker,
+            onDismiss = viewModel::dismissFilePicker,
+            allRows = fileRows,
+            collapsedGroups = pickerState.filePickerCollapsed,
+            onToggleCollapse = viewModel.pickerModalDelegate::toggleFilePickerGroupCollapse,
+            manageMode = pickerState.filePickerManageMode
         )
     }
 
@@ -996,9 +1094,27 @@ private fun GameDetailModals(
         com.nendo.argosy.ui.screens.gamedetail.modals.VariantPickerModal(
             variants = pickerState.variantPickerOptions,
             focusIndex = pickerState.variantPickerFocusIndex,
-            onSelectVariant = { viewModel.pickerModalDelegate.confirmVariantSelection() },
+            onSelectVariant = { fileId -> viewModel.pickerModalDelegate.confirmVariantSelection(fileId) },
             onDownloadVariant = { fileId -> viewModel.downloadVariant(fileId) },
+            activeFileId = pickerState.variantPickerActiveFileId,
+            showActiveMarker = true,
             onDismiss = viewModel.pickerModalDelegate::dismissVariantPicker
+        )
+    }
+
+    AnimatedVisibility(
+        visible = pickerState.showCoverPicker,
+        enter = fadeIn(),
+        exit = fadeOut()
+    ) {
+        com.nendo.argosy.ui.screens.gamedetail.modals.CoverPickerModal(
+            gameTitle = uiState.game?.title ?: "",
+            covers = pickerState.coverCandidates,
+            focusIndex = pickerState.coverPickerFocusIndex,
+            isLoading = pickerState.coverPickerLoading,
+            errorMessage = pickerState.coverPickerError,
+            onSelect = viewModel::selectCover,
+            onDismiss = viewModel::dismissCoverPicker
         )
     }
 

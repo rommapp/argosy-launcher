@@ -417,8 +417,10 @@ private fun GameDataContent(
 
                 GameDataItem.ClearPathCache -> {
                     val pathCount = uiState.syncSettings.pathCacheCount
+                    val pendingUploads = uiState.syncSettings.pendingUploadsCount
                     val subtitle = when {
                         uiState.syncSettings.isClearingPathCache -> "Clearing..."
+                        pendingUploads > 0 -> "$pendingUploads saves waiting to upload"
                         pathCount > 0 -> "$pathCount cached paths"
                         else -> "No cached paths"
                     }
@@ -426,15 +428,17 @@ private fun GameDataContent(
                         title = "Clear Save Path Cache",
                         subtitle = subtitle,
                         isFocused = isFocused(item),
-                        isEnabled = !uiState.syncSettings.isClearingPathCache && pathCount > 0,
+                        isEnabled = !uiState.syncSettings.isClearingPathCache && pathCount > 0 && pendingUploads == 0,
                         onClick = { viewModel.requestClearPathCache() }
                     )
                 }
 
                 GameDataItem.ResetSaveCache -> {
                     val totalCached = uiState.syncSettings.saveCacheCount + uiState.syncSettings.stateCacheCount
+                    val pendingUploads = uiState.syncSettings.pendingUploadsCount
                     val subtitle = when {
                         uiState.syncSettings.isResettingSaveCache -> "Resetting..."
+                        pendingUploads > 0 -> "$pendingUploads saves waiting to upload"
                         totalCached > 0 -> "$totalCached cached entries"
                         else -> "No cached entries"
                     }
@@ -442,7 +446,7 @@ private fun GameDataContent(
                         title = "Reset Save Cache",
                         subtitle = subtitle,
                         isFocused = isFocused(item),
-                        isEnabled = !uiState.syncSettings.isResettingSaveCache && totalCached > 0,
+                        isEnabled = !uiState.syncSettings.isResettingSaveCache && totalCached > 0 && pendingUploads == 0,
                         isDangerous = true,
                         onClick = { viewModel.requestResetSaveCache() }
                     )

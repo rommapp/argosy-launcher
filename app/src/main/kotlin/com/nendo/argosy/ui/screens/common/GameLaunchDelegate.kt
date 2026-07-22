@@ -139,7 +139,7 @@ class GameLaunchDelegate @Inject constructor(
     ): Boolean =
         emulatorPackage == EmulatorRegistry.BUILTIN_PACKAGE &&
             game.achievementCount > 0 &&
-            preferencesRepository.getBuiltinEmulatorSettings().first().defaultToHardcore &&
+            preferencesRepository.getBuiltinEmulatorSettings().first().defaultToHardcore == "hardcore" &&
             retroAchievementsRepository.isLoggedIn()
 
     private val _syncOverlayState = MutableStateFlow<SyncOverlayState?>(null)
@@ -237,6 +237,13 @@ class GameLaunchDelegate @Inject constructor(
 
                 val emulatorPackage = emulatorResolver.getEmulatorPackageForGame(gameId, game.platformId, game.platformSlug)
                 val emulatorId = emulatorPackage?.let { emulatorResolver.resolveEmulatorId(it) }
+                if (activeSession == null && emulatorPackage != null && emulatorId != null &&
+                    EmulatorRegistry.getById(emulatorId)?.launchConfig?.requiresEmulatorKill == true
+                ) {
+                    android.util.Log.d("GameLaunchDelegate", "Force-stopping $emulatorPackage before launch (requiresEmulatorKill, no tracked session)")
+                    gameLauncher.forceStopEmulator(emulatorPackage)
+                    delay(EMULATOR_KILL_DELAY_MS)
+                }
                 val prefs = preferencesRepository.preferences.first()
                 val canSync = resolvedVariantId == null && emulatorId != null && SavePathRegistry.canSyncWithSettings(
                     emulatorId,

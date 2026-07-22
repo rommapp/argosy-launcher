@@ -113,13 +113,11 @@ class DualHomeInputHandler(
             com.nendo.argosy.ui.input.GamepadEvent.PrevSection -> {
                 if (inAppBar) viewModel.focusCarousel()
                 viewModel.previousSection()
-                onBroadcastCurrentGameSelection()
                 InputResult.HANDLED
             }
             com.nendo.argosy.ui.input.GamepadEvent.NextSection -> {
                 if (inAppBar) viewModel.focusCarousel()
                 viewModel.nextSection()
-                onBroadcastCurrentGameSelection()
                 InputResult.HANDLED
             }
             com.nendo.argosy.ui.input.GamepadEvent.Select -> {

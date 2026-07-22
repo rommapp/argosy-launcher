@@ -10,6 +10,8 @@ import android.provider.DocumentsContract
 import androidx.core.content.FileProvider
 import com.nendo.argosy.data.download.ZipExtractor
 import com.nendo.argosy.data.local.dao.GameFileDao
+import com.nendo.argosy.data.storage.StorageAttributionRepository
+import com.nendo.argosy.data.storage.StorageCategory
 import com.nendo.argosy.data.storage.StoragePathUtils
 import com.nendo.argosy.data.launcher.GameNativeLauncher
 import com.nendo.argosy.data.launcher.SteamLaunchers
@@ -89,7 +91,8 @@ class GameLauncher @Inject constructor(
     private val emulatorSaveConfigRepository: com.nendo.argosy.data.repository.EmulatorSaveConfigRepository,
     private val saveHandlerRegistry: com.nendo.argosy.data.sync.platform.PlatformSaveHandlerRegistry,
     private val libretroStatePathResolver: LibretroStatePathResolver,
-    private val notificationManager: com.nendo.argosy.core.notification.NotificationManager
+    private val notificationManager: com.nendo.argosy.core.notification.NotificationManager,
+    private val attributionRepository: StorageAttributionRepository
 ) {
     private val shellAmAvailable: Boolean by lazy {
         try {
@@ -526,10 +529,11 @@ class GameLauncher @Inject constructor(
 
         Logger.info(TAG, "[BuiltIn] Launching: rom=${romFile.name}, core=$coreName, romSize=${romFile.length()}b, coreVars=${coreVariables.size}")
         val builtinSettings = userPreferencesRepository.getBuiltinEmulatorSettings().first()
-        // Per-platform builtin save/state overrides (Video & Performance in platform context).
         val platformLibretroOverride = platformLibretroSettingsDao.getByPlatformId(game.platformId)
         val builtinBesideRom = emulatorSaveConfigRepository.getByEmulator("builtin")?.savesBesideRom == true
-        val effectiveSavePath = if (builtinBesideRom) romFile.parent
+        val perGameSavePath = emulatorConfigDao.getSavePathForGame(game.id)?.takeIf { it.isNotBlank() }
+        val effectiveSavePath = perGameSavePath
+            ?: if (builtinBesideRom) romFile.parent
             else platformLibretroOverride?.savePath ?: builtinSettings.customSavePath
         val effectiveStatePath = libretroStatePathResolver
             .liveStateBaseDir(platformLibretroOverride?.statePath, builtinSettings.customStatePath)
@@ -1739,6 +1743,17 @@ class GameLauncher @Inject constructor(
 
     /** An update or DLC file is unbootable alone, so redirect to the base rom and persist it; excluded (title-id) platforms always re-elect the base, other platforms only when the launch target is provably update/dlc content, preferring an m3u so multi-disc folders keep their playlist. */
     private suspend fun resolveBaseRomFile(game: GameEntity, romFile: File): File {
+        game.activeVariantFileId?.let { fileId ->
+            val chosen = gameFileDao.getById(fileId)
+            val chosenPath = chosen?.localPath
+            if (chosen?.versionGroup != null && chosenPath != null && File(chosenPath).exists()) {
+                if (chosenPath != romFile.absolutePath) {
+                    Logger.info(TAG, "resolveBaseRomFile: honoring active version ${chosen.fileName} for ${game.title}")
+                    gameDao.updateLocalPath(game.id, chosenPath, game.source)
+                }
+                return File(chosenPath)
+            }
+        }
         val excluded = game.platformSlug in VariantCategory.TITLE_ID_PLATFORMS
         val parent = romFile.parentFile ?: return romFile
         val inContentSubfolder = parent.name.lowercase() in EXTCONTENT_SOURCE_NAMES
@@ -1905,15 +1920,18 @@ class GameLauncher @Inject constructor(
 
             if (extractedFile.exists()) {
                 Logger.info(TAG, "Extracted to cache: ${extractedFile.name}")
+                attributionRepository.markDirty(StorageCategory.ROM_EXTRACTION)
                 extractedFile
             } else {
                 Logger.error(TAG, "Extraction failed: extracted file doesn't exist: ${extractedFile.absolutePath}")
                 cacheDir.deleteRecursively()
+                attributionRepository.markDirty(StorageCategory.ROM_EXTRACTION)
                 romFile
             }
         } catch (e: Exception) {
             Logger.error(TAG, "Failed to extract archive: ${e.message}", e)
             cacheDir.deleteRecursively()
+            attributionRepository.markDirty(StorageCategory.ROM_EXTRACTION)
             romFile
         }
     }
@@ -1924,13 +1942,10 @@ class GameLauncher @Inject constructor(
         }
 
         java.util.zip.ZipFile(archiveFile).use { zip ->
-            val entries = zip.entries().toList().filter { !it.isDirectory && !it.name.startsWith("._") }
-            if (entries.isEmpty()) {
-                throw IllegalStateException("Archive is empty")
-            }
+            val entry = ArchiveRomNaming.primaryZipEntry(zip)
+                ?: throw IllegalStateException("Archive is empty")
 
-            val entry = entries.first()
-            val fileName = File(entry.name).name
+            val fileName = ArchiveRomNaming.launchFileName(entry.name)
             val targetFile = File(targetDir, fileName)
 
             zip.getInputStream(entry).use { input ->
@@ -1951,8 +1966,8 @@ class GameLauncher @Inject constructor(
             .use { sevenZ ->
                 var entry = sevenZ.nextEntry
                 while (entry != null) {
-                    if (!entry.isDirectory && !entry.name.startsWith("._")) {
-                        val fileName = File(entry.name).name
+                    if (ArchiveRomNaming.isUsableEntry(entry.name, entry.isDirectory)) {
+                        val fileName = ArchiveRomNaming.launchFileName(entry.name)
                         val targetFile = File(targetDir, fileName)
 
                         targetFile.outputStream().use { output ->

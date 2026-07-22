@@ -164,38 +164,31 @@ sealed class LibretroSettingDef(
         type = SettingType.Switch
     )
 
-    data object DefaultToHardcore : LibretroSettingDef(
-        key = "defaultToHardcore",
-        section = "saving",
-        title = "Default to Hardcore",
-        subtitle = "When launching a game, default to hardcore instead of casual",
-        type = SettingType.Switch
-    )
-
     companion object {
-        val ALL: List<LibretroSettingDef> = listOf(
-            Shader,
-            Filter,
-            Frame,
-            AspectRatio,
-            PortraitPosition,
-            Rotation,
-            OverscanCrop,
-            BlackFrameInsertion,
-            VSync,
-            FastForwardEnabled,
-            FastForwardSpeed,
-            RewindEnabled,
-            RewindSpeed,
-            RewindBufferDuration,
-            SkipDuplicateFrames,
-            LowLatencyAudio,
-            AudioVolume,
-            AutoSaveState,
-            AutoRestoreState,
-            HwCoreSaveStates,
-            DefaultToHardcore
-        )
+        val ALL: List<LibretroSettingDef> by lazy {
+            listOf(
+                Shader,
+                Filter,
+                Frame,
+                AspectRatio,
+                PortraitPosition,
+                Rotation,
+                OverscanCrop,
+                BlackFrameInsertion,
+                VSync,
+                FastForwardEnabled,
+                FastForwardSpeed,
+                RewindEnabled,
+                RewindSpeed,
+                RewindBufferDuration,
+                SkipDuplicateFrames,
+                LowLatencyAudio,
+                AudioVolume,
+                AutoSaveState,
+                AutoRestoreState,
+                HwCoreSaveStates
+            )
+        }
 
         val SECTIONS: Map<String, String> = mapOf(
             "shaders" to "Shaders",

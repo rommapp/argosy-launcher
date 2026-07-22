@@ -5,6 +5,7 @@ import com.nendo.argosy.data.launcher.SteamLaunchers
 import com.nendo.argosy.data.local.entity.GameEntity
 import com.nendo.argosy.data.model.GameSource
 import com.nendo.argosy.data.steam.resolveSteamGenres
+import com.nendo.argosy.ui.common.displayTitleId
 import com.nendo.argosy.ui.common.isAndroidApp
 import com.nendo.argosy.ui.common.isRommGame
 import com.nendo.argosy.ui.common.isSteamGame
@@ -37,6 +38,7 @@ fun GameEntity.toGameDetailUi(
         platformSlug = platformSlug,
         platformName = platformName,
         coverPath = coverPath,
+        coverSetManually = coverSetManually,
         backgroundPath = effectiveBackground,
         boxBackPath = boxBackPath?.takeIf { it.startsWith("/") },
         boxSpinePath = boxSpinePath?.takeIf { it.startsWith("/") },
@@ -75,7 +77,7 @@ fun GameEntity.toGameDetailUi(
         isAndroidApp = isAndroidApp,
         packageName = packageName,
         isHidden = isHidden,
-        titleId = titleId,
+        titleId = displayTitleId,
         igdbId = igdbId,
         steamAppId = steamAppId,
         rommFileName = rommFileName

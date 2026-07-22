@@ -1,5 +1,6 @@
 package com.nendo.argosy.ui.screens.settings.sections.input
 
+import com.nendo.argosy.core.input.SoundType
 import com.nendo.argosy.ui.input.InputHandler
 import com.nendo.argosy.ui.input.InputResult
 import com.nendo.argosy.ui.screens.settings.SettingsViewModel
@@ -9,13 +10,11 @@ internal class DriversSectionInput(
 ) : InputHandler {
 
     override fun onUp(): InputResult {
-        viewModel.moveFocus(-1)
-        return InputResult.HANDLED
+        return if (viewModel.moveFocus(-1)) InputResult.HANDLED else InputResult.handled(SoundType.BOUNDARY)
     }
 
     override fun onDown(): InputResult {
-        viewModel.moveFocus(1)
-        return InputResult.HANDLED
+        return if (viewModel.moveFocus(1)) InputResult.HANDLED else InputResult.handled(SoundType.BOUNDARY)
     }
 
     override fun onConfirm(): InputResult {

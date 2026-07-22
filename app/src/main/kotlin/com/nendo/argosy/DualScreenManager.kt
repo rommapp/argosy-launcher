@@ -1,10 +1,8 @@
 package com.nendo.argosy
 
 import android.hardware.display.DisplayManager
-import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
-import android.content.pm.PackageManager
 import android.net.Uri
 import android.util.Log
 import com.nendo.argosy.data.download.DownloadManager
@@ -49,6 +47,7 @@ import com.nendo.argosy.ui.screens.common.GameLaunchDelegate
 import com.nendo.argosy.hardware.FocusAccessibilityService
 import com.nendo.argosy.hardware.FocusDirectorActivity
 import com.nendo.argosy.hardware.SecondaryHomeActivity
+import com.nendo.argosy.hardware.withLiveQuickActionState
 import com.nendo.argosy.util.DisplayAffinityHelper
 import com.nendo.argosy.util.SecondaryDisplayType
 import kotlinx.coroutines.CoroutineScope
@@ -98,6 +97,8 @@ class DualScreenManager(
     internal val repairImageCacheUseCase: com.nendo.argosy.domain.usecase.cache.RepairImageCacheUseCase? = null,
     internal val downloadFileStatusRepository: com.nendo.argosy.data.repository.DownloadFileStatusRepository,
     internal val gradientExtractionDelegate: com.nendo.argosy.ui.screens.common.GradientExtractionDelegate,
+    private val filePickerFlow: com.nendo.argosy.domain.usecase.download.FilePickerFlowUseCase,
+    private val gameThemeAudioCoordinator: com.nendo.argosy.ui.audio.GameThemeAudioCoordinator,
     initialRolesSwapped: Boolean = false
 ) {
 
@@ -126,19 +127,14 @@ class DualScreenManager(
     }
 
     private fun setSecondaryHomeComponentEnabled(enabled: Boolean) {
-        val state = if (enabled) {
-            PackageManager.COMPONENT_ENABLED_STATE_ENABLED
-        } else {
-            PackageManager.COMPONENT_ENABLED_STATE_DISABLED
-        }
-        val component = ComponentName(appContext, SecondaryHomeActivity::class.java)
-        if (appContext.packageManager.getComponentEnabledSetting(component) == state) return
-        appContext.packageManager.setComponentEnabledSetting(
-            component, state, PackageManager.DONT_KILL_APP
-        )
+        com.nendo.argosy.util.SecondaryHomeComponent.setEnabled(appContext, enabled)
     }
 
+    /** Live in-memory session check; unlike SessionStateStore.hasActiveSession this flips false the moment session teardown begins, not after save sync completes. */
+    fun hasLiveSession(): Boolean = playSessionTracker.activeSession.value != null
+
     fun teardownCompanion() {
+        stopStartupGuard()
         companionLaunchJob?.cancel()
         companionLaunchJob = null
         companionWatchdogJob?.cancel()
@@ -192,6 +188,7 @@ class DualScreenManager(
         fun onSavesSyncDone()
         fun onDownloadCompleted(gameId: Long)
         fun onSessionActionsChanged(available: Boolean)
+        fun onHasQuickSaveChanged(hasQuickSave: Boolean)
         fun finishCompanion()
     }
 
@@ -206,6 +203,11 @@ class DualScreenManager(
             field = value
             companionHost?.onSessionActionsChanged(value != null)
         }
+
+    fun updateCompanionHasQuickSave(hasQuickSave: Boolean) {
+        _swappedCompanionState.update { it.copy(hasQuickSave = hasQuickSave) }
+        companionHost?.onHasQuickSaveChanged(hasQuickSave)
+    }
 
     var sessionRefocus: (() -> Unit)? = null
 
@@ -263,6 +265,7 @@ class DualScreenManager(
     init {
         scope.launch {
             preferencesRepository.userPreferences.collect { prefs ->
+                menuWrapMode = prefs.menuWrapMode
                 _dualScreenShowcase.update {
                     it.copy(
                         useGameBackground = prefs.useGameBackground,
@@ -272,6 +275,9 @@ class DualScreenManager(
             }
         }
     }
+
+    @Volatile private var menuWrapMode: com.nendo.argosy.data.preferences.MenuWrapMode =
+        com.nendo.argosy.data.preferences.MenuWrapMode.HARD_STOP
 
     private val _dualSyncOverlay = MutableStateFlow<com.nendo.argosy.ui.screens.common.SyncOverlayState?>(null)
     val dualSyncOverlay: StateFlow<com.nendo.argosy.ui.screens.common.SyncOverlayState?> = _dualSyncOverlay
@@ -431,6 +437,8 @@ class DualScreenManager(
     )
     val swappedCompanionState: StateFlow<com.nendo.argosy.hardware.CompanionInGameState> =
         _swappedCompanionState
+    val companionHasQuickSave: Boolean
+        get() = _swappedCompanionState.value.hasQuickSave
 
     var swappedSessionTimer: com.nendo.argosy.hardware.CompanionSessionTimer? = null
         private set
@@ -542,6 +550,11 @@ class DualScreenManager(
             val state = _dualGameDetailState.value
             if (state?.modalType != null && state.modalType != ActiveModal.NONE) {
                 _dualGameDetailState.update { it?.copy(modalType = ActiveModal.NONE) }
+                companionHost?.onModalResult(
+                    dismissed = true, type = null, value = 0,
+                    statusSelected = null, selectedIndex = -1,
+                    collectionToggleId = -1, collectionCreateName = null
+                )
                 Log.w(TAG, "Companion watchdog: auto-dismissed stale modal")
             }
         }
@@ -595,6 +608,7 @@ class DualScreenManager(
 
     internal fun handleGameDetailOpened(gameId: Long) {
         if (gameId == -1L) return
+        gameThemeAudioCoordinator.enter(gameId)
         val current = _dualGameDetailState.value
         if (current != null && current.gameId == gameId && current.modalType != ActiveModal.NONE) {
             return
@@ -670,6 +684,7 @@ class DualScreenManager(
 
     fun onGameDetailClosed() {
         Log.d("UpdatesDLC", "onGameDetailClosed, currentModal=${_dualGameDetailState.value?.modalType}")
+        _dualGameDetailState.value?.gameId?.let { gameThemeAudioCoordinator.exit(it) }
         _dualGameDetailState.value = null
         resyncShowcaseFromHome()
     }
@@ -696,7 +711,8 @@ class DualScreenManager(
     fun openModal(type: ActiveModal, value: Int = 0, statusSelected: String? = null, statusCurrent: String? = null) {
         when (type) {
             ActiveModal.EMULATOR, ActiveModal.CORE, ActiveModal.COLLECTION,
-            ActiveModal.SAVE_NAME, ActiveModal.UPDATES_DLC,
+            ActiveModal.SAVE_PATH, ActiveModal.DISPLAY_TARGET,
+            ActiveModal.SAVE_NAME,
             ActiveModal.DISC_PICKER, ActiveModal.VARIANT_PICKER,
             ActiveModal.STEAM_INSTALL -> return
             else -> handleDualModalOpen(type, value, statusSelected, statusCurrent)
@@ -737,21 +753,6 @@ class DualScreenManager(
                 saveNamePromptAction = actionType,
                 saveNameCacheId = cacheId,
                 saveNameText = ""
-            )
-        }
-        refocusMain()
-    }
-
-    fun openUpdatesModal(allFiles: List<UpdateFileUi>) {
-        val updateFiles = allFiles.filter { it.type == UpdateFileType.UPDATE }
-        val dlcFiles = allFiles.filter { it.type == UpdateFileType.DLC }
-        Log.d("UpdatesDLC", "openUpdatesModal: ${updateFiles.size} updates, ${dlcFiles.size} dlc")
-        _dualGameDetailState.update { state ->
-            state?.copy(
-                modalType = ActiveModal.UPDATES_DLC,
-                updateFiles = updateFiles,
-                dlcFiles = dlcFiles,
-                updatesPickerFocusIndex = 0
             )
         }
         refocusMain()
@@ -819,6 +820,14 @@ class DualScreenManager(
                 confirmDualCoreSelection()
                 return
             }
+            ActiveModal.SAVE_PATH -> {
+                confirmDualSavePathSelection()
+                return
+            }
+            ActiveModal.DISPLAY_TARGET -> {
+                confirmDualDisplayTargetSelection()
+                return
+            }
             ActiveModal.VARIANT_PICKER -> {
                 confirmDualVariantSelection()
                 return
@@ -880,6 +889,7 @@ class DualScreenManager(
             }
             "SELECT_DISC" -> handleSelectDisc(gameId)
             "PLAY_DISC" -> handleDualPlayDisc(gameId, channelName)
+            "FILES" -> promptDualManageFilePicker(gameId)
         }
     }
 
@@ -888,7 +898,6 @@ class DualScreenManager(
             "rating" -> _dualGameDetailState.update { s -> s?.copy(rating = intValue.takeIf { it > 0 }) }
             "difficulty" -> _dualGameDetailState.update { s -> s?.copy(userDifficulty = intValue) }
             "status" -> _dualGameDetailState.update { s -> s?.copy(status = stringValue) }
-            "updates_focus" -> _dualGameDetailState.update { s -> s?.copy(updatesPickerFocusIndex = intValue) }
             "modal_rating" -> _dualGameDetailState.update { s -> s?.copy(modalRatingValue = intValue) }
             "modal_status" -> _dualGameDetailState.update { s -> s?.copy(modalStatusSelected = stringValue) }
             "emulator_focus" -> _dualGameDetailState.update { s -> s?.copy(emulatorFocusIndex = intValue) }
@@ -908,6 +917,27 @@ class DualScreenManager(
                         coreCurrentName = if (intValue == 0) null else s.coreNames.getOrNull(intValue - 1)
                     )
                 }
+            }
+            "save_path_focus" -> _dualGameDetailState.update { s -> s?.copy(savePathFocusIndex = intValue) }
+            "save_path_confirm" -> {
+                _dualGameDetailState.update { s ->
+                    s?.copy(
+                        modalType = ActiveModal.NONE,
+                        savePathOverride = if (intValue == 0) null else s.savePathOverride
+                    )
+                }
+                _swappedGameDetailViewModel?.confirmSavePathByIndex(intValue)
+            }
+            "display_target_focus" -> _dualGameDetailState.update { s -> s?.copy(displayTargetFocusIndex = intValue) }
+            "display_target_confirm" -> {
+                _dualGameDetailState.update { s ->
+                    s?.copy(
+                        modalType = ActiveModal.NONE,
+                        displayTargetCurrentName = if (intValue == 0) null
+                        else s.displayTargetNames.getOrNull(intValue - 1)
+                    )
+                }
+                _swappedGameDetailViewModel?.confirmDisplayTargetByIndex(intValue)
             }
             "variant_focus" -> _dualGameDetailState.update { s -> s?.copy(variantFocusIndex = intValue) }
             "variant_confirm" -> {
@@ -963,22 +993,27 @@ class DualScreenManager(
             scope.launch(Dispatchers.IO) {
                 val game = gameDao.getById(gameId) ?: return@launch
                 val platform = platformRepository.getById(game.platformId)
-                _swappedCompanionState.value = com.nendo.argosy.hardware.CompanionInGameState(
-                    gameId = gameId,
-                    title = game.title,
-                    coverPath = game.coverPath,
-                    platformName = platform?.getDisplayName() ?: game.platformSlug,
-                    developer = game.developer,
-                    releaseYear = game.releaseYear,
-                    playTimeMinutes = game.playTimeMinutes,
-                    playCount = game.playCount,
-                    achievementCount = game.achievementCount,
-                    earnedAchievementCount = game.earnedAchievementCount,
-                    sessionStartTimeMillis = sessionStateStore.getSessionStartTimeMillis(),
-                    channelName = channelName,
-                    isHardcore = isHardcore,
-                    isLoaded = true
-                )
+                _swappedCompanionState.update { liveState ->
+                    com.nendo.argosy.hardware.CompanionInGameState(
+                        gameId = gameId,
+                        title = game.title,
+                        coverPath = game.coverPath,
+                        platformName = platform?.getDisplayName() ?: game.platformSlug,
+                        developer = game.developer,
+                        releaseYear = game.releaseYear,
+                        playTimeMinutes = game.playTimeMinutes,
+                        playCount = game.playCount,
+                        achievementCount = game.achievementCount,
+                        earnedAchievementCount = game.earnedAchievementCount,
+                        sessionStartTimeMillis = sessionStateStore.getSessionStartTimeMillis(),
+                        channelName = channelName,
+                        isHardcore = isHardcore,
+                        isLoaded = true
+                    ).withLiveQuickActionState(
+                        quickActionsAvailable = sessionQuickActions != null,
+                        hasQuickSave = liveState.hasQuickSave
+                    )
+                }
             }
             companionHost?.onSessionStarted(gameId, isHardcore, channelName)
         } else {
@@ -1090,6 +1125,14 @@ class DualScreenManager(
                 confirmDualCoreSelection()
                 return
             }
+            ActiveModal.SAVE_PATH -> {
+                confirmDualSavePathSelection()
+                return
+            }
+            ActiveModal.DISPLAY_TARGET -> {
+                confirmDualDisplayTargetSelection()
+                return
+            }
             ActiveModal.VARIANT_PICKER -> {
                 confirmDualVariantSelection()
                 return
@@ -1156,8 +1199,9 @@ class DualScreenManager(
         _dualGameDetailState.update { state ->
             val max = state?.emulatorNames?.size ?: 0
             state?.copy(
-                emulatorFocusIndex = (state.emulatorFocusIndex + delta)
-                    .coerceIn(0, max)
+                emulatorFocusIndex = com.nendo.argosy.ui.input.InputDispatcher.computeWrappedIndex(
+                    state.emulatorFocusIndex, delta, max, menuWrapMode
+                )
             )
         }
     }
@@ -1195,8 +1239,9 @@ class DualScreenManager(
         _dualGameDetailState.update { state ->
             val max = state?.coreNames?.size ?: 0
             state?.copy(
-                coreFocusIndex = (state.coreFocusIndex + delta)
-                    .coerceIn(0, max)
+                coreFocusIndex = com.nendo.argosy.ui.input.InputDispatcher.computeWrappedIndex(
+                    state.coreFocusIndex, delta, max, menuWrapMode
+                )
             )
         }
     }
@@ -1224,6 +1269,97 @@ class DualScreenManager(
         }
     }
 
+    fun openSavePathModal(overridePath: String?) {
+        _dualGameDetailState.update { state ->
+            state?.copy(
+                modalType = ActiveModal.SAVE_PATH,
+                savePathOverride = overridePath,
+                savePathFocusIndex = 0
+            )
+        }
+        refocusMain()
+    }
+
+    fun moveDualSavePathFocus(delta: Int) {
+        _dualGameDetailState.update { state ->
+            val max = if (state?.savePathOverride != null) 1 else 0
+            state?.copy(
+                savePathFocusIndex = com.nendo.argosy.ui.input.InputDispatcher.computeWrappedIndex(
+                    state.savePathFocusIndex, delta, max, menuWrapMode
+                )
+            )
+        }
+    }
+
+    fun setDualSavePathFocus(index: Int) {
+        _dualGameDetailState.update { state ->
+            state?.copy(savePathFocusIndex = index)
+        }
+    }
+
+    fun confirmDualSavePathSelection() {
+        val state = _dualGameDetailState.value ?: return
+        val index = state.savePathFocusIndex
+        companionHost?.onModalResult(
+            dismissed = false, type = ActiveModal.SAVE_PATH.name,
+            value = 0, statusSelected = null, selectedIndex = index,
+            collectionToggleId = -1, collectionCreateName = null
+        )
+        _dualGameDetailState.update {
+            it?.copy(
+                modalType = ActiveModal.NONE,
+                savePathOverride = if (index == 0) null else it.savePathOverride
+            )
+        }
+    }
+
+    fun openDisplayTargetModal(names: List<String>, current: String?, inherited: String?) {
+        _dualGameDetailState.update { state ->
+            state?.copy(
+                modalType = ActiveModal.DISPLAY_TARGET,
+                displayTargetNames = names,
+                displayTargetFocusIndex = 0,
+                displayTargetCurrentName = current,
+                displayTargetInheritedName = inherited
+            )
+        }
+        refocusMain()
+    }
+
+    fun moveDualDisplayTargetFocus(delta: Int) {
+        _dualGameDetailState.update { state ->
+            val max = state?.displayTargetNames?.size ?: 0
+            state?.copy(
+                displayTargetFocusIndex = com.nendo.argosy.ui.input.InputDispatcher.computeWrappedIndex(
+                    state.displayTargetFocusIndex, delta, max, menuWrapMode
+                )
+            )
+        }
+    }
+
+    fun setDualDisplayTargetFocus(index: Int) {
+        _dualGameDetailState.update { state ->
+            state?.copy(displayTargetFocusIndex = index)
+        }
+    }
+
+    fun confirmDualDisplayTargetSelection() {
+        val state = _dualGameDetailState.value ?: return
+        val index = state.displayTargetFocusIndex
+        companionHost?.onModalResult(
+            dismissed = false, type = ActiveModal.DISPLAY_TARGET.name,
+            value = 0, statusSelected = null, selectedIndex = index,
+            collectionToggleId = -1, collectionCreateName = null
+        )
+        _dualGameDetailState.update {
+            it?.copy(
+                modalType = ActiveModal.NONE,
+                displayTargetCurrentName = if (index == 0) null
+                else state.displayTargetNames.getOrNull(index - 1)
+            )
+        }
+    }
+
     fun openVariantModal(names: List<String>, current: String?) {
         _dualGameDetailState.update { state ->
             state?.copy(
@@ -1240,8 +1376,9 @@ class DualScreenManager(
         _dualGameDetailState.update { state ->
             val max = state?.variantNames?.size ?: 0
             state?.copy(
-                variantFocusIndex = (state.variantFocusIndex + delta)
-                    .coerceIn(0, max)
+                variantFocusIndex = com.nendo.argosy.ui.input.InputDispatcher.computeWrappedIndex(
+                    state.variantFocusIndex, delta, max, menuWrapMode
+                )
             )
         }
     }
@@ -1272,8 +1409,9 @@ class DualScreenManager(
         _dualGameDetailState.update { state ->
             val max = state?.collectionItems?.size ?: 0
             state?.copy(
-                collectionFocusIndex = (state.collectionFocusIndex + delta)
-                    .coerceIn(0, max)
+                collectionFocusIndex = com.nendo.argosy.ui.input.InputDispatcher.computeWrappedIndex(
+                    state.collectionFocusIndex, delta, max, menuWrapMode
+                )
             )
         }
     }
@@ -1373,8 +1511,9 @@ class DualScreenManager(
         _dualGameDetailState.update { state ->
             val max = state?.steamInstallOptionNames?.size ?: 0
             state?.copy(
-                steamInstallFocusIndex = (state.steamInstallFocusIndex + delta)
-                    .coerceIn(0, max)
+                steamInstallFocusIndex = com.nendo.argosy.ui.input.InputDispatcher.computeWrappedIndex(
+                    state.steamInstallFocusIndex, delta, max, menuWrapMode
+                )
             )
         }
     }
@@ -1449,7 +1588,7 @@ class DualScreenManager(
                 ?: swappedDualHomeViewModel?.uiState?.value?.selectedGame?.platformId
                 ?: gameDao.getById(gameId)?.platformId
             val effectiveSwapped = if (platformId != null) {
-                resolveEmulatorDisplaySwapped(platformId)
+                resolveEmulatorDisplaySwapped(gameId, platformId)
             } else {
                 _isRolesSwapped.value
             }
@@ -1487,10 +1626,11 @@ class DualScreenManager(
         }
     }
 
-    private suspend fun resolveEmulatorDisplaySwapped(platformId: Long): Boolean {
+    private suspend fun resolveEmulatorDisplaySwapped(gameId: Long, platformId: Long): Boolean {
         if (!displayAffinityHelper.hasSecondaryDisplay) return _isRolesSwapped.value
         val target = EmulatorDisplayTarget.fromString(
-            emulatorConfigDao.getDisplayTargetForPlatform(platformId)
+            emulatorConfigDao.getDisplayTargetForGame(gameId)
+                ?: emulatorConfigDao.getDisplayTargetForPlatform(platformId)
         )
         return when (target) {
             EmulatorDisplayTarget.HERO -> _isRolesSwapped.value
@@ -1512,6 +1652,7 @@ class DualScreenManager(
     }
 
     private fun handleDualDownload(gameId: Long) {
+        val detailOpen = _dualGameDetailState.value?.gameId == gameId
         scope.launch(Dispatchers.IO) {
             val game = gameDao.getById(gameId) ?: return@launch
             if (game.steamAppId != null) {
@@ -1520,8 +1661,184 @@ class DualScreenManager(
                     return@launch
                 }
                 steamContentManager.queueDownloadOptimistic(game.steamAppId, game.title, game.coverPath)
+            } else if (detailOpen) {
+                promptDualFilePicker(gameId)
             } else {
                 gameActionsDelegate.queueDownload(gameId)
+            }
+        }
+    }
+
+    fun promptDualFilePicker(gameId: Long) {
+        scope.launch(Dispatchers.IO) {
+            val setup = filePickerFlow.buildRows(gameId)
+            if (setup == null) {
+                gameActionsDelegate.queueDownload(gameId)
+                return@launch
+            }
+            _dualGameDetailState.update { state ->
+                state?.takeIf { it.gameId == gameId }?.copy(
+                    modalType = ActiveModal.FILE_PICKER,
+                    filePickerRows = setup.rows,
+                    filePickerSelected = setup.preselectedFileIds,
+                    filePickerSelectedVersions = setup.preselectedVersionIds,
+                    filePickerFocusIndex = 0,
+                    filePickerCollapsed = emptySet(),
+                    filePickerManageMode = false
+                ) ?: state
+            }
+            refocusMain()
+        }
+    }
+
+    fun promptDualManageFilePicker(gameId: Long) {
+        scope.launch(Dispatchers.IO) {
+            val setup = filePickerFlow.buildManageRows(gameId) ?: return@launch
+            _dualGameDetailState.update { state ->
+                state?.takeIf { it.gameId == gameId }?.copy(
+                    modalType = ActiveModal.FILE_PICKER,
+                    filePickerRows = setup.rows,
+                    filePickerSelected = setup.preselectedFileIds,
+                    filePickerSelectedVersions = setup.preselectedVersionIds,
+                    filePickerFocusIndex = 0,
+                    filePickerCollapsed = emptySet(),
+                    filePickerManageMode = true
+                ) ?: state
+            }
+            refocusMain()
+        }
+    }
+
+    fun moveDualFilePickerFocus(delta: Int) {
+        _dualGameDetailState.update { state ->
+            if (state == null) return@update null
+            val maxIndex = state.visibleFilePickerRows.size + 1
+            state.copy(filePickerFocusIndex = com.nendo.argosy.ui.input.InputDispatcher.computeWrappedIndex(state.filePickerFocusIndex, delta, maxIndex, menuWrapMode))
+        }
+    }
+
+    fun moveDualFilePickerButtonFocus(delta: Int): Boolean {
+        val state = _dualGameDetailState.value ?: return false
+        val buttonStart = state.visibleFilePickerRows.size
+        if (state.filePickerFocusIndex < buttonStart) return false
+        _dualGameDetailState.update {
+            it?.copy(filePickerFocusIndex = (it.filePickerFocusIndex + delta).coerceIn(buttonStart, buttonStart + 1))
+        }
+        return true
+    }
+
+    fun activateDualFilePickerFocused() {
+        val state = _dualGameDetailState.value ?: return
+        val rowCount = state.visibleFilePickerRows.size
+        when {
+            state.filePickerFocusIndex < rowCount -> toggleDualFilePickerRow()
+            state.filePickerFocusIndex == rowCount -> dismissDualModal()
+            else -> confirmDualFilePicker()
+        }
+    }
+
+    fun jumpDualFilePickerGroup(direction: Int) {
+        _dualGameDetailState.update { state ->
+            if (state == null) return@update null
+            val headers = state.visibleFilePickerRows.withIndex().filter { it.value.isHeader }.map { it.index }
+            if (headers.isEmpty()) return@update state
+            val target = if (direction > 0) {
+                headers.firstOrNull { it > state.filePickerFocusIndex }
+            } else {
+                headers.lastOrNull { it < state.filePickerFocusIndex }
+            } ?: return@update state
+            state.copy(filePickerFocusIndex = target)
+        }
+    }
+
+    fun toggleDualFilePickerGroupCollapse(groupKey: String) {
+        _dualGameDetailState.update { state ->
+            if (state == null) return@update null
+            val oldVisible = state.visibleFilePickerRows
+            val focusedRow = oldVisible.getOrNull(state.filePickerFocusIndex)
+            val newCollapsed = if (groupKey in state.filePickerCollapsed) {
+                state.filePickerCollapsed - groupKey
+            } else {
+                state.filePickerCollapsed + groupKey
+            }
+            val newVisible = state.filePickerRows.filter { it.isHeader || it.groupKey !in newCollapsed }
+            val newIndex = when {
+                state.filePickerFocusIndex >= oldVisible.size ->
+                    newVisible.size + (state.filePickerFocusIndex - oldVisible.size)
+                focusedRow != null ->
+                    newVisible.indexOf(focusedRow).takeIf { it >= 0 }
+                        ?: newVisible.indexOfFirst { it.isHeader && it.groupKey == focusedRow.groupKey }.coerceAtLeast(0)
+                else -> 0
+            }
+            state.copy(filePickerCollapsed = newCollapsed, filePickerFocusIndex = newIndex.coerceAtLeast(0))
+        }
+    }
+
+    fun setDualFocusedFilePickerGroupCollapsed(collapse: Boolean) {
+        val state = _dualGameDetailState.value ?: return
+        val row = state.visibleFilePickerRows.getOrNull(state.filePickerFocusIndex) ?: return
+        if (!row.isHeader) return
+        val isCollapsed = row.groupKey in state.filePickerCollapsed
+        if (collapse == isCollapsed) return
+        toggleDualFilePickerGroupCollapse(row.groupKey)
+    }
+
+    fun toggleDualFilePickerRow(row: com.nendo.argosy.data.model.FilePickerRow? = null) {
+        _dualGameDetailState.update { state ->
+            if (state == null) return@update null
+            val target = row ?: state.visibleFilePickerRows.getOrNull(state.filePickerFocusIndex)
+                ?: return@update state
+            var selected = state.filePickerSelected
+            var versions = state.filePickerSelectedVersions
+            if (target.isHeader) {
+                val members = state.filePickerRows.filter { !it.isHeader && it.groupKey == target.groupKey && !it.isLocked }
+                val fileIds = members.mapNotNull { it.rommFileId }
+                val versionIds = members.mapNotNull { it.versionRommId }
+                val allSelected = fileIds.all { it in selected } && versionIds.all { it in versions }
+                if (allSelected) {
+                    selected = selected - fileIds.toSet()
+                    versions = versions - versionIds.toSet()
+                    if (versionIds.isNotEmpty() && versions.isEmpty()) versions = setOf(versionIds.first())
+                } else {
+                    selected = selected + fileIds
+                    versions = versions + versionIds
+                }
+            } else if (target.versionRommId != null) {
+                versions = if (target.versionRommId in versions) {
+                    (versions - target.versionRommId).ifEmpty { versions }
+                } else {
+                    versions + target.versionRommId
+                }
+            } else if (target.rommFileId != null && !target.isLocked) {
+                selected = if (target.rommFileId in selected) selected - target.rommFileId
+                else selected + target.rommFileId
+            }
+            state.copy(filePickerSelected = selected, filePickerSelectedVersions = versions)
+        }
+    }
+
+    fun confirmDualFilePicker() {
+        val state = _dualGameDetailState.value ?: return
+        if (state.modalType != ActiveModal.FILE_PICKER) return
+        val gameId = state.gameId
+        val files = state.filePickerSelected
+        val versions = state.filePickerSelectedVersions
+        val manageMode = state.filePickerManageMode
+        val rows = state.filePickerRows
+        _dualGameDetailState.update { it?.copy(modalType = ActiveModal.NONE) }
+        companionHost?.refocusSelf()
+        scope.launch(Dispatchers.IO) {
+            if (manageMode) {
+                val (added, removed) = filePickerFlow.applyManagedSelection(gameId, rows, files)
+                val parts = buildList {
+                    if (added > 0) add("$added queued")
+                    if (removed > 0) add("$removed removed")
+                }
+                if (parts.isNotEmpty()) notificationManager.showSuccess(parts.joinToString(", "))
+            } else {
+                val (queued, errors) = filePickerFlow.downloadSelection(gameId, files, versions)
+                errors.forEach { notificationManager.showError(it) }
+                if (queued > 1) notificationManager.showSuccess("Queued " + queued + " downloads")
             }
         }
     }
@@ -1859,6 +2176,7 @@ class DualScreenManager(
             displayAffinityHelper = displayAffinityHelper,
             downloadFileStatusRepository = downloadFileStatusRepository,
             sessionStateStore = sessionStateStore,
+            preferencesRepository = preferencesRepository,
             context = appContext
         )
         vm.loadGame(gameId)
@@ -1929,6 +2247,12 @@ class DualScreenManager(
         emulatorDisplayId = displayId
     }
 
+    /** Fallback for launch paths that never assigned a display; the launch path's write wins. */
+    fun assignEmulatorDisplayForSessionStart() {
+        if (emulatorDisplayId != null) return
+        emulatorDisplayId = displayAffinityHelper.getEmulatorDisplayId(_isRolesSwapped.value)
+    }
+
     fun startStartupGuard() {
         startupGuardJob?.cancel()
         startupGuardJob = scope.launch {
@@ -1951,6 +2275,7 @@ class DualScreenManager(
 
     fun ensureCompanionLaunched(allowDuringSession: Boolean = false) {
         if (!displayAffinityHelper.hasSecondaryDisplay) return
+        if (sessionStateStore.isDualScreenEnabled()) setSecondaryHomeComponentEnabled(true)
         if (_isCompanionActive.value) return
         if (!allowDuringSession && sessionStateStore.hasActiveSession()) return
         if (sessionStateStore.isForeignAppOnSecondary()) return

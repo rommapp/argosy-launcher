@@ -25,6 +25,8 @@ import com.nendo.argosy.data.remote.romm.RomMApi
 import com.nendo.argosy.data.remote.romm.RomMDeleteSavesRequest
 import com.nendo.argosy.data.remote.romm.RomMSave
 import com.nendo.argosy.data.remote.romm.RomMState
+import com.nendo.argosy.data.storage.StorageAttributionRepository
+import com.nendo.argosy.data.storage.StorageCategory
 import com.nendo.argosy.util.AppPaths
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
@@ -64,7 +66,8 @@ class StateCacheManager @Inject constructor(
     private val retroArchPathResolver: com.nendo.argosy.data.emulator.RetroArchPathResolver,
     private val libretroStatePathResolver: com.nendo.argosy.data.emulator.LibretroStatePathResolver,
     private val saveSyncApiClient: SaveSyncApiClient,
-    private val payloadCodec: com.nendo.argosy.data.sync.SyncPayloadCodec
+    private val payloadCodec: com.nendo.argosy.data.sync.SyncPayloadCodec,
+    private val attributionRepository: StorageAttributionRepository
 ) {
     companion object {
         private const val TAG = "StateCacheManager"
@@ -76,7 +79,9 @@ class StateCacheManager @Inject constructor(
     }
 
     private val cacheBaseDir: File
-        get() = File(context.filesDir, "state_cache")
+        get() = AppPaths.stateCacheDir(context.filesDir)
+
+    private val sessionStateStore by lazy { com.nendo.argosy.data.preferences.SessionStateStore(context) }
 
     @Volatile
     private var legacyCacheCleared = false
@@ -211,7 +216,16 @@ class StateCacheManager @Inject constructor(
                 Log.d(TAG, "No screenshot found for state: $statePath")
             }
 
+            val existing = stateCacheDao.getBySlotAndCore(
+                gameId = gameId,
+                emulatorId = emulatorId,
+                slotNumber = slotNumber,
+                channelName = channelName,
+                coreId = coreId
+            )
+
             val entity = StateCacheEntity(
+                id = existing?.id ?: 0,
                 gameId = gameId,
                 platformSlug = platformSlug,
                 emulatorId = emulatorId,
@@ -224,7 +238,11 @@ class StateCacheManager @Inject constructor(
                 coreId = coreId,
                 coreVersion = coreVersion,
                 isLocked = isLocked,
-                note = null
+                note = existing?.note,
+                rommSaveId = existing?.rommSaveId,
+                syncStatus = existing?.syncStatus,
+                serverUpdatedAt = existing?.serverUpdatedAt,
+                lastUploadedHash = existing?.lastUploadedHash
             )
 
             val id = stateCacheDao.upsert(entity)
@@ -620,12 +638,22 @@ class StateCacheManager @Inject constructor(
         deletedAny
     }
 
-    suspend fun clearAllCache() = withContext(Dispatchers.IO) {
+    /** Deletes all state cache rows AND files; returns false when blocked by an active session. */
+    suspend fun clearAllCache(): Boolean = withContext(Dispatchers.IO) {
+        if (sessionStateStore.hasActiveSession()) {
+            Log.w(TAG, "clearAllCache blocked: active game session")
+            return@withContext false
+        }
+        pendingSyncQueueDao.deleteBySyncType(SyncType.SAVE_STATE)
+        stateCacheDao.deleteAll()
+        stateTombstoneDao.deleteAll()
         if (cacheBaseDir.exists()) {
             cacheBaseDir.deleteRecursively()
             cacheBaseDir.mkdirs()
         }
         Log.d(TAG, "Cleared all state cache")
+        attributionRepository.markDirty(StorageCategory.SAVE_STATE_CACHE)
+        true
     }
 
     sealed class StateCloudResult {
@@ -1015,7 +1043,7 @@ class StateCacheManager @Inject constructor(
         }
     }
 
-    private fun parseTimestamp(timestamp: String): Instant? {
+    fun parseTimestamp(timestamp: String): Instant? {
         return try {
             ZonedDateTime.parse(timestamp, DateTimeFormatter.ISO_DATE_TIME).toInstant()
         } catch (e: Exception) {

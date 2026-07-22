@@ -70,7 +70,6 @@ import com.nendo.argosy.ui.screens.collections.dialogs.CreateCollectionDialog
 import com.nendo.argosy.ui.screens.gamedetail.RatingType
 import com.nendo.argosy.ui.screens.gamedetail.modals.RatingPickerModal
 import com.nendo.argosy.ui.screens.gamedetail.modals.StatusPickerModal
-import com.nendo.argosy.ui.screens.gamedetail.modals.UpdatesPickerModal
 import com.nendo.argosy.ui.theme.ALauncherColors
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalArgosyTheme
@@ -88,6 +87,8 @@ fun DualGameDetailUpperScreen(
     onModalStatusSelect: (String) -> Unit = {},
     onModalEmulatorSelect: (Int) -> Unit = {},
     onModalCoreSelect: (Int) -> Unit = {},
+    onModalSavePathSelect: (Int) -> Unit = {},
+    onModalDisplayTargetSelect: (Int) -> Unit = {},
     onModalVariantSelect: (Int) -> Unit = {},
     onModalCollectionToggle: (Long) -> Unit = {},
     onModalCollectionShowCreate: () -> Unit = {},
@@ -98,6 +99,9 @@ fun DualGameDetailUpperScreen(
     onDiscSelect: (Int) -> Unit = {},
     onModalSteamInstallSelect: (Int) -> Unit = {},
     onModalDismiss: () -> Unit = {},
+    onFilePickerToggle: (com.nendo.argosy.data.model.FilePickerRow) -> Unit = {},
+    onFilePickerConfirm: () -> Unit = {},
+    onFilePickerToggleCollapse: (String) -> Unit = {},
     footerHints: @Composable () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -166,6 +170,20 @@ fun DualGameDetailUpperScreen(
                 onSelect = onModalCoreSelect,
                 onDismiss = onModalDismiss
             )
+            ActiveModal.SAVE_PATH -> DualSavePathPickerContent(
+                overridePath = state.savePathOverride,
+                focusIndex = state.savePathFocusIndex,
+                onSelect = onModalSavePathSelect,
+                onDismiss = onModalDismiss
+            )
+            ActiveModal.DISPLAY_TARGET -> DualDisplayTargetPickerContent(
+                targetNames = state.displayTargetNames,
+                currentTargetName = state.displayTargetCurrentName,
+                inheritedTargetName = state.displayTargetInheritedName,
+                focusIndex = state.displayTargetFocusIndex,
+                onSelect = onModalDisplayTargetSelect,
+                onDismiss = onModalDismiss
+            )
             ActiveModal.VARIANT_PICKER -> DualVariantPickerContent(
                 variantNames = state.variantNames,
                 currentVariantName = state.variantCurrentName,
@@ -191,12 +209,6 @@ fun DualGameDetailUpperScreen(
                 onConfirm = onSaveNameConfirm,
                 onDismiss = onModalDismiss
             )
-            ActiveModal.UPDATES_DLC -> UpdatesPickerModal(
-                files = state.updateFiles + state.dlcFiles,
-                focusIndex = state.updatesPickerFocusIndex,
-                onDownload = {},
-                onDismiss = onModalDismiss
-            )
             ActiveModal.DISC_PICKER -> DualDiscPickerContent(
                 discs = state.discPickerOptions,
                 focusIndex = state.discPickerFocusIndex,
@@ -209,7 +221,45 @@ fun DualGameDetailUpperScreen(
                 onSelect = onModalSteamInstallSelect,
                 onDismiss = onModalDismiss
             )
-            ActiveModal.VARIANT_PICKER -> {}
+            ActiveModal.FILE_PICKER -> {
+                val isSelected = { row: com.nendo.argosy.data.model.FilePickerRow ->
+                    row.versionRommId
+                        ?.let { it in state.filePickerSelectedVersions }
+                        ?: (row.rommFileId in state.filePickerSelected)
+                }
+                val summary = if (state.filePickerManageMode) {
+                    val adds = state.filePickerRows.filter { !it.isHeader && !it.isLocked && !it.isDownloaded && isSelected(it) }
+                    val removes = state.filePickerRows.filter { !it.isHeader && !it.isLocked && it.isDownloaded && !isSelected(it) }
+                    when {
+                        adds.isEmpty() && removes.isEmpty() -> "No changes"
+                        else -> buildList {
+                            if (adds.isNotEmpty()) add("+" + adds.size + " · " + com.nendo.argosy.util.formatBytes(adds.sumOf { it.sizeBytes }))
+                            if (removes.isNotEmpty()) add("-" + removes.size + " · " + com.nendo.argosy.util.formatBytes(removes.sumOf { it.sizeBytes }))
+                        }.joinToString("   ")
+                    }
+                } else {
+                    val selected = state.filePickerRows.filter { !it.isHeader && isSelected(it) }
+                    selected.size.toString() + " of " +
+                        state.filePickerRows.count { !it.isHeader } + " · " +
+                        com.nendo.argosy.util.formatBytes(selected.sumOf { it.sizeBytes }) + " selected"
+                }
+                com.nendo.argosy.ui.screens.gamedetail.modals.FilePickerModal(
+                    gameTitle = state.title,
+                    title = if (state.filePickerManageMode) "Files" else "Choose files",
+                    rows = state.visibleFilePickerRows,
+                    selectedIds = state.filePickerSelected,
+                    selectedVersionIds = state.filePickerSelectedVersions,
+                    focusIndex = state.filePickerFocusIndex,
+                    summary = summary,
+                    onToggleRow = onFilePickerToggle,
+                    onConfirm = onFilePickerConfirm,
+                    onDismiss = onModalDismiss,
+                    allRows = state.filePickerRows,
+                    collapsedGroups = state.filePickerCollapsed,
+                    onToggleCollapse = onFilePickerToggleCollapse,
+                    manageMode = state.filePickerManageMode
+                )
+            }
             ActiveModal.NONE -> {}
         }
     }
@@ -532,6 +582,128 @@ private fun DualCorePickerContent(
                             version = null,
                             isSelected = isSelected,
                             isCurrent = isCurrent,
+                            onClick = { onSelect(itemIndex) }
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun DualSavePathPickerContent(
+    overridePath: String?,
+    focusIndex: Int,
+    onSelect: (Int) -> Unit,
+    onDismiss: () -> Unit
+) {
+    val theme = LocalArgosyTheme.current
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black.copy(alpha = 0.6f))
+            .touchOnly { onDismiss() },
+        contentAlignment = Alignment.Center
+    ) {
+        GlassPanel(
+            modifier = Modifier
+                .fillMaxWidth(0.6f)
+                .touchOnly { }
+        ) {
+            Column(modifier = Modifier.padding(Dimens.spacingLg)) {
+                Text(
+                    text = "SAVE PATH",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = theme.textPrimary,
+                    modifier = Modifier.padding(bottom = Dimens.spacingMd)
+                )
+
+                LazyColumn(
+                    verticalArrangement = Arrangement.spacedBy(Dimens.spacingXs),
+                    contentPadding = PaddingValues(vertical = Dimens.spacingXs)
+                ) {
+                    item {
+                        EmulatorPickerItem(
+                            name = if (overridePath != null) "Reset to Inherited Default"
+                                else "Inherited Default",
+                            version = if (overridePath == null) {
+                                "Set a custom path from Per-Game Settings on the main screen"
+                            } else null,
+                            isSelected = focusIndex == 0,
+                            isCurrent = overridePath == null,
+                            onClick = { onSelect(0) }
+                        )
+                    }
+                    if (overridePath != null) {
+                        item {
+                            EmulatorPickerItem(
+                                name = overridePath,
+                                version = "Current override",
+                                isSelected = focusIndex == 1,
+                                isCurrent = true,
+                                onClick = { onSelect(1) }
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun DualDisplayTargetPickerContent(
+    targetNames: List<String>,
+    currentTargetName: String?,
+    inheritedTargetName: String?,
+    focusIndex: Int,
+    onSelect: (Int) -> Unit,
+    onDismiss: () -> Unit
+) {
+    val theme = LocalArgosyTheme.current
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black.copy(alpha = 0.6f))
+            .touchOnly { onDismiss() },
+        contentAlignment = Alignment.Center
+    ) {
+        GlassPanel(
+            modifier = Modifier
+                .fillMaxWidth(0.6f)
+                .touchOnly { }
+        ) {
+            Column(modifier = Modifier.padding(Dimens.spacingLg)) {
+                Text(
+                    text = "DISPLAY TARGET",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = theme.textPrimary,
+                    modifier = Modifier.padding(bottom = Dimens.spacingMd)
+                )
+
+                LazyColumn(
+                    verticalArrangement = Arrangement.spacedBy(Dimens.spacingXs),
+                    contentPadding = PaddingValues(vertical = Dimens.spacingXs)
+                ) {
+                    item {
+                        EmulatorPickerItem(
+                            name = "Use Platform Default",
+                            version = inheritedTargetName,
+                            isSelected = focusIndex == 0,
+                            isCurrent = currentTargetName == null,
+                            onClick = { onSelect(0) }
+                        )
+                    }
+                    itemsIndexed(targetNames, key = { _, n -> n }) { index, name ->
+                        val itemIndex = index + 1
+                        EmulatorPickerItem(
+                            name = name,
+                            version = null,
+                            isSelected = focusIndex == itemIndex,
+                            isCurrent = name == currentTargetName,
                             onClick = { onSelect(itemIndex) }
                         )
                     }

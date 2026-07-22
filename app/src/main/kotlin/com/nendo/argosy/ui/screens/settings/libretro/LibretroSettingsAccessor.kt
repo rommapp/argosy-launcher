@@ -54,7 +54,6 @@ class GlobalLibretroSettingsAccessor(
         LibretroSettingDef.AutoSaveState -> state.autoSaveState.toString()
         LibretroSettingDef.AutoRestoreState -> state.autoRestoreState.toString()
         LibretroSettingDef.HwCoreSaveStates -> state.hwCoreSaveStatesEnabled.toString()
-        LibretroSettingDef.DefaultToHardcore -> state.defaultToHardcore.toString()
     }
 
     override fun hasOverride(setting: LibretroSettingDef): Boolean = false
@@ -79,7 +78,6 @@ class GlobalLibretroSettingsAccessor(
             LibretroSettingDef.AutoSaveState -> state.autoSaveState
             LibretroSettingDef.AutoRestoreState -> state.autoRestoreState
             LibretroSettingDef.HwCoreSaveStates -> state.hwCoreSaveStatesEnabled
-            LibretroSettingDef.DefaultToHardcore -> state.defaultToHardcore
             else -> return
         }
         onToggle(setting, !current)
@@ -153,7 +151,6 @@ class PlatformLibretroSettingsAccessor(
         LibretroSettingDef.AutoSaveState -> globalState.autoSaveState.toString()
         LibretroSettingDef.AutoRestoreState -> globalState.autoRestoreState.toString()
         LibretroSettingDef.HwCoreSaveStates -> globalState.hwCoreSaveStatesEnabled.toString()
-        LibretroSettingDef.DefaultToHardcore -> globalState.defaultToHardcore.toString()
     }
 
     override fun hasOverride(setting: LibretroSettingDef): Boolean {
@@ -212,7 +209,6 @@ class PlatformLibretroSettingsAccessor(
             LibretroSettingDef.AutoSaveState -> null
             LibretroSettingDef.AutoRestoreState -> null
             LibretroSettingDef.HwCoreSaveStates -> null
-            LibretroSettingDef.DefaultToHardcore -> null
         }
     }
 

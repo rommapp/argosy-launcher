@@ -23,7 +23,8 @@ class PreLaunchStateSyncUseCase @Inject constructor(
     private val emulatorConfigDao: EmulatorConfigDao,
     private val emulatorResolver: EmulatorResolver,
     private val coreVersionExtractor: CoreVersionExtractor,
-    private val preferencesRepository: UserPreferencesRepository
+    private val preferencesRepository: UserPreferencesRepository,
+    private val restoreStateUseCase: RestoreStateUseCase
 ) {
     sealed class Result {
         data object Ready : Result()
@@ -84,21 +85,42 @@ class PreLaunchStateSyncUseCase @Inject constructor(
 
         val localStates = stateCacheManager.getByGameAndEmulator(gameId, emulatorId)
         val localByRommId = localStates.filter { it.rommSaveId != null }.associateBy { it.rommSaveId }
+        val localBySlot = localStates.associateBy { it.slotNumber }
 
         var downloadedCount = 0
 
         for (serverState in serverStates) {
-            val localState = localByRommId[serverState.id]
             val parsed = stateCacheManager.parseStateFileName(serverState.fileName)
             val slotNumber = parsed.slotNumber
+            val linked = localByRommId[serverState.id]
+            val localState = linked ?: localBySlot[slotNumber]
+            val serverUpdatedAt = stateCacheManager.parseTimestamp(serverState.updatedAt)
 
             val shouldDownload = when {
                 localState == null -> {
                     Log.d(TAG, "Server state ${serverState.fileName} (slot $slotNumber) not cached locally")
                     true
                 }
+                localState.rommSaveId == null ||
+                    localState.syncStatus == StateCacheEntity.STATUS_PENDING_UPLOAD ||
+                    localState.syncStatus == StateCacheEntity.STATUS_LOCAL_NEWER -> {
+                    Log.d(TAG, "Slot $slotNumber has unsent local changes, keeping local over ${serverState.fileName}")
+                    false
+                }
+                linked == null -> {
+                    Log.d(TAG, "Slot $slotNumber is linked to a different server state, skipping ${serverState.fileName}")
+                    false
+                }
                 localState.syncStatus == StateCacheEntity.STATUS_SERVER_NEWER -> {
                     Log.d(TAG, "Server state ${serverState.fileName} marked as newer")
+                    true
+                }
+                serverUpdatedAt == null -> {
+                    Log.w(TAG, "Server state ${serverState.fileName} has unparseable updated_at, skipping")
+                    false
+                }
+                localState.serverUpdatedAt == null || serverUpdatedAt.isAfter(localState.serverUpdatedAt) -> {
+                    Log.d(TAG, "Server state ${serverState.fileName} updated since last sync (slot $slotNumber)")
                     true
                 }
                 else -> {
@@ -122,6 +144,7 @@ class PreLaunchStateSyncUseCase @Inject constructor(
                     is StateCacheManager.StateCloudResult.Success -> {
                         downloadedCount++
                         Log.d(TAG, "Downloaded state ${serverState.fileName} for ${game.title}")
+                        materializeToLiveDir(serverState.id, game.localPath, game.platformSlug, emulatorId, coreId)
                     }
                     is StateCacheManager.StateCloudResult.Error -> {
                         Log.e(TAG, "Failed to download state ${serverState.fileName}: ${result.message}")
@@ -138,6 +161,40 @@ class PreLaunchStateSyncUseCase @Inject constructor(
             Result.Downloaded(downloadedCount)
         } else {
             Result.Ready
+        }
+    }
+
+    private suspend fun materializeToLiveDir(
+        rommStateId: Long,
+        romPath: String?,
+        platformSlug: String,
+        emulatorId: String,
+        coreId: String?
+    ) {
+        if (romPath == null) {
+            Log.w(TAG, "Cannot restore downloaded state to live dir: game has no local path")
+            return
+        }
+
+        val cached = stateCacheManager.getByRommSaveId(rommStateId)
+        if (cached == null) {
+            Log.w(TAG, "Downloaded state $rommStateId not found in cache, cannot restore to live dir")
+            return
+        }
+
+        when (val restore = restoreStateUseCase(
+            cacheId = cached.id,
+            emulatorId = emulatorId,
+            platformId = platformSlug,
+            romPath = romPath,
+            currentCoreId = coreId
+        )) {
+            is RestoreStateResult.Success ->
+                Log.d(TAG, "Restored downloaded state slot ${cached.slotNumber} to live dir")
+            is RestoreStateResult.VersionMismatch ->
+                Log.w(TAG, "Downloaded state slot ${cached.slotNumber} left in cache: core version mismatch")
+            else ->
+                Log.w(TAG, "Could not restore downloaded state slot ${cached.slotNumber} to live dir: $restore")
         }
     }
 }

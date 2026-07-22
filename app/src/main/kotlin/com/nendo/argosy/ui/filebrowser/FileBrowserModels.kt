@@ -1,5 +1,6 @@
 package com.nendo.argosy.ui.filebrowser
 
+import com.nendo.argosy.core.media.AudioFileTypes
 import com.nendo.argosy.core.storage.StorageVolume
 
 data class FileEntry(
@@ -34,7 +35,7 @@ data class FileFilter(
 
     companion object {
         val AUDIO = FileFilter(
-            extensions = setOf("mp3", "ogg", "wav", "flac", "m4a", "aac", "opus", "wma")
+            extensions = AudioFileTypes.EXTENSIONS
         )
     }
 }

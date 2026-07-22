@@ -10,6 +10,8 @@ import com.nendo.argosy.data.local.dao.GameFileDao
 import com.nendo.argosy.data.local.dao.PlatformDao
 import com.nendo.argosy.data.local.entity.DownloadQueueEntity
 import com.nendo.argosy.data.model.GameSource
+import com.nendo.argosy.data.model.VariantCategory
+import com.nendo.argosy.data.music.MusicDirectoryManager
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.remote.romm.ConnectionState
 import com.nendo.argosy.data.remote.romm.RomMRepository
@@ -19,6 +21,8 @@ import com.nendo.argosy.data.remote.romm.RomMResult
 import com.nendo.argosy.data.download.nsz.NszDecompressor
 import com.nendo.argosy.data.emulator.EmulatorResolver
 import com.nendo.argosy.data.emulator.M3uManager
+import com.nendo.argosy.data.storage.StorageAttributionRepository
+import com.nendo.argosy.data.storage.StorageCategory
 import com.nendo.argosy.DualScreenManagerHolder
 import dagger.hilt.android.qualifiers.ApplicationContext
 import com.nendo.argosy.util.Logger
@@ -71,7 +75,8 @@ data class DownloadProgress(
     val extractionTotalBytes: Long = 0,
     val isMultiFileRom: Boolean = false,
     val bytesPerSecond: Long = 0,
-    val statusMessage: String? = null
+    val statusMessage: String? = null,
+    val selectedFileIds: List<Long>? = null
 ) {
     val progressPercent: Float
         get() = if (totalBytes > 0) bytesDownloaded.toFloat() / totalBytes else 0f
@@ -142,7 +147,9 @@ class DownloadManager @Inject constructor(
     private val m3uManager: M3uManager,
     private val thermalManager: dagger.Lazy<DownloadThermalManager>,
     private val emulatorResolver: EmulatorResolver,
-    private val steamContentManager: dagger.Lazy<com.nendo.argosy.data.steam.SteamContentManager>
+    private val steamContentManager: dagger.Lazy<com.nendo.argosy.data.steam.SteamContentManager>,
+    private val musicDirectoryManager: MusicDirectoryManager,
+    private val attributionRepository: StorageAttributionRepository
 ) {
     private val _state = MutableStateFlow(DownloadQueueState())
     val state: StateFlow<DownloadQueueState> = _state.asStateFlow()
@@ -355,8 +362,10 @@ class DownloadManager @Inject constructor(
         platformSlug: String,
         coverPath: String?,
         expectedSizeBytes: Long = 0,
-        isMultiFileRom: Boolean = false
+        isMultiFileRom: Boolean = false,
+        selectedFileIds: List<Long>? = null
     ) {
+        val effectiveMultiFile = isMultiFileRom || (selectedFileIds?.size ?: 0) > 1
         val currentState = _state.value
         if (currentState.activeDownloads.any { it.gameId == gameId }) return
         if (currentState.queue.any { it.gameId == gameId }) return
@@ -387,7 +396,8 @@ class DownloadManager @Inject constructor(
             errorReason = null,
             tempFilePath = tempFilePath,
             createdAt = Instant.now(),
-            isMultiFileRom = isMultiFileRom
+            isMultiFileRom = effectiveMultiFile,
+            selectedFileIds = selectedFileIds?.joinToString(",")
         )
 
         val id = downloadQueueDao.insert(entity)
@@ -408,7 +418,8 @@ class DownloadManager @Inject constructor(
             bytesDownloaded = 0,
             totalBytes = expectedSizeBytes,
             state = DownloadState.QUEUED,
-            isMultiFileRom = isMultiFileRom
+            isMultiFileRom = effectiveMultiFile,
+            selectedFileIds = selectedFileIds
         )
 
         if (isInstantDownload(expectedSizeBytes)) {
@@ -502,8 +513,12 @@ class DownloadManager @Inject constructor(
         val gameFolder = resolveAddonFolder(gameId, platformSlug, gameFolderName, gameTitle)
         val useExtcontent = ZipExtractor.isNswPlatform(platformSlug) &&
             isEdenEmulator(gameId, platformSlug)
-        val categoryFolder = File(gameFolder, if (useExtcontent) "extcontent" else category)
-            .apply { mkdirs() }
+        val serverRelativeDir = if (!useExtcontent) resolveServerRelativeDir(gameId, gameFileId) else null
+        val categoryFolder = when {
+            useExtcontent -> File(gameFolder, "extcontent")
+            serverRelativeDir != null -> File(gameFolder, serverRelativeDir)
+            else -> File(gameFolder, category)
+        }.apply { mkdirs() }
         val tempFilePath = File(categoryFolder, "${fileName}.tmp").absolutePath
         Logger.info(
             TAG,
@@ -567,6 +582,15 @@ class DownloadManager @Inject constructor(
         return File(platformDir, sanitizedTitle).apply { mkdirs() }
     }
 
+    /** Server dir of this file relative to the rom root, or null for root files. */
+    private suspend fun resolveServerRelativeDir(gameId: Long, gameFileId: Long): String? {
+        val row = gameFileDao.getById(gameFileId) ?: return null
+        val rootLen = gameFileDao.getFilesForGame(gameId)
+            .minOfOrNull { it.filePath.length } ?: return null
+        return row.filePath.takeIf { it.length > rootLen }
+            ?.substring(rootLen)?.trim('/')?.takeIf { it.isNotEmpty() }
+    }
+
     private suspend fun resolveAddonFolder(
         gameId: Long,
         platformSlug: String,
@@ -574,14 +598,31 @@ class DownloadManager @Inject constructor(
         gameTitle: String
     ): File {
         val platformDir = getDownloadDir(platformSlug)
-        val baseParent = gameDao.getById(gameId)?.localPath?.let { File(it).parentFile }
-        return if (baseParent != null && baseParent.isDirectory &&
+        val game = gameDao.getById(gameId)
+        val basePath = game?.localPath
+        val baseParent = basePath?.let { File(it).parentFile }
+        if (baseParent != null && baseParent.isDirectory &&
             baseParent.absolutePath != platformDir.absolutePath
         ) {
-            baseParent
-        } else {
-            getGameFolder(platformSlug, gameFolderName ?: gameTitle)
+            return baseParent
         }
+        val gameFolder = getGameFolder(platformSlug, gameFolderName ?: gameTitle)
+        val baseFile = basePath?.let { File(it) }
+        if (baseFile != null && baseFile.isFile &&
+            baseFile.parentFile?.absolutePath == platformDir.absolutePath
+        ) {
+            val moved = File(gameFolder, baseFile.name)
+            if (baseFile.renameTo(moved)) {
+                gameDao.updateLocalPath(gameId, moved.absolutePath, game.source)
+                gameFileDao.getByLocalPath(basePath)?.let { row ->
+                    gameFileDao.updateLocalPath(row.id, moved.absolutePath, row.downloadedAt ?: Instant.now())
+                }
+                Logger.info(TAG, "resolveAddonFolder: moved flat base ${baseFile.name} into ${gameFolder.name}")
+            } else {
+                Logger.warn(TAG, "resolveAddonFolder: failed to move ${baseFile.name} into ${gameFolder.name}")
+            }
+        }
+        return gameFolder
     }
 
     private suspend fun processQueue() {
@@ -751,7 +792,10 @@ class DownloadManager @Inject constructor(
                 val downloadCall = if (progress.isGameFileDownload) {
                     romMRepository.downloadRomFile(progress.rommId, progress.fileName, rangeHeader)
                 } else {
-                    romMRepository.downloadRom(progress.rommId, progress.fileName, rangeHeader)
+                    romMRepository.downloadRom(
+                        progress.rommId, progress.fileName, rangeHeader,
+                        fileIds = progress.selectedFileIds?.joinToString(",")
+                    )
                 }
                 when (val result = downloadCall) {
                     is RomMResult.Success -> {
@@ -949,8 +993,14 @@ class DownloadManager @Inject constructor(
             }
             else -> {
                 gameDao.updateLocalPath(progress.gameId, finalPath, GameSource.ROMM_SYNCED)
+                if (progress.selectedFileIds != null) {
+                    mapSelectedFilesToDisk(progress.gameId, progress.selectedFileIds, File(finalPath))
+                }
+                relocateSoundtrackFiles(progress.gameId, File(finalPath), platformDir)
+                attributionRepository.markDirty(StorageCategory.MUSIC)
             }
         }
+        attributionRepository.markDirty(StorageCategory.GAMES)
 
         _completionEvents.emit(
             DownloadCompletionEvent(
@@ -1316,7 +1366,8 @@ class DownloadManager @Inject constructor(
                     platformSlug = item.platformSlug,
                     coverPath = item.coverPath,
                     expectedSizeBytes = item.totalBytes,
-                    isMultiFileRom = item.isMultiFileRom
+                    isMultiFileRom = item.isMultiFileRom,
+                    selectedFileIds = item.selectedFileIds
                 )
             }
         }
@@ -1380,6 +1431,7 @@ class DownloadManager @Inject constructor(
                 }
             }
             downloadQueueDao.deleteByGameId(gameId)
+            attributionRepository.markDirty(StorageCategory.GAMES)
 
             _completionEvents.emit(
                 DownloadCompletionEvent(
@@ -1426,6 +1478,59 @@ class DownloadManager @Inject constructor(
         }
     }
 
+    private suspend fun relocateSoundtrackFiles(
+        gameId: Long,
+        finalTarget: File,
+        platformDir: File
+    ) {
+        val gameFolder = if (finalTarget.isDirectory) finalTarget else finalTarget.parentFile ?: return
+        if (gameFolder.absolutePath == platformDir.absolutePath) return
+        val rows = gameFileDao.getFilesByCategory(gameId, VariantCategory.SOUNDTRACK.key)
+        if (rows.isEmpty()) return
+        val game = gameDao.getById(gameId) ?: return
+        val platformName = platformDao.getBySlug(game.platformSlug)?.name ?: game.platformSlug
+        val folderPrefix = gameFolder.absolutePath + File.separator
+        val onDisk = gameFolder.walkTopDown().filter { it.isFile }.toList()
+        val emptiedDirs = mutableSetOf<File>()
+        for (row in rows) {
+            val fromLocalPath = row.localPath?.let(::File)
+                ?.takeIf { it.absolutePath.startsWith(folderPrefix) && it.exists() }
+            val source = fromLocalPath ?: onDisk.firstOrNull { it.name == row.fileName } ?: continue
+            val target = musicDirectoryManager.targetFileFor(
+                platformName, game.title, row.trackNumber, row.trackTitle, row.fileName
+            )
+            if (source.absolutePath == target.absolutePath) continue
+            if (musicDirectoryManager.moveIntoMusic(source, target)) {
+                gameFileDao.updateLocalPath(row.id, target.absolutePath, Instant.now())
+                musicDirectoryManager.scanFile(target)
+                source.parentFile
+                    ?.takeIf { it.absolutePath != gameFolder.absolutePath }
+                    ?.let { emptiedDirs.add(it) }
+                Logger.info(TAG, "Relocated soundtrack ${row.fileName} -> ${target.absolutePath}")
+            } else {
+                Logger.warn(TAG, "Failed to relocate soundtrack ${row.fileName} to ${target.absolutePath}")
+            }
+        }
+        emptiedDirs.forEach { dir ->
+            if (dir.listFiles().isNullOrEmpty()) dir.delete()
+        }
+    }
+
+    private suspend fun mapSelectedFilesToDisk(
+        gameId: Long,
+        selectedRommFileIds: List<Long>,
+        finalTarget: File
+    ) {
+        val gameFolder = finalTarget.parentFile ?: return
+        val onDisk = gameFolder.walkTopDown().filter { it.isFile }.toList()
+        for (rommFileId in selectedRommFileIds) {
+            val row = gameFileDao.getByRommFileId(rommFileId) ?: continue
+            if (row.gameId != gameId || row.localPath != null) continue
+            val match = onDisk.firstOrNull { it.name == row.fileName } ?: continue
+            gameFileDao.updateLocalPath(row.id, match.absolutePath, Instant.now())
+        }
+    }
+
     private fun DownloadQueueEntity.toDownloadProgress(): DownloadProgress {
         return DownloadProgress(
             id = id,
@@ -1448,7 +1553,10 @@ class DownloadManager @Inject constructor(
                 DownloadState.QUEUED
             },
             errorReason = errorReason,
-            isMultiFileRom = isMultiFileRom
+            isMultiFileRom = isMultiFileRom,
+            selectedFileIds = selectedFileIds
+                ?.split(",")?.mapNotNull { it.trim().toLongOrNull() }
+                ?.takeIf { it.isNotEmpty() }
         )
     }
 }

@@ -34,6 +34,20 @@ interface StateCacheDao {
 
     @Query("""
         SELECT * FROM state_cache
+        WHERE gameId = :gameId AND emulatorId = :emulatorId AND slotNumber = :slotNumber
+        AND (channelName = :channelName OR (channelName IS NULL AND :channelName IS NULL))
+        AND (coreId = :coreId OR (coreId IS NULL AND :coreId IS NULL))
+    """)
+    suspend fun getBySlotAndCore(
+        gameId: Long,
+        emulatorId: String,
+        slotNumber: Int,
+        channelName: String?,
+        coreId: String?
+    ): StateCacheEntity?
+
+    @Query("""
+        SELECT * FROM state_cache
         WHERE gameId = :gameId AND channelName = :channelName
         ORDER BY slotNumber ASC
     """)

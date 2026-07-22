@@ -7,14 +7,23 @@ import android.provider.Settings
 import com.nendo.argosy.BuildConfig
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.repository.BiosRepository
+import android.net.ConnectivityManager
+import android.net.Network
 import com.nendo.argosy.util.Logger
 import com.squareup.moshi.Moshi
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import com.nendo.argosy.data.remote.ssl.UserCertTrustManager.withUserCertTrust
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
@@ -28,6 +37,8 @@ import javax.inject.Singleton
 private const val TAG = "RomMConnectionManager"
 private const val MIN_DEVICE_API_VERSION = "4.7.0"
 private const val DOWNLOAD_STALL_TIMEOUT_SECONDS = 300
+
+private val RECONNECT_BACKOFF_MS = listOf(5_000L, 10_000L, 20_000L, 40_000L, 60_000L)
 
 private val DEVICE_AUTH_SCOPES = listOf(
     "me.read", "me.write",
@@ -65,6 +76,7 @@ class RomMConnectionManager @Inject constructor(
     private val userPreferencesRepository: UserPreferencesRepository,
     private val saveSyncRepository: dagger.Lazy<com.nendo.argosy.data.repository.SaveSyncRepository>,
     private val databaseAdminRepository: dagger.Lazy<com.nendo.argosy.data.repository.DatabaseAdminRepository>,
+    private val saveCacheRepository: dagger.Lazy<com.nendo.argosy.data.repository.SaveCacheRepository>,
     private val biosRepository: BiosRepository
 ) {
     private var api: RomMApi? = null
@@ -74,6 +86,12 @@ class RomMConnectionManager @Inject constructor(
     private var deviceAuthApi: RomMApi? = null
     private var deviceAuthBaseUrl: String? = null
     private val detailAdapter by lazy { Moshi.Builder().build().adapter(RomMDetailResponse::class.java) }
+
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val connectMutex = Mutex()
+    private var reconnectJob: Job? = null
+    private var networkCallbackRegistered = false
+    @Volatile private var reconnectPending = false
 
     private val _connectionState = MutableStateFlow<ConnectionState>(ConnectionState.Disconnected)
     val connectionState: StateFlow<ConnectionState> = _connectionState.asStateFlow()
@@ -107,10 +125,53 @@ class RomMConnectionManager @Inject constructor(
         if (cachedDeviceId != null) {
             saveSyncRepository.get().setDeviceId(cachedDeviceId)
         }
-        if (!prefs.rommBaseUrl.isNullOrBlank()) {
-            val result = connect(prefs.rommBaseUrl, prefs.rommToken)
-            Logger.info(TAG, "initialize: connect result=$result, state=${_connectionState.value}")
+        if (prefs.rommBaseUrl.isNullOrBlank()) return
+        registerNetworkCallback()
+        val result = attemptConnection(prefs.rommBaseUrl, prefs.rommToken)
+        Logger.info(TAG, "initialize: connect result=$result, state=${_connectionState.value}")
+        if (result is RomMResult.Error) scheduleReconnect()
+    }
+
+    /**
+     * Retries the persisted connection on a backoff ladder, preserving the current
+     * connection state until the ladder is exhausted so transient network loss
+     * (sleep/wake, spotty wifi) does not read as a dead server.
+     */
+    private fun scheduleReconnect() {
+        reconnectPending = true
+        if (reconnectJob?.isActive == true) return
+        reconnectJob = scope.launch {
+            for (backoffMs in RECONNECT_BACKOFF_MS) {
+                delay(backoffMs)
+                if (!reconnectPending) return@launch
+                val prefs = userPreferencesRepository.preferences.first()
+                val url = prefs.rommBaseUrl
+                if (url.isNullOrBlank()) return@launch
+                Logger.info(TAG, "scheduleReconnect: retrying after ${backoffMs}ms")
+                if (attemptConnection(url, prefs.rommToken) is RomMResult.Success) return@launch
+            }
+            if (!reconnectPending) return@launch
+            Logger.info(TAG, "scheduleReconnect: exhausted retries, marking disconnected")
+            _connectionState.value = ConnectionState.Disconnected
         }
+    }
+
+    private fun registerNetworkCallback() {
+        if (networkCallbackRegistered) return
+        networkCallbackRegistered = true
+        val cm = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        cm.registerDefaultNetworkCallback(object : ConnectivityManager.NetworkCallback() {
+            override fun onAvailable(network: Network) {
+                if (isConnected()) return
+                scope.launch {
+                    val prefs = userPreferencesRepository.preferences.first()
+                    val url = prefs.rommBaseUrl
+                    if (url.isNullOrBlank()) return@launch
+                    Logger.info(TAG, "network available, attempting reconnect")
+                    if (attemptConnection(url, prefs.rommToken) is RomMResult.Error) scheduleReconnect()
+                }
+            }
+        })
     }
 
     private fun normalizeServerKey(url: String): String =
@@ -120,6 +181,13 @@ class RomMConnectionManager @Inject constructor(
         val storedKey = userPreferencesRepository.preferences.first().rommBaseUrl?.let { normalizeServerKey(it) }
         val newKey = normalizeServerKey(newBaseUrl)
         if (!storedKey.isNullOrBlank() && storedKey != newKey) {
+            val pendingUploads = saveCacheRepository.get().getPendingSyncCounts().pendingUploads
+            if (pendingUploads > 0) {
+                Logger.info(TAG, "persistRommCredentials: server switch blocked, $pendingUploads saves pending upload")
+                throw IllegalStateException(
+                    "Sync saves first - $pendingUploads pending upload. Switching servers would delete them."
+                )
+            }
             Logger.info(TAG, "persistRommCredentials: server changed ($storedKey -> $newKey), purging RomM library")
             databaseAdminRepository.get().purgeRomMLibrary()
         }
@@ -128,7 +196,32 @@ class RomMConnectionManager @Inject constructor(
 
     suspend fun connect(url: String, token: String? = null): RomMResult<String> {
         _connectionState.value = ConnectionState.Connecting
+        val result = attemptConnection(url, token)
+        if (result is RomMResult.Error) {
+            _connectionState.value = ConnectionState.Failed(result.message)
+        }
+        return result
+    }
 
+    /** Probes a server URL with a throwaway client, leaving the live session untouched. */
+    suspend fun probeServerVersion(url: String): RomMResult<String> {
+        var lastError: String? = null
+        for (candidateUrl in buildUrlsToTry(url)) {
+            val normalizedUrl = candidateUrl.trimEnd('/') + "/"
+            try {
+                val response = createApi(normalizedUrl, null).heartbeat()
+                if (response.isSuccessful) {
+                    return RomMResult.Success(response.body()?.version ?: "unknown")
+                }
+                lastError = "Server returned ${response.code()}"
+            } catch (e: Exception) {
+                lastError = e.message ?: "Connection failed"
+            }
+        }
+        return RomMResult.Error(lastError ?: "Connection failed")
+    }
+
+    private suspend fun attemptConnection(url: String, token: String?): RomMResult<String> = connectMutex.withLock {
         val urlsToTry = buildUrlsToTry(url)
         var lastError: String? = null
 
@@ -146,9 +239,10 @@ class RomMConnectionManager @Inject constructor(
                     biosRepository.setApi(api)
                     val body = response.body()
                     val version = body?.version ?: "unknown"
-                    val capabilities = RomMCapabilities.from(version, body?.libretroApiEnabled)
+                    val capabilities = RomMCapabilities.from(version, body?.libretroApiEnabled, body?.steamGridDbEnabled)
                     _connectionState.value = ConnectionState.Connected(version, capabilities)
                     saveSyncRepository.get().setCapabilities(capabilities)
+                    reconnectPending = false
                     Logger.info(TAG, "connect: success at $normalizedUrl, version=$version, capabilities=$capabilities")
                     if (token != null && isVersionAtLeast(MIN_DEVICE_API_VERSION)) {
                         registerDeviceIfNeeded()
@@ -164,38 +258,7 @@ class RomMConnectionManager @Inject constructor(
             }
         }
 
-        _connectionState.value = ConnectionState.Failed(lastError ?: "Connection failed")
         return RomMResult.Error(lastError ?: "Connection failed")
-    }
-
-    suspend fun login(username: String, password: String): RomMResult<String> {
-        val currentApi = api ?: return RomMResult.Error("Not connected")
-
-        return try {
-            val scope = buildLoginScope()
-            val response = currentApi.login(username, password, scope)
-            if (response.isSuccessful) {
-                val token = response.body()?.accessToken
-                    ?: return RomMResult.Error("No token received")
-
-                accessToken = token
-                api = createApi(baseUrl, token)
-                saveSyncRepository.get().setApi(api)
-                biosRepository.setApi(api)
-
-                persistRommCredentials(baseUrl, token, username)
-
-                if (isVersionAtLeast(MIN_DEVICE_API_VERSION)) {
-                    registerDeviceIfNeeded()
-                }
-
-                RomMResult.Success(token)
-            } else {
-                RomMResult.Error("Login failed", response.code())
-            }
-        } catch (e: Exception) {
-            RomMResult.Error(e.message ?: "Login failed")
-        }
     }
 
     suspend fun connectWithToken(url: String, token: String): RomMResult<String> {
@@ -340,7 +403,7 @@ class RomMConnectionManager @Inject constructor(
 
         val heartbeat = try { newApi.heartbeat() } catch (_: Exception) { null }
         val version = heartbeat?.body()?.version ?: "unknown"
-        val capabilities = RomMCapabilities.from(version, heartbeat?.body()?.libretroApiEnabled)
+        val capabilities = RomMCapabilities.from(version, heartbeat?.body()?.libretroApiEnabled, heartbeat?.body()?.steamGridDbEnabled)
         _connectionState.value = ConnectionState.Connected(version, capabilities)
         saveSyncRepository.get().setCapabilities(capabilities)
 
@@ -373,6 +436,9 @@ class RomMConnectionManager @Inject constructor(
     private fun deviceDisplayName(): String = "${Build.MANUFACTURER} ${Build.MODEL}".trim()
 
     fun disconnect() {
+        reconnectPending = false
+        reconnectJob?.cancel()
+        reconnectJob = null
         api = null
         biosRepository.setApi(null)
         saveSyncRepository.get().setCapabilities(RomMCapabilities.NONE)
@@ -382,52 +448,31 @@ class RomMConnectionManager @Inject constructor(
         _connectionState.value = ConnectionState.Disconnected
     }
 
-    suspend fun checkConnection(retryCount: Int = 2) {
-        if (api == null) {
+    suspend fun checkConnection() {
+        val currentApi = api
+        if (currentApi == null) {
             Logger.info(TAG, "checkConnection: api is null, initializing")
             initialize()
             return
         }
 
-        val currentApi = api ?: return
         try {
             val response = currentApi.heartbeat()
             if (response.isSuccessful) {
                 val body = response.body()
                 val version = body?.version ?: "unknown"
-                val capabilities = RomMCapabilities.from(version, body?.libretroApiEnabled)
+                val capabilities = RomMCapabilities.from(version, body?.libretroApiEnabled, body?.steamGridDbEnabled)
                 _connectionState.value = ConnectionState.Connected(version, capabilities)
                 saveSyncRepository.get().setCapabilities(capabilities)
+                reconnectPending = false
                 Logger.info(TAG, "checkConnection: connected, version=$version")
             } else {
-                Logger.info(TAG, "checkConnection: heartbeat failed with ${response.code()}, reinitializing")
-                _connectionState.value = ConnectionState.Disconnected
-                api = null
-                initialize()
+                Logger.info(TAG, "checkConnection: heartbeat failed with ${response.code()}, scheduling reconnect")
+                scheduleReconnect()
             }
         } catch (e: Exception) {
-            Logger.info(TAG, "checkConnection: exception: ${e.message}, retries left=$retryCount")
-            _connectionState.value = ConnectionState.Disconnected
-            api = null
-            if (retryCount > 0) {
-                delay(1000)
-                initialize()
-                if (_connectionState.value !is ConnectionState.Connected && retryCount > 1) {
-                    delay(2000)
-                    checkConnection(retryCount - 1)
-                }
-            } else {
-                initialize()
-            }
-        }
-    }
-
-    private fun buildLoginScope(): String {
-        val baseScope = "me.read me.write platforms.read roms.read assets.read assets.write roms.user.read roms.user.write collections.read collections.write firmware.read"
-        return if (isVersionAtLeast(MIN_DEVICE_API_VERSION)) {
-            "$baseScope devices.read devices.write"
-        } else {
-            baseScope
+            Logger.info(TAG, "checkConnection: exception: ${e.message}, scheduling reconnect")
+            scheduleReconnect()
         }
     }
 
@@ -547,7 +592,6 @@ class RomMConnectionManager @Inject constructor(
             .connectTimeout(30, TimeUnit.SECONDS)
             .readTimeout(60, TimeUnit.SECONDS)
             .writeTimeout(60, TimeUnit.SECONDS)
-            .connectionPool(okhttp3.ConnectionPool(0, 1, TimeUnit.NANOSECONDS))
             .dns(okhttp3.Dns.SYSTEM)
             .withUserCertTrust(true)
             .build()

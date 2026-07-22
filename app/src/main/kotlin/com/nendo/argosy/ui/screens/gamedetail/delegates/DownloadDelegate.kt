@@ -9,7 +9,9 @@ import com.nendo.argosy.data.steam.SteamContentManager
 import com.nendo.argosy.data.steam.SteamDownloadState
 import com.nendo.argosy.data.remote.playstore.PlayStoreService
 import com.nendo.argosy.data.remote.romm.RomMRepository
+import com.nendo.argosy.data.model.VariantCategory
 import com.nendo.argosy.data.remote.romm.RomMResult
+import com.nendo.argosy.data.model.FilePickerRow
 import com.nendo.argosy.data.update.ApkInstallManager
 import com.nendo.argosy.domain.usecase.download.DownloadResult
 import com.nendo.argosy.ui.common.toDownloadStatus
@@ -22,7 +24,6 @@ import com.nendo.argosy.ui.screens.common.GameActionsDelegate
 import com.nendo.argosy.ui.screens.gamedetail.ExtractionFailedInfo
 import com.nendo.argosy.ui.screens.gamedetail.GameDownloadStatus
 import com.nendo.argosy.ui.screens.gamedetail.LaunchEvent
-import com.nendo.argosy.ui.screens.gamedetail.UpdateFileUi
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -33,6 +34,7 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.io.File
 import javax.inject.Inject
 
 data class DownloadUiState(
@@ -67,7 +69,9 @@ class DownloadDelegate @Inject constructor(
     private val playStoreService: PlayStoreService,
     private val imageCacheManager: com.nendo.argosy.data.cache.ImageCacheManager,
     private val gameRepository: com.nendo.argosy.data.repository.GameRepository,
-    private val steamContentManager: SteamContentManager
+    private val steamContentManager: SteamContentManager,
+    private val gameFileDao: com.nendo.argosy.data.local.dao.GameFileDao,
+    private val filePickerFlow: com.nendo.argosy.domain.usecase.download.FilePickerFlowUseCase
 ) {
     private val _state = MutableStateFlow(DownloadUiState())
     val state: StateFlow<DownloadUiState> = _state.asStateFlow()
@@ -172,6 +176,45 @@ class DownloadDelegate @Inject constructor(
                 val (status, progress) = result
                 _state.update { it.copy(downloadStatus = status, downloadProgress = progress) }
             }
+        }
+    }
+
+    suspend fun buildFilePickerRows(gameId: Long): Triple<List<FilePickerRow>, Set<Long>, Set<Long>>? {
+        val setup = filePickerFlow.buildRows(gameId) ?: return null
+        return Triple(setup.rows, setup.preselectedFileIds, setup.preselectedVersionIds)
+    }
+
+    suspend fun buildManageRows(gameId: Long): Triple<List<FilePickerRow>, Set<Long>, Set<Long>>? {
+        val setup = filePickerFlow.buildManageRows(gameId) ?: return null
+        return Triple(setup.rows, setup.preselectedFileIds, setup.preselectedVersionIds)
+    }
+
+    fun applyManagedFiles(
+        scope: CoroutineScope,
+        gameId: Long,
+        rows: List<FilePickerRow>,
+        selected: Set<Long>
+    ) {
+        scope.launch {
+            val (added, removed) = filePickerFlow.applyManagedSelection(gameId, rows, selected)
+            val parts = buildList {
+                if (added > 0) add("$added queued")
+                if (removed > 0) add("$removed removed")
+            }
+            if (parts.isNotEmpty()) notificationManager.showSuccess(parts.joinToString(", "))
+        }
+    }
+
+    fun downloadWithSelection(
+        scope: CoroutineScope,
+        gameId: Long,
+        selectedFileIds: Set<Long>,
+        selectedVersionIds: Set<Long>
+    ) {
+        scope.launch {
+            val (queued, errors) = filePickerFlow.downloadSelection(gameId, selectedFileIds, selectedVersionIds)
+            errors.forEach { notificationManager.showError(it) }
+            if (queued > 1) notificationManager.showSuccess("Queued $queued downloads")
         }
     }
 
@@ -289,35 +332,6 @@ class DownloadDelegate @Inject constructor(
                 is DownloadResult.Error -> notificationManager.showError(result.message)
                 is DownloadResult.ExtractionFailed -> { }
             }
-        }
-    }
-
-    fun downloadUpdateFile(
-        scope: CoroutineScope,
-        gameId: Long,
-        file: UpdateFileUi,
-        gameTitle: String,
-        platformSlug: String,
-        coverPath: String?,
-        gameFolderName: String? = null
-    ) {
-        val gameFileId = file.gameFileId ?: return
-        val rommFileId = file.rommFileId ?: return
-
-        scope.launch {
-            downloadManager.enqueueGameFileDownload(
-                gameId = gameId,
-                gameFileId = gameFileId,
-                rommFileId = rommFileId,
-                fileName = file.fileName,
-                category = file.type.name.lowercase(),
-                gameTitle = gameTitle,
-                platformSlug = platformSlug,
-                coverPath = coverPath,
-                expectedSizeBytes = file.sizeBytes,
-                gameFolderName = gameFolderName
-            )
-            notificationManager.showSuccess("Download queued: ${file.fileName}")
         }
     }
 

@@ -58,6 +58,9 @@ object PlatformDefinitions {
         "nintendo-64" to "n64",
         "64dd" to "n64dd",
         "nintendo-64dd" to "n64dd",
+        "g-and-w" to "gameandwatch",
+        "game-and-watch" to "gameandwatch",
+        "game_and_watch" to "gameandwatch",
         "gameboy" to "gb",
         "game_boy" to "gb",
         "game-boy" to "gb",
@@ -456,7 +459,7 @@ object PlatformDefinitions {
         PlatformDef("vic20", "VIC-20", "VIC-20", setOf("d64", "t64", "tap", "prg", "p00", "crt", "20", "40", "60", "a0", "b0", "zip", "7z"), 600),
         PlatformDef("c64", "Commodore 64", "C64", setOf("d64", "d81", "g64", "t64", "tap", "prg", "p00", "crt", "bin", "nib", "zip", "7z"), 605),
         PlatformDef("c128", "Commodore 128", "C128", setOf("d64", "d81", "prg", "zip", "7z"), 610),
-        PlatformDef("amiga", "Amiga", "Amiga", setOf("adf", "ipf", "lha", "hdf", "zip", "7z"), 620),
+        PlatformDef("amiga", "Amiga", "Amiga", setOf("adf", "adz", "dms", "fdi", "ipf", "hdf", "hdz", "lha", "slave", "info", "cue", "ccd", "nrg", "mds", "iso", "chd", "uae", "m3u", "rp9", "zip", "7z"), 620),
         PlatformDef("amigacd32", "Amiga CD32", "CD32", setOf("chd", "cue", "iso", "zip", "7z"), 625),
         PlatformDef("cdtv", "CDTV", "CDTV", setOf("chd", "cue", "iso", "zip", "7z"), 627),
 
@@ -568,6 +571,9 @@ object PlatformDefinitions {
         val lower = slug.lowercase()
         return platformMap[slugAliases[lower] ?: lower]
     }
+
+    fun shortNameForDisplayName(displayName: String): String? =
+        platforms.firstOrNull { it.name.equals(displayName, ignoreCase = true) }?.shortName
 
     fun isAlias(slug: String): Boolean = slugAliases.containsKey(slug.lowercase())
 

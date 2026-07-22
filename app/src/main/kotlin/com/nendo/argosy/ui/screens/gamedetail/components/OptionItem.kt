@@ -8,6 +8,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -29,6 +31,8 @@ fun OptionItem(
     icon: ImageVector? = null,
     iconTint: Color? = null,
     value: String? = null,
+    trailingIcon: ImageVector? = null,
+    trailingTint: Color? = null,
     isFocused: Boolean = false,
     isDangerous: Boolean = false,
     isSelected: Boolean = false,
@@ -75,10 +79,18 @@ fun OptionItem(
             modifier = Modifier.weight(1f)
         )
         if (isSelected) {
-            Text(
-                text = "[Current]",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.primary
+            Icon(
+                imageVector = Icons.Default.Check,
+                contentDescription = "Current",
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.width(Dimens.iconSm)
+            )
+        } else if (trailingIcon != null) {
+            Icon(
+                imageVector = trailingIcon,
+                contentDescription = null,
+                tint = trailingTint ?: contentColor,
+                modifier = Modifier.width(Dimens.iconSm)
             )
         } else if (value != null) {
             Text(

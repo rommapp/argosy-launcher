@@ -5,6 +5,7 @@ import com.nendo.argosy.data.cache.GradientExtractionConfig
 import com.nendo.argosy.ui.common.GradientExtractionResult
 import com.nendo.argosy.data.cache.GradientPreset
 import com.nendo.argosy.data.emulator.EmulatorDef
+import com.nendo.argosy.data.platform.PlatformDefinitions
 import com.nendo.argosy.data.emulator.ExtensionOption
 import com.nendo.argosy.data.emulator.InstalledEmulator
 import com.nendo.argosy.data.emulator.RetroArchCore
@@ -52,6 +53,12 @@ data class BuiltinPathMigration(
     val existingFileCount: Int
 )
 
+data class MusicRelocationPrompt(
+    val oldPath: String,
+    val newPath: String,
+    val fileCount: Int
+)
+
 enum class SettingsSection {
     MAIN,
     SERVER,
@@ -59,9 +66,13 @@ enum class SettingsSection {
     STEAM_SETTINGS,
     RETRO_ACHIEVEMENTS,
     STORAGE,
+    STORAGE_GAMES,
+    STORAGE_PLATFORM_GAMES,
+    STORAGE_CACHES,
     BIOS,
     THEME,
     THEME_SOUNDS,
+    THEME_MUSIC,
     THEME_FONTS,
     THEME_BACKDROP,
     INTERFACE,
@@ -93,8 +104,7 @@ enum class ConnectionStatus {
 
 enum class RomMAuthMethod {
     DEVICE,
-    PAIRING_CODE,
-    PASSWORD
+    PAIRING_CODE
 }
 
 internal const val ROMM_AUTH_METHOD_PICKER_KEY = "rommAuthMethod"
@@ -224,6 +234,7 @@ data class DisplayState(
     val ambientLedCustomColorHue: Int = 200,
     val ambientLedTransitionMs: Int = 250,
     val ambientLedScreenEnabled: Boolean = false,
+    val ambientLedAchievementFlash: Boolean = true,
     val ambientLedAvailable: Boolean = false,
     val hasScreenCapturePermission: Boolean = true,
     val hasSecondaryDisplay: Boolean = false,
@@ -251,36 +262,72 @@ data class ControlsState(
     val menuWrapMode: com.nendo.argosy.data.preferences.MenuWrapMode = com.nendo.argosy.data.preferences.MenuWrapMode.HARD_STOP
 )
 
+data class SoundValueLabel(
+    val primary: String,
+    val secondary: String? = null,
+    val secondaryPrefix: String? = null
+)
+
 data class SoundState(
     val enabled: Boolean = false,
     val volume: Int = 40,
     val soundConfigs: Map<SoundType, SoundConfig> = emptyMap(),
     val showSoundPicker: Boolean = false,
     val soundPickerType: SoundType? = null,
-    val soundPickerFocusIndex: Int = 0
+    val soundPickerFocusIndex: Int = 0,
+    val musicApiSupported: Boolean = false
 ) {
-    val presets: List<SoundPreset> get() = SoundPreset.selectable
+    val presets: List<SoundPreset>
+        get() = buildList {
+            add(SoundPreset.DEFAULT)
+            if (musicApiSupported) add(SoundPreset.ROMM_MUSIC)
+            add(SoundPreset.CUSTOM)
+            add(SoundPreset.SILENT)
+        }
 
     fun getCurrentPresetForType(type: SoundType): SoundPreset? {
-        val config = soundConfigs[type] ?: return null
+        val config = soundConfigs[type] ?: return SoundPreset.DEFAULT
+        if (config.isRommSource) return SoundPreset.ROMM_MUSIC
+        if (config.customFilePath != null) return SoundPreset.CUSTOM
         return SoundPreset.entries.find { it.name == config.presetName }
     }
 
-    fun getDisplayNameForType(type: SoundType): String {
-        val config = soundConfigs[type] ?: return "Default"
-        if (config.customFilePath != null) return "Custom"
-        return SoundPreset.entries.find { it.name == config.presetName }?.displayName ?: "Default"
+    fun getSoundValueForType(type: SoundType): SoundValueLabel {
+        val config = soundConfigs[type] ?: return SoundValueLabel("Default")
+        val path = config.customFilePath
+        if (path != null) {
+            val trackName = path.substringAfterLast('/')
+                .substringBeforeLast('.')
+                .replace(TRACK_NUMBER_PREFIX, "")
+                .ifBlank { "Custom" }
+            if (config.isRommSource) {
+                val gameDir = path.substringBeforeLast('/')
+                val gameName = gameDir.substringAfterLast('/')
+                val platformFolder = gameDir.substringBeforeLast('/').substringAfterLast('/')
+                val platform = PlatformDefinitions.shortNameForDisplayName(platformFolder) ?: platformFolder
+                return SoundValueLabel(trackName, gameName, platform)
+            }
+            return SoundValueLabel(trackName)
+        }
+        return SoundValueLabel(
+            SoundPreset.entries.find { it.name == config.presetName }?.displayName ?: "Default"
+        )
+    }
+
+    companion object {
+        private val TRACK_NUMBER_PREFIX = Regex("^\\d+\\s*-\\s*")
     }
 }
 
 data class AmbientAudioState(
     val enabled: Boolean = false,
     val volume: Int = 50,
-    val audioUri: String? = null,
-    val audioFileName: String? = null,
-    val isFolder: Boolean = false,
     val shuffle: Boolean = false,
-    val currentTrackName: String? = null
+    val gameDetailThemeEnabled: Boolean = false,
+    val currentTrackName: String? = null,
+    val playlistEntryCount: Int = 0,
+    val musicDirPath: String? = null,
+    val pendingMusicRelocation: MusicRelocationPrompt? = null
 )
 
 data class EmulatorState(
@@ -390,7 +437,12 @@ data class PlatformDetailState(
     val isUserStatePathOverride: Boolean = false,
     val supportsStatePath: Boolean = false,
     val isScanning: Boolean = false,
-    val downloadedSizeBytes: Long = 0
+    val downloadedSizeBytes: Long = 0,
+    val downloadOverrides: Map<String, Boolean> = emptyMap(),
+    val globalDownloadDefaults: Map<String, Boolean> = emptyMap(),
+    val showDownloadDefaults: Boolean = false,
+    val downloadDefaultsFocusIndex: Int = 0,
+    val downloadDefaultsSlug: String? = null
 ) {
     val playTimeFormatted: String get() {
         if (totalPlayTimeMs <= 0) return "--"
@@ -424,7 +476,6 @@ data class BuiltinVideoState(
     val autoSaveState: Boolean = true,
     val autoRestoreState: Boolean = true,
     val hwCoreSaveStatesEnabled: Boolean = false,
-    val defaultToHardcore: Boolean = false,
     val savePath: String = "",
     val statePath: String = "",
     val isCustomSavePath: Boolean = false,
@@ -639,10 +690,73 @@ data class StorageState(
     val isValidatingCache: Boolean = false,
     val isValidatingDownloads: Boolean = false,
     val showPurgeAllConfirm: Boolean = false,
+    val purgeAllPendingUploads: Int = 0,
     val isPurgingAll: Boolean = false,
+    val showHardResetModal: Boolean = false,
+    val hardResetPendingUploads: Int = 0,
+    val isHardResetting: Boolean = false,
     val weeklyIntegrityCheckEnabled: Boolean = true,
     val busyPlatformIds: Set<Long> = emptySet(),
     val isLibrarySyncing: Boolean = false
+)
+
+enum class StorageGamesSortMode { PLATFORM, SIZE }
+
+internal const val CACHES_ENTRY_TOP = 0
+internal const val CACHES_ENTRY_STEAM = 1
+
+data class StorageAttributionState(
+    val snapshot: com.nendo.argosy.data.storage.StorageSnapshot? = null,
+    val volumes: List<com.nendo.argosy.data.storage.StorageVolumeInfo> = emptyList(),
+    val walkProgress: Map<com.nendo.argosy.data.storage.StorageCategory, com.nendo.argosy.data.storage.WalkState> = emptyMap(),
+    val isRefreshing: Boolean = false,
+    val gamesSortMode: StorageGamesSortMode = StorageGamesSortMode.PLATFORM,
+    val musicEnteredFromStorage: Boolean = false,
+    val cachesEntryFocus: Int = CACHES_ENTRY_TOP,
+    val steamTileLatched: Boolean = false
+)
+
+data class GameStorageDeleteConfirm(
+    val gameId: Long,
+    val title: String,
+    val hasSoundtrack: Boolean,
+    val unsyncedSaves: Int
+)
+
+data class GameStorageCategoryDeleteConfirm(
+    val gameId: Long,
+    val bucket: com.nendo.argosy.domain.usecase.storage.GameStorageBucket,
+    val fileCount: Int,
+    val totalBytes: Long
+)
+
+data class StoragePlatformGamesState(
+    val selectedPlatformId: Long = -1L,
+    val platformName: String = "",
+    val isLoading: Boolean = false,
+    val games: List<com.nendo.argosy.domain.usecase.storage.GameStorageBreakdown> = emptyList(),
+    val coverPaths: Map<Long, String?> = emptyMap(),
+    val highlightedCategoryIndex: Int = 0,
+    val deleteConfirm: GameStorageDeleteConfirm? = null,
+    val categoryDeleteConfirm: GameStorageCategoryDeleteConfirm? = null
+)
+
+enum class CachesClearTarget {
+    IMAGE_CACHE,
+    ROM_EXTRACTION,
+    SFX_CACHE,
+    EMULATOR_APKS,
+    MISC_DOWNLOADS,
+    SHADERS_CATALOG,
+    FRAMES,
+    STEAM_DOWNLOADS
+}
+
+data class StorageCachesState(
+    val pendingClear: CachesClearTarget? = null,
+    val busyClears: Set<CachesClearTarget> = emptySet(),
+    val steamDownloadBusy: Boolean = false,
+    val steamStagingBytes: Long? = null
 )
 
 data class PlatformMigrationInfo(
@@ -666,8 +780,6 @@ data class ServerState(
     val rommConfiguring: Boolean = false,
     val rommAuthMethod: RomMAuthMethod = RomMAuthMethod.PAIRING_CODE,
     val rommConfigUrl: String = "",
-    val rommConfigUsername: String = "",
-    val rommConfigPassword: String = "",
     val rommConfigPairingCode: String = "",
     val rommShowScanner: Boolean = false,
     val rommHasCamera: Boolean = false,
@@ -680,7 +792,8 @@ data class ServerState(
     val syncScreenshotsEnabled: Boolean = false,
     val uploadScreenshotsEnabled: Boolean = true,
     val boxArtCacheEnabled: Boolean = true,
-    val screenshotUploadSupported: Boolean = false
+    val screenshotUploadSupported: Boolean = false,
+    val musicApiSupported: Boolean = false
 )
 
 data class PlatformFilterItem(
@@ -692,6 +805,7 @@ data class PlatformFilterItem(
 )
 
 data class SyncSettingsState(
+    val downloadDefaults: Map<String, Boolean> = emptyMap(),
     val syncFilters: SyncFilterPreferences = SyncFilterPreferences(),
     val showSyncFiltersModal: Boolean = false,
     val syncFiltersModalFocusIndex: Int = 0,
@@ -727,6 +841,9 @@ data class SyncSettingsState(
     val isImageCacheMigrating: Boolean = false,
     val showResetSaveCacheConfirm: Boolean = false,
     val isResettingSaveCache: Boolean = false,
+    val showClearStateCacheConfirm: Boolean = false,
+    val isClearingStateCache: Boolean = false,
+    val stateCacheEnabled: Boolean = true,
     val showClearPathCacheConfirm: Boolean = false,
     val isClearingPathCache: Boolean = false,
     val showForceSyncConfirm: Boolean = false,
@@ -883,7 +1000,8 @@ data class RASettingsState(
     val pendingAchievementsCount: Int = 0,
     val proxyEnabled: Boolean = false,
     val proxyAddress: String = "",
-    val canPushToRetroArch: Boolean = false
+    val canPushToRetroArch: Boolean = false,
+    val defaultToHardcore: String = "ask"
 )
 
 data class BiosFirmwareItem(
@@ -1055,6 +1173,9 @@ data class SettingsUiState(
     val coreOptions: CoreOptionsState = CoreOptionsState(),
     val server: ServerState = ServerState(),
     val storage: StorageState = StorageState(),
+    val attribution: StorageAttributionState = StorageAttributionState(),
+    val storagePlatformGames: StoragePlatformGamesState = StoragePlatformGamesState(),
+    val storageCaches: StorageCachesState = StorageCachesState(),
     val platformLibretro: PlatformLibretroState = PlatformLibretroState(),
     val syncSettings: SyncSettingsState = SyncSettingsState(),
     val steam: SteamSettingsState = SteamSettingsState(),

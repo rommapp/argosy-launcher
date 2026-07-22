@@ -20,6 +20,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -38,6 +39,7 @@ fun Modal(
     fillHeight: Boolean = false,
     onDismiss: (() -> Unit)? = null,
     footerHints: List<Pair<InputButton, String>>? = null,
+    inlineFooterHints: Boolean = false,
     content: @Composable ColumnScope.() -> Unit
 ) {
     val isDarkTheme = LocalLauncherTheme.current.isDarkTheme
@@ -48,7 +50,7 @@ fun Modal(
         modifier = Modifier
             .fillMaxSize()
             .background(overlayColor)
-            .then(if (onDismiss != null) Modifier.clickableNoFocus(onClick = onDismiss) else Modifier),
+            .clickableNoFocus(onClick = onDismiss ?: {}),
         contentAlignment = Alignment.Center
     ) {
         val modalWidth = (baseWidth * scale).coerceIn(280.dp, maxWidth * 0.9f)
@@ -61,35 +63,48 @@ fun Modal(
                     if (fillHeight) Modifier.fillMaxHeight()
                     else Modifier.heightIn(max = modalMaxHeight)
                 )
-                .background(
-                    MaterialTheme.colorScheme.surface,
-                    RoundedCornerShape(Dimens.radiusPanel)
-                )
-                .then(if (onDismiss != null) Modifier.clickableNoFocus {} else Modifier)
-                .padding(Dimens.spacingLg)
+                .clip(RoundedCornerShape(Dimens.radiusPanel))
+                .background(MaterialTheme.colorScheme.surface)
+                .clickableNoFocus {}
         ) {
-            if (titleContent != null) {
-                titleContent()
-            } else {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                if (subtitle != null) {
+            Column(
+                modifier = Modifier
+                    .weight(1f, fill = false)
+                    .padding(Dimens.spacingLg)
+            ) {
+                if (titleContent != null) {
+                    titleContent()
+                } else {
                     Text(
-                        text = subtitle,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = subtitleColor ?: MaterialTheme.colorScheme.onSurfaceVariant
+                        text = title,
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onSurface
                     )
+                    if (subtitle != null) {
+                        Text(
+                            text = subtitle,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = subtitleColor ?: MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
-            }
-            Spacer(modifier = Modifier.height(Dimens.spacingMd))
+                Spacer(modifier = Modifier.height(Dimens.spacingMd))
 
-            content()
+                content()
+            }
 
             if (footerHints != null) {
-                FooterHints(hints = footerHints)
+                if (inlineFooterHints) {
+                    val shown = footerHints.filterNot { isObviousHint(it.first, it.second) }
+                    if (shown.isNotEmpty()) {
+                        FooterBarWithState(
+                            hints = shown.map { FooterHintItem(it.first, it.second) },
+                            forceVisible = true
+                        )
+                    }
+                } else {
+                    FooterHints(hints = footerHints)
+                }
             }
         }
     }
@@ -112,7 +127,7 @@ fun CenteredModal(
         modifier = Modifier
             .fillMaxSize()
             .background(overlayColor)
-            .then(if (onDismiss != null) Modifier.clickableNoFocus(onClick = onDismiss) else Modifier),
+            .clickableNoFocus(onClick = onDismiss ?: {}),
         contentAlignment = Alignment.Center
     ) {
         val modalWidth = (baseWidth * scale).coerceIn(280.dp, maxWidth * 0.9f)
@@ -124,7 +139,7 @@ fun CenteredModal(
                     MaterialTheme.colorScheme.surface,
                     RoundedCornerShape(Dimens.radiusPanel)
                 )
-                .then(if (onDismiss != null) Modifier.clickableNoFocus {} else Modifier)
+                .clickableNoFocus {}
                 .padding(Dimens.spacingLg),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
@@ -161,7 +176,7 @@ fun NestedModal(
         modifier = Modifier
             .fillMaxSize()
             .background(overlayColor)
-            .then(if (onDismiss != null) Modifier.clickableNoFocus(onClick = onDismiss) else Modifier),
+            .clickableNoFocus(onClick = onDismiss ?: {}),
         contentAlignment = Alignment.Center
     ) {
         val modalWidth = (baseWidth * scale).coerceIn(280.dp, maxWidth * 0.9f)
@@ -173,7 +188,7 @@ fun NestedModal(
                     MaterialTheme.colorScheme.surface,
                     RoundedCornerShape(Dimens.radiusPanel)
                 )
-                .then(if (onDismiss != null) Modifier.clickableNoFocus {} else Modifier)
+                .clickableNoFocus {}
                 .padding(Dimens.spacingLg),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {

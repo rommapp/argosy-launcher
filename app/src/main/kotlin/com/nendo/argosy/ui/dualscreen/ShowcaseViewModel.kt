@@ -71,6 +71,32 @@ class ShowcaseViewModel(
         }
     }
 
+    fun onModalSavePathSelect(index: Int) {
+        detailState.update {
+            it?.copy(
+                modalType = ActiveModal.NONE,
+                savePathOverride = if (index == 0) null else it.savePathOverride
+            )
+        }
+        if (isControlActive()) {
+            broadcasts.broadcastInlineUpdate("save_path_confirm", index)
+        }
+    }
+
+    fun onModalDisplayTargetSelect(index: Int) {
+        val state = detailState.value ?: return
+        detailState.update {
+            it?.copy(
+                modalType = ActiveModal.NONE,
+                displayTargetCurrentName = if (index == 0) null
+                else state.displayTargetNames.getOrNull(index - 1)
+            )
+        }
+        if (isControlActive()) {
+            broadcasts.broadcastInlineUpdate("display_target_confirm", index)
+        }
+    }
+
     fun onModalVariantSelect(index: Int) {
         val state = detailState.value ?: return
         detailState.update {
@@ -175,6 +201,24 @@ class ShowcaseViewModel(
         }
     }
 
+    fun moveSavePathFocus(delta: Int) {
+        detailState.update { state ->
+            val max = if (state?.savePathOverride != null) 1 else 0
+            state?.copy(
+                savePathFocusIndex = (state.savePathFocusIndex + delta).coerceIn(0, max)
+            )
+        }
+    }
+
+    fun moveDisplayTargetFocus(delta: Int) {
+        detailState.update { state ->
+            val max = state?.displayTargetNames?.size ?: 0
+            state?.copy(
+                displayTargetFocusIndex = (state.displayTargetFocusIndex + delta).coerceIn(0, max)
+            )
+        }
+    }
+
     fun moveVariantFocus(delta: Int) {
         detailState.update { state ->
             val max = state?.variantNames?.size ?: 0
@@ -235,6 +279,8 @@ class ShowcaseViewModel(
                     ActiveModal.STATUS -> moveModalStatus(-1)
                     ActiveModal.EMULATOR -> moveEmulatorFocus(-1)
                     ActiveModal.CORE -> moveCoreFocus(-1)
+                    ActiveModal.SAVE_PATH -> moveSavePathFocus(-1)
+                    ActiveModal.DISPLAY_TARGET -> moveDisplayTargetFocus(-1)
                     ActiveModal.VARIANT_PICKER -> moveVariantFocus(-1)
                     ActiveModal.COLLECTION -> moveCollectionFocus(-1)
                     ActiveModal.DISC_PICKER -> moveDiscPickerFocus(-1)
@@ -248,6 +294,8 @@ class ShowcaseViewModel(
                     ActiveModal.STATUS -> moveModalStatus(1)
                     ActiveModal.EMULATOR -> moveEmulatorFocus(1)
                     ActiveModal.CORE -> moveCoreFocus(1)
+                    ActiveModal.SAVE_PATH -> moveSavePathFocus(1)
+                    ActiveModal.DISPLAY_TARGET -> moveDisplayTargetFocus(1)
                     ActiveModal.VARIANT_PICKER -> moveVariantFocus(1)
                     ActiveModal.COLLECTION -> moveCollectionFocus(1)
                     ActiveModal.DISC_PICKER -> moveDiscPickerFocus(1)
@@ -266,6 +314,10 @@ class ShowcaseViewModel(
                         onModalEmulatorSelect(state.emulatorFocusIndex)
                     ActiveModal.CORE ->
                         onModalCoreSelect(state.coreFocusIndex)
+                    ActiveModal.SAVE_PATH ->
+                        onModalSavePathSelect(state.savePathFocusIndex)
+                    ActiveModal.DISPLAY_TARGET ->
+                        onModalDisplayTargetSelect(state.displayTargetFocusIndex)
                     ActiveModal.VARIANT_PICKER ->
                         onModalVariantSelect(state.variantFocusIndex)
                     ActiveModal.COLLECTION -> {

@@ -8,9 +8,11 @@ import com.nendo.argosy.data.emulator.InstalledEmulator
 import com.nendo.argosy.data.emulator.RetroArchCore
 import com.nendo.argosy.data.launcher.SteamLauncher
 import com.nendo.argosy.data.launcher.SteamLaunchers
+import com.nendo.argosy.data.model.visibleWithCollapsed
+import com.nendo.argosy.data.preferences.MenuWrapMode
+import com.nendo.argosy.ui.input.InputDispatcher.Companion.computeWrappedIndex
 import com.nendo.argosy.ui.input.SoundFeedbackManager
 import com.nendo.argosy.core.input.SoundType
-import com.nendo.argosy.ui.screens.gamedetail.UpdateFileUi
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -35,16 +37,31 @@ data class PickerModalState(
     val discPickerOptions: List<DiscOption> = emptyList(),
     val discPickerFocusIndex: Int = 0,
 
-    val showUpdatesPicker: Boolean = false,
-    val updatesPickerFocusIndex: Int = 0,
-
     val showVariantPicker: Boolean = false,
     val variantPickerOptions: List<com.nendo.argosy.data.emulator.VariantOption> = emptyList(),
-    val variantPickerFocusIndex: Int = 0
+    val variantPickerFocusIndex: Int = 0,
+    val variantPickerActiveFileId: Long? = null,
+
+    val showFilePicker: Boolean = false,
+    val filePickerRows: List<com.nendo.argosy.data.model.FilePickerRow> = emptyList(),
+    val filePickerSelected: Set<Long> = emptySet(),
+    val filePickerSelectedVersions: Set<Long> = emptySet(),
+    val filePickerFocusIndex: Int = 0,
+    val filePickerManageMode: Boolean = false,
+    val filePickerCollapsed: Set<String> = emptySet(),
+
+    val showCoverPicker: Boolean = false,
+    val coverCandidates: List<com.nendo.argosy.ui.screens.gamedetail.CoverCandidate> = emptyList(),
+    val coverPickerFocusIndex: Int = 0,
+    val coverPickerLoading: Boolean = false,
+    val coverPickerError: String? = null
 ) {
     val hasAnyPickerOpen: Boolean
         get() = showEmulatorPicker || showCorePicker || showSteamLauncherPicker ||
-                showDiscPicker || showUpdatesPicker || showVariantPicker
+                showDiscPicker || showVariantPicker || showFilePicker || showCoverPicker
+
+    val visibleFilePickerRows: List<com.nendo.argosy.data.model.FilePickerRow>
+        get() = filePickerRows.visibleWithCollapsed(filePickerCollapsed)
 }
 
 sealed class PickerSelection {
@@ -52,7 +69,6 @@ sealed class PickerSelection {
     data class Core(val coreId: String?) : PickerSelection()
     data class SteamLauncher(val launcher: com.nendo.argosy.data.launcher.SteamLauncher?) : PickerSelection()
     data class Disc(val discPath: String) : PickerSelection()
-    data class UpdateFile(val file: UpdateFileUi) : PickerSelection()
     data class Variant(val variantFileId: Long?) : PickerSelection()
 }
 
@@ -67,8 +83,56 @@ class PickerModalDelegate @Inject constructor(
     private val _selection = MutableStateFlow<PickerSelection?>(null)
     val selection: StateFlow<PickerSelection?> = _selection.asStateFlow()
 
+    var menuWrapMode: MenuWrapMode = MenuWrapMode.HARD_STOP
+
     fun clearSelection() {
         _selection.value = null
+    }
+
+    fun showCoverPicker() {
+        _state.update {
+            it.copy(
+                showCoverPicker = true,
+                coverCandidates = emptyList(),
+                coverPickerFocusIndex = 0,
+                coverPickerLoading = true,
+                coverPickerError = null
+            )
+        }
+        soundManager.play(SoundType.OPEN_MODAL)
+    }
+
+    fun setCoverCandidates(candidates: List<com.nendo.argosy.ui.screens.gamedetail.CoverCandidate>) {
+        _state.update {
+            it.copy(
+                coverCandidates = candidates,
+                coverPickerFocusIndex = 0,
+                coverPickerLoading = false,
+                coverPickerError = null
+            )
+        }
+    }
+
+    fun setCoverPickerError(message: String) {
+        _state.update {
+            it.copy(coverPickerLoading = false, coverPickerError = message)
+        }
+    }
+
+    fun dismissCoverPicker() {
+        _state.update {
+            it.copy(showCoverPicker = false, coverCandidates = emptyList(), coverPickerError = null)
+        }
+        soundManager.play(SoundType.CLOSE_MODAL)
+    }
+
+    /** Grid navigation: [delta] of +/-1 steps within a row, +/-columns moves between rows. */
+    fun moveCoverPickerFocus(delta: Int) {
+        _state.update { state ->
+            if (state.coverCandidates.isEmpty()) return@update state
+            val target = state.coverPickerFocusIndex + delta
+            state.copy(coverPickerFocusIndex = target.coerceIn(0, state.coverCandidates.lastIndex))
+        }
     }
 
     // region Emulator Picker
@@ -99,7 +163,7 @@ class PickerModalDelegate @Inject constructor(
     fun moveEmulatorPickerFocus(delta: Int) {
         _state.update { state ->
             val maxIndex = state.availableEmulators.size
-            val newIndex = (state.emulatorPickerFocusIndex + delta).coerceIn(0, maxIndex)
+            val newIndex = computeWrappedIndex(state.emulatorPickerFocusIndex, delta, maxIndex, menuWrapMode)
             state.copy(emulatorPickerFocusIndex = newIndex)
         }
     }
@@ -147,7 +211,7 @@ class PickerModalDelegate @Inject constructor(
     fun moveCorePickerFocus(delta: Int) {
         _state.update { state ->
             val maxIndex = state.availableCores.size
-            val newIndex = (state.corePickerFocusIndex + delta).coerceIn(0, maxIndex)
+            val newIndex = computeWrappedIndex(state.corePickerFocusIndex, delta, maxIndex, menuWrapMode)
             state.copy(corePickerFocusIndex = newIndex)
         }
     }
@@ -188,7 +252,7 @@ class PickerModalDelegate @Inject constructor(
     fun moveSteamLauncherPickerFocus(delta: Int) {
         _state.update { state ->
             val maxIndex = state.availableSteamLaunchers.size
-            val newIndex = (state.steamLauncherPickerFocusIndex + delta).coerceIn(0, maxIndex)
+            val newIndex = computeWrappedIndex(state.steamLauncherPickerFocusIndex, delta, maxIndex, menuWrapMode)
             state.copy(steamLauncherPickerFocusIndex = newIndex)
         }
     }
@@ -234,7 +298,7 @@ class PickerModalDelegate @Inject constructor(
     fun moveDiscPickerFocus(delta: Int) {
         _state.update { state ->
             val maxIndex = (state.discPickerOptions.size - 1).coerceAtLeast(0)
-            val newIndex = (state.discPickerFocusIndex + delta).coerceIn(0, maxIndex)
+            val newIndex = computeWrappedIndex(state.discPickerFocusIndex, delta, maxIndex, menuWrapMode)
             state.copy(discPickerFocusIndex = newIndex)
         }
     }
@@ -260,13 +324,14 @@ class PickerModalDelegate @Inject constructor(
 
     // region Variant Picker
 
-    fun showVariantPicker(options: List<com.nendo.argosy.data.emulator.VariantOption>) {
+    fun showVariantPicker(options: List<com.nendo.argosy.data.emulator.VariantOption>, activeFileId: Long? = null) {
         val sorted = options.sortedBy { com.nendo.argosy.data.model.VariantCategory.fromKey(it.category).sortOrder }
         _state.update {
             it.copy(
                 showVariantPicker = true,
                 variantPickerOptions = sorted,
-                variantPickerFocusIndex = 0
+                variantPickerFocusIndex = 0,
+                variantPickerActiveFileId = activeFileId
             )
         }
         soundManager.play(SoundType.OPEN_MODAL)
@@ -286,7 +351,7 @@ class PickerModalDelegate @Inject constructor(
     fun moveVariantPickerFocus(delta: Int) {
         _state.update { state ->
             val maxIndex = (state.variantPickerOptions.size - 1).coerceAtLeast(0)
-            val newIndex = (state.variantPickerFocusIndex + delta).coerceIn(0, maxIndex)
+            val newIndex = computeWrappedIndex(state.variantPickerFocusIndex, delta, maxIndex, menuWrapMode)
             state.copy(variantPickerFocusIndex = newIndex)
         }
     }
@@ -294,6 +359,15 @@ class PickerModalDelegate @Inject constructor(
     fun confirmVariantSelection() {
         val state = _state.value
         val variant = state.variantPickerOptions.getOrNull(state.variantPickerFocusIndex) ?: return
+        confirmVariant(variant)
+    }
+
+    fun confirmVariantSelection(fileId: Long?) {
+        val variant = _state.value.variantPickerOptions.firstOrNull { it.fileId == fileId } ?: return
+        confirmVariant(variant)
+    }
+
+    private fun confirmVariant(variant: com.nendo.argosy.data.emulator.VariantOption) {
         _selection.value = PickerSelection.Variant(variant.fileId)
         _state.update {
             it.copy(
@@ -306,40 +380,135 @@ class PickerModalDelegate @Inject constructor(
 
     // endregion
 
-    // region Updates Picker
+    // region File Picker
 
-    fun showUpdatesPicker() {
+    fun showFilePicker(
+        rows: List<com.nendo.argosy.data.model.FilePickerRow>,
+        preselectedFileIds: Set<Long>,
+        preselectedVersionIds: Set<Long>,
+        manageMode: Boolean = false
+    ) {
         _state.update {
             it.copy(
-                showUpdatesPicker = true,
-                updatesPickerFocusIndex = 0
+                showFilePicker = true,
+                filePickerRows = rows,
+                filePickerSelected = preselectedFileIds,
+                filePickerSelectedVersions = preselectedVersionIds,
+                filePickerFocusIndex = 0,
+                filePickerManageMode = manageMode,
+                filePickerCollapsed = emptySet()
             )
         }
         soundManager.play(SoundType.OPEN_MODAL)
     }
 
-    fun dismissUpdatesPicker() {
-        _state.update { it.copy(showUpdatesPicker = false) }
+    fun dismissFilePicker() {
+        _state.update { it.copy(showFilePicker = false) }
         soundManager.play(SoundType.CLOSE_MODAL)
     }
 
-    fun moveUpdatesPickerFocus(delta: Int, updateFiles: List<UpdateFileUi>, dlcFiles: List<UpdateFileUi>) {
-        _state.update { state ->
-            val allFiles = updateFiles + dlcFiles
-            val maxIndex = (allFiles.size - 1).coerceAtLeast(0)
-            val newIndex = (state.updatesPickerFocusIndex + delta).coerceIn(0, maxIndex)
-            state.copy(updatesPickerFocusIndex = newIndex)
+    fun moveFilePickerFocus(delta: Int) {
+        _state.update { st ->
+            val maxIndex = st.visibleFilePickerRows.size + 1
+            st.copy(filePickerFocusIndex = computeWrappedIndex(st.filePickerFocusIndex, delta, maxIndex, menuWrapMode))
         }
     }
 
-    fun confirmUpdatesSelection(updateFiles: List<UpdateFileUi>, dlcFiles: List<UpdateFileUi>) {
-        val state = _state.value
-        val allFiles = updateFiles + dlcFiles
-        val focusedFile = allFiles.getOrNull(state.updatesPickerFocusIndex) ?: return
-
-        if (!focusedFile.isDownloaded && focusedFile.gameFileId != null) {
-            _selection.value = PickerSelection.UpdateFile(focusedFile)
+    fun moveFilePickerButtonFocus(delta: Int): Boolean {
+        val st = _state.value
+        val buttonStart = st.visibleFilePickerRows.size
+        if (st.filePickerFocusIndex < buttonStart) return false
+        _state.update {
+            it.copy(filePickerFocusIndex = (it.filePickerFocusIndex + delta).coerceIn(buttonStart, buttonStart + 1))
         }
+        return true
+    }
+
+    fun jumpFilePickerGroup(direction: Int) {
+        _state.update { st ->
+            val headers = st.visibleFilePickerRows.withIndex().filter { it.value.isHeader }.map { it.index }
+            if (headers.isEmpty()) return@update st
+            val target = if (direction > 0) {
+                headers.firstOrNull { it > st.filePickerFocusIndex }
+            } else {
+                headers.lastOrNull { it < st.filePickerFocusIndex }
+            } ?: return@update st
+            st.copy(filePickerFocusIndex = target)
+        }
+    }
+
+    fun toggleFilePickerGroupCollapse(groupKey: String) {
+        _state.update { st ->
+            val oldVisible = st.visibleFilePickerRows
+            val focusedRow = oldVisible.getOrNull(st.filePickerFocusIndex)
+            val newCollapsed = if (groupKey in st.filePickerCollapsed) {
+                st.filePickerCollapsed - groupKey
+            } else {
+                st.filePickerCollapsed + groupKey
+            }
+            val newVisible = st.filePickerRows.visibleWithCollapsed(newCollapsed)
+            val newIndex = when {
+                st.filePickerFocusIndex >= oldVisible.size ->
+                    newVisible.size + (st.filePickerFocusIndex - oldVisible.size)
+                focusedRow != null ->
+                    newVisible.indexOf(focusedRow).takeIf { it >= 0 }
+                        ?: newVisible.indexOfFirst { it.isHeader && it.groupKey == focusedRow.groupKey }.coerceAtLeast(0)
+                else -> 0
+            }
+            st.copy(filePickerCollapsed = newCollapsed, filePickerFocusIndex = newIndex.coerceAtLeast(0))
+        }
+    }
+
+    fun setFocusedFilePickerGroupCollapsed(collapse: Boolean): Boolean {
+        val st = _state.value
+        val row = st.visibleFilePickerRows.getOrNull(st.filePickerFocusIndex) ?: return false
+        if (!row.isHeader) return false
+        val isCollapsed = row.groupKey in st.filePickerCollapsed
+        if (collapse == isCollapsed) return false
+        toggleFilePickerGroupCollapse(row.groupKey)
+        return true
+    }
+
+    fun toggleFilePickerRow(row: com.nendo.argosy.data.model.FilePickerRow) {
+        _state.update { st ->
+            var selected = st.filePickerSelected
+            var versions = st.filePickerSelectedVersions
+            if (row.isHeader) {
+                val members = st.filePickerRows.filter { !it.isHeader && it.groupKey == row.groupKey && !it.isLocked }
+                val fileIds = members.mapNotNull { it.rommFileId }
+                val versionIds = members.mapNotNull { it.versionRommId }
+                val allSelected = fileIds.all { it in selected } && versionIds.all { it in versions }
+                if (allSelected) {
+                    selected = selected - fileIds.toSet()
+                    versions = versions - versionIds.toSet()
+                    if (versionIds.isNotEmpty() && versions.isEmpty()) {
+                        versions = setOf(versionIds.first())
+                    }
+                } else {
+                    selected = selected + fileIds
+                    versions = versions + versionIds
+                }
+            } else if (row.versionRommId != null) {
+                versions = if (row.versionRommId in versions) {
+                    (versions - row.versionRommId).ifEmpty { versions }
+                } else {
+                    versions + row.versionRommId
+                }
+            } else if (row.rommFileId != null && !row.isLocked) {
+                selected = if (row.rommFileId in selected) {
+                    selected - row.rommFileId
+                } else {
+                    selected + row.rommFileId
+                }
+            }
+            st.copy(filePickerSelected = selected, filePickerSelectedVersions = versions)
+        }
+        soundManager.play(SoundType.TOGGLE)
+    }
+
+    fun toggleFocusedFilePickerRow() {
+        val st = _state.value
+        st.visibleFilePickerRows.getOrNull(st.filePickerFocusIndex)?.let { toggleFilePickerRow(it) }
     }
 
     // endregion

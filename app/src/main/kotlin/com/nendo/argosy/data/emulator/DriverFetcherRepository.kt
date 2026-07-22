@@ -5,6 +5,8 @@ import android.os.Environment
 import com.nendo.argosy.data.remote.github.GitHubApi
 import com.nendo.argosy.data.remote.github.GitHubAsset
 import com.nendo.argosy.data.remote.github.GitHubRelease
+import com.nendo.argosy.data.storage.StorageAttributionRepository
+import com.nendo.argosy.data.storage.StorageCategory
 import com.nendo.argosy.util.Logger
 import com.squareup.moshi.Moshi
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -26,7 +28,8 @@ import javax.inject.Singleton
 
 @Singleton
 class DriverFetcherRepository @Inject constructor(
-    @ApplicationContext private val context: Context
+    @ApplicationContext private val context: Context,
+    private val attributionRepository: StorageAttributionRepository
 ) {
 
     enum class SortMode { Default, PublishTime }
@@ -61,9 +64,9 @@ class DriverFetcherRepository @Inject constructor(
             titlePrefixesToStrip = listOf("vturnip_mrpurple_", "turnip_mrpurple_"),
             titleSuffixesToStrip = listOf(".adpkg")
         ),
-        DriverRepo("GameHub Adreno 8xx", "crueter/GameHub-8Elite-Drivers", 1),
-        DriverRepo("KIMCHI Turnip", "K11MCH1/AdrenoToolsDrivers", 2, useTagName = true, sortMode = SortMode.PublishTime),
-        DriverRepo("Weab-Chan Freedreno", "Weab-chan/freedreno_turnip-CI", 3)
+        DriverRepo("StevenMX Turnip", "StevenMXZ/Adreno-Tools-Drivers", 1, sortMode = SortMode.PublishTime),
+        DriverRepo("GameHub Adreno 8xx", "crueter/GameHub-8Elite-Drivers", 2),
+        DriverRepo("KIMCHI Turnip", "K11MCH1/AdrenoToolsDrivers", 3, useTagName = true, sortMode = SortMode.PublishTime)
     )
 
     private val driverMap: List<Pair<IntRange, String>> = listOf(
@@ -201,6 +204,18 @@ class DriverFetcherRepository @Inject constructor(
         val dir = driversDir()
         if (!dir.exists()) return emptyList()
         return dir.listFiles()?.filter { it.isFile }?.sortedByDescending { it.lastModified() } ?: emptyList()
+    }
+
+    /** Deletes only regular files inside the app's drivers subfolder of the public Download dir. */
+    suspend fun clearDownloadedDrivers() = withContext(Dispatchers.IO) {
+        listDownloadedFiles().forEach { file ->
+            try {
+                file.delete()
+            } catch (e: Exception) {
+                Logger.warn(TAG, "Failed to delete driver ${file.name}: ${e.message}")
+            }
+        }
+        attributionRepository.markDirty(StorageCategory.MISC_DOWNLOADS)
     }
 
     fun driversDir(): File =

@@ -63,7 +63,7 @@ fun Box3dCover(
     androidx.compose.runtime.LaunchedEffect(frontPath, spinePath, backPath) {
         faces = withContext(Dispatchers.IO) {
             val front = decode(frontPath)
-            val spine = decode(spinePath)
+            val spine = decode(spinePath)?.let(::uprightSpine)
             if (front == null || spine == null) {
                 Logger.warn("Box3dCover", "decode failed front=${front != null} spine=${spine != null} frontPath=$frontPath spinePath=$spinePath")
                 null
@@ -265,4 +265,11 @@ private fun decode(path: String): Bitmap? {
     val file = File(path)
     if (!file.exists()) return null
     return BitmapFactory.decodeFile(path)
+}
+
+/** ScreenScraper side scans arrive portrait for some systems and landscape for others; the box geometry assumes portrait. */
+private fun uprightSpine(spine: Bitmap): Bitmap {
+    if (spine.height >= spine.width) return spine
+    val matrix = Matrix().apply { postRotate(90f) }
+    return Bitmap.createBitmap(spine, 0, 0, spine.width, spine.height, matrix, true)
 }

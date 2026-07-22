@@ -189,21 +189,25 @@ class FileBrowserViewModel @Inject constructor(
         return _state.value.volumes.any { it.path == _state.value.currentPath }
     }
 
-    fun moveFocus(delta: Int) {
+    fun moveFocus(delta: Int): Boolean {
+        var moved = false
         _state.update { state ->
             when (state.focusedPane) {
                 FocusedPane.VOLUMES -> {
                     val maxIndex = (state.volumes.size - 1).coerceAtLeast(0)
                     val newIndex = (state.volumeFocusIndex + delta).coerceIn(0, maxIndex)
+                    moved = newIndex != state.volumeFocusIndex
                     state.copy(volumeFocusIndex = newIndex)
                 }
                 FocusedPane.FILES -> {
                     val maxIndex = (state.entries.size - 1).coerceAtLeast(0)
                     val newIndex = (state.fileFocusIndex + delta).coerceIn(0, maxIndex)
+                    moved = newIndex != state.fileFocusIndex
                     state.copy(fileFocusIndex = newIndex)
                 }
             }
         }
+        return moved
     }
 
     fun switchPane(direction: Int) {

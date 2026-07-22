@@ -3,6 +3,8 @@ package com.nendo.argosy.domain.usecase
 import android.util.Log
 import com.nendo.argosy.data.local.dao.PlatformDao
 import com.nendo.argosy.data.repository.GameRepository
+import com.nendo.argosy.data.storage.StorageAttributionRepository
+import com.nendo.argosy.data.storage.StorageCategory
 import com.nendo.argosy.core.notification.NotificationManager
 import com.nendo.argosy.core.notification.NotificationProgress
 import com.nendo.argosy.core.notification.NotificationType
@@ -17,7 +19,8 @@ private const val NOTIFICATION_KEY = "platform-migration"
 class MigratePlatformStorageUseCase @Inject constructor(
     private val gameRepository: GameRepository,
     private val platformDao: PlatformDao,
-    private val notificationManager: NotificationManager
+    private val notificationManager: NotificationManager,
+    private val attributionRepository: StorageAttributionRepository
 ) {
     suspend operator fun invoke(
         platformId: Long,
@@ -109,6 +112,7 @@ class MigratePlatformStorageUseCase @Inject constructor(
             type = if (failed > 0) NotificationType.WARNING else NotificationType.SUCCESS
         )
 
+        attributionRepository.markDirty(StorageCategory.GAMES)
         MigrationResult(migrated, skipped, failed)
     }
 }

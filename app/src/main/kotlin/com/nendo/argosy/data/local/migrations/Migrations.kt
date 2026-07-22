@@ -1963,3 +1963,111 @@ object Migration_133_134 : Migration(133, 134) {
         )
     }
 }
+
+object Migration_134_135 : Migration(134, 135) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE `game_files` ADD COLUMN `regions` TEXT")
+        db.execSQL("ALTER TABLE `game_files` ADD COLUMN `versionGroup` TEXT")
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS `index_game_files_gameId_versionGroup` " +
+                "ON `game_files` (`gameId`, `versionGroup`)"
+        )
+    }
+}
+
+object Migration_135_136 : Migration(135, 136) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE `download_queue` ADD COLUMN `selectedFileIds` TEXT")
+    }
+}
+
+object Migration_136_137 : Migration(136, 137) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE `emulator_configs` ADD COLUMN `savePath` TEXT")
+    }
+}
+
+object Migration_137_138 : Migration(137, 138) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE `game_files` ADD COLUMN `trackTitle` TEXT")
+        db.execSQL("ALTER TABLE `game_files` ADD COLUMN `trackNumber` INTEGER")
+        db.execSQL("ALTER TABLE `game_files` ADD COLUMN `durationSeconds` REAL")
+        db.execSQL(
+            "CREATE TABLE IF NOT EXISTS `bgm_playlist` (" +
+                "`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                "`position` INTEGER NOT NULL, " +
+                "`filePath` TEXT NOT NULL, " +
+                "`displayName` TEXT NOT NULL, " +
+                "`gameFileId` INTEGER)"
+        )
+        db.execSQL(
+            "CREATE UNIQUE INDEX IF NOT EXISTS `index_bgm_playlist_filePath` ON `bgm_playlist` (`filePath`)"
+        )
+    }
+}
+
+object Migration_138_139 : Migration(138, 139) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE `bgm_playlist` ADD COLUMN `entryType` TEXT NOT NULL DEFAULT 'file'")
+    }
+}
+
+object Migration_139_140 : Migration(139, 140) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE `bgm_playlist` ADD COLUMN `sourceEntryId` INTEGER")
+    }
+}
+
+object Migration_140_141 : Migration(140, 141) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE `bgm_playlist` ADD COLUMN `enabled` INTEGER NOT NULL DEFAULT 1")
+    }
+}
+
+object Migration_141_142 : Migration(141, 142) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            "CREATE TABLE IF NOT EXISTS `audio_loudness` (" +
+                "`filePath` TEXT NOT NULL, " +
+                "`fileKey` TEXT NOT NULL, " +
+                "`meanDb` REAL NOT NULL, " +
+                "`measuredAt` INTEGER NOT NULL, " +
+                "PRIMARY KEY(`filePath`))"
+        )
+    }
+}
+
+object Migration_142_143 : Migration(142, 143) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        listOf(
+            "`alternativeNames` TEXT",
+            "`ageRatings` TEXT",
+            "`mobyId` INTEGER",
+            "`sgdbId` INTEGER",
+            "`ssId` INTEGER",
+            "`launchboxId` INTEGER",
+            "`hasheousId` INTEGER",
+            "`tgdbId` INTEGER",
+            "`hltbId` INTEGER",
+            "`flashpointId` TEXT",
+            "`gamelistId` TEXT",
+            "`libretroId` TEXT",
+            "`crcHash` TEXT",
+            "`md5Hash` TEXT",
+            "`sha1Hash` TEXT",
+            "`raHash` TEXT",
+            "`manualPath` TEXT"
+        ).forEach { db.execSQL("ALTER TABLE `games` ADD COLUMN $it") }
+
+        db.execSQL("ALTER TABLE `games` ADD COLUMN `hasManual` INTEGER NOT NULL DEFAULT 0")
+        db.execSQL("ALTER TABLE `games` ADD COLUMN `remoteHasSoundtrack` INTEGER NOT NULL DEFAULT 0")
+        db.execSQL("ALTER TABLE `games` ADD COLUMN `isIdentified` INTEGER NOT NULL DEFAULT 1")
+    }
+}
+
+object Migration_143_144 : Migration(143, 144) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE `games` ADD COLUMN `originalCoverPath` TEXT")
+        db.execSQL("ALTER TABLE `games` ADD COLUMN `coverSetManually` INTEGER NOT NULL DEFAULT 0")
+    }
+}

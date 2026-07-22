@@ -159,20 +159,36 @@ class InputDispatcher(
         return result
     }
 
+    private var boundaryLatched = false
+
+    private fun latchBoundary(override: SoundType?): SoundType? {
+        if (override != SoundType.BOUNDARY) {
+            boundaryLatched = false
+            return override
+        }
+        if (boundaryLatched) return SoundType.SILENT
+        boundaryLatched = true
+        return override
+    }
+
     private fun playFeedback(event: GamepadEvent, result: InputResult) {
         if (!result.handled) return
 
         when (event) {
             GamepadEvent.Up, GamepadEvent.Down, GamepadEvent.Left, GamepadEvent.Right -> {
-                if (result.soundOverride != SoundType.SILENT) {
+                val override = latchBoundary(result.soundOverride)
+                if (override != SoundType.SILENT) {
                     hapticManager?.vibrate(HapticPattern.FOCUS_CHANGE)
                 }
-                soundManager?.play(result.soundOverride ?: SoundType.NAVIGATE)
+                soundManager?.play(override ?: SoundType.NAVIGATE)
             }
             GamepadEvent.PrevSection, GamepadEvent.NextSection,
             GamepadEvent.PrevTrigger, GamepadEvent.NextTrigger -> {
-                hapticManager?.vibrate(HapticPattern.FOCUS_CHANGE)
-                soundManager?.play(result.soundOverride ?: SoundType.SECTION_CHANGE)
+                val override = latchBoundary(result.soundOverride)
+                if (override != SoundType.SILENT) {
+                    hapticManager?.vibrate(HapticPattern.FOCUS_CHANGE)
+                }
+                soundManager?.play(override ?: SoundType.SECTION_CHANGE)
             }
             GamepadEvent.Confirm -> {
                 hapticManager?.vibrate(HapticPattern.SELECTION)

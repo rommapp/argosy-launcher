@@ -23,6 +23,7 @@ import com.nendo.argosy.data.sync.SyncDirection
 import com.nendo.argosy.data.sync.SyncQueueManager
 import com.nendo.argosy.data.sync.SyncStatus
 import java.io.File
+import com.nendo.argosy.core.input.SoundType
 import com.nendo.argosy.ui.input.InputHandler
 import com.nendo.argosy.ui.input.InputResult
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -240,12 +241,10 @@ class SaveSyncViewModel @Inject constructor(
         onNavigateToGame: (Long) -> Unit
     ): InputHandler = object : InputHandler {
         override fun onUp(): InputResult {
-            moveFocus(-1)
-            return InputResult.HANDLED
+            return if (moveFocus(-1)) InputResult.HANDLED else InputResult.handled(SoundType.BOUNDARY)
         }
         override fun onDown(): InputResult {
-            moveFocus(1)
-            return InputResult.HANDLED
+            return if (moveFocus(1)) InputResult.HANDLED else InputResult.handled(SoundType.BOUNDARY)
         }
         override fun onLeft(): InputResult {
             if (uiState.value.focusedRow is AttentionRow) {
@@ -281,12 +280,14 @@ class SaveSyncViewModel @Inject constructor(
         }
     }
 
-    fun moveFocus(delta: Int) {
+    fun moveFocus(delta: Int): Boolean {
         val rows = uiState.value.allRows
-        if (rows.isEmpty()) return
+        if (rows.isEmpty()) return false
         val current = uiState.value.focusedIndex
         val next = (current + delta).coerceIn(0, rows.lastIndex)
+        if (next == current) return false
         _focusedRowKey.value = rows[next].key
+        return true
     }
 
     fun setAttentionAction(action: AttentionAction) {

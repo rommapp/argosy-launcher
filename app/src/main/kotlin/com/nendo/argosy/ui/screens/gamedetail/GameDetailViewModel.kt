@@ -30,6 +30,7 @@ import com.nendo.argosy.domain.usecase.cache.RepairImageCacheUseCase
 import com.nendo.argosy.domain.usecase.game.ConfigureEmulatorUseCase
 import com.nendo.argosy.ui.input.InputHandler
 import com.nendo.argosy.ui.input.InputResult
+import com.nendo.argosy.ui.screens.gamedetail.modals.COVER_PICKER_COLUMNS
 import com.nendo.argosy.ui.input.SoundFeedbackManager
 import com.nendo.argosy.core.input.SoundType
 import com.nendo.argosy.ui.navigation.GameNavigationContext
@@ -46,6 +47,8 @@ import com.nendo.argosy.core.event.GameUpdateBus
 import com.nendo.argosy.ui.screens.gamedetail.delegates.AchievementDelegate
 import com.nendo.argosy.ui.screens.gamedetail.delegates.DownloadDelegate
 import com.nendo.argosy.ui.screens.gamedetail.delegates.MoreOptionsDelegate
+import com.nendo.argosy.ui.screens.gamedetail.delegates.PerGameSettingsDelegate
+import com.nendo.argosy.ui.screens.gamedetail.delegates.PerGameSettingsRow
 import com.nendo.argosy.ui.screens.gamedetail.delegates.PickerModalDelegate
 import com.nendo.argosy.ui.screens.gamedetail.delegates.PickerSelection
 import com.nendo.argosy.ui.screens.gamedetail.delegates.PlayOptionsDelegate
@@ -103,6 +106,7 @@ class GameDetailViewModel @Inject constructor(
     private val ratingsStatus: RatingsStatusDelegate,
     private val playOptionsDelegate: PlayOptionsDelegate,
     private val moreOptionsDelegate: MoreOptionsDelegate,
+    private val perGameSettingsDelegate: PerGameSettingsDelegate,
     val speedrunSplitsDelegate: com.nendo.argosy.ui.screens.gamedetail.delegates.SpeedrunSplitsDelegate,
     private val socialRepository: com.nendo.argosy.data.social.SocialRepository,
     private val steamContentManager: com.nendo.argosy.data.steam.SteamContentManager,
@@ -111,7 +115,8 @@ class GameDetailViewModel @Inject constructor(
     private val variantResolver: com.nendo.argosy.data.emulator.VariantResolver,
     private val downloadManager: com.nendo.argosy.data.download.DownloadManager,
     private val downloadFileStatusRepository: com.nendo.argosy.data.repository.DownloadFileStatusRepository,
-    private val getRelatedGamesUseCase: com.nendo.argosy.domain.usecase.game.GetRelatedGamesUseCase
+    private val getRelatedGamesUseCase: com.nendo.argosy.domain.usecase.game.GetRelatedGamesUseCase,
+    private val gameThemeAudio: com.nendo.argosy.ui.audio.GameThemeAudioCoordinator
 ) : ViewModel() {
 
     private val sessionStateStore by lazy { com.nendo.argosy.data.preferences.SessionStateStore(context) }
@@ -141,6 +146,7 @@ class GameDetailViewModel @Inject constructor(
     override fun onCleared() {
         super.onCleared()
         imageCacheManager.resumeBackgroundCaching()
+        gameThemeAudio.exit(currentGameId)
     }
 
     @Deprecated("Hardcore conflict is now handled by GameLaunchDelegate callbacks")
@@ -173,6 +179,14 @@ class GameDetailViewModel @Inject constructor(
         modalResetSignal.signal.onEach { resetAllModals() }.launchIn(viewModelScope)
 
         viewModelScope.launch { emulatorDetector.detectEmulators() }
+
+        viewModelScope.launch {
+            preferencesRepository.userPreferences.collect { prefs ->
+                pickerModalDelegate.menuWrapMode = prefs.menuWrapMode
+                moreOptionsDelegate.menuWrapMode = prefs.menuWrapMode
+                perGameSettingsDelegate.menuWrapMode = prefs.menuWrapMode
+            }
+        }
 
         viewModelScope.launch {
             saveManagement.saveChannelDelegate.state.collect { saveState ->
@@ -295,6 +309,12 @@ class GameDetailViewModel @Inject constructor(
         }
 
         viewModelScope.launch {
+            perGameSettingsDelegate.state.collect { pgState ->
+                _uiState.update { it.copy(perGameSettings = pgState) }
+            }
+        }
+
+        viewModelScope.launch {
             achievementDelegate.achievements.collect { achievements ->
                 _uiState.update { state ->
                     if (state.game?.achievements == achievements) state
@@ -345,10 +365,12 @@ class GameDetailViewModel @Inject constructor(
                 val game = gameRepository.getById(gameId) ?: return
                 configureEmulatorUseCase.setForGame(gameId, game.platformId, game.platformSlug, selection.emulator)
                 loadGame(gameId)
+                perGameSettingsDelegate.refresh(gameId)
             }
             is PickerSelection.Core -> {
                 configureEmulatorUseCase.setCoreForGame(currentGameId, selection.coreId)
                 loadGame(currentGameId)
+                perGameSettingsDelegate.refresh(currentGameId)
             }
             is PickerSelection.SteamLauncher -> {
                 val launcher = selection.launcher
@@ -365,13 +387,6 @@ class GameDetailViewModel @Inject constructor(
                     gameId = currentGameId,
                     selectedDiscPath = selection.discPath,
                     callbacks = makeLaunchCallbacks()
-                )
-            }
-            is PickerSelection.UpdateFile -> {
-                val game = _uiState.value.game ?: return
-                downloadDelegate.downloadUpdateFile(
-                    viewModelScope, currentGameId, selection.file,
-                    game.title, game.platformSlug, game.coverPath, game.rommFileName
                 )
             }
             is PickerSelection.Variant -> {
@@ -391,6 +406,7 @@ class GameDetailViewModel @Inject constructor(
         pageLoadTime = System.currentTimeMillis()
         downloadDelegate.reset()
         imageCacheManager.pauseBackgroundCaching()
+        gameThemeAudio.enter(gameId)
         viewModelScope.launch {
             if (emulatorDetector.installedEmulators.value.isEmpty()) {
                 emulatorDetector.detectEmulators()
@@ -402,14 +418,15 @@ class GameDetailViewModel @Inject constructor(
 
             val gameSpecificConfig = emulatorConfigDao.getByGameId(gameId)
             val platformDefaultConfig = emulatorConfigDao.getDefaultForPlatform(game.platformId)
-            val emulatorConfig = gameSpecificConfig ?: platformDefaultConfig
 
             val prefs = preferencesRepository.userPreferences.first()
 
-            val emulatorName = emulatorConfig?.displayName
+            val emulatorName = gameSpecificConfig?.displayName
+                ?: platformDefaultConfig?.displayName
                 ?: emulatorDetector.getPreferredEmulator(game.platformSlug, prefs.builtinLibretroEnabled)?.def?.displayName
 
-            val emulatorDef = emulatorConfig?.packageName?.let { emulatorDetector.getByPackage(it) }
+            val configuredPackage = gameSpecificConfig?.packageName ?: platformDefaultConfig?.packageName
+            val emulatorDef = configuredPackage?.let { emulatorDetector.getByPackage(it) }
                 ?: emulatorDetector.getPreferredEmulator(game.platformSlug, prefs.builtinLibretroEnabled)?.def
             val isCoreSelectable = emulatorDef?.launchConfig?.isCoreSelectable == true
             val isBuiltInEmulator = emulatorDef?.launchConfig is LaunchConfig.BuiltIn
@@ -496,6 +513,7 @@ class GameDetailViewModel @Inject constructor(
 
             variantScanner.scanForVariants(game)
             val hasVariants = variantResolver.getVariantOptions(game) != null
+            val manageableFileCount = gameFileDao.getFilesForGame(gameId).size
 
             val downloadSizeBytes = when {
                 game.isMultiDisc -> gameDiscDao.getTotalFileSize(gameId)
@@ -524,12 +542,14 @@ class GameDetailViewModel @Inject constructor(
                         canManageSaves = canManageSaves,
                         steamLauncherName = steamLauncherName
                     ),
+                    canSearchCovers = romMRepository.getCapabilities().supportsCoverSearch,
                     isLoading = false,
                     selectedCoreId = selectedCoreId,
                     saveChannel = state.saveChannel.copy(activeChannel = game.activeSaveChannel),
                     saveStatusInfo = saveStatusInfo,
                     updateFiles = updateFilesUi,
                     dlcFiles = dlcFilesUi,
+                    hasManageableFiles = manageableFileCount > 0,
                     hasVariants = hasVariants,
                     siblingGameIds = siblingIds,
                     currentGameIndex = currentIndex,
@@ -771,13 +791,67 @@ class GameDetailViewModel @Inject constructor(
 
     fun downloadGame() = downloadDelegate.downloadGame(viewModelScope, currentGameId, pageLoadTime, pageLoadDebounceMs)
 
-    fun downloadSteamGame() {
-        steamDownloadPromptController.requestSteamDownload(currentGameId)
+    fun showFilesPicker() {
+        toggleMoreOptions()
+        viewModelScope.launch {
+            val built = downloadDelegate.buildManageRows(currentGameId) ?: return@launch
+            val (rows, files, versions) = built
+            pickerModalDelegate.showFilePicker(rows, files, versions, manageMode = true)
+        }
     }
 
-    fun downloadUpdateFile(file: UpdateFileUi) {
-        val game = _uiState.value.game ?: return
-        downloadDelegate.downloadUpdateFile(viewModelScope, currentGameId, file, game.title, game.platformSlug, game.coverPath, game.rommFileName)
+    fun promptOrDownload() {
+        viewModelScope.launch {
+            val built = downloadDelegate.buildFilePickerRows(currentGameId)
+            if (built == null) {
+                downloadGame()
+            } else {
+                val (rows, files, versions) = built
+                pickerModalDelegate.showFilePicker(rows, files, versions)
+            }
+        }
+    }
+
+    fun confirmFilePicker() {
+        val picker = pickerModalDelegate.state.value
+        if (!picker.showFilePicker) return
+        pickerModalDelegate.dismissFilePicker()
+        if (picker.filePickerManageMode) {
+            downloadDelegate.applyManagedFiles(
+                viewModelScope,
+                currentGameId,
+                picker.filePickerRows,
+                picker.filePickerSelected
+            )
+        } else {
+            downloadDelegate.downloadWithSelection(
+                viewModelScope,
+                currentGameId,
+                picker.filePickerSelected,
+                picker.filePickerSelectedVersions
+            )
+        }
+    }
+
+    fun dismissFilePicker() = pickerModalDelegate.dismissFilePicker()
+    fun moveFilePickerFocus(delta: Int) = pickerModalDelegate.moveFilePickerFocus(delta)
+    fun jumpFilePickerGroup(direction: Int) = pickerModalDelegate.jumpFilePickerGroup(direction)
+    fun toggleFocusedFilePickerRow() = pickerModalDelegate.toggleFocusedFilePickerRow()
+
+    fun activateFocusedFilePickerItem() {
+        val st = pickerModalDelegate.state.value
+        val rowCount = st.visibleFilePickerRows.size
+        when {
+            st.filePickerFocusIndex < rowCount -> pickerModalDelegate.toggleFocusedFilePickerRow()
+            st.filePickerFocusIndex == rowCount -> dismissFilePicker()
+            else -> confirmFilePicker()
+        }
+    }
+    fun toggleFilePickerRow(row: com.nendo.argosy.data.model.FilePickerRow) =
+        pickerModalDelegate.toggleFilePickerRow(row)
+
+    fun downloadSteamGame() {
+        steamDownloadPromptController.requestSteamDownload(currentGameId)
     }
 
     fun dismissExtractionPrompt() = downloadDelegate.dismissExtractionPrompt()
@@ -817,7 +891,7 @@ class GameDetailViewModel @Inject constructor(
                 if (game != null && game.isSteamGame) {
                     downloadSteamGame()
                 } else {
-                    downloadGame()
+                    promptOrDownload()
                 }
             }
             GameDownloadStatus.PAUSED, GameDownloadStatus.WAITING_FOR_STORAGE ->
@@ -943,21 +1017,26 @@ class GameDetailViewModel @Inject constructor(
 
     fun toggleMoreOptions() = moreOptionsDelegate.toggleMoreOptions()
 
-    fun moveOptionsFocus(delta: Int) {
+    private fun moreOptionsContext(): MoreOptionsContext {
         val state = _uiState.value
-        moreOptionsDelegate.moveOptionsFocus(
-            delta = delta,
-            downloadStatus = state.downloadStatus,
+        return MoreOptionsContext(
+            isDownloaded = state.downloadStatus == GameDownloadStatus.DOWNLOADED,
             isRommGame = state.game?.isRommGame == true,
             isAndroidApp = state.game?.isAndroidApp == true,
+            isSteamGame = state.game?.isSteamGame == true,
             canManageSaves = state.game?.canManageSaves == true,
-            hasMultipleCores = state.game?.hasMultipleCores == true,
             isMultiDisc = state.game?.isMultiDisc == true,
             hasVariants = state.hasVariants,
-            isSteamGame = state.game?.isSteamGame == true,
             hasUpdates = state.updateFiles.isNotEmpty() || state.dlcFiles.isNotEmpty(),
-            platformSlug = state.game?.platformSlug
+            hasManageableFiles = state.hasManageableFiles,
+            platformSlug = state.game?.platformSlug,
+            canSearchCovers = state.canSearchCovers,
+            coverSetManually = state.game?.coverSetManually == true
         )
+    }
+
+    fun moveOptionsFocus(delta: Int) {
+        moreOptionsDelegate.moveOptionsFocus(delta, moreOptionsContext())
     }
 
     fun handleMoreOptionAction(
@@ -981,7 +1060,7 @@ class GameDetailViewModel @Inject constructor(
             MoreOptionAction.ChangeCore -> showCorePicker()
             MoreOptionAction.SelectDisc -> showDiscPicker()
             MoreOptionAction.SelectVariant -> showVariantPickerFromMenu()
-            MoreOptionAction.UpdatesDlc -> showUpdatesPicker()
+            MoreOptionAction.Files -> showFilesPicker()
             MoreOptionAction.RefreshData -> refreshAndroidOrRommData()
             MoreOptionAction.RefreshTitleId -> refreshTitleId()
             MoreOptionAction.SpeedrunSplits -> {
@@ -989,6 +1068,8 @@ class GameDetailViewModel @Inject constructor(
                 speedrunSplitsDelegate.open(viewModelScope, currentGameId, _uiState.value.game?.title ?: "")
             }
             MoreOptionAction.AddToCollection -> showAddToCollectionModal()
+            MoreOptionAction.ChangeCover -> showCoverPicker()
+            MoreOptionAction.ResetCover -> resetCoverArt()
             MoreOptionAction.Delete -> {
                 toggleMoreOptions()
                 val gameUi = _uiState.value.game
@@ -1016,18 +1097,7 @@ class GameDetailViewModel @Inject constructor(
         onNavigateToPlatformSettings: (Long) -> Unit = {}
     ) {
         val state = _uiState.value
-        val action = moreOptionsDelegate.resolveOptionAction(
-            downloadStatus = state.downloadStatus,
-            isRommGame = state.game?.isRommGame == true,
-            isAndroidApp = state.game?.isAndroidApp == true,
-            canManageSaves = state.game?.canManageSaves == true,
-            hasMultipleCores = state.game?.hasMultipleCores == true,
-            isMultiDisc = state.game?.isMultiDisc == true,
-            hasVariants = state.hasVariants,
-            isSteamGame = state.game?.isSteamGame == true,
-            hasUpdates = state.updateFiles.isNotEmpty() || state.dlcFiles.isNotEmpty(),
-            platformSlug = state.game?.platformSlug
-        )
+        val action = moreOptionsDelegate.resolveOptionAction(moreOptionsContext())
         if (action != null) {
             handleMoreOptionAction(action, onBack, onNavigateToPlatformSettings)
         } else {
@@ -1234,7 +1304,184 @@ class GameDetailViewModel @Inject constructor(
         }
     }
 
+    // --- Per-game settings ---
+
+    fun showPerGameSettings() {
+        viewModelScope.launch { perGameSettingsDelegate.show(currentGameId) }
+    }
+
+    fun dismissPerGameSettings() = perGameSettingsDelegate.dismiss()
+
+    fun movePerGameSettingsFocus(delta: Int) = perGameSettingsDelegate.moveFocus(delta)
+
+    fun openPerGameSavePathBrowser() = perGameSettingsDelegate.openPathBrowser()
+
+    fun dismissPerGameSavePathBrowser() = perGameSettingsDelegate.dismissPathBrowser()
+
+    fun setPerGameSavePath(path: String) {
+        perGameSettingsDelegate.dismissPathBrowser()
+        viewModelScope.launch { perGameSettingsDelegate.setSavePath(currentGameId, path) }
+    }
+
+    fun clearPerGameSavePath() {
+        viewModelScope.launch { perGameSettingsDelegate.clearSavePath(currentGameId) }
+    }
+
+    fun cyclePerGameDisplayTarget(direction: Int) {
+        viewModelScope.launch { perGameSettingsDelegate.cycleDisplayTarget(currentGameId, direction) }
+    }
+
+    fun cyclePerGameExtension(direction: Int) {
+        viewModelScope.launch { perGameSettingsDelegate.cycleExtension(currentGameId, direction) }
+    }
+
+    fun confirmPerGameSetting(onNavigateToPlatformSettings: (Long) -> Unit) {
+        val st = _uiState.value.perGameSettings
+        when (st.focusedRow) {
+            PerGameSettingsRow.EMULATOR -> showEmulatorPicker()
+            PerGameSettingsRow.CORE -> showCorePicker()
+            PerGameSettingsRow.SAVE_PATH -> {
+                if (st.pathButtonIndex == 1 && st.isSavePathOverride) clearPerGameSavePath()
+                else openPerGameSavePathBrowser()
+            }
+            PerGameSettingsRow.DISPLAY_TARGET -> cyclePerGameDisplayTarget(1)
+            PerGameSettingsRow.EXTENSION -> cyclePerGameExtension(1)
+            PerGameSettingsRow.PLATFORM_SETTINGS -> {
+                dismissPerGameSettings()
+                _uiState.value.game?.platformId?.let(onNavigateToPlatformSettings)
+            }
+            null -> {}
+        }
+    }
+
+    private fun adjustPerGameSetting(direction: Int) {
+        val st = _uiState.value.perGameSettings
+        when (st.focusedRow) {
+            PerGameSettingsRow.SAVE_PATH -> perGameSettingsDelegate.movePathButton(-direction)
+            PerGameSettingsRow.DISPLAY_TARGET -> cyclePerGameDisplayTarget(direction)
+            PerGameSettingsRow.EXTENSION -> cyclePerGameExtension(direction)
+            else -> {}
+        }
+    }
+
+    fun createPerGameSettingsInputHandler(
+        onNavigateToPlatformSettings: (Long) -> Unit
+    ): InputHandler = object : InputHandler {
+        override fun onUp(): InputResult {
+            val picker = pickerModalDelegate.state.value
+            when {
+                picker.showEmulatorPicker -> moveEmulatorPickerFocus(-1)
+                picker.showCorePicker -> moveCorePickerFocus(-1)
+                else -> movePerGameSettingsFocus(-1)
+            }
+            return InputResult.HANDLED
+        }
+
+        override fun onDown(): InputResult {
+            val picker = pickerModalDelegate.state.value
+            when {
+                picker.showEmulatorPicker -> moveEmulatorPickerFocus(1)
+                picker.showCorePicker -> moveCorePickerFocus(1)
+                else -> movePerGameSettingsFocus(1)
+            }
+            return InputResult.HANDLED
+        }
+
+        override fun onLeft(): InputResult {
+            if (!pickerModalDelegate.state.value.hasAnyPickerOpen) adjustPerGameSetting(-1)
+            return InputResult.HANDLED
+        }
+
+        override fun onRight(): InputResult {
+            if (!pickerModalDelegate.state.value.hasAnyPickerOpen) adjustPerGameSetting(1)
+            return InputResult.HANDLED
+        }
+
+        override fun onConfirm(): InputResult {
+            val picker = pickerModalDelegate.state.value
+            when {
+                picker.showEmulatorPicker -> confirmEmulatorSelection()
+                picker.showCorePicker -> confirmCoreSelection()
+                else -> confirmPerGameSetting(onNavigateToPlatformSettings)
+            }
+            return InputResult.HANDLED
+        }
+
+        override fun onBack(): InputResult {
+            val picker = pickerModalDelegate.state.value
+            when {
+                picker.showEmulatorPicker -> dismissEmulatorPicker()
+                picker.showCorePicker -> dismissCorePicker()
+                else -> dismissPerGameSettings()
+            }
+            return InputResult.HANDLED
+        }
+
+        override fun onMenu(): InputResult = InputResult.HANDLED
+        override fun onSecondaryAction(): InputResult = InputResult.HANDLED
+        override fun onContextMenu(): InputResult = InputResult.HANDLED
+        override fun onPrevSection(): InputResult = InputResult.HANDLED
+        override fun onNextSection(): InputResult = InputResult.HANDLED
+
+        override fun onSelect(): InputResult {
+            dismissAllModals()
+            return InputResult.HANDLED
+        }
+    }
+
     // --- Picker delegate forwarding ---
+
+    fun showCoverPicker() {
+        val game = _uiState.value.game ?: return
+        moreOptionsDelegate.reset()
+        pickerModalDelegate.showCoverPicker()
+        viewModelScope.launch {
+            when (val result = romMRepository.searchCovers(game.title)) {
+                is RomMResult.Success -> pickerModalDelegate.setCoverCandidates(
+                    result.data.mapNotNull { resource ->
+                        val url = resource.fullResUrl ?: return@mapNotNull null
+                        CoverCandidate(
+                            url = url,
+                            thumbUrl = resource.thumb,
+                            width = resource.width,
+                            height = resource.height
+                        )
+                    }
+                )
+                is RomMResult.Error -> pickerModalDelegate.setCoverPickerError(
+                    "Could not search cover art. ${result.message}"
+                )
+            }
+        }
+    }
+
+    fun selectCover(candidate: CoverCandidate) {
+        val gameId = currentGameId
+        pickerModalDelegate.dismissCoverPicker()
+        viewModelScope.launch {
+            imageCacheManager.applyManualCover(gameId, candidate.url)
+            loadGame(gameId)
+        }
+    }
+
+    fun resetCoverArt() {
+        val gameId = currentGameId
+        moreOptionsDelegate.reset()
+        viewModelScope.launch {
+            imageCacheManager.resetManualCover(gameId)
+            loadGame(gameId)
+        }
+    }
+
+    fun moveCoverPickerFocus(delta: Int) = pickerModalDelegate.moveCoverPickerFocus(delta)
+
+    private fun confirmFocusedCover() {
+        val pickerState = pickerModalDelegate.state.value
+        val candidate = pickerState.coverCandidates.getOrNull(pickerState.coverPickerFocusIndex) ?: return
+        selectCover(candidate)
+    }
+
+    fun dismissCoverPicker() = pickerModalDelegate.dismissCoverPicker()
 
     fun showEmulatorPicker() {
         val game = _uiState.value.game ?: return
@@ -1255,7 +1502,16 @@ class GameDetailViewModel @Inject constructor(
         viewModelScope.launch {
             val game = gameRepository.getById(currentGameId) ?: return@launch
             val options = variantResolver.getVariantOptions(game) ?: return@launch
-            pickerModalDelegate.showVariantPicker(options)
+            pickerModalDelegate.showVariantPicker(options, game.activeVariantFileId)
+        }
+    }
+
+    private fun confirmOrDownloadFocusedVariant() {
+        val pickerState = pickerModalDelegate.state.value
+        val variant = pickerState.variantPickerOptions.getOrNull(pickerState.variantPickerFocusIndex) ?: return
+        when {
+            variant.isDownloaded -> pickerModalDelegate.confirmVariantSelection()
+            variant.fileId != null -> downloadVariant(variant.fileId)
         }
     }
 
@@ -1321,25 +1577,6 @@ class GameDetailViewModel @Inject constructor(
     fun dismissCorePicker() = pickerModalDelegate.dismissCorePicker()
     fun moveCorePickerFocus(delta: Int) = pickerModalDelegate.moveCorePickerFocus(delta)
     fun confirmCoreSelection() = pickerModalDelegate.confirmCoreSelection()
-
-    fun showUpdatesPicker() {
-        val state = _uiState.value
-        if (state.updateFiles.isEmpty() && state.dlcFiles.isEmpty()) return
-        moreOptionsDelegate.reset()
-        pickerModalDelegate.showUpdatesPicker()
-    }
-
-    fun dismissUpdatesPicker() = pickerModalDelegate.dismissUpdatesPicker()
-
-    fun moveUpdatesPickerFocus(delta: Int) {
-        pickerModalDelegate.moveUpdatesPickerFocus(delta, _uiState.value.updateFiles, _uiState.value.dlcFiles)
-    }
-
-    private fun confirmUpdatesSelection() {
-        pickerModalDelegate.confirmUpdatesSelection(_uiState.value.updateFiles, _uiState.value.dlcFiles)
-    }
-
-    fun installAllUpdatesAndDlc() { pickerModalDelegate.dismissUpdatesPicker(); playGame() }
 
     // --- Game actions ---
 
@@ -1418,7 +1655,9 @@ class GameDetailViewModel @Inject constructor(
             hasAchievements = game?.achievements?.isNotEmpty() == true,
             hasSocialAccount = state.hasSocialAccount,
             hasSaveSync = hasSaveSync,
-            hasRelated = state.relatedGames.isNotEmpty()
+            hasRelated = state.relatedGames.isNotEmpty(),
+            hasPerGameSettings = game != null && !game.isSteamGame && !game.isAndroidApp &&
+                state.downloadStatus == GameDownloadStatus.DOWNLOADED
         )
     }
 
@@ -1444,6 +1683,7 @@ class GameDetailViewModel @Inject constructor(
             MenuItem.Saves -> syncSavesNow()
             MenuItem.Favorite -> toggleFavorite()
             MenuItem.Privacy -> togglePrivacy()
+            MenuItem.PerGameSettings -> showPerGameSettings()
             MenuItem.Options -> toggleMoreOptions()
             MenuItem.Details -> {}
             MenuItem.Description -> {}
@@ -1581,6 +1821,7 @@ class GameDetailViewModel @Inject constructor(
     private fun resetAllModals() {
         pickerModalDelegate.reset()
         moreOptionsDelegate.reset()
+        perGameSettingsDelegate.reset()
         ratingsStatus.reset()
         playOptionsDelegate.reset()
         screenshotDelegate.reset()
@@ -1629,10 +1870,11 @@ class GameDetailViewModel @Inject constructor(
                 state.showStatusPicker -> { changeStatusValue(-1); InputResult.HANDLED }
                 state.showMissingDiscPrompt -> InputResult.UNHANDLED
                 state.showExtractionFailedPrompt -> InputResult.HANDLED
+                pickerState.showFilePicker -> { moveFilePickerFocus(-1); InputResult.HANDLED }
                 pickerState.showCorePicker -> { moveCorePickerFocus(-1); InputResult.HANDLED }
                 pickerState.showDiscPicker -> { navigateDiscPicker(-1); InputResult.HANDLED }
+                pickerState.showCoverPicker -> { moveCoverPickerFocus(-COVER_PICKER_COLUMNS); InputResult.HANDLED }
                 pickerState.showVariantPicker -> { pickerModalDelegate.moveVariantPickerFocus(-1); InputResult.HANDLED }
-                pickerState.showUpdatesPicker -> { moveUpdatesPickerFocus(-1); InputResult.HANDLED }
                 pickerState.showEmulatorPicker -> { moveEmulatorPickerFocus(-1); InputResult.HANDLED }
                 pickerState.showSteamLauncherPicker -> { moveSteamLauncherPickerFocus(-1); InputResult.HANDLED }
                 state.showAddToCollectionModal -> { moveCollectionFocusUp(); InputResult.HANDLED }
@@ -1659,10 +1901,11 @@ class GameDetailViewModel @Inject constructor(
                 state.showStatusPicker -> { changeStatusValue(1); InputResult.HANDLED }
                 state.showMissingDiscPrompt -> InputResult.UNHANDLED
                 state.showExtractionFailedPrompt -> InputResult.HANDLED
+                pickerState.showFilePicker -> { moveFilePickerFocus(1); InputResult.HANDLED }
                 pickerState.showCorePicker -> { moveCorePickerFocus(1); InputResult.HANDLED }
                 pickerState.showDiscPicker -> { navigateDiscPicker(1); InputResult.HANDLED }
+                pickerState.showCoverPicker -> { moveCoverPickerFocus(COVER_PICKER_COLUMNS); InputResult.HANDLED }
                 pickerState.showVariantPicker -> { pickerModalDelegate.moveVariantPickerFocus(1); InputResult.HANDLED }
-                pickerState.showUpdatesPicker -> { moveUpdatesPickerFocus(1); InputResult.HANDLED }
                 pickerState.showEmulatorPicker -> { moveEmulatorPickerFocus(1); InputResult.HANDLED }
                 pickerState.showSteamLauncherPicker -> { moveSteamLauncherPickerFocus(1); InputResult.HANDLED }
                 state.showAddToCollectionModal -> { moveCollectionFocusDown(); InputResult.HANDLED }
@@ -1687,12 +1930,19 @@ class GameDetailViewModel @Inject constructor(
                     }
                     return InputResult.HANDLED
                 }
+                pickerState.showCoverPicker -> { moveCoverPickerFocus(-1); return InputResult.HANDLED }
                 state.showScreenshotViewer -> { moveViewerIndex(-1); return InputResult.HANDLED }
                 state.showRatingPicker -> { changeRatingValue(-1); return InputResult.HANDLED }
                 state.showPermissionModal -> return InputResult.HANDLED
                 state.showStatusPicker -> return InputResult.HANDLED
                 state.showAchievementList -> return InputResult.HANDLED
                 state.showExtractionFailedPrompt -> { moveExtractionPromptFocus(-1); return InputResult.HANDLED }
+                pickerState.showFilePicker -> {
+                    if (!pickerModalDelegate.moveFilePickerButtonFocus(-1)) {
+                        pickerModalDelegate.setFocusedFilePickerGroupCollapsed(collapse = true)
+                    }
+                    return InputResult.HANDLED
+                }
                 state.showAddToCollectionModal || state.showRatingsStatusMenu || state.showPlayOptions || state.showMoreOptions || pickerState.hasAnyPickerOpen || state.showMissingDiscPrompt -> return InputResult.HANDLED
                 else -> { onSectionLeft(); return InputResult.HANDLED }
             }
@@ -1711,12 +1961,19 @@ class GameDetailViewModel @Inject constructor(
                     }
                     return InputResult.HANDLED
                 }
+                pickerState.showCoverPicker -> { moveCoverPickerFocus(1); return InputResult.HANDLED }
                 state.showScreenshotViewer -> { moveViewerIndex(1); return InputResult.HANDLED }
                 state.showRatingPicker -> { changeRatingValue(1); return InputResult.HANDLED }
                 state.showPermissionModal -> return InputResult.HANDLED
                 state.showStatusPicker -> return InputResult.HANDLED
                 state.showAchievementList -> return InputResult.HANDLED
                 state.showExtractionFailedPrompt -> { moveExtractionPromptFocus(1); return InputResult.HANDLED }
+                pickerState.showFilePicker -> {
+                    if (!pickerModalDelegate.moveFilePickerButtonFocus(1)) {
+                        pickerModalDelegate.setFocusedFilePickerGroupCollapsed(collapse = false)
+                    }
+                    return InputResult.HANDLED
+                }
                 state.showAddToCollectionModal || state.showRatingsStatusMenu || state.showPlayOptions || state.showMoreOptions || pickerState.hasAnyPickerOpen || state.showMissingDiscPrompt -> return InputResult.HANDLED
                 else -> { onSectionRight(); return InputResult.HANDLED }
             }
@@ -1726,6 +1983,7 @@ class GameDetailViewModel @Inject constructor(
             val state = _uiState.value
             val saveState = state.saveChannel
             val pickerState = pickerModalDelegate.state.value
+            if (pickerState.showFilePicker) { jumpFilePickerGroup(-1); return InputResult.HANDLED }
             if (saveState.isVisible) {
                 if (saveState.supportsStates) {
                     val newTab = if (saveState.selectedTab == com.nendo.argosy.ui.common.savechannel.SaveTab.STATES)
@@ -1744,6 +2002,7 @@ class GameDetailViewModel @Inject constructor(
             val state = _uiState.value
             val saveState = state.saveChannel
             val pickerState = pickerModalDelegate.state.value
+            if (pickerState.showFilePicker) { jumpFilePickerGroup(1); return InputResult.HANDLED }
             if (saveState.isVisible) {
                 if (saveState.supportsStates) {
                     val newTab = if (saveState.selectedTab == com.nendo.argosy.ui.common.savechannel.SaveTab.SAVES)
@@ -1782,10 +2041,11 @@ class GameDetailViewModel @Inject constructor(
                 state.showStatusPicker -> confirmStatus()
                 state.showMissingDiscPrompt -> repairAndPlay()
                 state.showExtractionFailedPrompt -> confirmExtractionPromptSelection()
+                pickerState.showFilePicker -> activateFocusedFilePickerItem()
                 pickerState.showCorePicker -> confirmCoreSelection()
                 pickerState.showDiscPicker -> selectFocusedDisc()
-                pickerState.showVariantPicker -> pickerModalDelegate.confirmVariantSelection()
-                pickerState.showUpdatesPicker -> confirmUpdatesSelection()
+                pickerState.showCoverPicker -> confirmFocusedCover()
+                pickerState.showVariantPicker -> confirmOrDownloadFocusedVariant()
                 pickerState.showEmulatorPicker -> confirmEmulatorSelection()
                 pickerState.showSteamLauncherPicker -> confirmSteamLauncherSelection()
                 state.showAddToCollectionModal -> confirmCollectionSelection()
@@ -1820,10 +2080,11 @@ class GameDetailViewModel @Inject constructor(
                 state.showStatusPicker -> dismissStatusPicker()
                 state.showMissingDiscPrompt -> dismissMissingDiscPrompt()
                 state.showExtractionFailedPrompt -> dismissExtractionPrompt()
+                pickerState.showFilePicker -> dismissFilePicker()
                 pickerState.showCorePicker -> dismissCorePicker()
                 pickerState.showDiscPicker -> dismissDiscPicker()
+                pickerState.showCoverPicker -> dismissCoverPicker()
                 pickerState.showVariantPicker -> pickerModalDelegate.dismissVariantPicker()
-                pickerState.showUpdatesPicker -> dismissUpdatesPicker()
                 pickerState.showEmulatorPicker -> dismissEmulatorPicker()
                 pickerState.showSteamLauncherPicker -> dismissSteamLauncherPicker()
                 state.showPermissionModal -> dismissPermissionModal()
@@ -1852,7 +2113,6 @@ class GameDetailViewModel @Inject constructor(
             if (state.showStatusPicker) { dismissStatusPicker(); return InputResult.UNHANDLED }
             if (state.showMissingDiscPrompt) { dismissMissingDiscPrompt(); return InputResult.UNHANDLED }
             if (pickerState.showCorePicker) { dismissCorePicker(); return InputResult.UNHANDLED }
-            if (pickerState.showUpdatesPicker) { dismissUpdatesPicker(); return InputResult.UNHANDLED }
             if (state.showPlayOptions) { dismissPlayOptions(); return InputResult.UNHANDLED }
             if (state.showMoreOptions) { toggleMoreOptions(); return InputResult.UNHANDLED }
             if (pickerState.showEmulatorPicker) { dismissEmulatorPicker(); return InputResult.UNHANDLED }
@@ -1873,6 +2133,7 @@ class GameDetailViewModel @Inject constructor(
         override fun onContextMenu(): InputResult {
             val state = _uiState.value
             val saveState = state.saveChannel
+            if (pickerModalDelegate.state.value.showFilePicker) { confirmFilePicker(); return InputResult.HANDLED }
             if (saveState.isVisible && !saveState.showRestoreConfirmation && !saveState.showRenameDialog && !saveState.showDeleteConfirmation && !saveState.showMigrateConfirmation && !saveState.showDeleteLegacyConfirmation) {
                 saveChannelTertiaryAction(); return InputResult.HANDLED
             }

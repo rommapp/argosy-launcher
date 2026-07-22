@@ -28,6 +28,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.blur
 import com.nendo.argosy.data.cache.ImageCacheProgress
+import com.nendo.argosy.data.model.VariantCategory
+import com.nendo.argosy.data.preferences.DownloadDefaults
 import com.nendo.argosy.data.preferences.RegionFilterMode
 import com.nendo.argosy.data.preferences.SyncFilterPreferences
 import com.nendo.argosy.ui.components.ActionPreference
@@ -48,7 +50,8 @@ import com.nendo.argosy.ui.theme.Motion
 // --- Item definitions ---
 
 internal sealed class SyncSettingsItem(val key: String, val section: String) {
-    val isFocusable: Boolean get() = this !is MediaHeader && this !is ImageCacheProgressIndicator
+    val isFocusable: Boolean get() =
+        this !is MediaHeader && this !is ImageCacheProgressIndicator && this !is DownloadDefaultsHeader
 
     data object PlatformFilters : SyncSettingsItem("platformFilters", "filters")
     data object MetadataFilters : SyncSettingsItem("metadataFilters", "filters")
@@ -58,7 +61,19 @@ internal sealed class SyncSettingsItem(val key: String, val section: String) {
     data object UploadScreenshots : SyncSettingsItem("uploadScreenshots", "media")
     data object ImageCacheLocation : SyncSettingsItem("imageCacheLocation", "media")
     data object ImageCacheProgressIndicator : SyncSettingsItem("imageCacheProgress", "media")
+    data object DownloadDefaultsHeader : SyncSettingsItem("downloadDefaultsHeader", "downloads")
+    class CategoryDefault(val categoryKey: String) :
+        SyncSettingsItem("dl_$categoryKey", "downloads")
+
+    companion object {
+        val CATEGORY_DEFAULTS: List<CategoryDefault> =
+            DownloadDefaults.CONFIGURABLE_KEYS.map { CategoryDefault(it) }
+    }
 }
+
+internal fun downloadCategoryLabel(key: String): String =
+    if (key == DownloadDefaults.OTHER_KEY) "Other Folders"
+    else VariantCategory.fromKey(key).displayLabel
 
 private val syncSettingsLayout = SettingsLayout<SyncSettingsItem, Boolean>(
     allItems = listOf(
@@ -69,8 +84,9 @@ private val syncSettingsLayout = SettingsLayout<SyncSettingsItem, Boolean>(
         SyncSettingsItem.CacheBoxArt,
         SyncSettingsItem.UploadScreenshots,
         SyncSettingsItem.ImageCacheLocation,
-        SyncSettingsItem.ImageCacheProgressIndicator
-    ),
+        SyncSettingsItem.ImageCacheProgressIndicator,
+        SyncSettingsItem.DownloadDefaultsHeader
+    ) + SyncSettingsItem.CATEGORY_DEFAULTS,
     isFocusable = { it.isFocusable },
     visibleWhen = { item, isProcessing ->
         if (item is SyncSettingsItem.ImageCacheProgressIndicator) isProcessing else true
@@ -79,6 +95,7 @@ private val syncSettingsLayout = SettingsLayout<SyncSettingsItem, Boolean>(
     sectionTitle = {
         when (it) {
             "media" -> "MEDIA"
+            "downloads" -> "DOWNLOAD DEFAULTS"
             else -> null
         }
     }
@@ -215,6 +232,21 @@ fun SyncSettingsSection(
                     SyncSettingsItem.ImageCacheProgressIndicator -> {
                         Spacer(modifier = Modifier.height(Dimens.spacingMd))
                         ImageCacheProgressItem(imageCacheProgress)
+                    }
+                    SyncSettingsItem.DownloadDefaultsHeader -> {
+                        Spacer(modifier = Modifier.height(Dimens.spacingMd))
+                        SectionHeader("DOWNLOAD DEFAULTS")
+                    }
+                    is SyncSettingsItem.CategoryDefault -> {
+                        val included = uiState.syncSettings.downloadDefaults[item.categoryKey]
+                            ?: (DownloadDefaults.FACTORY[item.categoryKey] ?: false)
+                        SwitchPreference(
+                            title = downloadCategoryLabel(item.categoryKey),
+                            subtitle = "Include ${downloadCategoryLabel(item.categoryKey).lowercase()} in downloads by default",
+                            isEnabled = included,
+                            isFocused = isFocused(item),
+                            onToggle = { viewModel.setDownloadCategoryDefault(item.categoryKey, !included) }
+                        )
                     }
                 }
         }

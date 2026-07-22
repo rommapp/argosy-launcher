@@ -4,7 +4,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -30,8 +29,6 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import com.nendo.argosy.ui.components.ActionPreference
 import com.nendo.argosy.ui.components.CyclePreference
@@ -47,7 +44,6 @@ import com.nendo.argosy.ui.theme.LocalArgosyTheme
 private fun authMethodLabel(method: RomMAuthMethod): String = when (method) {
     RomMAuthMethod.DEVICE -> "Device Pairing"
     RomMAuthMethod.PAIRING_CODE -> "Pairing Code"
-    RomMAuthMethod.PASSWORD -> "Password"
 }
 
 private fun cycleAuthMethod(current: RomMAuthMethod, direction: Int): RomMAuthMethod {
@@ -79,21 +75,16 @@ fun RomMConfigForm(uiState: SettingsUiState, viewModel: SettingsViewModel) {
     var wasUrlFocused by remember { mutableStateOf(false) }
     val urlFocusRequester = remember { FocusRequester() }
     val pairingCodeFocusRequester = remember { FocusRequester() }
-    val usernameFocusRequester = remember { FocusRequester() }
-    val passwordFocusRequester = remember { FocusRequester() }
 
     val authMethod = uiState.server.rommAuthMethod
     val isDevice = authMethod == RomMAuthMethod.DEVICE
     val isPairingCode = authMethod == RomMAuthMethod.PAIRING_CODE
-    val isPassword = authMethod == RomMAuthMethod.PASSWORD
     val hasCamera = uiState.server.rommHasCamera
 
     LaunchedEffect(uiState.server.rommFocusField) {
         when (uiState.server.rommFocusField) {
             0 -> urlFocusRequester.requestFocus()
             2 -> if (isPairingCode) pairingCodeFocusRequester.requestFocus()
-                 else if (isPassword) usernameFocusRequester.requestFocus()
-            3 -> if (isPassword) passwordFocusRequester.requestFocus()
         }
         if (uiState.server.rommFocusField != null) {
             viewModel.clearRommFocusField()
@@ -174,44 +165,6 @@ fun RomMConfigForm(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                     focusRequester = pairingCodeFocusRequester
                 )
             }
-            isPassword -> Row(
-                horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                OutlinedTextField(
-                    value = uiState.server.rommConfigUsername,
-                    onValueChange = { viewModel.setRommConfigUsername(it) },
-                    label = { Text("Username") },
-                    singleLine = true,
-                    shape = inputShape,
-                    modifier = Modifier
-                        .weight(1f)
-                        .focusRequester(usernameFocusRequester)
-                        .then(
-                            if (uiState.focusedIndex == 2)
-                                Modifier.background(LocalArgosyTheme.current.focusAccent.copy(alpha = 0.15f), inputShape)
-                            else Modifier
-                        )
-                )
-
-                OutlinedTextField(
-                    value = uiState.server.rommConfigPassword,
-                    onValueChange = { viewModel.setRommConfigPassword(it) },
-                    label = { Text("Password") },
-                    singleLine = true,
-                    visualTransformation = PasswordVisualTransformation(),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                    shape = inputShape,
-                    modifier = Modifier
-                        .weight(1f)
-                        .focusRequester(passwordFocusRequester)
-                        .then(
-                            if (uiState.focusedIndex == 3)
-                                Modifier.background(LocalArgosyTheme.current.focusAccent.copy(alpha = 0.15f), inputShape)
-                            else Modifier
-                        )
-                )
-            }
         }
 
         if (uiState.server.rommConfigError != null) {
@@ -228,7 +181,6 @@ fun RomMConfigForm(uiState: SettingsUiState, viewModel: SettingsViewModel) {
         var buttonIndex = when (authMethod) {
             RomMAuthMethod.DEVICE -> 2
             RomMAuthMethod.PAIRING_CODE -> 3
-            RomMAuthMethod.PASSWORD -> 4
         }
 
         ActionPreference(

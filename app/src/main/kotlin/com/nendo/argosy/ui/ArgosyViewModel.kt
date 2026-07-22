@@ -624,6 +624,18 @@ class ArgosyViewModel @Inject constructor(
         socialRepository.addFriendByCode(code)
     }
 
+    private fun moveWrappedFocus(
+        focusFlow: MutableStateFlow<Int>,
+        delta: Int,
+        maxIndex: Int,
+        wrapMode: MenuWrapMode
+    ): InputResult {
+        val next = computeWrappedIndex(focusFlow.value, delta, maxIndex, wrapMode)
+        val moved = next != focusFlow.value
+        focusFlow.value = next
+        return if (moved) InputResult.HANDLED else InputResult.handled(SoundType.BOUNDARY)
+    }
+
     fun createDrawerInputHandler(
         onNavigate: (String) -> Unit,
         onDismiss: () -> Unit
@@ -631,15 +643,12 @@ class ArgosyViewModel @Inject constructor(
         override fun onUp(): InputResult {
             val wrapMode = uiState.value.menuWrapMode
             return when (_drawerTab.value) {
-                DrawerTab.NAVIGATION -> {
-                    _navFocusIndex.update { computeWrappedIndex(it, -1, drawerItems.lastIndex, wrapMode) }
-                    InputResult.HANDLED
-                }
+                DrawerTab.NAVIGATION ->
+                    moveWrappedFocus(_navFocusIndex, -1, drawerItems.lastIndex, wrapMode)
                 DrawerTab.FRIENDS -> {
                     val friends = drawerUiState.value.friends
                     if (friends.isEmpty()) return InputResult.UNHANDLED
-                    _friendsFocusIndex.update { computeWrappedIndex(it, -1, friends.lastIndex, wrapMode) }
-                    InputResult.HANDLED
+                    moveWrappedFocus(_friendsFocusIndex, -1, friends.lastIndex, wrapMode)
                 }
             }
         }
@@ -647,15 +656,12 @@ class ArgosyViewModel @Inject constructor(
         override fun onDown(): InputResult {
             val wrapMode = uiState.value.menuWrapMode
             return when (_drawerTab.value) {
-                DrawerTab.NAVIGATION -> {
-                    _navFocusIndex.update { computeWrappedIndex(it, 1, drawerItems.lastIndex, wrapMode) }
-                    InputResult.HANDLED
-                }
+                DrawerTab.NAVIGATION ->
+                    moveWrappedFocus(_navFocusIndex, 1, drawerItems.lastIndex, wrapMode)
                 DrawerTab.FRIENDS -> {
                     val friends = drawerUiState.value.friends
                     if (friends.isEmpty()) return InputResult.UNHANDLED
-                    _friendsFocusIndex.update { computeWrappedIndex(it, 1, friends.lastIndex, wrapMode) }
-                    InputResult.HANDLED
+                    moveWrappedFocus(_friendsFocusIndex, 1, friends.lastIndex, wrapMode)
                 }
             }
         }
@@ -1305,14 +1311,12 @@ class ArgosyViewModel @Inject constructor(
 
         override fun onUp(): InputResult {
             val maxIndex = quickSettingsMaxFocusIndex(currentQuickSettingsState())
-            _quickSettingsFocusIndex.update { computeWrappedIndex(it, -1, maxIndex, uiState.value.menuWrapMode) }
-            return InputResult.HANDLED
+            return moveWrappedFocus(_quickSettingsFocusIndex, -1, maxIndex, uiState.value.menuWrapMode)
         }
 
         override fun onDown(): InputResult {
             val maxIndex = quickSettingsMaxFocusIndex(currentQuickSettingsState())
-            _quickSettingsFocusIndex.update { computeWrappedIndex(it, 1, maxIndex, uiState.value.menuWrapMode) }
-            return InputResult.HANDLED
+            return moveWrappedFocus(_quickSettingsFocusIndex, 1, maxIndex, uiState.value.menuWrapMode)
         }
 
         override fun onLeft(): InputResult {

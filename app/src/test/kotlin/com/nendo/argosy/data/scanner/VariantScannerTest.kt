@@ -34,6 +34,7 @@ class VariantScannerTest {
         inserted.clear()
         deleted.clear()
         coEvery { dao.getVariantsForGame(any()) } returns emptyList()
+        coEvery { dao.getByGameIdAndFileName(any(), any()) } returns emptyList()
         coEvery { dao.getByLocalPath(any()) } returns null
         coEvery { dao.insert(capture(inserted)) } returns 1L
         coEvery { dao.deleteById(capture(deleted)) } just Runs
@@ -256,8 +257,10 @@ class VariantScannerTest {
         val folder = gameFolder("Some Game")
         val base = write(folder, "Some Game.chd")
         val hackFile = write(File(folder, "hack"), "Cool Hack.chd")
-        coEvery { dao.getByLocalPath(hackFile.absolutePath) } returns GameFileEntity(
-            id = 9L, gameId = 1L, fileName = "Cool Hack.chd", filePath = hackFile.absolutePath, category = "hack", fileSize = 8L, localPath = hackFile.absolutePath
+        coEvery { dao.getByGameIdAndFileName(1L, "Cool Hack.chd") } returns listOf(
+            GameFileEntity(
+                id = 9L, gameId = 1L, fileName = "Cool Hack.chd", filePath = hackFile.absolutePath, category = "hack", fileSize = 8L, localPath = hackFile.absolutePath
+            )
         )
 
         val added = scanner.scanForVariants(game(base.absolutePath))

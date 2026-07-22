@@ -94,7 +94,7 @@ fun formatSaveTimestamp(timestamp: Long): String {
 
 fun formatBytes(bytes: Long): String {
     if (bytes <= 0) return "0 B"
-    val units = arrayOf("B", "KB", "MB", "GB")
+    val units = arrayOf("B", "KB", "MB", "GB", "TB")
     val digitGroups = (Math.log10(bytes.toDouble()) / Math.log10(1024.0)).toInt()
     val safeIndex = digitGroups.coerceIn(0, units.lastIndex)
     return String.format(

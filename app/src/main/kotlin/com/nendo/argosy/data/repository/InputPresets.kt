@@ -53,6 +53,120 @@ object MappingPlatforms {
         ) + DPAD
     )
 
+    val SMS = MappingPlatform(
+        id = "sms",
+        displayName = "Master System",
+        buttons = listOf(
+            RetroButton.B, RetroButton.A,
+            RetroButton.START
+        ) + DPAD,
+        buttonLabels = mapOf(
+            RetroButton.B to "1",
+            RetroButton.A to "2",
+            RetroButton.START to "Start/Pause"
+        )
+    )
+
+    val ATARI_7800 = MappingPlatform(
+        id = "atari-7800",
+        displayName = "Atari 7800",
+        buttons = listOf(
+            RetroButton.B, RetroButton.A, RetroButton.X,
+            RetroButton.L, RetroButton.R,
+            RetroButton.START, RetroButton.SELECT
+        ) + DPAD,
+        buttonLabels = mapOf(
+            RetroButton.B to "1",
+            RetroButton.A to "2",
+            RetroButton.X to "Console Reset",
+            RetroButton.L to "Left Difficulty",
+            RetroButton.R to "Right Difficulty",
+            RetroButton.START to "Console Pause",
+            RetroButton.SELECT to "Console Select"
+        )
+    )
+
+    val LYNX = MappingPlatform(
+        id = "lynx",
+        displayName = "Lynx",
+        buttons = listOf(
+            RetroButton.B, RetroButton.A,
+            RetroButton.L, RetroButton.R,
+            RetroButton.START, RetroButton.SELECT
+        ) + DPAD,
+        buttonLabels = mapOf(
+            RetroButton.L to "Option 1",
+            RetroButton.R to "Option 2",
+            RetroButton.START to "Pause",
+            RetroButton.SELECT to "Rotate Screen"
+        )
+    )
+
+    val NGP = MappingPlatform(
+        id = "ngp",
+        displayName = "Neo Geo Pocket",
+        buttons = listOf(
+            RetroButton.B, RetroButton.A,
+            RetroButton.START
+        ) + DPAD,
+        buttonLabels = mapOf(
+            RetroButton.B to "A",
+            RetroButton.A to "B",
+            RetroButton.START to "Option"
+        )
+    )
+
+    val WONDERSWAN = MappingPlatform(
+        id = "wonderswan",
+        displayName = "WonderSwan",
+        buttons = listOf(
+            RetroButton.A, RetroButton.B,
+            RetroButton.L, RetroButton.R, RetroButton.L2, RetroButton.R2,
+            RetroButton.START, RetroButton.SELECT
+        ) + DPAD,
+        buttonLabels = mapOf(
+            RetroButton.L to "Y Cursor Left",
+            RetroButton.R to "Y Cursor Right",
+            RetroButton.R2 to "Y Cursor Up",
+            RetroButton.L2 to "Y Cursor Down",
+            RetroButton.SELECT to "Rotate Screen"
+        )
+    )
+
+    val VIRTUALBOY = MappingPlatform(
+        id = "vb",
+        displayName = "Virtual Boy",
+        buttons = listOf(
+            RetroButton.B, RetroButton.A, RetroButton.X,
+            RetroButton.L, RetroButton.R, RetroButton.L2, RetroButton.R2,
+            RetroButton.L3, RetroButton.R3,
+            RetroButton.START, RetroButton.SELECT
+        ) + DPAD,
+        buttonLabels = mapOf(
+            RetroButton.X to "Low Battery Toggle",
+            RetroButton.R2 to "Right Pad Left",
+            RetroButton.L2 to "Right Pad Up",
+            RetroButton.L3 to "Right Pad Down",
+            RetroButton.R3 to "Right Pad Right"
+        )
+    )
+
+    val PSP = MappingPlatform(
+        id = "psp",
+        displayName = "PSP",
+        buttons = listOf(
+            RetroButton.B, RetroButton.A, RetroButton.X, RetroButton.Y,
+            RetroButton.L, RetroButton.R,
+            RetroButton.START, RetroButton.SELECT
+        ) + DPAD,
+        buttonLabels = mapOf(
+            RetroButton.B to "Cross",
+            RetroButton.A to "Circle",
+            RetroButton.Y to "Square",
+            RetroButton.X to "Triangle"
+        )
+    )
+
     val GB = MappingPlatform(
         id = "gb",
         displayName = "Game Boy",
@@ -78,27 +192,37 @@ object MappingPlatforms {
         buttons = listOf(
             RetroButton.A, RetroButton.B,
             RetroButton.L, RetroButton.R,
+            RetroButton.X, RetroButton.Y, RetroButton.L2, RetroButton.R2,
+            RetroButton.L3, RetroButton.R3,
             RetroButton.START, RetroButton.SELECT
-        ) + DPAD
+        ) + DPAD,
+        buttonLabels = mapOf(
+            RetroButton.X to "Turbo A",
+            RetroButton.Y to "Turbo B",
+            RetroButton.L2 to "Turbo L",
+            RetroButton.R2 to "Turbo R",
+            RetroButton.L3 to "Darken Solar Sensor",
+            RetroButton.R3 to "Brighten Solar Sensor"
+        )
     )
 
     val N64 = MappingPlatform(
         id = "n64",
         displayName = "N64",
         buttons = listOf(
-            RetroButton.A, RetroButton.B,
-            RetroButton.L, RetroButton.R, RetroButton.L2,
-            RetroButton.START,
-            RetroButton.X, RetroButton.Y, RetroButton.L3, RetroButton.R3
+            RetroButton.B, RetroButton.Y, RetroButton.A, RetroButton.X,
+            RetroButton.L, RetroButton.R, RetroButton.L2, RetroButton.R2,
+            RetroButton.START
         ) + DPAD,
         buttonLabels = mapOf(
+            RetroButton.B to "A",
+            RetroButton.Y to "B",
             RetroButton.L to "L",
             RetroButton.R to "R",
             RetroButton.L2 to "Z",
-            RetroButton.X to "C-Left",
-            RetroButton.Y to "C-Down",
-            RetroButton.L3 to "C-Up",
-            RetroButton.R3 to "C-Right"
+            RetroButton.R2 to "C Buttons (hold)",
+            RetroButton.A to "C-Right (C mode)",
+            RetroButton.X to "C-Up (C mode)"
         )
     )
 
@@ -125,7 +249,7 @@ object MappingPlatforms {
         buttons = listOf(
             RetroButton.A, RetroButton.B, RetroButton.Y,
             RetroButton.X, RetroButton.L, RetroButton.R,
-            RetroButton.START
+            RetroButton.START, RetroButton.SELECT
         ) + DPAD,
         buttonLabels = mapOf(
             RetroButton.Y to "A",
@@ -133,7 +257,8 @@ object MappingPlatforms {
             RetroButton.A to "C",
             RetroButton.L to "X",
             RetroButton.X to "Y",
-            RetroButton.R to "Z"
+            RetroButton.R to "Z",
+            RetroButton.SELECT to "Mode"
         )
     )
 
@@ -141,16 +266,18 @@ object MappingPlatforms {
         id = "3do",
         displayName = "3DO",
         buttons = listOf(
-            RetroButton.A, RetroButton.B, RetroButton.Y,
+            RetroButton.Y, RetroButton.B, RetroButton.A,
             RetroButton.L, RetroButton.R,
-            RetroButton.X, RetroButton.START
+            RetroButton.START, RetroButton.SELECT
         ) + DPAD,
         buttonLabels = mapOf(
-            RetroButton.Y to "C",
+            RetroButton.Y to "A",
+            RetroButton.B to "B",
+            RetroButton.A to "C",
             RetroButton.L to "L",
             RetroButton.R to "R",
-            RetroButton.X to "Pause",
-            RetroButton.START to "Start"
+            RetroButton.START to "P (Play/Pause)",
+            RetroButton.SELECT to "X (Stop)"
         )
     )
 
@@ -182,15 +309,20 @@ object MappingPlatforms {
         buttons = listOf(
             RetroButton.Y, RetroButton.X, RetroButton.L,
             RetroButton.B, RetroButton.A, RetroButton.R,
+            RetroButton.L2, RetroButton.R2, RetroButton.L3, RetroButton.R3,
             RetroButton.START, RetroButton.SELECT
         ) + DPAD,
         buttonLabels = mapOf(
-            RetroButton.Y to "A",
-            RetroButton.X to "B",
-            RetroButton.L to "C",
-            RetroButton.B to "D",
-            RetroButton.A to "E",
-            RetroButton.R to "F",
+            RetroButton.Y to "Button 1",
+            RetroButton.X to "Button 2",
+            RetroButton.L to "Button 3",
+            RetroButton.B to "Button 4",
+            RetroButton.A to "Button 5",
+            RetroButton.R to "Button 6",
+            RetroButton.L2 to "Button 7",
+            RetroButton.R2 to "Button 8",
+            RetroButton.L3 to "Button 9",
+            RetroButton.R3 to "Button 10",
             RetroButton.SELECT to "Coin"
         )
     )
@@ -236,14 +368,25 @@ object MappingPlatforms {
 
     val ATARI_SINGLE = MappingPlatform(
         id = "atari-single",
-        displayName = "Atari (1-button)",
+        displayName = "Atari 2600",
         buttons = listOf(
-            RetroButton.B,
+            RetroButton.B, RetroButton.A, RetroButton.Y,
+            RetroButton.L, RetroButton.R, RetroButton.L2, RetroButton.R2,
+            RetroButton.L3, RetroButton.R3,
             RetroButton.START, RetroButton.SELECT
         ) + DPAD,
         buttonLabels = mapOf(
             RetroButton.B to "Fire",
-            RetroButton.START to "Reset"
+            RetroButton.A to "Trigger",
+            RetroButton.Y to "Booster",
+            RetroButton.L to "Left Difficulty A",
+            RetroButton.R to "Right Difficulty A",
+            RetroButton.L2 to "Left Difficulty B",
+            RetroButton.R2 to "Right Difficulty B",
+            RetroButton.L3 to "Color",
+            RetroButton.R3 to "Black/White",
+            RetroButton.START to "Reset",
+            RetroButton.SELECT to "Select"
         )
     )
 
@@ -268,9 +411,16 @@ object MappingPlatforms {
         displayName = "Nintendo DS",
         buttons = listOf(
             RetroButton.A, RetroButton.B, RetroButton.X, RetroButton.Y,
-            RetroButton.L, RetroButton.R,
+            RetroButton.L, RetroButton.R, RetroButton.L2, RetroButton.R2,
+            RetroButton.L3, RetroButton.R3,
             RetroButton.START, RetroButton.SELECT
-        ) + DPAD
+        ) + DPAD,
+        buttonLabels = mapOf(
+            RetroButton.L2 to "Microphone",
+            RetroButton.R2 to "Swap Screens",
+            RetroButton.L3 to "Close Lid",
+            RetroButton.R3 to "Touch Joystick"
+        )
     )
 
     val GAMECUBE = MappingPlatform(
@@ -278,12 +428,35 @@ object MappingPlatforms {
         displayName = "GameCube",
         buttons = listOf(
             RetroButton.A, RetroButton.B, RetroButton.X, RetroButton.Y,
-            RetroButton.L, RetroButton.R, RetroButton.L2,
+            RetroButton.L2, RetroButton.R2, RetroButton.R,
+            RetroButton.L3, RetroButton.R3,
             RetroButton.START
         ) + DPAD,
         buttonLabels = mapOf(
-            RetroButton.L2 to "Z",
+            RetroButton.L2 to "L",
+            RetroButton.R2 to "R",
+            RetroButton.R to "Z",
+            RetroButton.L3 to "L Analog",
+            RetroButton.R3 to "R Analog",
             RetroButton.START to "Start"
+        )
+    )
+
+    val DREAMCAST = MappingPlatform(
+        id = "dreamcast",
+        displayName = "Dreamcast",
+        buttons = listOf(
+            RetroButton.B, RetroButton.A, RetroButton.Y, RetroButton.X,
+            RetroButton.L2, RetroButton.R2,
+            RetroButton.START
+        ) + DPAD,
+        buttonLabels = mapOf(
+            RetroButton.B to "A",
+            RetroButton.A to "B",
+            RetroButton.Y to "X",
+            RetroButton.X to "Y",
+            RetroButton.L2 to "L Trigger",
+            RetroButton.R2 to "R Trigger"
         )
     )
 
@@ -292,16 +465,20 @@ object MappingPlatforms {
         displayName = "Wii",
         buttons = listOf(
             RetroButton.A, RetroButton.B, RetroButton.X, RetroButton.Y,
-            RetroButton.L, RetroButton.R,
+            RetroButton.L, RetroButton.R, RetroButton.L2, RetroButton.R2,
+            RetroButton.R3,
             RetroButton.START, RetroButton.SELECT
         ) + DPAD,
         buttonLabels = mapOf(
-            RetroButton.X to "1",
-            RetroButton.Y to "2",
-            RetroButton.L to "C",
-            RetroButton.R to "Z",
-            RetroButton.START to "+",
-            RetroButton.SELECT to "-"
+            RetroButton.X to "C",
+            RetroButton.Y to "Z",
+            RetroButton.L to "-",
+            RetroButton.R to "+",
+            RetroButton.L2 to "Shake Nunchuk",
+            RetroButton.R2 to "Shake Wiimote",
+            RetroButton.R3 to "Home",
+            RetroButton.START to "1",
+            RetroButton.SELECT to "2"
         )
     )
 
@@ -325,12 +502,18 @@ object MappingPlatforms {
         id = "pce",
         displayName = "PC Engine",
         buttons = listOf(
-            RetroButton.B, RetroButton.Y,
+            RetroButton.A, RetroButton.B, RetroButton.Y, RetroButton.X,
+            RetroButton.L, RetroButton.R, RetroButton.L2,
             RetroButton.START, RetroButton.SELECT
         ) + DPAD,
         buttonLabels = mapOf(
-            RetroButton.B to "I",
-            RetroButton.Y to "II",
+            RetroButton.A to "I",
+            RetroButton.B to "II",
+            RetroButton.Y to "III",
+            RetroButton.X to "IV",
+            RetroButton.L to "V",
+            RetroButton.R to "VI",
+            RetroButton.L2 to "Mode Switch",
             RetroButton.START to "Run"
         )
     )
@@ -340,7 +523,7 @@ object MappingPlatforms {
         displayName = "Neo Geo",
         buttons = listOf(
             RetroButton.B, RetroButton.A, RetroButton.Y, RetroButton.X,
-            RetroButton.START, RetroButton.SELECT
+            RetroButton.START
         ) + DPAD,
         buttonLabels = mapOf(
             RetroButton.B to "A",
@@ -364,8 +547,9 @@ object MappingPlatforms {
     )
 
     val ALL = listOf(
-        UNIVERSAL, NES, GB, SNES, GBA, N64, PSX, GENESIS, THREEDO,
-        SATURN, ARCADE6, VECTREX, INTV, ATARI_SINGLE, ATARI_5200,
+        UNIVERSAL, NES, SMS, GB, SNES, GBA, N64, PSX, PSP, GENESIS, THREEDO,
+        SATURN, DREAMCAST, ARCADE6, VECTREX, INTV, ATARI_SINGLE, ATARI_5200,
+        ATARI_7800, LYNX, NGP, WONDERSWAN, VIRTUALBOY,
         DS, GAMECUBE, WII, WII_CLASSIC, PCE, NEOGEO, COMPUTER
     )
 
@@ -387,32 +571,40 @@ object MappingPlatforms {
     fun profileForSlug(slug: String): MappingPlatform = when (PlatformDefinitions.getCanonicalSlug(slug).lowercase()) {
         "atari2600" -> ATARI_SINGLE
         "atari5200" -> ATARI_5200
+        "atari7800" -> ATARI_7800
+        "lynx" -> LYNX
+        "ngp", "ngpc" -> NGP
+        "wonderswan", "wsc" -> WONDERSWAN
         "vectrex" -> VECTREX
         "intellivision" -> INTV
         "saturn" -> SATURN
+        "dreamcast" -> DREAMCAST
         "arcade", "fbneo", "mame", "cps1", "cps2", "cps3", "neogeocd" -> ARCADE6
 
         "nes", "fds", "gameandwatch",
-        "sg1000", "sms", "gg",
-        "atari7800", "lynx",
         "coleco", "odyssey2", "channelf",
-        "pokemini", "wonderswan", "wsc",
+        "pokemini",
         "megaduck", "supervision", "arduboy", "uzebox",
-        "ngp", "ngpc", "pico8" -> NES
+        "pico8" -> NES
+
+        "sg1000", "sms", "gg" -> SMS
 
         "gb", "gbc" -> GB
 
         "gba" -> GBA
 
-        "snes", "satellaview", "vb" -> SNES
+        "snes", "satellaview" -> SNES
+
+        "vb" -> VIRTUALBOY
 
         "tg16", "pce", "turbografx16", "pcengine",
         "supergrafx", "tgcd", "pcfx" -> PCE
 
         "n64", "n64dd" -> N64
 
-        "psx", "ps2", "psp", "vita",
-        "jaguar", "jaguarcd" -> PSX
+        "psx", "ps2" -> PSX
+
+        "psp", "vita" -> PSP
 
         "nds", "dsi", "3ds", "n3ds" -> DS
 
@@ -504,6 +696,16 @@ object InputPresets {
             DetectedLayout.NINTENDO -> DEFAULT_MAPPING
             DetectedLayout.XBOX -> DEFAULT_MAPPING
         }
+    }
+
+    /**
+     * Whether this platform's console controller uses [keyCode] as a real button under the
+     * default mapping. A single-key hotkey on such a button is shadowed by the console button
+     * on that platform, so the editor warns rather than binding something that silently won't fire.
+     */
+    fun keyMapsToConsoleButton(keyCode: Int, platformSlug: String): Boolean {
+        val retroButton = DEFAULT_MAPPING[keyCode] ?: return false
+        return retroButton in MappingPlatforms.profileForSlug(platformSlug).buttons
     }
 
     fun getPresetNamesForCycling(): List<String> = PRESETS.map { it.name }

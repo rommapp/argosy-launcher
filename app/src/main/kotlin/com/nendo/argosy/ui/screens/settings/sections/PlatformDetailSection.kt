@@ -30,6 +30,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.lazy.itemsIndexed
 import com.nendo.argosy.ui.components.ActionPreference
 import com.nendo.argosy.ui.components.CyclePreference
 import com.nendo.argosy.ui.components.InfoPreference
@@ -83,6 +84,7 @@ internal sealed class PlatformDetailItem(
 
     data object SyncToggle : PlatformDetailItem("sync_toggle", "sync")
     data object SyncNow : PlatformDetailItem("sync_now", "sync", { it.syncEnabled })
+    data object DownloadDefaults : PlatformDetailItem("download_defaults", "sync")
     data object PackagePath : PlatformDetailItem("package_path", "sync", { it.showSavePath })
     data object RemoveFiles : PlatformDetailItem("remove_files", "sync", { it.hasDownloads })
 
@@ -101,7 +103,7 @@ internal sealed class PlatformDetailItem(
             Header("header_bios", "bios", "BIOS", { it.hasBios }),
             InfoItem("info_bios_status", "bios", { it.hasBios }), BiosDownload, BiosInstall, BiosCopy,
             Header("header_sync", "sync", "Storage & Sync"),
-            SyncToggle, SyncNow, InfoItem("info_package_path", "sync", { it.showSavePath && !it.isBuiltin && !it.isRetroArch }),
+            SyncToggle, SyncNow, DownloadDefaults, InfoItem("info_package_path", "sync", { it.showSavePath && !it.isBuiltin && !it.isRetroArch }),
             RomPath, SavePath, MemoryCard, StatePath,
             RemoveFiles
         )
@@ -164,6 +166,7 @@ private fun createPlatformDetailLayout() = SettingsLayout<PlatformDetailItem, Pl
             "platform" -> "Platform"
             "bios" -> "BIOS"
             "sync" -> "Storage & Sync"
+            "downloads" -> "Download Defaults"
             else -> null
         }
     }
@@ -537,6 +540,13 @@ fun PlatformDetailSection(
                     )
                 }
                 PlatformDetailItem.PackagePath -> {} // rendered as InfoItem
+                PlatformDetailItem.DownloadDefaults -> ActionPreference(
+                    title = "Download Defaults",
+                    subtitle = if (detail.downloadOverrides.isEmpty()) "Preselected file types"
+                        else "${detail.downloadOverrides.size} platform overrides",
+                    isFocused = isFocused(item),
+                    onClick = { viewModel.openPlatformDownloadDefaults(config.platform.slug) }
+                )
                 PlatformDetailItem.RemoveFiles -> ActionPreference(
                     title = "Remove Local Files",
                     subtitle = "${detail.downloadedGames} downloaded files",
@@ -590,6 +600,10 @@ fun PlatformDetailSection(
             onDismiss = { viewModel.dismissRemoveConfirm() },
             destructive = true
         )
+
+        if (detail.showDownloadDefaults) {
+            DownloadDefaultsModal(detail = detail, viewModel = viewModel)
+        }
 
         // Modals
         if (emulators.showEmulatorPicker && emulators.emulatorPickerInfo != null) {
@@ -703,4 +717,50 @@ internal fun buildPlatformDetailFocusItems(
     val visibility = PlatformDetailVisibility.from(config, detail, syncEnabled)
     val layout = createPlatformDetailLayout()
     return layout.focusableItems(visibility)
+}
+
+@Composable
+private fun DownloadDefaultsModal(
+    detail: PlatformDetailState,
+    viewModel: SettingsViewModel
+) {
+    val keys = com.nendo.argosy.data.preferences.DownloadDefaults.CONFIGURABLE_KEYS
+    com.nendo.argosy.ui.components.Modal(
+        title = "DOWNLOAD DEFAULTS",
+        subtitle = "File types preselected when downloading",
+        onDismiss = viewModel::dismissPlatformDownloadDefaults
+    ) {
+        val listState = androidx.compose.foundation.lazy.rememberLazyListState()
+        com.nendo.argosy.ui.components.FocusedScroll(
+            listState = listState,
+            focusedIndex = detail.downloadDefaultsFocusIndex
+        )
+        androidx.compose.foundation.lazy.LazyColumn(
+            state = listState,
+            modifier = Modifier.weight(1f, fill = false)
+        ) {
+            itemsIndexed(keys, key = { _, key -> key }) { index, key ->
+                val override = detail.downloadOverrides[key]
+                val effective = override
+                    ?: detail.globalDownloadDefaults[key]
+                    ?: (com.nendo.argosy.data.preferences.DownloadDefaults.FACTORY[key] ?: false)
+                SwitchPreference(
+                    title = downloadCategoryLabel(key),
+                    subtitle = if (override == null) "Inherited from global" else "Platform override",
+                    isEnabled = effective,
+                    isFocused = detail.downloadDefaultsFocusIndex == index,
+                    onToggle = { viewModel.setPlatformDownloadDefault(key, it) }
+                )
+            }
+            item(key = "reset_overrides") {
+                ActionPreference(
+                    title = "Reset to Global",
+                    subtitle = "Clear all platform overrides",
+                    isFocused = detail.downloadDefaultsFocusIndex == keys.size,
+                    isEnabled = detail.downloadOverrides.isNotEmpty(),
+                    onClick = { viewModel.resetPlatformDownloadDefaults() }
+                )
+            }
+        }
+    }
 }

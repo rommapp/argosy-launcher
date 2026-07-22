@@ -22,6 +22,8 @@ import com.nendo.argosy.data.model.VariantCategory
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.remote.romm.RomMRepository
 import com.nendo.argosy.data.remote.romm.RomMResult
+import com.nendo.argosy.data.storage.StorageAttributionRepository
+import com.nendo.argosy.data.storage.StorageCategory
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -51,7 +53,8 @@ class GameRepository @Inject constructor(
     private val platformDao: PlatformDao,
     private val romMRepository: RomMRepository,
     private val preferencesRepository: UserPreferencesRepository,
-    private val fileAccessLayer: com.nendo.argosy.data.storage.FileAccessLayer
+    private val fileAccessLayer: com.nendo.argosy.data.storage.FileAccessLayer,
+    private val attributionRepository: StorageAttributionRepository
 ) {
     private val defaultDownloadDir: File by lazy {
         File(context.getExternalFilesDir(null), "downloads")
@@ -281,9 +284,18 @@ class GameRepository @Inject constructor(
                 Log.d(TAG, "Invalidated game ${info.id}: path no longer valid ($path)")
             }
         }
+        var invalidatedFiles = 0
+        for (row in gameFileDao.getAllWithLocalPath()) {
+            val path = row.localPath ?: continue
+            if (!File(path).exists()) {
+                gameFileDao.clearLocalPath(row.id)
+                invalidatedFiles++
+                Log.d(TAG, "Invalidated file row ${row.id} (${row.fileName}): path no longer valid ($path)")
+            }
+        }
         val elapsed = System.currentTimeMillis() - startTime
-        Log.d(TAG, "Validation complete: checked ${gamesWithPaths.size} games, $invalidated invalidated in ${elapsed}ms")
-        invalidated
+        Log.d(TAG, "Validation complete: $invalidated of ${gamesWithPaths.size} games and $invalidatedFiles file rows invalidated in ${elapsed}ms")
+        invalidated + invalidatedFiles
     }
 
     suspend fun repairFolderRomPointers(): Int = withContext(Dispatchers.IO) {
@@ -656,6 +668,7 @@ class GameRepository @Inject constructor(
             }
         }
         Log.i(TAG, "Deleted $deleted local files for platform $platformId")
+        attributionRepository.markDirty(StorageCategory.GAMES)
         deleted
     }
 

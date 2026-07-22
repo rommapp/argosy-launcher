@@ -1,5 +1,6 @@
 package com.nendo.argosy.ui.screens.settings.sections.input
 
+import com.nendo.argosy.core.input.SoundType
 import com.nendo.argosy.ui.input.InputHandler
 import com.nendo.argosy.ui.input.InputResult
 import com.nendo.argosy.ui.screens.settings.SettingsViewModel
@@ -13,21 +14,25 @@ internal class StorageSectionInput(
     private val viewModel: SettingsViewModel
 ) : InputHandler {
 
-    private fun layoutInfo(): StorageLayoutInfo {
-        val state = viewModel.uiState.value
-        return createStorageLayoutInfo()
-    }
+    private fun layoutInfo(): StorageLayoutInfo =
+        createStorageLayoutInfo(viewModel.uiState.value)
 
     override fun onUp(): InputResult {
         val info = layoutInfo()
-        viewModel.moveFocusWrapped(-1, info.layout.maxFocusIndex(info.state))
-        return InputResult.HANDLED
+        return if (viewModel.moveFocusWrapped(-1, info.layout.maxFocusIndex(info.state))) {
+            InputResult.HANDLED
+        } else {
+            InputResult.handled(SoundType.BOUNDARY)
+        }
     }
 
     override fun onDown(): InputResult {
         val info = layoutInfo()
-        viewModel.moveFocusWrapped(1, info.layout.maxFocusIndex(info.state))
-        return InputResult.HANDLED
+        return if (viewModel.moveFocusWrapped(1, info.layout.maxFocusIndex(info.state))) {
+            InputResult.HANDLED
+        } else {
+            InputResult.handled(SoundType.BOUNDARY)
+        }
     }
 
     override fun onLeft(): InputResult = cycle(-1)
@@ -35,29 +40,50 @@ internal class StorageSectionInput(
     override fun onRight(): InputResult = cycle(1)
 
     override fun onPrevSection(): InputResult {
-        val info = layoutInfo()
-        if (viewModel.jumpToPrevSection(storageSections(info))) {
+        if (viewModel.jumpToPrevSection(storageSections(layoutInfo()))) {
             return InputResult.HANDLED
         }
         return InputResult.UNHANDLED
     }
 
     override fun onNextSection(): InputResult {
-        val info = layoutInfo()
-        if (viewModel.jumpToNextSection(storageSections(info))) {
+        if (viewModel.jumpToNextSection(storageSections(layoutInfo()))) {
             return InputResult.HANDLED
         }
         return InputResult.UNHANDLED
     }
 
+    override fun onContextMenu(): InputResult {
+        if (viewModel.uiState.value.attribution.isRefreshing) {
+            return InputResult.handled(SoundType.SILENT)
+        }
+        viewModel.refreshStorageAttribution()
+        return InputResult.HANDLED
+    }
+
+    override fun onLongConfirm(): InputResult {
+        val state = viewModel.uiState.value
+        if (storageItemAtFocusIndex(state.focusedIndex, layoutInfo()) != StorageItem.RecomputeRow) {
+            return InputResult.UNHANDLED
+        }
+        if (state.attribution.isRefreshing) {
+            return InputResult.handled(SoundType.SILENT)
+        }
+        viewModel.refreshStorageAttribution(deep = true)
+        return InputResult.HANDLED
+    }
+
     private fun cycle(direction: Int): InputResult {
         val state = viewModel.uiState.value
-        val info = layoutInfo()
-        when (storageItemAtFocusIndex(state.focusedIndex, info)) {
-            StorageItem.MaxDownloads -> { viewModel.adjustMaxConcurrentDownloads(direction); return InputResult.HANDLED }
-            StorageItem.Threshold -> { viewModel.cycleInstantDownloadThreshold(direction); return InputResult.HANDLED }
-            StorageItem.WeeklyIntegrityCheck ->
-                return toggleLeftRight(direction, state.storage.weeklyIntegrityCheckEnabled) { viewModel.toggleWeeklyIntegrityCheck(it) }
+        when (storageItemAtFocusIndex(state.focusedIndex, layoutInfo())) {
+            StorageItem.MaxDownloads -> {
+                viewModel.adjustMaxConcurrentDownloads(direction)
+                return InputResult.HANDLED
+            }
+            StorageItem.Threshold -> {
+                viewModel.cycleInstantDownloadThreshold(direction)
+                return InputResult.HANDLED
+            }
             else -> {}
         }
         return InputResult.UNHANDLED

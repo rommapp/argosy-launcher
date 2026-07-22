@@ -571,6 +571,10 @@ fun ArgosyApp(
                     state?.modalType == ActiveModal.DIFFICULTY
                 ) {
                     activity?.adjustDualModalRating(-1)
+                } else if (state?.modalType == ActiveModal.FILE_PICKER) {
+                    if (activity?.moveDualFilePickerButtonFocus(-1) != true) {
+                        activity?.setDualFilePickerGroupCollapsed(collapse = true)
+                    }
                 }
                 return InputResult.HANDLED
             }
@@ -580,6 +584,10 @@ fun ArgosyApp(
                     state?.modalType == ActiveModal.DIFFICULTY
                 ) {
                     activity?.adjustDualModalRating(1)
+                } else if (state?.modalType == ActiveModal.FILE_PICKER) {
+                    if (activity?.moveDualFilePickerButtonFocus(1) != true) {
+                        activity?.setDualFilePickerGroupCollapsed(collapse = false)
+                    }
                 }
                 return InputResult.HANDLED
             }
@@ -590,9 +598,12 @@ fun ArgosyApp(
                     ActiveModal.STATUS -> activity?.moveDualModalStatus(-1)
                     ActiveModal.EMULATOR -> activity?.moveDualEmulatorFocus(-1)
                     ActiveModal.CORE -> activity?.moveDualCoreFocus(-1)
+                    ActiveModal.SAVE_PATH -> activity?.moveDualSavePathFocus(-1)
+                    ActiveModal.DISPLAY_TARGET -> activity?.moveDualDisplayTargetFocus(-1)
                     ActiveModal.VARIANT_PICKER -> activity?.moveDualVariantFocus(-1)
                     ActiveModal.COLLECTION -> activity?.moveDualCollectionFocus(-1)
                     ActiveModal.STEAM_INSTALL -> activity?.moveDualSteamInstallFocus(-1)
+                    ActiveModal.FILE_PICKER -> activity?.moveDualFilePickerFocus(-1)
                     else -> {}
                 }
                 return InputResult.HANDLED
@@ -604,9 +615,12 @@ fun ArgosyApp(
                     ActiveModal.STATUS -> activity?.moveDualModalStatus(1)
                     ActiveModal.EMULATOR -> activity?.moveDualEmulatorFocus(1)
                     ActiveModal.CORE -> activity?.moveDualCoreFocus(1)
+                    ActiveModal.SAVE_PATH -> activity?.moveDualSavePathFocus(1)
+                    ActiveModal.DISPLAY_TARGET -> activity?.moveDualDisplayTargetFocus(1)
                     ActiveModal.VARIANT_PICKER -> activity?.moveDualVariantFocus(1)
                     ActiveModal.COLLECTION -> activity?.moveDualCollectionFocus(1)
                     ActiveModal.STEAM_INSTALL -> activity?.moveDualSteamInstallFocus(1)
+                    ActiveModal.FILE_PICKER -> activity?.moveDualFilePickerFocus(1)
                     else -> {}
                 }
                 return InputResult.HANDLED
@@ -619,11 +633,34 @@ fun ArgosyApp(
                     ActiveModal.STATUS -> activity?.confirmDualModal()
                     ActiveModal.EMULATOR -> activity?.confirmDualEmulatorSelection()
                     ActiveModal.CORE -> activity?.confirmDualCoreSelection()
+                    ActiveModal.SAVE_PATH -> activity?.confirmDualSavePathSelection()
+                    ActiveModal.DISPLAY_TARGET -> activity?.confirmDualDisplayTargetSelection()
                     ActiveModal.VARIANT_PICKER -> activity?.confirmDualVariantSelection()
                     ActiveModal.COLLECTION -> activity?.toggleDualCollectionAtFocus()
                     ActiveModal.STEAM_INSTALL -> activity?.confirmDualSteamInstallSelection()
                     ActiveModal.SAVE_NAME -> activity?.confirmDualSaveName()
+                    ActiveModal.FILE_PICKER -> activity?.activateDualFilePickerFocused()
                     else -> {}
+                }
+                return InputResult.HANDLED
+            }
+            override fun onContextMenu(): InputResult {
+                val state = activity?.dualGameDetailState?.value
+                if (state?.modalType == ActiveModal.FILE_PICKER) {
+                    activity?.confirmDualFilePicker()
+                    return InputResult.HANDLED
+                }
+                return InputResult.HANDLED
+            }
+            override fun onPrevSection(): InputResult {
+                if (activity?.dualGameDetailState?.value?.modalType == ActiveModal.FILE_PICKER) {
+                    activity?.jumpDualFilePickerGroup(-1)
+                }
+                return InputResult.HANDLED
+            }
+            override fun onNextSection(): InputResult {
+                if (activity?.dualGameDetailState?.value?.modalType == ActiveModal.FILE_PICKER) {
+                    activity?.jumpDualFilePickerGroup(1)
                 }
                 return InputResult.HANDLED
             }
@@ -638,9 +675,6 @@ fun ArgosyApp(
             }
             override fun onMenu(): InputResult = InputResult.HANDLED
             override fun onSecondaryAction(): InputResult = InputResult.HANDLED
-            override fun onContextMenu(): InputResult = InputResult.HANDLED
-            override fun onPrevSection(): InputResult = InputResult.HANDLED
-            override fun onNextSection(): InputResult = InputResult.HANDLED
             override fun onPrevTrigger(): InputResult = InputResult.HANDLED
             override fun onNextTrigger(): InputResult = InputResult.HANDLED
             override fun onSelect(): InputResult = InputResult.HANDLED
@@ -1088,6 +1122,18 @@ fun ArgosyApp(
                                     a.confirmDualCoreSelection()
                                 }
                             },
+                            onModalSavePathSelect = { index ->
+                                activity?.let { a ->
+                                    a.setDualSavePathFocus(index)
+                                    a.confirmDualSavePathSelection()
+                                }
+                            },
+                            onModalDisplayTargetSelect = { index ->
+                                activity?.let { a ->
+                                    a.setDualDisplayTargetFocus(index)
+                                    a.confirmDualDisplayTargetSelection()
+                                }
+                            },
                             onModalVariantSelect = { index ->
                                 activity?.let { a ->
                                     a.setDualVariantFocus(index)
@@ -1132,6 +1178,15 @@ fun ArgosyApp(
                             },
                             onModalDismiss = {
                                 activity?.dismissDualModal()
+                            },
+                            onFilePickerToggle = { row ->
+                                activity?.toggleDualFilePickerRow(row)
+                            },
+                            onFilePickerConfirm = {
+                                activity?.confirmDualFilePicker()
+                            },
+                            onFilePickerToggleCollapse = { groupKey ->
+                                activity?.toggleDualFilePickerGroupCollapse(groupKey)
                             },
                             footerHints = {
                                 FooterHints(
@@ -1364,6 +1419,12 @@ fun ArgosyApp(
                                         cores.map { it.displayName },
                                         currentName
                                     )
+                                },
+                                onBroadcastSavePathModalOpen = { overridePath ->
+                                    dualScreenManager.openSavePathModal(overridePath)
+                                },
+                                onBroadcastDisplayTargetModalOpen = { names, currentName, inheritedName ->
+                                    dualScreenManager.openDisplayTargetModal(names, currentName, inheritedName)
                                 },
                                 onBroadcastVariantModalOpen = { variantNames, currentName ->
                                     dualScreenManager.openVariantModal(
@@ -1644,6 +1705,22 @@ fun ArgosyApp(
                                             )
                                         }
                                     }
+                                    GameDetailOption.SAVE_PATH -> {
+                                        vm.openSavePathPicker()
+                                        dualScreenManager.openSavePathModal(vm.uiState.value.savePathOverride)
+                                    }
+                                    GameDetailOption.DISPLAY_TARGET -> {
+                                        vm.openDisplayTargetPicker()
+                                        val detailUi = vm.uiState.value
+                                        dualScreenManager.openDisplayTargetModal(
+                                            com.nendo.argosy.data.preferences.EmulatorDisplayTarget.entries.map { it.displayName },
+                                            detailUi.displayTargetName?.let {
+                                                com.nendo.argosy.data.preferences.EmulatorDisplayTarget.fromString(it).displayName
+                                            },
+                                            com.nendo.argosy.data.preferences.EmulatorDisplayTarget
+                                                .fromString(detailUi.platformDisplayTargetName).displayName
+                                        )
+                                    }
                                     GameDetailOption.SELECT_VARIANT -> {
                                         scope.launch {
                                             val variants = vm.getDownloadedVariants()
@@ -1666,12 +1743,8 @@ fun ArgosyApp(
                                             )
                                         }
                                     }
-                                    GameDetailOption.UPDATES_DLC -> {
-                                        scope.launch {
-                                            vm.openUpdatesModal()
-                                            val allFiles = vm.updateFiles.value + vm.dlcFiles.value
-                                            dualScreenManager.openUpdatesModal(allFiles)
-                                        }
+                                    GameDetailOption.FILES -> {
+                                        dualScreenManager.handleDirectAction("FILES", gameId)
                                     }
                                     GameDetailOption.SELECT_DISC -> {
                                         dualScreenManager.handleDirectAction("SELECT_DISC", gameId)

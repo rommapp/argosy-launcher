@@ -2,6 +2,7 @@ package com.nendo.argosy.ui.screens.search
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.nendo.argosy.core.input.SoundType
 import com.nendo.argosy.data.repository.GameRepository
 import com.nendo.argosy.data.repository.PlatformRepository
 import com.nendo.argosy.data.local.entity.GameEntity
@@ -82,12 +83,15 @@ class SearchViewModel @Inject constructor(
         }
     }
 
-    fun moveFocus(delta: Int) {
+    fun moveFocus(delta: Int): Boolean {
+        var moved = false
         _uiState.update { state ->
             if (state.results.isEmpty()) return@update state
             val newIndex = (state.focusedIndex + delta).coerceIn(0, state.results.size - 1)
+            moved = newIndex != state.focusedIndex
             state.copy(focusedIndex = newIndex, showKeyboard = false)
         }
+        return moved
     }
 
     fun focusKeyboard() {
@@ -122,15 +126,13 @@ class SearchViewModel @Inject constructor(
             val state = _uiState.value
             if (state.focusedIndex == 0) {
                 focusKeyboard()
-            } else {
-                moveFocus(-1)
+                return InputResult.HANDLED
             }
-            return InputResult.HANDLED
+            return if (moveFocus(-1)) InputResult.HANDLED else InputResult.handled(SoundType.BOUNDARY)
         }
 
         override fun onDown(): InputResult {
-            moveFocus(1)
-            return InputResult.HANDLED
+            return if (moveFocus(1)) InputResult.HANDLED else InputResult.handled(SoundType.BOUNDARY)
         }
 
         override fun onLeft(): InputResult = InputResult.UNHANDLED

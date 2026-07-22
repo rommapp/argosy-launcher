@@ -43,6 +43,18 @@ fun Modifier.clickableNoFocus(onClick: () -> Unit, onLongClick: () -> Unit): Mod
 }
 
 @OptIn(ExperimentalFoundationApi::class)
+fun Modifier.clickableNoFocus(
+    interactionSource: MutableInteractionSource,
+    onClick: () -> Unit,
+    onLongClick: () -> Unit
+): Modifier = combinedClickable(
+    interactionSource = interactionSource,
+    indication = null,
+    onClick = onClick,
+    onLongClick = onLongClick
+)
+
+@OptIn(ExperimentalFoundationApi::class)
 fun Modifier.doubleTapNoFocus(onDoubleClick: () -> Unit): Modifier = composed {
     combinedClickable(
         interactionSource = remember { MutableInteractionSource() },

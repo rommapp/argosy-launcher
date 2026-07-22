@@ -96,7 +96,7 @@ object BiosPathRegistry {
         "dc10d7bdd1b6f450773dfb558477c230" to "kick37175.A500",
         "465646c9b6729f77eea5314d1f057951" to "kick37350.A600",
         "e40a5dfb3d017ba8779faba30cbd1c8e" to "kick40063.A600",
-        "b7cc148386aa631136f510cd28e42fc3" to "kick39106.A1200",
+        "b7cc148386aa631136f510cd29e42fc3" to "kick39106.A1200",
         "646773759326fbac3b2311fd8c8793ee" to "kick40068.A1200",
         "9b8bdd5a3fd32c2a5a6f5b1aefc799a5" to "kick39106.A4000",
         "9bdedde6a4f33555b4a270c8ca53297d" to "kick40068.A4000",
@@ -179,7 +179,7 @@ object BiosPathRegistry {
             BiosRequirement("amiga", "kick34005.A500", "82a21c1890cae844b3df741f2762d48d", "Kickstart v1.3 rev 34.005 (A500)", isRequired = false),
             BiosRequirement("amiga", "kick37175.A500", "dc10d7bdd1b6f450773dfb558477c230", "Kickstart v2.04 rev 37.175 (A500+)", isRequired = false),
             BiosRequirement("amiga", "kick40063.A600", "e40a5dfb3d017ba8779faba30cbd1c8e", "Kickstart v3.1 rev 40.063 (A600)", isRequired = false),
-            BiosRequirement("amiga", "kick39106.A1200", "b7cc148386aa631136f510cd28e42fc3", "Kickstart v3.0 rev 39.106 (A1200)", isRequired = false),
+            BiosRequirement("amiga", "kick39106.A1200", "b7cc148386aa631136f510cd29e42fc3", "Kickstart v3.0 rev 39.106 (A1200)", isRequired = false),
             BiosRequirement("amiga", "kick40068.A1200", "646773759326fbac3b2311fd8c8793ee", "Kickstart v3.1 rev 40.068 (A1200)", isRequired = false),
             BiosRequirement("amiga", "kick40068.A4000", "9bdedde6a4f33555b4a270c8ca53297d", "Kickstart v3.1 rev 40.068 (A4000)", isRequired = false)
         ),

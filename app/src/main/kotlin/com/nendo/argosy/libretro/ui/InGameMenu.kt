@@ -131,9 +131,7 @@ fun InGameMenu(
             val showStates = !isHardcoreMode && statesSupported && !isInNetplaySession
             if (showStates) {
                 add("Quick Save" to InGameMenuAction.QuickSave)
-                if (hasQuickSave) {
-                    add("Quick Load" to InGameMenuAction.QuickLoad)
-                }
+                add("Quick Load" to InGameMenuAction.QuickLoad)
                 add("Manage States" to InGameMenuAction.ManageStates)
             }
             if (!isInNetplaySession && cheatsAvailable) {
@@ -244,6 +242,9 @@ fun InGameMenu(
             }
             override fun onConfirm(): InputResult {
                 val action = menuItems.getOrNull(currentFocusedIndex.value)?.second
+                if (action == InGameMenuAction.QuickLoad && !currentHasQuickSave.value) {
+                    return InputResult.HANDLED
+                }
                 if (action == InGameMenuAction.QuickLoad && currentQuickHistoryFocused.value) {
                     currentOnAction.value(InGameMenuAction.QuickLoadHistory)
                 } else {
@@ -339,20 +340,31 @@ fun InGameMenu(
                         key = { _: Int, item: Pair<String, InGameMenuAction> -> item.second.toString() }
                     ) { index, item ->
                         val (label, action) = item
-                        if (action == InGameMenuAction.QuickLoad && hasQuickSave) {
-                            QuickLoadRow(
-                                text = label,
-                                isFocused = index == focusedIndex && !quickHistoryFocused,
-                                historyFocused = index == focusedIndex && quickHistoryFocused,
-                                onClick = { onAction(action) },
-                                onHistoryClick = { onAction(InGameMenuAction.QuickLoadHistory) }
-                            )
-                        } else {
-                            MenuButton(
-                                text = label,
-                                isFocused = index == focusedIndex,
-                                onClick = { onAction(action) }
-                            )
+                        when {
+                            action == InGameMenuAction.QuickLoad && hasQuickSave -> {
+                                QuickLoadRow(
+                                    text = label,
+                                    isFocused = index == focusedIndex && !quickHistoryFocused,
+                                    historyFocused = index == focusedIndex && quickHistoryFocused,
+                                    onClick = { onAction(action) },
+                                    onHistoryClick = { onAction(InGameMenuAction.QuickLoadHistory) }
+                                )
+                            }
+                            action == InGameMenuAction.QuickLoad -> {
+                                MenuButton(
+                                    text = label,
+                                    isFocused = index == focusedIndex,
+                                    enabled = false,
+                                    onClick = {}
+                                )
+                            }
+                            else -> {
+                                MenuButton(
+                                    text = label,
+                                    isFocused = index == focusedIndex,
+                                    onClick = { onAction(action) }
+                                )
+                            }
                         }
                     }
                 }
@@ -554,18 +566,20 @@ private fun QuickLoadRow(
 private fun MenuButton(
     text: String,
     isFocused: Boolean,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    enabled: Boolean = true
 ) {
-    val backgroundColor = if (isFocused) {
-        MaterialTheme.colorScheme.primary
-    } else {
-        MaterialTheme.colorScheme.surfaceVariant
+    val backgroundColor = when {
+        !enabled && isFocused -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
+        !enabled -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+        isFocused -> MaterialTheme.colorScheme.primary
+        else -> MaterialTheme.colorScheme.surfaceVariant
     }
 
-    val textColor = if (isFocused) {
-        MaterialTheme.colorScheme.onPrimary
-    } else {
-        MaterialTheme.colorScheme.onSurfaceVariant
+    val textColor = when {
+        !enabled -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
+        isFocused -> MaterialTheme.colorScheme.onPrimary
+        else -> MaterialTheme.colorScheme.onSurfaceVariant
     }
 
     Box(
@@ -573,7 +587,7 @@ private fun MenuButton(
             .fillMaxWidth()
             .clip(RoundedCornerShape(8.dp))
             .background(backgroundColor)
-            .clickableNoFocus(onClick = onClick)
+            .clickableNoFocus(enabled = enabled, onClick = onClick)
             .padding(vertical = 12.dp, horizontal = 16.dp),
         contentAlignment = Alignment.Center
     ) {

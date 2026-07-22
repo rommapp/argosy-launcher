@@ -341,7 +341,7 @@ fun HomeScreen(
     DisposableEffect(isHardcoreConflict) {
         onDispose {
             if (isHardcoreConflict) {
-                inputDispatcher.popModal()
+                inputDispatcher.removeModal(hardcoreConflictInputHandler)
             }
         }
     }
@@ -349,7 +349,7 @@ fun HomeScreen(
     DisposableEffect(isLocalModified) {
         onDispose {
             if (isLocalModified) {
-                inputDispatcher.popModal()
+                inputDispatcher.removeModal(localModifiedInputHandler)
             }
         }
     }
@@ -370,7 +370,7 @@ fun HomeScreen(
     DisposableEffect(uiState.discPickerState) {
         onDispose {
             if (uiState.discPickerState != null) {
-                inputDispatcher.popModal()
+                inputDispatcher.removeModal(discPickerInputHandler)
             }
         }
     }
@@ -386,7 +386,7 @@ fun HomeScreen(
     DisposableEffect(showMemcardPicker) {
         onDispose {
             if (showMemcardPicker) {
-                inputDispatcher.popModal()
+                inputDispatcher.removeModal(memcardPickerInputHandler)
             }
         }
     }
@@ -394,7 +394,7 @@ fun HomeScreen(
     DisposableEffect(uiState.changelogEntry) {
         onDispose {
             if (uiState.changelogEntry != null) {
-                inputDispatcher.popModal()
+                inputDispatcher.removeModal(changelogInputHandler)
             }
         }
     }

@@ -9,6 +9,8 @@
 
 Sync your entire game library from your self-hosted [RomM](https://github.com/rommapp/romm) server, download games and BIOS files on demand, track your achievements, and play across devices with automatic save sync—all from a controller-native interface designed for Anbernic, Retroid Pocket, Odin, and similar devices.
 
+**[Read the Wiki](https://github.com/rommapp/argosy-launcher/wiki)** for setup guides, emulator configuration, and troubleshooting.
+
 <img width="400" alt="Home Screen" src="https://github.com/user-attachments/assets/931e1f4a-e0a1-46a9-a7ce-e712c0d558cc" />
 
 ## Feature Highlights

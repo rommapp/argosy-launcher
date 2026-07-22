@@ -12,8 +12,10 @@ import android.os.IBinder
 import android.os.Looper
 import android.util.Log
 import androidx.core.app.NotificationCompat
+import com.nendo.argosy.DualScreenManagerHolder
 import com.nendo.argosy.MainActivity
 import com.nendo.argosy.R
+import com.nendo.argosy.util.SecondaryHomeComponent
 
 class CompanionGuardService : Service() {
 
@@ -59,6 +61,19 @@ class CompanionGuardService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         return START_STICKY
+    }
+
+    override fun onTaskRemoved(rootIntent: Intent?) {
+        super.onTaskRemoved(rootIntent)
+        if (rootIntent?.component?.className != MainActivity::class.java.name) return
+        if (SecondaryHomeComponent.isDefaultHome(this)) return
+        val dsm = DualScreenManagerHolder.instance
+        val sessionLive = dsm?.hasLiveSession() == true
+        if (sessionLive) return
+        Log.i(TAG, "Main task removed while not default home, releasing secondary display")
+        SecondaryHomeComponent.setEnabled(this, false)
+        dsm?.teardownCompanion()
+        stopSelf()
     }
 
     override fun onBind(intent: Intent?): IBinder? = null

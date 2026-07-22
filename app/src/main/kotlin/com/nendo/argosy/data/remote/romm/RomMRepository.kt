@@ -46,8 +46,8 @@ class RomMRepository @Inject constructor(
     suspend fun connect(url: String, token: String? = null): RomMResult<String> =
         connectionManager.connect(url, token)
 
-    suspend fun login(username: String, password: String): RomMResult<String> =
-        connectionManager.login(username, password)
+    suspend fun probeServerVersion(url: String): RomMResult<String> =
+        connectionManager.probeServerVersion(url)
 
     suspend fun connectWithToken(url: String, token: String): RomMResult<String> =
         connectionManager.connectWithToken(url, token)
@@ -65,7 +65,7 @@ class RomMRepository @Inject constructor(
 
     fun disconnect() = connectionManager.disconnect()
 
-    suspend fun checkConnection(retryCount: Int = 2) = connectionManager.checkConnection(retryCount)
+    suspend fun checkConnection() = connectionManager.checkConnection()
 
     fun getCurrentDeviceId(): String? = connectionManager.getDeviceId()
 
@@ -88,8 +88,9 @@ class RomMRepository @Inject constructor(
     suspend fun downloadRom(
         romId: Long,
         fileName: String,
-        rangeHeader: String? = null
-    ): RomMResult<DownloadResponse> = apiClient.downloadRom(romId, fileName, rangeHeader)
+        rangeHeader: String? = null,
+        fileIds: String? = null
+    ): RomMResult<DownloadResponse> = apiClient.downloadRom(romId, fileName, rangeHeader, fileIds)
 
     suspend fun downloadRomFile(
         fileId: Long,
@@ -97,9 +98,40 @@ class RomMRepository @Inject constructor(
         rangeHeader: String? = null
     ): RomMResult<DownloadResponse> = apiClient.downloadRomFile(fileId, fileName, rangeHeader)
 
+    suspend fun getMusicTracks(params: Map<String, String>): RomMResult<RomMMusicTrackPage> =
+        apiClient.getMusicTracks(params)
+
+    suspend fun getMusicFacet(
+        facet: RomMMusicFacet,
+        params: Map<String, String>
+    ): RomMResult<RomMMusicFacetPage> = apiClient.getMusicFacet(facet, params)
+
+    fun buildMusicQueryParams(
+        search: String? = null,
+        artist: String? = null,
+        album: String? = null,
+        genre: String? = null,
+        platformId: Long? = null,
+        minDuration: Double? = null,
+        maxDuration: Double? = null,
+        orderBy: String = "title",
+        orderDir: String = "asc",
+        limit: Int = 50,
+        offset: Int = 0
+    ): Map<String, String> = apiClient.buildMusicQueryParams(
+        search, artist, album, genre, platformId, minDuration, maxDuration, orderBy, orderDir, limit, offset
+    )
+
     suspend fun getCurrentUser(): RomMResult<RomMUser> = apiClient.getCurrentUser()
 
     suspend fun getLibrarySummary(): RomMResult<Pair<Int, Int>> = apiClient.getLibrarySummary()
+
+    suspend fun getPlatformCount(): RomMResult<Int> = apiClient.getPlatformCount()
+
+    suspend fun searchCovers(searchTerm: String): RomMResult<List<RomMCoverResource>> =
+        apiClient.searchCovers(searchTerm)
+
+    fun getCapabilities(): RomMCapabilities = apiClient.getCapabilities()
 
     suspend fun fetchAndStorePlatforms(
         defaultSyncEnabled: Boolean = true

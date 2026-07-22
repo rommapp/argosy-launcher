@@ -12,6 +12,8 @@ import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.remote.romm.RomMApi
 import com.nendo.argosy.data.remote.romm.RomMFirmware
 import com.nendo.argosy.data.remote.romm.RomMResult
+import com.nendo.argosy.data.storage.StorageAttributionRepository
+import com.nendo.argosy.data.storage.StorageCategory
 import com.nendo.argosy.util.AppPaths
 import com.nendo.argosy.util.Logger
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -67,7 +69,8 @@ class BiosRepository @Inject constructor(
     private val firmwareDao: FirmwareDao,
     private val platformDao: PlatformDao,
     private val userPreferencesRepository: UserPreferencesRepository,
-    private val switchKeyManager: SwitchKeyManager
+    private val switchKeyManager: SwitchKeyManager,
+    private val attributionRepository: StorageAttributionRepository
 ) {
     private var api: RomMApi? = null
 
@@ -221,6 +224,7 @@ class BiosRepository @Inject constructor(
             firmwareDao.updateLocalPath(firmware.id, targetFile.absolutePath, Instant.now())
             Logger.info(TAG, "Downloaded firmware: ${firmware.fileName}")
 
+            attributionRepository.markDirty(StorageCategory.BIOS)
             BiosDownloadResult.Success(targetFile.absolutePath)
         } catch (e: Exception) {
             Logger.error(TAG, "Failed to download firmware: ${e.message}", e)
@@ -297,6 +301,7 @@ class BiosRepository @Inject constructor(
         }
 
         Logger.info(TAG, "Cleaned up $cleaned firmware files for disabled platforms")
+        attributionRepository.markDirty(StorageCategory.BIOS)
     }
 
     private suspend fun cleanupDistributedCopies(platformSlug: String) {
@@ -600,6 +605,7 @@ class BiosRepository @Inject constructor(
         }
 
         userPreferencesRepository.setCustomBiosPath(newPath)
+        attributionRepository.markDirty(StorageCategory.BIOS)
         true
     }
 

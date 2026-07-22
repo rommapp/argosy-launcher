@@ -56,6 +56,8 @@ internal class AmbientLedSectionInput(
                 return toggleLeftRight(direction, state.display.ambientLedEnabled) { viewModel.setAmbientLedEnabled(it) }
             AmbientLedItem.CustomColor ->
                 return toggleLeftRight(direction, state.display.ambientLedCustomColor) { viewModel.setAmbientLedCustomColor(it) }
+            AmbientLedItem.AchievementFlash ->
+                return toggleLeftRight(direction, state.display.ambientLedAchievementFlash) { viewModel.setAmbientLedAchievementFlash(it) }
             AmbientLedItem.CoverArtColors ->
                 return toggleLeftRight(direction, state.display.ambientLedCoverArtEnabled) { viewModel.setAmbientLedCoverArtEnabled(it) }
             AmbientLedItem.AudioBrightness ->

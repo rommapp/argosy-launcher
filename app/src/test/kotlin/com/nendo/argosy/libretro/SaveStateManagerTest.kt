@@ -5,11 +5,15 @@ import com.nendo.argosy.data.local.entity.GameEntity
 import com.nendo.argosy.data.local.entity.SaveCacheEntity
 import com.nendo.argosy.data.model.GameSource
 import com.nendo.argosy.data.repository.SaveCacheManager
+import com.swordfish.libretrodroid.GLRetroView
 import io.mockk.coEvery
+import io.mockk.every
 import io.mockk.mockk
+import io.mockk.verify
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -161,6 +165,61 @@ class SaveStateManagerTest {
             "legacy default/ state should be migrated up to the flat states dir",
             File(states, "Sonic Advance.state.auto").exists()
         )
+    }
+
+    @Test
+    fun `performSlotLoad returns true when core accepts persisted state`() {
+        val mgr = manager(mockk(relaxed = true), mockk(relaxed = true))
+        val state = byteArrayOf(1, 2, 3, 4)
+        mgr.getSlotFile(1).writeBytes(state)
+        val retroView = mockk<GLRetroView>()
+        every { retroView.unserializePersistedState(match { it.contentEquals(state) }) } returns true
+
+        assertTrue(mgr.performSlotLoad(retroView, 1))
+        verify(exactly = 1) {
+            retroView.unserializePersistedState(match { it.contentEquals(state) })
+        }
+    }
+
+    @Test
+    fun `performSlotLoad returns false when core rejects persisted state`() {
+        val mgr = manager(mockk(relaxed = true), mockk(relaxed = true))
+        val state = byteArrayOf(5, 6, 7)
+        mgr.getSlotFile(2).writeBytes(state)
+        val retroView = mockk<GLRetroView>()
+        every { retroView.unserializePersistedState(any()) } returns false
+
+        assertFalse(mgr.performSlotLoad(retroView, 2))
+        verify(exactly = 1) { retroView.unserializePersistedState(any()) }
+    }
+
+    @Test
+    fun `performSlotLoad returns false for missing state without calling core`() {
+        val mgr = manager(mockk(relaxed = true), mockk(relaxed = true))
+        val retroView = mockk<GLRetroView>(relaxed = true)
+
+        assertFalse(mgr.performSlotLoad(retroView, 3))
+        verify(exactly = 0) { retroView.unserializePersistedState(any()) }
+    }
+
+    @Test
+    fun `performSlotLoad returns false when state cannot be read`() {
+        val mgr = manager(mockk(relaxed = true), mockk(relaxed = true))
+        mgr.getSlotFile(4).mkdirs()
+        val retroView = mockk<GLRetroView>(relaxed = true)
+
+        assertFalse(mgr.performSlotLoad(retroView, 4))
+        verify(exactly = 0) { retroView.unserializePersistedState(any()) }
+    }
+
+    @Test
+    fun `performQuickLoad propagates core rejection`() {
+        val mgr = manager(mockk(relaxed = true), mockk(relaxed = true))
+        mgr.getSlotFile(SaveStateManager.QUICK_SLOT_BASE).writeBytes(byteArrayOf(8, 9))
+        val retroView = mockk<GLRetroView>()
+        every { retroView.unserializePersistedState(any()) } returns false
+
+        assertFalse(mgr.performQuickLoad(retroView))
     }
 
     companion object {

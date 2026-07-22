@@ -17,7 +17,13 @@ import com.nendo.argosy.ui.screens.settings.sections.BiosItem
 import com.nendo.argosy.ui.screens.settings.sections.biosItemAtFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.GameDataItem
 import com.nendo.argosy.ui.screens.settings.sections.buildGameDataItemsFromState
+import com.nendo.argosy.ui.screens.settings.sections.StorageItem
+import com.nendo.argosy.ui.screens.settings.sections.createStorageCachesLayoutInfo
+import com.nendo.argosy.ui.screens.settings.sections.createStorageLayoutInfo
 import com.nendo.argosy.ui.screens.settings.sections.gameDataItemAtFocusIndex
+import com.nendo.argosy.ui.screens.settings.sections.storageCachesFocusIndexOfSteam
+import com.nendo.argosy.ui.screens.settings.sections.storageFocusIndexOf
+import com.nendo.argosy.ui.screens.settings.sections.storageSteamVisibleLive
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -38,6 +44,15 @@ internal fun routeNavigateToSection(vm: SettingsViewModel, section: SettingsSect
             vm.syncDelegate.loadLibrarySettings(vm.viewModelScope)
         }
         SettingsSection.SYNC_SETTINGS -> vm.syncDelegate.loadLibrarySettings(vm.viewModelScope)
+        SettingsSection.STORAGE -> {
+            vm.attributionDelegate.latchSteamTileVisible(storageSteamVisibleLive(vm._uiState.value))
+            vm.attributionDelegate.refreshOnOpen()
+            vm._uiState.update { state ->
+                state.copy(
+                    focusedIndex = storageFocusIndexOf(StorageItem.GamesTile, createStorageLayoutInfo(state))
+                )
+            }
+        }
         SettingsSection.STEAM_SETTINGS -> vm.steamDelegate.loadSteamSettings(vm.context, vm.viewModelScope)
         SettingsSection.PERMISSIONS -> vm.permissionsDelegate.refreshPermissions()
         SettingsSection.SHADER_STACK -> vm.shaderChainManager.loadChain(vm._uiState.value.builtinVideo.shaderChainJson)
@@ -61,6 +76,35 @@ internal fun routeNavigateToAmbientLed(vm: SettingsViewModel) {
 
 internal fun routeNavigateToThemeSounds(vm: SettingsViewModel) {
     vm._uiState.update { it.copy(currentSection = SettingsSection.THEME_SOUNDS, focusedIndex = 0) }
+}
+
+internal fun routeNavigateToThemeMusic(vm: SettingsViewModel) {
+    vm.attributionDelegate.setMusicEnteredFromStorage(false)
+    vm._uiState.update { it.copy(currentSection = SettingsSection.THEME_MUSIC, focusedIndex = 0) }
+}
+
+internal fun routeNavigateToThemeMusicFromStorage(vm: SettingsViewModel) {
+    vm.attributionDelegate.setMusicEnteredFromStorage(true)
+    vm._uiState.update { it.copy(currentSection = SettingsSection.THEME_MUSIC, focusedIndex = 0) }
+}
+
+internal fun routeNavigateToStorageGames(vm: SettingsViewModel) {
+    vm._uiState.update { it.copy(currentSection = SettingsSection.STORAGE_GAMES, focusedIndex = 0) }
+}
+
+internal fun routeNavigateToStorageCaches(vm: SettingsViewModel, entryFocus: Int) {
+    vm.attributionDelegate.setCachesEntryFocus(entryFocus)
+    vm.syncDelegate.loadLibrarySettings(vm.viewModelScope)
+    vm.storageCachesDelegate.refreshOnOpen(vm.viewModelScope)
+    vm._uiState.update { state ->
+        val entered = state.copy(currentSection = SettingsSection.STORAGE_CACHES, focusedIndex = 0)
+        if (entryFocus == CACHES_ENTRY_STEAM) {
+            val steamFocus = storageCachesFocusIndexOfSteam(createStorageCachesLayoutInfo(entered))
+            entered.copy(focusedIndex = steamFocus.coerceAtLeast(0))
+        } else {
+            entered
+        }
+    }
 }
 
 internal fun routeNavigateToThemeBackdrop(vm: SettingsViewModel) {
@@ -500,11 +544,15 @@ internal fun routeDismissRegionPicker(vm: SettingsViewModel) {
 }
 
 internal fun routeToggleSyncScreenshots(vm: SettingsViewModel) {
-    vm.syncDelegate.toggleSyncScreenshots(vm.viewModelScope, vm._uiState.value.server.syncScreenshotsEnabled)
+    val current = vm._uiState.value.server.syncScreenshotsEnabled
+    vm.syncDelegate.toggleSyncScreenshots(vm.viewModelScope, current)
+    vm.serverDelegate.updateState(vm._uiState.value.server.copy(syncScreenshotsEnabled = !current))
 }
 
 internal fun routeToggleBoxArtCache(vm: SettingsViewModel) {
-    vm.syncDelegate.toggleBoxArtCache(vm.viewModelScope, vm._uiState.value.server.boxArtCacheEnabled)
+    val current = vm._uiState.value.server.boxArtCacheEnabled
+    vm.syncDelegate.toggleBoxArtCache(vm.viewModelScope, current)
+    vm.serverDelegate.updateState(vm._uiState.value.server.copy(boxArtCacheEnabled = !current))
 }
 
 internal fun routeToggleUploadScreenshots(vm: SettingsViewModel) {
@@ -798,7 +846,8 @@ internal fun routeSetRAProxyEnabled(vm: SettingsViewModel, enabled: Boolean) {
     vm.raDelegate.setProxyEnabled(vm.viewModelScope, enabled)
     if (!enabled) {
         vm._uiState.update {
-            if (it.focusedIndex > RA_PROXY_TOGGLE_INDEX) it.copy(focusedIndex = RA_PROXY_TOGGLE_INDEX) else it
+            val proxyToggleIndex = if (it.retroAchievements.isLoggedIn) 2 else 1
+            if (it.focusedIndex > proxyToggleIndex) it.copy(focusedIndex = proxyToggleIndex) else it
         }
     }
 }

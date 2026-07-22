@@ -63,7 +63,7 @@ fun DualHomeLowerContent(
                     appBarIndex = uiState.appBarIndex,
                     viewMode = uiState.viewMode,
                     repairedCoverPaths = uiState.repairedCoverPaths,
-                    onGameTapped = { index -> viewModel.setSelectedIndex(index) },
+                    onGameTapped = { index -> viewModel.selectByTouch(index) },
                     onGameSelected = onGameSelected,
                     onCoverLoadFailed = { gameId, path -> viewModel.repairCoverImage(gameId, path) },
                     onAppClick = onAppClick,

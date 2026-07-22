@@ -65,8 +65,33 @@ class VariantScanner @Inject constructor(
 
         var added = 0
         for ((file, category) in candidates) {
-            val existing = gameFileDao.getByLocalPath(file.absolutePath)
-            if (existing != null) continue
+            val matches = gameFileDao.getByGameIdAndFileName(game.id, file.name)
+            val synced = matches.firstOrNull { it.rommFileId != null }
+            val localRows = matches.filter { it.rommFileId == null }
+
+            if (synced != null) {
+                val syncedPathLive = synced.localPath != null && File(synced.localPath).exists()
+                if (!syncedPathLive) {
+                    gameFileDao.updateLocalPath(synced.id, file.absolutePath, synced.downloadedAt ?: java.time.Instant.now())
+                    Logger.debug(TAG, "Adopted local file into synced variant: ${file.name} for game ${game.title}")
+                }
+                for (orphan in localRows) {
+                    gameFileDao.deleteById(orphan.id)
+                    Logger.debug(TAG, "Folded duplicate local variant into synced row: ${orphan.fileName} for game ${game.title}")
+                }
+                continue
+            }
+
+            if (localRows.isNotEmpty()) {
+                val keeper = localRows.first()
+                if (keeper.localPath != file.absolutePath) {
+                    gameFileDao.updateLocalPath(keeper.id, file.absolutePath, keeper.downloadedAt ?: java.time.Instant.now())
+                }
+                for (extra in localRows.drop(1)) {
+                    gameFileDao.deleteById(extra.id)
+                }
+                continue
+            }
 
             val isM3u = file.extension.equals("m3u", ignoreCase = true)
             gameFileDao.insert(

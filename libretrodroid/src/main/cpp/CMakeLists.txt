@@ -77,6 +77,10 @@ add_library(libretrodroid SHARED
         libretrodroidjni.cpp
         libretrodroid.h
         libretrodroid.cpp
+        stateloadpolicy.h
+        stateloadpolicy.cpp
+        stateloadpolicy_test.h
+        stateloadpolicy_test.cpp
         log.h
         core.h
         core.cpp

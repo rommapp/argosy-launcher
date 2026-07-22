@@ -30,10 +30,12 @@ class RomMApiClient @Inject constructor(
     fun isVersionAtLeast(minVersion: String): Boolean =
         connectionManager.isVersionAtLeast(minVersion)
 
+    fun getCapabilities(): RomMCapabilities = connectionManager.getCapabilities()
+
     fun buildRomsQueryParams(
         platformId: Long? = null,
         searchTerm: String? = null,
-        orderBy: String = "name",
+        orderBy: String = "id",
         orderDir: String = "asc",
         limit: Int = 100,
         offset: Int = 0,
@@ -49,9 +51,74 @@ class RomMApiClient @Inject constructor(
             put("order_dir", orderDir)
             put("limit", limit.toString())
             put("offset", offset.toString())
+            put("with_char_index", "false")
+            put("with_filter_values", "false")
             if (includeFiles) {
                 put("with_files", "true")
             }
+        }
+    }
+
+    fun buildMusicQueryParams(
+        search: String? = null,
+        artist: String? = null,
+        album: String? = null,
+        genre: String? = null,
+        platformId: Long? = null,
+        minDuration: Double? = null,
+        maxDuration: Double? = null,
+        orderBy: String = "title",
+        orderDir: String = "asc",
+        limit: Int = 50,
+        offset: Int = 0
+    ): Map<String, String> {
+        return buildMap {
+            search?.let { put("search", it) }
+            artist?.let { put("artist", it) }
+            album?.let { put("album", it) }
+            genre?.let { put("genre", it) }
+            platformId?.let { put("platform_ids", it.toString()) }
+            minDuration?.let { put("min_duration", it.toString()) }
+            maxDuration?.let { put("max_duration", it.toString()) }
+            put("order_by", orderBy)
+            put("order_dir", orderDir)
+            put("limit", limit.toString())
+            put("offset", offset.toString())
+        }
+    }
+
+    suspend fun getMusicTracks(params: Map<String, String>): RomMResult<RomMMusicTrackPage> {
+        val currentApi = api ?: return RomMResult.Error("Not connected")
+        return try {
+            val response = currentApi.getMusicTracks(params)
+            if (response.isSuccessful) {
+                val body = response.body()
+                    ?: return RomMResult.Error("Empty response from server")
+                RomMResult.Success(body)
+            } else {
+                RomMResult.Error("Failed to fetch music tracks", response.code())
+            }
+        } catch (e: Exception) {
+            RomMResult.Error(e.message ?: "Failed to fetch music tracks")
+        }
+    }
+
+    suspend fun getMusicFacet(
+        facet: RomMMusicFacet,
+        params: Map<String, String>
+    ): RomMResult<RomMMusicFacetPage> {
+        val currentApi = api ?: return RomMResult.Error("Not connected")
+        return try {
+            val response = currentApi.getMusicFacet(facet.path, params)
+            if (response.isSuccessful) {
+                val body = response.body()
+                    ?: return RomMResult.Error("Empty response from server")
+                RomMResult.Success(body)
+            } else {
+                RomMResult.Error("Failed to fetch music ${facet.path}", response.code())
+            }
+        } catch (e: Exception) {
+            RomMResult.Error(e.message ?: "Failed to fetch music ${facet.path}")
         }
     }
 
@@ -74,11 +141,12 @@ class RomMApiClient @Inject constructor(
     suspend fun downloadRom(
         romId: Long,
         fileName: String,
-        rangeHeader: String? = null
+        rangeHeader: String? = null,
+        fileIds: String? = null
     ): RomMResult<DownloadResponse> {
         val currentApi = api ?: return RomMResult.Error("Not connected")
         return try {
-            val response = currentApi.downloadRom(romId, fileName, rangeHeader)
+            val response = currentApi.downloadRom(romId, fileName, rangeHeader, fileIds)
             interpretDownloadResponse(response, "ROM")
         } catch (e: Exception) {
             RomMResult.Error(downloadErrorMessage(e))
@@ -149,15 +217,50 @@ class RomMApiClient @Inject constructor(
             val response = currentApi.getPlatforms()
             if (response.isSuccessful) {
                 val platforms = response.body() ?: emptyList()
-                val platformCount = platforms.size
-                val totalRoms = platforms.sumOf { it.romCount }
-                RomMResult.Success(platformCount to totalRoms)
+                RomMResult.Success(platforms.size to platforms.sumOf { it.romCount })
             } else {
                 RomMResult.Error("Failed to fetch library", response.code())
             }
         } catch (e: Exception) {
             RomMResult.Error(e.message ?: "Failed to fetch library")
         }
+    }
+
+    suspend fun searchCovers(searchTerm: String): RomMResult<List<RomMCoverResource>> {
+        val currentApi = api ?: return RomMResult.Error("Not connected")
+        return try {
+            val response = currentApi.searchCovers(searchTerm)
+            if (response.isSuccessful) {
+                val covers = response.body()
+                    ?.flatMap { it.resources ?: emptyList() }
+                    ?.filter { it.fullResUrl != null }
+                    ?: emptyList()
+                RomMResult.Success(covers)
+            } else {
+                RomMResult.Error("Cover search failed", response.code())
+            }
+        } catch (e: Exception) {
+            RomMResult.Error(e.message ?: "Cover search failed")
+        }
+    }
+
+    suspend fun getPlatformCount(): RomMResult<Int> {
+        val currentApi = api ?: return RomMResult.Error("Not connected")
+        return try {
+            val response = currentApi.getPlatformIdentifiers()
+            if (response.isSuccessful) {
+                RomMResult.Success(response.body()?.size ?: 0)
+            } else {
+                cachedPlatformCount() ?: RomMResult.Error("Failed to fetch platform count", response.code())
+            }
+        } catch (e: Exception) {
+            cachedPlatformCount() ?: RomMResult.Error(e.message ?: "Failed to fetch platform count")
+        }
+    }
+
+    private suspend fun cachedPlatformCount(): RomMResult<Int>? {
+        val cached = platformDao.getTotalPlatformCount()
+        return if (cached > 0) RomMResult.Success(cached) else null
     }
 
     suspend fun fetchAndStorePlatforms(

@@ -26,6 +26,14 @@ interface GameDiscDao {
     @Query("SELECT * FROM game_discs WHERE gameId = :gameId AND localPath IS NULL")
     suspend fun getMissingDiscs(gameId: Long): List<GameDiscEntity>
 
+    @Query("""
+        SELECT g.platformId AS platformId, gd.localPath AS localPath
+        FROM game_discs gd
+        INNER JOIN games g ON gd.gameId = g.id
+        WHERE gd.localPath IS NOT NULL
+    """)
+    suspend fun getAllLocalPathsWithPlatform(): List<PlatformLocalPath>
+
     @Query("SELECT COUNT(*) FROM game_discs WHERE gameId = :gameId AND localPath IS NOT NULL")
     suspend fun getDownloadedDiscCount(gameId: Long): Int
 

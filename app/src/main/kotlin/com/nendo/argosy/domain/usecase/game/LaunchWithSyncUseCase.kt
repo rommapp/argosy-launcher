@@ -12,10 +12,16 @@ import com.nendo.argosy.data.repository.SaveSyncRepository
 import com.nendo.argosy.data.repository.SaveSyncResult
 import com.nendo.argosy.domain.model.SyncProgress
 import com.nendo.argosy.domain.model.SyncState
+import com.nendo.argosy.domain.usecase.state.PreLaunchStateSyncUseCase
+import com.nendo.argosy.util.Logger
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import javax.inject.Inject
+
+private const val TAG = "LaunchWithSync"
 
 class LaunchWithSyncUseCase @Inject constructor(
     private val gameDao: GameDao,
@@ -24,7 +30,8 @@ class LaunchWithSyncUseCase @Inject constructor(
     private val preferencesRepository: UserPreferencesRepository,
     private val romMRepository: RomMRepository,
     private val saveSyncRepository: SaveSyncRepository,
-    private val titleIdDownloadObserver: TitleIdDownloadObserver
+    private val titleIdDownloadObserver: TitleIdDownloadObserver,
+    private val preLaunchStateSyncUseCase: PreLaunchStateSyncUseCase
 ) {
     @Deprecated("Use invokeWithProgress instead", ReplaceWith("invokeWithProgress(gameId)"))
     fun invoke(gameId: Long): Flow<SyncState> = flow {
@@ -107,6 +114,11 @@ class LaunchWithSyncUseCase @Inject constructor(
         }
     }
 
+    private suspend fun syncStatesQuietly(gameId: Long, emulatorPackage: String) {
+        runCatching { preLaunchStateSyncUseCase(gameId, emulatorPackage) }
+            .onFailure { Logger.error(TAG, "Pre-launch state sync failed for gameId=$gameId", it) }
+    }
+
     fun invokeWithProgress(
         gameId: Long,
         channelName: String? = null,
@@ -158,6 +170,9 @@ class LaunchWithSyncUseCase @Inject constructor(
         }
 
         if (!SavePathRegistry.canSyncWithSettings(emulatorId, prefs.saveSyncEnabled)) {
+            if (romMRepository.isConnected()) {
+                syncStatesQuietly(gameId, emulatorPackage)
+            }
             emit(SyncProgress.Skipped)
             return@flow
         }
@@ -177,7 +192,12 @@ class LaunchWithSyncUseCase @Inject constructor(
 
         saveSyncRepository.crossEmulatorMigrateIfNeeded(gameId, emulatorId)
 
-        val syncResult = saveSyncRepository.preLaunchSyncForGame(gameId, game.rommId, emulatorId, channelName)
+        val syncResult = coroutineScope {
+            val stateSync = async { syncStatesQuietly(gameId, emulatorPackage) }
+            val saveSync = saveSyncRepository.preLaunchSyncForGame(gameId, game.rommId, emulatorId, channelName)
+            stateSync.await()
+            saveSync
+        }
 
         when (syncResult) {
             is PreLaunchSyncResult.NoConnection -> {

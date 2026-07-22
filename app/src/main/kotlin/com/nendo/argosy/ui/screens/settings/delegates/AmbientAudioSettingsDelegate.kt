@@ -1,12 +1,13 @@
 package com.nendo.argosy.ui.screens.settings.delegates
 
-import android.content.Context
-import android.net.Uri
-import android.provider.OpenableColumns
+import com.nendo.argosy.data.local.entity.BgmPlaylistEntity
+import com.nendo.argosy.data.music.MusicDirectoryManager
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
+import com.nendo.argosy.domain.usecase.music.RelocateMusicLibraryUseCase
 import com.nendo.argosy.ui.audio.AmbientAudioManager
+import com.nendo.argosy.ui.audio.BgmPlaylistCoordinator
 import com.nendo.argosy.ui.screens.settings.AmbientAudioState
-import dagger.hilt.android.qualifiers.ApplicationContext
+import com.nendo.argosy.ui.screens.settings.MusicRelocationPrompt
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -16,27 +17,40 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import java.io.File
 import javax.inject.Inject
 
 class AmbientAudioSettingsDelegate @Inject constructor(
-    @ApplicationContext private val context: Context,
     private val preferencesRepository: UserPreferencesRepository,
-    private val ambientAudioManager: AmbientAudioManager
+    private val ambientAudioManager: AmbientAudioManager,
+    private val playlistCoordinator: BgmPlaylistCoordinator,
+    private val musicDirectoryManager: MusicDirectoryManager,
+    private val relocateMusicLibrary: RelocateMusicLibraryUseCase
 ) {
     private val _state = MutableStateFlow(AmbientAudioState())
     val state: StateFlow<AmbientAudioState> = _state.asStateFlow()
 
-    private val _openAudioFilePickerEvent = MutableSharedFlow<Unit>()
-    val openAudioFilePickerEvent: SharedFlow<Unit> = _openAudioFilePickerEvent.asSharedFlow()
+    private val _openPlaylistManagerEvent = MutableSharedFlow<Unit>()
+    val openPlaylistManagerEvent: SharedFlow<Unit> = _openPlaylistManagerEvent.asSharedFlow()
 
-    private val _openAudioFileBrowserEvent = MutableSharedFlow<Unit>()
-    val openAudioFileBrowserEvent: SharedFlow<Unit> = _openAudioFileBrowserEvent.asSharedFlow()
+    private val _openMusicBrowserEvent = MutableSharedFlow<Unit>()
+    val openMusicBrowserEvent: SharedFlow<Unit> = _openMusicBrowserEvent.asSharedFlow()
+
+    private val _openAddMusicBrowserEvent = MutableSharedFlow<Unit>()
+    val openAddMusicBrowserEvent: SharedFlow<Unit> = _openAddMusicBrowserEvent.asSharedFlow()
+
+    private val _openMusicLocationPickerEvent = MutableSharedFlow<Unit>()
+    val openMusicLocationPickerEvent: SharedFlow<Unit> = _openMusicLocationPickerEvent.asSharedFlow()
 
     fun initFlowCollection(scope: CoroutineScope) {
         scope.launch {
             ambientAudioManager.currentTrackName.collect { trackName ->
                 _state.update { it.copy(currentTrackName = trackName) }
+            }
+        }
+        scope.launch {
+            playlistCoordinator.entries.collect { entries ->
+                val trackCount = entries.count { it.entryType != BgmPlaylistEntity.TYPE_FOLDER && it.enabled }
+                _state.update { it.copy(playlistEntryCount = trackCount) }
             }
         }
     }
@@ -51,9 +65,9 @@ class AmbientAudioSettingsDelegate @Inject constructor(
             ambientAudioManager.setEnabled(enabled)
             _state.update { it.copy(enabled = enabled) }
 
-            if (enabled && _state.value.audioUri != null) {
+            if (enabled) {
                 ambientAudioManager.fadeIn()
-            } else if (!enabled) {
+            } else {
                 ambientAudioManager.fadeOut()
             }
         }
@@ -79,71 +93,91 @@ class AmbientAudioSettingsDelegate @Inject constructor(
         }
     }
 
-    fun openFilePicker(scope: CoroutineScope) {
+    fun setGameDetailTheme(scope: CoroutineScope, enabled: Boolean) {
         scope.launch {
-            _openAudioFilePickerEvent.emit(Unit)
+            preferencesRepository.setGameDetailThemeEnabled(enabled)
+            _state.update { it.copy(gameDetailThemeEnabled = enabled) }
         }
     }
 
-    fun openFileBrowser(scope: CoroutineScope) {
+    fun addPlaylistEntry(scope: CoroutineScope, path: String) {
         scope.launch {
-            _openAudioFileBrowserEvent.emit(Unit)
+            playlistCoordinator.addLocalPath(path)
         }
     }
 
-    fun setAudioSource(scope: CoroutineScope, path: String?) {
+    fun openPlaylistManager(scope: CoroutineScope) {
         scope.launch {
-            preferencesRepository.setAmbientAudioUri(path)
-            ambientAudioManager.setAudioSource(path)
+            _openPlaylistManagerEvent.emit(Unit)
+        }
+    }
 
-            val isFolder = path?.let { File(it).isDirectory } ?: false
-            val displayName = path?.let { extractDisplayName(it, isFolder) }
+    fun openAddMusicBrowser(scope: CoroutineScope) {
+        scope.launch {
+            _openAddMusicBrowserEvent.emit(Unit)
+        }
+    }
 
-            _state.update {
-                it.copy(
-                    audioUri = path,
-                    audioFileName = displayName,
-                    isFolder = isFolder
-                )
-            }
+    fun openMusicBrowser(scope: CoroutineScope) {
+        scope.launch {
+            _openMusicBrowserEvent.emit(Unit)
+        }
+    }
 
-            if (_state.value.enabled && path != null) {
-                ambientAudioManager.fadeIn()
+    fun openMusicLocationPicker(scope: CoroutineScope) {
+        scope.launch {
+            _openMusicLocationPickerEvent.emit(Unit)
+        }
+    }
+
+    fun refreshMusicDirPath(scope: CoroutineScope) {
+        scope.launch {
+            val path = musicDirectoryManager.resolveMusicDir().absolutePath
+            _state.update { it.copy(musicDirPath = path) }
+        }
+    }
+
+    fun onMusicLocationSelected(scope: CoroutineScope, newPath: String) {
+        scope.launch {
+            val oldPath = musicDirectoryManager.resolveMusicDir().absolutePath
+            if (oldPath == newPath) return@launch
+            val fileCount = musicDirectoryManager.countFiles()
+            if (fileCount > 0) {
+                _state.update {
+                    it.copy(pendingMusicRelocation = MusicRelocationPrompt(oldPath, newPath, fileCount))
+                }
+            } else {
+                applyMusicLocation(scope, oldPath, newPath, moveFiles = false)
             }
         }
     }
 
-    @Deprecated("Use setAudioSource instead", ReplaceWith("setAudioSource(scope, uri)"))
-    fun setAudioUri(scope: CoroutineScope, uri: String?) {
-        setAudioSource(scope, uri)
+    fun confirmMusicRelocation(scope: CoroutineScope) {
+        val pending = _state.value.pendingMusicRelocation ?: return
+        _state.update { it.copy(pendingMusicRelocation = null) }
+        applyMusicLocation(scope, pending.oldPath, pending.newPath, moveFiles = true)
     }
 
-    fun clearAudioFile(scope: CoroutineScope) {
-        setAudioSource(scope, null)
+    fun skipMusicRelocation(scope: CoroutineScope) {
+        val pending = _state.value.pendingMusicRelocation ?: return
+        _state.update { it.copy(pendingMusicRelocation = null) }
+        applyMusicLocation(scope, pending.oldPath, pending.newPath, moveFiles = false)
     }
 
-    @Deprecated("Use setAudioSource instead", ReplaceWith("setAudioSource(scope, path)"))
-    fun setAudioFilePath(scope: CoroutineScope, path: String?) {
-        setAudioSource(scope, path)
+    fun cancelMusicRelocation() {
+        _state.update { it.copy(pendingMusicRelocation = null) }
     }
 
-    private fun extractDisplayName(path: String, isFolder: Boolean): String? {
-        if (path.startsWith("/")) {
-            return path.substringAfterLast("/")
-        }
-        if (isFolder) {
-            return path.substringAfterLast("/")
-        }
-        return try {
-            val uri = Uri.parse(path)
-            context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
-                if (cursor.moveToFirst()) {
-                    val nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
-                    if (nameIndex >= 0) cursor.getString(nameIndex) else null
-                } else null
-            }
-        } catch (e: Exception) {
-            path.substringAfterLast("/").substringBefore("?")
+    private fun applyMusicLocation(
+        scope: CoroutineScope,
+        oldPath: String,
+        newPath: String,
+        moveFiles: Boolean
+    ) {
+        scope.launch {
+            relocateMusicLibrary(oldPath, newPath, moveFiles)
+            playlistCoordinator.refresh()
+            _state.update { it.copy(musicDirPath = newPath) }
         }
     }
 }

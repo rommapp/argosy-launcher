@@ -25,6 +25,20 @@ sealed class SyncLibraryResult {
     data object AlreadyInProgress : SyncLibraryResult()
 }
 
+private fun describeSyncFailure(raw: String?): String {
+    val message = raw?.lowercase().orEmpty()
+    return when {
+        "timeout" in message || "timed out" in message ->
+            "Server took too long to respond. It may be busy or your library is very large."
+        "unable to resolve host" in message || "no address associated" in message ->
+            "Can't reach the server. Check your connection and the server address."
+        "connection abort" in message || "connection reset" in message || "failed to connect" in message ->
+            "Lost connection to the server. Sync resumes where it left off next time."
+        raw.isNullOrBlank() -> "Sync failed. Try again."
+        else -> raw
+    }
+}
+
 class SyncLibraryUseCase @Inject constructor(
     private val romMRepository: RomMRepository,
     private val notificationManager: NotificationManager,
@@ -46,14 +60,19 @@ class SyncLibraryUseCase @Inject constructor(
             return SyncLibraryResult.Error("RomM not connected")
         }
 
-        Logger.info(TAG, "invoke: fetching summary")
-        return when (val summary = romMRepository.getLibrarySummary()) {
+        Logger.info(TAG, "invoke: fetching platform count")
+        return when (val summary = romMRepository.getPlatformCount()) {
             is RomMResult.Error -> {
-                Logger.error(TAG, "invoke: summary error: ${summary.message}")
+                Logger.error(TAG, "invoke: platform count error: ${summary.message}")
+                notificationManager.show(
+                    title = "Sync could not start",
+                    subtitle = describeSyncFailure(summary.message),
+                    type = NotificationType.ERROR
+                )
                 SyncLibraryResult.Error(summary.message)
             }
             is RomMResult.Success -> {
-                val (platformCount, _) = summary.data
+                val platformCount = summary.data
                 Logger.info(TAG, "invoke: got $platformCount platforms, showing persistent")
 
                 notificationManager.showPersistent(
@@ -129,7 +148,7 @@ class SyncLibraryUseCase @Inject constructor(
                         notificationManager.completePersistent(
                             key = NOTIFICATION_KEY,
                             title = "Sync failed",
-                            subtitle = e.message,
+                            subtitle = describeSyncFailure(e.message),
                             type = NotificationType.ERROR
                         )
                     }

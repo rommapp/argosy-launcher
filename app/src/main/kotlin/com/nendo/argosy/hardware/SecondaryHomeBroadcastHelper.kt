@@ -65,6 +65,18 @@ class SecondaryHomeBroadcastHelper(
         dsm.openCoreModal(cores.map { it.displayName }, currentName)
     }
 
+    fun broadcastSavePathModalOpen(overridePath: String?) {
+        dsm.openSavePathModal(overridePath)
+    }
+
+    fun broadcastDisplayTargetModalOpen(
+        names: List<String>,
+        currentName: String?,
+        inheritedName: String?
+    ) {
+        dsm.openDisplayTargetModal(names, currentName, inheritedName)
+    }
+
     fun broadcastVariantModalOpen(
         variantNames: List<String>,
         currentName: String?
@@ -91,12 +103,6 @@ class SecondaryHomeBroadcastHelper(
 
     fun openSteamChooserForHome(gameId: Long) {
         dsm.openSteamChooserForHome(gameId)
-    }
-
-    fun broadcastUpdatesModalOpen(vm: DualGameDetailViewModel) {
-        val updates = vm.updateFiles.value
-        val dlc = vm.dlcFiles.value
-        dsm.openUpdatesModal(updates + dlc)
     }
 
     fun broadcastDiscModalOpen(discs: List<com.nendo.argosy.data.emulator.DiscOption>) {
@@ -139,9 +145,9 @@ class SecondaryHomeBroadcastHelper(
     }
 
     fun broadcastCurrentGameSelection() {
-        val state = dualHomeViewModel.uiState.value
-        val game = state.selectedGame ?: return
-        dsm.onGameSelected(game.toShowcaseState())
+        val game = dualHomeViewModel.uiState.value.selectedGame
+        if (game != null) dsm.onGameSelected(game.toShowcaseState())
+        else dsm.onGameSelected(com.nendo.argosy.ui.dualscreen.home.DualHomeShowcaseState())
     }
 
     fun broadcastDirectAction(

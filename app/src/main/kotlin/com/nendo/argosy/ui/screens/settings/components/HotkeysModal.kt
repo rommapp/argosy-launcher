@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -28,7 +27,10 @@ import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.ui.focus.focusProperties
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -43,7 +45,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import com.nendo.argosy.R
+import com.nendo.argosy.data.repository.InputPresets
 import com.nendo.argosy.ui.input.LocalGamepadInputHandler
 import com.nendo.argosy.data.local.entity.CoreInputMode
 import com.nendo.argosy.data.local.entity.HotkeyAction
@@ -56,6 +61,7 @@ import com.nendo.argosy.ui.components.InputButton
 import com.nendo.argosy.ui.components.Modal
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalArgosyTheme
+import com.nendo.argosy.ui.theme.LocalLauncherTheme
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -99,11 +105,22 @@ private sealed interface MenuRow {
         override val focusable get() = false
     }
 
-    data class System(val action: HotkeyAction, val combo: List<Int>, val holdMs: Long, val conflicting: Boolean) : MenuRow {
+    data class System(
+        val action: HotkeyAction,
+        val combo: List<Int>,
+        val holdMs: Long,
+        val conflicting: Boolean,
+        val inherited: Boolean,
+        val shadowedByConsoleButton: Boolean
+    ) : MenuRow {
         override val focusable get() = true
     }
 
     data class Core(val def: CoreControlDef, val boundEntity: HotkeyEntity?) : MenuRow {
+        override val focusable get() = true
+    }
+
+    data class ScopeToggle(val platformLabel: String, val enabled: Boolean) : MenuRow {
         override val focusable get() = true
     }
 }
@@ -122,12 +139,14 @@ private sealed class HotkeysState {
 @Composable
 fun HotkeysModal(
     hotkeys: List<HotkeyEntity>,
-    onSaveHotkey: suspend (HotkeyAction, List<Int>) -> Unit,
-    onClearHotkey: suspend (HotkeyAction) -> Unit,
-    onSetHoldMs: suspend (HotkeyAction, Long) -> Unit,
+    onSaveHotkey: suspend (HotkeyAction, List<Int>, HotkeyScopeType, String?) -> Unit,
+    onClearHotkey: suspend (HotkeyAction, HotkeyScopeType, String?) -> Unit,
+    onSetHoldMs: suspend (HotkeyAction, Long, HotkeyScopeType, String?) -> Unit,
     onDismiss: () -> Unit,
     coreId: String? = null,
     coreName: String? = null,
+    platformSlug: String? = null,
+    platformName: String? = null,
     coreControls: List<CoreControlDef> = emptyList(),
     onSaveCoreControl: suspend (Int, CoreInputMode, List<Int>) -> Unit = { _, _, _ -> },
     onClearCoreBind: suspend (Long) -> Unit = {}
@@ -136,24 +155,40 @@ fun HotkeysModal(
     val scope = rememberCoroutineScope()
     val gamepadInputHandler = LocalGamepadInputHandler.current
 
-    val conflictingActions = remember(hotkeys) { findConflictingActions(hotkeys) }
+    val canScopePlatform = platformSlug != null
+    var scopeToPlatform by remember(canScopePlatform) { mutableStateOf(false) }
+    val activeScopeType = if (scopeToPlatform && canScopePlatform) HotkeyScopeType.PLATFORM else HotkeyScopeType.GLOBAL
+    val activeScopeKey = if (activeScopeType == HotkeyScopeType.PLATFORM) platformSlug else null
 
-    val rows = remember(hotkeys, coreControls, coreId, coreName, conflictingActions) {
-        buildRows(hotkeys, coreControls, coreId, coreName, conflictingActions)
+    val conflictingActions = remember(hotkeys, activeScopeType, activeScopeKey) {
+        findConflictingActions(hotkeys, activeScopeType, activeScopeKey)
+    }
+
+    val scopeLabel = if (canScopePlatform) platformName ?: platformSlug else null
+
+    val rows = remember(hotkeys, coreControls, coreId, coreName, conflictingActions, activeScopeType, activeScopeKey, platformSlug, scopeLabel) {
+        buildRows(hotkeys, coreControls, coreId, coreName, conflictingActions, activeScopeType, activeScopeKey, platformSlug, scopeLabel)
     }
     val focusableRows = remember(rows) { rows.filter { it.focusable } }
 
+    fun scopedSystemEntity(action: HotkeyAction): HotkeyEntity? =
+        hotkeys.find { it.action == action && it.scopeType == activeScopeType && it.scopeKey == activeScopeKey }
+
     fun cycleHoldDelay(action: HotkeyAction) {
-        val current = hotkeys.find { it.action == action }?.holdMs ?: 0L
+        val current = scopedSystemEntity(action)?.holdMs ?: 0L
         val currentIdx = HOLD_DELAY_CYCLE.indexOf(current).coerceAtLeast(0)
         val nextHoldMs = HOLD_DELAY_CYCLE[(currentIdx + 1) % HOLD_DELAY_CYCLE.size]
-        scope.launch { onSetHoldMs(action, nextHoldMs) }
+        scope.launch { onSetHoldMs(action, nextHoldMs, activeScopeType, activeScopeKey) }
     }
 
     fun startRecording(focusableIndex: Int) {
         val target = when (val row = focusableRows.getOrNull(focusableIndex)) {
             is MenuRow.System -> RecordTarget.System(row.action)
             is MenuRow.Core -> RecordTarget.Core(row.def)
+            is MenuRow.ScopeToggle -> {
+                scopeToPlatform = !scopeToPlatform
+                return
+            }
             else -> return
         }
         state = HotkeysState.Recording(target = target, returnFocusIndex = focusableIndex)
@@ -161,7 +196,7 @@ fun HotkeysModal(
 
     fun clearBind(focusableIndex: Int) {
         when (val row = focusableRows.getOrNull(focusableIndex)) {
-            is MenuRow.System -> scope.launch { onClearHotkey(row.action) }
+            is MenuRow.System -> scope.launch { onClearHotkey(row.action, activeScopeType, activeScopeKey) }
             is MenuRow.Core -> row.boundEntity?.let { entity -> scope.launch { onClearCoreBind(entity.id) } }
             else -> {}
         }
@@ -225,11 +260,17 @@ fun HotkeysModal(
         }
     }
 
+    val subtitle = when {
+        !canScopePlatform -> "Configure button shortcuts"
+        scopeToPlatform -> "Editing ${platformName ?: platformSlug} only"
+        else -> "Editing all systems"
+    }
     when (val currentState = state) {
         is HotkeysState.ActionList -> MenuListContent(
             rows = rows,
             focusableRows = focusableRows,
             focusedIndex = currentState.focusedIndex,
+            subtitle = subtitle,
             onSelect = ::startRecording,
             onCycleHoldDelay = ::cycleHoldDelayAt,
             onDismiss = onDismiss
@@ -241,7 +282,7 @@ fun HotkeysModal(
             onComplete = { keys ->
                 scope.launch {
                     when (val target = currentState.target) {
-                        is RecordTarget.System -> onSaveHotkey(target.action, keys.toList())
+                        is RecordTarget.System -> onSaveHotkey(target.action, keys.toList(), activeScopeType, activeScopeKey)
                         is RecordTarget.Core -> onSaveCoreControl(target.def.retropadId, target.def.mode, keys.toList())
                     }
                     delay(500)
@@ -263,17 +304,36 @@ private fun buildRows(
     coreControls: List<CoreControlDef>,
     coreId: String?,
     coreName: String?,
-    conflictingActions: Set<HotkeyAction>
+    conflictingActions: Set<HotkeyAction>,
+    scopeType: HotkeyScopeType,
+    scopeKey: String?,
+    platformSlug: String?,
+    platformLabel: String?
 ): List<MenuRow> = buildList {
+    if (platformLabel != null) {
+        add(MenuRow.ScopeToggle(platformLabel = platformLabel, enabled = scopeType == HotkeyScopeType.PLATFORM))
+    }
     add(MenuRow.Header("System Hotkeys", dimmed = false))
     HOTKEY_ACTIONS.forEach { action ->
-        val entity = hotkeys.find { it.action == action }
+        val scopeEntity = hotkeys.find { it.action == action && it.scopeType == scopeType && it.scopeKey == scopeKey }
+        val inherited = scopeType == HotkeyScopeType.PLATFORM && scopeEntity == null
+        val displayEntity = scopeEntity
+            ?: if (inherited) {
+                hotkeys.find { it.action == action && it.scopeType == HotkeyScopeType.GLOBAL && it.scopeKey == null }
+            } else {
+                null
+            }
+        val combo = displayEntity?.let { parseComboJson(it.buttonComboJson) } ?: emptyList()
+        val shadowed = platformSlug != null && combo.size == 1 &&
+            InputPresets.keyMapsToConsoleButton(combo.first(), platformSlug)
         add(
             MenuRow.System(
                 action = action,
-                combo = entity?.let { parseComboJson(it.buttonComboJson) } ?: emptyList(),
-                holdMs = entity?.holdMs ?: 0L,
-                conflicting = action in conflictingActions
+                combo = combo,
+                holdMs = displayEntity?.holdMs ?: 0L,
+                conflicting = action in conflictingActions,
+                inherited = inherited,
+                shadowedByConsoleButton = shadowed
             )
         )
     }
@@ -301,6 +361,7 @@ private fun MenuListContent(
     rows: List<MenuRow>,
     focusableRows: List<MenuRow>,
     focusedIndex: Int,
+    subtitle: String,
     onSelect: (Int) -> Unit,
     onCycleHoldDelay: (Int) -> Unit,
     onDismiss: () -> Unit
@@ -313,9 +374,10 @@ private fun MenuListContent(
 
     Modal(
         title = "Hotkeys",
-        subtitle = "Configure button shortcuts",
+        subtitle = subtitle,
         baseWidth = 520.dp,
         onDismiss = onDismiss,
+        inlineFooterHints = true,
         footerHints = listOf(
             InputButton.A to "Record",
             InputButton.B to "Back",
@@ -325,15 +387,22 @@ private fun MenuListContent(
     ) {
         LazyColumn(
             state = listState,
-            modifier = Modifier
-                .weight(1f, fill = false)
-                .heightIn(max = 400.dp),
+            modifier = Modifier.weight(1f, fill = false),
             verticalArrangement = Arrangement.spacedBy(Dimens.spacingXs)
         ) {
             itemsIndexed(rows) { _, row ->
                 when (row) {
                     is MenuRow.Header -> SectionHeaderRow(row.title, row.dimmed)
                     is MenuRow.Placeholder -> PlaceholderRow(row.text)
+                    is MenuRow.ScopeToggle -> {
+                        val fIndex = focusableRows.indexOf(row)
+                        ScopeToggleRow(
+                            platformLabel = row.platformLabel,
+                            enabled = row.enabled,
+                            isFocused = fIndex == focusedIndex,
+                            onToggle = { onSelect(fIndex) }
+                        )
+                    }
                     is MenuRow.System -> {
                         val fIndex = focusableRows.indexOf(row)
                         HotkeyRow(
@@ -342,6 +411,8 @@ private fun MenuListContent(
                             holdMs = row.holdMs,
                             isFocused = fIndex == focusedIndex,
                             isConflicting = row.conflicting,
+                            inherited = row.inherited,
+                            shadowedByConsoleButton = row.shadowedByConsoleButton,
                             onClick = { onSelect(fIndex) },
                             onSecondaryClick = { onCycleHoldDelay(fIndex) }
                         )
@@ -361,6 +432,50 @@ private fun MenuListContent(
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun ScopeToggleRow(
+    platformLabel: String,
+    enabled: Boolean,
+    isFocused: Boolean,
+    onToggle: () -> Unit
+) {
+    val theme = LocalArgosyTheme.current
+    val backgroundColor = if (isFocused) theme.focusAccent.copy(alpha = 0.15f) else Color.Transparent
+    val borderColor = if (isFocused) theme.focusAccent else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+    val contentColor = if (isFocused) lerp(theme.focusAccent, Color.White, 0.45f) else MaterialTheme.colorScheme.onSurface
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(Dimens.radiusSm))
+            .background(backgroundColor)
+            .border(1.dp, borderColor, RoundedCornerShape(Dimens.radiusSm))
+            .clickableNoFocus(onClick = onToggle)
+            .padding(horizontal = Dimens.spacingMd, vertical = Dimens.spacingSm),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column {
+            Text(
+                text = "Only for $platformLabel",
+                style = MaterialTheme.typography.bodyMedium,
+                color = contentColor
+            )
+            Text(
+                text = if (enabled) "Overrides the shared hotkeys" else "Using the shared hotkeys",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        Switch(
+            checked = enabled,
+            onCheckedChange = { onToggle() },
+            modifier = Modifier.focusProperties { canFocus = false },
+            interactionSource = remember { MutableInteractionSource() }
+        )
     }
 }
 
@@ -395,17 +510,23 @@ private fun HotkeyRow(
     holdMs: Long,
     isFocused: Boolean,
     isConflicting: Boolean,
+    inherited: Boolean = false,
+    shadowedByConsoleButton: Boolean = false,
     onClick: () -> Unit,
     onSecondaryClick: () -> Unit
 ) {
     val theme = LocalArgosyTheme.current
+    val warningColor = LocalLauncherTheme.current.semanticColors.warning
+    val showWarning = shadowedByConsoleButton && !isConflicting
     val backgroundColor = when {
         isFocused && isConflicting -> MaterialTheme.colorScheme.errorContainer
+        isFocused && showWarning -> warningColor.copy(alpha = 0.15f)
         isFocused -> theme.focusAccent.copy(alpha = 0.15f)
         else -> Color.Transparent
     }
     val borderColor = when {
         isConflicting -> MaterialTheme.colorScheme.error
+        showWarning -> warningColor
         isFocused -> theme.focusAccent
         else -> MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
     }
@@ -413,6 +534,7 @@ private fun HotkeyRow(
         isFocused && isConflicting -> MaterialTheme.colorScheme.onErrorContainer
         isFocused -> lerp(theme.focusAccent, Color.White, 0.45f)
         isConflicting -> MaterialTheme.colorScheme.error
+        showWarning -> warningColor
         else -> MaterialTheme.colorScheme.onSurface
     }
     val secondaryAlpha = if (isFocused) 1.0f else 0.7f
@@ -437,6 +559,14 @@ private fun HotkeyRow(
             horizontalArrangement = Arrangement.spacedBy(Dimens.spacingXs),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            if (showWarning) {
+                Icon(
+                    painter = painterResource(R.drawable.ic_controller),
+                    contentDescription = "Used by the console on this system",
+                    modifier = Modifier.size(14.dp),
+                    tint = warningColor
+                )
+            }
             if (holdMs > 0L) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -462,9 +592,13 @@ private fun HotkeyRow(
                 )
             }
             Text(
-                text = HotkeyManager.formatCombo(combo),
+                text = when {
+                    inherited && combo.isNotEmpty() -> "${HotkeyManager.formatCombo(combo)} · inherited"
+                    inherited -> "Inherited"
+                    else -> HotkeyManager.formatCombo(combo)
+                },
                 style = MaterialTheme.typography.bodySmall,
-                color = if (combo.isNotEmpty()) {
+                color = if (combo.isNotEmpty() && !inherited) {
                     contentColor.copy(alpha = secondaryAlpha)
                 } else {
                     MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
@@ -621,9 +755,14 @@ private fun getActionDisplayName(action: HotkeyAction): String {
     }
 }
 
-private fun findConflictingActions(hotkeys: List<HotkeyEntity>): Set<HotkeyAction> {
+private fun findConflictingActions(
+    hotkeys: List<HotkeyEntity>,
+    scopeType: HotkeyScopeType,
+    scopeKey: String?
+): Set<HotkeyAction> {
     val grouped = hotkeys
         .filter { it.action != HotkeyAction.CYCLE_CORE_OPTION && it.action != HotkeyAction.SEND_CORE_INPUT }
+        .filter { it.scopeType == scopeType && it.scopeKey == scopeKey }
         .filter { it.buttonComboJson.isNotBlank() }
         .mapNotNull { entity ->
             val combo = parseComboJson(entity.buttonComboJson)

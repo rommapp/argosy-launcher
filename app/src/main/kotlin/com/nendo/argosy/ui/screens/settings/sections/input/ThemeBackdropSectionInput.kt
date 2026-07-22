@@ -1,5 +1,6 @@
 package com.nendo.argosy.ui.screens.settings.sections.input
 
+import com.nendo.argosy.core.input.SoundType
 import com.nendo.argosy.ui.components.DIRECTION_STEP_FINE_DEGREES
 import com.nendo.argosy.ui.input.InputHandler
 import com.nendo.argosy.ui.input.InputResult
@@ -20,13 +21,19 @@ internal class ThemeBackdropSectionInput(
     private fun layoutState() = ThemeBackdropLayoutState.from(viewModel.uiState.value)
 
     override fun onUp(): InputResult {
-        viewModel.moveFocusWrapped(-1, themeBackdropMaxFocusIndex(layoutState()))
-        return InputResult.HANDLED
+        return if (viewModel.moveFocusWrapped(-1, themeBackdropMaxFocusIndex(layoutState()))) {
+            InputResult.HANDLED
+        } else {
+            InputResult.handled(SoundType.BOUNDARY)
+        }
     }
 
     override fun onDown(): InputResult {
-        viewModel.moveFocusWrapped(1, themeBackdropMaxFocusIndex(layoutState()))
-        return InputResult.HANDLED
+        return if (viewModel.moveFocusWrapped(1, themeBackdropMaxFocusIndex(layoutState()))) {
+            InputResult.HANDLED
+        } else {
+            InputResult.handled(SoundType.BOUNDARY)
+        }
     }
 
     override fun onLeft(): InputResult = adjust(-1)

@@ -35,7 +35,12 @@ class MigrateStorageUseCaseTest {
         gameRepository = mockk(relaxed = true)
         preferencesRepository = mockk(relaxed = true)
         notificationManager = mockk(relaxed = true)
-        useCase = MigrateStorageUseCase(gameRepository, preferencesRepository, notificationManager)
+        useCase = MigrateStorageUseCase(
+            gameRepository,
+            preferencesRepository,
+            notificationManager,
+            mockk(relaxed = true)
+        )
 
         oldDir = tempFolder.newFolder("old")
         newDir = tempFolder.newFolder("new")

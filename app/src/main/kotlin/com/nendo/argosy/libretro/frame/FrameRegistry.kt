@@ -154,6 +154,13 @@ class FrameRegistry @Inject constructor(@ApplicationContext private val context:
         getFramesDir().mkdirs()
     }
 
+    /** Deletes downloaded frame overlays; they re-download on demand from the catalog. */
+    fun clearDownloadedFrames() {
+        val dir = getFramesDir()
+        if (dir.exists()) dir.deleteRecursively()
+        installedCache = null
+    }
+
     companion object {
         private const val TAG = "FrameRegistry"
 

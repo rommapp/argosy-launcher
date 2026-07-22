@@ -44,7 +44,7 @@ fun SoundPickerPopup(
     presets: List<SoundPreset>,
     focusIndex: Int,
     currentPreset: SoundPreset?,
-    onConfirm: () -> Unit,
+    onConfirm: (Int) -> Unit,
     onDismiss: () -> Unit
 ) {
     val listState = rememberLazyListState()
@@ -93,21 +93,20 @@ fun SoundPickerPopup(
                 contentPadding = PaddingValues(vertical = Dimens.spacingXs),
                 verticalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
             ) {
-                itemsIndexed(presets) { index, preset ->
+                itemsIndexed(presets, key = { _, preset -> preset.name }) { index, preset ->
                     val isFocused = focusIndex == index
                     val isSelected = preset == currentPreset
                     SoundPickerItem(
                         name = preset.displayName,
                         isFocused = isFocused,
                         isSelected = isSelected,
-                        onClick = onConfirm
+                        onClick = { onConfirm(index) }
                     )
                 }
             }
 
             FooterHints(
                 hints = listOf(
-                    InputButton.X to "Preview",
                     InputButton.A to "Select",
                     InputButton.B to "Close"
                 )

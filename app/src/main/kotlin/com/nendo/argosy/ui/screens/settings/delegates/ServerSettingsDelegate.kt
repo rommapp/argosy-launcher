@@ -62,10 +62,8 @@ class ServerSettingsDelegate @Inject constructor(
         _state.update {
             it.copy(
                 rommConfiguring = true,
-                rommAuthMethod = RomMAuthMethod.DEVICE,
+                rommAuthMethod = defaultAuthMethod(),
                 rommConfigUrl = it.rommUrl,
-                rommConfigUsername = it.rommUsername,
-                rommConfigPassword = "",
                 rommConfigPairingCode = "",
                 rommHasCamera = hasCamera,
                 rommConfigError = null,
@@ -77,6 +75,13 @@ class ServerSettingsDelegate @Inject constructor(
         onFocusReset()
     }
 
+    private fun defaultAuthMethod(): RomMAuthMethod =
+        if (romMRepository.isConnected() && !romMRepository.isVersionAtLeast(RomMCapabilities.DEVICE_AUTH_MIN_VERSION)) {
+            RomMAuthMethod.PAIRING_CODE
+        } else {
+            RomMAuthMethod.DEVICE
+        }
+
     fun cancelRommConfig(onFocusReset: () -> Unit) {
         devicePollJob?.cancel()
         devicePollJob = null
@@ -85,8 +90,6 @@ class ServerSettingsDelegate @Inject constructor(
             it.copy(
                 rommConfiguring = false,
                 rommConfigUrl = "",
-                rommConfigUsername = "",
-                rommConfigPassword = "",
                 rommConfigPairingCode = "",
                 rommConfigError = null,
                 rommConnecting = false,
@@ -100,14 +103,6 @@ class ServerSettingsDelegate @Inject constructor(
 
     fun setRommConfigUrl(url: String) {
         _state.update { it.copy(rommConfigUrl = url) }
-    }
-
-    fun setRommConfigUsername(username: String) {
-        _state.update { it.copy(rommConfigUsername = username) }
-    }
-
-    fun setRommConfigPassword(password: String) {
-        _state.update { it.copy(rommConfigPassword = password) }
     }
 
     fun setRommConfigPairingCode(code: String) {
@@ -163,9 +158,9 @@ class ServerSettingsDelegate @Inject constructor(
         if (state.rommConnecting || state.rommConfigUrl.isBlank()) return
         scope.launch {
             _state.update { it.copy(rommConnecting = true, rommConfigError = null) }
-            when (val result = romMRepository.connect(state.rommConfigUrl)) {
+            when (val result = romMRepository.probeServerVersion(state.rommConfigUrl)) {
                 is RomMResult.Success -> {
-                    val method = if (romMRepository.isVersionAtLeast(RomMCapabilities.DEVICE_AUTH_MIN_VERSION)) {
+                    val method = if (RomMCapabilities.from(result.data).supportsDeviceAuth) {
                         RomMAuthMethod.DEVICE
                     } else {
                         RomMAuthMethod.PAIRING_CODE
@@ -192,12 +187,7 @@ class ServerSettingsDelegate @Inject constructor(
 
         scope.launch {
             _state.update { it.copy(rommConnecting = true, rommConfigError = null) }
-
-            when (state.rommAuthMethod) {
-                RomMAuthMethod.PAIRING_CODE -> connectWithPairingCode(state, onSuccess)
-                RomMAuthMethod.PASSWORD -> connectWithPassword(state, onSuccess)
-                RomMAuthMethod.DEVICE -> {}
-            }
+            connectWithPairingCode(state, onSuccess)
         }
     }
 
@@ -308,41 +298,4 @@ class ServerSettingsDelegate @Inject constructor(
         }
     }
 
-    private suspend fun connectWithPassword(state: ServerState, onSuccess: suspend () -> Unit) {
-        if (state.rommConfigUsername.isBlank() || state.rommConfigPassword.isBlank()) {
-            _state.update {
-                it.copy(rommConnecting = false, rommConfigError = "Username and password required")
-            }
-            return
-        }
-
-        when (val result = romMRepository.connect(state.rommConfigUrl)) {
-            is RomMResult.Success -> {
-                when (val loginResult = romMRepository.login(state.rommConfigUsername, state.rommConfigPassword)) {
-                    is RomMResult.Success -> {
-                        _state.update {
-                            it.copy(
-                                rommConnecting = false,
-                                rommConfiguring = false,
-                                connectionStatus = ConnectionStatus.ONLINE,
-                                rommUrl = state.rommConfigUrl,
-                                rommUsername = state.rommConfigUsername
-                            )
-                        }
-                        onSuccess()
-                    }
-                    is RomMResult.Error -> {
-                        _state.update {
-                            it.copy(rommConnecting = false, rommConfigError = loginResult.message)
-                        }
-                    }
-                }
-            }
-            is RomMResult.Error -> {
-                _state.update {
-                    it.copy(rommConnecting = false, rommConfigError = result.message)
-                }
-            }
-        }
-    }
 }

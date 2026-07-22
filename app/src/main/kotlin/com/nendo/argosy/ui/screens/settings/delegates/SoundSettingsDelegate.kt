@@ -27,8 +27,15 @@ class SoundSettingsDelegate @Inject constructor(
     private val _openCustomSoundPickerEvent = MutableSharedFlow<SoundType>()
     val openCustomSoundPickerEvent: SharedFlow<SoundType> = _openCustomSoundPickerEvent.asSharedFlow()
 
+    private val _openMusicBrowserSfxEvent = MutableSharedFlow<SoundType>()
+    val openMusicBrowserSfxEvent: SharedFlow<SoundType> = _openMusicBrowserSfxEvent.asSharedFlow()
+
     fun updateState(newState: SoundState) {
         _state.value = newState
+    }
+
+    fun setMusicApiSupported(supported: Boolean) {
+        _state.update { it.copy(musicApiSupported = supported) }
     }
 
     fun setSoundEnabled(scope: CoroutineScope, enabled: Boolean) {
@@ -53,11 +60,17 @@ class SoundSettingsDelegate @Inject constructor(
     }
 
     fun showSoundPicker(type: SoundType) {
-        val currentConfig = _state.value.soundConfigs[type]
-        val initialIndex = if (currentConfig?.presetName != null) {
-            SoundPreset.selectable.indexOfFirst { it.name == currentConfig.presetName }.takeIf { it >= 0 } ?: 0
-        } else {
-            0
+        val currentState = _state.value
+        val currentConfig = currentState.soundConfigs[type]
+        val presets = currentState.presets
+        val initialIndex = when {
+            currentConfig?.isRommSource == true ->
+                presets.indexOf(SoundPreset.ROMM_MUSIC).coerceAtLeast(0)
+            currentConfig?.customFilePath != null ->
+                presets.indexOf(SoundPreset.CUSTOM).coerceAtLeast(0)
+            currentConfig?.presetName == SoundPreset.SILENT.name ->
+                presets.indexOf(SoundPreset.SILENT).coerceAtLeast(0)
+            else -> presets.indexOf(SoundPreset.DEFAULT).coerceAtLeast(0)
         }
         _state.update {
             it.copy(
@@ -82,25 +95,30 @@ class SoundSettingsDelegate @Inject constructor(
 
     fun moveSoundPickerFocus(delta: Int) {
         _state.update { state ->
-            val maxIndex = SoundPreset.selectable.size - 1
+            val maxIndex = state.presets.size - 1
             val newIndex = (state.soundPickerFocusIndex + delta).coerceIn(0, maxIndex)
             state.copy(soundPickerFocusIndex = newIndex)
         }
     }
 
-    fun previewSoundPickerSelection() {
-        val focusIndex = _state.value.soundPickerFocusIndex
-        val preset = SoundPreset.selectable.getOrNull(focusIndex) ?: return
-        if (preset != SoundPreset.SILENT && preset != SoundPreset.CUSTOM) {
-            soundManager.playPreset(preset)
+    fun resetSoundToDefault(scope: CoroutineScope, type: SoundType) {
+        scope.launch {
+            preferencesRepository.setSoundConfig(type, null)
+            _state.update { it.copy(soundConfigs = it.soundConfigs - type) }
+            soundManager.clearSoundConfig(type)
         }
+    }
+
+    fun confirmSoundPickerSelectionAt(scope: CoroutineScope, index: Int) {
+        _state.update { it.copy(soundPickerFocusIndex = index) }
+        confirmSoundPickerSelection(scope)
     }
 
     fun confirmSoundPickerSelection(scope: CoroutineScope) {
         val state = _state.value
         val type = state.soundPickerType ?: return
         val focusIndex = state.soundPickerFocusIndex
-        val preset = SoundPreset.selectable.getOrNull(focusIndex) ?: return
+        val preset = state.presets.getOrNull(focusIndex) ?: return
 
         if (preset == SoundPreset.CUSTOM) {
             scope.launch {
@@ -110,11 +128,25 @@ class SoundSettingsDelegate @Inject constructor(
             return
         }
 
-        val config = if (preset == SoundPreset.SILENT) {
-            SoundConfig(presetName = SoundPreset.SILENT.name)
-        } else {
-            SoundConfig(presetName = preset.name)
+        if (preset == SoundPreset.ROMM_MUSIC) {
+            scope.launch {
+                _openMusicBrowserSfxEvent.emit(type)
+            }
+            dismissSoundPicker()
+            return
         }
+
+        if (preset == SoundPreset.DEFAULT) {
+            scope.launch {
+                preferencesRepository.setSoundConfig(type, null)
+                _state.update { it.copy(soundConfigs = it.soundConfigs - type) }
+                soundManager.clearSoundConfig(type)
+            }
+            dismissSoundPicker()
+            return
+        }
+
+        val config = SoundConfig(presetName = SoundPreset.SILENT.name)
 
         scope.launch {
             preferencesRepository.setSoundConfig(type, config)
@@ -125,8 +157,11 @@ class SoundSettingsDelegate @Inject constructor(
         dismissSoundPicker()
     }
 
-    fun setCustomSoundFile(scope: CoroutineScope, type: SoundType, filePath: String) {
-        val config = SoundConfig(customFilePath = filePath)
+    fun setCustomSoundFile(scope: CoroutineScope, type: SoundType, filePath: String, fromRomm: Boolean = false) {
+        val config = SoundConfig(
+            presetName = if (fromRomm) SoundConfig.ROMM_SOURCE else null,
+            customFilePath = filePath
+        )
         scope.launch {
             preferencesRepository.setSoundConfig(type, config)
             val updatedConfigs = _state.value.soundConfigs + (type to config)

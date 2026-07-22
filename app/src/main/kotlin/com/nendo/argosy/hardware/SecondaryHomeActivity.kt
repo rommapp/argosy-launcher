@@ -72,12 +72,11 @@ class SecondaryHomeActivity :
         private set
     private var companionInGameState by mutableStateOf(CompanionInGameState())
     private var companionSessionTimer: CompanionSessionTimer? = null
+    private var homeRestoreSettled = false
 
     private lateinit var viewModel: SecondaryHomeViewModel
     private lateinit var dualHomeViewModel: DualHomeViewModel
     private lateinit var stateManager: SecondaryHomeStateManager
-    var useDualScreenMode by mutableStateOf(false)
-        private set
     var isShowcaseRole by mutableStateOf(false)
         private set
 
@@ -120,6 +119,12 @@ class SecondaryHomeActivity :
         if (existing != null) {
             dsm = existing
             initializeCompanion()
+        } else if (!com.nendo.argosy.util.SecondaryHomeComponent.isDefaultHome(this)) {
+            android.util.Log.i("SecondaryHome", "Respawned without a running Argosy and not default home, releasing secondary display")
+            com.nendo.argosy.util.SecondaryHomeComponent.setEnabled(this, false)
+            CompanionGuardService.stop(this)
+            finish()
+            return
         } else {
             android.util.Log.w("SecondaryHome", "DSM not available, launching MainActivity")
             startActivity(
@@ -207,7 +212,6 @@ class SecondaryHomeActivity :
                             homeApps = homeApps,
                             viewModel = viewModel,
                             dualHomeViewModel = dualHomeViewModel,
-                            useDualScreenMode = useDualScreenMode,
                             currentScreen = currentScreen,
                             dualGameDetailViewModel = dualGameDetailViewModel,
                             onAppClick = ::launchApp,
@@ -281,16 +285,14 @@ class SecondaryHomeActivity :
         isSaveDirty = store.isSaveDirty()
         broadcasts.broadcastCompanionResumed()
 
-        if (isGameActive && dsm.emulatorDisplayId != null && !dsm.isLaunchingGame) {
-            val emulatorPkg = dsm.sessionStateStore.getEmulatorPackage()
-            if (emulatorPkg != null) {
-                val helper = com.nendo.argosy.util.PermissionHelper()
-                if (!helper.isPackageInForeground(this, emulatorPkg, withinMs = 15_000)) {
-                    android.util.Log.d("SecondaryHome", "Emulator exited on secondary display, ending session")
-                    dsm.emulatorDisplayId = null
-                    dsm.playSessionTracker.endSessionInBackground()
-                    dsm.broadcastSessionCleared()
-                }
+        if (isGameActive && !dsm.isLaunchingGame) {
+            val emulatorDisplay = dsm.emulatorDisplayId
+            val ownDisplay = window.decorView.display?.displayId
+            if (emulatorDisplay != null && ownDisplay != null && emulatorDisplay == ownDisplay) {
+                android.util.Log.d("SecondaryHome", "Companion resumed on the emulator's display, ending session")
+                dsm.emulatorDisplayId = null
+                dsm.playSessionTracker.endSessionInBackground()
+                dsm.broadcastSessionCleared()
             }
         }
     }
@@ -298,6 +300,11 @@ class SecondaryHomeActivity :
     override fun onStop() {
         super.onStop()
         if (::broadcasts.isInitialized) broadcasts.broadcastCompanionPaused()
+        if (homeRestoreSettled && ::stateManager.isInitialized &&
+            currentScreen == CompanionScreen.HOME && !isGameActive
+        ) {
+            stateManager.persistCarouselPosition(dualHomeViewModel)
+        }
     }
 
     override fun finishCompanion() {
@@ -365,8 +372,7 @@ class SecondaryHomeActivity :
             )
             if (gamepadEvent != null) {
                 val result = inputHandler.routeInput(
-                    gamepadEvent, useDualScreenMode, true,
-                    isGameActive, currentScreen
+                    gamepadEvent, true, isGameActive, currentScreen
                 )
                 if (result.handled) return true
             }
@@ -378,7 +384,7 @@ class SecondaryHomeActivity :
         isArgosyForeground = isForeground
         if (isForeground && isGameActive) {
             val outOfGame = if (isShowcaseRole) {
-                !dsm.sessionStateStore.hasActiveSession()
+                !dsm.hasLiveSession()
             } else {
                 true
             }
@@ -398,6 +404,12 @@ class SecondaryHomeActivity :
     override fun onSessionActionsChanged(available: Boolean) {
         runOnUiThread {
             companionInGameState = companionInGameState.copy(quickActionsAvailable = available)
+        }
+    }
+
+    override fun onHasQuickSaveChanged(hasQuickSave: Boolean) {
+        runOnUiThread {
+            companionInGameState = companionInGameState.copy(hasQuickSave = hasQuickSave)
         }
     }
 
@@ -435,7 +447,7 @@ class SecondaryHomeActivity :
         companionSessionTimer = null
         val savedGameId = preSessionDetailGameId
         preSessionDetailGameId = -1L
-        if (savedGameId > 0 && useDualScreenMode) {
+        if (savedGameId > 0) {
             selectGame(savedGameId)
         } else {
             dsm.sessionStateStore.setCompanionScreen("HOME")
@@ -472,7 +484,7 @@ class SecondaryHomeActivity :
 
     override fun onForwardKey(keyCode: Int, swapAB: Boolean, swapXY: Boolean, swapStartSelect: Boolean) {
         val gamepadEvent = mapKeycodeToGamepadEvent(keyCode, swapAB, swapXY, swapStartSelect) ?: return
-        inputHandler.routeInput(gamepadEvent, useDualScreenMode, true, isGameActive, currentScreen)
+        inputHandler.routeInput(gamepadEvent, true, isGameActive, currentScreen)
     }
 
     override fun refocusSelf() = startActivity(
@@ -502,7 +514,6 @@ class SecondaryHomeActivity :
         if (dismissed) {
             when (vm.activeModal.value) {
                 ActiveModal.COLLECTION -> vm.dismissCollectionModal()
-                ActiveModal.UPDATES_DLC -> vm.dismissUpdatesModal()
                 ActiveModal.STEAM_INSTALL -> vm.dismissSteamInstallModal()
                 ActiveModal.EMULATOR -> vm.dismissPicker()
                 else -> vm.dismissPicker()
@@ -529,6 +540,16 @@ class SecondaryHomeActivity :
             }
             ActiveModal.CORE.name -> {
                 if (selectedIndex >= 0) vm.confirmCoreByIndex(selectedIndex)
+                else vm.dismissPicker()
+                refocusSelf()
+            }
+            ActiveModal.SAVE_PATH.name -> {
+                if (selectedIndex >= 0) vm.confirmSavePathByIndex(selectedIndex)
+                else vm.dismissPicker()
+                refocusSelf()
+            }
+            ActiveModal.DISPLAY_TARGET.name -> {
+                if (selectedIndex >= 0) vm.confirmDisplayTargetByIndex(selectedIndex)
                 else vm.dismissPicker()
                 refocusSelf()
             }
@@ -667,6 +688,12 @@ class SecondaryHomeActivity :
             dsm = dsm, dualHomeViewModel = dualHomeViewModel,
             secondaryHomeViewModel = { viewModel }
         )
+        dualHomeViewModel.onRestoreComplete = {
+            homeRestoreSettled = true
+            if (currentScreen == CompanionScreen.HOME) {
+                broadcasts.broadcastCurrentGameSelection()
+            }
+        }
         stateManager = SecondaryHomeStateManager(
             context = applicationContext, gameRepository = gameRepository,
             platformRepository = platformRepository,
@@ -677,8 +704,13 @@ class SecondaryHomeActivity :
             configureEmulatorUseCase = dsm.configureEmulatorUseCase,
             steamContentManager = dsm.steamContentManager,
             displayAffinityHelper = affinityHelper,
-            downloadFileStatusRepository = dsm.downloadFileStatusRepository
+            downloadFileStatusRepository = dsm.downloadFileStatusRepository,
+            preferencesRepository = dsm.preferencesRepository
         )
+
+        dualHomeViewModel.onSelectionPersist = {
+            stateManager.persistCarouselPosition(dualHomeViewModel)
+        }
 
         inputHandler = SecondaryHomeInputHandler(
             viewModel = viewModel,
@@ -716,10 +748,10 @@ class SecondaryHomeActivity :
     private fun loadInitialState() {
         val initial = stateManager.loadInitialState(viewModel, dualHomeViewModel)
 
-        useDualScreenMode = initial.useDualScreenMode
         isShowcaseRole = initial.isShowcaseRole
         isArgosyForeground = initial.isArgosyForeground
         isGameActive = initial.isGameActive
+        homeRestoreSettled = !initial.restoreScheduled
         isWizardActive = dsm.sessionStateStore.isWizardActive() ||
             !dsm.sessionStateStore.isFirstRunComplete()
         currentChannelName = initial.currentChannelName
@@ -757,8 +789,9 @@ class SecondaryHomeActivity :
 
     private fun loadCompanionGameData(gameId: Long) {
         lifecycleScope.launch {
-            companionInGameState = stateManager.loadCompanionGameData(gameId).copy(
-                quickActionsAvailable = dsm.sessionQuickActions != null
+            companionInGameState = stateManager.loadCompanionGameData(gameId).withLiveQuickActionState(
+                quickActionsAvailable = dsm.sessionQuickActions != null,
+                hasQuickSave = dsm.companionHasQuickSave
             )
         }
     }
@@ -859,12 +892,6 @@ class SecondaryHomeActivity :
     }
 
     private fun selectGame(gameId: Long) {
-        if (!useDualScreenMode) {
-            val (intent, options) = dualHomeViewModel.getGameDetailIntent(gameId)
-            if (options != null) startActivity(intent, options)
-            else startActivity(intent)
-            return
-        }
         val vm = stateManager.createGameDetailViewModel()
         vm.loadGame(gameId)
         dualGameDetailViewModel = vm

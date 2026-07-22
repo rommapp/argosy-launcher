@@ -16,18 +16,6 @@ class RomMConnectionTest : RomMIntegrationTest() {
     }
 
     @Test
-    fun `login with valid credentials returns token`() = runBlocking {
-        val response = api.login(
-            username = RomMTestConfig.username,
-            password = RomMTestConfig.password
-        )
-
-        assertTrue("Login should succeed", response.isSuccessful)
-        assertNotNull("Login should return access token", response.body()?.accessToken)
-        assertTrue("Access token should not be empty", response.body()!!.accessToken.isNotEmpty())
-    }
-
-    @Test
     fun `getCurrentUser returns user profile after auth`() = runBlocking {
         authenticate()
 

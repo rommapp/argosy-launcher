@@ -4,6 +4,7 @@ import android.view.InputDevice
 import com.nendo.argosy.data.local.entity.ControllerOrderEntity
 import com.nendo.argosy.data.local.entity.CoreInputMode
 import com.nendo.argosy.data.local.entity.HotkeyAction
+import com.nendo.argosy.data.local.entity.HotkeyScopeType
 import com.nendo.argosy.libretro.coreoptions.CoreControlDef
 import com.nendo.argosy.data.local.entity.HotkeyEntity
 import com.nendo.argosy.data.repository.ControllerInfo
@@ -124,11 +125,13 @@ data class InGameModalCallbacks(
     val onGetMapping: suspend (ControllerInfo, String?) -> Pair<Map<InputSource, Int>, String?>,
     val onSaveMapping: suspend (ControllerInfo, Map<InputSource, Int>, String?, Boolean, String?) -> Unit,
     val onApplyPreset: suspend (ControllerInfo, String) -> Unit,
-    val onSaveHotkey: suspend (HotkeyAction, List<Int>) -> Unit,
-    val onClearHotkey: suspend (HotkeyAction) -> Unit,
-    val onSetHotkeyHoldMs: suspend (HotkeyAction, Long) -> Unit,
+    val onSaveHotkey: suspend (HotkeyAction, List<Int>, HotkeyScopeType, String?) -> Unit,
+    val onClearHotkey: suspend (HotkeyAction, HotkeyScopeType, String?) -> Unit,
+    val onSetHotkeyHoldMs: suspend (HotkeyAction, Long, HotkeyScopeType, String?) -> Unit,
     val coreId: String? = null,
     val coreName: String? = null,
+    val platformSlug: String? = null,
+    val platformName: String? = null,
     val coreControls: List<CoreControlDef> = emptyList(),
     val onSaveCoreControl: suspend (Int, CoreInputMode, List<Int>) -> Unit = { _, _, _ -> },
     val onClearCoreBind: suspend (Long) -> Unit = {}
@@ -555,6 +558,8 @@ fun InGameSettingsScreen(
                 onDismiss = { showHotkeysModal = false },
                 coreId = modalCallbacks.coreId,
                 coreName = modalCallbacks.coreName,
+                platformSlug = modalCallbacks.platformSlug,
+                platformName = modalCallbacks.platformName,
                 coreControls = modalCallbacks.coreControls,
                 onSaveCoreControl = modalCallbacks.onSaveCoreControl,
                 onClearCoreBind = modalCallbacks.onClearCoreBind

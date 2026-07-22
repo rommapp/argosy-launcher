@@ -42,7 +42,6 @@ import com.nendo.argosy.ui.dualscreen.home.DualFilterCategory
 import com.nendo.argosy.ui.dualscreen.home.DualHomeShowcaseState
 import com.nendo.argosy.ui.dualscreen.home.DualHomeUpperScreen
 import com.nendo.argosy.ui.dualscreen.home.DualHomeViewModel
-import com.nendo.argosy.ui.screens.secondaryhome.SecondaryHomeScreen
 import com.nendo.argosy.ui.screens.secondaryhome.SecondaryHomeViewModel
 import com.nendo.argosy.ui.theme.Motion
 import com.nendo.argosy.ui.theme.backdrop.BackdropRole
@@ -62,7 +61,6 @@ fun SecondaryHomeContent(
     homeApps: List<String>,
     viewModel: SecondaryHomeViewModel,
     dualHomeViewModel: DualHomeViewModel,
-    useDualScreenMode: Boolean,
     currentScreen: CompanionScreen,
     dualGameDetailViewModel: DualGameDetailViewModel?,
     onAppClick: (String) -> Unit,
@@ -109,32 +107,28 @@ fun SecondaryHomeContent(
             enter = fadeIn(),
             exit = fadeOut()
         ) {
-            if (useDualScreenMode) {
-                ControlRoleContent(
-                    currentScreen = currentScreen,
-                    dualHomeViewModel = dualHomeViewModel,
-                    dualGameDetailViewModel = dualGameDetailViewModel,
-                    homeApps = homeApps,
-                    onGameSelected = onGameSelected,
-                    onAppClick = onAppClick,
-                    onCollectionsClick = onCollectionsClick,
-                    onLibraryToggle = onLibraryToggle,
-                    onViewAllClick = onViewAllClick,
-                    onCollectionTapped = onCollectionTapped,
-                    onGridGameTapped = onGridGameTapped,
-                    onLetterClick = onLetterClick,
-                    onFilterOptionTapped = onFilterOptionTapped,
-                    onFilterCategoryTapped = onFilterCategoryTapped,
-                    onSearchQueryChange = onSearchQueryChange,
-                    onOpenDrawer = { viewModel.openDrawer() },
-                    onDetailBack = onDetailBack,
-                    onOptionAction = onOptionAction,
-                    onScreenshotViewed = onScreenshotViewed,
-                    onDimTapped = onDimTapped
-                )
-            } else {
-                SecondaryHomeScreen(viewModel = viewModel)
-            }
+            ControlRoleContent(
+                currentScreen = currentScreen,
+                dualHomeViewModel = dualHomeViewModel,
+                dualGameDetailViewModel = dualGameDetailViewModel,
+                homeApps = homeApps,
+                onGameSelected = onGameSelected,
+                onAppClick = onAppClick,
+                onCollectionsClick = onCollectionsClick,
+                onLibraryToggle = onLibraryToggle,
+                onViewAllClick = onViewAllClick,
+                onCollectionTapped = onCollectionTapped,
+                onGridGameTapped = onGridGameTapped,
+                onLetterClick = onLetterClick,
+                onFilterOptionTapped = onFilterOptionTapped,
+                onFilterCategoryTapped = onFilterCategoryTapped,
+                onSearchQueryChange = onSearchQueryChange,
+                onOpenDrawer = { viewModel.openDrawer() },
+                onDetailBack = onDetailBack,
+                onOptionAction = onOptionAction,
+                onScreenshotViewed = onScreenshotViewed,
+                onDimTapped = onDimTapped
+            )
         }
 
         AnimatedVisibility(
@@ -257,6 +251,8 @@ fun ShowcaseRoleContent(
                         onModalStatusSelect = showcaseViewModel::onModalStatusSelect,
                         onModalEmulatorSelect = showcaseViewModel::onModalEmulatorSelect,
                         onModalCoreSelect = showcaseViewModel::onModalCoreSelect,
+                        onModalSavePathSelect = showcaseViewModel::onModalSavePathSelect,
+                        onModalDisplayTargetSelect = showcaseViewModel::onModalDisplayTargetSelect,
                         onModalVariantSelect = showcaseViewModel::onModalVariantSelect,
                         onModalCollectionToggle = showcaseViewModel::onModalCollectionToggle,
                         onModalCollectionShowCreate = showcaseViewModel::onModalCollectionShowCreate,

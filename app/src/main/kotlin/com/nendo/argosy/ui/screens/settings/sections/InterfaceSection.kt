@@ -1,17 +1,10 @@
 package com.nendo.argosy.ui.screens.settings.sections
 
-import androidx.compose.foundation.background
-import com.nendo.argosy.ui.util.clickableNoFocus
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.draw.clip
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.WbTwilight
@@ -20,8 +13,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.lerp
 import com.nendo.argosy.data.preferences.DisplayRoleOverride
 import com.nendo.argosy.data.preferences.GridDensity
 import com.nendo.argosy.ui.components.CyclePreference
@@ -34,12 +25,9 @@ import com.nendo.argosy.ui.screens.settings.SettingsUiState
 import com.nendo.argosy.ui.screens.settings.SettingsViewModel
 import com.nendo.argosy.ui.screens.settings.menu.SettingsLayout
 import com.nendo.argosy.ui.theme.Dimens
-import com.nendo.argosy.ui.theme.LocalArgosyTheme
 
 internal data class InterfaceLayoutState(
     val display: DisplayState,
-    val bgmEnabled: Boolean,
-    val bgmIsFolder: Boolean,
     val hasSecondaryDisplay: Boolean = false,
     val hasPhysicalSecondaryDisplay: Boolean = false,
     val dualScreenEnabled: Boolean = false
@@ -47,8 +35,6 @@ internal data class InterfaceLayoutState(
     companion object {
         fun from(state: SettingsUiState) = InterfaceLayoutState(
             display = state.display,
-            bgmEnabled = state.ambientAudio.enabled,
-            bgmIsFolder = state.ambientAudio.isFolder,
             hasSecondaryDisplay = state.display.hasSecondaryDisplay,
             hasPhysicalSecondaryDisplay = state.display.hasPhysicalSecondaryDisplay,
             dualScreenEnabled = state.display.dualScreenEnabled
@@ -84,11 +70,6 @@ internal sealed class InterfaceItem(
     data object DimAfter : InterfaceItem("dimAfter", "screenSafety")
     data object DimLevel : InterfaceItem("dimLevel", "screenSafety")
 
-    data object BgmToggle : InterfaceItem("bgmToggle", "ambience")
-    data object BgmVolume : InterfaceItem("bgmVolume", "ambience", { it.bgmEnabled })
-    data object BgmFile : InterfaceItem("bgmFile", "ambience", { it.bgmEnabled })
-    data object BgmShuffle : InterfaceItem("bgmShuffle", "ambience", { it.bgmEnabled && it.bgmIsFolder })
-
     data object DualScreenEnabled : InterfaceItem("dualScreenEnabled", "displays")
     data object DisplayRoles : InterfaceItem(
         key = "displayRoles",
@@ -105,8 +86,6 @@ internal sealed class InterfaceItem(
         private val LayoutHeader = Header("layoutHeader", "layout", "Layout")
         private val ScreenSafetySpacer = SectionSpacer("screenSafetySpacer", "screenSafety")
         private val ScreenSafetyHeader = Header("screenSafetyHeader", "screenSafety", "Screen Safety")
-        private val AmbienceSpacer = SectionSpacer("ambienceSpacer", "ambience")
-        private val AmbienceHeader = Header("ambienceHeader", "ambience", "Ambience")
         private val DisplaysSpacer = SectionSpacer("displaysSpacer", "displays")
         private val DisplaysHeader = Header("displaysHeader", "displays", "Displays")
 
@@ -115,8 +94,6 @@ internal sealed class InterfaceItem(
             GridDensity, UiScale, HomeScreen,
             ScreenSafetySpacer, ScreenSafetyHeader,
             ScreenDimmer, DimAfter, DimLevel,
-            AmbienceSpacer, AmbienceHeader,
-            BgmToggle, BgmVolume, BgmFile, BgmShuffle,
             DisplaysSpacer, DisplaysHeader,
             DualScreenEnabled, DisplayRoles, AmbientLedSettings
         )
@@ -132,7 +109,6 @@ private val interfaceLayout = SettingsLayout<InterfaceItem, InterfaceLayoutState
         when (it) {
             "layout" -> "Layout"
             "screenSafety" -> "Screen Safety"
-            "ambience" -> "Ambience"
             "displays" -> "Displays"
             else -> null
         }
@@ -153,18 +129,14 @@ internal fun interfaceFocusIndexOf(item: InterfaceItem, state: InterfaceLayoutSt
 fun InterfaceSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
     val display = uiState.display
     val storage = uiState.storage
-    val bgmEnabled = uiState.ambientAudio.enabled
-    val bgmIsFolder = uiState.ambientAudio.isFolder
 
     val layoutState = remember(
         display.ambientLedAvailable,
         display.hasSecondaryDisplay,
         display.hasPhysicalSecondaryDisplay,
-        display.dualScreenEnabled,
-        bgmEnabled,
-        bgmIsFolder
+        display.dualScreenEnabled
     ) {
-        InterfaceLayoutState(display, bgmEnabled, bgmIsFolder, display.hasSecondaryDisplay, display.hasPhysicalSecondaryDisplay, display.dualScreenEnabled)
+        InterfaceLayoutState(display, display.hasSecondaryDisplay, display.hasPhysicalSecondaryDisplay, display.dualScreenEnabled)
     }
 
     val visibleItems = remember(layoutState) {
@@ -255,45 +227,6 @@ fun InterfaceSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                     onClick = { viewModel.cycleScreenDimmerLevel() }
                 )
 
-                InterfaceItem.BgmToggle -> SwitchPreference(
-                    title = "Background Music",
-                    subtitle = "Play music while using the launcher",
-                    isEnabled = uiState.ambientAudio.enabled,
-                    isFocused = isFocused(item),
-                    onToggle = { viewModel.setAmbientAudioEnabled(it) }
-                )
-
-                InterfaceItem.BgmVolume -> {
-                    val volumeLevels = listOf(2, 5, 10, 20, 35)
-                    val currentIndex = volumeLevels.indexOfFirst { it >= uiState.ambientAudio.volume }.takeIf { it >= 0 } ?: 0
-                    val sliderValue = currentIndex + 1
-                    SliderPreference(
-                        title = "Volume",
-                        value = sliderValue,
-                        minValue = 1,
-                        maxValue = 5,
-                        isFocused = isFocused(item),
-                        onClick = {
-                            val nextIndex = (currentIndex + 1).mod(volumeLevels.size)
-                            viewModel.setAmbientAudioVolume(volumeLevels[nextIndex])
-                        }
-                    )
-                }
-
-                InterfaceItem.BgmFile -> BackgroundMusicFileItem(
-                    filePath = uiState.ambientAudio.audioUri,
-                    isFocused = isFocused(item),
-                    onClick = { viewModel.openAudioFileBrowser() }
-                )
-
-                InterfaceItem.BgmShuffle -> SwitchPreference(
-                    title = "Shuffle",
-                    subtitle = "Randomize playback order",
-                    isEnabled = uiState.ambientAudio.shuffle,
-                    isFocused = isFocused(item),
-                    onToggle = { viewModel.setAmbientAudioShuffle(it) }
-                )
-
                 InterfaceItem.DualScreenEnabled -> SwitchPreference(
                     title = "Enable Dual-screen Mode",
                     subtitle = "Use secondary display as companion screen",
@@ -333,63 +266,4 @@ private fun InterfaceSectionHeader(title: String) {
         color = MaterialTheme.colorScheme.primary,
         modifier = Modifier.padding(vertical = Dimens.spacingXs)
     )
-}
-
-private fun truncatePathMiddle(path: String, maxLength: Int = 40): String {
-    if (path.length <= maxLength) return path
-
-    val parts = path.split("/").filter { it.isNotEmpty() }
-    if (parts.size <= 2) return path
-
-    val first = parts.first()
-    val last = parts.last()
-    val secondLast = parts.getOrNull(parts.size - 2)
-
-    val suffix = if (secondLast != null) "$secondLast/$last" else last
-    val ellipsis = "/.../"
-
-    val available = maxLength - first.length - ellipsis.length
-    return if (available >= suffix.length) {
-        "$first$ellipsis$suffix"
-    } else {
-        "$first$ellipsis$last"
-    }
-}
-
-@Composable
-private fun BackgroundMusicFileItem(
-    filePath: String?,
-    isFocused: Boolean,
-    onClick: () -> Unit
-) {
-    val displayValue = filePath?.let { truncatePathMiddle(it) } ?: "None selected"
-
-    val focusAccent = LocalArgosyTheme.current.focusAccent
-    val focusedContent = lerp(focusAccent, Color.White, 0.45f)
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(Dimens.radiusMd))
-            .background(
-                if (isFocused) focusAccent.copy(alpha = 0.15f)
-                else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-            )
-            .clickableNoFocus(onClick = onClick)
-            .padding(Dimens.spacingMd),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(
-            text = "Music File(s)",
-            style = MaterialTheme.typography.titleMedium,
-            color = if (isFocused) focusedContent
-                    else MaterialTheme.colorScheme.onSurface
-        )
-        Text(
-            text = displayValue,
-            style = MaterialTheme.typography.bodyMedium,
-            color = if (isFocused) focusedContent.copy(alpha = 0.7f)
-                    else MaterialTheme.colorScheme.onSurfaceVariant
-        )
-    }
 }

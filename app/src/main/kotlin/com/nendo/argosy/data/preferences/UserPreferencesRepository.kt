@@ -7,6 +7,7 @@ import com.nendo.argosy.core.input.SoundType
 import com.nendo.argosy.util.LogLevel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import java.time.Instant
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -147,6 +148,7 @@ class UserPreferencesRepository @Inject constructor(
             ambientAudioVolume = controls.ambientAudioVolume,
             ambientAudioUri = controls.ambientAudioUri,
             ambientAudioShuffle = controls.ambientAudioShuffle,
+            gameDetailThemeEnabled = controls.gameDetailThemeEnabled,
             imageCachePath = sync.imageCachePath,
             screenDimmerEnabled = display.screenDimmerEnabled,
             screenDimmerTimeoutMinutes = display.screenDimmerTimeoutMinutes,
@@ -169,6 +171,7 @@ class UserPreferencesRepository @Inject constructor(
             ambientLedCustomColorHue = display.ambientLedCustomColorHue,
             ambientLedScreenEnabled = display.ambientLedScreenEnabled,
             ambientLedTransitionMs = display.ambientLedTransitionMs,
+            ambientLedAchievementFlash = display.ambientLedAchievementFlash,
             androidDataSafUri = sync.androidDataSafUri,
             builtinLibretroEnabled = builtinEnabled,
             appAffinityEnabled = app.appAffinityEnabled,
@@ -255,6 +258,7 @@ class UserPreferencesRepository @Inject constructor(
     suspend fun setAmbientLedCustomColorHue(hue: Int) = displayPrefs.setAmbientLedCustomColorHue(hue)
     suspend fun setAmbientLedTransitionMs(ms: Int) = displayPrefs.setAmbientLedTransitionMs(ms)
     suspend fun setAmbientLedScreenEnabled(enabled: Boolean) = displayPrefs.setAmbientLedScreenEnabled(enabled)
+    suspend fun setAmbientLedAchievementFlash(enabled: Boolean) = displayPrefs.setAmbientLedAchievementFlash(enabled)
     suspend fun setScreenDimmerEnabled(enabled: Boolean) = displayPrefs.setScreenDimmerEnabled(enabled)
     suspend fun setScreenDimmerTimeoutMinutes(minutes: Int) = displayPrefs.setScreenDimmerTimeoutMinutes(minutes)
     suspend fun setScreenDimmerLevel(level: Int) = displayPrefs.setScreenDimmerLevel(level)
@@ -266,6 +270,16 @@ class UserPreferencesRepository @Inject constructor(
     // --- Sync delegates ---
 
     suspend fun setRommConfig(url: String?, username: String?) = syncPrefs.setRommConfig(url, username)
+    suspend fun setDownloadCategoryDefault(categoryKey: String, include: Boolean) =
+        syncPrefs.setDownloadCategoryDefault(categoryKey, include)
+    suspend fun setDownloadCategoryPlatformOverride(platformSlug: String, categoryKey: String, include: Boolean?) =
+        syncPrefs.setDownloadCategoryPlatformOverride(platformSlug, categoryKey, include)
+    suspend fun getGlobalDownloadDefaults(): Map<String, Boolean> =
+        DownloadDefaults.FACTORY + syncPrefs.downloadCategoryDefaults.first()
+    suspend fun getDownloadPlatformOverrides(platformSlug: String): Map<String, Boolean> =
+        syncPrefs.downloadCategoryPlatformOverrides.first()[platformSlug] ?: emptyMap()
+    suspend fun getEffectiveDownloadDefaults(platformSlug: String): Map<String, Boolean> =
+        syncPrefs.getEffectiveDownloadDefaults(platformSlug)
     suspend fun setRomMCredentials(baseUrl: String, token: String, username: String? = null) = syncPrefs.setRomMCredentials(baseUrl, token, username)
     suspend fun clearRomMCredentials() = syncPrefs.clearRomMCredentials()
     suspend fun setRommDeviceId(deviceId: String, clientVersion: String) = syncPrefs.setRommDeviceId(deviceId, clientVersion)
@@ -274,6 +288,11 @@ class UserPreferencesRepository @Inject constructor(
     suspend fun clearRACredentials() = syncPrefs.clearRACredentials()
     suspend fun setRAProxy(enabled: Boolean, address: String) = syncPrefs.setRAProxy(enabled, address)
     suspend fun setLastRommSyncTime(time: Instant) = syncPrefs.setLastRommSyncTime(time)
+    suspend fun getSyncResumeGeneration(): Instant? = syncPrefs.getSyncResumeGeneration()
+    suspend fun getSyncResumeCompletedPlatformIds(): Set<Long> = syncPrefs.getSyncResumeCompletedPlatformIds()
+    suspend fun startSyncGeneration(time: Instant) = syncPrefs.startSyncGeneration(time)
+    suspend fun addSyncResumeCompletedPlatform(platformId: Long) = syncPrefs.addSyncResumeCompletedPlatform(platformId)
+    suspend fun clearSyncResume() = syncPrefs.clearSyncResume()
     suspend fun setLastFavoritesSyncTime(time: Instant) = syncPrefs.setLastFavoritesSyncTime(time)
     suspend fun setLastFavoritesCheckTime(time: Instant) = syncPrefs.setLastFavoritesCheckTime(time)
     suspend fun setSyncFilterRegions(regions: List<String>) = syncPrefs.setSyncFilterRegions(regions)
@@ -287,6 +306,7 @@ class UserPreferencesRepository @Inject constructor(
     suspend fun setUploadScreenshotsEnabled(enabled: Boolean) = syncPrefs.setUploadScreenshotsEnabled(enabled)
     suspend fun setBoxArtCacheEnabled(enabled: Boolean) = syncPrefs.setBoxArtCacheEnabled(enabled)
     suspend fun setSaveSyncEnabled(enabled: Boolean) = syncPrefs.setSaveSyncEnabled(enabled)
+    suspend fun setStateCacheEnabled(enabled: Boolean) = syncPrefs.setStateCacheEnabled(enabled)
     suspend fun setSaveCacheLimit(limit: Int) = syncPrefs.setSaveCacheLimit(limit)
     suspend fun setSaveDebugLoggingEnabled(enabled: Boolean) = syncPrefs.setSaveDebugLoggingEnabled(enabled)
     suspend fun setImageCachePath(path: String?) = syncPrefs.setImageCachePath(path)
@@ -330,6 +350,7 @@ class UserPreferencesRepository @Inject constructor(
     suspend fun setAmbientAudioVolume(volume: Int) = controlsPrefs.setAmbientAudioVolume(volume)
     suspend fun setAmbientAudioUri(uri: String?) = controlsPrefs.setAmbientAudioUri(uri)
     suspend fun setAmbientAudioShuffle(shuffle: Boolean) = controlsPrefs.setAmbientAudioShuffle(shuffle)
+    suspend fun setGameDetailThemeEnabled(enabled: Boolean) = controlsPrefs.setGameDetailThemeEnabled(enabled)
     suspend fun setMenuWrapMode(mode: MenuWrapMode) = controlsPrefs.setMenuWrapMode(mode)
 
     // --- Storage delegates ---
@@ -461,7 +482,7 @@ data class BuiltinEmulatorSettings(
     val autoRestoreState: Boolean = true,
     val autoRestoreStateMode: String = "restore",
     val hwCoreSaveStatesEnabled: Boolean = false,
-    val defaultToHardcore: Boolean = false,
+    val defaultToHardcore: String = "ask",
     val customSavePath: String? = null,
     val customStatePath: String? = null,
     val architectureOverride: String? = null,
@@ -643,6 +664,7 @@ data class UserPreferences(
     val ambientAudioVolume: Int = 50,
     val ambientAudioUri: String? = null,
     val ambientAudioShuffle: Boolean = false,
+    val gameDetailThemeEnabled: Boolean = false,
     val imageCachePath: String? = null,
     val screenDimmerEnabled: Boolean = true,
     val screenDimmerTimeoutMinutes: Int = 2,
@@ -662,6 +684,7 @@ data class UserPreferences(
     val ambientLedCustomColorHue: Int = 200,
     val ambientLedScreenEnabled: Boolean = false,
     val ambientLedTransitionMs: Int = 250,
+    val ambientLedAchievementFlash: Boolean = true,
     val androidDataSafUri: String? = null,
     val builtinLibretroEnabled: Boolean = true,
     val appAffinityEnabled: Boolean = false,

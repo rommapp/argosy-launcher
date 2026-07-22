@@ -122,7 +122,7 @@ fun MainSettingsSection(uiState: SettingsUiState, viewModel: SettingsViewModel) 
             "No downloads"
         }
         MainSettingsItem.Theme -> "Colors, backdrop, fonts"
-        MainSettingsItem.Interface -> "Layout, dimmer, ambience"
+        MainSettingsItem.Interface -> "Layout, dimmer, displays"
         MainSettingsItem.Controls -> "Button layout, haptic feedback"
         MainSettingsItem.Platforms -> "${uiState.emulators.platforms.size} platforms"
         MainSettingsItem.BuiltinEmulator -> if (uiState.emulators.builtinLibretroEnabled) "Enabled" else "Disabled"

@@ -479,12 +479,13 @@ fun BuiltinControlsSection(
             }
             HotkeysModal(
                 hotkeys = hotkeys,
-                onSaveHotkey = { action, keyCodes -> viewModel.saveHotkey(action, keyCodes) },
-                onClearHotkey = { action -> viewModel.clearHotkey(action) },
-                onSetHoldMs = { action, holdMs -> viewModel.setHotkeyHoldMs(action, holdMs) },
+                onSaveHotkey = { action, keyCodes, scopeType, scopeKey -> viewModel.saveHotkey(action, keyCodes, scopeType, scopeKey) },
+                onClearHotkey = { action, scopeType, scopeKey -> viewModel.clearHotkey(action, scopeType, scopeKey) },
+                onSetHoldMs = { action, holdMs, scopeType, scopeKey -> viewModel.setHotkeyHoldMs(action, holdMs, scopeType, scopeKey) },
                 onDismiss = { viewModel.hideHotkeysModal() },
                 coreId = coreInfo?.coreId,
                 coreName = coreInfo?.displayName,
+                platformSlug = if (!isGlobal) platformSlug else null,
                 coreControls = coreInfo?.let { CoreControlManifestRegistry.getManifest(it.coreId)?.controls } ?: emptyList(),
                 onSaveCoreControl = { retropadId, mode, keyCodes ->
                     coreInfo?.let { viewModel.saveCoreControlHotkey(it.coreId, retropadId, mode, keyCodes) }

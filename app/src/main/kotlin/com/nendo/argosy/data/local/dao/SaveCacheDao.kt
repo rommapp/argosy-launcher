@@ -163,6 +163,9 @@ interface SaveCacheDao {
     @Query("SELECT COUNT(*) FROM save_cache WHERE needsRemoteSync = 1")
     suspend fun countNeedingRemoteSync(): Int
 
+    @Query("SELECT COUNT(*) FROM save_cache WHERE gameId = :gameId AND needsRemoteSync = 1")
+    suspend fun countNeedingRemoteSyncForGame(gameId: Long): Int
+
     @Query("""
         SELECT EXISTS(
             SELECT 1 FROM save_cache

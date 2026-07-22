@@ -49,6 +49,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import com.nendo.argosy.ui.components.FooterHints
 import com.nendo.argosy.ui.components.FooterSpacer
 import com.nendo.argosy.ui.components.InputButton
+import com.nendo.argosy.core.input.SoundType
 import com.nendo.argosy.ui.filebrowser.FileBrowserMode
 import com.nendo.argosy.ui.filebrowser.FileBrowserScreen
 import com.nendo.argosy.ui.filebrowser.FileFilter
@@ -56,6 +57,11 @@ import com.nendo.argosy.ui.input.LocalInputDispatcher
 import com.nendo.argosy.ui.navigation.Screen
 import com.nendo.argosy.ui.primitives.ArgosyConfirmModal
 import com.nendo.argosy.ui.primitives.ArgosyConfirmModalHost
+import com.nendo.argosy.util.formatBytes
+import com.nendo.argosy.ui.screens.musicbrowser.MusicBrowserMode
+import com.nendo.argosy.ui.screens.musicbrowser.MusicBrowserScreen
+import com.nendo.argosy.data.storage.StorageCategory
+import com.nendo.argosy.ui.screens.settings.components.HardResetModal
 import com.nendo.argosy.ui.screens.settings.components.PlatformSettingsModal
 import com.nendo.argosy.ui.screens.settings.components.ReleaseChangelogModal
 import com.nendo.argosy.ui.screens.settings.components.SoundPickerPopup
@@ -88,13 +94,23 @@ import com.nendo.argosy.ui.screens.settings.sections.RASettingsSection
 import com.nendo.argosy.ui.screens.settings.sections.ShaderStackSection
 import com.nendo.argosy.ui.screens.settings.sections.SocialSection
 import com.nendo.argosy.ui.screens.settings.sections.SteamSection
+import com.nendo.argosy.ui.screens.settings.sections.StorageCachesSection
+import com.nendo.argosy.ui.screens.settings.sections.StorageGamesSection
+import com.nendo.argosy.ui.screens.settings.sections.StoragePlatformGamesSection
+import com.nendo.argosy.ui.screens.settings.sections.StoragePlatformGamesItem
+import com.nendo.argosy.ui.screens.settings.sections.createStoragePlatformGamesLayoutInfo
+import com.nendo.argosy.ui.screens.settings.sections.storagePlatformGamesItemAtFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.StorageSection
 import com.nendo.argosy.ui.screens.settings.sections.SyncSettingsSection
 import com.nendo.argosy.data.preferences.FontSlot
 import com.nendo.argosy.ui.screens.settings.sections.ThemeBackdropSection
 import com.nendo.argosy.ui.screens.settings.sections.ThemeFontsSection
+import com.nendo.argosy.ui.screens.settings.sections.ThemeMusicSection
 import com.nendo.argosy.ui.screens.settings.sections.ThemeSection
+import com.nendo.argosy.ui.screens.settings.sections.ThemeSoundsItem
+import com.nendo.argosy.ui.screens.settings.sections.ThemeSoundsLayoutState
 import com.nendo.argosy.ui.screens.settings.sections.ThemeSoundsSection
+import com.nendo.argosy.ui.screens.settings.sections.themeSoundsItemAtFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.formatFileSize
 import com.nendo.argosy.ui.screens.settings.libretro.libretroSettingsMaxFocusIndex
 import com.nendo.argosy.ui.icons.InputIcons
@@ -142,22 +158,6 @@ fun SettingsScreen(
                 // Ignore if permission can't be persisted
             }
             viewModel.setCustomBackgroundPath(it.toString())
-        }
-    }
-
-    val audioFilePickerLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.OpenDocument()
-    ) { uri: Uri? ->
-        uri?.let {
-            try {
-                context.contentResolver.takePersistableUriPermission(
-                    it,
-                    Intent.FLAG_GRANT_READ_URI_PERMISSION
-                )
-            } catch (_: SecurityException) {
-                // Ignore if permission can't be persisted
-            }
-            viewModel.setAmbientAudioUri(it.toString())
         }
     }
 
@@ -245,6 +245,10 @@ fun SettingsScreen(
         }
     }
 
+    LaunchedEffect(onBack) {
+        viewModel.hardResetCompletedEvent.collect { onBack() }
+    }
+
     LaunchedEffect(Unit) {
         viewModel.openDeviceSettingsEvent.collect {
             context.startActivity(Intent(Settings.ACTION_SETTINGS))
@@ -300,17 +304,48 @@ fun SettingsScreen(
         }
     }
 
+    var showBgmPlaylistManager by remember { mutableStateOf(false) }
+    var showBgmAddMusicBrowser by remember { mutableStateOf(false) }
+
     LaunchedEffect(Unit) {
-        viewModel.openAudioFilePickerEvent.collect {
-            audioFilePickerLauncher.launch(arrayOf("audio/*"))
+        viewModel.openBgmPlaylistManagerEvent.collect {
+            showBgmPlaylistManager = true
         }
     }
 
-    var showAudioFileBrowser by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        viewModel.openBgmAddMusicBrowserEvent.collect {
+            showBgmAddMusicBrowser = true
+        }
+    }
+
+    var showMusicBrowserBgm by remember { mutableStateOf(false) }
+    var showMusicLocationBrowser by remember { mutableStateOf(false) }
+    var musicBrowserSfxTarget by remember { mutableStateOf<SoundType?>(null) }
 
     LaunchedEffect(Unit) {
-        viewModel.openAudioFileBrowserEvent.collect {
-            showAudioFileBrowser = true
+        viewModel.openMusicBrowserBgmEvent.collect {
+            showMusicBrowserBgm = true
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        viewModel.openMusicLocationPickerEvent.collect {
+            showMusicLocationBrowser = true
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        viewModel.openMusicBrowserSfxEvent.collect { soundType ->
+            musicBrowserSfxTarget = soundType
+        }
+    }
+
+    var customSoundTargetType by remember { mutableStateOf<SoundType?>(null) }
+
+    LaunchedEffect(Unit) {
+        viewModel.openCustomSoundPickerEvent.collect { soundType ->
+            customSoundTargetType = soundType
         }
     }
 
@@ -459,8 +494,13 @@ fun SettingsScreen(
                         SettingsSection.STEAM_SETTINGS -> "STEAM (EXPERIMENTAL)"
                         SettingsSection.RETRO_ACHIEVEMENTS -> "RETROACHIEVEMENTS"
                         SettingsSection.STORAGE -> "STORAGE"
+                        SettingsSection.STORAGE_GAMES -> "GAMES STORAGE"
+                        SettingsSection.STORAGE_PLATFORM_GAMES ->
+                            uiState.storagePlatformGames.platformName.uppercase().ifBlank { "PLATFORM GAMES" }
+                        SettingsSection.STORAGE_CACHES -> "CACHES & SYSTEM"
                         SettingsSection.THEME -> "THEME"
                         SettingsSection.THEME_SOUNDS -> "SOUNDS"
+                        SettingsSection.THEME_MUSIC -> "MUSIC"
                         SettingsSection.THEME_FONTS -> "FONTS"
                         SettingsSection.THEME_BACKDROP -> "SURFACE BACKDROP"
                         SettingsSection.INTERFACE -> "INTERFACE"
@@ -523,8 +563,12 @@ fun SettingsScreen(
                     SettingsSection.STEAM_SETTINGS -> SteamSection(uiState, viewModel)
                     SettingsSection.RETRO_ACHIEVEMENTS -> RASettingsSection(uiState, viewModel)
                     SettingsSection.STORAGE -> StorageSection(uiState, viewModel)
+                    SettingsSection.STORAGE_GAMES -> StorageGamesSection(uiState, viewModel)
+                    SettingsSection.STORAGE_PLATFORM_GAMES -> StoragePlatformGamesSection(uiState, viewModel)
+                    SettingsSection.STORAGE_CACHES -> StorageCachesSection(uiState, viewModel)
                     SettingsSection.THEME -> ThemeSection(uiState, viewModel)
                     SettingsSection.THEME_SOUNDS -> ThemeSoundsSection(uiState, viewModel)
+                    SettingsSection.THEME_MUSIC -> ThemeMusicSection(uiState, viewModel)
                     SettingsSection.THEME_FONTS -> ThemeFontsSection(uiState, viewModel)
                     SettingsSection.THEME_BACKDROP -> ThemeBackdropSection(uiState, viewModel)
                     SettingsSection.INTERFACE -> InterfaceSection(uiState, viewModel)
@@ -581,7 +625,7 @@ fun SettingsScreen(
                     presets = uiState.sounds.presets,
                     focusIndex = uiState.sounds.soundPickerFocusIndex,
                     currentPreset = uiState.sounds.getCurrentPresetForType(soundType),
-                    onConfirm = { viewModel.confirmSoundPickerSelection() },
+                    onConfirm = { index -> viewModel.confirmSoundPickerSelectionAt(index) },
                     onDismiss = { viewModel.dismissSoundPicker() }
                 )
             }
@@ -651,6 +695,18 @@ fun SettingsScreen(
         onNeutral = { viewModel.skipBuiltinPathMigration() }
     )
 
+    val musicRelocation = uiState.ambientAudio.pendingMusicRelocation
+    ArgosyConfirmModalHost(
+        visible = musicRelocation != null,
+        title = "Move music files?",
+        message = "The current music folder contains ${musicRelocation?.fileCount ?: 0} files. Move them to the new location? This will overwrite any conflicts.",
+        confirmLabel = "Move",
+        onConfirm = { viewModel.confirmMusicRelocation() },
+        onDismiss = { viewModel.cancelMusicRelocation() },
+        neutralLabel = "Skip",
+        onNeutral = { viewModel.skipMusicRelocation() }
+    )
+
     ArgosyConfirmModalHost(
         visible = uiState.showMigrationDialog,
         title = "Migrate Downloads?",
@@ -687,15 +743,104 @@ fun SettingsScreen(
         onDismiss = { viewModel.cancelPurgePlatform() }
     )
 
-    ArgosyConfirmModalHost(
-        visible = uiState.storage.showPurgeAllConfirm,
-        title = "Reset Library?",
-        message = "This will clear all metadata, platforms, and cached images. Downloaded ROM files will be preserved. You will need to re-sync your library.",
-        confirmLabel = "Reset",
-        destructive = true,
-        onConfirm = { viewModel.confirmPurgeAll() },
-        onDismiss = { viewModel.cancelPurgeAll() }
-    )
+    if (uiState.storage.purgeAllPendingUploads > 0) {
+        ArgosyConfirmModalHost(
+            visible = uiState.storage.showPurgeAllConfirm,
+            title = "Sync Saves First",
+            message = "Sync saves first - ${uiState.storage.purgeAllPendingUploads} pending. Resetting the library now would permanently discard saves that have not been uploaded.",
+            confirmLabel = "Sync Now",
+            onConfirm = {
+                viewModel.cancelPurgeAll()
+                viewModel.requestSyncSaves()
+            },
+            onDismiss = { viewModel.cancelPurgeAll() }
+        )
+    } else {
+        ArgosyConfirmModalHost(
+            visible = uiState.storage.showPurgeAllConfirm,
+            title = "Reset Library?",
+            message = "Clears the database and image cache. Downloaded files stay on disk. Permanently lost: play time, local collections, download history, save sync state, and per-game settings. You will need to re-sync your library.",
+            confirmLabel = "Reset",
+            destructive = true,
+            onConfirm = { viewModel.confirmPurgeAll() },
+            onDismiss = { viewModel.cancelPurgeAll() }
+        )
+    }
+
+    if (uiState.storage.showHardResetModal) {
+        val snapshot = uiState.attribution.snapshot
+        val gamesBytes = snapshot?.categories?.get(StorageCategory.GAMES)?.bytes
+            ?: uiState.storage.downloadedGamesSize
+        val gamesCount = snapshot?.gamesPerPlatform?.takeIf { it.isNotEmpty() }
+            ?.sumOf { it.downloadedCount }
+            ?: uiState.storage.downloadedGamesCount
+        HardResetModal(
+            downloadedGamesCount = gamesCount,
+            downloadedGamesBytes = gamesBytes,
+            pendingUploads = uiState.storage.hardResetPendingUploads,
+            isResetting = uiState.storage.isHardResetting,
+            canSyncNow = uiState.server.connectionStatus == ConnectionStatus.ONLINE &&
+                !uiState.syncSettings.isSyncing,
+            onSyncNow = { viewModel.requestSyncSaves() },
+            onHoldStart = { viewModel.hardResetHoldStarted() },
+            onConfirm = { viewModel.confirmHardReset() },
+            onDismiss = { viewModel.cancelHardReset() }
+        )
+    }
+
+    val platformGameDelete = uiState.storagePlatformGames.deleteConfirm
+    if (platformGameDelete != null) {
+        val saveWarning = if (platformGameDelete.unsyncedSaves > 0) {
+            val noun = if (platformGameDelete.unsyncedSaves == 1) "save" else "saves"
+            " ${platformGameDelete.unsyncedSaves} unsynced $noun will be lost."
+        } else ""
+        if (platformGameDelete.hasSoundtrack) {
+            ArgosyConfirmModalHost(
+                visible = true,
+                title = "Delete ${platformGameDelete.title}?",
+                message = "Removes all downloaded files for this game.$saveWarning Choose whether to also delete its soundtrack.",
+                cancelLabel = "Cancel",
+                neutralLabel = "Delete Game",
+                onNeutral = { viewModel.confirmStoragePlatformGameDelete(platformGameDelete.gameId, withSoundtrack = false) },
+                confirmLabel = "Delete + Soundtrack",
+                destructive = true,
+                onConfirm = { viewModel.confirmStoragePlatformGameDelete(platformGameDelete.gameId, withSoundtrack = true) },
+                onDismiss = { viewModel.dismissStoragePlatformGameDelete() }
+            )
+        } else {
+            ArgosyConfirmModalHost(
+                visible = true,
+                title = "Delete ${platformGameDelete.title}?",
+                message = "Removes all downloaded files for this game.$saveWarning This cannot be undone.",
+                confirmLabel = "Delete Game",
+                destructive = true,
+                onConfirm = { viewModel.confirmStoragePlatformGameDelete(platformGameDelete.gameId, withSoundtrack = false) },
+                onDismiss = { viewModel.dismissStoragePlatformGameDelete() }
+            )
+        }
+    }
+
+    val platformCategoryDelete = uiState.storagePlatformGames.categoryDeleteConfirm
+    if (platformCategoryDelete != null) {
+        val fileNoun = if (platformCategoryDelete.fileCount == 1) "file" else "files"
+        val bucketLabel = com.nendo.argosy.ui.screens.settings.sections
+            .bucketDisplayLabel(platformCategoryDelete.bucket)
+        ArgosyConfirmModalHost(
+            visible = true,
+            title = "Remove $bucketLabel?",
+            message = "Removes ${platformCategoryDelete.fileCount} $fileNoun " +
+                "(${formatBytes(platformCategoryDelete.totalBytes)}). Re-downloads from your library.",
+            confirmLabel = "Delete",
+            destructive = true,
+            onConfirm = {
+                viewModel.confirmStoragePlatformCategoryDelete(
+                    platformCategoryDelete.gameId,
+                    platformCategoryDelete.bucket
+                )
+            },
+            onDismiss = { viewModel.dismissStoragePlatformCategoryDelete() }
+        )
+    }
 
     ArgosyConfirmModalHost(
         visible = uiState.syncSettings.showResetSaveCacheConfirm,
@@ -715,6 +860,27 @@ fun SettingsScreen(
         destructive = true,
         onConfirm = { viewModel.confirmClearPathCache() },
         onDismiss = { viewModel.cancelClearPathCache() }
+    )
+
+    ArgosyConfirmModalHost(
+        visible = uiState.syncSettings.showClearStateCacheConfirm,
+        title = "Clear State Cache?",
+        message = "This will delete all locally cached save state snapshots and their pending sync operations. Save files and server copies are not affected.",
+        confirmLabel = "Clear",
+        destructive = true,
+        onConfirm = { viewModel.confirmClearStateCache() },
+        onDismiss = { viewModel.cancelClearStateCache() }
+    )
+
+    val pendingCachesClear = uiState.storageCaches.pendingClear
+    ArgosyConfirmModalHost(
+        visible = pendingCachesClear != null,
+        title = cachesClearConfirmTitle(pendingCachesClear),
+        message = cachesClearConfirmMessage(pendingCachesClear),
+        confirmLabel = "Clear",
+        destructive = true,
+        onConfirm = { viewModel.confirmCachesClear() },
+        onDismiss = { viewModel.cancelCachesClear() }
     )
 
     ArgosyConfirmModal(
@@ -745,16 +911,76 @@ fun SettingsScreen(
         )
     }
 
-    if (showAudioFileBrowser) {
+    if (showBgmPlaylistManager) {
+        BgmPlaylistManagerScreen(
+            onAddMusic = { showBgmAddMusicBrowser = true },
+            onDismiss = { showBgmPlaylistManager = false }
+        )
+    }
+
+    if (showBgmAddMusicBrowser) {
         FileBrowserScreen(
             mode = FileBrowserMode.FILE_OR_FOLDER_SELECTION,
             fileFilter = FileFilter.AUDIO,
+            title = "Add Music",
             onPathSelected = { path ->
-                showAudioFileBrowser = false
-                viewModel.setAmbientAudioFilePath(path)
+                showBgmAddMusicBrowser = false
+                viewModel.addBgmPlaylistEntry(path)
             },
             onDismiss = {
-                showAudioFileBrowser = false
+                showBgmAddMusicBrowser = false
+            }
+        )
+    }
+
+    if (showMusicLocationBrowser) {
+        FileBrowserScreen(
+            mode = FileBrowserMode.FOLDER_SELECTION,
+            title = "Music Location",
+            onPathSelected = { path ->
+                showMusicLocationBrowser = false
+                viewModel.onMusicLocationSelected(path)
+            },
+            onDismiss = {
+                showMusicLocationBrowser = false
+            }
+        )
+    }
+
+    if (showMusicBrowserBgm) {
+        MusicBrowserScreen(
+            mode = MusicBrowserMode.BGM,
+            onDismiss = { showMusicBrowserBgm = false }
+        )
+    }
+
+    musicBrowserSfxTarget?.let { soundType ->
+        MusicBrowserScreen(
+            mode = MusicBrowserMode.SFX,
+            sfxTargetLabel = soundType.name
+                .replace("_", " ")
+                .lowercase()
+                .split(" ")
+                .joinToString(" ") { it.replaceFirstChar { c -> c.uppercase() } },
+            onSfxSelected = { path ->
+                musicBrowserSfxTarget = null
+                viewModel.setCustomSoundFile(soundType, path, fromRomm = true)
+            },
+            onDismiss = { musicBrowserSfxTarget = null }
+        )
+    }
+
+    customSoundTargetType?.let { soundType ->
+        FileBrowserScreen(
+            mode = FileBrowserMode.FILE_SELECTION,
+            fileFilter = FileFilter.AUDIO,
+            title = "Custom Sound",
+            onPathSelected = { path ->
+                customSoundTargetType = null
+                viewModel.setCustomSoundFile(soundType, path)
+            },
+            onDismiss = {
+                customSoundTargetType = null
             }
         )
     }
@@ -986,6 +1212,16 @@ private fun SettingsFooter(uiState: SettingsUiState, shaderStack: ShaderStackSta
                 add(InputButton.Y to "Reset to Default")
             }
         }
+        if (uiState.currentSection == SettingsSection.THEME_SOUNDS && uiState.sounds.enabled) {
+            val soundsLayout = ThemeSoundsLayoutState.from(uiState)
+            val focusedSoundItem = themeSoundsItemAtFocusIndex(uiState.focusedIndex, soundsLayout)
+            if (focusedSoundItem is ThemeSoundsItem.SoundTypeItem) {
+                add(InputButton.X to "Sample")
+                if (uiState.sounds.soundConfigs.containsKey(focusedSoundItem.soundType)) {
+                    add(InputButton.Y to "Reset to Default")
+                }
+            }
+        }
         if (uiState.currentSection == SettingsSection.CORE_OPTIONS &&
             uiState.coreOptions.availablePlatforms.isNotEmpty()) {
             add(InputButton.LB_RB to "Platform")
@@ -1002,6 +1238,25 @@ private fun SettingsFooter(uiState: SettingsUiState, shaderStack: ShaderStackSta
             )
             if (steamItem == com.nendo.argosy.ui.screens.settings.sections.SteamItem.SyncLibrary) {
                 add(InputButton.X to "Force Sync")
+            }
+        }
+        if (uiState.currentSection == SettingsSection.STORAGE) {
+            add(InputButton.X to "Refresh")
+        }
+        if (uiState.currentSection == SettingsSection.STORAGE_GAMES) {
+            add(InputButton.X to "Sort")
+        }
+        if (uiState.currentSection == SettingsSection.STORAGE_PLATFORM_GAMES) {
+            val pgInfo = createStoragePlatformGamesLayoutInfo(uiState)
+            val focusedPg = storagePlatformGamesItemAtFocusIndex(uiState.focusedIndex, pgInfo)
+            val focusedGame = (focusedPg as? StoragePlatformGamesItem.GameCard)?.let { card ->
+                uiState.storagePlatformGames.games.firstOrNull { it.gameId == card.gameId }
+            }
+            if (focusedGame != null) {
+                if (focusedGame.buckets.size > 1) {
+                    add(InputButton.DPAD_HORIZONTAL to "Category")
+                }
+                add(InputButton.Y to "Delete")
             }
         }
         if (uiState.currentSection == SettingsSection.PLATFORM_DETAIL) {
@@ -1103,5 +1358,37 @@ private fun SettingsFooter(uiState: SettingsUiState, shaderStack: ShaderStackSta
 
     FooterHints(hints = hints)
     FooterSpacer()
+}
+
+private fun cachesClearConfirmTitle(target: CachesClearTarget?): String = when (target) {
+    CachesClearTarget.IMAGE_CACHE -> "Clear Image Cache?"
+    CachesClearTarget.ROM_EXTRACTION -> "Clear Extracted ROMs?"
+    CachesClearTarget.SFX_CACHE -> "Clear Sound Effects Cache?"
+    CachesClearTarget.EMULATOR_APKS -> "Clear Emulator Installers?"
+    CachesClearTarget.MISC_DOWNLOADS -> "Clear Misc Downloads?"
+    CachesClearTarget.SHADERS_CATALOG -> "Clear Shader Catalog?"
+    CachesClearTarget.FRAMES -> "Clear Frame Overlays?"
+    CachesClearTarget.STEAM_DOWNLOADS -> "Clear Steam Download Data?"
+    null -> ""
+}
+
+private fun cachesClearConfirmMessage(target: CachesClearTarget?): String = when (target) {
+    CachesClearTarget.IMAGE_CACHE ->
+        "This will delete all cached covers, backgrounds, and screenshots. Images re-download from the server as you browse."
+    CachesClearTarget.ROM_EXTRACTION ->
+        "This will delete extracted working copies of compressed games. They re-extract the next time each game launches."
+    CachesClearTarget.SFX_CACHE ->
+        "This will delete transcoded custom sound files. They rebuild automatically the next time sounds load."
+    CachesClearTarget.MISC_DOWNLOADS ->
+        "This will delete friend presence covers and downloaded GPU driver packages. Installed drivers are not affected."
+    CachesClearTarget.EMULATOR_APKS ->
+        "This will delete downloaded emulator installer APKs. Installed emulators are not affected."
+    CachesClearTarget.SHADERS_CATALOG ->
+        "This will delete downloaded catalog shaders. Custom shaders are kept, and catalog shaders re-download on demand."
+    CachesClearTarget.FRAMES ->
+        "This will delete downloaded frame overlays. They re-download on demand when selected."
+    CachesClearTarget.STEAM_DOWNLOADS ->
+        "This will delete staged Steam downloads and clear the download queue. Installed games are not affected, but partial downloads restart from zero."
+    null -> ""
 }
 

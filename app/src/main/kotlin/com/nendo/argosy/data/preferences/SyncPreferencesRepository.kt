@@ -69,6 +69,8 @@ class SyncPreferencesRepository @Inject constructor(
         val LAST_ROMM_SYNC = stringPreferencesKey("last_romm_sync")
         val LAST_FAVORITES_SYNC = stringPreferencesKey("last_favorites_sync")
         val LAST_FAVORITES_CHECK = stringPreferencesKey("last_favorites_check")
+        val SYNC_RESUME_GENERATION = stringPreferencesKey("sync_resume_generation")
+        val SYNC_RESUME_COMPLETED = stringPreferencesKey("sync_resume_completed")
         val SYNC_FILTER_REGIONS = stringPreferencesKey("sync_filter_regions")
         val SYNC_FILTER_REGION_MODE = stringPreferencesKey("sync_filter_region_mode")
         val SYNC_FILTER_EXCLUDE_BETA = booleanPreferencesKey("sync_filter_exclude_beta")
@@ -103,6 +105,47 @@ class SyncPreferencesRepository @Inject constructor(
         val SAVE_SYNC_LOCAL_REKEY_DONE = booleanPreferencesKey("save_sync_local_rekey_done")
         val SAVE_PATH_CACHE_PURGED = booleanPreferencesKey("save_path_cache_purged")
         val LAST_NEGOTIATE_AT = stringPreferencesKey("last_negotiate_at")
+        val DOWNLOAD_CATEGORY_DEFAULTS = stringPreferencesKey("download_category_defaults")
+        val DOWNLOAD_CATEGORY_PLATFORM_OVERRIDES = stringPreferencesKey("download_category_platform_overrides")
+    }
+
+    val downloadCategoryDefaults: Flow<Map<String, Boolean>> =
+        dataStore.data.map { DownloadDefaults.deserialize(it[Keys.DOWNLOAD_CATEGORY_DEFAULTS]) }
+
+    val downloadCategoryPlatformOverrides: Flow<Map<String, Map<String, Boolean>>> =
+        dataStore.data.map {
+            DownloadDefaults.deserializeOverrides(it[Keys.DOWNLOAD_CATEGORY_PLATFORM_OVERRIDES])
+        }
+
+    suspend fun setDownloadCategoryDefault(categoryKey: String, include: Boolean) {
+        dataStore.edit { prefs ->
+            val current = DownloadDefaults.deserialize(prefs[Keys.DOWNLOAD_CATEGORY_DEFAULTS])
+            prefs[Keys.DOWNLOAD_CATEGORY_DEFAULTS] =
+                DownloadDefaults.serialize(current + (categoryKey to include))
+        }
+    }
+
+    suspend fun setDownloadCategoryPlatformOverride(
+        platformSlug: String,
+        categoryKey: String,
+        include: Boolean?
+    ) {
+        dataStore.edit { prefs ->
+            val all = DownloadDefaults
+                .deserializeOverrides(prefs[Keys.DOWNLOAD_CATEGORY_PLATFORM_OVERRIDES])
+                .toMutableMap()
+            val platform = (all[platformSlug] ?: emptyMap()).toMutableMap()
+            if (include == null) platform.remove(categoryKey) else platform[categoryKey] = include
+            if (platform.isEmpty()) all.remove(platformSlug) else all[platformSlug] = platform
+            prefs[Keys.DOWNLOAD_CATEGORY_PLATFORM_OVERRIDES] =
+                DownloadDefaults.serializeOverrides(all)
+        }
+    }
+
+    suspend fun getEffectiveDownloadDefaults(platformSlug: String): Map<String, Boolean> {
+        val global = downloadCategoryDefaults.first()
+        val override = downloadCategoryPlatformOverrides.first()[platformSlug] ?: emptyMap()
+        return DownloadDefaults.resolve(global, override)
     }
 
     suspend fun getLastNegotiateAt(): Instant? =
@@ -252,6 +295,42 @@ class SyncPreferencesRepository @Inject constructor(
 
     suspend fun setLastRommSyncTime(time: Instant) {
         dataStore.edit { it[Keys.LAST_ROMM_SYNC] = time.toString() }
+    }
+
+    suspend fun getSyncResumeGeneration(): Instant? =
+        dataStore.data.map { it[Keys.SYNC_RESUME_GENERATION]?.let(Instant::parse) }.first()
+
+    suspend fun getSyncResumeCompletedPlatformIds(): Set<Long> =
+        dataStore.data.map { prefs ->
+            prefs[Keys.SYNC_RESUME_COMPLETED]
+                ?.split(",")
+                ?.mapNotNull { it.toLongOrNull() }
+                ?.toSet()
+                ?: emptySet()
+        }.first()
+
+    suspend fun startSyncGeneration(time: Instant) {
+        dataStore.edit {
+            it[Keys.SYNC_RESUME_GENERATION] = time.toString()
+            it[Keys.SYNC_RESUME_COMPLETED] = ""
+        }
+    }
+
+    suspend fun addSyncResumeCompletedPlatform(platformId: Long) {
+        dataStore.edit { prefs ->
+            val existing = prefs[Keys.SYNC_RESUME_COMPLETED]
+                ?.split(",")
+                ?.filter { it.isNotBlank() }
+                ?: emptyList()
+            prefs[Keys.SYNC_RESUME_COMPLETED] = (existing + platformId.toString()).joinToString(",")
+        }
+    }
+
+    suspend fun clearSyncResume() {
+        dataStore.edit {
+            it.remove(Keys.SYNC_RESUME_GENERATION)
+            it.remove(Keys.SYNC_RESUME_COMPLETED)
+        }
     }
 
     suspend fun setLastStateValidationTime(time: Instant) {

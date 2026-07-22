@@ -3,8 +3,12 @@ package com.nendo.argosy.ui.common
 import com.nendo.argosy.data.local.entity.GameEntity
 import com.nendo.argosy.data.local.entity.GameListItem
 import com.nendo.argosy.data.model.GameSource
+import com.nendo.argosy.data.platform.PlatformDefinitions
 
 private const val ANDROID_PLATFORM_SLUG = "android"
+
+val GameEntity.displayTitleId: String?
+    get() = titleId?.takeIf { platformSlug in PlatformDefinitions.TITLE_ID_PLATFORMS }
 
 val GameEntity.isAndroidApp: Boolean
     get() = source == GameSource.ANDROID_APP || platformSlug == ANDROID_PLATFORM_SLUG

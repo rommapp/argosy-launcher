@@ -14,6 +14,9 @@ import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.remote.romm.RomMRepository
 import com.nendo.argosy.data.repository.SaveCacheRepository
 import com.nendo.argosy.data.repository.SaveSyncRepository
+import com.nendo.argosy.data.repository.StateCacheManager
+import com.nendo.argosy.data.storage.StorageAttributionRepository
+import com.nendo.argosy.data.storage.StorageCategory
 import com.nendo.argosy.core.notification.NotificationManager
 import com.nendo.argosy.core.notification.showError
 import com.nendo.argosy.ui.screens.settings.PlatformFilterItem
@@ -39,12 +42,14 @@ class SyncSettingsDelegate @Inject constructor(
     private val preferencesRepository: UserPreferencesRepository,
     private val saveSyncRepository: SaveSyncRepository,
     private val saveCacheRepository: SaveCacheRepository,
+    private val stateCacheManager: StateCacheManager,
     private val syncCoordinator: com.nendo.argosy.data.sync.SyncCoordinator,
     private val platformRepository: PlatformRepository,
     private val rommRepository: RomMRepository,
     private val imageCacheManager: ImageCacheManager,
     private val notificationManager: NotificationManager,
-    private val permissionHelper: com.nendo.argosy.util.PermissionHelper
+    private val permissionHelper: com.nendo.argosy.util.PermissionHelper,
+    private val attributionRepository: StorageAttributionRepository
 ) {
     private val _state = MutableStateFlow(SyncSettingsState())
     val state: StateFlow<SyncSettingsState> = _state.asStateFlow()
@@ -68,6 +73,15 @@ class SyncSettingsDelegate @Inject constructor(
         _state.value = newState
     }
 
+    fun setDownloadCategoryDefault(scope: CoroutineScope, categoryKey: String, include: Boolean) {
+        _state.update {
+            it.copy(downloadDefaults = it.downloadDefaults + (categoryKey to include))
+        }
+        scope.launch {
+            preferencesRepository.setDownloadCategoryDefault(categoryKey, include)
+        }
+    }
+
     fun loadLibrarySettings(scope: CoroutineScope) {
         scope.launch {
             val prefs = preferencesRepository.preferences.first()
@@ -77,14 +91,17 @@ class SyncSettingsDelegate @Inject constructor(
             val enabledPlatformCount = platformRepository.getEnabledPlatformCount()
             val totalPlatformCount = platformRepository.getTotalPlatformCount()
             val cacheCounts = saveCacheRepository.getCounts()
+            val downloadDefaults = preferencesRepository.getGlobalDownloadDefaults()
             _state.update {
                 it.copy(
+                    downloadDefaults = downloadDefaults,
                     syncFilters = prefs.syncFilters,
                     saveSyncEnabled = prefs.saveSyncEnabled,
+                    stateCacheEnabled = prefs.stateCacheEnabled,
                     saveCacheLimit = prefs.saveCacheLimit,
                     hasStoragePermission = hasStoragePermission,
                     hasNotificationPermission = hasNotificationPermission,
-                    pendingUploadsCount = pendingCounts.total,
+                    pendingUploadsCount = pendingCounts.pendingUploads,
                     imageCachePath = prefs.imageCachePath,
                     defaultImageCachePath = imageCacheManager.getDefaultCachePath(),
                     enabledPlatformCount = enabledPlatformCount,
@@ -485,7 +502,7 @@ class SyncSettingsDelegate @Inject constructor(
                 saveSyncRepository.checkForAllServerUpdates()
                 val result = syncCoordinator.processQueue()
                 val pendingCounts = saveCacheRepository.getPendingSyncCounts()
-                _state.update { it.copy(pendingUploadsCount = pendingCounts.total) }
+                _state.update { it.copy(pendingUploadsCount = pendingCounts.pendingUploads) }
 
                 val message = when (result) {
                     is com.nendo.argosy.data.sync.SyncCoordinator.ProcessResult.NotConnected ->
@@ -542,6 +559,7 @@ class SyncSettingsDelegate @Inject constructor(
                     } else {
                         notificationManager.showError("Failed to move some images")
                     }
+                    attributionRepository.markDirty(StorageCategory.IMAGE_CACHE)
                 } finally {
                     _state.update { it.copy(isImageCacheMigrating = false) }
                 }
@@ -571,6 +589,7 @@ class SyncSettingsDelegate @Inject constructor(
                     } else {
                         notificationManager.showError("Failed to move some images")
                     }
+                    attributionRepository.markDirty(StorageCategory.IMAGE_CACHE)
                 } finally {
                     _state.update { it.copy(isImageCacheMigrating = false) }
                 }
@@ -793,8 +812,16 @@ class SyncSettingsDelegate @Inject constructor(
         }
     }
 
-    fun requestResetSaveCache() {
-        _state.update { it.copy(showResetSaveCacheConfirm = true) }
+    fun requestResetSaveCache(scope: CoroutineScope) {
+        scope.launch {
+            val pendingUploads = saveCacheRepository.getPendingSyncCounts().pendingUploads
+            _state.update {
+                it.copy(
+                    pendingUploadsCount = pendingUploads,
+                    showResetSaveCacheConfirm = pendingUploads == 0
+                )
+            }
+        }
     }
 
     fun cancelResetSaveCache() {
@@ -804,13 +831,65 @@ class SyncSettingsDelegate @Inject constructor(
     fun confirmResetSaveCache(scope: CoroutineScope) {
         _state.update { it.copy(showResetSaveCacheConfirm = false, isResettingSaveCache = true) }
         scope.launch {
-            saveCacheRepository.resetSaveCache()
-            _state.update { it.copy(isResettingSaveCache = false, saveCacheCount = 0, stateCacheCount = 0) }
+            val performed = saveCacheRepository.resetSaveCache()
+            if (performed) {
+                _state.update { it.copy(isResettingSaveCache = false, saveCacheCount = 0, stateCacheCount = 0) }
+                attributionRepository.refreshOnOpen()
+            } else {
+                notificationManager.showError("Cannot reset save cache while a game is running")
+                _state.update { it.copy(isResettingSaveCache = false) }
+            }
         }
     }
 
-    fun requestClearPathCache() {
-        _state.update { it.copy(showClearPathCacheConfirm = true) }
+    fun toggleStateCache(scope: CoroutineScope) {
+        scope.launch {
+            val newValue = !_state.value.stateCacheEnabled
+            preferencesRepository.setStateCacheEnabled(newValue)
+            _state.update { it.copy(stateCacheEnabled = newValue) }
+        }
+    }
+
+    fun requestClearStateCache(scope: CoroutineScope) {
+        scope.launch {
+            val pendingUploads = saveCacheRepository.getPendingSyncCounts().pendingUploads
+            _state.update {
+                it.copy(
+                    pendingUploadsCount = pendingUploads,
+                    showClearStateCacheConfirm = pendingUploads == 0
+                )
+            }
+        }
+    }
+
+    fun cancelClearStateCache() {
+        _state.update { it.copy(showClearStateCacheConfirm = false) }
+    }
+
+    fun confirmClearStateCache(scope: CoroutineScope) {
+        _state.update { it.copy(showClearStateCacheConfirm = false, isClearingStateCache = true) }
+        scope.launch {
+            val performed = stateCacheManager.clearAllCache()
+            if (performed) {
+                _state.update { it.copy(isClearingStateCache = false, stateCacheCount = 0) }
+                attributionRepository.refreshOnOpen()
+            } else {
+                notificationManager.showError("Cannot clear state cache while a game is running")
+                _state.update { it.copy(isClearingStateCache = false) }
+            }
+        }
+    }
+
+    fun requestClearPathCache(scope: CoroutineScope) {
+        scope.launch {
+            val pendingUploads = saveCacheRepository.getPendingSyncCounts().pendingUploads
+            _state.update {
+                it.copy(
+                    pendingUploadsCount = pendingUploads,
+                    showClearPathCacheConfirm = pendingUploads == 0
+                )
+            }
+        }
     }
 
     fun cancelClearPathCache() {
@@ -862,7 +941,7 @@ class SyncSettingsDelegate @Inject constructor(
                 saveSyncRepository.checkForAllServerUpdates()
                 val result = syncCoordinator.processQueue()
                 val pendingCounts = saveCacheRepository.getPendingSyncCounts()
-                _state.update { it.copy(pendingUploadsCount = pendingCounts.total) }
+                _state.update { it.copy(pendingUploadsCount = pendingCounts.pendingUploads) }
 
                 val message = when (result) {
                     is com.nendo.argosy.data.sync.SyncCoordinator.ProcessResult.NotConnected ->

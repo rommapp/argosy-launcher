@@ -23,4 +23,10 @@ enum class SoundType {
 data class SoundConfig(
     val presetName: String? = null,
     val customFilePath: String? = null
-)
+) {
+    val isRommSource: Boolean get() = customFilePath != null && presetName == ROMM_SOURCE
+
+    companion object {
+        const val ROMM_SOURCE = "ROMM_MUSIC"
+    }
+}

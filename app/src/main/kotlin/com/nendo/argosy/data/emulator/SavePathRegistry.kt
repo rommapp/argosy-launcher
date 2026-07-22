@@ -632,6 +632,15 @@ object SavePathRegistry {
         return getConfigForPlatform(configId, platformSlug)
     }
 
+    /** Whether a per-game save path override applies: file-based saves only, psx memcards excluded. */
+    fun supportsPerGameSavePath(config: SavePathConfig?, platformSlug: String): Boolean =
+        config != null &&
+            config.supported &&
+            !config.usesFolderBasedSaves &&
+            !config.usesGciFormat &&
+            !config.usesSharedMemoryCard &&
+            PlatformDefinitions.getCanonicalSlug(platformSlug) != "psx"
+
     fun getAllConfigs(): Map<String, SavePathConfig> = configs.filterValues { it.supported }
 
     fun canSyncWithSettings(

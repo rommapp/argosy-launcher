@@ -12,9 +12,15 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.TemporaryFolder
+import java.io.File
 
 class VariantResolverTest {
+
+    @get:Rule
+    val tempFolder = TemporaryFolder()
 
     private lateinit var dao: GameFileDao
     private lateinit var resolver: VariantResolver
@@ -24,6 +30,8 @@ class VariantResolverTest {
         dao = mockk(relaxed = true)
         resolver = VariantResolver(dao)
     }
+
+    private fun onDisk(name: String): String = File(tempFolder.root, name).apply { writeText("x") }.absolutePath
 
     private fun game(
         platformSlug: String = "psx",
@@ -84,7 +92,7 @@ class VariantResolverTest {
     fun `getVariantOptions marks the base downloaded state from localPath`() = runTest {
         coEvery { dao.getVariantsForGame(1L) } returns listOf(variant(2L))
 
-        val downloaded = resolver.getVariantOptions(game(localPath = "/roms/psx/Game/Game.m3u"))!!.first()
+        val downloaded = resolver.getVariantOptions(game(localPath = onDisk("Game.m3u")))!!.first()
         assertTrue(downloaded.isDownloaded)
 
         val notDownloaded = resolver.getVariantOptions(game(localPath = null))!!.first()
@@ -93,7 +101,7 @@ class VariantResolverTest {
 
     @Test
     fun `resolveVariant returns the active variant file`() = runTest {
-        val active = variant(2L)
+        val active = variant(2L, localPath = onDisk("Hack.chd"))
         coEvery { dao.getById(2L) } returns active
 
         val resolved = resolver.resolveVariant(game(activeVariantFileId = 2L))
@@ -103,7 +111,7 @@ class VariantResolverTest {
 
     @Test
     fun `resolveVariant falls back to last played file`() = runTest {
-        val last = variant(5L)
+        val last = variant(5L, localPath = onDisk("Hack.chd"))
         coEvery { dao.getById(5L) } returns last
 
         val resolved = resolver.resolveVariant(game(lastPlayedFileId = 5L))

@@ -145,6 +145,9 @@ interface SaveSyncDao {
     @Query("UPDATE save_sync SET localSavePath = NULL")
     suspend fun clearAllPaths()
 
+    @Query("UPDATE save_sync SET localSavePath = NULL WHERE gameId = :gameId")
+    suspend fun clearLocalPathsForGame(gameId: Long)
+
     @Query("SELECT COUNT(*) FROM save_sync WHERE localSavePath IS NOT NULL")
     suspend fun countWithPaths(): Int
 

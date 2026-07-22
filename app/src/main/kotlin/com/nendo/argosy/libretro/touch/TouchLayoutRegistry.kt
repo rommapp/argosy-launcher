@@ -111,7 +111,7 @@ object TouchLayoutRegistry {
     private fun pcEngine(): TouchLayoutSpec = TouchLayoutSpec(
         dpad = DpadStyle.EightWay,
         face = FaceShape.HorizontalPair,
-        faceSlots = listOf(slot(RetroButton.Y, "II"), slot(RetroButton.B, "I")),
+        faceSlots = listOf(slot(RetroButton.B, "II"), slot(RetroButton.A, "I")),
         shoulders = ShoulderShape.None,
         shoulderSlots = emptyList(),
         system = listOf(slot(RetroButton.SELECT, "Select"), slot(RetroButton.START, "Run")),
@@ -178,9 +178,9 @@ object TouchLayoutRegistry {
         ),
         shoulders = ShoulderShape.TopPairPlusZ,
         shoulderSlots = listOf(
-            slot(RetroButton.L, "L"),
-            slot(RetroButton.R, "R"),
-            slot(RetroButton.L2, "Z")
+            slot(RetroButton.L2, "L"),
+            slot(RetroButton.R2, "R"),
+            slot(RetroButton.R, "Z")
         ),
         system = listOf(slot(RetroButton.START, "Start")),
         analog = AnalogConfig.LeftAndRight
@@ -190,14 +190,14 @@ object TouchLayoutRegistry {
         dpad = DpadStyle.EightWay,
         face = FaceShape.Diamond4,
         faceSlots = listOf(
-            slot(RetroButton.Y, "2"),
-            slot(RetroButton.X, "1"),
+            slot(RetroButton.Y, "Z"),
+            slot(RetroButton.X, "C"),
             slot(RetroButton.B, "B"),
             slot(RetroButton.A, "A")
         ),
         shoulders = ShoulderShape.TopPair,
-        shoulderSlots = listOf(slot(RetroButton.L, "C"), slot(RetroButton.R, "Z")),
-        system = listOf(slot(RetroButton.SELECT, "-"), slot(RetroButton.START, "+")),
+        shoulderSlots = listOf(slot(RetroButton.L, "-"), slot(RetroButton.R, "+")),
+        system = listOf(slot(RetroButton.SELECT, "2"), slot(RetroButton.START, "1")),
         analog = AnalogConfig.LeftOnly
     )
 
@@ -253,12 +253,12 @@ object TouchLayoutRegistry {
         dpad = DpadStyle.EightWay,
         face = FaceShape.Row6,
         faceSlots = listOf(
-            slot(RetroButton.Y, "A"),
-            slot(RetroButton.X, "B"),
-            slot(RetroButton.L, "C"),
-            slot(RetroButton.B, "D"),
-            slot(RetroButton.A, "E"),
-            slot(RetroButton.R, "F")
+            slot(RetroButton.Y, "1"),
+            slot(RetroButton.X, "2"),
+            slot(RetroButton.L, "3"),
+            slot(RetroButton.B, "4"),
+            slot(RetroButton.A, "5"),
+            slot(RetroButton.R, "6")
         ),
         shoulders = ShoulderShape.None,
         shoulderSlots = emptyList(),
@@ -365,13 +365,13 @@ object TouchLayoutRegistry {
         dpad = DpadStyle.EightWay,
         face = FaceShape.HorizontalTrio,
         faceSlots = listOf(
-            slot(RetroButton.A, "A"),
+            slot(RetroButton.Y, "A"),
             slot(RetroButton.B, "B"),
-            slot(RetroButton.Y, "C")
+            slot(RetroButton.A, "C")
         ),
         shoulders = ShoulderShape.TopPair,
         shoulderSlots = listOf(slot(RetroButton.L, "L"), slot(RetroButton.R, "R")),
-        system = listOf(slot(RetroButton.X, "Pause"), slot(RetroButton.START, "Start")),
+        system = listOf(slot(RetroButton.SELECT, "Stop"), slot(RetroButton.START, "Play/Pause")),
         analog = AnalogConfig.None
     )
 

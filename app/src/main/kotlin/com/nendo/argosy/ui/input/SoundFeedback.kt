@@ -3,11 +3,16 @@ package com.nendo.argosy.ui.input
 import android.content.Context
 import android.media.AudioAttributes
 import android.media.SoundPool
+import android.os.SystemClock
 import android.util.Log
 import com.nendo.argosy.R
 import com.nendo.argosy.core.input.SoundConfig
 import com.nendo.argosy.core.input.SoundType
+import com.nendo.argosy.core.media.SfxTranscoder
+import com.nendo.argosy.data.storage.StorageAttributionRepository
+import com.nendo.argosy.data.storage.StorageCategory
 import dagger.hilt.android.qualifiers.ApplicationContext
+import java.io.File
 import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -15,6 +20,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 private const val TAG = "SoundFeedback"
 
@@ -35,16 +41,15 @@ enum class SoundPreset(val resourceId: Int?, val displayName: String) {
     COLLECT(R.raw.collect, "Collect"),
     DISMISS_FAIL(R.raw.dismiss_fail, "Dismiss Fail"),
     SILENT(null, "Silent"),
-    CUSTOM(null, "Custom...");
-
-    companion object {
-        val selectable: List<SoundPreset> = entries.filter { it != CUSTOM }
-    }
+    CUSTOM(null, "Custom File"),
+    ROMM_MUSIC(null, "RomM Music"),
+    DEFAULT(null, "Default");
 }
 
 @Singleton
 class SoundFeedbackManager @Inject constructor(
-    @ApplicationContext private val context: Context
+    @ApplicationContext private val context: Context,
+    private val attributionRepository: StorageAttributionRepository
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val initLock = Any()
@@ -58,10 +63,15 @@ class SoundFeedbackManager @Inject constructor(
     @Volatile
     private var soundPool: SoundPool? = null
     private val soundIds = ConcurrentHashMap<SoundPreset, Int>()
+    private val customSoundIds = ConcurrentHashMap<SoundType, Int>()
+    private val customSoundPaths = ConcurrentHashMap<SoundType, String>()
     private val loadedSampleIds: MutableSet<Int> = ConcurrentHashMap.newKeySet()
 
     @Volatile
     private var soundConfigs: Map<SoundType, SoundConfig> = emptyMap()
+
+    @Volatile
+    private var lastBoundaryPlayMs = 0L
 
     private val defaultPresetMap = mapOf(
         SoundType.NAVIGATE to SoundPreset.TAP_LIGHT,
@@ -78,7 +88,7 @@ class SoundFeedbackManager @Inject constructor(
         SoundType.DOWNLOAD_CANCEL to SoundPreset.DISMISS_FAIL,
         SoundType.ERROR to SoundPreset.BUZZ_ERROR,
         SoundType.VOLUME_PREVIEW to SoundPreset.CLICK_SOFT,
-        SoundType.TOGGLE to SoundPreset.BELL_HIGH,
+        SoundType.TOGGLE to SoundPreset.CLICK_SOFT,
         SoundType.LAUNCH_GAME to SoundPreset.COLLECT
     )
 
@@ -96,6 +106,7 @@ class SoundFeedbackManager @Inject constructor(
         private const val PRIORITY_LOW = 1
         private const val PRIORITY_DEFAULT = 2
         private const val PRIORITY_HIGH = 3
+        private const val BOUNDARY_RATE_LIMIT_MS = 500L
     }
 
     fun setEnabled(enabled: Boolean) {
@@ -137,6 +148,53 @@ class SoundFeedbackManager @Inject constructor(
                 }
             }
         }
+        syncCustomSounds(pool)
+    }
+
+    private fun syncCustomSounds(pool: SoundPool) {
+        val desired = soundConfigs.entries
+            .mapNotNull { (type, config) -> config.customFilePath?.let { type to it } }
+            .toMap()
+        customSoundPaths.keys.filterNot { it in desired }.forEach { type ->
+            unloadCustomSound(pool, type)
+        }
+        desired.forEach { (type, path) ->
+            if (customSoundPaths[type] != path) {
+                unloadCustomSound(pool, type)
+                loadCustomSound(pool, type, path)
+            }
+        }
+    }
+
+    private fun unloadCustomSound(pool: SoundPool, type: SoundType) {
+        customSoundPaths.remove(type)
+        customSoundIds.remove(type)?.let { sampleId ->
+            loadedSampleIds.remove(sampleId)
+            pool.unload(sampleId)
+        }
+    }
+
+    private fun loadCustomSound(pool: SoundPool, type: SoundType, path: String) {
+        if (!File(path).exists()) {
+            Log.w(TAG, "Custom sound missing for ${type.name}: $path")
+            return
+        }
+        val playablePath = resolvePlayablePath(path)
+        if (playablePath == null) {
+            Log.w(TAG, "Skipping custom sound for ${type.name}: transcode failed for $path")
+            return
+        }
+        try {
+            customSoundIds[type] = pool.load(playablePath, 1)
+            customSoundPaths[type] = path
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to load custom sound for ${type.name}", e)
+        }
+    }
+
+    private fun resolvePlayablePath(path: String): String? {
+        if (path.substringAfterLast('.', "").lowercase() == "wav") return path
+        return SfxTranscoder.transcodeToWavCache(context, path)?.absolutePath
     }
 
     private fun releaseSoundPool() {
@@ -144,6 +202,8 @@ class SoundFeedbackManager @Inject constructor(
             soundPool?.release()
             soundPool = null
             soundIds.clear()
+            customSoundIds.clear()
+            customSoundPaths.clear()
             loadedSampleIds.clear()
         }
     }
@@ -163,10 +223,29 @@ class SoundFeedbackManager @Inject constructor(
 
     fun setSoundConfigs(configs: Map<SoundType, SoundConfig>) {
         soundConfigs = configs
+        refreshCustomSounds()
     }
 
     fun setSoundConfig(type: SoundType, config: SoundConfig) {
         soundConfigs = soundConfigs + (type to config)
+        refreshCustomSounds()
+    }
+
+    fun clearSoundConfig(type: SoundType) {
+        soundConfigs = soundConfigs - type
+        refreshCustomSounds()
+    }
+
+    fun playDefault(type: SoundType) {
+        defaultPresetMap[type]?.let { playPreset(it) }
+    }
+
+    private fun refreshCustomSounds() {
+        scope.launch {
+            synchronized(initLock) {
+                soundPool?.let { syncCustomSounds(it) }
+            }
+        }
     }
 
     fun getSoundConfig(type: SoundType): SoundConfig? = soundConfigs[type]
@@ -193,8 +272,14 @@ class SoundFeedbackManager @Inject constructor(
 
     fun play(type: SoundType) {
         if (!shouldPlaySound(type)) return
+        if (type == SoundType.BOUNDARY) {
+            val now = SystemClock.elapsedRealtime()
+            if (now - lastBoundaryPlayMs < BOUNDARY_RATE_LIMIT_MS) return
+            lastBoundaryPlayMs = now
+        }
 
         val config = soundConfigs[type]
+        if (config?.customFilePath != null && playCustomSample(type)) return
         val preset = config?.presetName
             ?.let { name -> SoundPreset.entries.find { it.name == name } }
             ?.takeIf { it.resourceId != null }
@@ -203,7 +288,32 @@ class SoundFeedbackManager @Inject constructor(
         playPreset(preset)
     }
 
+    /** Plays the loaded custom sample assigned to this type, if any; for picker previews. */
+    fun playCustom(type: SoundType) {
+        if (!enabled) return
+        playCustomSample(type)
+    }
+
+    private fun playCustomSample(type: SoundType): Boolean {
+        val pool = soundPool ?: return false
+        val soundId = customSoundIds[type] ?: return false
+        if (soundId !in loadedSampleIds) return false
+        return try {
+            pool.play(soundId, volume, volume, PRIORITY_DEFAULT, 0, 1f) != 0
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to play custom sound for ${type.name}", e)
+            false
+        }
+    }
+
     fun release() {
         releaseSoundPool()
+    }
+
+    /** Deletes transcoded SFX WAVs; loaded samples stay in memory and re-transcode on next load. */
+    suspend fun clearSfxCache() = withContext(Dispatchers.IO) {
+        val dir = File(context.cacheDir, "sfx")
+        if (dir.exists()) dir.deleteRecursively()
+        attributionRepository.markDirty(StorageCategory.SFX_CACHE)
     }
 }

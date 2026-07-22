@@ -1,5 +1,6 @@
 package com.nendo.argosy.ui.screens.settings.sections.input
 
+import com.nendo.argosy.core.input.SoundType
 import com.nendo.argosy.ui.input.InputHandler
 import com.nendo.argosy.ui.input.InputResult
 import com.nendo.argosy.ui.screens.settings.SettingsInputHandler
@@ -14,13 +15,19 @@ internal class ThemeSectionInput(
 ) : InputHandler {
 
     override fun onUp(): InputResult {
-        viewModel.moveFocusWrapped(-1, themeMaxFocusIndex())
-        return InputResult.HANDLED
+        return if (viewModel.moveFocusWrapped(-1, themeMaxFocusIndex())) {
+            InputResult.HANDLED
+        } else {
+            InputResult.handled(SoundType.BOUNDARY)
+        }
     }
 
     override fun onDown(): InputResult {
-        viewModel.moveFocusWrapped(1, themeMaxFocusIndex())
-        return InputResult.HANDLED
+        return if (viewModel.moveFocusWrapped(1, themeMaxFocusIndex())) {
+            InputResult.HANDLED
+        } else {
+            InputResult.handled(SoundType.BOUNDARY)
+        }
     }
 
     override fun onLeft(): InputResult = cycle(-1)

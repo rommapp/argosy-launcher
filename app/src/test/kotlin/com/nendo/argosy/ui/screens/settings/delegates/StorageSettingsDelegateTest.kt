@@ -69,6 +69,7 @@ class StorageSettingsDelegateTest {
             syncPlatformUseCase = syncPlatformUseCase,
             platformSyncQueue = platformSyncQueue,
             databaseAdminRepository = databaseAdminRepository,
+            saveCacheRepository = mockk(relaxed = true),
             managedStorageAccessor = managedStorageAccessor,
             notificationManager = mockk(relaxed = true)
         )

@@ -546,9 +546,9 @@ class FirstRunViewModel @Inject constructor(
         if (url.isBlank()) return
         _uiState.update { it.copy(isConnecting = true, connectionError = null) }
         viewModelScope.launch {
-            when (val result = romMRepository.connect(url)) {
+            when (val result = romMRepository.probeServerVersion(url)) {
                 is RomMResult.Success -> {
-                    if (romMRepository.isVersionAtLeast(RomMCapabilities.DEVICE_AUTH_MIN_VERSION)) {
+                    if (RomMCapabilities.from(result.data).supportsDeviceAuth) {
                         _uiState.update {
                             it.copy(rommUrlCommitted = true, rommAuthMethod = RomMAuthMethod.DEVICE)
                         }

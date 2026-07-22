@@ -2,12 +2,14 @@ package com.nendo.argosy.ui.screens.settings.sections
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -18,7 +20,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.withStyle
 import com.nendo.argosy.core.input.SoundType
+import com.nendo.argosy.ui.screens.settings.SoundValueLabel
 import com.nendo.argosy.ui.components.SliderPreference
 import com.nendo.argosy.ui.screens.settings.delegates.VolumeLevels
 import com.nendo.argosy.ui.components.SwitchPreference
@@ -28,6 +36,7 @@ import com.nendo.argosy.ui.screens.settings.components.SectionPaneLayout
 import com.nendo.argosy.ui.screens.settings.menu.SettingsLayout
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalArgosyTheme
+import com.nendo.argosy.ui.theme.LocalLauncherTheme
 import com.nendo.argosy.ui.util.clickableNoFocus
 
 internal data class ThemeSoundsLayoutState(
@@ -85,7 +94,7 @@ internal sealed class ThemeSoundsItem(
         val ALL: List<ThemeSoundsItem> = listOf(
             UiSoundsToggle, UiSoundsVolume,
             CustomizeSpacer, CustomizeHeader
-        ) + SoundType.entries.map { SoundTypeItem(it) }
+        ) + SoundType.entries.filterNot { it == SoundType.SILENT }.map { SoundTypeItem(it) }
     }
 }
 
@@ -172,7 +181,7 @@ fun ThemeSoundsSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
 
             is ThemeSoundsItem.SoundTypeItem -> SoundCustomizationItem(
                 soundType = item.soundType,
-                displayValue = uiState.sounds.getDisplayNameForType(item.soundType),
+                displayValue = uiState.sounds.getSoundValueForType(item.soundType),
                 isFocused = isFocused(item),
                 onClick = { viewModel.showSoundPicker(item.soundType) }
             )
@@ -193,7 +202,7 @@ private fun ThemeSoundsSectionHeader(title: String) {
 @Composable
 private fun SoundCustomizationItem(
     soundType: SoundType,
-    displayValue: String,
+    displayValue: SoundValueLabel,
     isFocused: Boolean,
     onClick: () -> Unit
 ) {
@@ -215,7 +224,6 @@ private fun SoundCustomizationItem(
             )
             .clickableNoFocus(onClick = onClick)
             .padding(Dimens.spacingMd),
-        horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
@@ -224,11 +232,43 @@ private fun SoundCustomizationItem(
             color = if (isFocused) focusedContent
                     else MaterialTheme.colorScheme.onSurface
         )
-        Text(
-            text = displayValue,
-            style = MaterialTheme.typography.bodyMedium,
-            color = if (isFocused) focusedContent.copy(alpha = 0.7f)
-                    else MaterialTheme.colorScheme.onSurfaceVariant
-        )
+        Spacer(modifier = Modifier.width(Dimens.spacingMd))
+        Column(
+            modifier = Modifier.weight(1f),
+            horizontalAlignment = Alignment.End
+        ) {
+            Text(
+                text = displayValue.primary,
+                style = MaterialTheme.typography.bodyMedium,
+                color = if (isFocused) focusedContent.copy(alpha = 0.7f)
+                        else MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            displayValue.secondary?.let { secondary ->
+                val isDark = LocalLauncherTheme.current.isDarkTheme
+                val palePrimary = lerp(
+                    MaterialTheme.colorScheme.primary,
+                    if (isDark) Color.White else Color.Black,
+                    0.35f
+                )
+                val secondaryColor = if (isFocused) focusedContent.copy(alpha = 0.5f)
+                    else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                Text(
+                    text = buildAnnotatedString {
+                        displayValue.secondaryPrefix?.let { prefix ->
+                            withStyle(SpanStyle(color = palePrimary)) { append(prefix) }
+                            append(" - ")
+                        }
+                        append(secondary)
+                    },
+                    style = MaterialTheme.typography.bodySmall,
+                    fontStyle = FontStyle.Italic,
+                    color = secondaryColor,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+        }
     }
 }

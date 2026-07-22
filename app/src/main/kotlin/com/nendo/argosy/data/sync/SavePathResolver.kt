@@ -5,6 +5,7 @@ import com.nendo.argosy.data.emulator.RetroArchConfigParser
 import com.nendo.argosy.data.emulator.SavePathConfig
 import com.nendo.argosy.data.emulator.SavePathRegistry
 import com.nendo.argosy.data.emulator.TitleIdExtractor
+import com.nendo.argosy.data.local.dao.EmulatorConfigDao
 import com.nendo.argosy.data.local.dao.EmulatorSaveConfigDao
 import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.platform.PlatformDefinitions
@@ -17,6 +18,7 @@ import com.nendo.argosy.util.Logger
 import com.nendo.argosy.util.SaveDebugLogger
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import java.io.File
 import javax.inject.Inject
@@ -29,6 +31,7 @@ class SavePathResolver @Inject constructor(
     @ApplicationContext private val context: Context,
     private val fal: FileAccessLayer,
     private val emulatorSaveConfigDao: EmulatorSaveConfigDao,
+    private val emulatorConfigDao: EmulatorConfigDao,
     private val gameDao: GameDao,
     private val retroArchConfigParser: RetroArchConfigParser,
     private val retroArchPathResolver: com.nendo.argosy.data.emulator.RetroArchPathResolver,
@@ -37,7 +40,9 @@ class SavePathResolver @Inject constructor(
     private val saveArchiver: SaveArchiver,
     private val switchSaveHandler: SwitchSaveHandler,
     private val gciSaveHandler: GciSaveHandler,
-    private val saveHandlerRegistry: PlatformSaveHandlerRegistry
+    private val saveHandlerRegistry: PlatformSaveHandlerRegistry,
+    private val builtinPreferences: com.nendo.argosy.data.preferences.BuiltinEmulatorPreferencesRepository,
+    private val platformLibretroSettingsDao: com.nendo.argosy.data.local.dao.PlatformLibretroSettingsDao
 ) {
     suspend fun discoverSavePath(
         emulatorId: String,
@@ -101,6 +106,19 @@ class SavePathResolver @Inject constructor(
             Logger.warn(TAG, "[SaveSync] DISCOVER | No save path config | emulatorId=$emulatorId, emulatorPackage=$emulatorPackage")
             onDecision("noConfig", null, null)
             return@withContext null
+        }
+
+        val perGameDir = perGameSaveDir(gameId, config, platformSlug)
+        if (perGameDir != null) {
+            if (romPath != null) {
+                val savePath = findSaveByRomName(perGameDir, romPath, config.saveExtensions)
+                if (savePath != null) {
+                    onDecision("perGame+romName", null, perGameDir)
+                    return@withContext savePath
+                }
+            }
+            onDecision("perGame+title", null, perGameDir)
+            return@withContext findSaveInPath(perGameDir, gameTitle, config.saveExtensions)
         }
 
         val effectiveEmulatorId = config.emulatorId
@@ -190,7 +208,7 @@ class SavePathResolver @Inject constructor(
                 retroArchPathResolver.resolveSaveDirectoriesForPlatform(req, platformSlug)
             }
         } else {
-            resolveSavePaths(config, platformSlug)
+            builtinSaveDirOverrides(effectiveEmulatorId, gameId) + resolveSavePaths(config, platformSlug)
         }
 
         Logger.debug(TAG, "discoverSavePath: searching ${paths.size} paths for '$gameTitle' (romPath=$romPath)")
@@ -427,37 +445,58 @@ class SavePathResolver @Inject constructor(
 
         val romFile = File(romPath)
         val romName = romFile.nameWithoutExtension
-        val isZipContainer = romFile.extension.equals("zip", ignoreCase = true)
+        val candidateNames = listOfNotNull(
+            romName,
+            com.nendo.argosy.data.emulator.ArchiveRomNaming.launchBaseName(romFile)
+        ).distinct()
 
         Logger.verbose(TAG) {
-            "findSaveByRomName: romPath=${romFile.name}, romName=$romName, isZip=$isZipContainer, extensions=$extensions, searchDir=$basePath"
+            "findSaveByRomName: romPath=${romFile.name}, candidates=$candidateNames, extensions=$extensions, searchDir=$basePath"
         }
 
-        if (isZipContainer) {
-            Logger.verbose(TAG) {
-                "findSaveByRomName: WARNING - ROM is in ZIP container, save filename may differ from container name '$romName'"
-            }
-        }
-
-        for (ext in extensions) {
-            if (ext == "*") continue
-            val savePath = "$basePath/$romName.$ext"
-            Logger.verbose(TAG) { "findSaveByRomName: checking $romName.$ext -> exists=${fal.exists(savePath)}" }
-            if (fal.exists(savePath) && fal.isFile(savePath)) {
-                Logger.debug(TAG, "findSaveByRomName: found $savePath")
-                return savePath
+        for (candidate in candidateNames) {
+            for (ext in extensions) {
+                if (ext == "*") continue
+                val savePath = "$basePath/$candidate.$ext"
+                Logger.verbose(TAG) { "findSaveByRomName: checking $candidate.$ext -> exists=${fal.exists(savePath)}" }
+                if (fal.exists(savePath) && fal.isFile(savePath)) {
+                    Logger.debug(TAG, "findSaveByRomName: found $savePath")
+                    return savePath
+                }
             }
         }
 
         if (Logger.isVerbose) {
             val existingFiles = fal.listFiles(basePath)?.filter { it.isFile }?.map { it.name } ?: emptyList()
             Logger.verbose(TAG) {
-                "findSaveByRomName: no match for '$romName' in $basePath, existing files (${existingFiles.size}): ${existingFiles.take(10).joinToString()}" +
+                "findSaveByRomName: no match for $candidateNames in $basePath, existing files (${existingFiles.size}): ${existingFiles.take(10).joinToString()}" +
                     if (existingFiles.size > 10) "..." else ""
             }
         }
 
         return null
+    }
+
+    /**
+     * Save directories the built-in core may have been launched with. GameLauncher honours a
+     * per-platform override then a global custom path, neither of which is stored in
+     * emulatorSaveConfig, so detection has to resolve them the same way or it searches only
+     * the defaults.
+     */
+    private suspend fun builtinSaveDirOverrides(emulatorId: String, gameId: Long?): List<String> {
+        if (emulatorId != "builtin") return emptyList()
+
+        val platformOverride = gameId
+            ?.let { gameDao.getById(it) }
+            ?.let { platformLibretroSettingsDao.getByPlatformId(it.platformId) }
+            ?.savePath
+            ?.takeIf { it.isNotBlank() }
+
+        val globalOverride = builtinPreferences.getBuiltinEmulatorSettings().first()
+            .customSavePath
+            ?.takeIf { it.isNotBlank() }
+
+        return listOfNotNull(platformOverride, globalOverride).distinct()
     }
 
     private fun findSaveInPath(basePath: String, gameTitle: String, extensions: List<String>): String? {
@@ -509,7 +548,8 @@ class SavePathResolver @Inject constructor(
         platformSlug: String,
         romPath: String?,
         coreName: String? = null,
-        cachedSaveId: String? = null
+        cachedSaveId: String? = null,
+        gameId: Long? = null
     ): String? {
         val config = SavePathRegistry.getConfigForPlatform(emulatorId, platformSlug)
             ?: SavePathRegistry.getConfig(emulatorId)
@@ -517,6 +557,13 @@ class SavePathResolver @Inject constructor(
                 Logger.debug(TAG, "constructSavePath: FAILED - no SavePathConfig | emulatorId=$emulatorId, platformSlug=$platformSlug")
                 return null
             }
+
+        val perGameDir = perGameSaveDir(gameId, config, platformSlug)
+        if (perGameDir != null && (directoryExists(perGameDir) || saveArchiver.getFileForPath(perGameDir).mkdirs())) {
+            val extension = config.saveExtensions.firstOrNull { it != "*" } ?: "sav"
+            val baseName = if (romPath != null) File(romPath).nameWithoutExtension else sanitizeFileName(gameTitle)
+            return "$perGameDir/$baseName.$extension"
+        }
 
         if (emulatorId == "retroarch" || emulatorId == "retroarch_64") {
             return constructRetroArchSavePath(emulatorId, gameTitle, platformSlug, romPath, coreName)
@@ -686,6 +733,12 @@ class SavePathResolver @Inject constructor(
         val userConfig = emulatorSaveConfigDao.getByEmulator(config.emulatorId)
         val basePathOverride = userConfig?.takeIf { it.isUserOverride }?.savePathPattern
         return switchSaveHandler.resolveSaveTargetPath(zipFile, config, emulatorPackage, basePathOverride)
+    }
+
+    private suspend fun perGameSaveDir(gameId: Long?, config: SavePathConfig, platformSlug: String): String? {
+        if (gameId == null) return null
+        if (!SavePathRegistry.supportsPerGameSavePath(config, platformSlug)) return null
+        return emulatorConfigDao.getSavePathForGame(gameId)?.takeIf { it.isNotBlank() }
     }
 
     private fun resolveSavePaths(config: SavePathConfig, platformSlug: String): List<String> {

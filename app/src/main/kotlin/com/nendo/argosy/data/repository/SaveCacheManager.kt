@@ -51,7 +51,7 @@ class SaveCacheManager @Inject constructor(
     }
 
     private val cacheBaseDir: File
-        get() = File(context.filesDir, "save_cache")
+        get() = com.nendo.argosy.util.AppPaths.saveCacheDir(context.filesDir)
 
     suspend fun cacheCurrentSave(
         gameId: Long,

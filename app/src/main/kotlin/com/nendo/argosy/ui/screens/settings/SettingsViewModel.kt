@@ -33,6 +33,7 @@ import com.nendo.argosy.domain.usecase.sync.SyncLibraryUseCase
 import com.nendo.argosy.libretro.LibretroCoreManager
 import com.nendo.argosy.ui.ModalResetSignal
 import com.nendo.argosy.ui.input.HapticFeedbackManager
+import com.nendo.argosy.ui.input.HapticPattern
 import com.nendo.argosy.ui.input.InputHandler
 import com.nendo.argosy.ui.input.InputResult
 import com.nendo.argosy.ui.input.SoundFeedbackManager
@@ -48,6 +49,7 @@ import com.nendo.argosy.ui.screens.settings.delegates.RASettingsDelegate
 import com.nendo.argosy.ui.screens.settings.delegates.ServerSettingsDelegate
 import com.nendo.argosy.ui.screens.settings.delegates.SoundSettingsDelegate
 import com.nendo.argosy.ui.screens.settings.delegates.SteamSettingsDelegate
+import com.nendo.argosy.ui.screens.settings.delegates.StorageAttributionDelegate
 import com.nendo.argosy.ui.screens.settings.delegates.StorageSettingsDelegate
 import com.nendo.argosy.ui.screens.settings.delegates.SyncSettingsDelegate
 import com.nendo.argosy.core.emulator.LibretroSettingDef
@@ -101,6 +103,9 @@ class SettingsViewModel @Inject constructor(
     val emulatorDelegate: EmulatorSettingsDelegate,
     val serverDelegate: ServerSettingsDelegate,
     val storageDelegate: StorageSettingsDelegate,
+    val attributionDelegate: StorageAttributionDelegate,
+    val storagePlatformGamesDelegate: com.nendo.argosy.ui.screens.settings.delegates.StoragePlatformGamesDelegate,
+    val storageCachesDelegate: com.nendo.argosy.ui.screens.settings.delegates.StorageCachesDelegate,
     val syncDelegate: SyncSettingsDelegate,
     val steamDelegate: SteamSettingsDelegate,
     val raDelegate: RASettingsDelegate,
@@ -147,8 +152,11 @@ class SettingsViewModel @Inject constructor(
 
     val openBackgroundPickerEvent: SharedFlow<Unit> = displayDelegate.openBackgroundPickerEvent
     val openCustomSoundPickerEvent: SharedFlow<SoundType> = soundsDelegate.openCustomSoundPickerEvent
-    val openAudioFilePickerEvent: SharedFlow<Unit> = ambientAudioDelegate.openAudioFilePickerEvent
-    val openAudioFileBrowserEvent: SharedFlow<Unit> = ambientAudioDelegate.openAudioFileBrowserEvent
+    val openBgmPlaylistManagerEvent: SharedFlow<Unit> = ambientAudioDelegate.openPlaylistManagerEvent
+    val openBgmAddMusicBrowserEvent: SharedFlow<Unit> = ambientAudioDelegate.openAddMusicBrowserEvent
+    val openMusicBrowserBgmEvent: SharedFlow<Unit> = ambientAudioDelegate.openMusicBrowserEvent
+    val openMusicLocationPickerEvent: SharedFlow<Unit> = ambientAudioDelegate.openMusicLocationPickerEvent
+    val openMusicBrowserSfxEvent: SharedFlow<SoundType> = soundsDelegate.openMusicBrowserSfxEvent
     val launchPlatformFolderPicker: SharedFlow<Long> = storageDelegate.launchPlatformFolderPicker
     val launchSavePathPicker: SharedFlow<Unit> = emulatorDelegate.launchSavePathPicker
     val builtinNavigationEvent = emulatorDelegate.builtinNavigationEvent
@@ -170,6 +178,7 @@ class SettingsViewModel @Inject constructor(
     fun openPlatformBuiltinStatePathBrowser(platformId: Long) { viewModelScope.launch { _launchPlatformBuiltinStatePathPicker.emit(platformId) } }
     val resetPlatformStatePathEvent: SharedFlow<Long> = storageDelegate.resetStatePathEvent
     val openImageCachePickerEvent: SharedFlow<Unit> = syncDelegate.openImageCachePickerEvent
+    val hardResetCompletedEvent: SharedFlow<Unit> = storageDelegate.hardResetCompletedEvent
     val launchBiosFolderPicker: SharedFlow<Unit> = biosDelegate.launchFolderPicker
     val launchGpuDriverFilePicker: SharedFlow<Unit> = biosDelegate.launchGpuDriverFilePicker
 
@@ -272,7 +281,9 @@ class SettingsViewModel @Inject constructor(
         _uiState.update { it.copy(
             currentSection = SettingsSection.PLATFORM_DETAIL,
             focusedIndex = 0,
-            platformDetail = it.platformDetail.copy(platformIndex = platformIndex)
+            platformDetail = it.platformDetail.copy(
+                platformIndex = platformIndex
+            )
         ) }
         loadPlatformDetailStats(platformIndex)
     }
@@ -309,6 +320,9 @@ class SettingsViewModel @Inject constructor(
                 }
             }
 
+            val globalDefaults = preferencesRepository.getGlobalDownloadDefaults()
+            val overrides = preferencesRepository.getDownloadPlatformOverrides(platformSlug)
+
             _uiState.update { it.copy(
                 platformDetail = it.platformDetail.copy(
                     totalGames = config.platform.gameCount,
@@ -318,7 +332,9 @@ class SettingsViewModel @Inject constructor(
                     packagePathAccessible = packagePathAccessible,
                     biosTotal = biosStatus?.totalFiles ?: 0,
                     biosDownloaded = biosStatus?.downloadedFiles ?: 0,
-                    hasBiosRequirements = (biosStatus?.totalFiles ?: 0) > 0
+                    hasBiosRequirements = (biosStatus?.totalFiles ?: 0) > 0,
+                    downloadOverrides = overrides,
+                    globalDownloadDefaults = globalDefaults
                 )
             ) }
         }
@@ -399,7 +415,14 @@ class SettingsViewModel @Inject constructor(
     fun setBuiltinAutoSaveState(enabled: Boolean) = routeSetBuiltinAutoSaveState(this, enabled)
     fun setBuiltinAutoRestoreState(enabled: Boolean) = routeSetBuiltinAutoRestoreState(this, enabled)
     fun setBuiltinHwCoreSaveStates(enabled: Boolean) = routeSetBuiltinHwCoreSaveStates(this, enabled)
-    fun setBuiltinDefaultToHardcore(enabled: Boolean) = routeSetBuiltinDefaultToHardcore(this, enabled)
+    fun setBuiltinDefaultToHardcore(mode: String) = routeSetBuiltinDefaultToHardcore(this, mode)
+    fun cycleRADefaultMode(direction: Int) {
+        val options = listOf("ask", "casual", "hardcore")
+        val current = _uiState.value.retroAchievements.defaultToHardcore
+        val currentIndex = options.indexOf(current).coerceAtLeast(0)
+        val nextIndex = (currentIndex + direction + options.size) % options.size
+        setBuiltinDefaultToHardcore(options[nextIndex])
+    }
     fun setBuiltinSavePath(path: String) = routeSetBuiltinSavePath(this, path)
     fun resetBuiltinSavePath() = routeResetBuiltinSavePath(this)
     fun setBuiltinStatePath(path: String) = routeSetBuiltinStatePath(this, path)
@@ -493,19 +516,30 @@ class SettingsViewModel @Inject constructor(
     fun hideHotkeysModal() = routeHideHotkeysModal(this)
     fun observeHotkeys() = inputConfigRepository.observeHotkeys()
 
-    suspend fun saveHotkey(action: com.nendo.argosy.data.local.entity.HotkeyAction, keyCodes: List<Int>) {
-        inputConfigRepository.setHotkey(action, keyCodes)
+    suspend fun saveHotkey(
+        action: com.nendo.argosy.data.local.entity.HotkeyAction,
+        keyCodes: List<Int>,
+        scopeType: com.nendo.argosy.data.local.entity.HotkeyScopeType,
+        scopeKey: String?
+    ) {
+        inputConfigRepository.setHotkey(action, keyCodes, scopeType = scopeType, scopeKey = scopeKey)
     }
 
-    suspend fun clearHotkey(action: com.nendo.argosy.data.local.entity.HotkeyAction) {
-        inputConfigRepository.deleteHotkey(action)
+    suspend fun clearHotkey(
+        action: com.nendo.argosy.data.local.entity.HotkeyAction,
+        scopeType: com.nendo.argosy.data.local.entity.HotkeyScopeType,
+        scopeKey: String?
+    ) {
+        inputConfigRepository.clearScopedHotkey(action, scopeType, scopeKey)
     }
 
     suspend fun setHotkeyHoldMs(
         action: com.nendo.argosy.data.local.entity.HotkeyAction,
-        holdMs: Long
+        holdMs: Long,
+        scopeType: com.nendo.argosy.data.local.entity.HotkeyScopeType,
+        scopeKey: String?
     ) {
-        inputConfigRepository.setHotkeyHoldMs(action, holdMs)
+        inputConfigRepository.setHotkeyHoldMs(action, holdMs, scopeType = scopeType, scopeKey = scopeKey)
     }
 
     suspend fun saveCoreControlHotkey(
@@ -656,12 +690,16 @@ class SettingsViewModel @Inject constructor(
         _uiState.update { it.copy(enumPickerKey = key, enumPickerToken = it.enumPickerToken + 1) }
     }
 
-    fun moveFocusWrapped(delta: Int, maxIndex: Int) {
+    fun moveFocusWrapped(delta: Int, maxIndex: Int): Boolean {
+        var moved = false
         _uiState.update {
-            it.copy(focusedIndex = com.nendo.argosy.ui.input.InputDispatcher.computeWrappedIndex(
+            val newIndex = com.nendo.argosy.ui.input.InputDispatcher.computeWrappedIndex(
                 it.focusedIndex, delta, maxIndex, it.controls.menuWrapMode
-            ))
+            )
+            moved = newIndex != it.focusedIndex
+            it.copy(focusedIndex = newIndex)
         }
+        return moved
     }
 
     fun refreshSteamSettings() = steamDelegate.loadSteamSettings(context, viewModelScope)
@@ -778,8 +816,108 @@ class SettingsViewModel @Inject constructor(
     fun navigateToHomeScreen() = routeNavigateToHomeScreen(this)
     fun navigateToAmbientLed() = routeNavigateToAmbientLed(this)
     fun navigateToThemeSounds() = routeNavigateToThemeSounds(this)
+    fun navigateToThemeMusic() = routeNavigateToThemeMusic(this)
+    fun navigateToThemeMusicFromStorage() = routeNavigateToThemeMusicFromStorage(this)
     fun navigateToThemeFonts() = routeNavigateToThemeFonts(this)
     fun navigateToThemeBackdrop() = routeNavigateToThemeBackdrop(this)
+    fun navigateToStorageGames() = routeNavigateToStorageGames(this)
+    fun navigateToStorageCaches() = routeNavigateToStorageCaches(this, CACHES_ENTRY_TOP)
+    fun navigateToStorageCachesForSteam() = routeNavigateToStorageCaches(this, CACHES_ENTRY_STEAM)
+    fun refreshStorageAttribution(deep: Boolean = false) = attributionDelegate.refresh(force = true, deep = deep)
+
+    fun toggleStateCache() = syncDelegate.toggleStateCache(viewModelScope)
+    fun requestClearStateCache() = syncDelegate.requestClearStateCache(viewModelScope)
+    fun cancelClearStateCache() = syncDelegate.cancelClearStateCache()
+    fun confirmClearStateCache() = syncDelegate.confirmClearStateCache(viewModelScope)
+
+    fun requestCachesClear(target: CachesClearTarget) {
+        val driverBusy = _uiState.value.drivers.activeDownload
+            ?.let { it.error == null && !it.isComplete } == true
+        storageCachesDelegate.requestClear(target, driverDownloadActive = driverBusy)
+    }
+
+    fun cancelCachesClear() = storageCachesDelegate.cancelClear()
+
+    fun confirmCachesClear() = storageCachesDelegate.confirmClear(viewModelScope) { target ->
+        if (target == CachesClearTarget.SHADERS_CATALOG) {
+            getShaderRegistry().invalidateInstalledCache()
+        }
+    }
+
+    fun toggleGamesSortMode() = attributionDelegate.setGamesSortMode(
+        when (_uiState.value.attribution.gamesSortMode) {
+            StorageGamesSortMode.PLATFORM -> StorageGamesSortMode.SIZE
+            StorageGamesSortMode.SIZE -> StorageGamesSortMode.PLATFORM
+        }
+    )
+
+    fun openStoragePlatformGames(platformId: Long) {
+        val name = _uiState.value.attribution.snapshot?.gamesPerPlatform
+            ?.firstOrNull { it.platformId == platformId }?.name ?: ""
+        _uiState.update { it.copy(currentSection = SettingsSection.STORAGE_PLATFORM_GAMES, focusedIndex = 0) }
+        storagePlatformGamesDelegate.open(platformId, name, viewModelScope)
+    }
+
+    fun resetStoragePlatformHighlightedCategory() =
+        storagePlatformGamesDelegate.setHighlightedCategory(0)
+
+    fun setStoragePlatformHighlightedCategory(index: Int) =
+        storagePlatformGamesDelegate.setHighlightedCategory(index)
+
+    fun onStoragePlatformCoverTap(gameIndex: Int, gameId: Long) {
+        setFocusIndex(gameIndex)
+        storagePlatformGamesDelegate.setHighlightedCategory(0)
+        storagePlatformGamesDelegate.requestDeleteConfirm(gameId)
+    }
+
+    fun onStoragePlatformCategoryTap(
+        gameIndex: Int,
+        categoryIndex: Int,
+        gameId: Long,
+        bucket: com.nendo.argosy.domain.usecase.storage.GameStorageBucket
+    ) {
+        setFocusIndex(gameIndex)
+        storagePlatformGamesDelegate.setHighlightedCategory(categoryIndex)
+        if (bucket == com.nendo.argosy.domain.usecase.storage.GameStorageBucket.BASE) {
+            storagePlatformGamesDelegate.requestDeleteConfirm(gameId)
+        } else {
+            storagePlatformGamesDelegate.requestCategoryDeleteConfirm(gameId, bucket)
+        }
+    }
+
+    fun requestStoragePlatformCategoryDelete(
+        gameId: Long,
+        bucket: com.nendo.argosy.domain.usecase.storage.GameStorageBucket
+    ) = storagePlatformGamesDelegate.requestCategoryDeleteConfirm(gameId, bucket)
+
+    fun dismissStoragePlatformCategoryDelete() =
+        storagePlatformGamesDelegate.dismissCategoryDeleteConfirm()
+
+    fun confirmStoragePlatformCategoryDelete(
+        gameId: Long,
+        bucket: com.nendo.argosy.domain.usecase.storage.GameStorageBucket
+    ) = storagePlatformGamesDelegate.deleteCategory(gameId, bucket, viewModelScope) {
+        backToStorageGamesFromPlatform()
+    }
+
+    fun requestStoragePlatformGameDelete(gameId: Long) =
+        storagePlatformGamesDelegate.requestDeleteConfirm(gameId)
+
+    fun dismissStoragePlatformGameDelete() = storagePlatformGamesDelegate.dismissDeleteConfirm()
+
+    fun confirmStoragePlatformGameDelete(gameId: Long, withSoundtrack: Boolean) =
+        storagePlatformGamesDelegate.confirmDeleteGame(gameId, withSoundtrack, viewModelScope) {
+            backToStorageGamesFromPlatform()
+        }
+
+    private fun backToStorageGamesFromPlatform() {
+        val platformId = _uiState.value.storagePlatformGames.selectedPlatformId
+        val focusIdx = com.nendo.argosy.ui.screens.settings.sections.storageGamesFocusIndexOfPlatform(
+            platformId,
+            com.nendo.argosy.ui.screens.settings.sections.createStorageGamesLayoutInfo(_uiState.value)
+        )
+        _uiState.update { it.copy(currentSection = SettingsSection.STORAGE_GAMES, focusedIndex = focusIdx) }
+    }
 
     fun openFontPicker(slot: FontSlot) {
         viewModelScope.launch { _openFontPickerEvent.emit(slot) }
@@ -835,6 +973,7 @@ class SettingsViewModel @Inject constructor(
     fun cycleAmbientLedTransitionMsWrap() = displayDelegate.cycleAmbientLedTransitionMsWrap(viewModelScope)
     fun setAmbientLedTransitionMs(ms: Int) = displayDelegate.setAmbientLedTransitionMs(viewModelScope, ms)
     fun setAmbientLedScreenEnabled(enabled: Boolean) = displayDelegate.setAmbientLedScreenEnabled(viewModelScope, enabled)
+    fun setAmbientLedAchievementFlash(enabled: Boolean) = displayDelegate.setAmbientLedAchievementFlash(viewModelScope, enabled)
     fun setInstalledOnlyHome(enabled: Boolean) = displayDelegate.setInstalledOnlyHome(viewModelScope, enabled)
 
     fun loadPreviewGames() = routeLoadPreviewGames(this)
@@ -876,21 +1015,28 @@ class SettingsViewModel @Inject constructor(
     fun showSoundPicker(type: SoundType) = soundsDelegate.showSoundPicker(type)
     fun dismissSoundPicker() = soundsDelegate.dismissSoundPicker()
     fun moveSoundPickerFocus(delta: Int) = soundsDelegate.moveSoundPickerFocus(delta)
-    fun previewSoundPickerSelection() = soundsDelegate.previewSoundPickerSelection()
+    fun resetSoundToDefault(type: SoundType) = soundsDelegate.resetSoundToDefault(viewModelScope, type)
     fun confirmSoundPickerSelection() = soundsDelegate.confirmSoundPickerSelection(viewModelScope)
-    fun setCustomSoundFile(type: SoundType, filePath: String) = soundsDelegate.setCustomSoundFile(viewModelScope, type, filePath)
+    fun confirmSoundPickerSelectionAt(index: Int) = soundsDelegate.confirmSoundPickerSelectionAt(viewModelScope, index)
+    fun setCustomSoundFile(type: SoundType, filePath: String, fromRomm: Boolean = false) =
+        soundsDelegate.setCustomSoundFile(viewModelScope, type, filePath, fromRomm)
     fun setAmbientAudioEnabled(enabled: Boolean) = ambientAudioDelegate.setEnabled(viewModelScope, enabled)
     fun setAmbientAudioVolume(volume: Int) = ambientAudioDelegate.setVolume(viewModelScope, volume)
 
     fun adjustAmbientAudioVolume(delta: Int) = routeAdjustAmbientAudioVolume(this, delta)
     fun cycleAmbientAudioVolume() = routeCycleAmbientAudioVolume(this)
 
-    fun openAudioFilePicker() = ambientAudioDelegate.openFilePicker(viewModelScope)
-    fun openAudioFileBrowser() = ambientAudioDelegate.openFileBrowser(viewModelScope)
-    fun setAmbientAudioUri(uri: String?) = ambientAudioDelegate.setAudioSource(viewModelScope, uri)
-    fun setAmbientAudioFilePath(path: String?) = ambientAudioDelegate.setAudioSource(viewModelScope, path)
     fun setAmbientAudioShuffle(shuffle: Boolean) = ambientAudioDelegate.setShuffle(viewModelScope, shuffle)
-    fun clearAmbientAudioFile() = ambientAudioDelegate.clearAudioFile(viewModelScope)
+    fun setGameDetailThemeEnabled(enabled: Boolean) = ambientAudioDelegate.setGameDetailTheme(viewModelScope, enabled)
+    fun addBgmPlaylistEntry(path: String) = ambientAudioDelegate.addPlaylistEntry(viewModelScope, path)
+    fun openBgmPlaylistManager() = ambientAudioDelegate.openPlaylistManager(viewModelScope)
+    fun openBgmAddMusicBrowser() = ambientAudioDelegate.openAddMusicBrowser(viewModelScope)
+    fun openMusicBrowserBgm() = ambientAudioDelegate.openMusicBrowser(viewModelScope)
+    fun openMusicLocationPicker() = ambientAudioDelegate.openMusicLocationPicker(viewModelScope)
+    fun onMusicLocationSelected(path: String) = ambientAudioDelegate.onMusicLocationSelected(viewModelScope, path)
+    fun confirmMusicRelocation() = ambientAudioDelegate.confirmMusicRelocation(viewModelScope)
+    fun skipMusicRelocation() = ambientAudioDelegate.skipMusicRelocation(viewModelScope)
+    fun cancelMusicRelocation() = ambientAudioDelegate.cancelMusicRelocation()
     fun setSwapAB(enabled: Boolean) = controlsDelegate.setSwapAB(viewModelScope, enabled)
     fun setSwapXY(enabled: Boolean) = controlsDelegate.setSwapXY(viewModelScope, enabled)
     fun cycleControllerLayout(direction: Int = 1) = controlsDelegate.cycleControllerLayout(viewModelScope, direction)
@@ -961,6 +1107,78 @@ class SettingsViewModel @Inject constructor(
     fun toggleSyncScreenshots() = routeToggleSyncScreenshots(this)
     fun toggleUploadScreenshots() = routeToggleUploadScreenshots(this)
     fun toggleBoxArtCache() = routeToggleBoxArtCache(this)
+    fun setDownloadCategoryDefault(categoryKey: String, include: Boolean) =
+        syncDelegate.setDownloadCategoryDefault(viewModelScope, categoryKey, include)
+
+    fun openPlatformDownloadDefaults(platformSlug: String) {
+        _uiState.update {
+            it.copy(platformDetail = it.platformDetail.copy(
+                showDownloadDefaults = true,
+                downloadDefaultsFocusIndex = 0,
+                downloadDefaultsSlug = platformSlug
+            ))
+        }
+    }
+
+    fun dismissPlatformDownloadDefaults() {
+        _uiState.update {
+            it.copy(platformDetail = it.platformDetail.copy(showDownloadDefaults = false))
+        }
+    }
+
+    fun movePlatformDownloadDefaultsFocus(delta: Int) {
+        _uiState.update { st ->
+            val maxIndex = com.nendo.argosy.data.preferences.DownloadDefaults.CONFIGURABLE_KEYS.size
+            val newIndex = com.nendo.argosy.ui.input.InputDispatcher.computeWrappedIndex(
+                st.platformDetail.downloadDefaultsFocusIndex, delta, maxIndex, st.controls.menuWrapMode
+            )
+            st.copy(platformDetail = st.platformDetail.copy(downloadDefaultsFocusIndex = newIndex))
+        }
+    }
+
+    fun setPlatformDownloadDefault(categoryKey: String, include: Boolean) {
+        val slug = _uiState.value.platformDetail.downloadDefaultsSlug ?: return
+        _uiState.update { st ->
+            val overrides = st.platformDetail.downloadOverrides + (categoryKey to include)
+            st.copy(platformDetail = st.platformDetail.copy(downloadOverrides = overrides))
+        }
+        viewModelScope.launch {
+            preferencesRepository.setDownloadCategoryPlatformOverride(slug, categoryKey, include)
+        }
+    }
+
+    fun setFocusedPlatformDownloadDefault(include: Boolean) {
+        val keys = com.nendo.argosy.data.preferences.DownloadDefaults.CONFIGURABLE_KEYS
+        val key = keys.getOrNull(_uiState.value.platformDetail.downloadDefaultsFocusIndex) ?: return
+        setPlatformDownloadDefault(key, include)
+    }
+
+    fun activatePlatformDownloadDefaultsRow() {
+        val detail = _uiState.value.platformDetail
+        val keys = com.nendo.argosy.data.preferences.DownloadDefaults.CONFIGURABLE_KEYS
+        val idx = detail.downloadDefaultsFocusIndex
+        if (idx < keys.size) {
+            val key = keys[idx]
+            val effective = detail.downloadOverrides[key]
+                ?: detail.globalDownloadDefaults[key]
+                ?: (com.nendo.argosy.data.preferences.DownloadDefaults.FACTORY[key] ?: false)
+            setPlatformDownloadDefault(key, !effective)
+        } else {
+            resetPlatformDownloadDefaults()
+        }
+    }
+
+    fun resetPlatformDownloadDefaults() {
+        val detail = _uiState.value.platformDetail
+        val slug = detail.downloadDefaultsSlug ?: return
+        val keys = detail.downloadOverrides.keys.toList()
+        _uiState.update { st ->
+            st.copy(platformDetail = st.platformDetail.copy(downloadOverrides = emptyMap()))
+        }
+        viewModelScope.launch {
+            keys.forEach { preferencesRepository.setDownloadCategoryPlatformOverride(slug, it, null) }
+        }
+    }
 
     fun enableSaveSync() = syncDelegate.enableSaveSync(viewModelScope)
     fun toggleSaveSync() = syncDelegate.toggleSaveSync(viewModelScope)
@@ -973,11 +1191,11 @@ class SettingsViewModel @Inject constructor(
     fun onMediaPermissionResult(granted: Boolean) = routeOnMediaPermissionResult(this, granted)
     fun runSaveSyncNow() = syncDelegate.runSaveSyncNow(viewModelScope)
 
-    fun requestResetSaveCache() = syncDelegate.requestResetSaveCache()
+    fun requestResetSaveCache() = syncDelegate.requestResetSaveCache(viewModelScope)
     fun confirmResetSaveCache() = syncDelegate.confirmResetSaveCache(viewModelScope)
     fun cancelResetSaveCache() = syncDelegate.cancelResetSaveCache()
 
-    fun requestClearPathCache() = syncDelegate.requestClearPathCache()
+    fun requestClearPathCache() = syncDelegate.requestClearPathCache(viewModelScope)
     fun confirmClearPathCache() = syncDelegate.confirmClearPathCache(viewModelScope)
     fun cancelClearPathCache() = syncDelegate.cancelClearPathCache()
 
@@ -994,12 +1212,8 @@ class SettingsViewModel @Inject constructor(
     fun validateImageCache() = routeValidateImageCache(this)
     fun validateDownloads() = routeValidateDownloads(this)
 
-    fun toggleWeeklyIntegrityCheck(enabled: Boolean) {
-        _uiState.update { it.copy(storage = it.storage.copy(weeklyIntegrityCheckEnabled = enabled)) }
-        viewModelScope.launch {
-            preferencesRepository.setWeeklyIntegrityCheckEnabled(enabled)
-        }
-    }
+    fun toggleWeeklyIntegrityCheck(enabled: Boolean) =
+        storageDelegate.toggleWeeklyIntegrityCheck(viewModelScope, enabled)
 
     fun cycleMaxConcurrentDownloads() = storageDelegate.cycleMaxConcurrentDownloads(viewModelScope)
 
@@ -1087,9 +1301,16 @@ class SettingsViewModel @Inject constructor(
     fun requestPurgePlatform(platformId: Long) = storageDelegate.requestPurgePlatform(platformId)
     fun confirmPurgePlatform() = storageDelegate.confirmPurgePlatform(viewModelScope)
     fun cancelPurgePlatform() = storageDelegate.cancelPurgePlatform()
-    fun requestPurgeAll() = storageDelegate.requestPurgeAll()
+    fun requestPurgeAll() = storageDelegate.requestPurgeAll(viewModelScope)
     fun confirmPurgeAll() = storageDelegate.confirmPurgeAll(viewModelScope)
     fun cancelPurgeAll() = storageDelegate.cancelPurgeAll()
+    fun requestHardReset() = storageDelegate.requestHardReset(viewModelScope)
+    fun cancelHardReset() = storageDelegate.cancelHardReset()
+    fun hardResetHoldStarted() = hapticManager.vibrate(HapticPattern.SELECTION)
+    fun confirmHardReset() {
+        hapticManager.vibrate(HapticPattern.ERROR)
+        storageDelegate.confirmHardReset(viewModelScope)
+    }
     fun confirmPlatformMigration() = storageDelegate.confirmPlatformMigration(viewModelScope)
     fun cancelPlatformMigration() = storageDelegate.cancelPlatformMigration()
     fun skipPlatformMigration() = storageDelegate.skipPlatformMigration(viewModelScope)
@@ -1133,8 +1354,6 @@ class SettingsViewModel @Inject constructor(
 
     fun setRommConfigUrl(url: String) = serverDelegate.setRommConfigUrl(url)
     fun commitRommUrl() = serverDelegate.commitRommUrl(viewModelScope)
-    fun setRommConfigUsername(username: String) = serverDelegate.setRommConfigUsername(username)
-    fun setRommConfigPassword(password: String) = serverDelegate.setRommConfigPassword(password)
     fun setRommConfigPairingCode(code: String) = serverDelegate.setRommConfigPairingCode(code)
     fun setRommAuthMethod(method: RomMAuthMethod) = serverDelegate.setRommAuthMethod(method)
     fun showRommScanner() = serverDelegate.showScanner()
@@ -1142,7 +1361,6 @@ class SettingsViewModel @Inject constructor(
     fun handleRommScanResult(origin: String, code: String) = serverDelegate.handleScanResult(origin, code, viewModelScope) { loadSettings() }
     fun clearRommFocusField() = serverDelegate.clearRommFocusField()
 
-    fun setRommConfigFocusIndex(index: Int) = setFocusIndex(index)
     fun connectToRomm() = routeConnectToRomm(this)
     fun showRALoginForm() = routeShowRALoginForm(this)
     fun hideRALoginForm() = routeHideRALoginForm(this)

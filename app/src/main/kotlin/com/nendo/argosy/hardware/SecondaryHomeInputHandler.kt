@@ -2,6 +2,7 @@ package com.nendo.argosy.hardware
 
 import android.util.Log
 import com.nendo.argosy.data.emulator.EmulatorDetector
+import com.nendo.argosy.data.preferences.EmulatorDisplayTarget
 import com.nendo.argosy.ui.common.savechannel.SaveFocusColumn
 import com.nendo.argosy.DualScreenManager
 import com.nendo.argosy.ui.dualscreen.gamedetail.ActiveModal
@@ -39,7 +40,6 @@ class SecondaryHomeInputHandler(
 
     fun routeInput(
         event: GamepadEvent,
-        useDualScreenMode: Boolean,
         isArgosyForeground: Boolean,
         isGameActive: Boolean,
         currentScreen: CompanionScreen
@@ -50,15 +50,13 @@ class SecondaryHomeInputHandler(
         val saveConflictResult = handleSaveConflictInput(event)
         if (saveConflictResult.handled) return saveConflictResult
 
-        return if (useDualScreenMode && isArgosyForeground && !isGameActive) {
+        return if (isArgosyForeground && !isGameActive) {
             when (currentScreen) {
-            CompanionScreen.HOME -> handleDualHomeInput(event)
-            CompanionScreen.GAME_DETAIL -> handleDualDetailInput(event)
-        }
-        } else if (useDualScreenMode && isGameActive) {
-            handleCompanionInput(event)
+                CompanionScreen.HOME -> handleDualHomeInput(event)
+                CompanionScreen.GAME_DETAIL -> handleDualDetailInput(event)
+            }
         } else {
-            handleGridInput(event)
+            handleCompanionInput(event)
         }
     }
 
@@ -270,51 +268,6 @@ class SecondaryHomeInputHandler(
         }
     }
 
-    fun handleGridInput(event: GamepadEvent): InputResult {
-        if (viewModel.uiState.value.isDrawerOpen) return handleDrawerInput(event)
-
-        return when (event) {
-            GamepadEvent.Up -> {
-                viewModel.moveFocusUp()
-                InputResult.HANDLED
-            }
-            GamepadEvent.Down -> {
-                viewModel.moveFocusDown()
-                InputResult.HANDLED
-            }
-            GamepadEvent.Left -> {
-                viewModel.moveFocusLeft()
-                InputResult.HANDLED
-            }
-            GamepadEvent.Right -> {
-                viewModel.moveFocusRight()
-                InputResult.HANDLED
-            }
-            GamepadEvent.PrevSection -> {
-                viewModel.previousSection()
-                InputResult.HANDLED
-            }
-            GamepadEvent.NextSection -> {
-                viewModel.nextSection()
-                InputResult.HANDLED
-            }
-            GamepadEvent.Confirm -> {
-                selectFocusedGame()
-                InputResult.HANDLED
-            }
-            GamepadEvent.ContextMenu -> {
-                launchFocusedGame()
-                InputResult.HANDLED
-            }
-            GamepadEvent.Select -> {
-                viewModel.openDrawer()
-                broadcasts.broadcastViewModeChange(drawerOpen = true)
-                InputResult.HANDLED
-            }
-            else -> InputResult.UNHANDLED
-        }
-    }
-
     fun handleOption(vm: DualGameDetailViewModel, option: GameDetailOption) {
         val gameId = vm.uiState.value.gameId
         when (option) {
@@ -369,6 +322,21 @@ class SecondaryHomeInputHandler(
                     )
                 }
             }
+            GameDetailOption.SAVE_PATH -> {
+                vm.openSavePathPicker()
+                broadcasts.broadcastSavePathModalOpen(vm.uiState.value.savePathOverride)
+            }
+            GameDetailOption.DISPLAY_TARGET -> {
+                vm.openDisplayTargetPicker()
+                val state = vm.uiState.value
+                broadcasts.broadcastDisplayTargetModalOpen(
+                    EmulatorDisplayTarget.entries.map { it.displayName },
+                    state.displayTargetName?.let {
+                        EmulatorDisplayTarget.fromString(it).displayName
+                    },
+                    EmulatorDisplayTarget.fromString(state.platformDisplayTargetName).displayName
+                )
+            }
             GameDetailOption.SELECT_VARIANT -> {
                 lifecycleLaunch {
                     val variants = vm.getDownloadedVariants()
@@ -385,11 +353,8 @@ class SecondaryHomeInputHandler(
                     broadcasts.broadcastCollectionModalOpen(vm)
                 }
             }
-            GameDetailOption.UPDATES_DLC -> {
-                lifecycleLaunch {
-                    vm.openUpdatesModal()
-                    broadcasts.broadcastUpdatesModalOpen(vm)
-                }
+            GameDetailOption.FILES -> {
+                broadcasts.broadcastDirectAction("FILES", gameId)
             }
             GameDetailOption.REFRESH_METADATA -> {
                 broadcasts.broadcastDirectAction("REFRESH_METADATA", gameId)
@@ -468,9 +433,7 @@ class SecondaryHomeInputHandler(
                     dualHomeViewModel.focusCarousel()
                     broadcasts.broadcastViewModeChange()
                 }
-                dualHomeViewModel.previousSection()
-                broadcasts.broadcastCurrentGameSelection()
-                onPersistCarouselPosition()
+                dualHomeViewModel.previousSection { onPersistCarouselPosition() }
                 InputResult.HANDLED
             }
             GamepadEvent.NextSection -> {
@@ -478,9 +441,7 @@ class SecondaryHomeInputHandler(
                     dualHomeViewModel.focusCarousel()
                     broadcasts.broadcastViewModeChange()
                 }
-                dualHomeViewModel.nextSection()
-                broadcasts.broadcastCurrentGameSelection()
-                onPersistCarouselPosition()
+                dualHomeViewModel.nextSection { onPersistCarouselPosition() }
                 InputResult.HANDLED
             }
             GamepadEvent.Select -> {
@@ -799,6 +760,12 @@ class SecondaryHomeInputHandler(
                 }
                 return InputResult.HANDLED
             }
+            ActiveModal.FILE_PICKER -> {
+                if (event == GamepadEvent.Back) {
+                    broadcasts.broadcastModalClose()
+                }
+                return InputResult.HANDLED
+            }
             ActiveModal.STEAM_INSTALL -> {
                 when (event) {
                     GamepadEvent.Up -> {
@@ -849,6 +816,68 @@ class SecondaryHomeInputHandler(
                     GamepadEvent.Confirm -> {
                         val idx = vm.corePickerFocusIndex.value
                         vm.confirmCoreByIndex(idx)
+                        broadcasts.broadcastModalConfirmResult(
+                            modal, idx, null
+                        )
+                    }
+                    GamepadEvent.Back -> {
+                        vm.dismissPicker()
+                        broadcasts.broadcastModalClose()
+                    }
+                    else -> {}
+                }
+                return InputResult.HANDLED
+            }
+            ActiveModal.SAVE_PATH -> {
+                when (event) {
+                    GamepadEvent.Up -> {
+                        vm.moveSavePathPickerFocus(-1)
+                        broadcasts.broadcastInlineUpdate(
+                            "save_path_focus",
+                            vm.savePathPickerFocusIndex.value
+                        )
+                    }
+                    GamepadEvent.Down -> {
+                        vm.moveSavePathPickerFocus(1)
+                        broadcasts.broadcastInlineUpdate(
+                            "save_path_focus",
+                            vm.savePathPickerFocusIndex.value
+                        )
+                    }
+                    GamepadEvent.Confirm -> {
+                        val idx = vm.savePathPickerFocusIndex.value
+                        vm.confirmSavePathByIndex(idx)
+                        broadcasts.broadcastModalConfirmResult(
+                            modal, idx, null
+                        )
+                    }
+                    GamepadEvent.Back -> {
+                        vm.dismissPicker()
+                        broadcasts.broadcastModalClose()
+                    }
+                    else -> {}
+                }
+                return InputResult.HANDLED
+            }
+            ActiveModal.DISPLAY_TARGET -> {
+                when (event) {
+                    GamepadEvent.Up -> {
+                        vm.moveDisplayTargetPickerFocus(-1)
+                        broadcasts.broadcastInlineUpdate(
+                            "display_target_focus",
+                            vm.displayTargetPickerFocusIndex.value
+                        )
+                    }
+                    GamepadEvent.Down -> {
+                        vm.moveDisplayTargetPickerFocus(1)
+                        broadcasts.broadcastInlineUpdate(
+                            "display_target_focus",
+                            vm.displayTargetPickerFocusIndex.value
+                        )
+                    }
+                    GamepadEvent.Confirm -> {
+                        val idx = vm.displayTargetPickerFocusIndex.value
+                        vm.confirmDisplayTargetByIndex(idx)
                         broadcasts.broadcastModalConfirmResult(
                             modal, idx, null
                         )
@@ -988,58 +1017,6 @@ class SecondaryHomeInputHandler(
                     }
                     GamepadEvent.Back -> {
                         vm.dismissPicker()
-                        broadcasts.broadcastModalClose()
-                    }
-                    else -> {}
-                }
-                return InputResult.HANDLED
-            }
-            ActiveModal.UPDATES_DLC -> {
-                Log.d("UpdatesDLC", "handleModalInput: event=$event")
-                when (event) {
-                    GamepadEvent.Up -> {
-                        vm.moveUpdatesFocus(-1)
-                        broadcasts.broadcastInlineUpdate(
-                            "updates_focus",
-                            vm.updatesPickerFocusIndex.value
-                        )
-                    }
-                    GamepadEvent.Down -> {
-                        vm.moveUpdatesFocus(1)
-                        broadcasts.broadcastInlineUpdate(
-                            "updates_focus",
-                            vm.updatesPickerFocusIndex.value
-                        )
-                    }
-                    GamepadEvent.Confirm -> {
-                        val allFiles = vm.updateFiles.value + vm.dlcFiles.value
-                        val idx = vm.updatesPickerFocusIndex.value
-                        val file = allFiles.getOrNull(idx)
-                        if (file != null && !file.isDownloaded && file.gameFileId != null) {
-                            val gameId = vm.uiState.value.gameId
-                            broadcasts.broadcastDirectAction(
-                                "DOWNLOAD_UPDATE_FILE",
-                                gameId,
-                                file.gameFileId.toString()
-                            )
-                        }
-                    }
-                    GamepadEvent.SecondaryAction -> {
-                        val allFiles = vm.updateFiles.value + vm.dlcFiles.value
-                        val gameId = vm.uiState.value.gameId
-                        val downloadable = allFiles.filter {
-                            !it.isDownloaded && it.gameFileId != null
-                        }
-                        for (file in downloadable) {
-                            broadcasts.broadcastDirectAction(
-                                "DOWNLOAD_UPDATE_FILE",
-                                gameId,
-                                file.gameFileId.toString()
-                            )
-                        }
-                    }
-                    GamepadEvent.Back -> {
-                        vm.dismissUpdatesModal()
                         broadcasts.broadcastModalClose()
                     }
                     else -> {}
@@ -1218,17 +1195,6 @@ class SecondaryHomeInputHandler(
 
     private fun launchDrawerApp(intent: android.content.Intent?, options: android.os.Bundle?) {
         drawerAppLauncher?.invoke(intent, options)
-    }
-
-    private fun selectFocusedGame() {
-        val (intent, options) = viewModel.selectFocusedGame() ?: return
-        drawerAppLauncher?.invoke(intent, options)
-    }
-
-    private fun launchFocusedGame() {
-        val result = viewModel.launchFocusedGame() ?: return
-        val (intent, options) = result
-        intent?.let { drawerAppLauncher?.invoke(it, options) }
     }
 }
 

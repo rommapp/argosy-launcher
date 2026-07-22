@@ -19,7 +19,8 @@ import java.time.Instant
     ],
     indices = [
         Index("gameId"),
-        Index(value = ["rommFileId"])
+        Index(value = ["rommFileId"]),
+        Index(value = ["gameId", "versionGroup"])
     ]
 )
 data class GameFileEntity(
@@ -37,7 +38,12 @@ data class GameFileEntity(
     val isLaunchTarget: Boolean = false,
     val isMultiDisc: Boolean = false,
     val m3uPath: String? = null,
-    val romHashPrefix: String? = null
+    val romHashPrefix: String? = null,
+    val regions: String? = null,
+    val versionGroup: String? = null,
+    val trackTitle: String? = null,
+    val trackNumber: Int? = null,
+    val durationSeconds: Double? = null
 ) {
     fun isLocallyPresent(): Boolean = localPath?.let { File(it).exists() } == true
 }

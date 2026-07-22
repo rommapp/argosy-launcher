@@ -8,6 +8,8 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.ui.layout.layout
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -82,6 +84,7 @@ import com.nendo.argosy.ui.screens.home.HomeGameUi
 import androidx.compose.ui.platform.LocalConfiguration
 import kotlinx.coroutines.delay
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun GameHeader(
     game: GameDetailUi,
@@ -166,44 +169,45 @@ fun GameHeader(
 
             Spacer(modifier = Modifier.height(Dimens.spacingSm))
 
-            Row(horizontalArrangement = Arrangement.spacedBy(Dimens.radiusLg)) {
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(Dimens.spacingMd),
+                verticalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
+            ) {
                 game.players?.let { players ->
                     MetadataChip(label = "Players", value = players)
                 }
                 game.rating?.let { rating ->
                     CommunityRatingChip(rating = rating)
                 }
-                if (game.userRating > 0) {
-                    RatingChip(
-                        label = "My Rating",
-                        value = game.userRating,
-                        icon = Icons.Default.Star,
-                        iconColor = ALauncherColors.StarGold
-                    )
-                }
-                if (game.userDifficulty > 0) {
-                    RatingChip(
-                        label = "Difficulty",
-                        value = game.userDifficulty,
-                        icon = Icons.Default.Whatshot,
-                        iconColor = ALauncherColors.DifficultyRed
-                    )
-                }
             }
 
             Spacer(modifier = Modifier.height(Dimens.spacingLg))
 
-            if (game.playTimeMinutes > 0 || game.status != null) {
-                Row(horizontalArrangement = Arrangement.spacedBy(Dimens.radiusLg)) {
-                    if (game.playTimeMinutes > 0) {
-                        PlayTimeChip(minutes = game.playTimeMinutes)
-                    }
-                    game.status?.let { status ->
-                        StatusChip(statusValue = status)
-                    }
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(Dimens.spacingMd),
+                verticalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
+            ) {
+                RatingChip(
+                    label = "My Rating",
+                    value = game.userRating,
+                    icon = Icons.Default.Star,
+                    iconColor = ALauncherColors.StarGold
+                )
+                RatingChip(
+                    label = "Difficulty",
+                    value = game.userDifficulty,
+                    icon = Icons.Default.Whatshot,
+                    iconColor = ALauncherColors.DifficultyRed
+                )
+                if (game.playTimeMinutes > 0) {
+                    PlayTimeChip(minutes = game.playTimeMinutes)
                 }
-                Spacer(modifier = Modifier.height(Dimens.radiusLg))
+                game.status?.let { status ->
+                    StatusChip(statusValue = status)
+                }
             }
+
+            Spacer(modifier = Modifier.height(Dimens.spacingMd))
 
             ActionButtons(game = game, uiState = uiState, viewModel = viewModel)
         }

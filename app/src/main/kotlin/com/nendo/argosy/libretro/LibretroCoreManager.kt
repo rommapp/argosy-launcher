@@ -7,6 +7,8 @@ import com.nendo.argosy.data.local.dao.CoreVersionDao
 import com.nendo.argosy.data.local.dao.CoreVersionHistoryDao
 import com.nendo.argosy.data.local.entity.CoreVersionEntity
 import com.nendo.argosy.data.local.entity.CoreVersionHistoryEntity
+import com.nendo.argosy.data.storage.StorageAttributionRepository
+import com.nendo.argosy.data.storage.StorageCategory
 import com.nendo.argosy.util.AppPaths
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
@@ -31,7 +33,8 @@ class LibretroCoreManager @Inject constructor(
     private val coreVersionDao: CoreVersionDao,
     private val coreVersionHistoryDao: CoreVersionHistoryDao,
     private val coreSystemDataManager: CoreSystemDataManager,
-    private val compatCoreCache: CompatCoreCache
+    private val compatCoreCache: CompatCoreCache,
+    private val attributionRepository: StorageAttributionRepository
 ) {
     private val downloadedCoresDir = File(context.filesDir, "libretro/cores").apply { mkdirs() }
     private val coreHistoryDir = File(context.filesDir, "libretro/core_history").apply { mkdirs() }
@@ -54,6 +57,7 @@ class LibretroCoreManager @Inject constructor(
                 ?.forEach { it.delete() }
             coreVersionDao.deleteAll()
             abiMarkerFile.writeText(currentAbi)
+            attributionRepository.markDirty(StorageCategory.CORES_SYSTEM)
         }
     }
 
@@ -266,6 +270,7 @@ class LibretroCoreManager @Inject constructor(
                     coreSystemDataManager.ensureCoreSystemData(coreInfo.coreId, systemDir)
                 }
 
+                attributionRepository.markDirty(StorageCategory.CORES_SYSTEM)
                 targetFile
             }
         }
@@ -323,6 +328,7 @@ class LibretroCoreManager @Inject constructor(
             File(dir, stale.fileName).delete()
             coreVersionHistoryDao.deleteById(stale.id)
         }
+        attributionRepository.markDirty(StorageCategory.CORES_SYSTEM)
     }
 
     suspend fun getCoreHistory(coreId: String): List<CoreVersionHistoryEntity> =
@@ -351,6 +357,7 @@ class LibretroCoreManager @Inject constructor(
                     blockedVersion = crashedVersion
                 )
             )
+            attributionRepository.markDirty(StorageCategory.CORES_SYSTEM)
             true
         }
 
@@ -395,6 +402,7 @@ class LibretroCoreManager @Inject constructor(
         val deleted = File(downloadedCoresDir, coreInfo.fileName).delete()
         if (deleted) {
             coreVersionDao.delete(coreId)
+            attributionRepository.markDirty(StorageCategory.CORES_SYSTEM)
         }
         return deleted
     }

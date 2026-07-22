@@ -47,6 +47,7 @@ import com.nendo.argosy.ui.screens.common.GameLaunchDelegate
 import com.nendo.argosy.hardware.FocusAccessibilityService
 import com.nendo.argosy.hardware.FocusDirectorActivity
 import com.nendo.argosy.hardware.SecondaryHomeActivity
+import com.nendo.argosy.hardware.withLiveQuickActionState
 import com.nendo.argosy.util.DisplayAffinityHelper
 import com.nendo.argosy.util.SecondaryDisplayType
 import kotlinx.coroutines.CoroutineScope
@@ -204,7 +205,7 @@ class DualScreenManager(
         }
 
     fun updateCompanionHasQuickSave(hasQuickSave: Boolean) {
-        _swappedCompanionState.value = _swappedCompanionState.value.copy(hasQuickSave = hasQuickSave)
+        _swappedCompanionState.update { it.copy(hasQuickSave = hasQuickSave) }
         companionHost?.onHasQuickSaveChanged(hasQuickSave)
     }
 
@@ -436,6 +437,8 @@ class DualScreenManager(
     )
     val swappedCompanionState: StateFlow<com.nendo.argosy.hardware.CompanionInGameState> =
         _swappedCompanionState
+    val companionHasQuickSave: Boolean
+        get() = _swappedCompanionState.value.hasQuickSave
 
     var swappedSessionTimer: com.nendo.argosy.hardware.CompanionSessionTimer? = null
         private set
@@ -990,22 +993,27 @@ class DualScreenManager(
             scope.launch(Dispatchers.IO) {
                 val game = gameDao.getById(gameId) ?: return@launch
                 val platform = platformRepository.getById(game.platformId)
-                _swappedCompanionState.value = com.nendo.argosy.hardware.CompanionInGameState(
-                    gameId = gameId,
-                    title = game.title,
-                    coverPath = game.coverPath,
-                    platformName = platform?.getDisplayName() ?: game.platformSlug,
-                    developer = game.developer,
-                    releaseYear = game.releaseYear,
-                    playTimeMinutes = game.playTimeMinutes,
-                    playCount = game.playCount,
-                    achievementCount = game.achievementCount,
-                    earnedAchievementCount = game.earnedAchievementCount,
-                    sessionStartTimeMillis = sessionStateStore.getSessionStartTimeMillis(),
-                    channelName = channelName,
-                    isHardcore = isHardcore,
-                    isLoaded = true
-                )
+                _swappedCompanionState.update { liveState ->
+                    com.nendo.argosy.hardware.CompanionInGameState(
+                        gameId = gameId,
+                        title = game.title,
+                        coverPath = game.coverPath,
+                        platformName = platform?.getDisplayName() ?: game.platformSlug,
+                        developer = game.developer,
+                        releaseYear = game.releaseYear,
+                        playTimeMinutes = game.playTimeMinutes,
+                        playCount = game.playCount,
+                        achievementCount = game.achievementCount,
+                        earnedAchievementCount = game.earnedAchievementCount,
+                        sessionStartTimeMillis = sessionStateStore.getSessionStartTimeMillis(),
+                        channelName = channelName,
+                        isHardcore = isHardcore,
+                        isLoaded = true
+                    ).withLiveQuickActionState(
+                        quickActionsAvailable = sessionQuickActions != null,
+                        hasQuickSave = liveState.hasQuickSave
+                    )
+                }
             }
             companionHost?.onSessionStarted(gameId, isHardcore, channelName)
         } else {

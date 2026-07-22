@@ -95,7 +95,7 @@ class LaunchWithSyncUseCaseTest {
     @Test
     fun `NoConnection result emits Skipped`() = runTest {
         coEvery {
-            saveSyncRepository.preLaunchSyncForGame(gameId, rommId, emulatorId, channelName = null)
+            saveSyncRepository.preLaunchSyncForGame(gameId, rommId, emulatorId, channelName = null, secureSaves = true)
         } returns PreLaunchSyncResult.NoConnection
 
         val progress = useCase.invokeWithProgress(gameId).toList()
@@ -106,7 +106,7 @@ class LaunchWithSyncUseCaseTest {
     @Test
     fun `NoServerSave result emits Launching`() = runTest {
         coEvery {
-            saveSyncRepository.preLaunchSyncForGame(gameId, rommId, emulatorId, channelName = null)
+            saveSyncRepository.preLaunchSyncForGame(gameId, rommId, emulatorId, channelName = null, secureSaves = true)
         } returns PreLaunchSyncResult.NoServerSave
 
         val progress = useCase.invokeWithProgress(gameId).toList()
@@ -117,7 +117,7 @@ class LaunchWithSyncUseCaseTest {
     @Test
     fun `LocalIsNewer result emits Launching`() = runTest {
         coEvery {
-            saveSyncRepository.preLaunchSyncForGame(gameId, rommId, emulatorId, channelName = null)
+            saveSyncRepository.preLaunchSyncForGame(gameId, rommId, emulatorId, channelName = null, secureSaves = true)
         } returns PreLaunchSyncResult.LocalIsNewer
 
         val progress = useCase.invokeWithProgress(gameId).toList()
@@ -128,7 +128,7 @@ class LaunchWithSyncUseCaseTest {
     @Test
     fun `ServerIsNewer result downloads and emits Launching`() = runTest {
         coEvery {
-            saveSyncRepository.preLaunchSyncForGame(gameId, rommId, emulatorId, channelName = null)
+            saveSyncRepository.preLaunchSyncForGame(gameId, rommId, emulatorId, channelName = null, secureSaves = true)
         } returns PreLaunchSyncResult.ServerIsNewer(
             serverTimestamp = Instant.parse("2025-01-15T12:00:00Z"),
             channelName = "autosave",
@@ -149,7 +149,7 @@ class LaunchWithSyncUseCaseTest {
     @Test
     fun `LocalModified result emits LocalModified for UI prompt`() = runTest {
         coEvery {
-            saveSyncRepository.preLaunchSyncForGame(gameId, rommId, emulatorId, channelName = null)
+            saveSyncRepository.preLaunchSyncForGame(gameId, rommId, emulatorId, channelName = null, secureSaves = true)
         } returns PreLaunchSyncResult.LocalModified(
             localSavePath = "/saves/test.srm",
             serverTimestamp = Instant.parse("2025-01-15T12:00:00Z"),
@@ -167,13 +167,13 @@ class LaunchWithSyncUseCaseTest {
     @Test
     fun `channelName is forwarded to preLaunchSyncForGame`() = runTest {
         coEvery {
-            saveSyncRepository.preLaunchSyncForGame(gameId, rommId, emulatorId, channelName = "slot1")
+            saveSyncRepository.preLaunchSyncForGame(gameId, rommId, emulatorId, channelName = "slot1", secureSaves = true)
         } returns PreLaunchSyncResult.LocalIsNewer
 
         useCase.invokeWithProgress(gameId, channelName = "slot1").toList()
 
         io.mockk.coVerify {
-            saveSyncRepository.preLaunchSyncForGame(gameId, rommId, emulatorId, channelName = "slot1")
+            saveSyncRepository.preLaunchSyncForGame(gameId, rommId, emulatorId, channelName = "slot1", secureSaves = true)
         }
     }
 
@@ -183,7 +183,7 @@ class LaunchWithSyncUseCaseTest {
 
         assertEquals(listOf(SyncProgress.Skipped), progress)
         io.mockk.coVerify(exactly = 0) {
-            saveSyncRepository.preLaunchSyncForGame(any(), any(), any(), any())
+            saveSyncRepository.preLaunchSyncForGame(any(), any(), any(), any(), any())
         }
     }
 
@@ -197,7 +197,7 @@ class LaunchWithSyncUseCaseTest {
 
         assertEquals(listOf(SyncProgress.Skipped), progress)
         io.mockk.coVerify(exactly = 0) {
-            saveSyncRepository.preLaunchSyncForGame(any(), any(), any(), any())
+            saveSyncRepository.preLaunchSyncForGame(any(), any(), any(), any(), any())
         }
     }
 }

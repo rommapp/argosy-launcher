@@ -75,7 +75,7 @@ class LaunchWithSyncUseCase @Inject constructor(
 
         emit(SyncState.CheckingConnection)
 
-        val syncResult = saveSyncRepository.preLaunchSyncForGame(gameId, game.rommId, emulatorId, channelName = null)
+        val syncResult = saveSyncRepository.preLaunchSyncForGame(gameId, game.rommId, emulatorId, channelName = null, secureSaves = prefs.secureSaves)
 
         when (syncResult) {
             is PreLaunchSyncResult.NoConnection -> {
@@ -194,7 +194,7 @@ class LaunchWithSyncUseCase @Inject constructor(
 
         val syncResult = coroutineScope {
             val stateSync = async { syncStatesQuietly(gameId, emulatorPackage) }
-            val saveSync = saveSyncRepository.preLaunchSyncForGame(gameId, game.rommId, emulatorId, channelName)
+            val saveSync = saveSyncRepository.preLaunchSyncForGame(gameId, game.rommId, emulatorId, channelName, secureSaves = prefs.secureSaves)
             stateSync.await()
             saveSync
         }

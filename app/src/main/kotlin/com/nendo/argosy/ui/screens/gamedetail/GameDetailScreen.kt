@@ -948,7 +948,7 @@ private fun GameDetailModals(
             hasSaves = uiState.hasCasualSaves,
             hasHardcoreSave = uiState.hasHardcoreSave,
             hasRASupport = uiState.hasRASupport,
-            isRALoggedIn = uiState.isRALoggedIn,
+            hardcoreAvailable = uiState.hardcoreAvailable,
             isOnline = uiState.isOnline,
             canSkipSync = uiState.isOnline,
             onAction = viewModel::handlePlayOption,

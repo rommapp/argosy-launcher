@@ -31,10 +31,11 @@ data class PlayOptionsState(
     val hasHardcoreSave: Boolean = false,
     val hasRASupport: Boolean = false,
     val isRALoggedIn: Boolean = false,
-    val isOnline: Boolean = false
+    val isOnline: Boolean = false,
+    val secureSaves: Boolean = true
 ) {
-    /** Hardcore requires a RetroAchievements login. */
-    val hardcoreAvailable: Boolean get() = hasRASupport && isRALoggedIn
+    /** Hardcore requires a RetroAchievements login and Secure Saves. */
+    val hardcoreAvailable: Boolean get() = hasRASupport && isRALoggedIn && secureSaves
 
     /**
      * Continue-in-hardcore is offered whenever hardcore is available and there is any resumable
@@ -75,6 +76,7 @@ class PlayOptionsDelegate @Inject constructor(
             val hasCasualSaves = entries.any { !it.isHardcore }
             val hasHardcoreSave = entries.any { it.isHardcore }
             val isRALoggedIn = raRepository.isLoggedIn()
+            val secureSaves = userPreferencesRepository.preferences.first().secureSaves
             val defaultToHardcore = isDefaultToHardcore()
 
             val newState = PlayOptionsState(
@@ -83,9 +85,10 @@ class PlayOptionsDelegate @Inject constructor(
                 hasHardcoreSave = hasHardcoreSave,
                 hasRASupport = hasAchievements,
                 isRALoggedIn = isRALoggedIn,
-                isOnline = isOnline
+                isOnline = isOnline,
+                secureSaves = secureSaves
             )
-            openModal(newState, PlayOptionAction.ResumeHardcore.takeIf { defaultToHardcore })
+            openModal(newState, PlayOptionAction.ResumeHardcore.takeIf { defaultToHardcore && newState.hardcoreAvailable })
         }
     }
 
@@ -134,6 +137,7 @@ class PlayOptionsDelegate @Inject constructor(
     ): Boolean {
         if (!isBuiltInEmulator || !hasAchievements) return false
         if (!raRepository.isLoggedIn()) return false
+        if (!userPreferencesRepository.preferences.first().secureSaves) return false
         val pref = userPreferencesRepository.getBuiltinEmulatorSettings().first().defaultToHardcore
         if (pref != "ask") return false
         val isOnline = com.nendo.argosy.util.NetworkUtils.isOnline(context)
@@ -143,15 +147,17 @@ class PlayOptionsDelegate @Inject constructor(
     fun showFreshGameModeSelection(scope: CoroutineScope, gameId: Long) {
         scope.launch {
             val isOnline = com.nendo.argosy.util.NetworkUtils.isOnline(context)
+            val secureSaves = userPreferencesRepository.preferences.first().secureSaves
             val newState = PlayOptionsState(
                 showPlayOptions = true,
                 hasCasualSaves = false,
                 hasHardcoreSave = false,
                 hasRASupport = true,
                 isRALoggedIn = true,
-                isOnline = isOnline
+                isOnline = isOnline,
+                secureSaves = secureSaves
             )
-            openModal(newState, PlayOptionAction.NewHardcore.takeIf { isDefaultToHardcore() && isOnline })
+            openModal(newState, PlayOptionAction.NewHardcore.takeIf { isDefaultToHardcore() && isOnline && secureSaves })
         }
     }
 

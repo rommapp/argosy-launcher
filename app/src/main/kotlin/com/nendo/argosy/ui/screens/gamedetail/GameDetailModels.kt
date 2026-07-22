@@ -217,7 +217,7 @@ data class GameDetailUiState(
     val hasCasualSaves: Boolean = false,
     val hasHardcoreSave: Boolean = false,
     val hasRASupport: Boolean = false,
-    val isRALoggedIn: Boolean = false,
+    val hardcoreAvailable: Boolean = false,
     val isOnline: Boolean = false,
     val canSearchCovers: Boolean = false,
     val isLoading: Boolean = true,

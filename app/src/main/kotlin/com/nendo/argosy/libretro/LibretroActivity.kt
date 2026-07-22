@@ -215,6 +215,7 @@ class LibretroActivity : ComponentActivity() {
     private var restoredSram: ByteArray? = null
     private var casualSaveInHardcore: Boolean = false
     private var hardcoreMode by mutableStateOf(false)
+    private var secureSavesEnabled = true
     private var launchMode = LaunchMode.RESUME
     private var statesSupported = true
     private var autoSaveEnabled = true
@@ -484,6 +485,12 @@ class LibretroActivity : ComponentActivity() {
             ?.let { M3uManager.parseAllDiscs(File(it)) } ?: emptyList()
         coreName = intent.getStringExtra(EXTRA_CORE_NAME)
         launchMode = LaunchMode.fromString(intent.getStringExtra(LaunchMode.EXTRA_LAUNCH_MODE))
+        secureSavesEnabled = kotlinx.coroutines.runBlocking {
+            preferencesRepository.preferences.first().secureSaves
+        }
+        if (!secureSavesEnabled && launchMode.isHardcore) {
+            launchMode = if (launchMode == LaunchMode.RESUME_HARDCORE) LaunchMode.RESUME else LaunchMode.NEW_CASUAL
+        }
         hardcoreMode = launchMode.isHardcore
 
         val joinSessionId = intent.getStringExtra(EXTRA_NETPLAY_JOIN_SESSION_ID)
@@ -536,7 +543,7 @@ class LibretroActivity : ComponentActivity() {
         }
         restoredSram = restoreResult.sramData
         casualSaveInHardcore = restoreResult.casualSaveInHardcore
-        if (restoreResult.switchToHardcore) {
+        if (restoreResult.switchToHardcore && secureSavesEnabled) {
             hardcoreMode = true
         }
         saveStateManager.initializeFromExistingSave(restoreResult.sramData)

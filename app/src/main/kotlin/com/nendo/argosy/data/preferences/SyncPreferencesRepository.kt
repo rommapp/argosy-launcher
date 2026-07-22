@@ -31,6 +31,7 @@ data class SyncPreferences(
     val uploadScreenshotsEnabled: Boolean = true,
     val boxArtCacheEnabled: Boolean = true,
     val saveSyncEnabled: Boolean = false,
+    val secureSaves: Boolean = true,
     val stateCacheEnabled: Boolean = true,
     val saveCacheLimit: Int = 10,
     val saveWatcherEnabled: Boolean = false,
@@ -82,6 +83,7 @@ class SyncPreferencesRepository @Inject constructor(
         val UPLOAD_SCREENSHOTS_ENABLED = booleanPreferencesKey("upload_screenshots_enabled")
         val BOX_ART_CACHE_ENABLED = booleanPreferencesKey("box_art_cache_enabled")
         val SAVE_SYNC_ENABLED = booleanPreferencesKey("save_sync_enabled")
+        val SECURE_SAVES = booleanPreferencesKey("secure_saves")
         val STATE_CACHE_ENABLED = booleanPreferencesKey("state_cache_enabled")
         val SAVE_CACHE_LIMIT = intPreferencesKey("save_cache_limit")
         val SAVE_WATCHER_ENABLED = booleanPreferencesKey("save_watcher_enabled")
@@ -202,6 +204,7 @@ class SyncPreferencesRepository @Inject constructor(
             boxArtCacheEnabled = prefs[Keys.BOX_ART_CACHE_ENABLED] ?: true,
             uploadScreenshotsEnabled = prefs[Keys.UPLOAD_SCREENSHOTS_ENABLED] ?: true,
             saveSyncEnabled = prefs[Keys.SAVE_SYNC_ENABLED] ?: false,
+            secureSaves = prefs[Keys.SECURE_SAVES] ?: true,
             stateCacheEnabled = prefs[Keys.STATE_CACHE_ENABLED] ?: true,
             saveCacheLimit = prefs[Keys.SAVE_CACHE_LIMIT] ?: 10,
             saveWatcherEnabled = prefs[Keys.SAVE_WATCHER_ENABLED] ?: false,
@@ -387,6 +390,13 @@ class SyncPreferencesRepository @Inject constructor(
 
     suspend fun setSaveSyncEnabled(enabled: Boolean) {
         dataStore.edit { it[Keys.SAVE_SYNC_ENABLED] = enabled }
+    }
+
+    suspend fun isSecureSaves(): Boolean =
+        dataStore.data.map { it[Keys.SECURE_SAVES] ?: true }.first()
+
+    suspend fun setSecureSaves(enabled: Boolean) {
+        dataStore.edit { it[Keys.SECURE_SAVES] = enabled }
     }
 
     suspend fun setStateCacheEnabled(enabled: Boolean) {

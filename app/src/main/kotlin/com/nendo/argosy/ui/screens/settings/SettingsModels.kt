@@ -830,6 +830,8 @@ data class SyncSettingsState(
     val totalGames: Int = 0,
     val totalPlatforms: Int = 0,
     val saveSyncEnabled: Boolean = false,
+    val secureSaves: Boolean = true,
+    val showSecureSavesConfirm: Boolean = false,
     val saveCacheLimit: Int = 10,
     val pendingUploadsCount: Int = 0,
     val hasStoragePermission: Boolean = false,

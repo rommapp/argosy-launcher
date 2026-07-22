@@ -863,6 +863,16 @@ fun SettingsScreen(
     )
 
     ArgosyConfirmModalHost(
+        visible = uiState.syncSettings.showSecureSavesConfirm,
+        title = "Turn Off Secure Saves?",
+        message = "Turning this off disables RetroAchievements hardcore mode. Games will launch in casual mode until Secure Saves is turned back on.",
+        confirmLabel = "Turn Off",
+        destructive = true,
+        onConfirm = { viewModel.confirmDisableSecureSaves() },
+        onDismiss = { viewModel.cancelDisableSecureSaves() }
+    )
+
+    ArgosyConfirmModalHost(
         visible = uiState.syncSettings.showClearStateCacheConfirm,
         title = "Clear State Cache?",
         message = "This will delete all locally cached save state snapshots and their pending sync operations. Save files and server copies are not affected.",

@@ -8,6 +8,7 @@ import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.dao.SaveCacheDao
 import com.nendo.argosy.data.local.dao.SaveSyncDao
 import com.nendo.argosy.data.local.entity.SaveSyncEntity
+import com.nendo.argosy.data.preferences.SyncPreferencesRepository
 import com.nendo.argosy.data.remote.romm.RomMDeviceIdRequest
 import com.nendo.argosy.data.remote.romm.originDeviceName
 import com.nendo.argosy.data.storage.FileAccessLayer
@@ -39,6 +40,7 @@ class SaveDownloader @Inject constructor(
     private val titleIdExtractor: com.nendo.argosy.data.emulator.TitleIdExtractor,
     private val saveArchiver: SaveArchiver,
     private val savePathResolver: SavePathResolver,
+    private val syncPreferencesRepository: SyncPreferencesRepository,
     private val saveCacheManager: dagger.Lazy<SaveCacheManager>,
     private val fal: FileAccessLayer,
     private val switchSaveHandler: SwitchSaveHandler,
@@ -55,6 +57,7 @@ class SaveDownloader @Inject constructor(
         knownServerSaveId: Long? = null
     ): SaveSyncResult = withContext(Dispatchers.IO) {
         Logger.debug(TAG, "[SaveSync] DOWNLOAD gameId=$gameId emulator=$emulatorId channel=$channelName | Starting download")
+        val secureSaves = syncPreferencesRepository.isSecureSaves()
         val client = apiClient.get()
         val api = client.getApi()
         if (api == null) {
@@ -245,7 +248,7 @@ class SaveDownloader @Inject constructor(
                         syncEntity.copy(
                             rommSaveId = serverSave.id,
                             localSavePath = preDownloadTargetPath,
-                            localUpdatedAt = serverTimestamp,
+                            localUpdatedAt = if (secureSaves) serverTimestamp else localWriteAnchor(preDownloadTargetPath, serverTimestamp),
                             serverUpdatedAt = serverTimestamp,
                             lastSyncedAt = Instant.now(),
                             syncStatus = SaveSyncEntity.STATUS_SYNCED,
@@ -631,7 +634,7 @@ class SaveDownloader @Inject constructor(
                 syncEntity.copy(
                     rommSaveId = serverSave.id,
                     localSavePath = targetPath,
-                    localUpdatedAt = serverTimestamp,
+                    localUpdatedAt = if (secureSaves) serverTimestamp else localWriteAnchor(targetPath, serverTimestamp),
                     serverUpdatedAt = serverTimestamp,
                     lastSyncedAt = Instant.now(),
                     syncStatus = SaveSyncEntity.STATUS_SYNCED,
@@ -999,6 +1002,12 @@ class SaveDownloader @Inject constructor(
         } catch (e: Exception) {
             Logger.warn(TAG, "[SaveSync] flushPendingDeviceSync | gameId=$gameId | Failed, will retry later", e)
         }
+    }
+
+    private fun localWriteAnchor(path: String, fallback: Instant?): Instant? {
+        val file = File(path)
+        val newest = if (file.isDirectory) savePathResolver.findNewestFileTime(path) else file.lastModified()
+        return if (newest > 0L) Instant.ofEpochMilli(newest) else fallback
     }
 
     private suspend fun extractSaveIdNow(

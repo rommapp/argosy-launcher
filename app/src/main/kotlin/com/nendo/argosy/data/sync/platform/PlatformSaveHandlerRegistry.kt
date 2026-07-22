@@ -80,7 +80,7 @@ class PlatformSaveHandlerRegistry @Inject constructor(
      * layout. Used by [com.nendo.argosy.data.sync.SavePathResolver] for `findSaveFolderBySaveId`,
      * `resolveBasePath`, and `constructSavePath` dispatches.
      */
-    fun getFolderHandler(platformSlug: String): PlatformSaveHandler? =
+    fun getFolderHandler(platformSlug: String): FolderSaveHandler? =
         folderHandlers[canonicalSlug(platformSlug)]
 
     fun listPs2FolderMemcards(basePath: String): List<MemcardInfo> {

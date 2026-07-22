@@ -290,7 +290,7 @@ class GameDetailViewModel @Inject constructor(
                         hasCasualSaves = poState.hasCasualSaves,
                         hasHardcoreSave = poState.hasHardcoreSave,
                         hasRASupport = poState.hasRASupport,
-                        isRALoggedIn = poState.isRALoggedIn,
+                        hardcoreAvailable = poState.hardcoreAvailable,
                         isOnline = poState.isOnline
                     )
                 }

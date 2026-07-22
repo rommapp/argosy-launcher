@@ -17,10 +17,16 @@ sealed class ForceSaveCheckUiState {
     data class Failed(val message: String) : ForceSaveCheckUiState()
 }
 
+data class SaveAccessNoticeUi(
+    val count: Int,
+    val emulatorNames: List<String>
+)
+
 data class SaveSyncUiState(
     val deviceCard: ThisDeviceCard = ThisDeviceCard(),
     val otherDevices: List<DeviceSummary> = emptyList(),
     val otherDevicesHidden: Int = 0,
+    val accessNotice: SaveAccessNoticeUi? = null,
     val attentionRows: List<AttentionRow> = emptyList(),
     val inProgressRows: List<InProgressRow> = emptyList(),
     val gameRows: List<GameSaveRow> = emptyList(),

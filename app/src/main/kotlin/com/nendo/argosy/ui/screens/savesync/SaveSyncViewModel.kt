@@ -17,8 +17,10 @@ import com.nendo.argosy.data.remote.romm.RomMDevice
 import com.nendo.argosy.data.remote.romm.RomMRepository
 import com.nendo.argosy.data.repository.SaveSyncApiClient
 import com.nendo.argosy.data.repository.SaveSyncRepository
+import com.nendo.argosy.data.emulator.EmulatorRegistry
 import com.nendo.argosy.data.sync.ConflictResolution
 import com.nendo.argosy.data.sync.ConflictResolutionService
+import com.nendo.argosy.data.sync.SaveAccessNotices
 import com.nendo.argosy.data.sync.SyncDirection
 import com.nendo.argosy.data.sync.SyncQueueManager
 import com.nendo.argosy.data.sync.SyncStatus
@@ -50,7 +52,8 @@ class SaveSyncViewModel @Inject constructor(
     private val preferencesRepository: UserPreferencesRepository,
     private val romMRepository: RomMRepository,
     private val conflictResolutionService: ConflictResolutionService,
-    private val saveSyncRepository: SaveSyncRepository
+    private val saveSyncRepository: SaveSyncRepository,
+    private val saveAccessNotices: SaveAccessNotices
 ) : ViewModel() {
 
     private val _forceCheckStatus = MutableStateFlow<ForceSaveCheckUiState>(ForceSaveCheckUiState.Idle)
@@ -92,7 +95,8 @@ class SaveSyncViewModel @Inject constructor(
             _attentionAction,
             romMRepository.connectionState,
             saveSyncDao.observeSaveCountsByDevice(),
-            _registeredDevices
+            _registeredDevices,
+            saveAccessNotices.locations
         )
     ) { values ->
         @Suppress("UNCHECKED_CAST")
@@ -108,6 +112,8 @@ class SaveSyncViewModel @Inject constructor(
         val deviceCounts = values[7] as List<SaveCountByDevice>
         @Suppress("UNCHECKED_CAST")
         val registeredDevices = values[8] as List<RomMDevice>
+        @Suppress("UNCHECKED_CAST")
+        val inaccessibleLocations = values[9] as List<SaveAccessNotices.InaccessibleLocation>
         val gameIds = (saveRows.map { it.gameId } + conflicts.map { it.gameId } + queueState.operations.map { it.gameId })
             .distinct()
         val gameById = if (gameIds.isEmpty()) emptyMap() else gameDao.getByIdsChunked(gameIds).associateBy { it.id }
@@ -218,10 +224,20 @@ class SaveSyncViewModel @Inject constructor(
         val rows = attentionRows + inProgressRows + gameRows
         val resolvedFocus = resolveFocusKey(focusedKey, rows)
 
+        val accessNotice = if (!prefs.secureSaves && inaccessibleLocations.isNotEmpty()) {
+            SaveAccessNoticeUi(
+                count = inaccessibleLocations.size,
+                emulatorNames = inaccessibleLocations
+                    .map { EmulatorRegistry.getById(it.emulatorId)?.displayName ?: it.emulatorId }
+                    .distinct()
+            )
+        } else null
+
         SaveSyncUiState(
             deviceCard = deviceCard,
             otherDevices = otherDevices,
             otherDevicesHidden = otherDevicesHidden,
+            accessNotice = accessNotice,
             attentionRows = attentionRows,
             inProgressRows = inProgressRows,
             gameRows = gameRows,

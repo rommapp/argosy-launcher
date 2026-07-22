@@ -4,17 +4,22 @@ import com.nendo.argosy.data.emulator.EmulatorResolver
 import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.dao.getByIdsChunked
 import com.nendo.argosy.data.local.dao.PendingSyncQueueDao
+import com.nendo.argosy.data.local.dao.SaveCacheDao
 import com.nendo.argosy.data.local.dao.SaveSyncDao
+import com.nendo.argosy.data.local.entity.GameEntity
 import com.nendo.argosy.data.local.entity.PendingSyncQueueEntity
 import com.nendo.argosy.data.local.entity.SaveSyncEntity
 import com.nendo.argosy.data.local.entity.SyncPriority
 import com.nendo.argosy.data.local.entity.SyncType
 import com.nendo.argosy.data.preferences.SyncPreferencesRepository
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
+import com.nendo.argosy.data.sync.SaveAccessNotices
 import com.nendo.argosy.data.sync.SaveFilePayload
+import com.nendo.argosy.data.sync.SaveLookup
 import com.nendo.argosy.data.sync.SyncPayloadCodec
 import com.nendo.argosy.data.sync.SavePathResolver
 import com.nendo.argosy.data.sync.SyncDirection
+import com.nendo.argosy.data.sync.platform.PlatformSaveHandlerRegistry
 import com.nendo.argosy.data.sync.SyncOperation
 import com.nendo.argosy.data.sync.SyncQueueManager
 import com.nendo.argosy.data.sync.SyncStatus
@@ -30,6 +35,8 @@ import javax.inject.Singleton
 @Singleton
 class SaveSyncOrchestrator @Inject constructor(
     private val saveSyncDao: SaveSyncDao,
+    private val saveCacheDao: SaveCacheDao,
+    private val saveCacheManager: dagger.Lazy<SaveCacheManager>,
     private val pendingSyncQueueDao: PendingSyncQueueDao,
     private val gameDao: GameDao,
     private val emulatorResolver: EmulatorResolver,
@@ -38,8 +45,18 @@ class SaveSyncOrchestrator @Inject constructor(
     private val syncPreferencesRepository: SyncPreferencesRepository,
     private val syncQueueManager: SyncQueueManager,
     private val apiClient: dagger.Lazy<SaveSyncApiClient>,
-    private val payloadCodec: SyncPayloadCodec
+    private val payloadCodec: SyncPayloadCodec,
+    private val saveHandlerRegistry: PlatformSaveHandlerRegistry,
+    private val saveAccessNotices: SaveAccessNotices
 ) {
+    sealed interface RefreshOutcome {
+        data object Dirtied : RefreshOutcome
+        data object Unchanged : RefreshOutcome
+        data class Unreadable(val dirPath: String) : RefreshOutcome
+    }
+
+    private data class SystemSaveScan(val newestMillis: Long, val wholePath: Boolean)
+
     suspend fun queueUpload(gameId: Long, emulatorId: String, localPath: String) {
         val game = gameDao.getById(gameId) ?: return
         val rommId = game.rommId ?: return
@@ -57,13 +74,26 @@ class SaveSyncOrchestrator @Inject constructor(
         )
     }
 
-    suspend fun scanAndQueueLocalChanges(): Int = withContext(Dispatchers.IO) {
+    suspend fun scanAndQueueLocalChanges(secureSaves: Boolean): Int = withContext(Dispatchers.IO) {
         val downloadedGames = gameDao.getByIdsChunked(gameDao.getDownloadedRommGameIds())
         var queued = 0
         val client = apiClient.get()
+        val processedWholePaths = mutableSetOf<String>()
+        val unreadableLocations = mutableListOf<SaveAccessNotices.InaccessibleLocation>()
 
         for (game in downloadedGames) {
             val emulatorId = client.resolveEmulatorForGame(game) ?: continue
+
+            if (!secureSaves) {
+                when (val outcome = refreshCacheFromSystem(game, emulatorId, game.activeSaveChannel, processedWholePaths)) {
+                    RefreshOutcome.Dirtied -> queued++
+                    is RefreshOutcome.Unreadable ->
+                        unreadableLocations.add(SaveAccessNotices.InaccessibleLocation(outcome.dirPath, emulatorId))
+                    RefreshOutcome.Unchanged -> Unit
+                }
+                continue
+            }
+
             val emulatorPackage = emulatorResolver.getEmulatorPackageForGame(game.id, game.platformId, game.platformSlug)
             val coreName = client.resolveCoreForGame(game)
 
@@ -97,8 +127,141 @@ class SaveSyncOrchestrator @Inject constructor(
             }
         }
 
-        Logger.info(TAG, "[SaveSync] SCAN | Queued $queued local saves for upload")
+        if (secureSaves) {
+            Logger.info(TAG, "[SaveSync] SCAN | Queued $queued local saves for upload")
+        } else {
+            saveAccessNotices.publishPass(unreadableLocations)
+            Logger.info(TAG, "[SaveSync] SCAN | Refreshed $queued save caches from system | unreadableLocations=${unreadableLocations.size}")
+        }
         queued
+    }
+
+    suspend fun refreshCacheFromSystem(gameId: Long, emulatorId: String, channelName: String?): RefreshOutcome {
+        val game = gameDao.getById(gameId) ?: return RefreshOutcome.Unchanged
+        return refreshCacheFromSystem(game, emulatorId, channelName)
+    }
+
+    /**
+     * Secure-saves-OFF preamble: reconciles the save cache with the on-system save so
+     * existing dirty-flag logic sees off-Argosy changes. Never call in secure-saves-ON flows.
+     */
+    suspend fun refreshCacheFromSystem(
+        game: GameEntity,
+        emulatorId: String,
+        channelName: String?,
+        processedWholePaths: MutableSet<String>? = null
+    ): RefreshOutcome = withContext(Dispatchers.IO) {
+        val channel = channelName ?: SaveSyncApiClient.AUTOSAVE_SLOT_NAME
+        if (STATE_CHANNEL_PATTERN.containsMatchIn(channel)) return@withContext RefreshOutcome.Unchanged
+        if (game.localPath == null) return@withContext RefreshOutcome.Unchanged
+        if (saveCacheDao.getMostRecent(game.id)?.isHardcore == true) {
+            Logger.debug(TAG, "[SaveSync] REFRESH gameId=${game.id} | latest cache is hardcore, skipping on-system derivation")
+            return@withContext RefreshOutcome.Unchanged
+        }
+
+        val client = apiClient.get()
+        val emulatorPackage = emulatorResolver.getEmulatorPackageForGame(game.id, game.platformId, game.platformSlug)
+        val coreName = client.resolveCoreForGame(game)
+        val savePath = when (val lookup = savePathResolver.discoverSavePathChecked(
+            emulatorId = emulatorId,
+            gameTitle = game.title,
+            platformSlug = game.platformSlug,
+            romPath = game.localPath,
+            cachedSaveId = game.saveId ?: game.titleId,
+            coreName = coreName,
+            emulatorPackage = emulatorPackage,
+            gameId = game.id
+        )) {
+            is SaveLookup.Found -> lookup.path
+            SaveLookup.Absent -> return@withContext RefreshOutcome.Unchanged
+            is SaveLookup.Unreadable -> {
+                Logger.debug(TAG, "[SaveSync] REFRESH gameId=${game.id} | save location unreadable, leaving cache untouched | dir=${lookup.dirPath}")
+                saveAccessNotices.record(lookup.dirPath, emulatorId)
+                return@withContext RefreshOutcome.Unreadable(lookup.dirPath)
+            }
+        }
+
+        val localFile = File(savePath)
+        if (!localFile.exists()) return@withContext RefreshOutcome.Unchanged
+
+        val scan = if (localFile.isDirectory) {
+            scanFolderSave(game, savePath) ?: return@withContext RefreshOutcome.Unchanged
+        } else {
+            SystemSaveScan(newestMillis = localFile.lastModified(), wholePath = true)
+        }
+
+        if (scan.wholePath && processedWholePaths != null) {
+            val pathKey = runCatching { localFile.canonicalPath }.getOrDefault(savePath)
+            if (!processedWholePaths.add(pathKey)) {
+                Logger.debug(TAG, "[SaveSync] REFRESH gameId=${game.id} | resolved path already processed this pass | path=$pathKey")
+                return@withContext RefreshOutcome.Unchanged
+            }
+        }
+
+        val latest = saveCacheDao.getMostRecentInChannel(game.id, channel)
+        if (latest == null) {
+            Logger.debug(TAG, "[SaveSync] REFRESH gameId=${game.id} channel=$channel | no cache entry, adopting on-system save")
+            return@withContext if (cacheSystemSave(game.id, emulatorId, savePath, channelName)) RefreshOutcome.Dirtied else RefreshOutcome.Unchanged
+        }
+
+        val anchor = saveSyncDao.getByGameEmulatorAndChannel(game.id, emulatorId, channel)
+            ?.localUpdatedAt ?: latest.cachedAt
+        val anchorMillis = anchor.toEpochMilli()
+        val dirty = if (localFile.isDirectory) {
+            scan.newestMillis > anchorMillis
+        } else {
+            scan.newestMillis > anchorMillis && systemDiffersFromCache(savePath, latest.contentHash)
+        }
+        if (!dirty) return@withContext RefreshOutcome.Unchanged
+
+        Logger.debug(TAG, "[SaveSync] REFRESH gameId=${game.id} channel=$channel | on-system save newer than anchor=$anchor, caching as dirty")
+        if (cacheSystemSave(game.id, emulatorId, savePath, channelName)) RefreshOutcome.Dirtied else RefreshOutcome.Unchanged
+    }
+
+    private suspend fun scanFolderSave(game: GameEntity, savePath: String): SystemSaveScan? {
+        val handler = saveHandlerRegistry.getFolderHandler(game.platformSlug)
+            ?: return SystemSaveScan(savePathResolver.findNewestFileTime(savePath), wholePath = true)
+        val saveId = game.saveId ?: game.titleId ?: refreshedSaveId(game.id)
+        if (saveId == null) {
+            Logger.debug(TAG, "[SaveSync] REFRESH gameId=${game.id} | folder save without saveId, skipping to avoid whole-card scan | path=$savePath")
+            return null
+        }
+        if (handler.isEntryForSaveId(File(savePath).name, saveId)) {
+            return SystemSaveScan(savePathResolver.findNewestFileTime(savePath), wholePath = true)
+        }
+        val matched = handler.findAllSaveFoldersBySaveId(savePath, saveId)
+        if (matched.isNotEmpty()) {
+            return SystemSaveScan(matched.maxOf { savePathResolver.findNewestFileTime(it) }, wholePath = false)
+        }
+        if (handler.constructSavePath(savePath, saveId) == savePath) {
+            Logger.debug(TAG, "[SaveSync] REFRESH gameId=${game.id} | shared card has no entries for saveId=$saveId | path=$savePath")
+            return null
+        }
+        return SystemSaveScan(savePathResolver.findNewestFileTime(savePath), wholePath = true)
+    }
+
+    private suspend fun refreshedSaveId(gameId: Long): String? =
+        gameDao.getById(gameId)?.let { it.saveId ?: it.titleId }
+
+    private suspend fun systemDiffersFromCache(savePath: String, cachedHash: String?): Boolean {
+        val systemHash = saveCacheManager.get().calculateLocalSaveHash(savePath) ?: return false
+        return systemHash != cachedHash
+    }
+
+    private suspend fun cacheSystemSave(
+        gameId: Long,
+        emulatorId: String,
+        savePath: String,
+        channelName: String?
+    ): Boolean {
+        val result = saveCacheManager.get().cacheCurrentSave(
+            gameId = gameId,
+            emulatorId = emulatorId,
+            savePath = savePath,
+            channelName = channelName,
+            needsRemoteSync = true
+        )
+        return result is SaveCacheManager.CacheResult.Created
     }
 
     suspend fun downloadPendingServerSaves(): Int = withContext(Dispatchers.IO) {
@@ -313,5 +476,6 @@ class SaveSyncOrchestrator @Inject constructor(
 
     companion object {
         private const val TAG = "SaveSyncOrchestrator"
+        private val STATE_CHANNEL_PATTERN = Regex("""^state_""", RegexOption.IGNORE_CASE)
     }
 }

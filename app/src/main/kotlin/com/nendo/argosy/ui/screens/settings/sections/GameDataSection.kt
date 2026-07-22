@@ -87,6 +87,7 @@ internal sealed class GameDataItem(val key: String, val section: String) {
     data object SyncLibrary : GameDataItem("syncLibrary", "library")
     data object AccuratePlayTime : GameDataItem("accuratePlayTime", "tracking")
     data object SaveSync : GameDataItem("saveSync", "saves")
+    data object SecureSaves : GameDataItem("secureSaves", "saves")
     data object SaveCacheLimit : GameDataItem("saveCacheLimit", "saves")
     data object SyncSaves : GameDataItem("syncSaves", "saves")
     data object ClearPathCache : GameDataItem("clearPathCache", "saves")
@@ -122,6 +123,7 @@ internal fun buildGameDataItems(
         add(GameDataItem.Header("savesHeader", "saves", "SAVES"))
         add(GameDataItem.SaveSync)
         if (saveSyncEnabled) {
+            add(GameDataItem.SecureSaves)
             add(GameDataItem.SaveCacheLimit)
             add(GameDataItem.SyncSaves)
         }
@@ -385,6 +387,18 @@ private fun GameDataContent(
                     isEnabled = saveSyncEnabled,
                     isFocused = isFocused(item),
                     onToggle = { viewModel.toggleSaveSync() }
+                )
+
+                GameDataItem.SecureSaves -> SwitchPreference(
+                    title = "Secure Saves",
+                    subtitle = if (uiState.syncSettings.secureSaves) {
+                        "Argosy manages and enforces save files"
+                    } else {
+                        "Argosy attempts to sync saves managed outside the launcher"
+                    },
+                    isEnabled = uiState.syncSettings.secureSaves,
+                    isFocused = isFocused(item),
+                    onToggle = { viewModel.toggleSecureSaves() }
                 )
 
                 GameDataItem.SaveCacheLimit -> {

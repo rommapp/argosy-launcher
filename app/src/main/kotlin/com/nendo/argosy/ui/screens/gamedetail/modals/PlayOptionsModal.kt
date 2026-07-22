@@ -46,14 +46,14 @@ fun PlayOptionsModal(
     hasSaves: Boolean,
     hasHardcoreSave: Boolean,
     hasRASupport: Boolean,
-    isRALoggedIn: Boolean,
+    hardcoreAvailable: Boolean,
     isOnline: Boolean,
     canSkipSync: Boolean = false,
     onAction: (PlayOptionAction) -> Unit,
     onDismiss: () -> Unit
 ) {
     var currentIndex = 0
-    val showHardcoreOptions = hasRASupport && isRALoggedIn
+    val showHardcoreOptions = hardcoreAvailable
 
     Modal(title = "START GAME", onDismiss = onDismiss) {
         val hasContinueSection = hasSaves || hasHardcoreSave

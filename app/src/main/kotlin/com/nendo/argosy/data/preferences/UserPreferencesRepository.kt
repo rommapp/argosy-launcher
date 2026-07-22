@@ -112,6 +112,7 @@ class UserPreferencesRepository @Inject constructor(
             soundConfigs = controls.soundConfigs,
             betaUpdatesEnabled = app.betaUpdatesEnabled,
             saveSyncEnabled = sync.saveSyncEnabled,
+            secureSaves = sync.secureSaves,
             stateCacheEnabled = sync.stateCacheEnabled,
             saveCacheLimit = sync.saveCacheLimit,
             fileLoggingEnabled = app.fileLoggingEnabled,
@@ -306,6 +307,7 @@ class UserPreferencesRepository @Inject constructor(
     suspend fun setUploadScreenshotsEnabled(enabled: Boolean) = syncPrefs.setUploadScreenshotsEnabled(enabled)
     suspend fun setBoxArtCacheEnabled(enabled: Boolean) = syncPrefs.setBoxArtCacheEnabled(enabled)
     suspend fun setSaveSyncEnabled(enabled: Boolean) = syncPrefs.setSaveSyncEnabled(enabled)
+    suspend fun setSecureSaves(enabled: Boolean) = syncPrefs.setSecureSaves(enabled)
     suspend fun setStateCacheEnabled(enabled: Boolean) = syncPrefs.setStateCacheEnabled(enabled)
     suspend fun setSaveCacheLimit(limit: Int) = syncPrefs.setSaveCacheLimit(limit)
     suspend fun setSaveDebugLoggingEnabled(enabled: Boolean) = syncPrefs.setSaveDebugLoggingEnabled(enabled)
@@ -621,6 +623,7 @@ data class UserPreferences(
     val soundConfigs: Map<SoundType, SoundConfig> = emptyMap(),
     val betaUpdatesEnabled: Boolean = false,
     val saveSyncEnabled: Boolean = false,
+    val secureSaves: Boolean = true,
     val stateCacheEnabled: Boolean = true,
     val saveCacheLimit: Int = 10,
     val backgroundBlur: Int = 0,

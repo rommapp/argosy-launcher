@@ -26,6 +26,12 @@ import javax.inject.Singleton
 
 private const val TAG = "SavePathResolver"
 
+sealed interface SaveLookup {
+    data class Found(val path: String) : SaveLookup
+    data object Absent : SaveLookup
+    data class Unreadable(val dirPath: String) : SaveLookup
+}
+
 @Singleton
 class SavePathResolver @Inject constructor(
     @ApplicationContext private val context: Context,
@@ -82,6 +88,72 @@ class SavePathResolver @Inject constructor(
         }
         return result
     }
+
+    /**
+     * Three-state variant of [discoverSavePath]: distinguishes a genuinely absent save from a
+     * candidate save directory that exists but cannot be listed (e.g. an emulator-locked dir).
+     */
+    suspend fun discoverSavePathChecked(
+        emulatorId: String,
+        gameTitle: String,
+        platformSlug: String,
+        romPath: String? = null,
+        cachedSaveId: String? = null,
+        coreName: String? = null,
+        emulatorPackage: String? = null,
+        gameId: Long? = null
+    ): SaveLookup {
+        val path = discoverSavePath(emulatorId, gameTitle, platformSlug, romPath, cachedSaveId, coreName, emulatorPackage, gameId)
+        if (path != null) return SaveLookup.Found(path)
+        val unreadable = findUnreadableCandidateDir(emulatorId, platformSlug, romPath, coreName, emulatorPackage, gameId)
+        return if (unreadable != null) SaveLookup.Unreadable(unreadable) else SaveLookup.Absent
+    }
+
+    private suspend fun findUnreadableCandidateDir(
+        emulatorId: String,
+        platformSlug: String,
+        romPath: String?,
+        coreName: String?,
+        emulatorPackage: String?,
+        gameId: Long?
+    ): String? = withContext(Dispatchers.IO) {
+        val config = emulatorPackage?.let { SavePathRegistry.getConfigForPlatformByPackage(it, platformSlug) }
+            ?: SavePathRegistry.getConfigForPlatform(emulatorId, platformSlug)
+            ?: return@withContext null
+        val effectiveEmulatorId = config.emulatorId
+        val userConfig = emulatorSaveConfigDao.getByEmulator(effectiveEmulatorId)
+        val isRetroArch = effectiveEmulatorId == "retroarch" || effectiveEmulatorId == "retroarch_64"
+        val candidates = buildList {
+            perGameSaveDir(gameId, config, platformSlug)?.let { add(it) }
+            if (userConfig?.savesBesideRom == true && romPath != null) File(romPath).parent?.let { add(it) }
+            userConfig?.takeIf { it.isUserOverride }?.savePathPattern?.let { add(it) }
+            userConfig?.selectedMemcardPath?.let { add(it) }
+            if (isRetroArch) {
+                val req = com.nendo.argosy.data.emulator.RetroArchPathResolver.Request(
+                    emulatorId = effectiveEmulatorId,
+                    coreName = coreName,
+                    romPath = romPath,
+                )
+                addAll(
+                    if (coreName != null) retroArchPathResolver.resolveSaveDirectories(req)
+                    else retroArchPathResolver.resolveSaveDirectoriesForPlatform(req, platformSlug)
+                )
+            } else if (config.usesFolderBasedSaves) {
+                addAll(SavePathRegistry.resolvePathWithPackage(config, emulatorPackage, context.filesDir.absolutePath, fal.externalStorageRoots()))
+            } else {
+                addAll(builtinSaveDirOverrides(effectiveEmulatorId, gameId))
+                addAll(resolveSavePaths(config, platformSlug))
+            }
+        }
+        val unreadable = candidates.distinct().firstOrNull { isUnreadableDir(it) }
+        if (unreadable != null) {
+            Logger.debug(TAG, "[SaveSync] DISCOVER | Candidate save dir exists but cannot be listed | path=$unreadable, emulatorId=$effectiveEmulatorId")
+        }
+        unreadable
+    }
+
+    private fun isUnreadableDir(path: String): Boolean =
+        fal.exists(path) && fal.isDirectory(path) && fal.listFiles(path) == null
 
     private suspend fun discoverSavePathInternal(
         emulatorId: String,

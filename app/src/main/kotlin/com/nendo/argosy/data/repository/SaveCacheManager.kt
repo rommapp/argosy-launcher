@@ -4,12 +4,15 @@ import android.content.Context
 import android.util.Log
 import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.dao.SaveCacheDao
+import com.nendo.argosy.data.local.dao.SaveSyncDao
 import com.nendo.argosy.data.local.entity.GameEntity
 import com.nendo.argosy.data.local.entity.SaveCacheEntity
 import com.nendo.argosy.data.platform.PlatformDefinitions
+import com.nendo.argosy.data.preferences.SyncPreferencesRepository
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.storage.FileAccessLayer
 import com.nendo.argosy.data.sync.SaveArchiver
+import com.nendo.argosy.data.sync.SavePathResolver
 import com.nendo.argosy.data.sync.platform.PlatformSaveHandlerRegistry
 import com.nendo.argosy.util.SaveDebugLogger
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -28,8 +31,11 @@ import javax.inject.Singleton
 class SaveCacheManager @Inject constructor(
     @ApplicationContext private val context: Context,
     private val saveCacheDao: SaveCacheDao,
+    private val saveSyncDao: SaveSyncDao,
     private val gameDao: GameDao,
     private val preferencesRepository: UserPreferencesRepository,
+    private val syncPreferencesRepository: SyncPreferencesRepository,
+    private val savePathResolver: SavePathResolver,
     private val saveArchiver: SaveArchiver,
     private val fal: FileAccessLayer,
     private val saveHandlerRegistry: PlatformSaveHandlerRegistry
@@ -68,6 +74,7 @@ class SaveCacheManager @Inject constructor(
     ): CacheResult = withContext(Dispatchers.IO) {
         @Suppress("NAME_SHADOWING")
         val channelName = resolveDefaultChannel(channelName, isHardcore)
+        val secureSaves = syncPreferencesRepository.isSecureSaves()
         if (!fal.exists(savePath)) {
             Log.w(TAG, "Save file does not exist: $savePath")
             return@withContext CacheResult.Failed
@@ -82,6 +89,7 @@ class SaveCacheManager @Inject constructor(
             val cachedHash = unchanged?.contentHash
             if (unchanged != null && !cachedHash.isNullOrBlank()) {
                 Log.d(TAG, "Cache untouched since ${unchanged.cachedAt} for game $gameId (hash=$cachedHash), skipping rehash")
+                if (!secureSaves && !isHardcore) recordLocalWriteAnchor(gameId, emulatorId, channelName, savePath)
                 return@withContext CacheResult.Duplicate(unchanged.id, cachedHash)
             }
         }
@@ -127,6 +135,7 @@ class SaveCacheManager @Inject constructor(
                         contentHash = contentHash
                     )
                     tempFile?.delete()
+                    if (!secureSaves && !isHardcore) recordLocalWriteAnchor(gameId, emulatorId, channelName, savePath)
                     return@withContext CacheResult.Duplicate(existingWithHash.id, contentHash)
                 }
             }
@@ -193,6 +202,7 @@ class SaveCacheManager @Inject constructor(
             } else {
                 saveCacheDao.clearDirtyFlagForLatest(gameId)
             }
+            if (!secureSaves && !isHardcore) recordLocalWriteAnchor(gameId, emulatorId, channelName, savePath)
             val slotInfo = when {
                 isHardcore -> " [HARDCORE]"
                 channelName != null -> " (channel: $channelName)"
@@ -396,6 +406,7 @@ class SaveCacheManager @Inject constructor(
             Log.e(TAG, "Cache entry not found: $cacheId")
             return@withContext false
         }
+        val secureSaves = syncPreferencesRepository.isSecureSaves()
 
         val cacheFile = File(cacheBaseDir, entity.cachePath)
         if (!cacheFile.exists()) {
@@ -471,6 +482,10 @@ class SaveCacheManager @Inject constructor(
                 }
             } catch (e: Exception) {
                 Log.w(TAG, "Restore verify failed for cache $cacheId: ${e.message}")
+            }
+
+            if (!secureSaves && !entity.isHardcore) {
+                recordLocalWriteAnchor(entity.gameId, entity.emulatorId, entity.channelName, targetPath)
             }
 
             true
@@ -797,6 +812,23 @@ class SaveCacheManager @Inject constructor(
             Log.e(TAG, "Failed to calculate hash for $savePath", e)
             null
         }
+    }
+
+    private suspend fun recordLocalWriteAnchor(
+        gameId: Long,
+        emulatorId: String,
+        channelName: String?,
+        savePath: String
+    ) {
+        if (channelName == null) return
+        val row = saveSyncDao.getByGameEmulatorAndChannel(gameId, emulatorId, channelName) ?: return
+        val newest = if (fal.isDirectory(savePath)) {
+            savePathResolver.findNewestFileTime(savePath)
+        } else {
+            fal.getTransformedFile(savePath).lastModified()
+        }
+        if (newest <= 0L) return
+        saveSyncDao.upsert(row.copy(localUpdatedAt = Instant.ofEpochMilli(newest)))
     }
 
     private fun resolveDefaultChannel(channelName: String?, isHardcore: Boolean): String? {

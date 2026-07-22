@@ -112,6 +112,9 @@ open class FolderSaveHandler(
 
     override fun constructSavePath(baseDir: String, saveId: String): String? = "$baseDir/$saveId"
 
+    /** True when [folderName] is one of [saveId]'s own per-game entries per this platform's match rule. */
+    fun isEntryForSaveId(folderName: String, saveId: String): Boolean = folderMatches(folderName, saveId)
+
     override fun resolveBasePath(config: SavePathConfig, basePathOverride: String?): String? {
         if (basePathOverride != null) return basePathOverride
 

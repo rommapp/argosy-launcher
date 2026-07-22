@@ -12,6 +12,7 @@ import com.nendo.argosy.data.preferences.RegionFilterMode
 import com.nendo.argosy.data.preferences.SyncFilterPreferences
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.remote.romm.RomMRepository
+import com.nendo.argosy.data.repository.RetroAchievementsRepository
 import com.nendo.argosy.data.repository.SaveCacheRepository
 import com.nendo.argosy.data.repository.SaveSyncRepository
 import com.nendo.argosy.data.repository.StateCacheManager
@@ -49,7 +50,8 @@ class SyncSettingsDelegate @Inject constructor(
     private val imageCacheManager: ImageCacheManager,
     private val notificationManager: NotificationManager,
     private val permissionHelper: com.nendo.argosy.util.PermissionHelper,
-    private val attributionRepository: StorageAttributionRepository
+    private val attributionRepository: StorageAttributionRepository,
+    private val retroAchievementsRepository: RetroAchievementsRepository
 ) {
     private val _state = MutableStateFlow(SyncSettingsState())
     val state: StateFlow<SyncSettingsState> = _state.asStateFlow()
@@ -97,6 +99,7 @@ class SyncSettingsDelegate @Inject constructor(
                     downloadDefaults = downloadDefaults,
                     syncFilters = prefs.syncFilters,
                     saveSyncEnabled = prefs.saveSyncEnabled,
+                    secureSaves = prefs.secureSaves,
                     stateCacheEnabled = prefs.stateCacheEnabled,
                     saveCacheLimit = prefs.saveCacheLimit,
                     hasStoragePermission = hasStoragePermission,
@@ -444,6 +447,30 @@ class SyncSettingsDelegate @Inject constructor(
                 runSaveSyncNow(scope)
             }
         }
+    }
+
+    fun toggleSecureSaves(scope: CoroutineScope) {
+        scope.launch {
+            val newValue = !_state.value.secureSaves
+            val hardcorePref = preferencesRepository.getBuiltinEmulatorSettings().first().defaultToHardcore
+            if (!newValue && hardcorePref != "casual" && retroAchievementsRepository.isLoggedIn()) {
+                _state.update { it.copy(showSecureSavesConfirm = true) }
+                return@launch
+            }
+            preferencesRepository.setSecureSaves(newValue)
+            _state.update { it.copy(secureSaves = newValue) }
+        }
+    }
+
+    fun confirmDisableSecureSaves(scope: CoroutineScope) {
+        scope.launch {
+            preferencesRepository.setSecureSaves(false)
+            _state.update { it.copy(secureSaves = false, showSecureSavesConfirm = false) }
+        }
+    }
+
+    fun cancelDisableSecureSaves() {
+        _state.update { it.copy(showSecureSavesConfirm = false) }
     }
 
     companion object {
@@ -932,7 +959,8 @@ class SyncSettingsDelegate @Inject constructor(
         scope.launch {
             try {
                 notificationManager.show("Scanning local saves...")
-                val queued = saveSyncRepository.scanAndQueueLocalChanges()
+                val secureSaves = preferencesRepository.userPreferences.first().secureSaves
+                val queued = saveSyncRepository.scanAndQueueLocalChanges(secureSaves)
                 if (queued > 0) {
                     notificationManager.show("Found $queued local saves to sync")
                 }

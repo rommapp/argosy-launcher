@@ -105,6 +105,7 @@ class SyncCoordinatorProcessQueueTest {
             syncQueueManager = syncQueueManager,
             syncPreferencesRepository = syncPreferencesRepository,
             payloadCodec = payloadCodec,
+            savePathResolver = mockk(relaxed = true),
             strategySelector = strategySelector,
             pendingConflictDao = pendingConflictDao,
             reconcileEffectApplier = effectApplier,

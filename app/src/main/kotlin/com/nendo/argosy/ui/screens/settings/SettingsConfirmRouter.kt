@@ -194,6 +194,7 @@ internal fun routeConfirm(vm: SettingsViewModel): InputResult {
                     when (state.focusedIndex) {
                         0 -> vm.logoutFromRA()
                         1 -> {
+                            if (!state.syncSettings.secureSaves) return InputResult.HANDLED
                             vm.cycleRADefaultMode(1)
                             return InputResult.handled(SoundType.SELECT)
                         }
@@ -314,6 +315,10 @@ private fun routeServerConfirm(vm: SettingsViewModel, state: SettingsUiState): I
         }
         GameDataItem.SaveSync -> {
             vm.toggleSaveSync()
+            return InputResult.handled(SoundType.TOGGLE)
+        }
+        GameDataItem.SecureSaves -> {
+            vm.toggleSecureSaves()
             return InputResult.handled(SoundType.TOGGLE)
         }
         GameDataItem.SaveCacheLimit -> {

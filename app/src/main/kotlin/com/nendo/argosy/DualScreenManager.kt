@@ -201,6 +201,7 @@ class DualScreenManager(
     var sessionQuickActions: SessionQuickActions? = null
         set(value) {
             field = value
+            _swappedCompanionState.update { it.copy(quickActionsAvailable = value != null) }
             companionHost?.onSessionActionsChanged(value != null)
         }
 
@@ -437,6 +438,7 @@ class DualScreenManager(
     )
     val swappedCompanionState: StateFlow<com.nendo.argosy.hardware.CompanionInGameState> =
         _swappedCompanionState
+    /** Canonical in both companion modes; updateCompanionHasQuickSave maintains it regardless of screen mode. */
     val companionHasQuickSave: Boolean
         get() = _swappedCompanionState.value.hasQuickSave
 

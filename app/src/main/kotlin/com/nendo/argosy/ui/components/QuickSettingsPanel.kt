@@ -55,6 +55,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import com.nendo.argosy.data.preferences.ThemeMode
 import com.nendo.argosy.ui.primitives.ArgosyToggle
+import com.nendo.argosy.ui.quaypass.QuayPassIcons
 import com.nendo.argosy.ui.primitives.ArgosyTrackSlider
 import com.nendo.argosy.ui.screens.settings.menu.SettingsLayout
 import com.nendo.argosy.ui.theme.Dimens
@@ -369,7 +370,7 @@ fun QuickSettingsPanel(
                             )
 
                             QuickSettingsItem.QuayPass -> QuickSettingToggle(
-                                icon = Icons.Default.Person,
+                                icon = if (state.quayPassEnabled) QuayPassIcons.On else QuayPassIcons.Off,
                                 label = "QuayPass",
                                 isEnabled = state.quayPassEnabled,
                                 isFocused = isFocused(item),

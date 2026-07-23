@@ -21,6 +21,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -46,6 +47,7 @@ import com.nendo.argosy.ui.components.InputButton
 import com.nendo.argosy.ui.components.friends.SocialAvatar
 import com.nendo.argosy.ui.input.LocalInputDispatcher
 import com.nendo.argosy.ui.navigation.Screen
+import com.nendo.argosy.ui.quaypass.QuayPassIcons
 import com.nendo.argosy.ui.primitives.FocusIndicators
 import com.nendo.argosy.ui.primitives.argosyFocusIndicators
 import com.nendo.argosy.ui.screens.doodle.CanvasSize
@@ -60,8 +62,8 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
 @Composable
-fun QuayPassPlazaScreen(
-    viewModel: QuayPassPlazaViewModel = hiltViewModel()
+fun QuayPassCheckInScreen(
+    viewModel: QuayPassCheckInViewModel = hiltViewModel()
 ) {
     val encounters by viewModel.encounters.collectAsState()
     val running by viewModel.isServiceRunning.collectAsState()
@@ -105,11 +107,22 @@ fun QuayPassPlazaScreen(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(
-                        text = "Plaza",
-                        style = MaterialTheme.typography.headlineMedium,
-                        fontWeight = FontWeight.SemiBold
-                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
+                    ) {
+                        Icon(
+                            imageVector = if (running) QuayPassIcons.Encounter else QuayPassIcons.Off,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(Dimens.iconLg)
+                        )
+                        Text(
+                            text = "Check-In",
+                            style = MaterialTheme.typography.headlineMedium,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
                     TicketBalanceChip(ticketBalance)
                 }
                 Text(

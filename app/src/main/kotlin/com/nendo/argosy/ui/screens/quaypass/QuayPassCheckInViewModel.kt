@@ -24,7 +24,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-data class QuayPassPlazaUiState(
+data class QuayPassCheckInUiState(
     val focusedIndex: Int = 0,
     val pendingArrivals: List<String> = emptyList(),
     val revealedArrivals: Set<String> = emptySet(),
@@ -32,22 +32,22 @@ data class QuayPassPlazaUiState(
     val friendAccountIds: Set<String> = emptySet(),
     val pendingFriendAccountIds: Set<String> = emptySet(),
     val sessionSentAccountIds: Set<String> = emptySet(),
-    val ticketAwardPerEncounter: Int = QuayPassPlazaViewModel.TICKETS_PER_ENCOUNTER
+    val ticketAwardPerEncounter: Int = QuayPassCheckInViewModel.TICKETS_PER_ENCOUNTER
 ) {
     val arrivalSequenceRunning: Boolean get() = pendingArrivals.isNotEmpty()
     val sentAccountIds: Set<String> get() = sessionSentAccountIds + pendingFriendAccountIds
 }
 
 @HiltViewModel
-class QuayPassPlazaViewModel @Inject constructor(
+class QuayPassCheckInViewModel @Inject constructor(
     private val repository: QuayPassRepository,
     private val service: QuayPassService,
     private val socialRepository: SocialRepository,
     preferencesRepository: UserPreferencesRepository
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(QuayPassPlazaUiState())
-    val uiState: StateFlow<QuayPassPlazaUiState> = _uiState.asStateFlow()
+    private val _uiState = MutableStateFlow(QuayPassCheckInUiState())
+    val uiState: StateFlow<QuayPassCheckInUiState> = _uiState.asStateFlow()
 
     val encounters: StateFlow<List<QuayPassEncounterEntity>> =
         repository.observeEncounters()

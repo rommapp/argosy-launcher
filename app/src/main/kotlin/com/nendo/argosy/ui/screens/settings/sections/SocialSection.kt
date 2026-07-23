@@ -275,7 +275,7 @@ fun SocialSection(
                         SocialItem.QuayPassEnabled -> SwitchPreference(
                             title = "QuayPass",
                             subtitle = if (social.quayPassEnabled) {
-                                "Pass nearby travelers in the Plaza"
+                                "Pass nearby travelers at Check-In"
                             } else {
                                 "Off"
                             },

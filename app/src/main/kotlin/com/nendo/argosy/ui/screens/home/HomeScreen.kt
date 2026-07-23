@@ -158,6 +158,7 @@ fun HomeScreen(
     onNavigateToDefault: () -> Unit,
     onDrawerToggle: () -> Unit,
     onChangelogAction: (RequiredAction) -> Unit = {},
+    onNavigateToRoute: (String) -> Unit = {},
     viewModel: HomeViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -904,6 +905,10 @@ fun HomeScreen(
                     onChangelogAction(viewModel.handleChangelogAction(action))
                 }
             )
+        }
+
+        if (!uiState.isLoading && uiState.changelogEntry == null) {
+            com.nendo.argosy.ui.screens.quaypass.QuayPassAnnouncementHost(onNavigate = onNavigateToRoute)
         }
     }
         }

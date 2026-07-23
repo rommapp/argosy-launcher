@@ -2079,3 +2079,48 @@ object Migration_144_145 : Migration(144, 145) {
         db.execSQL("ALTER TABLE `games` ADD COLUMN `timeToBeatCompletionistSec` INTEGER")
     }
 }
+
+object Migration_145_146 : Migration(145, 146) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS quaypass_encounters (
+                credentialFingerprint TEXT NOT NULL PRIMARY KEY,
+                username TEXT NOT NULL,
+                displayName TEXT,
+                avatarColor TEXT,
+                avatarBlobBase64 TEXT,
+                greeting TEXT,
+                lastGameTitle TEXT,
+                lastGamePlatform TEXT,
+                lastGamePlaytimeMinutes INTEGER,
+                lastGameIgdbId INTEGER,
+                encounteredAt INTEGER NOT NULL,
+                seenByUser INTEGER NOT NULL DEFAULT 0,
+                accountId TEXT,
+                reported INTEGER NOT NULL DEFAULT 0
+            )
+            """.trimIndent()
+        )
+        db.execSQL("CREATE INDEX IF NOT EXISTS index_quaypass_encounters_encounteredAt ON quaypass_encounters(encounteredAt)")
+        db.execSQL("CREATE INDEX IF NOT EXISTS index_quaypass_encounters_seenByUser ON quaypass_encounters(seenByUser)")
+        db.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS quaypass_daily_stats (
+                date TEXT NOT NULL PRIMARY KEY,
+                encounterCount INTEGER NOT NULL DEFAULT 0,
+                ticketsEarned INTEGER NOT NULL DEFAULT 0
+            )
+            """.trimIndent()
+        )
+        db.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS quaypass_owned_parts (
+                partKey TEXT NOT NULL PRIMARY KEY,
+                acquiredAt INTEGER NOT NULL,
+                synced INTEGER NOT NULL DEFAULT 0
+            )
+            """.trimIndent()
+        )
+    }
+}

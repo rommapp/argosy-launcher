@@ -124,6 +124,7 @@ fun SettingsScreen(
     initialAction: String? = null,
     initialPlatformId: Long? = null,
     onNavigateToAvatarEditor: () -> Unit = {},
+    onNavigate: (String) -> Unit = {},
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -196,6 +197,12 @@ fun SettingsScreen(
         viewModel.onMediaPermissionResult(granted)
     }
 
+    val blePermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestMultiplePermissions()
+    ) { results ->
+        viewModel.onBlePermissionResult(results.values.all { it })
+    }
+
     val inputDispatcher = LocalInputDispatcher.current
     val inputHandler = remember(onBack) {
         viewModel.createInputHandler(onBack = onBack)
@@ -251,6 +258,12 @@ fun SettingsScreen(
     }
 
     LaunchedEffect(Unit) {
+        viewModel.navigationEvents.collect { event ->
+            onNavigate(event.route)
+        }
+    }
+
+    LaunchedEffect(Unit) {
         viewModel.openDeviceSettingsEvent.collect {
             context.startActivity(Intent(Settings.ACTION_SETTINGS))
         }
@@ -289,6 +302,22 @@ fun SettingsScreen(
                 mediaPermissionLauncher.launch(android.Manifest.permission.READ_MEDIA_IMAGES)
             } else {
                 viewModel.onMediaPermissionResult(true)
+            }
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        viewModel.requestBlePermissionEvent.collect {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                blePermissionLauncher.launch(
+                    arrayOf(
+                        android.Manifest.permission.BLUETOOTH_SCAN,
+                        android.Manifest.permission.BLUETOOTH_ADVERTISE,
+                        android.Manifest.permission.BLUETOOTH_CONNECT
+                    )
+                )
+            } else {
+                viewModel.onBlePermissionResult(true)
             }
         }
     }
@@ -612,7 +641,7 @@ fun SettingsScreen(
                     SettingsSection.PERMISSIONS -> PermissionsSection(uiState, viewModel)
                     SettingsSection.DRIVERS -> DriversSection(uiState, viewModel)
                     SettingsSection.ABOUT -> AboutSection(uiState, viewModel)
-                    SettingsSection.SOCIAL -> SocialSection(uiState, viewModel)
+                    SettingsSection.SOCIAL -> SocialSection(uiState, viewModel, onNavigate)
                 }
             }
 

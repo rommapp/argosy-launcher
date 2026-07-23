@@ -1155,7 +1155,9 @@ data class SocialState(
     val discordLinked: Boolean = false,
     val discordUsername: String? = null,
     val discordRichPresenceEnabled: Boolean = true,
-    val discordPresenceState: DiscordPresenceState = DiscordPresenceState.Disconnected
+    val discordPresenceState: DiscordPresenceState = DiscordPresenceState.Disconnected,
+    val quayPassEnabled: Boolean = false,
+    val quayPassAvatarConfigured: Boolean = false
 )
 
 data class SettingsUiState(

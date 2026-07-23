@@ -134,7 +134,10 @@ data class QuickSettingsUiState(
     val deviceSettingsSupported: Boolean = false,
     val deviceSettingsEnabled: Boolean = false,
     val systemVolume: Float = 1f,
-    val screenBrightness: Float = 0.5f
+    val screenBrightness: Float = 0.5f,
+    val isSocialLinked: Boolean = false,
+    val quayPassEnabled: Boolean = false,
+    val quayPassAvatarConfigured: Boolean = false
 )
 
 data class ScreenDimmerPreferences(
@@ -523,6 +526,7 @@ class ArgosyViewModel @Inject constructor(
     private val allDrawerItems = listOf(
         DrawerItem(Screen.Home.route, "Home"),
         DrawerItem(Screen.Social.route, "Social"),
+        DrawerItem(Screen.QuayPass.route, "Plaza"),
         DrawerItem(Screen.Collections.route, "Collections"),
         DrawerItem(Screen.Library.route, "Library"),
         DrawerItem(Screen.Downloads.route, "Downloads"),
@@ -820,7 +824,10 @@ class ArgosyViewModel @Inject constructor(
             deviceSettingsSupported = device.isSupported,
             deviceSettingsEnabled = device.hasWritePermission,
             systemVolume = volume,
-            screenBrightness = brightness
+            screenBrightness = brightness,
+            isSocialLinked = prefs.isSocialLinked,
+            quayPassEnabled = prefs.quayPassEnabled,
+            quayPassAvatarConfigured = prefs.quayPassAvatarConfigured
         )
     }.stateIn(
         scope = viewModelScope,
@@ -1304,8 +1311,19 @@ class ArgosyViewModel @Inject constructor(
             systemVolume = qs.systemVolume,
             screenBrightness = qs.screenBrightness,
             isDualScreenActive = _isDualScreenMode,
-            isRolesSwapped = false
+            isRolesSwapped = false,
+            isSocialLinked = qs.isSocialLinked,
+            quayPassEnabled = qs.quayPassEnabled,
+            quayPassAvatarConfigured = qs.quayPassAvatarConfigured
         )
+    }
+
+    fun toggleQuayPassFromQuickSettings() {
+        viewModelScope.launch {
+            val prefs = preferencesRepository.userPreferences.first()
+            if (!prefs.quayPassAvatarConfigured) return@launch
+            preferencesRepository.setQuayPassEnabled(!prefs.quayPassEnabled)
+        }
     }
 
     fun createQuickSettingsInputHandler(
@@ -1397,6 +1415,10 @@ class ArgosyViewModel @Inject constructor(
                 QuickSettingsItem.SwapDisplays -> {
                     onSwapDisplays?.invoke()
                     InputResult.HANDLED
+                }
+                QuickSettingsItem.QuayPass -> {
+                    toggleQuayPassFromQuickSettings()
+                    InputResult.handled(SoundType.TOGGLE)
                 }
                 else -> InputResult.HANDLED
             }

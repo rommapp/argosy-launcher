@@ -122,7 +122,19 @@ fun CheatsScreen(
     val filteredCheats = if (searchQuery.isBlank()) cheats else {
         cheats.filter { it.description.contains(searchQuery, ignoreCase = true) }
     }
-    val currentFilteredCheats by rememberUpdatedState(filteredCheats)
+    val sessionOrderKeys = remember { mutableMapOf<Long, CheatOrderKey>() }
+    val orderingNow = remember { System.currentTimeMillis() }
+    val cheatListItems = remember(cheats, searchQuery) {
+        if (searchQuery.isBlank()) {
+            buildSectionedList(cheats, orderingNow, sessionOrderKeys)
+        } else {
+            filteredCheats.mapIndexed { index, cheat -> CheatListItem.Cheat(cheat, index) }
+        }
+    }
+    val displayCheats = remember(cheatListItems) {
+        cheatListItems.filterIsInstance<CheatListItem.Cheat>().map { it.item }
+    }
+    val currentDisplayCheats by rememberUpdatedState(displayCheats)
     val knownAddresses = remember(cheats) {
         cheats.mapNotNull { cheat -> cheat.address?.let { it to cheat.description } }.toMap()
     }
@@ -153,8 +165,7 @@ fun CheatsScreen(
     fun getNextFocusIndex(current: Int, delta: Int): Int {
         return when (currentTab) {
             CheatsTab.CHEATS -> {
-                // Index 0 = search bar, indices 1..N = cheats, so max = size (not size-1)
-                val maxIndex = currentFilteredCheats.size
+                val maxIndex = currentDisplayCheats.size
                 (current + delta).coerceIn(0, maxIndex)
             }
             CheatsTab.DISCOVER -> {
@@ -321,7 +332,7 @@ fun CheatsScreen(
                     }
                 } else {
                     add(InputButton.A to "Toggle")
-                    if (filteredCheats.getOrNull(contentFocusIndex - 1) != null) {
+                    if (displayCheats.getOrNull(contentFocusIndex - 1) != null) {
                         add(InputButton.X to "Edit")
                     }
                 }
@@ -374,9 +385,9 @@ fun CheatsScreen(
         }
     }
 
-    LaunchedEffect(currentFilteredCheats.size) {
-        if (currentTab == CheatsTab.CHEATS && contentFocusIndex > currentFilteredCheats.size) {
-            contentFocusIndex = currentFilteredCheats.size.coerceAtLeast(0)
+    LaunchedEffect(currentDisplayCheats.size) {
+        if (currentTab == CheatsTab.CHEATS && contentFocusIndex > currentDisplayCheats.size) {
+            contentFocusIndex = currentDisplayCheats.size.coerceAtLeast(0)
         }
     }
 
@@ -453,7 +464,7 @@ fun CheatsScreen(
                         } else if (contentFocusIndex == 0) {
                             showSearchDialog = true
                         } else {
-                            currentFilteredCheats.getOrNull(contentFocusIndex - 1)?.let { cheat ->
+                            currentDisplayCheats.getOrNull(contentFocusIndex - 1)?.let { cheat ->
                                 onToggleCheat(cheat.id, !cheat.enabled)
                             }
                         }
@@ -487,7 +498,7 @@ fun CheatsScreen(
                                 searchQuery = ""
                             }
                         } else {
-                            currentFilteredCheats.getOrNull(contentFocusIndex - 1)?.let { cheat ->
+                            currentDisplayCheats.getOrNull(contentFocusIndex - 1)?.let { cheat ->
                                 editingCheat = cheat
                             }
                         }
@@ -556,6 +567,7 @@ fun CheatsScreen(
                 Box(modifier = Modifier.weight(1f).fillMaxWidth().focusProperties { canFocus = false }) {
                     TabContent(
                         tab = currentTab,
+                        listItems = cheatListItems,
                         filteredCheats = filteredCheats,
                         allCheats = cheats,
                         variants = variants,
@@ -605,7 +617,7 @@ fun CheatsScreen(
                                                 searchQuery = ""
                                             }
                                         } else {
-                                            filteredCheats.getOrNull(contentFocusIndex - 1)?.let { cheat ->
+                                            displayCheats.getOrNull(contentFocusIndex - 1)?.let { cheat ->
                                                 editingCheat = cheat
                                             }
                                         }
@@ -628,7 +640,7 @@ fun CheatsScreen(
                                                 onSelectVariant(v.region, v.version)
                                             }
                                         } else if (contentFocusIndex > 0) {
-                                            filteredCheats.getOrNull(contentFocusIndex - 1)?.let { cheat ->
+                                            displayCheats.getOrNull(contentFocusIndex - 1)?.let { cheat ->
                                                 onToggleCheat(cheat.id, !cheat.enabled)
                                             }
                                         }
@@ -666,7 +678,7 @@ fun CheatsScreen(
                 },
                 onDelete = {
                     val maxIndex = when (currentTab) {
-                        CheatsTab.CHEATS -> filteredCheats.size - 1
+                        CheatsTab.CHEATS -> displayCheats.size - 1
                         CheatsTab.DISCOVER -> contentFocusIndex
                     }
                     if (contentFocusIndex > maxIndex) {
@@ -808,6 +820,7 @@ private fun TabIndicator(
 @Composable
 private fun TabContent(
     tab: CheatsTab,
+    listItems: List<CheatListItem>,
     filteredCheats: List<CheatDisplayItem>,
     allCheats: List<CheatDisplayItem>,
     variants: List<CheatVariantInfo>,
@@ -843,6 +856,7 @@ private fun TabContent(
                 )
             } else {
                 AvailableTab(
+                    listItems = listItems,
                     cheats = filteredCheats,
                     allCheats = allCheats,
                     searchQuery = searchQuery,

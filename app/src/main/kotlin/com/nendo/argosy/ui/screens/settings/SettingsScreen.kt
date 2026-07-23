@@ -641,7 +641,7 @@ fun SettingsScreen(
                     SettingsSection.PERMISSIONS -> PermissionsSection(uiState, viewModel)
                     SettingsSection.DRIVERS -> DriversSection(uiState, viewModel)
                     SettingsSection.ABOUT -> AboutSection(uiState, viewModel)
-                    SettingsSection.SOCIAL -> SocialSection(uiState, viewModel, onNavigate)
+                    SettingsSection.SOCIAL -> SocialSection(uiState, viewModel)
                 }
             }
 

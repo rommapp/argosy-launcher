@@ -95,12 +95,12 @@ class QuayPassService @Inject constructor(
 
         scope.launch {
             preferencesRepository.userPreferences
-                .map { ServiceTrigger(it.socialSessionToken, it.quayPassEnabled, it.quayPassAvatarConfigured) }
+                .map { ServiceTrigger(it.socialSessionToken, it.quayPassEnabled) }
                 .distinctUntilChanged()
                 .collect { trigger ->
                     val isLinked = trigger.sessionToken != null
                     credentialManager.onSocialLinkChanged(isLinked, trigger.sessionToken)
-                    shouldBeRunning = isLinked && trigger.quayPassEnabled && trigger.quayPassAvatarConfigured
+                    shouldBeRunning = isLinked && trigger.quayPassEnabled
                     if (shouldBeRunning && !_isRunning.value) tryStart()
                     else if (!shouldBeRunning && _isRunning.value) stop()
                 }
@@ -128,8 +128,7 @@ class QuayPassService @Inject constructor(
 
     private data class ServiceTrigger(
         val sessionToken: String?,
-        val quayPassEnabled: Boolean,
-        val quayPassAvatarConfigured: Boolean
+        val quayPassEnabled: Boolean
     )
 
     private data class ProfileSnapshot(

@@ -102,8 +102,7 @@ data class QuickSettingsState(
     val isDualScreenActive: Boolean = false,
     val isRolesSwapped: Boolean = false,
     val isSocialLinked: Boolean = false,
-    val quayPassEnabled: Boolean = false,
-    val quayPassAvatarConfigured: Boolean = false
+    val quayPassEnabled: Boolean = false
 )
 
 sealed class QuickSettingsItem(
@@ -145,7 +144,7 @@ sealed class QuickSettingsItem(
 
     data object QuayPass : QuickSettingsItem(
         "quaypass", "social",
-        visibleWhen = { it.isSocialLinked && it.quayPassAvatarConfigured }
+        visibleWhen = { it.isSocialLinked }
     )
 
     companion object {

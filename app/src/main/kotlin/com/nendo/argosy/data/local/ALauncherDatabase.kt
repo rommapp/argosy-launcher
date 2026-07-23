@@ -37,7 +37,6 @@ import com.nendo.argosy.data.local.dao.PlaySessionDao
 import com.nendo.argosy.data.local.dao.PlatformLibretroSettingsDao
 import com.nendo.argosy.data.local.dao.QuayPassDailyStatsDao
 import com.nendo.argosy.data.local.dao.QuayPassEncounterDao
-import com.nendo.argosy.data.local.dao.QuayPassOwnedPartDao
 import com.nendo.argosy.data.local.dao.SaveCacheDao
 import com.nendo.argosy.data.local.dao.SaveSyncDao
 import com.nendo.argosy.data.local.dao.SocialGameCacheDao
@@ -81,7 +80,6 @@ import com.nendo.argosy.data.local.entity.PlatformEntity
 import com.nendo.argosy.data.local.entity.PlatformLibretroSettingsEntity
 import com.nendo.argosy.data.local.entity.PlaySessionEntity
 import com.nendo.argosy.data.local.entity.QuayPassDailyStatsEntity
-import com.nendo.argosy.data.local.entity.QuayPassOwnedPartEntity
 import com.nendo.argosy.data.local.entity.QuayPassEncounterEntity
 import com.nendo.argosy.data.local.entity.SaveCacheEntity
 import com.nendo.argosy.data.local.entity.SaveSyncEntity
@@ -145,8 +143,7 @@ import com.nendo.argosy.data.local.entity.SteamLicenseEntity
         BgmPlaylistEntity::class,
         AudioLoudnessEntity::class,
         QuayPassEncounterEntity::class,
-        QuayPassDailyStatsEntity::class,
-        QuayPassOwnedPartEntity::class
+        QuayPassDailyStatsEntity::class
     ],
     version = 146,
     exportSchema = true
@@ -199,6 +196,5 @@ abstract class ALauncherDatabase : RoomDatabase() {
     abstract fun audioLoudnessDao(): AudioLoudnessDao
     abstract fun quayPassEncounterDao(): QuayPassEncounterDao
     abstract fun quayPassDailyStatsDao(): QuayPassDailyStatsDao
-    abstract fun quayPassOwnedPartDao(): QuayPassOwnedPartDao
 
 }

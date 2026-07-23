@@ -136,8 +136,7 @@ data class QuickSettingsUiState(
     val systemVolume: Float = 1f,
     val screenBrightness: Float = 0.5f,
     val isSocialLinked: Boolean = false,
-    val quayPassEnabled: Boolean = false,
-    val quayPassAvatarConfigured: Boolean = false
+    val quayPassEnabled: Boolean = false
 )
 
 data class ScreenDimmerPreferences(
@@ -826,8 +825,7 @@ class ArgosyViewModel @Inject constructor(
             systemVolume = volume,
             screenBrightness = brightness,
             isSocialLinked = prefs.isSocialLinked,
-            quayPassEnabled = prefs.quayPassEnabled,
-            quayPassAvatarConfigured = prefs.quayPassAvatarConfigured
+            quayPassEnabled = prefs.quayPassEnabled
         )
     }.stateIn(
         scope = viewModelScope,
@@ -1313,15 +1311,13 @@ class ArgosyViewModel @Inject constructor(
             isDualScreenActive = _isDualScreenMode,
             isRolesSwapped = false,
             isSocialLinked = qs.isSocialLinked,
-            quayPassEnabled = qs.quayPassEnabled,
-            quayPassAvatarConfigured = qs.quayPassAvatarConfigured
+            quayPassEnabled = qs.quayPassEnabled
         )
     }
 
     fun toggleQuayPassFromQuickSettings() {
         viewModelScope.launch {
             val prefs = preferencesRepository.userPreferences.first()
-            if (!prefs.quayPassAvatarConfigured) return@launch
             preferencesRepository.setQuayPassEnabled(!prefs.quayPassEnabled)
         }
     }

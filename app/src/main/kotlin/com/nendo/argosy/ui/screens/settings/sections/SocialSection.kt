@@ -87,7 +87,6 @@ internal sealed class SocialItem(
     data object NotifyFriendPlaying : SocialItem("notifyFriendPlaying", "notifications")
     data object SuppressInGame : SocialItem("suppressInGame", "notifications")
     data object QuayPassEnabled : SocialItem("quayPassEnabled", "quaypass")
-    data object QuayPassEditAvatar : SocialItem("quayPassEditAvatar", "quaypass")
     data object Unlink : SocialItem("unlink", "unlink")
 
     companion object {
@@ -103,7 +102,7 @@ internal sealed class SocialItem(
             AccountHeader, AccountInfo, EditAvatar, UseDoodleAvatar,
             PrivacyHeader, OnlineStatus, ShowNowPlaying,
             NotificationsSpacer, NotificationsHeader, NotifyFriendOnline, NotifyFriendPlaying, SuppressInGame,
-            QuayPassSpacer, QuayPassHeader, QuayPassEnabled, QuayPassEditAvatar,
+            QuayPassSpacer, QuayPassHeader, QuayPassEnabled,
             UnlinkSpacer, Unlink
         )
     }
@@ -143,8 +142,7 @@ internal fun socialItemAtFocusIndex(focusIndex: Int, state: SocialLayoutState): 
 @Composable
 fun SocialSection(
     uiState: SettingsUiState,
-    viewModel: SettingsViewModel,
-    onNavigate: (String) -> Unit = {}
+    viewModel: SettingsViewModel
 ) {
     val social = uiState.social
 
@@ -276,36 +274,19 @@ fun SocialSection(
 
                         SocialItem.QuayPassEnabled -> SwitchPreference(
                             title = "QuayPass",
-                            subtitle = when {
-                                !social.quayPassAvatarConfigured -> "Create an avatar first"
-                                social.quayPassEnabled -> "Pass nearby travelers in the Plaza"
-                                else -> "Off"
+                            subtitle = if (social.quayPassEnabled) {
+                                "Pass nearby travelers in the Plaza"
+                            } else {
+                                "Off"
                             },
                             isEnabled = social.quayPassEnabled,
                             isFocused = isFocused(item),
                             onToggle = { requested ->
                                 if (requested) {
-                                    if (!social.quayPassAvatarConfigured) {
-                                        onNavigate(com.nendo.argosy.ui.navigation.Screen.QuayPassAvatarEditor.route)
-                                    } else {
-                                        viewModel.requestEnableQuayPass()
-                                    }
+                                    viewModel.requestEnableQuayPass()
                                 } else {
                                     viewModel.setQuayPassEnabled(false)
                                 }
-                            }
-                        )
-
-                        SocialItem.QuayPassEditAvatar -> ActionPreference(
-                            title = if (social.quayPassAvatarConfigured) "Edit Avatar" else "Create Avatar",
-                            subtitle = if (social.quayPassAvatarConfigured) {
-                                "Customize your Mii"
-                            } else {
-                                "Required to enable QuayPass"
-                            },
-                            isFocused = isFocused(item),
-                            onClick = {
-                                onNavigate(com.nendo.argosy.ui.navigation.Screen.QuayPassAvatarEditor.route)
                             }
                         )
 

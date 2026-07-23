@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 146,
-    "identityHash": "0182a9c833d3021004333d41017b014b",
+    "identityHash": "ad28e79923c0f7a30d5b2988f5b40bca",
     "entities": [
       {
         "tableName": "platforms",
@@ -4856,41 +4856,11 @@
             "date"
           ]
         }
-      },
-      {
-        "tableName": "quaypass_owned_parts",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`partKey` TEXT NOT NULL, `acquiredAt` INTEGER NOT NULL, `synced` INTEGER NOT NULL, PRIMARY KEY(`partKey`))",
-        "fields": [
-          {
-            "fieldPath": "partKey",
-            "columnName": "partKey",
-            "affinity": "TEXT",
-            "notNull": true
-          },
-          {
-            "fieldPath": "acquiredAt",
-            "columnName": "acquiredAt",
-            "affinity": "INTEGER",
-            "notNull": true
-          },
-          {
-            "fieldPath": "synced",
-            "columnName": "synced",
-            "affinity": "INTEGER",
-            "notNull": true
-          }
-        ],
-        "primaryKey": {
-          "autoGenerate": false,
-          "columnNames": [
-            "partKey"
-          ]
-        }
       }
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '0182a9c833d3021004333d41017b014b')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'ad28e79923c0f7a30d5b2988f5b40bca')"
     ]
   }
 }

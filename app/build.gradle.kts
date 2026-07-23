@@ -304,19 +304,6 @@ val verifyQuayPassReleaseConfig = tasks.register("verifyQuayPassReleaseConfig") 
     }
 }
 
-val checkQuayPassPlaceholderAssets = tasks.register("checkQuayPassPlaceholderAssets") {
-    doLast {
-        val devOnly = file("src/main/assets/quaypass/avatar/README.DEV_ONLY.md")
-        if (devOnly.exists()) {
-            logger.warn(
-                "WARNING: QuayPass placeholder avatar assets are present " +
-                    "(README.DEV_ONLY.md). These are dev-only and must be replaced with " +
-                    "commissioned art before a public release."
-            )
-        }
-    }
-}
-
 tasks.matching { it.name == "assembleRelease" || it.name == "bundleRelease" }.configureEach {
-    dependsOn(verifyQuayPassReleaseConfig, checkQuayPassPlaceholderAssets)
+    dependsOn(verifyQuayPassReleaseConfig)
 }

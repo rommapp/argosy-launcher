@@ -22,8 +22,6 @@ import com.nendo.argosy.ui.screens.downloads.DownloadsScreen
 import com.nendo.argosy.ui.screens.firstrun.FirstRunScreen
 import com.nendo.argosy.ui.screens.gamedetail.GameDetailScreen
 import com.nendo.argosy.ui.screens.home.HomeScreen
-import com.nendo.argosy.ui.screens.quaypass.QuayPassAvatarCustomizerScreen
-import com.nendo.argosy.ui.screens.quaypass.QuayPassDetailsScreen
 import com.nendo.argosy.ui.screens.quaypass.QuayPassPlazaScreen
 import com.nendo.argosy.ui.screens.library.LibraryScreen
 import com.nendo.argosy.ui.screens.doodle.DoodleScreen
@@ -87,8 +85,7 @@ fun NavGraph(
                 onChangelogAction = { action ->
                     val section = action.section.name
                     navController.navigate(Screen.Settings.createRoute(section, action.actionKey))
-                },
-                onNavigateToRoute = { route -> navController.navigate(route) }
+                }
             )
         }
 
@@ -395,20 +392,6 @@ fun NavGraph(
 
         composable(Screen.QuayPass.route) {
             QuayPassPlazaScreen()
-        }
-
-        composable(Screen.QuayPassAvatarEditor.route) {
-            QuayPassAvatarCustomizerScreen(
-                onSaved = { navController.popBackStack() },
-                onCancel = { navController.popBackStack() }
-            )
-        }
-
-        composable(Screen.QuayPassDetails.route) {
-            QuayPassDetailsScreen(
-                onEditAvatar = { navController.navigate(Screen.QuayPassAvatarEditor.route) },
-                onClose = { navController.popBackStack() }
-            )
         }
     }
 }

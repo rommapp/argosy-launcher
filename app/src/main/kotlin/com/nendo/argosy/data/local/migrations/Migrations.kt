@@ -2113,14 +2113,5 @@ object Migration_145_146 : Migration(145, 146) {
             )
             """.trimIndent()
         )
-        db.execSQL(
-            """
-            CREATE TABLE IF NOT EXISTS quaypass_owned_parts (
-                partKey TEXT NOT NULL PRIMARY KEY,
-                acquiredAt INTEGER NOT NULL,
-                synced INTEGER NOT NULL DEFAULT 0
-            )
-            """.trimIndent()
-        )
     }
 }

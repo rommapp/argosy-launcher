@@ -1554,8 +1554,7 @@ class SettingsViewModel @Inject constructor(
                         discordUsername = socialRepository.discordUsername.value,
                         discordRichPresenceEnabled = prefs.discordRichPresenceEnabled,
                         discordPresenceState = discordPresenceManager.state.value,
-                        quayPassEnabled = prefs.quayPassEnabled,
-                        quayPassAvatarConfigured = prefs.quayPassAvatarConfigured
+                        quayPassEnabled = prefs.quayPassEnabled
                     )) }
                 }
                 is SocialConnectionState.AwaitingAuth -> {
@@ -1588,12 +1587,11 @@ class SettingsViewModel @Inject constructor(
         }.launchIn(viewModelScope)
 
         preferencesRepository.userPreferences
-            .map { it.quayPassEnabled to it.quayPassAvatarConfigured }
+            .map { it.quayPassEnabled }
             .distinctUntilChanged()
-            .onEach { (enabled, configured) ->
+            .onEach { enabled ->
                 _uiState.update { it.copy(social = it.social.copy(
-                    quayPassEnabled = enabled,
-                    quayPassAvatarConfigured = configured
+                    quayPassEnabled = enabled
                 )) }
             }
             .launchIn(viewModelScope)
@@ -1644,17 +1642,9 @@ class SettingsViewModel @Inject constructor(
                         InputResult.handled(SoundType.TOGGLE)
                     }
                     is com.nendo.argosy.ui.screens.settings.sections.SocialItem.QuayPassEnabled -> {
-                        if (state.social.quayPassAvatarConfigured) {
-                            setQuayPassEnabled(!state.social.quayPassEnabled)
-                            InputResult.handled(SoundType.TOGGLE)
-                        } else {
-                            _navigationEvents.tryEmit(NavigationEvent(com.nendo.argosy.ui.navigation.Screen.QuayPassAvatarEditor.route))
-                            InputResult.HANDLED
-                        }
-                    }
-                    is com.nendo.argosy.ui.screens.settings.sections.SocialItem.QuayPassEditAvatar -> {
-                        _navigationEvents.tryEmit(NavigationEvent(com.nendo.argosy.ui.navigation.Screen.QuayPassAvatarEditor.route))
-                        InputResult.HANDLED
+                        if (state.social.quayPassEnabled) setQuayPassEnabled(false)
+                        else requestEnableQuayPass()
+                        InputResult.handled(SoundType.TOGGLE)
                     }
                     is com.nendo.argosy.ui.screens.settings.sections.SocialItem.Unlink -> {
                         logoutSocial()
@@ -1800,32 +1790,18 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
-    /**
-     * Returns true if QuayPass was enabled. Returns false if the call was a
-     * no-op (e.g. avatar not configured) so the caller can route to the
-     * customizer or surface a message. Disable always succeeds.
-     */
-    fun setQuayPassEnabled(enabled: Boolean): Boolean {
-        if (enabled && !_uiState.value.social.quayPassAvatarConfigured) {
-            return false
-        }
+    fun setQuayPassEnabled(enabled: Boolean) {
         viewModelScope.launch {
             preferencesRepository.setQuayPassEnabled(enabled)
         }
-        return true
     }
 
     /**
      * Begins enabling QuayPass: requests BLE runtime permissions first (the
-     * service cannot scan/advertise without them on Android 12+). Returns false
-     * if the avatar is not configured so the caller can route to the customizer.
+     * service cannot scan/advertise without them on Android 12+).
      */
-    fun requestEnableQuayPass(): Boolean {
-        if (!_uiState.value.social.quayPassAvatarConfigured) {
-            return false
-        }
+    fun requestEnableQuayPass() {
         viewModelScope.launch { _requestBlePermissionEvent.emit(Unit) }
-        return true
     }
 
     fun onBlePermissionResult(granted: Boolean) {

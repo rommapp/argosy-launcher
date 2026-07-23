@@ -49,8 +49,6 @@ sealed class Screen(val route: String) {
     data object AvatarDoodle : Screen("doodle/avatar")
     data object PostEditor : Screen("post_editor")
     data object QuayPass : Screen("quaypass")
-    data object QuayPassAvatarEditor : Screen("quaypass/avatar/editor")
-    data object QuayPassDetails : Screen("quaypass/details")
 
     companion object {
         const val ROUTE_HOME = "home"

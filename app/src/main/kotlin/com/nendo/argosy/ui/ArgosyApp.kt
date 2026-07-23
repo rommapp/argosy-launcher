@@ -1831,8 +1831,7 @@ fun ArgosyApp(
                     isDualScreenActive = isDualScreenDevice && companionActive,
                     isRolesSwapped = isRolesSwapped,
                     isSocialLinked = quickSettingsUiState.isSocialLinked,
-                    quayPassEnabled = quickSettingsUiState.quayPassEnabled,
-                    quayPassAvatarConfigured = quickSettingsUiState.quayPassAvatarConfigured
+                    quayPassEnabled = quickSettingsUiState.quayPassEnabled
                 ),
                 focusedIndex = quickSettingsFocusIndex,
                 onThemeCycle = { viewModel.cycleTheme() },

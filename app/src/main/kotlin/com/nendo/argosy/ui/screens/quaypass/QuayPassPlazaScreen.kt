@@ -37,6 +37,7 @@ import com.nendo.argosy.ui.input.InputHandler
 import com.nendo.argosy.ui.input.InputResult
 import com.nendo.argosy.ui.input.LocalInputDispatcher
 import com.nendo.argosy.ui.navigation.Screen
+import com.nendo.argosy.ui.theme.Dimens
 import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -48,7 +49,6 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.nendo.argosy.data.local.entity.QuayPassEncounterEntity
 import com.nendo.argosy.data.quaypass.ble.QuayPassAvatar
 import com.nendo.argosy.data.quaypass.ble.QuayPassAvatarCodec
-import com.nendo.argosy.ui.quaypass.avatar.QuayPassAvatarRenderer
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -188,16 +188,12 @@ private fun EncounterCard(encounter: QuayPassEncounterEntity) {
             modifier = Modifier.padding(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            if (avatar != null) {
-                QuayPassAvatarRenderer(avatar = avatar, size = 56.dp)
-            } else {
-                Box(
-                    modifier = Modifier
-                        .size(56.dp)
-                        .clip(CircleShape)
-                        .background(accent)
-                )
-            }
+            Box(
+                modifier = Modifier
+                    .size(Dimens.avatarXl)
+                    .clip(CircleShape)
+                    .background(accent)
+            )
             Spacer(Modifier.width(12.dp))
             Column(modifier = Modifier.fillMaxWidth()) {
                 Text(

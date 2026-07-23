@@ -2,7 +2,6 @@ package com.nendo.argosy.data.quaypass
 
 import android.util.Log
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
-import com.nendo.argosy.data.quaypass.ble.QuayPassDoodleCodec
 import com.nendo.argosy.data.social.ArgosSocialService
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -11,17 +10,18 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import java.util.Base64
 import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
  * Watches the social WS connection state and the local pending-avatar-sync flag.
- * On every transition into Connected, rasterizes the doodle avatar prefs and
- * flushes the bytes to argosy-server via [ArgosSocialService.sendQuayPassAvatar]
- * if a sync is outstanding. Server is the single source of truth for
- * cross-device sync; launcher pushes on save and on next online state change.
- * (Pull on first sign-in to a new device is a follow-up; v1 only pushes.)
+ * On every transition into Connected, flushes the stored sparse doodle base64
+ * to argosy-server via [ArgosSocialService.sendQuayPassAvatar] if a sync is
+ * outstanding (empty string clears the server copy). The BLE wire format keeps
+ * the raster encoding; only this server payload is sparse. Server is the single
+ * source of truth for cross-device sync; launcher pushes on save and on next
+ * online state change. (Pull on first sign-in to a new device is a follow-up;
+ * v1 only pushes.)
  */
 @Singleton
 class QuayPassAvatarSyncCoordinator @Inject constructor(
@@ -48,12 +48,8 @@ class QuayPassAvatarSyncCoordinator @Inject constructor(
 
     private suspend fun flush() {
         val prefs = preferencesRepository.userPreferences.first()
-        val raster = if (prefs.socialAvatarUseDoodle && prefs.socialAvatarDoodle != null) {
-            QuayPassDoodleCodec.encodeFromSparseBase64(prefs.socialAvatarDoodle) ?: ByteArray(0)
-        } else {
-            ByteArray(0)
-        }
-        val sent = socialService.sendQuayPassAvatar(Base64.getEncoder().encodeToString(raster))
+        val sparse = if (prefs.socialAvatarUseDoodle) prefs.socialAvatarDoodle.orEmpty() else ""
+        val sent = socialService.sendQuayPassAvatar(sparse)
         if (sent) {
             preferencesRepository.setQuayPassAvatarSyncPending(false)
             Log.i(TAG, "QuayPass avatar synced to server")

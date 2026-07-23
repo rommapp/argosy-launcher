@@ -118,6 +118,7 @@ class SyncPreferencesRepository @Inject constructor(
         val QUAYPASS_AVATAR_SYNC_PENDING = booleanPreferencesKey("quaypass_avatar_sync_pending")
         val QUAYPASS_GREETING = stringPreferencesKey("quaypass_greeting")
         val QUAYPASS_TICKET_BALANCE = intPreferencesKey("quaypass_ticket_balance")
+        val QUAYPASS_PENDING_FRIEND_REQUESTS = stringPreferencesKey("quaypass_pending_friend_requests")
         val LAST_NEGOTIATE_AT = stringPreferencesKey("last_negotiate_at")
         val DOWNLOAD_CATEGORY_DEFAULTS = stringPreferencesKey("download_category_defaults")
         val DOWNLOAD_CATEGORY_PLATFORM_OVERRIDES = stringPreferencesKey("download_category_platform_overrides")
@@ -201,6 +202,32 @@ class SyncPreferencesRepository @Inject constructor(
 
     suspend fun setQuayPassTicketBalance(balance: Int) {
         dataStore.edit { it[Keys.QUAYPASS_TICKET_BALANCE] = balance.coerceAtLeast(0) }
+    }
+
+    fun quayPassPendingFriendRequests(): Flow<Set<String>> = dataStore.data.map { prefs ->
+        prefs[Keys.QUAYPASS_PENDING_FRIEND_REQUESTS]
+            ?.split(",")
+            ?.filter { it.isNotBlank() }
+            ?.toSet()
+            ?: emptySet()
+    }
+
+    suspend fun addQuayPassPendingFriendRequest(accountId: String) {
+        dataStore.edit { prefs ->
+            val existing = prefs[Keys.QUAYPASS_PENDING_FRIEND_REQUESTS]
+                ?.split(",")
+                ?.filter { it.isNotBlank() }
+                ?.toSet()
+                ?: emptySet()
+            prefs[Keys.QUAYPASS_PENDING_FRIEND_REQUESTS] = (existing + accountId).joinToString(",")
+        }
+    }
+
+    suspend fun setQuayPassPendingFriendRequests(accountIds: Set<String>) {
+        dataStore.edit { prefs ->
+            if (accountIds.isEmpty()) prefs.remove(Keys.QUAYPASS_PENDING_FRIEND_REQUESTS)
+            else prefs[Keys.QUAYPASS_PENDING_FRIEND_REQUESTS] = accountIds.joinToString(",")
+        }
     }
 
     val preferences: Flow<SyncPreferences> = dataStore.data.map { prefs ->

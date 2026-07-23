@@ -165,6 +165,7 @@ fun QuayPassCheckInScreen(
                                     showTicketAward = fingerprint in uiState.revealedArrivals,
                                     ticketAward = uiState.ticketAwardPerEncounter,
                                     requestSent = accountId != null && accountId in uiState.sentAccountIds,
+                                    requestQueued = accountId != null && accountId in uiState.queuedFriendAccountIds,
                                     onClick = { viewModel.onCardTapped(index) }
                                 )
                             }
@@ -235,6 +236,7 @@ private fun EncounterCard(
     showTicketAward: Boolean,
     ticketAward: Int,
     requestSent: Boolean,
+    requestQueued: Boolean,
     onClick: () -> Unit
 ) {
     val doodle = remember(encounter.avatarBlobBase64) { decodeAvatarDoodle(encounter.avatarBlobBase64) }
@@ -291,7 +293,7 @@ private fun EncounterCard(
                 }
                 if (requestSent) {
                     Text(
-                        text = "Friend request sent",
+                        text = if (requestQueued) "Friend request queued" else "Friend request sent",
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.primary
                     )

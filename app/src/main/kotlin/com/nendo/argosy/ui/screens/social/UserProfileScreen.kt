@@ -62,10 +62,14 @@ data class UserProfileUiState(
     val error: String? = null,
     val localIgdbIds: Set<Int> = emptySet(),
     val localUserId: String? = null,
-    val localAvatarDoodle: String? = null
+    val localAvatarDoodle: String? = null,
+    val friendAvatarDoodle: String? = null
 ) {
     val ownAvatarDoodle: String?
         get() = localAvatarDoodle.takeIf { profile?.user?.id == localUserId }
+
+    val displayAvatarDoodle: String?
+        get() = ownAvatarDoodle ?: friendAvatarDoodle
 
     val focusCount: Int
         get() = DISPLAY_SECTIONS + (profile?.mostPlayed?.size ?: 0)
@@ -107,6 +111,12 @@ class UserProfileViewModel @Inject constructor(
                         localAvatarDoodle = prefs.socialAvatarDoodle.takeIf { prefs.socialAvatarUseDoodle }
                     )
                 }
+            }
+        }
+        viewModelScope.launch {
+            socialRepository.friends.collect { friends ->
+                val doodle = friends.firstOrNull { it.id == userId }?.quayPassAvatar
+                _uiState.update { it.copy(friendAvatarDoodle = doodle) }
             }
         }
         viewModelScope.launch {
@@ -281,7 +291,7 @@ fun UserProfileScreen(
                         AccountInfoCard(
                             user = profile.user,
                             profile = profile,
-                            avatarDoodle = uiState.ownAvatarDoodle
+                            avatarDoodle = uiState.displayAvatarDoodle
                         )
                     }
 

@@ -940,8 +940,8 @@ class ArgosSocialService @Inject constructor(
         send(MessageTypes.LOOKUP_FRIEND_CODE, mapOf("code" to code))
     }
 
-    fun sendFriendRequest(userId: String) {
-        send(MessageTypes.SEND_FRIEND_REQ, mapOf("user_id" to userId))
+    fun sendFriendRequest(userId: String): Boolean {
+        return send(MessageTypes.SEND_FRIEND_REQ, mapOf("user_id" to userId))
     }
 
     fun getFeed(limit: Int? = null, beforeId: String? = null, userId: String? = null) {
@@ -1319,7 +1319,9 @@ class ArgosSocialService @Inject constructor(
                     },
                     currentGame = gameInfo,
                     deviceName = presenceObj?.optString("device_name", null),
-                    isFavorite = obj.optBoolean("is_favorite", false)
+                    isFavorite = obj.optBoolean("is_favorite", false),
+                    quayPassAvatar = userObj.optString("quaypass_avatar", null)?.takeIf { it.isNotEmpty() }
+                        ?: obj.optString("quaypass_avatar", null)?.takeIf { it.isNotEmpty() }
                 )
             } catch (e: Exception) {
                 Log.w(TAG, "Failed to parse friend", e)

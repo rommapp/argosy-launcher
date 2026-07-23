@@ -157,7 +157,8 @@ private fun FriendCard(
                 SocialAvatar(
                     displayName = friend.displayName,
                     avatarColor = friend.avatarColor,
-                    size = Dimens.avatarLg
+                    size = Dimens.avatarLg,
+                    avatarDoodle = friend.quayPassAvatar
                 )
 
                 friend.presence?.let { presence ->

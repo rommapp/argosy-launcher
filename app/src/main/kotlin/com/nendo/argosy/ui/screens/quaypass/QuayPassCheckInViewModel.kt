@@ -3,6 +3,7 @@ package com.nendo.argosy.ui.screens.quaypass
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.nendo.argosy.data.local.entity.QuayPassEncounterEntity
+import com.nendo.argosy.data.preferences.SyncPreferencesRepository
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.quaypass.QuayPassRepository
 import com.nendo.argosy.data.quaypass.QuayPassService
@@ -32,10 +33,12 @@ data class QuayPassCheckInUiState(
     val friendAccountIds: Set<String> = emptySet(),
     val pendingFriendAccountIds: Set<String> = emptySet(),
     val sessionSentAccountIds: Set<String> = emptySet(),
+    val queuedFriendAccountIds: Set<String> = emptySet(),
     val ticketAwardPerEncounter: Int = QuayPassCheckInViewModel.TICKETS_PER_ENCOUNTER
 ) {
     val arrivalSequenceRunning: Boolean get() = pendingArrivals.isNotEmpty()
-    val sentAccountIds: Set<String> get() = sessionSentAccountIds + pendingFriendAccountIds
+    val sentAccountIds: Set<String>
+        get() = sessionSentAccountIds + pendingFriendAccountIds + queuedFriendAccountIds
 }
 
 @HiltViewModel
@@ -43,6 +46,7 @@ class QuayPassCheckInViewModel @Inject constructor(
     private val repository: QuayPassRepository,
     private val service: QuayPassService,
     private val socialRepository: SocialRepository,
+    private val syncPreferencesRepository: SyncPreferencesRepository,
     preferencesRepository: UserPreferencesRepository
 ) : ViewModel() {
 
@@ -78,6 +82,11 @@ class QuayPassCheckInViewModel @Inject constructor(
                 _uiState.update {
                     it.copy(friendAccountIds = accepted, pendingFriendAccountIds = pending)
                 }
+            }
+        }
+        viewModelScope.launch {
+            syncPreferencesRepository.quayPassPendingFriendRequests().collect { queued ->
+                _uiState.update { it.copy(queuedFriendAccountIds = queued) }
             }
         }
     }
@@ -117,9 +126,14 @@ class QuayPassCheckInViewModel @Inject constructor(
         val encounter = encounters.value.getOrNull(index) ?: return false
         val accountId = encounter.accountId ?: return false
         if (accountId in state.friendAccountIds || accountId in state.sentAccountIds) return false
-        if (!socialRepository.isConnected()) return false
-        socialRepository.sendFriendRequest(accountId)
-        _uiState.update { it.copy(sessionSentAccountIds = it.sessionSentAccountIds + accountId) }
+        if (socialRepository.isConnected()) {
+            socialRepository.sendFriendRequest(accountId)
+            _uiState.update { it.copy(sessionSentAccountIds = it.sessionSentAccountIds + accountId) }
+        } else {
+            viewModelScope.launch {
+                syncPreferencesRepository.addQuayPassPendingFriendRequest(accountId)
+            }
+        }
         return true
     }
 

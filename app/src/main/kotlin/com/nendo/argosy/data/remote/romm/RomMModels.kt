@@ -61,6 +61,7 @@ data class RomMRom(
 
     @Json(name = "summary") val summary: String?,
     @Json(name = "metadatum") val metadatum: RomMMetadatum? = null,
+    @Json(name = "hltb_metadata") val hltbMetadata: RomMHltbMetadata? = null,
     @Json(name = "launchbox_metadata") val launchboxMetadata: RomMLaunchboxMetadata? = null,
     @Json(name = "ss_metadata") val ssMetadata: RomMSsMetadata? = null,
     @Json(name = "merged_ra_metadata") val raMetadata: RomMRAMetadata? = null,
@@ -225,6 +226,13 @@ data class RomMMetadatum(
     @Json(name = "average_rating") val averageRating: Float? = null,
     @Json(name = "player_count") val playerCount: String? = null,
     @Json(name = "age_ratings") val ageRatings: List<String>? = null
+)
+
+@JsonClass(generateAdapter = true)
+data class RomMHltbMetadata(
+    @Json(name = "main_story") val mainStorySec: Int? = null,
+    @Json(name = "main_plus_extra") val mainPlusExtraSec: Int? = null,
+    @Json(name = "completionist") val completionistSec: Int? = null
 )
 
 @JsonClass(generateAdapter = true)

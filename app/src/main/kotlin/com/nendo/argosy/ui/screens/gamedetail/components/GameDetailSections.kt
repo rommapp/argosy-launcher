@@ -179,6 +179,15 @@ fun GameHeader(
                 game.rating?.let { rating ->
                     CommunityRatingChip(rating = rating)
                 }
+                game.timeToBeatMain?.let { time ->
+                    MetadataChip(label = "Main Story", value = time)
+                }
+                game.timeToBeatExtra?.let { time ->
+                    MetadataChip(label = "Main + Extras", value = time)
+                }
+                game.timeToBeatCompletionist?.let { time ->
+                    MetadataChip(label = "Completionist", value = time)
+                }
             }
 
             Spacer(modifier = Modifier.height(Dimens.spacingLg))

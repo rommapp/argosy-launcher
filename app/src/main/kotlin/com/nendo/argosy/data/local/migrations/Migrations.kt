@@ -2071,3 +2071,11 @@ object Migration_143_144 : Migration(143, 144) {
         db.execSQL("ALTER TABLE `games` ADD COLUMN `coverSetManually` INTEGER NOT NULL DEFAULT 0")
     }
 }
+
+object Migration_144_145 : Migration(144, 145) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE `games` ADD COLUMN `timeToBeatMainSec` INTEGER")
+        db.execSQL("ALTER TABLE `games` ADD COLUMN `timeToBeatExtraSec` INTEGER")
+        db.execSQL("ALTER TABLE `games` ADD COLUMN `timeToBeatCompletionistSec` INTEGER")
+    }
+}

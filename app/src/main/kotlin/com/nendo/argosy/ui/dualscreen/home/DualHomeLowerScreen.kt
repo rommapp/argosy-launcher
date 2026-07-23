@@ -78,6 +78,7 @@ import com.nendo.argosy.ui.common.rememberCoverAspectRatio
 import com.nendo.argosy.ui.common.rememberFileImageModel
 import com.nendo.argosy.ui.components.AlphabetSidebar
 import com.nendo.argosy.ui.components.GameCard
+import com.nendo.argosy.ui.components.fastAnimateScrollToItem
 import com.nendo.argosy.ui.primitives.ActionButton
 import com.nendo.argosy.ui.screens.home.HomeGameUi
 import com.nendo.argosy.ui.theme.Dimens
@@ -560,12 +561,12 @@ fun DualHomeLibraryGrid(
                     .firstOrNull { it.index == targetGridIndex }?.size?.height
                     ?: staggeredState.layoutInfo.visibleItemsInfo.firstOrNull()?.size?.height ?: 0
                 val centerOffset = if (itemHeight > 0) (viewportHeight - itemHeight) / 2 else 0
-                staggeredState.animateScrollToItem(targetGridIndex, -centerOffset)
+                staggeredState.fastAnimateScrollToItem(targetGridIndex, -centerOffset)
             } else {
                 val viewportHeight = gridState.layoutInfo.viewportSize.height
                 val itemHeight = gridState.layoutInfo.visibleItemsInfo.firstOrNull()?.size?.height ?: 0
                 val centerOffset = if (itemHeight > 0) (viewportHeight - itemHeight) / 2 else 0
-                gridState.animateScrollToItem(targetGridIndex, -centerOffset)
+                gridState.fastAnimateScrollToItem(targetGridIndex, -centerOffset)
             }
         }
     }

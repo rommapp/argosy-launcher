@@ -87,6 +87,7 @@ import com.nendo.argosy.ui.theme.Motion
 import com.nendo.argosy.data.model.GameSource
 import com.nendo.argosy.data.preferences.GridDensity
 import com.nendo.argosy.ui.components.FocusedScroll
+import com.nendo.argosy.ui.components.fastAnimateScrollToItem
 import com.nendo.argosy.ui.components.AddToCollectionModal
 import com.nendo.argosy.ui.components.AlphabetSidebar
 import com.nendo.argosy.ui.components.CollectionItem
@@ -215,7 +216,7 @@ fun LibraryScreen(
         val centeringOffset = if (itemHeight > 0) (effectiveHeight - itemHeight) / 2 else 0
 
         isProgrammaticScroll = true
-        gridState.animateScrollToItem(
+        gridState.fastAnimateScrollToItem(
             index = gridIndex,
             scrollOffset = -centeringOffset
         )
@@ -944,7 +945,7 @@ private fun LibraryMasonryGrid(
         val centeringOffset = if (itemHeight > 0) (effectiveHeight - itemHeight) / 2 else 0
 
         isProgrammaticScroll = true
-        staggeredState.animateScrollToItem(
+        staggeredState.fastAnimateScrollToItem(
             index = gridIndex,
             scrollOffset = -centeringOffset
         )

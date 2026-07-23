@@ -32,6 +32,7 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.SportsEsports
 import androidx.compose.material.icons.filled.SystemUpdate
 import androidx.compose.material.icons.filled.VideoLibrary
+import com.nendo.argosy.ui.quaypass.QuayPassIcons
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -701,6 +702,7 @@ private fun getIconForRoute(route: String): ImageVector = when (route) {
     Screen.Downloads.route -> Icons.Default.Download
     Screen.SaveSync.route -> Icons.Default.CloudSync
     Screen.Apps.route -> Icons.Default.Apps
+    Screen.QuayPass.route -> QuayPassIcons.Encounter
     Screen.Settings.route -> Icons.Default.Settings
     else -> Icons.Default.Apps
 }

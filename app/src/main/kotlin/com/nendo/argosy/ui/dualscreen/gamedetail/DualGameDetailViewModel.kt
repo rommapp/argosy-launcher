@@ -39,8 +39,10 @@ import com.nendo.argosy.ui.common.savechannel.SaveFocusColumn
 import com.nendo.argosy.ui.common.savechannel.SaveHistoryItem
 import com.nendo.argosy.ui.common.savechannel.SaveSlotItem
 import com.nendo.argosy.util.DisplayAffinityHelper
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -59,6 +61,7 @@ class DualGameDetailViewModel(
     private val downloadQueueRepository: DownloadQueueRepository,
     private val steamRepository: SteamRepository,
     private val configureEmulatorUseCase: ConfigureEmulatorUseCase,
+    private val saveHandlerRegistry: com.nendo.argosy.data.sync.platform.PlatformSaveHandlerRegistry,
     private val steamContentManager: com.nendo.argosy.data.steam.SteamContentManager? = null,
     private val displayAffinityHelper: DisplayAffinityHelper,
     private val downloadFileStatusRepository: com.nendo.argosy.data.repository.DownloadFileStatusRepository,
@@ -146,6 +149,12 @@ class DualGameDetailViewModel(
 
     private val _displayTargetPickerFocusIndex = MutableStateFlow(0)
     val displayTargetPickerFocusIndex: StateFlow<Int> = _displayTargetPickerFocusIndex.asStateFlow()
+
+    private val _memcardPickerList = MutableStateFlow<List<com.nendo.argosy.data.sync.platform.MemcardInfo>>(emptyList())
+    val memcardPickerList: StateFlow<List<com.nendo.argosy.data.sync.platform.MemcardInfo>> = _memcardPickerList.asStateFlow()
+
+    private val _memoryCardPickerFocusIndex = MutableStateFlow(0)
+    val memoryCardPickerFocusIndex: StateFlow<Int> = _memoryCardPickerFocusIndex.asStateFlow()
 
     private val _variantPickerList = MutableStateFlow<List<GameFileEntity>>(emptyList())
 
@@ -285,6 +294,7 @@ class DualGameDetailViewModel(
             }
             ActiveModal.EMULATOR, ActiveModal.CORE, ActiveModal.COLLECTION,
             ActiveModal.SAVE_PATH, ActiveModal.DISPLAY_TARGET,
+            ActiveModal.MEMORY_CARD,
             ActiveModal.SAVE_NAME,
             ActiveModal.DISC_PICKER, ActiveModal.VARIANT_PICKER,
             ActiveModal.STEAM_INSTALL -> return
@@ -352,6 +362,18 @@ class DualGameDetailViewModel(
             val hasFileBasedSaves = com.nendo.argosy.data.emulator.SavePathRegistry
                 .supportsPerGameSavePath(saveConfig, game.platformSlug)
 
+            val ps2Memcards = if (game.platformSlug == "ps2") {
+                withContext(Dispatchers.IO) {
+                    saveHandlerRegistry.listPs2FolderMemcardsForEmulator(
+                        emulatorId = saveConfig?.emulatorId ?: "",
+                        emulatorPackage = effectiveSavePackage
+                    )
+                }
+            } else emptyList()
+            val selectedMemcardPath = emulatorConfigDao.getSelectedMemcardForGame(game.id)
+            val hasMultipleMemcards = ps2Memcards.size > 1
+            val selectedMemcardName = ps2Memcards.find { it.path == selectedMemcardPath }?.name
+
             val platformCores = EmulatorRegistry.getCoresForPlatform(game.platformSlug)
             val emulatorDef = configuredEmulatorPackage?.let { pkg ->
                 EmulatorRegistry.getByPackage(pkg)
@@ -417,6 +439,8 @@ class DualGameDetailViewModel(
                 hasSecondaryDisplay = displayAffinityHelper.hasSecondaryDisplay,
                 displayTargetName = gameSpecificConfig?.displayTarget,
                 platformDisplayTargetName = platformDefaultConfig?.displayTarget,
+                hasMultipleMemcards = hasMultipleMemcards,
+                selectedMemcardName = selectedMemcardName,
                 hasMultipleVariants = hasMultipleVariants,
                 selectedVariantName = selectedVariantName,
                 activeChannel = activeChannel,
@@ -426,6 +450,7 @@ class DualGameDetailViewModel(
             )
             val sameGame = _uiState.value.gameId == game.id
             _uiState.value = newState
+            _memcardPickerList.value = ps2Memcards
             _visibleOptions.value = newState.visibleOptions()
 
             _selectedScreenshotIndex.value = when {
@@ -1027,6 +1052,30 @@ class DualGameDetailViewModel(
         viewModelScope.launch {
             configureEmulatorUseCase.setDisplayTargetForGame(state.gameId, selected?.name)
             _uiState.update { it.copy(displayTargetName = selected?.name) }
+        }
+        _activeModal.value = ActiveModal.NONE
+    }
+
+    fun openMemoryCardPicker() {
+        _memoryCardPickerFocusIndex.value = 0
+        _activeModal.value = ActiveModal.MEMORY_CARD
+    }
+
+    fun moveMemoryCardPickerFocus(delta: Int) {
+        val max = _memcardPickerList.value.size
+        _memoryCardPickerFocusIndex.update { (it + delta).coerceIn(0, max) }
+    }
+
+    fun confirmMemoryCardByIndex(index: Int) {
+        val selected = if (index == 0) null else _memcardPickerList.value.getOrNull(index - 1)
+        val state = _uiState.value
+        viewModelScope.launch {
+            if (selected != null) {
+                configureEmulatorUseCase.setMemcardForGame(state.gameId, selected.path)
+            } else {
+                configureEmulatorUseCase.clearMemcardForGame(state.gameId)
+            }
+            _uiState.update { it.copy(selectedMemcardName = selected?.name) }
         }
         _activeModal.value = ActiveModal.NONE
     }

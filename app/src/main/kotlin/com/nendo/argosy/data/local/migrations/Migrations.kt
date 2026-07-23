@@ -2115,3 +2115,9 @@ object Migration_145_146 : Migration(145, 146) {
         )
     }
 }
+
+object Migration_146_147 : Migration(146, 147) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE emulator_configs ADD COLUMN selectedMemcardPath TEXT")
+    }
+}

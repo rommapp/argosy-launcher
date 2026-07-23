@@ -100,6 +100,7 @@ class MainActivity : ComponentActivity() {
     @Inject lateinit var downloadManagerInstance: com.nendo.argosy.data.download.DownloadManager
     @Inject lateinit var notificationManager: com.nendo.argosy.core.notification.NotificationManager
     @Inject lateinit var emulatorConfigDao: com.nendo.argosy.data.local.dao.EmulatorConfigDao
+    @Inject lateinit var saveHandlerRegistry: com.nendo.argosy.data.sync.platform.PlatformSaveHandlerRegistry
     @Inject lateinit var steamDownloadQueueDao: com.nendo.argosy.data.local.dao.SteamDownloadQueueDao
     @Inject lateinit var steamRepository: com.nendo.argosy.data.repository.SteamRepository
     @Inject lateinit var playSessionTracker: com.nendo.argosy.data.emulator.PlaySessionTracker
@@ -170,6 +171,9 @@ class MainActivity : ComponentActivity() {
     fun setDualDisplayTargetFocus(index: Int) = dualScreenManager.setDualDisplayTargetFocus(index)
     fun moveDualDisplayTargetFocus(delta: Int) = dualScreenManager.moveDualDisplayTargetFocus(delta)
     fun confirmDualDisplayTargetSelection() = dualScreenManager.confirmDualDisplayTargetSelection()
+    fun setDualMemoryCardFocus(index: Int) = dualScreenManager.setDualMemoryCardFocus(index)
+    fun moveDualMemoryCardFocus(delta: Int) = dualScreenManager.moveDualMemoryCardFocus(delta)
+    fun confirmDualMemoryCardSelection() = dualScreenManager.confirmDualMemoryCardSelection()
     fun setDualVariantFocus(index: Int) = dualScreenManager.setDualVariantFocus(index)
     fun moveDualVariantFocus(delta: Int) = dualScreenManager.moveDualVariantFocus(delta)
     fun confirmDualVariantSelection() = dualScreenManager.confirmDualVariantSelection()
@@ -287,6 +291,7 @@ class MainActivity : ComponentActivity() {
                 notificationManager = notificationManager,
                 emulatorConfigDao = emulatorConfigDao,
                 configureEmulatorUseCase = configureEmulatorUseCase,
+                saveHandlerRegistry = saveHandlerRegistry,
                 steamDownloadQueueDao = steamDownloadQueueDao,
                 steamRepository = steamRepository,
                 playSessionTracker = playSessionTracker,

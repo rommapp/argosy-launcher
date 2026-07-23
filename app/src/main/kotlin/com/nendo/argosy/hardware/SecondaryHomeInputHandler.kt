@@ -337,6 +337,14 @@ class SecondaryHomeInputHandler(
                     EmulatorDisplayTarget.fromString(state.platformDisplayTargetName).displayName
                 )
             }
+            GameDetailOption.MEMORY_CARD -> {
+                vm.openMemoryCardPicker()
+                broadcasts.broadcastMemoryCardModalOpen(
+                    vm.memcardPickerList.value.map { it.name },
+                    vm.uiState.value.selectedMemcardName,
+                    null
+                )
+            }
             GameDetailOption.SELECT_VARIANT -> {
                 lifecycleLaunch {
                     val variants = vm.getDownloadedVariants()
@@ -878,6 +886,37 @@ class SecondaryHomeInputHandler(
                     GamepadEvent.Confirm -> {
                         val idx = vm.displayTargetPickerFocusIndex.value
                         vm.confirmDisplayTargetByIndex(idx)
+                        broadcasts.broadcastModalConfirmResult(
+                            modal, idx, null
+                        )
+                    }
+                    GamepadEvent.Back -> {
+                        vm.dismissPicker()
+                        broadcasts.broadcastModalClose()
+                    }
+                    else -> {}
+                }
+                return InputResult.HANDLED
+            }
+            ActiveModal.MEMORY_CARD -> {
+                when (event) {
+                    GamepadEvent.Up -> {
+                        vm.moveMemoryCardPickerFocus(-1)
+                        broadcasts.broadcastInlineUpdate(
+                            "memory_card_focus",
+                            vm.memoryCardPickerFocusIndex.value
+                        )
+                    }
+                    GamepadEvent.Down -> {
+                        vm.moveMemoryCardPickerFocus(1)
+                        broadcasts.broadcastInlineUpdate(
+                            "memory_card_focus",
+                            vm.memoryCardPickerFocusIndex.value
+                        )
+                    }
+                    GamepadEvent.Confirm -> {
+                        val idx = vm.memoryCardPickerFocusIndex.value
+                        vm.confirmMemoryCardByIndex(idx)
                         broadcasts.broadcastModalConfirmResult(
                             modal, idx, null
                         )

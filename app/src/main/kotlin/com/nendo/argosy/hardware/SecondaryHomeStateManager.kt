@@ -28,6 +28,7 @@ class SecondaryHomeStateManager(
     private val downloadQueueRepository: DownloadQueueRepository,
     private val steamRepository: SteamRepository,
     private val configureEmulatorUseCase: com.nendo.argosy.domain.usecase.game.ConfigureEmulatorUseCase,
+    private val saveHandlerRegistry: com.nendo.argosy.data.sync.platform.PlatformSaveHandlerRegistry,
     private val steamContentManager: com.nendo.argosy.data.steam.SteamContentManager? = null,
     private val displayAffinityHelper: DisplayAffinityHelper,
     private val downloadFileStatusRepository: com.nendo.argosy.data.repository.DownloadFileStatusRepository,
@@ -123,6 +124,7 @@ class SecondaryHomeStateManager(
                 downloadQueueRepository = downloadQueueRepository,
                 steamRepository = steamRepository,
                 configureEmulatorUseCase = configureEmulatorUseCase,
+                saveHandlerRegistry = saveHandlerRegistry,
                 steamContentManager = steamContentManager,
                 displayAffinityHelper = affinityHelper,
                 downloadFileStatusRepository = downloadFileStatusRepository,
@@ -216,6 +218,7 @@ class SecondaryHomeStateManager(
             downloadFileStatusRepository = downloadFileStatusRepository,
             sessionStateStore = sessionStateStore,
             preferencesRepository = preferencesRepository,
+            saveHandlerRegistry = saveHandlerRegistry,
             context = context
         )
     }

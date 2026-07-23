@@ -33,6 +33,7 @@ fun PerGameSettingsModal(
     onCoreClick: () -> Unit,
     onChangeSavePath: () -> Unit,
     onResetSavePath: () -> Unit,
+    onMemcardClick: () -> Unit,
     onCycleDisplayTarget: (Int) -> Unit,
     onCycleExtension: (Int) -> Unit,
     onPlatformSettings: () -> Unit,
@@ -60,6 +61,7 @@ fun PerGameSettingsModal(
                 InputButton.A to when (focusedRow) {
                     PerGameSettingsRow.EMULATOR, PerGameSettingsRow.CORE -> "Select"
                     PerGameSettingsRow.SAVE_PATH -> "Change"
+                    PerGameSettingsRow.MEMCARD -> "Change"
                     PerGameSettingsRow.DISPLAY_TARGET, PerGameSettingsRow.EXTENSION -> "Cycle"
                     PerGameSettingsRow.PLATFORM_SETTINGS, null -> "Open"
                 }
@@ -93,6 +95,19 @@ fun PerGameSettingsModal(
                     buttonFocusIndex = state.pathButtonIndex,
                     onChange = onChangeSavePath,
                     onReset = if (state.isSavePathOverride) onResetSavePath else null
+                )
+
+                PerGameSettingsRow.MEMCARD -> ValueConfigItem(
+                    label = "Memory Card",
+                    value = state.selectedMemcardPath
+                        ?.let { path ->
+                            state.memcardCards.find { it.path == path }?.name
+                                ?: java.io.File(path).name
+                        }
+                        ?: "Default (${state.inheritedMemcardName ?: "Auto"})",
+                    isOverride = state.selectedMemcardPath != null,
+                    isFocused = isFocused(row),
+                    onClick = onMemcardClick
                 )
 
                 PerGameSettingsRow.DISPLAY_TARGET -> ValueConfigItem(

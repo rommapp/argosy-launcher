@@ -77,6 +77,14 @@ class SecondaryHomeBroadcastHelper(
         dsm.openDisplayTargetModal(names, currentName, inheritedName)
     }
 
+    fun broadcastMemoryCardModalOpen(
+        names: List<String>,
+        currentName: String?,
+        inheritedName: String?
+    ) {
+        dsm.openMemoryCardModal(names, currentName, inheritedName)
+    }
+
     fun broadcastVariantModalOpen(
         variantNames: List<String>,
         currentName: String?

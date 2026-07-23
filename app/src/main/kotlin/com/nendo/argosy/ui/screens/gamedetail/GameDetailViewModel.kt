@@ -1348,6 +1348,22 @@ class GameDetailViewModel @Inject constructor(
         viewModelScope.launch { perGameSettingsDelegate.cycleExtension(currentGameId, direction) }
     }
 
+    fun openPerGameMemcardPicker() = perGameSettingsDelegate.openMemcardPicker()
+
+    fun dismissPerGameMemcardPicker() = perGameSettingsDelegate.dismissMemcardPicker()
+
+    fun movePerGameMemcardFocus(delta: Int) = perGameSettingsDelegate.moveMemcardPickerFocus(delta)
+
+    fun selectPerGameMemcard(path: String) {
+        viewModelScope.launch { perGameSettingsDelegate.selectMemcard(currentGameId, path) }
+    }
+
+    fun confirmPerGameMemcardSelection() {
+        val st = perGameSettingsDelegate.state.value
+        val path = st.memcardPickerCards.getOrNull(st.memcardPickerFocusIndex)?.path ?: return
+        selectPerGameMemcard(path)
+    }
+
     fun confirmPerGameSetting(onNavigateToPlatformSettings: (Long) -> Unit) {
         val st = _uiState.value.perGameSettings
         when (st.focusedRow) {
@@ -1357,6 +1373,7 @@ class GameDetailViewModel @Inject constructor(
                 if (st.pathButtonIndex == 1 && st.isSavePathOverride) clearPerGameSavePath()
                 else openPerGameSavePathBrowser()
             }
+            PerGameSettingsRow.MEMCARD -> openPerGameMemcardPicker()
             PerGameSettingsRow.DISPLAY_TARGET -> cyclePerGameDisplayTarget(1)
             PerGameSettingsRow.EXTENSION -> cyclePerGameExtension(1)
             PerGameSettingsRow.PLATFORM_SETTINGS -> {
@@ -1383,6 +1400,7 @@ class GameDetailViewModel @Inject constructor(
         override fun onUp(): InputResult {
             val picker = pickerModalDelegate.state.value
             when {
+                perGameSettingsDelegate.state.value.showMemcardPicker -> movePerGameMemcardFocus(-1)
                 picker.showEmulatorPicker -> moveEmulatorPickerFocus(-1)
                 picker.showCorePicker -> moveCorePickerFocus(-1)
                 else -> movePerGameSettingsFocus(-1)
@@ -1393,6 +1411,7 @@ class GameDetailViewModel @Inject constructor(
         override fun onDown(): InputResult {
             val picker = pickerModalDelegate.state.value
             when {
+                perGameSettingsDelegate.state.value.showMemcardPicker -> movePerGameMemcardFocus(1)
                 picker.showEmulatorPicker -> moveEmulatorPickerFocus(1)
                 picker.showCorePicker -> moveCorePickerFocus(1)
                 else -> movePerGameSettingsFocus(1)
@@ -1401,11 +1420,13 @@ class GameDetailViewModel @Inject constructor(
         }
 
         override fun onLeft(): InputResult {
+            if (perGameSettingsDelegate.state.value.showMemcardPicker) return InputResult.HANDLED
             if (!pickerModalDelegate.state.value.hasAnyPickerOpen) adjustPerGameSetting(-1)
             return InputResult.HANDLED
         }
 
         override fun onRight(): InputResult {
+            if (perGameSettingsDelegate.state.value.showMemcardPicker) return InputResult.HANDLED
             if (!pickerModalDelegate.state.value.hasAnyPickerOpen) adjustPerGameSetting(1)
             return InputResult.HANDLED
         }
@@ -1413,6 +1434,7 @@ class GameDetailViewModel @Inject constructor(
         override fun onConfirm(): InputResult {
             val picker = pickerModalDelegate.state.value
             when {
+                perGameSettingsDelegate.state.value.showMemcardPicker -> confirmPerGameMemcardSelection()
                 picker.showEmulatorPicker -> confirmEmulatorSelection()
                 picker.showCorePicker -> confirmCoreSelection()
                 else -> confirmPerGameSetting(onNavigateToPlatformSettings)
@@ -1423,6 +1445,7 @@ class GameDetailViewModel @Inject constructor(
         override fun onBack(): InputResult {
             val picker = pickerModalDelegate.state.value
             when {
+                perGameSettingsDelegate.state.value.showMemcardPicker -> dismissPerGameMemcardPicker()
                 picker.showEmulatorPicker -> dismissEmulatorPicker()
                 picker.showCorePicker -> dismissCorePicker()
                 else -> dismissPerGameSettings()

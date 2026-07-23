@@ -43,6 +43,7 @@ import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Album
+import androidx.compose.material.icons.filled.SdCard
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Checklist
@@ -171,6 +172,7 @@ fun DualGameDetailLowerScreen(
                         savePathOverride = state.savePathOverride,
                         displayTargetName = state.displayTargetName,
                         platformDisplayTargetName = state.platformDisplayTargetName,
+                        memoryCardName = state.selectedMemcardName,
                         variantName = state.selectedVariantName,
                         activeChannel = state.activeChannel,
                         activeSaveTimestamp = state.activeSaveTimestamp,
@@ -743,6 +745,7 @@ private fun OptionsTabContent(
     savePathOverride: String?,
     displayTargetName: String?,
     platformDisplayTargetName: String?,
+    memoryCardName: String?,
     variantName: String?,
     activeChannel: String?,
     activeSaveTimestamp: Long?,
@@ -757,6 +760,7 @@ private fun OptionsTabContent(
     val savePathText = if (savePathOverride != null) "Custom" else "Default"
     val displayTargetText = EmulatorDisplayTarget
         .fromString(displayTargetName ?: platformDisplayTargetName).displayName
+    val memoryCardText = memoryCardName ?: "Auto"
     val variantText = variantName ?: "Default"
     val completionStatus = CompletionStatus.fromApiValue(status)
 
@@ -886,6 +890,9 @@ private fun OptionsTabContent(
         GameDetailOption.DISPLAY_TARGET -> OptionEntry(
             option, Icons.Filled.Tv, "Display Target", displayTargetText
         )
+        GameDetailOption.MEMORY_CARD -> OptionEntry(
+            option, Icons.Filled.SdCard, "Memory Card", memoryCardText
+        )
         GameDetailOption.SELECT_VARIANT -> OptionEntry(
             option, Icons.Filled.Settings, "Select Variant", variantText
         )
@@ -922,6 +929,7 @@ private fun OptionsTabContent(
         GameDetailOption.CHANGE_CORE,
         GameDetailOption.SAVE_PATH,
         GameDetailOption.DISPLAY_TARGET,
+        GameDetailOption.MEMORY_CARD,
         GameDetailOption.SELECT_VARIANT,
         GameDetailOption.SELECT_DISC,
         GameDetailOption.FILES,

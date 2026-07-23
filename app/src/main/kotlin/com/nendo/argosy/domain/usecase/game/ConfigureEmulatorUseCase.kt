@@ -146,6 +146,32 @@ class ConfigureEmulatorUseCase @Inject constructor(
         saveSyncDao.clearLocalPathsForGame(gameId)
     }
 
+    suspend fun setMemcardForGame(gameId: Long, memcardPath: String) {
+        val existing = emulatorConfigDao.getByGameId(gameId)
+        if (existing != null) {
+            emulatorConfigDao.updateSelectedMemcardForGame(gameId, memcardPath)
+        } else {
+            val config = EmulatorConfigEntity(
+                platformId = null,
+                gameId = gameId,
+                packageName = null,
+                displayName = null,
+                coreName = null,
+                isDefault = false,
+                selectedMemcardPath = memcardPath
+            )
+            emulatorConfigDao.insert(config)
+        }
+        saveSyncDao.clearLocalPathsForGame(gameId)
+    }
+
+    suspend fun clearMemcardForGame(gameId: Long) {
+        val existing = emulatorConfigDao.getByGameId(gameId) ?: return
+        if (existing.selectedMemcardPath == null) return
+        emulatorConfigDao.updateSelectedMemcardForGame(gameId, null)
+        saveSyncDao.clearLocalPathsForGame(gameId)
+    }
+
     suspend fun getConfigForPlatform(platformId: Long): EmulatorConfigEntity? {
         return emulatorConfigDao.getDefaultForPlatform(platformId)
     }

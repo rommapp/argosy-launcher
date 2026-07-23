@@ -553,6 +553,11 @@ class SecondaryHomeActivity :
                 else vm.dismissPicker()
                 refocusSelf()
             }
+            ActiveModal.MEMORY_CARD.name -> {
+                if (selectedIndex >= 0) vm.confirmMemoryCardByIndex(selectedIndex)
+                else vm.dismissPicker()
+                refocusSelf()
+            }
             ActiveModal.VARIANT_PICKER.name -> {
                 if (selectedIndex >= 0) vm.confirmVariantByIndex(selectedIndex)
                 else vm.dismissPicker()
@@ -702,6 +707,7 @@ class SecondaryHomeActivity :
             downloadQueueRepository = dsm.downloadQueueRepository,
             steamRepository = dsm.steamRepository,
             configureEmulatorUseCase = dsm.configureEmulatorUseCase,
+            saveHandlerRegistry = dsm.saveHandlerRegistry,
             steamContentManager = dsm.steamContentManager,
             displayAffinityHelper = affinityHelper,
             downloadFileStatusRepository = dsm.downloadFileStatusRepository,

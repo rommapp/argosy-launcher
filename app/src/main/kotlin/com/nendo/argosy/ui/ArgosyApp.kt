@@ -600,6 +600,7 @@ fun ArgosyApp(
                     ActiveModal.CORE -> activity?.moveDualCoreFocus(-1)
                     ActiveModal.SAVE_PATH -> activity?.moveDualSavePathFocus(-1)
                     ActiveModal.DISPLAY_TARGET -> activity?.moveDualDisplayTargetFocus(-1)
+                    ActiveModal.MEMORY_CARD -> activity?.moveDualMemoryCardFocus(-1)
                     ActiveModal.VARIANT_PICKER -> activity?.moveDualVariantFocus(-1)
                     ActiveModal.COLLECTION -> activity?.moveDualCollectionFocus(-1)
                     ActiveModal.STEAM_INSTALL -> activity?.moveDualSteamInstallFocus(-1)
@@ -617,6 +618,7 @@ fun ArgosyApp(
                     ActiveModal.CORE -> activity?.moveDualCoreFocus(1)
                     ActiveModal.SAVE_PATH -> activity?.moveDualSavePathFocus(1)
                     ActiveModal.DISPLAY_TARGET -> activity?.moveDualDisplayTargetFocus(1)
+                    ActiveModal.MEMORY_CARD -> activity?.moveDualMemoryCardFocus(1)
                     ActiveModal.VARIANT_PICKER -> activity?.moveDualVariantFocus(1)
                     ActiveModal.COLLECTION -> activity?.moveDualCollectionFocus(1)
                     ActiveModal.STEAM_INSTALL -> activity?.moveDualSteamInstallFocus(1)
@@ -635,6 +637,7 @@ fun ArgosyApp(
                     ActiveModal.CORE -> activity?.confirmDualCoreSelection()
                     ActiveModal.SAVE_PATH -> activity?.confirmDualSavePathSelection()
                     ActiveModal.DISPLAY_TARGET -> activity?.confirmDualDisplayTargetSelection()
+                    ActiveModal.MEMORY_CARD -> activity?.confirmDualMemoryCardSelection()
                     ActiveModal.VARIANT_PICKER -> activity?.confirmDualVariantSelection()
                     ActiveModal.COLLECTION -> activity?.toggleDualCollectionAtFocus()
                     ActiveModal.STEAM_INSTALL -> activity?.confirmDualSteamInstallSelection()
@@ -1139,6 +1142,12 @@ fun ArgosyApp(
                                     a.confirmDualDisplayTargetSelection()
                                 }
                             },
+                            onModalMemoryCardSelect = { index ->
+                                activity?.let { a ->
+                                    a.setDualMemoryCardFocus(index)
+                                    a.confirmDualMemoryCardSelection()
+                                }
+                            },
                             onModalVariantSelect = { index ->
                                 activity?.let { a ->
                                     a.setDualVariantFocus(index)
@@ -1430,6 +1439,9 @@ fun ArgosyApp(
                                 },
                                 onBroadcastDisplayTargetModalOpen = { names, currentName, inheritedName ->
                                     dualScreenManager.openDisplayTargetModal(names, currentName, inheritedName)
+                                },
+                                onBroadcastMemoryCardModalOpen = { names, currentName, inheritedName ->
+                                    dualScreenManager.openMemoryCardModal(names, currentName, inheritedName)
                                 },
                                 onBroadcastVariantModalOpen = { variantNames, currentName ->
                                     dualScreenManager.openVariantModal(
@@ -1724,6 +1736,14 @@ fun ArgosyApp(
                                             },
                                             com.nendo.argosy.data.preferences.EmulatorDisplayTarget
                                                 .fromString(detailUi.platformDisplayTargetName).displayName
+                                        )
+                                    }
+                                    GameDetailOption.MEMORY_CARD -> {
+                                        vm.openMemoryCardPicker()
+                                        dualScreenManager.openMemoryCardModal(
+                                            vm.memcardPickerList.value.map { it.name },
+                                            vm.uiState.value.selectedMemcardName,
+                                            null
                                         )
                                     }
                                     GameDetailOption.SELECT_VARIANT -> {

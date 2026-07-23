@@ -89,6 +89,7 @@ fun DualGameDetailUpperScreen(
     onModalCoreSelect: (Int) -> Unit = {},
     onModalSavePathSelect: (Int) -> Unit = {},
     onModalDisplayTargetSelect: (Int) -> Unit = {},
+    onModalMemoryCardSelect: (Int) -> Unit = {},
     onModalVariantSelect: (Int) -> Unit = {},
     onModalCollectionToggle: (Long) -> Unit = {},
     onModalCollectionShowCreate: () -> Unit = {},
@@ -182,6 +183,14 @@ fun DualGameDetailUpperScreen(
                 inheritedTargetName = state.displayTargetInheritedName,
                 focusIndex = state.displayTargetFocusIndex,
                 onSelect = onModalDisplayTargetSelect,
+                onDismiss = onModalDismiss
+            )
+            ActiveModal.MEMORY_CARD -> DualMemoryCardPickerContent(
+                cardNames = state.memoryCardNames,
+                currentCardName = state.memoryCardCurrentName,
+                inheritedCardName = state.memoryCardInheritedName,
+                focusIndex = state.memoryCardFocusIndex,
+                onSelect = onModalMemoryCardSelect,
                 onDismiss = onModalDismiss
             )
             ActiveModal.VARIANT_PICKER -> DualVariantPickerContent(
@@ -704,6 +713,66 @@ private fun DualDisplayTargetPickerContent(
                             version = null,
                             isSelected = focusIndex == itemIndex,
                             isCurrent = name == currentTargetName,
+                            onClick = { onSelect(itemIndex) }
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun DualMemoryCardPickerContent(
+    cardNames: List<String>,
+    currentCardName: String?,
+    inheritedCardName: String?,
+    focusIndex: Int,
+    onSelect: (Int) -> Unit,
+    onDismiss: () -> Unit
+) {
+    val theme = LocalArgosyTheme.current
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black.copy(alpha = 0.6f))
+            .touchOnly { onDismiss() },
+        contentAlignment = Alignment.Center
+    ) {
+        GlassPanel(
+            modifier = Modifier
+                .fillMaxWidth(0.6f)
+                .touchOnly { }
+        ) {
+            Column(modifier = Modifier.padding(Dimens.spacingLg)) {
+                Text(
+                    text = "MEMORY CARD",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = theme.textPrimary,
+                    modifier = Modifier.padding(bottom = Dimens.spacingMd)
+                )
+
+                LazyColumn(
+                    verticalArrangement = Arrangement.spacedBy(Dimens.spacingXs),
+                    contentPadding = PaddingValues(vertical = Dimens.spacingXs)
+                ) {
+                    item {
+                        EmulatorPickerItem(
+                            name = "Auto Detect",
+                            version = inheritedCardName,
+                            isSelected = focusIndex == 0,
+                            isCurrent = currentCardName == null,
+                            onClick = { onSelect(0) }
+                        )
+                    }
+                    itemsIndexed(cardNames, key = { _, n -> n }) { index, name ->
+                        val itemIndex = index + 1
+                        EmulatorPickerItem(
+                            name = name,
+                            version = null,
+                            isSelected = focusIndex == itemIndex,
+                            isCurrent = name == currentCardName,
                             onClick = { onSelect(itemIndex) }
                         )
                     }

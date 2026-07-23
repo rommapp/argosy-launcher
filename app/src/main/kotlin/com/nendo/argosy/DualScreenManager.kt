@@ -90,6 +90,7 @@ class DualScreenManager(
     private val notificationManager: com.nendo.argosy.core.notification.NotificationManager,
     internal val emulatorConfigDao: com.nendo.argosy.data.local.dao.EmulatorConfigDao,
     internal val configureEmulatorUseCase: com.nendo.argosy.domain.usecase.game.ConfigureEmulatorUseCase,
+    internal val saveHandlerRegistry: com.nendo.argosy.data.sync.platform.PlatformSaveHandlerRegistry,
     internal val steamDownloadQueueDao: com.nendo.argosy.data.local.dao.SteamDownloadQueueDao,
     internal val steamRepository: com.nendo.argosy.data.repository.SteamRepository,
     internal val playSessionTracker: com.nendo.argosy.data.emulator.PlaySessionTracker,
@@ -833,6 +834,10 @@ class DualScreenManager(
                 confirmDualDisplayTargetSelection()
                 return
             }
+            ActiveModal.MEMORY_CARD -> {
+                confirmDualMemoryCardSelection()
+                return
+            }
             ActiveModal.VARIANT_PICKER -> {
                 confirmDualVariantSelection()
                 return
@@ -943,6 +948,17 @@ class DualScreenManager(
                     )
                 }
                 _swappedGameDetailViewModel?.confirmDisplayTargetByIndex(intValue)
+            }
+            "memory_card_focus" -> _dualGameDetailState.update { s -> s?.copy(memoryCardFocusIndex = intValue) }
+            "memory_card_confirm" -> {
+                _dualGameDetailState.update { s ->
+                    s?.copy(
+                        modalType = ActiveModal.NONE,
+                        memoryCardCurrentName = if (intValue == 0) null
+                        else s.memoryCardNames.getOrNull(intValue - 1)
+                    )
+                }
+                _swappedGameDetailViewModel?.confirmMemoryCardByIndex(intValue)
             }
             "variant_focus" -> _dualGameDetailState.update { s -> s?.copy(variantFocusIndex = intValue) }
             "variant_confirm" -> {
@@ -1136,6 +1152,10 @@ class DualScreenManager(
             }
             ActiveModal.DISPLAY_TARGET -> {
                 confirmDualDisplayTargetSelection()
+                return
+            }
+            ActiveModal.MEMORY_CARD -> {
+                confirmDualMemoryCardSelection()
                 return
             }
             ActiveModal.VARIANT_PICKER -> {
@@ -1361,6 +1381,53 @@ class DualScreenManager(
                 modalType = ActiveModal.NONE,
                 displayTargetCurrentName = if (index == 0) null
                 else state.displayTargetNames.getOrNull(index - 1)
+            )
+        }
+    }
+
+    fun openMemoryCardModal(names: List<String>, current: String?, inherited: String?) {
+        _dualGameDetailState.update { state ->
+            state?.copy(
+                modalType = ActiveModal.MEMORY_CARD,
+                memoryCardNames = names,
+                memoryCardFocusIndex = 0,
+                memoryCardCurrentName = current,
+                memoryCardInheritedName = inherited
+            )
+        }
+        refocusMain()
+    }
+
+    fun moveDualMemoryCardFocus(delta: Int) {
+        _dualGameDetailState.update { state ->
+            val max = state?.memoryCardNames?.size ?: 0
+            state?.copy(
+                memoryCardFocusIndex = com.nendo.argosy.ui.input.InputDispatcher.computeWrappedIndex(
+                    state.memoryCardFocusIndex, delta, max, menuWrapMode
+                )
+            )
+        }
+    }
+
+    fun setDualMemoryCardFocus(index: Int) {
+        _dualGameDetailState.update { state ->
+            state?.copy(memoryCardFocusIndex = index)
+        }
+    }
+
+    fun confirmDualMemoryCardSelection() {
+        val state = _dualGameDetailState.value ?: return
+        val index = state.memoryCardFocusIndex
+        companionHost?.onModalResult(
+            dismissed = false, type = ActiveModal.MEMORY_CARD.name,
+            value = 0, statusSelected = null, selectedIndex = index,
+            collectionToggleId = -1, collectionCreateName = null
+        )
+        _dualGameDetailState.update {
+            it?.copy(
+                modalType = ActiveModal.NONE,
+                memoryCardCurrentName = if (index == 0) null
+                else state.memoryCardNames.getOrNull(index - 1)
             )
         }
     }
@@ -2177,6 +2244,7 @@ class DualScreenManager(
             downloadQueueRepository = downloadQueueRepository,
             steamRepository = steamRepository,
             configureEmulatorUseCase = configureEmulatorUseCase,
+            saveHandlerRegistry = saveHandlerRegistry,
             steamContentManager = steamContentManager,
             displayAffinityHelper = displayAffinityHelper,
             downloadFileStatusRepository = downloadFileStatusRepository,

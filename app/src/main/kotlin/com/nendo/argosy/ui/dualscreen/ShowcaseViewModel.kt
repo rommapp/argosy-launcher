@@ -97,6 +97,20 @@ class ShowcaseViewModel(
         }
     }
 
+    fun onModalMemoryCardSelect(index: Int) {
+        val state = detailState.value ?: return
+        detailState.update {
+            it?.copy(
+                modalType = ActiveModal.NONE,
+                memoryCardCurrentName = if (index == 0) null
+                else state.memoryCardNames.getOrNull(index - 1)
+            )
+        }
+        if (isControlActive()) {
+            broadcasts.broadcastInlineUpdate("memory_card_confirm", index)
+        }
+    }
+
     fun onModalVariantSelect(index: Int) {
         val state = detailState.value ?: return
         detailState.update {
@@ -219,6 +233,15 @@ class ShowcaseViewModel(
         }
     }
 
+    fun moveMemoryCardFocus(delta: Int) {
+        detailState.update { state ->
+            val max = state?.memoryCardNames?.size ?: 0
+            state?.copy(
+                memoryCardFocusIndex = (state.memoryCardFocusIndex + delta).coerceIn(0, max)
+            )
+        }
+    }
+
     fun moveVariantFocus(delta: Int) {
         detailState.update { state ->
             val max = state?.variantNames?.size ?: 0
@@ -281,6 +304,7 @@ class ShowcaseViewModel(
                     ActiveModal.CORE -> moveCoreFocus(-1)
                     ActiveModal.SAVE_PATH -> moveSavePathFocus(-1)
                     ActiveModal.DISPLAY_TARGET -> moveDisplayTargetFocus(-1)
+                    ActiveModal.MEMORY_CARD -> moveMemoryCardFocus(-1)
                     ActiveModal.VARIANT_PICKER -> moveVariantFocus(-1)
                     ActiveModal.COLLECTION -> moveCollectionFocus(-1)
                     ActiveModal.DISC_PICKER -> moveDiscPickerFocus(-1)
@@ -296,6 +320,7 @@ class ShowcaseViewModel(
                     ActiveModal.CORE -> moveCoreFocus(1)
                     ActiveModal.SAVE_PATH -> moveSavePathFocus(1)
                     ActiveModal.DISPLAY_TARGET -> moveDisplayTargetFocus(1)
+                    ActiveModal.MEMORY_CARD -> moveMemoryCardFocus(1)
                     ActiveModal.VARIANT_PICKER -> moveVariantFocus(1)
                     ActiveModal.COLLECTION -> moveCollectionFocus(1)
                     ActiveModal.DISC_PICKER -> moveDiscPickerFocus(1)
@@ -318,6 +343,8 @@ class ShowcaseViewModel(
                         onModalSavePathSelect(state.savePathFocusIndex)
                     ActiveModal.DISPLAY_TARGET ->
                         onModalDisplayTargetSelect(state.displayTargetFocusIndex)
+                    ActiveModal.MEMORY_CARD ->
+                        onModalMemoryCardSelect(state.memoryCardFocusIndex)
                     ActiveModal.VARIANT_PICKER ->
                         onModalVariantSelect(state.variantFocusIndex)
                     ActiveModal.COLLECTION -> {

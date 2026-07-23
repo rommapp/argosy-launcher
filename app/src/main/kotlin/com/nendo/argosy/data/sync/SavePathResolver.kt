@@ -127,6 +127,7 @@ class SavePathResolver @Inject constructor(
             perGameSaveDir(gameId, config, platformSlug)?.let { add(it) }
             if (userConfig?.savesBesideRom == true && romPath != null) File(romPath).parent?.let { add(it) }
             userConfig?.takeIf { it.isUserOverride }?.savePathPattern?.let { add(it) }
+            gameId?.let { emulatorConfigDao.getSelectedMemcardForGame(it) }?.let { add(it) }
             userConfig?.selectedMemcardPath?.let { add(it) }
             if (isRetroArch) {
                 val req = com.nendo.argosy.data.emulator.RetroArchPathResolver.Request(
@@ -200,7 +201,9 @@ class SavePathResolver @Inject constructor(
         val overrideBaseDir = besideRomBaseDir
             ?: userConfig?.takeIf { it.isUserOverride }?.savePathPattern
         val savePathOverrideForLog = overrideBaseDir
-        val selectedMemcardForLog = userConfig?.selectedMemcardPath
+        val effectiveMemcard =
+            (gameId?.let { emulatorConfigDao.getSelectedMemcardForGame(it) } ?: userConfig?.selectedMemcardPath)
+        val selectedMemcardForLog = effectiveMemcard
 
         if (overrideBaseDir != null && !isRetroArch) {
             if (config.usesFolderBasedSaves && (romPath != null || cachedSaveId != null)) {
@@ -214,7 +217,7 @@ class SavePathResolver @Inject constructor(
                     gameId = gameId,
                     gameTitle = gameTitle,
                     basePathOverride = overrideBaseDir,
-                    selectedMemcardPath = userConfig?.selectedMemcardPath
+                    selectedMemcardPath = effectiveMemcard
                 )
             }
             if (config.usesGciFormat && romPath != null) {
@@ -246,7 +249,7 @@ class SavePathResolver @Inject constructor(
                 emulatorPackage = emulatorPackage,
                 gameId = gameId,
                 gameTitle = gameTitle,
-                selectedMemcardPath = userConfig?.selectedMemcardPath
+                selectedMemcardPath = effectiveMemcard
             )
         }
 
@@ -761,7 +764,9 @@ class SavePathResolver @Inject constructor(
 
         val userConfig = emulatorSaveConfigDao.getByEmulator(config.emulatorId)
         val basePathOverride = userConfig?.takeIf { it.isUserOverride }?.savePathPattern
-        val selectedMemcard = userConfig?.selectedMemcardPath?.takeIf { directoryExists(it) }
+        val selectedMemcard =
+            (emulatorConfigDao.getSelectedMemcardForGame(gameId) ?: userConfig?.selectedMemcardPath)
+                ?.takeIf { directoryExists(it) }
 
         val baseDir = if (platformSlug == "switch") {
             switchSaveHandler.resolveBasePath(config, basePathOverride, emulatorPackage)

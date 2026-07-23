@@ -604,6 +604,7 @@ class GameLauncher @Inject constructor(
 
     private suspend fun ps2MemcardGate(gameId: Long, game: GameEntity, emulator: EmulatorDef): LaunchResult? {
         if (game.platformSlug != "ps2") return null
+        if (emulatorConfigDao.getSelectedMemcardForGame(gameId) != null) return null
         val emulatorId = SavePathRegistry.canonicalConfigId(emulator.id, emulator.packageName)
         val userConfig = emulatorSaveConfigRepository.getByEmulator(emulatorId)
         if (userConfig?.selectedMemcardPath != null) return null

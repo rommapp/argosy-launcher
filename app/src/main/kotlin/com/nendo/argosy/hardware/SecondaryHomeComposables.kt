@@ -253,6 +253,7 @@ fun ShowcaseRoleContent(
                         onModalCoreSelect = showcaseViewModel::onModalCoreSelect,
                         onModalSavePathSelect = showcaseViewModel::onModalSavePathSelect,
                         onModalDisplayTargetSelect = showcaseViewModel::onModalDisplayTargetSelect,
+                        onModalMemoryCardSelect = showcaseViewModel::onModalMemoryCardSelect,
                         onModalVariantSelect = showcaseViewModel::onModalVariantSelect,
                         onModalCollectionToggle = showcaseViewModel::onModalCollectionToggle,
                         onModalCollectionShowCreate = showcaseViewModel::onModalCollectionShowCreate,

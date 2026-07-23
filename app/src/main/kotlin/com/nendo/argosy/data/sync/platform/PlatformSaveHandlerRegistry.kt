@@ -401,13 +401,14 @@ private class Ps2FolderHandler(
             0 -> "$baseDir/Shared.ps2"
             1 -> folderCards[0].path
             else -> {
+                val active = listFolderMemcards(baseDir).firstOrNull()?.path ?: folderCards[0].path
                 Logger.warn(
                     TAG,
-                    "constructSavePath: $baseDir contains ${folderCards.size} folder memcards " +
-                        "(${folderCards.map { it.name }}). Cannot pick a target -- set a preferred " +
-                        "memcard for PS2 save sync, or remove the unused cards."
+                    "constructSavePath: $baseDir has ${folderCards.size} folder memcards " +
+                        "(${folderCards.map { it.name }}); no preferred memcard set, defaulting to the " +
+                        "most-recently-written card=${File(active).name}. Set a preferred memcard to pin one."
                 )
-                return null
+                active
             }
         }
         return "$cardDir/${toFolderName(saveId)}"

@@ -28,6 +28,10 @@ class QuayPassRepository @Inject constructor(
         encounterDao.markAllSeen()
     }
 
+    suspend fun markSeen(fingerprint: String) {
+        encounterDao.markSeen(fingerprint)
+    }
+
     suspend fun deleteEncounter(fingerprint: String) {
         encounterDao.delete(fingerprint)
     }

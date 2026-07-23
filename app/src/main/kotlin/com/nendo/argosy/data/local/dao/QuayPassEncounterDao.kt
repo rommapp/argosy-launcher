@@ -29,6 +29,9 @@ interface QuayPassEncounterDao {
     @Query("UPDATE quaypass_encounters SET seenByUser = 1 WHERE seenByUser = 0")
     suspend fun markAllSeen()
 
+    @Query("UPDATE quaypass_encounters SET seenByUser = 1 WHERE credentialFingerprint = :fingerprint")
+    suspend fun markSeen(fingerprint: String)
+
     @Query("SELECT * FROM quaypass_encounters WHERE reported = 0 AND accountId IS NOT NULL")
     suspend fun unreported(): List<QuayPassEncounterEntity>
 

@@ -1,5 +1,8 @@
 package com.nendo.argosy.ui.screens.quaypass
 
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.snap
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,7 +16,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
@@ -21,36 +25,36 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.ui.platform.LocalLifecycleOwner
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleEventObserver
-import com.nendo.argosy.ui.components.FooterBar
-import com.nendo.argosy.ui.components.InputButton
-import com.nendo.argosy.ui.input.InputHandler
-import com.nendo.argosy.ui.input.InputResult
-import com.nendo.argosy.ui.input.LocalInputDispatcher
-import com.nendo.argosy.ui.navigation.Screen
-import com.nendo.argosy.ui.theme.Dimens
-import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import com.nendo.argosy.data.local.entity.QuayPassEncounterEntity
 import com.nendo.argosy.data.quaypass.ble.QuayPassDoodleCodec
+import com.nendo.argosy.ui.components.FocusedScroll
+import com.nendo.argosy.ui.components.FooterBar
+import com.nendo.argosy.ui.components.InputButton
 import com.nendo.argosy.ui.components.friends.SocialAvatar
+import com.nendo.argosy.ui.input.LocalInputDispatcher
+import com.nendo.argosy.ui.navigation.Screen
+import com.nendo.argosy.ui.primitives.FocusIndicators
+import com.nendo.argosy.ui.primitives.argosyFocusIndicators
 import com.nendo.argosy.ui.screens.doodle.CanvasSize
 import com.nendo.argosy.ui.screens.doodle.DecodedDoodle
 import com.nendo.argosy.ui.screens.doodle.DoodleColor
 import com.nendo.argosy.ui.screens.doodle.DoodlePreview
+import com.nendo.argosy.ui.theme.Dimens
+import com.nendo.argosy.ui.theme.generated.MotionTokens
+import com.nendo.argosy.ui.util.clickableNoFocus
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -62,32 +66,15 @@ fun QuayPassPlazaScreen(
     val encounters by viewModel.encounters.collectAsState()
     val running by viewModel.isServiceRunning.collectAsState()
     val ticketBalance by viewModel.ticketBalance.collectAsState()
+    val uiState by viewModel.uiState.collectAsState()
     val listState = rememberLazyListState()
-    val scope = rememberCoroutineScope()
     val inputDispatcher = LocalInputDispatcher.current
 
     DisposableEffect(Unit) {
         onDispose { viewModel.markAllSeen() }
     }
 
-    val handler = remember(listState) {
-        object : InputHandler {
-            override fun onUp(): InputResult {
-                scope.launch {
-                    val target = (listState.firstVisibleItemIndex - 1).coerceAtLeast(0)
-                    listState.animateScrollToItem(target)
-                }
-                return InputResult.HANDLED
-            }
-            override fun onDown(): InputResult {
-                scope.launch {
-                    val target = listState.firstVisibleItemIndex + 1
-                    listState.animateScrollToItem(target)
-                }
-                return InputResult.HANDLED
-            }
-        }
-    }
+    val handler = remember(viewModel) { viewModel.createInputHandler() }
 
     val lifecycleOwner = LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner, handler) {
@@ -101,6 +88,8 @@ fun QuayPassPlazaScreen(
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
+    FocusedScroll(listState = listState, focusedIndex = uiState.focusedIndex)
+
     Surface(
         modifier = Modifier.fillMaxSize(),
         color = MaterialTheme.colorScheme.background
@@ -109,7 +98,7 @@ fun QuayPassPlazaScreen(
             Column(
                 modifier = Modifier
                     .weight(1f)
-                    .padding(16.dp)
+                    .padding(Dimens.spacingMd)
             ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -128,28 +117,64 @@ fun QuayPassPlazaScreen(
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
                 )
-                Spacer(Modifier.height(16.dp))
+                Spacer(Modifier.height(Dimens.spacingMd))
 
                 if (encounters.isEmpty()) {
                     EmptyState()
                 } else {
-                    LazyColumn(
-                        state = listState,
-                        contentPadding = PaddingValues(vertical = 8.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        items(encounters, key = { it.credentialFingerprint }) { encounter ->
-                            EncounterCard(encounter)
+                    Box(modifier = Modifier.fillMaxSize()) {
+                        LazyColumn(
+                            state = listState,
+                            contentPadding = PaddingValues(vertical = Dimens.spacingSm),
+                            verticalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
+                        ) {
+                            itemsIndexed(
+                                encounters,
+                                key = { _, encounter -> encounter.credentialFingerprint }
+                            ) { index, encounter ->
+                                val fingerprint = encounter.credentialFingerprint
+                                val accountId = encounter.accountId
+                                EncounterCard(
+                                    encounter = encounter,
+                                    isFocused = index == uiState.focusedIndex,
+                                    visible = fingerprint !in uiState.pendingArrivals,
+                                    snapReveal = fingerprint in uiState.rushedArrivals,
+                                    showTicketAward = fingerprint in uiState.revealedArrivals,
+                                    ticketAward = uiState.ticketAwardPerEncounter,
+                                    requestSent = accountId != null && accountId in uiState.sentAccountIds,
+                                    onClick = { viewModel.onCardTapped(index) }
+                                )
+                            }
+                        }
+                        if (uiState.arrivalSequenceRunning) {
+                            Box(
+                                modifier = Modifier
+                                    .matchParentSize()
+                                    .clickableNoFocus { viewModel.rushArrivals() }
+                            )
                         }
                     }
                 }
             }
 
+            val focusedAccountId = encounters.getOrNull(uiState.focusedIndex)?.accountId
+            val canAddFriend = !uiState.arrivalSequenceRunning &&
+                focusedAccountId != null &&
+                focusedAccountId !in uiState.friendAccountIds &&
+                focusedAccountId !in uiState.sentAccountIds
             FooterBar(
-                hints = listOf(
-                    InputButton.B to "Back",
-                    InputButton.DPAD_VERTICAL to "Scroll"
-                )
+                hints = if (canAddFriend) {
+                    listOf(
+                        InputButton.A to "Add Friend",
+                        InputButton.B to "Back",
+                        InputButton.DPAD_VERTICAL to "Scroll"
+                    )
+                } else {
+                    listOf(
+                        InputButton.B to "Back",
+                        InputButton.DPAD_VERTICAL to "Scroll"
+                    )
+                }
             )
         }
     }
@@ -163,7 +188,7 @@ private fun EmptyState() {
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            verticalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
         ) {
             Text(
                 text = "No travelers yet",
@@ -179,14 +204,37 @@ private fun EmptyState() {
 }
 
 @Composable
-private fun EncounterCard(encounter: QuayPassEncounterEntity) {
+private fun EncounterCard(
+    encounter: QuayPassEncounterEntity,
+    isFocused: Boolean,
+    visible: Boolean,
+    snapReveal: Boolean,
+    showTicketAward: Boolean,
+    ticketAward: Int,
+    requestSent: Boolean,
+    onClick: () -> Unit
+) {
     val doodle = remember(encounter.avatarBlobBase64) { decodeAvatarDoodle(encounter.avatarBlobBase64) }
+    val cardShape = RoundedCornerShape(Dimens.radiusLg)
+    val cardAlpha by animateFloatAsState(
+        targetValue = if (visible) 1f else 0f,
+        animationSpec = if (snapReveal) snap() else MotionTokens.Tween.page,
+        label = "arrival-fade"
+    )
     Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp)
+        modifier = Modifier
+            .fillMaxWidth()
+            .graphicsLayer { alpha = cardAlpha }
+            .argosyFocusIndicators(
+                focused = isFocused,
+                indicators = FocusIndicators.Ring,
+                shape = cardShape
+            )
+            .clickableNoFocus(onClick = onClick),
+        shape = cardShape
     ) {
         Row(
-            modifier = Modifier.padding(12.dp),
+            modifier = Modifier.padding(Dimens.spacingMd),
             verticalAlignment = Alignment.CenterVertically
         ) {
             if (doodle != null) {
@@ -204,8 +252,8 @@ private fun EncounterCard(encounter: QuayPassEncounterEntity) {
                     size = Dimens.avatarXl
                 )
             }
-            Spacer(Modifier.width(12.dp))
-            Column(modifier = Modifier.fillMaxWidth()) {
+            Spacer(Modifier.width(Dimens.spacingMd))
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = encounter.displayName ?: "@${encounter.username}",
                     style = MaterialTheme.typography.titleMedium,
@@ -218,30 +266,54 @@ private fun EncounterCard(encounter: QuayPassEncounterEntity) {
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
+                if (requestSent) {
+                    Text(
+                        text = "Friend request sent",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
                 if (!encounter.greeting.isNullOrBlank()) {
-                    Spacer(Modifier.height(4.dp))
+                    Spacer(Modifier.height(Dimens.spacingXs))
                     Text(
                         text = encounter.greeting,
                         style = MaterialTheme.typography.bodyMedium
                     )
                 }
                 if (!encounter.lastGameTitle.isNullOrBlank()) {
-                    Spacer(Modifier.height(4.dp))
+                    Spacer(Modifier.height(Dimens.spacingXs))
                     Text(
                         text = "Played ${encounter.lastGameTitle}",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
-                Spacer(Modifier.height(4.dp))
+                Spacer(Modifier.height(Dimens.spacingXs))
                 Text(
                     text = formatTimestamp(encounter.encounteredAt),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
+            if (showTicketAward) {
+                Spacer(Modifier.width(Dimens.spacingSm))
+                TicketAwardChip(ticketAward)
+            }
         }
     }
+}
+
+@Composable
+private fun TicketAwardChip(amount: Int, modifier: Modifier = Modifier) {
+    Text(
+        text = "+$amount",
+        style = MaterialTheme.typography.labelMedium,
+        fontWeight = FontWeight.SemiBold,
+        color = MaterialTheme.colorScheme.onPrimaryContainer,
+        modifier = modifier
+            .background(MaterialTheme.colorScheme.primaryContainer, RoundedCornerShape(Dimens.radiusMd))
+            .padding(horizontal = Dimens.spacingSm, vertical = Dimens.spacingXs)
+    )
 }
 
 private fun decodeAvatarDoodle(base64: String?): DecodedDoodle? = base64?.let {

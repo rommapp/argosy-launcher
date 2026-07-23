@@ -23,10 +23,10 @@ import com.nendo.argosy.data.quaypass.ble.QuayPassAdvertiser
 import com.nendo.argosy.data.quaypass.ble.QuayPassExchangeOrchestrator
 import com.nendo.argosy.data.quaypass.ble.QuayPassGattClient
 import com.nendo.argosy.data.quaypass.ble.QuayPassGattServer
+import com.nendo.argosy.data.quaypass.ble.QuayPassDoodleCodec
 import com.nendo.argosy.data.quaypass.ble.QuayPassScanReceiver
 import com.nendo.argosy.data.quaypass.ble.QuayPassScanner
 import com.nendo.argosy.data.quaypass.ble.QuayPassWireFormat
-import com.nendo.argosy.data.quaypass.ble.colorOnlyAvatar
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -108,7 +108,14 @@ class QuayPassService @Inject constructor(
 
         scope.launch {
             preferencesRepository.userPreferences
-                .map { ProfileSnapshot(it.socialUsername, it.socialDisplayName, it.quayPassAvatarBytes) }
+                .map {
+                    ProfileSnapshot(
+                        it.socialUsername,
+                        it.socialDisplayName,
+                        it.socialAvatarDoodle,
+                        it.socialAvatarUseDoodle
+                    )
+                }
                 .distinctUntilChanged()
                 .collect {
                     if (_isRunning.value) refreshOurBytes()
@@ -134,7 +141,8 @@ class QuayPassService @Inject constructor(
     private data class ProfileSnapshot(
         val socialUsername: String?,
         val socialDisplayName: String?,
-        val quayPassAvatarBytes: String?
+        val socialAvatarDoodle: String?,
+        val socialAvatarUseDoodle: Boolean
     )
 
     fun isBleSupported(): Boolean = bluetoothManager?.adapter != null
@@ -228,8 +236,7 @@ class QuayPassService @Inject constructor(
     private suspend fun refreshOurBytes(): ByteArray? {
         val prefs = preferencesRepository.userPreferences.first()
         val username = prefs.socialUsername ?: return null
-        val avatar = decodeStoredAvatar(prefs.quayPassAvatarBytes)
-            ?: colorOnlyAvatar(parseColorIndex(prefs.socialAvatarColor))
+        val avatarRaster = buildAvatarRaster(prefs.socialAvatarDoodle, prefs.socialAvatarUseDoodle)
         val profile = OutboundProfile(
             username = username,
             displayName = prefs.socialDisplayName,
@@ -238,23 +245,17 @@ class QuayPassService @Inject constructor(
             lastGamePlatform = cachedLastGame?.platformSlug,
             lastGamePlaytimeMinutes = cachedLastGame?.playTimeMinutes,
             lastGameIgdbId = cachedLastGame?.igdbId,
-            avatar = avatar
+            avatarRaster = avatarRaster
         )
         val bytes = orchestrator.buildOurWireBytes(profile)
         cachedOurBytes.set(bytes)
         return bytes
     }
 
-    private fun decodeStoredAvatar(bytesBase64: String?): com.nendo.argosy.data.quaypass.ble.QuayPassAvatar? {
-        val raw = bytesBase64 ?: return null
-        return runCatching {
-            val bytes = android.util.Base64.decode(raw, android.util.Base64.NO_WRAP)
-            com.nendo.argosy.data.quaypass.ble.QuayPassAvatarCodec.decode(bytes)
-        }.getOrNull()
+    private fun buildAvatarRaster(doodleBase64: String?, useDoodle: Boolean): ByteArray {
+        if (!useDoodle || doodleBase64 == null) return ByteArray(0)
+        return QuayPassDoodleCodec.encodeFromSparseBase64(doodleBase64) ?: ByteArray(0)
     }
-
-    private fun parseColorIndex(stored: String?): Int =
-        stored?.toIntOrNull()?.coerceIn(0, 15) ?: 0
 
     fun updateLastGame(game: GameEntity) {
         cachedLastGame = game

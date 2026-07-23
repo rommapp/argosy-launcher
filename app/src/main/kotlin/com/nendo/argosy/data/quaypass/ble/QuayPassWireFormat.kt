@@ -16,7 +16,7 @@ data class OutboundProfile(
     val lastGamePlatform: String?,
     val lastGamePlaytimeMinutes: Int?,
     val lastGameIgdbId: Long?,
-    val avatar: QuayPassAvatar
+    val avatarRaster: ByteArray
 )
 
 data class InboundProfile(
@@ -24,7 +24,6 @@ data class InboundProfile(
     val protocolMinor: Int,
     val nonce: ByteArray,
     val timestamp: Instant,
-    val avatar: QuayPassAvatar,
     val avatarBytes: ByteArray,
     val username: String,
     val displayName: String?,
@@ -73,7 +72,10 @@ object QuayPassWireFormat {
     ): ByteArray {
         val nonce = ByteArray(QuayPassConfig.NONCE_BYTES).also { secureRandom.nextBytes(it) }
         val timestamp = Instant.now().epochSecond
-        val avatarBlock = QuayPassAvatarCodec.encode(profile.avatar)
+        val avatarRaster = profile.avatarRaster
+        require(avatarRaster.size <= QuayPassConfig.MAX_AVATAR_RASTER_BYTES) {
+            "QuayPass avatar raster too large: ${avatarRaster.size} > ${QuayPassConfig.MAX_AVATAR_RASTER_BYTES}"
+        }
         val textBytes = encodeText(profile)
         require(textBytes.size <= QuayPassConfig.MAX_TEXT_BYTES) {
             "QuayPass text section too large: ${textBytes.size} > ${QuayPassConfig.MAX_TEXT_BYTES}"
@@ -81,13 +83,14 @@ object QuayPassWireFormat {
 
         val profileBody = ByteBuffer.allocate(
             1 + 1 + QuayPassConfig.NONCE_BYTES + QuayPassConfig.TIMESTAMP_BYTES +
-                QuayPassConfig.AVATAR_BLOCK_BYTES + 2 + textBytes.size
+                2 + avatarRaster.size + 2 + textBytes.size
         ).apply {
             put(QuayPassConfig.PROTOCOL_MAJOR)
             put(QuayPassConfig.PROTOCOL_MINOR)
             put(nonce)
             putLong(timestamp)
-            put(avatarBlock)
+            putShort(avatarRaster.size.toShort())
+            put(avatarRaster)
             putShort(textBytes.size.toShort())
             put(textBytes)
         }.array()
@@ -165,8 +168,14 @@ object QuayPassWireFormat {
             return DecodeResult.Failure(DecodeResult.Reason.TIMESTAMP_OUT_OF_WINDOW)
         }
         val timestampInstant = Instant.ofEpochSecond(timestampSecs)
-        val avatarBytes = ByteArray(QuayPassConfig.AVATAR_BLOCK_BYTES).also { pb.get(it) }
-        val avatar = QuayPassAvatarCodec.decode(avatarBytes)
+        val avatarLen = pb.short.toInt() and 0xFFFF
+        if (avatarLen > QuayPassConfig.MAX_AVATAR_RASTER_BYTES) {
+            return DecodeResult.Failure(DecodeResult.Reason.BAD_LENGTHS)
+        }
+        if (pb.remaining() < avatarLen + 2) {
+            return DecodeResult.Failure(DecodeResult.Reason.TRUNCATED)
+        }
+        val avatarBytes = ByteArray(avatarLen).also { pb.get(it) }
 
         val textLen = pb.short.toInt() and 0xFFFF
         if (textLen > QuayPassConfig.MAX_TEXT_BYTES) {
@@ -189,7 +198,6 @@ object QuayPassWireFormat {
                 protocolMinor = minor,
                 nonce = nonce,
                 timestamp = timestampInstant,
-                avatar = avatar,
                 avatarBytes = avatarBytes,
                 username = text.username,
                 displayName = text.displayName,
@@ -306,8 +314,7 @@ object QuayPassWireFormat {
     private const val KEY_GAME_IGDB_ID = "gi"
 
     private const val MIN_PROFILE_BODY_BYTES =
-        1 + 1 + QuayPassConfig.NONCE_BYTES + QuayPassConfig.TIMESTAMP_BYTES +
-            QuayPassConfig.AVATAR_BLOCK_BYTES + 2
+        1 + 1 + QuayPassConfig.NONCE_BYTES + QuayPassConfig.TIMESTAMP_BYTES + 2 + 2
 
     private const val MIN_VALID_BYTES =
         2 + MIN_PROFILE_BODY_BYTES + 2 + 32 + QuayPassConfig.SIGNATURE_BYTES

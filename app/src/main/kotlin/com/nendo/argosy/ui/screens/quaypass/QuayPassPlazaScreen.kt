@@ -1,6 +1,5 @@
 package com.nendo.argosy.ui.screens.quaypass
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -42,13 +41,16 @@ import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.nendo.argosy.data.local.entity.QuayPassEncounterEntity
-import com.nendo.argosy.data.quaypass.ble.QuayPassAvatar
-import com.nendo.argosy.data.quaypass.ble.QuayPassAvatarCodec
+import com.nendo.argosy.data.quaypass.ble.QuayPassDoodleCodec
+import com.nendo.argosy.ui.components.friends.SocialAvatar
+import com.nendo.argosy.ui.screens.doodle.CanvasSize
+import com.nendo.argosy.ui.screens.doodle.DecodedDoodle
+import com.nendo.argosy.ui.screens.doodle.DoodleColor
+import com.nendo.argosy.ui.screens.doodle.DoodlePreview
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -178,8 +180,7 @@ private fun EmptyState() {
 
 @Composable
 private fun EncounterCard(encounter: QuayPassEncounterEntity) {
-    val avatar = remember(encounter.avatarBlobBase64) { decodeAvatar(encounter.avatarBlobBase64) }
-    val accent = PALETTE[(avatar?.favoriteColor ?: 0) and 0x0F]
+    val doodle = remember(encounter.avatarBlobBase64) { decodeAvatarDoodle(encounter.avatarBlobBase64) }
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp)
@@ -188,12 +189,21 @@ private fun EncounterCard(encounter: QuayPassEncounterEntity) {
             modifier = Modifier.padding(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Box(
-                modifier = Modifier
-                    .size(Dimens.avatarXl)
-                    .clip(CircleShape)
-                    .background(accent)
-            )
+            if (doodle != null) {
+                DoodlePreview(
+                    canvasSize = doodle.size,
+                    pixels = doodle.pixels,
+                    modifier = Modifier
+                        .size(Dimens.avatarXl)
+                        .clip(CircleShape)
+                )
+            } else {
+                SocialAvatar(
+                    displayName = encounter.username,
+                    avatarColor = null,
+                    size = Dimens.avatarXl
+                )
+            }
             Spacer(Modifier.width(12.dp))
             Column(modifier = Modifier.fillMaxWidth()) {
                 Text(
@@ -234,18 +244,31 @@ private fun EncounterCard(encounter: QuayPassEncounterEntity) {
     }
 }
 
-private fun decodeAvatar(base64: String?): QuayPassAvatar? = base64?.let {
+private fun decodeAvatarDoodle(base64: String?): DecodedDoodle? = base64?.let {
     runCatching {
-        QuayPassAvatarCodec.decode(android.util.Base64.decode(it, android.util.Base64.NO_WRAP))
+        val raster = QuayPassDoodleCodec.decode(android.util.Base64.decode(it, android.util.Base64.NO_WRAP))
+            ?: return@runCatching null
+        rasterToDecodedDoodle(raster.size, raster.paletteIndices)
     }.getOrNull()
 }
 
-private val PALETTE = listOf(
-    Color(0xFFE57373), Color(0xFFF06292), Color(0xFFBA68C8), Color(0xFF9575CD),
-    Color(0xFF7986CB), Color(0xFF64B5F6), Color(0xFF4FC3F7), Color(0xFF4DD0E1),
-    Color(0xFF4DB6AC), Color(0xFF81C784), Color(0xFFAED581), Color(0xFFDCE775),
-    Color(0xFFFFD54F), Color(0xFFFFB74D), Color(0xFFFF8A65), Color(0xFFA1887F)
-)
+private fun rasterToDecodedDoodle(size: Int, paletteIndices: IntArray): DecodedDoodle? {
+    val canvasSize = when (size) {
+        CanvasSize.SMALL.pixels -> CanvasSize.SMALL
+        CanvasSize.MEDIUM.pixels -> CanvasSize.MEDIUM
+        else -> return null
+    }
+    val pixels = mutableMapOf<Pair<Int, Int>, DoodleColor>()
+    for (y in 0 until size) {
+        for (x in 0 until size) {
+            val index = paletteIndices[y * size + x]
+            if (index != 0) {
+                pixels[x to y] = DoodleColor.fromIndex(index)
+            }
+        }
+    }
+    return DecodedDoodle(canvasSize, pixels)
+}
 
 private val TIME_FORMAT = DateTimeFormatter.ofPattern("MMM d, HH:mm")
 private fun formatTimestamp(instant: Instant): String =

@@ -14,12 +14,16 @@ object QuayPassConfig {
     const val MANUFACTURER_ID: Int = 0xFFFF
     val MAGIC_BYTES: ByteArray = byteArrayOf(0x41, 0x52)
 
-    const val PROTOCOL_MAJOR: Byte = 1
+    const val PROTOCOL_MAJOR: Byte = 2
     const val PROTOCOL_MINOR: Byte = 0
 
     /** Hard ceiling on the whole signed envelope (profile + credential + signature). */
-    const val MAX_PROFILE_BYTES: Int = 1024
-    const val AVATAR_BLOCK_BYTES: Int = 32
+    const val MAX_PROFILE_BYTES: Int = 1536
+
+    /**
+     * Sanity cap on the doodle raster field (514 bytes for a 32px canvas).
+     */
+    const val MAX_AVATAR_RASTER_BYTES: Int = 600
     const val MAX_TEXT_BYTES: Int = 384
 
     const val MAX_USERNAME_BYTES: Int = 32
@@ -46,7 +50,8 @@ object QuayPassConfig {
 
     /**
      * Profile body after the length prefix:
-     * protocol_major(u8) | protocol_minor(u8) | nonce(16) | timestamp(i64 BE) | avatar(AVATAR_BLOCK_BYTES)
+     * protocol_major(u8) | protocol_minor(u8) | nonce(16) | timestamp(i64 BE) |
+     * avatar_len(u16 BE) | avatar_raster(avatar_len) | text_len(u16 BE) | text
      */
     const val NONCE_BYTES: Int = 16
     const val TIMESTAMP_BYTES: Int = 8

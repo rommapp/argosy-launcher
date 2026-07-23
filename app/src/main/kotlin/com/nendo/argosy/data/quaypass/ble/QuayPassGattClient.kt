@@ -12,6 +12,8 @@ import android.util.Log
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withTimeoutOrNull
+import java.io.ByteArrayOutputStream
+import java.nio.ByteBuffer
 import kotlin.coroutines.resume
 
 class QuayPassGattClient(private val application: Application) {
@@ -37,6 +39,7 @@ class QuayPassGattClient(private val application: Application) {
                         connectionChannel.trySend(false)
                         mtuChannel.trySend(0)
                         readChannel.trySend(null)
+                        writeChannel.trySend(false)
                     }
                 }
             }
@@ -88,7 +91,7 @@ class QuayPassGattClient(private val application: Application) {
             if (!connectionChannel.receive()) return@withTimeoutOrNull null
 
             gatt.requestMtu(MTU_REQUEST)
-            mtuChannel.receive()
+            val negotiatedMtu = mtuChannel.receive().takeIf { it > 0 } ?: DEFAULT_MTU
 
             gatt.discoverServices()
             if (!servicesChannel.receive()) return@withTimeoutOrNull null
@@ -99,24 +102,35 @@ class QuayPassGattClient(private val application: Application) {
             val writeChar = service.getCharacteristic(QuayPassConfig.CHARACTERISTIC_WRITE_UUID)
                 ?: return@withTimeoutOrNull null
 
-            val writeOk = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                gatt.writeCharacteristic(
-                    writeChar,
-                    ourProfileBytes,
-                    BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT
-                ) == BluetoothGatt.GATT_SUCCESS
-            } else {
-                @Suppress("DEPRECATION")
-                run {
-                    writeChar.value = ourProfileBytes
-                    writeChar.writeType = BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT
-                    gatt.writeCharacteristic(writeChar)
-                }
-            }
-            if (!writeOk || !writeChannel.receive()) return@withTimeoutOrNull null
+            val chunkSize = (negotiatedMtu - ATT_WRITE_OVERHEAD_BYTES).coerceAtLeast(MIN_CHUNK_BYTES)
+            val stream = ByteBuffer.allocate(2 + ourProfileBytes.size).apply {
+                putShort(ourProfileBytes.size.toShort())
+                put(ourProfileBytes)
+            }.array()
 
-            gatt.readCharacteristic(readChar)
-            readChannel.receive()
+            var offset = 0
+            while (offset < stream.size) {
+                val end = minOf(offset + chunkSize, stream.size)
+                val chunk = stream.copyOfRange(offset, end)
+                val writeOk = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    gatt.writeCharacteristic(
+                        writeChar,
+                        chunk,
+                        BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT
+                    ) == BluetoothGatt.GATT_SUCCESS
+                } else {
+                    @Suppress("DEPRECATION")
+                    run {
+                        writeChar.value = chunk
+                        writeChar.writeType = BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT
+                        gatt.writeCharacteristic(writeChar)
+                    }
+                }
+                if (!writeOk || !writeChannel.receive()) return@withTimeoutOrNull null
+                offset = end
+            }
+
+            readAssembledProfile(gatt, readChar, readChannel)
         } catch (t: Throwable) {
             Log.w(TAG, "Exchange failed", t)
             null
@@ -129,8 +143,36 @@ class QuayPassGattClient(private val application: Application) {
         }
     }
 
+    @SuppressLint("MissingPermission")
+    private suspend fun readAssembledProfile(
+        gatt: BluetoothGatt,
+        readChar: BluetoothGattCharacteristic,
+        readChannel: Channel<ByteArray?>
+    ): ByteArray? {
+        val assembled = ByteArrayOutputStream()
+        var expectedLen = -1
+        while (true) {
+            if (!gatt.readCharacteristic(readChar)) return null
+            val chunk = readChannel.receive() ?: return null
+            if (chunk.isEmpty()) return null
+            assembled.write(chunk)
+            val bytes = assembled.toByteArray()
+            if (expectedLen < 0 && bytes.size >= 2) {
+                expectedLen = ((bytes[0].toInt() and 0xFF) shl 8) or (bytes[1].toInt() and 0xFF)
+                if (expectedLen <= 0 || expectedLen > QuayPassConfig.MAX_PROFILE_BYTES) return null
+            }
+            if (expectedLen >= 0 && bytes.size - 2 >= expectedLen) {
+                return bytes.copyOfRange(2, 2 + expectedLen)
+            }
+            if (bytes.size > QuayPassConfig.MAX_PROFILE_BYTES + 2) return null
+        }
+    }
+
     companion object {
         private const val TAG = "QuayPassGattClient"
         private const val MTU_REQUEST = 512
+        private const val DEFAULT_MTU = 23
+        private const val ATT_WRITE_OVERHEAD_BYTES = 3
+        private const val MIN_CHUNK_BYTES = 20
     }
 }

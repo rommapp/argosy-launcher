@@ -196,11 +196,7 @@ class UserPreferencesRepository @Inject constructor(
             lastPlaySessionSync = sync.lastPlaySessionSync,
             lastStateValidation = sync.lastStateValidation,
             quayPassEnabled = sync.quayPassEnabled,
-            quayPassAvatarBytes = sync.quayPassAvatarBytes,
-            quayPassAvatarConfigured = sync.quayPassAvatarConfigured,
-            quayPassAvatarUpdatedAt = sync.quayPassAvatarUpdatedAt,
             quayPassAvatarSyncPending = sync.quayPassAvatarSyncPending,
-            quayPassAnnouncementSeen = sync.quayPassAnnouncementSeen,
             quayPassGreeting = sync.quayPassGreeting,
             quayPassTicketBalance = sync.quayPassTicketBalance
         )
@@ -345,11 +341,7 @@ class UserPreferencesRepository @Inject constructor(
     suspend fun setDiscordRichPresenceEnabled(enabled: Boolean) = syncPrefs.setDiscordRichPresenceEnabled(enabled)
     suspend fun setLastPlaySessionSyncTime(time: Instant) = syncPrefs.setLastPlaySessionSyncTime(time)
     suspend fun setQuayPassEnabled(enabled: Boolean) = syncPrefs.setQuayPassEnabled(enabled)
-    suspend fun setQuayPassAvatar(bytesBase64: String, updatedAt: Instant = Instant.now()) =
-        syncPrefs.setQuayPassAvatar(bytesBase64, updatedAt)
-    suspend fun clearQuayPassAvatar() = syncPrefs.clearQuayPassAvatar()
     suspend fun setQuayPassAvatarSyncPending(pending: Boolean) = syncPrefs.setQuayPassAvatarSyncPending(pending)
-    suspend fun setQuayPassAnnouncementSeen(seen: Boolean) = syncPrefs.setQuayPassAnnouncementSeen(seen)
     suspend fun setQuayPassGreeting(greeting: String) = syncPrefs.setQuayPassGreeting(greeting)
     suspend fun setQuayPassTicketBalance(balance: Int) = syncPrefs.setQuayPassTicketBalance(balance)
 
@@ -734,11 +726,7 @@ data class UserPreferences(
     val lastIntegrityCheckTime: Long? = null,
     val steamInstallVolume: String? = null,
     val quayPassEnabled: Boolean = false,
-    val quayPassAvatarBytes: String? = null,
-    val quayPassAvatarConfigured: Boolean = false,
-    val quayPassAvatarUpdatedAt: Instant? = null,
     val quayPassAvatarSyncPending: Boolean = false,
-    val quayPassAnnouncementSeen: Boolean = false,
     val quayPassGreeting: String? = null,
     val quayPassTicketBalance: Int = 0
 ) {

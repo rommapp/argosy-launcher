@@ -79,7 +79,9 @@ class QuayPassExchangeOrchestrator @Inject constructor(
             username = profile.username,
             displayName = profile.displayName,
             avatarColor = null,
-            avatarBlobBase64 = Base64.encodeToString(profile.avatarBytes, Base64.NO_WRAP),
+            avatarBlobBase64 = profile.avatarBytes
+                .takeIf { it.isNotEmpty() }
+                ?.let { Base64.encodeToString(it, Base64.NO_WRAP) },
             greeting = profile.greeting,
             lastGameTitle = profile.lastGameTitle,
             lastGamePlatform = profile.lastGamePlatform,

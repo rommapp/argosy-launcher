@@ -4,13 +4,17 @@ import com.nendo.argosy.data.quaypass.QuayPassCredentialBundle
 import com.nendo.argosy.data.quaypass.ble.DecodeResult
 import com.nendo.argosy.data.quaypass.ble.OutboundProfile
 import com.nendo.argosy.data.quaypass.ble.QuayPassConfig
+import com.nendo.argosy.data.quaypass.ble.QuayPassDoodleCodec
+import com.nendo.argosy.data.quaypass.ble.QuayPassDoodleRaster
 import com.nendo.argosy.data.quaypass.ble.QuayPassWireFormat
-import com.nendo.argosy.data.quaypass.ble.colorOnlyAvatar
+import com.upokecenter.cbor.CBORObject
 import org.junit.After
+import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import java.nio.ByteBuffer
 import java.time.Instant
 import java.util.Base64
 
@@ -29,7 +33,7 @@ class QuayPassWireFormatTest {
         lastGamePlatform = "snes",
         lastGamePlaytimeMinutes = 123,
         lastGameIgdbId = 4567L,
-        avatar = colorOnlyAvatar(3)
+        avatarRaster = ByteArray(0)
     )
 
     @Before
@@ -64,6 +68,74 @@ class QuayPassWireFormatTest {
         assertEquals("Chrono Trigger", p.lastGameTitle)
         assertEquals(123, p.lastGamePlaytimeMinutes)
         assertEquals(4567L, p.lastGameIgdbId)
+        assertEquals(0, p.avatarBytes.size)
+    }
+
+    @Test
+    fun `round trips a 16px doodle raster`() {
+        val raster = QuayPassDoodleCodec.encode(
+            QuayPassDoodleRaster(16, IntArray(256) { it % 16 })
+        )
+        assertEquals(130, raster.size)
+        val bytes = QuayPassWireFormat.encode(
+            profile.copy(avatarRaster = raster), credB64(server)
+        ) { device.sign(it) }
+        val result = QuayPassWireFormat.decode(bytes)
+        assertTrue(result is DecodeResult.Success)
+        assertArrayEquals(raster, (result as DecodeResult.Success).profile.avatarBytes)
+    }
+
+    @Test
+    fun `round trips a 32px doodle raster`() {
+        val raster = QuayPassDoodleCodec.encode(
+            QuayPassDoodleRaster(32, IntArray(1024) { (it * 7) % 16 })
+        )
+        assertEquals(514, raster.size)
+        val bytes = QuayPassWireFormat.encode(
+            profile.copy(avatarRaster = raster), credB64(server)
+        ) { device.sign(it) }
+        val result = QuayPassWireFormat.decode(bytes)
+        assertTrue(result is DecodeResult.Success)
+        assertArrayEquals(raster, (result as DecodeResult.Success).profile.avatarBytes)
+    }
+
+    @Test
+    fun `avatar length overrunning the body is rejected`() {
+        assertEquals(
+            DecodeResult.Reason.TRUNCATED,
+            reasonOf(QuayPassWireFormat.decode(forgedAvatarLenBytes(avatarLen = 300)))
+        )
+    }
+
+    @Test
+    fun `avatar length above the sanity cap is rejected`() {
+        assertEquals(
+            DecodeResult.Reason.BAD_LENGTHS,
+            reasonOf(QuayPassWireFormat.decode(forgedAvatarLenBytes(avatarLen = 1000)))
+        )
+    }
+
+    private fun forgedAvatarLenBytes(avatarLen: Int): ByteArray {
+        val textBytes = CBORObject.NewMap().apply { Add("u", "traveler") }.EncodeToBytes()
+        val profileBody = ByteBuffer.allocate(
+            1 + 1 + QuayPassConfig.NONCE_BYTES + QuayPassConfig.TIMESTAMP_BYTES + 2 + 2 + textBytes.size
+        ).apply {
+            put(QuayPassConfig.PROTOCOL_MAJOR)
+            put(QuayPassConfig.PROTOCOL_MINOR)
+            put(ByteArray(QuayPassConfig.NONCE_BYTES))
+            putLong(Instant.now().epochSecond)
+            putShort(avatarLen.toShort())
+            putShort(textBytes.size.toShort())
+            put(textBytes)
+        }.array()
+        val credentialBytes = Base64.getDecoder().decode(credB64(server))
+        val signedInput = ByteBuffer.allocate(2 + profileBody.size + 2 + credentialBytes.size).apply {
+            putShort(profileBody.size.toShort())
+            put(profileBody)
+            putShort(credentialBytes.size.toShort())
+            put(credentialBytes)
+        }.array()
+        return signedInput + device.sign(signedInput)
     }
 
     @Test

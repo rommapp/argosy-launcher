@@ -100,8 +100,8 @@ class QuayPassTestHarness : BroadcastReceiver() {
                     username?.let { prefs[stringPreferencesKey("social_username")] = it }
                     sessionToken?.let { prefs[stringPreferencesKey("social_session_token")] = it }
                     avatar?.let {
-                        prefs[stringPreferencesKey("quaypass_avatar_bytes")] = it
-                        prefs[booleanPreferencesKey("quaypass_avatar_configured")] = true
+                        prefs[stringPreferencesKey("social_avatar_doodle")] = it
+                        prefs[booleanPreferencesKey("social_avatar_use_doodle")] = true
                     }
                     if (enable) prefs[booleanPreferencesKey("quaypass_enabled")] = true
                 }
@@ -126,8 +126,8 @@ class QuayPassTestHarness : BroadcastReceiver() {
             "quaypass_client_install_id",
             "quaypass_credential_expires_at",
             "quaypass_enabled",
-            "quaypass_avatar_configured",
-            "quaypass_avatar_bytes",
+            "social_avatar_doodle",
+            "social_avatar_use_doodle",
             "social_username"
         )
     }

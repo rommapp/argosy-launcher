@@ -58,7 +58,7 @@ class QuayPassCheckInViewModel @Inject constructor(
             .map { it.quayPassTicketBalance }
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 0)
 
-    val isServiceRunning: StateFlow<Boolean> = service.isRunning
+    val serviceState: StateFlow<QuayPassService.QuayPassRunState> = service.runState
 
     private val trackedArrivals = mutableSetOf<String>()
     private var arrivalJob: Job? = null

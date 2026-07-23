@@ -40,6 +40,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import com.nendo.argosy.data.local.entity.QuayPassEncounterEntity
+import com.nendo.argosy.data.quaypass.QuayPassService
 import com.nendo.argosy.data.quaypass.ble.QuayPassDoodleCodec
 import com.nendo.argosy.ui.components.FocusedScroll
 import com.nendo.argosy.ui.components.FooterBar
@@ -66,7 +67,8 @@ fun QuayPassCheckInScreen(
     viewModel: QuayPassCheckInViewModel = hiltViewModel()
 ) {
     val encounters by viewModel.encounters.collectAsState()
-    val running by viewModel.isServiceRunning.collectAsState()
+    val serviceState by viewModel.serviceState.collectAsState()
+    val running = serviceState == QuayPassService.QuayPassRunState.RUNNING
     val ticketBalance by viewModel.ticketBalance.collectAsState()
     val uiState by viewModel.uiState.collectAsState()
     val listState = rememberLazyListState()
@@ -126,7 +128,15 @@ fun QuayPassCheckInScreen(
                     TicketBalanceChip(ticketBalance)
                 }
                 Text(
-                    text = if (running) "Listening for nearby travelers..." else "QuayPass is offline",
+                    text = when (serviceState) {
+                        QuayPassService.QuayPassRunState.RUNNING -> "Listening for nearby travelers..."
+                        QuayPassService.QuayPassRunState.DISABLED -> "QuayPass is off"
+                        QuayPassService.QuayPassRunState.NOT_LINKED -> "Link your Argosy account to check in"
+                        QuayPassService.QuayPassRunState.AWAITING_REGISTRATION -> "Registering with the server..."
+                        QuayPassService.QuayPassRunState.BLUETOOTH_OFF -> "Turn on Bluetooth to check in"
+                        QuayPassService.QuayPassRunState.PERMISSIONS_MISSING -> "Bluetooth permission needed"
+                        QuayPassService.QuayPassRunState.BLE_UNSUPPORTED -> "This device can't exchange nearby"
+                    },
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
                 )

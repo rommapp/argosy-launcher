@@ -59,8 +59,10 @@ class QuayPassService @Inject constructor(
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val exchangeMutex = Mutex()
 
-    private val _isRunning = MutableStateFlow(false)
-    val isRunning: StateFlow<Boolean> = _isRunning.asStateFlow()
+    private val _runState = MutableStateFlow(QuayPassRunState.DISABLED)
+    val runState: StateFlow<QuayPassRunState> = _runState.asStateFlow()
+
+    private val isRunningNow: Boolean get() = _runState.value == QuayPassRunState.RUNNING
 
     private val bluetoothManager: BluetoothManager? by lazy {
         application.getSystemService(Context.BLUETOOTH_SERVICE) as? BluetoothManager
@@ -82,9 +84,9 @@ class QuayPassService @Inject constructor(
             val state = intent.getIntExtra(BluetoothAdapter.EXTRA_STATE, BluetoothAdapter.ERROR)
             when (state) {
                 BluetoothAdapter.STATE_ON ->
-                    if (shouldBeRunning && !_isRunning.value) scope.launch { tryStart() }
+                    if (shouldBeRunning && !isRunningNow) scope.launch { tryStart() }
                 BluetoothAdapter.STATE_OFF ->
-                    if (_isRunning.value) scope.launch { stop() }
+                    if (isRunningNow) scope.launch { stop(QuayPassRunState.BLUETOOTH_OFF) }
             }
         }
     }
@@ -101,9 +103,19 @@ class QuayPassService @Inject constructor(
                     val isLinked = trigger.sessionToken != null
                     credentialManager.onSocialLinkChanged(isLinked, trigger.sessionToken)
                     shouldBeRunning = isLinked && trigger.quayPassEnabled
-                    if (shouldBeRunning && !_isRunning.value) tryStart()
-                    else if (!shouldBeRunning && _isRunning.value) stop()
+                    val idleState = if (isLinked) QuayPassRunState.DISABLED else QuayPassRunState.NOT_LINKED
+                    if (shouldBeRunning && !isRunningNow) {
+                        tryStart()
+                    } else if (!shouldBeRunning) {
+                        if (isRunningNow) stop(idleState) else _runState.value = idleState
+                    }
                 }
+        }
+
+        scope.launch {
+            credentialManager.isRegisteredFlow.collect { registered ->
+                if (registered && shouldBeRunning && !isRunningNow) tryStart()
+            }
         }
 
         scope.launch {
@@ -118,7 +130,7 @@ class QuayPassService @Inject constructor(
                 }
                 .distinctUntilChanged()
                 .collect {
-                    if (_isRunning.value) refreshOurBytes()
+                    if (isRunningNow) refreshOurBytes()
                 }
         }
 
@@ -137,6 +149,16 @@ class QuayPassService @Inject constructor(
         val sessionToken: String?,
         val quayPassEnabled: Boolean
     )
+
+    enum class QuayPassRunState {
+        RUNNING,
+        DISABLED,
+        NOT_LINKED,
+        BLE_UNSUPPORTED,
+        BLUETOOTH_OFF,
+        PERMISSIONS_MISSING,
+        AWAITING_REGISTRATION
+    }
 
     private data class ProfileSnapshot(
         val socialUsername: String?,
@@ -161,12 +183,16 @@ class QuayPassService @Inject constructor(
     }
 
     private suspend fun tryStart() {
-        if (!isBleSupported() || !isBleEnabled() || !hasPermissions()) {
-            Log.w(TAG, "Cannot start QuayPass: ble=${isBleEnabled()} supported=${isBleSupported()} permissions=${hasPermissions()}")
-            return
+        val blockedState = when {
+            !isBleSupported() -> QuayPassRunState.BLE_UNSUPPORTED
+            !isBleEnabled() -> QuayPassRunState.BLUETOOTH_OFF
+            !hasPermissions() -> QuayPassRunState.PERMISSIONS_MISSING
+            !credentialManager.isRegistered() -> QuayPassRunState.AWAITING_REGISTRATION
+            else -> null
         }
-        if (!credentialManager.isRegistered()) {
-            Log.d(TAG, "Skipping start: install not yet registered")
+        if (blockedState != null) {
+            Log.w(TAG, "Cannot start QuayPass: $blockedState")
+            _runState.value = blockedState
             return
         }
 
@@ -194,7 +220,7 @@ class QuayPassService @Inject constructor(
         scope.launch { refreshOurBytes() }
         startReEncodeLoop()
 
-        _isRunning.value = true
+        _runState.value = QuayPassRunState.RUNNING
         Log.i(TAG, "QuayPass service started")
     }
 
@@ -203,12 +229,12 @@ class QuayPassService @Inject constructor(
         reEncodeJob = scope.launch {
             while (isActive) {
                 delay(RE_ENCODE_INTERVAL_MS)
-                if (_isRunning.value) refreshOurBytes()
+                if (isRunningNow) refreshOurBytes()
             }
         }
     }
 
-    private suspend fun stop() {
+    private suspend fun stop(resultState: QuayPassRunState) {
         reEncodeJob?.cancel()
         reEncodeJob = null
         advertiser?.stop()
@@ -220,13 +246,13 @@ class QuayPassService @Inject constructor(
         gattServer = null
         gattClient = null
         cachedOurBytes.set(null)
-        _isRunning.value = false
-        Log.i(TAG, "QuayPass service stopped")
+        _runState.value = resultState
+        Log.i(TAG, "QuayPass service stopped: $resultState")
     }
 
     private suspend fun onDiscovered(device: BluetoothDevice) {
         exchangeMutex.withLock {
-            if (!_isRunning.value) return
+            if (!isRunningNow) return
             val client = gattClient ?: return
             val ourBytes = cachedOurBytes.get() ?: refreshOurBytes() ?: return
             orchestrator.handleClient(device, client, ourBytes)

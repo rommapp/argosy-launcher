@@ -141,8 +141,10 @@ import com.nendo.argosy.ui.input.LocalModifiedInputHandler
 import com.nendo.argosy.domain.model.SyncProgress
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
+import com.nendo.argosy.ui.theme.AspectRatioClass
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalBoxArtStyle
+import com.nendo.argosy.ui.theme.LocalUiScale
 import com.nendo.argosy.ui.theme.LocalLauncherTheme
 import com.nendo.argosy.ui.theme.Motion
 import com.nendo.argosy.ui.theme.generated.ColorTokens
@@ -619,12 +621,9 @@ fun HomeScreen(
                 )
             }
 
-        val configuration = LocalConfiguration.current
-        val screenWidth = configuration.screenWidthDp.dp
-        val boxArtStyle = LocalBoxArtStyle.current
-        val carouselScale = 0.9f
-        val cardWidth = screenWidth * 0.16f * carouselScale
-        val cardHeight = cardWidth / boxArtStyle.aspectRatio
+        val cardSize = rememberCarouselCardSize()
+        val cardWidth = cardSize.width
+        val cardHeight = cardSize.height
         val focusScale = 1.8f
         val railHeight = cardHeight * focusScale + 16.dp
 
@@ -646,6 +645,7 @@ fun HomeScreen(
                     .align(Alignment.BottomCenter)
                     .fillMaxWidth()
                     .offset(x = videoModeRailOffsetX, y = videoModeFooterOffset)
+                    .padding(bottom = Dimens.spacingLg)
             ) {
                 Box(
                     modifier = Modifier
@@ -1232,6 +1232,28 @@ private fun GameInfo(
     }
 }
 
+/**
+ * Carousel card size. Wide screens stay width-driven (unchanged); square and
+ * taller screens (1:1, 4:3) size off the larger vertical dimension so the
+ * boxart does not shrink into the ample space those aspect ratios leave.
+ */
+@Composable
+private fun rememberCarouselCardSize(): DpSize {
+    val configuration = LocalConfiguration.current
+    val screenWidth = configuration.screenWidthDp.dp
+    val screenHeight = configuration.screenHeightDp.dp
+    val aspect = LocalBoxArtStyle.current.aspectRatio
+    val aspectClass = LocalUiScale.current.aspectRatioClass
+    val carouselScale = 0.9f
+    val isWide = aspectClass == AspectRatioClass.ULTRA_WIDE || aspectClass == AspectRatioClass.WIDE
+    val cardHeight = if (isWide) {
+        (screenWidth * 0.16f * carouselScale) / aspect
+    } else {
+        minOf(screenHeight * 0.36f, screenWidth * 0.32f) * carouselScale
+    }
+    return DpSize(cardHeight * aspect, cardHeight)
+}
+
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun GameRail(
@@ -1253,9 +1275,9 @@ private fun GameRail(
     val screenWidth = configuration.screenWidthDp.dp
     val boxArtStyle = LocalBoxArtStyle.current
 
-    val carouselScale = 0.9f
-    val cardWidth = screenWidth * 0.16f * carouselScale
-    val cardHeight = cardWidth / boxArtStyle.aspectRatio
+    val cardSize = rememberCarouselCardSize()
+    val cardWidth = cardSize.width
+    val cardHeight = cardSize.height
     val focusScale = 1.8f
     val railHeight = cardHeight * focusScale + 16.dp
 

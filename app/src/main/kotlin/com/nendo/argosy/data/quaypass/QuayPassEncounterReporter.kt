@@ -7,7 +7,10 @@ import com.nendo.argosy.data.social.ArgosSocialService
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import java.time.Duration
+import java.time.Instant
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -37,7 +40,15 @@ class QuayPassEncounterReporter @Inject constructor(
     }
 
     private suspend fun flushUnreported() {
-        encounterDao.unreported().forEach { report(it) }
+        val cutoff = Instant.now().minus(MAX_REPORT_AGE)
+        encounterDao.unreported().forEach { encounter ->
+            if (encounter.encounteredAt.isBefore(cutoff)) {
+                encounterDao.markReported(encounter.credentialFingerprint)
+            } else {
+                report(encounter)
+                delay(FLUSH_SPACING_MS)
+            }
+        }
     }
 
     private fun report(encounter: QuayPassEncounterEntity) {
@@ -50,5 +61,10 @@ class QuayPassEncounterReporter @Inject constructor(
         if (sent) {
             scope.launch { encounterDao.markReported(encounter.credentialFingerprint) }
         }
+    }
+
+    companion object {
+        private val MAX_REPORT_AGE: Duration = Duration.ofDays(30)
+        private const val FLUSH_SPACING_MS = 300L
     }
 }

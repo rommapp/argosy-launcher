@@ -4,10 +4,16 @@ import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 import retrofit2.Response
 import retrofit2.http.Body
+import retrofit2.http.GET
 import retrofit2.http.Header
 import retrofit2.http.POST
 
 interface QuayPassApi {
+
+    @GET("api/v1/clients/register/challenge")
+    suspend fun getRegisterChallenge(
+        @Header("Authorization") bearer: String
+    ): Response<RegisterChallengeResponse>
 
     @POST("api/v1/clients/register")
     suspend fun registerClient(
@@ -29,12 +35,21 @@ interface QuayPassApi {
 }
 
 @JsonClass(generateAdapter = true)
+data class RegisterChallengeResponse(
+    @Json(name = "challenge") val challenge: String,
+    @Json(name = "expires_at") val expiresAtEpochSecs: Long
+)
+
+@JsonClass(generateAdapter = true)
 data class RegisterClientRequest(
     @Json(name = "public_key") val publicKey: String,
     @Json(name = "public_key_alg") val publicKeyAlg: String,
     @Json(name = "apk_signing_cert_hash") val apkSigningCertHash: String,
     @Json(name = "fingerprint_hash") val fingerprintHash: String,
-    @Json(name = "device_token") val deviceToken: String
+    @Json(name = "device_token") val deviceToken: String,
+    @Json(name = "device_id") val deviceId: String,
+    @Json(name = "challenge") val challenge: String,
+    @Json(name = "challenge_signature") val challengeSignature: String
 )
 
 @JsonClass(generateAdapter = true)

@@ -64,6 +64,24 @@ class QuayPassKeystore @Inject constructor(
         }
     }
 
+    /**
+     * Signs for server-side verification via a standard SPKI/PKIX decoder:
+     * Ed25519 returns the raw 64-byte signature, EC P-256 returns ASN.1 DER
+     * (no P1363 conversion). Used for the registration possession proof.
+     */
+    fun signServerVerifiable(data: ByteArray): ByteArray {
+        val privateKey = getPrivateKey()
+        val info = getOrCreateKeyInfo()
+        val sigAlg = when (info.algorithm) {
+            Algorithm.ED25519 -> "Ed25519"
+            Algorithm.EC_P256 -> "SHA256withECDSA"
+        }
+        val signer = Signature.getInstance(sigAlg)
+        signer.initSign(privateKey)
+        signer.update(data)
+        return signer.sign()
+    }
+
     @Synchronized
     fun clear() {
         try {

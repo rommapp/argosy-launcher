@@ -139,6 +139,26 @@ class QuayPassCredentialManager @Inject constructor(
             return null
         }
 
+        val challenge = try {
+            val resp = api.getRegisterChallenge(bearerHeader(sessionToken))
+            if (!resp.isSuccessful) {
+                Log.w(TAG, "Challenge request failed: HTTP ${resp.code()}")
+                return null
+            }
+            resp.body()?.challenge
+        } catch (t: Throwable) {
+            Log.w(TAG, "Challenge request error", t)
+            null
+        } ?: return null
+
+        val challengeSignature = try {
+            val sig = keystore.signServerVerifiable(challenge.toByteArray(Charsets.UTF_8))
+            Base64.encodeToString(sig, Base64.NO_WRAP)
+        } catch (t: Throwable) {
+            Log.e(TAG, "Failed to sign registration challenge", t)
+            return null
+        }
+
         val req = RegisterClientRequest(
             publicKey = Base64.encodeToString(keyInfo.publicKeyEncoded, Base64.NO_WRAP),
             publicKeyAlg = when (keyInfo.algorithm) {
@@ -147,7 +167,10 @@ class QuayPassCredentialManager @Inject constructor(
             },
             apkSigningCertHash = fingerprint.apkSigningCertHash,
             fingerprintHash = fingerprint.fingerprintHash,
-            deviceToken = fingerprint.deviceToken
+            deviceToken = fingerprint.deviceToken,
+            deviceId = fingerprint.deviceToken,
+            challenge = challenge,
+            challengeSignature = challengeSignature
         )
 
         return try {
@@ -164,7 +187,8 @@ class QuayPassCredentialManager @Inject constructor(
                     null
                 }
             } else {
-                Log.w(TAG, "Register failed: HTTP ${resp.code()}")
+                val detail = runCatching { resp.errorBody()?.string() }.getOrNull().orEmpty()
+                Log.w(TAG, "Register failed: HTTP ${resp.code()} $detail")
                 null
             }
         } catch (t: Throwable) {

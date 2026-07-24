@@ -7,11 +7,13 @@ import com.nendo.argosy.data.local.dao.QuayPassDailyStatsDao
 import com.nendo.argosy.data.local.dao.QuayPassEncounterDao
 import com.nendo.argosy.data.local.entity.QuayPassDailyStatsEntity
 import com.nendo.argosy.data.local.entity.QuayPassEncounterEntity
+import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.quaypass.QuayPassCredentialManager
 import com.nendo.argosy.data.quaypass.QuayPassKeystore
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.first
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -25,7 +27,8 @@ class QuayPassExchangeOrchestrator @Inject constructor(
     private val nonceStore: QuayPassNonceStore,
     private val cooldownStore: QuayPassCooldownStore,
     private val encounterDao: QuayPassEncounterDao,
-    private val dailyStatsDao: QuayPassDailyStatsDao
+    private val dailyStatsDao: QuayPassDailyStatsDao,
+    private val userPreferencesRepository: UserPreferencesRepository
 ) {
 
     private val _newEncounters = MutableSharedFlow<QuayPassEncounterEntity>(extraBufferCapacity = 16)
@@ -64,6 +67,14 @@ class QuayPassExchangeOrchestrator @Inject constructor(
     }
 
     suspend fun record(profile: InboundProfile, now: Instant = Instant.now()): Boolean {
+        val ourAccountId = userPreferencesRepository.userPreferences.first().socialUserId
+        if (ourAccountId != null &&
+            profile.credentialBundle.accountId.toString().equals(ourAccountId, ignoreCase = true)
+        ) {
+            Log.v(TAG, "Skipping self encounter (same account across two devices)")
+            return false
+        }
+
         val nowSecs = now.epochSecond
 
         if (cooldownStore.isWithinCooldown(profile.credentialFingerprint, nowSecs)) {

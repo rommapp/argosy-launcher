@@ -871,7 +871,7 @@ object EmulatorRegistry {
             launchAction = "aenu.intent.action.AX360E",
             launchConfig = LaunchConfig.Custom(
                 activityClass = "aenu.ax360e.EmulatorActivity",
-                intentExtras = mapOf("game_uri" to ExtraValue.FileUri)
+                intentExtras = mapOf("game_uri" to ExtraValue.FileUriString)
             ),
             downloadUrl = "https://play.google.com/store/apps/details?id=aenu.ax360e"
         ),
@@ -883,7 +883,7 @@ object EmulatorRegistry {
             launchAction = "aenu.intent.action.AX360E",
             launchConfig = LaunchConfig.Custom(
                 activityClass = "aenu.ax360e.EmulatorActivity",
-                intentExtras = mapOf("game_uri" to ExtraValue.FileUri)
+                intentExtras = mapOf("game_uri" to ExtraValue.FileUriString)
             ),
             downloadUrl = "https://play.google.com/store/apps/details?id=aenu.ax360e.free"
         ),
@@ -896,7 +896,7 @@ object EmulatorRegistry {
             launchAction = "aenu.intent.action.APS3E",
             launchConfig = LaunchConfig.Custom(
                 activityClass = "aenu.aps3e.EmulatorActivity",
-                intentExtras = mapOf("iso_uri" to ExtraValue.FileUri)
+                intentExtras = mapOf("iso_uri" to ExtraValue.FileUriString)
             ),
             downloadUrl = "https://play.google.com/store/apps/details?id=aenu.aps3e"
         ),
@@ -1651,7 +1651,7 @@ object EmulatorRegistry {
             launchAction = "aenu.intent.action.AX360E",
             launchConfig = LaunchConfig.Custom(
                 activityClass = "aenu.ax360e.EmulatorActivity",
-                intentExtras = mapOf("game_uri" to ExtraValue.FileUri)
+                intentExtras = mapOf("game_uri" to ExtraValue.FileUriString)
             )
         ),
         EmulatorFamily(

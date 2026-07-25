@@ -205,6 +205,7 @@ class QuayPassService @Inject constructor(
         gattClient = QuayPassGattClient(application)
         gattServer = QuayPassGattServer(
             application = application,
+            scope = scope,
             getOurProfileBytes = { cachedOurBytes.get() },
             onPeerProfileWritten = { bytes ->
                 when (val result = QuayPassWireFormat.decode(bytes)) {

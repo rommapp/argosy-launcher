@@ -45,6 +45,16 @@ object QuayPassConfig {
     const val MAX_CONCURRENT_CONNECTIONS: Int = 4
     const val PER_PEER_WRITE_RATE_LIMIT_SECS: Long = 60
 
+    /**
+     * Hard ceiling on a single pass. A passing encounter transfers in well under
+     * a second at a negotiated MTU; this bounds the failure case so a stalled peer
+     * is dropped rather than lingering. Applies to the client exchange as a whole
+     * and to the server-side per-connection watchdog.
+     */
+    const val EXCHANGE_TIMEOUT_MS: Long = 6_000
+    const val CONNECT_TIMEOUT_MS: Long = 3_000
+    const val GATT_STAGE_TIMEOUT_MS: Long = 2_000
+
     const val LENGTH_PREFIX_BYTES: Int = 2
     const val SIGNATURE_BYTES: Int = 64
 

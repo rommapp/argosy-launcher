@@ -77,13 +77,12 @@ class QuayPassExchangeOrchestrator @Inject constructor(
 
         val nowSecs = now.epochSecond
 
-        if (cooldownStore.isWithinCooldown(profile.credentialFingerprint, nowSecs)) {
+        if (!cooldownStore.claim(profile.credentialFingerprint, nowSecs)) {
             return false
         }
         if (!nonceStore.acceptOrReject(profile.credentialFingerprint, profile.nonce, nowSecs)) {
             return false
         }
-        cooldownStore.mark(profile.credentialFingerprint, nowSecs)
 
         val entity = QuayPassEncounterEntity(
             credentialFingerprint = profile.credentialFingerprint,

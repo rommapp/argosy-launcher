@@ -27,6 +27,21 @@ class QuayPassCooldownStore @Inject constructor() {
         }
     }
 
+    /**
+     * Atomic check-and-mark: marks and returns true when the peer is outside the
+     * cooldown window, returns false when a prior or concurrent pass already
+     * claimed it. Collapsing the two steps dedupes a mutual pass, where both the
+     * client read and the server write record the same peer at once.
+     */
+    fun claim(credentialFingerprint: String, nowSecs: Long): Boolean {
+        synchronized(lock) {
+            val last = recent[credentialFingerprint]
+            if (last != null && nowSecs - last < QuayPassConfig.EXCHANGE_COOLDOWN_SECS) return false
+            recent[credentialFingerprint] = nowSecs
+            return true
+        }
+    }
+
     fun clear() {
         synchronized(lock) { recent.clear() }
     }

@@ -12,10 +12,15 @@ import android.bluetooth.BluetoothManager
 import android.bluetooth.BluetoothProfile
 import android.content.Context
 import android.util.Log
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import java.util.concurrent.ConcurrentHashMap
 
 class QuayPassGattServer(
     private val application: Application,
+    private val scope: CoroutineScope,
     private val getOurProfileBytes: () -> ByteArray?,
     private val onPeerProfileWritten: (ByteArray) -> Boolean
 ) {
@@ -33,6 +38,7 @@ class QuayPassGattServer(
     private val readCursors = ConcurrentHashMap<String, Int>()
     private val readWindowStarts = ConcurrentHashMap<String, Int>()
     private val verifiedReaders = ConcurrentHashMap.newKeySet<String>()
+    private val watchdogs = ConcurrentHashMap<String, Job>()
 
     @SuppressLint("MissingPermission")
     fun start() {
@@ -68,6 +74,8 @@ class QuayPassGattServer(
     fun stop() {
         gattServer?.close()
         gattServer = null
+        watchdogs.values.forEach { it.cancel() }
+        watchdogs.clear()
         connectedDevices.clear()
         recentWritesByPeer.clear()
         pendingWriteBuffers.clear()
@@ -77,6 +85,29 @@ class QuayPassGattServer(
         readWindowStarts.clear()
         verifiedReaders.clear()
         Log.d(TAG, "GATT server stopped")
+    }
+
+    @SuppressLint("MissingPermission")
+    private fun armWatchdog(device: BluetoothDevice) {
+        val address = device.address
+        watchdogs.remove(address)?.cancel()
+        watchdogs[address] = scope.launch {
+            delay(QuayPassConfig.EXCHANGE_TIMEOUT_MS)
+            Log.d(TAG, "Exchange watchdog expired, dropping $address")
+            runCatching { gattServer?.cancelConnection(device) }
+            clearDeviceState(address)
+        }
+    }
+
+    private fun clearDeviceState(address: String) {
+        watchdogs.remove(address)?.cancel()
+        connectedDevices.remove(address)
+        pendingWriteBuffers.remove(address)
+        sequentialWriteBuffers.remove(address)
+        deviceMtus.remove(address)
+        readCursors.remove(address)
+        readWindowStarts.remove(address)
+        verifiedReaders.remove(address)
     }
 
     private sealed interface Assembly {
@@ -96,16 +127,9 @@ class QuayPassGattServer(
                         return
                     }
                     connectedDevices[device.address] = System.currentTimeMillis()
+                    armWatchdog(device)
                 }
-                BluetoothProfile.STATE_DISCONNECTED -> {
-                    connectedDevices.remove(device.address)
-                    pendingWriteBuffers.remove(device.address)
-                    sequentialWriteBuffers.remove(device.address)
-                    deviceMtus.remove(device.address)
-                    readCursors.remove(device.address)
-                    readWindowStarts.remove(device.address)
-                    verifiedReaders.remove(device.address)
-                }
+                BluetoothProfile.STATE_DISCONNECTED -> clearDeviceState(device.address)
             }
         }
 

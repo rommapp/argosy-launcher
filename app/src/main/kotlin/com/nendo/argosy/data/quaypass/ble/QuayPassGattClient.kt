@@ -24,7 +24,7 @@ class QuayPassGattClient(private val application: Application) {
     suspend fun exchangeProfiles(
         device: BluetoothDevice,
         ourProfileBytes: ByteArray
-    ): ByteArray? = withTimeoutOrNull(15_000) {
+    ): ByteArray? = withTimeoutOrNull(QuayPassConfig.EXCHANGE_TIMEOUT_MS) {
         val connectionChannel = Channel<Boolean>(Channel.CONFLATED)
         val mtuChannel = Channel<Int>(Channel.CONFLATED)
         val servicesChannel = Channel<Boolean>(Channel.CONFLATED)
@@ -88,13 +88,16 @@ class QuayPassGattClient(private val application: Application) {
                 cont.resume(g)
             } ?: return@withTimeoutOrNull null
 
-            if (!connectionChannel.receive()) return@withTimeoutOrNull null
+            val connected = withTimeoutOrNull(QuayPassConfig.CONNECT_TIMEOUT_MS) { connectionChannel.receive() }
+            if (connected != true) return@withTimeoutOrNull null
 
             gatt.requestMtu(MTU_REQUEST)
-            val negotiatedMtu = mtuChannel.receive().takeIf { it > 0 } ?: DEFAULT_MTU
+            val negotiatedMtu = withTimeoutOrNull(QuayPassConfig.GATT_STAGE_TIMEOUT_MS) { mtuChannel.receive() }
+                ?.takeIf { it > 0 } ?: DEFAULT_MTU
 
             gatt.discoverServices()
-            if (!servicesChannel.receive()) return@withTimeoutOrNull null
+            val discovered = withTimeoutOrNull(QuayPassConfig.GATT_STAGE_TIMEOUT_MS) { servicesChannel.receive() }
+            if (discovered != true) return@withTimeoutOrNull null
 
             val service = gatt.getService(QuayPassConfig.SERVICE_UUID) ?: return@withTimeoutOrNull null
             val readChar = service.getCharacteristic(QuayPassConfig.CHARACTERISTIC_PROFILE_UUID)
@@ -126,7 +129,9 @@ class QuayPassGattClient(private val application: Application) {
                         gatt.writeCharacteristic(writeChar)
                     }
                 }
-                if (!writeOk || !writeChannel.receive()) return@withTimeoutOrNull null
+                val wrote = writeOk &&
+                    withTimeoutOrNull(QuayPassConfig.GATT_STAGE_TIMEOUT_MS) { writeChannel.receive() } == true
+                if (!wrote) return@withTimeoutOrNull null
                 offset = end
             }
 
@@ -153,7 +158,7 @@ class QuayPassGattClient(private val application: Application) {
         var expectedLen = -1
         while (true) {
             if (!gatt.readCharacteristic(readChar)) return null
-            val chunk = readChannel.receive() ?: return null
+            val chunk = withTimeoutOrNull(QuayPassConfig.GATT_STAGE_TIMEOUT_MS) { readChannel.receive() } ?: return null
             if (chunk.isEmpty()) return null
             assembled.write(chunk)
             val bytes = assembled.toByteArray()

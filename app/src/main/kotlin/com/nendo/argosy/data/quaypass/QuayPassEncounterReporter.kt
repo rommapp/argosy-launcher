@@ -60,7 +60,7 @@ class QuayPassEncounterReporter @Inject constructor(
             peerMessage = encounter.greeting,
             peerGameIgdbId = encounter.lastGameIgdbId,
             peerGameTitle = encounter.lastGameTitle,
-            peerAvatarRaster = QuayPassRasterPng.fromRasterBase64(encounter.avatarBlobBase64)
+            peerAvatarRaster = encounter.avatarBlobBase64
         )
         if (sent) {
             scope.launch { encounterDao.markReported(encounter.credentialFingerprint) }

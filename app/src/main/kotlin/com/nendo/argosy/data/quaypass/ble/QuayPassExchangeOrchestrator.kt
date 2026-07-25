@@ -1,8 +1,8 @@
 package com.nendo.argosy.data.quaypass.ble
 
 import android.bluetooth.BluetoothDevice
-import android.util.Base64
 import android.util.Log
+import com.nendo.argosy.data.quaypass.QuayPassRasterPng
 import com.nendo.argosy.data.local.dao.QuayPassDailyStatsDao
 import com.nendo.argosy.data.local.dao.QuayPassEncounterDao
 import com.nendo.argosy.data.local.entity.QuayPassDailyStatsEntity
@@ -89,9 +89,9 @@ class QuayPassExchangeOrchestrator @Inject constructor(
             username = profile.username,
             displayName = profile.displayName,
             avatarColor = null,
-            avatarBlobBase64 = profile.avatarBytes
-                .takeIf { it.isNotEmpty() }
-                ?.let { Base64.encodeToString(it, Base64.NO_WRAP) },
+            avatarBlobBase64 = QuayPassRasterPng.fromRasterBytes(
+                profile.avatarBytes.takeIf { it.isNotEmpty() }
+            ),
             greeting = profile.greeting,
             lastGameTitle = profile.lastGameTitle,
             lastGamePlatform = profile.lastGamePlatform,

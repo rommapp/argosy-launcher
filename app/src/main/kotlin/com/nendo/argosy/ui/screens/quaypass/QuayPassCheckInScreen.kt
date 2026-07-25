@@ -2,6 +2,7 @@ package com.nendo.argosy.ui.screens.quaypass
 
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.snap
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -33,6 +34,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.FilterQuality
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.font.FontWeight
@@ -41,7 +45,6 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import com.nendo.argosy.data.local.entity.QuayPassEncounterEntity
 import com.nendo.argosy.data.quaypass.QuayPassService
-import com.nendo.argosy.data.quaypass.ble.QuayPassDoodleCodec
 import com.nendo.argosy.ui.components.FocusedScroll
 import com.nendo.argosy.ui.components.FooterBar
 import com.nendo.argosy.ui.components.InputButton
@@ -51,10 +54,6 @@ import com.nendo.argosy.ui.navigation.Screen
 import com.nendo.argosy.ui.quaypass.QuayPassIcons
 import com.nendo.argosy.ui.primitives.FocusIndicators
 import com.nendo.argosy.ui.primitives.argosyFocusIndicators
-import com.nendo.argosy.ui.screens.doodle.CanvasSize
-import com.nendo.argosy.ui.screens.doodle.DecodedDoodle
-import com.nendo.argosy.ui.screens.doodle.DoodleColor
-import com.nendo.argosy.ui.screens.doodle.DoodlePreview
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.generated.MotionTokens
 import com.nendo.argosy.ui.util.clickableNoFocus
@@ -252,7 +251,7 @@ private fun EncounterCard(
     friendAvatarDoodle: String?,
     onClick: () -> Unit
 ) {
-    val doodle = remember(encounter.avatarBlobBase64) { decodeAvatarDoodle(encounter.avatarBlobBase64) }
+    val frozenAvatar = remember(encounter.avatarBlobBase64) { decodePngAvatar(encounter.avatarBlobBase64) }
     val cardShape = RoundedCornerShape(Dimens.radiusLg)
     val cardAlpha by animateFloatAsState(
         targetValue = if (visible) 1f else 0f,
@@ -283,10 +282,11 @@ private fun EncounterCard(
                     avatarDoodle = friendAvatarDoodle,
                     userId = encounter.accountId
                 )
-            } else if (doodle != null) {
-                DoodlePreview(
-                    canvasSize = doodle.size,
-                    pixels = doodle.pixels,
+            } else if (frozenAvatar != null) {
+                Image(
+                    bitmap = frozenAvatar,
+                    contentDescription = null,
+                    filterQuality = FilterQuality.None,
                     modifier = Modifier
                         .size(Dimens.avatarXl)
                         .clip(CircleShape)
@@ -381,30 +381,11 @@ private fun TicketAwardChip(amount: Int, modifier: Modifier = Modifier) {
     )
 }
 
-private fun decodeAvatarDoodle(base64: String?): DecodedDoodle? = base64?.let {
+private fun decodePngAvatar(base64: String?): ImageBitmap? = base64?.let {
     runCatching {
-        val raster = QuayPassDoodleCodec.decode(android.util.Base64.decode(it, android.util.Base64.NO_WRAP))
-            ?: return@runCatching null
-        rasterToDecodedDoodle(raster.size, raster.paletteIndices)
+        val bytes = android.util.Base64.decode(it, android.util.Base64.NO_WRAP)
+        android.graphics.BitmapFactory.decodeByteArray(bytes, 0, bytes.size)?.asImageBitmap()
     }.getOrNull()
-}
-
-private fun rasterToDecodedDoodle(size: Int, paletteIndices: IntArray): DecodedDoodle? {
-    val canvasSize = when (size) {
-        CanvasSize.SMALL.pixels -> CanvasSize.SMALL
-        CanvasSize.MEDIUM.pixels -> CanvasSize.MEDIUM
-        else -> return null
-    }
-    val pixels = mutableMapOf<Pair<Int, Int>, DoodleColor>()
-    for (y in 0 until size) {
-        for (x in 0 until size) {
-            val index = paletteIndices[y * size + x]
-            if (index != 0) {
-                pixels[x to y] = DoodleColor.fromIndex(index)
-            }
-        }
-    }
-    return DecodedDoodle(canvasSize, pixels)
 }
 
 private val TIME_FORMAT = DateTimeFormatter.ofPattern("MMM d, HH:mm")

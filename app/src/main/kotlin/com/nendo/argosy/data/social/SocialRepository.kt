@@ -347,6 +347,9 @@ class SocialRepository @Inject constructor(
                             }
                         }
                     }
+                    is ArgosSocialService.IncomingMessage.QuayPassMessageUpdated -> {
+                        preferencesRepository.setQuayPassGreetingFromServer(message.message)
+                    }
                     is ArgosSocialService.IncomingMessage.FriendsData -> {
                         Log.d(TAG, "Received initial friends: ${message.friends.size}")
                         _friends.value = message.friends.sortedWith(friendComparator)

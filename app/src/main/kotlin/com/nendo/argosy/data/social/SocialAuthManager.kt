@@ -1,5 +1,7 @@
 package com.nendo.argosy.data.social
 
+import android.app.Application
+import android.provider.Settings
 import android.util.Log
 import com.nendo.argosy.BuildConfig
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
@@ -28,10 +30,15 @@ import javax.inject.Singleton
 
 @Singleton
 class SocialAuthManager @Inject constructor(
+    private val application: Application,
     private val userPreferencesRepository: UserPreferencesRepository
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val moshi = Moshi.Builder().build()
+
+    private val deviceId: String by lazy {
+        Settings.Secure.getString(application.contentResolver, Settings.Secure.ANDROID_ID) ?: ""
+    }
 
     private val _authState = MutableStateFlow<AuthState>(AuthState.Idle)
     val authState: StateFlow<AuthState> = _authState.asStateFlow()
@@ -65,6 +72,14 @@ class SocialAuthManager @Inject constructor(
             .create(SocialApi::class.java)
     }
 
+    suspend fun fetchMe(token: String): MeResponse? = try {
+        val response = api.getMe("Bearer $token")
+        if (response.isSuccessful) response.body() else null
+    } catch (e: Exception) {
+        Log.w(TAG, "Failed to fetch /api/me", e)
+        null
+    }
+
     sealed class AuthState {
         data object Idle : AuthState()
         data object RequestingKey : AuthState()
@@ -86,7 +101,7 @@ class SocialAuthManager @Inject constructor(
         _authState.value = AuthState.RequestingKey
 
         val keyResponse = try {
-            val response = api.generateDeviceKey()
+            val response = api.generateDeviceKey(DeviceKeyRequest(deviceId))
             if (response.isSuccessful) {
                 response.body()
             } else {

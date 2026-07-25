@@ -3,6 +3,7 @@ package com.nendo.argosy.data.quaypass
 import android.util.Log
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.social.ArgosSocialService
+import com.nendo.argosy.data.social.SocialAuthManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -14,16 +15,18 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * Pushes the user's greeting to argosy-server, mirroring
- * [QuayPassAvatarSyncCoordinator]. The greeting is a settable profile field like
- * the avatar doodle: on every transition into Connected with a sync outstanding,
- * flushes the stored greeting via [ArgosSocialService.sendQuayPassMessage] (empty
- * string clears the server copy). Server is the single source of truth for
- * cross-surface parity; the pass record keeps its own frozen copy via peer_card.
+ * Two-way greeting sync, mirroring [QuayPassAvatarSyncCoordinator]. The greeting
+ * is a settable profile field: a local edit is pushed via set_quaypass_message on
+ * the next Connected transition (empty clears the server copy); on connect with no
+ * pending edit the current greeting is pulled from GET /api/me so a fresh device
+ * hydrates. A local edit wins over the server value. The inbound
+ * quaypass_message_updated push (handled in SocialRepository) covers edits made on
+ * another of the owner's devices while this one is already online.
  */
 @Singleton
 class QuayPassMessageSyncCoordinator @Inject constructor(
     private val socialService: ArgosSocialService,
+    private val authManager: SocialAuthManager,
     private val preferencesRepository: UserPreferencesRepository
 ) {
 
@@ -42,6 +45,12 @@ class QuayPassMessageSyncCoordinator @Inject constructor(
                     if (state is ArgosSocialService.ConnectionState.Connected && pending) flush()
                 }
         }
+        scope.launch {
+            socialService.connectionState.collect { state ->
+                if (state !is ArgosSocialService.ConnectionState.Connected) return@collect
+                if (!preferencesRepository.userPreferences.first().quayPassMessageSyncPending) pull()
+            }
+        }
     }
 
     private suspend fun flush() {
@@ -53,6 +62,12 @@ class QuayPassMessageSyncCoordinator @Inject constructor(
         } else {
             Log.w(TAG, "Failed to send QuayPass message; will retry on next connect")
         }
+    }
+
+    private suspend fun pull() {
+        val token = preferencesRepository.userPreferences.first().socialSessionToken ?: return
+        val me = authManager.fetchMe(token) ?: return
+        preferencesRepository.setQuayPassGreetingFromServer(me.quayPassMessage.orEmpty())
     }
 
     companion object {

@@ -4,11 +4,21 @@ import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
 @JsonClass(generateAdapter = true)
+data class DeviceKeyRequest(
+    @Json(name = "device_id") val deviceId: String
+)
+
+@JsonClass(generateAdapter = true)
 data class DeviceKeyResponse(
     val key: String,
     @Json(name = "qr_url") val qrUrl: String,
     @Json(name = "pending_ws") val pendingWs: String,
     @Json(name = "expires_at") val expiresAt: String
+)
+
+@JsonClass(generateAdapter = true)
+data class MeResponse(
+    @Json(name = "quaypass_message") val quayPassMessage: String? = null
 )
 
 @JsonClass(generateAdapter = true)
@@ -148,6 +158,7 @@ object MessageTypes {
     const val GET_QUAYPASS_BALANCE = "get_quaypass_balance"
     const val QUAYPASS_BALANCE = "quaypass_balance"
     const val QUAYPASS_AVATAR_UPDATED = "quaypass_avatar_updated"
+    const val QUAYPASS_MESSAGE_UPDATED = "quaypass_message_updated"
     const val GET_FRIEND = "get_friend"
     const val FRIEND_DATA = "friend_data"
     const val SEND_FRIEND_REQ = "send_friend_req"

@@ -111,6 +111,7 @@ class ArgosSocialService @Inject constructor(
         data class FriendCodeData(val code: String, val url: String) : IncomingMessage()
         data class QuayPassBalance(val balance: Int) : IncomingMessage()
         data class QuayPassAvatarUpdated(val userId: String, val avatar: String) : IncomingMessage()
+        data class QuayPassMessageUpdated(val message: String) : IncomingMessage()
         data class FriendsData(val friends: List<Friend>) : IncomingMessage()
         data class SharedCollections(val collections: List<CollectionSummary>) : IncomingMessage()
         data class SavedCollections(val collections: List<CollectionSummary>) : IncomingMessage()
@@ -315,6 +316,9 @@ class ArgosSocialService @Inject constructor(
                         )
                     } else null
                 }
+
+                MessageTypes.QUAYPASS_MESSAGE_UPDATED ->
+                    IncomingMessage.QuayPassMessageUpdated(json.optString("message", ""))
 
                 MessageTypes.FRIEND_ACCEPTED -> {
                     if (payload != null) {

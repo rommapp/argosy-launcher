@@ -207,6 +207,15 @@ class SyncPreferencesRepository @Inject constructor(
         }
     }
 
+    suspend fun setQuayPassGreetingFromServer(greeting: String) {
+        dataStore.edit {
+            val trimmed = greeting.trim()
+            if (trimmed.isEmpty()) it.remove(Keys.QUAYPASS_GREETING)
+            else it[Keys.QUAYPASS_GREETING] = trimmed
+            it[Keys.QUAYPASS_MESSAGE_SYNC_PENDING] = false
+        }
+    }
+
     suspend fun setQuayPassTicketBalance(balance: Int) {
         dataStore.edit { it[Keys.QUAYPASS_TICKET_BALANCE] = balance.coerceAtLeast(0) }
     }

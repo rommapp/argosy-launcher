@@ -16,6 +16,7 @@ import androidx.core.content.ContextCompat
 import com.nendo.argosy.data.emulator.PlaySessionTracker
 import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.entity.GameEntity
+import com.nendo.argosy.data.preferences.SyncPreferencesRepository
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.quaypass.ble.DecodeResult
 import com.nendo.argosy.data.quaypass.ble.OutboundProfile
@@ -53,7 +54,8 @@ class QuayPassService @Inject constructor(
     private val credentialManager: QuayPassCredentialManager,
     private val orchestrator: QuayPassExchangeOrchestrator,
     private val playSessionTracker: PlaySessionTracker,
-    private val gameDao: GameDao
+    private val gameDao: GameDao,
+    private val syncPreferencesRepository: SyncPreferencesRepository
 ) {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -263,14 +265,18 @@ class QuayPassService @Inject constructor(
         val prefs = preferencesRepository.userPreferences.first()
         val username = prefs.socialUsername ?: return null
         val avatarRaster = buildAvatarRaster(prefs.socialAvatarDoodle, prefs.socialAvatarUseDoodle)
+        val hiddenGameIds = syncPreferencesRepository.hiddenGameIds().first()
+        val lastGame = cachedLastGame?.takeUnless { game ->
+            game.igdbId?.toInt()?.let { it in hiddenGameIds } == true
+        }
         val profile = OutboundProfile(
             username = username,
             displayName = prefs.socialDisplayName,
             greeting = prefs.quayPassGreeting,
-            lastGameTitle = cachedLastGame?.title,
-            lastGamePlatform = cachedLastGame?.platformSlug,
-            lastGamePlaytimeMinutes = cachedLastGame?.playTimeMinutes,
-            lastGameIgdbId = cachedLastGame?.igdbId,
+            lastGameTitle = lastGame?.title,
+            lastGamePlatform = lastGame?.platformSlug,
+            lastGamePlaytimeMinutes = lastGame?.playTimeMinutes,
+            lastGameIgdbId = lastGame?.igdbId,
             avatarRaster = avatarRaster
         )
         val bytes = orchestrator.buildOurWireBytes(profile)

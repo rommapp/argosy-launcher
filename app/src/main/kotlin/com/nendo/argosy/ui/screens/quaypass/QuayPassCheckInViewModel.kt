@@ -31,6 +31,7 @@ data class QuayPassCheckInUiState(
     val revealedArrivals: Set<String> = emptySet(),
     val rushedArrivals: Set<String> = emptySet(),
     val friendAccountIds: Set<String> = emptySet(),
+    val friendAvatars: Map<String, String?> = emptyMap(),
     val pendingFriendAccountIds: Set<String> = emptySet(),
     val sessionSentAccountIds: Set<String> = emptySet(),
     val queuedFriendAccountIds: Set<String> = emptySet(),
@@ -91,8 +92,15 @@ class QuayPassCheckInViewModel @Inject constructor(
                 val pending = friends
                     .filter { it.friendshipStatus == FriendshipStatus.PENDING }
                     .mapTo(mutableSetOf()) { it.id }
+                val avatars = friends
+                    .filter { it.friendshipStatus == FriendshipStatus.ACCEPTED }
+                    .associate { it.id to it.quayPassAvatar }
                 _uiState.update {
-                    it.copy(friendAccountIds = accepted, pendingFriendAccountIds = pending)
+                    it.copy(
+                        friendAccountIds = accepted,
+                        friendAvatars = avatars,
+                        pendingFriendAccountIds = pending
+                    )
                 }
             }
         }

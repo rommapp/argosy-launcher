@@ -167,6 +167,8 @@ fun QuayPassCheckInScreen(
                                     ticketAward = uiState.ticketAwardPerEncounter,
                                     requestSent = accountId != null && accountId in uiState.sentAccountIds,
                                     requestQueued = accountId != null && accountId in uiState.queuedFriendAccountIds,
+                                    isFriend = accountId != null && accountId in uiState.friendAccountIds,
+                                    friendAvatarDoodle = accountId?.let { uiState.friendAvatars[it] },
                                     onClick = { viewModel.onCardTapped(index) }
                                 )
                             }
@@ -246,6 +248,8 @@ private fun EncounterCard(
     ticketAward: Int,
     requestSent: Boolean,
     requestQueued: Boolean,
+    isFriend: Boolean,
+    friendAvatarDoodle: String?,
     onClick: () -> Unit
 ) {
     val doodle = remember(encounter.avatarBlobBase64) { decodeAvatarDoodle(encounter.avatarBlobBase64) }
@@ -271,7 +275,15 @@ private fun EncounterCard(
             modifier = Modifier.padding(Dimens.spacingMd),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            if (doodle != null) {
+            if (isFriend) {
+                SocialAvatar(
+                    displayName = encounter.displayName ?: encounter.username,
+                    avatarColor = null,
+                    size = Dimens.avatarXl,
+                    avatarDoodle = friendAvatarDoodle,
+                    userId = encounter.accountId
+                )
+            } else if (doodle != null) {
                 DoodlePreview(
                     canvasSize = doodle.size,
                     pixels = doodle.pixels,
@@ -288,11 +300,17 @@ private fun EncounterCard(
             }
             Spacer(Modifier.width(Dimens.spacingMd))
             Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = encounter.displayName ?: "@${encounter.username}",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Medium
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = encounter.displayName ?: "@${encounter.username}",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Medium
+                    )
+                    if (isFriend) {
+                        Spacer(Modifier.width(Dimens.spacingSm))
+                        FriendBadge()
+                    }
+                }
                 if (encounter.displayName != null) {
                     Text(
                         text = "@${encounter.username}",
@@ -335,6 +353,19 @@ private fun EncounterCard(
             }
         }
     }
+}
+
+@Composable
+private fun FriendBadge(modifier: Modifier = Modifier) {
+    Text(
+        text = "Friend",
+        style = MaterialTheme.typography.labelSmall,
+        fontWeight = FontWeight.SemiBold,
+        color = MaterialTheme.colorScheme.onPrimaryContainer,
+        modifier = modifier
+            .background(MaterialTheme.colorScheme.primaryContainer, RoundedCornerShape(Dimens.radiusSm))
+            .padding(horizontal = Dimens.spacingSm, vertical = Dimens.spacingXs)
+    )
 }
 
 @Composable

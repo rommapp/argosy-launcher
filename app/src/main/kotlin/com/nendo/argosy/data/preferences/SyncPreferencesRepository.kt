@@ -55,6 +55,7 @@ data class SyncPreferences(
     val lastStateValidation: Instant? = null,
     val quayPassEnabled: Boolean = false,
     val quayPassAvatarSyncPending: Boolean = false,
+    val quayPassMessageSyncPending: Boolean = false,
     val quayPassGreeting: String? = null,
     val quayPassTicketBalance: Int = 0
 )
@@ -116,6 +117,7 @@ class SyncPreferencesRepository @Inject constructor(
         val SAVE_PATH_CACHE_PURGED = booleanPreferencesKey("save_path_cache_purged")
         val QUAYPASS_ENABLED = booleanPreferencesKey("quaypass_enabled")
         val QUAYPASS_AVATAR_SYNC_PENDING = booleanPreferencesKey("quaypass_avatar_sync_pending")
+        val QUAYPASS_MESSAGE_SYNC_PENDING = booleanPreferencesKey("quaypass_message_sync_pending")
         val QUAYPASS_GREETING = stringPreferencesKey("quaypass_greeting")
         val QUAYPASS_TICKET_BALANCE = intPreferencesKey("quaypass_ticket_balance")
         val QUAYPASS_PENDING_FRIEND_REQUESTS = stringPreferencesKey("quaypass_pending_friend_requests")
@@ -192,11 +194,16 @@ class SyncPreferencesRepository @Inject constructor(
         dataStore.edit { it[Keys.QUAYPASS_AVATAR_SYNC_PENDING] = pending }
     }
 
+    suspend fun setQuayPassMessageSyncPending(pending: Boolean) {
+        dataStore.edit { it[Keys.QUAYPASS_MESSAGE_SYNC_PENDING] = pending }
+    }
+
     suspend fun setQuayPassGreeting(greeting: String) {
         dataStore.edit {
             val trimmed = greeting.trim()
             if (trimmed.isEmpty()) it.remove(Keys.QUAYPASS_GREETING)
             else it[Keys.QUAYPASS_GREETING] = trimmed
+            it[Keys.QUAYPASS_MESSAGE_SYNC_PENDING] = true
         }
     }
 
@@ -287,6 +294,7 @@ class SyncPreferencesRepository @Inject constructor(
             lastStateValidation = prefs[Keys.LAST_STATE_VALIDATION]?.let { Instant.parse(it) },
             quayPassEnabled = prefs[Keys.QUAYPASS_ENABLED] ?: false,
             quayPassAvatarSyncPending = prefs[Keys.QUAYPASS_AVATAR_SYNC_PENDING] ?: false,
+            quayPassMessageSyncPending = prefs[Keys.QUAYPASS_MESSAGE_SYNC_PENDING] ?: false,
             quayPassGreeting = prefs[Keys.QUAYPASS_GREETING],
             quayPassTicketBalance = prefs[Keys.QUAYPASS_TICKET_BALANCE] ?: 0
         )

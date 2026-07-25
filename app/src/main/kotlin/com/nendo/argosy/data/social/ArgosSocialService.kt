@@ -865,6 +865,9 @@ class ArgosSocialService @Inject constructor(
         return send(MessageTypes.SET_QUAYPASS_AVATAR, mapOf("avatar" to bytesBase64))
     }
 
+    fun sendQuayPassMessage(message: String): Boolean {
+        return send(MessageTypes.SET_QUAYPASS_MESSAGE, mapOf("message" to message))
+    }
 
     fun reportQuayPassEncounter(
         peerAccountId: String,

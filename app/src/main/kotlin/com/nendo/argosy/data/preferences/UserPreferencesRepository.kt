@@ -197,6 +197,7 @@ class UserPreferencesRepository @Inject constructor(
             lastStateValidation = sync.lastStateValidation,
             quayPassEnabled = sync.quayPassEnabled,
             quayPassAvatarSyncPending = sync.quayPassAvatarSyncPending,
+            quayPassMessageSyncPending = sync.quayPassMessageSyncPending,
             quayPassGreeting = sync.quayPassGreeting,
             quayPassTicketBalance = sync.quayPassTicketBalance
         )
@@ -342,6 +343,7 @@ class UserPreferencesRepository @Inject constructor(
     suspend fun setLastPlaySessionSyncTime(time: Instant) = syncPrefs.setLastPlaySessionSyncTime(time)
     suspend fun setQuayPassEnabled(enabled: Boolean) = syncPrefs.setQuayPassEnabled(enabled)
     suspend fun setQuayPassAvatarSyncPending(pending: Boolean) = syncPrefs.setQuayPassAvatarSyncPending(pending)
+    suspend fun setQuayPassMessageSyncPending(pending: Boolean) = syncPrefs.setQuayPassMessageSyncPending(pending)
     suspend fun setQuayPassGreeting(greeting: String) = syncPrefs.setQuayPassGreeting(greeting)
     suspend fun setQuayPassTicketBalance(balance: Int) = syncPrefs.setQuayPassTicketBalance(balance)
 
@@ -727,6 +729,7 @@ data class UserPreferences(
     val steamInstallVolume: String? = null,
     val quayPassEnabled: Boolean = false,
     val quayPassAvatarSyncPending: Boolean = false,
+    val quayPassMessageSyncPending: Boolean = false,
     val quayPassGreeting: String? = null,
     val quayPassTicketBalance: Int = 0
 ) {

@@ -143,6 +143,7 @@ object MessageTypes {
     const val SYNC_PLAY_SESSIONS = "sync_play_sessions"
     const val PLAY_SESSIONS_SYNCED = "play_sessions_synced"
     const val SET_QUAYPASS_AVATAR = "set_quaypass_avatar"
+    const val SET_QUAYPASS_MESSAGE = "set_quaypass_message"
     const val REPORT_QUAYPASS_ENCOUNTER = "report_quaypass_encounter"
     const val GET_QUAYPASS_BALANCE = "get_quaypass_balance"
     const val QUAYPASS_BALANCE = "quaypass_balance"

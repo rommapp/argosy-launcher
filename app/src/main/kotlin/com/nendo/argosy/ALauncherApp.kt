@@ -104,6 +104,10 @@ class ArgosyApp : Application(), Configuration.Provider, ImageLoaderFactory {
 
     @Suppress("unused")
     @Inject
+    lateinit var quayPassMessageSyncCoordinator: com.nendo.argosy.data.quaypass.QuayPassMessageSyncCoordinator
+
+    @Suppress("unused")
+    @Inject
     lateinit var quayPassFriendRequestQueueCoordinator: com.nendo.argosy.data.quaypass.QuayPassFriendRequestQueueCoordinator
 
     @Suppress("unused")

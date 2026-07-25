@@ -347,6 +347,14 @@ class SocialRepository @Inject constructor(
                             }
                         }
                     }
+                    is ArgosSocialService.IncomingMessage.QuayPassMessageUpdated -> {
+                        val newGreeting = message.message.takeIf { it.isNotBlank() }
+                        _friends.update { friends ->
+                            friends.map {
+                                if (it.id == message.userId) it.copy(quayPassGreeting = newGreeting) else it
+                            }
+                        }
+                    }
                     is ArgosSocialService.IncomingMessage.FriendsData -> {
                         Log.d(TAG, "Received initial friends: ${message.friends.size}")
                         _friends.value = message.friends.sortedWith(friendComparator)

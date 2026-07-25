@@ -56,7 +56,10 @@ class QuayPassEncounterReporter @Inject constructor(
         val sent = socialService.reportQuayPassEncounter(
             peerAccountId = accountId,
             fingerprint = encounter.credentialFingerprint,
-            encounteredAtEpoch = encounter.encounteredAt.epochSecond
+            encounteredAtEpoch = encounter.encounteredAt.epochSecond,
+            peerMessage = encounter.greeting,
+            peerGameIgdbId = encounter.lastGameIgdbId,
+            peerGameTitle = encounter.lastGameTitle
         )
         if (sent) {
             scope.launch { encounterDao.markReported(encounter.credentialFingerprint) }

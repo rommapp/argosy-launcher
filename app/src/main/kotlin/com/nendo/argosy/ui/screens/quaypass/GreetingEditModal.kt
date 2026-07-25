@@ -28,7 +28,9 @@ import com.nendo.argosy.ui.input.InputResult
 import com.nendo.argosy.ui.input.LocalInputDispatcher
 import com.nendo.argosy.ui.theme.Dimens
 
-private const val MAX_GREETING_CHARS = 140
+private const val MAX_GREETING_RUNES = 140
+
+private fun String.runeCount(): Int = codePointCount(0, length)
 
 @Composable
 fun GreetingEditModal(
@@ -89,7 +91,7 @@ fun GreetingEditModal(
 
                 TextField(
                     value = greeting,
-                    onValueChange = { if (it.length <= MAX_GREETING_CHARS) greeting = it },
+                    onValueChange = { if (it.runeCount() <= MAX_GREETING_RUNES) greeting = it },
                     modifier = Modifier.fillMaxWidth(),
                     placeholder = {
                         Text(

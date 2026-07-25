@@ -111,6 +111,7 @@ class ArgosSocialService @Inject constructor(
         data class FriendCodeData(val code: String, val url: String) : IncomingMessage()
         data class QuayPassBalance(val balance: Int) : IncomingMessage()
         data class QuayPassAvatarUpdated(val userId: String, val avatar: String) : IncomingMessage()
+        data class QuayPassMessageUpdated(val userId: String, val message: String) : IncomingMessage()
         data class FriendsData(val friends: List<Friend>) : IncomingMessage()
         data class SharedCollections(val collections: List<CollectionSummary>) : IncomingMessage()
         data class SavedCollections(val collections: List<CollectionSummary>) : IncomingMessage()
@@ -312,6 +313,16 @@ class ArgosSocialService @Inject constructor(
                         IncomingMessage.QuayPassAvatarUpdated(
                             userId = userId,
                             avatar = json.optString("quaypass_avatar", "")
+                        )
+                    } else null
+                }
+
+                MessageTypes.QUAYPASS_MESSAGE_UPDATED -> {
+                    val userId = json.optString("user_id", "")
+                    if (userId.isNotEmpty()) {
+                        IncomingMessage.QuayPassMessageUpdated(
+                            userId = userId,
+                            message = json.optString("message", "")
                         )
                     } else null
                 }
@@ -869,15 +880,26 @@ class ArgosSocialService @Inject constructor(
         return send(MessageTypes.SET_QUAYPASS_MESSAGE, mapOf("message" to message))
     }
 
-    fun reportQuayPassEncounter(peerAccountId: String, fingerprint: String, encounteredAtEpoch: Long): Boolean {
-        return send(
-            MessageTypes.REPORT_QUAYPASS_ENCOUNTER,
-            mapOf(
-                "peer_account_id" to peerAccountId,
-                "credential_fingerprint" to fingerprint,
-                "encountered_at" to encounteredAtEpoch
-            )
-        )
+    fun reportQuayPassEncounter(
+        peerAccountId: String,
+        fingerprint: String,
+        encounteredAtEpoch: Long,
+        peerMessage: String?,
+        peerGameIgdbId: Long?,
+        peerGameTitle: String?
+    ): Boolean {
+        val peerCard = buildMap<String, Any> {
+            peerMessage?.let { put("message", it) }
+            peerGameIgdbId?.let { put("igdb_id", it) }
+            peerGameTitle?.let { put("game_title", it) }
+        }
+        val payload = buildMap<String, Any> {
+            put("peer_account_id", peerAccountId)
+            put("credential_fingerprint", fingerprint)
+            put("encountered_at", encounteredAtEpoch)
+            if (peerCard.isNotEmpty()) put("peer_card", peerCard)
+        }
+        return send(MessageTypes.REPORT_QUAYPASS_ENCOUNTER, payload)
     }
 
     fun requestQuayPassBalance(): Boolean = send(MessageTypes.GET_QUAYPASS_BALANCE, emptyMap())

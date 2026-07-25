@@ -42,6 +42,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import org.json.JSONObject
 import java.time.Instant
@@ -337,6 +338,14 @@ class SocialRepository @Inject constructor(
                             if (friend.id == message.friendId) friend.copy(isFavorite = message.isFavorite)
                             else friend
                         }.sortedWith(friendComparator)
+                    }
+                    is ArgosSocialService.IncomingMessage.QuayPassAvatarUpdated -> {
+                        val newAvatar = message.avatar.takeIf { it.isNotBlank() }
+                        _friends.update { friends ->
+                            friends.map {
+                                if (it.id == message.userId) it.copy(quayPassAvatar = newAvatar) else it
+                            }
+                        }
                     }
                     is ArgosSocialService.IncomingMessage.FriendsData -> {
                         Log.d(TAG, "Received initial friends: ${message.friends.size}")

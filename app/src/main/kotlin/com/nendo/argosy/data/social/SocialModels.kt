@@ -146,6 +146,7 @@ object MessageTypes {
     const val REPORT_QUAYPASS_ENCOUNTER = "report_quaypass_encounter"
     const val GET_QUAYPASS_BALANCE = "get_quaypass_balance"
     const val QUAYPASS_BALANCE = "quaypass_balance"
+    const val QUAYPASS_AVATAR_UPDATED = "quaypass_avatar_updated"
     const val GET_FRIEND = "get_friend"
     const val FRIEND_DATA = "friend_data"
     const val SEND_FRIEND_REQ = "send_friend_req"

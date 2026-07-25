@@ -22,6 +22,8 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
+import org.json.JSONObject
+import retrofit2.Response
 import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
 import java.time.Instant
@@ -101,7 +103,7 @@ class QuayPassCredentialManager @Inject constructor(
             return cachedValid
         }
         lastRefreshAttemptMillis = nowMillis
-        return doRefresh(installId) ?: cachedValid
+        return fetchCredential(installId, refresh = cred != null) ?: cachedValid
     }
 
     suspend fun refreshIfNeeded() {
@@ -110,7 +112,7 @@ class QuayPassCredentialManager @Inject constructor(
         val expires = state[Keys.CREDENTIAL_EXPIRES_AT] ?: 0L
         val now = Instant.now().epochSecond
         if (now >= expires - REFRESH_THRESHOLD_SECONDS) {
-            mutex.withLock { doRefresh(installId) }
+            mutex.withLock { fetchCredential(installId, refresh = true) }
         }
     }
 
@@ -125,7 +127,7 @@ class QuayPassCredentialManager @Inject constructor(
                 val state = dataStore.data.first()
                 val installId = state[Keys.CLIENT_INSTALL_ID] ?: registerNewInstall(token)
                 if (installId != null) {
-                    doRefresh(installId)
+                    fetchCredential(installId, refresh = false)
                 }
             }
         }
@@ -136,6 +138,11 @@ class QuayPassCredentialManager @Inject constructor(
             keystore.getOrCreateKeyInfo()
         } catch (t: Throwable) {
             Log.e(TAG, "Keystore unavailable; cannot register", t)
+            return null
+        }
+
+        if (fingerprint.apkSigningCertHash.isBlank()) {
+            Log.e(TAG, "APK signing cert hash unavailable; cannot register (server requires it)")
             return null
         }
 
@@ -167,7 +174,6 @@ class QuayPassCredentialManager @Inject constructor(
             },
             apkSigningCertHash = fingerprint.apkSigningCertHash,
             fingerprintHash = fingerprint.fingerprintHash,
-            deviceToken = fingerprint.deviceToken,
             deviceId = fingerprint.deviceToken,
             challenge = challenge,
             challengeSignature = challengeSignature
@@ -187,8 +193,7 @@ class QuayPassCredentialManager @Inject constructor(
                     null
                 }
             } else {
-                val detail = runCatching { resp.errorBody()?.string() }.getOrNull().orEmpty()
-                Log.w(TAG, "Register failed: HTTP ${resp.code()} $detail")
+                Log.w(TAG, "Register failed: HTTP ${resp.code()} code=${errorCodeOf(resp)}")
                 null
             }
         } catch (t: Throwable) {
@@ -197,11 +202,23 @@ class QuayPassCredentialManager @Inject constructor(
         }
     }
 
-    private suspend fun doRefresh(installId: String): StoredCredential? {
+    /**
+     * Fetches the install credential. `issue` is idempotent (returns the current
+     * live credential, minting only if none exists) and is used for the normal
+     * path; `refresh` always mints and extends expiry and is used inside the
+     * refresh window. On `unknown_install` the stored install id is discarded and
+     * a fresh registration is performed once, per the server contract.
+     */
+    private suspend fun fetchCredential(
+        installId: String,
+        refresh: Boolean,
+        allowReRegister: Boolean = true
+    ): StoredCredential? {
         val sessionToken = userPrefs.userPreferences.first().socialSessionToken ?: return null
         val req = IssueCredentialRequest(clientInstallId = installId)
         return try {
-            val resp = api.refreshCredential(bearerHeader(sessionToken), req)
+            val resp = if (refresh) api.refreshCredential(bearerHeader(sessionToken), req)
+            else api.issueCredential(bearerHeader(sessionToken), req)
             if (resp.isSuccessful) {
                 val body = resp.body() ?: return null
                 if (!verifyServerSignature(body.credential)) {
@@ -212,16 +229,34 @@ class QuayPassCredentialManager @Inject constructor(
                     it[Keys.CREDENTIAL] = body.credential
                     it[Keys.CREDENTIAL_EXPIRES_AT] = body.expiresAtEpochSecs
                 }
-                Log.i(TAG, "Refreshed QuayPass credential, expires ${body.expiresAtEpochSecs}")
+                Log.i(TAG, "Fetched QuayPass credential (refresh=$refresh), expires ${body.expiresAtEpochSecs}")
                 StoredCredential(body.credential, Instant.ofEpochSecond(body.expiresAtEpochSecs))
             } else {
-                Log.w(TAG, "Refresh failed: HTTP ${resp.code()}")
-                null
+                val code = errorCodeOf(resp)
+                if (code == "unknown_install" && allowReRegister) {
+                    Log.w(TAG, "unknown_install; discarding install id and re-registering")
+                    dataStore.edit {
+                        it.remove(Keys.CLIENT_INSTALL_ID)
+                        it.remove(Keys.CREDENTIAL)
+                        it.remove(Keys.CREDENTIAL_EXPIRES_AT)
+                    }
+                    val newId = registerNewInstall(sessionToken) ?: return null
+                    fetchCredential(newId, refresh = false, allowReRegister = false)
+                } else {
+                    Log.w(TAG, "Credential fetch failed (refresh=$refresh): HTTP ${resp.code()} code=$code")
+                    null
+                }
             }
         } catch (t: Throwable) {
-            Log.w(TAG, "Refresh error", t)
+            Log.w(TAG, "Credential fetch error", t)
             null
         }
+    }
+
+    private fun errorCodeOf(resp: Response<*>): String? {
+        val raw = runCatching { resp.errorBody()?.string() }.getOrNull()?.takeIf { it.isNotBlank() }
+            ?: return null
+        return runCatching { JSONObject(raw).optString("error").takeIf { it.isNotBlank() } }.getOrNull()
     }
 
     private suspend fun clearLocal() {

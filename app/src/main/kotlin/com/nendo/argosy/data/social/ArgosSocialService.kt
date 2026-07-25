@@ -875,12 +875,14 @@ class ArgosSocialService @Inject constructor(
         encounteredAtEpoch: Long,
         peerMessage: String?,
         peerGameIgdbId: Long?,
-        peerGameTitle: String?
+        peerGameTitle: String?,
+        peerAvatarRaster: String?
     ): Boolean {
         val peerCard = buildMap<String, Any> {
             peerMessage?.let { put("message", it) }
             peerGameIgdbId?.let { put("igdb_id", it) }
             peerGameTitle?.let { put("game_title", it) }
+            peerAvatarRaster?.let { put("avatar_raster", it) }
         }
         val payload = buildMap<String, Any> {
             put("peer_account_id", peerAccountId)

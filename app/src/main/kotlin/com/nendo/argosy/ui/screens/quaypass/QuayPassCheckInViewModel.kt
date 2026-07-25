@@ -73,7 +73,6 @@ class QuayPassCheckInViewModel @Inject constructor(
     fun setGreeting(text: String) {
         viewModelScope.launch {
             syncPreferencesRepository.setQuayPassGreeting(text)
-            socialRepository.sendQuayPassMessage(text)
         }
     }
 

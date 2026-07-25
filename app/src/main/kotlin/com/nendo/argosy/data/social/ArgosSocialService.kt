@@ -111,7 +111,6 @@ class ArgosSocialService @Inject constructor(
         data class FriendCodeData(val code: String, val url: String) : IncomingMessage()
         data class QuayPassBalance(val balance: Int) : IncomingMessage()
         data class QuayPassAvatarUpdated(val userId: String, val avatar: String) : IncomingMessage()
-        data class QuayPassMessageUpdated(val userId: String, val message: String) : IncomingMessage()
         data class FriendsData(val friends: List<Friend>) : IncomingMessage()
         data class SharedCollections(val collections: List<CollectionSummary>) : IncomingMessage()
         data class SavedCollections(val collections: List<CollectionSummary>) : IncomingMessage()
@@ -313,16 +312,6 @@ class ArgosSocialService @Inject constructor(
                         IncomingMessage.QuayPassAvatarUpdated(
                             userId = userId,
                             avatar = json.optString("quaypass_avatar", "")
-                        )
-                    } else null
-                }
-
-                MessageTypes.QUAYPASS_MESSAGE_UPDATED -> {
-                    val userId = json.optString("user_id", "")
-                    if (userId.isNotEmpty()) {
-                        IncomingMessage.QuayPassMessageUpdated(
-                            userId = userId,
-                            message = json.optString("message", "")
                         )
                     } else null
                 }
@@ -876,9 +865,6 @@ class ArgosSocialService @Inject constructor(
         return send(MessageTypes.SET_QUAYPASS_AVATAR, mapOf("avatar" to bytesBase64))
     }
 
-    fun sendQuayPassMessage(message: String): Boolean {
-        return send(MessageTypes.SET_QUAYPASS_MESSAGE, mapOf("message" to message))
-    }
 
     fun reportQuayPassEncounter(
         peerAccountId: String,

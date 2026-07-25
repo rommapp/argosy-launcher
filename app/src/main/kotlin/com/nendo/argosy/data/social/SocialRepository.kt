@@ -659,6 +659,12 @@ class SocialRepository @Inject constructor(
         }
     }
 
+    fun sendQuayPassMessage(message: String) {
+        if (socialService.isConnected()) {
+            socialService.sendQuayPassMessage(message)
+        }
+    }
+
     fun requestDiscordTokens() {
         if (socialService.isConnected()) {
             socialService.requestDiscordTokens()

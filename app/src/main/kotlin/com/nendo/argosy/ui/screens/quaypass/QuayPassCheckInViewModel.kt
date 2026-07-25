@@ -34,6 +34,7 @@ data class QuayPassCheckInUiState(
     val pendingFriendAccountIds: Set<String> = emptySet(),
     val sessionSentAccountIds: Set<String> = emptySet(),
     val queuedFriendAccountIds: Set<String> = emptySet(),
+    val showGreetingEditor: Boolean = false,
     val ticketAwardPerEncounter: Int = QuayPassCheckInViewModel.TICKETS_PER_ENCOUNTER
 ) {
     val arrivalSequenceRunning: Boolean get() = pendingArrivals.isNotEmpty()
@@ -62,7 +63,19 @@ class QuayPassCheckInViewModel @Inject constructor(
             .map { it.quayPassTicketBalance }
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 0)
 
+    val greeting: StateFlow<String> =
+        preferencesRepository.userPreferences
+            .map { it.quayPassGreeting ?: "" }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), "")
+
     val serviceState: StateFlow<QuayPassService.QuayPassRunState> = service.runState
+
+    fun setGreeting(text: String) {
+        viewModelScope.launch {
+            syncPreferencesRepository.setQuayPassGreeting(text)
+            socialRepository.sendQuayPassMessage(text)
+        }
+    }
 
     private val trackedArrivals = mutableSetOf<String>()
     private var arrivalJob: Job? = null
@@ -101,7 +114,16 @@ class QuayPassCheckInViewModel @Inject constructor(
         override fun onConfirm(): InputResult =
             if (activateCard(_uiState.value.focusedIndex)) InputResult.HANDLED
             else InputResult.UNHANDLED
+
+        override fun onSecondaryAction(): InputResult {
+            if (!_uiState.value.arrivalSequenceRunning) openGreetingEditor()
+            return InputResult.HANDLED
+        }
     }
+
+    fun openGreetingEditor() = _uiState.update { it.copy(showGreetingEditor = true) }
+
+    fun dismissGreetingEditor() = _uiState.update { it.copy(showGreetingEditor = false) }
 
     fun moveFocus(delta: Int): Boolean {
         val count = encounters.value.size

@@ -70,6 +70,7 @@ fun QuayPassCheckInScreen(
     val serviceState by viewModel.serviceState.collectAsState()
     val running = serviceState == QuayPassService.QuayPassRunState.RUNNING
     val ticketBalance by viewModel.ticketBalance.collectAsState()
+    val greeting by viewModel.greeting.collectAsState()
     val uiState by viewModel.uiState.collectAsState()
     val listState = rememberLazyListState()
     val inputDispatcher = LocalInputDispatcher.current
@@ -187,20 +188,28 @@ fun QuayPassCheckInScreen(
                 focusedAccountId !in uiState.friendAccountIds &&
                 focusedAccountId !in uiState.sentAccountIds
             FooterBar(
-                hints = if (canAddFriend) {
-                    listOf(
-                        InputButton.A to "Add Friend",
-                        InputButton.B to "Back",
-                        InputButton.DPAD_VERTICAL to "Scroll"
-                    )
-                } else {
-                    listOf(
-                        InputButton.B to "Back",
-                        InputButton.DPAD_VERTICAL to "Scroll"
-                    )
+                hints = buildList {
+                    if (canAddFriend) add(InputButton.A to "Add Friend")
+                    add(InputButton.Y to "Greeting")
+                    add(InputButton.B to "Back")
+                    add(InputButton.DPAD_VERTICAL to "Scroll")
+                },
+                onHintClick = { button ->
+                    if (button == InputButton.Y) viewModel.openGreetingEditor()
                 }
             )
         }
+    }
+
+    if (uiState.showGreetingEditor) {
+        GreetingEditModal(
+            initial = greeting,
+            onSubmit = {
+                viewModel.setGreeting(it)
+                viewModel.dismissGreetingEditor()
+            },
+            onDismiss = { viewModel.dismissGreetingEditor() }
+        )
     }
 }
 

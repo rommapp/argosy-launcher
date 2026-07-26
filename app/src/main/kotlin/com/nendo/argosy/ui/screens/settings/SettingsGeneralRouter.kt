@@ -55,7 +55,9 @@ internal fun routeNavigateToSection(vm: SettingsViewModel, section: SettingsSect
         }
         SettingsSection.STEAM_SETTINGS -> vm.steamDelegate.loadSteamSettings(vm.context, vm.viewModelScope)
         SettingsSection.PERMISSIONS -> vm.permissionsDelegate.refreshPermissions()
-        SettingsSection.SHADER_STACK -> vm.shaderChainManager.loadChain(vm._uiState.value.builtinVideo.shaderChainJson)
+        SettingsSection.SHADER_STACK -> vm.shaderChainManager.loadChain(
+            routeResolveShaderChainSettingsScope(vm._uiState.value).chainJson
+        )
         SettingsSection.DRIVERS -> vm.driversDelegate.loadDrivers(vm.viewModelScope)
         else -> {}
     }

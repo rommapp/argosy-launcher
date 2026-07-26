@@ -36,6 +36,12 @@ class LibretroSettingsRepository @Inject constructor(
     suspend fun upsert(settings: PlatformLibretroSettingsEntity): Long =
         platformLibretroSettingsDao.upsert(settings)
 
+    suspend fun setPlatformShaderChain(platformId: Long, shader: String, chainJson: String) {
+        val current = platformLibretroSettingsDao.getByPlatformId(platformId)
+            ?: PlatformLibretroSettingsEntity(platformId = platformId)
+        platformLibretroSettingsDao.upsert(current.copy(shader = shader, shaderChain = chainJson))
+    }
+
     suspend fun deleteByPlatformId(platformId: Long) =
         platformLibretroSettingsDao.deleteByPlatformId(platformId)
 

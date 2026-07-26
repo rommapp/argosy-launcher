@@ -889,25 +889,25 @@ class ArgosSocialService @Inject constructor(
 
     fun reportQuayPassEncounter(
         peerAccountId: String,
-        fingerprint: String,
-        encounteredAtEpoch: Long,
-        peerMessage: String?,
-        peerGameIgdbId: Long?,
-        peerGameTitle: String?,
-        peerAvatarRaster: String?
+        credentialBase64: String,
+        attestationBase64: String,
+        nonceBase64: String,
+        cardMessage: String?,
+        cardIgdbId: Long?,
+        cardAvatarPngBase64: String?
     ): Boolean {
         val peerCard = buildMap<String, Any> {
-            peerMessage?.let { put("message", it) }
-            peerGameIgdbId?.let { put("igdb_id", it) }
-            peerGameTitle?.let { put("game_title", it) }
-            peerAvatarRaster?.let { put("avatar", it) }
+            cardMessage?.let { put("message", it) }
+            cardIgdbId?.let { put("igdb_id", it) }
+            cardAvatarPngBase64?.let { put("avatar", it) }
         }
-        val payload = buildMap<String, Any> {
-            put("peer_account_id", peerAccountId)
-            put("credential_fingerprint", fingerprint)
-            put("encountered_at", encounteredAtEpoch)
-            if (peerCard.isNotEmpty()) put("peer_card", peerCard)
-        }
+        val payload = mapOf(
+            "peer_account_id" to peerAccountId,
+            "credential" to credentialBase64,
+            "attestation" to attestationBase64,
+            "nonce" to nonceBase64,
+            "peer_card" to peerCard
+        )
         return send(MessageTypes.REPORT_QUAYPASS_ENCOUNTER, payload)
     }
 

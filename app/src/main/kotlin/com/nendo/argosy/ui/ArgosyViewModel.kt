@@ -561,6 +561,7 @@ class ArgosyViewModel @Inject constructor(
     val isDrawerOpen: StateFlow<Boolean> = _isDrawerOpen.asStateFlow()
 
     fun setDrawerOpen(open: Boolean) {
+        if (open) _drawerTab.value = DrawerTab.NAVIGATION
         _isDrawerOpen.value = open
     }
 

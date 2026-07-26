@@ -14,7 +14,7 @@ object QuayPassConfig {
     const val MANUFACTURER_ID: Int = 0xFFFF
     val MAGIC_BYTES: ByteArray = byteArrayOf(0x41, 0x52)
 
-    const val PROTOCOL_MAJOR: Byte = 2
+    const val PROTOCOL_MAJOR: Byte = 3
     const val PROTOCOL_MINOR: Byte = 0
 
     /** Hard ceiling on the whole signed envelope (profile + credential + signature). */

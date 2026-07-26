@@ -18,7 +18,6 @@ import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.entity.GameEntity
 import com.nendo.argosy.data.preferences.SyncPreferencesRepository
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
-import com.nendo.argosy.data.quaypass.ble.DecodeResult
 import com.nendo.argosy.data.quaypass.ble.OutboundProfile
 import com.nendo.argosy.data.quaypass.ble.QuayPassAdvertiser
 import com.nendo.argosy.data.quaypass.ble.QuayPassExchangeOrchestrator
@@ -27,7 +26,6 @@ import com.nendo.argosy.data.quaypass.ble.QuayPassGattServer
 import com.nendo.argosy.data.quaypass.ble.QuayPassDoodleCodec
 import com.nendo.argosy.data.quaypass.ble.QuayPassScanReceiver
 import com.nendo.argosy.data.quaypass.ble.QuayPassScanner
-import com.nendo.argosy.data.quaypass.ble.QuayPassWireFormat
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -206,16 +204,15 @@ class QuayPassService @Inject constructor(
         gattServer = QuayPassGattServer(
             application = application,
             scope = scope,
-            getOurProfileBytes = { cachedOurBytes.get() },
-            onPeerProfileWritten = { bytes ->
-                when (val result = QuayPassWireFormat.decode(bytes)) {
-                    is DecodeResult.Success -> {
-                        scope.launch { orchestrator.record(result.profile) }
-                        true
-                    }
-                    is DecodeResult.Failure -> false
+            onProfileWrite = { deviceKey, frame ->
+                cachedOurBytes.get()?.let { ourEnvelope ->
+                    orchestrator.onServerProfileWrite(deviceKey, ourEnvelope, frame)
                 }
-            }
+            },
+            onAttestationWrite = { deviceKey, frame ->
+                orchestrator.onServerAttestationWrite(deviceKey, frame)
+            },
+            onDeviceGone = { deviceKey -> orchestrator.onServerDeviceGone(deviceKey) }
         ).also { it.start() }
         advertiser = QuayPassAdvertiser(application).also { it.start() }
         scanner = QuayPassScanner(application).also { it.start() }

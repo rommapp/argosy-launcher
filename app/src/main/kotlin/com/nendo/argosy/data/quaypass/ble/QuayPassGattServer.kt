@@ -21,8 +21,9 @@ import java.util.concurrent.ConcurrentHashMap
 class QuayPassGattServer(
     private val application: Application,
     private val scope: CoroutineScope,
-    private val getOurProfileBytes: () -> ByteArray?,
-    private val onPeerProfileWritten: (ByteArray) -> Boolean
+    private val onProfileWrite: suspend (deviceKey: String, frame: QuayPassExchangeFrames.ProfileWrite) -> ByteArray?,
+    private val onAttestationWrite: suspend (deviceKey: String, frame: QuayPassExchangeFrames.AttestationWrite) -> Unit,
+    private val onDeviceGone: (deviceKey: String) -> Unit
 ) {
 
     private val bluetoothManager by lazy {
@@ -37,7 +38,7 @@ class QuayPassGattServer(
     private val deviceMtus = ConcurrentHashMap<String, Int>()
     private val readCursors = ConcurrentHashMap<String, Int>()
     private val readWindowStarts = ConcurrentHashMap<String, Int>()
-    private val verifiedReaders = ConcurrentHashMap.newKeySet<String>()
+    private val readResponses = ConcurrentHashMap<String, ByteArray>()
     private val watchdogs = ConcurrentHashMap<String, Job>()
 
     @SuppressLint("MissingPermission")
@@ -83,7 +84,7 @@ class QuayPassGattServer(
         deviceMtus.clear()
         readCursors.clear()
         readWindowStarts.clear()
-        verifiedReaders.clear()
+        readResponses.clear()
         Log.d(TAG, "GATT server stopped")
     }
 
@@ -107,7 +108,28 @@ class QuayPassGattServer(
         deviceMtus.remove(address)
         readCursors.remove(address)
         readWindowStarts.remove(address)
-        verifiedReaders.remove(address)
+        readResponses.remove(address)
+        onDeviceGone(address)
+    }
+
+    private fun dispatchMessage(deviceKey: String, payload: ByteArray) {
+        when (QuayPassExchangeFrames.messageType(payload)) {
+            QuayPassExchangeFrames.MSG_PROFILE -> {
+                val frame = QuayPassExchangeFrames.parseProfileWrite(payload) ?: return
+                scope.launch {
+                    val response = onProfileWrite(deviceKey, frame)
+                    if (response != null) {
+                        readResponses[deviceKey] = response
+                        readCursors.remove(deviceKey)
+                        readWindowStarts.remove(deviceKey)
+                    }
+                }
+            }
+            QuayPassExchangeFrames.MSG_ATTESTATION -> {
+                val frame = QuayPassExchangeFrames.parseAttestationWrite(payload) ?: return
+                scope.launch { onAttestationWrite(deviceKey, frame) }
+            }
+        }
     }
 
     private sealed interface Assembly {
@@ -148,19 +170,15 @@ class QuayPassGattServer(
                 gattServer?.sendResponse(device, requestId, BluetoothGatt.GATT_FAILURE, 0, null)
                 return
             }
-            if (!verifiedReaders.contains(device.address)) {
+            val response = readResponses[device.address]
+            if (response == null || response.isEmpty()) {
                 gattServer?.sendResponse(device, requestId, BluetoothGatt.GATT_SUCCESS, offset, ByteArray(0))
                 return
             }
-            val profile = getOurProfileBytes()
-            if (profile == null || profile.isEmpty()) {
-                gattServer?.sendResponse(device, requestId, BluetoothGatt.GATT_SUCCESS, offset, ByteArray(0))
-                return
-            }
-            val stream = ByteArray(2 + profile.size)
-            stream[0] = ((profile.size shr 8) and 0xFF).toByte()
-            stream[1] = (profile.size and 0xFF).toByte()
-            profile.copyInto(stream, 2)
+            val stream = ByteArray(2 + response.size)
+            stream[0] = ((response.size shr 8) and 0xFF).toByte()
+            stream[1] = (response.size and 0xFF).toByte()
+            response.copyInto(stream, 2)
 
             val mtu = deviceMtus[device.address] ?: DEFAULT_MTU
             val windowCap = (mtu - WINDOW_MARGIN_BYTES).coerceAtLeast(MIN_WINDOW_BYTES)
@@ -234,11 +252,7 @@ class QuayPassGattServer(
             when (val assembly = assemble(merged)) {
                 is Assembly.Complete -> {
                     sequentialWriteBuffers.remove(device.address)
-                    if (onPeerProfileWritten(assembly.payload)) {
-                        verifiedReaders.add(device.address)
-                        readCursors.remove(device.address)
-                        readWindowStarts.remove(device.address)
-                    }
+                    dispatchMessage(device.address, assembly.payload)
                     if (responseNeeded) {
                         gattServer?.sendResponse(device, requestId, BluetoothGatt.GATT_SUCCESS, 0, null)
                     }
@@ -263,10 +277,8 @@ class QuayPassGattServer(
             val accumulated = pendingWriteBuffers.remove(device.address)
             if (execute && accumulated != null) {
                 val assembly = assemble(accumulated)
-                if (assembly is Assembly.Complete && onPeerProfileWritten(assembly.payload)) {
-                    verifiedReaders.add(device.address)
-                    readCursors.remove(device.address)
-                    readWindowStarts.remove(device.address)
+                if (assembly is Assembly.Complete) {
+                    dispatchMessage(device.address, assembly.payload)
                 }
             }
             gattServer?.sendResponse(device, requestId, BluetoothGatt.GATT_SUCCESS, 0, null)

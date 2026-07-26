@@ -42,6 +42,7 @@ import com.nendo.argosy.data.local.dao.StateTombstoneDao
 import com.nendo.argosy.data.local.dao.CachedLicenseDao
 import com.nendo.argosy.data.local.dao.QuayPassDailyStatsDao
 import com.nendo.argosy.data.local.dao.QuayPassEncounterDao
+import com.nendo.argosy.data.local.dao.QuayPassPendingReportDao
 import com.nendo.argosy.data.local.dao.SteamAccountDao
 import com.nendo.argosy.data.local.dao.SteamDownloadQueueDao
 import com.nendo.argosy.data.local.dao.SteamDownloadTrackingDao
@@ -246,4 +247,8 @@ object DatabaseModule {
     @Provides
     fun provideQuayPassDailyStatsDao(database: ALauncherDatabase): QuayPassDailyStatsDao =
         database.quayPassDailyStatsDao()
+
+    @Provides
+    fun provideQuayPassPendingReportDao(database: ALauncherDatabase): QuayPassPendingReportDao =
+        database.quayPassPendingReportDao()
 }

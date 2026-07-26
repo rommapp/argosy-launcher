@@ -196,7 +196,7 @@ class QuayPassCheckInViewModel @Inject constructor(
         return (localCards + manifestOnly).sortedByDescending { it.encounteredAt }
     }
 
-    fun createInputHandler(): InputHandler = object : InputHandler {
+    fun createInputHandler(onExit: () -> Unit): InputHandler = object : InputHandler {
         override fun onUp(): InputResult =
             if (moveFocus(-1)) InputResult.HANDLED else InputResult.UNHANDLED
 
@@ -209,6 +209,11 @@ class QuayPassCheckInViewModel @Inject constructor(
 
         override fun onSecondaryAction(): InputResult {
             if (!_uiState.value.arrivalSequenceRunning) openGreetingEditor()
+            return InputResult.HANDLED
+        }
+
+        override fun onBack(): InputResult {
+            onExit()
             return InputResult.HANDLED
         }
     }

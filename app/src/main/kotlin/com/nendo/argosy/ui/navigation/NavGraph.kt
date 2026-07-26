@@ -391,7 +391,7 @@ fun NavGraph(
         }
 
         composable(Screen.QuayPass.route) {
-            QuayPassCheckInScreen()
+            QuayPassCheckInScreen(onBack = navigateToDefault)
         }
     }
 }

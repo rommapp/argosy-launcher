@@ -68,6 +68,7 @@ import java.time.format.DateTimeFormatter
 
 @Composable
 fun QuayPassCheckInScreen(
+    onBack: () -> Unit,
     viewModel: QuayPassCheckInViewModel = hiltViewModel()
 ) {
     val cards by viewModel.cards.collectAsState()
@@ -92,7 +93,7 @@ fun QuayPassCheckInScreen(
         onDispose { viewModel.markAllSeen() }
     }
 
-    val handler = remember(viewModel) { viewModel.createInputHandler() }
+    val handler = remember(viewModel, onBack) { viewModel.createInputHandler(onBack) }
 
     val lifecycleOwner = LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner, handler) {

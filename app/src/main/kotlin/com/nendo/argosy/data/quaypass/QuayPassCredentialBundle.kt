@@ -143,6 +143,46 @@ data class QuayPassCredentialBundle(
             false
         }
 
+        /**
+         * Verifies a per-meeting attestation, which uses the server-verifiable
+         * signature form (Ed25519 raw / ECDSA ASN.1 DER) rather than the P1363
+         * form the BLE envelope carries. Matches [QuayPassKeystore.signServerVerifiable]
+         * so the same bytes verify on this client and on the Go server.
+         */
+        fun verifyPeerAttestation(
+            pubkeyAlg: Int,
+            pubKeyEncoded: ByteArray,
+            data: ByteArray,
+            sig: ByteArray
+        ): Boolean {
+            val oid = try {
+                SubjectPublicKeyInfo.getInstance(pubKeyEncoded).algorithm.algorithm
+            } catch (_: Throwable) {
+                return false
+            }
+            return when {
+                oid == OID_ED25519 && pubkeyAlg == ALG_ED25519 ->
+                    verifyEd25519(pubKeyEncoded, data, sig)
+                oid == OID_EC_PUBLIC_KEY && pubkeyAlg == ALG_EC_P256 ->
+                    verifyEcP256Der(pubKeyEncoded, data, sig)
+                else -> false
+            }
+        }
+
+        private fun verifyEcP256Der(
+            pubKeyEncoded: ByteArray,
+            data: ByteArray,
+            derSig: ByteArray
+        ): Boolean = try {
+            val pub = KeyFactory.getInstance("EC").generatePublic(X509EncodedKeySpec(pubKeyEncoded))
+            val verifier = Signature.getInstance("SHA256withECDSA")
+            verifier.initVerify(pub)
+            verifier.update(data)
+            verifier.verify(derSig)
+        } catch (_: Throwable) {
+            false
+        }
+
         internal fun verifyEd25519(
             pubKeyEncoded: ByteArray,
             data: ByteArray,

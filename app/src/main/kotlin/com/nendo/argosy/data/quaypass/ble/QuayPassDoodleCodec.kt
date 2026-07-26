@@ -15,6 +15,7 @@ object QuayPassDoodleCodec {
     const val VERSION: Int = 1
     const val SIZE_SMALL: Int = 16
     const val SIZE_MEDIUM: Int = 32
+    const val SIZE_LARGE: Int = 64
 
     val PALETTE_RGB: IntArray = intArrayOf(
         0xFFFFFF, 0x000000, 0x808080, 0xFF0000,
@@ -79,17 +80,19 @@ object QuayPassDoodleCodec {
     }
 
     /**
-     * Converts the sparse doodle format (DoodleEncoder v1: version u8, sizeEnum
-     * u8, paletteCount u8, RGB triples, pixelCount u16, x/y/localIndex triples)
-     * into a full palette-index grid. Returns null for malformed input or the
-     * unsupported 64px canvas.
+     * The single decoder for the sparse doodle format (version u8, sizeEnum u8,
+     * paletteCount u8, RGB triples, pixelCount u16, x/y/localIndex triples) into a
+     * full palette-index grid. Supports every editor canvas size (16/32/64) so the
+     * ui DoodleEncoder can delegate here instead of re-parsing; [fromSparseDoodle]
+     * narrows it to the BLE avatar sizes.
      */
-    fun fromSparseDoodle(bytes: ByteArray): QuayPassDoodleRaster? {
+    fun decodeSparse(bytes: ByteArray): QuayPassDoodleRaster? {
         if (bytes.size < 5) return null
         if (bytes[0].toInt() and 0xFF != 1) return null
         val size = when (bytes[1].toInt() and 0xFF) {
             0 -> SIZE_SMALL
             1 -> SIZE_MEDIUM
+            2 -> SIZE_LARGE
             else -> return null
         }
         val paletteCount = bytes[2].toInt() and 0xFF
@@ -117,6 +120,12 @@ object QuayPassDoodleCodec {
         }
         return QuayPassDoodleRaster(size, grid)
     }
+
+    /**
+     * Avatar-wire decode: only the sparse sizes the BLE raster supports (16/32).
+     */
+    fun fromSparseDoodle(bytes: ByteArray): QuayPassDoodleRaster? =
+        decodeSparse(bytes)?.takeUnless { it.size == SIZE_LARGE }
 
     fun encodeFromSparseBase64(doodleBase64: String): ByteArray? = runCatching {
         fromSparseDoodle(Base64.getDecoder().decode(doodleBase64))?.let { encode(it) }

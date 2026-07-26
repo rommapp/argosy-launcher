@@ -898,7 +898,7 @@ class ArgosSocialService @Inject constructor(
             peerMessage?.let { put("message", it) }
             peerGameIgdbId?.let { put("igdb_id", it) }
             peerGameTitle?.let { put("game_title", it) }
-            peerAvatarRaster?.let { put("avatar_raster", it) }
+            peerAvatarRaster?.let { put("avatar", it) }
         }
         val payload = buildMap<String, Any> {
             put("peer_account_id", peerAccountId)
@@ -930,7 +930,7 @@ class ArgosSocialService @Inject constructor(
             username = obj.optString("username", ""),
             displayName = obj.optString("display_name", null)?.takeIf { it.isNotEmpty() },
             avatarColor = obj.optString("avatar_color", null)?.takeIf { it.isNotEmpty() },
-            quayPassAvatar = obj.optString("quaypass_avatar", null)?.takeIf { it.isNotEmpty() },
+            avatarRasterPng = obj.optString("avatar_raster", null)?.takeIf { it.isNotEmpty() },
             message = obj.optString("message", null)?.takeIf { it.isNotEmpty() },
             lastGameIgdbId = lastPlayed?.optLong("igdb_id")?.takeIf { it > 0 },
             lastGameTitle = lastPlayed?.optString("title", null)?.takeIf { !it.isNullOrEmpty() },

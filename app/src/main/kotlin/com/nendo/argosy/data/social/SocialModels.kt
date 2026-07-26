@@ -27,7 +27,7 @@ data class QuayPassCheckin(
     val username: String,
     val displayName: String?,
     val avatarColor: String?,
-    val quayPassAvatar: String?,
+    val avatarRasterPng: String?,
     val message: String?,
     val lastGameIgdbId: Long?,
     val lastGameTitle: String?,

@@ -34,6 +34,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.graphics.FilterQuality
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
@@ -43,6 +44,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
+import coil.compose.AsyncImage
 import com.nendo.argosy.data.quaypass.QuayPassService
 import com.nendo.argosy.ui.components.FocusedScroll
 import com.nendo.argosy.ui.components.FooterBar
@@ -336,11 +338,24 @@ private fun CheckInCardView(
                 }
                 if (!card.lastGameTitle.isNullOrBlank()) {
                     Spacer(Modifier.height(Dimens.spacingXs))
-                    Text(
-                        text = "Played ${card.lastGameTitle}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        if (card.coverThumbUrl != null) {
+                            AsyncImage(
+                                model = card.coverThumbUrl,
+                                contentDescription = null,
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier
+                                    .size(Dimens.iconLg)
+                                    .clip(RoundedCornerShape(Dimens.radiusSm))
+                            )
+                            Spacer(Modifier.width(Dimens.spacingXs))
+                        }
+                        Text(
+                            text = "Played ${card.lastGameTitle}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
                 Spacer(Modifier.height(Dimens.spacingXs))
                 Text(

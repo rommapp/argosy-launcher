@@ -165,7 +165,7 @@ class QuayPassCheckInViewModel @Inject constructor(
                     accountId = manifest.userId,
                     username = manifest.username,
                     displayName = manifest.displayName,
-                    avatarPngBase64 = manifest.quayPassAvatar,
+                    avatarPngBase64 = manifest.avatarRasterPng,
                     avatarSparse = if (manifest.isFriend) friendAvatarById[manifest.userId] else null,
                     greeting = manifest.message,
                     lastGameTitle = manifest.lastGameTitle,

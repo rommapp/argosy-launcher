@@ -1,8 +1,8 @@
 package com.nendo.argosy.ui.screens.doodle
 
 import android.util.Base64
+import com.nendo.argosy.data.quaypass.ble.QuayPassDoodleCodec
 import java.io.ByteArrayOutputStream
-import java.nio.ByteBuffer
 
 object DoodleEncoder {
     private const val VERSION: Byte = 1
@@ -50,43 +50,19 @@ object DoodleEncoder {
     }
 
     fun decode(data: ByteArray): DecodedDoodle {
-        val buffer = ByteBuffer.wrap(data)
-
-        val version = buffer.get().toInt() and 0xFF
-        require(version == 1) { "Unsupported doodle version: $version" }
-
-        val sizeEnum = buffer.get().toInt() and 0xFF
-        val size = CanvasSize.fromEnum(sizeEnum)
-
-        val paletteCount = buffer.get().toInt() and 0xFF
-        val palette = mutableListOf<DoodleColor>()
-
-        repeat(paletteCount) {
-            val r = buffer.get().toInt() and 0xFF
-            val g = buffer.get().toInt() and 0xFF
-            val b = buffer.get().toInt() and 0xFF
-
-            val hex = 0xFF000000L or (r.toLong() shl 16) or (g.toLong() shl 8) or b.toLong()
-            val color = DoodleColor.entries.find { it.hex == hex } ?: DoodleColor.BLACK
-            palette.add(color)
-        }
-
-        val pixelCountHigh = buffer.get().toInt() and 0xFF
-        val pixelCountLow = buffer.get().toInt() and 0xFF
-        val pixelCount = (pixelCountHigh shl 8) or pixelCountLow
-
+        val raster = QuayPassDoodleCodec.decodeSparse(data)
+            ?: throw IllegalArgumentException("Unsupported or malformed doodle")
+        val size = CanvasSize.entries.find { it.pixels == raster.size }
+            ?: throw IllegalArgumentException("Unsupported doodle size: ${raster.size}")
         val pixels = mutableMapOf<Pair<Int, Int>, DoodleColor>()
-
-        repeat(pixelCount) {
-            val x = buffer.get().toInt() and 0xFF
-            val y = buffer.get().toInt() and 0xFF
-            val colorIndex = buffer.get().toInt() and 0xFF
-
-            if (colorIndex < palette.size) {
-                pixels[x to y] = palette[colorIndex]
+        for (y in 0 until raster.size) {
+            for (x in 0 until raster.size) {
+                val index = raster.paletteIndices[y * raster.size + x]
+                if (index != 0) {
+                    pixels[x to y] = DoodleColor.fromIndex(index)
+                }
             }
         }
-
         return DecodedDoodle(size, pixels)
     }
 

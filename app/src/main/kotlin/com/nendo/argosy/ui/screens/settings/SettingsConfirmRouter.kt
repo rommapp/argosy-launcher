@@ -12,6 +12,7 @@ import com.nendo.argosy.ui.screens.settings.sections.AmbientLedItem
 import com.nendo.argosy.ui.screens.settings.sections.ambientLedItemAtFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.ambientLedMaxFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.BiosItem
+import com.nendo.argosy.ui.screens.settings.sections.BuiltinEmulatorItem
 import com.nendo.argosy.ui.screens.settings.sections.PlatformDetailItem
 import com.nendo.argosy.ui.screens.settings.sections.platformDetailItemAtFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.platformDetailMaxFocusIndex
@@ -860,6 +861,24 @@ private fun routeFramePickerConfirm(vm: SettingsViewModel, state: SettingsUiStat
     return InputResult.HANDLED
 }
 
+internal fun builtinEmulatorParentItem(section: SettingsSection): BuiltinEmulatorItem? = when (section) {
+    SettingsSection.BUILTIN_VIDEO -> BuiltinEmulatorItem.VIDEO
+    SettingsSection.BUILTIN_CONTROLS -> BuiltinEmulatorItem.CONTROLS
+    SettingsSection.CORE_MANAGEMENT -> BuiltinEmulatorItem.CORE_MANAGEMENT
+    SettingsSection.CORE_OPTIONS -> BuiltinEmulatorItem.CORE_OPTIONS
+    else -> null
+}
+
+private fun routeReturnToBuiltinEmulator(vm: SettingsViewModel, childSection: SettingsSection) {
+    val parentItem = requireNotNull(builtinEmulatorParentItem(childSection))
+    vm._uiState.update {
+        it.copy(
+            currentSection = SettingsSection.BUILTIN_EMULATOR,
+            focusedIndex = parentItem.focusIndex
+        )
+    }
+}
+
 internal fun routeNavigateBack(vm: SettingsViewModel): Boolean {
     val state = vm._uiState.value
     return when {
@@ -963,7 +982,7 @@ internal fun routeNavigateBack(vm: SettingsViewModel): Boolean {
                     platformDetail = it.platformDetail.copy(builtinEnteredFromPlatform = false)
                 ) }
             } else {
-                vm._uiState.update { it.copy(currentSection = SettingsSection.BUILTIN_EMULATOR, focusedIndex = 1) }
+                routeReturnToBuiltinEmulator(vm, state.currentSection)
             }; true
         }
         state.currentSection == SettingsSection.BUILTIN_CONTROLS -> {
@@ -974,11 +993,11 @@ internal fun routeNavigateBack(vm: SettingsViewModel): Boolean {
                     platformDetail = it.platformDetail.copy(builtinEnteredFromPlatform = false)
                 ) }
             } else {
-                vm._uiState.update { it.copy(currentSection = SettingsSection.BUILTIN_EMULATOR, focusedIndex = 2) }
+                routeReturnToBuiltinEmulator(vm, state.currentSection)
             }; true
         }
         state.currentSection == SettingsSection.CORE_MANAGEMENT -> {
-            vm._uiState.update { it.copy(currentSection = SettingsSection.BUILTIN_EMULATOR, focusedIndex = 3) }; true
+            routeReturnToBuiltinEmulator(vm, state.currentSection); true
         }
         state.currentSection == SettingsSection.CORE_OPTIONS -> {
             if (state.platformDetail.builtinEnteredFromPlatform) {
@@ -988,7 +1007,7 @@ internal fun routeNavigateBack(vm: SettingsViewModel): Boolean {
                     platformDetail = it.platformDetail.copy(builtinEnteredFromPlatform = false)
                 ) }
             } else {
-                vm._uiState.update { it.copy(currentSection = SettingsSection.BUILTIN_EMULATOR, focusedIndex = 4) }
+                routeReturnToBuiltinEmulator(vm, state.currentSection)
             }; true
         }
         state.currentSection == SettingsSection.PLATFORM_DETAIL && state.platformDetail.showRemoveConfirm -> {
@@ -1090,7 +1109,11 @@ private fun computeMaxFocusIndex(
     SettingsSection.PLATFORMS -> emulatorsMaxFocusIndex(
         state.emulators.platforms.size
     )
-    SettingsSection.BUILTIN_EMULATOR -> if (state.emulators.builtinLibretroEnabled) 6 else 0
+    SettingsSection.BUILTIN_EMULATOR -> if (state.emulators.builtinLibretroEnabled) {
+        BuiltinEmulatorItem.TWO_COLUMN.focusIndex
+    } else {
+        BuiltinEmulatorItem.ENABLE.focusIndex
+    }
     SettingsSection.PLATFORM_DETAIL -> platformDetailMaxFocusIndex(state)
     SettingsSection.BUILTIN_VIDEO -> builtinVideoMaxFocusIndex(state.builtinVideo, state.platformLibretro.platformSettings)
     SettingsSection.BUILTIN_CONTROLS -> builtinControlsMaxFocusIndex(state.builtinControls)
@@ -1165,17 +1188,19 @@ private fun routePlatformDetailConfirm(vm: SettingsViewModel, state: SettingsUiS
 
 private fun routeBuiltinEmulatorConfirm(vm: SettingsViewModel, state: SettingsUiState): InputResult {
     val builtinEnabled = state.emulators.builtinLibretroEnabled
-    when (state.focusedIndex) {
-        0 -> vm.setBuiltinLibretroEnabled(!builtinEnabled)
-        1 -> if (builtinEnabled) {
+    when (BuiltinEmulatorItem.entries.getOrNull(state.focusedIndex)) {
+        BuiltinEmulatorItem.ENABLE -> vm.setBuiltinLibretroEnabled(!builtinEnabled)
+        BuiltinEmulatorItem.ARCHITECTURE -> if (builtinEnabled) {
             vm.requestEnumPicker(BUILTIN_ARCHITECTURE_PICKER_KEY)
             return InputResult.handled(SoundType.OPEN_MODAL)
         }
-        2 -> if (builtinEnabled) vm.navigateToBuiltinVideo()
-        3 -> if (builtinEnabled) vm.navigateToBuiltinControls()
-        4 -> if (builtinEnabled) vm.navigateToCoreManagement()
-        5 -> if (builtinEnabled) vm.navigateToCoreOptions()
-        6 -> if (builtinEnabled) vm.setIngameMenuTwoColumn(!state.emulators.ingameMenuTwoColumn)
+        BuiltinEmulatorItem.VIDEO -> if (builtinEnabled) vm.navigateToBuiltinVideo()
+        BuiltinEmulatorItem.CONTROLS -> if (builtinEnabled) vm.navigateToBuiltinControls()
+        BuiltinEmulatorItem.CORE_MANAGEMENT -> if (builtinEnabled) vm.navigateToCoreManagement()
+        BuiltinEmulatorItem.CORE_OPTIONS -> if (builtinEnabled) vm.navigateToCoreOptions()
+        BuiltinEmulatorItem.TWO_COLUMN ->
+            if (builtinEnabled) vm.setIngameMenuTwoColumn(!state.emulators.ingameMenuTwoColumn)
+        null -> {}
     }
     return InputResult.HANDLED
 }

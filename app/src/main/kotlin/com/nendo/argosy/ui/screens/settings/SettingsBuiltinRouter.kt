@@ -15,6 +15,7 @@ import com.nendo.argosy.ui.input.HapticPattern
 import com.nendo.argosy.core.notification.NotificationType
 import com.nendo.argosy.core.notification.showError
 import com.nendo.argosy.core.emulator.LibretroSettingDef
+import com.nendo.argosy.ui.screens.settings.sections.BuiltinEmulatorItem
 import com.nendo.argosy.util.AppPaths
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.firstOrNull
@@ -78,7 +79,11 @@ internal fun routeSetBuiltinArchitecture(vm: SettingsViewModel, value: String) {
 }
 
 internal fun routeSetBuiltinLibretroEnabled(vm: SettingsViewModel, enabled: Boolean) {
-    val newToggleIndex = if (enabled) 3 else 0
+    val newToggleIndex = if (enabled) {
+        BuiltinEmulatorItem.CONTROLS.focusIndex
+    } else {
+        BuiltinEmulatorItem.ENABLE.focusIndex
+    }
     vm._uiState.update { state ->
         val adjustedParentIndex = when {
             enabled && state.parentFocusIndex >= 2 -> state.parentFocusIndex + 1

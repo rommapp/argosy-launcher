@@ -128,6 +128,20 @@ object StatePathRegistry {
             usesCore = true,
             maxSlots = 10
         ),
+        "retroarch_32" to StatePathConfig(
+            emulatorId = "retroarch_32",
+            defaultPaths = listOf(
+                "{extStorage}/RetroArch/states/{core}",
+                "{extStorage}/Android/data/com.retroarch.ra32/files/states/{core}",
+                "/data/data/com.retroarch.ra32/states/{core}"
+            ),
+            slotPattern = StateSlotPattern.SuffixNumber(
+                extension = "state",
+                autoSlotSuffix = "auto"
+            ),
+            usesCore = true,
+            maxSlots = 10
+        ),
 
         "ppsspp" to StatePathConfig(
             emulatorId = "ppsspp",

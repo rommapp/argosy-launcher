@@ -122,7 +122,8 @@ class SavePathResolver @Inject constructor(
             ?: return@withContext null
         val effectiveEmulatorId = config.emulatorId
         val userConfig = emulatorSaveConfigDao.getByEmulator(effectiveEmulatorId)
-        val isRetroArch = effectiveEmulatorId == "retroarch" || effectiveEmulatorId == "retroarch_64"
+        val isRetroArch =
+            com.nendo.argosy.data.emulator.RetroArchPathResolver.isRetroArch(effectiveEmulatorId)
         val candidates = buildList {
             perGameSaveDir(gameId, config, platformSlug)?.let { add(it) }
             if (userConfig?.savesBesideRom == true && romPath != null) File(romPath).parent?.let { add(it) }
@@ -196,7 +197,8 @@ class SavePathResolver @Inject constructor(
 
         val effectiveEmulatorId = config.emulatorId
         val userConfig = emulatorSaveConfigDao.getByEmulator(effectiveEmulatorId)
-        val isRetroArch = effectiveEmulatorId == "retroarch" || effectiveEmulatorId == "retroarch_64"
+        val isRetroArch =
+            com.nendo.argosy.data.emulator.RetroArchPathResolver.isRetroArch(effectiveEmulatorId)
         val besideRomBaseDir = if (userConfig?.savesBesideRom == true && romPath != null) File(romPath).parent else null
         val overrideBaseDir = besideRomBaseDir
             ?: userConfig?.takeIf { it.isUserOverride }?.savePathPattern
@@ -640,7 +642,7 @@ class SavePathResolver @Inject constructor(
             return "$perGameDir/$baseName.$extension"
         }
 
-        if (emulatorId == "retroarch" || emulatorId == "retroarch_64") {
+        if (com.nendo.argosy.data.emulator.RetroArchPathResolver.isRetroArch(emulatorId)) {
             return constructRetroArchSavePath(emulatorId, gameTitle, platformSlug, romPath, coreName)
         }
 

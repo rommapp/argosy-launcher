@@ -103,7 +103,7 @@ class PlatformSaveHandlerRegistry @Inject constructor(
     }
 
     companion object {
-        private val RETROARCH_EMULATOR_IDS = setOf("retroarch", "retroarch_64")
+        private val RETROARCH_EMULATOR_IDS = setOf("retroarch", "retroarch_64", "retroarch_32")
     }
 }
 

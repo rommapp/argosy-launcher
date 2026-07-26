@@ -7,6 +7,7 @@ import com.nendo.argosy.data.emulator.EmulatorDownloadManager
 import com.nendo.argosy.data.emulator.EmulatorRegistry
 import com.nendo.argosy.data.emulator.EmulatorUpdateManager
 import com.nendo.argosy.data.emulator.InstalledEmulator
+import com.nendo.argosy.data.emulator.RetroArchPathResolver
 import com.nendo.argosy.data.remote.github.EmulatorUpdateRepository
 import com.nendo.argosy.data.remote.github.FetchReleaseResult
 import com.nendo.argosy.data.local.entity.EmulatorUpdateEntity
@@ -341,7 +342,7 @@ class EmulatorSettingsDelegate @Inject constructor(
     ) {
         scope.launch {
             val config = emulatorSaveConfigRepository.getByEmulator(emulatorId)
-            val besideRomSupported = emulatorId != "retroarch" && emulatorId != "retroarch_64"
+            val besideRomSupported = !RetroArchPathResolver.isRetroArch(emulatorId)
             _state.update {
                 it.copy(
                     showSavePathModal = true,

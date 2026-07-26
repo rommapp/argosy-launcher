@@ -222,6 +222,19 @@ object BiosPathRegistry {
                 "amiga", "amigacd32", "cdtv"
             )
         ),
+        "retroarch_32" to BiosPathConfig(
+            emulatorId = "retroarch_32",
+            defaultPaths = listOf(
+                "$primaryRoot/RetroArch/system",
+                "$primaryRoot/Android/data/com.retroarch.ra32/files/system"
+            ),
+            supportedPlatforms = setOf(
+                "psx", "saturn", "scd", "dreamcast", "dc", "neogeo",
+                "3do", "nds", "gba", "tgcd", "pcfx", "lynx", "arcade",
+                "fbneo", "mame",
+                "amiga", "amigacd32", "cdtv"
+            )
+        ),
         "duckstation" to BiosPathConfig(
             emulatorId = "duckstation",
             defaultPaths = listOf(

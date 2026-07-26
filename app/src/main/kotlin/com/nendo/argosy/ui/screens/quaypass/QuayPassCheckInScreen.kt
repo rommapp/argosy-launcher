@@ -359,7 +359,11 @@ private fun CheckInCardView(
                 }
                 Spacer(Modifier.height(Dimens.spacingXs))
                 Text(
-                    text = formatTimestamp(card.encounteredAt),
+                    text = if (card.meetCount > 1) {
+                        "Met ${card.meetCount} times · ${formatTimestamp(card.encounteredAt)}"
+                    } else {
+                        formatTimestamp(card.encounteredAt)
+                    },
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

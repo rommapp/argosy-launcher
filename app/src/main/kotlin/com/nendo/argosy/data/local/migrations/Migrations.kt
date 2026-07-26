@@ -2121,3 +2121,9 @@ object Migration_146_147 : Migration(146, 147) {
         db.execSQL("ALTER TABLE emulator_configs ADD COLUMN selectedMemcardPath TEXT")
     }
 }
+
+object Migration_147_148 : Migration(147, 148) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE quaypass_encounters ADD COLUMN meetCount INTEGER NOT NULL DEFAULT 1")
+    }
+}

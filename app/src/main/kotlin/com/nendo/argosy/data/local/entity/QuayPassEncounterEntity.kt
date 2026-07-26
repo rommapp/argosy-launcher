@@ -27,5 +27,6 @@ data class QuayPassEncounterEntity(
     val encounteredAt: Instant,
     val seenByUser: Boolean = false,
     val accountId: String? = null,
-    val reported: Boolean = false
+    val reported: Boolean = false,
+    val meetCount: Int = 1
 )

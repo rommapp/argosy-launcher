@@ -16,23 +16,31 @@ interface QuayPassEncounterDao {
     suspend fun upsert(encounter: QuayPassEncounterEntity)
 
     /**
-     * Atomic, persistent cooldown claim: records the encounter only when the peer
-     * has no encounter newer than [cooldownCutoff], returning whether it was
-     * claimed. Runs in one transaction so two simultaneous passes with the same
-     * peer (mutual StreetPass, or a replay right after an app restart) collapse to
-     * a single credit; the persisted row is the cooldown, so it survives process
-     * death without any background work.
+     * Atomic per-user claim. Collapses to one row per peer account (StreetPass
+     * style): within the cooldown window a re-meet is dismissed and the earliest
+     * entry is left untouched; a later meet updates that user's single row to the
+     * newest card and increments [QuayPassEncounterEntity.meetCount], swapping the
+     * stored row in place when the peer's credential (and fingerprint) rotated.
+     * Runs in one transaction, so mutual StreetPass and a capture-restart-replay
+     * both collapse to a single credit, and the persisted row is the cooldown, so
+     * it survives process death with no background work. Returns whether claimed.
      */
     @Transaction
     suspend fun claimEncounter(
         encounter: QuayPassEncounterEntity,
         cooldownCutoff: Instant
     ): Boolean {
-        val last = lastSeenAt(encounter.credentialFingerprint)
-        if (last != null && last.isAfter(cooldownCutoff)) return false
-        upsert(encounter)
+        val existing = encounter.accountId?.let { getByAccountId(it) }
+        if (existing != null && existing.encounteredAt.isAfter(cooldownCutoff)) return false
+        if (existing != null && existing.credentialFingerprint != encounter.credentialFingerprint) {
+            delete(existing.credentialFingerprint)
+        }
+        upsert(encounter.copy(meetCount = (existing?.meetCount ?: 0) + 1))
         return true
     }
+
+    @Query("SELECT * FROM quaypass_encounters WHERE accountId = :accountId ORDER BY encounteredAt DESC LIMIT 1")
+    suspend fun getByAccountId(accountId: String): QuayPassEncounterEntity?
 
     @Query("SELECT * FROM quaypass_encounters ORDER BY encounteredAt DESC LIMIT :limit OFFSET :offset")
     suspend fun page(limit: Int, offset: Int): List<QuayPassEncounterEntity>
@@ -42,9 +50,6 @@ interface QuayPassEncounterDao {
 
     @Query("SELECT EXISTS(SELECT 1 FROM quaypass_encounters WHERE seenByUser = 0)")
     fun observeHasUnseen(): Flow<Boolean>
-
-    @Query("SELECT encounteredAt FROM quaypass_encounters WHERE credentialFingerprint = :fingerprint")
-    suspend fun lastSeenAt(fingerprint: String): Instant?
 
     @Query("UPDATE quaypass_encounters SET seenByUser = 1 WHERE seenByUser = 0")
     suspend fun markAllSeen()

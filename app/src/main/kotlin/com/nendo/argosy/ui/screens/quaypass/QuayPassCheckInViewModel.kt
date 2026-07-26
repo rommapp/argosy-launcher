@@ -40,6 +40,7 @@ data class CheckInCard(
     val lastGameTitle: String?,
     val coverThumbUrl: String?,
     val encounteredAt: Instant,
+    val meetCount: Int,
     val isFriend: Boolean,
     val isBlocked: Boolean,
     val requestSent: Boolean,
@@ -127,13 +128,18 @@ class QuayPassCheckInViewModel @Inject constructor(
         queued: Set<String>,
         sessionSent: Set<String>
     ): List<CheckInCard> {
-        val manifestByKey = checkins.associateBy { it.userId to it.encounteredAtEpochSec }
         val acceptedFriends = friends.filter { it.friendshipStatus == FriendshipStatus.ACCEPTED }
         val friendIds = acceptedFriends.mapTo(mutableSetOf()) { it.id }
         val friendAvatarById = acceptedFriends.associate { it.id to it.quayPassAvatar }
 
+        val manifestByAccount = checkins.groupBy { it.userId }.mapValues { (_, group) ->
+            group.maxByOrNull { it.encounteredAtEpochSec }!! to group.size
+        }
+
+        val localAccounts = encounters.mapNotNullTo(mutableSetOf()) { it.accountId }
         val localCards = encounters.map { enc ->
-            val manifest = enc.accountId?.let { manifestByKey[it to enc.encounteredAt.epochSecond] }
+            val manifestEntry = enc.accountId?.let { manifestByAccount[it] }
+            val manifest = manifestEntry?.first
             val isFriend = manifest?.isFriend ?: (enc.accountId in friendIds)
             CheckInCard(
                 key = enc.credentialFingerprint,
@@ -146,6 +152,7 @@ class QuayPassCheckInViewModel @Inject constructor(
                 lastGameTitle = if (manifest != null) manifest.lastGameTitle else enc.lastGameTitle,
                 coverThumbUrl = manifest?.coverThumbUrl,
                 encounteredAt = enc.encounteredAt,
+                meetCount = enc.meetCount,
                 isFriend = isFriend,
                 isBlocked = manifest?.isBlocked ?: false,
                 requestSent = manifest?.requestSent
@@ -154,23 +161,22 @@ class QuayPassCheckInViewModel @Inject constructor(
             )
         }
 
-        val localKeys = encounters
-            .mapNotNull { enc -> enc.accountId?.let { it to enc.encounteredAt.epochSecond } }
-            .toSet()
-        val manifestOnly = checkins
-            .filterNot { (it.userId to it.encounteredAtEpochSec) in localKeys }
-            .map { manifest ->
+        val manifestOnly = manifestByAccount
+            .filterKeys { it !in localAccounts }
+            .map { (userId, entry) ->
+                val (manifest, count) = entry
                 CheckInCard(
-                    key = "m:${manifest.userId}:${manifest.encounteredAtEpochSec}",
-                    accountId = manifest.userId,
+                    key = "m:$userId",
+                    accountId = userId,
                     username = manifest.username,
                     displayName = manifest.displayName,
                     avatarPngBase64 = manifest.avatarRasterPng,
-                    avatarSparse = if (manifest.isFriend) friendAvatarById[manifest.userId] else null,
+                    avatarSparse = if (manifest.isFriend) friendAvatarById[userId] else null,
                     greeting = manifest.message,
                     lastGameTitle = manifest.lastGameTitle,
                     coverThumbUrl = manifest.coverThumbUrl,
                     encounteredAt = Instant.ofEpochSecond(manifest.encounteredAtEpochSec),
+                    meetCount = count,
                     isFriend = manifest.isFriend,
                     isBlocked = manifest.isBlocked,
                     requestSent = manifest.requestSent,

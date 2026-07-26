@@ -9,8 +9,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.launchIn
-import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -31,19 +30,20 @@ class QuayPassFriendRequestQueueCoordinator @Inject constructor(
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     init {
-        combine(
-            socialService.connectionState,
-            syncPreferencesRepository.quayPassPendingFriendRequests()
-        ) { state, queued ->
-            state to queued
-        }
-            .distinctUntilChanged()
-            .onEach { (state, queued) ->
-                if (state is ArgosSocialService.ConnectionState.Connected && queued.isNotEmpty()) {
-                    flush(queued)
-                }
+        scope.launch {
+            combine(
+                socialService.connectionState,
+                syncPreferencesRepository.quayPassPendingFriendRequests()
+            ) { state, queued ->
+                state to queued
             }
-            .launchIn(scope)
+                .distinctUntilChanged()
+                .collect { (state, queued) ->
+                    if (state is ArgosSocialService.ConnectionState.Connected && queued.isNotEmpty()) {
+                        flush(queued)
+                    }
+                }
+        }
     }
 
     private suspend fun flush(queued: Set<String>) {

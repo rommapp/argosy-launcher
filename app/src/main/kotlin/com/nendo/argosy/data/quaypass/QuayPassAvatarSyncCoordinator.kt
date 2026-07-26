@@ -20,8 +20,10 @@ import javax.inject.Singleton
  * outstanding (empty string clears the server copy). The BLE wire format keeps
  * the raster encoding; only this server payload is sparse. Server is the single
  * source of truth for cross-device sync; launcher pushes on save and on next
- * online state change. (Pull on first sign-in to a new device is a follow-up;
- * v1 only pushes.)
+ * online state change. The reverse direction (pulling the owner's avatar from
+ * GET /api/me on connect, e.g. onto a fresh device) is handled by
+ * [QuayPassMessageSyncCoordinator], which hydrates both greeting and avatar;
+ * this coordinator only pushes.
  */
 @Singleton
 class QuayPassAvatarSyncCoordinator @Inject constructor(

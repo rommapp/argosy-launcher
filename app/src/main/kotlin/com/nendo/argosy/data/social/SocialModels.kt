@@ -18,6 +18,11 @@ data class DeviceKeyResponse(
 
 @JsonClass(generateAdapter = true)
 data class MeResponse(
+    @Json(name = "user") val user: MeUser? = null
+)
+
+@JsonClass(generateAdapter = true)
+data class MeUser(
     @Json(name = "quaypass_message") val quayPassMessage: String? = null,
     @Json(name = "quaypass_avatar") val quayPassAvatar: String? = null
 )

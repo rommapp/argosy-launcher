@@ -69,10 +69,10 @@ class QuayPassMessageSyncCoordinator @Inject constructor(
         val token = prefs.socialSessionToken ?: return
         val me = authManager.fetchMe(token) ?: return
         if (!prefs.quayPassMessageSyncPending) {
-            preferencesRepository.setQuayPassGreetingFromServer(me.quayPassMessage.orEmpty())
+            preferencesRepository.setQuayPassGreetingFromServer(me.user?.quayPassMessage.orEmpty())
         }
         if (!prefs.quayPassAvatarSyncPending) {
-            preferencesRepository.setSocialAvatarFromServer(me.quayPassAvatar)
+            preferencesRepository.setSocialAvatarFromServer(me.user?.quayPassAvatar)
         }
     }
 

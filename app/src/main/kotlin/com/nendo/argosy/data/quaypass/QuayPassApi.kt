@@ -45,7 +45,6 @@ data class RegisterClientRequest(
     @Json(name = "public_key") val publicKey: String,
     @Json(name = "public_key_alg") val publicKeyAlg: String,
     @Json(name = "apk_signing_cert_hash") val apkSigningCertHash: String,
-    @Json(name = "fingerprint_hash") val fingerprintHash: String,
     @Json(name = "challenge") val challenge: String,
     @Json(name = "challenge_signature") val challengeSignature: String
 )

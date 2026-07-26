@@ -3,7 +3,6 @@ package com.nendo.argosy.data.quaypass
 import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
-import android.provider.Settings
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.security.MessageDigest
 import javax.inject.Inject
@@ -14,29 +13,6 @@ import javax.inject.Singleton
 class ClientFingerprint @Inject constructor(
     @ApplicationContext private val context: Context
 ) {
-
-    val deviceToken: String by lazy {
-        try {
-            Settings.Secure.getString(
-                context.contentResolver,
-                Settings.Secure.ANDROID_ID
-            ) ?: ""
-        } catch (_: Throwable) {
-            ""
-        }
-    }
-
-    val fingerprintHash: String by lazy {
-        val canonical = listOf(
-            Build.FINGERPRINT.orEmpty(),
-            Build.MODEL.orEmpty(),
-            Build.MANUFACTURER.orEmpty(),
-            Build.BOARD.orEmpty(),
-            deviceToken,
-            apkSigningCertHash
-        ).joinToString("|")
-        sha256Hex(canonical.toByteArray(Charsets.UTF_8))
-    }
 
     val apkSigningCertHash: String by lazy {
         try {

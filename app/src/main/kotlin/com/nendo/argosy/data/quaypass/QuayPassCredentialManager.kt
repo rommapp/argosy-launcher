@@ -173,7 +173,6 @@ class QuayPassCredentialManager @Inject constructor(
                 QuayPassKeystore.Algorithm.EC_P256 -> "ec-p256"
             },
             apkSigningCertHash = fingerprint.apkSigningCertHash,
-            fingerprintHash = fingerprint.fingerprintHash,
             challenge = challenge,
             challengeSignature = challengeSignature
         )

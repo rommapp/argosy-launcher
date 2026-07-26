@@ -79,6 +79,7 @@ fun AccountInfoCard(
     user: SocialUser,
     profile: UserProfileData?,
     avatarDoodle: String? = null,
+    avatarPngBase64: String? = null,
     onEditAvatar: (() -> Unit)? = null
 ) {
     val isWide = LocalUiScale.current.aspectRatioClass.let {
@@ -109,6 +110,7 @@ fun AccountInfoCard(
                 avatarColor = user.avatarColor,
                 size = Dimens.avatarXl,
                 avatarDoodle = avatarDoodle,
+                avatarPngBase64 = avatarPngBase64,
                 userId = user.id
             )
 

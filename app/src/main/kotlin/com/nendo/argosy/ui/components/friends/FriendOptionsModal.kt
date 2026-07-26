@@ -153,7 +153,7 @@ private fun FriendMenuHeader(friend: Friend) {
             avatarColor = friend.avatarColor,
             size = Dimens.iconLg,
             showOnlineDot = isOnline,
-            avatarDoodle = friend.quayPassAvatar
+            avatarPngBase64 = friend.quayPassAvatar
         )
         Column {
             Text(

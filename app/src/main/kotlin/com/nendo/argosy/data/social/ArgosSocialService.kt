@@ -112,7 +112,11 @@ class ArgosSocialService @Inject constructor(
         data class FriendCodeData(val code: String, val url: String) : IncomingMessage()
         data class QuayPassBalance(val balance: Int) : IncomingMessage()
         data class QuayPassCheckins(val checkins: List<QuayPassCheckin>) : IncomingMessage()
-        data class QuayPassAvatarUpdated(val userId: String, val avatar: String) : IncomingMessage()
+        data class QuayPassAvatarUpdated(
+            val userId: String,
+            val ownerDoodle: String?,
+            val raster: String?
+        ) : IncomingMessage()
         data class QuayPassMessageUpdated(val message: String) : IncomingMessage()
         data class FriendsData(val friends: List<Friend>) : IncomingMessage()
         data class SharedCollections(val collections: List<CollectionSummary>) : IncomingMessage()
@@ -324,7 +328,8 @@ class ArgosSocialService @Inject constructor(
                     if (userId.isNotEmpty()) {
                         IncomingMessage.QuayPassAvatarUpdated(
                             userId = userId,
-                            avatar = json.optString("quaypass_avatar", "")
+                            ownerDoodle = json.optString("avatar", null)?.takeIf { it.isNotEmpty() },
+                            raster = json.optString("raster", null)?.takeIf { it.isNotEmpty() }
                         )
                     } else null
                 }
@@ -879,8 +884,11 @@ class ArgosSocialService @Inject constructor(
         ))
     }
 
-    fun sendQuayPassAvatar(bytesBase64: String): Boolean {
-        return send(MessageTypes.SET_QUAYPASS_AVATAR, mapOf("avatar" to bytesBase64))
+    fun sendQuayPassAvatar(sparseBase64: String, rasterPngBase64: String): Boolean {
+        return send(
+            MessageTypes.SET_QUAYPASS_AVATAR,
+            mapOf("avatar" to sparseBase64, "raster" to rasterPngBase64)
+        )
     }
 
     fun sendQuayPassMessage(message: String): Boolean {
@@ -892,6 +900,7 @@ class ArgosSocialService @Inject constructor(
         credentialBase64: String,
         attestationBase64: String,
         nonceBase64: String,
+        tsSecs: Long,
         cardMessage: String?,
         cardIgdbId: Long?,
         cardAvatarPngBase64: String?
@@ -906,6 +915,7 @@ class ArgosSocialService @Inject constructor(
             "credential" to credentialBase64,
             "attestation" to attestationBase64,
             "nonce" to nonceBase64,
+            "ts" to tsSecs,
             "peer_card" to peerCard
         )
         return send(MessageTypes.REPORT_QUAYPASS_ENCOUNTER, payload)
@@ -1407,8 +1417,8 @@ class ArgosSocialService @Inject constructor(
                     currentGame = gameInfo,
                     deviceName = presenceObj?.optString("device_name", null),
                     isFavorite = obj.optBoolean("is_favorite", false),
-                    quayPassAvatar = userObj.optString("quaypass_avatar", null)?.takeIf { it.isNotEmpty() }
-                        ?: obj.optString("quaypass_avatar", null)?.takeIf { it.isNotEmpty() }
+                    quayPassAvatar = userObj.optString("quaypass_avatar_raster", null)?.takeIf { it.isNotEmpty() }
+                        ?: obj.optString("quaypass_avatar_raster", null)?.takeIf { it.isNotEmpty() }
                 )
             } catch (e: Exception) {
                 Log.w(TAG, "Failed to parse friend", e)

@@ -51,7 +51,8 @@ class QuayPassAvatarSyncCoordinator @Inject constructor(
     private suspend fun flush() {
         val prefs = preferencesRepository.userPreferences.first()
         val sparse = if (prefs.socialAvatarUseDoodle) prefs.socialAvatarDoodle.orEmpty() else ""
-        val sent = socialService.sendQuayPassAvatar(sparse)
+        val raster = QuayPassRasterPng.fromSparseBase64(sparse.takeIf { it.isNotEmpty() }).orEmpty()
+        val sent = socialService.sendQuayPassAvatar(sparse, raster)
         if (sent) {
             preferencesRepository.setQuayPassAvatarSyncPending(false)
             Log.i(TAG, "QuayPass avatar synced to server")

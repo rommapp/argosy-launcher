@@ -15,6 +15,11 @@ import java.io.ByteArrayOutputStream
  */
 object QuayPassRasterPng {
 
+    fun fromSparseBase64(sparseBase64: String?): String? {
+        if (sparseBase64.isNullOrEmpty()) return null
+        return fromRasterBytes(QuayPassDoodleCodec.encodeFromSparseBase64(sparseBase64))
+    }
+
     fun fromRasterBytes(rasterBytes: ByteArray?): String? {
         if (rasterBytes == null || rasterBytes.isEmpty()) return null
         return runCatching {

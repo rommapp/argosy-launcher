@@ -143,7 +143,7 @@ data class Friend(
     @Json(name = "current_game") val currentGame: PresenceGameInfo? = null,
     @Json(name = "device_name") val deviceName: String? = null,
     @Json(name = "is_favorite") val isFavorite: Boolean = false,
-    @Json(name = "quaypass_avatar") val quayPassAvatar: String? = null
+    @Json(name = "quaypass_avatar_raster") val quayPassAvatar: String? = null
 ) {
     val friendshipStatus: FriendshipStatus
         get() = FriendshipStatus.fromValue(status)

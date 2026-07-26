@@ -174,7 +174,6 @@ class QuayPassCredentialManager @Inject constructor(
             },
             apkSigningCertHash = fingerprint.apkSigningCertHash,
             fingerprintHash = fingerprint.fingerprintHash,
-            deviceId = fingerprint.deviceToken,
             challenge = challenge,
             challengeSignature = challengeSignature
         )

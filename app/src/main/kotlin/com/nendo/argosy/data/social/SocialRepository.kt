@@ -343,10 +343,12 @@ class SocialRepository @Inject constructor(
                         }.sortedWith(friendComparator)
                     }
                     is ArgosSocialService.IncomingMessage.QuayPassAvatarUpdated -> {
-                        val newAvatar = message.avatar.takeIf { it.isNotBlank() }
-                        _friends.update { friends ->
-                            friends.map {
-                                if (it.id == message.userId) it.copy(quayPassAvatar = newAvatar) else it
+                        message.ownerDoodle?.let { preferencesRepository.setSocialAvatarFromServer(it) }
+                        message.raster?.let { raster ->
+                            _friends.update { friends ->
+                                friends.map {
+                                    if (it.id == message.userId) it.copy(quayPassAvatar = raster) else it
+                                }
                             }
                         }
                     }

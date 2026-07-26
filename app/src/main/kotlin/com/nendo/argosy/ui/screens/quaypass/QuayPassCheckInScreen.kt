@@ -244,7 +244,7 @@ private fun CheckInCardView(
     ticketAward: Int,
     onClick: () -> Unit
 ) {
-    val frozenAvatar = remember(card.avatarPngBase64) { decodePngAvatar(card.avatarPngBase64) }
+    val avatarBitmap = remember(card.avatarPngBase64) { decodePngAvatar(card.avatarPngBase64) }
     val cardShape = RoundedCornerShape(Dimens.radiusLg)
     val cardAlpha by animateFloatAsState(
         targetValue = when {
@@ -271,17 +271,9 @@ private fun CheckInCardView(
             modifier = Modifier.padding(Dimens.spacingMd),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            if (card.avatarSparse != null) {
-                SocialAvatar(
-                    displayName = card.displayName ?: card.username,
-                    avatarColor = null,
-                    size = Dimens.avatarXl,
-                    avatarDoodle = card.avatarSparse,
-                    userId = card.accountId
-                )
-            } else if (frozenAvatar != null) {
+            if (avatarBitmap != null) {
                 Image(
-                    bitmap = frozenAvatar,
+                    bitmap = avatarBitmap,
                     contentDescription = null,
                     filterQuality = FilterQuality.None,
                     modifier = Modifier

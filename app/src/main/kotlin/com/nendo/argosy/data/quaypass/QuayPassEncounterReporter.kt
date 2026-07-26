@@ -59,6 +59,7 @@ class QuayPassEncounterReporter @Inject constructor(
                 credentialBase64 = report.credentialBase64,
                 attestationBase64 = report.attestationBase64,
                 nonceBase64 = report.nonceBase64,
+                tsSecs = report.tsSecs,
                 cardMessage = report.cardMessage,
                 cardIgdbId = report.cardIgdbId,
                 cardAvatarPngBase64 = report.cardAvatarPngBase64

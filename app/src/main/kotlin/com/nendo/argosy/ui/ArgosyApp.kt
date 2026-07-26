@@ -1701,8 +1701,7 @@ fun ArgosyApp(
                                     }
                                     GameDetailOption.CHANGE_CORE -> {
                                         scope.launch {
-                                            val cores = com.nendo.argosy.data.emulator.EmulatorRegistry
-                                                .getCoresForPlatform(vm.uiState.value.platformSlug)
+                                            val cores = vm.uiState.value.availableCores
                                             vm.openCorePicker(cores)
                                             dualScreenManager.openCoreModal(
                                                 cores.map { it.displayName },

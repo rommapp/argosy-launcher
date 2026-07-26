@@ -2,6 +2,7 @@ package com.nendo.argosy.domain.usecase.game
 
 import com.nendo.argosy.data.emulator.EmulatorRegistry
 import com.nendo.argosy.data.emulator.InstalledEmulator
+import com.nendo.argosy.data.emulator.LaunchConfig
 import com.nendo.argosy.data.local.dao.EmulatorConfigDao
 import com.nendo.argosy.data.local.dao.SaveSyncDao
 import com.nendo.argosy.data.local.entity.EmulatorConfigEntity
@@ -21,7 +22,7 @@ class ConfigureEmulatorUseCase @Inject constructor(
                 gameId = gameId,
                 packageName = emulator.def.packageName,
                 displayName = emulator.def.displayName,
-                coreName = EmulatorRegistry.getDefaultCore(platformSlug)?.id,
+                coreName = defaultCoreFor(platformSlug, emulator),
                 isDefault = false
             )
             emulatorConfigDao.insert(config)
@@ -38,7 +39,7 @@ class ConfigureEmulatorUseCase @Inject constructor(
                 gameId = null,
                 packageName = emulator.def.packageName,
                 displayName = emulator.def.displayName,
-                coreName = EmulatorRegistry.getDefaultCore(platformSlug)?.id,
+                coreName = defaultCoreFor(platformSlug, emulator),
                 isDefault = true
             )
             emulatorConfigDao.insert(config)
@@ -66,6 +67,14 @@ class ConfigureEmulatorUseCase @Inject constructor(
 
     suspend fun clearForPlatform(platformId: Long) {
         emulatorConfigDao.clearPlatformDefaults(platformId)
+    }
+
+    private fun defaultCoreFor(platformSlug: String, emulator: InstalledEmulator): String? {
+        if (!emulator.def.launchConfig.isCoreSelectable) return null
+        return EmulatorRegistry.getDefaultSelectableCore(
+            platformId = platformSlug,
+            isBuiltIn = emulator.def.launchConfig is LaunchConfig.BuiltIn
+        )?.id
     }
 
     suspend fun setCoreForPlatform(platformId: Long, coreId: String?) {

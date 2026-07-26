@@ -1,7 +1,6 @@
 package com.nendo.argosy.ui.screens.gamedetail.delegates
 
 import com.nendo.argosy.core.input.SoundType
-import com.nendo.argosy.data.emulator.EmulatorDetector
 import com.nendo.argosy.data.emulator.EmulatorRegistry
 import com.nendo.argosy.data.emulator.EmulatorResolver
 import com.nendo.argosy.data.emulator.ExtensionOption
@@ -12,7 +11,6 @@ import com.nendo.argosy.data.local.dao.EmulatorConfigDao
 import com.nendo.argosy.data.repository.EmulatorSaveConfigRepository
 import com.nendo.argosy.data.preferences.EmulatorDisplayTarget
 import com.nendo.argosy.data.preferences.MenuWrapMode
-import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.repository.GameRepository
 import com.nendo.argosy.domain.usecase.game.ConfigureEmulatorUseCase
 import com.nendo.argosy.ui.input.InputDispatcher.Companion.computeWrappedIndex
@@ -21,7 +19,6 @@ import com.nendo.argosy.util.DisplayAffinityHelper
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import javax.inject.Inject
 
@@ -62,12 +59,10 @@ data class PerGameSettingsState(
 
 class PerGameSettingsDelegate @Inject constructor(
     private val emulatorConfigDao: EmulatorConfigDao,
-    private val emulatorDetector: EmulatorDetector,
     private val emulatorResolver: EmulatorResolver,
     private val retroArchPathResolver: RetroArchPathResolver,
     private val emulatorSaveConfigRepository: EmulatorSaveConfigRepository,
     private val configureEmulatorUseCase: ConfigureEmulatorUseCase,
-    private val preferencesRepository: UserPreferencesRepository,
     private val gameRepository: GameRepository,
     private val displayAffinityHelper: DisplayAffinityHelper,
     private val soundManager: SoundFeedbackManager
@@ -160,32 +155,30 @@ class PerGameSettingsDelegate @Inject constructor(
 
     private suspend fun buildState(gameId: Long): PerGameSettingsState? {
         val game = gameRepository.getById(gameId) ?: return null
-        if (emulatorDetector.installedEmulators.value.isEmpty()) {
-            emulatorDetector.detectEmulators()
-        }
-        val prefs = preferencesRepository.userPreferences.first()
 
         val gameConfig = emulatorConfigDao.getByGameId(gameId)
         val platformConfig = emulatorConfigDao.getDefaultForPlatform(game.platformId)
 
-        val emulatorName = gameConfig?.displayName
-            ?: platformConfig?.displayName
-            ?: emulatorDetector.getPreferredEmulator(game.platformSlug, prefs.builtinLibretroEnabled)?.def?.displayName
+        val emulatorDef = emulatorResolver.getEmulatorForGame(
+            gameId = game.id,
+            platformId = game.platformId,
+            platformSlug = game.platformSlug
+        )
+        val emulatorName = emulatorDef?.displayName
+        val coreSelection = emulatorDef?.let {
+            emulatorResolver.resolveCoreSelectionForGame(
+                gameId = game.id,
+                platformId = game.platformId,
+                platformSlug = game.platformSlug,
+                emulator = it
+            )
+        }
+        val showCoreRow = (coreSelection?.availableCores?.size ?: 0) > 1
+        val selectedCoreId = coreSelection?.selectedCore?.id
+        val coreName = coreSelection?.selectedCore?.displayName
 
-        val configuredPackage = gameConfig?.packageName ?: platformConfig?.packageName
-        val emulatorDef = configuredPackage?.let { emulatorDetector.getByPackage(it) }
-            ?: emulatorDetector.getPreferredEmulator(game.platformSlug, prefs.builtinLibretroEnabled)?.def
-        val isBuiltIn = emulatorDef?.launchConfig is LaunchConfig.BuiltIn
-        val isCoreSelectable = emulatorDef?.launchConfig?.isCoreSelectable == true
-        val cores = EmulatorRegistry.getSelectableCores(game.platformSlug, isBuiltIn)
-        val showCoreRow = isCoreSelectable && cores.size > 1
-        val selectedCoreId = gameConfig?.coreName
-            ?: platformConfig?.coreName
-            ?: EmulatorRegistry.getDefaultSelectableCore(game.platformSlug, isBuiltIn)?.id
-        val coreName = if (isCoreSelectable) cores.find { it.id == selectedCoreId }?.displayName else null
-
-        val effectivePackage = emulatorResolver.getEmulatorPackageForGame(gameId, game.platformId, game.platformSlug)
-        val effectiveEmulatorId = effectivePackage?.let { emulatorResolver.resolveEmulatorId(it) }
+        val effectivePackage = emulatorDef?.packageName
+        val effectiveEmulatorId = emulatorDef?.id
         val saveConfig = effectivePackage?.let { SavePathRegistry.getConfigForPlatformByPackage(it, game.platformSlug) }
             ?: effectiveEmulatorId?.let { SavePathRegistry.getConfigForPlatform(it, game.platformSlug) }
         val showSavePathRow = SavePathRegistry.supportsPerGameSavePath(saveConfig, game.platformSlug)

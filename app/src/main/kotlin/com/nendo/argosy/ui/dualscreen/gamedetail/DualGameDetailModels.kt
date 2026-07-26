@@ -4,6 +4,7 @@
 package com.nendo.argosy.ui.dualscreen.gamedetail
 
 import com.nendo.argosy.data.emulator.DiscOption
+import com.nendo.argosy.data.emulator.RetroArchCore
 import com.nendo.argosy.data.model.visibleWithCollapsed
 import com.nendo.argosy.domain.model.UnifiedSaveEntry
 import com.nendo.argosy.domain.model.UnifiedStateEntry
@@ -83,6 +84,7 @@ data class DualGameDetailUiState(
     val activeSaveTimestamp: Long? = null,
     val saveSyncStatusName: String? = null,
     val hasMultipleCores: Boolean = false,
+    val availableCores: List<RetroArchCore> = emptyList(),
     val selectedCoreName: String? = null,
     val selectedCoreId: String? = null,
     val hasFileBasedSaves: Boolean = false,

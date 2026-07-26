@@ -6,7 +6,6 @@ import androidx.lifecycle.viewModelScope
 import com.nendo.argosy.data.cache.ImageCacheManager
 import com.nendo.argosy.data.download.ZipExtractor
 import com.nendo.argosy.data.emulator.EmulatorDetector
-import com.nendo.argosy.data.emulator.EmulatorRegistry
 import com.nendo.argosy.data.emulator.LaunchConfig
 import com.nendo.argosy.data.emulator.EmulatorResolver
 import com.nendo.argosy.data.emulator.SavePathRegistry
@@ -434,25 +433,24 @@ class GameDetailViewModel @Inject constructor(
 
             val prefs = preferencesRepository.userPreferences.first()
 
-            val emulatorName = gameSpecificConfig?.displayName
-                ?: platformDefaultConfig?.displayName
-                ?: emulatorDetector.getPreferredEmulator(game.platformSlug, prefs.builtinLibretroEnabled)?.def?.displayName
-
-            val configuredPackage = gameSpecificConfig?.packageName ?: platformDefaultConfig?.packageName
-            val emulatorDef = configuredPackage?.let { emulatorDetector.getByPackage(it) }
-                ?: emulatorDetector.getPreferredEmulator(game.platformSlug, prefs.builtinLibretroEnabled)?.def
-            val isCoreSelectable = emulatorDef?.launchConfig?.isCoreSelectable == true
+            val emulatorDef = emulatorResolver.getEmulatorForGame(
+                gameId = game.id,
+                platformId = game.platformId,
+                platformSlug = game.platformSlug
+            )
+            val emulatorName = emulatorDef?.displayName
             val isBuiltInEmulator = emulatorDef?.launchConfig is LaunchConfig.BuiltIn
-
-            val platformCores = EmulatorRegistry.getSelectableCores(game.platformSlug, isBuiltInEmulator)
-            val hasMultipleCores = isCoreSelectable && platformCores.size > 1
-
-            val selectedCoreId = gameSpecificConfig?.coreName
-                ?: platformDefaultConfig?.coreName
-                ?: EmulatorRegistry.getDefaultSelectableCore(game.platformSlug, isBuiltInEmulator)?.id
-            val selectedCoreName = if (isCoreSelectable) {
-                platformCores.find { it.id == selectedCoreId }?.displayName
-            } else null
+            val coreSelection = emulatorDef?.let {
+                emulatorResolver.resolveCoreSelectionForGame(
+                    gameId = game.id,
+                    platformId = game.platformId,
+                    platformSlug = game.platformSlug,
+                    emulator = it
+                )
+            }
+            val hasMultipleCores = (coreSelection?.availableCores?.size ?: 0) > 1
+            val selectedCoreId = coreSelection?.selectedCore?.id
+            val selectedCoreName = coreSelection?.selectedCore?.displayName
 
             val isSteamGame = game.isSteamGame
             val isAndroidApp = game.isAndroidApp
@@ -511,7 +509,7 @@ class GameDetailViewModel @Inject constructor(
             achievementDelegate.loadCached(gameId, game.rommId != null || game.effectiveRaId != null)
             val cachedAchievements = achievementDelegate.achievements.value
 
-            val emulatorId = emulatorResolver.getEmulatorIdForGame(gameId, game.platformId, game.platformSlug)
+            val emulatorId = emulatorDef?.id
             val canManageSaves = prefs.saveSyncEnabled &&
                 downloadStatus == GameDownloadStatus.DOWNLOADED &&
                 game.rommId != null &&

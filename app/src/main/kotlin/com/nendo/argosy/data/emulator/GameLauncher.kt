@@ -78,9 +78,8 @@ class GameLauncher @Inject constructor(
     private val emulatorConfigDao: EmulatorConfigDao,
     private val emulatorLaunchArgsDao: EmulatorLaunchArgsDao,
     private val variantResolver: VariantResolver,
-    private val installedAppResolver: com.nendo.argosy.data.platform.InstalledAppResolver,
+    private val emulatorResolver: EmulatorResolver,
     private val platformLibretroSettingsDao: com.nendo.argosy.data.local.dao.PlatformLibretroSettingsDao,
-    private val emulatorDetector: EmulatorDetector,
     private val m3uManager: M3uManager,
     private val libretroCoreMgr: LibretroCoreManager,
     private val biosRepository: BiosRepository,
@@ -651,65 +650,7 @@ class GameLauncher @Inject constructor(
     }
 
     private suspend fun resolveEmulator(game: GameEntity): EmulatorDef? {
-        if (emulatorDetector.installedEmulators.value.isEmpty()) {
-            emulatorDetector.detectEmulators()
-        }
-
-        val builtinEnabled = userPreferencesRepository.userPreferences.first().builtinLibretroEnabled
-
-        var installedPackages = emulatorDetector.installedEmulators.value
-            .map { it.def.packageName }
-            .toSet()
-
-        val gameOverride = emulatorConfigDao.getByGameId(game.id)
-        val platformDefault = emulatorConfigDao.getDefaultForPlatform(game.platformId)
-
-        val configuredPackage = gameOverride?.packageName ?: platformDefault?.packageName
-        if (configuredPackage != null && configuredPackage !in installedPackages) {
-            Logger.debug(TAG, "Configured emulator $configuredPackage not in cache, re-detecting...")
-            emulatorDetector.detectEmulators()
-            installedPackages = emulatorDetector.installedEmulators.value
-                .map { it.def.packageName }
-                .toSet()
-        }
-
-        val isBuiltinPackage: (String?) -> Boolean = { pkg ->
-            pkg == EmulatorRegistry.BUILTIN_PACKAGE
-        }
-
-        if (gameOverride?.packageName != null && gameOverride.packageName in installedPackages) {
-            val skipBuiltin = isBuiltinPackage(gameOverride.packageName) &&
-                (!builtinEnabled || !libretroCoreMgr.isPlatformSupported(game.platformSlug))
-            if (!skipBuiltin) {
-                return emulatorDetector.getByPackage(gameOverride.packageName)
-            }
-        }
-
-        if (platformDefault?.packageName != null && platformDefault.packageName in installedPackages) {
-            val skipBuiltin = isBuiltinPackage(platformDefault.packageName) &&
-                (!builtinEnabled || !libretroCoreMgr.isPlatformSupported(game.platformSlug))
-            if (!skipBuiltin) {
-                return emulatorDetector.getByPackage(platformDefault.packageName)
-            }
-        }
-
-        val adHocPackage = gameOverride?.packageName?.takeIf {
-            !EmulatorRegistry.isKnownPackage(it) && installedAppResolver.isAppInstalled(it)
-        } ?: platformDefault?.packageName?.takeIf {
-            !EmulatorRegistry.isKnownPackage(it) && installedAppResolver.isAppInstalled(it)
-        }
-        if (adHocPackage != null) {
-            val displayName = (if (adHocPackage == gameOverride?.packageName) gameOverride.displayName else platformDefault?.displayName)
-                ?: adHocPackage
-            Logger.debug(TAG, "Resolved ad-hoc emulator binding: $adHocPackage for ${game.platformSlug}")
-            return EmulatorRegistry.synthesizeAdHocEmulatorDef(
-                packageName = adHocPackage,
-                displayName = displayName,
-                platformSlug = game.platformSlug
-            )
-        }
-
-        return emulatorDetector.getPreferredEmulator(game.platformSlug, builtinEnabled)?.def
+        return emulatorResolver.getEmulatorForGame(game.id, game.platformId, game.platformSlug)
     }
 
     private suspend fun buildIntent(emulator: EmulatorDef, romFile: File, game: GameEntity, forResume: Boolean, variantFileId: Long? = null, discM3uPath: String? = null): Intent? {
@@ -1052,7 +993,7 @@ class GameLauncher @Inject constructor(
 
         Logger.debug(TAG, "RetroArch: package=$retroArchPackage, activity=${config.activityClass}")
 
-        val coreName = resolveCoreName(game) ?: run {
+        val coreName = resolveCoreName(game, emulator) ?: run {
             Logger.error(TAG, "No compatible core found for platform: ${game.platformSlug}")
             return null
         }
@@ -1112,87 +1053,48 @@ class GameLauncher @Inject constructor(
         }
     }
 
-    /**
-     * Core selection for the built-in libretro path. Walks: game override ->
-     * platform default -> legacy built-in pref -> registry default. Accepts
-     * any non-empty core id; the built-in path downloads from the libretro
-     * buildbot, so membership in [com.nendo.argosy.libretro.LibretroCoreRegistry]
-     * is a metadata hint, not a gate. If the chosen id isn't a real core, the
-     * download will 404 and surface via [lastCoreDownloadError].
-     */
     private suspend fun resolveBuiltinCoreId(game: GameEntity): String? {
-        val validCoreIds = com.nendo.argosy.libretro.LibretroCoreRegistry
-            .getCoresForPlatform(game.platformSlug).map { it.coreId }.toSet()
-        var rejectedCore: String? = null
-
-        fun accept(coreId: String?, source: String): String? {
-            if (coreId.isNullOrBlank()) return null
-            if (coreId !in validCoreIds) {
-                Logger.warn(TAG, "[BuiltIn] ignoring unknown core '$coreId' from $source for ${game.platformSlug}")
-                if (rejectedCore == null) rejectedCore = coreId
-                return null
+        val emulator = EmulatorRegistry.getByPackage(EmulatorRegistry.BUILTIN_PACKAGE) ?: return null
+        val selection = emulatorResolver.resolveCoreSelectionForGame(
+            gameId = game.id,
+            platformId = game.platformId,
+            platformSlug = game.platformSlug,
+            emulator = emulator
+        ) ?: return null
+        val selectedCore = selection.selectedCore?.id
+        val configuredCores = listOf(
+            emulatorConfigDao.getByGameId(game.id)?.coreName,
+            emulatorConfigDao.getDefaultForPlatform(game.platformId)?.coreName,
+            userPreferencesRepository.getBuiltinCoreSelections().first()[game.platformSlug]
+        ).filterNotNull().filter { it.isNotBlank() }
+        val hasValidConfiguredCore = configuredCores.any { configuredCore ->
+            selection.availableCores.any {
+                it.id == configuredCore || it.id.startsWith(configuredCore)
             }
-            Logger.debug(TAG, "[BuiltIn] core selection: $source -> $coreId")
-            return coreId
         }
-
-        accept(emulatorConfigDao.getByGameId(game.id)?.coreName, "game override")?.let { return it }
-        accept(emulatorConfigDao.getDefaultForPlatform(game.platformId)?.coreName, "platform default")?.let { return it }
-        accept(userPreferencesRepository.getBuiltinCoreSelections().first()[game.platformSlug], "legacy pref")?.let { return it }
-
-        val default = com.nendo.argosy.libretro.LibretroCoreRegistry
-            .getDefaultCoreForPlatform(game.platformSlug)?.coreId
-        Logger.debug(TAG, "[BuiltIn] core selection: registry default -> $default")
-
-        val rejected = rejectedCore
-        if (rejected != null && default != null) {
+        val rejectedCore = configuredCores.firstOrNull()
+        if (!hasValidConfiguredCore && rejectedCore != null && selectedCore != null) {
+            Logger.warn(TAG, "[BuiltIn] ignoring unknown core '$rejectedCore' for ${game.platformSlug}")
             val registry = com.nendo.argosy.libretro.LibretroCoreRegistry
             notificationManager.show(
-                title = "Failed to load ${registry.displayNameFor(rejected)}, " +
-                    "using ${registry.displayNameFor(default)} instead",
+                title = "Failed to load ${registry.displayNameFor(rejectedCore)}, " +
+                    "using ${registry.displayNameFor(selectedCore)} instead",
                 type = com.nendo.argosy.core.notification.NotificationType.WARNING
             )
         }
-        return default
+        Logger.debug(TAG, "[BuiltIn] core selection -> $selectedCore")
+        return selectedCore
     }
 
-    private suspend fun resolveCoreName(game: GameEntity): String? {
-        val gameConfig = emulatorConfigDao.getByGameId(game.id)
-        if (gameConfig?.coreName != null) {
-            val corrected = normalizeLegacyCoreName(gameConfig.coreName, game.platformSlug)
-            Logger.debug(TAG, "Core selection: game-specific override -> $corrected")
-            return corrected
-        }
-
-        val platformConfig = emulatorConfigDao.getDefaultForPlatform(game.platformId)
-        if (platformConfig?.coreName != null) {
-            val corrected = normalizeLegacyCoreName(platformConfig.coreName, game.platformSlug)
-            Logger.debug(TAG, "Core selection: platform default -> $corrected")
-            return corrected
-        }
-
-        val defaultCore = EmulatorRegistry.getDefaultCore(game.platformSlug)
-        if (defaultCore != null) {
-            Logger.debug(TAG, "Core selection: registry default -> ${defaultCore.id}")
-            return defaultCore.id
-        }
-
-        val preferredCore = EmulatorRegistry.getPreferredCore(game.platformSlug)
-        Logger.debug(TAG, "Core selection: registry preferred -> $preferredCore")
-        return preferredCore
-    }
-
-    private fun normalizeLegacyCoreName(coreName: String, platformSlug: String): String {
-        val validCores = EmulatorRegistry.getCoresForPlatform(platformSlug)
-        if (validCores.any { it.id == coreName }) {
-            return coreName
-        }
-        val match = validCores.find { it.id.startsWith(coreName) }
-        if (match != null) {
-            Logger.debug(TAG, "Core name corrected: $coreName -> ${match.id}")
-            return match.id
-        }
-        return coreName
+    private suspend fun resolveCoreName(game: GameEntity, emulator: EmulatorDef): String? {
+        val selectedCore = emulatorResolver.resolveCoreSelectionForGame(
+            gameId = game.id,
+            platformId = game.platformId,
+            platformSlug = game.platformSlug,
+            emulator = emulator
+        )?.selectedCore?.id
+        Logger.debug(TAG, "Core selection -> $selectedCore")
+        return selectedCore
     }
 
     private fun commandForCustom(

@@ -293,6 +293,11 @@ data class RetroArchCore(
     val displayName: String
 )
 
+data class ResolvedCoreSelection(
+    val availableCores: List<RetroArchCore>,
+    val selectedCore: RetroArchCore?
+)
+
 data class ExtensionOption(
     val extension: String,
     val label: String
@@ -1395,6 +1400,34 @@ object EmulatorRegistry {
         } else {
             getSelectableCores(platformId, false).firstOrNull()
         }
+
+    fun resolveCoreSelection(
+        platformId: String,
+        isBuiltIn: Boolean,
+        storedCoreId: String?
+    ): ResolvedCoreSelection = resolveCoreSelection(
+        platformId = platformId,
+        isBuiltIn = isBuiltIn,
+        storedCoreIds = listOf(storedCoreId)
+    )
+
+    fun resolveCoreSelection(
+        platformId: String,
+        isBuiltIn: Boolean,
+        storedCoreIds: Iterable<String?>
+    ): ResolvedCoreSelection {
+        val availableCores = getSelectableCores(platformId, isBuiltIn)
+        val selectedCore = storedCoreIds.asSequence()
+            .filterNotNull()
+            .filter { it.isNotBlank() }
+            .mapNotNull { storedCoreId ->
+                availableCores.firstOrNull { it.id == storedCoreId }
+                    ?: availableCores.firstOrNull { it.id.startsWith(storedCoreId) }
+            }
+            .firstOrNull()
+            ?: getDefaultSelectableCore(platformId, isBuiltIn)
+        return ResolvedCoreSelection(availableCores, selectedCore)
+    }
 
     private val retroArchSaveDirByCore: Map<String, String> = mapOf(
         "snes9x2010" to "Snes9x 2010",

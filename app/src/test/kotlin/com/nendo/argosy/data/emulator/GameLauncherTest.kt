@@ -51,6 +51,7 @@ class GameLauncherTest {
     private lateinit var installedAppResolver: InstalledAppResolver
     private lateinit var platformLibretroSettingsDao: PlatformLibretroSettingsDao
     private lateinit var emulatorDetector: EmulatorDetector
+    private lateinit var emulatorResolver: EmulatorResolver
     private lateinit var m3uManager: M3uManager
     private lateinit var libretroCoreMgr: LibretroCoreManager
     private lateinit var biosRepository: BiosRepository
@@ -100,9 +101,17 @@ class GameLauncherTest {
 
         every { userPreferencesRepository.userPreferences } returns flowOf(UserPreferences())
         every { userPreferencesRepository.getBuiltinCoreSelections() } returns flowOf(emptyMap())
+        every { libretroCoreMgr.isPlatformSupported(any()) } returns true
         every { emulatorDetector.installedEmulators } returns mockk {
             every { value } returns emptyList()
         }
+        emulatorResolver = EmulatorResolver(
+            emulatorDetector = emulatorDetector,
+            emulatorConfigDao = emulatorConfigDao,
+            userPreferencesRepository = userPreferencesRepository,
+            libretroCoreMgr = libretroCoreMgr,
+            installedAppResolver = installedAppResolver
+        )
 
         launcher = GameLauncher(
             context = context,
@@ -112,9 +121,8 @@ class GameLauncherTest {
             emulatorConfigDao = emulatorConfigDao,
             emulatorLaunchArgsDao = emulatorLaunchArgsDao,
             variantResolver = variantResolver,
-            installedAppResolver = installedAppResolver,
+            emulatorResolver = emulatorResolver,
             platformLibretroSettingsDao = platformLibretroSettingsDao,
-            emulatorDetector = emulatorDetector,
             m3uManager = m3uManager,
             libretroCoreMgr = libretroCoreMgr,
             biosRepository = biosRepository,
@@ -688,22 +696,12 @@ class GameLauncherTest {
 
         stubDetectorWith(installedEmulator(builtinDef))
         every { emulatorDetector.getByPackage(EmulatorRegistry.BUILTIN_PACKAGE) } returns builtinDef
+        every { libretroCoreMgr.isPlatformSupported("ps2") } returns false
+        every { emulatorDetector.getPreferredEmulator("ps2", false) } returns null
 
-        // The built-in claims support via LibretroCoreRegistry.getSupportedPlatforms().
-        // PS2 is NOT in that set. Currently the resolver does not validate this --
-        // it trusts the DB config. This test documents the current behavior.
-        // If built-in is in the installed list AND the DB says built-in for PS2,
-        // the resolver WILL return built-in. This is a known gap.
         val result = launcher.launch(1L)
 
-        // Document current behavior: built-in IS returned (incorrectly).
-        // When a platform-support guard is added, this should become NoEmulator.
-        val isBuiltinLaunch = result is LaunchResult.NoCore || result is LaunchResult.Success
-        val isRejected = result is LaunchResult.NoEmulator
-        assertTrue(
-            "PS2 + built-in config should either be rejected or fail at core lookup, got ${result::class.simpleName}",
-            isBuiltinLaunch || isRejected
-        )
+        assertTrue(result is LaunchResult.NoEmulator)
     }
 
     // -----------------------------------------------------------------------

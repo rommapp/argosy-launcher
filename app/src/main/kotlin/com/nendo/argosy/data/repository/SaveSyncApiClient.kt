@@ -3,7 +3,6 @@ package com.nendo.argosy.data.repository
 import android.os.StatFs
 import com.nendo.argosy.data.emulator.EmulatorResolver
 import com.nendo.argosy.data.emulator.SavePathConfig
-import com.nendo.argosy.data.local.dao.EmulatorConfigDao
 import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.dao.SaveSyncDao
 import com.nendo.argosy.data.local.dao.getByIdsChunked
@@ -36,7 +35,6 @@ import javax.inject.Singleton
 @Singleton
 class SaveSyncApiClient @Inject constructor(
     private val saveSyncDao: SaveSyncDao,
-    private val emulatorConfigDao: EmulatorConfigDao,
     private val emulatorResolver: EmulatorResolver,
     private val gameDao: GameDao,
     private val savePathResolver: SavePathResolver,
@@ -78,48 +76,34 @@ class SaveSyncApiClient @Inject constructor(
     ): PlatformSaveHandler = saveHandlerRegistry.getHandler(config, platformSlug, emulatorId)
 
     suspend fun resolveEmulatorForGame(game: GameEntity): String? {
-        val gameConfig = emulatorConfigDao.getByGameId(game.id)
-        if (gameConfig?.packageName != null) {
-            val resolved = emulatorResolver.resolveEmulatorId(gameConfig.packageName)
-            if (resolved != null) {
-                Logger.verbose(TAG) { "[SaveSync] DISCOVER gameId=${game.id} | Resolved emulator from game config | package=${gameConfig.packageName}, emulatorId=$resolved" }
-                return resolved
-            }
+        val emulator = emulatorResolver.getEmulatorForGame(
+            gameId = game.id,
+            platformId = game.platformId,
+            platformSlug = game.platformSlug
+        )
+        if (emulator == null) {
+            Logger.warn(TAG, "[SaveSync] DISCOVER gameId=${game.id} | Cannot resolve effective emulator | platform=${game.platformSlug}")
+            return null
         }
-
-        val platformConfig = emulatorConfigDao.getDefaultForPlatform(game.platformId)
-        if (platformConfig?.packageName != null) {
-            val resolved = emulatorResolver.resolveEmulatorId(platformConfig.packageName)
-            if (resolved != null) {
-                Logger.verbose(TAG) { "[SaveSync] DISCOVER gameId=${game.id} | Resolved emulator from platform default | package=${platformConfig.packageName}, emulatorId=$resolved" }
-                return resolved
-            }
+        Logger.verbose(TAG) {
+            "[SaveSync] DISCOVER gameId=${game.id} | Effective emulator | " +
+                "package=${emulator.packageName}, emulatorId=${emulator.id}"
         }
-
-        emulatorResolver.ensureDetected()
-
-        val preferred = emulatorResolver.getPreferredEmulator(game.platformSlug)
-        if (preferred != null) {
-            Logger.verbose(TAG) { "[SaveSync] DISCOVER gameId=${game.id} | Using preferred emulator for platform=${game.platformSlug} | emulatorId=${preferred.def.id}" }
-            return preferred.def.id
-        }
-
-        val installedEmulators = emulatorResolver.getInstalledForPlatform(game.platformSlug)
-        if (installedEmulators.isNotEmpty()) {
-            val emulatorId = installedEmulators.first().def.id
-            Logger.debug(TAG, "[SaveSync] DISCOVER gameId=${game.id} | Falling back to first installed for platform=${game.platformSlug} | emulatorId=$emulatorId, installed=${installedEmulators.map { it.def.id }}")
-            return emulatorId
-        }
-
-        Logger.warn(TAG, "[SaveSync] DISCOVER gameId=${game.id} | Cannot resolve emulator | platform=${game.platformSlug}, no config and no installed emulators")
-        return null
+        return emulator.id
     }
 
     internal suspend fun resolveCoreForGame(game: GameEntity): String? {
-        val gameConfig = emulatorConfigDao.getByGameId(game.id)
-        if (gameConfig?.coreName != null) return gameConfig.coreName
-        val platformConfig = emulatorConfigDao.getDefaultForPlatform(game.platformId)
-        return platformConfig?.coreName
+        val emulator = emulatorResolver.getEmulatorForGame(
+            gameId = game.id,
+            platformId = game.platformId,
+            platformSlug = game.platformSlug
+        ) ?: return null
+        return emulatorResolver.resolveCoreSelectionForGame(
+            gameId = game.id,
+            platformId = game.platformId,
+            platformSlug = game.platformSlug,
+            emulator = emulator
+        )?.selectedCore?.id
     }
 
     suspend fun resolveCoreForGame(gameId: Long): String? {

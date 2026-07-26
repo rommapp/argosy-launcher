@@ -1,6 +1,7 @@
 package com.nendo.argosy.domain.usecase.game
 
 import com.nendo.argosy.data.emulator.EmulatorDef
+import com.nendo.argosy.data.emulator.EmulatorRegistry
 import com.nendo.argosy.data.emulator.InstalledEmulator
 import com.nendo.argosy.data.local.dao.EmulatorConfigDao
 import com.nendo.argosy.data.local.dao.SaveSyncDao
@@ -95,6 +96,39 @@ class ConfigureEmulatorUseCaseTest {
     }
 
     @Test
+    fun `setForGame stores built-in default core for platform`() = runTest {
+        val emulator = installed(EmulatorRegistry.getByPackage(EmulatorRegistry.BUILTIN_PACKAGE)!!)
+        val configSlot = slot<EmulatorConfigEntity>()
+        coEvery { emulatorConfigDao.insert(capture(configSlot)) } returns 1L
+
+        useCase.setForGame(123L, 1L, "saturn", emulator)
+
+        assertEquals("mednafen_saturn", configSlot.captured.coreName)
+    }
+
+    @Test
+    fun `setForPlatform stores external RetroArch default core for platform`() = runTest {
+        val emulator = installed(EmulatorRegistry.getById("retroarch")!!)
+        val configSlot = slot<EmulatorConfigEntity>()
+        coEvery { emulatorConfigDao.insert(capture(configSlot)) } returns 1L
+
+        useCase.setForPlatform(1L, "saturn", emulator)
+
+        assertEquals("yabasanshiro", configSlot.captured.coreName)
+    }
+
+    @Test
+    fun `setForPlatform leaves core empty for standalone emulator`() = runTest {
+        val emulator = installed(EmulatorRegistry.getById("yabasanshiro")!!)
+        val configSlot = slot<EmulatorConfigEntity>()
+        coEvery { emulatorConfigDao.insert(capture(configSlot)) } returns 1L
+
+        useCase.setForPlatform(1L, "saturn", emulator)
+
+        assertNull(configSlot.captured.coreName)
+    }
+
+    @Test
     fun `clearForGame deletes game override`() = runTest {
         useCase.clearForGame(456L)
 
@@ -178,6 +212,9 @@ class ConfigureEmulatorUseCaseTest {
             displayName = displayName,
             supportedPlatforms = setOf("nes", "snes", "gba")
         )
-        return InstalledEmulator(def = def, versionName = "1.0", versionCode = 1L)
+        return installed(def)
     }
+
+    private fun installed(def: EmulatorDef): InstalledEmulator =
+        InstalledEmulator(def = def, versionName = "1.0", versionCode = 1L)
 }

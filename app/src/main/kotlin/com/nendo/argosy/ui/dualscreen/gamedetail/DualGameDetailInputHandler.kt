@@ -559,8 +559,7 @@ class DualGameDetailInputHandler(
             }
             GameDetailOption.CHANGE_CORE -> {
                 lifecycleLaunch {
-                    val cores = com.nendo.argosy.data.emulator.EmulatorRegistry
-                        .getCoresForPlatform(vm.uiState.value.platformSlug)
+                    val cores = vm.uiState.value.availableCores
                     vm.openCorePicker(cores)
                     onBroadcastCoreModalOpen(cores, vm.uiState.value.selectedCoreName)
                 }

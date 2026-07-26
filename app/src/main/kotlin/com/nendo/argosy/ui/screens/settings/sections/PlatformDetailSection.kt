@@ -286,13 +286,18 @@ fun PlatformDetailSection(
                     val currentCoreIndex = config.availableCores
                         .indexOfFirst { it.id == config.selectedCore }
                         .takeIf { it >= 0 } ?: 0
+                    val selectedCoreName = config.availableCores
+                        .firstOrNull { it.id == config.selectedCore }
+                        ?.displayName
                     CyclePreference(
                         title = "Core",
-                        value = config.selectedCore ?: "Default",
+                        value = selectedCoreName ?: "Default",
                         isFocused = isFocused(item),
                         onClick = { viewModel.cycleCoreForPlatform(config, 1) },
                         onPrev = { viewModel.cycleCoreForPlatform(config, -1) },
-                        options = remember(config.availableCores) { config.availableCores.map { it.id } },
+                        options = remember(config.availableCores) {
+                            config.availableCores.map { it.displayName }
+                        },
                         onSelect = { viewModel.cycleCoreForPlatform(config, it - currentCoreIndex) },
                         pickerRequestToken = pickerToken(item),
                         valueFooter = if (platformHasNetplay) {

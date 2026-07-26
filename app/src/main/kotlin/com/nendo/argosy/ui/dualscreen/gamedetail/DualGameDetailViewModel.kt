@@ -20,7 +20,7 @@ import com.nendo.argosy.data.local.entity.GameFileEntity
 import com.nendo.argosy.data.local.entity.getDisplayName
 import com.nendo.argosy.domain.usecase.game.ConfigureEmulatorUseCase
 import com.nendo.argosy.data.emulator.DiscOption
-import com.nendo.argosy.data.emulator.EmulatorRegistry
+import com.nendo.argosy.data.emulator.EmulatorResolver
 import com.nendo.argosy.data.download.ZipExtractor
 import com.nendo.argosy.data.steam.SteamDownloadState
 import com.nendo.argosy.ui.common.appId
@@ -44,7 +44,6 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -63,7 +62,7 @@ class DualGameDetailViewModel(
     private val displayAffinityHelper: DisplayAffinityHelper,
     private val downloadFileStatusRepository: com.nendo.argosy.data.repository.DownloadFileStatusRepository,
     private val sessionStateStore: SessionStateStore,
-    private val preferencesRepository: com.nendo.argosy.data.preferences.UserPreferencesRepository,
+    private val emulatorResolver: EmulatorResolver,
     private val context: Context
 ) : ViewModel() {
 
@@ -338,34 +337,31 @@ class DualGameDetailViewModel(
 
             val gameSpecificConfig = emulatorConfigDao.getByGameId(game.id)
             val platformDefaultConfig = emulatorConfigDao.getDefaultForPlatform(game.platformId)
-            val configuredEmulatorPackage = gameSpecificConfig?.packageName ?: platformDefaultConfig?.packageName
-            val configuredEmulatorName = gameSpecificConfig?.displayName ?: platformDefaultConfig?.displayName
 
-            val detector = com.nendo.argosy.data.emulator.getSharedEmulatorDetector(context)
-            if (detector.installedEmulators.value.isEmpty()) detector.detectEmulators()
-            val builtinEnabled = preferencesRepository.userPreferences.first().builtinLibretroEnabled
-            val effectiveSavePackage = configuredEmulatorPackage
-                ?: detector.getPreferredEmulator(game.platformSlug, builtinEnabled)?.def?.packageName
+            val effectiveEmulatorDef = emulatorResolver.getEmulatorForGame(
+                gameId = game.id,
+                platformId = game.platformId,
+                platformSlug = game.platformSlug
+            )
+            val effectiveSavePackage = effectiveEmulatorDef?.packageName
             val saveConfig = effectiveSavePackage?.let {
                 com.nendo.argosy.data.emulator.SavePathRegistry.getConfigForPlatformByPackage(it, game.platformSlug)
             }
             val hasFileBasedSaves = com.nendo.argosy.data.emulator.SavePathRegistry
                 .supportsPerGameSavePath(saveConfig, game.platformSlug)
 
-            val platformCores = EmulatorRegistry.getCoresForPlatform(game.platformSlug)
-            val emulatorDef = configuredEmulatorPackage?.let { pkg ->
-                EmulatorRegistry.getByPackage(pkg)
+            val coreSelection = effectiveEmulatorDef?.let {
+                emulatorResolver.resolveCoreSelectionForGame(
+                    gameId = game.id,
+                    platformId = game.platformId,
+                    platformSlug = game.platformSlug,
+                    emulator = it
+                )
             }
-            // emulatorDef == null means we haven't resolved an emulator yet (auto-pick); still show core picker if cores exist.
-            val isCoreSelectable = emulatorDef?.launchConfig?.isCoreSelectable ?: true
-            val hasMultipleCores = isCoreSelectable && platformCores.size > 1
-
-            val selectedCoreId = gameSpecificConfig?.coreName
-                ?: platformDefaultConfig?.coreName
-                ?: EmulatorRegistry.getDefaultCore(game.platformSlug)?.id
-            val selectedCoreName = if (hasMultipleCores) {
-                platformCores.find { it.id == selectedCoreId }?.displayName
-            } else null
+            val availableCores = coreSelection?.availableCores ?: emptyList()
+            val hasMultipleCores = availableCores.size > 1
+            val selectedCoreId = coreSelection?.selectedCore?.id
+            val selectedCoreName = coreSelection?.selectedCore?.displayName
 
             val downloadedVariants = excludePrimaryFile(gameRepository.getVariantsForGame(game.id), game)
                 .filter { it.localPath != null }
@@ -408,8 +404,9 @@ class DualGameDetailViewModel(
                 isDownloaded = isDownloaded,
                 platformSlug = game.platformSlug,
                 platformId = game.platformId,
-                emulatorName = configuredEmulatorName,
+                emulatorName = effectiveEmulatorDef?.displayName,
                 hasMultipleCores = hasMultipleCores,
+                availableCores = availableCores,
                 selectedCoreName = selectedCoreName,
                 selectedCoreId = selectedCoreId,
                 hasFileBasedSaves = hasFileBasedSaves,
@@ -950,13 +947,7 @@ class DualGameDetailViewModel(
         val state = _uiState.value
         viewModelScope.launch {
             configureEmulatorUseCase.setForGame(state.gameId, state.platformId, state.platformSlug, selected)
-            _uiState.update {
-                it.copy(
-                    emulatorName = selected?.def?.displayName,
-                    savePathOverride = null,
-                    displayTargetName = null
-                )
-            }
+            loadGame(state.gameId)
         }
         _activeModal.value = ActiveModal.NONE
     }

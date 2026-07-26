@@ -81,7 +81,7 @@ class DualScreenManager(
     private val saveCacheManager: SaveCacheManager,
     private val getUnifiedSavesUseCase: GetUnifiedSavesUseCase,
     private val restoreCachedSaveUseCase: RestoreCachedSaveUseCase,
-    private val emulatorResolver: EmulatorResolver,
+    internal val emulatorResolver: EmulatorResolver,
     private val fetchAchievementsUseCase: FetchAchievementsUseCase,
     internal val displayAffinityHelper: DisplayAffinityHelper,
     internal val sessionStateStore: SessionStateStore,
@@ -2181,7 +2181,7 @@ class DualScreenManager(
             displayAffinityHelper = displayAffinityHelper,
             downloadFileStatusRepository = downloadFileStatusRepository,
             sessionStateStore = sessionStateStore,
-            preferencesRepository = preferencesRepository,
+            emulatorResolver = emulatorResolver,
             context = appContext
         )
         vm.loadGame(gameId)

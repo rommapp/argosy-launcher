@@ -705,7 +705,8 @@ class SecondaryHomeActivity :
             steamContentManager = dsm.steamContentManager,
             displayAffinityHelper = affinityHelper,
             downloadFileStatusRepository = dsm.downloadFileStatusRepository,
-            preferencesRepository = dsm.preferencesRepository
+            preferencesRepository = dsm.preferencesRepository,
+            emulatorResolver = dsm.emulatorResolver
         )
 
         dualHomeViewModel.onSelectionPersist = {

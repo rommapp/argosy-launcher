@@ -358,6 +358,9 @@ class SocialRepository @Inject constructor(
                     is ArgosSocialService.IncomingMessage.QuayPassCheckins -> {
                         _quayPassCheckins.value = message.checkins
                     }
+                    is ArgosSocialService.IncomingMessage.FriendRequest -> {
+                        requestQuayPassCheckins()
+                    }
                     is ArgosSocialService.IncomingMessage.FriendsData -> {
                         Log.d(TAG, "Received initial friends: ${message.friends.size}")
                         _friends.value = message.friends.sortedWith(friendComparator)

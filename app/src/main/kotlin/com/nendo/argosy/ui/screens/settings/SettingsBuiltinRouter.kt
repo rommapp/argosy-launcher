@@ -740,7 +740,7 @@ internal fun routeResetAllPlatformLibretroSettings(vm: SettingsViewModel) {
     vm.viewModelScope.launch {
         val current = vm.libretroSettingsRepo.getByPlatformId(platformContext.platformId) ?: return@launch
         val updated = current.copy(
-            shader = null, filter = null, aspectRatio = null, portraitPosition = null, rotation = null,
+            shader = null, shaderChain = null, filter = null, aspectRatio = null, portraitPosition = null, rotation = null,
             overscanCrop = null, frame = null, blackFrameInsertion = null, fastForwardEnabled = null, fastForwardSpeed = null,
             rewindEnabled = null, rewindSpeed = null, rewindBufferDuration = null,
             skipDuplicateFrames = null, lowLatencyAudio = null, audioVolume = null, vsync = null
@@ -996,7 +996,6 @@ internal fun routeDownloadCoreWithNotification(vm: SettingsViewModel, coreId: St
 }
 
 internal fun routeOpenShaderChainConfig(vm: SettingsViewModel) {
-    vm.shaderChainManager.loadChain(vm._uiState.value.builtinVideo.shaderChainJson)
     vm.loadPreviewGames()
     vm.navigateToSection(SettingsSection.SHADER_STACK)
 }
@@ -1046,16 +1045,51 @@ internal fun routeDownloadAndSelectFrame(vm: SettingsViewModel, frameId: String)
 internal fun routePersistShaderChain(vm: SettingsViewModel, config: ShaderChainConfig) {
     val json = config.toJson()
     val shaderMode = if (config.entries.isNotEmpty()) "Custom" else "None"
-    vm._uiState.update {
-        it.copy(builtinVideo = it.builtinVideo.copy(
-            shader = shaderMode,
-            shaderChainJson = json
-        ))
+    val settingsScope = routeResolveShaderChainSettingsScope(vm._uiState.value)
+    val platformId = settingsScope.platformId
+
+    if (platformId == null) {
+        vm._uiState.update {
+            it.copy(
+                builtinVideo = it.builtinVideo.copy(
+                    shader = shaderMode,
+                    shaderChainJson = json
+                )
+            )
+        }
+        vm.viewModelScope.launch {
+            vm.libretroSettingsRepo.setBuiltinShader(shaderMode)
+            vm.libretroSettingsRepo.setBuiltinShaderChain(json)
+        }
+    } else {
+        vm._uiState.update { state ->
+            val current = state.platformLibretro.platformSettings[platformId]
+                ?: PlatformLibretroSettingsEntity(platformId = platformId)
+            state.copy(
+                platformLibretro = state.platformLibretro.copy(
+                    platformSettings = state.platformLibretro.platformSettings +
+                        (platformId to current.copy(shader = shaderMode, shaderChain = json))
+                )
+            )
+        }
+        vm.viewModelScope.launch {
+            vm.libretroSettingsRepo.setPlatformShaderChain(platformId, shaderMode, json)
+        }
     }
-    vm.viewModelScope.launch {
-        vm.libretroSettingsRepo.setBuiltinShader(shaderMode)
-        vm.libretroSettingsRepo.setBuiltinShaderChain(json)
-    }
+}
+
+internal data class ShaderChainSettingsScope(
+    val platformId: Long?,
+    val chainJson: String
+)
+
+internal fun routeResolveShaderChainSettingsScope(state: SettingsUiState): ShaderChainSettingsScope {
+    val platformId = state.builtinVideo.currentPlatformContext?.platformId
+    val platformChain = platformId?.let { state.platformLibretro.platformSettings[it]?.shaderChain }
+    return ShaderChainSettingsScope(
+        platformId = platformId,
+        chainJson = platformChain ?: state.builtinVideo.shaderChainJson
+    )
 }
 
 internal suspend fun routeResolvePreviewBitmap(vm: SettingsViewModel): Bitmap? {

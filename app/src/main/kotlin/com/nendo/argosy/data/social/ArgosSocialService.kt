@@ -330,7 +330,9 @@ class ArgosSocialService @Inject constructor(
                 }
 
                 MessageTypes.QUAYPASS_MESSAGE_UPDATED ->
-                    IncomingMessage.QuayPassMessageUpdated(json.optString("message", ""))
+                    if (json.has("message")) {
+                        IncomingMessage.QuayPassMessageUpdated(json.optString("message", ""))
+                    } else null
 
                 MessageTypes.FRIEND_ACCEPTED -> {
                     if (payload != null) {

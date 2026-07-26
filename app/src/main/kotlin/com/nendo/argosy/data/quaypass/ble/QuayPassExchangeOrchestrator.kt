@@ -24,8 +24,6 @@ import javax.inject.Singleton
 class QuayPassExchangeOrchestrator @Inject constructor(
     private val keystore: QuayPassKeystore,
     private val credentialManager: QuayPassCredentialManager,
-    private val nonceStore: QuayPassNonceStore,
-    private val cooldownStore: QuayPassCooldownStore,
     private val encounterDao: QuayPassEncounterDao,
     private val dailyStatsDao: QuayPassDailyStatsDao,
     private val userPreferencesRepository: UserPreferencesRepository
@@ -75,15 +73,6 @@ class QuayPassExchangeOrchestrator @Inject constructor(
             return false
         }
 
-        val nowSecs = now.epochSecond
-
-        if (!cooldownStore.claim(profile.credentialFingerprint, nowSecs)) {
-            return false
-        }
-        if (!nonceStore.acceptOrReject(profile.credentialFingerprint, profile.nonce, nowSecs)) {
-            return false
-        }
-
         val entity = QuayPassEncounterEntity(
             credentialFingerprint = profile.credentialFingerprint,
             username = profile.username,
@@ -102,7 +91,11 @@ class QuayPassExchangeOrchestrator @Inject constructor(
             accountId = profile.credentialBundle.accountId.toString(),
             reported = false
         )
-        encounterDao.upsert(entity)
+
+        val cooldownCutoff = now.minusSeconds(QuayPassConfig.EXCHANGE_COOLDOWN_SECS)
+        if (!encounterDao.claimEncounter(entity, cooldownCutoff)) {
+            return false
+        }
 
         val dateKey = LocalDate.now(ZoneId.systemDefault()).toString()
         val updated = dailyStatsDao.incrementForDate(dateKey, tickets = 1)

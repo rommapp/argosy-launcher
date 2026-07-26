@@ -4,6 +4,7 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Transaction
 import com.nendo.argosy.data.local.entity.QuayPassEncounterEntity
 import kotlinx.coroutines.flow.Flow
 import java.time.Instant
@@ -13,6 +14,25 @@ interface QuayPassEncounterDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(encounter: QuayPassEncounterEntity)
+
+    /**
+     * Atomic, persistent cooldown claim: records the encounter only when the peer
+     * has no encounter newer than [cooldownCutoff], returning whether it was
+     * claimed. Runs in one transaction so two simultaneous passes with the same
+     * peer (mutual StreetPass, or a replay right after an app restart) collapse to
+     * a single credit; the persisted row is the cooldown, so it survives process
+     * death without any background work.
+     */
+    @Transaction
+    suspend fun claimEncounter(
+        encounter: QuayPassEncounterEntity,
+        cooldownCutoff: Instant
+    ): Boolean {
+        val last = lastSeenAt(encounter.credentialFingerprint)
+        if (last != null && last.isAfter(cooldownCutoff)) return false
+        upsert(encounter)
+        return true
+    }
 
     @Query("SELECT * FROM quaypass_encounters ORDER BY encounteredAt DESC LIMIT :limit OFFSET :offset")
     suspend fun page(limit: Int, offset: Int): List<QuayPassEncounterEntity>

@@ -24,6 +24,7 @@ import okhttp3.WebSocket
 import okhttp3.WebSocketListener
 import okhttp3.logging.HttpLoggingInterceptor
 import org.json.JSONObject
+import java.time.Instant
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -110,6 +111,7 @@ class ArgosSocialService @Inject constructor(
         data class FriendRemoved(val userId: String) : IncomingMessage()
         data class FriendCodeData(val code: String, val url: String) : IncomingMessage()
         data class QuayPassBalance(val balance: Int) : IncomingMessage()
+        data class QuayPassCheckins(val checkins: List<QuayPassCheckin>) : IncomingMessage()
         data class QuayPassAvatarUpdated(val userId: String, val avatar: String) : IncomingMessage()
         data class QuayPassMessageUpdated(val message: String) : IncomingMessage()
         data class FriendsData(val friends: List<Friend>) : IncomingMessage()
@@ -305,6 +307,16 @@ class ArgosSocialService @Inject constructor(
 
                 MessageTypes.QUAYPASS_BALANCE -> {
                     if (payload != null) IncomingMessage.QuayPassBalance(payload.optInt("balance", 0)) else null
+                }
+
+                MessageTypes.QUAYPASS_CHECKINS -> {
+                    val array = payload?.optJSONArray("checkins")
+                    val checkins = if (array != null) {
+                        (0 until array.length()).mapNotNull { i ->
+                            parseCheckin(array.optJSONObject(i))
+                        }
+                    } else emptyList()
+                    IncomingMessage.QuayPassCheckins(checkins)
                 }
 
                 MessageTypes.QUAYPASS_AVATAR_UPDATED -> {
@@ -899,6 +911,38 @@ class ArgosSocialService @Inject constructor(
 
     fun requestQuayPassBalance(): Boolean = send(MessageTypes.GET_QUAYPASS_BALANCE, emptyMap())
 
+    fun requestQuayPassCheckins(limit: Int? = null, beforeId: String? = null): Boolean {
+        val payload = buildMap<String, Any> {
+            limit?.let { put("limit", it) }
+            beforeId?.let { put("before_id", it) }
+        }
+        return send(MessageTypes.GET_QUAYPASS_CHECKINS, payload)
+    }
+
+    private fun parseCheckin(obj: JSONObject?): QuayPassCheckin? {
+        if (obj == null) return null
+        val userId = obj.optString("user_id", "").takeIf { it.isNotEmpty() } ?: return null
+        val encounteredAt = obj.optString("encountered_at", "").takeIf { it.isNotEmpty() } ?: return null
+        val epochSec = runCatching { Instant.parse(encounteredAt).epochSecond }.getOrNull() ?: return null
+        val lastPlayed = obj.optJSONObject("last_played")
+        return QuayPassCheckin(
+            userId = userId,
+            username = obj.optString("username", ""),
+            displayName = obj.optString("display_name", null)?.takeIf { it.isNotEmpty() },
+            avatarColor = obj.optString("avatar_color", null)?.takeIf { it.isNotEmpty() },
+            quayPassAvatar = obj.optString("quaypass_avatar", null)?.takeIf { it.isNotEmpty() },
+            message = obj.optString("message", null)?.takeIf { it.isNotEmpty() },
+            lastGameIgdbId = lastPlayed?.optLong("igdb_id")?.takeIf { it > 0 },
+            lastGameTitle = lastPlayed?.optString("title", null)?.takeIf { !it.isNullOrEmpty() },
+            coverThumbUrl = lastPlayed?.optString("cover_thumb_url", null)?.takeIf { !it.isNullOrEmpty() },
+            encounteredAtEpochSec = epochSec,
+            isFriend = obj.optBoolean("is_friend", false),
+            isBlocked = obj.optBoolean("is_blocked", false),
+            requestSent = obj.optBoolean("request_sent", false),
+            requestReceived = obj.optBoolean("request_received", false)
+        )
+    }
+
     fun sendPresence(status: PresenceStatus, gameIgdbId: Int? = null, gameTitle: String? = null, deviceName: String? = null): Boolean {
         return send(MessageTypes.SET_PRESENCE, mapOf(
             "status" to status.value,
@@ -974,6 +1018,10 @@ class ArgosSocialService @Inject constructor(
 
     fun sendFriendRequest(userId: String): Boolean {
         return send(MessageTypes.SEND_FRIEND_REQ, mapOf("user_id" to userId))
+    }
+
+    fun acceptFriend(userId: String): Boolean {
+        return send(MessageTypes.ACCEPT_FRIEND, mapOf("user_id" to userId))
     }
 
     fun getFeed(limit: Int? = null, beforeId: String? = null, userId: String? = null) {

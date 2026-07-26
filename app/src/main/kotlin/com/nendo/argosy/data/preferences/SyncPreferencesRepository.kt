@@ -554,6 +554,18 @@ class SyncPreferencesRepository @Inject constructor(
         }
     }
 
+    suspend fun setSocialAvatarFromServer(doodle: String?) {
+        dataStore.edit { prefs ->
+            if (doodle.isNullOrEmpty()) {
+                prefs[Keys.SOCIAL_AVATAR_USE_DOODLE] = false
+            } else {
+                prefs[Keys.SOCIAL_AVATAR_DOODLE] = doodle
+                prefs[Keys.SOCIAL_AVATAR_USE_DOODLE] = true
+            }
+            prefs[Keys.QUAYPASS_AVATAR_SYNC_PENDING] = false
+        }
+    }
+
     suspend fun setSocialOnlineStatusEnabled(enabled: Boolean) {
         dataStore.edit { it[Keys.SOCIAL_ONLINE_STATUS_ENABLED] = enabled }
     }

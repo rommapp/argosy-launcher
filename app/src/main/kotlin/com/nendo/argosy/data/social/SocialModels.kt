@@ -18,7 +18,25 @@ data class DeviceKeyResponse(
 
 @JsonClass(generateAdapter = true)
 data class MeResponse(
-    @Json(name = "quaypass_message") val quayPassMessage: String? = null
+    @Json(name = "quaypass_message") val quayPassMessage: String? = null,
+    @Json(name = "quaypass_avatar") val quayPassAvatar: String? = null
+)
+
+data class QuayPassCheckin(
+    val userId: String,
+    val username: String,
+    val displayName: String?,
+    val avatarColor: String?,
+    val quayPassAvatar: String?,
+    val message: String?,
+    val lastGameIgdbId: Long?,
+    val lastGameTitle: String?,
+    val coverThumbUrl: String?,
+    val encounteredAtEpochSec: Long,
+    val isFriend: Boolean,
+    val isBlocked: Boolean,
+    val requestSent: Boolean,
+    val requestReceived: Boolean
 )
 
 @JsonClass(generateAdapter = true)
@@ -157,6 +175,8 @@ object MessageTypes {
     const val REPORT_QUAYPASS_ENCOUNTER = "report_quaypass_encounter"
     const val GET_QUAYPASS_BALANCE = "get_quaypass_balance"
     const val QUAYPASS_BALANCE = "quaypass_balance"
+    const val GET_QUAYPASS_CHECKINS = "get_quaypass_checkins"
+    const val QUAYPASS_CHECKINS = "quaypass_checkins"
     const val QUAYPASS_AVATAR_UPDATED = "quaypass_avatar_updated"
     const val QUAYPASS_MESSAGE_UPDATED = "quaypass_message_updated"
     const val GET_FRIEND = "get_friend"

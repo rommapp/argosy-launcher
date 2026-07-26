@@ -15,13 +15,14 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * Two-way greeting sync, mirroring [QuayPassAvatarSyncCoordinator]. The greeting
- * is a settable profile field: a local edit is pushed via set_quaypass_message on
- * the next Connected transition (empty clears the server copy); on connect with no
- * pending edit the current greeting is pulled from GET /api/me so a fresh device
- * hydrates. A local edit wins over the server value. The inbound
- * quaypass_message_updated push (handled in SocialRepository) covers edits made on
- * another of the owner's devices while this one is already online.
+ * Greeting push plus profile pull. A local greeting edit is pushed via
+ * set_quaypass_message on the next Connected transition (empty clears the server
+ * copy). On every connect the profile is pulled once from GET /api/me and each
+ * field is hydrated only when it has no pending local edit, so a fresh device
+ * gets its greeting and avatar doodle while a local edit still wins. The inbound
+ * quaypass_message_updated push (handled in SocialRepository) covers greeting
+ * edits made on another of the owner's devices while this one is already online;
+ * avatar push stays in [QuayPassAvatarSyncCoordinator].
  */
 @Singleton
 class QuayPassMessageSyncCoordinator @Inject constructor(
@@ -47,8 +48,7 @@ class QuayPassMessageSyncCoordinator @Inject constructor(
         }
         scope.launch {
             socialService.connectionState.collect { state ->
-                if (state !is ArgosSocialService.ConnectionState.Connected) return@collect
-                if (!preferencesRepository.userPreferences.first().quayPassMessageSyncPending) pull()
+                if (state is ArgosSocialService.ConnectionState.Connected) pull()
             }
         }
     }
@@ -65,9 +65,15 @@ class QuayPassMessageSyncCoordinator @Inject constructor(
     }
 
     private suspend fun pull() {
-        val token = preferencesRepository.userPreferences.first().socialSessionToken ?: return
+        val prefs = preferencesRepository.userPreferences.first()
+        val token = prefs.socialSessionToken ?: return
         val me = authManager.fetchMe(token) ?: return
-        preferencesRepository.setQuayPassGreetingFromServer(me.quayPassMessage.orEmpty())
+        if (!prefs.quayPassMessageSyncPending) {
+            preferencesRepository.setQuayPassGreetingFromServer(me.quayPassMessage.orEmpty())
+        }
+        if (!prefs.quayPassAvatarSyncPending) {
+            preferencesRepository.setSocialAvatarFromServer(me.quayPassAvatar)
+        }
     }
 
     companion object {

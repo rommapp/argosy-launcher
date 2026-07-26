@@ -43,7 +43,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
-import com.nendo.argosy.data.local.entity.QuayPassEncounterEntity
 import com.nendo.argosy.data.quaypass.QuayPassService
 import com.nendo.argosy.ui.components.FocusedScroll
 import com.nendo.argosy.ui.components.FooterBar
@@ -65,7 +64,7 @@ import java.time.format.DateTimeFormatter
 fun QuayPassCheckInScreen(
     viewModel: QuayPassCheckInViewModel = hiltViewModel()
 ) {
-    val encounters by viewModel.encounters.collectAsState()
+    val cards by viewModel.cards.collectAsState()
     val serviceState by viewModel.serviceState.collectAsState()
     val running = serviceState == QuayPassService.QuayPassRunState.RUNNING
     val ticketBalance by viewModel.ticketBalance.collectAsState()
@@ -142,7 +141,7 @@ fun QuayPassCheckInScreen(
                 )
                 Spacer(Modifier.height(Dimens.spacingMd))
 
-                if (encounters.isEmpty()) {
+                if (cards.isEmpty()) {
                     EmptyState()
                 } else {
                     Box(modifier = Modifier.fillMaxSize()) {
@@ -152,22 +151,16 @@ fun QuayPassCheckInScreen(
                             verticalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
                         ) {
                             itemsIndexed(
-                                encounters,
-                                key = { _, encounter -> encounter.credentialFingerprint }
-                            ) { index, encounter ->
-                                val fingerprint = encounter.credentialFingerprint
-                                val accountId = encounter.accountId
-                                EncounterCard(
-                                    encounter = encounter,
+                                cards,
+                                key = { _, card -> card.key }
+                            ) { index, card ->
+                                CheckInCardView(
+                                    card = card,
                                     isFocused = index == uiState.focusedIndex,
-                                    visible = fingerprint !in uiState.pendingArrivals,
-                                    snapReveal = fingerprint in uiState.rushedArrivals,
-                                    showTicketAward = fingerprint in uiState.revealedArrivals,
+                                    visible = card.key !in uiState.pendingArrivals,
+                                    snapReveal = card.key in uiState.rushedArrivals,
+                                    showTicketAward = card.key in uiState.revealedArrivals,
                                     ticketAward = uiState.ticketAwardPerEncounter,
-                                    requestSent = accountId != null && accountId in uiState.sentAccountIds,
-                                    requestQueued = accountId != null && accountId in uiState.queuedFriendAccountIds,
-                                    isFriend = accountId != null && accountId in uiState.friendAccountIds,
-                                    friendAvatarDoodle = accountId?.let { uiState.friendAvatars[it] },
                                     onClick = { viewModel.onCardTapped(index) }
                                 )
                             }
@@ -183,14 +176,16 @@ fun QuayPassCheckInScreen(
                 }
             }
 
-            val focusedAccountId = encounters.getOrNull(uiState.focusedIndex)?.accountId
-            val canAddFriend = !uiState.arrivalSequenceRunning &&
-                focusedAccountId != null &&
-                focusedAccountId !in uiState.friendAccountIds &&
-                focusedAccountId !in uiState.sentAccountIds
+            val focusedCard = cards.getOrNull(uiState.focusedIndex)
+            val primaryAction = when {
+                uiState.arrivalSequenceRunning || focusedCard == null -> null
+                focusedCard.isBlocked || focusedCard.isFriend || focusedCard.requestSent -> null
+                focusedCard.requestReceived -> "Accept"
+                else -> "Add Friend"
+            }
             FooterBar(
                 hints = buildList {
-                    if (canAddFriend) add(InputButton.A to "Add Friend")
+                    if (primaryAction != null) add(InputButton.A to primaryAction)
                     add(InputButton.Y to "Greeting")
                     add(InputButton.B to "Back")
                     add(InputButton.DPAD_VERTICAL to "Scroll")
@@ -238,23 +233,23 @@ private fun EmptyState() {
 }
 
 @Composable
-private fun EncounterCard(
-    encounter: QuayPassEncounterEntity,
+private fun CheckInCardView(
+    card: CheckInCard,
     isFocused: Boolean,
     visible: Boolean,
     snapReveal: Boolean,
     showTicketAward: Boolean,
     ticketAward: Int,
-    requestSent: Boolean,
-    requestQueued: Boolean,
-    isFriend: Boolean,
-    friendAvatarDoodle: String?,
     onClick: () -> Unit
 ) {
-    val frozenAvatar = remember(encounter.avatarBlobBase64) { decodePngAvatar(encounter.avatarBlobBase64) }
+    val frozenAvatar = remember(card.avatarPngBase64) { decodePngAvatar(card.avatarPngBase64) }
     val cardShape = RoundedCornerShape(Dimens.radiusLg)
     val cardAlpha by animateFloatAsState(
-        targetValue = if (visible) 1f else 0f,
+        targetValue = when {
+            !visible -> 0f
+            card.isBlocked -> 0.45f
+            else -> 1f
+        },
         animationSpec = if (snapReveal) snap() else MotionTokens.Tween.page,
         label = "arrival-fade"
     )
@@ -274,13 +269,13 @@ private fun EncounterCard(
             modifier = Modifier.padding(Dimens.spacingMd),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            if (isFriend) {
+            if (card.avatarSparse != null) {
                 SocialAvatar(
-                    displayName = encounter.displayName ?: encounter.username,
+                    displayName = card.displayName ?: card.username,
                     avatarColor = null,
                     size = Dimens.avatarXl,
-                    avatarDoodle = friendAvatarDoodle,
-                    userId = encounter.accountId
+                    avatarDoodle = card.avatarSparse,
+                    userId = card.accountId
                 )
             } else if (frozenAvatar != null) {
                 Image(
@@ -293,7 +288,7 @@ private fun EncounterCard(
                 )
             } else {
                 SocialAvatar(
-                    displayName = encounter.username,
+                    displayName = card.username,
                     avatarColor = null,
                     size = Dimens.avatarXl
                 )
@@ -302,47 +297,54 @@ private fun EncounterCard(
             Column(modifier = Modifier.weight(1f)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        text = encounter.displayName ?: "@${encounter.username}",
+                        text = card.displayName ?: "@${card.username}",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Medium
                     )
-                    if (isFriend) {
+                    if (card.isFriend) {
                         Spacer(Modifier.width(Dimens.spacingSm))
                         FriendBadge()
                     }
                 }
-                if (encounter.displayName != null) {
+                if (card.displayName != null) {
                     Text(
-                        text = "@${encounter.username}",
+                        text = "@${card.username}",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
-                if (requestSent) {
+                val relationshipLabel = when {
+                    card.isBlocked -> "Blocked"
+                    card.requestReceived -> "Wants to add you"
+                    card.requestSent -> "Friend request sent"
+                    else -> null
+                }
+                if (relationshipLabel != null) {
                     Text(
-                        text = if (requestQueued) "Friend request queued" else "Friend request sent",
+                        text = relationshipLabel,
                         style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.primary
+                        color = if (card.requestReceived) MaterialTheme.colorScheme.primary
+                        else MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
-                if (!encounter.greeting.isNullOrBlank()) {
+                if (!card.greeting.isNullOrBlank()) {
                     Spacer(Modifier.height(Dimens.spacingXs))
                     Text(
-                        text = encounter.greeting,
+                        text = card.greeting,
                         style = MaterialTheme.typography.bodyMedium
                     )
                 }
-                if (!encounter.lastGameTitle.isNullOrBlank()) {
+                if (!card.lastGameTitle.isNullOrBlank()) {
                     Spacer(Modifier.height(Dimens.spacingXs))
                     Text(
-                        text = "Played ${encounter.lastGameTitle}",
+                        text = "Played ${card.lastGameTitle}",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
                 Spacer(Modifier.height(Dimens.spacingXs))
                 Text(
-                    text = formatTimestamp(encounter.encounteredAt),
+                    text = formatTimestamp(card.encounteredAt),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

@@ -7,7 +7,9 @@ import com.nendo.argosy.data.preferences.SyncPreferencesRepository
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.quaypass.QuayPassRepository
 import com.nendo.argosy.data.quaypass.QuayPassService
+import com.nendo.argosy.data.social.Friend
 import com.nendo.argosy.data.social.FriendshipStatus
+import com.nendo.argosy.data.social.QuayPassCheckin
 import com.nendo.argosy.data.social.SocialRepository
 import com.nendo.argosy.ui.input.InputHandler
 import com.nendo.argosy.ui.input.InputResult
@@ -19,28 +21,40 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.time.Instant
 import javax.inject.Inject
+
+data class CheckInCard(
+    val key: String,
+    val accountId: String?,
+    val username: String,
+    val displayName: String?,
+    val avatarPngBase64: String?,
+    val avatarSparse: String?,
+    val greeting: String?,
+    val lastGameTitle: String?,
+    val coverThumbUrl: String?,
+    val encounteredAt: Instant,
+    val isFriend: Boolean,
+    val isBlocked: Boolean,
+    val requestSent: Boolean,
+    val requestReceived: Boolean
+)
 
 data class QuayPassCheckInUiState(
     val focusedIndex: Int = 0,
     val pendingArrivals: List<String> = emptyList(),
     val revealedArrivals: Set<String> = emptySet(),
     val rushedArrivals: Set<String> = emptySet(),
-    val friendAccountIds: Set<String> = emptySet(),
-    val friendAvatars: Map<String, String?> = emptyMap(),
-    val pendingFriendAccountIds: Set<String> = emptySet(),
-    val sessionSentAccountIds: Set<String> = emptySet(),
-    val queuedFriendAccountIds: Set<String> = emptySet(),
     val showGreetingEditor: Boolean = false,
     val ticketAwardPerEncounter: Int = QuayPassCheckInViewModel.TICKETS_PER_ENCOUNTER
 ) {
     val arrivalSequenceRunning: Boolean get() = pendingArrivals.isNotEmpty()
-    val sentAccountIds: Set<String>
-        get() = sessionSentAccountIds + pendingFriendAccountIds + queuedFriendAccountIds
 }
 
 @HiltViewModel
@@ -55,9 +69,22 @@ class QuayPassCheckInViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(QuayPassCheckInUiState())
     val uiState: StateFlow<QuayPassCheckInUiState> = _uiState.asStateFlow()
 
-    val encounters: StateFlow<List<QuayPassEncounterEntity>> =
+    private val sessionSentAccountIds = MutableStateFlow<Set<String>>(emptySet())
+
+    private val encounters: StateFlow<List<QuayPassEncounterEntity>> =
         repository.observeEncounters()
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    val cards: StateFlow<List<CheckInCard>> =
+        combine(
+            encounters,
+            socialRepository.quayPassCheckins,
+            socialRepository.friends,
+            syncPreferencesRepository.quayPassPendingFriendRequests(),
+            sessionSentAccountIds
+        ) { encounters, checkins, friends, queued, sessionSent ->
+            buildCards(encounters, checkins, friends, queued, sessionSent)
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     val ticketBalance: StateFlow<Int> =
         preferencesRepository.userPreferences
@@ -81,34 +108,77 @@ class QuayPassCheckInViewModel @Inject constructor(
     private var arrivalJob: Job? = null
 
     init {
+        socialRepository.requestQuayPassCheckins()
         viewModelScope.launch {
             encounters.collect { list -> onEncountersChanged(list) }
         }
         viewModelScope.launch {
-            socialRepository.friends.collect { friends ->
-                val accepted = friends
-                    .filter { it.friendshipStatus == FriendshipStatus.ACCEPTED }
-                    .mapTo(mutableSetOf()) { it.id }
-                val pending = friends
-                    .filter { it.friendshipStatus == FriendshipStatus.PENDING }
-                    .mapTo(mutableSetOf()) { it.id }
-                val avatars = friends
-                    .filter { it.friendshipStatus == FriendshipStatus.ACCEPTED }
-                    .associate { it.id to it.quayPassAvatar }
-                _uiState.update {
-                    it.copy(
-                        friendAccountIds = accepted,
-                        friendAvatars = avatars,
-                        pendingFriendAccountIds = pending
-                    )
-                }
+            cards.collect { list ->
+                val maxIndex = (list.size - 1).coerceAtLeast(0)
+                _uiState.update { it.copy(focusedIndex = it.focusedIndex.coerceIn(0, maxIndex)) }
             }
         }
-        viewModelScope.launch {
-            syncPreferencesRepository.quayPassPendingFriendRequests().collect { queued ->
-                _uiState.update { it.copy(queuedFriendAccountIds = queued) }
-            }
+    }
+
+    private fun buildCards(
+        encounters: List<QuayPassEncounterEntity>,
+        checkins: List<QuayPassCheckin>,
+        friends: List<Friend>,
+        queued: Set<String>,
+        sessionSent: Set<String>
+    ): List<CheckInCard> {
+        val manifestByKey = checkins.associateBy { it.userId to it.encounteredAtEpochSec }
+        val acceptedFriends = friends.filter { it.friendshipStatus == FriendshipStatus.ACCEPTED }
+        val friendIds = acceptedFriends.mapTo(mutableSetOf()) { it.id }
+        val friendAvatarById = acceptedFriends.associate { it.id to it.quayPassAvatar }
+
+        val localCards = encounters.map { enc ->
+            val manifest = enc.accountId?.let { manifestByKey[it to enc.encounteredAt.epochSecond] }
+            val isFriend = manifest?.isFriend ?: (enc.accountId in friendIds)
+            CheckInCard(
+                key = enc.credentialFingerprint,
+                accountId = enc.accountId,
+                username = enc.username,
+                displayName = enc.displayName,
+                avatarPngBase64 = enc.avatarBlobBase64,
+                avatarSparse = if (isFriend) enc.accountId?.let { friendAvatarById[it] } else null,
+                greeting = manifest?.message ?: enc.greeting,
+                lastGameTitle = if (manifest != null) manifest.lastGameTitle else enc.lastGameTitle,
+                coverThumbUrl = manifest?.coverThumbUrl,
+                encounteredAt = enc.encounteredAt,
+                isFriend = isFriend,
+                isBlocked = manifest?.isBlocked ?: false,
+                requestSent = manifest?.requestSent
+                    ?: (enc.accountId != null && (enc.accountId in sessionSent || enc.accountId in queued)),
+                requestReceived = manifest?.requestReceived ?: false
+            )
         }
+
+        val localKeys = encounters
+            .mapNotNull { enc -> enc.accountId?.let { it to enc.encounteredAt.epochSecond } }
+            .toSet()
+        val manifestOnly = checkins
+            .filterNot { (it.userId to it.encounteredAtEpochSec) in localKeys }
+            .map { manifest ->
+                CheckInCard(
+                    key = "m:${manifest.userId}:${manifest.encounteredAtEpochSec}",
+                    accountId = manifest.userId,
+                    username = manifest.username,
+                    displayName = manifest.displayName,
+                    avatarPngBase64 = manifest.quayPassAvatar,
+                    avatarSparse = if (manifest.isFriend) friendAvatarById[manifest.userId] else null,
+                    greeting = manifest.message,
+                    lastGameTitle = manifest.lastGameTitle,
+                    coverThumbUrl = manifest.coverThumbUrl,
+                    encounteredAt = Instant.ofEpochSecond(manifest.encounteredAtEpochSec),
+                    isFriend = manifest.isFriend,
+                    isBlocked = manifest.isBlocked,
+                    requestSent = manifest.requestSent,
+                    requestReceived = manifest.requestReceived
+                )
+            }
+
+        return (localCards + manifestOnly).sortedByDescending { it.encounteredAt }
     }
 
     fun createInputHandler(): InputHandler = object : InputHandler {
@@ -133,37 +203,45 @@ class QuayPassCheckInViewModel @Inject constructor(
     fun dismissGreetingEditor() = _uiState.update { it.copy(showGreetingEditor = false) }
 
     fun moveFocus(delta: Int): Boolean {
-        val count = encounters.value.size
+        val count = cards.value.size
         if (count == 0) return false
         _uiState.update { it.copy(focusedIndex = (it.focusedIndex + delta).mod(count)) }
         return true
     }
 
     fun onCardTapped(index: Int) {
-        if (index in encounters.value.indices) {
+        if (index in cards.value.indices) {
             _uiState.update { it.copy(focusedIndex = index) }
         }
         activateCard(index)
     }
 
     fun activateCard(index: Int): Boolean {
-        val state = _uiState.value
-        if (state.arrivalSequenceRunning) {
+        if (_uiState.value.arrivalSequenceRunning) {
             rushArrivals()
             return true
         }
-        val encounter = encounters.value.getOrNull(index) ?: return false
-        val accountId = encounter.accountId ?: return false
-        if (accountId in state.friendAccountIds || accountId in state.sentAccountIds) return false
-        if (socialRepository.isConnected()) {
-            socialRepository.sendFriendRequest(accountId)
-            _uiState.update { it.copy(sessionSentAccountIds = it.sessionSentAccountIds + accountId) }
-        } else {
-            viewModelScope.launch {
-                syncPreferencesRepository.addQuayPassPendingFriendRequest(accountId)
+        val card = cards.value.getOrNull(index) ?: return false
+        val accountId = card.accountId ?: return false
+        return when {
+            card.isBlocked || card.isFriend || card.requestSent -> false
+            card.requestReceived -> {
+                socialRepository.acceptFriend(accountId)
+                socialRepository.requestQuayPassCheckins()
+                true
+            }
+            socialRepository.isConnected() -> {
+                socialRepository.sendFriendRequest(accountId)
+                sessionSentAccountIds.update { it + accountId }
+                true
+            }
+            else -> {
+                viewModelScope.launch {
+                    syncPreferencesRepository.addQuayPassPendingFriendRequest(accountId)
+                }
+                true
             }
         }
-        return true
     }
 
     fun rushArrivals() {
@@ -199,8 +277,6 @@ class QuayPassCheckInViewModel @Inject constructor(
             _uiState.update { it.copy(pendingArrivals = it.pendingArrivals + arrivals) }
             startArrivalSequence()
         }
-        val maxIndex = (list.size - 1).coerceAtLeast(0)
-        _uiState.update { it.copy(focusedIndex = it.focusedIndex.coerceIn(0, maxIndex)) }
     }
 
     private fun startArrivalSequence() {

@@ -84,6 +84,9 @@ class SocialRepository @Inject constructor(
     private val _friends = MutableStateFlow<List<Friend>>(emptyList())
     val friends: StateFlow<List<Friend>> = _friends.asStateFlow()
 
+    private val _quayPassCheckins = MutableStateFlow<List<QuayPassCheckin>>(emptyList())
+    val quayPassCheckins: StateFlow<List<QuayPassCheckin>> = _quayPassCheckins.asStateFlow()
+
     private val _sharedCollections = MutableStateFlow<List<CollectionSummary>>(emptyList())
     val sharedCollections: StateFlow<List<CollectionSummary>> = _sharedCollections.asStateFlow()
 
@@ -349,6 +352,9 @@ class SocialRepository @Inject constructor(
                     }
                     is ArgosSocialService.IncomingMessage.QuayPassMessageUpdated -> {
                         preferencesRepository.setQuayPassGreetingFromServer(message.message)
+                    }
+                    is ArgosSocialService.IncomingMessage.QuayPassCheckins -> {
+                        _quayPassCheckins.value = message.checkins
                     }
                     is ArgosSocialService.IncomingMessage.FriendsData -> {
                         Log.d(TAG, "Received initial friends: ${message.friends.size}")
@@ -659,6 +665,18 @@ class SocialRepository @Inject constructor(
     fun sendFriendRequest(userId: String) {
         if (socialService.isConnected()) {
             socialService.sendFriendRequest(userId)
+        }
+    }
+
+    fun acceptFriend(userId: String) {
+        if (socialService.isConnected()) {
+            socialService.acceptFriend(userId)
+        }
+    }
+
+    fun requestQuayPassCheckins() {
+        if (socialService.isConnected()) {
+            socialService.requestQuayPassCheckins(limit = 100)
         }
     }
 

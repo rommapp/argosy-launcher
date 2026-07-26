@@ -313,14 +313,10 @@ class SecondaryHomeInputHandler(
                 }
             }
             GameDetailOption.CHANGE_CORE -> {
-                lifecycleLaunch {
-                    val cores = com.nendo.argosy.data.emulator.EmulatorRegistry
-                        .getCoresForPlatform(vm.uiState.value.platformSlug)
-                    vm.openCorePicker(cores)
-                    broadcasts.broadcastCoreModalOpen(
-                        cores, vm.uiState.value.selectedCoreName
-                    )
-                }
+                val coreNames = vm.openCorePicker()
+                broadcasts.broadcastCoreModalOpen(
+                    coreNames, vm.uiState.value.selectedCoreName
+                )
             }
             GameDetailOption.SAVE_PATH -> {
                 vm.openSavePathPicker()

@@ -18,7 +18,7 @@ class DualGameDetailInputHandler(
     private val onBroadcastInlineUpdate: (String, Any) -> Unit,
     private val onBroadcastDirectAction: (String, Long, String?) -> Unit,
     private val onBroadcastEmulatorModalOpen: (List<com.nendo.argosy.data.emulator.InstalledEmulator>, String?) -> Unit,
-    private val onBroadcastCoreModalOpen: (List<com.nendo.argosy.data.emulator.RetroArchCore>, String?) -> Unit,
+    private val onBroadcastCoreModalOpen: (List<String>, String?) -> Unit,
     private val onBroadcastSavePathModalOpen: (String?) -> Unit,
     private val onBroadcastDisplayTargetModalOpen: (List<String>, String?, String?) -> Unit,
     private val onBroadcastMemoryCardModalOpen: (List<String>, String?, String?) -> Unit,
@@ -588,12 +588,8 @@ class DualGameDetailInputHandler(
                 }
             }
             GameDetailOption.CHANGE_CORE -> {
-                lifecycleLaunch {
-                    val cores = com.nendo.argosy.data.emulator.EmulatorRegistry
-                        .getCoresForPlatform(vm.uiState.value.platformSlug)
-                    vm.openCorePicker(cores)
-                    onBroadcastCoreModalOpen(cores, vm.uiState.value.selectedCoreName)
-                }
+                val coreNames = vm.openCorePicker()
+                onBroadcastCoreModalOpen(coreNames, vm.uiState.value.selectedCoreName)
             }
             GameDetailOption.SAVE_PATH -> {
                 vm.openSavePathPicker()

@@ -59,10 +59,10 @@ class SecondaryHomeBroadcastHelper(
     }
 
     fun broadcastCoreModalOpen(
-        cores: List<com.nendo.argosy.data.emulator.RetroArchCore>,
+        coreNames: List<String>,
         currentName: String?
     ) {
-        dsm.openCoreModal(cores.map { it.displayName }, currentName)
+        dsm.openCoreModal(coreNames, currentName)
     }
 
     fun broadcastSavePathModalOpen(overridePath: String?) {

@@ -79,6 +79,7 @@ data class DualGameDetailUiState(
     val platformSlug: String = "",
     val platformId: Long = 0,
     val emulatorName: String? = null,
+    val isBuiltInEmulator: Boolean = false,
     val saveFocusColumn: SaveFocusColumn = SaveFocusColumn.SLOTS,
     val activeChannel: String? = null,
     val activeSaveTimestamp: Long? = null,

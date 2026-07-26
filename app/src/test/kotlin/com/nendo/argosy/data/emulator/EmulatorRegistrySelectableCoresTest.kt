@@ -46,6 +46,35 @@ class EmulatorRegistrySelectableCoresTest {
     }
 
     @Test
+    fun `external mode offers dolphin for gamecube and wii`() {
+        val gc = EmulatorRegistry.getSelectableCores("gc", isBuiltIn = false).map { it.id }
+        val wii = EmulatorRegistry.getSelectableCores("wii", isBuiltIn = false).map { it.id }
+        val alias = EmulatorRegistry.getSelectableCores("gamecube", isBuiltIn = false).map { it.id }
+
+        assertEquals(listOf("dolphin"), gc)
+        assertEquals(listOf("dolphin"), wii)
+        assertEquals(gc, alias)
+    }
+
+    @Test
+    fun `every platform the retroarch def claims can resolve a selectable core`() {
+        val retroArch = EmulatorRegistry.getById("retroarch")
+        requireNotNull(retroArch) { "retroarch def must exist" }
+
+        val knownGaps = setOf("sg1000")
+        val unresolvable = retroArch.supportedPlatforms.filter { slug ->
+            EmulatorRegistry.getDefaultSelectableCore(slug, isBuiltIn = false) == null &&
+                EmulatorRegistry.getDefaultCore(slug) == null
+        }.toSet()
+
+        assertEquals(
+            "external RetroArch core resolution gained or lost a gap",
+            knownGaps,
+            unresolvable
+        )
+    }
+
+    @Test
     fun `platform slug aliases resolve to the same built-in cores`() {
         val bySlug = EmulatorRegistry.getSelectableCores("psx", isBuiltIn = true).map { it.id }.toSet()
         val byAlias = EmulatorRegistry.getSelectableCores("ps1", isBuiltIn = true).map { it.id }.toSet()

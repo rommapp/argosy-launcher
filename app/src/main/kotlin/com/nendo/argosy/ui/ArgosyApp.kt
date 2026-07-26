@@ -1428,11 +1428,8 @@ fun ArgosyApp(
                                         currentName
                                     )
                                 },
-                                onBroadcastCoreModalOpen = { cores, currentName ->
-                                    dualScreenManager.openCoreModal(
-                                        cores.map { it.displayName },
-                                        currentName
-                                    )
+                                onBroadcastCoreModalOpen = { coreNames, currentName ->
+                                    dualScreenManager.openCoreModal(coreNames, currentName)
                                 },
                                 onBroadcastSavePathModalOpen = { overridePath ->
                                     dualScreenManager.openSavePathModal(overridePath)
@@ -1712,15 +1709,11 @@ fun ArgosyApp(
                                         }
                                     }
                                     GameDetailOption.CHANGE_CORE -> {
-                                        scope.launch {
-                                            val cores = com.nendo.argosy.data.emulator.EmulatorRegistry
-                                                .getCoresForPlatform(vm.uiState.value.platformSlug)
-                                            vm.openCorePicker(cores)
-                                            dualScreenManager.openCoreModal(
-                                                cores.map { it.displayName },
-                                                vm.uiState.value.selectedCoreName
-                                            )
-                                        }
+                                        val coreNames = vm.openCorePicker()
+                                        dualScreenManager.openCoreModal(
+                                            coreNames,
+                                            vm.uiState.value.selectedCoreName
+                                        )
                                     }
                                     GameDetailOption.SAVE_PATH -> {
                                         vm.openSavePathPicker()

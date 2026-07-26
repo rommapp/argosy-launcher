@@ -28,6 +28,7 @@ import com.nendo.argosy.ui.common.isAndroidApp
 import com.nendo.argosy.ui.common.isRommGame
 import com.nendo.argosy.ui.common.isSteamGame
 import com.nendo.argosy.data.emulator.InstalledEmulator
+import com.nendo.argosy.data.emulator.LaunchConfig
 import com.nendo.argosy.data.emulator.RetroArchCore
 import com.nendo.argosy.data.model.GameSource
 import com.nendo.argosy.ui.screens.gamedetail.UpdateFileType
@@ -374,17 +375,17 @@ class DualGameDetailViewModel(
             val hasMultipleMemcards = ps2Memcards.size > 1
             val selectedMemcardName = ps2Memcards.find { it.path == selectedMemcardPath }?.name
 
-            val platformCores = EmulatorRegistry.getCoresForPlatform(game.platformSlug)
             val emulatorDef = configuredEmulatorPackage?.let { pkg ->
                 EmulatorRegistry.getByPackage(pkg)
-            }
-            // emulatorDef == null means we haven't resolved an emulator yet (auto-pick); still show core picker if cores exist.
+            } ?: detector.getPreferredEmulator(game.platformSlug, builtinEnabled)?.def
+            val isBuiltInEmulator = emulatorDef?.launchConfig is LaunchConfig.BuiltIn
+            val platformCores = EmulatorRegistry.getSelectableCores(game.platformSlug, isBuiltInEmulator)
             val isCoreSelectable = emulatorDef?.launchConfig?.isCoreSelectable ?: true
             val hasMultipleCores = isCoreSelectable && platformCores.size > 1
 
             val selectedCoreId = gameSpecificConfig?.coreName
                 ?: platformDefaultConfig?.coreName
-                ?: EmulatorRegistry.getDefaultCore(game.platformSlug)?.id
+                ?: EmulatorRegistry.getDefaultSelectableCore(game.platformSlug, isBuiltInEmulator)?.id
             val selectedCoreName = if (hasMultipleCores) {
                 platformCores.find { it.id == selectedCoreId }?.displayName
             } else null
@@ -431,6 +432,7 @@ class DualGameDetailViewModel(
                 platformSlug = game.platformSlug,
                 platformId = game.platformId,
                 emulatorName = configuredEmulatorName,
+                isBuiltInEmulator = isBuiltInEmulator,
                 hasMultipleCores = hasMultipleCores,
                 selectedCoreName = selectedCoreName,
                 selectedCoreId = selectedCoreId,
@@ -975,9 +977,15 @@ class DualGameDetailViewModel(
         val state = _uiState.value
         viewModelScope.launch {
             configureEmulatorUseCase.setForGame(state.gameId, state.platformId, state.platformSlug, selected)
+            val builtinEnabled = preferencesRepository.userPreferences.first().builtinLibretroEnabled
+            val resolvedDef = selected?.def
+                ?: com.nendo.argosy.data.emulator.getSharedEmulatorDetector(context)
+                    .getPreferredEmulator(state.platformSlug, builtinEnabled)?.def
+            val isBuiltIn = resolvedDef?.launchConfig is LaunchConfig.BuiltIn
             _uiState.update {
                 it.copy(
                     emulatorName = selected?.def?.displayName,
+                    isBuiltInEmulator = isBuiltIn,
                     savePathOverride = null,
                     displayTargetName = null
                 )
@@ -986,10 +994,19 @@ class DualGameDetailViewModel(
         _activeModal.value = ActiveModal.NONE
     }
 
-    fun openCorePicker(cores: List<RetroArchCore>) {
+    /**
+     * Opens the core picker for the game's resolved emulator mode and returns the display
+     * names of the backing core list, in the same order, for the upper-screen modal. The
+     * returned names are the only ones that may be shown: confirm indexes back into the
+     * list stored here.
+     */
+    fun openCorePicker(): List<String> {
+        val state = _uiState.value
+        val cores = EmulatorRegistry.getSelectableCores(state.platformSlug, state.isBuiltInEmulator)
         _corePickerList.value = cores
         _corePickerFocusIndex.value = 0
         _activeModal.value = ActiveModal.CORE
+        return cores.map { it.displayName }
     }
 
     fun confirmCoreByIndex(index: Int) {

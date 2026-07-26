@@ -354,14 +354,15 @@ internal fun routeLoadSettings(vm: SettingsViewModel) {
             val effectiveEmulatorDef = selectedEmulatorDef ?: if (adHocConfig != null) null else autoResolvedEmulator
             val isRetroArch = effectiveEmulatorDef?.launchConfig is com.nendo.argosy.data.emulator.LaunchConfig.RetroArch
             val hasCoreSelection = effectiveEmulatorDef?.launchConfig?.isCoreSelectable == true
+            val isBuiltInEmulator = effectiveEmulatorDef?.launchConfig is com.nendo.argosy.data.emulator.LaunchConfig.BuiltIn
             val availableCores = if (hasCoreSelection) {
-                EmulatorRegistry.getCoresForPlatform(platform.slug)
+                EmulatorRegistry.getSelectableCores(platform.slug, isBuiltInEmulator)
             } else {
                 emptyList()
             }
 
             val storedCore = defaultConfig?.coreName
-            val defaultCore = EmulatorRegistry.getDefaultCore(platform.slug)?.id
+            val defaultCore = EmulatorRegistry.getDefaultSelectableCore(platform.slug, isBuiltInEmulator)?.id
             val selectedCore = when {
                 !hasCoreSelection -> null
                 storedCore != null && availableCores.any { it.id == storedCore } -> storedCore

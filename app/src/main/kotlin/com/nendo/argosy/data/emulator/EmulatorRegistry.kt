@@ -1184,6 +1184,12 @@ object EmulatorRegistry {
         "3ds" to listOf(
             RetroArchCore("citra", "Citra")
         ),
+        "gc" to listOf(
+            RetroArchCore("dolphin", "Dolphin")
+        ),
+        "wii" to listOf(
+            RetroArchCore("dolphin", "Dolphin")
+        ),
         "genesis" to listOf(
             RetroArchCore("genesis_plus_gx", "Genesis Plus GX"),
             RetroArchCore("picodrive", "PicoDrive")

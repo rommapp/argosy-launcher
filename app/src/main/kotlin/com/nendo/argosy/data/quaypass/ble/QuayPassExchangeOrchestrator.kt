@@ -5,7 +5,6 @@ import android.util.Log
 import com.nendo.argosy.data.quaypass.QuayPassRasterPng
 import com.nendo.argosy.data.local.dao.QuayPassDailyStatsDao
 import com.nendo.argosy.data.local.dao.QuayPassEncounterDao
-import com.nendo.argosy.data.local.entity.QuayPassDailyStatsEntity
 import com.nendo.argosy.data.local.entity.QuayPassEncounterEntity
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.quaypass.QuayPassCredentialManager
@@ -98,10 +97,7 @@ class QuayPassExchangeOrchestrator @Inject constructor(
         }
 
         val dateKey = LocalDate.now(ZoneId.systemDefault()).toString()
-        val updated = dailyStatsDao.incrementForDate(dateKey, tickets = 1)
-        if (updated == 0) {
-            dailyStatsDao.upsert(QuayPassDailyStatsEntity(date = dateKey, encounterCount = 1, ticketsEarned = 1))
-        }
+        dailyStatsDao.creditDay(dateKey, tickets = 1)
 
         _newEncounters.tryEmit(entity)
         return true

@@ -13,7 +13,11 @@ import com.squareup.moshi.Moshi
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
@@ -46,6 +50,57 @@ class QuayPassCredentialManager @Inject constructor(
 
     @Volatile
     private var lastRefreshAttemptMillis = 0L
+
+    @Volatile
+    private var lastFetchRejected = false
+
+    private val _credentialChanged = MutableSharedFlow<Unit>(
+        replay = 0,
+        extraBufferCapacity = 1,
+        onBufferOverflow = BufferOverflow.DROP_OLDEST
+    )
+
+    /**
+     * Emits when a fetch attempt changes the credential's usability: a fresh
+     * credential was stored, or one was refused as unverifiable. Transient
+     * network failures do not emit, so a re-evaluation never loops while offline.
+     */
+    val credentialChanged: SharedFlow<Unit> = _credentialChanged.asSharedFlow()
+
+    /**
+     * Resolves the credential gate from local state only, with no network call,
+     * so a held unexpired credential runs fully offline. [CredentialGate.REJECTED]
+     * reflects the last fetch outcome, not a live check.
+     */
+    suspend fun localGate(): CredentialGate {
+        val state = dataStore.data.first()
+        if (state[Keys.CLIENT_INSTALL_ID] == null) return CredentialGate.ABSENT
+        val cred = state[Keys.CREDENTIAL]
+        val expires = state[Keys.CREDENTIAL_EXPIRES_AT]
+        val now = Instant.now().epochSecond
+        if (cred != null && expires != null && now < expires) return CredentialGate.VALID
+        if (lastFetchRejected) return CredentialGate.REJECTED
+        if (cred != null) return CredentialGate.EXPIRED
+        return CredentialGate.ABSENT
+    }
+
+    /**
+     * Fetches a credential only when the held one is missing or inside the
+     * refresh window, throttled by the same cooldown as the inline refresh. A
+     * held, comfortably-unexpired credential triggers no network call.
+     */
+    suspend fun ensureFreshCredential() = mutex.withLock {
+        val state = dataStore.data.first()
+        val installId = state[Keys.CLIENT_INSTALL_ID] ?: return@withLock
+        val cred = state[Keys.CREDENTIAL]
+        val expires = state[Keys.CREDENTIAL_EXPIRES_AT] ?: 0L
+        val now = Instant.now().epochSecond
+        if (cred != null && now < expires - REFRESH_THRESHOLD_SECONDS) return@withLock
+        val nowMillis = System.currentTimeMillis()
+        if (nowMillis - lastRefreshAttemptMillis < REFRESH_RETRY_COOLDOWN_MS) return@withLock
+        lastRefreshAttemptMillis = nowMillis
+        fetchCredential(installId, refresh = cred != null)
+    }
 
     private val okHttp by lazy {
         OkHttpClient.Builder()
@@ -221,12 +276,16 @@ class QuayPassCredentialManager @Inject constructor(
                 val body = resp.body() ?: return null
                 if (!verifyServerSignature(body.credential)) {
                     Log.e(TAG, "Server-issued credential failed signature verification; refusing")
+                    lastFetchRejected = true
+                    _credentialChanged.tryEmit(Unit)
                     return null
                 }
                 dataStore.edit {
                     it[Keys.CREDENTIAL] = body.credential
                     it[Keys.CREDENTIAL_EXPIRES_AT] = body.expiresAtEpochSecs
                 }
+                lastFetchRejected = false
+                _credentialChanged.tryEmit(Unit)
                 Log.i(TAG, "Fetched QuayPass credential (refresh=$refresh), expires ${body.expiresAtEpochSecs}")
                 StoredCredential(body.credential, Instant.ofEpochSecond(body.expiresAtEpochSecs))
             } else {
@@ -264,6 +323,8 @@ class QuayPassCredentialManager @Inject constructor(
             it.remove(Keys.CREDENTIAL_EXPIRES_AT)
         }
         keystore.clear()
+        lastFetchRejected = false
+        _credentialChanged.tryEmit(Unit)
     }
 
     private fun verifyServerSignature(credentialBase64: String): Boolean =
@@ -275,6 +336,8 @@ class QuayPassCredentialManager @Inject constructor(
         val bytesBase64: String,
         val expiresAt: Instant
     )
+
+    enum class CredentialGate { VALID, EXPIRED, ABSENT, REJECTED }
 
     private object Keys {
         val CLIENT_INSTALL_ID = stringPreferencesKey("quaypass_client_install_id")

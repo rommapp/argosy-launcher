@@ -18,6 +18,7 @@ import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.entity.GameEntity
 import com.nendo.argosy.data.preferences.SyncPreferencesRepository
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
+import com.nendo.argosy.data.social.ArgosSocialService
 import com.nendo.argosy.data.quaypass.ble.OutboundProfile
 import com.nendo.argosy.data.quaypass.ble.QuayPassAdvertiser
 import com.nendo.argosy.data.quaypass.ble.QuayPassExchangeOrchestrator
@@ -51,6 +52,7 @@ class QuayPassService @Inject constructor(
     private val preferencesRepository: UserPreferencesRepository,
     private val credentialManager: QuayPassCredentialManager,
     private val orchestrator: QuayPassExchangeOrchestrator,
+    private val socialService: ArgosSocialService,
     private val playSessionTracker: PlaySessionTracker,
     private val gameDao: GameDao,
     private val syncPreferencesRepository: SyncPreferencesRepository
@@ -119,6 +121,20 @@ class QuayPassService @Inject constructor(
         }
 
         scope.launch {
+            credentialManager.credentialChanged.collect {
+                if (shouldBeRunning) tryStart()
+            }
+        }
+
+        scope.launch {
+            socialService.connectionState.collect { state ->
+                if (state is ArgosSocialService.ConnectionState.Connected && shouldBeRunning) {
+                    credentialManager.ensureFreshCredential()
+                }
+            }
+        }
+
+        scope.launch {
             preferencesRepository.userPreferences
                 .map {
                     ProfileSnapshot(
@@ -157,7 +173,10 @@ class QuayPassService @Inject constructor(
         BLE_UNSUPPORTED,
         BLUETOOTH_OFF,
         PERMISSIONS_MISSING,
-        AWAITING_REGISTRATION
+        AWAITING_REGISTRATION,
+        AWAITING_CREDENTIAL,
+        KEY_EXPIRED,
+        CREDENTIAL_REJECTED
     }
 
     private data class ProfileSnapshot(
@@ -183,19 +202,33 @@ class QuayPassService @Inject constructor(
     }
 
     private suspend fun tryStart() {
-        val blockedState = when {
+        if (!shouldBeRunning) return
+        val target = when {
             !isBleSupported() -> QuayPassRunState.BLE_UNSUPPORTED
             !isBleEnabled() -> QuayPassRunState.BLUETOOTH_OFF
             !hasPermissions() -> QuayPassRunState.PERMISSIONS_MISSING
             !credentialManager.isRegistered() -> QuayPassRunState.AWAITING_REGISTRATION
-            else -> null
-        }
-        if (blockedState != null) {
-            Log.w(TAG, "Cannot start QuayPass: $blockedState")
-            _runState.value = blockedState
-            return
+            else -> when (credentialManager.localGate()) {
+                QuayPassCredentialManager.CredentialGate.VALID -> QuayPassRunState.RUNNING
+                QuayPassCredentialManager.CredentialGate.EXPIRED -> QuayPassRunState.KEY_EXPIRED
+                QuayPassCredentialManager.CredentialGate.ABSENT -> QuayPassRunState.AWAITING_CREDENTIAL
+                QuayPassCredentialManager.CredentialGate.REJECTED -> QuayPassRunState.CREDENTIAL_REJECTED
+            }
         }
 
+        if (target == QuayPassRunState.KEY_EXPIRED || target == QuayPassRunState.AWAITING_CREDENTIAL) {
+            scope.launch { credentialManager.ensureFreshCredential() }
+        }
+
+        if (target != QuayPassRunState.RUNNING) {
+            if (isRunningNow) stop(target) else _runState.value = target
+            return
+        }
+        if (isRunningNow) return
+        startBle()
+    }
+
+    private fun startBle() {
         QuayPassScanReceiver.scanResultSink = { device, _ ->
             scope.launch { onDiscovered(device) }
         }

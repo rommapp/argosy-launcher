@@ -1431,6 +1431,8 @@ class SettingsViewModel @Inject constructor(
     private var pendingBiosCopyPlatformSlug: String? = null
     val hasPendingBiosCopy: Boolean get() = pendingBiosCopyPlatformSlug != null
 
+    internal var shaderChainPersistJob: kotlinx.coroutines.Job? = null
+
     fun requestRemoveLocalFiles() {
         _uiState.update { it.copy(platformDetail = it.platformDetail.copy(showRemoveConfirm = true)) }
     }

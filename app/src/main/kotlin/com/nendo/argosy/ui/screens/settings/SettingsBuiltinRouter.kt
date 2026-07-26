@@ -20,6 +20,7 @@ import com.nendo.argosy.util.AppPaths
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -79,21 +80,10 @@ internal fun routeSetBuiltinArchitecture(vm: SettingsViewModel, value: String) {
 }
 
 internal fun routeSetBuiltinLibretroEnabled(vm: SettingsViewModel, enabled: Boolean) {
-    val newToggleIndex = if (enabled) {
-        BuiltinEmulatorItem.CONTROLS.focusIndex
-    } else {
-        BuiltinEmulatorItem.ENABLE.focusIndex
-    }
     vm._uiState.update { state ->
-        val adjustedParentIndex = when {
-            enabled && state.parentFocusIndex >= 2 -> state.parentFocusIndex + 1
-            !enabled && state.parentFocusIndex > 2 -> state.parentFocusIndex - 1
-            else -> state.parentFocusIndex
-        }
         state.copy(
             emulators = state.emulators.copy(builtinLibretroEnabled = enabled),
-            focusedIndex = newToggleIndex,
-            parentFocusIndex = adjustedParentIndex
+            focusedIndex = BuiltinEmulatorItem.ENABLE.focusIndex
         )
     }
     vm.viewModelScope.launch {
@@ -705,7 +695,10 @@ internal fun routeUpdatePlatformLibretroSetting(vm: SettingsViewModel, setting: 
             ?: PlatformLibretroSettingsEntity(platformId = platformContext.platformId)
 
         val updated = when (setting) {
-            LibretroSettingDef.Shader -> current.copy(shader = value)
+            LibretroSettingDef.Shader -> current.copy(
+                shader = value,
+                shaderChain = if (value == null) null else current.shaderChain
+            )
             LibretroSettingDef.Filter -> current.copy(filter = value)
             LibretroSettingDef.AspectRatio -> current.copy(aspectRatio = value)
             LibretroSettingDef.PortraitPosition -> current.copy(portraitPosition = value)
@@ -1062,7 +1055,7 @@ internal fun routePersistShaderChain(vm: SettingsViewModel, config: ShaderChainC
                 )
             )
         }
-        vm.viewModelScope.launch {
+        routeScheduleShaderChainWrite(vm) {
             vm.libretroSettingsRepo.setBuiltinShader(shaderMode)
             vm.libretroSettingsRepo.setBuiltinShaderChain(json)
         }
@@ -1077,8 +1070,42 @@ internal fun routePersistShaderChain(vm: SettingsViewModel, config: ShaderChainC
                 )
             )
         }
-        vm.viewModelScope.launch {
+        routeScheduleShaderChainWrite(vm) {
             vm.libretroSettingsRepo.setPlatformShaderChain(platformId, shaderMode, json)
+        }
+    }
+}
+
+private const val SHADER_CHAIN_PERSIST_DEBOUNCE_MS = 150L
+
+private fun routeScheduleShaderChainWrite(vm: SettingsViewModel, write: suspend () -> Unit) {
+    vm.shaderChainPersistJob?.cancel()
+    vm.shaderChainPersistJob = vm.viewModelScope.launch {
+        delay(SHADER_CHAIN_PERSIST_DEBOUNCE_MS)
+        write()
+        vm.shaderChainPersistJob = null
+    }
+}
+
+internal fun routeFlushShaderChain(vm: SettingsViewModel) {
+    val pending = vm.shaderChainPersistJob ?: return
+    if (!pending.isActive) return
+    pending.cancel()
+    vm.shaderChainPersistJob = null
+
+    val state = vm._uiState.value
+    val platformId = routeResolveShaderChainSettingsScope(state).platformId
+    vm.viewModelScope.launch {
+        if (platformId == null) {
+            vm.libretroSettingsRepo.setBuiltinShader(state.builtinVideo.shader)
+            vm.libretroSettingsRepo.setBuiltinShaderChain(state.builtinVideo.shaderChainJson)
+        } else {
+            val current = state.platformLibretro.platformSettings[platformId] ?: return@launch
+            vm.libretroSettingsRepo.setPlatformShaderChain(
+                platformId,
+                current.shader ?: "None",
+                current.shaderChain ?: ShaderChainConfig().toJson()
+            )
         }
     }
 }

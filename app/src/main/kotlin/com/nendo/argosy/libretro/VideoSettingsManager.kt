@@ -222,7 +222,7 @@ class VideoSettingsManager(
         scope.launch {
             val current = platformLibretroSettingsDao.getByPlatformId(platformId) ?: return@launch
             val updated = when (setting) {
-                LibretroSettingDef.Shader -> current.copy(shader = null)
+                LibretroSettingDef.Shader -> current.copy(shader = null, shaderChain = null)
                 LibretroSettingDef.Filter -> current.copy(filter = null)
                 LibretroSettingDef.AspectRatio -> current.copy(aspectRatio = null)
                 LibretroSettingDef.PortraitPosition -> current.copy(portraitPosition = null)

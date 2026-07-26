@@ -969,6 +969,7 @@ internal fun routeNavigateBack(vm: SettingsViewModel): Boolean {
             vm._uiState.update { it.copy(currentSection = SettingsSection.INTERFACE, focusedIndex = focusIdx) }; true
         }
         state.currentSection == SettingsSection.SHADER_STACK -> {
+            routeFlushShaderChain(vm)
             vm._uiState.update { it.copy(currentSection = SettingsSection.BUILTIN_VIDEO, focusedIndex = 1) }; true
         }
         state.currentSection == SettingsSection.FRAME_PICKER -> {

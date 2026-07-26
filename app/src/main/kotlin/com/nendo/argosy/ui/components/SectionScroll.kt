@@ -5,9 +5,26 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import kotlin.math.abs
+
+internal enum class FocusedScrollBehavior {
+    KEEP,
+    SNAP,
+    ANIMATE
+}
+
+internal fun focusedScrollBehavior(
+    isInitialPass: Boolean,
+    isTargetFullyVisible: Boolean,
+    jumped: Boolean = false
+): FocusedScrollBehavior = when {
+    isInitialPass && isTargetFullyVisible -> FocusedScrollBehavior.KEEP
+    isInitialPass || jumped -> FocusedScrollBehavior.SNAP
+    else -> FocusedScrollBehavior.ANIMATE
+}
 
 data class ListSection(
     val name: String? = null,
@@ -22,7 +39,11 @@ fun FocusedScroll(
     listState: LazyListState,
     focusedIndex: Int
 ) {
+    var isInitialPass by remember(listState) { mutableStateOf(true) }
+
     LaunchedEffect(focusedIndex) {
+        val initialPass = isInitialPass
+        isInitialPass = false
         val layoutInfo = listState.layoutInfo
         val visibleItems = layoutInfo.visibleItemsInfo
 
@@ -36,17 +57,32 @@ fun FocusedScroll(
 
         val viewportHeight = layoutInfo.viewportEndOffset - layoutInfo.viewportStartOffset
         val targetItem = visibleItems.find { it.index == focusedIndex }
+        val isTargetFullyVisible = targetItem != null &&
+            targetItem.offset >= layoutInfo.viewportStartOffset &&
+            targetItem.offset + targetItem.size <= layoutInfo.viewportEndOffset
+        val behavior = focusedScrollBehavior(initialPass, isTargetFullyVisible)
+        if (behavior == FocusedScrollBehavior.KEEP) {
+            return@LaunchedEffect
+        }
         val itemHeight = targetItem?.size ?: visibleItems.maxOfOrNull { it.size } ?: 80
         val lastListIndex = layoutInfo.totalItemsCount - 1
 
+        suspend fun scroll(index: Int, offset: Int) {
+            if (behavior == FocusedScrollBehavior.SNAP) {
+                listState.scrollToItem(index, offset)
+            } else {
+                listState.animateScrollToItem(index, offset)
+            }
+        }
+
         if (focusedIndex >= lastListIndex) {
             val bottomAlignOffset = if (targetItem != null) itemHeight - viewportHeight else 0
-            listState.animateScrollToItem(lastListIndex, bottomAlignOffset)
+            scroll(lastListIndex, bottomAlignOffset)
             return@LaunchedEffect
         }
 
         val centerOffset = (viewportHeight - itemHeight) / 2
-        listState.animateScrollToItem(focusedIndex, -centerOffset)
+        scroll(focusedIndex, -centerOffset)
     }
 }
 
@@ -58,8 +94,11 @@ fun SectionFocusedScroll(
     sections: List<ListSection>
 ) {
     var previousFocusIndex by remember { mutableIntStateOf(focusedIndex) }
+    var isInitialPass by remember(listState) { mutableStateOf(true) }
 
     LaunchedEffect(focusedIndex) {
+        val initialPass = isInitialPass
+        isInitialPass = false
         val jumped = abs(focusedIndex - previousFocusIndex) > 1
         previousFocusIndex = focusedIndex
 
@@ -72,11 +111,18 @@ fun SectionFocusedScroll(
         val viewportHeight = layoutInfo.viewportEndOffset - layoutInfo.viewportStartOffset
         val listIndex = focusToListIndex(focusedIndex)
         val targetItem = visibleItems.find { it.index == listIndex }
+        val isTargetFullyVisible = targetItem != null &&
+            targetItem.offset >= layoutInfo.viewportStartOffset &&
+            targetItem.offset + targetItem.size <= layoutInfo.viewportEndOffset
+        val behavior = focusedScrollBehavior(initialPass, isTargetFullyVisible, jumped)
+        if (behavior == FocusedScrollBehavior.KEEP) {
+            return@LaunchedEffect
+        }
         val itemHeight = targetItem?.size ?: visibleItems.maxOfOrNull { it.size } ?: 80
         val lastListIndex = layoutInfo.totalItemsCount - 1
 
         suspend fun scroll(index: Int, offset: Int) {
-            if (jumped) {
+            if (behavior == FocusedScrollBehavior.SNAP) {
                 listState.scrollToItem(index, offset)
             } else {
                 listState.animateScrollToItem(index, offset)

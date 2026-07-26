@@ -33,6 +33,7 @@ class QuayPassGattServer(
     private var gattServer: BluetoothGattServer? = null
     private val connectedDevices = ConcurrentHashMap<String, Long>()
     private val recentWritesByPeer = ConcurrentHashMap<String, Long>()
+    private val admittedExchanges = ConcurrentHashMap.newKeySet<String>()
     private val pendingWriteBuffers = ConcurrentHashMap<String, ByteArray>()
     private val sequentialWriteBuffers = ConcurrentHashMap<String, ByteArray>()
     private val deviceMtus = ConcurrentHashMap<String, Int>()
@@ -79,6 +80,7 @@ class QuayPassGattServer(
         watchdogs.clear()
         connectedDevices.clear()
         recentWritesByPeer.clear()
+        admittedExchanges.clear()
         pendingWriteBuffers.clear()
         sequentialWriteBuffers.clear()
         deviceMtus.clear()
@@ -103,6 +105,7 @@ class QuayPassGattServer(
     private fun clearDeviceState(address: String) {
         watchdogs.remove(address)?.cancel()
         connectedDevices.remove(address)
+        admittedExchanges.remove(address)
         pendingWriteBuffers.remove(address)
         sequentialWriteBuffers.remove(address)
         deviceMtus.remove(address)
@@ -220,7 +223,7 @@ class QuayPassGattServer(
 
             if (preparedWrite || offset > 0) {
                 val existing = pendingWriteBuffers[device.address]
-                if (existing == null && !checkRateLimit(device.address)) {
+                if (existing == null && !admitWrite(device.address)) {
                     if (responseNeeded) {
                         gattServer?.sendResponse(device, requestId, BluetoothGatt.GATT_FAILURE, 0, null)
                     }
@@ -242,7 +245,7 @@ class QuayPassGattServer(
             }
 
             val existing = sequentialWriteBuffers[device.address]
-            if (existing == null && !checkRateLimit(device.address)) {
+            if (existing == null && !admitWrite(device.address)) {
                 if (responseNeeded) {
                     gattServer?.sendResponse(device, requestId, BluetoothGatt.GATT_FAILURE, 0, null)
                 }
@@ -295,6 +298,20 @@ class QuayPassGattServer(
             bodySize > totalLen -> Assembly.Malformed
             else -> Assembly.Complete(buffer.copyOfRange(2, buffer.size))
         }
+    }
+
+    /**
+     * Admits the peer once per connection. The v3 exchange makes two writes
+     * (profile then attestation); the rate limit gates the exchange at its first
+     * write, and the rest of the same connection rides on that admission.
+     * [recentWritesByPeer] outlives the connection, so a too-soon reconnect is
+     * still throttled.
+     */
+    private fun admitWrite(deviceAddress: String): Boolean {
+        if (admittedExchanges.contains(deviceAddress)) return true
+        if (!checkRateLimit(deviceAddress)) return false
+        admittedExchanges.add(deviceAddress)
+        return true
     }
 
     private fun checkRateLimit(deviceAddress: String): Boolean {

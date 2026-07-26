@@ -183,6 +183,7 @@ class QuayPassExchangeOrchestrator @Inject constructor(
         val dateKey = LocalDate.now(ZoneId.systemDefault()).toString()
         dailyStatsDao.creditDay(dateKey, tickets = 1)
         _newEncounters.tryEmit(entity)
+        Log.i(TAG, "Recorded QuayPass meeting with ${entity.username} (${entity.accountId})")
         return true
     }
 

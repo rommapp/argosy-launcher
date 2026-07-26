@@ -144,6 +144,8 @@ data class Friend(
     @Json(name = "display_name") val displayName: String,
     @Json(name = "avatar_color") val avatarColor: String,
     val status: String,
+    @Json(name = "request_sent") val requestSent: Boolean = false,
+    @Json(name = "request_received") val requestReceived: Boolean = false,
     val presence: PresenceStatus? = null,
     @Json(name = "current_game") val currentGame: PresenceGameInfo? = null,
     @Json(name = "device_name") val deviceName: String? = null,
@@ -152,6 +154,10 @@ data class Friend(
 ) {
     val friendshipStatus: FriendshipStatus
         get() = FriendshipStatus.fromValue(status)
+
+    val isAccepted: Boolean get() = friendshipStatus == FriendshipStatus.ACCEPTED
+    val isIncomingRequest: Boolean get() = requestReceived
+    val isOutgoingRequest: Boolean get() = requestSent
 }
 
 @JsonClass(generateAdapter = true)
@@ -198,6 +204,7 @@ object MessageTypes {
     const val FRIEND_CODE_DATA = "friend_code"
     const val FRIEND_ADDED = "friend_added"
     const val FRIEND_REMOVED = "friend_removed"
+    const val REMOVE_FRIEND = "remove_friend"
     const val GET_FEED = "get_feed"
     const val FEED_DATA = "feed_data"
     const val FEED_EVENT = "feed_event"

@@ -1041,6 +1041,10 @@ class ArgosSocialService @Inject constructor(
         return send(MessageTypes.ACCEPT_FRIEND, mapOf("user_id" to userId))
     }
 
+    fun removeFriend(userId: String): Boolean {
+        return send(MessageTypes.REMOVE_FRIEND, mapOf("user_id" to userId))
+    }
+
     fun getFeed(limit: Int? = null, beforeId: String? = null, userId: String? = null) {
         Log.d(TAG, "getFeed: limit=$limit, beforeId=$beforeId, userId=$userId")
         val payload = mutableMapOf<String, Any?>()
@@ -1411,6 +1415,8 @@ class ArgosSocialService @Inject constructor(
                     displayName = userObj.getString("display_name"),
                     avatarColor = userObj.getString("avatar_color"),
                     status = obj.getString("status"),
+                    requestSent = obj.optBoolean("request_sent", false),
+                    requestReceived = obj.optBoolean("request_received", false),
                     presence = presenceObj?.let {
                         PresenceStatus.fromValue(it.optString("status", "offline"))
                     },

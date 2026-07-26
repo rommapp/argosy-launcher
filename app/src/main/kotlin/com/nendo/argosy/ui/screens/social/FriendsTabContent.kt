@@ -47,6 +47,8 @@ import com.nendo.argosy.data.social.Friend
 import com.nendo.argosy.data.social.NetplaySession
 import com.nendo.argosy.data.social.PresenceStatus
 import com.nendo.argosy.ui.components.friends.SocialAvatar
+import com.nendo.argosy.ui.primitives.FocusIndicators
+import com.nendo.argosy.ui.primitives.argosyFocusIndicators
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.util.clickableNoFocus
 
@@ -68,18 +70,54 @@ fun NetplayPreflightResult.toFriendJoinState(): FriendNetplayJoinState = when (t
     NetplayPreflightResult.CoreNotSupported -> FriendNetplayJoinState.CoreNotSupported
 }
 
+/**
+ * Maps a combined friends-tab focus index (received, then sent, then accepted)
+ * to the LazyColumn item index, accounting for the section header rows.
+ */
+fun friendsFocusToItemIndex(
+    focusIndex: Int,
+    receivedCount: Int,
+    sentCount: Int,
+    acceptedCount: Int
+): Int {
+    var item = 0
+    var remaining = focusIndex
+    if (receivedCount > 0) {
+        item += 1
+        if (remaining < receivedCount) return item + remaining
+        item += receivedCount
+        remaining -= receivedCount
+    }
+    if (sentCount > 0) {
+        item += 1
+        if (remaining < sentCount) return item + remaining
+        item += sentCount
+        remaining -= sentCount
+    }
+    val hasRequests = receivedCount > 0 || sentCount > 0
+    if (acceptedCount > 0 && hasRequests) {
+        item += 1
+    }
+    return item + remaining
+}
+
 @Composable
 fun FriendsTabContent(
     friends: List<Friend>,
+    receivedRequests: List<Friend>,
+    sentRequests: List<Friend>,
     focusedIndex: Int,
     listState: LazyListState,
     onViewProfile: (String) -> Unit,
     onToggleFavorite: (String) -> Unit = {},
+    onAcceptRequest: (String) -> Unit = {},
+    onDeclineRequest: (String) -> Unit = {},
+    onCancelRequest: (String) -> Unit = {},
     netplayPreflight: (suspend (NetplaySession) -> NetplayPreflightResult)? = null,
     onJoinNetplaySession: ((Friend, NetplaySession) -> Unit)? = null,
     onJoinableChanged: ((String, Boolean) -> Unit)? = null
 ) {
-    if (friends.isEmpty()) {
+    if (friends.isEmpty() && receivedRequests.isEmpty() && sentRequests.isEmpty()) {
         Box(
             modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.Center
@@ -90,7 +128,7 @@ fun FriendsTabContent(
                     style = MaterialTheme.typography.titleLarge,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                 )
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(Dimens.spacingSm))
                 Text(
                     text = "Add friends using your friend code in Settings",
                     style = MaterialTheme.typography.bodyMedium,
@@ -101,23 +139,168 @@ fun FriendsTabContent(
         return
     }
 
+    val hasRequests = receivedRequests.isNotEmpty() || sentRequests.isNotEmpty()
+
     LazyColumn(
         state = listState,
         modifier = Modifier.fillMaxSize(),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-        contentPadding = PaddingValues(horizontal = 24.dp, vertical = 12.dp)
+        verticalArrangement = Arrangement.spacedBy(Dimens.spacingSm),
+        contentPadding = PaddingValues(horizontal = Dimens.spacingLg, vertical = Dimens.spacingMd)
     ) {
-        itemsIndexed(friends, key = { _, friend -> friend.id }) { index, friend ->
-            FriendCard(
-                friend = friend,
-                isFocused = index == focusedIndex,
-                onClick = { onViewProfile(friend.id) },
-                onToggleFavorite = { onToggleFavorite(friend.id) },
-                netplayPreflight = netplayPreflight,
-                onJoinNetplaySession = onJoinNetplaySession,
-                onJoinableChanged = onJoinableChanged
-            )
+        if (receivedRequests.isNotEmpty()) {
+            item(key = "friends_hdr_incoming") { RequestsSectionHeader(text = "Incoming Requests") }
+            itemsIndexed(receivedRequests, key = { _, friend -> friend.id }) { index, friend ->
+                RequestCard(
+                    friend = friend,
+                    isFocused = index == focusedIndex,
+                    incoming = true,
+                    onAccept = { onAcceptRequest(friend.id) },
+                    onDecline = { onDeclineRequest(friend.id) },
+                    onCancel = {}
+                )
+            }
         }
+
+        if (sentRequests.isNotEmpty()) {
+            val base = receivedRequests.size
+            item(key = "friends_hdr_sent") { RequestsSectionHeader(text = "Sent Requests") }
+            itemsIndexed(sentRequests, key = { _, friend -> friend.id }) { index, friend ->
+                RequestCard(
+                    friend = friend,
+                    isFocused = base + index == focusedIndex,
+                    incoming = false,
+                    onAccept = {},
+                    onDecline = {},
+                    onCancel = { onCancelRequest(friend.id) }
+                )
+            }
+        }
+
+        if (friends.isNotEmpty()) {
+            val base = receivedRequests.size + sentRequests.size
+            if (hasRequests) {
+                item(key = "friends_hdr_accepted") { RequestsSectionHeader(text = "Friends") }
+            }
+            itemsIndexed(friends, key = { _, friend -> friend.id }) { index, friend ->
+                FriendCard(
+                    friend = friend,
+                    isFocused = base + index == focusedIndex,
+                    onClick = { onViewProfile(friend.id) },
+                    onToggleFavorite = { onToggleFavorite(friend.id) },
+                    netplayPreflight = netplayPreflight,
+                    onJoinNetplaySession = onJoinNetplaySession,
+                    onJoinableChanged = onJoinableChanged
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun RequestsSectionHeader(text: String) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.titleSmall,
+        fontWeight = FontWeight.SemiBold,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(vertical = Dimens.spacingXs)
+    )
+}
+
+@Composable
+private fun RequestCard(
+    friend: Friend,
+    isFocused: Boolean,
+    incoming: Boolean,
+    onAccept: () -> Unit,
+    onDecline: () -> Unit,
+    onCancel: () -> Unit
+) {
+    val shape = RoundedCornerShape(Dimens.radiusLg)
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .argosyFocusIndicators(
+                focused = isFocused,
+                indicators = FocusIndicators.Ring,
+                shape = shape
+            ),
+        shape = shape,
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant
+        )
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(Dimens.spacingMd),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(Dimens.spacingMd)
+        ) {
+            SocialAvatar(
+                displayName = friend.displayName,
+                avatarColor = friend.avatarColor,
+                size = Dimens.avatarLg,
+                avatarPngBase64 = friend.quayPassAvatar
+            )
+
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(Dimens.spacingXs)
+            ) {
+                Text(
+                    text = friend.displayName,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Text(
+                    text = "@${friend.username}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+
+            if (incoming) {
+                Row(horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm)) {
+                    RequestActionButton(label = "Accept", primary = true, onClick = onAccept)
+                    RequestActionButton(label = "Decline", primary = false, onClick = onDecline)
+                }
+            } else {
+                RequestActionButton(label = "Cancel", primary = false, onClick = onCancel)
+            }
+        }
+    }
+}
+
+@Composable
+private fun RequestActionButton(
+    label: String,
+    primary: Boolean,
+    onClick: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .clip(RoundedCornerShape(Dimens.radiusPanel))
+            .background(
+                if (primary) MaterialTheme.colorScheme.primary
+                else MaterialTheme.colorScheme.surface
+            )
+            .clickableNoFocus(onClick = onClick)
+            .padding(horizontal = Dimens.spacingMd, vertical = Dimens.spacingSm),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelMedium,
+            color = if (primary) MaterialTheme.colorScheme.onPrimary
+            else MaterialTheme.colorScheme.onSurface,
+            fontWeight = FontWeight.Bold
+        )
     }
 }
 

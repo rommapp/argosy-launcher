@@ -203,12 +203,19 @@ fun SocialScreen(
     }
 
     LaunchedEffect(uiState.focusedFriendIndex) {
-        if (uiState.selectedTab == SocialTab.FRIENDS && uiState.friends.isNotEmpty() && uiState.focusedFriendIndex in uiState.friends.indices) {
+        val friendsTabCount = uiState.friendsTabCount
+        if (uiState.selectedTab == SocialTab.FRIENDS && friendsTabCount > 0 && uiState.focusedFriendIndex in 0 until friendsTabCount) {
+            val itemIndex = friendsFocusToItemIndex(
+                uiState.focusedFriendIndex,
+                uiState.receivedRequests.size,
+                uiState.sentRequests.size,
+                uiState.friends.size
+            )
             val layoutInfo = friendsListState.layoutInfo
             val viewportHeight = layoutInfo.viewportEndOffset - layoutInfo.viewportStartOffset
             val itemHeight = layoutInfo.visibleItemsInfo.firstOrNull()?.size ?: 80
             val centerOffset = (viewportHeight - itemHeight) / 2
-            friendsListState.animateScrollToItem(uiState.focusedFriendIndex, -centerOffset)
+            friendsListState.animateScrollToItem(itemIndex, -centerOffset)
         }
     }
 
@@ -306,10 +313,15 @@ fun SocialScreen(
                         } else {
                             FriendsTabContent(
                                 friends = uiState.friends,
+                                receivedRequests = uiState.receivedRequests,
+                                sentRequests = uiState.sentRequests,
                                 focusedIndex = uiState.focusedFriendIndex,
                                 listState = friendsListState,
                                 onViewProfile = onViewProfile,
                                 onToggleFavorite = { friendId -> viewModel.toggleFavoriteFriend(friendId) },
+                                onAcceptRequest = { userId -> viewModel.acceptRequest(userId) },
+                                onDeclineRequest = { userId -> viewModel.declineRequest(userId) },
+                                onCancelRequest = { userId -> viewModel.cancelRequest(userId) },
                                 netplayPreflight = { session -> viewModel.runNetplayPreflight(session) },
                                 onJoinNetplaySession = { friend, session ->
                                     viewModel.launchNetplayJoin(friend, session)
@@ -373,11 +385,25 @@ fun SocialScreen(
                             add(FooterHintItem(InputButton.SELECT, "Options"))
                         }
                         SocialTab.FRIENDS -> {
-                            val focusedFriend = uiState.friends.getOrNull(uiState.focusedFriendIndex)
-                            val canJoin = focusedFriend != null && focusedFriend.id in uiState.joinableFriendIds
-                            val primaryLabel = if (canJoin) "Join" else "Profile"
-                            add(FooterHintItem(InputButton.A, primaryLabel, enabled = uiState.friends.isNotEmpty()))
-                            add(FooterHintItem(InputButton.Y, "Favorite", enabled = uiState.friends.isNotEmpty()))
+                            val receivedCount = uiState.receivedRequests.size
+                            val sentCount = uiState.sentRequests.size
+                            val idx = uiState.focusedFriendIndex
+                            when {
+                                idx < receivedCount -> {
+                                    add(FooterHintItem(InputButton.A, "Accept"))
+                                    add(FooterHintItem(InputButton.Y, "Decline"))
+                                }
+                                idx < receivedCount + sentCount -> {
+                                    add(FooterHintItem(InputButton.A, "Cancel"))
+                                }
+                                else -> {
+                                    val focusedFriend = uiState.friends.getOrNull(idx - receivedCount - sentCount)
+                                    val canJoin = focusedFriend != null && focusedFriend.id in uiState.joinableFriendIds
+                                    val primaryLabel = if (canJoin) "Join" else "Profile"
+                                    add(FooterHintItem(InputButton.A, primaryLabel, enabled = uiState.friends.isNotEmpty()))
+                                    add(FooterHintItem(InputButton.Y, "Favorite", enabled = uiState.friends.isNotEmpty()))
+                                }
+                            }
                         }
                         SocialTab.NOTIFICATIONS -> {
                             add(FooterHintItem(InputButton.A, "Open", enabled = uiState.notifications.isNotEmpty()))

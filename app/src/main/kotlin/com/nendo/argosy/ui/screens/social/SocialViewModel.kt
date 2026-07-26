@@ -59,6 +59,8 @@ data class SocialUiState(
     val events: List<FeedEventDto> = emptyList(),
     val communityEvents: List<FeedEventDto> = emptyList(),
     val friends: List<Friend> = emptyList(),
+    val receivedRequests: List<Friend> = emptyList(),
+    val sentRequests: List<Friend> = emptyList(),
     val notifications: List<SocialNotification> = emptyList(),
     val communityFollows: List<CommunityFollow> = emptyList(),
     val focusedEventIndex: Int = 0,
@@ -138,6 +140,26 @@ data class SocialUiState(
 
     val focusedNotification: SocialNotification?
         get() = notifications.getOrNull(focusedNotificationIndex)
+
+    val friendsTabCount: Int
+        get() = receivedRequests.size + sentRequests.size + friends.size
+
+    val focusedFriendIsReceived: Boolean
+        get() = focusedFriendIndex < receivedRequests.size
+
+    val focusedFriendIsSent: Boolean
+        get() = focusedFriendIndex >= receivedRequests.size &&
+                focusedFriendIndex < receivedRequests.size + sentRequests.size
+
+    val focusedFriendRow: Friend?
+        get() = when {
+            focusedFriendIndex < receivedRequests.size ->
+                receivedRequests.getOrNull(focusedFriendIndex)
+            focusedFriendIndex < receivedRequests.size + sentRequests.size ->
+                sentRequests.getOrNull(focusedFriendIndex - receivedRequests.size)
+            else ->
+                friends.getOrNull(focusedFriendIndex - receivedRequests.size - sentRequests.size)
+        }
 }
 
 sealed class SocialLaunchEvent {
@@ -236,24 +258,32 @@ class SocialViewModel @Inject constructor(
                 socialRepository.isLoadingFeed,
                 socialRepository.feedHasMore
             ) { connection, events, friends, isLoading, hasMore ->
-                val acceptedFriends = friends.filter { it.friendshipStatus.value == "accepted" }
-                val currentState = _uiState.value
-                val newFocusIndex = currentState.focusedEventIndex.coerceIn(0, events.size.coerceAtLeast(1) - 1)
-                Log.v(TAG, "state update: connection=$connection, events=${events.size}, friends=${acceptedFriends.size}, loading=$isLoading, hasMore=$hasMore, focusIndex=$newFocusIndex")
-                currentState.copy(
-                    connectionState = connection,
-                    events = events,
-                    friends = acceptedFriends,
-                    focusedEventIndex = newFocusIndex,
-                    isLoading = isLoading,
-                    hasMore = hasMore
+                data class FriendsFeedState(
+                    val connection: SocialConnectionState,
+                    val events: List<FeedEventDto>,
+                    val friends: List<Friend>,
+                    val isLoading: Boolean,
+                    val hasMore: Boolean
                 )
-            }.collect { newState ->
-                val prev = _uiState.value
-                if (prev.events.size != newState.events.size || prev.isLoading != newState.isLoading) {
-                    Log.d(TAG, "UI state changed: events ${prev.events.size}->${newState.events.size}, loading ${prev.isLoading}->${newState.isLoading}, hasMore=${newState.hasMore}")
+                FriendsFeedState(connection, events, friends, isLoading, hasMore)
+            }.collect { fs ->
+                val acceptedFriends = fs.friends.filter { it.isAccepted }
+                val received = fs.friends.filter { it.requestReceived }
+                val sent = fs.friends.filter { it.requestSent }
+                val friendsTabCount = acceptedFriends.size + received.size + sent.size
+                _uiState.update { current ->
+                    current.copy(
+                        connectionState = fs.connection,
+                        events = fs.events,
+                        friends = acceptedFriends,
+                        receivedRequests = received,
+                        sentRequests = sent,
+                        focusedEventIndex = current.focusedEventIndex.coerceIn(0, fs.events.size.coerceAtLeast(1) - 1),
+                        focusedFriendIndex = current.focusedFriendIndex.coerceIn(0, friendsTabCount.coerceAtLeast(1) - 1),
+                        isLoading = fs.isLoading,
+                        hasMore = fs.hasMore
+                    )
                 }
-                _uiState.value = newState
             }
         }
 
@@ -511,9 +541,9 @@ class SocialViewModel @Inject constructor(
 
     private fun moveFriendFocus(delta: Int): Boolean {
         val state = _uiState.value
-        if (state.friends.isEmpty()) return false
+        if (state.friendsTabCount == 0) return false
         val currentIndex = state.focusedFriendIndex
-        val newIndex = (currentIndex + delta).coerceIn(0, state.friends.size - 1)
+        val newIndex = (currentIndex + delta).coerceIn(0, state.friendsTabCount - 1)
         if (newIndex != currentIndex) {
             Log.v(TAG, "moveFriendFocus: $currentIndex -> $newIndex")
             _uiState.value = state.copy(focusedFriendIndex = newIndex)
@@ -605,6 +635,18 @@ class SocialViewModel @Inject constructor(
 
     fun toggleFavoriteFriend(friendId: String) {
         socialRepository.toggleFavoriteFriend(friendId)
+    }
+
+    fun acceptRequest(userId: String) {
+        socialRepository.acceptFriend(userId)
+    }
+
+    fun declineRequest(userId: String) {
+        socialRepository.removeFriend(userId)
+    }
+
+    fun cancelRequest(userId: String) {
+        socialRepository.removeFriend(userId)
     }
 
     fun likeCurrentEvent() {
@@ -815,12 +857,19 @@ class SocialViewModel @Inject constructor(
                 }
                 SocialTab.FRIENDS -> {
                     val state = _uiState.value
-                    val friend = state.friends.getOrNull(state.focusedFriendIndex)
-                    val session = friend?.currentGame?.netplaySession
-                    if (friend != null && session != null && friend.id in state.joinableFriendIds) {
-                        launchNetplayJoin(friend, session)
-                    } else {
-                        friend?.let { onViewProfile(it.id) }
+                    val row = state.focusedFriendRow
+                    when {
+                        row == null -> {}
+                        state.focusedFriendIsReceived -> acceptRequest(row.id)
+                        state.focusedFriendIsSent -> cancelRequest(row.id)
+                        else -> {
+                            val session = row.currentGame?.netplaySession
+                            if (session != null && row.id in state.joinableFriendIds) {
+                                launchNetplayJoin(row, session)
+                            } else {
+                                onViewProfile(row.id)
+                            }
+                        }
                     }
                     InputResult.HANDLED
                 }
@@ -898,8 +947,14 @@ class SocialViewModel @Inject constructor(
                     InputResult.HANDLED
                 }
                 SocialTab.FRIENDS -> {
-                    val friend = _uiState.value.friends.getOrNull(_uiState.value.focusedFriendIndex)
-                    friend?.let { toggleFavoriteFriend(it.id) }
+                    val state = _uiState.value
+                    val row = state.focusedFriendRow
+                    when {
+                        row == null -> {}
+                        state.focusedFriendIsReceived -> declineRequest(row.id)
+                        state.focusedFriendIsSent -> cancelRequest(row.id)
+                        else -> toggleFavoriteFriend(row.id)
+                    }
                     InputResult.HANDLED
                 }
                 SocialTab.NOTIFICATIONS -> {

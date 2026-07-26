@@ -271,31 +271,13 @@ class SocialRepository @Inject constructor(
                         _friendCode.value = FriendCode(message.code, message.url)
                     }
                     is ArgosSocialService.IncomingMessage.FriendAccepted -> {
-                        val newFriend = Friend(
-                            id = message.userId,
-                            username = message.username,
-                            displayName = message.displayName,
-                            avatarColor = message.avatarColor,
-                            status = "accepted"
-                        )
-                        _friends.value = _friends.value + newFriend
+                        Log.d(TAG, "Friend accepted: ${message.username}; list updates via the friends push")
                     }
                     is ArgosSocialService.IncomingMessage.FriendAdded -> {
-                        Log.d(TAG, "Friend added: ${message.username}")
-                        val newFriend = Friend(
-                            id = message.userId,
-                            username = message.username,
-                            displayName = message.displayName,
-                            avatarColor = message.avatarColor,
-                            status = "accepted"
-                        )
-                        if (_friends.value.none { it.id == message.userId }) {
-                            _friends.value = _friends.value + newFriend
-                        }
+                        Log.d(TAG, "Friend added: ${message.username}; list updates via the friends push")
                     }
                     is ArgosSocialService.IncomingMessage.FriendRemoved -> {
-                        Log.d(TAG, "Friend removed: ${message.userId}")
-                        _friends.value = _friends.value.filter { it.id != message.userId }
+                        Log.d(TAG, "Friend removed: ${message.userId}; list updates via the friends push")
                     }
                     is ArgosSocialService.IncomingMessage.PresenceUpdate -> {
                         val update = message.update
@@ -676,6 +658,16 @@ class SocialRepository @Inject constructor(
     fun acceptFriend(userId: String) {
         if (socialService.isConnected()) {
             socialService.acceptFriend(userId)
+        }
+    }
+
+    /**
+     * Declines a received request, cancels a sent one, or unfriends. The server
+     * routes by the relationship, so the caller does not distinguish them.
+     */
+    fun removeFriend(userId: String) {
+        if (socialService.isConnected()) {
+            socialService.removeFriend(userId)
         }
     }
 

@@ -241,11 +241,8 @@ class DoodleViewModel @Inject constructor(
     }
 
     fun confirmSizeSelection() {
-        _uiState.update { state ->
-            val size = CanvasSize.fromEnum(state.sizeFocusIndex)
-            setCanvasSize(size)
-            state.copy(currentSection = DoodleSection.CANVAS)
-        }
+        setCanvasSize(CanvasSize.fromEnum(_uiState.value.sizeFocusIndex))
+        _uiState.update { it.copy(currentSection = DoodleSection.CANVAS) }
     }
 
     fun cycleZoom() {

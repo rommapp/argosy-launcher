@@ -33,7 +33,8 @@ data class InboundProfile(
     val lastGamePlaytimeMinutes: Int?,
     val lastGameIgdbId: Long?,
     val credentialBundle: QuayPassCredentialBundle,
-    val credentialFingerprint: String
+    val credentialFingerprint: String,
+    val credentialBytesBase64: String
 )
 
 sealed class DecodeResult {
@@ -207,7 +208,8 @@ object QuayPassWireFormat {
                 lastGamePlaytimeMinutes = text.lastGamePlaytimeMinutes,
                 lastGameIgdbId = text.lastGameIgdbId,
                 credentialBundle = credential,
-                credentialFingerprint = fingerprintOf(credential.pubkey)
+                credentialFingerprint = fingerprintOf(credential.pubkey),
+                credentialBytesBase64 = Base64.getEncoder().encodeToString(credentialBytes)
             )
         )
     }

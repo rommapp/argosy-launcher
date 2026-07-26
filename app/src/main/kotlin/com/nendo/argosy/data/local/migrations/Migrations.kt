@@ -2127,3 +2127,20 @@ object Migration_147_148 : Migration(147, 148) {
         db.execSQL("ALTER TABLE quaypass_encounters ADD COLUMN meetCount INTEGER NOT NULL DEFAULT 1")
     }
 }
+
+object Migration_148_149 : Migration(148, 149) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            "CREATE TABLE IF NOT EXISTS `quaypass_pending_reports` (" +
+                "`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                "`peerAccountId` TEXT NOT NULL, " +
+                "`credentialBase64` TEXT NOT NULL, " +
+                "`attestationBase64` TEXT NOT NULL, " +
+                "`nonceBase64` TEXT NOT NULL, " +
+                "`tsSecs` INTEGER NOT NULL, " +
+                "`cardMessage` TEXT, " +
+                "`cardIgdbId` INTEGER, " +
+                "`cardAvatarPngBase64` TEXT)"
+        )
+    }
+}

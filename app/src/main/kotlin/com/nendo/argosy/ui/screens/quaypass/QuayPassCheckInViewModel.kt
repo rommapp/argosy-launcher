@@ -132,14 +132,11 @@ class QuayPassCheckInViewModel @Inject constructor(
         val friendIds = acceptedFriends.mapTo(mutableSetOf()) { it.id }
         val friendAvatarById = acceptedFriends.associate { it.id to it.quayPassAvatar }
 
-        val manifestByAccount = checkins.groupBy { it.userId }.mapValues { (_, group) ->
-            group.maxByOrNull { it.encounteredAtEpochSec }!! to group.size
-        }
+        val manifestByAccount = checkins.associateBy { it.userId }
 
         val localAccounts = encounters.mapNotNullTo(mutableSetOf()) { it.accountId }
         val localCards = encounters.map { enc ->
-            val manifestEntry = enc.accountId?.let { manifestByAccount[it] }
-            val manifest = manifestEntry?.first
+            val manifest = enc.accountId?.let { manifestByAccount[it] }
             val isFriend = manifest?.isFriend ?: (enc.accountId in friendIds)
             CheckInCard(
                 key = enc.credentialFingerprint,
@@ -152,7 +149,7 @@ class QuayPassCheckInViewModel @Inject constructor(
                 lastGameTitle = if (manifest != null) manifest.lastGameTitle else enc.lastGameTitle,
                 coverThumbUrl = manifest?.coverThumbUrl,
                 encounteredAt = enc.encounteredAt,
-                meetCount = enc.meetCount,
+                meetCount = manifest?.passCount ?: enc.meetCount,
                 isFriend = isFriend,
                 isBlocked = manifest?.isBlocked ?: false,
                 requestSent = manifest?.requestSent
@@ -163,20 +160,19 @@ class QuayPassCheckInViewModel @Inject constructor(
 
         val manifestOnly = manifestByAccount
             .filterKeys { it !in localAccounts }
-            .map { (userId, entry) ->
-                val (manifest, count) = entry
+            .map { (userId, manifest) ->
                 CheckInCard(
                     key = "m:$userId",
                     accountId = userId,
                     username = manifest.username,
                     displayName = manifest.displayName,
-                    avatarPngBase64 = manifest.avatarRasterPng,
+                    avatarPngBase64 = manifest.avatarPng,
                     avatarSparse = if (manifest.isFriend) friendAvatarById[userId] else null,
                     greeting = manifest.message,
                     lastGameTitle = manifest.lastGameTitle,
                     coverThumbUrl = manifest.coverThumbUrl,
-                    encounteredAt = Instant.ofEpochSecond(manifest.encounteredAtEpochSec),
-                    meetCount = count,
+                    encounteredAt = Instant.ofEpochSecond(manifest.lastMetAtEpochSec),
+                    meetCount = manifest.passCount,
                     isFriend = manifest.isFriend,
                     isBlocked = manifest.isBlocked,
                     requestSent = manifest.requestSent,

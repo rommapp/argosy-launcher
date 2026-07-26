@@ -310,7 +310,7 @@ class ArgosSocialService @Inject constructor(
                 }
 
                 MessageTypes.QUAYPASS_CHECKINS -> {
-                    val array = payload?.optJSONArray("checkins")
+                    val array = payload?.optJSONArray("check_ins")
                     val checkins = if (array != null) {
                         (0 until array.length()).mapNotNull { i ->
                             parseCheckin(array.optJSONObject(i))
@@ -924,26 +924,31 @@ class ArgosSocialService @Inject constructor(
     private fun parseCheckin(obj: JSONObject?): QuayPassCheckin? {
         if (obj == null) return null
         val userId = obj.optString("user_id", "").takeIf { it.isNotEmpty() } ?: return null
-        val encounteredAt = obj.optString("encountered_at", "").takeIf { it.isNotEmpty() } ?: return null
-        val epochSec = runCatching { Instant.parse(encounteredAt).epochSecond }.getOrNull() ?: return null
+        val lastMet = parseIsoEpoch(obj.optString("last_met_at", null)) ?: return null
+        val firstMet = parseIsoEpoch(obj.optString("first_met_at", null)) ?: lastMet
         val lastPlayed = obj.optJSONObject("last_played")
         return QuayPassCheckin(
             userId = userId,
             username = obj.optString("username", ""),
             displayName = obj.optString("display_name", null)?.takeIf { it.isNotEmpty() },
             avatarColor = obj.optString("avatar_color", null)?.takeIf { it.isNotEmpty() },
-            avatarRasterPng = obj.optString("avatar_raster", null)?.takeIf { it.isNotEmpty() },
+            avatarPng = obj.optString("avatar", null)?.takeIf { it.isNotEmpty() },
             message = obj.optString("message", null)?.takeIf { it.isNotEmpty() },
             lastGameIgdbId = lastPlayed?.optLong("igdb_id")?.takeIf { it > 0 },
             lastGameTitle = lastPlayed?.optString("title", null)?.takeIf { !it.isNullOrEmpty() },
             coverThumbUrl = lastPlayed?.optString("cover_thumb_url", null)?.takeIf { !it.isNullOrEmpty() },
-            encounteredAtEpochSec = epochSec,
+            firstMetAtEpochSec = firstMet,
+            lastMetAtEpochSec = lastMet,
+            passCount = obj.optInt("pass_count", 1).coerceAtLeast(1),
             isFriend = obj.optBoolean("is_friend", false),
             isBlocked = obj.optBoolean("is_blocked", false),
             requestSent = obj.optBoolean("request_sent", false),
             requestReceived = obj.optBoolean("request_received", false)
         )
     }
+
+    private fun parseIsoEpoch(value: String?): Long? =
+        value?.takeIf { it.isNotEmpty() }?.let { runCatching { Instant.parse(it).epochSecond }.getOrNull() }
 
     fun sendPresence(status: PresenceStatus, gameIgdbId: Int? = null, gameTitle: String? = null, deviceName: String? = null): Boolean {
         return send(MessageTypes.SET_PRESENCE, mapOf(

@@ -29,8 +29,12 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -74,6 +78,15 @@ fun QuayPassCheckInScreen(
     val uiState by viewModel.uiState.collectAsState()
     val listState = rememberLazyListState()
     val inputDispatcher = LocalInputDispatcher.current
+    var arrivalTrigger by remember { mutableIntStateOf(0) }
+    var arrivalPopup by remember { mutableStateOf<ArrivalPopup?>(null) }
+
+    LaunchedEffect(Unit) {
+        viewModel.arrivals.collect { popup ->
+            arrivalPopup = popup
+            arrivalTrigger++
+        }
+    }
 
     DisposableEffect(Unit) {
         onDispose { viewModel.markAllSeen() }
@@ -99,6 +112,7 @@ fun QuayPassCheckInScreen(
         modifier = Modifier.fillMaxSize(),
         color = MaterialTheme.colorScheme.background
     ) {
+      Box(modifier = Modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize()) {
             Column(
                 modifier = Modifier
@@ -126,7 +140,23 @@ fun QuayPassCheckInScreen(
                             fontWeight = FontWeight.SemiBold
                         )
                     }
-                    TicketBalanceChip(ticketBalance)
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
+                    ) {
+                        Text(
+                            text = "Replay",
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(Dimens.radiusMd))
+                                .background(MaterialTheme.colorScheme.surfaceVariant)
+                                .clickableNoFocus { viewModel.replayArrival() }
+                                .padding(horizontal = Dimens.spacingSm, vertical = Dimens.spacingXs)
+                        )
+                        TicketBalanceChip(ticketBalance)
+                    }
                 }
                 Text(
                     text = when (serviceState) {
@@ -200,6 +230,16 @@ fun QuayPassCheckInScreen(
                 }
             )
         }
+        QuayPassArrivalOverlay(
+            trigger = arrivalTrigger,
+            name = arrivalPopup?.name ?: "",
+            greeting = arrivalPopup?.greeting,
+            avatarBitmap = remember(arrivalPopup?.avatarPngBase64) {
+                decodePngAvatar(arrivalPopup?.avatarPngBase64)
+            },
+            onFinished = {}
+        )
+      }
     }
 
     if (uiState.showGreetingEditor) {

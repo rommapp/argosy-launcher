@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.nendo.argosy.data.local.entity.QuayPassEncounterEntity
 import com.nendo.argosy.data.preferences.SyncPreferencesRepository
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
+import com.nendo.argosy.data.quaypass.QuayPassLedController
 import com.nendo.argosy.data.quaypass.QuayPassRepository
 import com.nendo.argosy.data.quaypass.QuayPassService
 import com.nendo.argosy.data.social.Friend
@@ -17,9 +18,12 @@ import com.nendo.argosy.ui.theme.generated.MotionTokens
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
@@ -46,6 +50,12 @@ data class CheckInCard(
     val requestReceived: Boolean
 )
 
+data class ArrivalPopup(
+    val name: String,
+    val greeting: String?,
+    val avatarPngBase64: String?
+)
+
 data class QuayPassCheckInUiState(
     val focusedIndex: Int = 0,
     val pendingArrivals: List<String> = emptyList(),
@@ -63,6 +73,7 @@ class QuayPassCheckInViewModel @Inject constructor(
     private val service: QuayPassService,
     private val socialRepository: SocialRepository,
     private val syncPreferencesRepository: SyncPreferencesRepository,
+    private val ledController: QuayPassLedController,
     preferencesRepository: UserPreferencesRepository
 ) : ViewModel() {
 
@@ -70,6 +81,9 @@ class QuayPassCheckInViewModel @Inject constructor(
     val uiState: StateFlow<QuayPassCheckInUiState> = _uiState.asStateFlow()
 
     private val sessionSentAccountIds = MutableStateFlow<Set<String>>(emptySet())
+
+    private val _arrivals = MutableSharedFlow<ArrivalPopup>(extraBufferCapacity = 8)
+    val arrivals: SharedFlow<ArrivalPopup> = _arrivals.asSharedFlow()
 
     private val encounters: StateFlow<List<QuayPassEncounterEntity>> =
         repository.observeEncounters()
@@ -270,15 +284,32 @@ class QuayPassCheckInViewModel @Inject constructor(
     }
 
     private fun onEncountersChanged(list: List<QuayPassEncounterEntity>) {
-        val arrivals = list
-            .filter { !it.seenByUser && it.credentialFingerprint !in trackedArrivals }
-            .map { it.credentialFingerprint }
-        if (arrivals.isNotEmpty()) {
-            trackedArrivals.addAll(arrivals)
-            _uiState.update { it.copy(pendingArrivals = it.pendingArrivals + arrivals) }
+        val fresh = list.filter { !it.seenByUser && it.credentialFingerprint !in trackedArrivals }
+        if (fresh.isNotEmpty()) {
+            trackedArrivals.addAll(fresh.map { it.credentialFingerprint })
+            _uiState.update { it.copy(pendingArrivals = it.pendingArrivals + fresh.map { e -> e.credentialFingerprint }) }
             startArrivalSequence()
+            fresh.forEach { _arrivals.tryEmit(it.toArrivalPopup()) }
+            ledController.playNewPassAnimation()
         }
     }
+
+    fun replayArrival() {
+        val card = cards.value.getOrNull(_uiState.value.focusedIndex)
+        val popup = if (card != null) {
+            ArrivalPopup(card.displayName ?: "@${card.username}", card.greeting, card.avatarPngBase64)
+        } else {
+            ArrivalPopup("Traveler", "Safe travels", null)
+        }
+        _arrivals.tryEmit(popup)
+        ledController.playNewPassAnimation()
+    }
+
+    private fun QuayPassEncounterEntity.toArrivalPopup() = ArrivalPopup(
+        name = displayName ?: "@$username",
+        greeting = greeting,
+        avatarPngBase64 = avatarBlobBase64
+    )
 
     private fun startArrivalSequence() {
         if (arrivalJob?.isActive == true) return

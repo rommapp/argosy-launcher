@@ -78,6 +78,16 @@ class EmulatorResolver @Inject constructor(
         return emulatorDetector.getPreferredEmulator(platformSlug)
     }
 
+    /**
+     * Preferred emulator for a platform honouring the built-in toggle, as the id save and
+     * state paths key on. Used where a configured package resolves to no known emulator.
+     */
+    suspend fun getPreferredEmulatorId(platformSlug: String): String? {
+        val builtinEnabled = userPreferencesRepository.userPreferences.first().builtinLibretroEnabled
+        val def = emulatorDetector.getPreferredEmulator(platformSlug, builtinEnabled)?.def ?: return null
+        return canonicalEmulatorId(def)
+    }
+
     private fun EmulatorConfigEntity?.acceptableLaunchPackage(
         platformSlug: String,
         installedPackages: Set<String>,

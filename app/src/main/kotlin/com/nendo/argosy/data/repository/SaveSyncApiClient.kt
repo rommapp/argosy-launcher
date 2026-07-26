@@ -78,38 +78,20 @@ class SaveSyncApiClient @Inject constructor(
     ): PlatformSaveHandler = saveHandlerRegistry.getHandler(config, platformSlug, emulatorId)
 
     suspend fun resolveEmulatorForGame(game: GameEntity): String? {
-        val gameConfig = emulatorConfigDao.getByGameId(game.id)
-        if (gameConfig?.packageName != null) {
-            val resolved = emulatorResolver.resolveEmulatorId(gameConfig.packageName)
+        val launchPackage = emulatorResolver.getEmulatorPackageForGame(game.id, game.platformId, game.platformSlug)
+        if (launchPackage != null) {
+            val resolved = emulatorResolver.resolveEmulatorId(launchPackage)
             if (resolved != null) {
-                Logger.verbose(TAG) { "[SaveSync] DISCOVER gameId=${game.id} | Resolved emulator from game config | package=${gameConfig.packageName}, emulatorId=$resolved" }
+                Logger.verbose(TAG) { "[SaveSync] DISCOVER gameId=${game.id} | Resolved emulator from launch resolution | package=$launchPackage, emulatorId=$resolved" }
                 return resolved
             }
+            Logger.verbose(TAG) { "[SaveSync] DISCOVER gameId=${game.id} | Launch package is ad-hoc, falling back to preferred | package=$launchPackage" }
         }
 
-        val platformConfig = emulatorConfigDao.getDefaultForPlatform(game.platformId)
-        if (platformConfig?.packageName != null) {
-            val resolved = emulatorResolver.resolveEmulatorId(platformConfig.packageName)
-            if (resolved != null) {
-                Logger.verbose(TAG) { "[SaveSync] DISCOVER gameId=${game.id} | Resolved emulator from platform default | package=${platformConfig.packageName}, emulatorId=$resolved" }
-                return resolved
-            }
-        }
-
-        emulatorResolver.ensureDetected()
-
-        val preferred = emulatorResolver.getPreferredEmulator(game.platformSlug)
+        val preferred = emulatorResolver.getPreferredEmulatorId(game.platformSlug)
         if (preferred != null) {
-            val emulatorId = emulatorResolver.canonicalEmulatorId(preferred.def)
-            Logger.verbose(TAG) { "[SaveSync] DISCOVER gameId=${game.id} | Using preferred emulator for platform=${game.platformSlug} | emulatorId=$emulatorId" }
-            return emulatorId
-        }
-
-        val installedEmulators = emulatorResolver.getInstalledForPlatform(game.platformSlug)
-        if (installedEmulators.isNotEmpty()) {
-            val emulatorId = emulatorResolver.canonicalEmulatorId(installedEmulators.first().def)
-            Logger.debug(TAG, "[SaveSync] DISCOVER gameId=${game.id} | Falling back to first installed for platform=${game.platformSlug} | emulatorId=$emulatorId, installed=${installedEmulators.map { it.def.id }}")
-            return emulatorId
+            Logger.verbose(TAG) { "[SaveSync] DISCOVER gameId=${game.id} | Using preferred emulator for platform=${game.platformSlug} | emulatorId=$preferred" }
+            return preferred
         }
 
         Logger.warn(TAG, "[SaveSync] DISCOVER gameId=${game.id} | Cannot resolve emulator | platform=${game.platformSlug}, no config and no installed emulators")
@@ -134,6 +116,15 @@ class SaveSyncApiClient @Inject constructor(
         for (gameId in gameIds) {
             val game = gameDao.getById(gameId) ?: continue
             val localEmulator = resolveEmulatorForGame(game) ?: continue
+
+            val rows = saveSyncDao.getByGame(gameId)
+            val liveChannels = rows.filter { it.emulatorId == localEmulator }.map { it.channelName }.toSet()
+            rows.filter { it.emulatorId != localEmulator && it.channelName in liveChannels }
+                .forEach { stale ->
+                    Logger.debug(TAG, "[SaveSync] REKEY gameId=$gameId | dropping stale row for emulatorId=${stale.emulatorId} channel=${stale.channelName}, a row already exists for $localEmulator")
+                    saveSyncDao.deleteById(stale.id)
+                }
+
             val updated = saveSyncDao.rekeyEmulatorForGame(gameId, localEmulator)
             if (updated > 0) {
                 rewritten += updated

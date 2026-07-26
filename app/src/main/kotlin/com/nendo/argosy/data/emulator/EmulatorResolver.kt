@@ -23,6 +23,12 @@ class EmulatorResolver @Inject constructor(
         return emulatorDetector.getByPackage(packageName)?.id
     }
 
+    /**
+     * The id save and state path resolution expect: family-variant defs collapse to their
+     * base id, since [RetroArchPathResolver] and [StatePathRegistry] key on exact ids.
+     */
+    fun canonicalEmulatorId(def: EmulatorDef): String = resolveEmulatorId(def.packageName) ?: def.id
+
     suspend fun ensureDetected() {
         if (emulatorDetector.installedEmulators.value.isEmpty()) {
             emulatorDetector.detectEmulators()

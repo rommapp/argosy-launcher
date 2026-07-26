@@ -277,11 +277,22 @@ object StatePathRegistry {
     )
 
     fun getConfig(emulatorId: String): StatePathConfig? {
-        val config = configs[emulatorId] ?: return null
+        val config = configs[emulatorId] ?: familyFallbackConfig(emulatorId) ?: return null
         return if (config.supported) config else null
     }
 
-    fun getConfigIncludingUnsupported(emulatorId: String): StatePathConfig? = configs[emulatorId]
+    fun getConfigIncludingUnsupported(emulatorId: String): StatePathConfig? =
+        configs[emulatorId] ?: familyFallbackConfig(emulatorId)
+
+    /**
+     * Family-variant ids are `<baseId>_<package>` (EmulatorRegistry.createDefFromFamily);
+     * recover the base config so fork installs resolve state paths.
+     */
+    private fun familyFallbackConfig(emulatorId: String): StatePathConfig? =
+        EmulatorRegistry.getEmulatorFamilies()
+            .filter { emulatorId.length > it.baseId.length + 1 && emulatorId.startsWith(it.baseId + "_") }
+            .maxByOrNull { it.baseId.length }
+            ?.let { configs[it.baseId] }
 
     fun getAllConfigs(): Map<String, StatePathConfig> = configs.filterValues { it.supported }
 

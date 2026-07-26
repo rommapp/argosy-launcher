@@ -7,6 +7,7 @@ import android.bluetooth.BluetoothGatt
 import android.bluetooth.BluetoothGattCallback
 import android.bluetooth.BluetoothGattCharacteristic
 import android.bluetooth.BluetoothProfile
+import android.bluetooth.BluetoothStatusCodes
 import android.os.Build
 import android.util.Log
 import kotlinx.coroutines.channels.Channel
@@ -123,7 +124,7 @@ class QuayPassGattClient(private val application: Application) {
                             writeChar,
                             chunk,
                             BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT
-                        ) == BluetoothGatt.GATT_SUCCESS
+                        ) == BluetoothStatusCodes.SUCCESS
                     } else {
                         @Suppress("DEPRECATION")
                         run {

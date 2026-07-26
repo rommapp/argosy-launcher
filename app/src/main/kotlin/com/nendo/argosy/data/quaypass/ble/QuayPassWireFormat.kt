@@ -272,8 +272,8 @@ object QuayPassWireFormat {
     private fun sanitize(value: String, maxBytes: Int): String {
         val cleaned = value
             .replace(Regex("[ -]"), "")
-            .replace(Regex("[​-‍⁠﻿]"), "")
-            .replace(Regex("[‪-‮⁦-⁩]"), "")
+            .replace(Regex("[\u200B-\u200D\u2060\uFEFF]"), "")
+            .replace(Regex("[\u202A-\u202E\u2066-\u2069]"), "")
         val trimmed = cleaned.trim()
         return trimmed.toByteArray(Charsets.UTF_8).let {
             if (it.size <= maxBytes) trimmed else String(it.copyOfRange(0, maxBytes), Charsets.UTF_8)

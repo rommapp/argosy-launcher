@@ -742,7 +742,7 @@ internal fun routeValidateImageCache(vm: SettingsViewModel) {
                 progress = NotificationProgress(0, 100)
             )
 
-            val result = vm.imageCacheManager.validateAndCleanCache { phase, current, total ->
+            val result = vm.imageCacheManager.validateAndCleanCache(force = true) { phase, current, total ->
                 val progress = if (total > 0) (current * 100) / total else 0
                 vm.notificationManager.updatePersistent(
                     key = key,

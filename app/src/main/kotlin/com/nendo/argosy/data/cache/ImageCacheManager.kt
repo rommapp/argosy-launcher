@@ -144,6 +144,7 @@ class ImageCacheManager @Inject constructor(
         private const val CACHE_SUBFOLDER = "argosy_images"
         private const val FALLBACK_PLATFORM = "_misc"
         private const val LOGOS_DIR = "_logos"
+        private const val VALIDATION_MARKER = ".validated"
     }
 
     private fun ensureNoMedia(dir: File) {
@@ -1588,14 +1589,28 @@ class ImageCacheManager @Inject constructor(
         return parent.exists() && parent.isDirectory
     }
 
+    /**
+     * Decoding a header per cached file costs a read per file, and the cache holds one for
+     * every cover, screenshot and box face in the library. Only files written since the last
+     * pass are checked, because a file that gets rewritten carries a newer timestamp. Pass
+     * [force] to sweep everything regardless, which is what the settings action does.
+     */
     suspend fun validateAndCleanCache(
+        force: Boolean = false,
         onProgress: (suspend (phase: String, current: Int, total: Int) -> Unit)? = null
     ): CacheValidationResult {
         var deleted = 0
         var cleared = 0
 
+        val marker = File(cacheDir, VALIDATION_MARKER)
+        val validatedThrough = if (force) 0L else marker.takeIf { it.exists() }?.lastModified() ?: 0L
+        val sweepStartedAt = System.currentTimeMillis()
+
         val files = withContext(Dispatchers.IO) {
-            cacheDir.walk().filter { it.isFile && it.name != ".nomedia" }.toList()
+            cacheDir.walk()
+                .filter { it.isFile && it.name != ".nomedia" && it.name != VALIDATION_MARKER }
+                .filter { it.lastModified() >= validatedThrough }
+                .toList()
         }
         val totalFiles = files.size
         onProgress?.invoke("Checking $totalFiles cached files...", 0, totalFiles)
@@ -1610,6 +1625,10 @@ class ImageCacheManager @Inject constructor(
                 if (index % 50 == 0) {
                     onProgress?.invoke("Checking cached files...", index, totalFiles)
                 }
+            }
+            runCatching {
+                if (!marker.exists()) marker.createNewFile()
+                marker.setLastModified(sweepStartedAt)
             }
         }
 

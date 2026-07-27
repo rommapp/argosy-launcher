@@ -50,7 +50,7 @@ class DatabaseAdminRepository @Inject constructor(
     /** Deletes all cached image files and reconciles DB paths; safe to re-download from the server. */
     suspend fun clearImageCache() = withContext(Dispatchers.IO) {
         imageCacheManager.clearCache()
-        imageCacheManager.validateAndCleanCache()
+        imageCacheManager.validateAndCleanCache(force = true)
         attributionRepository.markDirty(StorageCategory.IMAGE_CACHE)
     }
 

@@ -581,7 +581,7 @@ object PlatformDefinitions {
         val lower = slug.lowercase()
         slugAliases[lower]?.let { return it }
         if (platformMap.containsKey(lower)) return lower
-        val sep = lower.indexOfFirst { it == '-' || it == '_' }
+        val sep = lower.indexOfFirst { it == '-' || it == '_' || it == ' ' }
         if (sep > 0) {
             val prefix = lower.substring(0, sep)
             slugAliases[prefix]?.let { return it }
@@ -616,7 +616,7 @@ object PlatformDefinitions {
     fun deriveDisplayName(slug: String?): Pair<String, String>? {
         if (slug.isNullOrBlank()) return null
         val lower = slug.lowercase()
-        val sep = lower.indexOfFirst { it == '-' || it == '_' }
+        val sep = lower.indexOfFirst { it == '-' || it == '_' || it == ' ' }
         if (sep <= 0 || sep >= lower.length - 1) return null
         val prefix = lower.substring(0, sep)
         val canonical = slugAliases[prefix] ?: prefix

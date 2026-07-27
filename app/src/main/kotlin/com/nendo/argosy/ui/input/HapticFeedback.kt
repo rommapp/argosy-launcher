@@ -23,6 +23,10 @@ enum class HapticPattern {
 class HapticFeedbackManager @Inject constructor(
     @ApplicationContext private val context: Context
 ) {
+    companion object {
+        private const val DEFAULT_STRENGTH = 0.5f
+    }
+
     private val vibrator: Vibrator? = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
         context.getSystemService<VibratorManager>()?.defaultVibrator
     } else {
@@ -31,6 +35,9 @@ class HapticFeedbackManager @Inject constructor(
     }
 
     private var enabled = true
+
+    @Volatile
+    private var cachedStrength: Float? = null
     private val hasAmplitudeControl = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
         vibrator?.hasAmplitudeControl() == true
     } else false
@@ -42,18 +49,27 @@ class HapticFeedbackManager @Inject constructor(
         this.enabled = enabled
     }
 
+    /**
+     * Reads the live system setting, which costs a binder transaction and a shell command.
+     * Call it to display or re-sync the value; [vibrate] uses the cached strength so a
+     * d-pad repeat does not issue one IPC per tick.
+     */
     fun getSystemVibrationStrength(): Float {
-        return PServerExecutor.getSystemSettingFloat("vibrate_strength_value", 0.5f)
+        val strength = PServerExecutor.getSystemSettingFloat("vibrate_strength_value", DEFAULT_STRENGTH)
+        cachedStrength = strength
+        return strength
     }
 
     fun setSystemVibrationStrength(strength: Float): Boolean {
-        return PServerExecutor.setSystemSettingFloat("vibrate_strength_value", strength.coerceIn(0f, 1f))
+        val clamped = strength.coerceIn(0f, 1f)
+        val applied = PServerExecutor.setSystemSettingFloat("vibrate_strength_value", clamped)
+        if (applied) cachedStrength = clamped
+        return applied
     }
 
-    private fun getAmplitude(): Int {
-        val strength = getSystemVibrationStrength()
-        return (strength * 255).toInt().coerceIn(1, 255)
-    }
+    private fun currentStrength(): Float = cachedStrength ?: getSystemVibrationStrength()
+
+    private fun getAmplitude(): Int = (currentStrength() * 255).toInt().coerceIn(1, 255)
 
     fun vibrate(pattern: HapticPattern) {
         if (!enabled || vibrator == null || !vibrator.hasVibrator()) return
@@ -74,7 +90,7 @@ class HapticFeedbackManager @Inject constructor(
                     )
                 }
             } else {
-                val strength = getSystemVibrationStrength()
+                val strength = currentStrength()
                 val duration = (45 + strength * 105).toLong()
                 when (pattern) {
                     HapticPattern.FOCUS_CHANGE -> VibrationEffect.createOneShot(duration, VibrationEffect.DEFAULT_AMPLITUDE)
@@ -90,7 +106,7 @@ class HapticFeedbackManager @Inject constructor(
             vibrator.vibrate(effect)
         } else {
             @Suppress("DEPRECATION")
-            val strength = getSystemVibrationStrength()
+            val strength = currentStrength()
             val duration = (45 + strength * 105).toLong()
             when (pattern) {
                 HapticPattern.FOCUS_CHANGE -> vibrator.vibrate(duration)

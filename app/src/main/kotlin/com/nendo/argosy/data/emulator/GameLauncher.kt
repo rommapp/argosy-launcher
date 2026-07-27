@@ -81,6 +81,7 @@ class GameLauncher @Inject constructor(
     private val installedAppResolver: com.nendo.argosy.data.platform.InstalledAppResolver,
     private val platformLibretroSettingsDao: com.nendo.argosy.data.local.dao.PlatformLibretroSettingsDao,
     private val emulatorDetector: EmulatorDetector,
+    private val builtinCoreResolver: BuiltinCoreResolver,
     private val m3uManager: M3uManager,
     private val libretroCoreMgr: LibretroCoreManager,
     private val biosRepository: BiosRepository,
@@ -1113,39 +1114,12 @@ class GameLauncher @Inject constructor(
         }
     }
 
-    /**
-     * Core selection for the built-in libretro path. Walks: game override ->
-     * platform default -> legacy built-in pref -> registry default. Accepts
-     * any non-empty core id; the built-in path downloads from the libretro
-     * buildbot, so membership in [com.nendo.argosy.libretro.LibretroCoreRegistry]
-     * is a metadata hint, not a gate. If the chosen id isn't a real core, the
-     * download will 404 and surface via [lastCoreDownloadError].
-     */
     private suspend fun resolveBuiltinCoreId(game: GameEntity): String? {
-        val validCoreIds = com.nendo.argosy.libretro.LibretroCoreRegistry
-            .getCoresForPlatform(game.platformSlug).map { it.coreId }.toSet()
-        var rejectedCore: String? = null
+        val resolution = builtinCoreResolver.resolve(game.id, game.platformId, game.platformSlug)
+        val default = resolution.coreId
+        Logger.debug(TAG, "[BuiltIn] core selection -> $default")
 
-        fun accept(coreId: String?, source: String): String? {
-            if (coreId.isNullOrBlank()) return null
-            if (coreId !in validCoreIds) {
-                Logger.warn(TAG, "[BuiltIn] ignoring unknown core '$coreId' from $source for ${game.platformSlug}")
-                if (rejectedCore == null) rejectedCore = coreId
-                return null
-            }
-            Logger.debug(TAG, "[BuiltIn] core selection: $source -> $coreId")
-            return coreId
-        }
-
-        accept(emulatorConfigDao.getByGameId(game.id)?.coreName, "game override")?.let { return it }
-        accept(emulatorConfigDao.getDefaultForPlatform(game.platformId)?.coreName, "platform default")?.let { return it }
-        accept(userPreferencesRepository.getBuiltinCoreSelections().first()[game.platformSlug], "legacy pref")?.let { return it }
-
-        val default = com.nendo.argosy.libretro.LibretroCoreRegistry
-            .getDefaultCoreForPlatform(game.platformSlug)?.coreId
-        Logger.debug(TAG, "[BuiltIn] core selection: registry default -> $default")
-
-        val rejected = rejectedCore
+        val rejected = resolution.rejectedCoreId
         if (rejected != null && default != null) {
             val registry = com.nendo.argosy.libretro.LibretroCoreRegistry
             notificationManager.show(

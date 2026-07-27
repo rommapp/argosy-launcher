@@ -308,6 +308,7 @@ enum class LaunchType {
 object EmulatorRegistry {
 
     const val BUILTIN_PACKAGE = "argosy.builtin.libretro"
+    const val BUILTIN_ID = "builtin"
 
     private val builtinEmulator = EmulatorDef(
         id = "builtin",

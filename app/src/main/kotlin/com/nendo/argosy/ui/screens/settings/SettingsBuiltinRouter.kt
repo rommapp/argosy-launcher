@@ -3,6 +3,7 @@ package com.nendo.argosy.ui.screens.settings
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import androidx.lifecycle.viewModelScope
+import com.nendo.argosy.data.emulator.EmulatorRegistry
 import com.nendo.argosy.data.local.entity.PlatformLibretroSettingsEntity
 import com.nendo.argosy.libretro.LibretroBuildbot
 import com.nendo.argosy.data.platform.PlatformWeightRegistry
@@ -18,7 +19,6 @@ import com.nendo.argosy.core.emulator.LibretroSettingDef
 import com.nendo.argosy.ui.screens.settings.sections.BuiltinEmulatorItem
 import com.nendo.argosy.util.AppPaths
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -824,7 +824,6 @@ private suspend fun loadCoreManagementStateInternal(vm: SettingsViewModel, prese
         val currentState = vm._uiState.value.coreManagement
         val isOnline = com.nendo.argosy.util.NetworkUtils.isOnline(vm.context)
         val syncEnabledPlatforms = vm.platformRepository.getSyncEnabledPlatforms()
-        val coreSelections = vm.libretroSettingsRepo.getBuiltinCoreSelections().firstOrNull() ?: emptyMap()
         val installedCoreIds = vm.getInstalledCoreIds()
         val updatableCoreIds = vm.coreManager.getCoreIdsWithUpdatesAvailable()
 
@@ -833,11 +832,14 @@ private suspend fun loadCoreManagementStateInternal(vm: SettingsViewModel, prese
             .distinctBy { it.slug }
             .map { platform ->
                 val availableCores = LibretroCoreRegistry.getCoresForPlatform(platform.slug)
-                val selectedCoreId = coreSelections[platform.slug]
-                val activeCoreId = selectedCoreId
-                    ?: LibretroCoreRegistry.getDefaultCoreForPlatform(platform.slug)?.coreId
+                val activeCoreId = vm.builtinCoreResolver.resolveCoreId(
+                    gameId = null,
+                    platformId = platform.id,
+                    platformSlug = platform.slug
+                )
 
                 PlatformCoreRow(
+                    platformId = platform.id,
                     platformSlug = platform.slug,
                     platformName = platform.name,
                     cores = availableCores.map { core ->
@@ -938,6 +940,10 @@ internal fun routeSelectCoreForPlatform(vm: SettingsViewModel) {
 
     vm.viewModelScope.launch {
         vm.libretroSettingsRepo.setBuiltinCoreForPlatform(platform.platformSlug, core.coreId)
+        val platformConfig = vm.emulatorConfigRepo.getDefaultForPlatform(platform.platformId)
+        if (platformConfig?.packageName == EmulatorRegistry.BUILTIN_PACKAGE && platformConfig.coreName != null) {
+            vm.emulatorConfigRepo.updateCoreNameForPlatform(platform.platformId, null)
+        }
         vm.loadCoreManagementState(preserveFocus = true)
     }
 }

@@ -95,7 +95,7 @@ class SaveSyncOrchestrator @Inject constructor(
             }
 
             val emulatorPackage = emulatorResolver.getEmulatorPackageForGame(game.id, game.platformId, game.platformSlug)
-            val coreName = client.resolveCoreForGame(game)
+            val coreName = client.resolveCoreForGame(game, emulatorId)
 
             val savePath = savePathResolver.discoverSavePath(
                 emulatorId = emulatorId,
@@ -161,7 +161,7 @@ class SaveSyncOrchestrator @Inject constructor(
 
         val client = apiClient.get()
         val emulatorPackage = emulatorResolver.getEmulatorPackageForGame(game.id, game.platformId, game.platformSlug)
-        val coreName = client.resolveCoreForGame(game)
+        val coreName = client.resolveCoreForGame(game, emulatorId)
         val savePath = when (val lookup = savePathResolver.discoverSavePathChecked(
             emulatorId = emulatorId,
             gameTitle = game.title,

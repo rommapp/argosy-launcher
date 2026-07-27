@@ -1,6 +1,8 @@
 package com.nendo.argosy.data.repository
 
 import android.os.StatFs
+import com.nendo.argosy.data.emulator.BuiltinCoreResolver
+import com.nendo.argosy.data.emulator.EmulatorRegistry
 import com.nendo.argosy.data.emulator.EmulatorResolver
 import com.nendo.argosy.data.emulator.SavePathConfig
 import com.nendo.argosy.data.local.dao.EmulatorConfigDao
@@ -38,6 +40,7 @@ class SaveSyncApiClient @Inject constructor(
     private val saveSyncDao: SaveSyncDao,
     private val emulatorConfigDao: EmulatorConfigDao,
     private val emulatorResolver: EmulatorResolver,
+    private val builtinCoreResolver: BuiltinCoreResolver,
     private val gameDao: GameDao,
     private val savePathResolver: SavePathResolver,
     private val userPreferencesRepository: UserPreferencesRepository,
@@ -98,7 +101,11 @@ class SaveSyncApiClient @Inject constructor(
         return null
     }
 
-    internal suspend fun resolveCoreForGame(game: GameEntity): String? {
+    internal suspend fun resolveCoreForGame(game: GameEntity, emulatorId: String? = null): String? {
+        val resolvedEmulator = emulatorId ?: resolveEmulatorForGame(game)
+        if (resolvedEmulator == EmulatorRegistry.BUILTIN_ID) {
+            return builtinCoreResolver.resolveCoreId(game.id, game.platformId, game.platformSlug)
+        }
         val gameConfig = emulatorConfigDao.getByGameId(game.id)
         if (gameConfig?.coreName != null) return gameConfig.coreName
         val platformConfig = emulatorConfigDao.getDefaultForPlatform(game.platformId)

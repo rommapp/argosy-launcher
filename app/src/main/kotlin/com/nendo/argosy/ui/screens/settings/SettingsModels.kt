@@ -573,6 +573,7 @@ data class CoreChipState(
 )
 
 data class PlatformCoreRow(
+    val platformId: Long,
     val platformSlug: String,
     val platformName: String,
     val cores: List<CoreChipState>

@@ -444,7 +444,7 @@ class SaveUploader @Inject constructor(
         } else {
             emulatorId
         }
-        val serverEmulator = EmulatorRegistry.toServerEmulator(resolvedEmulatorId, client.resolveCoreForGame(game))
+        val serverEmulator = EmulatorRegistry.toServerEmulator(resolvedEmulatorId, client.resolveCoreForGame(game, resolvedEmulatorId))
 
         if (!overwrite && deviceId != null) {
             if (conflictDetector.isSessionOnOlderSave(gameId)) {

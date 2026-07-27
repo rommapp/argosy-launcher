@@ -2,6 +2,7 @@ package com.nendo.argosy.domain.usecase.game
 
 import com.nendo.argosy.data.emulator.EmulatorRegistry
 import com.nendo.argosy.data.emulator.InstalledEmulator
+import com.nendo.argosy.data.emulator.LaunchConfig
 import com.nendo.argosy.data.local.dao.EmulatorConfigDao
 import com.nendo.argosy.data.local.dao.SaveSyncDao
 import com.nendo.argosy.data.local.entity.EmulatorConfigEntity
@@ -21,7 +22,7 @@ class ConfigureEmulatorUseCase @Inject constructor(
                 gameId = gameId,
                 packageName = emulator.def.packageName,
                 displayName = emulator.def.displayName,
-                coreName = EmulatorRegistry.getDefaultCore(platformSlug)?.id,
+                coreName = defaultCoreFor(platformSlug, emulator),
                 isDefault = false
             )
             emulatorConfigDao.insert(config)
@@ -38,11 +39,22 @@ class ConfigureEmulatorUseCase @Inject constructor(
                 gameId = null,
                 packageName = emulator.def.packageName,
                 displayName = emulator.def.displayName,
-                coreName = EmulatorRegistry.getDefaultCore(platformSlug)?.id,
+                coreName = defaultCoreFor(platformSlug, emulator),
                 isDefault = true
             )
             emulatorConfigDao.insert(config)
         }
+    }
+
+    /**
+     * The core to stamp when a user picks an emulator. Only external RetroArch needs one
+     * written up front: the built-in path resolves through [com.nendo.argosy.data.emulator.BuiltinCoreResolver],
+     * and stamping there would outrank the user's Manage Cores selection.
+     */
+    private fun defaultCoreFor(platformSlug: String, emulator: InstalledEmulator): String? {
+        val launchConfig = emulator.def.launchConfig
+        if (launchConfig !is LaunchConfig.RetroArch) return null
+        return EmulatorRegistry.getDefaultSelectableCore(platformSlug, isBuiltIn = false)?.id
     }
 
     suspend fun setAdHocForPlatform(platformId: Long, packageName: String, displayName: String) {

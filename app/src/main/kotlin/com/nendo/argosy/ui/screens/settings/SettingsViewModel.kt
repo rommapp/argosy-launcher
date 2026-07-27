@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.nendo.argosy.ui.common.GradientColorExtractor
 import com.nendo.argosy.data.cache.ImageCacheManager
 import com.nendo.argosy.data.cache.ImageCacheProgress
+import com.nendo.argosy.data.emulator.BuiltinCoreResolver
 import com.nendo.argosy.data.emulator.EmulatorDetector
 import com.nendo.argosy.data.emulator.InstalledEmulator
 import com.nendo.argosy.data.emulator.RetroArchConfigParser
@@ -85,6 +86,7 @@ class SettingsViewModel @Inject constructor(
     internal val installedAppResolver: com.nendo.argosy.data.platform.InstalledAppResolver,
     internal val emulatorConfigRepo: EmulatorConfigRepository,
     internal val emulatorDetector: EmulatorDetector,
+    internal val builtinCoreResolver: BuiltinCoreResolver,
     internal val romMRepository: RomMRepository,
     internal val notificationManager: NotificationManager,
     internal val gameRepository: GameRepository,

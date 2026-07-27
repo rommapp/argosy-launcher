@@ -365,6 +365,11 @@ internal fun routeLoadSettings(vm: SettingsViewModel) {
             val defaultCore = EmulatorRegistry.getDefaultSelectableCore(platform.slug, isBuiltInEmulator)?.id
             val selectedCore = when {
                 !hasCoreSelection -> null
+                isBuiltInEmulator -> vm.builtinCoreResolver.resolveCoreId(
+                    gameId = null,
+                    platformId = platform.id,
+                    platformSlug = platform.slug
+                )
                 storedCore != null && availableCores.any { it.id == storedCore } -> storedCore
                 else -> defaultCore ?: availableCores.firstOrNull()?.id
             }

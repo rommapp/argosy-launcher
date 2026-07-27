@@ -61,15 +61,14 @@ class EmulatorRegistrySelectableCoresTest {
         val retroArch = EmulatorRegistry.getById("retroarch")
         requireNotNull(retroArch) { "retroarch def must exist" }
 
-        val knownGaps = setOf("sg1000")
         val unresolvable = retroArch.supportedPlatforms.filter { slug ->
             EmulatorRegistry.getDefaultSelectableCore(slug, isBuiltIn = false) == null &&
                 EmulatorRegistry.getDefaultCore(slug) == null
         }.toSet()
 
         assertEquals(
-            "external RetroArch core resolution gained or lost a gap",
-            knownGaps,
+            "no core resolves for external RetroArch on these platforms",
+            emptySet<String>(),
             unresolvable
         )
     }

@@ -119,7 +119,7 @@ object LibretroCoreRegistry {
             coreId = "parallel_n64",
             fileName = "parallel_n64_libretro_android.so",
             displayName = "ParaLLEl N64",
-            platforms = setOf("n64"),
+            platforms = setOf("n64", "n64dd"),
             estimatedSizeBytes = 6_000_000L
         ),
 
@@ -138,7 +138,7 @@ object LibretroCoreRegistry {
             coreId = "genesis_plus_gx",
             fileName = "genesis_plus_gx_libretro_android.so",
             displayName = "Genesis Plus GX",
-            platforms = setOf("genesis", "megadrive", "sms", "gg", "scd", "segacd", "32x"),
+            platforms = setOf("genesis", "megadrive", "sms", "gg", "scd", "segacd", "sg1000", "pico", "nomad"),
             estimatedSizeBytes = 2_000_000L,
             isDefault = true,
             netplaySupport = NetplaySupportLevel.SUPPORTED
@@ -147,7 +147,7 @@ object LibretroCoreRegistry {
             coreId = "picodrive",
             fileName = "picodrive_libretro_android.so",
             displayName = "PicoDrive",
-            platforms = setOf("genesis", "megadrive", "sms", "gg", "scd", "segacd", "32x"),
+            platforms = setOf("genesis", "megadrive", "sms", "gg", "scd", "segacd", "32x", "pico", "nomad"),
             estimatedSizeBytes = 1_500_000L,
             netplaySupport = NetplaySupportLevel.SUPPORTED
         ),
@@ -189,7 +189,7 @@ object LibretroCoreRegistry {
             coreId = "flycast",
             fileName = "flycast_libretro_android.so",
             displayName = "Flycast",
-            platforms = setOf("dreamcast", "dc"),
+            platforms = setOf("dreamcast", "dc", "naomi", "atomiswave"),
             estimatedSizeBytes = 5_000_000L,
             isDefault = true
         ),
@@ -210,7 +210,7 @@ object LibretroCoreRegistry {
             coreId = "mednafen_pce",
             fileName = "mednafen_pce_libretro_android.so",
             displayName = "Beetle PCE",
-            platforms = setOf("tg16", "pce", "turbografx16", "pcengine", "tgcd"),
+            platforms = setOf("tg16", "pce", "turbografx16", "pcengine", "tgcd", "supergrafx"),
             estimatedSizeBytes = 1_500_000L,
             isDefault = true,
             netplaySupport = NetplaySupportLevel.SUPPORTED
@@ -221,7 +221,7 @@ object LibretroCoreRegistry {
             coreId = "melonds",
             fileName = "melonds_libretro_android.so",
             displayName = "melonDS",
-            platforms = setOf("nds", "ds"),
+            platforms = setOf("nds", "ds", "dsi"),
             estimatedSizeBytes = 4_000_000L,
             requiresBios = listOf("bios7.bin", "bios9.bin", "firmware.bin"),
             isDefault = true
@@ -230,7 +230,7 @@ object LibretroCoreRegistry {
             coreId = "melondsds",
             fileName = "melondsds_libretro_android.so",
             displayName = "melonDS DS",
-            platforms = setOf("nds", "ds"),
+            platforms = setOf("nds", "ds", "dsi"),
             requiresBios = listOf("bios7.bin", "bios9.bin", "firmware.bin")
         ),
 
@@ -322,7 +322,7 @@ object LibretroCoreRegistry {
             coreId = "bluemsx",
             fileName = "bluemsx_libretro_android.so",
             displayName = "blueMSX",
-            platforms = setOf("coleco", "msx", "msx2"),
+            platforms = setOf("coleco", "msx", "msx2", "sg1000"),
             estimatedSizeBytes = 2_000_000L,
             isDefault = true
         ),
@@ -361,7 +361,7 @@ object LibretroCoreRegistry {
             coreId = "fbneo",
             fileName = "fbneo_libretro_android.so",
             displayName = "FBNeo",
-            platforms = setOf("arcade", "fbneo", "neogeo", "cps1", "cps2", "cps3"),
+            platforms = setOf("arcade", "fbneo", "neogeo", "neogeocd", "cps1", "cps2", "cps3"),
             estimatedSizeBytes = 15_000_000L,
             isDefault = true,
             netplaySupport = NetplaySupportLevel.SUPPORTED

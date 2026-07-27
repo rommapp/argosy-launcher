@@ -1117,6 +1117,7 @@ object EmulatorRegistry {
         "3ds" to listOf("citra"),
         "genesis" to listOf("genesis_plus_gx", "picodrive"),
         "sms" to listOf("genesis_plus_gx", "picodrive", "gearsystem"),
+        "sg1000" to listOf("genesis_plus_gx", "gearsystem", "bluemsx"),
         "gg" to listOf("genesis_plus_gx", "gearsystem"),
         "scd" to listOf("genesis_plus_gx", "picodrive"),
         "32x" to listOf("picodrive"),
@@ -1222,6 +1223,11 @@ object EmulatorRegistry {
             RetroArchCore("genesis_plus_gx", "Genesis Plus GX"),
             RetroArchCore("picodrive", "PicoDrive"),
             RetroArchCore("gearsystem", "Gearsystem")
+        ),
+        "sg1000" to listOf(
+            RetroArchCore("genesis_plus_gx", "Genesis Plus GX"),
+            RetroArchCore("gearsystem", "Gearsystem"),
+            RetroArchCore("bluemsx", "blueMSX")
         ),
         "gg" to listOf(
             RetroArchCore("genesis_plus_gx", "Genesis Plus GX"),

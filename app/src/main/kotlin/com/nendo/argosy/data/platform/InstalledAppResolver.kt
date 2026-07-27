@@ -2,9 +2,7 @@ package com.nendo.argosy.data.platform
 
 import android.content.Context
 import android.content.Intent
-import android.content.pm.ApplicationInfo
 import android.graphics.drawable.Drawable
-import com.nendo.argosy.data.emulator.EmulatorRegistry
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -19,16 +17,19 @@ data class LaunchableApp(
 class InstalledAppResolver @Inject constructor(
     @ApplicationContext private val context: Context
 ) {
-    fun getLaunchableUserApps(): List<LaunchableApp> {
+    /**
+     * Every launchable package except Argosy itself. Known emulators and preinstalled
+     * system apps stay in: this backs the manual picker, which is the only way to bind
+     * an emulator to a platform Argosy does not recognise.
+     */
+    fun getLaunchableApps(): List<LaunchableApp> {
         val pm = context.packageManager
         val intent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)
         val resolveInfos = pm.queryIntentActivities(intent, 0)
         val selfPackage = context.packageName
 
         return resolveInfos.asSequence()
-            .filter { (it.activityInfo.applicationInfo.flags and ApplicationInfo.FLAG_SYSTEM) == 0 }
             .filter { it.activityInfo.applicationInfo.packageName != selfPackage }
-            .filter { !EmulatorRegistry.isKnownPackage(it.activityInfo.applicationInfo.packageName) }
             .distinctBy { it.activityInfo.applicationInfo.packageName }
             .map { info ->
                 LaunchableApp(

@@ -45,6 +45,12 @@ class SaveCacheManager @Inject constructor(
 
     companion object {
         private const val TAG = "SaveCacheManager"
+
+        /**
+         * Platforms whose save is a set of sibling folders sharing a prefix rather than one
+         * directory, so every match has to be archived together.
+         */
+        private val FOLDER_PREFIX_PLATFORMS = setOf("psp", "ps2")
         private const val MIN_UNLOCKED_SLOTS = 5
     }
 
@@ -588,7 +594,7 @@ class SaveCacheManager @Inject constructor(
         val saveId = game?.saveId ?: game?.titleId
         val handler = game?.platformSlug?.let { saveHandlerRegistry.getFolderHandler(it) }
         val canonical = game?.platformSlug?.let { PlatformDefinitions.getCanonicalSlug(it) }
-        if (canonical != "psp" || saveId == null || handler == null) {
+        if (canonical !in FOLDER_PREFIX_PLATFORMS || saveId == null || handler == null) {
             return listOf(saveFile)
         }
         return handler.findAllSaveFoldersBySaveId(savePath, saveId)

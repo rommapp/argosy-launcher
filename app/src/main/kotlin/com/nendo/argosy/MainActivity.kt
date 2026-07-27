@@ -686,19 +686,20 @@ class MainActivity : ComponentActivity() {
                 imageCacheManager.migrateFlatToSharded()
             }
 
-            val validationResult = imageCacheManager.validateAndCleanCache()
-            if (validationResult.deletedFiles > 0 || validationResult.clearedPaths > 0) {
-                Log.i(TAG, "Cache validation: ${validationResult.deletedFiles} files deleted, ${validationResult.clearedPaths} paths cleared")
-            }
-
             imageCacheManager.resumePendingCache()
             imageCacheManager.resumePendingCoverCache()
             if (preferencesRepository.preferences.first().boxArtCacheEnabled) {
                 imageCacheManager.resumePendingBoxFaceCache()
             }
-            imageCacheManager.recoverMissingCovers()
             imageCacheManager.resumePendingLogoCache()
             imageCacheManager.resumePendingBadgeCache()
+
+            val validationResult = imageCacheManager.validateAndCleanCache()
+            if (validationResult.deletedFiles > 0 || validationResult.clearedPaths > 0) {
+                Log.i(TAG, "Cache validation: ${validationResult.deletedFiles} files deleted, ${validationResult.clearedPaths} paths cleared")
+            }
+
+            imageCacheManager.recoverMissingCovers()
 
             val relinked = androidGameScanner.relinkInstalledRommAndroidApps()
             if (relinked > 0) {

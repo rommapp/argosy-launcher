@@ -45,6 +45,13 @@ data class ImageCacheRequest(
 
 enum class ImageType { BACKGROUND, SCREENSHOT, COVER, BOX_BACK, BOX_SPINE }
 
+data class CachedGameImages(
+    val coverPath: String?,
+    val backgroundPath: String?,
+    val boxBackPath: String?,
+    val boxSpinePath: String?
+)
+
 data class ImageCacheProgress(
     val isProcessing: Boolean = false,
     val currentGameTitle: String = "",
@@ -1172,6 +1179,34 @@ class ImageCacheManager @Inject constructor(
         if (current?.startsWith("/") == true && File(current).exists()) return
         if (isBack) gameDao.updateBoxBackPath(game.id, localPath)
         else gameDao.updateBoxSpinePath(game.id, localPath)
+    }
+
+    /**
+     * Caches a game's images and waits for them, for a refresh the player asked for and is
+     * watching. The queue is for background work that may take as long as it takes; a manual
+     * refresh has to finish its own image work before it reports itself done, or the row is
+     * written pointing at a remote url that nothing has fetched yet.
+     */
+    suspend fun cacheGameImagesNow(
+        rommId: Long,
+        gameTitle: String,
+        coverUrl: String?,
+        backgroundUrl: String?,
+        boxBackUrl: String?,
+        boxSpineUrl: String?
+    ): CachedGameImages = withContext(Dispatchers.IO) {
+        coverUrl?.let { processCoverRequest(ImageCacheRequest(it, rommId, ImageType.COVER, gameTitle, isSteam = false)) }
+        backgroundUrl?.let { processRequest(ImageCacheRequest(it, rommId, ImageType.BACKGROUND, gameTitle, isSteam = false)) }
+        boxBackUrl?.let { processBoxFaceRequest(ImageCacheRequest(it, rommId, ImageType.BOX_BACK, gameTitle, isSteam = false)) }
+        boxSpineUrl?.let { processBoxFaceRequest(ImageCacheRequest(it, rommId, ImageType.BOX_SPINE, gameTitle, isSteam = false)) }
+
+        val game = gameDao.getByRommId(rommId)
+        CachedGameImages(
+            coverPath = game?.coverPath,
+            backgroundPath = game?.backgroundPath,
+            boxBackPath = game?.boxBackPath,
+            boxSpinePath = game?.boxSpinePath
+        )
     }
 
     fun resumePendingBoxFaceCache() {

@@ -137,7 +137,17 @@ open class FolderSaveHandler(
     fun isEntryForSaveId(folderName: String, saveId: String): Boolean = folderMatches(folderName, saveId)
 
     /** How strongly an archive's top-level entry corresponds to the save it claims to be. */
-    enum class ArchiveRootMatch { EXACT, PREFIX, CONTAINS }
+    enum class ArchiveRootMatch {
+        EXACT,
+        PREFIX,
+        CONTAINS,
+
+        /**
+         * A shape written before the platform reported its layout. Recognisable and
+         * placeable, so it is repaired on load rather than discarded.
+         */
+        LEGACY
+    }
 
     /**
      * Sigil reports whether a save id addresses its folder exactly or as a prefix, so an
@@ -152,9 +162,17 @@ open class FolderSaveHandler(
             root == id -> ArchiveRootMatch.EXACT
             folderMatches(rootName, saveId) || root.startsWith(id) -> ArchiveRootMatch.PREFIX
             root.contains(id) -> ArchiveRootMatch.CONTAINS
+            rootName.trimEnd('/') in legacyArchiveRoots -> ArchiveRootMatch.LEGACY
             else -> null
         }
     }
+
+    /**
+     * Archive roots this platform wrote before it could describe its own layout. They carry
+     * no identity, so they are only safe because the destination is resolved separately -
+     * accepting one means trusting that path, not the archive.
+     */
+    protected open val legacyArchiveRoots: Set<String> = emptySet()
 
     private fun normalizeSaveId(value: String): String =
         value.replace("-", "").replace("_", "").uppercase()

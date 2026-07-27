@@ -220,7 +220,16 @@ private class N3dsFolderHandler(
         private const val DEFAULT_CATEGORY = "00040000"
         private const val SDMC_DIR = "sdmc"
         private const val SD_ROOT = "Nintendo 3DS"
+        private const val LEGACY_DATA_ROOT = "data"
     }
+
+    /**
+     * Archives written before sigil reported the title-id split are rooted at the `data`
+     * directory, which names no title. They are still placeable because the destination
+     * comes from the save path rather than the archive, so they are repaired rather than
+     * thrown away.
+     */
+    override val legacyArchiveRoots: Set<String> = setOf(LEGACY_DATA_ROOT)
 
     /**
      * Saves live under `<userDir>/sdmc/Nintendo 3DS/<id0>/<id1>/title/...`, and which part of

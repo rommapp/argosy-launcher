@@ -67,6 +67,23 @@ Every user-facing feature, no exceptions unless justified in review:
 - Maintainer domains (not open without prior discussion): social, netplay,
   music/BGM. Releases are maintainer-only.
 
+## Handling user data that looks wrong
+
+- Recovery before rejection. For a malformed archive, an unexpected layout, a
+  stale or mis-keyed row: the order is repair, then ignore, then discard.
+  Discarding needs a stated reason repair is impossible, not merely harder, and
+  a choice between "accept it" and "throw it out" is not a complete set of
+  options until you have established whether the data can be placed correctly
+  from what is already known. The legitimate exception is data that identifies
+  nothing - if it cannot be distinguished from another game's or another user's,
+  refusing is correct. The boundary: "no mapping exists" is a finding, "I did
+  not want to write the mapping" is not.
+- A guard added to one path is unfinished. When adding a validation, a gate, or
+  a repair, enumerate every other path reaching the same mutation and state
+  which are covered and which are not. A check on the download path that the
+  cache-restore path lacks is a half-built guard, and the uncovered path is
+  where the damage lands.
+
 ## Upstream mandate
 
 libretro / RetroArch / core / RetroAchievements identifiers and semantics

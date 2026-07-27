@@ -422,9 +422,12 @@ class SaveCacheManager @Inject constructor(
 
         try {
             val writeOk = if (entity.cachePath.endsWith(".zip")) {
+                val game = gameDao.getById(entity.gameId)
+                if (!archiveHoldsThisSave(cacheFile, game, targetPath)) {
+                    return@withContext false
+                }
                 fal.mkdirs(targetPath)
                 val targetFile = fal.getTransformedFile(targetPath)
-                val game = gameDao.getById(entity.gameId)
                 val preserveRoots = game?.platformSlug
                     ?.let { PlatformDefinitions.getCanonicalSlug(it) } in FOLDER_PREFIX_PLATFORMS
                 Log.d(TAG, "[RESTORE] cache=$cacheId zip=${cacheFile.name} size=${cacheFile.length()} target=$targetPath transformed=${targetFile.absolutePath} exists=${targetFile.exists()} dir=${targetFile.isDirectory} preserveRoots=$preserveRoots platform=${game?.platformSlug}")
@@ -590,6 +593,36 @@ class SaveCacheManager @Inject constructor(
 
     fun getCachesForGame(gameId: Long): Flow<List<SaveCacheEntity>> =
         saveCacheDao.observeByGame(gameId)
+
+    /**
+     * A restore unpacks straight over the live save directory, so an archive that does not
+     * hold this game's save must not be written. Mirrors the download path's check; the two
+     * differ only in where the archive came from.
+     */
+    private suspend fun archiveHoldsThisSave(
+        cacheFile: File,
+        game: GameEntity?,
+        targetPath: String
+    ): Boolean {
+        val entry = game ?: return true
+        val saveId = entry.saveId ?: entry.titleId ?: return true
+        val handler = saveHandlerRegistry.getFolderHandler(entry.platformSlug) ?: return true
+
+        val roots = saveArchiver.peekRootEntryNames(cacheFile)
+        val tier = roots.firstNotNullOfOrNull { handler.matchArchiveRoot(it, saveId) }
+        if (tier == null) {
+            Log.e(
+                TAG,
+                "[RESTORE] refusing archive that does not hold saveId=$saveId | " +
+                    "roots=$roots, target=$targetPath, zip=${cacheFile.name}"
+            )
+            return false
+        }
+        if (tier != com.nendo.argosy.data.sync.platform.FolderSaveHandler.ArchiveRootMatch.EXACT) {
+            Log.d(TAG, "[RESTORE] archive matched on $tier | saveId=$saveId, roots=$roots")
+        }
+        return true
+    }
 
     private fun resolveFoldersToCache(saveFile: File, savePath: String, game: GameEntity?): List<File> {
         val saveId = game?.saveId ?: game?.titleId

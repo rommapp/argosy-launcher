@@ -351,7 +351,7 @@ class ImageCacheManager @Inject constructor(
             connection.connectTimeout = 10_000
             connection.readTimeout = 30_000
 
-            val tempFile = File.createTempFile("img_", ".tmp", cacheDir)
+            val tempFile = File.createTempFile("img_", ".tmp", context.cacheDir)
             try {
                 connection.getInputStream().use { inputStream ->
                     tempFile.outputStream().use { out ->
@@ -436,7 +436,17 @@ class ImageCacheManager @Inject constructor(
         }
     }
 
-    suspend fun deleteGameImages(rommId: Long) {
+    /**
+     * Clearing Coil's memory cache evicts every decoded bitmap in the app, so a sync that
+     * touches thousands of games must clear once at the end rather than per game.
+     */
+    suspend fun clearDecodedImageCache() {
+        withContext(Dispatchers.Main) {
+            context.imageLoader.memoryCache?.clear()
+        }
+    }
+
+    suspend fun deleteGameImages(rommId: Long, clearDecoded: Boolean = true) {
         withContext(Dispatchers.IO) {
             val slug = resolveRommPlatformSlug(rommId)
             val prefixes = listOf(
@@ -454,10 +464,7 @@ class ImageCacheManager @Inject constructor(
                 }
             }
         }
-        withContext(Dispatchers.Main) {
-            context.imageLoader.memoryCache?.clear()
-            Log.d(TAG, "Cleared Coil memory cache after deleting images for rommId $rommId")
-        }
+        if (clearDecoded) clearDecodedImageCache()
     }
 
     fun getCacheSize(): Long {
@@ -1581,49 +1588,53 @@ class ImageCacheManager @Inject constructor(
             }
         }
 
-        val infos = gameDao.getAllImageCacheInfo()
+        val infos = withContext(Dispatchers.IO) { gameDao.getAllImageCacheInfo() }
         val totalGames = infos.size
         onProgress?.invoke("Validating $totalGames game paths...", 0, totalGames)
 
-        infos.forEachIndexed { index, info ->
-            if (info.coverPath != null && shouldClearMissingPath(info.coverPath)) {
-                gameDao.clearCoverPath(info.id)
-                cleared++
-            }
-            if (info.backgroundPath != null && shouldClearMissingPath(info.backgroundPath)) {
-                gameDao.clearBackgroundPath(info.id)
-                cleared++
-            }
-            if (info.cachedScreenshotPaths != null) {
-                val paths = info.cachedScreenshotPaths.split(",")
-                val validPaths = paths.filter { path -> !shouldClearMissingPath(path) }
-                if (validPaths.size != paths.size) {
-                    if (validPaths.isEmpty()) {
-                        gameDao.clearCachedScreenshotPaths(info.id)
-                    } else {
-                        gameDao.updateCachedScreenshotPaths(info.id, validPaths.joinToString(","))
-                    }
-                    cleared += paths.size - validPaths.size
+        withContext(Dispatchers.IO) {
+            infos.forEachIndexed { index, info ->
+                if (info.coverPath != null && shouldClearMissingPath(info.coverPath)) {
+                    gameDao.clearCoverPath(info.id)
+                    cleared++
                 }
-            }
-            if (index % 100 == 0) {
-                onProgress?.invoke("Validating game paths...", index, totalGames)
+                if (info.backgroundPath != null && shouldClearMissingPath(info.backgroundPath)) {
+                    gameDao.clearBackgroundPath(info.id)
+                    cleared++
+                }
+                if (info.cachedScreenshotPaths != null) {
+                    val paths = info.cachedScreenshotPaths.split(",")
+                    val validPaths = paths.filter { path -> !shouldClearMissingPath(path) }
+                    if (validPaths.size != paths.size) {
+                        if (validPaths.isEmpty()) {
+                            gameDao.clearCachedScreenshotPaths(info.id)
+                        } else {
+                            gameDao.updateCachedScreenshotPaths(info.id, validPaths.joinToString(","))
+                        }
+                        cleared += paths.size - validPaths.size
+                    }
+                }
+                if (index % 100 == 0) {
+                    onProgress?.invoke("Validating game paths...", index, totalGames)
+                }
             }
         }
 
-        val platforms = platformDao.getAllPlatforms()
+        val platforms = withContext(Dispatchers.IO) { platformDao.getAllPlatforms() }
         onProgress?.invoke("Checking ${platforms.size} platform logos...", 0, platforms.size)
 
-        platforms.forEach { platform ->
-            if (platform.logoPath != null && shouldClearMissingPath(platform.logoPath)) {
-                platformDao.clearLogoPath(platform.id)
-                cleared++
+        withContext(Dispatchers.IO) {
+            platforms.forEach { platform ->
+                if (platform.logoPath != null && shouldClearMissingPath(platform.logoPath)) {
+                    platformDao.clearLogoPath(platform.id)
+                    cleared++
+                }
             }
         }
 
         migrateLegacyIgdbCovers()
 
-        val orphanDirs = listOf("image_cache", "steam")
+        val orphanDirs = listOf("steam")
         withContext(Dispatchers.IO) {
             for (name in orphanDirs) {
                 val dir = File(context.cacheDir, name)

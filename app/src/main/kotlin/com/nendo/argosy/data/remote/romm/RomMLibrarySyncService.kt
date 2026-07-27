@@ -79,6 +79,7 @@ class RomMLibrarySyncService @Inject constructor(
     private val api: RomMApi? get() = connectionManager.getApi()
     private val syncMutex = Mutex()
     private var boxArtCacheEnabledForSync = true
+    private var decodedImageCacheDirty = false
 
     private val _syncProgress = MutableStateFlow(SyncProgress())
     val syncProgress: StateFlow<SyncProgress> = _syncProgress.asStateFlow()
@@ -112,6 +113,7 @@ class RomMLibrarySyncService @Inject constructor(
         try {
             return@withContext doSyncLibrary(onProgress)
         } finally {
+            flushDecodedImageCache()
             syncMutex.unlock()
         }
     }
@@ -124,8 +126,15 @@ class RomMLibrarySyncService @Inject constructor(
         try {
             return@withContext doSyncPlatform(platformId)
         } finally {
+            flushDecodedImageCache()
             syncMutex.unlock()
         }
+    }
+
+    private suspend fun flushDecodedImageCache() {
+        if (!decodedImageCacheDirty) return
+        decodedImageCacheDirty = false
+        imageCacheManager.clearDecodedImageCache()
     }
 
     suspend fun syncPlatformsOnly(): Result<Int> = withContext(Dispatchers.IO) {
@@ -512,7 +521,8 @@ class RomMLibrarySyncService @Inject constructor(
 
         val contentChanged = existing != null && existing.title != rom.name
         if (contentChanged) {
-            imageCacheManager.deleteGameImages(rom.id)
+            imageCacheManager.deleteGameImages(rom.id, clearDecoded = false)
+            decodedImageCacheDirty = true
         }
 
         val backgroundUrl = rom.backgroundUrls.firstOrNull()

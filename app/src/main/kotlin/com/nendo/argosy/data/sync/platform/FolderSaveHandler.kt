@@ -161,12 +161,19 @@ open class FolderSaveHandler(
 
 
     override fun resolveBasePath(config: SavePathConfig, basePathOverride: String?): String? {
-        if (basePathOverride != null) return basePathOverride
+        if (basePathOverride != null) return normalizeBasePath(basePathOverride)
 
         val resolvedPaths = SavePathRegistry.resolvePath(config, platformSlug, null)
         return resolvedPaths.firstOrNull { fal.exists(it) && fal.isDirectory(it) }
             ?: resolvedPaths.firstOrNull()
     }
+
+    /**
+     * Lets a platform accept a base the user pointed at a parent or a child of the root it
+     * actually scans from, so picking the emulator's folder, its `sdmc`, or somewhere deeper
+     * all land on the same place. Default is to take the path as given.
+     */
+    protected open fun normalizeBasePath(path: String): String = path
 
     /**
      * Per-platform folder-name match predicate. Default is case-insensitive equality. PSP

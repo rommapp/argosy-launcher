@@ -218,6 +218,33 @@ private class N3dsFolderHandler(
     companion object {
         private const val TAG = "N3dsFolderHandler"
         private const val DEFAULT_CATEGORY = "00040000"
+        private const val SDMC_DIR = "sdmc"
+        private const val SD_ROOT = "Nintendo 3DS"
+    }
+
+    /**
+     * Saves live under `<userDir>/sdmc/Nintendo 3DS/<id0>/<id1>/title/...`, and which part of
+     * that a user considers "the save path" varies by emulator. Any level is accepted: a path
+     * containing the SD root is trimmed back to it, and one above it is walked down.
+     */
+    override fun normalizeBasePath(path: String): String {
+        val trimmed = path.trimEnd('/')
+        val segments = trimmed.split('/')
+        val rootIndex = segments.indexOfLast { it.equals(SD_ROOT, ignoreCase = true) }
+        if (rootIndex >= 0) {
+            return segments.take(rootIndex + 1).joinToString("/")
+        }
+
+        val candidates = listOf(
+            "$trimmed/$SD_ROOT",
+            "$trimmed/$SDMC_DIR/$SD_ROOT"
+        )
+        val resolved = candidates.firstOrNull { fal.exists(it) && fal.isDirectory(it) }
+        if (resolved != null) {
+            Logger.debug(TAG, "normalizeBasePath: resolved SD root below the chosen path | chosen=$path, base=$resolved")
+            return resolved
+        }
+        return trimmed
     }
 
     override fun findSaveFolderBySaveId(basePath: String, saveId: String): String? {
@@ -287,20 +314,6 @@ private class N3dsFolderHandler(
         val savePath = "${id1Folder.path}/title/$category/$shortTitleId/data"
         Logger.debug(TAG, "Constructed save path | path=$savePath")
         return savePath
-    }
-
-    override fun resolveBasePath(config: SavePathConfig, basePathOverride: String?): String? {
-        if (basePathOverride != null) {
-            return if (basePathOverride.endsWith("/sdmc/Nintendo 3DS") || basePathOverride.endsWith("/sdmc/Nintendo 3DS/")) {
-                basePathOverride.trimEnd('/')
-            } else {
-                "$basePathOverride/sdmc/Nintendo 3DS"
-            }
-        }
-
-        val resolvedPaths = SavePathRegistry.resolvePath(config, "3ds", null)
-        return resolvedPaths.firstOrNull { fal.exists(it) && fal.isDirectory(it) }
-            ?: resolvedPaths.firstOrNull()
     }
 
     private fun newestFileTime(folderPath: String): Long {

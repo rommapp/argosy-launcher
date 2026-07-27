@@ -84,6 +84,15 @@ because a wrong region prefix still leaves the disc identifiable.
 Nothing fabricates an entry name. If a game has no folder on the card yet, a
 restore lands in the card and the archive's own entry names create it.
 
+Because the save unit is the card, an upload is rooted at the card's own name,
+which identifies nothing — the game's folder is one level below it. Archives
+written before the save unit became the card are rooted at that folder
+directly, and both shapes are on servers. `Ps2FolderHandler.matchArchive`
+therefore looks at folder names at any depth, and `unpackArchive` strips the
+archive's root only when that root is the card. Stripping a game-folder-rooted
+archive would empty its contents loose into the card, which no emulator reads;
+a card left in that state by an older build is repaired on the next restore.
+
 ### PSP (`PspFolderHandler`)
 
 `save_id` is the 9-character disc id (`ULUS10064`), `FOLDER_PREFIX`. Profile

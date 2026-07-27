@@ -609,7 +609,7 @@ class SaveCacheManager @Inject constructor(
         val handler = saveHandlerRegistry.getFolderHandler(entry.platformSlug) ?: return true
 
         val roots = saveArchiver.peekRootEntryNames(cacheFile)
-        val tier = roots.firstNotNullOfOrNull { handler.matchArchiveRoot(it, saveId) }
+        val tier = handler.matchArchive(cacheFile, saveId)
         if (tier == null) {
             Log.e(
                 TAG,

@@ -150,7 +150,7 @@ class PlatformSaveHandlerRegistry @Inject constructor(
 private class PspFolderHandler(
     context: Context,
     private val fal: FileAccessLayer,
-    private val saveArchiver: SaveArchiver
+    saveArchiver: SaveArchiver
 ) : FolderSaveHandler(context, fal, saveArchiver, platformSlug = "psp") {
 
     private val appContext = context
@@ -385,6 +385,65 @@ private class Ps2FolderHandler(
         private const val SUPERBLOCK_FILE = "_pcsx2_superblock"
         private val REGION_PREFIXED = Regex("^B[AEI][A-Z]{4}")
         private val BARE_SERIAL = Regex("^([A-Z]{4})(\\d+.*)$")
+    }
+
+    /**
+     * The save unit is the card, so an upload is rooted at the card's own name and that name
+     * identifies nothing. The game's folder sits one level below it, which is what has to be
+     * matched. Archives written before the save unit became the card are rooted at that
+     * folder directly, and both shapes are on servers now.
+     */
+    override fun matchArchive(tempFile: File, saveId: String): ArchiveRootMatch? {
+        super.matchArchive(tempFile, saveId)?.let { return it }
+        val holdsGameFolder = saveArchiver.peekFolderNames(tempFile).any { folderMatches(it, saveId) }
+        return if (holdsGameFolder) ArchiveRootMatch.CONTAINS else null
+    }
+
+    /**
+     * The target is the card. Stripping the archive's root is only correct when that root is
+     * the card itself; doing it to a game-folder-rooted archive would empty the folder's
+     * contents loose into the card, which is not a save layout any emulator reads.
+     */
+    override fun unpackArchive(tempFile: File, targetFolder: File, saveId: String?): Boolean {
+        val roots = saveArchiver.peekRootEntryNames(tempFile)
+        val rootIsGameFolder = saveId != null && roots.isNotEmpty() &&
+            roots.all { folderMatches(it, saveId) }
+
+        if (rootIsGameFolder) {
+            Logger.debug(TAG, "unpackArchive: archive is rooted at the game folder, keeping it | roots=$roots")
+            repairLooseCardEntries(targetFolder, roots)
+            return saveArchiver.unzipToFolder(tempFile, targetFolder)
+        }
+
+        Logger.debug(TAG, "unpackArchive: archive is rooted at the card, unwrapping it | roots=$roots")
+        return saveArchiver.unzipSingleFolder(tempFile, targetFolder)
+    }
+
+    /**
+     * A card that a previous build restored by stripping the game folder has that folder's
+     * files sitting loose beside the real entries. They are put back under the folder they
+     * came from before the restore overwrites them, so a card repairs itself by being synced
+     * rather than by hand. Anything that cannot be attributed to exactly one folder is left
+     * where it is.
+     */
+    private fun repairLooseCardEntries(card: File, gameFolders: Set<String>) {
+        val owner = gameFolders.singleOrNull() ?: return
+        if (!isFolderCard(card.path)) return
+
+        val loose = fal.listFiles(card.path).orEmpty()
+            .filter { it.isFile && it.name != SUPERBLOCK_FILE }
+        if (loose.isEmpty()) return
+
+        val ownerDir = File(card, owner)
+        if (!ownerDir.exists() && !ownerDir.mkdirs()) return
+
+        loose.forEach { entry ->
+            val moved = runCatching { File(entry.path).renameTo(File(ownerDir, entry.name)) }.getOrDefault(false)
+            Logger.warn(
+                TAG,
+                "repairLooseCardEntries: relocating a stray card entry | file=${entry.name}, into=$owner, moved=$moved"
+            )
+        }
     }
 
     override fun ensureContainerPrepared(targetFolder: File) {

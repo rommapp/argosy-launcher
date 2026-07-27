@@ -21,7 +21,7 @@ import java.io.File
 open class FolderSaveHandler(
     private val context: Context,
     private val fal: FileAccessLayer,
-    private val saveArchiver: SaveArchiver,
+    protected val saveArchiver: SaveArchiver,
     val platformSlug: String,
     private val tag: String = "FolderSaveHandler[$platformSlug]"
 ) : PlatformSaveHandler {
@@ -61,7 +61,7 @@ open class FolderSaveHandler(
         val saveId = context.saveId
         if (saveId != null) {
             val roots = saveArchiver.peekRootEntryNames(tempFile)
-            val tier = roots.firstNotNullOfOrNull { matchArchiveRoot(it, saveId) }
+            val tier = matchArchive(tempFile, saveId)
             if (tier == null) {
                 Logger.error(
                     tag,
@@ -87,7 +87,7 @@ open class FolderSaveHandler(
 
         val archiveRoot = saveArchiver.peekRootFolderName(tempFile)
         val success = try {
-            saveArchiver.unzipSingleFolder(tempFile, targetFolder)
+            unpackArchive(tempFile, targetFolder, saveId)
         } catch (e: com.nendo.argosy.data.sync.CorruptZipException) {
             Logger.error(tag, "extractDownload: Server zip is corrupt | target=$targetPath, archiveRoot=$archiveRoot, tempFile=${tempFile.name}, ${e.message}")
             return@withContext ExtractResult(false, null, "Corrupt server zip: ${e.message}", corruptZip = true)
@@ -100,6 +100,21 @@ open class FolderSaveHandler(
         Logger.debug(tag, "extractDownload: Complete | target=$targetPath")
         ExtractResult(true, targetPath)
     }
+
+    /**
+     * Whether [tempFile] holds the save [saveId] names, and on what strength. Platforms whose
+     * save unit is a container rather than the game's own folder look deeper than the root
+     * entry, since the root there names the container and identifies nothing.
+     */
+    open fun matchArchive(tempFile: File, saveId: String): ArchiveRootMatch? =
+        saveArchiver.peekRootEntryNames(tempFile).firstNotNullOfOrNull { matchArchiveRoot(it, saveId) }
+
+    /**
+     * Places the archive into the resolved target. The default strips a single common root,
+     * because the archive is the save folder itself and the target is that same folder.
+     */
+    protected open fun unpackArchive(tempFile: File, targetFolder: File, saveId: String?): Boolean =
+        saveArchiver.unzipSingleFolder(tempFile, targetFolder)
 
     /**
      * Default folder lookup uses case-insensitive equality. Platforms with prefix or normalized-

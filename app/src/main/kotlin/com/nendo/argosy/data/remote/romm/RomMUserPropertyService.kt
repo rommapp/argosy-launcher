@@ -1,6 +1,7 @@
 package com.nendo.argosy.data.remote.romm
 
 import com.nendo.argosy.data.cache.ImageCacheManager
+import kotlinx.coroutines.flow.first
 import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.dao.PendingSyncQueueDao
 import com.nendo.argosy.data.local.entity.SyncType
@@ -20,7 +21,8 @@ class RomMUserPropertyService @Inject constructor(
     private val gameDao: GameDao,
     private val pendingSyncQueueDao: PendingSyncQueueDao,
     private val imageCacheManager: ImageCacheManager,
-    private val syncCoordinator: dagger.Lazy<SyncCoordinator>
+    private val syncCoordinator: dagger.Lazy<SyncCoordinator>,
+    private val userPreferencesRepository: com.nendo.argosy.data.preferences.UserPreferencesRepository
 ) {
     private val api: RomMApi? get() = connectionManager.getApi()
 
@@ -146,24 +148,26 @@ class RomMUserPropertyService @Inject constructor(
                 imageCacheManager.queueCoverCache(coverUrl, rom.id, rom.name)
             }
 
-            val updatedGame = game.copy(
-                title = rom.name,
-                sortTitle = RomMUtils.createSortTitle(rom.name),
+            val boxArtEnabled = userPreferencesRepository.userPreferences.first().boxArtCacheEnabled
+            val boxBackUrl = if (boxArtEnabled) {
+                rom.ssMetadata?.box2dBackPath?.let { apiClient.buildResourceUrl(it) }
+            } else null
+            val boxSpineUrl = if (boxArtEnabled) {
+                rom.ssMetadata?.box2dSidePath?.let { apiClient.buildResourceUrl(it) }
+            } else null
+            if (boxBackUrl != null) {
+                imageCacheManager.queueBoxFaceCache(boxBackUrl, rom.id, rom.name, ImageCacheManager.BoxFace.BACK)
+            }
+            if (boxSpineUrl != null) {
+                imageCacheManager.queueBoxFaceCache(boxSpineUrl, rom.id, rom.name, ImageCacheManager.BoxFace.SPINE)
+            }
+
+            val updatedGame = game.withRomMetadata(rom).copy(
                 coverPath = coverUrl,
                 backgroundPath = backgroundUrl,
                 screenshotPaths = screenshotUrls.joinToString(","),
-                description = rom.summary,
-                releaseYear = rom.firstReleaseDateMillis?.let {
-                    java.time.Instant.ofEpochMilli(it).atZone(java.time.ZoneOffset.UTC).year
-                },
-                genre = rom.genres?.firstOrNull(),
-                developer = rom.companies?.firstOrNull(),
-                rating = rom.metadatum?.averageRating?.takeIf { rom.igdbId != null && it < 98f },
-                regions = rom.regions?.joinToString(","),
-                languages = rom.languages?.joinToString(","),
-                gameModes = rom.metadatum?.gameModes?.joinToString(","),
-                franchises = rom.metadatum?.franchises?.joinToString(","),
-                achievementCount = rom.raMetadata?.achievements?.size ?: game.achievementCount
+                boxBackPath = boxBackUrl ?: game.boxBackPath,
+                boxSpinePath = boxSpineUrl ?: game.boxSpinePath
             )
 
             gameDao.update(updatedGame)

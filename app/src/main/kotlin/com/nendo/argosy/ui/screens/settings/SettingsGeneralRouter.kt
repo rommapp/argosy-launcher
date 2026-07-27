@@ -189,8 +189,10 @@ internal fun routeShowSavePathModal(vm: SettingsViewModel, config: PlatformEmula
     val installedEmulator = config.availableEmulators
         .find { it.def.displayName == config.selectedEmulator || it.def.displayName == config.effectiveEmulatorName }
         ?: return
-    val emulatorId = SavePathRegistry.resolveConfigIdForPackage(installedEmulator.def.packageName)
-        ?: installedEmulator.def.id
+    val emulatorId = SavePathRegistry.canonicalConfigId(
+        installedEmulator.def.id,
+        installedEmulator.def.packageName
+    )
     vm.emulatorDelegate.showSavePathModal(
         scope = vm.viewModelScope,
         emulatorId = emulatorId,

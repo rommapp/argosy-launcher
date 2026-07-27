@@ -178,6 +178,7 @@ fun buildMoreOptions(ctx: MoreOptionsContext): List<MoreOptionAction> = buildLis
     if (ctx.canSearchCovers) add(MoreOptionAction.ChangeCover)
     if (ctx.coverSetManually) add(MoreOptionAction.ResetCover)
     if (ctx.isDownloaded || ctx.isAndroidApp) add(MoreOptionAction.Delete)
+    if (ctx.isSteamGame) add(MoreOptionAction.RemoveFromLibrary)
     add(MoreOptionAction.ToggleHide)
 }
 
@@ -201,6 +202,7 @@ sealed class MoreOptionAction {
     data object ChangeCover : MoreOptionAction()
     data object ResetCover : MoreOptionAction()
     data object Delete : MoreOptionAction()
+    data object RemoveFromLibrary : MoreOptionAction()
     data object ToggleHide : MoreOptionAction()
 }
 

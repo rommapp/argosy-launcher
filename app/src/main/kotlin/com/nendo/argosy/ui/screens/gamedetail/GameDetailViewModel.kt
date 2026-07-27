@@ -1106,10 +1106,13 @@ class GameDetailViewModel @Inject constructor(
                         viewModelScope.launch { loadGame(currentGameId) }
                     }
                     else -> {
-                        val isSteam = gameUi?.isSteamGame == true
-                        downloadDelegate.deleteLocalFile(viewModelScope, currentGameId, isSteam) { loadGame(currentGameId) }
+                        downloadDelegate.deleteLocalFile(viewModelScope, currentGameId) { loadGame(currentGameId) }
                     }
                 }
+            }
+            MoreOptionAction.RemoveFromLibrary -> {
+                toggleMoreOptions()
+                downloadDelegate.removeFromLibrary(viewModelScope, currentGameId)
             }
             MoreOptionAction.ToggleHide -> { toggleHideGame(); onBack() }
         }

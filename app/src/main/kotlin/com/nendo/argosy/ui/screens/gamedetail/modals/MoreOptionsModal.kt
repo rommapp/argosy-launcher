@@ -11,6 +11,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Album
 import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.FolderSpecial
+import androidx.compose.material.icons.filled.RemoveCircleOutline
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Restore
 import androidx.compose.material.icons.filled.Refresh
@@ -82,6 +83,12 @@ private fun MoreOptionAction.toMenuEntry(game: GameDetailUi): MoreMenuEntry.Opti
         isDangerous = !game.isExternallyManaged,
         action = this
     )
+    MoreOptionAction.RemoveFromLibrary -> MoreMenuEntry.Option(
+        icon = Icons.Default.RemoveCircleOutline,
+        label = "Remove from Library",
+        isDangerous = true,
+        action = this
+    )
     MoreOptionAction.ToggleHide -> MoreMenuEntry.Option(
         icon = if (game.isHidden) Icons.Default.Visibility else Icons.Default.VisibilityOff,
         label = if (game.isHidden) "Show" else "Hide",
@@ -123,7 +130,9 @@ fun MoreOptionsModal(
     val entries = buildList<MoreMenuEntry> {
         var dividerAdded = false
         actions.forEach { action ->
-            val isTailAction = action is MoreOptionAction.Delete || action is MoreOptionAction.ToggleHide
+            val isTailAction = action is MoreOptionAction.Delete ||
+                action is MoreOptionAction.RemoveFromLibrary ||
+                action is MoreOptionAction.ToggleHide
             if (isTailAction && !dividerAdded) {
                 add(MoreMenuEntry.Divider)
                 dividerAdded = true

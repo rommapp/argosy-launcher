@@ -143,10 +143,11 @@ open class FolderSaveHandler(
         CONTAINS,
 
         /**
-         * A shape written before the platform reported its layout. Recognisable and
-         * placeable, so it is repaired on load rather than discarded.
+         * A root that names no title, because the platform's save unit is a fixed directory
+         * below the title rather than the title folder itself. It cannot confirm or deny the
+         * save, so it is placed on the strength of the resolved destination alone.
          */
-        LEGACY
+        UNIDENTIFIED
     }
 
     /**
@@ -162,17 +163,17 @@ open class FolderSaveHandler(
             root == id -> ArchiveRootMatch.EXACT
             folderMatches(rootName, saveId) || root.startsWith(id) -> ArchiveRootMatch.PREFIX
             root.contains(id) -> ArchiveRootMatch.CONTAINS
-            rootName.trimEnd('/') in legacyArchiveRoots -> ArchiveRootMatch.LEGACY
+            rootName.trimEnd('/') in unidentifiedArchiveRoots -> ArchiveRootMatch.UNIDENTIFIED
             else -> null
         }
     }
 
     /**
-     * Archive roots this platform wrote before it could describe its own layout. They carry
-     * no identity, so they are only safe because the destination is resolved separately -
-     * accepting one means trusting that path, not the archive.
+     * Fixed directory names this platform's saves are rooted at instead of a title. Accepting
+     * one means trusting the resolved destination rather than the archive, so it stays an
+     * explicit per-platform opt-in.
      */
-    protected open val legacyArchiveRoots: Set<String> = emptySet()
+    protected open val unidentifiedArchiveRoots: Set<String> = emptySet()
 
     private fun normalizeSaveId(value: String): String =
         value.replace("-", "").replace("_", "").uppercase()

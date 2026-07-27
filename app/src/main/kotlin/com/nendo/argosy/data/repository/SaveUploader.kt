@@ -437,7 +437,8 @@ class SaveUploader @Inject constructor(
 
         if (!cacheFile.exists() || cacheFile.length() <= SaveSyncApiClient.MIN_VALID_SAVE_SIZE_BYTES) {
             Logger.warn(TAG, "[SaveSync] UPLOAD_CACHE gameId=$gameId | Cache file missing or empty | exists=${cacheFile.exists()}, size=${cacheFile.length()}")
-            return@withContext SaveSyncResult.Error("Cache file not valid")
+            uploadedCacheId?.let { saveCacheDao.clearRemoteSyncFlag(it) }
+            return@withContext SaveSyncResult.NotConfigured
         }
 
         val game = gameDao.getById(gameId)

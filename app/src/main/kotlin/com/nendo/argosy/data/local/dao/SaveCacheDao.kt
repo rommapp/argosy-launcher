@@ -141,6 +141,14 @@ interface SaveCacheDao {
     @Query("SELECT * FROM save_cache WHERE gameId = :gameId AND needsRemoteSync = 1 ORDER BY cachedAt DESC LIMIT 1")
     suspend fun getLatestNeedingSync(gameId: Long): SaveCacheEntity?
 
+    /**
+     * Stops one entry asking to be uploaded, keeping the row and its file. For a cache whose
+     * archive can never be accepted, so that it stops being retried on every sync without the
+     * user losing the restore point it still represents.
+     */
+    @Query("UPDATE save_cache SET needsRemoteSync = 0 WHERE id = :cacheId")
+    suspend fun clearRemoteSyncFlag(cacheId: Long)
+
     @Query("""
         UPDATE save_cache
         SET needsRemoteSync = 0

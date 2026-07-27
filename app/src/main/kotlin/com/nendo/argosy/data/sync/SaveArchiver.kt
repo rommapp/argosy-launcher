@@ -78,12 +78,22 @@ class SaveArchiver @Inject constructor(
 
         return try {
             targetZip.parentFile?.mkdirs()
+            var filesWritten = 0
             ZipArchiveOutputStream(BufferedOutputStream(FileOutputStream(targetZip))).use { zos ->
                 zos.setUseZip64(Zip64Mode.AsNeeded)
-                zipFolderRecursive(sourceFolder.absolutePath, sourceFolder.name, zos)
+                filesWritten = zipFolderRecursive(sourceFolder.absolutePath, sourceFolder.name, zos)
+            }
+            if (filesWritten == 0) {
+                Logger.warn(
+                    TAG,
+                    "[SaveSync] ARCHIVE | Nothing to archive | source=$path, listed=$fileCount files. " +
+                        "Refusing to produce an empty archive."
+                )
+                targetZip.delete()
+                return false
             }
             val ratio = if (totalSize > 0) (targetZip.length() * 100 / totalSize) else 100
-            Logger.debug(TAG, "[SaveSync] ARCHIVE | Zip complete | output=${targetZip.name}, compressedSize=${targetZip.length()}bytes, ratio=$ratio%")
+            Logger.debug(TAG, "[SaveSync] ARCHIVE | Zip complete | output=${targetZip.name}, files=$filesWritten, compressedSize=${targetZip.length()}bytes, ratio=$ratio%")
             true
         } catch (e: Exception) {
             Logger.error(TAG, "[SaveSync] ARCHIVE | Zip failed | source=${sourceFolder.absolutePath}", e)
@@ -109,16 +119,26 @@ class SaveArchiver @Inject constructor(
 
         return try {
             targetZip.parentFile?.mkdirs()
+            var filesWritten = 0
             ZipArchiveOutputStream(BufferedOutputStream(FileOutputStream(targetZip))).use { zos ->
                 zos.setUseZip64(Zip64Mode.AsNeeded)
                 for (folder in validFolders) {
                     zos.putArchiveEntry(ZipArchiveEntry("${folder.name}/"))
                     zos.closeArchiveEntry()
-                    zipFolderRecursive(folder.absolutePath, folder.name, zos)
+                    filesWritten += zipFolderRecursive(folder.absolutePath, folder.name, zos)
                 }
             }
+            if (filesWritten == 0) {
+                Logger.warn(
+                    TAG,
+                    "[SaveSync] ARCHIVE | Nothing to archive | folders=${validFolders.map { it.name }}. " +
+                        "Refusing to produce an empty archive."
+                )
+                targetZip.delete()
+                return false
+            }
             val ratio = if (totalSize > 0) (targetZip.length() * 100 / totalSize) else 100
-            Logger.debug(TAG, "[SaveSync] ARCHIVE | Multi-folder zip complete | folders=${validFolders.size}, output=${targetZip.name}, compressedSize=${targetZip.length()}bytes, ratio=$ratio%")
+            Logger.debug(TAG, "[SaveSync] ARCHIVE | Multi-folder zip complete | folders=${validFolders.size}, files=$filesWritten, output=${targetZip.name}, compressedSize=${targetZip.length()}bytes, ratio=$ratio%")
             true
         } catch (e: Exception) {
             Logger.error(TAG, "[SaveSync] ARCHIVE | Multi-folder zip failed", e)
@@ -168,8 +188,13 @@ class SaveArchiver @Inject constructor(
         }
     }
 
-    private fun zipFolderRecursive(folderPath: String, parentPath: String, zos: ZipArchiveOutputStream) {
+    /**
+     * Returns how many file entries were written, so a caller can refuse an archive that
+     * ended up holding nothing.
+     */
+    private fun zipFolderRecursive(folderPath: String, parentPath: String, zos: ZipArchiveOutputStream): Int {
         val entries = fal.listFilesUnion(folderPath)
+        var filesWritten = 0
 
         for (entry in entries) {
             val entryPath = "$parentPath/${entry.name}"
@@ -177,7 +202,7 @@ class SaveArchiver @Inject constructor(
             if (entry.isDirectory) {
                 zos.putArchiveEntry(ZipArchiveEntry("$entryPath/"))
                 zos.closeArchiveEntry()
-                zipFolderRecursive(entry.path, entryPath, zos)
+                filesWritten += zipFolderRecursive(entry.path, entryPath, zos)
             } else {
                 val input = fal.getInputStream(entry.path)
                 if (input == null) {
@@ -193,8 +218,10 @@ class SaveArchiver @Inject constructor(
                     }
                 }
                 zos.closeArchiveEntry()
+                filesWritten++
             }
         }
+        return filesWritten
     }
 
     private fun countFilesUnion(folderPath: String): Pair<Int, Long> {

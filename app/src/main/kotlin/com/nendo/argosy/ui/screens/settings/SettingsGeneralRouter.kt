@@ -612,8 +612,8 @@ internal fun routeAdjustScreenDimmerLevel(vm: SettingsViewModel, delta: Int) {
 internal fun routeSetPlatformSavePath(vm: SettingsViewModel, platformId: Long, basePath: String) {
     val storageConfig = vm._uiState.value.storage.platformConfigs.find { it.platformId == platformId }
     val emulatorId = storageConfig?.emulatorId ?: return
-    val evaluatedPath = routeComputeEvaluatedSavePath(vm, platformId, basePath)
-    vm.emulatorDelegate.setEmulatorSavePath(vm.viewModelScope, emulatorId, basePath) {
+    vm.emulatorDelegate.setEmulatorSavePath(vm.viewModelScope, emulatorId, basePath) { resolvedPath ->
+        val evaluatedPath = routeComputeEvaluatedSavePath(vm, platformId, resolvedPath)
         vm.storageDelegate.updatePlatformSavePath(platformId, evaluatedPath, true)
     }
 }

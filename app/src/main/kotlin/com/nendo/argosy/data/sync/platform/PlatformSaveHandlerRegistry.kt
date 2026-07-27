@@ -1,6 +1,7 @@
 package com.nendo.argosy.data.sync.platform
 
 import android.content.Context
+import com.nendo.argosy.data.emulator.EmulatorRegistry
 import com.nendo.argosy.data.emulator.SavePathConfig
 import com.nendo.argosy.data.emulator.SavePathRegistry
 import com.nendo.argosy.data.platform.PlatformDefinitions
@@ -83,6 +84,35 @@ class PlatformSaveHandlerRegistry @Inject constructor(
     fun getFolderHandler(platformSlug: String): FolderSaveHandler? =
         folderHandlers[canonicalSlug(platformSlug)]
 
+    /**
+     * The folder handler an emulator's saves go through, or null when it isn't a folder-based
+     * platform. Multi-platform emulators (RetroArch, builtin) resolve to nothing on purpose:
+     * they have no single folder layout to normalize a path against.
+     */
+    fun getFolderHandlerForEmulator(emulatorId: String): FolderSaveHandler? {
+        val platforms = EmulatorRegistry.getById(emulatorId)?.supportedPlatforms
+            ?: return null
+        val handlers = platforms.mapNotNull { folderHandlers[canonicalSlug(it)] }.distinct()
+        return handlers.singleOrNull()
+    }
+
+    /**
+     * Resolve a path the user picked to the root their platform actually scans from, so
+     * choosing a parent or a child of it lands in the same place. Returns the path unchanged
+     * for platforms that do not define a layout.
+     */
+    fun normalizeUserChosenSavePath(emulatorId: String, path: String): String {
+        val handler = getFolderHandlerForEmulator(emulatorId) ?: return path
+        val config = SavePathRegistry.getConfig(emulatorId) ?: return path
+        val resolved = handler.resolveBasePath(config, path) ?: return path
+        if (resolved != path) {
+            Logger.debug(TAG, "normalizeUserChosenSavePath: chosen=$path, resolved=$resolved, emulator=$emulatorId")
+        }
+        return resolved
+    }
+
+    fun pathIsPresent(path: String): Boolean = fal.exists(path) && fal.isDirectory(path)
+
     fun listPs2FolderMemcards(basePath: String): List<MemcardInfo> {
         val handler = folderHandlers["ps2"] as? Ps2FolderHandler ?: return emptyList()
         return handler.listFolderMemcards(basePath)
@@ -103,6 +133,7 @@ class PlatformSaveHandlerRegistry @Inject constructor(
     }
 
     companion object {
+        private const val TAG = "PlatformSaveHandlerRegistry"
         private val RETROARCH_EMULATOR_IDS = setOf("retroarch", "retroarch_64", "retroarch_32")
     }
 }

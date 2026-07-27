@@ -36,6 +36,8 @@ import com.nendo.argosy.ui.screens.settings.SavePathModalInfo
 import com.nendo.argosy.ui.screens.settings.VariantOption
 import com.nendo.argosy.ui.screens.settings.VariantPickerInfo
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -282,15 +284,37 @@ class EmulatorSettingsDelegate @Inject constructor(
         // No explicit refresh needed - the ViewModel calls loadSettings() after this
     }
 
+    /**
+     * Persists the root the platform actually scans from rather than the folder the user
+     * happened to select, so a pick anywhere along the layout (an emulator directory, its
+     * `sdmc`, a title folder below it) settles on one stored path. [onLoadSettings] receives
+     * that resolved path; callers displaying it elsewhere must show this, not their input.
+     */
     fun setEmulatorSavePath(
         scope: CoroutineScope,
         emulatorId: String,
         path: String,
-        onLoadSettings: suspend () -> Unit
+        onLoadSettings: suspend (resolvedPath: String) -> Unit
     ) {
         scope.launch {
-            emulatorSaveConfigRepository.setSavePath(emulatorId, path)
-            onLoadSettings()
+            val (resolved, present) = withContext(Dispatchers.IO) {
+                val target = saveHandlerRegistry.normalizeUserChosenSavePath(emulatorId, path)
+                target to saveHandlerRegistry.pathIsPresent(target)
+            }
+            emulatorSaveConfigRepository.setSavePath(emulatorId, resolved)
+            _state.update { state ->
+                val info = state.savePathModalInfo ?: return@update state
+                if (info.emulatorId != emulatorId) return@update state
+                state.copy(
+                    savePathModalInfo = info.copy(
+                        savePath = resolved,
+                        isUserOverride = true,
+                        chosenPath = path.takeIf { it != resolved },
+                        pathPresent = present
+                    )
+                )
+            }
+            onLoadSettings(resolved)
         }
     }
 
@@ -343,6 +367,9 @@ class EmulatorSettingsDelegate @Inject constructor(
         scope.launch {
             val config = emulatorSaveConfigRepository.getByEmulator(emulatorId)
             val besideRomSupported = !RetroArchPathResolver.isRetroArch(emulatorId)
+            val pathPresent = savePath?.let {
+                withContext(Dispatchers.IO) { saveHandlerRegistry.pathIsPresent(it) }
+            } ?: true
             _state.update {
                 it.copy(
                     showSavePathModal = true,
@@ -353,7 +380,8 @@ class EmulatorSettingsDelegate @Inject constructor(
                         savePath = savePath,
                         isUserOverride = isUserOverride,
                         savesBesideRom = config?.savesBesideRom == true,
-                        besideRomSupported = besideRomSupported
+                        besideRomSupported = besideRomSupported,
+                        pathPresent = pathPresent
                     ),
                     savePathModalFocusIndex = 0,
                     savePathModalButtonIndex = 0

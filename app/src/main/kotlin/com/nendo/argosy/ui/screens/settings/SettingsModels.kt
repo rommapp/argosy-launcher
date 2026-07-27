@@ -630,6 +630,11 @@ data class CoreOptionsState(
         coresForCurrentPlatform.getOrNull(selectedCoreIndex)
 }
 
+/**
+ * [chosenPath] holds what the user picked when it differed from the root their platform
+ * actually scans from, so the modal can say the path was moved rather than silently
+ * showing something else than what was selected.
+ */
 data class SavePathModalInfo(
     val emulatorId: String,
     val emulatorName: String,
@@ -637,7 +642,9 @@ data class SavePathModalInfo(
     val savePath: String?,
     val isUserOverride: Boolean,
     val savesBesideRom: Boolean = false,
-    val besideRomSupported: Boolean = false
+    val besideRomSupported: Boolean = false,
+    val chosenPath: String? = null,
+    val pathPresent: Boolean = true
 )
 
 data class MemcardPickerInfo(

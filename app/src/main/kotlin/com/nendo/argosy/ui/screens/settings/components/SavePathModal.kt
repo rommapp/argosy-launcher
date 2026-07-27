@@ -54,7 +54,15 @@ fun SavePathModal(
             isFocused = focusIndex == 0,
             buttonFocusIndex = buttonFocusIndex,
             onClick = onChangeSavePath,
-            onReset = if (info.isUserOverride) onResetSavePath else null
+            onReset = if (info.isUserOverride) onResetSavePath else null,
+            note = when {
+                info.savePath != null && !info.pathPresent ->
+                    "This folder isn't on the device right now. Saves won't be found until it is."
+                info.chosenPath != null ->
+                    "Moved to where ${info.platformName} saves actually live, below the folder you picked."
+                else -> null
+            },
+            noteIsWarning = info.savePath != null && !info.pathPresent
         )
 
         if (info.besideRomSupported) {
@@ -93,7 +101,9 @@ private fun SavePathOptionItem(
     buttonFocusIndex: Int,
     onClick: () -> Unit,
     onReset: (() -> Unit)? = null,
-    enabled: Boolean = true
+    enabled: Boolean = true,
+    note: String? = null,
+    noteIsWarning: Boolean = false
 ) {
     val focusContent = lerp(LocalArgosyTheme.current.focusAccent, Color.White, 0.45f)
     val contentColor = when {
@@ -189,6 +199,14 @@ private fun SavePathOptionItem(
                 text = "Not configured",
                 style = MaterialTheme.typography.bodySmall,
                 color = secondaryColor.copy(alpha = 0.6f),
+                modifier = Modifier.padding(top = Dimens.spacingXs)
+            )
+        }
+        if (note != null) {
+            Text(
+                text = note,
+                style = MaterialTheme.typography.labelSmall,
+                color = if (noteIsWarning) MaterialTheme.colorScheme.error else secondaryColor,
                 modifier = Modifier.padding(top = Dimens.spacingXs)
             )
         }

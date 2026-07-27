@@ -1,5 +1,7 @@
 package com.nendo.argosy.data.repository
 
+import com.nendo.argosy.data.local.entity.GameEntity
+import com.nendo.argosy.data.model.GameSource
 import com.nendo.argosy.data.storage.FileAccessLayer
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -38,6 +40,23 @@ class DownloadFileStatusRepository @Inject constructor(
         return withContext(Dispatchers.IO) {
             fileAccessLayer.exists(joinMarker(localPath, DOWNLOAD_IN_PROGRESS_MARKER))
         }
+    }
+
+    /**
+     * Whether a game's content is actually present, as opposed to merely known about.
+     *
+     * Steam is the trap: `source == STEAM` means the account owns it, not that it is
+     * installed. A credentials sync writes every owned title with no `localPath` and
+     * `steamLauncher = "native"`, which is the unspecified sentinel rather than a real
+     * launcher, so [GameEntity.isExternallyManaged] is the test - never a null check on
+     * `steamLauncher`. Anything asking "can the user play this right now" belongs here
+     * so the answer cannot drift between screens.
+     */
+    suspend fun isContentAvailable(game: GameEntity): Boolean = when {
+        game.source == GameSource.ANDROID_APP -> true
+        game.isExternallyManaged -> true
+        game.localPath != null -> pathExists(game.localPath)
+        else -> false
     }
 
     private fun joinMarker(localPath: String, marker: String): String =

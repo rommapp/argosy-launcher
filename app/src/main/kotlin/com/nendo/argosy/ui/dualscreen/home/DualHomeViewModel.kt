@@ -438,14 +438,7 @@ class DualHomeViewModel(
     }
 
     private suspend fun filterPlayable(games: List<GameEntity>): List<GameEntity> {
-        return games.filter { game ->
-            when {
-                game.source == GameSource.ANDROID_APP -> true
-                game.source == GameSource.STEAM -> true
-                game.localPath != null -> downloadFileStatusRepository.pathExists(game.localPath)
-                else -> false
-            }
-        }
+        return games.filter { downloadFileStatusRepository.isContentAvailable(it) }
     }
 
     private suspend fun isInstalledOnlyEnabled(): Boolean {

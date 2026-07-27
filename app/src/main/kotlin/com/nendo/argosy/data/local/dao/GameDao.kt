@@ -75,14 +75,6 @@ interface GameDao {
     @Query("SELECT * FROM games WHERE source = :source AND isHidden = 0 ORDER BY sortTitle ASC")
     fun observeBySource(source: GameSource): Flow<List<GameEntity>>
 
-    @Query("""
-        SELECT * FROM games
-        WHERE isHidden = 0
-        AND (source = 'LOCAL_ONLY' OR source = 'ROMM_SYNCED' OR source = 'STEAM' OR source = 'ANDROID_APP')
-        ORDER BY sortTitle ASC
-    """)
-    fun observePlayable(): Flow<List<GameEntity>>
-
     @Query("SELECT * FROM games WHERE isFavorite = 1 AND isHidden = 0 ORDER BY (source = 'ROMM_REMOTE') ASC, sortTitle ASC")
     fun observeFavorites(): Flow<List<GameEntity>>
 
@@ -100,6 +92,7 @@ interface GameDao {
         SELECT id, platformId, platformSlug, title, sortTitle, localPath, source, coverPath, isFavorite, isHidden, isMultiDisc, rommId, steamAppId, packageName, steamLauncher, playCount, playTimeMinutes, lastPlayed, genre, gameModes, rating, userRating, userDifficulty, releaseYear, addedAt FROM games
         WHERE isHidden = 0
         AND (source = 'LOCAL_ONLY' OR source = 'ROMM_SYNCED' OR source = 'STEAM' OR source = 'ANDROID_APP')
+        AND (source != 'STEAM' OR localPath IS NOT NULL OR (steamLauncher IS NOT NULL AND steamLauncher != 'native'))
         ORDER BY sortTitle ASC
     """)
     fun observePlayableList(): Flow<List<GameListItem>>
@@ -151,13 +144,6 @@ interface GameDao {
     @Query("SELECT id, platformId, platformSlug, title, sortTitle, localPath, source, coverPath, isFavorite, isHidden, isMultiDisc, rommId, steamAppId, packageName, steamLauncher, playCount, playTimeMinutes, lastPlayed, genre, gameModes, rating, userRating, userDifficulty, releaseYear, addedAt FROM games WHERE platformId = :platformId ORDER BY sortTitle ASC")
     fun observeByPlatformListIncludingHidden(platformId: Long): Flow<List<GameListItem>>
 
-    @Query("""
-        SELECT id, platformId, platformSlug, title, sortTitle, localPath, source, coverPath, isFavorite, isHidden, isMultiDisc, rommId, steamAppId, packageName, steamLauncher, playCount, playTimeMinutes, lastPlayed, genre, gameModes, rating, userRating, userDifficulty, releaseYear, addedAt FROM games
-        WHERE (source = 'LOCAL_ONLY' OR source = 'ROMM_SYNCED' OR source = 'STEAM' OR source = 'ANDROID_APP')
-        ORDER BY sortTitle ASC
-    """)
-    fun observePlayableListIncludingHidden(): Flow<List<GameListItem>>
-
     @Query("SELECT id, platformId, platformSlug, title, sortTitle, localPath, source, coverPath, isFavorite, isHidden, isMultiDisc, rommId, steamAppId, packageName, steamLauncher, playCount, playTimeMinutes, lastPlayed, genre, gameModes, rating, userRating, userDifficulty, releaseYear, addedAt FROM games WHERE isFavorite = 1 ORDER BY (source = 'ROMM_REMOTE') ASC, sortTitle ASC")
     fun observeFavoritesListIncludingHidden(): Flow<List<GameListItem>>
 
@@ -176,6 +162,7 @@ interface GameDao {
         WHERE platformId = :platformId
         AND isHidden = 0
         AND (source = 'LOCAL_ONLY' OR source = 'ROMM_SYNCED' OR source = 'STEAM' OR source = 'ANDROID_APP')
+        AND (source != 'STEAM' OR localPath IS NOT NULL OR (steamLauncher IS NOT NULL AND steamLauncher != 'native'))
         ORDER BY sortTitle ASC
     """)
     fun observePlayableByPlatformList(platformId: Long): Flow<List<GameListItem>>
@@ -209,18 +196,8 @@ interface GameDao {
         WHERE isHidden = 0
         AND lastPlayed IS NULL
         AND addedAt > :threshold
-        AND (localPath IS NOT NULL OR source = 'STEAM' OR source = 'ANDROID_APP')
-        ORDER BY addedAt DESC
-        LIMIT :limit
-    """)
-    fun observeNewlyAddedPlayable(threshold: Instant, limit: Int = 20): Flow<List<GameEntity>>
-
-    @Query("""
-        SELECT * FROM games
-        WHERE isHidden = 0
-        AND lastPlayed IS NULL
-        AND addedAt > :threshold
-        AND (localPath IS NOT NULL OR source = 'STEAM' OR source = 'ANDROID_APP')
+        AND (localPath IS NOT NULL OR source = 'ANDROID_APP'
+            OR (source = 'STEAM' AND steamLauncher IS NOT NULL AND steamLauncher != 'native'))
         ORDER BY addedAt DESC
         LIMIT :limit
     """)

@@ -635,14 +635,7 @@ class HomeLibraryDelegate @Inject constructor(
     }
 
     private suspend fun filterPlayable(candidates: List<GameEntity>): List<GameEntity> {
-        return candidates.filter { game ->
-            when {
-                game.source == GameSource.ANDROID_APP -> true
-                game.source == GameSource.STEAM && game.isExternallyManaged -> true
-                game.localPath != null -> downloadFileStatusRepository.pathExists(game.localPath)
-                else -> false
-            }
-        }
+        return candidates.filter { downloadFileStatusRepository.isContentAvailable(it) }
     }
 
     private fun sortRecentGamesWithNewPriority(games: List<GameEntity>): List<GameEntity> {

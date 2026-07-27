@@ -140,6 +140,7 @@ class ImageCacheManager @Inject constructor(
 
     companion object {
         private const val MAX_IN_MEMORY_IMAGE_BYTES = 8 * 1024 * 1024
+        private const val DEFAULT_IMAGE_BUFFER_BYTES = 64 * 1024
         private const val CACHE_SUBFOLDER = "argosy_images"
         private const val FALLBACK_PLATFORM = "_misc"
         private const val LOGOS_DIR = "_logos"
@@ -359,19 +360,22 @@ class ImageCacheManager @Inject constructor(
             connection.readTimeout = 30_000
 
             connection.getInputStream().use { inputStream ->
-                val head = ByteArray(MAX_IN_MEMORY_IMAGE_BYTES)
-                var headSize = 0
-                while (headSize < head.size) {
-                    val read = inputStream.read(head, headSize, head.size - headSize)
+                val buffered = java.io.ByteArrayOutputStream(DEFAULT_IMAGE_BUFFER_BYTES)
+                val chunk = ByteArray(DEFAULT_IMAGE_BUFFER_BYTES)
+                while (buffered.size() <= MAX_IN_MEMORY_IMAGE_BYTES) {
+                    val read = inputStream.read(chunk)
                     if (read == -1) break
-                    headSize += read
+                    buffered.write(chunk, 0, read)
                 }
 
-                if (headSize < head.size) {
+                if (buffered.size() <= MAX_IN_MEMORY_IMAGE_BYTES) {
+                    val bytes = buffered.toByteArray()
                     decodeSampled(maxWidth) { options ->
-                        BitmapFactory.decodeByteArray(head, 0, headSize, options)
+                        BitmapFactory.decodeByteArray(bytes, 0, bytes.size, options)
                     }
                 } else {
+                    val head = buffered.toByteArray()
+                    val headSize = head.size
                     val tempFile = File.createTempFile("img_", ".tmp", context.cacheDir)
                     try {
                         tempFile.outputStream().use { out ->
@@ -545,7 +549,9 @@ class ImageCacheManager @Inject constructor(
                 val relativePath = sourceFile.relativeTo(sourceDir).path
                 val destFile = File(destDir, relativePath)
                 destFile.parentFile?.mkdirs()
-                sourceFile.copyTo(destFile, overwrite = true)
+                if (!sourceFile.renameTo(destFile)) {
+                    sourceFile.copyTo(destFile, overwrite = true)
+                }
                 copied++
                 onProgress(copied, total)
             } catch (e: Exception) {

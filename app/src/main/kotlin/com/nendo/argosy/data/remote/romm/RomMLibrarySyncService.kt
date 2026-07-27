@@ -788,9 +788,11 @@ class RomMLibrarySyncService @Inject constructor(
             val group = existingGroups.firstOrNull() ?: SiblingGroup()
             existingGroups.drop(1).forEach { other ->
                 group.members.addAll(other.members)
+                group.expectedIds.addAll(other.expectedIds)
                 if (group.mainSiblingId == null) group.mainSiblingId = other.mainSiblingId
                 if (group.winner == null) group.winner = other.winner
             }
+            group.expectedIds.addAll(ids)
             ids.forEach { siblingGroups[it] = group }
             return group
         }
@@ -861,12 +863,19 @@ class RomMLibrarySyncService @Inject constructor(
                 }
 
                 if (rom.hasNonDiscSiblings) {
-                    groupFor(rom).let { group ->
-                        group.members.add(SiblingMember(rom.id, rom.regions, rom.files))
-                        rom.effectiveSiblings
-                            .firstOrNull { !it.isDiscVariant && it.isMainSibling == true }
-                            ?.let { group.mainSiblingId = it.id }
-                        group.winner = chooseWinner(group, rom, filters)
+                    val group = groupFor(rom)
+                    group.members.add(SiblingMember(rom.id, rom.regions, rom.files))
+                    rom.effectiveSiblings
+                        .firstOrNull { !it.isDiscVariant && it.isMainSibling == true }
+                        ?.let { group.mainSiblingId = it.id }
+                    group.winner = chooseWinner(group, rom, filters)
+
+                    if (group.isComplete) {
+                        val outcome = consolidateSiblingGroup(
+                            api, group, platform, absorptionPairs, ::trackSiblingMultiDisc
+                        )
+                        added += outcome.added
+                        updated += outcome.updated
                     }
                     continue
                 }
@@ -888,33 +897,65 @@ class RomMLibrarySyncService @Inject constructor(
         }
 
         for (group in siblingGroups.values.distinct()) {
-            val members = group.members
-            if (members.isEmpty()) continue
-            val winner = resolveGroupWinner(api, group) ?: continue
-            try {
-                val (isNew, _) = syncRom(winner, syncFiles = false)
-                if (isNew) added++ else updated++
-                trackSiblingMultiDisc(winner)
-                val gameId = gameDao.getByRommId(winner.id)?.id ?: continue
-                val validFileIds = mutableListOf<Long>()
-                for (member in members) {
-                    validFileIds += syncVersionFiles(gameId, member, platform.slug)
-                    if (member.id != winner.id) {
-                        gameDao.getByRommId(member.id)?.let { loser ->
-                            absorptionPairs.add(loser.id to gameId)
-                        }
-                    }
-                }
-                if (validFileIds.isNotEmpty()) {
-                    gameFileDao.deleteInvalidFiles(gameId, validFileIds)
-                }
-                Logger.info(TAG, "syncPlatformRoms: consolidated ${members.size} sibling versions under ${winner.name} (${winner.regions})")
-            } catch (e: Exception) {
-                Logger.warn(TAG, "syncPlatformRoms: failed to consolidate sibling group for ${winner.name}: ${e.message}")
-            }
+            val outcome = consolidateSiblingGroup(
+                api, group, platform, absorptionPairs, ::trackSiblingMultiDisc
+            )
+            added += outcome.added
+            updated += outcome.updated
         }
 
         return PlatformSyncResult(added, updated, multiDiscGroups, absorptionPairs = absorptionPairs)
+    }
+
+    private class ConsolidationOutcome(val added: Int, val updated: Int)
+
+    /**
+     * Consolidates one sibling group and drops its retained rom. Runs as soon as a group
+     * has seen every sibling it expects, so only in-flight groups stay resident; the pass
+     * after the last page picks up groups whose siblings were filtered out and never
+     * completed.
+     */
+    private suspend fun consolidateSiblingGroup(
+        api: RomMApi,
+        group: SiblingGroup,
+        platform: RomMPlatform,
+        absorptionPairs: MutableList<Pair<Long, Long>>,
+        trackMultiDisc: (RomMRom) -> Unit
+    ): ConsolidationOutcome {
+        if (group.consolidated) return ConsolidationOutcome(0, 0)
+        val members = group.members
+        if (members.isEmpty()) return ConsolidationOutcome(0, 0)
+        val winner = resolveGroupWinner(api, group) ?: return ConsolidationOutcome(0, 0)
+
+        group.consolidated = true
+        var added = 0
+        var updated = 0
+        try {
+            val (isNew, _) = syncRom(winner, syncFiles = false)
+            if (isNew) added++ else updated++
+            trackMultiDisc(winner)
+            val gameId = gameDao.getByRommId(winner.id)?.id
+                ?: return ConsolidationOutcome(added, updated)
+            val validFileIds = mutableListOf<Long>()
+            for (member in members) {
+                validFileIds += syncVersionFiles(gameId, member, platform.slug)
+                if (member.id != winner.id) {
+                    gameDao.getByRommId(member.id)?.let { loser ->
+                        absorptionPairs.add(loser.id to gameId)
+                    }
+                }
+            }
+            if (validFileIds.isNotEmpty()) {
+                gameFileDao.deleteInvalidFiles(gameId, validFileIds)
+            }
+            Logger.info(TAG, "syncPlatformRoms: consolidated ${members.size} sibling versions under ${winner.name} (${winner.regions})")
+        } catch (e: Exception) {
+            Logger.warn(TAG, "syncPlatformRoms: failed to consolidate sibling group for ${winner.name}: ${e.message}")
+        } finally {
+            group.winner = null
+            group.members.clear()
+        }
+        return ConsolidationOutcome(added, updated)
     }
 
     private suspend fun absorbConsolidatedGames(pairs: List<Pair<Long, Long>>) {
@@ -1352,8 +1393,18 @@ internal class SiblingMember(
 
 internal class SiblingGroup {
     val members = mutableListOf<SiblingMember>()
+    val expectedIds = mutableSetOf<Long>()
     var mainSiblingId: Long? = null
     var winner: RomMRom? = null
+    var consolidated = false
+
+    /**
+     * Every rom carries the ids of its whole sibling set, so a group knows its final size
+     * from its first member and can be consolidated and released as soon as the last one
+     * arrives rather than waiting out the platform.
+     */
+    val isComplete: Boolean get() = expectedIds.isNotEmpty() &&
+        members.mapTo(mutableSetOf()) { it.id }.containsAll(expectedIds)
 }
 
 /**

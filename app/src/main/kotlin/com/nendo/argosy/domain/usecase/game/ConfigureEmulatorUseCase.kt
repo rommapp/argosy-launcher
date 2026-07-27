@@ -13,7 +13,8 @@ class ConfigureEmulatorUseCase @Inject constructor(
     private val saveSyncDao: SaveSyncDao
 ) {
     suspend fun setForGame(gameId: Long, platformId: Long, platformSlug: String, emulator: InstalledEmulator?) {
-        val hadSavePath = emulatorConfigDao.getByGameId(gameId)?.savePath != null
+        val existing = emulatorConfigDao.getByGameId(gameId)
+        val hadSaveLocation = existing?.savePath != null || existing?.selectedMemcardPath != null
         emulatorConfigDao.deleteGameOverride(gameId)
 
         if (emulator != null) {
@@ -27,7 +28,7 @@ class ConfigureEmulatorUseCase @Inject constructor(
             )
             emulatorConfigDao.insert(config)
         }
-        if (hadSavePath) saveSyncDao.clearLocalPathsForGame(gameId)
+        if (hadSaveLocation) saveSyncDao.clearLocalPathsForGame(gameId)
     }
 
     suspend fun setForPlatform(platformId: Long, platformSlug: String, emulator: InstalledEmulator?) {
@@ -71,9 +72,10 @@ class ConfigureEmulatorUseCase @Inject constructor(
     }
 
     suspend fun clearForGame(gameId: Long) {
-        val hadSavePath = emulatorConfigDao.getByGameId(gameId)?.savePath != null
+        val existing = emulatorConfigDao.getByGameId(gameId)
+        val hadSaveLocation = existing?.savePath != null || existing?.selectedMemcardPath != null
         emulatorConfigDao.deleteGameOverride(gameId)
-        if (hadSavePath) saveSyncDao.clearLocalPathsForGame(gameId)
+        if (hadSaveLocation) saveSyncDao.clearLocalPathsForGame(gameId)
     }
 
     suspend fun clearForPlatform(platformId: Long) {

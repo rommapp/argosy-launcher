@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.nendo.argosy.data.cache.ImageCacheManager
 import com.nendo.argosy.data.download.ZipExtractor
+import com.nendo.argosy.data.emulator.BuiltinCoreResolver
 import com.nendo.argosy.data.emulator.EmulatorDetector
 import com.nendo.argosy.data.emulator.EmulatorRegistry
 import com.nendo.argosy.data.emulator.LaunchConfig
@@ -82,6 +83,7 @@ class GameDetailViewModel @Inject constructor(
     private val emulatorConfigDao: EmulatorConfigDao,
     private val emulatorDetector: EmulatorDetector,
     private val emulatorResolver: EmulatorResolver,
+    private val builtinCoreResolver: BuiltinCoreResolver,
     private val notificationManager: NotificationManager,
     private val gameRepository: GameRepository,
     private val gameNavigationContext: GameNavigationContext,
@@ -447,9 +449,17 @@ class GameDetailViewModel @Inject constructor(
             val platformCores = EmulatorRegistry.getSelectableCores(game.platformSlug, isBuiltInEmulator)
             val hasMultipleCores = isCoreSelectable && platformCores.size > 1
 
-            val selectedCoreId = gameSpecificConfig?.coreName
-                ?: platformDefaultConfig?.coreName
-                ?: EmulatorRegistry.getDefaultSelectableCore(game.platformSlug, isBuiltInEmulator)?.id
+            val selectedCoreId = if (isBuiltInEmulator) {
+                builtinCoreResolver.resolveCoreId(
+                    gameId = gameId,
+                    platformId = game.platformId,
+                    platformSlug = game.platformSlug
+                )
+            } else {
+                gameSpecificConfig?.coreName
+                    ?: platformDefaultConfig?.coreName
+                    ?: EmulatorRegistry.getDefaultSelectableCore(game.platformSlug, isBuiltInEmulator)?.id
+            }
             val selectedCoreName = if (isCoreSelectable) {
                 platformCores.find { it.id == selectedCoreId }?.displayName
             } else null

@@ -1157,12 +1157,30 @@ class GameLauncher @Inject constructor(
         return preferredCore
     }
 
+    /**
+     * External RetroArch can run cores Argosy does not curate, so an unrecognised id is
+     * passed through untouched. An id belonging to the built-in catalogue is the one
+     * exception: it can only have been written for the built-in path, and pointing
+     * RetroArch at it names a core file it does not have and a save directory it never
+     * writes.
+     */
     private fun normalizeLegacyCoreName(coreName: String, platformSlug: String): String {
-        val validCores = EmulatorRegistry.getCoresForPlatform(platformSlug)
-        if (validCores.any { it.id == coreName }) {
+        val externalCores = EmulatorRegistry.getSelectableCores(platformSlug, isBuiltIn = false)
+        if (externalCores.any { it.id == coreName }) {
             return coreName
         }
-        val match = validCores.find { it.id.startsWith(coreName) }
+
+        val isBuiltinCore = com.nendo.argosy.libretro.LibretroCoreRegistry
+            .getCoresForPlatform(platformSlug).any { it.coreId == coreName }
+        if (isBuiltinCore) {
+            val fallback = EmulatorRegistry.getDefaultSelectableCore(platformSlug, isBuiltIn = false)?.id
+            if (fallback != null) {
+                Logger.warn(TAG, "Core '$coreName' is a built-in core; using '$fallback' for external RetroArch")
+                return fallback
+            }
+        }
+
+        val match = externalCores.find { it.id.startsWith(coreName) }
         if (match != null) {
             Logger.debug(TAG, "Core name corrected: $coreName -> ${match.id}")
             return match.id

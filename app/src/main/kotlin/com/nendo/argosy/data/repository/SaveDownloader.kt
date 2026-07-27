@@ -120,7 +120,7 @@ class SaveDownloader @Inject constructor(
         }
 
         val emulatorPackage = emulatorResolver.getEmulatorPackageForGame(gameId, game.platformId, game.platformSlug)
-        val preferredCore = client.resolveCoreForGame(game)
+        val preferredCore = client.resolveCoreForGame(game, resolvedEmulatorId)
 
         val saveInfoResponse = try {
             if (deviceId != null) api.getSaveWithDevice(saveId, deviceId) else api.getSave(saveId)

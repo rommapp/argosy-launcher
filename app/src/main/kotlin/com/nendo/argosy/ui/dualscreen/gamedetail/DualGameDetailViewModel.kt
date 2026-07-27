@@ -19,6 +19,7 @@ import com.nendo.argosy.data.local.entity.GameEntity
 import com.nendo.argosy.data.local.entity.GameFileEntity
 import com.nendo.argosy.data.local.entity.getDisplayName
 import com.nendo.argosy.domain.usecase.game.ConfigureEmulatorUseCase
+import com.nendo.argosy.data.emulator.BuiltinCoreResolver
 import com.nendo.argosy.data.emulator.DiscOption
 import com.nendo.argosy.data.emulator.EmulatorRegistry
 import com.nendo.argosy.data.download.ZipExtractor
@@ -62,6 +63,7 @@ class DualGameDetailViewModel(
     private val downloadQueueRepository: DownloadQueueRepository,
     private val steamRepository: SteamRepository,
     private val configureEmulatorUseCase: ConfigureEmulatorUseCase,
+    private val builtinCoreResolver: BuiltinCoreResolver,
     private val saveHandlerRegistry: com.nendo.argosy.data.sync.platform.PlatformSaveHandlerRegistry,
     private val steamContentManager: com.nendo.argosy.data.steam.SteamContentManager? = null,
     private val displayAffinityHelper: DisplayAffinityHelper,
@@ -383,9 +385,17 @@ class DualGameDetailViewModel(
             val isCoreSelectable = emulatorDef?.launchConfig?.isCoreSelectable ?: true
             val hasMultipleCores = isCoreSelectable && platformCores.size > 1
 
-            val selectedCoreId = gameSpecificConfig?.coreName
-                ?: platformDefaultConfig?.coreName
-                ?: EmulatorRegistry.getDefaultSelectableCore(game.platformSlug, isBuiltInEmulator)?.id
+            val selectedCoreId = if (isBuiltInEmulator) {
+                builtinCoreResolver.resolveCoreId(
+                    gameId = game.id,
+                    platformId = game.platformId,
+                    platformSlug = game.platformSlug
+                )
+            } else {
+                gameSpecificConfig?.coreName
+                    ?: platformDefaultConfig?.coreName
+                    ?: EmulatorRegistry.getDefaultSelectableCore(game.platformSlug, isBuiltInEmulator)?.id
+            }
             val selectedCoreName = if (hasMultipleCores) {
                 platformCores.find { it.id == selectedCoreId }?.displayName
             } else null

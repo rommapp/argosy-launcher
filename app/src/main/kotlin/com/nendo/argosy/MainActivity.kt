@@ -100,6 +100,7 @@ class MainActivity : ComponentActivity() {
     @Inject lateinit var downloadManagerInstance: com.nendo.argosy.data.download.DownloadManager
     @Inject lateinit var notificationManager: com.nendo.argosy.core.notification.NotificationManager
     @Inject lateinit var emulatorConfigDao: com.nendo.argosy.data.local.dao.EmulatorConfigDao
+    @Inject lateinit var builtinCoreResolver: com.nendo.argosy.data.emulator.BuiltinCoreResolver
     @Inject lateinit var saveHandlerRegistry: com.nendo.argosy.data.sync.platform.PlatformSaveHandlerRegistry
     @Inject lateinit var steamDownloadQueueDao: com.nendo.argosy.data.local.dao.SteamDownloadQueueDao
     @Inject lateinit var steamRepository: com.nendo.argosy.data.repository.SteamRepository
@@ -291,6 +292,7 @@ class MainActivity : ComponentActivity() {
                 notificationManager = notificationManager,
                 emulatorConfigDao = emulatorConfigDao,
                 configureEmulatorUseCase = configureEmulatorUseCase,
+                builtinCoreResolver = builtinCoreResolver,
                 saveHandlerRegistry = saveHandlerRegistry,
                 steamDownloadQueueDao = steamDownloadQueueDao,
                 steamRepository = steamRepository,

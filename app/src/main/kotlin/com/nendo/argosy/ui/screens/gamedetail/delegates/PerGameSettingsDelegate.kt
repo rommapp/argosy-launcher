@@ -1,6 +1,7 @@
 package com.nendo.argosy.ui.screens.gamedetail.delegates
 
 import com.nendo.argosy.core.input.SoundType
+import com.nendo.argosy.data.emulator.BuiltinCoreResolver
 import com.nendo.argosy.data.emulator.EmulatorDetector
 import com.nendo.argosy.data.emulator.EmulatorRegistry
 import com.nendo.argosy.data.emulator.EmulatorResolver
@@ -87,6 +88,7 @@ class PerGameSettingsDelegate @Inject constructor(
     private val emulatorConfigDao: EmulatorConfigDao,
     private val emulatorDetector: EmulatorDetector,
     private val emulatorResolver: EmulatorResolver,
+    private val builtinCoreResolver: BuiltinCoreResolver,
     private val retroArchPathResolver: RetroArchPathResolver,
     private val emulatorSaveConfigRepository: EmulatorSaveConfigRepository,
     private val configureEmulatorUseCase: ConfigureEmulatorUseCase,
@@ -234,9 +236,17 @@ class PerGameSettingsDelegate @Inject constructor(
         val isCoreSelectable = emulatorDef?.launchConfig?.isCoreSelectable == true
         val cores = EmulatorRegistry.getSelectableCores(game.platformSlug, isBuiltIn)
         val showCoreRow = isCoreSelectable && cores.size > 1
-        val selectedCoreId = gameConfig?.coreName
-            ?: platformConfig?.coreName
-            ?: EmulatorRegistry.getDefaultSelectableCore(game.platformSlug, isBuiltIn)?.id
+        val selectedCoreId = if (isBuiltIn) {
+            builtinCoreResolver.resolveCoreId(
+                gameId = gameId,
+                platformId = game.platformId,
+                platformSlug = game.platformSlug
+            )
+        } else {
+            gameConfig?.coreName
+                ?: platformConfig?.coreName
+                ?: EmulatorRegistry.getDefaultSelectableCore(game.platformSlug, isBuiltIn)?.id
+        }
         val coreName = if (isCoreSelectable) cores.find { it.id == selectedCoreId }?.displayName else null
 
         val effectivePackage = emulatorResolver.getEmulatorPackageForGame(gameId, game.platformId, game.platformSlug)

@@ -425,7 +425,8 @@ class SaveCacheManager @Inject constructor(
                 fal.mkdirs(targetPath)
                 val targetFile = fal.getTransformedFile(targetPath)
                 val game = gameDao.getById(entity.gameId)
-                val preserveRoots = game?.platformSlug?.let { PlatformDefinitions.getCanonicalSlug(it) } == "psp"
+                val preserveRoots = game?.platformSlug
+                    ?.let { PlatformDefinitions.getCanonicalSlug(it) } in FOLDER_PREFIX_PLATFORMS
                 Log.d(TAG, "[RESTORE] cache=$cacheId zip=${cacheFile.name} size=${cacheFile.length()} target=$targetPath transformed=${targetFile.absolutePath} exists=${targetFile.exists()} dir=${targetFile.isDirectory} preserveRoots=$preserveRoots platform=${game?.platformSlug}")
                 val ok = if (preserveRoots) {
                     saveArchiver.unzipToFolder(cacheFile, targetFile)

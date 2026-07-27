@@ -58,11 +58,32 @@ open class FolderSaveHandler(
                 ?: return@withContext ExtractResult(false, null, "Cannot construct $platformSlug save path")
         }
 
+        val saveId = context.saveId
+        if (saveId != null) {
+            val roots = saveArchiver.peekRootEntryNames(tempFile)
+            val tier = roots.firstNotNullOfOrNull { matchArchiveRoot(it, saveId) }
+            if (tier == null) {
+                Logger.error(
+                    tag,
+                    "extractDownload: archive does not hold this save | saveId=$saveId, " +
+                        "roots=$roots, target=$targetPath. Refusing to unpack it."
+                )
+                return@withContext ExtractResult(
+                    false,
+                    null,
+                    "Archive contents do not match $saveId (top level: ${roots.joinToString().ifEmpty { "no directories" }})"
+                )
+            }
+            if (tier != ArchiveRootMatch.EXACT) {
+                Logger.debug(tag, "extractDownload: archive matched on $tier | saveId=$saveId, roots=$roots")
+            }
+        }
+
         val targetFolder = File(targetPath)
         targetFolder.mkdirs()
         ensureContainerPrepared(targetFolder)
 
-        context.saveId?.let { pruneNonCanonicalSiblings(targetFolder, it) }
+        saveId?.let { pruneNonCanonicalSiblings(targetFolder, it) }
 
         val archiveRoot = saveArchiver.peekRootFolderName(tempFile)
         val success = try {
@@ -114,6 +135,30 @@ open class FolderSaveHandler(
 
     /** True when [folderName] is one of [saveId]'s own per-game entries per this platform's match rule. */
     fun isEntryForSaveId(folderName: String, saveId: String): Boolean = folderMatches(folderName, saveId)
+
+    /** How strongly an archive's top-level entry corresponds to the save it claims to be. */
+    enum class ArchiveRootMatch { EXACT, PREFIX, CONTAINS }
+
+    /**
+     * Sigil reports whether a save id addresses its folder exactly or as a prefix, so an
+     * archive is accepted on the same terms, weakest tier last. Anything that matches on
+     * none of them is not this save and must not be unpacked over it.
+     */
+    fun matchArchiveRoot(rootName: String, saveId: String): ArchiveRootMatch? {
+        val root = normalizeSaveId(rootName)
+        val id = normalizeSaveId(saveId)
+        if (root.isEmpty() || id.isEmpty()) return null
+        return when {
+            root == id -> ArchiveRootMatch.EXACT
+            folderMatches(rootName, saveId) || root.startsWith(id) -> ArchiveRootMatch.PREFIX
+            root.contains(id) -> ArchiveRootMatch.CONTAINS
+            else -> null
+        }
+    }
+
+    private fun normalizeSaveId(value: String): String =
+        value.replace("-", "").replace("_", "").uppercase()
+
 
     override fun resolveBasePath(config: SavePathConfig, basePathOverride: String?): String? {
         if (basePathOverride != null) return basePathOverride

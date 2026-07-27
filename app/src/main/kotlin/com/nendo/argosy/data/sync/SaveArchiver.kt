@@ -276,6 +276,31 @@ class SaveArchiver @Inject constructor(
         }
     }
 
+    /**
+     * Every top-level directory in the archive. Unlike [peekRootFolderName] this reads the
+     * whole index, so a save spanning several sibling folders reports all of them.
+     */
+    fun peekRootEntryNames(zipFile: File): Set<String> {
+        if (!zipFile.exists() || !zipFile.isFile) return emptySet()
+        return try {
+            ZipArchiveInputStream(BufferedInputStream(FileInputStream(zipFile))).use { zis ->
+                val roots = mutableSetOf<String>()
+                var entry = zis.nextEntry
+                while (entry != null) {
+                    val name = entry.name
+                    if (name.contains('/')) {
+                        name.substringBefore('/').takeIf { it.isNotEmpty() }?.let { roots.add(it) }
+                    }
+                    entry = zis.nextEntry
+                }
+                roots
+            }
+        } catch (e: Exception) {
+            Logger.error(TAG, "[SaveSync] ARCHIVE | peekRootEntryNames failed | zip=${zipFile.name}", e)
+            emptySet()
+        }
+    }
+
     fun unzipSingleFolder(sourceZip: File, targetFolder: File): Boolean {
         if (!sourceZip.exists() || !sourceZip.isFile) {
             Logger.warn(TAG, "[SaveSync] ARCHIVE | Source zip invalid | path=${sourceZip.absolutePath}")

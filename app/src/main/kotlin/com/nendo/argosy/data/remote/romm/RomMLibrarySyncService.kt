@@ -68,6 +68,7 @@ class RomMLibrarySyncService @Inject constructor(
     private val collectionDao: CollectionDao,
     private val imageCacheManager: ImageCacheManager,
     private val musicDirectoryManager: com.nendo.argosy.data.music.MusicDirectoryManager,
+    private val gameFileSync: RomMGameFileSync,
     private val biosRepository: BiosRepository,
     private val installedAppResolver: InstalledAppResolver,
     private val gameRepository: dagger.Lazy<com.nendo.argosy.data.repository.GameRepository>,
@@ -655,63 +656,7 @@ class RomMLibrarySyncService @Inject constructor(
     }
 
     private suspend fun syncGameFiles(gameId: Long, rom: RomMRom, platformSlug: String) {
-        val isVariantExcluded = platformSlug in com.nendo.argosy.data.model.VariantCategory.VARIANT_EXCLUDED_PLATFORMS
-        val files = rom.files?.filter { file ->
-            val cat = file.category
-            if (cat == null || file.fileName.startsWith(".")) return@filter false
-            if (isVariantExcluded) cat in setOf("update", "dlc") else true
-        } ?: return
-
-        if (files.isEmpty()) {
-            gameFileDao.deleteByGameId(gameId)
-            return
-        }
-
-        val validIds = files.mapNotNull { if (it.id > 0) it.id else null }
-        if (validIds.isNotEmpty()) {
-            gameFileDao.deleteInvalidFiles(gameId, validIds)
-        }
-
-        val entities = files.map { file ->
-            val existing = gameFileDao.getByRommFileId(file.id)
-            val category = com.nendo.argosy.data.model.VariantCategory.fromKey(file.category)
-            val localPath = existing?.localPath ?: recoverMusicLocalPath(file, category, rom)
-            GameFileEntity(
-                id = existing?.id ?: 0,
-                gameId = gameId,
-                rommFileId = file.id,
-                romId = file.romId,
-                fileName = file.fileName,
-                filePath = file.filePath,
-                category = category.key,
-                fileSize = file.fileSizeBytes,
-                localPath = localPath,
-                downloadedAt = existing?.downloadedAt ?: localPath?.let { Instant.now() },
-                isLaunchTarget = category.isLaunchTarget,
-                isMultiDisc = existing?.isMultiDisc ?: false,
-                m3uPath = existing?.m3uPath,
-                trackTitle = file.trackMeta?.title,
-                trackNumber = file.trackMeta?.track,
-                durationSeconds = file.trackMeta?.durationSeconds
-            )
-        }
-        gameFileDao.insertAll(entities)
-    }
-
-    private suspend fun recoverMusicLocalPath(
-        file: RomMRomFile,
-        category: VariantCategory,
-        rom: RomMRom
-    ): String? {
-        if (category != VariantCategory.SOUNDTRACK) return null
-        val target = musicDirectoryManager.targetFileFor(
-            platformName = rom.platformName ?: rom.platformSlug,
-            gameName = rom.name,
-            trackNumber = file.trackMeta?.track,
-            title = file.trackMeta?.title,
-            fileName = file.fileName
-        )
-        return target.takeIf { it.exists() }?.absolutePath
+        gameFileSync.sync(gameId, rom, platformSlug, fileListIsAuthoritative = false)
     }
 
     private data class PlatformSyncResult(

@@ -9,6 +9,7 @@ import com.nendo.argosy.data.local.dao.PlatformDao
 import com.nendo.argosy.data.platform.LocalPlatformIds
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.storage.AndroidDataAccessor
+import com.nendo.argosy.util.AppPaths
 import com.nendo.argosy.data.storage.StorageVolumeDetector
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.first
@@ -139,6 +140,10 @@ class SteamPathResolver @Inject constructor(
             androidDataAccessor.exists("$expectedPath/.download_complete")
         if (installed && game.localPath != expectedPath) {
             runCatching { gameDao.update(game.copy(localPath = expectedPath)) }
+        }
+        if (!installed && path != null && !path.contains(AppPaths.STEAM_STAGING_DIR)) {
+            Log.d(TAG, "isGameInstalled: install is gone, clearing stale path | appId=$appId, path=$path")
+            runCatching { gameDao.update(game.copy(localPath = null)) }
         }
         return installed
     }

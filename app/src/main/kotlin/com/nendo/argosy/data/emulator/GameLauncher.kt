@@ -443,15 +443,16 @@ class GameLauncher @Inject constructor(
                 Logger.warn(TAG, "launchSteamGame() failed: missing steamAppId")
             }
 
-        val launcherPackage = game.steamLauncher ?: "native"
+        val chosenPackage = game.steamLauncher?.takeIf { it != GameEntity.LAUNCHER_UNSPECIFIED }
 
-        val launcher = when (launcherPackage) {
-            "native" -> GameNativeLauncher
-            else -> SteamLaunchers.getByPackage(launcherPackage) ?: GameNativeLauncher
+        val launcher = if (chosenPackage != null) {
+            SteamLaunchers.getByPackage(chosenPackage) ?: GameNativeLauncher
+        } else {
+            SteamLaunchers.getPreferred(context) ?: GameNativeLauncher
         }
 
         if (!launcher.isInstalled(context)) {
-            return LaunchResult.NoSteamLauncher(launcherPackage).also {
+            return LaunchResult.NoSteamLauncher(launcher.packageName).also {
                 Logger.warn(TAG, "launchSteamGame() failed: ${launcher.displayName} not installed")
             }
         }

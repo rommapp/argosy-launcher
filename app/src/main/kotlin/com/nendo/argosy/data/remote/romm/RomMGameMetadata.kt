@@ -1,6 +1,7 @@
 package com.nendo.argosy.data.remote.romm
 
 import com.nendo.argosy.data.local.entity.GameEntity
+import com.nendo.argosy.util.SearchNormalizer
 import java.time.Instant
 import java.time.ZoneOffset
 
@@ -19,6 +20,7 @@ import java.time.ZoneOffset
 internal fun GameEntity.withRomMetadata(rom: RomMRom): GameEntity = copy(
     title = rom.name,
     sortTitle = RomMUtils.createSortTitle(rom.name),
+    searchTitle = SearchNormalizer.normalize(rom.name),
     description = rom.summary,
     releaseYear = rom.firstReleaseDateMillis?.let {
         Instant.ofEpochMilli(it).atZone(ZoneOffset.UTC).year

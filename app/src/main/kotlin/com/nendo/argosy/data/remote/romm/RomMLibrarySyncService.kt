@@ -616,43 +616,6 @@ class RomMLibrarySyncService @Inject constructor(
             boxBackPath = cachedBoxBack,
             boxSpinePath = cachedBoxSpine,
             screenshotPaths = screenshotUrls.joinToString(","),
-            description = rom.summary,
-            releaseYear = rom.firstReleaseDateMillis?.let {
-                java.time.Instant.ofEpochMilli(it).atZone(java.time.ZoneOffset.UTC).year
-            },
-            genre = rom.genres?.firstOrNull(),
-            developer = rom.companies?.firstOrNull(),
-            rating = rom.metadatum?.averageRating?.takeIf { rom.igdbId != null && it < 98f },
-            regions = rom.regions?.joinToString(","),
-            languages = rom.languages?.joinToString(","),
-            gameModes = rom.metadatum?.gameModes?.joinToString(","),
-            franchises = rom.metadatum?.franchises?.joinToString(","),
-            genres = rom.genres?.joinToString(","),
-            collections = rom.metadatum?.collections?.joinToString(","),
-            players = rom.metadatum?.playerCount,
-            ageRatings = rom.metadatum?.ageRatings?.joinToString(","),
-            alternativeNames = rom.alternativeNames?.joinToString(","),
-            mobyId = rom.mobyId,
-            sgdbId = rom.sgdbId,
-            ssId = rom.ssId,
-            launchboxId = rom.launchboxId,
-            hasheousId = rom.hasheousId,
-            tgdbId = rom.tgdbId,
-            hltbId = rom.hltbId,
-            timeToBeatMainSec = rom.hltbMetadata?.mainStorySec,
-            timeToBeatExtraSec = rom.hltbMetadata?.mainPlusExtraSec,
-            timeToBeatCompletionistSec = rom.hltbMetadata?.completionistSec,
-            flashpointId = rom.flashpointId,
-            gamelistId = rom.gamelistId,
-            libretroId = rom.libretroId,
-            crcHash = rom.crcHash,
-            md5Hash = rom.md5Hash,
-            sha1Hash = rom.sha1Hash,
-            raHash = rom.raHash,
-            hasManual = rom.hasManual,
-            manualPath = rom.manualPath,
-            remoteHasSoundtrack = rom.hasSoundtrack,
-            isIdentified = rom.isIdentified,
             userRating = rom.romUser?.rating ?: localDataSource?.userRating ?: 0,
             userDifficulty = rom.romUser?.difficulty ?: localDataSource?.userDifficulty ?: 0,
             completion = rom.romUser?.completion ?: localDataSource?.completion ?: 0,
@@ -670,14 +633,8 @@ class RomMLibrarySyncService @Inject constructor(
             playTimeMinutes = localDataSource?.playTimeMinutes ?: 0,
             lastPlayed = localDataSource?.lastPlayed,
             addedAt = localDataSource?.addedAt ?: java.time.Instant.now(),
-            achievementCount = rom.raMetadata?.achievements?.size ?: localDataSource?.achievementCount ?: 0,
-            youtubeVideoId = rom.youtubeVideoId,
-            fileSizeBytes = rom.files
-                ?.filter { it.category == null && !it.fileName.startsWith(".") }
-                ?.maxByOrNull { it.fileSizeBytes }
-                ?.fileSizeBytes
-                ?: rom.fileSize.takeIf { it > 0 }
-        )
+            achievementCount = localDataSource?.achievementCount ?: 0
+        ).withRomMetadata(rom)
 
         val isNew = existing == null
         gameDao.insert(game)

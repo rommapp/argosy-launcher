@@ -986,7 +986,9 @@ object EmulatorRegistry {
         return emulators.filter { canonical in it.supportedPlatforms }
     }
 
-    fun getRecommendedEmulators(): Map<String, List<String>> = mapOf(
+    fun getRecommendedEmulators(): Map<String, List<String>> = recommendedEmulators
+
+    private val recommendedEmulators: Map<String, List<String>> = mapOf(
         "psx" to listOf("builtin", "duckstation", "retroarch", "retroarch_64", "retroarch_32"),
         "ps2" to listOf("nethersx2", "armsx2_refresh", "armsx2", "psx2", "pcsx2"),
         "psp" to listOf(
@@ -1104,7 +1106,9 @@ object EmulatorRegistry {
         "pico8" to "retro8"
     )
 
-    fun getRetroArchCorePatterns(): Map<String, List<String>> = mapOf(
+    fun getRetroArchCorePatterns(): Map<String, List<String>> = retroArchCorePatterns
+
+    private val retroArchCorePatterns: Map<String, List<String>> = mapOf(
         "nes" to listOf("fceumm", "nestopia", "quicknes", "mesen"),
         "snes" to listOf("snes9x", "bsnes", "mesen"),
         "n64" to listOf("mupen64plus_next_gles3", "mupen64plus_next_gles2", "parallel_n64"),

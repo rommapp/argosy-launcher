@@ -12,7 +12,7 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.LayoutDirection
 import com.nendo.argosy.data.preferences.SystemIconPosition
 
-internal class GlassCombinedShape(
+internal data class GlassCombinedShape(
     private val outerCornerRadius: Float,
     private val frameWidth: Float,
     private val badgePosition: SystemIconPosition,
@@ -233,7 +233,7 @@ internal class GlassCombinedShape(
     }
 }
 
-internal class InnerEffectShape(
+internal data class InnerEffectShape(
     private val outerCornerRadius: Float,
     private val frameWidth: Float,
     private val effectWidth: Float,
@@ -464,7 +464,7 @@ internal class InnerEffectShape(
     }
 }
 
-internal class GlassRingShape(
+internal data class GlassRingShape(
     private val outerCornerRadius: Float,
     private val frameWidth: Float,
     private val innerEffectWidth: Float,
@@ -680,7 +680,7 @@ internal class GlassRingShape(
     }
 }
 
-internal class GradientMaskShape(
+internal data class GradientMaskShape(
     private val outerCornerRadius: Float,
     private val frameWidth: Float,
     private val isStub: Boolean,

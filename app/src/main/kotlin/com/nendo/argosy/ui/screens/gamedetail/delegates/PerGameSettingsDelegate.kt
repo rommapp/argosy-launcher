@@ -306,7 +306,7 @@ class PerGameSettingsDelegate @Inject constructor(
         } else {
             emptyList()
         }
-        val showMemcardRow = isPs2 && memcardCards.size > 1
+        val showMemcardRow = isPs2 && memcardCards.isNotEmpty()
         val perGameMemcardPath = emulatorConfigDao.getSelectedMemcardForGame(gameId)?.takeIf { it.isNotBlank() }
         val inheritedMemcardPath = memcardUserConfig?.selectedMemcardPath?.takeIf { it.isNotBlank() }
         val inheritedMemcardName = inheritedMemcardPath

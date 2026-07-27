@@ -73,9 +73,9 @@ fun Box3dCover(
         }
     }
 
-    val yaw = remember { Animatable(REST_YAW_DEG) }
-    val pitch = remember { Animatable(0f) }
-    var isDragging by remember { mutableStateOf(false) }
+    val yaw = remember(frontPath, spinePath, backPath) { Animatable(REST_YAW_DEG) }
+    val pitch = remember(frontPath, spinePath, backPath) { Animatable(0f) }
+    var isDragging by remember(frontPath, spinePath, backPath) { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
     androidx.compose.runtime.LaunchedEffect(isDragging, faces) {

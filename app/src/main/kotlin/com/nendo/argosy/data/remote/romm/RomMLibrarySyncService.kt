@@ -755,11 +755,6 @@ class RomMLibrarySyncService @Inject constructor(
         val absorptionPairs: List<Pair<Long, Long>> = emptyList()
     )
 
-    private class SiblingGroup {
-        val memberRoms = mutableListOf<RomMRom>()
-        var mainSiblingId: Long? = null
-    }
-
     private suspend fun syncPlatformRoms(
         api: RomMApi,
         platform: RomMPlatform,
@@ -782,8 +777,9 @@ class RomMLibrarySyncService @Inject constructor(
             val existingGroups = ids.mapNotNull { siblingGroups[it] }.distinct()
             val group = existingGroups.firstOrNull() ?: SiblingGroup()
             existingGroups.drop(1).forEach { other ->
-                group.memberRoms.addAll(other.memberRoms)
+                group.members.addAll(other.members)
                 if (group.mainSiblingId == null) group.mainSiblingId = other.mainSiblingId
+                if (group.winner == null) group.winner = other.winner
             }
             ids.forEach { siblingGroups[it] = group }
             return group
@@ -856,10 +852,11 @@ class RomMLibrarySyncService @Inject constructor(
 
                 if (rom.hasNonDiscSiblings) {
                     groupFor(rom).let { group ->
-                        group.memberRoms.add(rom)
+                        group.members.add(SiblingMember(rom.id, rom.regions, rom.files))
                         rom.effectiveSiblings
                             .firstOrNull { !it.isDiscVariant && it.isMainSibling == true }
                             ?.let { group.mainSiblingId = it.id }
+                        group.winner = chooseWinner(group, rom, filters)
                     }
                     continue
                 }
@@ -881,11 +878,9 @@ class RomMLibrarySyncService @Inject constructor(
         }
 
         for (group in siblingGroups.values.distinct()) {
-            val members = group.memberRoms
+            val members = group.members
             if (members.isEmpty()) continue
-            val winner = members.firstOrNull { it.id == group.mainSiblingId }
-                ?: members.minByOrNull { filters.regionRank(it.regions) }
-                ?: continue
+            val winner = resolveGroupWinner(api, group) ?: continue
             try {
                 val (isNew, _) = syncRom(winner, syncFiles = false)
                 if (isNew) added++ else updated++
@@ -942,9 +937,29 @@ class RomMLibrarySyncService @Inject constructor(
         }
     }
 
+    /**
+     * A group can learn its declared main sibling from a member fetched after that sibling
+     * was already seen and reduced to a projection. Re-fetch it in that case rather than
+     * consolidating under the wrong ROM.
+     */
+    private suspend fun resolveGroupWinner(api: RomMApi, group: SiblingGroup): RomMRom? {
+        val running = group.winner ?: return null
+        val mainId = group.mainSiblingId
+        if (mainId == null || running.id == mainId) return running
+        if (group.members.none { it.id == mainId }) return running
+
+        return try {
+            val response = api.getRom(mainId)
+            response.body()?.takeIf { response.isSuccessful } ?: running
+        } catch (e: Exception) {
+            Logger.warn(TAG, "resolveGroupWinner: failed to fetch main sibling $mainId: ${e.message}")
+            running
+        }
+    }
+
     private suspend fun syncVersionFiles(
         gameId: Long,
-        member: RomMRom,
+        member: SiblingMember,
         platformSlug: String
     ): List<Long> {
         val files = member.files
@@ -1311,4 +1326,42 @@ class RomMLibrarySyncService @Inject constructor(
         return migrated
     }
 
+}
+
+/**
+ * What consolidation needs from a sibling: its id to re-attribute the losing game, its
+ * regions to rank candidates, and its files to register as versions of the winner.
+ * Retaining the whole [RomMRom] instead holds every metadata blob plus each member's own
+ * sibling list for the entire platform, which is quadratic in group size.
+ */
+internal class SiblingMember(
+    val id: Long,
+    val regions: List<String>?,
+    val files: List<RomMRomFile>?
+)
+
+internal class SiblingGroup {
+    val members = mutableListOf<SiblingMember>()
+    var mainSiblingId: Long? = null
+    var winner: RomMRom? = null
+}
+
+/**
+ * Running pick of the sibling a group consolidates under, so only one full [RomMRom] per
+ * group stays resident. Mirrors the deferred rule it replaced: a declared main sibling
+ * wins outright, otherwise the best region rank wins, ties going to the member seen first.
+ */
+internal fun chooseWinner(
+    group: SiblingGroup,
+    candidate: RomMRom,
+    filters: SyncFilterPreferences
+): RomMRom {
+    val current = group.winner ?: return candidate
+    if (candidate.id == group.mainSiblingId) return candidate
+    if (current.id == group.mainSiblingId) return current
+    return if (filters.regionRank(candidate.regions) < filters.regionRank(current.regions)) {
+        candidate
+    } else {
+        current
+    }
 }

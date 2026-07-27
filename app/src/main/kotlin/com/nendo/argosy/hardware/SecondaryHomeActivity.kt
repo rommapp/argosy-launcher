@@ -661,6 +661,20 @@ class SecondaryHomeActivity :
         lifecycleScope.launch { dsm.dualViewMode.collect { _showcaseViewMode.value = it } }
         lifecycleScope.launch { dsm.dualCollectionShowcase.collect { _showcaseCollectionState.value = it } }
         lifecycleScope.launch { dsm.dualGameDetailState.collect { _showcaseGameDetailState.value = it } }
+        lifecycleScope.launch {
+            dsm.preferencesRepository.userPreferences.collect { prefs ->
+                applyInputSwapState(stateManager.inputSwapStateFrom(prefs))
+            }
+        }
+    }
+
+    private fun applyInputSwapState(state: SecondaryHomeStateManager.InputSwapState) {
+        swapAB = state.swapAB
+        swapXY = state.swapXY
+        swapStartSelect = state.swapStartSelect
+        abIconsSwapped = state.abIconsSwapped
+        xyIconsSwapped = state.xyIconsSwapped
+        startSelectSwapped = state.startSelectSwapped
     }
 
     private fun initializeDependencies() {

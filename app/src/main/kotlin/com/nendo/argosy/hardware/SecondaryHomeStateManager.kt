@@ -9,6 +9,7 @@ import com.nendo.argosy.data.repository.PlatformRepository
 import com.nendo.argosy.data.repository.SteamRepository
 import com.nendo.argosy.data.local.entity.getDisplayName
 import com.nendo.argosy.data.preferences.SessionStateStore
+import com.nendo.argosy.data.preferences.UserPreferences
 import com.nendo.argosy.ui.dualscreen.gamedetail.DualGameDetailViewModel
 import com.nendo.argosy.ui.dualscreen.home.DualHomeViewModel
 import com.nendo.argosy.core.input.ControllerDetector
@@ -177,6 +178,32 @@ class SecondaryHomeStateManager(
             abIconsSwapped = abIconsSwapped,
             xyIconsSwapped = xyIconsSwapped,
             startSelectSwapped = swapStartSelect
+        )
+    }
+
+    /**
+     * Swap state from live preferences rather than the boot-time session mirror, and the
+     * only place the companion honours the Controller Layout override.
+     *
+     * `swap*` drive key mapping and are the raw preference; `*IconsSwapped` drive glyphs
+     * and are xor'd with the pad's lettering. Start/Select has no xor by design. Feeding
+     * an icon value into key mapping inverts the buttons.
+     */
+    fun inputSwapStateFrom(prefs: UserPreferences): InputSwapState {
+        val isNintendoLayout = when (prefs.controllerLayout) {
+            "nintendo" -> true
+            "xbox" -> false
+            else -> ControllerDetector.detectFromActiveGamepad().layout == DetectedLayout.NINTENDO
+        }
+
+        return InputSwapState(
+            swapAB = prefs.swapAB,
+            swapXY = prefs.swapXY,
+            swapStartSelect = prefs.swapStartSelect,
+            dualScreenInputFocus = sessionStateStore.getDualScreenInputFocus(),
+            abIconsSwapped = isNintendoLayout xor prefs.swapAB,
+            xyIconsSwapped = isNintendoLayout xor prefs.swapXY,
+            startSelectSwapped = prefs.swapStartSelect
         )
     }
 

@@ -102,6 +102,9 @@ folder resolution); "tidying" them breaks resolution.
   and GameLauncher.resolveEmulator.
 - Sync engines: SyncCoordinator (negotiate/reconcile), SaveSyncOrchestrator
   (discovery/preamble), SaveSyncRepository facade + services.
+- Save id -> on-disk path, per platform: docs/save-id-to-path.md. Read it
+  before touching a save handler; the id-to-path rules are upstream-exact and
+  a changed archive shape invalidates every save already on a server.
 - Input: InputDispatcher + per-screen InputHandler; index wrap via .mod();
   no Compose focus anywhere.
 - Tokens: design-system-docs/tokens.json -> scripts/gen-tokens.mjs ->

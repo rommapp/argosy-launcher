@@ -239,6 +239,10 @@ private class PspFolderHandler(
  * 3DS save layout: `{baseDir}/{id0}/{id1}/title/{category}/{shortTitleId}/data`. The id0/id1
  * folders are randomized per console install, so we walk the tree to find them. Includes a
  * 3DS-specific basePathOverride normalization (mounting `sdmc/Nintendo 3DS` if missing).
+ *
+ * Category and short title id are the two halves of the 16-hex save id. sigil reports the
+ * same split as `save_path`; splitting it here stays equivalent for every 16-hex id. See
+ * docs/save-id-to-path.md.
  */
 private class N3dsFolderHandler(
     context: Context,

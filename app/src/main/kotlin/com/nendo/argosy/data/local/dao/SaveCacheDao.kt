@@ -81,6 +81,15 @@ interface SaveCacheDao {
     @Query("DELETE FROM save_cache WHERE gameId = :gameId")
     suspend fun deleteByGame(gameId: Long)
 
+    /**
+     * Drops the server-side half of a game's cached saves, keeping the files themselves.
+     * Used when the rom they were synced against is gone or has been renumbered: the save
+     * ids name saves on a rom that no longer answers, and a pending upload against it can
+     * only fail.
+     */
+    @Query("UPDATE save_cache SET rommSaveId = NULL, needsRemoteSync = 0, remoteSyncError = NULL WHERE gameId = :gameId")
+    suspend fun clearRemoteLinkage(gameId: Long)
+
     @Query("DELETE FROM save_cache WHERE gameId IN (SELECT id FROM games WHERE source IN (:sourceNames))")
     suspend fun deleteByGameSources(sourceNames: List<String>)
 

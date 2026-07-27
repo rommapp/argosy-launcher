@@ -396,7 +396,11 @@ class SaveUploader @Inject constructor(
                     error = "HTTP ${response.code()}: $errorBody"
                 )
 
-                SaveSyncResult.Error("Upload failed: ${response.code()}")
+                if (response.code() == 404 && dropSyncStateIfRomIsGone(gameId, rommId, game.title)) {
+                    SaveSyncResult.NotConfigured
+                } else {
+                    SaveSyncResult.Error("Upload failed: ${response.code()}")
+                }
             }
         } catch (e: Exception) {
             Logger.error(TAG, "[SaveSync] UPLOAD gameId=$gameId | Exception during upload", e)
@@ -539,12 +543,42 @@ class SaveUploader @Inject constructor(
             } else {
                 val errorBody = response.errorBody()?.string()
                 Logger.error(TAG, "[SaveSync] UPLOAD_CACHE gameId=$gameId | HTTP failed | status=${response.code()}, body=$errorBody")
-                SaveSyncResult.Error("Upload failed: ${response.code()}")
+                if (response.code() == 404 && dropSyncStateIfRomIsGone(gameId, rommId, game.title)) {
+                    SaveSyncResult.NotConfigured
+                } else {
+                    SaveSyncResult.Error("Upload failed: ${response.code()}")
+                }
             }
         } catch (e: Exception) {
             Logger.error(TAG, "[SaveSync] UPLOAD_CACHE gameId=$gameId | Exception during upload", e)
             SaveSyncResult.Error(e.message ?: "Upload failed")
         }
+    }
+
+    /**
+     * A 404 from an upload is ambiguous, so the rom is asked for directly before anything is
+     * removed: only a rom the server also denies is treated as gone. Its sync rows and the
+     * server half of its cached saves go with it, because they address a rom that will never
+     * answer again and every retry is another failure the user has no way to clear. A
+     * negative id is Argosy's own marker for a rom that left the library and needs no call.
+     *
+     * Returns whether the sync state was dropped. Cached save files are never removed; only
+     * their link to the server is.
+     */
+    private suspend fun dropSyncStateIfRomIsGone(gameId: Long, rommId: Long, gameTitle: String): Boolean {
+        val confirmedGone = rommId < 0 || apiClient.get().romIsMissing(rommId)
+        if (!confirmedGone) {
+            Logger.debug(TAG, "[SaveSync] UPLOAD gameId=$gameId | 404 but rom $rommId still exists, leaving sync state alone")
+            return false
+        }
+
+        saveSyncDao.deleteByGame(gameId)
+        saveCacheDao.clearRemoteLinkage(gameId)
+        Logger.warn(
+            TAG,
+            "[SaveSync] UPLOAD gameId=$gameId | rom $rommId is gone from the server; dropped sync state for $gameTitle, kept its cached saves"
+        )
+        return true
     }
 
     private suspend fun clearUserSelectedRestorePointIfSet(gameId: Long, emulatorId: String, channelName: String?) {

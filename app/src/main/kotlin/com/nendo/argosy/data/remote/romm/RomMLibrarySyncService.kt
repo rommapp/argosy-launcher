@@ -60,6 +60,8 @@ class RomMLibrarySyncService @Inject constructor(
     private val gameDao: GameDao,
     private val gameDiscDao: GameDiscDao,
     private val gameFileDao: GameFileDao,
+    private val saveSyncDao: com.nendo.argosy.data.local.dao.SaveSyncDao,
+    private val saveCacheDao: com.nendo.argosy.data.local.dao.SaveCacheDao,
     private val platformDao: PlatformDao,
     private val emulatorConfigDao: EmulatorConfigDao,
     private val platformLibretroSettingsDao: PlatformLibretroSettingsDao,
@@ -1082,6 +1084,10 @@ class RomMLibrarySyncService @Inject constructor(
 
             gameDao.delete(successor.id)
             gameDao.insert(game.copy(rommId = successor.rommId, syncDirty = false))
+            successor.rommId?.let { newRommId ->
+                saveSyncDao.realignToRommId(game.id, newRommId)
+                saveCacheDao.clearRemoteLinkage(game.id)
+            }
             realigned++
             Logger.info(
                 TAG,
@@ -1098,13 +1104,21 @@ class RomMLibrarySyncService @Inject constructor(
             gameFileDao.getDownloadedCount(game.id) > 0 ||
             gameDiscDao.getDiscsForGame(game.id).any { it.localPath != null }
 
+    /**
+     * Keeps a game whose rom left the server, under a synthetic id so nothing downstream
+     * mistakes it for a synced one. Its sync rows go: they address a rom that no longer
+     * answers, and leaving them is what makes a device retry an upload against a dead id
+     * for as long as the game exists. The cached saves themselves are never touched.
+     */
     private suspend fun preserveOrphanedGame(game: GameEntity) {
         val syntheticId = game.rommId?.takeIf { it < 0 } ?: -game.id
         gameDao.insert(game.copy(rommId = syntheticId, syncDirty = false))
         if (syntheticId != game.rommId) {
+            saveSyncDao.deleteByGame(game.id)
+            saveCacheDao.clearRemoteLinkage(game.id)
             Logger.info(
                 TAG,
-                "preserveOrphanedGame: ${game.title} has local content, rommId ${game.rommId} -> $syntheticId"
+                "preserveOrphanedGame: ${game.title} has local content, rommId ${game.rommId} -> $syntheticId, dropped remote sync state"
             )
         }
     }

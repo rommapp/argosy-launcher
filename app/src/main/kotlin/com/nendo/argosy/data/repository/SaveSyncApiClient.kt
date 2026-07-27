@@ -155,6 +155,26 @@ class SaveSyncApiClient @Inject constructor(
         }
     }
 
+    /**
+     * Whether the server positively denies knowing this rom. Only a 404 answers yes: an
+     * unreachable server, a timeout or any other status leaves the question open, and a
+     * caller acting on this removes local state, so "could not ask" must never read as gone.
+     */
+    suspend fun romIsMissing(rommId: Long): Boolean = withContext(Dispatchers.IO) {
+        val api = this@SaveSyncApiClient.api ?: return@withContext false
+        try {
+            val response = api.getRom(rommId)
+            val missing = response.code() == 404
+            if (!missing && !response.isSuccessful) {
+                Logger.warn(TAG, "[SaveSync] rom check inconclusive | rommId=$rommId, status=${response.code()}")
+            }
+            missing
+        } catch (e: Exception) {
+            Logger.warn(TAG, "[SaveSync] rom check failed, treating rom as present | rommId=$rommId: ${e.message}")
+            false
+        }
+    }
+
     suspend fun checkSavesForGame(gameId: Long, rommId: Long): List<RomMSave> = withContext(Dispatchers.IO) {
         val api = this@SaveSyncApiClient.api ?: return@withContext emptyList()
 

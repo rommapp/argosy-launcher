@@ -98,6 +98,18 @@ interface SaveSyncDao {
     @Query("DELETE FROM save_sync WHERE gameId = :gameId")
     suspend fun deleteByGame(gameId: Long)
 
+    /**
+     * Points a game's sync rows at the rom id it was renumbered to. The server save ids go
+     * with them: they identify saves belonging to the rom that was replaced, so the next
+     * negotiate has to establish them again against the new one.
+     */
+    @Query("""
+        UPDATE save_sync
+        SET rommId = :newRommId, rommSaveId = NULL, lastUploadedHash = NULL
+        WHERE gameId = :gameId
+    """)
+    suspend fun realignToRommId(gameId: Long, newRommId: Long)
+
     @Query("DELETE FROM save_sync WHERE gameId IN (SELECT id FROM games WHERE source IN (:sourceNames))")
     suspend fun deleteByGameSources(sourceNames: List<String>)
 

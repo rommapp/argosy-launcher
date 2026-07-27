@@ -139,6 +139,7 @@ class ImageCacheManager @Inject constructor(
     fun getCurrentCachePath(): String = cacheDir.absolutePath
 
     companion object {
+        private const val MAX_IN_MEMORY_IMAGE_BYTES = 8 * 1024 * 1024
         private const val CACHE_SUBFOLDER = "argosy_images"
         private const val FALLBACK_PLATFORM = "_misc"
         private const val LOGOS_DIR = "_logos"
@@ -345,43 +346,45 @@ class ImageCacheManager @Inject constructor(
         gameDao.updateBackgroundPath(game.id, localPath)
     }
 
+    /**
+     * Downsampling needs the encoded bytes twice, once for the bounds and once for the
+     * real decode, and a network stream cannot be rewound. Artwork is small enough to hold
+     * while that happens; anything past [MAX_IN_MEMORY_IMAGE_BYTES] spills to a temp file
+     * so an unexpectedly huge response cannot be turned into a heap spike.
+     */
     private fun downloadAndResize(url: String, maxWidth: Int): Bitmap? {
         return try {
             val connection = URL(url).openConnection()
             connection.connectTimeout = 10_000
             connection.readTimeout = 30_000
 
-            val tempFile = File.createTempFile("img_", ".tmp", context.cacheDir)
-            try {
-                connection.getInputStream().use { inputStream ->
-                    tempFile.outputStream().use { out ->
-                        inputStream.copyTo(out)
+            connection.getInputStream().use { inputStream ->
+                val head = ByteArray(MAX_IN_MEMORY_IMAGE_BYTES)
+                var headSize = 0
+                while (headSize < head.size) {
+                    val read = inputStream.read(head, headSize, head.size - headSize)
+                    if (read == -1) break
+                    headSize += read
+                }
+
+                if (headSize < head.size) {
+                    decodeSampled(maxWidth) { options ->
+                        BitmapFactory.decodeByteArray(head, 0, headSize, options)
+                    }
+                } else {
+                    val tempFile = File.createTempFile("img_", ".tmp", context.cacheDir)
+                    try {
+                        tempFile.outputStream().use { out ->
+                            out.write(head, 0, headSize)
+                            inputStream.copyTo(out)
+                        }
+                        decodeSampled(maxWidth) { options ->
+                            BitmapFactory.decodeFile(tempFile.absolutePath, options)
+                        }
+                    } finally {
+                        tempFile.delete()
                     }
                 }
-
-                val options = BitmapFactory.Options().apply {
-                    inJustDecodeBounds = true
-                }
-                BitmapFactory.decodeFile(tempFile.absolutePath, options)
-
-                val sampleSize = calculateSampleSize(options.outWidth, options.outHeight, maxWidth)
-                options.inJustDecodeBounds = false
-                options.inSampleSize = sampleSize
-
-                val bitmap = BitmapFactory.decodeFile(tempFile.absolutePath, options)
-                    ?: return null
-
-                if (bitmap.width > maxWidth) {
-                    val ratio = maxWidth.toFloat() / bitmap.width
-                    val newHeight = (bitmap.height * ratio).toInt()
-                    val scaled = Bitmap.createScaledBitmap(bitmap, maxWidth, newHeight, true)
-                    if (scaled != bitmap) bitmap.recycle()
-                    return scaled
-                }
-
-                bitmap
-            } finally {
-                tempFile.delete()
             }
         } catch (e: java.io.FileNotFoundException) {
             Log.w(TAG, "Image not found: $url")
@@ -390,6 +393,22 @@ class ImageCacheManager @Inject constructor(
             Log.e(TAG, "Failed to download image from $url: ${e.javaClass.simpleName}: ${e.message}")
             null
         }
+    }
+
+    private fun decodeSampled(maxWidth: Int, decode: (BitmapFactory.Options) -> Bitmap?): Bitmap? {
+        val options = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+        decode(options)
+
+        options.inSampleSize = calculateSampleSize(options.outWidth, options.outHeight, maxWidth)
+        options.inJustDecodeBounds = false
+
+        val bitmap = decode(options) ?: return null
+        if (bitmap.width <= maxWidth) return bitmap
+
+        val ratio = maxWidth.toFloat() / bitmap.width
+        val scaled = Bitmap.createScaledBitmap(bitmap, maxWidth, (bitmap.height * ratio).toInt(), true)
+        if (scaled != bitmap) bitmap.recycle()
+        return scaled
     }
 
     @Suppress("UNUSED_PARAMETER")

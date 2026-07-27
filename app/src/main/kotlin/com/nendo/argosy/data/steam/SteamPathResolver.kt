@@ -141,11 +141,28 @@ class SteamPathResolver @Inject constructor(
         if (installed && game.localPath != expectedPath) {
             runCatching { gameDao.update(game.copy(localPath = expectedPath)) }
         }
-        if (!installed && path != null && !path.contains(AppPaths.STEAM_STAGING_DIR)) {
+        if (!installed && path != null && isPositivelyGone(path)) {
             Log.d(TAG, "isGameInstalled: install is gone, clearing stale path | appId=$appId, path=$path")
             runCatching { gameDao.update(game.copy(localPath = null)) }
         }
         return installed
+    }
+
+    /**
+     * Whether an install is genuinely absent rather than merely unreadable. Called from the
+     * home screen for every Steam game, so an unmounted volume or a storage permission that
+     * has not been granted yet must not be mistaken for a deleted game: forgetting the path
+     * is not recoverable by looking again. Only a reachable parent with nothing under it
+     * counts as gone.
+     */
+    private fun isPositivelyGone(path: String): Boolean {
+        if (path.contains(AppPaths.STEAM_STAGING_DIR)) return false
+
+        val parent = File(path).parentFile ?: return false
+        val parentReachable = parent.exists() || androidDataAccessor.exists(parent.absolutePath)
+        if (!parentReachable) return false
+
+        return !File(path).exists() && !androidDataAccessor.exists(path)
     }
 
     fun findGnStoragePath(): String? = findAllGnStoragePaths().firstOrNull()

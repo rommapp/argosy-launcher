@@ -56,7 +56,8 @@ class AndroidGameScanner @Inject constructor(
     private val playStoreService: PlayStoreService,
     private val gameDao: GameDao,
     private val platformDao: PlatformDao,
-    private val imageCacheManager: ImageCacheManager
+    private val imageCacheManager: ImageCacheManager,
+    private val syncPreferencesRepository: com.nendo.argosy.data.preferences.SyncPreferencesRepository
 ) {
     private val scope = SafeCoroutineScope(Dispatchers.IO, "AndroidGameScanner")
     private val _progress = MutableStateFlow(AndroidScanProgress())
@@ -284,7 +285,8 @@ class AndroidGameScanner @Inject constructor(
     }
 
     suspend fun relinkInstalledRommAndroidApps(): Int = withContext(Dispatchers.IO) {
-        val candidates = gameDao.getByPlatform(LocalPlatformIds.ANDROID)
+        val candidates = gameDao
+            .getByPlatform(LocalPlatformIds.ANDROID, syncPreferencesRepository.getRommUserId())
             .filter { it.packageName == null && it.source != GameSource.ANDROID_APP }
         if (candidates.isEmpty()) return@withContext 0
 
@@ -328,7 +330,8 @@ class AndroidGameScanner @Inject constructor(
         createSortTitle(title).replace(Regex("[^a-z0-9]"), "")
 
     private suspend fun findUnlinkedRommMatch(label: String, packageName: String): GameEntity? {
-        val unlinked = gameDao.getByPlatform(LocalPlatformIds.ANDROID)
+        val unlinked = gameDao
+            .getByPlatform(LocalPlatformIds.ANDROID, syncPreferencesRepository.getRommUserId())
             .filter { it.packageName == null && it.rommId != null }
         unlinked.firstOrNull { it.titleId == packageName }?.let { return it }
         val key = matchKey(label)
@@ -430,7 +433,10 @@ class AndroidGameScanner @Inject constructor(
     }
 
     private suspend fun updatePlatformGameCount() {
-        val count = gameDao.countByPlatform(LocalPlatformIds.ANDROID)
+        val count = gameDao.countByPlatform(
+            LocalPlatformIds.ANDROID,
+            syncPreferencesRepository.getRommUserId()
+        )
         platformDao.updateGameCount(LocalPlatformIds.ANDROID, count)
     }
 

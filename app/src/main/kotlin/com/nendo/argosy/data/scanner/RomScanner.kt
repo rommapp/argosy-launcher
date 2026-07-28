@@ -39,7 +39,8 @@ data class ScanResult(
 @Singleton
 class RomScanner @Inject constructor(
     private val gameDao: GameDao,
-    private val platformDao: PlatformDao
+    private val platformDao: PlatformDao,
+    private val syncPreferencesRepository: com.nendo.argosy.data.preferences.SyncPreferencesRepository
 ) {
     private val _progress = MutableStateFlow(ScanProgress())
     val progress: StateFlow<ScanProgress> = _progress.asStateFlow()
@@ -92,9 +93,10 @@ class RomScanner @Inject constructor(
                 )
             }
 
+            val ownerUserId = syncPreferencesRepository.getRommUserId()
             platformsWithGames.forEach { platformSlug ->
                 val platform = platformDao.getBySlug(platformSlug) ?: return@forEach
-                val count = gameDao.countByPlatform(platform.id)
+                val count = gameDao.countByPlatform(platform.id, ownerUserId)
                 platformDao.updateGameCount(platform.id, count)
             }
 

@@ -79,10 +79,12 @@ class GameStorageBreakdownUseCase @Inject constructor(
     private val gameDao: GameDao,
     private val gameFileDao: GameFileDao,
     private val gameDiscDao: GameDiscDao,
-    private val saveCacheDao: SaveCacheDao
+    private val saveCacheDao: SaveCacheDao,
+    private val syncPreferencesRepository: com.nendo.argosy.data.preferences.SyncPreferencesRepository
 ) {
     suspend fun loadPlatform(platformId: Long): List<GameStorageBreakdown> = withContext(Dispatchers.IO) {
-        gameDao.getDownloadedGamesByPlatform(platformId).mapNotNull { game ->
+        val ownerUserId = syncPreferencesRepository.getRommUserId()
+        gameDao.getDownloadedGamesByPlatform(platformId, ownerUserId).mapNotNull { game ->
             buildBreakdown(game.id, game.title, game.source, game.localPath, game.fileSizeBytes)
         }
     }

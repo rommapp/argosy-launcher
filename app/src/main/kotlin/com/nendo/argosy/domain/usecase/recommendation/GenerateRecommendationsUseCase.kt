@@ -20,10 +20,12 @@ private const val FAVORITE_PENALTY = 0.5f
 class GenerateRecommendationsUseCase @Inject constructor(
     private val gameDao: GameDao,
     private val preferencesRepository: UserPreferencesRepository,
-    private val platformRepository: PlatformRepository
+    private val platformRepository: PlatformRepository,
+    private val syncPreferencesRepository: com.nendo.argosy.data.preferences.SyncPreferencesRepository
 ) {
     suspend operator fun invoke(forceRegenerate: Boolean = false): List<Long> {
         val prefs = preferencesRepository.preferences.first()
+        val ownerUserId = syncPreferencesRepository.getRommUserId()
         val currentWeekKey = getCurrentWeekKey()
 
         var penalties = prefs.recommendationPenalties.toMutableMap()
@@ -34,7 +36,7 @@ class GenerateRecommendationsUseCase @Inject constructor(
             penalties = decayPenalties(penalties, weeksPassed)
         }
 
-        val playedGames = gameDao.getPlayedGames()
+        val playedGames = gameDao.getPlayedGames(ownerUserId)
         if (playedGames.isEmpty()) return emptyList()
 
         val genreWeights = calculateGenreWeights(playedGames)
@@ -44,9 +46,9 @@ class GenerateRecommendationsUseCase @Inject constructor(
         val syncEnabledPlatformIds = platformRepository.getSyncEnabledPlatforms()
             .mapTo(mutableSetOf()) { it.id }
 
-        val undownloadedGames = gameDao.getUnplayedUndownloadedGames()
+        val undownloadedGames = gameDao.getUnplayedUndownloadedGames(ownerUserId)
             .filter { it.platformId in syncEnabledPlatformIds }
-        val installedUnplayed = gameDao.getUnplayedInstalledGames()
+        val installedUnplayed = gameDao.getUnplayedInstalledGames(ownerUserId)
             .filter { it.platformId in syncEnabledPlatformIds }
 
         if (undownloadedGames.isEmpty() && installedUnplayed.isEmpty()) return emptyList()

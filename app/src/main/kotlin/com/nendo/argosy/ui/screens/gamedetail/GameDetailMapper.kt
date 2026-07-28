@@ -10,6 +10,10 @@ import com.nendo.argosy.ui.common.isAndroidApp
 import com.nendo.argosy.ui.common.isRommGame
 import com.nendo.argosy.ui.common.isSteamGame
 
+/**
+ * [isHidden] is supplied by the caller: hiding is per account and lives in `user_roms_hidden`,
+ * so a bare [GameEntity] cannot answer it.
+ */
 fun GameEntity.toGameDetailUi(
     platformName: String,
     emulatorName: String?,
@@ -20,7 +24,8 @@ fun GameEntity.toGameDetailUi(
     selectedCoreName: String? = null,
     achievements: List<AchievementUi> = emptyList(),
     canManageSaves: Boolean = false,
-    steamLauncherName: String? = null
+    steamLauncherName: String? = null,
+    isHidden: Boolean = false
 ): GameDetailUi {
     val remoteUrls = screenshotPaths?.split(",")?.filter { it.isNotBlank() } ?: emptyList()
     val cachedPaths = cachedScreenshotPaths?.split(",")?.filter { it.isNotBlank() } ?: emptyList()

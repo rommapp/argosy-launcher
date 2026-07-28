@@ -55,6 +55,23 @@ class RomMUserPropertyService @Inject constructor(
         return RomMResult.Success(Unit)
     }
 
+    /**
+     * The user's own hide choice: recorded locally first so the library reacts immediately, then
+     * queued onto the rom's `rom_user` block. A rom with no server id stops at the local write.
+     */
+    suspend fun updateHidden(gameId: Long, hidden: Boolean): RomMResult<Unit> {
+        val game = gameDao.getById(gameId) ?: return RomMResult.Error("Game not found")
+        overlayWriter.setHidden(gameId, hidden)
+        val rommId = game.rommId ?: return RomMResult.Success(Unit)
+        syncCoordinator.get().queuePropertyChange(
+            gameId,
+            rommId,
+            SyncType.HIDDEN,
+            intValue = if (hidden) 1 else 0
+        )
+        return RomMResult.Success(Unit)
+    }
+
     suspend fun refreshUserProps(gameId: Long): RomMResult<Unit> {
         val currentApi = api ?: return RomMResult.Success(Unit)
         val game = gameDao.getById(gameId) ?: return RomMResult.Error("Game not found")
@@ -73,11 +90,13 @@ class RomMUserPropertyService @Inject constructor(
             val hasRating = pendingSyncQueueDao.hasPending(gameId, SyncType.RATING)
             val hasDifficulty = pendingSyncQueueDao.hasPending(gameId, SyncType.DIFFICULTY)
             val hasStatus = pendingSyncQueueDao.hasPending(gameId, SyncType.STATUS)
+            val hasHidden = pendingSyncQueueDao.hasPending(gameId, SyncType.HIDDEN)
 
             val current = gameDao.getById(gameId) ?: return RomMResult.Success(Unit)
             if (!hasRating) overlayWriter.updateUserRating(gameId, romUser.rating)
             if (!hasDifficulty) overlayWriter.updateUserDifficulty(gameId, romUser.difficulty)
             if (!hasStatus) overlayWriter.updateStatus(gameId, romUser.status)
+            if (!hasHidden) overlayWriter.setHidden(gameId, romUser.hidden)
             if (current.backlogged != romUser.backlogged) {
                 overlayWriter.updateBacklogged(gameId, romUser.backlogged)
             }

@@ -390,6 +390,7 @@ class SyncCoordinator @Inject constructor(
                 SyncType.DIFFICULTY -> processProperty(item)
                 SyncType.STATUS -> processProperty(item)
                 SyncType.FAVORITE -> processFavorite(item)
+                SyncType.HIDDEN -> processHidden(item)
                 SyncType.ACHIEVEMENT -> processAchievement(item)
                 SyncType.SCREENSHOT -> processScreenshot(item)
             }
@@ -562,6 +563,15 @@ class SyncCoordinator @Inject constructor(
             userRating = if (item.syncType == SyncType.RATING) payload.intValue else null,
             userDifficulty = if (item.syncType == SyncType.DIFFICULTY) payload.intValue else null,
             userStatus = if (item.syncType == SyncType.STATUS) payload.stringValue else null
+        )
+    }
+
+    private suspend fun processHidden(item: PendingSyncQueueEntity): Boolean {
+        val payload = payloadCodec.decodeProperty(item.payloadJson) ?: return false
+
+        return romMRepository.get().updateRomUserProps(
+            rommId = item.rommId,
+            hidden = payload.intValue == 1
         )
     }
 

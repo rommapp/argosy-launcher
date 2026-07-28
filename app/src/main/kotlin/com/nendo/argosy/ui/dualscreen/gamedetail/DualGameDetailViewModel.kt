@@ -460,7 +460,7 @@ class DualGameDetailViewModel(
                 activeChannel = activeChannel,
                 activeSaveTimestamp = activeSaveTimestamp,
                 isMultiDisc = game.isMultiDisc,
-                isHidden = game.isHidden
+                isHidden = gameRepository.isGameHidden(game.id)
             )
             val sameGame = _uiState.value.gameId == game.id
             _uiState.value = newState

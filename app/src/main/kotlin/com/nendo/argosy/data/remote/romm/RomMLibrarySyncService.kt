@@ -80,7 +80,9 @@ class RomMLibrarySyncService @Inject constructor(
     private val syncVirtualCollectionsUseCase: dagger.Lazy<com.nendo.argosy.domain.usecase.collection.SyncVirtualCollectionsUseCase>,
     private val fileAccessLayer: com.nendo.argosy.data.storage.FileAccessLayer,
     private val androidGameScanner: dagger.Lazy<com.nendo.argosy.data.scanner.AndroidGameScanner>,
-    private val attributionRepository: StorageAttributionRepository
+    private val attributionRepository: StorageAttributionRepository,
+    private val userRomsHiddenDao: com.nendo.argosy.data.local.dao.UserRomsHiddenDao,
+    private val pendingSyncQueueDao: com.nendo.argosy.data.local.dao.PendingSyncQueueDao
 ) {
     private val api: RomMApi? get() = connectionManager.getApi()
     private val syncMutex = Mutex()
@@ -99,8 +101,9 @@ class RomMLibrarySyncService @Inject constructor(
         val gameModeCount = collectionDao.countByType(CollectionType.GAME_MODE)
 
         if (genreCount == 0 && gameModeCount == 0) {
-            val hasGenres = gameDao.getDistinctGenres().isNotEmpty()
-            val hasGameModes = gameDao.getDistinctGameModes().isNotEmpty()
+            val owner = overlayWriter.activeOwnerId()
+            val hasGenres = gameDao.getDistinctGenres(owner).isNotEmpty()
+            val hasGameModes = gameDao.getDistinctGameModes(owner).isNotEmpty()
 
             if (hasGenres || hasGameModes) {
                 Logger.info(TAG, "Populating virtual collections for existing games")
@@ -242,7 +245,7 @@ class RomMLibrarySyncService @Inject constructor(
         gameRepository.get().validateDiscLocalFiles(platformId)
         gameRepository.get().validateFileLocalFiles(platformId)
 
-        val count = gameDao.countByPlatform(platformId)
+        val count = gameDao.countByPlatform(platformId, scope.ownerUserId)
         platformDao.updateGameCount(platformId, count)
 
         return gamesDeleted
@@ -532,8 +535,9 @@ class RomMLibrarySyncService @Inject constructor(
     }
 
     private suspend fun migrateLegacyAndroidPlatform(legacy: PlatformEntity) {
+        val owner = overlayWriter.activeOwnerId()
         database.withTransaction {
-            val moved = gameDao.countByPlatform(legacy.id)
+            val moved = gameDao.countByPlatform(legacy.id, owner)
             gameDao.migratePlatform(legacy.id, LocalPlatformIds.ANDROID, ANDROID_SLUG)
             emulatorConfigDao.migratePlatform(legacy.id, LocalPlatformIds.ANDROID)
             platformDao.getById(LocalPlatformIds.ANDROID)?.let { local ->
@@ -544,7 +548,10 @@ class RomMLibrarySyncService @Inject constructor(
                 ))
             }
             platformDao.deleteById(legacy.id)
-            platformDao.updateGameCount(LocalPlatformIds.ANDROID, gameDao.countByPlatform(LocalPlatformIds.ANDROID))
+            platformDao.updateGameCount(
+                LocalPlatformIds.ANDROID,
+                gameDao.countByPlatform(LocalPlatformIds.ANDROID, owner)
+            )
             Logger.info(TAG, "migrateLegacyAndroidPlatform: moved $moved games from platform ${legacy.id} to local android platform")
         }
     }
@@ -690,7 +697,6 @@ class RomMLibrarySyncService @Inject constructor(
             backlogged = localDataSource?.backlogged ?: false,
             nowPlaying = localDataSource?.nowPlaying ?: false,
             isFavorite = localDataSource?.isFavorite ?: false,
-            isHidden = localDataSource?.isHidden ?: false,
             isMultiDisc = when {
                 rom.isFolderMultiDisc -> localDataSource?.isMultiDisc == true && localDataSource.localPath != null
                 shouldBeMultiDisc -> localDataSource?.isMultiDisc ?: false
@@ -708,6 +714,14 @@ class RomMLibrarySyncService @Inject constructor(
         gameDao.insert(game)
 
         if (migrationSources.isNotEmpty()) {
+            val mergedId = gameDao.getByRommId(rom.id)?.id
+            if (mergedId != null) {
+                userRomsHiddenDao.inheritWhenAllHidden(
+                    mergedId,
+                    migrationSources.map { it.id },
+                    migrationSources.size
+                )
+            }
             migrationSources.forEach { source ->
                 gameDao.delete(source.id)
             }
@@ -727,6 +741,11 @@ class RomMLibrarySyncService @Inject constructor(
      * Records the server's rom_user block against the account that fetched it, and re-grants that
      * account's membership. The block is per user, so writing it onto the library row alone would
      * publish one account's rating and status to every other account on the device.
+     *
+     * `rom_user.hidden` lands in `user_roms_hidden` rather than on the overlay row: it is the
+     * user's own choice and the peer of the local toggle, not the admin-imposed `serverHidden`.
+     * A local hide that has not been pushed yet wins, or the server would undo it on the next
+     * pass before the queue ever drained.
      */
     private suspend fun applyRomUserProperties(gameId: Long, rom: RomMRom, scope: SyncScope) {
         val owner = scope.ownerUserId
@@ -739,6 +758,13 @@ class RomMLibrarySyncService @Inject constructor(
         overlayDao.setStatus(owner, gameId, romUser.status)
         overlayDao.setBacklogged(owner, gameId, romUser.backlogged)
         overlayDao.setNowPlaying(owner, gameId, romUser.nowPlaying)
+
+        if (pendingSyncQueueDao.hasPending(gameId, com.nendo.argosy.data.local.entity.SyncType.HIDDEN)) return
+        if (romUser.hidden) {
+            userRomsHiddenDao.hide(owner, gameId)
+        } else {
+            userRomsHiddenDao.unhide(owner, gameId)
+        }
     }
 
     private suspend fun syncGameFiles(gameId: Long, rom: RomMRom, platformSlug: String) {
@@ -1318,8 +1344,9 @@ class RomMLibrarySyncService @Inject constructor(
 
     private suspend fun migratePlatformData(old: PlatformEntity, remote: RomMPlatform) {
         val label = "${old.name} (${old.id} -> ${remote.id})"
+        val owner = overlayWriter.activeOwnerId()
         database.withTransaction {
-            val gameCount = gameDao.countByPlatform(old.id)
+            val gameCount = gameDao.countByPlatform(old.id, owner)
             gameDao.migratePlatform(old.id, remote.id, remote.slug)
             Logger.info(TAG, "migratePlatformData [$label]: moved $gameCount games")
 

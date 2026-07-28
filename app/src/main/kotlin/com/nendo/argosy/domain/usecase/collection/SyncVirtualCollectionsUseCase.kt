@@ -5,14 +5,18 @@ import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.entity.CollectionEntity
 import com.nendo.argosy.data.local.entity.CollectionGameEntity
 import com.nendo.argosy.data.local.entity.CollectionType
+import com.nendo.argosy.data.preferences.SyncPreferencesRepository
 import javax.inject.Inject
 
 class SyncVirtualCollectionsUseCase @Inject constructor(
     private val gameDao: GameDao,
-    private val collectionDao: CollectionDao
+    private val collectionDao: CollectionDao,
+    private val syncPreferencesRepository: SyncPreferencesRepository
 ) {
     suspend operator fun invoke() {
-        val games = gameDao.getSyncEnabledGamesForCategories()
+        val games = gameDao.getSyncEnabledGamesForCategories(
+            syncPreferencesRepository.getRommUserId()
+        )
 
         val genreMap = mutableMapOf<String, MutableList<Long>>()
         val modeMap = mutableMapOf<String, MutableList<Long>>()

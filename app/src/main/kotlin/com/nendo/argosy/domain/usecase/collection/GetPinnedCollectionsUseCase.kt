@@ -4,6 +4,7 @@ import com.nendo.argosy.data.local.dao.CollectionDao
 import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.dao.PinnedCollectionDao
 import com.nendo.argosy.data.local.entity.CollectionType
+import com.nendo.argosy.data.preferences.SyncPreferencesRepository
 import com.nendo.argosy.domain.model.PinnedCollection
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -12,7 +13,8 @@ import javax.inject.Inject
 class GetPinnedCollectionsUseCase @Inject constructor(
     private val pinnedCollectionDao: PinnedCollectionDao,
     private val collectionDao: CollectionDao,
-    private val gameDao: GameDao
+    private val gameDao: GameDao,
+    private val syncPreferencesRepository: SyncPreferencesRepository
 ) {
     operator fun invoke(): Flow<List<PinnedCollection>> {
         return pinnedCollectionDao.observeAllPinned().map { pinnedEntities ->
@@ -59,7 +61,7 @@ class GetPinnedCollectionsUseCase @Inject constructor(
             val collection = collectionDao.getByTypeAndName(CollectionType.SERIES, name) ?: return 0
             return collectionDao.getGameCountInCollection(collection.id)
         }
-        val infos = gameDao.getAllCategoryInfo()
+        val infos = gameDao.getAllCategoryInfo(syncPreferencesRepository.getRommUserId())
         return infos.count { info ->
             val field = when (type) {
                 CategoryType.GENRE -> info.genre

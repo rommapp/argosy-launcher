@@ -24,7 +24,6 @@ class GameMigrationHelperTest {
         userDifficulty: Int = 0,
         completion: Int = 0,
         isFavorite: Boolean = false,
-        isHidden: Boolean = false,
         addedAt: Instant = Instant.now(),
         lastPlayed: Instant? = null,
         achievementCount: Int = 0
@@ -57,7 +56,6 @@ class GameMigrationHelperTest {
         backlogged = false,
         nowPlaying = false,
         isFavorite = isFavorite,
-        isHidden = isHidden,
         isMultiDisc = false,
         playCount = playCount,
         playTimeMinutes = playTimeMinutes,
@@ -161,27 +159,6 @@ class GameMigrationHelperTest {
         val result = GameMigrationHelper.aggregateMultiDiscData(listOf(disc1, disc2))!!
 
         assertFalse(result.isFavorite)
-    }
-
-    @Test
-    fun `isHidden is true only if all sources are hidden`() {
-        val disc1 = createGameEntity(id = 1, rommId = 100, isHidden = true)
-        val disc2 = createGameEntity(id = 2, rommId = 101, isHidden = true)
-
-        val result = GameMigrationHelper.aggregateMultiDiscData(listOf(disc1, disc2))!!
-
-        assertTrue(result.isHidden)
-    }
-
-    @Test
-    fun `isHidden is false if any source is not hidden`() {
-        val disc1 = createGameEntity(id = 1, rommId = 100, isHidden = true)
-        val disc2 = createGameEntity(id = 2, rommId = 101, isHidden = false)
-        val disc3 = createGameEntity(id = 3, rommId = 102, isHidden = true)
-
-        val result = GameMigrationHelper.aggregateMultiDiscData(listOf(disc1, disc2, disc3))!!
-
-        assertFalse(result.isHidden)
     }
 
     @Test
@@ -300,7 +277,6 @@ class GameMigrationHelperTest {
             userDifficulty = 2,
             completion = 75,
             isFavorite = true,
-            isHidden = false,
             addedAt = addedTime,
             lastPlayed = lastPlayed,
             achievementCount = 0
@@ -455,7 +431,6 @@ class GameMigrationHelperTest {
             userDifficulty = 3,
             completion = 100,
             isFavorite = true,
-            isHidden = false,
             addedAt = addedTime,
             lastPlayed = disc1Played,
             achievementCount = 50
@@ -474,7 +449,6 @@ class GameMigrationHelperTest {
             userDifficulty = 2,
             completion = 0,
             isFavorite = false,
-            isHidden = false,
             addedAt = addedTime.plusSeconds(3600),
             lastPlayed = disc2Played,
             achievementCount = 30
@@ -493,7 +467,6 @@ class GameMigrationHelperTest {
             userDifficulty = 0,
             completion = 0,
             isFavorite = false,
-            isHidden = false,
             addedAt = addedTime.plusSeconds(7200),
             lastPlayed = disc3Played,
             achievementCount = 20
@@ -512,7 +485,6 @@ class GameMigrationHelperTest {
         assertEquals(3, result.userDifficulty)
         assertEquals(100, result.completion)
         assertTrue(result.isFavorite)
-        assertFalse(result.isHidden)
         assertEquals(addedTime, result.addedAt)
         assertEquals(disc2Played, result.lastPlayed)
         assertEquals(50, result.achievementCount)

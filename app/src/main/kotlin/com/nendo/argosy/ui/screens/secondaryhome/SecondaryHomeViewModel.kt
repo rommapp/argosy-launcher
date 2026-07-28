@@ -302,7 +302,6 @@ class SecondaryHomeViewModel @Inject constructor(
                 }
                 is HomeSection.Platform -> {
                     gameRepository.getByPlatformSorted(section.id, limit = 200)
-                        .filter { !it.isHidden }
                         .map { it.toUi(hiddenIds) }
                 }
             }

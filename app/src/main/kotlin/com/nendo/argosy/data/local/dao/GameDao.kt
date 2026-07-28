@@ -13,15 +13,29 @@ import com.nendo.argosy.data.model.GameSource
 import kotlinx.coroutines.flow.Flow
 import java.time.Instant
 
+/**
+ * Hiding is per account and lives in `user_roms_hidden`, so every list, count and filter here
+ * carries the owner it is being run for and tests row existence rather than a column.
+ *
+ * A row with a null owner is an unattributed hide from an install that predates accounts, and
+ * counts for whoever is signed in; the alternative is a user's hidden roms all reappearing the
+ * first time they sign in to RomM. `save_cache` reads its unattributed rows the same way.
+ */
 @Dao
 interface GameDao {
 
-    @Query("SELECT * FROM games WHERE platformId = :platformId AND isHidden = 0 ORDER BY sortTitle ASC")
-    fun observeByPlatform(platformId: Long): Flow<List<GameEntity>>
+    @Query("""
+        SELECT * FROM games
+        WHERE platformId = :platformId
+        AND NOT EXISTS (SELECT 1 FROM user_roms_hidden h WHERE h.gameId = games.id AND (h.ownerUserId IS NULL OR h.ownerUserId IS :ownerUserId))
+        ORDER BY sortTitle ASC
+    """)
+    fun observeByPlatform(platformId: Long, ownerUserId: Long?): Flow<List<GameEntity>>
 
     @Query("""
         SELECT * FROM games
-        WHERE platformId = :platformId AND isHidden = 0
+        WHERE platformId = :platformId
+        AND NOT EXISTS (SELECT 1 FROM user_roms_hidden h WHERE h.gameId = games.id AND (h.ownerUserId IS NULL OR h.ownerUserId IS :ownerUserId))
         ORDER BY
             CASE
                 WHEN localPath IS NOT NULL AND isFavorite = 1 THEN 0
@@ -36,11 +50,12 @@ interface GameDao {
             sortTitle ASC
         LIMIT :limit
     """)
-    fun observeByPlatformSorted(platformId: Long, limit: Int = 20): Flow<List<GameEntity>>
+    fun observeByPlatformSorted(platformId: Long, ownerUserId: Long?, limit: Int = 20): Flow<List<GameEntity>>
 
     @Query("""
         SELECT * FROM games
-        WHERE platformId = :platformId AND isHidden = 0
+        WHERE platformId = :platformId
+        AND NOT EXISTS (SELECT 1 FROM user_roms_hidden h WHERE h.gameId = games.id AND (h.ownerUserId IS NULL OR h.ownerUserId IS :ownerUserId))
         ORDER BY
             CASE
                 WHEN localPath IS NOT NULL AND isFavorite = 1 THEN 0
@@ -55,136 +70,291 @@ interface GameDao {
             sortTitle ASC
         LIMIT :limit
     """)
-    suspend fun getByPlatformSorted(platformId: Long, limit: Int = 20): List<GameEntity>
-
-    @Query("SELECT * FROM games WHERE isHidden = 0 ORDER BY sortTitle ASC")
-    fun observeAll(): Flow<List<GameEntity>>
-
-    @Query("SELECT * FROM games WHERE isHidden = 0 ORDER BY sortTitle ASC")
-    suspend fun getAllSortedByTitle(): List<GameEntity>
-
-    @Query("SELECT id FROM games WHERE isHidden = 0 ORDER BY sortTitle ASC")
-    suspend fun getAllSortedByTitleIds(): List<Long>
-
-    @Query("SELECT * FROM games WHERE isHidden = 1 ORDER BY sortTitle ASC")
-    suspend fun getHiddenSortedByTitle(): List<GameEntity>
-
-    @Query("SELECT id FROM games WHERE isHidden = 1 ORDER BY sortTitle ASC")
-    suspend fun getHiddenSortedByTitleIds(): List<Long>
-
-    @Query("SELECT * FROM games WHERE source = :source AND isHidden = 0 ORDER BY sortTitle ASC")
-    fun observeBySource(source: GameSource): Flow<List<GameEntity>>
-
-    @Query("SELECT * FROM games WHERE isFavorite = 1 AND isHidden = 0 ORDER BY (source = 'ROMM_REMOTE') ASC, sortTitle ASC")
-    fun observeFavorites(): Flow<List<GameEntity>>
-
-    // Lightweight list projections (avoid CursorWindow overflow)
-    @Query("SELECT id, platformId, platformSlug, title, sortTitle, localPath, source, coverPath, isFavorite, isHidden, isMultiDisc, rommId, steamAppId, packageName, steamLauncher, playCount, playTimeMinutes, lastPlayed, genre, gameModes, rating, userRating, userDifficulty, releaseYear, addedAt FROM games WHERE isHidden = 0 ORDER BY sortTitle ASC")
-    fun observeAllList(): Flow<List<GameListItem>>
-
-    @Query("SELECT id, platformId, platformSlug, title, sortTitle, localPath, source, coverPath, isFavorite, isHidden, isMultiDisc, rommId, steamAppId, packageName, steamLauncher, playCount, playTimeMinutes, lastPlayed, genre, gameModes, rating, userRating, userDifficulty, releaseYear, addedAt FROM games WHERE platformId = :platformId AND isHidden = 0 ORDER BY sortTitle ASC")
-    fun observeByPlatformList(platformId: Long): Flow<List<GameListItem>>
-
-    @Query("SELECT id, platformId, platformSlug, title, sortTitle, localPath, source, coverPath, isFavorite, isHidden, isMultiDisc, rommId, steamAppId, packageName, steamLauncher, playCount, playTimeMinutes, lastPlayed, genre, gameModes, rating, userRating, userDifficulty, releaseYear, addedAt FROM games WHERE source = :source AND isHidden = 0 ORDER BY sortTitle ASC")
-    fun observeBySourceList(source: GameSource): Flow<List<GameListItem>>
+    suspend fun getByPlatformSorted(platformId: Long, ownerUserId: Long?, limit: Int = 20): List<GameEntity>
 
     @Query("""
-        SELECT id, platformId, platformSlug, title, sortTitle, localPath, source, coverPath, isFavorite, isHidden, isMultiDisc, rommId, steamAppId, packageName, steamLauncher, playCount, playTimeMinutes, lastPlayed, genre, gameModes, rating, userRating, userDifficulty, releaseYear, addedAt FROM games
-        WHERE isHidden = 0
+        SELECT * FROM games
+        WHERE NOT EXISTS (SELECT 1 FROM user_roms_hidden h WHERE h.gameId = games.id AND (h.ownerUserId IS NULL OR h.ownerUserId IS :ownerUserId))
+        ORDER BY sortTitle ASC
+    """)
+    fun observeAll(ownerUserId: Long?): Flow<List<GameEntity>>
+
+    @Query("""
+        SELECT * FROM games
+        WHERE NOT EXISTS (SELECT 1 FROM user_roms_hidden h WHERE h.gameId = games.id AND (h.ownerUserId IS NULL OR h.ownerUserId IS :ownerUserId))
+        ORDER BY sortTitle ASC
+    """)
+    suspend fun getAllSortedByTitle(ownerUserId: Long?): List<GameEntity>
+
+    @Query("""
+        SELECT id FROM games
+        WHERE NOT EXISTS (SELECT 1 FROM user_roms_hidden h WHERE h.gameId = games.id AND (h.ownerUserId IS NULL OR h.ownerUserId IS :ownerUserId))
+        ORDER BY sortTitle ASC
+    """)
+    suspend fun getAllSortedByTitleIds(ownerUserId: Long?): List<Long>
+
+    @Query("""
+        SELECT * FROM games
+        WHERE EXISTS (SELECT 1 FROM user_roms_hidden h WHERE h.gameId = games.id AND (h.ownerUserId IS NULL OR h.ownerUserId IS :ownerUserId))
+        ORDER BY sortTitle ASC
+    """)
+    suspend fun getHiddenSortedByTitle(ownerUserId: Long?): List<GameEntity>
+
+    @Query("""
+        SELECT id FROM games
+        WHERE EXISTS (SELECT 1 FROM user_roms_hidden h WHERE h.gameId = games.id AND (h.ownerUserId IS NULL OR h.ownerUserId IS :ownerUserId))
+        ORDER BY sortTitle ASC
+    """)
+    suspend fun getHiddenSortedByTitleIds(ownerUserId: Long?): List<Long>
+
+    @Query("""
+        SELECT * FROM games
+        WHERE source = :source
+        AND NOT EXISTS (SELECT 1 FROM user_roms_hidden h WHERE h.gameId = games.id AND (h.ownerUserId IS NULL OR h.ownerUserId IS :ownerUserId))
+        ORDER BY sortTitle ASC
+    """)
+    fun observeBySource(source: GameSource, ownerUserId: Long?): Flow<List<GameEntity>>
+
+    @Query("""
+        SELECT * FROM games
+        WHERE isFavorite = 1
+        AND NOT EXISTS (SELECT 1 FROM user_roms_hidden h WHERE h.gameId = games.id AND (h.ownerUserId IS NULL OR h.ownerUserId IS :ownerUserId))
+        ORDER BY (source = 'ROMM_REMOTE') ASC, sortTitle ASC
+    """)
+    fun observeFavorites(ownerUserId: Long?): Flow<List<GameEntity>>
+
+    @Query("""
+        SELECT id, platformId, platformSlug, title, sortTitle, localPath, source, coverPath, isFavorite,
+               EXISTS(SELECT 1 FROM user_roms_hidden h WHERE h.gameId = games.id AND (h.ownerUserId IS NULL OR h.ownerUserId IS :ownerUserId)) AS isHidden,
+               isMultiDisc, rommId, steamAppId, packageName, steamLauncher, playCount, playTimeMinutes,
+               lastPlayed, genre, gameModes, rating, userRating, userDifficulty, releaseYear, addedAt
+        FROM games
+        WHERE NOT EXISTS (SELECT 1 FROM user_roms_hidden h WHERE h.gameId = games.id AND (h.ownerUserId IS NULL OR h.ownerUserId IS :ownerUserId))
+        ORDER BY sortTitle ASC
+    """)
+    fun observeAllList(ownerUserId: Long?): Flow<List<GameListItem>>
+
+    @Query("""
+        SELECT id, platformId, platformSlug, title, sortTitle, localPath, source, coverPath, isFavorite,
+               EXISTS(SELECT 1 FROM user_roms_hidden h WHERE h.gameId = games.id AND (h.ownerUserId IS NULL OR h.ownerUserId IS :ownerUserId)) AS isHidden,
+               isMultiDisc, rommId, steamAppId, packageName, steamLauncher, playCount, playTimeMinutes,
+               lastPlayed, genre, gameModes, rating, userRating, userDifficulty, releaseYear, addedAt
+        FROM games
+        WHERE platformId = :platformId
+        AND NOT EXISTS (SELECT 1 FROM user_roms_hidden h WHERE h.gameId = games.id AND (h.ownerUserId IS NULL OR h.ownerUserId IS :ownerUserId))
+        ORDER BY sortTitle ASC
+    """)
+    fun observeByPlatformList(platformId: Long, ownerUserId: Long?): Flow<List<GameListItem>>
+
+    @Query("""
+        SELECT id, platformId, platformSlug, title, sortTitle, localPath, source, coverPath, isFavorite,
+               EXISTS(SELECT 1 FROM user_roms_hidden h WHERE h.gameId = games.id AND (h.ownerUserId IS NULL OR h.ownerUserId IS :ownerUserId)) AS isHidden,
+               isMultiDisc, rommId, steamAppId, packageName, steamLauncher, playCount, playTimeMinutes,
+               lastPlayed, genre, gameModes, rating, userRating, userDifficulty, releaseYear, addedAt
+        FROM games
+        WHERE source = :source
+        AND NOT EXISTS (SELECT 1 FROM user_roms_hidden h WHERE h.gameId = games.id AND (h.ownerUserId IS NULL OR h.ownerUserId IS :ownerUserId))
+        ORDER BY sortTitle ASC
+    """)
+    fun observeBySourceList(source: GameSource, ownerUserId: Long?): Flow<List<GameListItem>>
+
+    @Query("""
+        SELECT id, platformId, platformSlug, title, sortTitle, localPath, source, coverPath, isFavorite,
+               EXISTS(SELECT 1 FROM user_roms_hidden h WHERE h.gameId = games.id AND (h.ownerUserId IS NULL OR h.ownerUserId IS :ownerUserId)) AS isHidden,
+               isMultiDisc, rommId, steamAppId, packageName, steamLauncher, playCount, playTimeMinutes,
+               lastPlayed, genre, gameModes, rating, userRating, userDifficulty, releaseYear, addedAt
+        FROM games
+        WHERE NOT EXISTS (SELECT 1 FROM user_roms_hidden h WHERE h.gameId = games.id AND (h.ownerUserId IS NULL OR h.ownerUserId IS :ownerUserId))
         AND (source = 'LOCAL_ONLY' OR source = 'ROMM_SYNCED' OR source = 'STEAM' OR source = 'ANDROID_APP')
         AND (source != 'STEAM' OR localPath IS NOT NULL OR (steamLauncher IS NOT NULL AND steamLauncher != 'native'))
         ORDER BY sortTitle ASC
     """)
-    fun observePlayableList(): Flow<List<GameListItem>>
-
-    @Query("SELECT id, platformId, platformSlug, title, sortTitle, localPath, source, coverPath, isFavorite, isHidden, isMultiDisc, rommId, steamAppId, packageName, steamLauncher, playCount, playTimeMinutes, lastPlayed, genre, gameModes, rating, userRating, userDifficulty, releaseYear, addedAt FROM games WHERE isFavorite = 1 AND isHidden = 0 ORDER BY (source = 'ROMM_REMOTE') ASC, sortTitle ASC")
-    fun observeFavoritesList(): Flow<List<GameListItem>>
-
-    @Query("SELECT id, platformId, platformSlug, title, sortTitle, localPath, source, coverPath, isFavorite, isHidden, isMultiDisc, rommId, steamAppId, packageName, steamLauncher, playCount, playTimeMinutes, lastPlayed, genre, gameModes, rating, userRating, userDifficulty, releaseYear, addedAt FROM games ORDER BY sortTitle ASC")
-    fun observeAllListIncludingHidden(): Flow<List<GameListItem>>
+    fun observePlayableList(ownerUserId: Long?): Flow<List<GameListItem>>
 
     @Query("""
-        SELECT g.id, g.platformId, g.platformSlug, g.title, g.sortTitle, g.localPath, g.source, g.coverPath, g.isFavorite, g.isHidden, g.isMultiDisc, g.rommId, g.steamAppId, g.packageName, g.steamLauncher, g.playCount, g.playTimeMinutes, g.lastPlayed, g.genre, g.gameModes, g.rating, g.userRating, g.userDifficulty, g.releaseYear, g.addedAt
+        SELECT id, platformId, platformSlug, title, sortTitle, localPath, source, coverPath, isFavorite,
+               EXISTS(SELECT 1 FROM user_roms_hidden h WHERE h.gameId = games.id AND (h.ownerUserId IS NULL OR h.ownerUserId IS :ownerUserId)) AS isHidden,
+               isMultiDisc, rommId, steamAppId, packageName, steamLauncher, playCount, playTimeMinutes,
+               lastPlayed, genre, gameModes, rating, userRating, userDifficulty, releaseYear, addedAt
+        FROM games
+        WHERE isFavorite = 1
+        AND NOT EXISTS (SELECT 1 FROM user_roms_hidden h WHERE h.gameId = games.id AND (h.ownerUserId IS NULL OR h.ownerUserId IS :ownerUserId))
+        ORDER BY (source = 'ROMM_REMOTE') ASC, sortTitle ASC
+    """)
+    fun observeFavoritesList(ownerUserId: Long?): Flow<List<GameListItem>>
+
+    @Query("""
+        SELECT id, platformId, platformSlug, title, sortTitle, localPath, source, coverPath, isFavorite,
+               EXISTS(SELECT 1 FROM user_roms_hidden h WHERE h.gameId = games.id AND (h.ownerUserId IS NULL OR h.ownerUserId IS :ownerUserId)) AS isHidden,
+               isMultiDisc, rommId, steamAppId, packageName, steamLauncher, playCount, playTimeMinutes,
+               lastPlayed, genre, gameModes, rating, userRating, userDifficulty, releaseYear, addedAt
+        FROM games
+        ORDER BY sortTitle ASC
+    """)
+    fun observeAllListIncludingHidden(ownerUserId: Long?): Flow<List<GameListItem>>
+
+    @Query("""
+        SELECT g.id, g.platformId, g.platformSlug, g.title, g.sortTitle, g.localPath, g.source, g.coverPath, g.isFavorite,
+               EXISTS(SELECT 1 FROM user_roms_hidden h WHERE h.gameId = g.id AND (h.ownerUserId IS NULL OR h.ownerUserId IS :ownerUserId)) AS isHidden,
+               g.isMultiDisc, g.rommId, g.steamAppId, g.packageName, g.steamLauncher, g.playCount, g.playTimeMinutes,
+               g.lastPlayed, g.genre, g.gameModes, g.rating, g.userRating, g.userDifficulty, g.releaseYear, g.addedAt
         FROM games g
         INNER JOIN platforms p ON g.platformId = p.id
-        WHERE g.isHidden = 0 AND p.syncEnabled = 1
+        WHERE p.syncEnabled = 1
+        AND NOT EXISTS (SELECT 1 FROM user_roms_hidden h WHERE h.gameId = g.id AND (h.ownerUserId IS NULL OR h.ownerUserId IS :ownerUserId))
         ORDER BY g.sortTitle ASC
     """)
-    fun observeSyncEnabledGames(): Flow<List<GameListItem>>
+    fun observeSyncEnabledGames(ownerUserId: Long?): Flow<List<GameListItem>>
 
     @Query("""
         SELECT g.*
         FROM games g
         INNER JOIN platforms p ON g.platformId = p.id
-        WHERE g.isHidden = 0 AND p.syncEnabled = 1
+        WHERE p.syncEnabled = 1
+        AND NOT EXISTS (SELECT 1 FROM user_roms_hidden h WHERE h.gameId = g.id AND (h.ownerUserId IS NULL OR h.ownerUserId IS :ownerUserId))
         ORDER BY g.sortTitle ASC
     """)
-    fun observeSyncEnabledGamesFull(): Flow<List<GameEntity>>
+    fun observeSyncEnabledGamesFull(ownerUserId: Long?): Flow<List<GameEntity>>
 
     @Query("""
         SELECT g.id, g.genre, g.gameModes
         FROM games g
         INNER JOIN platforms p ON g.platformId = p.id
-        WHERE g.isHidden = 0 AND p.syncEnabled = 1
+        WHERE p.syncEnabled = 1
+        AND NOT EXISTS (SELECT 1 FROM user_roms_hidden h WHERE h.gameId = g.id AND (h.ownerUserId IS NULL OR h.ownerUserId IS :ownerUserId))
     """)
-    suspend fun getSyncEnabledGamesForCategories(): List<GameCategoryInfo>
+    suspend fun getSyncEnabledGamesForCategories(ownerUserId: Long?): List<GameCategoryInfo>
 
-    @Query("SELECT id, genre, gameModes FROM games WHERE isHidden = 0")
-    fun observeAllCategoryInfo(): Flow<List<GameCategoryInfo>>
+    @Query("""
+        SELECT id, genre, gameModes FROM games
+        WHERE NOT EXISTS (SELECT 1 FROM user_roms_hidden h WHERE h.gameId = games.id AND (h.ownerUserId IS NULL OR h.ownerUserId IS :ownerUserId))
+    """)
+    fun observeAllCategoryInfo(ownerUserId: Long?): Flow<List<GameCategoryInfo>>
 
-    @Query("SELECT id, genre, gameModes FROM games WHERE isHidden = 0")
-    suspend fun getAllCategoryInfo(): List<GameCategoryInfo>
+    @Query("""
+        SELECT id, genre, gameModes FROM games
+        WHERE NOT EXISTS (SELECT 1 FROM user_roms_hidden h WHERE h.gameId = games.id AND (h.ownerUserId IS NULL OR h.ownerUserId IS :ownerUserId))
+    """)
+    suspend fun getAllCategoryInfo(ownerUserId: Long?): List<GameCategoryInfo>
 
     @Query("SELECT id, platformId, platformSlug, source, localPath FROM games WHERE localPath IS NOT NULL")
     suspend fun getGamesWithLocalPathInfo(): List<GameLocalPathInfo>
 
-    @Query("SELECT id, platformId, localPath FROM games WHERE isHidden = 0")
-    suspend fun getAllStorageInfo(): List<GameStorageInfo>
-
-    @Query("SELECT id, platformId, platformSlug, title, sortTitle, localPath, source, coverPath, isFavorite, isHidden, isMultiDisc, rommId, steamAppId, packageName, steamLauncher, playCount, playTimeMinutes, lastPlayed, genre, gameModes, rating, userRating, userDifficulty, releaseYear, addedAt FROM games WHERE platformId = :platformId ORDER BY sortTitle ASC")
-    fun observeByPlatformListIncludingHidden(platformId: Long): Flow<List<GameListItem>>
-
-    @Query("SELECT id, platformId, platformSlug, title, sortTitle, localPath, source, coverPath, isFavorite, isHidden, isMultiDisc, rommId, steamAppId, packageName, steamLauncher, playCount, playTimeMinutes, lastPlayed, genre, gameModes, rating, userRating, userDifficulty, releaseYear, addedAt FROM games WHERE isFavorite = 1 ORDER BY (source = 'ROMM_REMOTE') ASC, sortTitle ASC")
-    fun observeFavoritesListIncludingHidden(): Flow<List<GameListItem>>
-
-    @Query("SELECT id, platformId, platformSlug, title, sortTitle, localPath, source, coverPath, isFavorite, isHidden, isMultiDisc, rommId, steamAppId, packageName, steamLauncher, playCount, playTimeMinutes, lastPlayed, genre, gameModes, rating, userRating, userDifficulty, releaseYear, addedAt FROM games WHERE isHidden = 1 ORDER BY sortTitle ASC")
-    fun observeHiddenList(): Flow<List<GameListItem>>
-
-    @Query("SELECT id, platformId, platformSlug, title, sortTitle, localPath, source, coverPath, isFavorite, isHidden, isMultiDisc, rommId, steamAppId, packageName, steamLauncher, playCount, playTimeMinutes, lastPlayed, genre, gameModes, rating, userRating, userDifficulty, releaseYear, addedAt FROM games WHERE platformId = :platformId AND isHidden = 1 ORDER BY sortTitle ASC")
-    fun observeHiddenByPlatformList(platformId: Long): Flow<List<GameListItem>>
-
-    @Query("SELECT id, platformId, platformSlug, title, sortTitle, localPath, source, coverPath, isFavorite, isHidden, isMultiDisc, rommId, steamAppId, packageName, steamLauncher, playCount, playTimeMinutes, lastPlayed, genre, gameModes, rating, userRating, userDifficulty, releaseYear, addedAt FROM games WHERE platformId = :platformId AND isFavorite = 1 AND isHidden = 0 ORDER BY (source = 'ROMM_REMOTE') ASC, sortTitle ASC")
-    fun observeFavoritesByPlatformList(platformId: Long): Flow<List<GameListItem>>
+    @Query("""
+        SELECT id, platformId, localPath FROM games
+        WHERE NOT EXISTS (SELECT 1 FROM user_roms_hidden h WHERE h.gameId = games.id AND (h.ownerUserId IS NULL OR h.ownerUserId IS :ownerUserId))
+    """)
+    suspend fun getAllStorageInfo(ownerUserId: Long?): List<GameStorageInfo>
 
     @Query("""
-        SELECT id, platformId, platformSlug, title, sortTitle, localPath, source, coverPath, isFavorite, isHidden, isMultiDisc, rommId, steamAppId, packageName, steamLauncher, playCount, playTimeMinutes, lastPlayed, genre, gameModes, rating, userRating, userDifficulty, releaseYear, addedAt
+        SELECT id, platformId, platformSlug, title, sortTitle, localPath, source, coverPath, isFavorite,
+               EXISTS(SELECT 1 FROM user_roms_hidden h WHERE h.gameId = games.id AND (h.ownerUserId IS NULL OR h.ownerUserId IS :ownerUserId)) AS isHidden,
+               isMultiDisc, rommId, steamAppId, packageName, steamLauncher, playCount, playTimeMinutes,
+               lastPlayed, genre, gameModes, rating, userRating, userDifficulty, releaseYear, addedAt
         FROM games
         WHERE platformId = :platformId
-        AND isHidden = 0
+        ORDER BY sortTitle ASC
+    """)
+    fun observeByPlatformListIncludingHidden(platformId: Long, ownerUserId: Long?): Flow<List<GameListItem>>
+
+    @Query("""
+        SELECT id, platformId, platformSlug, title, sortTitle, localPath, source, coverPath, isFavorite,
+               EXISTS(SELECT 1 FROM user_roms_hidden h WHERE h.gameId = games.id AND (h.ownerUserId IS NULL OR h.ownerUserId IS :ownerUserId)) AS isHidden,
+               isMultiDisc, rommId, steamAppId, packageName, steamLauncher, playCount, playTimeMinutes,
+               lastPlayed, genre, gameModes, rating, userRating, userDifficulty, releaseYear, addedAt
+        FROM games
+        WHERE isFavorite = 1
+        ORDER BY (source = 'ROMM_REMOTE') ASC, sortTitle ASC
+    """)
+    fun observeFavoritesListIncludingHidden(ownerUserId: Long?): Flow<List<GameListItem>>
+
+    @Query("""
+        SELECT id, platformId, platformSlug, title, sortTitle, localPath, source, coverPath, isFavorite,
+               EXISTS(SELECT 1 FROM user_roms_hidden h WHERE h.gameId = games.id AND (h.ownerUserId IS NULL OR h.ownerUserId IS :ownerUserId)) AS isHidden,
+               isMultiDisc, rommId, steamAppId, packageName, steamLauncher, playCount, playTimeMinutes,
+               lastPlayed, genre, gameModes, rating, userRating, userDifficulty, releaseYear, addedAt
+        FROM games
+        WHERE EXISTS (SELECT 1 FROM user_roms_hidden h WHERE h.gameId = games.id AND (h.ownerUserId IS NULL OR h.ownerUserId IS :ownerUserId))
+        ORDER BY sortTitle ASC
+    """)
+    fun observeHiddenList(ownerUserId: Long?): Flow<List<GameListItem>>
+
+    @Query("""
+        SELECT id, platformId, platformSlug, title, sortTitle, localPath, source, coverPath, isFavorite,
+               EXISTS(SELECT 1 FROM user_roms_hidden h WHERE h.gameId = games.id AND (h.ownerUserId IS NULL OR h.ownerUserId IS :ownerUserId)) AS isHidden,
+               isMultiDisc, rommId, steamAppId, packageName, steamLauncher, playCount, playTimeMinutes,
+               lastPlayed, genre, gameModes, rating, userRating, userDifficulty, releaseYear, addedAt
+        FROM games
+        WHERE platformId = :platformId
+        AND EXISTS (SELECT 1 FROM user_roms_hidden h WHERE h.gameId = games.id AND (h.ownerUserId IS NULL OR h.ownerUserId IS :ownerUserId))
+        ORDER BY sortTitle ASC
+    """)
+    fun observeHiddenByPlatformList(platformId: Long, ownerUserId: Long?): Flow<List<GameListItem>>
+
+    @Query("""
+        SELECT id, platformId, platformSlug, title, sortTitle, localPath, source, coverPath, isFavorite,
+               EXISTS(SELECT 1 FROM user_roms_hidden h WHERE h.gameId = games.id AND (h.ownerUserId IS NULL OR h.ownerUserId IS :ownerUserId)) AS isHidden,
+               isMultiDisc, rommId, steamAppId, packageName, steamLauncher, playCount, playTimeMinutes,
+               lastPlayed, genre, gameModes, rating, userRating, userDifficulty, releaseYear, addedAt
+        FROM games
+        WHERE platformId = :platformId AND isFavorite = 1
+        AND NOT EXISTS (SELECT 1 FROM user_roms_hidden h WHERE h.gameId = games.id AND (h.ownerUserId IS NULL OR h.ownerUserId IS :ownerUserId))
+        ORDER BY (source = 'ROMM_REMOTE') ASC, sortTitle ASC
+    """)
+    fun observeFavoritesByPlatformList(platformId: Long, ownerUserId: Long?): Flow<List<GameListItem>>
+
+    @Query("""
+        SELECT id, platformId, platformSlug, title, sortTitle, localPath, source, coverPath, isFavorite,
+               EXISTS(SELECT 1 FROM user_roms_hidden h WHERE h.gameId = games.id AND (h.ownerUserId IS NULL OR h.ownerUserId IS :ownerUserId)) AS isHidden,
+               isMultiDisc, rommId, steamAppId, packageName, steamLauncher, playCount, playTimeMinutes,
+               lastPlayed, genre, gameModes, rating, userRating, userDifficulty, releaseYear, addedAt
+        FROM games
+        WHERE platformId = :platformId
+        AND NOT EXISTS (SELECT 1 FROM user_roms_hidden h WHERE h.gameId = games.id AND (h.ownerUserId IS NULL OR h.ownerUserId IS :ownerUserId))
         AND (source = 'LOCAL_ONLY' OR source = 'ROMM_SYNCED' OR source = 'STEAM' OR source = 'ANDROID_APP')
         AND (source != 'STEAM' OR localPath IS NOT NULL OR (steamLauncher IS NOT NULL AND steamLauncher != 'native'))
         ORDER BY sortTitle ASC
     """)
-    fun observePlayableByPlatformList(platformId: Long): Flow<List<GameListItem>>
+    fun observePlayableByPlatformList(platformId: Long, ownerUserId: Long?): Flow<List<GameListItem>>
 
-    @Query("SELECT * FROM games WHERE isFavorite = 1 AND isHidden = 0 ORDER BY (source = 'ROMM_REMOTE') ASC, sortTitle ASC")
-    suspend fun getFavorites(): List<GameEntity>
+    @Query("""
+        SELECT * FROM games
+        WHERE isFavorite = 1
+        AND NOT EXISTS (SELECT 1 FROM user_roms_hidden h WHERE h.gameId = games.id AND (h.ownerUserId IS NULL OR h.ownerUserId IS :ownerUserId))
+        ORDER BY (source = 'ROMM_REMOTE') ASC, sortTitle ASC
+    """)
+    suspend fun getFavorites(ownerUserId: Long?): List<GameEntity>
 
-    @Query("SELECT id FROM games WHERE isFavorite = 1 AND isHidden = 0 ORDER BY (source = 'ROMM_REMOTE') ASC, sortTitle ASC")
-    suspend fun getFavoriteIds(): List<Long>
+    @Query("""
+        SELECT id FROM games
+        WHERE isFavorite = 1
+        AND NOT EXISTS (SELECT 1 FROM user_roms_hidden h WHERE h.gameId = games.id AND (h.ownerUserId IS NULL OR h.ownerUserId IS :ownerUserId))
+        ORDER BY (source = 'ROMM_REMOTE') ASC, sortTitle ASC
+    """)
+    suspend fun getFavoriteIds(ownerUserId: Long?): List<Long>
 
     @Query("SELECT rommId FROM games WHERE isFavorite = 1 AND rommId IS NOT NULL")
     suspend fun getFavoriteRommIds(): List<Long>
 
-    @Query("SELECT * FROM games WHERE isHidden = 0 AND lastPlayed IS NOT NULL ORDER BY lastPlayed DESC LIMIT :limit")
-    fun observeRecentlyPlayed(limit: Int = 20): Flow<List<GameEntity>>
-
-    @Query("SELECT * FROM games WHERE isHidden = 0 AND lastPlayed IS NOT NULL ORDER BY lastPlayed DESC LIMIT :limit")
-    suspend fun getRecentlyPlayed(limit: Int = 20): List<GameEntity>
+    @Query("""
+        SELECT * FROM games
+        WHERE lastPlayed IS NOT NULL
+        AND NOT EXISTS (SELECT 1 FROM user_roms_hidden h WHERE h.gameId = games.id AND (h.ownerUserId IS NULL OR h.ownerUserId IS :ownerUserId))
+        ORDER BY lastPlayed DESC LIMIT :limit
+    """)
+    fun observeRecentlyPlayed(ownerUserId: Long?, limit: Int = 20): Flow<List<GameEntity>>
 
     @Query("""
         SELECT * FROM games
-        WHERE isHidden = 0
+        WHERE lastPlayed IS NOT NULL
+        AND NOT EXISTS (SELECT 1 FROM user_roms_hidden h WHERE h.gameId = games.id AND (h.ownerUserId IS NULL OR h.ownerUserId IS :ownerUserId))
+        ORDER BY lastPlayed DESC LIMIT :limit
+    """)
+    suspend fun getRecentlyPlayed(ownerUserId: Long?, limit: Int = 20): List<GameEntity>
+
+    @Query("""
+        SELECT * FROM games
+        WHERE NOT EXISTS (SELECT 1 FROM user_roms_hidden h WHERE h.gameId = games.id AND (h.ownerUserId IS NULL OR h.ownerUserId IS :ownerUserId))
         AND lastPlayed IS NULL
         AND addedAt > :threshold
         AND (localPath IS NOT NULL OR source = 'ANDROID_APP'
@@ -192,7 +362,7 @@ interface GameDao {
         ORDER BY addedAt DESC
         LIMIT :limit
     """)
-    suspend fun getNewlyAddedPlayable(threshold: Instant, limit: Int = 20): List<GameEntity>
+    suspend fun getNewlyAddedPlayable(threshold: Instant, ownerUserId: Long?, limit: Int = 20): List<GameEntity>
 
     @Query("SELECT * FROM games WHERE id = :id")
     suspend fun getById(id: Long): GameEntity?
@@ -236,8 +406,13 @@ interface GameDao {
     @Query("SELECT * FROM games WHERE sortTitle = :sortTitle AND platformId = :platformId LIMIT 1")
     suspend fun getBySortTitleAndPlatform(sortTitle: String, platformId: Long): GameEntity?
 
-    @Query("SELECT * FROM games WHERE searchTitle LIKE '%' || :query || '%' AND isHidden = 0 ORDER BY sortTitle ASC")
-    fun search(query: String): Flow<List<GameEntity>>
+    @Query("""
+        SELECT * FROM games
+        WHERE searchTitle LIKE '%' || :query || '%'
+        AND NOT EXISTS (SELECT 1 FROM user_roms_hidden h WHERE h.gameId = games.id AND (h.ownerUserId IS NULL OR h.ownerUserId IS :ownerUserId))
+        ORDER BY sortTitle ASC
+    """)
+    fun search(query: String, ownerUserId: Long?): Flow<List<GameEntity>>
 
     @Upsert
     suspend fun insert(game: GameEntity): Long
@@ -247,9 +422,6 @@ interface GameDao {
 
     @Update
     suspend fun update(game: GameEntity)
-
-    @Query("UPDATE games SET isHidden = :hidden WHERE id = :gameId")
-    suspend fun updateHidden(gameId: Long, hidden: Boolean)
 
     @Query("UPDATE games SET perGameSettingsEnabled = :enabled WHERE id = :gameId")
     suspend fun setPerGameSettingsEnabled(gameId: Long, enabled: Boolean)
@@ -272,29 +444,52 @@ interface GameDao {
     @Query("SELECT * FROM games WHERE source IN (:sources) AND localPath IS NOT NULL")
     suspend fun getDownloadedBySources(sources: List<GameSource>): List<GameEntity>
 
-    @Query("SELECT * FROM games WHERE platformId = :platformId AND localPath IS NOT NULL AND isHidden = 0 ORDER BY sortTitle ASC")
-    suspend fun getDownloadedGamesByPlatform(platformId: Long): List<GameEntity>
+    @Query("""
+        SELECT * FROM games
+        WHERE platformId = :platformId AND localPath IS NOT NULL
+        AND NOT EXISTS (SELECT 1 FROM user_roms_hidden h WHERE h.gameId = games.id AND (h.ownerUserId IS NULL OR h.ownerUserId IS :ownerUserId))
+        ORDER BY sortTitle ASC
+    """)
+    suspend fun getDownloadedGamesByPlatform(platformId: Long, ownerUserId: Long?): List<GameEntity>
 
     @Query("DELETE FROM games WHERE source IN (:sources)")
     suspend fun deleteBySources(sources: List<GameSource>)
 
-    @Query("SELECT COUNT(*) FROM games WHERE platformId = :platformId AND isHidden = 0")
-    suspend fun countByPlatform(platformId: Long): Int
+    @Query("""
+        SELECT COUNT(*) FROM games
+        WHERE platformId = :platformId
+        AND NOT EXISTS (SELECT 1 FROM user_roms_hidden h WHERE h.gameId = games.id AND (h.ownerUserId IS NULL OR h.ownerUserId IS :ownerUserId))
+    """)
+    suspend fun countByPlatform(platformId: Long, ownerUserId: Long?): Int
 
     @Query("SELECT COUNT(*) FROM games WHERE platformId = :platformId AND localPath IS NOT NULL")
     suspend fun countDownloadedByPlatform(platformId: Long): Int
 
-    @Query("SELECT COUNT(*) FROM games WHERE platformId = :platformId AND isFavorite = 1 AND isHidden = 0")
-    suspend fun countFavoritesByPlatform(platformId: Long): Int
+    @Query("""
+        SELECT COUNT(*) FROM games
+        WHERE platformId = :platformId AND isFavorite = 1
+        AND NOT EXISTS (SELECT 1 FROM user_roms_hidden h WHERE h.gameId = games.id AND (h.ownerUserId IS NULL OR h.ownerUserId IS :ownerUserId))
+    """)
+    suspend fun countFavoritesByPlatform(platformId: Long, ownerUserId: Long?): Int
 
     @Query("SELECT * FROM games WHERE platformId = :platformId AND localPath IS NOT NULL")
     suspend fun getDownloadedByPlatform(platformId: Long): List<GameEntity>
 
-    @Query("SELECT * FROM games WHERE platformId = :platformId AND isHidden = 0 ORDER BY sortTitle ASC")
-    suspend fun getByPlatform(platformId: Long): List<GameEntity>
+    @Query("""
+        SELECT * FROM games
+        WHERE platformId = :platformId
+        AND NOT EXISTS (SELECT 1 FROM user_roms_hidden h WHERE h.gameId = games.id AND (h.ownerUserId IS NULL OR h.ownerUserId IS :ownerUserId))
+        ORDER BY sortTitle ASC
+    """)
+    suspend fun getByPlatform(platformId: Long, ownerUserId: Long?): List<GameEntity>
 
-    @Query("SELECT * FROM games WHERE platformId = :platformId AND isHidden = 1 ORDER BY sortTitle ASC")
-    suspend fun getHiddenByPlatform(platformId: Long): List<GameEntity>
+    @Query("""
+        SELECT * FROM games
+        WHERE platformId = :platformId
+        AND EXISTS (SELECT 1 FROM user_roms_hidden h WHERE h.gameId = games.id AND (h.ownerUserId IS NULL OR h.ownerUserId IS :ownerUserId))
+        ORDER BY sortTitle ASC
+    """)
+    suspend fun getHiddenByPlatform(platformId: Long, ownerUserId: Long?): List<GameEntity>
 
     @Query("SELECT COUNT(*) FROM games")
     suspend fun countAll(): Int
@@ -420,10 +615,11 @@ interface GameDao {
 
     @Query("""
         SELECT id, coverPath FROM games
-        WHERE coverPath LIKE '/%' AND gradientColors IS NULL AND isHidden = 0
+        WHERE coverPath LIKE '/%' AND gradientColors IS NULL
+        AND NOT EXISTS (SELECT 1 FROM user_roms_hidden h WHERE h.gameId = games.id AND (h.ownerUserId IS NULL OR h.ownerUserId IS :ownerUserId))
         ORDER BY lastPlayed DESC
     """)
-    suspend fun getLocalGamesNeedingGradients(): List<GradientExtractionCandidate>
+    suspend fun getLocalGamesNeedingGradients(ownerUserId: Long?): List<GradientExtractionCandidate>
 
     @Query("SELECT * FROM games WHERE coverPath LIKE 'http%'")
     suspend fun getGamesWithUncachedCovers(): List<GameEntity>
@@ -446,80 +642,125 @@ interface GameDao {
     @Query("SELECT COUNT(*) FROM games WHERE coverPath LIKE '/%' AND rommId IS NOT NULL")
     suspend fun countGamesWithCachedCovers(): Int
 
-    @Query("SELECT DISTINCT regions FROM games WHERE regions IS NOT NULL AND isHidden = 0")
-    suspend fun getDistinctRegions(): List<String>
+    @Query("""
+        SELECT DISTINCT regions FROM games
+        WHERE regions IS NOT NULL
+        AND NOT EXISTS (SELECT 1 FROM user_roms_hidden h WHERE h.gameId = games.id AND (h.ownerUserId IS NULL OR h.ownerUserId IS :ownerUserId))
+    """)
+    suspend fun getDistinctRegions(ownerUserId: Long?): List<String>
 
-    @Query("SELECT DISTINCT genre FROM games WHERE genre IS NOT NULL AND isHidden = 0")
-    suspend fun getDistinctGenres(): List<String>
+    @Query("""
+        SELECT DISTINCT genre FROM games
+        WHERE genre IS NOT NULL
+        AND NOT EXISTS (SELECT 1 FROM user_roms_hidden h WHERE h.gameId = games.id AND (h.ownerUserId IS NULL OR h.ownerUserId IS :ownerUserId))
+    """)
+    suspend fun getDistinctGenres(ownerUserId: Long?): List<String>
 
-    @Query("SELECT DISTINCT franchises FROM games WHERE franchises IS NOT NULL AND isHidden = 0")
-    suspend fun getDistinctFranchises(): List<String>
+    @Query("""
+        SELECT DISTINCT franchises FROM games
+        WHERE franchises IS NOT NULL
+        AND NOT EXISTS (SELECT 1 FROM user_roms_hidden h WHERE h.gameId = games.id AND (h.ownerUserId IS NULL OR h.ownerUserId IS :ownerUserId))
+    """)
+    suspend fun getDistinctFranchises(ownerUserId: Long?): List<String>
 
-    @Query("SELECT DISTINCT gameModes FROM games WHERE gameModes IS NOT NULL AND isHidden = 0")
-    suspend fun getDistinctGameModes(): List<String>
+    @Query("""
+        SELECT DISTINCT gameModes FROM games
+        WHERE gameModes IS NOT NULL
+        AND NOT EXISTS (SELECT 1 FROM user_roms_hidden h WHERE h.gameId = games.id AND (h.ownerUserId IS NULL OR h.ownerUserId IS :ownerUserId))
+    """)
+    suspend fun getDistinctGameModes(ownerUserId: Long?): List<String>
 
     @Query("""
         SELECT * FROM games
-        WHERE isHidden = 0
+        WHERE NOT EXISTS (SELECT 1 FROM user_roms_hidden h WHERE h.gameId = games.id AND (h.ownerUserId IS NULL OR h.ownerUserId IS :ownerUserId))
         AND regions LIKE '%' || :region || '%'
         ORDER BY sortTitle ASC
     """)
-    fun observeByRegion(region: String): Flow<List<GameEntity>>
+    fun observeByRegion(region: String, ownerUserId: Long?): Flow<List<GameEntity>>
 
     @Query("""
         SELECT * FROM games
-        WHERE isHidden = 0
+        WHERE NOT EXISTS (SELECT 1 FROM user_roms_hidden h WHERE h.gameId = games.id AND (h.ownerUserId IS NULL OR h.ownerUserId IS :ownerUserId))
         AND genre = :genre
         ORDER BY sortTitle ASC
     """)
-    fun observeByGenre(genre: String): Flow<List<GameEntity>>
+    fun observeByGenre(genre: String, ownerUserId: Long?): Flow<List<GameEntity>>
 
     @Query("""
         SELECT * FROM games
-        WHERE isHidden = 0
+        WHERE NOT EXISTS (SELECT 1 FROM user_roms_hidden h WHERE h.gameId = games.id AND (h.ownerUserId IS NULL OR h.ownerUserId IS :ownerUserId))
         AND franchises LIKE '%' || :franchise || '%'
         ORDER BY sortTitle ASC
     """)
-    fun observeByFranchise(franchise: String): Flow<List<GameEntity>>
+    fun observeByFranchise(franchise: String, ownerUserId: Long?): Flow<List<GameEntity>>
 
     @Query("""
         SELECT * FROM games
-        WHERE isHidden = 0
+        WHERE NOT EXISTS (SELECT 1 FROM user_roms_hidden h WHERE h.gameId = games.id AND (h.ownerUserId IS NULL OR h.ownerUserId IS :ownerUserId))
         AND gameModes LIKE '%' || :gameMode || '%'
         ORDER BY sortTitle ASC
     """)
-    fun observeByGameMode(gameMode: String): Flow<List<GameEntity>>
+    fun observeByGameMode(gameMode: String, ownerUserId: Long?): Flow<List<GameEntity>>
 
     @Query("""
-        SELECT id, platformId, platformSlug, title, sortTitle, localPath, source, coverPath, isFavorite, isHidden, isMultiDisc, rommId, steamAppId, packageName, steamLauncher, playCount, playTimeMinutes, lastPlayed, genre, gameModes, rating, userRating, userDifficulty, releaseYear, addedAt FROM games
-        WHERE isHidden = 0
+        SELECT id, platformId, platformSlug, title, sortTitle, localPath, source, coverPath, isFavorite,
+               EXISTS(SELECT 1 FROM user_roms_hidden h WHERE h.gameId = games.id AND (h.ownerUserId IS NULL OR h.ownerUserId IS :ownerUserId)) AS isHidden,
+               isMultiDisc, rommId, steamAppId, packageName, steamLauncher, playCount, playTimeMinutes,
+               lastPlayed, genre, gameModes, rating, userRating, userDifficulty, releaseYear, addedAt
+        FROM games
+        WHERE NOT EXISTS (SELECT 1 FROM user_roms_hidden h WHERE h.gameId = games.id AND (h.ownerUserId IS NULL OR h.ownerUserId IS :ownerUserId))
         AND id != :excludeGameId
         AND collections LIKE '%' || :token || '%'
         ORDER BY releaseYear ASC
         LIMIT :limit
     """)
-    suspend fun getRelatedByCollection(token: String, excludeGameId: Long, limit: Int): List<GameListItem>
+    suspend fun getRelatedByCollection(
+        token: String,
+        excludeGameId: Long,
+        ownerUserId: Long?,
+        limit: Int
+    ): List<GameListItem>
 
     @Query("""
-        SELECT id, platformId, platformSlug, title, sortTitle, localPath, source, coverPath, isFavorite, isHidden, isMultiDisc, rommId, steamAppId, packageName, steamLauncher, playCount, playTimeMinutes, lastPlayed, genre, gameModes, rating, userRating, userDifficulty, releaseYear, addedAt FROM games
-        WHERE isHidden = 0
+        SELECT id, platformId, platformSlug, title, sortTitle, localPath, source, coverPath, isFavorite,
+               EXISTS(SELECT 1 FROM user_roms_hidden h WHERE h.gameId = games.id AND (h.ownerUserId IS NULL OR h.ownerUserId IS :ownerUserId)) AS isHidden,
+               isMultiDisc, rommId, steamAppId, packageName, steamLauncher, playCount, playTimeMinutes,
+               lastPlayed, genre, gameModes, rating, userRating, userDifficulty, releaseYear, addedAt
+        FROM games
+        WHERE NOT EXISTS (SELECT 1 FROM user_roms_hidden h WHERE h.gameId = games.id AND (h.ownerUserId IS NULL OR h.ownerUserId IS :ownerUserId))
         AND id != :excludeGameId
         AND franchises LIKE '%' || :token || '%'
         ORDER BY rating DESC
         LIMIT :limit
     """)
-    suspend fun getRelatedByFranchise(token: String, excludeGameId: Long, limit: Int): List<GameListItem>
+    suspend fun getRelatedByFranchise(
+        token: String,
+        excludeGameId: Long,
+        ownerUserId: Long?,
+        limit: Int
+    ): List<GameListItem>
 
     @Query("""
-        SELECT id, platformId, platformSlug, title, sortTitle, localPath, source, coverPath, isFavorite, isHidden, isMultiDisc, rommId, steamAppId, packageName, steamLauncher, playCount, playTimeMinutes, lastPlayed, genre, gameModes, rating, userRating, userDifficulty, releaseYear, addedAt FROM games
-        WHERE isHidden = 0
+        SELECT id, platformId, platformSlug, title, sortTitle, localPath, source, coverPath, isFavorite,
+               EXISTS(SELECT 1 FROM user_roms_hidden h WHERE h.gameId = games.id AND (h.ownerUserId IS NULL OR h.ownerUserId IS :ownerUserId)) AS isHidden,
+               isMultiDisc, rommId, steamAppId, packageName, steamLauncher, playCount, playTimeMinutes,
+               lastPlayed, genre, gameModes, rating, userRating, userDifficulty, releaseYear, addedAt
+        FROM games
+        WHERE NOT EXISTS (SELECT 1 FROM user_roms_hidden h WHERE h.gameId = games.id AND (h.ownerUserId IS NULL OR h.ownerUserId IS :ownerUserId))
         AND id != :excludeGameId
         AND releaseYear BETWEEN :yearLo AND :yearHi
         AND (genres LIKE '%' || :token || '%' OR (genres IS NULL AND genre = :token))
         ORDER BY rating DESC
         LIMIT :limit
     """)
-    suspend fun getRelatedByGenreAndYear(token: String, yearLo: Int, yearHi: Int, excludeGameId: Long, limit: Int): List<GameListItem>
+    suspend fun getRelatedByGenreAndYear(
+        token: String,
+        yearLo: Int,
+        yearHi: Int,
+        excludeGameId: Long,
+        ownerUserId: Long?,
+        limit: Int
+    ): List<GameListItem>
 
     @Query("SELECT * FROM games WHERE screenshotPaths IS NOT NULL AND cachedScreenshotPaths IS NULL AND rommId IS NOT NULL")
     suspend fun getGamesWithUncachedScreenshots(): List<GameEntity>
@@ -608,26 +849,31 @@ interface GameDao {
     @Query("SELECT titleIdCandidates FROM games WHERE id = :gameId")
     suspend fun getTitleIdCandidates(gameId: Long): String?
 
-    @Query("SELECT * FROM games WHERE playCount > 0 AND isHidden = 0 ORDER BY playTimeMinutes DESC")
-    suspend fun getPlayedGames(): List<GameEntity>
+    @Query("""
+        SELECT * FROM games
+        WHERE playCount > 0
+        AND NOT EXISTS (SELECT 1 FROM user_roms_hidden h WHERE h.gameId = games.id AND (h.ownerUserId IS NULL OR h.ownerUserId IS :ownerUserId))
+        ORDER BY playTimeMinutes DESC
+    """)
+    suspend fun getPlayedGames(ownerUserId: Long?): List<GameEntity>
 
     @Query("""
         SELECT * FROM games
         WHERE (playCount = 0 OR playCount IS NULL)
         AND (completion = 0 OR completion IS NULL)
         AND localPath IS NOT NULL
-        AND isHidden = 0
+        AND NOT EXISTS (SELECT 1 FROM user_roms_hidden h WHERE h.gameId = games.id AND (h.ownerUserId IS NULL OR h.ownerUserId IS :ownerUserId))
     """)
-    suspend fun getUnplayedInstalledGames(): List<GameEntity>
+    suspend fun getUnplayedInstalledGames(ownerUserId: Long?): List<GameEntity>
 
     @Query("""
         SELECT * FROM games
         WHERE (playCount = 0 OR playCount IS NULL)
         AND (completion = 0 OR completion IS NULL)
         AND localPath IS NULL
-        AND isHidden = 0
+        AND NOT EXISTS (SELECT 1 FROM user_roms_hidden h WHERE h.gameId = games.id AND (h.ownerUserId IS NULL OR h.ownerUserId IS :ownerUserId))
     """)
-    suspend fun getUnplayedUndownloadedGames(): List<GameEntity>
+    suspend fun getUnplayedUndownloadedGames(ownerUserId: Long?): List<GameEntity>
 
     @Query("SELECT * FROM games WHERE id IN (:ids)")
     suspend fun getByIds(ids: List<Long>): List<GameEntity>
@@ -646,17 +892,17 @@ interface GameDao {
 
     @Query("""
         SELECT * FROM games
-        WHERE isHidden = 0
+        WHERE NOT EXISTS (SELECT 1 FROM user_roms_hidden h WHERE h.gameId = games.id AND (h.ownerUserId IS NULL OR h.ownerUserId IS :ownerUserId))
         AND (status IS NULL OR status NOT IN ('retired', 'never_playing'))
         ORDER BY RANDOM()
         LIMIT 1
     """)
-    suspend fun getRandomGame(): GameEntity?
+    suspend fun getRandomGame(ownerUserId: Long?): GameEntity?
 
     @Query("""
         SELECT * FROM games
         WHERE searchTitle LIKE '%' || :query || '%'
-        AND isHidden = 0
+        AND NOT EXISTS (SELECT 1 FROM user_roms_hidden h WHERE h.gameId = games.id AND (h.ownerUserId IS NULL OR h.ownerUserId IS :ownerUserId))
         ORDER BY
             CASE WHEN searchTitle LIKE :query || '%' THEN 0 ELSE 1 END,
             CASE WHEN rating IS NULL THEN 1 ELSE 0 END,
@@ -664,50 +910,60 @@ interface GameDao {
             sortTitle ASC
         LIMIT :limit
     """)
-    fun searchForQuickMenu(query: String, limit: Int = 10): Flow<List<GameEntity>>
+    fun searchForQuickMenu(query: String, ownerUserId: Long?, limit: Int = 10): Flow<List<GameEntity>>
 
     @Query("""
         SELECT id, title, rating FROM games
-        WHERE isHidden = 0
+        WHERE NOT EXISTS (SELECT 1 FROM user_roms_hidden h WHERE h.gameId = games.id AND (h.ownerUserId IS NULL OR h.ownerUserId IS :ownerUserId))
         AND (status IS NULL OR status NOT IN ('retired', 'never_playing'))
     """)
-    suspend fun getSearchCandidates(): List<SearchCandidate>
+    suspend fun getSearchCandidates(ownerUserId: Long?): List<SearchCandidate>
 
     @Query("""
-        SELECT id, platformId, platformSlug, title, sortTitle, localPath, source, coverPath,
-               isFavorite, isHidden, isMultiDisc, rommId, steamAppId, packageName, steamLauncher,
+        SELECT id, platformId, platformSlug, title, sortTitle, localPath, source, coverPath, isFavorite,
+               EXISTS(SELECT 1 FROM user_roms_hidden h WHERE h.gameId = games.id AND (h.ownerUserId IS NULL OR h.ownerUserId IS :ownerUserId)) AS isHidden,
+               isMultiDisc, rommId, steamAppId, packageName, steamLauncher,
                playCount, playTimeMinutes, lastPlayed, genre, gameModes,
                rating, userRating, userDifficulty, releaseYear, addedAt
         FROM games
-        WHERE coverPath LIKE '/%' AND isHidden = 0
+        WHERE coverPath LIKE '/%'
+        AND NOT EXISTS (SELECT 1 FROM user_roms_hidden h WHERE h.gameId = games.id AND (h.ownerUserId IS NULL OR h.ownerUserId IS :ownerUserId))
         LIMIT 1
     """)
-    suspend fun getFirstGameWithCover(): GameListItem?
+    suspend fun getFirstGameWithCover(ownerUserId: Long?): GameListItem?
 
     @Query("""
-        SELECT id, platformId, platformSlug, title, sortTitle, localPath, source, coverPath,
-               isFavorite, isHidden, isMultiDisc, rommId, steamAppId, packageName, steamLauncher,
+        SELECT id, platformId, platformSlug, title, sortTitle, localPath, source, coverPath, isFavorite,
+               EXISTS(SELECT 1 FROM user_roms_hidden h WHERE h.gameId = games.id AND (h.ownerUserId IS NULL OR h.ownerUserId IS :ownerUserId)) AS isHidden,
+               isMultiDisc, rommId, steamAppId, packageName, steamLauncher,
                playCount, playTimeMinutes, lastPlayed, genre, gameModes,
                rating, userRating, userDifficulty, releaseYear, addedAt
         FROM games
-        WHERE coverPath LIKE '/%' AND isHidden = 0 AND lastPlayed IS NOT NULL AND localPath IS NOT NULL
+        WHERE coverPath LIKE '/%' AND lastPlayed IS NOT NULL AND localPath IS NOT NULL
+        AND NOT EXISTS (SELECT 1 FROM user_roms_hidden h WHERE h.gameId = games.id AND (h.ownerUserId IS NULL OR h.ownerUserId IS :ownerUserId))
         ORDER BY lastPlayed DESC
         LIMIT :limit
     """)
-    suspend fun getRecentlyPlayedWithCovers(limit: Int = 10): List<GameListItem>
+    suspend fun getRecentlyPlayedWithCovers(ownerUserId: Long?, limit: Int = 10): List<GameListItem>
 
     @Query("""
-        SELECT id, platformId, platformSlug, title, sortTitle, localPath, source, coverPath,
-               isFavorite, isHidden, isMultiDisc, rommId, steamAppId, packageName, steamLauncher,
+        SELECT id, platformId, platformSlug, title, sortTitle, localPath, source, coverPath, isFavorite,
+               EXISTS(SELECT 1 FROM user_roms_hidden h WHERE h.gameId = games.id AND (h.ownerUserId IS NULL OR h.ownerUserId IS :ownerUserId)) AS isHidden,
+               isMultiDisc, rommId, steamAppId, packageName, steamLauncher,
                playCount, playTimeMinutes, lastPlayed, genre, gameModes,
                rating, userRating, userDifficulty, releaseYear, addedAt
         FROM games
-        WHERE coverPath LIKE '/%' AND isHidden = 0 AND lastPlayed IS NOT NULL
+        WHERE coverPath LIKE '/%' AND lastPlayed IS NOT NULL
               AND localPath IS NOT NULL AND platformSlug IN (:platformSlugs)
+        AND NOT EXISTS (SELECT 1 FROM user_roms_hidden h WHERE h.gameId = games.id AND (h.ownerUserId IS NULL OR h.ownerUserId IS :ownerUserId))
         ORDER BY lastPlayed DESC
         LIMIT :limit
     """)
-    suspend fun getRecentlyPlayedOnPlatforms(platformSlugs: List<String>, limit: Int = 10): List<GameListItem>
+    suspend fun getRecentlyPlayedOnPlatforms(
+        platformSlugs: List<String>,
+        ownerUserId: Long?,
+        limit: Int = 10
+    ): List<GameListItem>
 
     @Query("UPDATE games SET cheatsFetched = :fetched WHERE id = :gameId")
     suspend fun updateCheatsFetched(gameId: Long, fetched: Boolean)

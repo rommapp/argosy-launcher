@@ -34,7 +34,8 @@ class PurgePlatformUseCase @Inject constructor(
     private val saveCacheDao: SaveCacheDao,
     private val stateCacheDao: StateCacheDao,
     private val saveSyncDao: SaveSyncDao,
-    private val attributionRepository: StorageAttributionRepository
+    private val attributionRepository: StorageAttributionRepository,
+    private val syncPreferencesRepository: com.nendo.argosy.data.preferences.SyncPreferencesRepository
 ) {
     suspend operator fun invoke(
         platformId: Long,
@@ -86,7 +87,7 @@ class PurgePlatformUseCase @Inject constructor(
         saveCacheDao.deleteByPlatform(platformId)
         saveSyncDao.deleteByPlatform(platformId)
 
-        val gamesCount = gameDao.countByPlatform(platformId)
+        val gamesCount = gameDao.countByPlatform(platformId, syncPreferencesRepository.getRommUserId())
         gameDao.deleteByPlatform(platformId)
         Log.d(TAG, "Purge: deleted $gamesCount game records for $platformId")
 

@@ -41,7 +41,8 @@ class SteamRepository @Inject constructor(
     private val gameDao: GameDao,
     private val platformDao: PlatformDao,
     private val imageCacheManager: ImageCacheManager,
-    private val steamDownloadQueueDao: com.nendo.argosy.data.local.dao.SteamDownloadQueueDao
+    private val steamDownloadQueueDao: com.nendo.argosy.data.local.dao.SteamDownloadQueueDao,
+    private val syncPreferencesRepository: com.nendo.argosy.data.preferences.SyncPreferencesRepository
 ) {
     private val api: SteamStoreApi by lazy { createApi() }
 
@@ -410,7 +411,10 @@ class SteamRepository @Inject constructor(
     }
 
     private suspend fun updatePlatformGameCount() {
-        val count = gameDao.countByPlatform(LocalPlatformIds.STEAM)
+        val count = gameDao.countByPlatform(
+            LocalPlatformIds.STEAM,
+            syncPreferencesRepository.getRommUserId()
+        )
         platformDao.updateGameCount(LocalPlatformIds.STEAM, count)
     }
 

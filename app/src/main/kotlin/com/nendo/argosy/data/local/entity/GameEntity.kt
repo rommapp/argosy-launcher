@@ -114,7 +114,6 @@ data class GameEntity(
     val nowPlaying: Boolean = false,
 
     val isFavorite: Boolean = false,
-    val isHidden: Boolean = false,
     val playCount: Int = 0,
     val playTimeMinutes: Int = 0,
     val lastPlayed: Instant? = null,
@@ -177,6 +176,11 @@ data class GameEntity(
     }
 }
 
+/**
+ * [isHidden] is not a column on `games`. Every projection computes it as the existence of a
+ * `user_roms_hidden` row for the owner the query was run for, so it means "hidden for that
+ * account" and nothing more.
+ */
 data class GameListItem(
     val id: Long,
     val platformId: Long,

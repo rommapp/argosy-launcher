@@ -555,6 +555,8 @@ class GameDetailViewModel @Inject constructor(
             downloadDelegate.updateDownloadStatus(downloadStatus, if (downloadStatus == GameDownloadStatus.DOWNLOADED) 1f else 0f)
             downloadDelegate.updateDownloadSize(downloadSizeBytes)
 
+            val isHiddenForOwner = gameRepository.isGameHidden(gameId)
+
             val isPrivate = game.igdbId != null &&
                 game.igdbId.toInt() in socialRepository.hiddenGameIds.value
             val hasSocial = socialRepository.connectionState.value is
@@ -572,7 +574,8 @@ class GameDetailViewModel @Inject constructor(
                         selectedCoreName = selectedCoreName,
                         achievements = cachedAchievements,
                         canManageSaves = canManageSaves,
-                        steamLauncherName = steamLauncherName
+                        steamLauncherName = steamLauncherName,
+                        isHidden = isHiddenForOwner
                     ),
                     canSearchCovers = romMRepository.getCapabilities().supportsCoverSearch,
                     isLoading = false,
@@ -1665,6 +1668,7 @@ class GameDetailViewModel @Inject constructor(
         viewModelScope.launch {
             val isHidden = _uiState.value.game?.isHidden ?: false
             if (isHidden) gameActions.unhideGame(currentGameId) else gameActions.hideGame(currentGameId)
+            loadGame(currentGameId)
         }
     }
 

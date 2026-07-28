@@ -411,6 +411,7 @@ data class RomMRomUser(
     @Json(name = "status") val status: String? = null,
     @Json(name = "backlogged") val backlogged: Boolean = false,
     @Json(name = "now_playing") val nowPlaying: Boolean = false,
+    @Json(name = "hidden") val hidden: Boolean = false,
     @Json(name = "last_played") val lastPlayed: String? = null
 )
 
@@ -421,12 +422,8 @@ data class RomMUserPropsUpdateData(
     @Json(name = "completion") val completion: Int? = null,
     @Json(name = "status") val status: String? = null,
     @Json(name = "backlogged") val backlogged: Boolean? = null,
-    @Json(name = "now_playing") val nowPlaying: Boolean? = null
-)
-
-@JsonClass(generateAdapter = true)
-data class RomMUserPropsUpdate(
-    @Json(name = "data") val data: RomMUserPropsUpdateData
+    @Json(name = "now_playing") val nowPlaying: Boolean? = null,
+    @Json(name = "hidden") val hidden: Boolean? = null
 )
 
 @JsonClass(generateAdapter = true)

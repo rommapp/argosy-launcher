@@ -13,6 +13,7 @@ import com.nendo.argosy.data.local.dao.GameDiscDao
 import com.nendo.argosy.data.local.dao.GameFileDao
 import com.nendo.argosy.data.local.dao.PlatformDao
 import com.nendo.argosy.data.local.dao.SearchCandidate
+import com.nendo.argosy.data.local.dao.UserRomsHiddenDao
 import com.nendo.argosy.data.local.dao.getByIdsChunked
 import com.nendo.argosy.data.local.entity.GameEntity
 import com.nendo.argosy.data.local.entity.GameFileEntity
@@ -27,7 +28,9 @@ import com.nendo.argosy.data.storage.StorageCategory
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.time.Instant
@@ -48,6 +51,7 @@ data class PlatformStats(
 class GameRepository @Inject constructor(
     @ApplicationContext private val context: Context,
     private val gameDao: GameDao,
+    private val userRomsHiddenDao: UserRomsHiddenDao,
     private val gameDiscDao: GameDiscDao,
     private val gameFileDao: GameFileDao,
     private val platformDao: PlatformDao,
@@ -589,7 +593,7 @@ class GameRepository @Inject constructor(
 
     suspend fun getPlatformBreakdowns(): List<PlatformStats> = withContext(Dispatchers.IO) {
         val platforms = platformDao.observeAllPlatforms().first()
-        val storageInfo = gameDao.getAllStorageInfo()
+        val storageInfo = gameDao.getAllStorageInfo(overlayWriter.activeOwnerId())
         val byPlatform = storageInfo.groupBy { it.platformId }
 
         platforms.mapNotNull { platform ->
@@ -753,26 +757,38 @@ class GameRepository @Inject constructor(
         if (changed) gameDao.getById(gameId) else game
     }
 
-    // --- Direct DAO delegations ---
+    /**
+     * The account every hidden-aware query below is run for. Resolved once per call and passed
+     * down, never re-read partway through an operation.
+     */
+    private suspend fun hiddenOwnerId(): Long? = overlayWriter.activeOwnerId()
+
+    suspend fun isGameHidden(gameId: Long): Boolean =
+        userRomsHiddenDao.isHidden(hiddenOwnerId(), gameId)
+
+    suspend fun getHiddenGameIds(): Set<Long> =
+        userRomsHiddenDao.hiddenGameIds(hiddenOwnerId()).toSet()
 
     suspend fun getById(id: Long): GameEntity? = gameDao.getById(id)
 
     fun observeById(id: Long): Flow<GameEntity?> = gameDao.observeById(id)
 
-    suspend fun getPlayedGames(): List<GameEntity> = gameDao.getPlayedGames()
+    suspend fun getPlayedGames(): List<GameEntity> = gameDao.getPlayedGames(hiddenOwnerId())
 
     suspend fun getRecentlyPlayed(limit: Int = 20): List<GameEntity> =
-        gameDao.getRecentlyPlayed(limit)
+        gameDao.getRecentlyPlayed(hiddenOwnerId(), limit)
 
-    fun observeRecentlyPlayed(limit: Int = 20): Flow<List<GameEntity>> =
-        gameDao.observeRecentlyPlayed(limit)
+    fun observeRecentlyPlayed(limit: Int = 20): Flow<List<GameEntity>> = flow {
+        emitAll(gameDao.observeRecentlyPlayed(hiddenOwnerId(), limit))
+    }
 
-    suspend fun getFavorites(): List<GameEntity> = hydrateByIds(gameDao.getFavoriteIds())
+    suspend fun getFavorites(): List<GameEntity> =
+        hydrateByIds(gameDao.getFavoriteIds(hiddenOwnerId()))
 
-    suspend fun getRandomGame(): GameEntity? = gameDao.getRandomGame()
+    suspend fun getRandomGame(): GameEntity? = gameDao.getRandomGame(hiddenOwnerId())
 
     suspend fun getSearchCandidates(): List<SearchCandidate> =
-        gameDao.getSearchCandidates()
+        gameDao.getSearchCandidates(hiddenOwnerId())
 
     suspend fun getByIds(ids: List<Long>): List<GameEntity> = gameDao.getByIds(ids)
 
@@ -803,8 +819,18 @@ class GameRepository @Inject constructor(
         }
     }
 
-    suspend fun updateHidden(gameId: Long, hidden: Boolean) =
-        gameDao.updateHidden(gameId, hidden)
+    /**
+     * Hides or shows a rom for the signed-in account. A rom the server knows about also queues
+     * the change onto its `rom_user` block; a purely local rom stops at the join table.
+     */
+    suspend fun updateHidden(gameId: Long, hidden: Boolean) {
+        val rommId = gameDao.getById(gameId)?.rommId
+        if (rommId != null) {
+            romMRepository.updateHidden(gameId, hidden)
+        } else {
+            overlayWriter.setHidden(gameId, hidden)
+        }
+    }
 
     suspend fun getBySource(source: GameSource): List<GameEntity> =
         gameDao.getBySource(source)
@@ -820,63 +846,81 @@ class GameRepository @Inject constructor(
 
     suspend fun update(game: GameEntity) = gameDao.update(game)
 
-    fun search(query: String): Flow<List<GameEntity>> =
-        gameDao.search(com.nendo.argosy.util.SearchNormalizer.normalize(query))
+    fun search(query: String): Flow<List<GameEntity>> = flow {
+        emitAll(
+            gameDao.search(
+                com.nendo.argosy.util.SearchNormalizer.normalize(query),
+                hiddenOwnerId()
+            )
+        )
+    }
 
-    suspend fun getDistinctGenres(): List<String> = gameDao.getDistinctGenres()
+    suspend fun getDistinctGenres(): List<String> = gameDao.getDistinctGenres(hiddenOwnerId())
 
-    suspend fun getDistinctGameModes(): List<String> = gameDao.getDistinctGameModes()
+    suspend fun getDistinctGameModes(): List<String> = gameDao.getDistinctGameModes(hiddenOwnerId())
 
-    fun observeHiddenByPlatformList(platformId: Long): Flow<List<GameListItem>> =
-        gameDao.observeHiddenByPlatformList(platformId)
+    fun observeHiddenByPlatformList(platformId: Long): Flow<List<GameListItem>> = flow {
+        emitAll(gameDao.observeHiddenByPlatformList(platformId, hiddenOwnerId()))
+    }
 
-    fun observeHiddenList(): Flow<List<GameListItem>> = gameDao.observeHiddenList()
+    fun observeHiddenList(): Flow<List<GameListItem>> = flow {
+        emitAll(gameDao.observeHiddenList(hiddenOwnerId()))
+    }
 
-    fun observePlayableByPlatformList(platformId: Long): Flow<List<GameListItem>> =
-        gameDao.observePlayableByPlatformList(platformId)
+    fun observePlayableByPlatformList(platformId: Long): Flow<List<GameListItem>> = flow {
+        emitAll(gameDao.observePlayableByPlatformList(platformId, hiddenOwnerId()))
+    }
 
-    fun observeFavoritesByPlatformList(platformId: Long): Flow<List<GameListItem>> =
-        gameDao.observeFavoritesByPlatformList(platformId)
+    fun observeFavoritesByPlatformList(platformId: Long): Flow<List<GameListItem>> = flow {
+        emitAll(gameDao.observeFavoritesByPlatformList(platformId, hiddenOwnerId()))
+    }
 
-    fun observeByPlatformList(platformId: Long): Flow<List<GameListItem>> =
-        gameDao.observeByPlatformList(platformId)
+    fun observeByPlatformList(platformId: Long): Flow<List<GameListItem>> = flow {
+        emitAll(gameDao.observeByPlatformList(platformId, hiddenOwnerId()))
+    }
 
-    fun observeAllList(): Flow<List<GameListItem>> = gameDao.observeAllList()
+    fun observeAllList(): Flow<List<GameListItem>> = flow {
+        emitAll(gameDao.observeAllList(hiddenOwnerId()))
+    }
 
-    fun observePlayableList(): Flow<List<GameListItem>> = gameDao.observePlayableList()
+    fun observePlayableList(): Flow<List<GameListItem>> = flow {
+        emitAll(gameDao.observePlayableList(hiddenOwnerId()))
+    }
 
-    fun observeFavoritesList(): Flow<List<GameListItem>> = gameDao.observeFavoritesList()
+    fun observeFavoritesList(): Flow<List<GameListItem>> = flow {
+        emitAll(gameDao.observeFavoritesList(hiddenOwnerId()))
+    }
 
     suspend fun getNewlyAddedPlayable(
         threshold: Instant,
         limit: Int = 20
-    ): List<GameEntity> = gameDao.getNewlyAddedPlayable(threshold, limit)
+    ): List<GameEntity> = gameDao.getNewlyAddedPlayable(threshold, hiddenOwnerId(), limit)
 
     suspend fun countByPlatform(platformId: Long): Int =
-        gameDao.countByPlatform(platformId)
+        gameDao.countByPlatform(platformId, hiddenOwnerId())
 
     suspend fun getByPlatformSorted(
         platformId: Long,
         limit: Int = 20
-    ): List<GameEntity> = gameDao.getByPlatformSorted(platformId, limit)
+    ): List<GameEntity> = gameDao.getByPlatformSorted(platformId, hiddenOwnerId(), limit)
 
     suspend fun getAllSortedByTitle(): List<GameEntity> =
-        hydrateByIds(gameDao.getAllSortedByTitleIds())
+        hydrateByIds(gameDao.getAllSortedByTitleIds(hiddenOwnerId()))
 
     suspend fun getHiddenSortedByTitle(): List<GameEntity> =
-        hydrateByIds(gameDao.getHiddenSortedByTitleIds())
+        hydrateByIds(gameDao.getHiddenSortedByTitleIds(hiddenOwnerId()))
 
     suspend fun getByPlatform(platformId: Long): List<GameEntity> =
-        gameDao.getByPlatform(platformId)
+        gameDao.getByPlatform(platformId, hiddenOwnerId())
 
     suspend fun getHiddenByPlatform(platformId: Long): List<GameEntity> =
-        gameDao.getHiddenByPlatform(platformId)
+        gameDao.getHiddenByPlatform(platformId, hiddenOwnerId())
 
     suspend fun countDownloadedByPlatform(platformId: Long): Int =
         gameDao.countDownloadedByPlatform(platformId)
 
     suspend fun countFavoritesByPlatform(platformId: Long): Int =
-        gameDao.countFavoritesByPlatform(platformId)
+        gameDao.countFavoritesByPlatform(platformId, hiddenOwnerId())
 
     suspend fun updateSteamLauncher(
         gameId: Long,
@@ -897,15 +941,16 @@ class GameRepository @Inject constructor(
         gameDao.updateFileSize(gameId, sizeBytes)
 
     suspend fun getFirstGameWithCover(): GameListItem? =
-        gameDao.getFirstGameWithCover()
+        gameDao.getFirstGameWithCover(hiddenOwnerId())
 
     suspend fun getRecentlyPlayedWithCovers(limit: Int = 10): List<GameListItem> =
-        gameDao.getRecentlyPlayedWithCovers(limit)
+        gameDao.getRecentlyPlayedWithCovers(hiddenOwnerId(), limit)
 
     suspend fun getRecentlyPlayedOnPlatforms(
         platformSlugs: List<String>,
         limit: Int = 10
-    ): List<GameListItem> = gameDao.getRecentlyPlayedOnPlatforms(platformSlugs, limit)
+    ): List<GameListItem> =
+        gameDao.getRecentlyPlayedOnPlatforms(platformSlugs, hiddenOwnerId(), limit)
 
     suspend fun getCachedScreenshotPaths(gameId: Long): String? =
         gameDao.getCachedScreenshotPaths(gameId)
@@ -918,11 +963,18 @@ class GameRepository @Inject constructor(
     suspend fun getBySteamAppId(steamAppId: Long): GameEntity? =
         gameDao.getBySteamAppId(steamAppId)
 
-    fun searchForQuickMenu(query: String, limit: Int = 10): Flow<List<GameEntity>> =
-        gameDao.searchForQuickMenu(com.nendo.argosy.util.SearchNormalizer.normalize(query), limit)
+    fun searchForQuickMenu(query: String, limit: Int = 10): Flow<List<GameEntity>> = flow {
+        emitAll(
+            gameDao.searchForQuickMenu(
+                com.nendo.argosy.util.SearchNormalizer.normalize(query),
+                hiddenOwnerId(),
+                limit
+            )
+        )
+    }
 
     suspend fun getLocalGamesNeedingGradients(): List<com.nendo.argosy.data.local.dao.GradientExtractionCandidate> =
-        gameDao.getLocalGamesNeedingGradients()
+        gameDao.getLocalGamesNeedingGradients(hiddenOwnerId())
 
     suspend fun updateGradientColors(gameId: Long, json: String) =
         gameDao.updateGradientColors(gameId, json)

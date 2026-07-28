@@ -2,6 +2,7 @@ package com.nendo.argosy.domain.usecase.quickmenu
 
 import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.entity.GameEntity
+import com.nendo.argosy.data.preferences.SyncPreferencesRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import java.time.Duration
@@ -9,14 +10,16 @@ import java.time.Instant
 import javax.inject.Inject
 
 class GetTopUnplayedUseCase @Inject constructor(
-    private val gameDao: GameDao
+    private val gameDao: GameDao,
+    private val syncPreferencesRepository: SyncPreferencesRepository
 ) {
     operator fun invoke(limit: Int = 20): Flow<List<GameEntity>> = flow {
-        val playedGames = gameDao.getPlayedGames()
+        val ownerUserId = syncPreferencesRepository.getRommUserId()
+        val playedGames = gameDao.getPlayedGames(ownerUserId)
 
         if (playedGames.isEmpty()) {
-            val unplayedByRating = (gameDao.getUnplayedInstalledGames() +
-                gameDao.getUnplayedUndownloadedGames())
+            val unplayedByRating = (gameDao.getUnplayedInstalledGames(ownerUserId) +
+                gameDao.getUnplayedUndownloadedGames(ownerUserId))
                 .filter { it.rating != null }
                 .sortedByDescending { it.rating }
                 .take(limit)
@@ -28,8 +31,8 @@ class GetTopUnplayedUseCase @Inject constructor(
         val platformWeights = calculatePlatformWeights(playedGames)
         val playTimeBoost = calculatePlayTimeBoost(playedGames)
 
-        val unplayedGames = gameDao.getUnplayedInstalledGames() +
-            gameDao.getUnplayedUndownloadedGames()
+        val unplayedGames = gameDao.getUnplayedInstalledGames(ownerUserId) +
+            gameDao.getUnplayedUndownloadedGames(ownerUserId)
 
         if (unplayedGames.isEmpty()) {
             emit(emptyList())

@@ -53,7 +53,8 @@ class GameNativeStoreSync @Inject constructor(
     private val platformDao: PlatformDao,
     private val imageCacheManager: ImageCacheManager,
     private val storagePrefs: StoragePreferencesRepository,
-    private val preferencesRepository: UserPreferencesRepository
+    private val preferencesRepository: UserPreferencesRepository,
+    private val syncPreferencesRepository: com.nendo.argosy.data.preferences.SyncPreferencesRepository
 ) {
     private val httpClient by lazy {
         OkHttpClient.Builder()
@@ -169,7 +170,10 @@ class GameNativeStoreSync @Inject constructor(
             }
 
         if (platformDao.getById(store.platformId) != null) {
-            platformDao.updateGameCount(store.platformId, gameDao.countByPlatform(store.platformId))
+            platformDao.updateGameCount(
+                store.platformId,
+                gameDao.countByPlatform(store.platformId, syncPreferencesRepository.getRommUserId())
+            )
         }
         return added to removed
     }

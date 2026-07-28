@@ -1,6 +1,7 @@
 package com.nendo.argosy.data.repository
 
 import com.nendo.argosy.data.local.dao.GameUserOverlayDao
+import com.nendo.argosy.data.local.dao.UserRomsHiddenDao
 import com.nendo.argosy.data.preferences.SyncPreferencesRepository
 import java.time.Instant
 import javax.inject.Inject
@@ -17,9 +18,24 @@ import javax.inject.Singleton
 @Singleton
 class GameUserOverlayWriter @Inject constructor(
     private val overlayDao: GameUserOverlayDao,
+    private val userRomsHiddenDao: UserRomsHiddenDao,
     private val syncPreferencesRepository: SyncPreferencesRepository
 ) {
     suspend fun activeOwnerId(): Long? = syncPreferencesRepository.getRommUserId()
+
+    /**
+     * The user's own hide choice, which lives in `user_roms_hidden` and not on the overlay row.
+     * It is routed through here only so that the active account is resolved in one place; it is
+     * not the admin-imposed `serverHidden` and never touches it.
+     */
+    suspend fun setHidden(gameId: Long, hidden: Boolean) {
+        val owner = activeOwnerId()
+        if (hidden) {
+            userRomsHiddenDao.hide(owner, gameId)
+        } else {
+            userRomsHiddenDao.unhide(owner, gameId)
+        }
+    }
 
     suspend fun updateFavorite(gameId: Long, favorite: Boolean) =
         overlayDao.setFavorite(activeOwnerId(), gameId, favorite)

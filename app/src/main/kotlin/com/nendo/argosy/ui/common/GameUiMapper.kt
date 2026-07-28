@@ -83,11 +83,16 @@ suspend fun GameEntity.toHomeGameUi(
     )
 }
 
+/**
+ * [isHidden] is supplied by the caller: hiding is per account and lives in `user_roms_hidden`,
+ * so a bare [GameEntity] cannot answer it.
+ */
 suspend fun GameEntity.toLibraryGameUi(
     downloadStatus: DownloadFileStatusRepository,
     platformDisplayName: String? = null,
     gradientColors: Pair<Color, Color>? = null,
-    emulatorName: String? = null
+    emulatorName: String? = null,
+    isHidden: Boolean = false
 ): LibraryGameUi = LibraryGameUi(
     id = id,
     title = title,

@@ -129,6 +129,12 @@ object DatabaseModule {
         database.gameUserOverlayDao()
 
     @Provides
+    fun provideUserRomsHiddenDao(
+        database: ALauncherDatabase
+    ): com.nendo.argosy.data.local.dao.UserRomsHiddenDao =
+        database.userRomsHiddenDao()
+
+    @Provides
     fun provideCollectionMembershipDao(
         database: ALauncherDatabase
     ): com.nendo.argosy.data.local.dao.CollectionMembershipDao =

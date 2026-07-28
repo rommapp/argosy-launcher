@@ -479,7 +479,7 @@ class DualHomeViewModel(
                 realCount = gameRepository.countByPlatform(section.id)
                 var platformGames = gameRepository.getByPlatformSorted(
                     section.id, limit = PLATFORM_GAMES_LIMIT
-                ).filter { !it.isHidden }
+                )
                 if (installedOnly) platformGames = filterPlayable(platformGames)
                 platformGames.map { it.toUi() }
             }
@@ -798,8 +798,9 @@ class DualHomeViewModel(
         onLoaded: (() -> Unit)? = null
     ) {
         viewModelScope.launch {
+            val hiddenIds = gameRepository.getHiddenGameIds()
             val games = collectionRepository.getGamesInCollection(collectionId)
-                .filter { !it.isHidden }
+                .filter { it.id !in hiddenIds }
                 .map { it.toUi() }
             val item = _uiState.value.collectionItems
                 .filterIsInstance<DualCollectionListItem.Collection>()

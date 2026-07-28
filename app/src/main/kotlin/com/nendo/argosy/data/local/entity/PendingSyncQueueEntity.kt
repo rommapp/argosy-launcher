@@ -51,6 +51,7 @@ enum class SyncType {
     DIFFICULTY,
     STATUS,
     FAVORITE,
+    HIDDEN,
     ACHIEVEMENT,
     SCREENSHOT
 }

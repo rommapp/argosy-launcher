@@ -26,7 +26,6 @@ object GameMigrationHelper {
             userDifficulty = sources.maxOf { it.userDifficulty },
             completion = sources.maxOf { it.completion },
             isFavorite = sources.any { it.isFavorite },
-            isHidden = sources.all { it.isHidden },
             addedAt = sources.minOfOrNull { it.addedAt } ?: base.addedAt,
             lastPlayed = sources.mapNotNull { it.lastPlayed }.maxOrNull(),
             achievementCount = sources.maxOf { it.achievementCount }

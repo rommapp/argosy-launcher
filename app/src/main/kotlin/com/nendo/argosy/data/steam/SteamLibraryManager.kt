@@ -67,7 +67,8 @@ class SteamLibraryManager @Inject constructor(
     private val steamRepository: dagger.Lazy<SteamRepository>,
     private val steamIgdbResolver: dagger.Lazy<com.nendo.argosy.data.repository.SteamIgdbResolver>,
     private val steamContentManager: dagger.Lazy<SteamContentManager>,
-    private val preferencesRepository: com.nendo.argosy.data.preferences.UserPreferencesRepository
+    private val preferencesRepository: com.nendo.argosy.data.preferences.UserPreferencesRepository,
+    private val syncPreferencesRepository: com.nendo.argosy.data.preferences.SyncPreferencesRepository
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val syncMutex = Mutex()
@@ -531,7 +532,10 @@ class SteamLibraryManager @Inject constructor(
     }
 
     private suspend fun updatePlatformGameCount() {
-        val count = gameDao.countByPlatform(LocalPlatformIds.STEAM)
+        val count = gameDao.countByPlatform(
+            LocalPlatformIds.STEAM,
+            syncPreferencesRepository.getRommUserId()
+        )
         platformDao.updateGameCount(LocalPlatformIds.STEAM, count)
     }
 

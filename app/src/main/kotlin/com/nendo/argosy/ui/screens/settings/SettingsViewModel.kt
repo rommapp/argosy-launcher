@@ -1381,6 +1381,11 @@ class SettingsViewModel @Inject constructor(
     fun handleRommScanResult(origin: String, code: String) = serverDelegate.handleScanResult(origin, code, viewModelScope) { loadSettings() }
     fun clearRommFocusField() = serverDelegate.clearRommFocusField()
 
+    fun requestRommSignOut() =
+        serverDelegate.requestRommSignOut(viewModelScope) { syncDelegate.pendingUploadCount() }
+    fun cancelRommSignOut() = serverDelegate.cancelRommSignOut()
+    fun confirmRommSignOut() = serverDelegate.confirmRommSignOut(viewModelScope) { loadSettings() }
+
     fun connectToRomm() = routeConnectToRomm(this)
     fun showRALoginForm() = routeShowRALoginForm(this)
     fun hideRALoginForm() = routeHideRALoginForm(this)

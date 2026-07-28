@@ -5,6 +5,7 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
+import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
@@ -16,6 +17,7 @@ import javax.inject.Singleton
 data class SyncPreferences(
     val rommBaseUrl: String? = null,
     val rommUsername: String? = null,
+    val rommUserId: Long? = null,
     val rommToken: String? = null,
     val rommDeviceId: String? = null,
     val rommDeviceClientVersion: String? = null,
@@ -67,6 +69,7 @@ class SyncPreferencesRepository @Inject constructor(
     private object Keys {
         val ROMM_URL = stringPreferencesKey("romm_url")
         val ROMM_USERNAME = stringPreferencesKey("romm_username")
+        val ROMM_USER_ID = longPreferencesKey("romm_user_id")
         val ROMM_TOKEN = stringPreferencesKey("romm_token")
         val ROMM_DEVICE_ID = stringPreferencesKey("romm_device_id")
         val ROMM_DEVICE_CLIENT_VERSION = stringPreferencesKey("romm_device_client_version")
@@ -250,6 +253,7 @@ class SyncPreferencesRepository @Inject constructor(
         SyncPreferences(
             rommBaseUrl = prefs[Keys.ROMM_URL],
             rommUsername = prefs[Keys.ROMM_USERNAME],
+            rommUserId = prefs[Keys.ROMM_USER_ID],
             rommToken = prefs[Keys.ROMM_TOKEN],
             rommDeviceId = prefs[Keys.ROMM_DEVICE_ID],
             rommDeviceClientVersion = prefs[Keys.ROMM_DEVICE_CLIENT_VERSION],
@@ -320,13 +324,22 @@ class SyncPreferencesRepository @Inject constructor(
         }
     }
 
-    suspend fun setRomMCredentials(baseUrl: String, token: String, username: String? = null) {
+    suspend fun setRomMCredentials(
+        baseUrl: String,
+        token: String,
+        username: String? = null,
+        userId: Long? = null
+    ) {
         dataStore.edit { prefs ->
             val previousUrl = prefs[Keys.ROMM_URL]
+            val previousUserId = prefs[Keys.ROMM_USER_ID]
             prefs[Keys.ROMM_URL] = baseUrl
             prefs[Keys.ROMM_TOKEN] = token
             if (username != null) prefs[Keys.ROMM_USERNAME] = username
-            if (previousUrl != null && previousUrl != baseUrl) {
+            if (userId != null) prefs[Keys.ROMM_USER_ID] = userId
+            val serverChanged = previousUrl != null && previousUrl != baseUrl
+            val userChanged = previousUserId != null && userId != null && previousUserId != userId
+            if (serverChanged || userChanged) {
                 prefs.remove(Keys.ROMM_DEVICE_ID)
                 prefs.remove(Keys.ROMM_DEVICE_CLIENT_VERSION)
             }
@@ -338,6 +351,7 @@ class SyncPreferencesRepository @Inject constructor(
             prefs.remove(Keys.ROMM_URL)
             prefs.remove(Keys.ROMM_TOKEN)
             prefs.remove(Keys.ROMM_USERNAME)
+            prefs.remove(Keys.ROMM_USER_ID)
             prefs.remove(Keys.ROMM_DEVICE_ID)
             prefs.remove(Keys.ROMM_DEVICE_CLIENT_VERSION)
         }

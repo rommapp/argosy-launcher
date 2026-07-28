@@ -152,6 +152,42 @@ class ServerSettingsDelegate @Inject constructor(
         _state.update { it.copy(rommFocusField = index) }
     }
 
+    fun requestRommSignOut(scope: CoroutineScope, pendingUploads: suspend () -> Int) {
+        scope.launch {
+            val pending = pendingUploads()
+            _state.update {
+                it.copy(showRommSignOutConfirm = true, rommSignOutPendingUploads = pending)
+            }
+        }
+    }
+
+    fun cancelRommSignOut() {
+        _state.update { it.copy(showRommSignOutConfirm = false) }
+    }
+
+    fun confirmRommSignOut(scope: CoroutineScope, onSignedOut: suspend () -> Unit) {
+        if (_state.value.rommSigningOut) return
+        scope.launch {
+            _state.update { it.copy(showRommSignOutConfirm = false, rommSigningOut = true) }
+            try {
+                romMRepository.signOut()
+                _state.update {
+                    it.copy(
+                        rommSigningOut = false,
+                        rommUrl = "",
+                        rommUsername = "",
+                        rommVersion = null,
+                        connectionStatus = ConnectionStatus.NOT_CONFIGURED
+                    )
+                }
+                onSignedOut()
+            } catch (e: Exception) {
+                Log.e(TAG, "confirmRommSignOut: failed", e)
+                _state.update { it.copy(rommSigningOut = false, rommConfigError = e.message) }
+            }
+        }
+    }
+
     /** Probes the entered URL and auto-selects the version-appropriate auth method, mirroring the first-run wizard. */
     fun commitRommUrl(scope: CoroutineScope) {
         val state = _state.value

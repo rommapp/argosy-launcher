@@ -303,6 +303,7 @@ private fun routeServerConfirm(vm: SettingsViewModel, state: SettingsUiState): I
     val items = buildGameDataItemsFromState(state)
     when (val item = gameDataItemAtFocusIndex(state.focusedIndex, items)) {
         GameDataItem.RomManager -> vm.startRommConfig()
+        GameDataItem.RomMSignOut -> vm.requestRommSignOut()
         GameDataItem.SyncSettings -> vm.navigateToSection(SettingsSection.SYNC_SETTINGS)
         GameDataItem.SyncLibrary -> if (isOnline) vm.syncRomm()
         GameDataItem.AccuratePlayTime -> {

@@ -65,6 +65,8 @@ class RomMRepository @Inject constructor(
 
     fun disconnect() = connectionManager.disconnect()
 
+    suspend fun signOut() = connectionManager.signOut()
+
     suspend fun checkConnection() = connectionManager.checkConnection()
 
     fun getCurrentDeviceId(): String? = connectionManager.getDeviceId()

@@ -47,6 +47,7 @@ class UserPreferencesRepository @Inject constructor(
             firstRunComplete = app.firstRunComplete,
             rommBaseUrl = sync.rommBaseUrl,
             rommUsername = sync.rommUsername,
+            rommUserId = sync.rommUserId,
             rommToken = sync.rommToken,
             rommDeviceId = sync.rommDeviceId,
             rommDeviceClientVersion = sync.rommDeviceClientVersion,
@@ -288,7 +289,8 @@ class UserPreferencesRepository @Inject constructor(
         syncPrefs.downloadCategoryPlatformOverrides.first()[platformSlug] ?: emptyMap()
     suspend fun getEffectiveDownloadDefaults(platformSlug: String): Map<String, Boolean> =
         syncPrefs.getEffectiveDownloadDefaults(platformSlug)
-    suspend fun setRomMCredentials(baseUrl: String, token: String, username: String? = null) = syncPrefs.setRomMCredentials(baseUrl, token, username)
+    suspend fun setRomMCredentials(baseUrl: String, token: String, username: String? = null, userId: Long? = null) =
+        syncPrefs.setRomMCredentials(baseUrl, token, username, userId)
     suspend fun clearRomMCredentials() = syncPrefs.clearRomMCredentials()
     suspend fun setRommDeviceId(deviceId: String, clientVersion: String) = syncPrefs.setRommDeviceId(deviceId, clientVersion)
     suspend fun clearRommDeviceId() = syncPrefs.clearRommDeviceId()
@@ -581,6 +583,7 @@ data class UserPreferences(
     val firstRunComplete: Boolean = false,
     val rommBaseUrl: String? = null,
     val rommUsername: String? = null,
+    val rommUserId: Long? = null,
     val rommToken: String? = null,
     val rommDeviceId: String? = null,
     val rommDeviceClientVersion: String? = null,

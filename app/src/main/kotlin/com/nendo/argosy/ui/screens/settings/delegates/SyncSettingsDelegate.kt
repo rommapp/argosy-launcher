@@ -839,6 +839,8 @@ class SyncSettingsDelegate @Inject constructor(
         }
     }
 
+    suspend fun pendingUploadCount(): Int = saveCacheRepository.getPendingSyncCounts().pendingUploads
+
     fun requestResetSaveCache(scope: CoroutineScope) {
         scope.launch {
             val pendingUploads = saveCacheRepository.getPendingSyncCounts().pendingUploads

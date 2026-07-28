@@ -69,6 +69,9 @@ import com.nendo.argosy.ui.screens.settings.delegates.BuiltinNavigationTarget
 import com.nendo.argosy.ui.screens.settings.sections.AboutSection
 import com.nendo.argosy.ui.screens.settings.sections.BiosSection
 import com.nendo.argosy.ui.screens.settings.sections.DistributeResultModal
+import com.nendo.argosy.ui.screens.settings.sections.GameDataItem
+import com.nendo.argosy.ui.screens.settings.sections.buildGameDataItemsFromState
+import com.nendo.argosy.ui.screens.settings.sections.gameDataFocusIndexOf
 import com.nendo.argosy.ui.screens.settings.sections.DriversSection
 import com.nendo.argosy.ui.screens.settings.sections.AmbientLedSection
 import com.nendo.argosy.ui.screens.settings.sections.BoxArtSection
@@ -141,7 +144,10 @@ fun SettingsScreen(
                 kotlinx.coroutines.delay(300)
                 when (initialAction) {
                     "rommConfig" -> viewModel.startRommConfig()
-                    "syncLibrary" -> viewModel.setFocusIndex(2)
+                    "syncLibrary" -> {
+                        val items = buildGameDataItemsFromState(viewModel.uiState.value)
+                        viewModel.setFocusIndex(gameDataFocusIndexOf(GameDataItem.SyncLibrary, items))
+                    }
                 }
             }
         }
@@ -875,6 +881,22 @@ fun SettingsScreen(
             onDismiss = { viewModel.dismissStoragePlatformCategoryDelete() }
         )
     }
+
+    ArgosyConfirmModalHost(
+        visible = uiState.server.showRommSignOutConfirm,
+        title = "Sign Out of RomM?",
+        message = if (uiState.server.rommSignOutPendingUploads > 0) {
+            "${uiState.server.rommSignOutPendingUploads} save(s) still need uploading. " +
+                "Sign out now and they stay on this device until you sign back in."
+        } else {
+            "This device will forget your RomM account. Your library, downloaded games and " +
+                "saves stay on this device, and signing back in as the same user picks them up."
+        },
+        confirmLabel = "Sign Out",
+        destructive = true,
+        onConfirm = { viewModel.confirmRommSignOut() },
+        onDismiss = { viewModel.cancelRommSignOut() }
+    )
 
     ArgosyConfirmModalHost(
         visible = uiState.syncSettings.showResetSaveCacheConfirm,

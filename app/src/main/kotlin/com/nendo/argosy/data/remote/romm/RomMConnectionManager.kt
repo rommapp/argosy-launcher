@@ -177,21 +177,36 @@ class RomMConnectionManager @Inject constructor(
     private fun normalizeServerKey(url: String): String =
         url.trim().lowercase().removePrefix("https://").removePrefix("http://").trimEnd('/')
 
-    private suspend fun persistRommCredentials(newBaseUrl: String, token: String, username: String?) {
-        val storedKey = userPreferencesRepository.preferences.first().rommBaseUrl?.let { normalizeServerKey(it) }
+    private suspend fun fetchCurrentUser(target: RomMApi): RomMUser? = try {
+        val response = target.getCurrentUser()
+        if (response.isSuccessful) response.body() else null
+    } catch (_: Exception) {
+        null
+    }
+
+    private suspend fun persistRommCredentials(newBaseUrl: String, token: String, user: RomMUser?) {
+        val stored = userPreferencesRepository.preferences.first()
+        val storedKey = stored.rommBaseUrl?.let { normalizeServerKey(it) }
         val newKey = normalizeServerKey(newBaseUrl)
-        if (!storedKey.isNullOrBlank() && storedKey != newKey) {
+        val storedUserId = stored.rommUserId
+
+        val serverChanged = !storedKey.isNullOrBlank() && storedKey != newKey
+        val userChanged = storedUserId != null && user != null && storedUserId != user.id
+
+        if (serverChanged || userChanged) {
             val pendingUploads = saveCacheRepository.get().getPendingSyncCounts().pendingUploads
             if (pendingUploads > 0) {
-                Logger.info(TAG, "persistRommCredentials: server switch blocked, $pendingUploads saves pending upload")
+                Logger.info(TAG, "persistRommCredentials: identity switch blocked, $pendingUploads saves pending upload")
                 throw IllegalStateException(
-                    "Sync saves first - $pendingUploads pending upload. Switching servers would delete them."
+                    "Sync saves first - $pendingUploads pending upload. Switching accounts would delete them."
                 )
             }
-            Logger.info(TAG, "persistRommCredentials: server changed ($storedKey -> $newKey), purging RomM library")
+            val reason = if (serverChanged) "server changed ($storedKey -> $newKey)"
+                else "user changed ($storedUserId -> ${user?.id})"
+            Logger.info(TAG, "persistRommCredentials: $reason, purging RomM library")
             databaseAdminRepository.get().purgeRomMLibrary()
         }
-        userPreferencesRepository.setRomMCredentials(newBaseUrl, token, username)
+        userPreferencesRepository.setRomMCredentials(newBaseUrl, token, user?.username, user?.id)
     }
 
     suspend fun connect(url: String, token: String? = null): RomMResult<String> {
@@ -221,7 +236,11 @@ class RomMConnectionManager @Inject constructor(
         return RomMResult.Error(lastError ?: "Connection failed")
     }
 
-    private suspend fun attemptConnection(url: String, token: String?): RomMResult<String> = connectMutex.withLock {
+    private suspend fun attemptConnection(
+        url: String,
+        token: String?,
+        registerDevice: Boolean = true
+    ): RomMResult<String> = connectMutex.withLock {
         val urlsToTry = buildUrlsToTry(url)
         var lastError: String? = null
 
@@ -244,7 +263,7 @@ class RomMConnectionManager @Inject constructor(
                     saveSyncRepository.get().setCapabilities(capabilities)
                     reconnectPending = false
                     Logger.info(TAG, "connect: success at $normalizedUrl, version=$version, capabilities=$capabilities")
-                    if (token != null && isVersionAtLeast(MIN_DEVICE_API_VERSION)) {
+                    if (registerDevice && token != null && isVersionAtLeast(MIN_DEVICE_API_VERSION)) {
                         registerDeviceIfNeeded()
                     }
                     return RomMResult.Success(normalizedUrl)
@@ -262,17 +281,16 @@ class RomMConnectionManager @Inject constructor(
     }
 
     suspend fun connectWithToken(url: String, token: String): RomMResult<String> {
-        val connectResult = connect(url, token)
-        if (connectResult is RomMResult.Error) return connectResult
+        _connectionState.value = ConnectionState.Connecting
+        val connectResult = attemptConnection(url, token, registerDevice = false)
+        if (connectResult is RomMResult.Error) {
+            _connectionState.value = ConnectionState.Failed(connectResult.message)
+            return connectResult
+        }
 
         val currentApi = api ?: return RomMResult.Error("Not connected")
         return try {
-            val userResponse = currentApi.getCurrentUser()
-            val username = if (userResponse.isSuccessful) {
-                userResponse.body()?.username
-            } else null
-
-            persistRommCredentials(baseUrl, token, username)
+            persistRommCredentials(baseUrl, token, fetchCurrentUser(currentApi))
 
             if (isVersionAtLeast(MIN_DEVICE_API_VERSION)) {
                 registerDeviceIfNeeded()
@@ -394,29 +412,24 @@ class RomMConnectionManager @Inject constructor(
     }
 
     private suspend fun finalizeDeviceAuth(base: String, body: RomMDeviceAuthTokenResponse) {
-        baseUrl = base
-        accessToken = body.accessToken
         val newApi = createApi(base, body.accessToken)
-        api = newApi
-        saveSyncRepository.get().setApi(newApi)
-        biosRepository.setApi(newApi)
-
         val heartbeat = try { newApi.heartbeat() } catch (_: Exception) { null }
         val version = heartbeat?.body()?.version ?: "unknown"
         val capabilities = RomMCapabilities.from(version, heartbeat?.body()?.libretroApiEnabled, heartbeat?.body()?.steamGridDbEnabled)
-        _connectionState.value = ConnectionState.Connected(version, capabilities)
-        saveSyncRepository.get().setCapabilities(capabilities)
 
-        val username = try {
-            val userResponse = newApi.getCurrentUser()
-            if (userResponse.isSuccessful) userResponse.body()?.username else null
-        } catch (_: Exception) {
-            null
-        }
-        persistRommCredentials(base, body.accessToken, username)
+        persistRommCredentials(base, body.accessToken, fetchCurrentUser(newApi))
         userPreferencesRepository.setRommDeviceId(body.deviceId, BuildConfig.VERSION_NAME)
+
+        baseUrl = base
+        accessToken = body.accessToken
+        api = newApi
         cachedDeviceId = body.deviceId
+        saveSyncRepository.get().setApi(newApi)
+        biosRepository.setApi(newApi)
+        saveSyncRepository.get().setCapabilities(capabilities)
         saveSyncRepository.get().setDeviceId(body.deviceId)
+        _connectionState.value = ConnectionState.Connected(version, capabilities)
+
         deviceAuthApi = null
         deviceAuthBaseUrl = null
         Logger.info(TAG, "finalizeDeviceAuth: connected, deviceId=${body.deviceId}, version=$version")
@@ -446,6 +459,17 @@ class RomMConnectionManager @Inject constructor(
         baseUrl = ""
         cachedDeviceId = null
         _connectionState.value = ConnectionState.Disconnected
+    }
+
+    /**
+     * Forgets the stored RomM identity and tears down the live session. Library rows and
+     * downloaded content are left alone; signing back in as the same user reuses them, and
+     * signing in as a different user purges via [persistRommCredentials].
+     */
+    suspend fun signOut() {
+        disconnect()
+        userPreferencesRepository.clearRomMCredentials()
+        Logger.info(TAG, "signOut: cleared stored RomM identity")
     }
 
     suspend fun checkConnection() {

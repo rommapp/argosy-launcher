@@ -20,6 +20,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import com.nendo.argosy.ui.screens.settings.components.SectionPaneLayout
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.LibraryBooks
+import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.Cloud
 import androidx.compose.material.icons.filled.Dns
@@ -83,6 +84,7 @@ internal sealed class GameDataItem(val key: String, val section: String) {
     class Header(key: String, section: String, val title: String) : GameDataItem(key, section)
 
     data object RomManager : GameDataItem("romManager", "server")
+    data object RomMSignOut : GameDataItem("rommSignOut", "server")
     data object SyncSettings : GameDataItem("syncSettings", "library")
     data object SyncLibrary : GameDataItem("syncLibrary", "library")
     data object AccuratePlayTime : GameDataItem("accuratePlayTime", "tracking")
@@ -107,10 +109,14 @@ internal fun buildGameDataItems(
     installedLaunchers: List<InstalledSteamLauncher>,
     notInstalledLaunchers: List<NotInstalledSteamLauncher>,
     hasStoragePermission: Boolean,
-    isSteamLoggedIn: Boolean = false
+    isSteamLoggedIn: Boolean = false,
+    isSignedIntoRomM: Boolean = false
 ): List<GameDataItem> = buildList {
     add(GameDataItem.Header("serverHeader", "server", "SERVER"))
     add(GameDataItem.RomManager)
+    if (isSignedIntoRomM) {
+        add(GameDataItem.RomMSignOut)
+    }
 
     if (isConnected) {
         add(GameDataItem.Header("libraryHeader", "library", "LIBRARY"))
@@ -169,7 +175,8 @@ internal fun buildGameDataItemsFromState(state: SettingsUiState): List<GameDataI
         installedLaunchers = state.steam.installedLaunchers,
         notInstalledLaunchers = state.steam.notInstalledLaunchers,
         hasStoragePermission = state.steam.hasStoragePermission,
-        isSteamLoggedIn = state.steam.connectionState == com.nendo.argosy.data.steam.SteamConnectionState.LOGGED_IN
+        isSteamLoggedIn = state.steam.connectionState == com.nendo.argosy.data.steam.SteamConnectionState.LOGGED_IN,
+        isSignedIntoRomM = state.server.rommUrl.isNotBlank()
     )
 }
 
@@ -324,6 +331,18 @@ private fun GameDataContent(
                     },
                     isFocused = isFocused(item),
                     onClick = { viewModel.startRommConfig() }
+                )
+
+                GameDataItem.RomMSignOut -> ActionPreference(
+                    icon = Icons.AutoMirrored.Filled.Logout,
+                    title = if (uiState.server.rommSigningOut) "Signing out..." else "Sign Out",
+                    subtitle = uiState.server.rommUsername.takeIf { it.isNotBlank() }
+                        ?.let { "Signed in as $it" }
+                        ?: "Forget this RomM account",
+                    isFocused = isFocused(item),
+                    isEnabled = !uiState.server.rommSigningOut,
+                    isDangerous = true,
+                    onClick = { viewModel.requestRommSignOut() }
                 )
 
                 GameDataItem.SyncSettings -> NavigationPreference(

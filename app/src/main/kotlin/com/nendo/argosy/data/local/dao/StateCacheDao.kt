@@ -237,6 +237,24 @@ interface StateCacheDao {
     @Query("DELETE FROM state_cache WHERE ownerUserId = :ownerUserId")
     suspend fun deleteByOwner(ownerUserId: Long)
 
+    @Query("UPDATE state_cache SET ownerUserId = :ownerUserId WHERE id = :id")
+    suspend fun updateOwner(id: Long, ownerUserId: Long?)
+
+    /**
+     * Distinct games the account holds a cached state for. Strict owner equality, unlike the
+     * tolerant read paths: an account switch places what this account owns, and an unattributed
+     * legacy row belongs to nobody in particular.
+     */
+    @Query("SELECT DISTINCT gameId FROM state_cache WHERE ownerUserId = :ownerUserId")
+    suspend fun getGameIdsForOwner(ownerUserId: Long): List<Long>
+
+    @Query("""
+        SELECT * FROM state_cache
+        WHERE gameId = :gameId AND ownerUserId = :ownerUserId
+        ORDER BY cachedAt DESC
+    """)
+    suspend fun getAllForOwnerAndGame(gameId: Long, ownerUserId: Long): List<StateCacheEntity>
+
     @Query("DELETE FROM state_cache")
     suspend fun deleteAll()
 

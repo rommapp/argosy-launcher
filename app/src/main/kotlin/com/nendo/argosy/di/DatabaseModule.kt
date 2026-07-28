@@ -145,6 +145,12 @@ object DatabaseModule {
         database.stateCacheDao()
 
     @Provides
+    fun provideStateOwnershipDao(
+        database: ALauncherDatabase
+    ): com.nendo.argosy.data.local.dao.StateOwnershipDao =
+        database.stateOwnershipDao()
+
+    @Provides
     fun provideStateTombstoneDao(database: ALauncherDatabase): StateTombstoneDao =
         database.stateTombstoneDao()
 

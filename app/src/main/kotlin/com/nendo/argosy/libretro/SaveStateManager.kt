@@ -23,7 +23,9 @@ class SaveStateManager(
     private val saveCacheManager: SaveCacheManager,
     private val usesExternalMemcard: Boolean = false,
     private val channelName: String? = null,
-    private val isVariant: Boolean = false
+    private val isVariant: Boolean = false,
+    private val onLiveStateWritten: ((Int, File) -> Unit)? = null,
+    private val onLiveStateRemoved: ((Int, File) -> Unit)? = null
 ) {
     private var lastSramHash: String? = null
     var hasQuickSave by mutableStateOf(false)
@@ -287,6 +289,7 @@ class SaveStateManager(
             if (slotNumber in QUICK_SLOT_BASE until QUICK_SLOT_BASE + QUICK_RING_SIZE) {
                 hasQuickSave = true
             }
+            onLiveStateWritten?.invoke(slotNumber, stateFile)
             Log.d(TAG, "Saved state to slot $slotNumber (${stateData.size} bytes)")
             true
         } catch (e: Exception) {
@@ -322,6 +325,7 @@ class SaveStateManager(
             val screenshotFile = getSlotScreenshotFile(slotNumber)
             val deleted = stateFile.delete()
             screenshotFile.delete()
+            if (deleted) onLiveStateRemoved?.invoke(slotNumber, stateFile)
             if (slotNumber in QUICK_SLOT_BASE until QUICK_SLOT_BASE + QUICK_RING_SIZE) {
                 hasQuickSave = quickRingEntries().isNotEmpty()
             }
@@ -363,6 +367,7 @@ class SaveStateManager(
             val screenshotFile = getSlotScreenshotFile(slot)
             if (stateFile.exists()) {
                 stateFile.delete()
+                onLiveStateRemoved?.invoke(slot, stateFile)
                 Log.d(TAG, "Deleted state slot $slot for fresh start")
             }
             if (screenshotFile.exists()) {

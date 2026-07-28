@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.room.withTransaction
 import com.nendo.argosy.data.local.ALauncherDatabase
 import com.nendo.argosy.data.local.entity.SaveOwnershipEntity
+import com.nendo.argosy.data.local.entity.StateOwnershipEntity
 import com.nendo.argosy.data.preferences.AccountPreferenceStoreRegistry
 import com.nendo.argosy.data.preferences.AccountSwitchMarkerStore
 import com.nendo.argosy.data.quaypass.QuayPassKeystore
@@ -76,6 +77,7 @@ class AccountRemovalService @Inject constructor(
     private val database: ALauncherDatabase,
     private val markerStore: AccountSwitchMarkerStore,
     private val artifactService: AccountSwitchArtifactService,
+    private val stateService: AccountSwitchStateService,
     private val rommAccountRepository: RomMAccountRepository,
     private val preferenceStores: AccountPreferenceStoreRegistry,
     private val quayPassKeystore: QuayPassKeystore
@@ -122,6 +124,18 @@ class AccountRemovalService @Inject constructor(
                 AccountSwitchArtifactService.TeardownResult.NOTHING_TO_DO -> Unit
             }
         }
+        for (row in outstandingStates(ownerUserId)) {
+            val result = if (row.transitionState == StateOwnershipEntity.STATE_RECLAIMED) {
+                stateService.resumeRemoval(row, ownerUserId)
+            } else {
+                stateService.tearDown(row, ownerUserId, ownerUserId)
+            }
+            when (result) {
+                AccountSwitchStateService.TeardownResult.RECLAIMED -> reclaimed++
+                AccountSwitchStateService.TeardownResult.ABORTED -> aborted++
+                AccountSwitchStateService.TeardownResult.NOTHING_TO_DO -> Unit
+            }
+        }
 
         deleteRows(ownerUserId)
         deleteCacheDirectories(ownerUserId)
@@ -148,6 +162,10 @@ class AccountRemovalService @Inject constructor(
         database.saveOwnershipDao().getByOwner(ownerUserId)
             .filter { it.transitionState != SaveOwnershipEntity.STATE_CLEARED }
 
+    private suspend fun outstandingStates(ownerUserId: Long): List<StateOwnershipEntity> =
+        database.stateOwnershipDao().getByOwner(ownerUserId)
+            .filter { it.transitionState != StateOwnershipEntity.STATE_CLEARED }
+
     private suspend fun deleteRows(ownerUserId: Long) {
         database.withTransaction {
             database.gameUserOverlayDao().deleteForOwner(ownerUserId)
@@ -162,6 +180,7 @@ class AccountRemovalService @Inject constructor(
             database.saveOwnershipDao().deleteByOwner(ownerUserId)
             database.saveSyncDao().deleteByOwner(ownerUserId)
             database.stateCacheDao().deleteByOwner(ownerUserId)
+            database.stateOwnershipDao().deleteByOwner(ownerUserId)
             database.stateTombstoneDao().deleteByOwner(ownerUserId)
             database.downloadQueueDao().deleteByOwner(ownerUserId)
             database.quayPassEncounterDao().deleteByOwner(ownerUserId)

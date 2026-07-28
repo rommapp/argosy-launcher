@@ -181,6 +181,14 @@ class AccountSwitchArtifactService @Inject constructor(
         }
         val existingRow = priorRow?.takeIf { it.savePath == targetPath }
 
+        if (heldByAnotherAccount(existingRow, toUserId)) {
+            Logger.warn(
+                TAG,
+                "Refusing to place over game ${artifact.gameId} at $targetPath: still owned by user ${existingRow?.ownerUserId} with bytes on disk"
+            )
+            return@withContext PlacementResult.FAILED
+        }
+
         val cache = saveCacheDao.getPlaceableForOwner(artifact.gameId, toUserId)
         if (cache == null) {
             val anyCopy = saveCacheDao.getNewestForOwner(artifact.gameId, toUserId)
@@ -359,6 +367,18 @@ class AccountSwitchArtifactService @Inject constructor(
             cachedSaveId = game.saveId ?: game.titleId,
             gameId = game.id
         )
+    }
+
+    /**
+     * True when the bytes at this path still belong to another account and are physically there.
+     * A teardown that aborted restores the row to stable under its original owner without
+     * removing the file, so placing over it would destroy exactly what the abort protected.
+     */
+    private fun heldByAnotherAccount(row: SaveOwnershipEntity?, toUserId: Long): Boolean {
+        if (row == null) return false
+        if (row.transitionState != SaveOwnershipEntity.STATE_STABLE) return false
+        val owner = row.ownerUserId ?: return false
+        return owner != toUserId && java.io.File(row.savePath).exists()
     }
 
     private suspend fun markNeedsSync(

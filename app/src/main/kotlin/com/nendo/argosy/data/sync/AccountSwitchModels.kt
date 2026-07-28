@@ -59,7 +59,11 @@ data class AccountSwitchOutcome(
     val reclaimedArtifacts: Int,
     val abortedArtifacts: Int,
     val placedArtifacts: Int,
-    val needsSyncArtifacts: Int
+    val needsSyncArtifacts: Int,
+    val reclaimedStates: Int = 0,
+    val abortedStates: Int = 0,
+    val placedStates: Int = 0,
+    val needsSyncStates: Int = 0
 )
 
 /**
@@ -73,4 +77,22 @@ data class AccountSwitchArtifact(
     val channelName: String?,
     val ownershipId: Long?,
     val savePath: String?
+)
+
+/**
+ * One save state on disk, or one that wants to be, as the switch sees it.
+ *
+ * A game has as many of these as it has occupied slots, so the identity is the slot tuple
+ * `state_cache` is uniquely indexed on rather than the game: teardown and placement for the same
+ * slot must be the same artifact or the two halves act on different files.
+ */
+data class StateSwitchArtifact(
+    val gameId: Long,
+    val emulatorId: String,
+    val slotNumber: Int,
+    val channelName: String?,
+    val coreId: String?,
+    val cacheId: Long?,
+    val ownershipId: Long?,
+    val statePath: String?
 )

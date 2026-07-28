@@ -2,8 +2,10 @@ package com.nendo.argosy.data.sync
 
 import com.nendo.argosy.data.local.dao.SaveCacheDao
 import com.nendo.argosy.data.local.dao.SaveOwnershipDao
+import com.nendo.argosy.data.local.dao.StateOwnershipDao
 import com.nendo.argosy.data.local.entity.RomMAccountEntity
 import com.nendo.argosy.data.local.entity.SaveOwnershipEntity
+import com.nendo.argosy.data.local.entity.StateOwnershipEntity
 import com.nendo.argosy.data.preferences.AccountSwitchMarkerStore
 import com.nendo.argosy.data.remote.romm.RomMAchievementService
 import com.nendo.argosy.data.remote.romm.RomMApiProvider
@@ -45,9 +47,11 @@ class AccountSwitchCoordinator @Inject constructor(
     private val markerStore: AccountSwitchMarkerStore,
     private val blockerService: AccountSwitchBlockerService,
     private val artifactService: AccountSwitchArtifactService,
+    private val stateService: AccountSwitchStateService,
     private val rommAccountRepository: RomMAccountRepository,
     private val overlayWriter: GameUserOverlayWriter,
     private val saveOwnershipDao: SaveOwnershipDao,
+    private val stateOwnershipDao: StateOwnershipDao,
     private val saveCacheDao: SaveCacheDao,
     private val connectionManager: Lazy<RomMConnectionManager>,
     private val rommApiProvider: RomMApiProvider,
@@ -70,6 +74,14 @@ class AccountSwitchCoordinator @Inject constructor(
      * server. They stay empty until a sync fetches the current one.
      */
     fun observeNeedsSync(): Flow<List<SaveOwnershipEntity>> = saveOwnershipDao.observeNeedingSync()
+
+    /**
+     * Slots left empty because the incoming account's cached state was known to be behind the
+     * server, or was written by a core build this device no longer runs. They stay empty until a
+     * sync fetches a placeable one.
+     */
+    fun observeStatesNeedingSync(): Flow<List<StateOwnershipEntity>> =
+        stateOwnershipDao.observeNeedingSync()
 
     suspend fun checkBlockers(confirmedExternalGamesClosed: Boolean): AccountSwitchBlocker? =
         blockerService.check(confirmedExternalGamesClosed)
@@ -133,14 +145,20 @@ class AccountSwitchCoordinator @Inject constructor(
         var aborted = 0
         var placed = 0
         var needsSync = 0
+        var statesReclaimed = 0
+        var statesAborted = 0
+        var statesPlaced = 0
+        var statesNeedingSync = 0
 
         try {
             _progress.value = AccountSwitchProgress.Preparing
             socialRepository.get().suspendForAccountSwitch()
 
             val outgoing = collectOutgoing(fromUserId)
+            val outgoingStates = stateService.outgoingRows(fromUserId)
+            val teardownTotal = outgoing.size + outgoingStates.size
             outgoing.forEachIndexed { index, row ->
-                _progress.value = AccountSwitchProgress.TearingDown(index, outgoing.size)
+                _progress.value = AccountSwitchProgress.TearingDown(index, teardownTotal)
                 val result = if (row.transitionState == SaveOwnershipEntity.STATE_RECLAIMED) {
                     artifactService.resumeRemoval(row, fromUserId ?: toUserId)
                 } else {
@@ -152,18 +170,42 @@ class AccountSwitchCoordinator @Inject constructor(
                     AccountSwitchArtifactService.TeardownResult.NOTHING_TO_DO -> Unit
                 }
             }
+            outgoingStates.forEachIndexed { index, row ->
+                _progress.value = AccountSwitchProgress.TearingDown(outgoing.size + index, teardownTotal)
+                val result = if (row.transitionState == StateOwnershipEntity.STATE_RECLAIMED) {
+                    stateService.resumeRemoval(row, fromUserId ?: toUserId)
+                } else {
+                    stateService.tearDown(row, fromUserId ?: toUserId, toUserId)
+                }
+                when (result) {
+                    AccountSwitchStateService.TeardownResult.RECLAIMED -> statesReclaimed++
+                    AccountSwitchStateService.TeardownResult.ABORTED -> statesAborted++
+                    AccountSwitchStateService.TeardownResult.NOTHING_TO_DO -> Unit
+                }
+            }
 
             _progress.value = AccountSwitchProgress.SwappingIdentity
             swapIdentity(target, fromUserId)
 
             val artifacts = collectIncoming(toUserId)
+            val stateArtifacts = stateService.incomingArtifacts(toUserId)
+            val placementTotal = artifacts.size + stateArtifacts.size
             artifacts.forEachIndexed { index, artifact ->
-                _progress.value = AccountSwitchProgress.Placing(index, artifacts.size)
+                _progress.value = AccountSwitchProgress.Placing(index, placementTotal)
                 when (artifactService.place(artifact, toUserId)) {
                     AccountSwitchArtifactService.PlacementResult.PLACED -> placed++
                     AccountSwitchArtifactService.PlacementResult.NEEDS_SYNC -> needsSync++
                     AccountSwitchArtifactService.PlacementResult.FAILED -> needsSync++
                     AccountSwitchArtifactService.PlacementResult.NOTHING_TO_PLACE -> Unit
+                }
+            }
+            stateArtifacts.forEachIndexed { index, artifact ->
+                _progress.value = AccountSwitchProgress.Placing(artifacts.size + index, placementTotal)
+                when (stateService.place(artifact, toUserId)) {
+                    AccountSwitchStateService.PlacementResult.PLACED -> statesPlaced++
+                    AccountSwitchStateService.PlacementResult.NEEDS_SYNC -> statesNeedingSync++
+                    AccountSwitchStateService.PlacementResult.FAILED -> statesNeedingSync++
+                    AccountSwitchStateService.PlacementResult.NOTHING_TO_PLACE -> Unit
                 }
             }
 
@@ -177,7 +219,11 @@ class AccountSwitchCoordinator @Inject constructor(
                 reclaimedArtifacts = reclaimed,
                 abortedArtifacts = aborted,
                 placedArtifacts = placed,
-                needsSyncArtifacts = needsSync
+                needsSyncArtifacts = needsSync,
+                reclaimedStates = statesReclaimed,
+                abortedStates = statesAborted,
+                placedStates = statesPlaced,
+                needsSyncStates = statesNeedingSync
             )
             Logger.info(TAG, "Switch complete | $outcome")
             return AccountSwitchProgress.Completed(outcome).also { _progress.value = it }

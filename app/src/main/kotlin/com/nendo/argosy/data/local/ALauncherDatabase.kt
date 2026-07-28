@@ -47,6 +47,7 @@ import com.nendo.argosy.data.local.dao.SaveOwnershipDao
 import com.nendo.argosy.data.local.dao.SaveSyncDao
 import com.nendo.argosy.data.local.dao.SocialGameCacheDao
 import com.nendo.argosy.data.local.dao.StateCacheDao
+import com.nendo.argosy.data.local.dao.StateOwnershipDao
 import com.nendo.argosy.data.local.dao.StateTombstoneDao
 import com.nendo.argosy.data.local.dao.CachedLicenseDao
 import com.nendo.argosy.data.local.dao.SteamAccountDao
@@ -98,6 +99,7 @@ import com.nendo.argosy.data.local.entity.SaveSyncEntity
 import com.nendo.argosy.data.local.entity.PendingSocialSyncEntity
 import com.nendo.argosy.data.local.entity.SocialGameCacheEntity
 import com.nendo.argosy.data.local.entity.StateCacheEntity
+import com.nendo.argosy.data.local.entity.StateOwnershipEntity
 import com.nendo.argosy.data.local.entity.StateTombstoneEntity
 import com.nendo.argosy.data.local.entity.SteamAccountEntity
 import com.nendo.argosy.data.local.entity.SteamCompletedDepotEntity
@@ -122,6 +124,7 @@ import com.nendo.argosy.data.local.entity.SteamLicenseEntity
         SaveOwnershipEntity::class,
         RomMAccountEntity::class,
         StateCacheEntity::class,
+        StateOwnershipEntity::class,
         StateTombstoneEntity::class,
         OrphanedFileEntity::class,
         AppCategoryEntity::class,
@@ -163,7 +166,7 @@ import com.nendo.argosy.data.local.entity.SteamLicenseEntity
         QuayPassDailyStatsEntity::class,
         QuayPassPendingReportEntity::class
     ],
-    version = 160,
+    version = 161,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -185,6 +188,7 @@ abstract class ALauncherDatabase : RoomDatabase() {
     abstract fun saveOwnershipDao(): SaveOwnershipDao
     abstract fun rommAccountDao(): RomMAccountDao
     abstract fun stateCacheDao(): StateCacheDao
+    abstract fun stateOwnershipDao(): StateOwnershipDao
     abstract fun stateTombstoneDao(): StateTombstoneDao
     abstract fun orphanedFileDao(): OrphanedFileDao
     abstract fun appCategoryDao(): AppCategoryDao

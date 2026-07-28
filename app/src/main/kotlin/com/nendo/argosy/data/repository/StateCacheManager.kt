@@ -72,7 +72,8 @@ class StateCacheManager @Inject constructor(
     private val libretroStatePathResolver: com.nendo.argosy.data.emulator.LibretroStatePathResolver,
     private val saveSyncApiClient: SaveSyncApiClient,
     private val payloadCodec: com.nendo.argosy.data.sync.SyncPayloadCodec,
-    private val attributionRepository: StorageAttributionRepository
+    private val attributionRepository: StorageAttributionRepository,
+    private val stateOwnershipTracker: com.nendo.argosy.data.sync.StateOwnershipTracker
 ) {
     companion object {
         private const val TAG = "StateCacheManager"
@@ -177,6 +178,16 @@ class StateCacheManager @Inject constructor(
         discovered
     }
 
+    /**
+     * Copies a live state (and its paired screenshot) into the cache and records the live path as
+     * belonging to the caching account.
+     *
+     * [ownerUserIdOverride] exists for the account-switch and account-removal teardowns, which
+     * archive the outgoing account's states while a different account may be the signed-in one.
+     * Re-owning the row afterwards is not equivalent: the slot lookup this method performs is
+     * itself owner-scoped, and the unique index folds the owner in, so the archive has to be
+     * written under the right account rather than moved to it.
+     */
     suspend fun cacheState(
         gameId: Long,
         platformSlug: String,
@@ -186,7 +197,8 @@ class StateCacheManager @Inject constructor(
         coreId: String? = null,
         coreVersion: String? = null,
         channelName: String? = null,
-        isLocked: Boolean = false
+        isLocked: Boolean = false,
+        ownerUserIdOverride: Long? = null
     ): Long? = withContext(Dispatchers.IO) {
         clearLegacyCacheIfNeeded()
 
@@ -197,7 +209,7 @@ class StateCacheManager @Inject constructor(
         }
 
         val now = Instant.now()
-        val ownerUserId = syncPreferencesRepository.getRommUserId()
+        val ownerUserId = ownerUserIdOverride ?: syncPreferencesRepository.getRommUserId()
         val relativeDir = stateRelativeDir(ownerUserId, gameId, platformSlug, channelName, coreId)
         val coreDir = File(cacheBaseDir, relativeDir)
 
@@ -255,6 +267,19 @@ class StateCacheManager @Inject constructor(
             val id = stateCacheDao.upsert(entity)
             Log.d(TAG, "Cached state for game $gameId slot $slotNumber at $cachePath")
 
+            if (isLiveStatePath(statePath)) {
+                stateOwnershipTracker.record(
+                    statePath = statePath,
+                    emulatorId = emulatorId,
+                    contentHash = calculateFileHash(cachedFile),
+                    gameId = gameId,
+                    slotNumber = slotNumber,
+                    channelName = channelName,
+                    coreId = coreId,
+                    ownerUserIdOverride = ownerUserId
+                )
+            }
+
             pruneOldCaches(gameId, ownerUserId)
             id
         } catch (e: Exception) {
@@ -283,11 +308,99 @@ class StateCacheManager @Inject constructor(
             cacheFile.copyTo(targetFile, overwrite = true)
 
             Log.d(TAG, "Restored state from cache $cacheId to $targetPath")
+            stateOwnershipTracker.record(
+                statePath = targetPath,
+                emulatorId = entity.emulatorId,
+                contentHash = calculateFileHash(targetFile),
+                gameId = entity.gameId,
+                slotNumber = entity.slotNumber,
+                channelName = entity.channelName,
+                coreId = entity.coreId,
+                ownerUserIdOverride = entity.ownerUserId
+            )
             true
         } catch (e: Exception) {
             Log.e(TAG, "Failed to restore state from cache", e)
             false
         }
+    }
+
+    /**
+     * Writes the cached screenshot beside a state just restored to [targetPath].
+     *
+     * The live convention is a `.png` sidecar named after the state file, which is what
+     * [cacheState] reads and what the emulator's own slot UI expects. Restoring the state without
+     * it leaves the incoming account looking at the outgoing account's thumbnail.
+     */
+    suspend fun restoreStateScreenshot(cacheId: Long, targetPath: String): Boolean =
+        withContext(Dispatchers.IO) {
+            val entity = stateCacheDao.getById(cacheId) ?: return@withContext false
+            val screenshot = getScreenshotFile(entity) ?: return@withContext false
+            try {
+                screenshot.copyTo(File("$targetPath.png"), overwrite = true)
+                true
+            } catch (e: Exception) {
+                Log.w(TAG, "Failed to restore screenshot for cache $cacheId", e)
+                false
+            }
+        }
+
+    /**
+     * Hash of the bytes currently at a live state path, or null when nothing is there.
+     *
+     * Teardown compares this against the archive twice: once to prove the archive captured what
+     * was on disk, and once immediately before the delete, so a state written between the two is
+     * left alone instead of removed with no copy anywhere.
+     */
+    suspend fun calculateLiveStateHash(statePath: String): String? = withContext(Dispatchers.IO) {
+        val file = File(statePath)
+        if (!file.exists() || !file.isFile) return@withContext null
+        try {
+            calculateFileHash(file)
+        } catch (e: Exception) {
+            Log.w(TAG, "Could not hash live state $statePath", e)
+            null
+        }
+    }
+
+    /**
+     * Reads the cached copy of [cacheId] back off disk and re-derives its hash.
+     *
+     * An archive is only evidence that the live bytes are safe to remove once it has been read
+     * back and matched: a write that reported success but landed truncated or against a full
+     * volume is indistinguishable from a good one without re-reading it.
+     */
+    suspend fun verifyCachedState(cacheId: Long, expectedHash: String?): Boolean =
+        withContext(Dispatchers.IO) {
+            if (expectedHash.isNullOrBlank()) return@withContext false
+            val entity = stateCacheDao.getById(cacheId) ?: return@withContext false
+            val file = File(cacheBaseDir, entity.cachePath)
+            if (!file.exists() || file.length() == 0L) return@withContext false
+            try {
+                val actual = calculateFileHash(file)
+                val match = actual == expectedHash
+                if (!match) {
+                    Log.e(TAG, "State archive verify failed for cache $cacheId: expected=$expectedHash, actual=$actual")
+                }
+                match
+            } catch (e: Exception) {
+                Log.e(TAG, "State archive verify threw for cache $cacheId", e)
+                false
+            }
+        }
+
+    suspend fun reassignCacheOwner(cacheId: Long, ownerUserId: Long?) =
+        withContext(Dispatchers.IO) { stateCacheDao.updateOwner(cacheId, ownerUserId) }
+
+    /**
+     * Removes a live state file and its screenshot sidecar. Returns false when the state file was
+     * there and could not be deleted, so a caller can leave the ownership row alone.
+     */
+    suspend fun deleteLiveState(statePath: String): Boolean = withContext(Dispatchers.IO) {
+        val file = File(statePath)
+        val removed = !file.exists() || file.delete()
+        File("$statePath.png").takeIf { it.exists() }?.delete()
+        removed
     }
 
     suspend fun validateCoreVersion(
@@ -564,6 +677,16 @@ class StateCacheManager @Inject constructor(
      */
     fun coreDirFor(entity: StateCacheEntity): File =
         File(cacheBaseDir, entity.cachePath).parentFile ?: cacheBaseDir
+
+    /**
+     * Whether a path names a live state rather than one already inside the cache.
+     *
+     * [cacheState] is also called cache-to-cache (replacing the auto slot with a numbered one),
+     * and an ownership row for a cache path would make an account switch archive and then delete
+     * the account's own cache file.
+     */
+    private fun isLiveStatePath(statePath: String): Boolean =
+        !statePath.startsWith(cacheBaseDir.absolutePath)
 
     private fun stateRelativeDir(
         ownerUserId: Long?,

@@ -9,6 +9,8 @@ import com.nendo.argosy.data.local.entity.StateCacheEntity
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.repository.ActiveSaveRepository
 import com.nendo.argosy.data.repository.StateCacheManager
+import com.nendo.argosy.data.sync.StateClaim
+import com.nendo.argosy.data.sync.StateOwnershipTracker
 import kotlinx.coroutines.flow.first
 import java.io.File
 import javax.inject.Inject
@@ -28,7 +30,8 @@ class SyncStatesOnSessionEndUseCase @Inject constructor(
     private val activeSaveRepository: ActiveSaveRepository,
     private val emulatorDetector: EmulatorDetector,
     private val coreVersionExtractor: CoreVersionExtractor,
-    private val preferencesRepository: UserPreferencesRepository
+    private val preferencesRepository: UserPreferencesRepository,
+    private val stateOwnershipTracker: StateOwnershipTracker
 ) {
     suspend operator fun invoke(
         gameId: Long,
@@ -91,6 +94,15 @@ class SyncStatesOnSessionEndUseCase @Inject constructor(
         val channelName = activeSaveRepository.getActiveChannel(gameId)
 
         for (state in discoveredStates) {
+            val claim = stateOwnershipTracker.claim(state.file.absolutePath, emulatorId)
+            if (claim is StateClaim.Foreign) {
+                Log.i(
+                    TAG,
+                    "Slot ${state.slotNumber} on disk belongs to user ${claim.ownerUserId}, not adopting | path=${state.file.absolutePath}"
+                )
+                continue
+            }
+
             val existingCache = stateCacheManager.getStateBySlot(
                 gameId = gameId,
                 emulatorId = emulatorId,

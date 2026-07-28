@@ -8,6 +8,7 @@ import com.nendo.argosy.data.emulator.StatePathRegistry
 import com.nendo.argosy.data.local.dao.EmulatorSaveConfigDao
 import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.repository.StateCacheManager
+import com.nendo.argosy.data.sync.StateOwnershipTracker
 import java.io.File
 import javax.inject.Inject
 
@@ -29,6 +30,7 @@ class RestoreCachedStatesUseCase @Inject constructor(
     private val retroArchConfigParser: RetroArchConfigParser,
     private val retroArchPathResolver: com.nendo.argosy.data.emulator.RetroArchPathResolver,
     private val libretroStatePathResolver: com.nendo.argosy.data.emulator.LibretroStatePathResolver,
+    private val stateOwnershipTracker: StateOwnershipTracker,
 ) {
     suspend operator fun invoke(
         gameId: Long,
@@ -120,6 +122,7 @@ class RestoreCachedStatesUseCase @Inject constructor(
                 if (screenshotFile.exists()) {
                     screenshotFile.delete()
                 }
+                stateOwnershipTracker.clear(existingFile.absolutePath, emulatorId)
                 Log.d(TAG, "Deleted existing state: ${existingFile.name}")
             }
 
@@ -139,6 +142,17 @@ class RestoreCachedStatesUseCase @Inject constructor(
                     val screenshotTarget = File(targetDir, screenshotCacheFile.name)
                     screenshotCacheFile.copyTo(screenshotTarget, overwrite = true)
                 }
+
+                stateOwnershipTracker.record(
+                    statePath = targetFile.absolutePath,
+                    emulatorId = emulatorId,
+                    contentHash = stateCacheManager.calculateLiveStateHash(targetFile.absolutePath),
+                    gameId = gameId,
+                    slotNumber = state.slotNumber,
+                    channelName = state.channelName,
+                    coreId = state.coreId,
+                    ownerUserIdOverride = state.ownerUserId
+                )
 
                 restoredCount++
                 Log.d(TAG, "Restored state slot ${state.slotNumber} to ${targetFile.absolutePath}")

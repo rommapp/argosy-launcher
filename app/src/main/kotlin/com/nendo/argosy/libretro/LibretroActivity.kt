@@ -164,6 +164,7 @@ class LibretroActivity : ComponentActivity() {
     @Inject lateinit var frameRegistry: FrameRegistry
     @Inject lateinit var coreOptionsRepository: com.nendo.argosy.data.repository.CoreOptionsRepository
     @Inject lateinit var speedrunRepository: com.nendo.argosy.data.speedrun.SpeedrunRepository
+    @Inject lateinit var stateOwnershipTracker: com.nendo.argosy.data.sync.StateOwnershipTracker
 
     private var coreLoadedSuccessfully = false
     @Volatile private var coreDestroyed = false
@@ -539,6 +540,34 @@ class LibretroActivity : ComponentActivity() {
     private fun variantIsolatedDir(baseDir: File): File =
         if (variantFileId >= 0) File(baseDir, "variants/$variantFileId") else baseDir
 
+    /**
+     * Stamps a live state file with the signed-in account as soon as the core writes it.
+     *
+     * The built-in core's state directory is device-global, so without this the next account to
+     * end a session here discovers the file, finds no ownership record, and adopts and uploads it
+     * as their own. Recording at session end would leave that window open across a crash.
+     */
+    private fun recordStateOwnership(slotNumber: Int, stateFile: File, channelName: String?) {
+        if (gameId < 0) return
+        lifecycleScope.launch(kotlinx.coroutines.Dispatchers.IO + kotlinx.coroutines.NonCancellable) {
+            stateOwnershipTracker.record(
+                statePath = stateFile.absolutePath,
+                emulatorId = EmulatorRegistry.BUILTIN_ID,
+                contentHash = null,
+                gameId = gameId,
+                slotNumber = slotNumber,
+                channelName = channelName,
+                coreId = resolvedCoreId
+            )
+        }
+    }
+
+    private fun clearStateOwnership(stateFile: File) {
+        lifecycleScope.launch(kotlinx.coroutines.Dispatchers.IO + kotlinx.coroutines.NonCancellable) {
+            stateOwnershipTracker.clear(stateFile.absolutePath, EmulatorRegistry.BUILTIN_ID)
+        }
+    }
+
     private fun initializeSaveState(savesDir: File, statesDir: File, channelName: String? = null) {
         saveStateManager = SaveStateManager(
             savesDir = savesDir,
@@ -549,7 +578,9 @@ class LibretroActivity : ComponentActivity() {
             saveCacheManager = saveCacheManager,
             usesExternalMemcard = com.nendo.argosy.data.platform.PlatformDefinitions.getCanonicalSlug(platformSlug) == "gc",
             channelName = channelName,
-            isVariant = variantFileId >= 0
+            isVariant = variantFileId >= 0,
+            onLiveStateWritten = { slot, file -> recordStateOwnership(slot, file, channelName) },
+            onLiveStateRemoved = { _, file -> clearStateOwnership(file) }
         )
         val restoreResult = kotlinx.coroutines.runBlocking {
             saveStateManager.restoreSaveForLaunchMode(launchMode)

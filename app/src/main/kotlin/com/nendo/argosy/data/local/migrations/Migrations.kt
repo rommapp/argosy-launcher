@@ -2823,3 +2823,55 @@ object Migration_159_160 : Migration(159, 160) {
         )
     }
 }
+
+/**
+ * Gives live save-state files the ownership record live saves already have.
+ *
+ * Owner-scoping the `state_cache` reads left the filesystem door open: a state file the outgoing
+ * account left in the emulator's state directory is still discovered at session end, cached, and
+ * uploaded under whoever is signed in. The row is keyed on the live path plus emulator, mirroring
+ * `save_ownership`, and additionally carries the slot identity (`slotNumber`, `channelName`,
+ * `coreId`) because states are multi-slot per game where a save is one artifact.
+ *
+ * No backfill: an empty table reads as unowned everywhere, which is the pre-accounts behaviour
+ * (adopt once, then record). Claiming every state file on disk for the active account would need a
+ * filesystem walk this migration cannot perform.
+ */
+object Migration_160_161 : Migration(160, 161) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            "CREATE TABLE IF NOT EXISTS `state_ownership` (" +
+                "`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                "`statePath` TEXT NOT NULL, " +
+                "`emulatorId` TEXT NOT NULL, " +
+                "`ownerUserId` INTEGER, " +
+                "`contentHash` TEXT, " +
+                "`transitionState` TEXT NOT NULL, " +
+                "`updatedAt` INTEGER NOT NULL, " +
+                "`gameId` INTEGER, " +
+                "`slotNumber` INTEGER NOT NULL DEFAULT 0, " +
+                "`channelName` TEXT, " +
+                "`coreId` TEXT, " +
+                "`pendingOwnerUserId` INTEGER, " +
+                "`archivedCacheId` INTEGER, " +
+                "`incomingCacheId` INTEGER, " +
+                "`needsSync` INTEGER NOT NULL DEFAULT 0)"
+        )
+        db.execSQL(
+            "CREATE UNIQUE INDEX IF NOT EXISTS `index_state_ownership_statePath_emulatorId` " +
+                "ON `state_ownership` (`statePath`, `emulatorId`)"
+        )
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS `index_state_ownership_ownerUserId` " +
+                "ON `state_ownership` (`ownerUserId`)"
+        )
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS `index_state_ownership_transitionState` " +
+                "ON `state_ownership` (`transitionState`)"
+        )
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS `index_state_ownership_gameId` " +
+                "ON `state_ownership` (`gameId`)"
+        )
+    }
+}

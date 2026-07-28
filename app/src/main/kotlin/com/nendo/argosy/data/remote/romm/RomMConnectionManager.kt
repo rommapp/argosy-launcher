@@ -77,7 +77,8 @@ class RomMConnectionManager @Inject constructor(
     private val saveSyncRepository: dagger.Lazy<com.nendo.argosy.data.repository.SaveSyncRepository>,
     private val databaseAdminRepository: dagger.Lazy<com.nendo.argosy.data.repository.DatabaseAdminRepository>,
     private val saveCacheRepository: dagger.Lazy<com.nendo.argosy.data.repository.SaveCacheRepository>,
-    private val biosRepository: BiosRepository
+    private val biosRepository: BiosRepository,
+    private val rommAccountRepository: dagger.Lazy<com.nendo.argosy.data.repository.RomMAccountRepository>
 ) {
     private var api: RomMApi? = null
     private var baseUrl: String = ""
@@ -121,6 +122,7 @@ class RomMConnectionManager @Inject constructor(
     suspend fun initialize() {
         val prefs = userPreferencesRepository.preferences.first()
         Logger.info(TAG, "initialize: baseUrl=${prefs.rommBaseUrl?.take(30)}, hasToken=${prefs.rommToken != null}")
+        rommAccountRepository.get().adoptLegacyCredentialsIfNeeded()
         cachedDeviceId = prefs.rommDeviceId
         if (cachedDeviceId != null) {
             saveSyncRepository.get().setDeviceId(cachedDeviceId)
@@ -207,6 +209,17 @@ class RomMConnectionManager @Inject constructor(
             databaseAdminRepository.get().purgeRomMLibrary()
         }
         userPreferencesRepository.setRomMCredentials(newBaseUrl, token, user?.username, user?.id)
+        if (user != null) {
+            val stored = userPreferencesRepository.preferences.first()
+            rommAccountRepository.get().onSignedIn(
+                rommUserId = user.id,
+                username = user.username,
+                baseUrl = newBaseUrl,
+                token = token,
+                deviceId = stored.rommDeviceId,
+                deviceClientVersion = stored.rommDeviceClientVersion
+            )
+        }
     }
 
     suspend fun connect(url: String, token: String? = null): RomMResult<String> {
@@ -419,6 +432,7 @@ class RomMConnectionManager @Inject constructor(
 
         persistRommCredentials(base, body.accessToken, fetchCurrentUser(newApi))
         userPreferencesRepository.setRommDeviceId(body.deviceId, BuildConfig.VERSION_NAME)
+        rommAccountRepository.get().recordDeviceRegistration(body.deviceId, BuildConfig.VERSION_NAME)
 
         baseUrl = base
         accessToken = body.accessToken
@@ -468,6 +482,7 @@ class RomMConnectionManager @Inject constructor(
      */
     suspend fun signOut() {
         disconnect()
+        rommAccountRepository.get().activeAccount()?.let { rommAccountRepository.get().forget(it.id) }
         userPreferencesRepository.clearRomMCredentials()
         Logger.info(TAG, "signOut: cleared stored RomM identity")
     }
@@ -532,6 +547,7 @@ class RomMConnectionManager @Inject constructor(
                         cachedDeviceId = device.id
                         saveSyncRepository.get().setDeviceId(device.id)
                         userPreferencesRepository.setRommDeviceId(device.id, clientVersion)
+                        rommAccountRepository.get().recordDeviceRegistration(device.id, clientVersion)
                         Logger.info(TAG, "Device updated: ${device.id}")
                         return
                     }
@@ -545,6 +561,7 @@ class RomMConnectionManager @Inject constructor(
                     cachedDeviceId = device.deviceId
                     saveSyncRepository.get().setDeviceId(device.deviceId)
                     userPreferencesRepository.setRommDeviceId(device.deviceId, clientVersion)
+                    rommAccountRepository.get().recordDeviceRegistration(device.deviceId, clientVersion)
                     Logger.info(TAG, "Device registered: ${device.deviceId}")
                 }
             } else {

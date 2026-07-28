@@ -2167,3 +2167,30 @@ object Migration_149_150 : Migration(149, 150) {
         )
     }
 }
+
+object Migration_150_151 : Migration(150, 151) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            "CREATE TABLE IF NOT EXISTS `romm_accounts` (" +
+                "`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                "`rommUserId` INTEGER NOT NULL, " +
+                "`username` TEXT NOT NULL, " +
+                "`baseUrl` TEXT NOT NULL, " +
+                "`token` TEXT NOT NULL, " +
+                "`deviceId` TEXT, " +
+                "`deviceClientVersion` TEXT, " +
+                "`avatarPath` TEXT, " +
+                "`isActive` INTEGER NOT NULL, " +
+                "`lastLoginAt` INTEGER NOT NULL, " +
+                "`createdAt` INTEGER NOT NULL)"
+        )
+        db.execSQL(
+            "CREATE UNIQUE INDEX IF NOT EXISTS `index_romm_accounts_rommUserId` " +
+                "ON `romm_accounts` (`rommUserId`)"
+        )
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS `index_romm_accounts_isActive` " +
+                "ON `romm_accounts` (`isActive`)"
+        )
+    }
+}

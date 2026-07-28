@@ -39,6 +39,7 @@ import com.nendo.argosy.data.local.dao.QuayPassDailyStatsDao
 import com.nendo.argosy.data.local.dao.QuayPassEncounterDao
 import com.nendo.argosy.data.local.dao.QuayPassPendingReportDao
 import com.nendo.argosy.data.local.dao.SaveCacheDao
+import com.nendo.argosy.data.local.dao.RomMAccountDao
 import com.nendo.argosy.data.local.dao.SaveOwnershipDao
 import com.nendo.argosy.data.local.dao.SaveSyncDao
 import com.nendo.argosy.data.local.dao.SocialGameCacheDao
@@ -85,6 +86,7 @@ import com.nendo.argosy.data.local.entity.QuayPassDailyStatsEntity
 import com.nendo.argosy.data.local.entity.QuayPassEncounterEntity
 import com.nendo.argosy.data.local.entity.QuayPassPendingReportEntity
 import com.nendo.argosy.data.local.entity.SaveCacheEntity
+import com.nendo.argosy.data.local.entity.RomMAccountEntity
 import com.nendo.argosy.data.local.entity.SaveOwnershipEntity
 import com.nendo.argosy.data.local.entity.SaveSyncEntity
 import com.nendo.argosy.data.local.entity.PendingSocialSyncEntity
@@ -109,6 +111,7 @@ import com.nendo.argosy.data.local.entity.SteamLicenseEntity
         AchievementEntity::class,
         SaveCacheEntity::class,
         SaveOwnershipEntity::class,
+        RomMAccountEntity::class,
         StateCacheEntity::class,
         StateTombstoneEntity::class,
         OrphanedFileEntity::class,
@@ -151,7 +154,7 @@ import com.nendo.argosy.data.local.entity.SteamLicenseEntity
         QuayPassDailyStatsEntity::class,
         QuayPassPendingReportEntity::class
     ],
-    version = 150,
+    version = 151,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -168,6 +171,7 @@ abstract class ALauncherDatabase : RoomDatabase() {
     abstract fun achievementDao(): AchievementDao
     abstract fun saveCacheDao(): SaveCacheDao
     abstract fun saveOwnershipDao(): SaveOwnershipDao
+    abstract fun rommAccountDao(): RomMAccountDao
     abstract fun stateCacheDao(): StateCacheDao
     abstract fun stateTombstoneDao(): StateTombstoneDao
     abstract fun orphanedFileDao(): OrphanedFileDao

@@ -70,8 +70,8 @@ class SaveSyncViewModelTest {
         conflictResolutionService = mockk(relaxed = true)
         saveSyncRepository = mockk(relaxed = true)
 
-        every { saveSyncDao.observeAll() } returns flowOf(emptyList())
-        every { saveSyncDao.observeSaveCountsByDevice() } returns flowOf(emptyList())
+        every { saveSyncDao.observeAll(any()) } returns flowOf(emptyList())
+        every { saveSyncDao.observeSaveCountsByDevice(any()) } returns flowOf(emptyList())
         every { pendingConflictDao.observeOpenConflicts() } returns flowOf(emptyList())
         every { syncQueueManager.state } returns MutableStateFlow(SyncQueueState())
         every { preferencesRepository.preferences } returns flowOf(UserPreferences())
@@ -159,7 +159,7 @@ class SaveSyncViewModelTest {
     @Test
     fun `game rows are produced from save_sync rows joined with games`() = runTest(testDispatcher) {
         val game = makeGame(id = 1L, title = "Tekken")
-        every { saveSyncDao.observeAll() } returns flowOf(
+        every { saveSyncDao.observeAll(any()) } returns flowOf(
             listOf(
                 SaveSyncEntity(
                     id = 100L,
@@ -273,7 +273,7 @@ class SaveSyncViewModelTest {
 
     @Test
     fun `confirm on focused synced game row navigates to game`() = runTest(testDispatcher) {
-        every { saveSyncDao.observeAll() } returns flowOf(
+        every { saveSyncDao.observeAll(any()) } returns flowOf(
             listOf(
                 SaveSyncEntity(
                     id = 1L, gameId = 5L, rommId = 5L, emulatorId = "e", channelName = null,

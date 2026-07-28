@@ -104,6 +104,7 @@ class SaveSyncConflictResolverTest {
             saveArchiver = saveArchiver,
             savePathResolver = savePathResolver,
             userPreferencesRepository = userPreferencesRepository,
+            syncPreferencesRepository = mockk(relaxed = true),
             saveCacheManager = saveCacheManager,
             apiClient = apiClient,
             switchSaveHandler = switchSaveHandler,
@@ -198,7 +199,7 @@ class SaveSyncConflictResolverTest {
 
     @Test
     fun `checkForConflict no local file returns null`() = runTest {
-        coEvery { saveSyncDao.getByGameAndEmulatorWithDefault(any(), any(), any()) } returns makeSyncEntity(
+        coEvery { saveSyncDao.getByGameAndEmulatorWithDefault(any(), any(), any(), any()) } returns makeSyncEntity(
             localSavePath = "/nonexistent.srm"
         )
         coEvery { savePathResolver.discoverSavePath(
@@ -222,7 +223,7 @@ class SaveSyncConflictResolverTest {
             deviceSyncs = listOf(RomMDeviceSync(deviceId = "device-1", isCurrent = false))
         )
         coEvery { mockApiClient.checkSavesForGame(1L, 100L) } returns listOf(serverSave)
-        coEvery { saveSyncDao.getByGameEmulatorAndChannel(any(), any(), any()) } returns makeSyncEntity(
+        coEvery { saveSyncDao.getByGameEmulatorAndChannel(any(), any(), any(), any()) } returns makeSyncEntity(
             localSavePath = localFile.absolutePath
         )
         coEvery { mockCacheManager.calculateLocalSaveHash(any()) } returns null
@@ -286,7 +287,7 @@ class SaveSyncConflictResolverTest {
         )
         val serverSave = makeServerSave(deviceSyncs = deviceSyncs, contentHash = contentHash)
         coEvery { mockApiClient.checkSavesForGame(1L, 100L) } returns listOf(serverSave)
-        coEvery { saveSyncDao.getByGameAndEmulatorWithDefault(any(), any(), any()) } returns entityWithRealPath
+        coEvery { saveSyncDao.getByGameAndEmulatorWithDefault(any(), any(), any(), any()) } returns entityWithRealPath
     }
 
     private fun makeCache(

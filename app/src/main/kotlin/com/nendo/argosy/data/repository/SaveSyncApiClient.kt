@@ -51,7 +51,8 @@ class SaveSyncApiClient @Inject constructor(
     private val saveHandlerRegistry: PlatformSaveHandlerRegistry,
     private val conflictDetector: ConflictDetector,
     private val saveUploader: dagger.Lazy<SaveUploader>,
-    private val saveDownloader: dagger.Lazy<SaveDownloader>
+    private val saveDownloader: dagger.Lazy<SaveDownloader>,
+    private val syncPreferencesRepository: com.nendo.argosy.data.preferences.SyncPreferencesRepository
 ) {
     private var api: RomMApi? = null
     private var deviceId: String? = null
@@ -119,13 +120,14 @@ class SaveSyncApiClient @Inject constructor(
     }
 
     suspend fun rekeySaveSyncToLocalEmulators(): Int = withContext(Dispatchers.IO) {
+        val ownerUserId = syncPreferencesRepository.getRommUserId()
         val gameIds = saveSyncDao.getAllGameIds()
         var rewritten = 0
         for (gameId in gameIds) {
             val game = gameDao.getById(gameId) ?: continue
             val localEmulator = resolveEmulatorForGame(game) ?: continue
 
-            val rows = saveSyncDao.getByGame(gameId)
+            val rows = saveSyncDao.getByGame(gameId, ownerUserId)
             val liveChannels = rows.filter { it.emulatorId == localEmulator }.map { it.channelName }.toSet()
             rows.filter { it.emulatorId != localEmulator && it.channelName in liveChannels }
                 .forEach { stale ->
@@ -177,7 +179,7 @@ class SaveSyncApiClient @Inject constructor(
     }
 
     suspend fun checkSavesForGame(gameId: Long, rommId: Long): List<RomMSave> =
-        fetchSavesForGame(gameId, rommId, api, deviceId)
+        fetchSavesForGame(gameId, rommId, api, deviceId, syncPreferencesRepository.getRommUserId())
 
     /**
      * Server saves as seen by a specific account. Save negotiation is evaluated per device and
@@ -185,13 +187,14 @@ class SaveSyncApiClient @Inject constructor(
      * that account's client rather than the live connection.
      */
     suspend fun checkSavesForGame(gameId: Long, rommId: Long, account: AccountApi): List<RomMSave> =
-        fetchSavesForGame(gameId, rommId, account.api, account.deviceId)
+        fetchSavesForGame(gameId, rommId, account.api, account.deviceId, account.rommUserId)
 
     private suspend fun fetchSavesForGame(
         gameId: Long,
         rommId: Long,
         api: RomMApi?,
-        deviceId: String?
+        deviceId: String?,
+        ownerUserId: Long?
     ): List<RomMSave> = withContext(Dispatchers.IO) {
         if (api == null) return@withContext emptyList()
 
@@ -208,14 +211,14 @@ class SaveSyncApiClient @Inject constructor(
         }
 
         val saves = response.body() ?: emptyList()
-        adoptServerHashes(gameId, saves)
+        adoptServerHashes(gameId, saves, ownerUserId)
         saves
     }
 
-    private suspend fun adoptServerHashes(gameId: Long, serverSaves: List<RomMSave>) {
+    private suspend fun adoptServerHashes(gameId: Long, serverSaves: List<RomMSave>, ownerUserId: Long?) {
         if (serverSaves.isEmpty() || !capabilities.trustsServerHash) return
         val hashByServerId = serverSaves.associate { it.id to it.contentHash }
-        saveSyncDao.getByGame(gameId).forEach { row ->
+        saveSyncDao.getByGame(gameId, ownerUserId).forEach { row ->
             val hash = row.rommSaveId?.let { hashByServerId[it] } ?: return@forEach
             if (row.lastUploadedHash != hash) {
                 saveSyncDao.updateLastUploadedHash(row.id, hash)
@@ -240,6 +243,7 @@ class SaveSyncApiClient @Inject constructor(
 
         val serverSaves = response.body() ?: return@withContext emptyList()
         val updatedEntities = mutableListOf<SaveSyncEntity>()
+        val ownerUserId = syncPreferencesRepository.getRommUserId()
 
         val downloadedGames = gameDao.getByIdsChunked(gameDao.getDownloadedRommGameIds())
 
@@ -255,7 +259,7 @@ class SaveSyncApiClient @Inject constructor(
 
             if (channelName == null) continue
 
-            val existing = saveSyncDao.getByGameEmulatorAndChannel(game.id, emulatorId, channelName)
+            val existing = saveSyncDao.getByGameEmulatorAndChannel(game.id, emulatorId, channelName, ownerUserId)
 
             val serverTime = parseTimestamp(serverSave.updatedAt)
 
@@ -278,7 +282,8 @@ class SaveSyncApiClient @Inject constructor(
                     lastUploadedHash = existing?.lastUploadedHash,
                     localContentHash = existing?.localContentHash,
                     lastSyncDeviceId = uploaderDeviceSync?.deviceId ?: existing?.lastSyncDeviceId,
-                    lastSyncDeviceName = uploaderDeviceSync?.deviceName ?: existing?.lastSyncDeviceName
+                    lastSyncDeviceName = uploaderDeviceSync?.deviceName ?: existing?.lastSyncDeviceName,
+                    ownerUserId = existing?.ownerUserId ?: ownerUserId
                 )
                 saveSyncDao.upsert(entity)
                 if (entity.syncStatus == SaveSyncEntity.STATUS_SERVER_NEWER) {

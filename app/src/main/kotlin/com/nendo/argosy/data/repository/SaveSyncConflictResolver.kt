@@ -7,6 +7,7 @@ import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.dao.SaveCacheDao
 import com.nendo.argosy.data.local.dao.SaveSyncDao
 import com.nendo.argosy.data.local.entity.SaveSyncEntity
+import com.nendo.argosy.data.preferences.SyncPreferencesRepository
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.sync.ConflictInfo
 import com.nendo.argosy.data.sync.SaveArchiver
@@ -31,6 +32,7 @@ class SaveSyncConflictResolver @Inject constructor(
     private val saveArchiver: SaveArchiver,
     private val savePathResolver: SavePathResolver,
     private val userPreferencesRepository: UserPreferencesRepository,
+    private val syncPreferencesRepository: SyncPreferencesRepository,
     private val saveCacheManager: dagger.Lazy<SaveCacheManager>,
     private val apiClient: dagger.Lazy<SaveSyncApiClient>,
     private val switchSaveHandler: SwitchSaveHandler,
@@ -97,7 +99,11 @@ class SaveSyncConflictResolver @Inject constructor(
                         isHardcore = false
                     )
 
-                    val syncEntity = saveSyncDao.getByGameAndEmulator(resolution.gameId, resolution.emulatorId)
+                    val syncEntity = saveSyncDao.getByGameAndEmulator(
+                        resolution.gameId,
+                        resolution.emulatorId,
+                        syncPreferencesRepository.getRommUserId()
+                    )
                     if (syncEntity != null) {
                         saveSyncDao.upsert(
                             syncEntity.copy(
@@ -134,10 +140,16 @@ class SaveSyncConflictResolver @Inject constructor(
             apiClient.get().resolveEmulatorForGame(game) ?: return null
         } else emulatorId
 
+        val ownerUserId = syncPreferencesRepository.getRommUserId()
         val syncEntity = if (channelName != null) {
-            saveSyncDao.getByGameEmulatorAndChannel(gameId, resolvedEmulatorId, channelName)
+            saveSyncDao.getByGameEmulatorAndChannel(gameId, resolvedEmulatorId, channelName, ownerUserId)
         } else {
-            saveSyncDao.getByGameAndEmulatorWithDefault(gameId, resolvedEmulatorId, SaveSyncApiClient.DEFAULT_SAVE_NAME)
+            saveSyncDao.getByGameAndEmulatorWithDefault(
+                gameId,
+                resolvedEmulatorId,
+                SaveSyncApiClient.DEFAULT_SAVE_NAME,
+                ownerUserId
+            )
         }
 
         val cachedPath = syncEntity?.localSavePath?.takeIf { path ->
@@ -255,10 +267,16 @@ class SaveSyncConflictResolver @Inject constructor(
 
         val localModified = Instant.ofEpochMilli(localFile.lastModified())
 
+        val ownerUserId = syncPreferencesRepository.getRommUserId()
         val syncEntity = if (channelName != null) {
-            saveSyncDao.getByGameEmulatorAndChannel(gameId, emulatorId, channelName)
+            saveSyncDao.getByGameEmulatorAndChannel(gameId, emulatorId, channelName, ownerUserId)
         } else {
-            saveSyncDao.getByGameAndEmulatorWithDefault(gameId, emulatorId, SaveSyncApiClient.DEFAULT_SAVE_NAME)
+            saveSyncDao.getByGameAndEmulatorWithDefault(
+                gameId,
+                emulatorId,
+                SaveSyncApiClient.DEFAULT_SAVE_NAME,
+                ownerUserId
+            )
         }
 
         val localHash = saveCacheManager.get().calculateLocalSaveHash(localPath)

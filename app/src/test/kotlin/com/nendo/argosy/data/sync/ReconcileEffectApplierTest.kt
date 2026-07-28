@@ -127,7 +127,7 @@ class ReconcileEffectApplierTest {
     fun `DOWNLOAD marks save_sync STATUS_SERVER_NEWER with the server saveId`() = runTest {
         val captured = slot<SaveSyncEntity>()
         coEvery { saveSyncDao.upsert(capture(captured)) } returns 1L
-        coEvery { saveSyncDao.getByGameEmulatorAndChannel(any(), any(), any()) } returns null
+        coEvery { saveSyncDao.getByGameEmulatorAndChannel(any(), any(), any(), any()) } returns null
 
         val outcome = applier.apply(op(ReconcileAction.DOWNLOAD, saveId = 77L), sessionId = null)
 
@@ -175,7 +175,7 @@ class ReconcileEffectApplierTest {
         coEvery {
             conflictAutoResolver.classify(any(), any())
         } returns ConflictAutoResolver.Resolution.KeepServer("local-unchanged")
-        coEvery { saveSyncDao.getByGameEmulatorAndChannel(any(), any(), any()) } returns null
+        coEvery { saveSyncDao.getByGameEmulatorAndChannel(any(), any(), any(), any()) } returns null
 
         val outcome = applier.apply(op(ReconcileAction.CONFLICT), sessionId = null)
 

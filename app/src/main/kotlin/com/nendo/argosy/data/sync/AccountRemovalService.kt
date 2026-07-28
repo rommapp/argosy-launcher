@@ -25,13 +25,15 @@ data class AccountPendingWork(
     val queuedSyncOperations: Int,
     val savesAwaitingUpload: Int,
     val queuedSocialEvents: Int,
-    val queuedQuayPassReports: Int
+    val queuedQuayPassReports: Int,
+    val unfinishedDownloads: Int
 ) {
     val isEmpty: Boolean
         get() = queuedSyncOperations == 0 &&
             savesAwaitingUpload == 0 &&
             queuedSocialEvents == 0 &&
-            queuedQuayPassReports == 0
+            queuedQuayPassReports == 0 &&
+            unfinishedDownloads == 0
 }
 
 /**
@@ -138,7 +140,8 @@ class AccountRemovalService @Inject constructor(
         queuedSyncOperations = database.pendingSyncQueueDao().countUnflushedForOwner(ownerUserId),
         savesAwaitingUpload = database.saveCacheDao().countNeedingRemoteSyncForOwner(ownerUserId),
         queuedSocialEvents = database.pendingSocialSyncDao().countPendingForOwner(ownerUserId),
-        queuedQuayPassReports = database.quayPassPendingReportDao().countForOwner(ownerUserId)
+        queuedQuayPassReports = database.quayPassPendingReportDao().countForOwner(ownerUserId),
+        unfinishedDownloads = database.downloadQueueDao().countUnfinishedForOwner(ownerUserId)
     )
 
     private suspend fun outstandingArtifacts(ownerUserId: Long): List<SaveOwnershipEntity> =
@@ -157,6 +160,10 @@ class AccountRemovalService @Inject constructor(
             database.playSessionDao().deleteByOwner(ownerUserId)
             database.achievementDao().deleteByOwner(ownerUserId)
             database.saveOwnershipDao().deleteByOwner(ownerUserId)
+            database.saveSyncDao().deleteByOwner(ownerUserId)
+            database.stateCacheDao().deleteByOwner(ownerUserId)
+            database.stateTombstoneDao().deleteByOwner(ownerUserId)
+            database.downloadQueueDao().deleteByOwner(ownerUserId)
             database.quayPassEncounterDao().deleteByOwner(ownerUserId)
             database.quayPassPendingReportDao().deleteByOwner(ownerUserId)
         }

@@ -25,7 +25,7 @@ class ConflictAutoResolverTest {
     private val saveCacheDao: SaveCacheDao = mockk(relaxed = true)
 
     private val resolver =
-        ConflictAutoResolver(gameDao, saveSyncDao, saveCacheDao, pendingSyncQueueDao)
+        ConflictAutoResolver(gameDao, saveSyncDao, saveCacheDao, pendingSyncQueueDao, mockk(relaxed = true))
 
     private fun game(id: Long = 1L, rommId: Long = 100L) = GameEntity(
         id = id,
@@ -93,7 +93,7 @@ class ConflictAutoResolverTest {
     fun `rule 3 picks server when local hash matches lastUploaded but server differs`() = runTest {
         coEvery { gameDao.getByRommId(100L) } returns game()
         coEvery { pendingSyncQueueDao.getByGameId(any()) } returns emptyList()
-        coEvery { saveSyncDao.getByGameAndEmulator(1L, "mgba") } returns SaveSyncEntity(
+        coEvery { saveSyncDao.getByGameAndEmulator(1L, "mgba", any()) } returns SaveSyncEntity(
             gameId = 1L,
             rommId = 100L,
             emulatorId = "mgba",
@@ -111,7 +111,7 @@ class ConflictAutoResolverTest {
     fun `rule 4 picks local when server hash matches lastUploaded but local differs`() = runTest {
         coEvery { gameDao.getByRommId(100L) } returns game()
         coEvery { pendingSyncQueueDao.getByGameId(any()) } returns emptyList()
-        coEvery { saveSyncDao.getByGameAndEmulator(1L, "mgba") } returns SaveSyncEntity(
+        coEvery { saveSyncDao.getByGameAndEmulator(1L, "mgba", any()) } returns SaveSyncEntity(
             gameId = 1L,
             rommId = 100L,
             emulatorId = "mgba",
@@ -130,7 +130,7 @@ class ConflictAutoResolverTest {
     fun `genuine conflict with no rule match returns AsIs`() = runTest {
         coEvery { gameDao.getByRommId(100L) } returns game()
         coEvery { pendingSyncQueueDao.getByGameId(any()) } returns emptyList()
-        coEvery { saveSyncDao.getByGameAndEmulator(1L, "mgba") } returns SaveSyncEntity(
+        coEvery { saveSyncDao.getByGameAndEmulator(1L, "mgba", any()) } returns SaveSyncEntity(
             gameId = 1L,
             rommId = 100L,
             emulatorId = "mgba",

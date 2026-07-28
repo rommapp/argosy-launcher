@@ -62,13 +62,14 @@ class ReconcileEffectApplier @Inject constructor(
     }
 
     private suspend fun dispatchConflict(op: ReconcileOperation, sessionId: Long?): ReconcileEffectOutcome {
+        val ownerUserId = syncPreferencesRepository.getRommUserId()
         val game = gameDao.getByRommId(op.romId)
         val existing = game?.id?.let { gid ->
             val emu = op.emulator ?: ""
             if (op.slot != null) {
-                saveSyncDao.getByGameEmulatorAndChannel(gid, emu, op.slot)
+                saveSyncDao.getByGameEmulatorAndChannel(gid, emu, op.slot, ownerUserId)
             } else {
-                saveSyncDao.getByGameAndEmulator(gid, emu)
+                saveSyncDao.getByGameAndEmulator(gid, emu, ownerUserId)
             }
         }
         val clientHash = existing?.localSavePath?.let { saveCacheManager.get().calculateLocalSaveHash(it) }
@@ -163,10 +164,11 @@ class ReconcileEffectApplier @Inject constructor(
             Logger.debug(TAG, "applyPlan DOWNLOAD: no canonical emulator for gameId=${game.id} (op.emulator=${op.emulator}), skipping")
             return false
         }
+        val ownerUserId = syncPreferencesRepository.getRommUserId()
         val existing = if (op.slot != null) {
-            saveSyncDao.getByGameEmulatorAndChannel(game.id, emulatorId, op.slot)
+            saveSyncDao.getByGameEmulatorAndChannel(game.id, emulatorId, op.slot, ownerUserId)
         } else {
-            saveSyncDao.getByGameAndEmulator(game.id, emulatorId)
+            saveSyncDao.getByGameAndEmulator(game.id, emulatorId, ownerUserId)
         }
         val serverTime = op.serverUpdatedAt?.let { parseInstantOrNull(it) }
         saveSyncDao.upsert(
@@ -185,7 +187,8 @@ class ReconcileEffectApplier @Inject constructor(
                 lastUploadedHash = existing?.lastUploadedHash,
                 localContentHash = existing?.localContentHash,
                 lastSyncDeviceId = existing?.lastSyncDeviceId,
-                lastSyncDeviceName = existing?.lastSyncDeviceName
+                lastSyncDeviceName = existing?.lastSyncDeviceName,
+                ownerUserId = existing?.ownerUserId ?: ownerUserId
             )
         )
         return true

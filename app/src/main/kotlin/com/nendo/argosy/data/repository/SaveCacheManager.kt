@@ -103,7 +103,7 @@ class SaveCacheManager @Inject constructor(
             val cachedHash = unchanged?.contentHash
             if (unchanged != null && !cachedHash.isNullOrBlank()) {
                 Log.d(TAG, "Cache untouched since ${unchanged.cachedAt} for game $gameId (hash=$cachedHash), skipping rehash")
-                if (!secureSaves && !isHardcore) recordLocalWriteAnchor(gameId, emulatorId, channelName, savePath)
+                if (!secureSaves && !isHardcore) recordLocalWriteAnchor(gameId, emulatorId, channelName, savePath, ownerUserId)
                 saveOwnershipTracker.record(savePath, emulatorId, cachedHash, gameId, channelName)
                 return@withContext CacheResult.Duplicate(unchanged.id, cachedHash)
             }
@@ -150,7 +150,7 @@ class SaveCacheManager @Inject constructor(
                         contentHash = contentHash
                     )
                     tempFile?.delete()
-                    if (!secureSaves && !isHardcore) recordLocalWriteAnchor(gameId, emulatorId, channelName, savePath)
+                    if (!secureSaves && !isHardcore) recordLocalWriteAnchor(gameId, emulatorId, channelName, savePath, ownerUserId)
                     saveOwnershipTracker.record(savePath, emulatorId, contentHash, gameId, channelName)
                     return@withContext CacheResult.Duplicate(existingWithHash.id, contentHash)
                 }
@@ -220,7 +220,7 @@ class SaveCacheManager @Inject constructor(
             } else {
                 saveCacheDao.clearDirtyFlagForLatest(gameId)
             }
-            if (!secureSaves && !isHardcore) recordLocalWriteAnchor(gameId, emulatorId, channelName, savePath)
+            if (!secureSaves && !isHardcore) recordLocalWriteAnchor(gameId, emulatorId, channelName, savePath, ownerUserId)
             saveOwnershipTracker.record(savePath, emulatorId, contentHash, gameId, channelName)
             val slotInfo = when {
                 isHardcore -> " [HARDCORE]"
@@ -515,7 +515,13 @@ class SaveCacheManager @Inject constructor(
             }
 
             if (!secureSaves && !entity.isHardcore) {
-                recordLocalWriteAnchor(entity.gameId, entity.emulatorId, entity.channelName, targetPath)
+                recordLocalWriteAnchor(
+                    entity.gameId,
+                    entity.emulatorId,
+                    entity.channelName,
+                    targetPath,
+                    entity.ownerUserId ?: syncPreferencesRepository.getRommUserId()
+                )
             }
             saveOwnershipTracker.record(
                 targetPath,
@@ -966,10 +972,11 @@ class SaveCacheManager @Inject constructor(
         gameId: Long,
         emulatorId: String,
         channelName: String?,
-        savePath: String
+        savePath: String,
+        ownerUserId: Long?
     ) {
         if (channelName == null) return
-        val row = saveSyncDao.getByGameEmulatorAndChannel(gameId, emulatorId, channelName) ?: return
+        val row = saveSyncDao.getByGameEmulatorAndChannel(gameId, emulatorId, channelName, ownerUserId) ?: return
         val newest = if (fal.isDirectory(savePath)) {
             savePathResolver.findNewestFileTime(savePath)
         } else {

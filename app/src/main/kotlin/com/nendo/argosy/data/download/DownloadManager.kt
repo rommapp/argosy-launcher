@@ -12,6 +12,7 @@ import com.nendo.argosy.data.local.entity.DownloadQueueEntity
 import com.nendo.argosy.data.model.GameSource
 import com.nendo.argosy.data.model.VariantCategory
 import com.nendo.argosy.data.music.MusicDirectoryManager
+import com.nendo.argosy.data.preferences.SyncPreferencesRepository
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.remote.romm.ConnectionState
 import com.nendo.argosy.data.remote.romm.RomMRepository
@@ -149,7 +150,8 @@ class DownloadManager @Inject constructor(
     private val emulatorResolver: EmulatorResolver,
     private val steamContentManager: dagger.Lazy<com.nendo.argosy.data.steam.SteamContentManager>,
     private val musicDirectoryManager: MusicDirectoryManager,
-    private val attributionRepository: StorageAttributionRepository
+    private val attributionRepository: StorageAttributionRepository,
+    private val syncPreferencesRepository: SyncPreferencesRepository
 ) {
     private val _state = MutableStateFlow(DownloadQueueState())
     val state: StateFlow<DownloadQueueState> = _state.asStateFlow()
@@ -397,7 +399,8 @@ class DownloadManager @Inject constructor(
             tempFilePath = tempFilePath,
             createdAt = Instant.now(),
             isMultiFileRom = effectiveMultiFile,
-            selectedFileIds = selectedFileIds?.joinToString(",")
+            selectedFileIds = selectedFileIds?.joinToString(","),
+            ownerUserId = syncPreferencesRepository.getRommUserId()
         )
 
         val id = downloadQueueDao.insert(entity)
@@ -464,7 +467,8 @@ class DownloadManager @Inject constructor(
             state = DownloadState.QUEUED.name,
             errorReason = null,
             tempFilePath = tempFilePath,
-            createdAt = Instant.now()
+            createdAt = Instant.now(),
+            ownerUserId = syncPreferencesRepository.getRommUserId()
         )
 
         val id = downloadQueueDao.insert(entity)
@@ -541,7 +545,8 @@ class DownloadManager @Inject constructor(
             state = DownloadState.QUEUED.name,
             errorReason = null,
             tempFilePath = tempFilePath,
-            createdAt = Instant.now()
+            createdAt = Instant.now(),
+            ownerUserId = syncPreferencesRepository.getRommUserId()
         )
 
         val id = downloadQueueDao.insert(entity)

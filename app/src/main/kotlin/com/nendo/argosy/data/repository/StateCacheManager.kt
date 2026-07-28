@@ -32,7 +32,10 @@ import com.nendo.argosy.util.AppPaths
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.MultipartBody
@@ -223,7 +226,8 @@ class StateCacheManager @Inject constructor(
                 emulatorId = emulatorId,
                 slotNumber = slotNumber,
                 channelName = channelName,
-                coreId = coreId
+                coreId = coreId,
+                ownerUserId = ownerUserId
             )
 
             val entity = StateCacheEntity(
@@ -244,13 +248,14 @@ class StateCacheManager @Inject constructor(
                 rommSaveId = existing?.rommSaveId,
                 syncStatus = existing?.syncStatus,
                 serverUpdatedAt = existing?.serverUpdatedAt,
-                lastUploadedHash = existing?.lastUploadedHash
+                lastUploadedHash = existing?.lastUploadedHash,
+                ownerUserId = existing?.ownerUserId ?: ownerUserId
             )
 
             val id = stateCacheDao.upsert(entity)
             Log.d(TAG, "Cached state for game $gameId slot $slotNumber at $cachePath")
 
-            pruneOldCaches(gameId)
+            pruneOldCaches(gameId, ownerUserId)
             id
         } catch (e: Exception) {
             Log.e(TAG, "Failed to cache state", e)
@@ -335,42 +340,53 @@ class StateCacheManager @Inject constructor(
 
     suspend fun tombstoneServerState(gameId: Long, rommSaveId: Long) = withContext(Dispatchers.IO) {
         stateTombstoneDao.insert(
-            StateTombstoneEntity(gameId = gameId, rommSaveId = rommSaveId, createdAt = Instant.now())
+            StateTombstoneEntity(
+                gameId = gameId,
+                rommSaveId = rommSaveId,
+                createdAt = Instant.now(),
+                ownerUserId = syncPreferencesRepository.getRommUserId()
+            )
         )
         Log.d(TAG, "Tombstoned server state $rommSaveId for game $gameId")
     }
 
     suspend fun clearStateTombstone(rommSaveId: Long) = withContext(Dispatchers.IO) {
-        stateTombstoneDao.deleteByServerId(rommSaveId)
+        stateTombstoneDao.deleteByServerId(rommSaveId, syncPreferencesRepository.getRommUserId())
     }
 
     suspend fun getStateTombstones(gameId: Long): Set<Long> = withContext(Dispatchers.IO) {
-        stateTombstoneDao.getServerIdsForGame(gameId).toSet()
+        stateTombstoneDao.getServerIdsForGame(gameId, syncPreferencesRepository.getRommUserId()).toSet()
     }
 
     suspend fun pruneStateTombstones(gameId: Long, presentServerIds: Collection<Long>) = withContext(Dispatchers.IO) {
+        val ownerUserId = syncPreferencesRepository.getRommUserId()
         val present = presentServerIds.toSet()
-        val stale = stateTombstoneDao.getServerIdsForGame(gameId).filter { it !in present }
+        val stale = stateTombstoneDao.getServerIdsForGame(gameId, ownerUserId).filter { it !in present }
         if (stale.isNotEmpty()) {
-            stateTombstoneDao.deleteByServerIds(stale)
+            stateTombstoneDao.deleteByServerIds(stale, ownerUserId)
         }
     }
 
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
     fun getStatesForGame(gameId: Long): Flow<List<StateCacheEntity>> =
-        stateCacheDao.observeByGame(gameId)
+        syncPreferencesRepository.preferences
+            .map { it.rommUserId }
+            .distinctUntilChanged()
+            .flatMapLatest { stateCacheDao.observeByGame(gameId, it) }
 
     suspend fun getStatesForGameOnce(gameId: Long): List<StateCacheEntity> =
-        stateCacheDao.getByGame(gameId)
+        stateCacheDao.getByGame(gameId, syncPreferencesRepository.getRommUserId())
 
     suspend fun duplicateStatesForChannel(
         gameId: Long,
         sourceChannel: String?,
         targetChannel: String
     ): Int = withContext(Dispatchers.IO) {
+        val ownerUserId = syncPreferencesRepository.getRommUserId()
         val sourceStates = if (sourceChannel != null) {
-            stateCacheDao.getByChannel(gameId, sourceChannel)
+            stateCacheDao.getByChannel(gameId, sourceChannel, ownerUserId)
         } else {
-            stateCacheDao.getDefaultChannel(gameId)
+            stateCacheDao.getDefaultChannel(gameId, ownerUserId)
         }
 
         if (sourceStates.isEmpty()) return@withContext 0
@@ -418,7 +434,8 @@ class StateCacheManager @Inject constructor(
                 coreVersion = source.coreVersion,
                 isLocked = true,
                 note = null,
-                syncStatus = StateCacheEntity.STATUS_PENDING_UPLOAD
+                syncStatus = StateCacheEntity.STATUS_PENDING_UPLOAD,
+                ownerUserId = source.ownerUserId ?: ownerUserId
             )
             stateCacheDao.upsert(entity)
             copied++
@@ -429,17 +446,23 @@ class StateCacheManager @Inject constructor(
     }
 
     suspend fun getStatesForChannel(gameId: Long, channelName: String): List<StateCacheEntity> =
-        stateCacheDao.getByChannel(gameId, channelName)
+        stateCacheDao.getByChannel(gameId, channelName, syncPreferencesRepository.getRommUserId())
 
     suspend fun getDefaultChannelStates(gameId: Long): List<StateCacheEntity> =
-        stateCacheDao.getDefaultChannel(gameId)
+        stateCacheDao.getDefaultChannel(gameId, syncPreferencesRepository.getRommUserId())
 
     suspend fun getStateBySlot(
         gameId: Long,
         emulatorId: String,
         slotNumber: Int,
         channelName: String? = null
-    ): StateCacheEntity? = stateCacheDao.getBySlot(gameId, emulatorId, slotNumber, channelName)
+    ): StateCacheEntity? = stateCacheDao.getBySlot(
+        gameId,
+        emulatorId,
+        slotNumber,
+        channelName,
+        syncPreferencesRepository.getRommUserId()
+    )
 
     suspend fun getStateById(cacheId: Long): StateCacheEntity? =
         stateCacheDao.getById(cacheId)
@@ -449,21 +472,26 @@ class StateCacheManager @Inject constructor(
         return File(cacheBaseDir, relativePath).absolutePath
     }
 
-    suspend fun pruneOldCaches(gameId: Long) = withContext(Dispatchers.IO) {
+    /**
+     * Trims one account's state history for a game. The budget is per account, so an account
+     * filling its slots cannot evict another's states for the same rom, and the rows selected for
+     * deletion are named by id rather than re-derived so the delete cannot widen past them.
+     */
+    suspend fun pruneOldCaches(gameId: Long, ownerUserId: Long?) = withContext(Dispatchers.IO) {
         val prefs = preferencesRepository.userPreferences.first()
         val limit = prefs.saveCacheLimit
 
-        val totalCount = stateCacheDao.countByGame(gameId)
+        val totalCount = stateCacheDao.countByGameAndOwner(gameId, ownerUserId)
         if (totalCount <= limit) return@withContext
 
-        val caches = stateCacheDao.getByGame(gameId)
-        val lockedCount = caches.count { it.isLocked }
+        val lockedCount = stateCacheDao.countLockedByGameAndOwner(gameId, ownerUserId)
         val effectiveLimit = maxOf(limit, lockedCount + MIN_UNLOCKED_SLOTS)
 
         val toDeleteCount = totalCount - effectiveLimit
         if (toDeleteCount <= 0) return@withContext
 
-        val toDelete = stateCacheDao.getOldestUnlocked(gameId, toDeleteCount)
+        val toDelete = stateCacheDao.getOldestUnlockedForOwner(gameId, ownerUserId, toDeleteCount)
+        if (toDelete.isEmpty()) return@withContext
         for (entity in toDelete) {
             val cacheFile = File(cacheBaseDir, entity.cachePath)
             cacheFile.delete()
@@ -474,12 +502,12 @@ class StateCacheManager @Inject constructor(
             }
         }
 
-        stateCacheDao.deleteOldestUnlocked(gameId, toDeleteCount)
-        Log.d(TAG, "Pruned $toDeleteCount old state caches for game $gameId (files cleaned)")
+        stateCacheDao.deleteByIds(toDelete.map { it.id })
+        Log.d(TAG, "Pruned ${toDelete.size} old state caches for game $gameId owner $ownerUserId (files cleaned)")
     }
 
     suspend fun deleteAllStatesForGame(gameId: Long) = withContext(Dispatchers.IO) {
-        val caches = stateCacheDao.getByGame(gameId)
+        val caches = stateCacheDao.getByGame(gameId, syncPreferencesRepository.getRommUserId())
         for (cache in caches) {
             val cacheFile = File(cacheBaseDir, cache.cachePath)
             val parentDir = cacheFile.parentFile
@@ -488,7 +516,7 @@ class StateCacheManager @Inject constructor(
                 parentDir.delete()
             }
         }
-        stateCacheDao.deleteByGame(gameId)
+        stateCacheDao.deleteByIds(caches.map { it.id })
 
         val gameDir = File(cacheBaseDir, gameId.toString())
         if (gameDir.exists() && gameDir.isDirectory) {
@@ -561,10 +589,11 @@ class StateCacheManager @Inject constructor(
     }
 
     suspend fun deleteStatesForChannel(gameId: Long, channelName: String?) = withContext(Dispatchers.IO) {
+        val ownerUserId = syncPreferencesRepository.getRommUserId()
         val states = if (channelName != null) {
-            stateCacheDao.getByChannel(gameId, channelName)
+            stateCacheDao.getByChannel(gameId, channelName, ownerUserId)
         } else {
-            stateCacheDao.getDefaultChannel(gameId)
+            stateCacheDao.getDefaultChannel(gameId, ownerUserId)
         }
 
         for (state in states) {
@@ -573,12 +602,13 @@ class StateCacheManager @Inject constructor(
             state.screenshotPath?.let { File(cacheBaseDir, it).delete() }
         }
 
-        stateCacheDao.deleteByChannel(gameId, channelName)
+        stateCacheDao.deleteByChannel(gameId, channelName, ownerUserId)
         Log.d(TAG, "Deleted ${states.size} states for game $gameId channel ${channelName ?: "default"}")
     }
 
     suspend fun deleteStatesForChannelAndCore(gameId: Long, channelName: String?, coreId: String?) = withContext(Dispatchers.IO) {
-        val states = stateCacheDao.getByChannelAndCore(gameId, channelName, coreId)
+        val ownerUserId = syncPreferencesRepository.getRommUserId()
+        val states = stateCacheDao.getByChannelAndCore(gameId, channelName, coreId, ownerUserId)
 
         for (state in states) {
             val cacheFile = File(cacheBaseDir, state.cachePath)
@@ -586,12 +616,12 @@ class StateCacheManager @Inject constructor(
             state.screenshotPath?.let { File(cacheBaseDir, it).delete() }
         }
 
-        stateCacheDao.deleteByChannelAndCore(gameId, channelName, coreId)
+        stateCacheDao.deleteByChannelAndCore(gameId, channelName, coreId, ownerUserId)
         Log.d(TAG, "Deleted ${states.size} states for game $gameId channel ${channelName ?: "default"} core ${coreId ?: "unknown"}")
     }
 
     suspend fun getStatesForChannelAndCore(gameId: Long, channelName: String?, coreId: String?): List<StateCacheEntity> =
-        stateCacheDao.getByChannelAndCore(gameId, channelName, coreId)
+        stateCacheDao.getByChannelAndCore(gameId, channelName, coreId, syncPreferencesRepository.getRommUserId())
 
     suspend fun deleteAutoResumeStatesFromDisk(
         emulatorId: String,
@@ -756,6 +786,7 @@ class StateCacheManager @Inject constructor(
         serverState: RomMState
     ): StateCloudResult = withContext(Dispatchers.IO) {
         Log.d(TAG, "[StateSync] DOWNLOAD rommStateId=$rommStateId gameId=$gameId")
+        val ownerUserId = syncPreferencesRepository.getRommUserId()
 
         try {
             val downloadPath = serverState.downloadPath
@@ -779,9 +810,7 @@ class StateCacheManager @Inject constructor(
             val channelName = parsed.channelName
             val parsedSlot = parsed.slotNumber
 
-            val relativeDir = stateRelativeDir(
-                syncPreferencesRepository.getRommUserId(), gameId, platformSlug, channelName, coreId
-            )
+            val relativeDir = stateRelativeDir(ownerUserId, gameId, platformSlug, channelName, coreId)
             val coreDir = File(cacheBaseDir, relativeDir)
             coreDir.mkdirs()
 
@@ -831,7 +860,8 @@ class StateCacheManager @Inject constructor(
                 rommSaveId = rommStateId,
                 syncStatus = StateCacheEntity.STATUS_SYNCED,
                 serverUpdatedAt = now,
-                lastUploadedHash = contentHash
+                lastUploadedHash = contentHash,
+                ownerUserId = ownerUserId
             )
 
             stateCacheDao.upsert(entity)
@@ -991,7 +1021,9 @@ class StateCacheManager @Inject constructor(
                         api.deleteSaves(RomMDeleteSavesRequest(saves = listOf(save.id)))
 
                         // Update local cache: remove old rommSaveId reference, set new state ID
-                        val oldCache = save.id.let { stateCacheDao.getByRommSaveId(it) }
+                        val oldCache = save.id.let {
+                            stateCacheDao.getByRommSaveId(it, syncPreferencesRepository.getRommUserId())
+                        }
                         if (oldCache != null && serverState != null) {
                             val serverTimestamp = parseTimestamp(serverState.updatedAt)
                             stateCacheDao.updateSyncState(
@@ -1021,20 +1053,20 @@ class StateCacheManager @Inject constructor(
     }
 
     suspend fun getPendingUploads(): List<StateCacheEntity> =
-        stateCacheDao.getPendingUploads()
+        stateCacheDao.getPendingUploads(syncPreferencesRepository.getRommUserId())
 
     suspend fun getPendingUploadsByGame(gameId: Long): List<StateCacheEntity> =
-        stateCacheDao.getPendingUploadsByGame(gameId)
+        stateCacheDao.getPendingUploadsByGame(gameId, syncPreferencesRepository.getRommUserId())
 
     suspend fun markForUpload(stateId: Long) {
         stateCacheDao.updateSyncStatus(stateId, StateCacheEntity.STATUS_PENDING_UPLOAD)
     }
 
     suspend fun getByRommSaveId(rommSaveId: Long): StateCacheEntity? =
-        stateCacheDao.getByRommSaveId(rommSaveId)
+        stateCacheDao.getByRommSaveId(rommSaveId, syncPreferencesRepository.getRommUserId())
 
     suspend fun getByGameAndEmulator(gameId: Long, emulatorId: String): List<StateCacheEntity> =
-        stateCacheDao.getByGameAndEmulator(gameId, emulatorId)
+        stateCacheDao.getByGameAndEmulator(gameId, emulatorId, syncPreferencesRepository.getRommUserId())
 
     private fun calculateFileHash(file: File): String {
         val md = MessageDigest.getInstance("MD5")

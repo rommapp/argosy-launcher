@@ -38,10 +38,11 @@ class SaveSyncRepositoryPreLaunchTest {
         repo = SaveSyncRepository(
             apiClient, conflictResolver, orchestrator, entityManager,
             stateCacheManager, syncQueueManager, saveSyncDao, saveCacheDao,
+            mockk(relaxed = true),
         )
         every { apiClient.getDeviceId() } returns "device-1"
         coEvery { apiClient.checkSavesForGame(any(), any()) } returns emptyList()
-        coEvery { saveSyncDao.getByGameEmulatorAndChannel(any(), any(), any()) } returns null
+        coEvery { saveSyncDao.getByGameEmulatorAndChannel(any(), any(), any(), any()) } returns null
         coEvery { saveCacheDao.hasNeedingRemoteSync(any(), any()) } returns false
     }
 
@@ -74,7 +75,7 @@ class SaveSyncRepositoryPreLaunchTest {
     @Test
     fun `userSelectedRestorePoint=true short-circuits to LocalIsNewer without API call`() = runTest {
         coEvery {
-            saveSyncDao.getByGameEmulatorAndChannel(gameId, emulatorId, "autosave")
+            saveSyncDao.getByGameEmulatorAndChannel(gameId, emulatorId, "autosave", any())
         } returns SaveSyncEntity(
             id = 5L, gameId = gameId, rommId = rommId, emulatorId = emulatorId,
             channelName = "autosave",
@@ -92,7 +93,7 @@ class SaveSyncRepositoryPreLaunchTest {
     fun `userSelectedRestorePoint=true persists across long idle until cleared by upload`() = runTest {
         val pinnedLongAgo = java.time.Instant.now().minusMillis(30L * 24 * 60 * 60 * 1000)
         coEvery {
-            saveSyncDao.getByGameEmulatorAndChannel(gameId, emulatorId, "autosave")
+            saveSyncDao.getByGameEmulatorAndChannel(gameId, emulatorId, "autosave", any())
         } returns SaveSyncEntity(
             id = 5L, gameId = gameId, rommId = rommId, emulatorId = emulatorId,
             channelName = "autosave",
@@ -253,7 +254,7 @@ class SaveSyncRepositoryPreLaunchTest {
     @Test
     fun `LocalModified carries existing localSavePath from save_sync row when present`() = runTest {
         coEvery {
-            saveSyncDao.getByGameEmulatorAndChannel(gameId, emulatorId, "autosave")
+            saveSyncDao.getByGameEmulatorAndChannel(gameId, emulatorId, "autosave", any())
         } returns SaveSyncEntity(
             id = 7L, gameId = gameId, rommId = rommId, emulatorId = emulatorId,
             channelName = "autosave",

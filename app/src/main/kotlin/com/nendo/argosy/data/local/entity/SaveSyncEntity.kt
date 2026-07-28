@@ -8,9 +8,10 @@ import java.time.Instant
 @Entity(
     tableName = "save_sync",
     indices = [
-        Index(value = ["gameId", "emulatorId", "channelName"], unique = true),
+        Index(value = ["gameId", "emulatorId", "channelName", "ownerUserId"], unique = true),
         Index("rommSaveId"),
-        Index("lastSyncedAt")
+        Index("lastSyncedAt"),
+        Index("ownerUserId")
     ]
 )
 data class SaveSyncEntity(
@@ -38,7 +39,12 @@ data class SaveSyncEntity(
     val lastSyncDeviceId: String? = null,
     val lastSyncDeviceName: String? = null,
     val userSelectedRestorePoint: Boolean = false,
-    val userSelectedRestorePointAt: Instant? = null
+    val userSelectedRestorePointAt: Instant? = null,
+    /**
+     * RomM user this sync row belongs to. Null is an unattributed row written before accounts
+     * existed; reads treat it as visible to whoever is signed in rather than orphaning it.
+     */
+    val ownerUserId: Long? = null
 ) {
     companion object {
         const val STATUS_SYNCED = "SYNCED"

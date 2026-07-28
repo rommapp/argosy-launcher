@@ -34,6 +34,7 @@ class SaveSyncRepositoryUploadMutexTest {
         repo = SaveSyncRepository(
             apiClient, conflictResolver, orchestrator, entityManager,
             stateCacheManager, syncQueueManager, saveSyncDao, saveCacheDao,
+            mockk(relaxed = true),
         )
     }
 

@@ -2755,3 +2755,71 @@ object Migration_158_159 : Migration(158, 159) {
         )
     }
 }
+
+/**
+ * Gives the last four sync tables an owner.
+ *
+ * Three of them carry a unique index that has to absorb the owner rather than merely gain a
+ * column beside it. `state_cache` inserts with REPLACE, so one account caching a slot deletes
+ * the other account's row and leaks its cache file; `state_tombstones` was unique on the server
+ * save id alone, so one account's delete suppressed another's state and it resurrected on their
+ * next sync; `save_sync` resolves one row per (game, emulator, channel) and would otherwise
+ * collapse two accounts onto it. `download_queue` needs attribution only -- the rom file is
+ * device-global and one copy serves every account.
+ *
+ * The columns are nullable with no SQL default because Room emits none for a Kotlin default, and
+ * every existing row is backfilled to the active account. An install with no account leaves them
+ * null, which the reads treat as visible to whoever signs in rather than orphaning them.
+ */
+object Migration_159_160 : Migration(159, 160) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        val activeUserId = "(SELECT `rommUserId` FROM `romm_accounts` WHERE `isActive` = 1 LIMIT 1)"
+
+        db.execSQL("ALTER TABLE `save_sync` ADD COLUMN `ownerUserId` INTEGER")
+        db.execSQL("UPDATE `save_sync` SET `ownerUserId` = $activeUserId")
+        db.execSQL("DROP INDEX IF EXISTS `index_save_sync_gameId_emulatorId_channelName`")
+        db.execSQL(
+            "CREATE UNIQUE INDEX IF NOT EXISTS " +
+                "`index_save_sync_gameId_emulatorId_channelName_ownerUserId` " +
+                "ON `save_sync` (`gameId`, `emulatorId`, `channelName`, `ownerUserId`)"
+        )
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS `index_save_sync_ownerUserId` " +
+                "ON `save_sync` (`ownerUserId`)"
+        )
+
+        db.execSQL("ALTER TABLE `state_cache` ADD COLUMN `ownerUserId` INTEGER")
+        db.execSQL("UPDATE `state_cache` SET `ownerUserId` = $activeUserId")
+        db.execSQL("DROP INDEX IF EXISTS `index_state_cache_game_emu_slot_channel_core`")
+        db.execSQL(
+            "CREATE UNIQUE INDEX IF NOT EXISTS " +
+                "`index_state_cache_game_emu_slot_channel_core_owner` " +
+                "ON `state_cache` (`gameId`, `emulatorId`, `slotNumber`, `channelName`, " +
+                "`coreId`, `ownerUserId`)"
+        )
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS `index_state_cache_ownerUserId` " +
+                "ON `state_cache` (`ownerUserId`)"
+        )
+
+        db.execSQL("ALTER TABLE `state_tombstones` ADD COLUMN `ownerUserId` INTEGER")
+        db.execSQL("UPDATE `state_tombstones` SET `ownerUserId` = $activeUserId")
+        db.execSQL("DROP INDEX IF EXISTS `index_state_tombstones_rommSaveId`")
+        db.execSQL(
+            "CREATE UNIQUE INDEX IF NOT EXISTS " +
+                "`index_state_tombstones_rommSaveId_ownerUserId` " +
+                "ON `state_tombstones` (`rommSaveId`, `ownerUserId`)"
+        )
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS `index_state_tombstones_ownerUserId` " +
+                "ON `state_tombstones` (`ownerUserId`)"
+        )
+
+        db.execSQL("ALTER TABLE `download_queue` ADD COLUMN `ownerUserId` INTEGER")
+        db.execSQL("UPDATE `download_queue` SET `ownerUserId` = $activeUserId")
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS `index_download_queue_ownerUserId` " +
+                "ON `download_queue` (`ownerUserId`)"
+        )
+    }
+}

@@ -58,4 +58,18 @@ interface DownloadQueueDao {
 
     @Query("DELETE FROM download_queue WHERE state IN ('COMPLETED', 'FAILED')")
     suspend fun clearFinished()
+
+    @Query("DELETE FROM download_queue WHERE ownerUserId = :ownerUserId")
+    suspend fun deleteByOwner(ownerUserId: Long)
+
+    /**
+     * Rows this account queued and never finished. Removing the account discards them, so the
+     * tally is what the caller is asked to confirm before that happens.
+     */
+    @Query("""
+        SELECT COUNT(*) FROM download_queue
+        WHERE ownerUserId = :ownerUserId
+          AND state IN ('QUEUED', 'PAUSED', 'DOWNLOADING', 'EXTRACTING', 'WAITING_FOR_STORAGE')
+    """)
+    suspend fun countUnfinishedForOwner(ownerUserId: Long): Int
 }

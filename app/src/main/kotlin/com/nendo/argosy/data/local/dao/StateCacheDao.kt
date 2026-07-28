@@ -8,14 +8,28 @@ import androidx.room.Update
 import com.nendo.argosy.data.local.entity.StateCacheEntity
 import kotlinx.coroutines.flow.Flow
 
+/**
+ * Owner scoping here is deliberately tolerant: a null `ownerUserId` is a row written before the
+ * schema had accounts, so it stays reachable for whoever is signed in instead of being orphaned.
+ * Single-row resolvers order the signed-in account's row ahead of an unattributed one, because
+ * both can now match where the unique index previously allowed only one.
+ */
 @Dao
 interface StateCacheDao {
 
-    @Query("SELECT * FROM state_cache WHERE gameId = :gameId ORDER BY slotNumber ASC")
-    fun observeByGame(gameId: Long): Flow<List<StateCacheEntity>>
+    @Query("""
+        SELECT * FROM state_cache
+        WHERE gameId = :gameId AND (ownerUserId IS NULL OR ownerUserId IS :ownerUserId)
+        ORDER BY slotNumber ASC
+    """)
+    fun observeByGame(gameId: Long, ownerUserId: Long?): Flow<List<StateCacheEntity>>
 
-    @Query("SELECT * FROM state_cache WHERE gameId = :gameId ORDER BY slotNumber ASC")
-    suspend fun getByGame(gameId: Long): List<StateCacheEntity>
+    @Query("""
+        SELECT * FROM state_cache
+        WHERE gameId = :gameId AND (ownerUserId IS NULL OR ownerUserId IS :ownerUserId)
+        ORDER BY slotNumber ASC
+    """)
+    suspend fun getByGame(gameId: Long, ownerUserId: Long?): List<StateCacheEntity>
 
     @Query("SELECT * FROM state_cache WHERE id = :id")
     suspend fun getById(id: Long): StateCacheEntity?
@@ -24,12 +38,16 @@ interface StateCacheDao {
         SELECT * FROM state_cache
         WHERE gameId = :gameId AND emulatorId = :emulatorId AND slotNumber = :slotNumber
         AND (channelName = :channelName OR (channelName IS NULL AND :channelName IS NULL))
+        AND (ownerUserId IS NULL OR ownerUserId IS :ownerUserId)
+        ORDER BY (ownerUserId IS NULL) ASC, id DESC
+        LIMIT 1
     """)
     suspend fun getBySlot(
         gameId: Long,
         emulatorId: String,
         slotNumber: Int,
-        channelName: String? = null
+        channelName: String?,
+        ownerUserId: Long?
     ): StateCacheEntity?
 
     @Query("""
@@ -37,48 +55,64 @@ interface StateCacheDao {
         WHERE gameId = :gameId AND emulatorId = :emulatorId AND slotNumber = :slotNumber
         AND (channelName = :channelName OR (channelName IS NULL AND :channelName IS NULL))
         AND (coreId = :coreId OR (coreId IS NULL AND :coreId IS NULL))
+        AND (ownerUserId IS NULL OR ownerUserId IS :ownerUserId)
+        ORDER BY (ownerUserId IS NULL) ASC, id DESC
+        LIMIT 1
     """)
     suspend fun getBySlotAndCore(
         gameId: Long,
         emulatorId: String,
         slotNumber: Int,
         channelName: String?,
-        coreId: String?
+        coreId: String?,
+        ownerUserId: Long?
     ): StateCacheEntity?
 
     @Query("""
         SELECT * FROM state_cache
         WHERE gameId = :gameId AND channelName = :channelName
+        AND (ownerUserId IS NULL OR ownerUserId IS :ownerUserId)
         ORDER BY slotNumber ASC
     """)
-    suspend fun getByChannel(gameId: Long, channelName: String): List<StateCacheEntity>
+    suspend fun getByChannel(gameId: Long, channelName: String, ownerUserId: Long?): List<StateCacheEntity>
 
     @Query("""
         SELECT * FROM state_cache
         WHERE gameId = :gameId AND channelName IS NULL
+        AND (ownerUserId IS NULL OR ownerUserId IS :ownerUserId)
         ORDER BY slotNumber ASC
     """)
-    suspend fun getDefaultChannel(gameId: Long): List<StateCacheEntity>
+    suspend fun getDefaultChannel(gameId: Long, ownerUserId: Long?): List<StateCacheEntity>
 
     @Query("""
         SELECT * FROM state_cache
         WHERE gameId = :gameId
         AND (channelName = :channelName OR (channelName IS NULL AND :channelName IS NULL))
         AND (coreId = :coreId OR (coreId IS NULL AND :coreId IS NULL))
+        AND (ownerUserId IS NULL OR ownerUserId IS :ownerUserId)
         ORDER BY slotNumber ASC
     """)
-    suspend fun getByChannelAndCore(gameId: Long, channelName: String?, coreId: String?): List<StateCacheEntity>
+    suspend fun getByChannelAndCore(
+        gameId: Long,
+        channelName: String?,
+        coreId: String?,
+        ownerUserId: Long?
+    ): List<StateCacheEntity>
 
     @Query("""
         DELETE FROM state_cache
         WHERE gameId = :gameId
         AND (channelName = :channelName OR (channelName IS NULL AND :channelName IS NULL))
         AND (coreId = :coreId OR (coreId IS NULL AND :coreId IS NULL))
+        AND (ownerUserId IS NULL OR ownerUserId IS :ownerUserId)
     """)
-    suspend fun deleteByChannelAndCore(gameId: Long, channelName: String?, coreId: String?)
+    suspend fun deleteByChannelAndCore(gameId: Long, channelName: String?, coreId: String?, ownerUserId: Long?)
 
-    @Query("SELECT COUNT(*) FROM state_cache WHERE gameId = :gameId")
-    suspend fun countByGame(gameId: Long): Int
+    @Query("""
+        SELECT COUNT(*) FROM state_cache
+        WHERE gameId = :gameId AND IFNULL(ownerUserId, -1) = IFNULL(:ownerUserId, -1)
+    """)
+    suspend fun countByGameAndOwner(gameId: Long, ownerUserId: Long?): Int
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(entity: StateCacheEntity): Long
@@ -111,51 +145,65 @@ interface StateCacheDao {
         DELETE FROM state_cache
         WHERE gameId = :gameId
         AND (channelName = :channelName OR (channelName IS NULL AND :channelName IS NULL))
+        AND (ownerUserId IS NULL OR ownerUserId IS :ownerUserId)
     """)
-    suspend fun deleteByChannel(gameId: Long, channelName: String?)
+    suspend fun deleteByChannel(gameId: Long, channelName: String?, ownerUserId: Long?)
+
+    /**
+     * Cache budget is per account: one account filling its slots must not evict another's states
+     * for the same rom. A null [ownerUserId] is its own bucket of unattributed legacy rows rather
+     * than a wildcard, which is why these use strict equality where the read paths are tolerant.
+     */
+    @Query("""
+        SELECT COUNT(*) FROM state_cache
+        WHERE gameId = :gameId AND isLocked = 1
+          AND IFNULL(ownerUserId, -1) = IFNULL(:ownerUserId, -1)
+    """)
+    suspend fun countLockedByGameAndOwner(gameId: Long, ownerUserId: Long?): Int
 
     @Query("""
         SELECT * FROM state_cache
         WHERE gameId = :gameId AND isLocked = 0
+          AND IFNULL(ownerUserId, -1) = IFNULL(:ownerUserId, -1)
         ORDER BY cachedAt ASC
         LIMIT :count
     """)
-    suspend fun getOldestUnlocked(gameId: Long, count: Int): List<StateCacheEntity>
+    suspend fun getOldestUnlockedForOwner(gameId: Long, ownerUserId: Long?, count: Int): List<StateCacheEntity>
+
+    @Query("DELETE FROM state_cache WHERE id IN (:ids)")
+    suspend fun deleteByIds(ids: List<Long>)
 
     @Query("""
-        DELETE FROM state_cache
-        WHERE id IN (
-            SELECT id FROM state_cache
-            WHERE gameId = :gameId AND isLocked = 0
-            ORDER BY cachedAt ASC
-            LIMIT :count
-        )
+        SELECT * FROM state_cache
+        WHERE rommSaveId = :rommSaveId AND (ownerUserId IS NULL OR ownerUserId IS :ownerUserId)
+        ORDER BY (ownerUserId IS NULL) ASC, id DESC
+        LIMIT 1
     """)
-    suspend fun deleteOldestUnlocked(gameId: Long, count: Int)
-
-    @Query("SELECT * FROM state_cache WHERE rommSaveId = :rommSaveId")
-    suspend fun getByRommSaveId(rommSaveId: Long): StateCacheEntity?
+    suspend fun getByRommSaveId(rommSaveId: Long, ownerUserId: Long?): StateCacheEntity?
 
     @Query("""
         SELECT * FROM state_cache
         WHERE gameId = :gameId AND emulatorId = :emulatorId
+        AND (ownerUserId IS NULL OR ownerUserId IS :ownerUserId)
         ORDER BY slotNumber ASC
     """)
-    suspend fun getByGameAndEmulator(gameId: Long, emulatorId: String): List<StateCacheEntity>
+    suspend fun getByGameAndEmulator(gameId: Long, emulatorId: String, ownerUserId: Long?): List<StateCacheEntity>
 
     @Query("""
         SELECT * FROM state_cache
         WHERE syncStatus IN ('PENDING_UPLOAD', 'LOCAL_NEWER')
+        AND (ownerUserId IS NULL OR ownerUserId IS :ownerUserId)
         ORDER BY cachedAt ASC
     """)
-    suspend fun getPendingUploads(): List<StateCacheEntity>
+    suspend fun getPendingUploads(ownerUserId: Long?): List<StateCacheEntity>
 
     @Query("""
         SELECT * FROM state_cache
         WHERE gameId = :gameId AND syncStatus IN ('PENDING_UPLOAD', 'LOCAL_NEWER')
+        AND (ownerUserId IS NULL OR ownerUserId IS :ownerUserId)
         ORDER BY slotNumber ASC
     """)
-    suspend fun getPendingUploadsByGame(gameId: Long): List<StateCacheEntity>
+    suspend fun getPendingUploadsByGame(gameId: Long, ownerUserId: Long?): List<StateCacheEntity>
 
     @Query("""
         UPDATE state_cache
@@ -185,6 +233,9 @@ interface StateCacheDao {
 
     @Query("DELETE FROM state_cache WHERE gameId IN (SELECT id FROM games WHERE platformId = :platformId)")
     suspend fun deleteByPlatform(platformId: Long)
+
+    @Query("DELETE FROM state_cache WHERE ownerUserId = :ownerUserId")
+    suspend fun deleteByOwner(ownerUserId: Long)
 
     @Query("DELETE FROM state_cache")
     suspend fun deleteAll()

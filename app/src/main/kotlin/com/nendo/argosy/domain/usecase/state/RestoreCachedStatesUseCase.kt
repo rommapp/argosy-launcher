@@ -7,7 +7,6 @@ import com.nendo.argosy.data.emulator.RetroArchConfigParser
 import com.nendo.argosy.data.emulator.StatePathRegistry
 import com.nendo.argosy.data.local.dao.EmulatorSaveConfigDao
 import com.nendo.argosy.data.local.dao.GameDao
-import com.nendo.argosy.data.local.dao.StateCacheDao
 import com.nendo.argosy.data.repository.StateCacheManager
 import java.io.File
 import javax.inject.Inject
@@ -23,7 +22,6 @@ sealed class RestoreCachedStatesResult {
 
 class RestoreCachedStatesUseCase @Inject constructor(
     private val stateCacheManager: StateCacheManager,
-    private val stateCacheDao: StateCacheDao,
     private val gameDao: GameDao,
     private val emulatorSaveConfigDao: EmulatorSaveConfigDao,
     private val emulatorDetector: EmulatorDetector,
@@ -98,7 +96,7 @@ class RestoreCachedStatesUseCase @Inject constructor(
             return RestoreCachedStatesResult.Error("Could not determine state directory")
         }
 
-        val cachedStates = stateCacheDao.getByChannelAndCore(gameId, channelName, effectiveCoreId)
+        val cachedStates = stateCacheManager.getStatesForChannelAndCore(gameId, channelName, effectiveCoreId)
             .let { states ->
                 if (skipAutoState) states.filter { it.slotNumber != -1 } else states
             }

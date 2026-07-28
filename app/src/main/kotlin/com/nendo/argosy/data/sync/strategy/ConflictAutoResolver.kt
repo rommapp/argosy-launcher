@@ -14,7 +14,8 @@ class ConflictAutoResolver @Inject constructor(
     private val gameDao: GameDao,
     private val saveSyncDao: SaveSyncDao,
     private val saveCacheDao: SaveCacheDao,
-    private val pendingSyncQueueDao: PendingSyncQueueDao
+    private val pendingSyncQueueDao: PendingSyncQueueDao,
+    private val syncPreferencesRepository: com.nendo.argosy.data.preferences.SyncPreferencesRepository
 ) {
     suspend fun classify(
         operation: ReconcileOperation,
@@ -41,10 +42,11 @@ class ConflictAutoResolver @Inject constructor(
             }
         }
 
+        val ownerUserId = syncPreferencesRepository.getRommUserId()
         val syncRow = gameId?.let { gid ->
             operation.emulator?.takeIf { it.isNotBlank() }?.let { emu ->
-                operation.slot?.let { saveSyncDao.getByGameEmulatorAndChannel(gid, emu, it) }
-                    ?: saveSyncDao.getByGameAndEmulator(gid, emu)
+                operation.slot?.let { saveSyncDao.getByGameEmulatorAndChannel(gid, emu, it, ownerUserId) }
+                    ?: saveSyncDao.getByGameAndEmulator(gid, emu, ownerUserId)
             }
         }
         val localAnchor = syncRow?.localContentHash

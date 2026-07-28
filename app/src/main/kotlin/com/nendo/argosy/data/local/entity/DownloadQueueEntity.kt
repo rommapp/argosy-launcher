@@ -11,7 +11,8 @@ import java.time.Instant
         Index(value = ["gameId"]),
         Index(value = ["state"]),
         Index(value = ["discId"]),
-        Index(value = ["gameFileId"])
+        Index(value = ["gameFileId"]),
+        Index(value = ["ownerUserId"])
     ]
 )
 data class DownloadQueueEntity(
@@ -35,5 +36,11 @@ data class DownloadQueueEntity(
     val tempFilePath: String?,
     val createdAt: Instant = Instant.now(),
     val isMultiFileRom: Boolean = false,
-    val selectedFileIds: String? = null
+    val selectedFileIds: String? = null,
+    /**
+     * RomM user who queued the download. The rom file itself is device-global and one copy serves
+     * every account, so this is attribution for removal and pending-work accounting, not a
+     * visibility filter on the queue.
+     */
+    val ownerUserId: Long? = null
 )

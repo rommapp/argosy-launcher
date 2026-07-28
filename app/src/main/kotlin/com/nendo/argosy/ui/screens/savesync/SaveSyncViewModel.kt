@@ -90,14 +90,14 @@ class SaveSyncViewModel @Inject constructor(
 
     val uiState: StateFlow<SaveSyncUiState> = combine(
         listOf(
-            saveSyncDao.observeAll(),
+            ownedSaveRows(),
             ownedConflicts(),
             syncQueueManager.state,
             preferencesRepository.preferences,
             _focusedRowKey,
             _attentionAction,
             romMRepository.connectionState,
-            saveSyncDao.observeSaveCountsByDevice(),
+            ownedDeviceCounts(),
             _registeredDevices,
             saveAccessNotices.locations
         )
@@ -398,6 +398,16 @@ class SaveSyncViewModel @Inject constructor(
         .map { it.rommUserId }
         .distinctUntilChanged()
         .flatMapLatest { pendingConflictDao.observeOpenConflicts(PendingConflictEntity.ownerScope(it)) }
+
+    private fun ownedSaveRows() = preferencesRepository.preferences
+        .map { it.rommUserId }
+        .distinctUntilChanged()
+        .flatMapLatest { saveSyncDao.observeAll(it) }
+
+    private fun ownedDeviceCounts() = preferencesRepository.preferences
+        .map { it.rommUserId }
+        .distinctUntilChanged()
+        .flatMapLatest { saveSyncDao.observeSaveCountsByDevice(it) }
 
     private fun resolveAttention(conflictId: Long, resolution: ConflictResolution) {
         viewModelScope.launch {

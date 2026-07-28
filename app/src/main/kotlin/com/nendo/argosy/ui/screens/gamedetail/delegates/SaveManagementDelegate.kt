@@ -29,6 +29,7 @@ class SaveManagementDelegate @Inject constructor(
     private val emulatorResolver: EmulatorResolver,
     private val saveCacheManager: SaveCacheManager,
     private val saveSyncRepository: SaveSyncRepository,
+    private val syncPreferencesRepository: com.nendo.argosy.data.preferences.SyncPreferencesRepository,
     private val notificationManager: NotificationManager,
     private val retroArchPathResolver: com.nendo.argosy.data.emulator.RetroArchPathResolver,
     val saveChannelDelegate: SaveChannelDelegate
@@ -40,10 +41,11 @@ class SaveManagementDelegate @Inject constructor(
         activeChannel: String?,
         activeSaveTimestamp: Long?
     ): SaveStatusInfo? {
+        val ownerUserId = syncPreferencesRepository.getRommUserId()
         val syncEntity = if (activeChannel != null) {
-            saveSyncDao.getByGameEmulatorAndChannel(gameId, emulatorId, activeChannel)
+            saveSyncDao.getByGameEmulatorAndChannel(gameId, emulatorId, activeChannel, ownerUserId)
         } else {
-            saveSyncDao.getByGameAndEmulator(gameId, emulatorId)
+            saveSyncDao.getByGameAndEmulator(gameId, emulatorId, ownerUserId)
         }
 
         val cacheTimestamp = if (activeChannel != null) {

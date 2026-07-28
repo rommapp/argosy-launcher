@@ -183,7 +183,7 @@ class SyncCoordinatorApplyPlanTest {
     fun `DOWNLOAD op upserts save_sync with STATUS_SERVER_NEWER and the saveId`() = runTest {
         val captured = slot<SaveSyncEntity>()
         coEvery { saveSyncDao.upsert(capture(captured)) } returns 1L
-        coEvery { saveSyncDao.getByGameAndEmulator(game.id, "mgba") } returns null
+        coEvery { saveSyncDao.getByGameAndEmulator(game.id, "mgba", any()) } returns null
 
         runWith(listOf(op(ReconcileAction.DOWNLOAD, saveId = 77L)))
 
@@ -237,7 +237,7 @@ class SyncCoordinatorApplyPlanTest {
         coEvery {
             conflictAutoResolver.classify(any(), any())
         } returns ConflictAutoResolver.Resolution.KeepServer("local-unchanged")
-        coEvery { saveSyncDao.getByGameAndEmulator(game.id, "mgba") } returns null
+        coEvery { saveSyncDao.getByGameAndEmulator(game.id, "mgba", any()) } returns null
 
         runWith(listOf(op(ReconcileAction.CONFLICT)))
 
@@ -323,7 +323,7 @@ class SyncCoordinatorApplyPlanTest {
     @Test
     fun `conflict entity carries current local file hash and serverHash from plan op`() = runTest {
         coEvery { conflictAutoResolver.classify(any(), any()) } returns ConflictAutoResolver.Resolution.AsIs
-        coEvery { saveSyncDao.getByGameEmulatorAndChannel(game.id, "mgba", "autosave") } returns SaveSyncEntity(
+        coEvery { saveSyncDao.getByGameEmulatorAndChannel(game.id, "mgba", "autosave", any()) } returns SaveSyncEntity(
             gameId = game.id,
             rommId = 100L,
             emulatorId = "mgba",
@@ -346,7 +346,7 @@ class SyncCoordinatorApplyPlanTest {
     @Test
     fun `conflict entity has null localHash when no save_sync row exists yet`() = runTest {
         coEvery { conflictAutoResolver.classify(any(), any()) } returns ConflictAutoResolver.Resolution.AsIs
-        coEvery { saveSyncDao.getByGameEmulatorAndChannel(game.id, "mgba", "autosave") } returns null
+        coEvery { saveSyncDao.getByGameEmulatorAndChannel(game.id, "mgba", "autosave", any()) } returns null
         val captured = slot<PendingConflictEntity>()
         coEvery { pendingConflictDao.upsert(capture(captured)) } returns 1L
 

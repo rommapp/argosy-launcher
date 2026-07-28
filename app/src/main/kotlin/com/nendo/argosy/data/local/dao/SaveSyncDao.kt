@@ -7,32 +7,76 @@ import androidx.room.Query
 import com.nendo.argosy.data.local.entity.SaveSyncEntity
 import kotlinx.coroutines.flow.Flow
 
+/**
+ * Owner scoping here is deliberately tolerant: a null `ownerUserId` is a row written before the
+ * schema had accounts, so it stays reachable for whoever is signed in instead of being orphaned.
+ * Single-row resolvers order the signed-in account's row ahead of an unattributed one, because
+ * both can now match where the unique index previously allowed only one.
+ */
 @Dao
 interface SaveSyncDao {
 
-    @Query("SELECT * FROM save_sync WHERE gameId = :gameId AND emulatorId = :emulatorId AND channelName IS NULL")
-    suspend fun getByGameAndEmulator(gameId: Long, emulatorId: String): SaveSyncEntity?
+    @Query("""
+        SELECT * FROM save_sync
+        WHERE gameId = :gameId AND emulatorId = :emulatorId AND channelName IS NULL
+          AND (ownerUserId IS NULL OR ownerUserId IS :ownerUserId)
+        ORDER BY (ownerUserId IS NULL) ASC, id DESC
+        LIMIT 1
+    """)
+    suspend fun getByGameAndEmulator(gameId: Long, emulatorId: String, ownerUserId: Long?): SaveSyncEntity?
 
-    @Query("SELECT * FROM save_sync WHERE gameId = :gameId AND emulatorId = :emulatorId AND channelName = :channelName")
-    suspend fun getByGameEmulatorAndChannel(gameId: Long, emulatorId: String, channelName: String): SaveSyncEntity?
+    @Query("""
+        SELECT * FROM save_sync
+        WHERE gameId = :gameId AND emulatorId = :emulatorId AND channelName = :channelName
+          AND (ownerUserId IS NULL OR ownerUserId IS :ownerUserId)
+        ORDER BY (ownerUserId IS NULL) ASC, id DESC
+        LIMIT 1
+    """)
+    suspend fun getByGameEmulatorAndChannel(
+        gameId: Long,
+        emulatorId: String,
+        channelName: String,
+        ownerUserId: Long?
+    ): SaveSyncEntity?
 
-    @Query("SELECT * FROM save_sync WHERE gameId = :gameId AND emulatorId = :emulatorId AND channelName IS NULL ORDER BY id DESC LIMIT 1")
-    suspend fun getByGameEmulatorAndNullChannel(gameId: Long, emulatorId: String): SaveSyncEntity?
+    @Query("""
+        SELECT * FROM save_sync
+        WHERE gameId = :gameId AND emulatorId = :emulatorId AND channelName IS NULL
+          AND (ownerUserId IS NULL OR ownerUserId IS :ownerUserId)
+        ORDER BY (ownerUserId IS NULL) ASC, id DESC
+        LIMIT 1
+    """)
+    suspend fun getByGameEmulatorAndNullChannel(gameId: Long, emulatorId: String, ownerUserId: Long?): SaveSyncEntity?
 
     @Query("""
         DELETE FROM save_sync
         WHERE id NOT IN (
             SELECT MAX(id) FROM save_sync
-            GROUP BY gameId, emulatorId, IFNULL(channelName, '__null__')
+            GROUP BY gameId, emulatorId, IFNULL(channelName, '__null__'), IFNULL(ownerUserId, -1)
         )
     """)
     suspend fun deleteDuplicateRows(): Int
 
-    @Query("SELECT * FROM save_sync WHERE gameId = :gameId AND emulatorId = :emulatorId AND (channelName IS NULL OR channelName = :defaultChannelName)")
-    suspend fun getByGameAndEmulatorWithDefault(gameId: Long, emulatorId: String, defaultChannelName: String): SaveSyncEntity?
+    @Query("""
+        SELECT * FROM save_sync
+        WHERE gameId = :gameId AND emulatorId = :emulatorId
+          AND (channelName IS NULL OR channelName = :defaultChannelName)
+          AND (ownerUserId IS NULL OR ownerUserId IS :ownerUserId)
+        ORDER BY (ownerUserId IS NULL) ASC, id DESC
+        LIMIT 1
+    """)
+    suspend fun getByGameAndEmulatorWithDefault(
+        gameId: Long,
+        emulatorId: String,
+        defaultChannelName: String,
+        ownerUserId: Long?
+    ): SaveSyncEntity?
 
-    @Query("SELECT * FROM save_sync WHERE gameId = :gameId")
-    suspend fun getByGame(gameId: Long): List<SaveSyncEntity>
+    @Query("""
+        SELECT * FROM save_sync
+        WHERE gameId = :gameId AND (ownerUserId IS NULL OR ownerUserId IS :ownerUserId)
+    """)
+    suspend fun getByGame(gameId: Long, ownerUserId: Long?): List<SaveSyncEntity>
 
     @Query("SELECT * FROM save_sync WHERE syncStatus IN (:statuses)")
     suspend fun getByStatuses(vararg statuses: String): List<SaveSyncEntity>
@@ -46,14 +90,24 @@ interface SaveSyncDao {
     """)
     suspend fun getByGameStatusAndChannel(gameId: Long, status: String, channelName: String?): SaveSyncEntity?
 
-    @Query("SELECT * FROM save_sync WHERE syncStatus = 'SERVER_NEWER' OR syncStatus = 'CONFLICT'")
-    suspend fun getPendingDownloads(): List<SaveSyncEntity>
+    @Query("""
+        SELECT * FROM save_sync
+        WHERE (syncStatus = 'SERVER_NEWER' OR syncStatus = 'CONFLICT')
+          AND (ownerUserId IS NULL OR ownerUserId IS :ownerUserId)
+    """)
+    suspend fun getPendingDownloads(ownerUserId: Long?): List<SaveSyncEntity>
 
-    @Query("SELECT * FROM save_sync WHERE syncStatus = 'SERVER_NEWER'")
-    fun observeGamesWithNewerServerSaves(): Flow<List<SaveSyncEntity>>
+    @Query("""
+        SELECT * FROM save_sync
+        WHERE syncStatus = 'SERVER_NEWER' AND (ownerUserId IS NULL OR ownerUserId IS :ownerUserId)
+    """)
+    fun observeGamesWithNewerServerSaves(ownerUserId: Long?): Flow<List<SaveSyncEntity>>
 
-    @Query("SELECT COUNT(*) FROM save_sync WHERE syncStatus = 'SERVER_NEWER'")
-    fun observeNewSavesCount(): Flow<Int>
+    @Query("""
+        SELECT COUNT(*) FROM save_sync
+        WHERE syncStatus = 'SERVER_NEWER' AND (ownerUserId IS NULL OR ownerUserId IS :ownerUserId)
+    """)
+    fun observeNewSavesCount(ownerUserId: Long?): Flow<Int>
 
     @Query("SELECT COUNT(*) FROM save_sync WHERE syncStatus = :status")
     suspend fun countByStatus(status: String): Int
@@ -70,23 +124,39 @@ interface SaveSyncDao {
             lastSyncError = :error
         WHERE gameId = :gameId AND emulatorId = :emulatorId
           AND (:channelName IS NULL OR channelName = :channelName)
+          AND (ownerUserId IS NULL OR ownerUserId IS :ownerUserId)
     """)
-    suspend fun markCorruptZip(gameId: Long, emulatorId: String, channelName: String?, serverTimestamp: String, error: String)
+    suspend fun markCorruptZip(
+        gameId: Long,
+        emulatorId: String,
+        channelName: String?,
+        ownerUserId: Long?,
+        serverTimestamp: String,
+        error: String
+    )
 
     @Query("""
         SELECT corruptZipTimestamp FROM save_sync
         WHERE gameId = :gameId AND emulatorId = :emulatorId
           AND (:channelName IS NULL OR channelName = :channelName)
+          AND (ownerUserId IS NULL OR ownerUserId IS :ownerUserId)
+        ORDER BY (ownerUserId IS NULL) ASC, id DESC
         LIMIT 1
     """)
-    suspend fun getCorruptZipTimestamp(gameId: Long, emulatorId: String, channelName: String?): String?
+    suspend fun getCorruptZipTimestamp(
+        gameId: Long,
+        emulatorId: String,
+        channelName: String?,
+        ownerUserId: Long?
+    ): String?
 
     @Query("""
         UPDATE save_sync SET corruptZipTimestamp = NULL
         WHERE gameId = :gameId AND emulatorId = :emulatorId
           AND (:channelName IS NULL OR channelName = :channelName)
+          AND (ownerUserId IS NULL OR ownerUserId IS :ownerUserId)
     """)
-    suspend fun clearCorruptZip(gameId: Long, emulatorId: String, channelName: String?)
+    suspend fun clearCorruptZip(gameId: Long, emulatorId: String, channelName: String?, ownerUserId: Long?)
 
     @Query("""
         UPDATE save_sync
@@ -163,11 +233,18 @@ interface SaveSyncDao {
     @Query("SELECT COUNT(*) FROM save_sync WHERE localSavePath IS NOT NULL")
     suspend fun countWithPaths(): Int
 
-    @Query("SELECT * FROM save_sync ORDER BY lastSyncedAt DESC, gameId ASC")
-    fun observeAll(): Flow<List<SaveSyncEntity>>
+    @Query("""
+        SELECT * FROM save_sync
+        WHERE ownerUserId IS NULL OR ownerUserId IS :ownerUserId
+        ORDER BY lastSyncedAt DESC, gameId ASC
+    """)
+    fun observeAll(ownerUserId: Long?): Flow<List<SaveSyncEntity>>
 
     @Query("UPDATE save_sync SET lastSyncDeviceId = :deviceId, lastSyncDeviceName = :deviceName WHERE id = :id")
     suspend fun updateDeviceTag(id: Long, deviceId: String?, deviceName: String?)
+
+    @Query("DELETE FROM save_sync WHERE ownerUserId = :ownerUserId")
+    suspend fun deleteByOwner(ownerUserId: Long)
 
     @Query("""
         SELECT lastSyncDeviceId AS deviceId,
@@ -175,9 +252,10 @@ interface SaveSyncDao {
                COUNT(DISTINCT gameId) AS saveCount,
                MAX(lastSyncedAt) AS latestSyncAt
         FROM save_sync
+        WHERE ownerUserId IS NULL OR ownerUserId IS :ownerUserId
         GROUP BY lastSyncDeviceId
     """)
-    fun observeSaveCountsByDevice(): Flow<List<SaveCountByDevice>>
+    fun observeSaveCountsByDevice(ownerUserId: Long?): Flow<List<SaveCountByDevice>>
 }
 
 data class SaveCountByDevice(

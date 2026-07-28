@@ -118,7 +118,8 @@ class SaveUploaderTest {
             switchSaveHandler = switchSaveHandler,
             apiClient = dagger.Lazy { apiClient },
             conflictDetector = conflictDetector,
-            saveCacheManager = dagger.Lazy { saveCacheManager }
+            saveCacheManager = dagger.Lazy { saveCacheManager },
+            syncPreferencesRepository = mockk(relaxed = true)
         )
     }
 
@@ -142,7 +143,7 @@ class SaveUploaderTest {
             localContentHash = "deadbeef"
         )
         coEvery {
-            saveSyncDao.getByGameAndEmulatorWithDefault(gameId, emulatorId, SaveSyncApiClient.DEFAULT_SAVE_NAME)
+            saveSyncDao.getByGameAndEmulatorWithDefault(gameId, emulatorId, SaveSyncApiClient.DEFAULT_SAVE_NAME, any())
         } returns syncEntity
         every { saveArchiver.calculateContentHash(any()) } returns "deadbeef"
         coEvery { saveCacheDao.getByGameAndHash(any(), any()) } returns null
@@ -181,7 +182,7 @@ class SaveUploaderTest {
         )
 
         coEvery {
-            saveSyncDao.getByGameEmulatorAndChannel(gameId, emulatorId, "manual")
+            saveSyncDao.getByGameEmulatorAndChannel(gameId, emulatorId, "manual", any())
         } returns SaveSyncEntity(
             id = 1L,
             gameId = gameId,
@@ -226,7 +227,7 @@ class SaveUploaderTest {
         )
 
         coEvery {
-            saveSyncDao.getByGameEmulatorAndChannel(gameId, emulatorId, "manual")
+            saveSyncDao.getByGameEmulatorAndChannel(gameId, emulatorId, "manual", any())
         } returns SaveSyncEntity(
             id = 1L,
             gameId = gameId,
@@ -281,7 +282,7 @@ class SaveUploaderTest {
         )
 
         coEvery {
-            saveSyncDao.getByGameEmulatorAndChannel(gameId, emulatorId, "channel-A")
+            saveSyncDao.getByGameEmulatorAndChannel(gameId, emulatorId, "channel-A", any())
         } returns SaveSyncEntity(
             id = 11L,
             gameId = gameId,
@@ -327,7 +328,7 @@ class SaveUploaderTest {
         )
 
         coEvery {
-            saveSyncDao.getByGameEmulatorAndChannel(gameId, emulatorId, "manual")
+            saveSyncDao.getByGameEmulatorAndChannel(gameId, emulatorId, "manual", any())
         } returns SaveSyncEntity(
             id = 1L,
             gameId = gameId,
@@ -364,7 +365,7 @@ class SaveUploaderTest {
     @Test
     fun `serverSave with null contentHash does not leak local hash into SaveSyncEntity write (coverage gap)`() = runTest {
         coEvery {
-            saveSyncDao.getByGameEmulatorAndChannel(gameId, emulatorId, "manual")
+            saveSyncDao.getByGameEmulatorAndChannel(gameId, emulatorId, "manual", any())
         } returns SaveSyncEntity(
             id = 1L,
             gameId = gameId,
@@ -451,7 +452,7 @@ class SaveUploaderTest {
         )
 
         coEvery {
-            saveSyncDao.getByGameEmulatorAndChannel(gameId, emulatorId, "manual")
+            saveSyncDao.getByGameEmulatorAndChannel(gameId, emulatorId, "manual", any())
         } returns SaveSyncEntity(
             id = 1L,
             gameId = gameId,
@@ -490,7 +491,7 @@ class SaveUploaderTest {
     @Test
     fun `hardcore upload with null channelName threads through without misbehavior (coverage gap)`() = runTest {
         coEvery {
-            saveSyncDao.getByGameAndEmulatorWithDefault(gameId, emulatorId, SaveSyncApiClient.DEFAULT_SAVE_NAME)
+            saveSyncDao.getByGameAndEmulatorWithDefault(gameId, emulatorId, SaveSyncApiClient.DEFAULT_SAVE_NAME, any())
         } returns SaveSyncEntity(
             id = 1L,
             gameId = gameId,

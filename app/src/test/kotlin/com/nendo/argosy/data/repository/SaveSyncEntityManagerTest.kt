@@ -20,17 +20,20 @@ class SaveSyncEntityManagerTest {
     private val saveCacheDao = mockk<SaveCacheDao>(relaxed = true)
     private val syncQueueManager = mockk<SyncQueueManager>(relaxed = true)
 
+    private val syncPreferencesRepository =
+        mockk<com.nendo.argosy.data.preferences.SyncPreferencesRepository>(relaxed = true)
+
     private lateinit var manager: SaveSyncEntityManager
 
     @Before
     fun setUp() {
-        manager = SaveSyncEntityManager(saveSyncDao, saveCacheDao, syncQueueManager)
+        manager = SaveSyncEntityManager(saveSyncDao, saveCacheDao, syncQueueManager, syncPreferencesRepository)
     }
 
     @Test
     fun `createOrUpdateSyncEntity inserts PENDING_UPLOAD when no row exists`() = runTest {
-        coEvery { saveSyncDao.getByGameEmulatorAndChannel(any(), any(), any()) } returns null
-        coEvery { saveSyncDao.getByGameAndEmulatorWithDefault(any(), any(), any()) } returns null
+        coEvery { saveSyncDao.getByGameEmulatorAndChannel(any(), any(), any(), any()) } returns null
+        coEvery { saveSyncDao.getByGameAndEmulatorWithDefault(any(), any(), any(), any()) } returns null
         val captured = slot<SaveSyncEntity>()
         coEvery { saveSyncDao.upsert(capture(captured)) } returns 1L
 
@@ -56,7 +59,7 @@ class SaveSyncEntityManagerTest {
             serverUpdatedAt = Instant.ofEpochMilli(600), lastSyncedAt = Instant.ofEpochMilli(700),
             syncStatus = SaveSyncEntity.STATUS_SYNCED,
         )
-        coEvery { saveSyncDao.getByGameAndEmulatorWithDefault(1L, "eden", any()) } returns existing
+        coEvery { saveSyncDao.getByGameAndEmulatorWithDefault(1L, "eden", any(), any()) } returns existing
         val captured = slot<SaveSyncEntity>()
         coEvery { saveSyncDao.upsert(capture(captured)) } returns 42L
 
@@ -81,7 +84,7 @@ class SaveSyncEntityManagerTest {
             localUpdatedAt = Instant.ofEpochMilli(1_000),
             syncStatus = SaveSyncEntity.STATUS_LOCAL_NEWER,
         )
-        coEvery { saveSyncDao.getByGameAndEmulatorWithDefault(any(), any(), any()) } returns existing
+        coEvery { saveSyncDao.getByGameAndEmulatorWithDefault(any(), any(), any(), any()) } returns existing
         val captured = slot<SaveSyncEntity>()
         coEvery { saveSyncDao.upsert(capture(captured)) } returns 7L
 
@@ -106,7 +109,7 @@ class SaveSyncEntityManagerTest {
             syncStatus = SaveSyncEntity.STATUS_SYNCED,
             lastUploadedHash = "server-verified-abc",
         )
-        coEvery { saveSyncDao.getByGameEmulatorAndChannel(1L, "eden", "manual") } returns existing
+        coEvery { saveSyncDao.getByGameEmulatorAndChannel(1L, "eden", "manual", any()) } returns existing
         val captured = slot<SaveSyncEntity>()
         coEvery { saveSyncDao.upsert(capture(captured)) } returns 42L
 
@@ -125,7 +128,7 @@ class SaveSyncEntityManagerTest {
 
     @Test
     fun `createOrUpdateSyncEntity uses channel-keyed lookup when channelName provided`() = runTest {
-        coEvery { saveSyncDao.getByGameEmulatorAndChannel(1L, "eden", "manual") } returns null
+        coEvery { saveSyncDao.getByGameEmulatorAndChannel(1L, "eden", "manual", any()) } returns null
         coEvery { saveSyncDao.upsert(any()) } returns 1L
 
         manager.createOrUpdateSyncEntity(
@@ -134,13 +137,13 @@ class SaveSyncEntityManagerTest {
             channelName = "manual",
         )
 
-        coVerify(exactly = 1) { saveSyncDao.getByGameEmulatorAndChannel(1L, "eden", "manual") }
-        coVerify(exactly = 0) { saveSyncDao.getByGameAndEmulatorWithDefault(any(), any(), any()) }
+        coVerify(exactly = 1) { saveSyncDao.getByGameEmulatorAndChannel(1L, "eden", "manual", any()) }
+        coVerify(exactly = 0) { saveSyncDao.getByGameAndEmulatorWithDefault(any(), any(), any(), any()) }
     }
 
     @Test
     fun `markRestored writes SYNCED with new path and timestamps`() = runTest {
-        coEvery { saveSyncDao.getByGameAndEmulator(1L, "eden") } returns null
+        coEvery { saveSyncDao.getByGameAndEmulator(1L, "eden", any()) } returns null
         val captured = slot<SaveSyncEntity>()
         coEvery { saveSyncDao.upsert(capture(captured)) } returns 1L
 
@@ -163,7 +166,7 @@ class SaveSyncEntityManagerTest {
             channelName = "autosave",
             syncStatus = SaveSyncEntity.STATUS_SYNCED,
         )
-        coEvery { saveSyncDao.getByGameEmulatorAndChannel(1L, "eden", "autosave") } returns existing
+        coEvery { saveSyncDao.getByGameEmulatorAndChannel(1L, "eden", "autosave", any()) } returns existing
 
         manager.markUserSelectedRestorePoint(1L, "eden", "autosave")
 
@@ -177,8 +180,8 @@ class SaveSyncEntityManagerTest {
             channelName = null,
             syncStatus = SaveSyncEntity.STATUS_SYNCED,
         )
-        coEvery { saveSyncDao.getByGameEmulatorAndChannel(1L, "eden", "autosave") } returns null
-        coEvery { saveSyncDao.getByGameAndEmulatorWithDefault(1L, "eden", "autosave") } returns existing
+        coEvery { saveSyncDao.getByGameEmulatorAndChannel(1L, "eden", "autosave", any()) } returns null
+        coEvery { saveSyncDao.getByGameAndEmulatorWithDefault(1L, "eden", "autosave", any()) } returns existing
 
         manager.markUserSelectedRestorePoint(1L, "eden", "autosave")
 
@@ -192,7 +195,7 @@ class SaveSyncEntityManagerTest {
             channelName = null,
             syncStatus = SaveSyncEntity.STATUS_SYNCED,
         )
-        coEvery { saveSyncDao.getByGameAndEmulator(1L, "eden") } returns existing
+        coEvery { saveSyncDao.getByGameAndEmulator(1L, "eden", any()) } returns existing
 
         manager.markUserSelectedRestorePoint(1L, "eden", null)
 
@@ -201,8 +204,8 @@ class SaveSyncEntityManagerTest {
 
     @Test
     fun `markUserSelectedRestorePoint is a no-op when no row exists`() = runTest {
-        coEvery { saveSyncDao.getByGameEmulatorAndChannel(any(), any(), any()) } returns null
-        coEvery { saveSyncDao.getByGameAndEmulatorWithDefault(any(), any(), any()) } returns null
+        coEvery { saveSyncDao.getByGameEmulatorAndChannel(any(), any(), any(), any()) } returns null
+        coEvery { saveSyncDao.getByGameAndEmulatorWithDefault(any(), any(), any(), any()) } returns null
 
         manager.markUserSelectedRestorePoint(1L, "eden", "autosave")
 
@@ -224,7 +227,7 @@ class SaveSyncEntityManagerTest {
             localSavePath = "/old", localUpdatedAt = Instant.ofEpochMilli(1_000),
             syncStatus = SaveSyncEntity.STATUS_LOCAL_NEWER,
         )
-        coEvery { saveSyncDao.getByGameAndEmulator(1L, "eden") } returns existing
+        coEvery { saveSyncDao.getByGameAndEmulator(1L, "eden", any()) } returns existing
         val captured = slot<SaveSyncEntity>()
         coEvery { saveSyncDao.upsert(capture(captured)) } returns 3L
 

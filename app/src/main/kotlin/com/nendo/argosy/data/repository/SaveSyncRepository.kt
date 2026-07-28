@@ -110,7 +110,8 @@ class SaveSyncRepository @Inject constructor(
     private val stateCacheManager: StateCacheManager,
     private val syncQueueManager: SyncQueueManager,
     private val saveSyncDao: SaveSyncDao,
-    private val saveCacheDao: SaveCacheDao
+    private val saveCacheDao: SaveCacheDao,
+    private val syncPreferencesRepository: com.nendo.argosy.data.preferences.SyncPreferencesRepository
 ) {
     private val PRE_LAUNCH_TAG = "SaveSyncRepository"
 
@@ -328,7 +329,13 @@ class SaveSyncRepository @Inject constructor(
         }
         val effectiveChannel = channelName ?: SaveSyncApiClient.AUTOSAVE_SLOT_NAME
 
-        val existing = saveSyncDao.getByGameEmulatorAndChannel(gameId, emulatorId, effectiveChannel)
+        val ownerUserId = syncPreferencesRepository.getRommUserId()
+        val existing = saveSyncDao.getByGameEmulatorAndChannel(
+            gameId,
+            emulatorId,
+            effectiveChannel,
+            ownerUserId
+        )
         if (existing?.userSelectedRestorePoint == true) {
             Logger.debug(PRE_LAUNCH_TAG, "[SaveSync] PRE_LAUNCH gameId=$gameId channel=$effectiveChannel | userSelectedRestorePoint=true | decision=LocalIsNewer")
             return@withContext PreLaunchSyncResult.LocalIsNewer
@@ -337,7 +344,7 @@ class SaveSyncRepository @Inject constructor(
         apiClient.flushPendingDeviceSync(gameId)
 
         if (!secureSaves) {
-            val refresh = orchestrator.refreshCacheFromSystem(gameId, emulatorId, channelName)
+            val refresh = orchestrator.refreshCacheFromSystem(gameId, emulatorId, channelName, ownerUserId)
             if (refresh is SaveSyncOrchestrator.RefreshOutcome.Unreadable) {
                 Logger.debug(PRE_LAUNCH_TAG, "[SaveSync] PRE_LAUNCH gameId=$gameId | save location unreadable (${refresh.dirPath}); skipping sync decision | decision=LocalIsNewer")
                 return@withContext PreLaunchSyncResult.LocalIsNewer

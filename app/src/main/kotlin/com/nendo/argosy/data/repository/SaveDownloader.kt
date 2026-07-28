@@ -59,6 +59,7 @@ class SaveDownloader @Inject constructor(
     ): SaveSyncResult = withContext(Dispatchers.IO) {
         Logger.debug(TAG, "[SaveSync] DOWNLOAD gameId=$gameId emulator=$emulatorId channel=$channelName | Starting download")
         val secureSaves = syncPreferencesRepository.isSecureSaves()
+        val ownerUserId = syncPreferencesRepository.getRommUserId()
         val client = apiClient.get()
         val api = client.getApi()
         if (api == null) {
@@ -90,9 +91,14 @@ class SaveDownloader @Inject constructor(
         }
 
         val syncEntity = (if (channelName != null) {
-            saveSyncDao.getByGameEmulatorAndChannel(gameId, resolvedEmulatorId, channelName)
+            saveSyncDao.getByGameEmulatorAndChannel(gameId, resolvedEmulatorId, channelName, ownerUserId)
         } else {
-            saveSyncDao.getByGameAndEmulatorWithDefault(gameId, resolvedEmulatorId, SaveSyncApiClient.DEFAULT_SAVE_NAME)
+            saveSyncDao.getByGameAndEmulatorWithDefault(
+                gameId,
+                resolvedEmulatorId,
+                SaveSyncApiClient.DEFAULT_SAVE_NAME,
+                ownerUserId
+            )
         }) ?: knownServerSaveId?.let { serverId ->
             Logger.debug(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | No sync entity in DB; synthesizing from knownServerSaveId=$serverId")
             SaveSyncEntity(
@@ -101,7 +107,8 @@ class SaveDownloader @Inject constructor(
                 emulatorId = resolvedEmulatorId,
                 channelName = channelName,
                 rommSaveId = serverId,
-                syncStatus = SaveSyncEntity.STATUS_SERVER_NEWER
+                syncStatus = SaveSyncEntity.STATUS_SERVER_NEWER,
+                ownerUserId = ownerUserId
             )
         }
         if (syncEntity == null) {
@@ -286,13 +293,13 @@ class SaveDownloader @Inject constructor(
             val serverFingerprint = (downloadPath?.substringAfter("?timestamp=", "") ?: "")
                 .ifEmpty { serverSave.updatedAt ?: "" }
             if (serverFingerprint.isNotEmpty()) {
-                val cachedCorrupt = saveSyncDao.getCorruptZipTimestamp(gameId, resolvedEmulatorId, channelName)
+                val cachedCorrupt = saveSyncDao.getCorruptZipTimestamp(gameId, resolvedEmulatorId, channelName, ownerUserId)
                 if (cachedCorrupt == serverFingerprint) {
                     Logger.warn(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | Skipping — server zip known corrupt at this timestamp; re-upload from device to recover | timestamp=$serverFingerprint")
                     return@withContext SaveSyncResult.Error("Server zip is corrupt; re-upload to recover")
                 } else if (cachedCorrupt != null) {
                     Logger.debug(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | Server timestamp changed since corrupt-zip mark, retrying | wasCorruptAt=$cachedCorrupt, now=$serverFingerprint")
-                    saveSyncDao.clearCorruptZip(gameId, resolvedEmulatorId, channelName)
+                    saveSyncDao.clearCorruptZip(gameId, resolvedEmulatorId, channelName, ownerUserId)
                 }
             }
 
@@ -432,6 +439,7 @@ class SaveDownloader @Inject constructor(
                             gameId = gameId,
                             emulatorId = resolvedEmulatorId,
                             channelName = channelName,
+                            ownerUserId = ownerUserId,
                             serverTimestamp = serverFingerprint,
                             error = result.error ?: "corrupt zip"
                         )
@@ -456,7 +464,7 @@ class SaveDownloader @Inject constructor(
                         }
                         if (recoveryResult is SaveSyncResult.Success) {
                             Logger.info(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | Auto-recovery succeeded — corrupt server zip overwritten with local copy")
-                            saveSyncDao.clearCorruptZip(gameId, resolvedEmulatorId, channelName)
+                            saveSyncDao.clearCorruptZip(gameId, resolvedEmulatorId, channelName, ownerUserId)
                             return@withContext recoveryResult
                         } else {
                             Logger.error(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | Auto-recovery upload failed | result=$recoveryResult")

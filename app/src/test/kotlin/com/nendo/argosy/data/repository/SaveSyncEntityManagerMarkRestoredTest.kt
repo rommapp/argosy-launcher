@@ -20,14 +20,15 @@ class SaveSyncEntityManagerMarkRestoredTest {
     private val manager = SaveSyncEntityManager(
         saveSyncDao = saveSyncDao,
         saveCacheDao = mockk(relaxed = true),
-        syncQueueManager = SyncQueueManager()
+        syncQueueManager = SyncQueueManager(),
+        syncPreferencesRepository = mockk(relaxed = true)
     )
 
     @Test
     fun `markRestored creates a fresh SYNCED row when none exists`() = runTest {
-        coEvery { saveSyncDao.getByGameAndEmulator(any(), any()) } returns null
-        coEvery { saveSyncDao.getByGameEmulatorAndChannel(any(), any(), any()) } returns null
-        coEvery { saveSyncDao.getByGameAndEmulatorWithDefault(any(), any(), any()) } returns null
+        coEvery { saveSyncDao.getByGameAndEmulator(any(), any(), any()) } returns null
+        coEvery { saveSyncDao.getByGameEmulatorAndChannel(any(), any(), any(), any()) } returns null
+        coEvery { saveSyncDao.getByGameAndEmulatorWithDefault(any(), any(), any(), any()) } returns null
         val captured = slot<SaveSyncEntity>()
         coEvery { saveSyncDao.upsert(capture(captured)) } returns 1L
 
@@ -69,7 +70,7 @@ class SaveSyncEntityManagerMarkRestoredTest {
             lastUploadedHash = "old-hash"
         )
         coEvery {
-            saveSyncDao.getByGameEmulatorAndChannel(7L, "mgba", "slot1")
+            saveSyncDao.getByGameEmulatorAndChannel(7L, "mgba", "slot1", any())
         } returns existing
         val captured = slot<SaveSyncEntity>()
         coEvery { saveSyncDao.upsert(capture(captured)) } returns 1L
@@ -102,7 +103,7 @@ class SaveSyncEntityManagerMarkRestoredTest {
             lastUploadedHash = "old-hash"
         )
         coEvery {
-            saveSyncDao.getByGameEmulatorAndChannel(7L, "mgba", "slot1")
+            saveSyncDao.getByGameEmulatorAndChannel(7L, "mgba", "slot1", any())
         } returns existing
         val captured = slot<SaveSyncEntity>()
         coEvery { saveSyncDao.upsert(capture(captured)) } returns 1L
@@ -134,7 +135,7 @@ class SaveSyncEntityManagerMarkRestoredTest {
             rommSaveId = 999L,
             syncStatus = SaveSyncEntity.STATUS_SERVER_NEWER
         )
-        coEvery { saveSyncDao.getByGameAndEmulator(7L, "mgba") } returns existing
+        coEvery { saveSyncDao.getByGameAndEmulator(7L, "mgba", any()) } returns existing
         val captured = slot<SaveSyncEntity>()
         coEvery { saveSyncDao.upsert(capture(captured)) } returns 1L
 
@@ -162,10 +163,10 @@ class SaveSyncEntityManagerMarkRestoredTest {
             syncStatus = SaveSyncEntity.STATUS_LOCAL_NEWER
         )
         coEvery {
-            saveSyncDao.getByGameEmulatorAndChannel(7L, "mgba", "slot1")
+            saveSyncDao.getByGameEmulatorAndChannel(7L, "mgba", "slot1", any())
         } returns null
         coEvery {
-            saveSyncDao.getByGameAndEmulatorWithDefault(7L, "mgba", "slot1")
+            saveSyncDao.getByGameAndEmulatorWithDefault(7L, "mgba", "slot1", any())
         } returns existing
         val captured = slot<SaveSyncEntity>()
         coEvery { saveSyncDao.upsert(capture(captured)) } returns 1L

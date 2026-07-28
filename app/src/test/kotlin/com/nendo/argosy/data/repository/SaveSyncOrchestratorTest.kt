@@ -180,7 +180,7 @@ class SaveSyncOrchestratorTest {
     fun `downloadPendingServerSaves downloads all pending entities`() = runTest {
         val entity1 = makeSyncEntity(id = 1L, gameId = 1L)
         val entity2 = makeSyncEntity(id = 2L, gameId = 1L, channelName = "slot1")
-        coEvery { saveSyncDao.getPendingDownloads() } returns listOf(entity1, entity2)
+        coEvery { saveSyncDao.getPendingDownloads(any()) } returns listOf(entity1, entity2)
         coEvery { mockApiClient.downloadSave(any(), any(), any(), any(), any()) } returns SaveSyncResult.Success()
 
         val result = orchestrator.downloadPendingServerSaves()
@@ -191,7 +191,7 @@ class SaveSyncOrchestratorTest {
     @Test
     fun `downloadPendingServerSaves download failure does not count as success`() = runTest {
         val entity = makeSyncEntity(id = 1L, gameId = 1L)
-        coEvery { saveSyncDao.getPendingDownloads() } returns listOf(entity)
+        coEvery { saveSyncDao.getPendingDownloads(any()) } returns listOf(entity)
         coEvery { mockApiClient.downloadSave(any(), any(), any(), any(), any()) } returns SaveSyncResult.Error("failed")
 
         val result = orchestrator.downloadPendingServerSaves()
@@ -201,7 +201,7 @@ class SaveSyncOrchestratorTest {
 
     @Test
     fun `downloadPendingServerSaves empty pending list is no-op`() = runTest {
-        coEvery { saveSyncDao.getPendingDownloads() } returns emptyList()
+        coEvery { saveSyncDao.getPendingDownloads(any()) } returns emptyList()
 
         val result = orchestrator.downloadPendingServerSaves()
 
@@ -212,7 +212,7 @@ class SaveSyncOrchestratorTest {
     @Test
     fun `downloadPendingServerSaves NeedsHardcoreResolution parks row and drops from queue`() = runTest {
         val entity = makeSyncEntity(id = 1L, gameId = 1L)
-        coEvery { saveSyncDao.getPendingDownloads() } returns listOf(entity)
+        coEvery { saveSyncDao.getPendingDownloads(any()) } returns listOf(entity)
         coEvery { mockApiClient.downloadSave(any(), any(), any(), any(), any()) } returns
             SaveSyncResult.NeedsHardcoreResolution(
                 tempFilePath = "/tmp/save",

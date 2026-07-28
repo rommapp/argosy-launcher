@@ -121,6 +121,7 @@ class SaveSyncOrchestrator @Inject constructor(
             Logger.info(TAG, "[SaveSync] SCAN | account switch in progress, not adopting on-disk saves")
             return@withContext 0
         }
+        val ownerUserId = syncPreferencesRepository.getRommUserId()
         val downloadedGames = gameDao.getByIdsChunked(gameDao.getDownloadedRommGameIds())
         var queued = 0
         val client = apiClient.get()
@@ -132,7 +133,7 @@ class SaveSyncOrchestrator @Inject constructor(
             val activeChannel = activeSaveRepository.getActiveChannel(game.id)
 
             if (!secureSaves) {
-                when (val outcome = refreshCacheFromSystem(game, emulatorId, activeChannel, processedWholePaths)) {
+                when (val outcome = refreshCacheFromSystem(game, emulatorId, activeChannel, ownerUserId, processedWholePaths)) {
                     RefreshOutcome.Dirtied -> queued++
                     is RefreshOutcome.Unreadable ->
                         unreadableLocations.add(SaveAccessNotices.InaccessibleLocation(outcome.dirPath, emulatorId))
@@ -164,7 +165,7 @@ class SaveSyncOrchestrator @Inject constructor(
                 Instant.ofEpochMilli(localFile.lastModified())
             }
 
-            val syncEntity = saveSyncDao.getByGameAndEmulator(game.id, emulatorId)
+            val syncEntity = saveSyncDao.getByGameAndEmulator(game.id, emulatorId, ownerUserId)
             val lastSynced = syncEntity?.lastSyncedAt
 
             if (lastSynced == null || localModified.isAfter(lastSynced)) {
@@ -183,19 +184,28 @@ class SaveSyncOrchestrator @Inject constructor(
         queued
     }
 
-    suspend fun refreshCacheFromSystem(gameId: Long, emulatorId: String, channelName: String?): RefreshOutcome {
+    suspend fun refreshCacheFromSystem(
+        gameId: Long,
+        emulatorId: String,
+        channelName: String?,
+        ownerUserId: Long?
+    ): RefreshOutcome {
         val game = gameDao.getById(gameId) ?: return RefreshOutcome.Unchanged
-        return refreshCacheFromSystem(game, emulatorId, channelName)
+        return refreshCacheFromSystem(game, emulatorId, channelName, ownerUserId)
     }
 
     /**
      * Secure-saves-OFF preamble: reconciles the save cache with the on-system save so
      * existing dirty-flag logic sees off-Argosy changes. Never call in secure-saves-ON flows.
+     *
+     * [ownerUserId] is resolved once by the caller and passed down: a scan walks every downloaded
+     * game and the account must not be re-read part way through one pass.
      */
     suspend fun refreshCacheFromSystem(
         game: GameEntity,
         emulatorId: String,
         channelName: String?,
+        ownerUserId: Long?,
         processedWholePaths: MutableSet<String>? = null
     ): RefreshOutcome = withContext(Dispatchers.IO) {
         val channel = channelName ?: SaveSyncApiClient.AUTOSAVE_SLOT_NAME
@@ -260,7 +270,7 @@ class SaveSyncOrchestrator @Inject constructor(
             return@withContext if (cacheSystemSave(game.id, emulatorId, savePath, channelName)) RefreshOutcome.Dirtied else RefreshOutcome.Unchanged
         }
 
-        val anchor = saveSyncDao.getByGameEmulatorAndChannel(game.id, emulatorId, channel)
+        val anchor = saveSyncDao.getByGameEmulatorAndChannel(game.id, emulatorId, channel, ownerUserId)
             ?.localUpdatedAt ?: latest.cachedAt
         val anchorMillis = anchor.toEpochMilli()
         val dirty = if (localFile.isDirectory) {
@@ -325,7 +335,7 @@ class SaveSyncOrchestrator @Inject constructor(
             Logger.info(TAG, "[SaveSync] DOWNLOAD | account switch in progress, not writing save files")
             return@withContext 0
         }
-        val pendingDownloads = saveSyncDao.getPendingDownloads()
+        val pendingDownloads = saveSyncDao.getPendingDownloads(syncPreferencesRepository.getRommUserId())
         if (pendingDownloads.isEmpty()) {
             return@withContext 0
         }
@@ -391,6 +401,7 @@ class SaveSyncOrchestrator @Inject constructor(
         val prefs = userPreferencesRepository.preferences.first()
         if (!prefs.saveSyncEnabled) return@withContext
 
+        val ownerUserId = syncPreferencesRepository.getRommUserId()
         val client = apiClient.get()
         val serverSaves = client.checkSavesForGame(gameId, rommId)
         if (serverSaves.isEmpty()) return@withContext
@@ -410,9 +421,9 @@ class SaveSyncOrchestrator @Inject constructor(
             val serverTime = SaveSyncApiClient.parseTimestamp(serverSave.updatedAt)
 
             val existing = if (channelName != null) {
-                saveSyncDao.getByGameEmulatorAndChannel(gameId, canonicalEmulatorId, channelName)
+                saveSyncDao.getByGameEmulatorAndChannel(gameId, canonicalEmulatorId, channelName, ownerUserId)
             } else {
-                saveSyncDao.getByGameEmulatorAndNullChannel(gameId, canonicalEmulatorId)
+                saveSyncDao.getByGameEmulatorAndNullChannel(gameId, canonicalEmulatorId, ownerUserId)
             }
 
             saveSyncDao.upsert(
@@ -431,7 +442,8 @@ class SaveSyncOrchestrator @Inject constructor(
                     lastUploadedHash = existing?.lastUploadedHash,
                     localContentHash = existing?.localContentHash,
                     lastSyncDeviceId = existing?.lastSyncDeviceId,
-                    lastSyncDeviceName = existing?.lastSyncDeviceName
+                    lastSyncDeviceName = existing?.lastSyncDeviceName,
+                    ownerUserId = existing?.ownerUserId ?: ownerUserId
                 )
             )
 
@@ -446,6 +458,7 @@ class SaveSyncOrchestrator @Inject constructor(
         val prefs = userPreferencesRepository.preferences.first()
         if (!prefs.saveSyncEnabled) return@withContext ForceSaveCheckResult(0, 0, "Save sync disabled")
 
+        val ownerUserId = syncPreferencesRepository.getRommUserId()
         val client = apiClient.get()
         val downloadedIds = gameDao.getDownloadedRommGameIds()
         val downloadedGames = gameDao.getByIdsChunked(downloadedIds)
@@ -456,7 +469,7 @@ class SaveSyncOrchestrator @Inject constructor(
             val rommId = game.rommId ?: continue
             val emulatorId = client.resolveEmulatorForGame(game) ?: continue
             val romBaseName = game.localPath?.let { File(it).nameWithoutExtension }
-            val heldHashByRow = saveSyncDao.getByGame(game.id).associate { it.id to it.lastUploadedHash }
+            val heldHashByRow = saveSyncDao.getByGame(game.id, ownerUserId).associate { it.id to it.lastUploadedHash }
             val serverSaves = client.checkSavesForGame(game.id, rommId)
             if (serverSaves.isEmpty()) continue
             inspected++
@@ -477,9 +490,9 @@ class SaveSyncOrchestrator @Inject constructor(
             for (latest in latestPerChannel) {
                 val channelName = latest.slot ?: SaveSyncApiClient.parseServerChannelNameForSync(latest.fileName, romBaseName)
                 val existing = if (channelName != null) {
-                    saveSyncDao.getByGameEmulatorAndChannel(game.id, emulatorId, channelName)
+                    saveSyncDao.getByGameEmulatorAndChannel(game.id, emulatorId, channelName, ownerUserId)
                 } else {
-                    saveSyncDao.getByGameEmulatorAndNullChannel(game.id, emulatorId)
+                    saveSyncDao.getByGameEmulatorAndNullChannel(game.id, emulatorId, ownerUserId)
                 }
                 val serverTime = SaveSyncApiClient.parseTimestamp(latest.updatedAt)
                 val localPresent = existing?.localSavePath?.let { File(it).exists() } == true
@@ -515,7 +528,8 @@ class SaveSyncOrchestrator @Inject constructor(
                         lastUploadedHash = existing?.lastUploadedHash,
                         localContentHash = existing?.localContentHash,
                         lastSyncDeviceId = existing?.lastSyncDeviceId,
-                        lastSyncDeviceName = existing?.lastSyncDeviceName
+                        lastSyncDeviceName = existing?.lastSyncDeviceName,
+                        ownerUserId = existing?.ownerUserId ?: ownerUserId
                     )
                 )
                 if (shouldDownload) queued++

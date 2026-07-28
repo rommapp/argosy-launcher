@@ -263,4 +263,10 @@ interface StateCacheDao {
 
     @Query("SELECT COUNT(*) FROM state_cache")
     suspend fun count(): Int
+
+    @Query("SELECT COUNT(*) FROM state_cache WHERE ownerUserId IS NULL")
+    suspend fun countUnowned(): Int
+
+    @Query("UPDATE state_cache SET ownerUserId = :ownerUserId WHERE ownerUserId IS NULL")
+    suspend fun adoptUnowned(ownerUserId: Long)
 }

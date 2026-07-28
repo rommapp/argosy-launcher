@@ -263,7 +263,6 @@ data class ControlsState(
     val swapStartSelect: Boolean = false,
     val selectLCombo: String = "quick_menu",
     val selectRCombo: String = "quick_settings",
-    val accuratePlayTimeEnabled: Boolean = false,
     val hasUsageStatsPermission: Boolean = false,
     val hasSecondaryDisplay: Boolean = false,
     val menuWrapMode: com.nendo.argosy.data.preferences.MenuWrapMode = com.nendo.argosy.data.preferences.MenuWrapMode.HARD_STOP

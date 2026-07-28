@@ -522,7 +522,6 @@ internal fun routeLoadSettings(vm: SettingsViewModel) {
             swapStartSelect = prefs.swapStartSelect,
             selectLCombo = prefs.selectLCombo,
             selectRCombo = prefs.selectRCombo,
-            accuratePlayTimeEnabled = prefs.accuratePlayTimeEnabled,
             hasSecondaryDisplay = vm.displayAffinityHelper.hasSecondaryDisplay,
             menuWrapMode = prefs.menuWrapMode
         ))

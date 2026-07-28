@@ -695,17 +695,6 @@ class PlaySessionTracker @Inject constructor(
     }
 
     private suspend fun recordPlayTime(session: ActiveSession, screenOnDuration: Duration) {
-        val prefs = preferencesRepository.userPreferences.first()
-        val hasPermission = permissionHelper.hasUsageStatsPermission(application)
-        val canTrackAccurately = prefs.accuratePlayTimeEnabled && hasPermission
-
-        Logger.debug(TAG, "Time tracking check: enabled=${prefs.accuratePlayTimeEnabled}, hasPermission=$hasPermission, canTrack=$canTrackAccurately")
-
-        if (!canTrackAccurately) {
-            Logger.debug(TAG, "Skipping play time recording - accurate tracking not enabled or permission missing")
-            return
-        }
-
         val seconds = screenOnDuration.toMillis() / 1000
         val minutes = ((seconds + 30) / 60).toInt()
         if (minutes <= 0) {

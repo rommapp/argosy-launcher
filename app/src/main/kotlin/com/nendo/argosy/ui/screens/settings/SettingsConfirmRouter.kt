@@ -529,10 +529,6 @@ private fun routeInterfaceConfirm(vm: SettingsViewModel, state: SettingsUiState)
         }
         InterfaceItem.UiScale -> vm.cycleUiScale()
         InterfaceItem.HomeScreen -> vm.navigateToHomeScreen()
-        InterfaceItem.AccuratePlayTime -> {
-            routeHandlePlayTimeToggle(vm, state.controls)
-            return InputResult.handled(SoundType.TOGGLE)
-        }
         else -> {}
     }
     return InputResult.HANDLED

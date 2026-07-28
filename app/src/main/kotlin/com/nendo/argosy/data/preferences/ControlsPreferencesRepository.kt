@@ -22,7 +22,6 @@ data class ControlsPreferences(
     val swapXY: Boolean = false,
     val controllerLayout: String = "auto",
     val swapStartSelect: Boolean = false,
-    val accuratePlayTimeEnabled: Boolean = false,
     val ambientAudioEnabled: Boolean = false,
     val ambientAudioVolume: Int = 50,
     val ambientAudioUri: String? = null,
@@ -46,7 +45,6 @@ class ControlsPreferencesRepository @Inject constructor(
         val SWAP_XY = booleanPreferencesKey("swap_xy")
         val CONTROLLER_LAYOUT = stringPreferencesKey("controller_layout")
         val SWAP_START_SELECT = booleanPreferencesKey("swap_start_select")
-        val ACCURATE_PLAY_TIME_ENABLED = booleanPreferencesKey("accurate_play_time_enabled")
         val AMBIENT_AUDIO_ENABLED = booleanPreferencesKey("ambient_audio_enabled")
         val AMBIENT_AUDIO_VOLUME = intPreferencesKey("ambient_audio_volume")
         val AMBIENT_AUDIO_URI = stringPreferencesKey("ambient_audio_uri")
@@ -67,7 +65,6 @@ class ControlsPreferencesRepository @Inject constructor(
             swapXY = prefs[Keys.SWAP_XY] ?: false,
             controllerLayout = prefs[Keys.CONTROLLER_LAYOUT] ?: "auto",
             swapStartSelect = prefs[Keys.SWAP_START_SELECT] ?: false,
-            accuratePlayTimeEnabled = prefs[Keys.ACCURATE_PLAY_TIME_ENABLED] ?: false,
             ambientAudioEnabled = prefs[Keys.AMBIENT_AUDIO_ENABLED] ?: false,
             ambientAudioVolume = prefs[Keys.AMBIENT_AUDIO_VOLUME] ?: 50,
             ambientAudioUri = prefs[Keys.AMBIENT_AUDIO_URI],
@@ -152,10 +149,6 @@ class ControlsPreferencesRepository @Inject constructor(
 
     suspend fun setSwapStartSelect(enabled: Boolean) {
         dataStore.edit { it[Keys.SWAP_START_SELECT] = enabled }
-    }
-
-    suspend fun setAccuratePlayTimeEnabled(enabled: Boolean) {
-        dataStore.edit { it[Keys.ACCURATE_PLAY_TIME_ENABLED] = enabled }
     }
 
     suspend fun setAmbientAudioEnabled(enabled: Boolean) {

@@ -38,4 +38,10 @@ interface QuayPassPendingReportDao {
 
     @Query("DELETE FROM quaypass_pending_reports")
     suspend fun clear()
+
+    @Query("SELECT COUNT(*) FROM quaypass_pending_reports WHERE localOwnerUserId = 0")
+    suspend fun countUnowned(): Int
+
+    @Query("UPDATE quaypass_pending_reports SET localOwnerUserId = :ownerUserId WHERE localOwnerUserId = 0")
+    suspend fun adoptUnowned(ownerUserId: Long)
 }

@@ -78,4 +78,10 @@ interface PendingSocialSyncDao {
         WHERE status = 'FAILED' AND retryCount >= maxRetries
     """)
     suspend fun deleteExhausted()
+
+    @Query("SELECT COUNT(*) FROM pending_social_sync WHERE ownerUserId IS NULL")
+    suspend fun countUnowned(): Int
+
+    @Query("UPDATE pending_social_sync SET ownerUserId = :ownerUserId WHERE ownerUserId IS NULL")
+    suspend fun adoptUnowned(ownerUserId: Long)
 }

@@ -839,7 +839,6 @@ class FirstRunViewModel @Inject constructor(
                 }
             }
             preferencesRepository.setSaveSyncEnabled(true)
-            preferencesRepository.setAccuratePlayTimeEnabled(true)
             preferencesRepository.setFirstRunComplete()
             onDone()
         }

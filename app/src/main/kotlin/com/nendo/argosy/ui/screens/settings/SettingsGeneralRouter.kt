@@ -890,11 +890,3 @@ internal fun routeRequestScreenCapturePermission(vm: SettingsViewModel) {
     }
 }
 
-internal fun routeHandlePlayTimeToggle(vm: SettingsViewModel, controls: ControlsState) {
-    val newEnabled = !controls.accuratePlayTimeEnabled
-    if (newEnabled && !controls.hasUsageStatsPermission) {
-        vm.openUsageStatsSettings()
-    } else {
-        vm.setAccuratePlayTimeEnabled(newEnabled)
-    }
-}

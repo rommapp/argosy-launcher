@@ -256,6 +256,12 @@ interface SaveSyncDao {
         GROUP BY lastSyncDeviceId
     """)
     fun observeSaveCountsByDevice(ownerUserId: Long?): Flow<List<SaveCountByDevice>>
+
+    @Query("SELECT COUNT(*) FROM save_sync WHERE ownerUserId IS NULL")
+    suspend fun countUnowned(): Int
+
+    @Query("UPDATE save_sync SET ownerUserId = :ownerUserId WHERE ownerUserId IS NULL")
+    suspend fun adoptUnowned(ownerUserId: Long)
 }
 
 data class SaveCountByDevice(

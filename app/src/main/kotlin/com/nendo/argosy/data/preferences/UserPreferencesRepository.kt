@@ -145,7 +145,6 @@ class UserPreferencesRepository @Inject constructor(
             lastPenaltyDecayWeek = app.lastPenaltyDecayWeek,
             lastSeenVersion = app.lastSeenVersion,
             libraryRecentSearches = app.libraryRecentSearches,
-            accuratePlayTimeEnabled = controls.accuratePlayTimeEnabled,
             ambientAudioEnabled = controls.ambientAudioEnabled,
             ambientAudioVolume = controls.ambientAudioVolume,
             ambientAudioUri = controls.ambientAudioUri,
@@ -366,7 +365,6 @@ class UserPreferencesRepository @Inject constructor(
     suspend fun setSwapStartSelect(enabled: Boolean) = controlsPrefs.setSwapStartSelect(enabled)
     suspend fun setSelectLCombo(value: String) = controlsPrefs.setSelectLCombo(value)
     suspend fun setSelectRCombo(value: String) = controlsPrefs.setSelectRCombo(value)
-    suspend fun setAccuratePlayTimeEnabled(enabled: Boolean) = controlsPrefs.setAccuratePlayTimeEnabled(enabled)
     suspend fun setAmbientAudioEnabled(enabled: Boolean) = controlsPrefs.setAmbientAudioEnabled(enabled)
     suspend fun setAmbientAudioVolume(volume: Int) = controlsPrefs.setAmbientAudioVolume(volume)
     suspend fun setAmbientAudioUri(uri: String?) = controlsPrefs.setAmbientAudioUri(uri)
@@ -683,7 +681,6 @@ data class UserPreferences(
     val lastPenaltyDecayWeek: String? = null,
     val lastSeenVersion: String? = null,
     val libraryRecentSearches: List<String> = emptyList(),
-    val accuratePlayTimeEnabled: Boolean = false,
     val ambientAudioEnabled: Boolean = false,
     val ambientAudioVolume: Int = 50,
     val ambientAudioUri: String? = null,

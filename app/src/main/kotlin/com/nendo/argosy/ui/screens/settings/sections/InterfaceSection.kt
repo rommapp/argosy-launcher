@@ -54,17 +54,13 @@ internal sealed class InterfaceItem(
     data object GridDensity : InterfaceItem("gridDensity", "layout")
     data object UiScale : InterfaceItem("uiScale", "layout")
     data object HomeScreen : InterfaceItem("homeScreen", "layout")
-    data object AccuratePlayTime : InterfaceItem("accuratePlayTime", "tracking")
 
     companion object {
         private val LayoutHeader = Header("layoutHeader", "layout", "Layout")
-        private val TrackingHeader = Header("trackingHeader", "tracking", "Tracking")
 
         val ALL: List<InterfaceItem> = listOf(
             LayoutHeader,
-            UiScale, GridDensity, HomeScreen,
-            TrackingHeader,
-            AccuratePlayTime
+            UiScale, GridDensity, HomeScreen
         )
     }
 }
@@ -77,7 +73,6 @@ private val interfaceLayout = SettingsLayout<InterfaceItem, InterfaceLayoutState
     sectionTitle = {
         when (it) {
             "layout" -> "Layout"
-            "tracking" -> "Tracking"
             else -> null
         }
     }
@@ -164,30 +159,6 @@ fun InterfaceSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                     onClick = { viewModel.navigateToHomeScreen() }
                 )
 
-                InterfaceItem.AccuratePlayTime -> {
-                    val hasPermission = uiState.controls.hasUsageStatsPermission
-                    val isEnabled = uiState.controls.accuratePlayTimeEnabled
-                    SwitchPreference(
-                        title = "Accurate Play Time",
-                        subtitle = when {
-                            isEnabled && hasPermission -> "Tracking active screen time"
-                            isEnabled && !hasPermission -> "Permission required - tap to grant"
-                            else -> "Track only when screen is on"
-                        },
-                        isEnabled = isEnabled,
-                        isFocused = isFocused(item),
-                        onToggle = { enabled ->
-                            if (enabled && !hasPermission) {
-                                viewModel.openUsageStatsSettings()
-                            } else {
-                                viewModel.setAccuratePlayTimeEnabled(enabled)
-                            }
-                        },
-                        onLabelClick = if (isEnabled && !hasPermission) {
-                            { viewModel.openUsageStatsSettings() }
-                        } else null
-                    )
-                }
             }
     }
 }

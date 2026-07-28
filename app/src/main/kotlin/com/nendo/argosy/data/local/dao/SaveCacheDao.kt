@@ -398,4 +398,10 @@ interface SaveCacheDao {
         """
     )
     suspend fun hasActiveSaveApplied(gameId: Long): Boolean
+
+    @Query("SELECT COUNT(*) FROM save_cache WHERE ownerUserId IS NULL")
+    suspend fun countUnowned(): Int
+
+    @Query("UPDATE save_cache SET ownerUserId = :ownerUserId WHERE ownerUserId IS NULL")
+    suspend fun adoptUnowned(ownerUserId: Long)
 }

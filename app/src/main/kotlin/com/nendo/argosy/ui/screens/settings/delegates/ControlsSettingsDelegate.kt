@@ -172,13 +172,6 @@ class ControlsSettingsDelegate @Inject constructor(
         _state.update { it.copy(hasUsageStatsPermission = hasPermission) }
     }
 
-    fun setAccuratePlayTimeEnabled(scope: CoroutineScope, enabled: Boolean) {
-        scope.launch {
-            preferencesRepository.setAccuratePlayTimeEnabled(enabled)
-            _state.update { it.copy(accuratePlayTimeEnabled = enabled) }
-        }
-    }
-
     fun openUsageStatsSettings() {
         permissionHelper.openUsageStatsSettings(application)
     }

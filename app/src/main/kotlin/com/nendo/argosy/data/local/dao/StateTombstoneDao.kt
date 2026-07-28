@@ -40,4 +40,10 @@ interface StateTombstoneDao {
 
     @Query("DELETE FROM state_tombstones")
     suspend fun deleteAll()
+
+    @Query("SELECT COUNT(*) FROM state_tombstones WHERE ownerUserId IS NULL")
+    suspend fun countUnowned(): Int
+
+    @Query("UPDATE state_tombstones SET ownerUserId = :ownerUserId WHERE ownerUserId IS NULL")
+    suspend fun adoptUnowned(ownerUserId: Long)
 }

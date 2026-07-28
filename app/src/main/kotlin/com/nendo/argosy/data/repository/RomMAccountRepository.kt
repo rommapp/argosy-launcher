@@ -1,7 +1,15 @@
 package com.nendo.argosy.data.repository
 
 import com.nendo.argosy.data.local.dao.AchievementDao
+import com.nendo.argosy.data.local.dao.DownloadQueueDao
+import com.nendo.argosy.data.local.dao.PendingSocialSyncDao
+import com.nendo.argosy.data.local.dao.PlaySessionDao
+import com.nendo.argosy.data.local.dao.QuayPassPendingReportDao
 import com.nendo.argosy.data.local.dao.RomMAccountDao
+import com.nendo.argosy.data.local.dao.SaveCacheDao
+import com.nendo.argosy.data.local.dao.SaveSyncDao
+import com.nendo.argosy.data.local.dao.StateCacheDao
+import com.nendo.argosy.data.local.dao.StateTombstoneDao
 import com.nendo.argosy.data.local.entity.RomMAccountEntity
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.remote.romm.RomMApiProvider
@@ -22,6 +30,14 @@ import javax.inject.Singleton
 class RomMAccountRepository @Inject constructor(
     private val rommAccountDao: RomMAccountDao,
     private val achievementDao: AchievementDao,
+    private val saveCacheDao: SaveCacheDao,
+    private val saveSyncDao: SaveSyncDao,
+    private val stateCacheDao: StateCacheDao,
+    private val stateTombstoneDao: StateTombstoneDao,
+    private val playSessionDao: PlaySessionDao,
+    private val pendingSocialSyncDao: PendingSocialSyncDao,
+    private val downloadQueueDao: DownloadQueueDao,
+    private val quayPassPendingReportDao: QuayPassPendingReportDao,
     private val userPreferencesRepository: UserPreferencesRepository,
     private val rommApiProvider: RomMApiProvider
 ) {
@@ -69,6 +85,7 @@ class RomMAccountRepository @Inject constructor(
         rommAccountDao.setActive(id)
         rommApiProvider.invalidate(id)
         adoptUnownedAchievements(rommUserId)
+        adoptUnownedRows(rommUserId)
         return id
     }
 
@@ -84,6 +101,30 @@ class RomMAccountRepository @Inject constructor(
         if (achievementDao.countOwned() > 0) return
         if (achievementDao.countUnowned() == 0) return
         achievementDao.adoptUnowned(ownerUserId)
+    }
+
+    /**
+     * Claims rows the account migration could not reach.
+     *
+     * That migration backfilled every owner column from `romm_accounts`, but the registry is
+     * seeded by [adoptLegacyCredentialsIfNeeded] after the database opens, so the subselect saw an
+     * empty table and wrote NULL everywhere. The rows are not ambiguous - they predate multiple
+     * accounts, so they belong to the only account there has ever been - but per-account reads
+     * filter them out, which strands cached saves, queued uploads and play sessions alike.
+     *
+     * Runs only while a single account exists; past that a NULL owner cannot be attributed safely
+     * and the rows are left alone.
+     */
+    private suspend fun adoptUnownedRows(ownerUserId: Long) {
+        if (rommAccountDao.count() > 1) return
+        saveCacheDao.adoptUnowned(ownerUserId)
+        saveSyncDao.adoptUnowned(ownerUserId)
+        stateCacheDao.adoptUnowned(ownerUserId)
+        stateTombstoneDao.adoptUnowned(ownerUserId)
+        playSessionDao.adoptUnowned(ownerUserId)
+        pendingSocialSyncDao.adoptUnowned(ownerUserId)
+        downloadQueueDao.adoptUnowned(ownerUserId)
+        quayPassPendingReportDao.adoptUnowned(ownerUserId)
     }
 
     /**
@@ -165,7 +206,10 @@ class RomMAccountRepository @Inject constructor(
      * them. Runs once: a non-empty registry is left alone.
      */
     suspend fun adoptLegacyCredentialsIfNeeded() {
-        rommAccountDao.getActive()?.let { adoptUnownedAchievements(it.rommUserId) }
+        rommAccountDao.getActive()?.let {
+            adoptUnownedAchievements(it.rommUserId)
+            adoptUnownedRows(it.rommUserId)
+        }
         if (rommAccountDao.count() > 0) return
         val prefs = userPreferencesRepository.preferences.first()
         val baseUrl = prefs.rommBaseUrl?.takeIf { it.isNotBlank() } ?: return

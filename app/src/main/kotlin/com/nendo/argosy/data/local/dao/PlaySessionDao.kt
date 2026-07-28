@@ -87,6 +87,12 @@ interface PlaySessionDao {
 
     @Query("DELETE FROM play_sessions WHERE ownerUserId = :ownerUserId")
     suspend fun deleteByOwner(ownerUserId: Long)
+
+    @Query("SELECT COUNT(*) FROM play_sessions WHERE ownerUserId IS NULL")
+    suspend fun countUnowned(): Int
+
+    @Query("UPDATE play_sessions SET ownerUserId = :ownerUserId WHERE ownerUserId IS NULL")
+    suspend fun adoptUnowned(ownerUserId: Long)
 }
 
 data class PlayTimeSummary(

@@ -1111,7 +1111,6 @@ class SettingsViewModel @Inject constructor(
     fun setSelectRCombo(value: String) = controlsDelegate.setSelectRCombo(viewModelScope, value)
     fun cycleMenuWrapMode(direction: Int = 1) = controlsDelegate.cycleMenuWrapMode(viewModelScope, direction)
     fun setMenuWrapMode(mode: com.nendo.argosy.data.preferences.MenuWrapMode) = controlsDelegate.setMenuWrapMode(viewModelScope, mode)
-    fun setAccuratePlayTimeEnabled(enabled: Boolean) = controlsDelegate.setAccuratePlayTimeEnabled(viewModelScope, enabled)
     fun refreshUsageStatsPermission() = controlsDelegate.refreshUsageStatsPermission()
     fun openUsageStatsSettings() = controlsDelegate.openUsageStatsSettings()
     fun openStorageSettings() = permissionsDelegate.openStorageSettings()
@@ -1121,7 +1120,6 @@ class SettingsViewModel @Inject constructor(
 
     fun requestScreenCapturePermission() = routeRequestScreenCapturePermission(this)
     fun refreshPermissions() = permissionsDelegate.refreshPermissions()
-    internal fun handlePlayTimeToggle(controls: ControlsState) = routeHandlePlayTimeToggle(this, controls)
 
     fun showSyncFiltersModal() = routeShowSyncFiltersModal(this)
     fun dismissSyncFiltersModal() = routeDismissSyncFiltersModal(this)

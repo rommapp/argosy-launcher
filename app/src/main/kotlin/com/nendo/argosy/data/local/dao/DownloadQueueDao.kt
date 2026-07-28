@@ -72,4 +72,10 @@ interface DownloadQueueDao {
           AND state IN ('QUEUED', 'PAUSED', 'DOWNLOADING', 'EXTRACTING', 'WAITING_FOR_STORAGE')
     """)
     suspend fun countUnfinishedForOwner(ownerUserId: Long): Int
+
+    @Query("SELECT COUNT(*) FROM download_queue WHERE ownerUserId IS NULL")
+    suspend fun countUnowned(): Int
+
+    @Query("UPDATE download_queue SET ownerUserId = :ownerUserId WHERE ownerUserId IS NULL")
+    suspend fun adoptUnowned(ownerUserId: Long)
 }

@@ -1,5 +1,6 @@
 package com.nendo.argosy.data.repository
 
+import com.nendo.argosy.data.local.dao.AchievementDao
 import com.nendo.argosy.data.local.dao.RomMAccountDao
 import com.nendo.argosy.data.local.entity.RomMAccountEntity
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
@@ -20,6 +21,7 @@ import javax.inject.Singleton
 @Singleton
 class RomMAccountRepository @Inject constructor(
     private val rommAccountDao: RomMAccountDao,
+    private val achievementDao: AchievementDao,
     private val userPreferencesRepository: UserPreferencesRepository,
     private val rommApiProvider: RomMApiProvider
 ) {
@@ -66,7 +68,22 @@ class RomMAccountRepository @Inject constructor(
         ).let { if (it > 0) it else existing?.id ?: 0 }
         rommAccountDao.setActive(id)
         rommApiProvider.invalidate(id)
+        adoptUnownedAchievements(rommUserId)
         return id
+    }
+
+    /**
+     * Hands achievements recorded before accounts existed to the first account that appears.
+     *
+     * They carry the no-owner sentinel, and achievement reads match the owner exactly rather than
+     * tolerating it the way the save tables do, so without this every unlock on an upgrading
+     * install becomes invisible the moment an identity is adopted. Only ever runs while no row is
+     * owned, so a genuine second account cannot claim the first account's history.
+     */
+    private suspend fun adoptUnownedAchievements(ownerUserId: Long) {
+        if (achievementDao.countOwned() > 0) return
+        if (achievementDao.countUnowned() == 0) return
+        achievementDao.adoptUnowned(ownerUserId)
     }
 
     /**
@@ -148,6 +165,7 @@ class RomMAccountRepository @Inject constructor(
      * them. Runs once: a non-empty registry is left alone.
      */
     suspend fun adoptLegacyCredentialsIfNeeded() {
+        rommAccountDao.getActive()?.let { adoptUnownedAchievements(it.rommUserId) }
         if (rommAccountDao.count() > 0) return
         val prefs = userPreferencesRepository.preferences.first()
         val baseUrl = prefs.rommBaseUrl?.takeIf { it.isNotBlank() } ?: return

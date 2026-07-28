@@ -42,6 +42,15 @@ interface AchievementDao {
     @Query("DELETE FROM achievements WHERE ownerUserId = :ownerUserId")
     suspend fun deleteByOwner(ownerUserId: Long)
 
+    @Query("SELECT COUNT(*) FROM achievements WHERE ownerUserId = :sentinel")
+    suspend fun countUnowned(sentinel: Long = AchievementEntity.NO_OWNER): Int
+
+    @Query("SELECT COUNT(*) FROM achievements WHERE ownerUserId != :sentinel")
+    suspend fun countOwned(sentinel: Long = AchievementEntity.NO_OWNER): Int
+
+    @Query("UPDATE achievements SET ownerUserId = :ownerUserId WHERE ownerUserId = :sentinel")
+    suspend fun adoptUnowned(ownerUserId: Long, sentinel: Long = AchievementEntity.NO_OWNER)
+
     data class SocialSharedRow(val raId: Long, val socialSharedAt: Long?)
 
     @Query(

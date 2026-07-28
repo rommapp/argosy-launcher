@@ -871,7 +871,12 @@ data class AccountsState(
      * accounts still on it, so the switch has to happen first. The last account is removable:
      * that case is the sign-out, and the teardown runs with no incoming account.
      */
-    fun canRemove(account: AccountUi): Boolean = !account.isActive || accounts.size <= 1
+    /**
+     * Only a signed-out account can be removed, which also means the last one never can: it is
+     * necessarily active, and forgetting it would clear the credential mirror without promoting a
+     * survivor. Signing out is the way to leave a single account.
+     */
+    fun canRemove(account: AccountUi): Boolean = !account.isActive && accounts.size > 1
 
     fun selectedActionFor(account: AccountUi): AccountRowAction? {
         val actions = actionsFor(account)

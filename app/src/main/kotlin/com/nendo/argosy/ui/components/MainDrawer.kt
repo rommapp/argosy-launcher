@@ -124,7 +124,7 @@ fun MainDrawer(
                         focusedIndex = drawerState.navFocusIndex - DRAWER_NAV_ITEM_OFFSET,
                         downloadCount = drawerState.downloadCount,
                         saveSyncAttentionCount = drawerState.saveSyncAttentionCount,
-                        emulatorUpdatesAvailable = drawerState.emulatorUpdatesAvailable,
+                        isRommConnected = drawerState.rommConnected,
                         onNavigate = onNavigate,
                         modifier = Modifier.weight(1f)
                     )
@@ -294,7 +294,7 @@ private fun NavigationContent(
     focusedIndex: Int,
     downloadCount: Int,
     saveSyncAttentionCount: Int,
-    emulatorUpdatesAvailable: Int,
+    isRommConnected: Boolean,
     onNavigate: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -339,9 +339,7 @@ private fun NavigationContent(
             }
         }
 
-        if (emulatorUpdatesAvailable > 0) {
-            EmulatorUpdateNotice(updateCount = emulatorUpdatesAvailable)
-        }
+        DrawerDeviceStatus(isRommConnected = isRommConnected)
     }
 }
 
@@ -578,7 +576,6 @@ private fun DrawerStatusBar(
     onOpenAccounts: () -> Unit = {}
 ) {
     val theme = LocalArgosyTheme.current
-    val mutedColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.35f)
     val shape = RoundedCornerShape(Dimens.radiusControl)
     Row(
         modifier = Modifier
@@ -592,40 +589,91 @@ private fun DrawerStatusBar(
             .clickableNoFocus(onClick = onOpenAccounts)
             .padding(horizontal = Dimens.spacingMd, vertical = Dimens.spacingSm),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween
+        horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
     ) {
-        Row(
-            modifier = Modifier.weight(1f),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
-        ) {
-            if (localUser != null) {
-                SocialAvatar(
-                    displayName = localUser.displayName,
-                    avatarColor = localUser.avatarColor,
-                    size = Dimens.iconLg,
-                    avatarDoodle = localAvatarDoodle,
-                    userId = localUser.id
-                )
-            }
-            Icon(
-                painter = painterResource(
-                    if (isRommConnected) R.drawable.ic_romm_connected
-                    else R.drawable.ic_romm_disconnected
-                ),
-                contentDescription = if (isRommConnected) "RomM Connected" else "RomM Offline",
-                tint = if (isRommConnected) Color.Unspecified else mutedColor,
-                modifier = Modifier.size(Dimens.iconMd)
+        if (localUser != null) {
+            SocialAvatar(
+                displayName = localUser.displayName,
+                avatarColor = localUser.avatarColor,
+                size = Dimens.iconLg,
+                avatarDoodle = localAvatarDoodle,
+                userId = localUser.id
             )
+        } else {
+            AccountInitialAvatar(name = rommUsername, size = Dimens.iconLg)
+        }
+        Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = rommUsername ?: "No account",
                 style = MaterialTheme.typography.labelLarge,
                 color = if (isFocused) theme.focusAccent else MaterialTheme.colorScheme.onSurface,
                 maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f, fill = false)
+                overflow = TextOverflow.Ellipsis
+            )
+            Text(
+                text = "Account",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f),
+                maxLines = 1
             )
         }
+    }
+}
+
+/**
+ * Stand-in avatar for a device with no social link: the RomM name's first character, or a
+ * neutral glyph when there is no account at all.
+ */
+@Composable
+private fun AccountInitialAvatar(name: String?, size: androidx.compose.ui.unit.Dp) {
+    val initial = name?.trim()?.firstOrNull()?.uppercaseChar()?.toString()
+    Box(
+        modifier = Modifier
+            .size(size)
+            .clip(CircleShape)
+            .background(MaterialTheme.colorScheme.surfaceVariant),
+        contentAlignment = Alignment.Center
+    ) {
+        if (initial != null) {
+            Text(
+                text = initial,
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        } else {
+            Icon(
+                imageVector = Icons.Default.Person,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(size * 0.6f)
+            )
+        }
+    }
+}
+
+/**
+ * The drawer's footer strip: connection, clock and battery. They describe the device rather than
+ * the account, so they sit away from the account row rather than competing with it.
+ */
+@Composable
+private fun DrawerDeviceStatus(isRommConnected: Boolean) {
+    val mutedColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.35f)
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = Dimens.spacingLg, vertical = Dimens.spacingSm),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Icon(
+            painter = painterResource(
+                if (isRommConnected) R.drawable.ic_romm_connected
+                else R.drawable.ic_romm_disconnected
+            ),
+            contentDescription = if (isRommConnected) "RomM Connected" else "RomM Offline",
+            tint = if (isRommConnected) Color.Unspecified else mutedColor,
+            modifier = Modifier.size(Dimens.iconMd)
+        )
         SystemStatusBar(
             contentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
         )
@@ -633,30 +681,6 @@ private fun DrawerStatusBar(
 }
 
 private const val DRAWER_FOCUS_WASH_ALPHA = 0.15f
-
-@Composable
-private fun EmulatorUpdateNotice(updateCount: Int) {
-    val contentColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = Dimens.spacingLg, vertical = Dimens.spacingSm)
-    ) {
-        Icon(
-            imageVector = Icons.Default.SystemUpdate,
-            contentDescription = null,
-            tint = contentColor,
-            modifier = Modifier.size(Dimens.iconSm)
-        )
-        Spacer(modifier = Modifier.width(Dimens.spacingSm))
-        Text(
-            text = "$updateCount emulator update${if (updateCount != 1) "s" else ""} available",
-            style = MaterialTheme.typography.bodySmall,
-            color = contentColor
-        )
-    }
-}
 
 @Composable
 private fun DrawerMenuItem(

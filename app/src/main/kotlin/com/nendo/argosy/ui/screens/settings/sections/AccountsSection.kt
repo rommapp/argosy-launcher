@@ -250,7 +250,11 @@ private fun AccountRow(
 
         if (!removable) {
             Text(
-                text = "Switch to another account before removing this one.",
+                text = if (state.accounts.size <= 1) {
+                    "This is the only account on this device. Sign out from Game Data to leave it."
+                } else {
+                    "Switch to another account before removing this one."
+                },
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )

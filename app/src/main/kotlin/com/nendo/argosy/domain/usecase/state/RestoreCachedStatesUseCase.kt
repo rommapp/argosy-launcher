@@ -8,6 +8,7 @@ import com.nendo.argosy.data.emulator.StatePathRegistry
 import com.nendo.argosy.data.local.dao.EmulatorSaveConfigDao
 import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.repository.StateCacheManager
+import com.nendo.argosy.data.sync.StateClaim
 import com.nendo.argosy.data.sync.StateOwnershipTracker
 import java.io.File
 import javax.inject.Inject
@@ -117,12 +118,31 @@ class RestoreCachedStatesUseCase @Inject constructor(
             } ?: emptyList()
 
             for (existingFile in existingStates) {
+                val existingPath = existingFile.absolutePath
+                val claim = stateOwnershipTracker.claim(existingPath, emulatorId)
+                if (claim is StateClaim.Foreign) {
+                    val slotNumber = config.slotPattern.parseSlotNumber(existingFile.name, romBaseName)
+                    val archived = slotNumber != null && stateCacheManager.cacheState(
+                        gameId = gameId,
+                        platformSlug = game.platformSlug,
+                        emulatorId = emulatorId,
+                        slotNumber = slotNumber,
+                        statePath = existingPath,
+                        coreId = effectiveCoreId,
+                        channelName = channelName,
+                        ownerUserIdOverride = claim.ownerUserId
+                    ) != null
+                    if (!archived) {
+                        Log.w(TAG, "Leaving ${existingFile.name} in place: belongs to user ${claim.ownerUserId} and could not be archived")
+                        continue
+                    }
+                }
                 existingFile.delete()
-                val screenshotFile = File("${existingFile.absolutePath}.png")
+                val screenshotFile = File("$existingPath.png")
                 if (screenshotFile.exists()) {
                     screenshotFile.delete()
                 }
-                stateOwnershipTracker.clear(existingFile.absolutePath, emulatorId)
+                stateOwnershipTracker.clear(existingPath, emulatorId)
                 Log.d(TAG, "Deleted existing state: ${existingFile.name}")
             }
 

@@ -132,6 +132,7 @@ internal fun routeConfirm(vm: SettingsViewModel): InputResult {
         SettingsSection.MAIN -> {
             val item = mainSettingsItemAtFocusIndex(state.focusedIndex)
             when (item) {
+                is MainSettingsItem.Header -> Unit
                 MainSettingsItem.DeviceSettings -> vm.viewModelScope.launch { vm._openDeviceSettingsEvent.emit(Unit) }
                 MainSettingsItem.GameData -> vm.navigateToSection(SettingsSection.SERVER)
                 MainSettingsItem.Accounts -> vm.navigateToSection(SettingsSection.ACCOUNTS)

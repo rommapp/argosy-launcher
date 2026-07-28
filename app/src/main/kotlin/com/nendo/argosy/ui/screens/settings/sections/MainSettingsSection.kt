@@ -37,6 +37,9 @@ import com.nendo.argosy.ui.screens.settings.SettingsSection
 import com.nendo.argosy.ui.screens.settings.SocialAuthStatus
 import com.nendo.argosy.ui.screens.settings.SettingsUiState
 import com.nendo.argosy.ui.screens.settings.SettingsViewModel
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
+import com.nendo.argosy.ui.screens.settings.components.SectionHeader
 import com.nendo.argosy.ui.screens.settings.menu.SettingsLayout
 import com.nendo.argosy.ui.theme.Dimens
 import java.time.ZoneId
@@ -46,40 +49,65 @@ internal sealed class MainSettingsItem(
     val key: String,
     val icon: ImageVector,
     val title: String,
+    val section: String
 ) {
-    data object DeviceSettings : MainSettingsItem("device", Icons.Default.PhoneAndroid, "Device Settings")
-    data object Accounts : MainSettingsItem("accounts", Icons.Default.ManageAccounts, "Accounts")
-    data object GameData : MainSettingsItem("gameData", Icons.Default.Dns, "Game Data")
+    val isFocusable: Boolean get() = this !is Header
+
+    class Header(key: String, section: String, title: String) :
+        MainSettingsItem(key, Icons.Default.Info, title, section)
+
+    data object Theme : MainSettingsItem("theme", Icons.Default.Palette, "Theme", "launcher")
+    data object Interface : MainSettingsItem("interface", Icons.Default.Dashboard, "Interface", "launcher")
+    data object Controls : MainSettingsItem("controls", Icons.Default.TouchApp, "Navigation", "launcher")
+
+    data object BuiltinEmulator :
+        MainSettingsItem("builtin_emulator", Icons.Default.Build, "Built-in Emulator", "gameplay")
     data object RetroAchievements : MainSettingsItem(
         "retroAchievements",
         Icons.Default.EmojiEvents,
-        "RetroAchievements"
+        "RetroAchievements",
+        "gameplay"
     )
-    data object Storage : MainSettingsItem("storage", Icons.Default.Storage, "Storage")
-    data object Theme : MainSettingsItem("theme", Icons.Default.Palette, "Theme")
-    data object Interface : MainSettingsItem("interface", Icons.Default.Dashboard, "Interface")
-    data object Controls : MainSettingsItem("controls", Icons.Default.TouchApp, "Controls")
-    data object Platforms : MainSettingsItem("platforms", Icons.Default.Gamepad, "Platforms")
-    data object BuiltinEmulator : MainSettingsItem("builtin_emulator", Icons.Default.Build, "Built-in Emulator")
-    data object Bios : MainSettingsItem("bios", Icons.Default.Memory, "BIOS Files")
-    data object Drivers : MainSettingsItem("drivers", Icons.Default.DeveloperBoard, "GPU Drivers")
-    data object Steam : MainSettingsItem("steam", Icons.Default.CloudQueue, "Steam")
-    data object Social : MainSettingsItem("social", Icons.Default.Group, "Social")
-    data object Permissions : MainSettingsItem("permissions", Icons.Default.Security, "Permissions")
-    data object About : MainSettingsItem("about", Icons.Default.Info, "About")
+    data object Bios : MainSettingsItem("bios", Icons.Default.Memory, "BIOS Files", "gameplay")
+    data object Drivers :
+        MainSettingsItem("drivers", Icons.Default.DeveloperBoard, "GPU Drivers", "gameplay")
+
+    data object Platforms : MainSettingsItem("platforms", Icons.Default.Gamepad, "Platforms", "library")
+    data object Storage : MainSettingsItem("storage", Icons.Default.Storage, "Storage", "library")
+
+    data object GameData : MainSettingsItem("gameData", Icons.Default.Dns, "Game Data", "connections")
+    data object Accounts :
+        MainSettingsItem("accounts", Icons.Default.ManageAccounts, "Accounts", "connections")
+    data object Steam : MainSettingsItem("steam", Icons.Default.CloudQueue, "Steam", "connections")
+    data object Social : MainSettingsItem("social", Icons.Default.Group, "Social", "connections")
+
+    data object Permissions :
+        MainSettingsItem("permissions", Icons.Default.Security, "Permissions", "system")
+    data object DeviceSettings :
+        MainSettingsItem("device", Icons.Default.PhoneAndroid, "Android Settings", "system")
+    data object About : MainSettingsItem("about", Icons.Default.Info, "About", "system")
 
     companion object {
         val ALL: List<MainSettingsItem> = listOf(
-            DeviceSettings, Platforms, BuiltinEmulator, Storage, Theme, Interface, Controls,
-            GameData, Accounts, Bios, Drivers, RetroAchievements, Steam, Social, Permissions, About
+            Header("launcherHeader", "launcher", "LAUNCHER"),
+            Theme, Interface, Controls,
+            Header("gameplayHeader", "gameplay", "GAMEPLAY"),
+            BuiltinEmulator, RetroAchievements, Bios, Drivers,
+            Header("libraryHeader", "library", "LIBRARY"),
+            Platforms, Storage,
+            Header("connectionsHeader", "connections", "CONNECTIONS"),
+            GameData, Accounts, Steam, Social,
+            Header("systemHeader", "system", "SYSTEM"),
+            Permissions, DeviceSettings, About
         )
     }
 }
 
 private val mainSettingsLayout = SettingsLayout<MainSettingsItem, Unit>(
     allItems = MainSettingsItem.ALL,
-    isFocusable = { true },
-    visibleWhen = { _, _ -> true }
+    isFocusable = { it.isFocusable },
+    visibleWhen = { _, _ -> true },
+    sectionOf = { it.section }
 )
 
 internal fun mainSettingsMaxFocusIndex(): Int =
@@ -99,6 +127,7 @@ fun MainSettingsSection(uiState: SettingsUiState, viewModel: SettingsViewModel) 
         uiState.focusedIndex == mainSettingsLayout.focusIndexOf(item, Unit)
 
     fun getSubtitle(item: MainSettingsItem): String = when (item) {
+        is MainSettingsItem.Header -> ""
         MainSettingsItem.DeviceSettings -> "System settings"
         MainSettingsItem.GameData -> when (uiState.server.connectionStatus) {
             ConnectionStatus.NOT_CONFIGURED -> "Server not configured"
@@ -159,6 +188,7 @@ fun MainSettingsSection(uiState: SettingsUiState, viewModel: SettingsViewModel) 
 
     fun handleClick(item: MainSettingsItem) {
         when (item) {
+            is MainSettingsItem.Header -> Unit
             MainSettingsItem.DeviceSettings -> context.startActivity(Intent(Settings.ACTION_SETTINGS))
             MainSettingsItem.GameData -> viewModel.navigateToSection(SettingsSection.SERVER)
             MainSettingsItem.Accounts -> viewModel.navigateToSection(SettingsSection.ACCOUNTS)
@@ -191,13 +221,20 @@ fun MainSettingsSection(uiState: SettingsUiState, viewModel: SettingsViewModel) 
         verticalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
     ) {
         items(visibleItems, key = { it.key }) { item ->
-            NavigationPreference(
-                icon = item.icon,
-                title = item.title,
-                subtitle = getSubtitle(item),
-                isFocused = isFocused(item),
-                onClick = { handleClick(item) }
-            )
+            if (item is MainSettingsItem.Header) {
+                if (item.key != "launcherHeader") {
+                    Spacer(modifier = Modifier.height(Dimens.spacingSm))
+                }
+                SectionHeader(item.title)
+            } else {
+                NavigationPreference(
+                    icon = item.icon,
+                    title = item.title,
+                    subtitle = getSubtitle(item),
+                    isFocused = isFocused(item),
+                    onClick = { handleClick(item) }
+                )
+            }
         }
     }
 }

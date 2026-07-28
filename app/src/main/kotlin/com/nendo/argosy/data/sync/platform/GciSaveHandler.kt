@@ -260,6 +260,14 @@ class GciSaveHandler @Inject constructor(
             return@withContext null
         }
 
+        if (!gciInfo.gameId.equals(romInfo.gameId, ignoreCase = true)) {
+            Logger.error(
+                TAG,
+                "Refusing a gci that belongs to another game | archive=${gciInfo.gameId}, rom=${romInfo.gameId}"
+            )
+            return@withContext null
+        }
+
         val gciFilename = GameCubeHeaderParser.buildGciFilename(
             gciInfo.makerCode,
             gciInfo.gameId,

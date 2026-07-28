@@ -1,5 +1,6 @@
 package com.nendo.argosy.data.emulator
 
+import com.nendo.argosy.util.Logger
 import java.io.File
 import java.io.RandomAccessFile
 
@@ -18,6 +19,8 @@ data class GciSaveInfo(
 )
 
 object GameCubeHeaderParser {
+
+    private const val TAG = "GameCubeHeaderParser"
 
     private const val RVZ_MAGIC = "RVZ"
     private const val RVZ_GAME_ID_OFFSET = 0x58L
@@ -80,6 +83,14 @@ object GameCubeHeaderParser {
         }
     }
 
+    /**
+     * A GCI id is four printable ASCII characters and a maker code is two. Reading fixed offsets
+     * out of a file that is not a GCI yields whatever bytes happen to sit there, which is how an
+     * srm payload once got written into a GameCube card directory under a garbage name.
+     */
+    private fun looksLikeGciField(value: String, length: Int): Boolean =
+        value.length == length && value.all { it.code in 0x21..0x7E }
+
     fun parseGciHeader(file: File): GciSaveInfo? {
         if (!file.exists() || file.length() < 0x40) return null
 
@@ -110,6 +121,14 @@ object GameCubeHeaderParser {
                     'J' -> "JAP"
                     'K' -> "KOR"
                     else -> "USA"
+                }
+
+                if (!looksLikeGciField(gameId, 4) || !looksLikeGciField(makerCode, 2)) {
+                    Logger.warn(
+                        TAG,
+                        "Not a GCI: header bytes are not a game id and maker code | file=${file.name}"
+                    )
+                    return@use null
                 }
 
                 GciSaveInfo(

@@ -78,7 +78,8 @@ class RomMConnectionManager @Inject constructor(
     private val databaseAdminRepository: dagger.Lazy<com.nendo.argosy.data.repository.DatabaseAdminRepository>,
     private val saveCacheRepository: dagger.Lazy<com.nendo.argosy.data.repository.SaveCacheRepository>,
     private val biosRepository: BiosRepository,
-    private val rommAccountRepository: dagger.Lazy<com.nendo.argosy.data.repository.RomMAccountRepository>
+    private val rommAccountRepository: dagger.Lazy<com.nendo.argosy.data.repository.RomMAccountRepository>,
+    private val apiFactory: RomMApiFactory
 ) {
     private var api: RomMApi? = null
     private var baseUrl: String = ""
@@ -597,51 +598,5 @@ class RomMConnectionManager @Inject constructor(
         }
     }
 
-    fun createApi(baseUrl: String, token: String?): RomMApi {
-        val moshi = Moshi.Builder().build()
-
-        val loggingInterceptor = HttpLoggingInterceptor().apply {
-            level = if (BuildConfig.DEBUG) HttpLoggingInterceptor.Level.BASIC
-                    else HttpLoggingInterceptor.Level.NONE
-        }
-
-        val authInterceptor = Interceptor { chain ->
-            val request = if (token != null) {
-                chain.request().newBuilder()
-                    .addHeader("Authorization", "Bearer $token")
-                    .build()
-            } else {
-                chain.request()
-            }
-            chain.proceed(request)
-        }
-
-        val downloadTimeoutInterceptor = Interceptor { chain ->
-            if (chain.request().url.encodedPath.contains("/content")) {
-                chain.withReadTimeout(DOWNLOAD_STALL_TIMEOUT_SECONDS, TimeUnit.SECONDS)
-                    .withWriteTimeout(DOWNLOAD_STALL_TIMEOUT_SECONDS, TimeUnit.SECONDS)
-                    .proceed(chain.request())
-            } else {
-                chain.proceed(chain.request())
-            }
-        }
-
-        val client = OkHttpClient.Builder()
-            .addInterceptor(authInterceptor)
-            .addInterceptor(downloadTimeoutInterceptor)
-            .addInterceptor(loggingInterceptor)
-            .connectTimeout(30, TimeUnit.SECONDS)
-            .readTimeout(60, TimeUnit.SECONDS)
-            .writeTimeout(60, TimeUnit.SECONDS)
-            .dns(okhttp3.Dns.SYSTEM)
-            .withUserCertTrust(true)
-            .build()
-
-        return Retrofit.Builder()
-            .baseUrl(baseUrl)
-            .client(client)
-            .addConverterFactory(MoshiConverterFactory.create(moshi))
-            .build()
-            .create(RomMApi::class.java)
-    }
+    fun createApi(baseUrl: String, token: String?): RomMApi = apiFactory.create(baseUrl, token)
 }

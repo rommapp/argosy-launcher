@@ -3,6 +3,7 @@ package com.nendo.argosy.data.repository
 import com.nendo.argosy.data.local.dao.RomMAccountDao
 import com.nendo.argosy.data.local.entity.RomMAccountEntity
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
+import com.nendo.argosy.data.remote.romm.RomMApiProvider
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import java.time.Instant
@@ -19,7 +20,8 @@ import javax.inject.Singleton
 @Singleton
 class RomMAccountRepository @Inject constructor(
     private val rommAccountDao: RomMAccountDao,
-    private val userPreferencesRepository: UserPreferencesRepository
+    private val userPreferencesRepository: UserPreferencesRepository,
+    private val rommApiProvider: RomMApiProvider
 ) {
     fun observeAccounts(): Flow<List<RomMAccountEntity>> = rommAccountDao.observeAll()
 
@@ -63,12 +65,14 @@ class RomMAccountRepository @Inject constructor(
             )
         ).let { if (it > 0) it else existing?.id ?: 0 }
         rommAccountDao.setActive(id)
+        rommApiProvider.invalidate(id)
         return id
     }
 
     suspend fun recordDeviceRegistration(deviceId: String, clientVersion: String) {
         val active = rommAccountDao.getActive() ?: return
         rommAccountDao.updateDevice(active.id, deviceId, clientVersion)
+        rommApiProvider.invalidate(active.id)
     }
 
     /**
@@ -96,6 +100,7 @@ class RomMAccountRepository @Inject constructor(
     suspend fun forget(id: Long) {
         val account = rommAccountDao.getById(id) ?: return
         rommAccountDao.deleteById(id)
+        rommApiProvider.invalidate(id)
         if (account.isActive) {
             userPreferencesRepository.clearRomMCredentials()
         }

@@ -20,7 +20,8 @@ class CheatsSyncWorker @AssistedInject constructor(
     @Assisted context: Context,
     @Assisted params: WorkerParameters,
     private val gameDao: GameDao,
-    private val cheatsRepository: CheatsRepository
+    private val cheatsRepository: CheatsRepository,
+    private val accountSwitchMarkerStore: com.nendo.argosy.data.preferences.AccountSwitchMarkerStore
 ) : CoroutineWorker(context, params) {
 
     companion object {
@@ -58,6 +59,11 @@ class CheatsSyncWorker @AssistedInject constructor(
     }
 
     override suspend fun doWork(): Result {
+        if (accountSwitchMarkerStore.isSwitching()) {
+            Logger.info(TAG, "Account switch in progress, deferring cheats sync")
+            return Result.retry()
+        }
+
         if (!cheatsRepository.isConfigured()) {
             Logger.info(TAG, "CheatsDB not configured, skipping sync")
             return Result.success()

@@ -11,6 +11,7 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
+import com.nendo.argosy.data.preferences.AccountSwitchMarkerStore
 import com.nendo.argosy.data.remote.romm.ConnectionState
 import com.nendo.argosy.data.remote.romm.RomMRepository
 import com.nendo.argosy.domain.usecase.save.CheckNewSavesUseCase
@@ -24,7 +25,8 @@ class SaveSyncWorker @AssistedInject constructor(
     @Assisted params: WorkerParameters,
     private val checkNewSavesUseCase: CheckNewSavesUseCase,
     private val syncCoordinator: SyncCoordinator,
-    private val romMRepository: RomMRepository
+    private val romMRepository: RomMRepository,
+    private val accountSwitchMarkerStore: AccountSwitchMarkerStore
 ) : CoroutineWorker(context, params) {
 
     companion object {
@@ -71,6 +73,11 @@ class SaveSyncWorker @AssistedInject constructor(
     }
 
     override suspend fun doWork(): Result {
+        if (accountSwitchMarkerStore.isSwitching()) {
+            Logger.info(TAG, "[SaveSync] WORKER | Account switch in progress, deferring sync")
+            return Result.retry()
+        }
+
         val isConnected = romMRepository.connectionState.value is ConnectionState.Connected
         if (!isConnected) {
             Logger.info(TAG, "[SaveSync] WORKER | RomM not connected, skipping sync")

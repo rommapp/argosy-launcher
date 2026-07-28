@@ -18,7 +18,8 @@ import dagger.assisted.AssistedInject
 class AchievementSubmissionWorker @AssistedInject constructor(
     @Assisted context: Context,
     @Assisted params: WorkerParameters,
-    private val raRepository: RetroAchievementsRepository
+    private val raRepository: RetroAchievementsRepository,
+    private val accountSwitchMarkerStore: com.nendo.argosy.data.preferences.AccountSwitchMarkerStore
 ) : CoroutineWorker(context, params) {
 
     companion object {
@@ -49,6 +50,11 @@ class AchievementSubmissionWorker @AssistedInject constructor(
     }
 
     override suspend fun doWork(): Result {
+        if (accountSwitchMarkerStore.isSwitching()) {
+            Logger.info(TAG, "Account switch in progress, deferring achievement submission")
+            return Result.retry()
+        }
+
         if (!raRepository.isLoggedIn()) {
             Logger.info(TAG, "Not logged in to RA, skipping submission")
             return Result.success()

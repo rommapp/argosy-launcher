@@ -2218,3 +2218,21 @@ object Migration_151_152 : Migration(151, 152) {
         )
     }
 }
+
+object Migration_152_153 : Migration(152, 153) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE `save_ownership` ADD COLUMN `gameId` INTEGER")
+        db.execSQL("ALTER TABLE `save_ownership` ADD COLUMN `channelName` TEXT")
+        db.execSQL("ALTER TABLE `save_ownership` ADD COLUMN `pendingOwnerUserId` INTEGER")
+        db.execSQL("ALTER TABLE `save_ownership` ADD COLUMN `archivedCacheId` INTEGER")
+        db.execSQL("ALTER TABLE `save_ownership` ADD COLUMN `incomingCacheId` INTEGER")
+        db.execSQL("ALTER TABLE `save_ownership` ADD COLUMN `needsSync` INTEGER NOT NULL DEFAULT 0")
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS `index_save_ownership_transitionState` " +
+                "ON `save_ownership` (`transitionState`)"
+        )
+
+        db.execSQL("ALTER TABLE `save_cache` ADD COLUMN `serverCurrentAtSync` INTEGER NOT NULL DEFAULT 0")
+        db.execSQL("UPDATE `save_cache` SET `serverCurrentAtSync` = 1 WHERE `rommSaveId` IS NOT NULL")
+    }
+}

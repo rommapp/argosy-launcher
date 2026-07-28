@@ -18,7 +18,8 @@ class SaveSyncDownloadObserver @Inject constructor(
     private val downloadManager: DownloadManager,
     private val saveSyncRepository: dagger.Lazy<SaveSyncRepository>,
     private val gameDao: GameDao,
-    private val emulatorResolver: EmulatorResolver
+    private val emulatorResolver: EmulatorResolver,
+    private val accountSwitchMarkerStore: com.nendo.argosy.data.preferences.AccountSwitchMarkerStore
 ) {
     private val scope = SafeCoroutineScope(Dispatchers.IO, "SaveSyncDownloadObserver")
 
@@ -36,6 +37,11 @@ class SaveSyncDownloadObserver @Inject constructor(
     ) {
         if (event.isDiscDownload) {
             Logger.debug(TAG, "handleDownloadCompletion: skipped - disc download for game ${event.gameId}")
+            return
+        }
+
+        if (accountSwitchMarkerStore.isSwitching()) {
+            Logger.info(TAG, "handleDownloadCompletion: skipped - account switch in progress for game ${event.gameId}")
             return
         }
 

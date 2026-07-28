@@ -18,15 +18,22 @@ import java.util.concurrent.TimeUnit
 class QuayPassCredentialRefreshWorker @AssistedInject constructor(
     @Assisted context: Context,
     @Assisted params: WorkerParameters,
-    private val credentialManager: QuayPassCredentialManager
+    private val credentialManager: QuayPassCredentialManager,
+    private val accountSwitchMarkerStore: com.nendo.argosy.data.preferences.AccountSwitchMarkerStore
 ) : CoroutineWorker(context, params) {
 
-    override suspend fun doWork(): Result = try {
-        credentialManager.refreshIfNeeded()
-        Result.success()
-    } catch (t: Throwable) {
-        Logger.error(TAG, "QuayPass credential refresh failed; retry", t)
-        Result.retry()
+    override suspend fun doWork(): Result {
+        if (accountSwitchMarkerStore.isSwitching()) {
+            Logger.info(TAG, "Account switch in progress, deferring QuayPass credential refresh")
+            return Result.retry()
+        }
+        return try {
+            credentialManager.refreshIfNeeded()
+            Result.success()
+        } catch (t: Throwable) {
+            Logger.error(TAG, "QuayPass credential refresh failed; retry", t)
+            Result.retry()
+        }
     }
 
     companion object {

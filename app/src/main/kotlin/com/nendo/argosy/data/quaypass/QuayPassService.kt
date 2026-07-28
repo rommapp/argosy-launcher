@@ -80,6 +80,9 @@ class QuayPassService @Inject constructor(
     private var shouldBeRunning = false
     private var reEncodeJob: Job? = null
 
+    @Volatile
+    private var accountSwitchHold = false
+
     private val bluetoothStateReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             if (intent?.action != BluetoothAdapter.ACTION_STATE_CHANGED) return
@@ -201,7 +204,22 @@ class QuayPassService @Inject constructor(
         true
     }
 
+    /**
+     * Stops advertising for the duration of a RomM account switch. The pass identifies a person,
+     * and mid-swap there is no settled answer to which one, so it must not be on the air.
+     */
+    suspend fun holdForAccountSwitch() {
+        accountSwitchHold = true
+        if (isRunningNow) stop(QuayPassRunState.DISABLED)
+    }
+
+    suspend fun releaseAccountSwitchHold() {
+        accountSwitchHold = false
+        if (shouldBeRunning && !isRunningNow) tryStart()
+    }
+
     private suspend fun tryStart() {
+        if (accountSwitchHold) return
         if (!shouldBeRunning) return
         val target = when {
             !isBleSupported() -> QuayPassRunState.BLE_UNSUPPORTED

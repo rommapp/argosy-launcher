@@ -617,6 +617,7 @@ class SaveUploader @Inject constructor(
         uploadedCacheId: Long?,
         serverSave: RomMSave
     ) {
+        uploadedCacheId?.let { saveCacheDao.updateServerCurrentAtSync(it, true) }
         val verifiedHash = serverSave.contentHash ?: return
         val serverTimestamp = SaveSyncApiClient.parseTimestamp(serverSave.updatedAt)
         val matches = saveCacheDao.getAllByGameChannelAndHash(gameId, channelName, verifiedHash)
@@ -637,6 +638,7 @@ class SaveUploader @Inject constructor(
             ?: matches.firstOrNull()
             ?: uploadedCacheId?.let { saveCacheDao.getById(it) }
             ?: return
+        saveCacheDao.updateServerCurrentAtSync(keeper.id, true)
         if (keeper.rommSaveId != serverSave.id) {
             saveCacheDao.updateRommSaveId(keeper.id, serverSave.id)
             Logger.debug(TAG, "[SaveSync] UPLOAD gameId=$gameId | Self-healed orphan cache row | cacheId=${keeper.id}, rommSaveId=${serverSave.id}")

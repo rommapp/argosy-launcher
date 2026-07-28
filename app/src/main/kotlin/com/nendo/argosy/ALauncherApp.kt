@@ -118,6 +118,9 @@ class ArgosyApp : Application(), Configuration.Provider, ImageLoaderFactory {
     @Inject
     lateinit var quayPassWalletCoordinator: com.nendo.argosy.data.quaypass.QuayPassWalletCoordinator
 
+    @Inject
+    lateinit var accountSwitchCoordinator: com.nendo.argosy.data.sync.AccountSwitchCoordinator
+
     private val quayPassForegroundObserver = object : androidx.lifecycle.DefaultLifecycleObserver {
         override fun onStart(owner: androidx.lifecycle.LifecycleOwner) {
             appScope.launch { quayPassCredentialManager.refreshIfNeeded() }
@@ -155,6 +158,7 @@ class ArgosyApp : Application(), Configuration.Provider, ImageLoaderFactory {
             coreCrashController.runBootDetection()
             playSessionTracker.checkOrphanedSession()
         }
+        appScope.launch { accountSwitchCoordinator.resumeIfInterrupted() }
         appScope.launch { gameDao.resetAllActiveSaveApplied() }
         appScope.launch { autoConnectSteam() }
         appScope.launch { steamContentManager.discoverLocalSteamGames() }

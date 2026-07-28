@@ -18,6 +18,18 @@ interface PlatformSaveHandler {
     suspend fun extractDownload(tempFile: File, context: SaveContext): ExtractResult
 
     /**
+     * Every live path the save at [localPath] occupies -- the same set [prepareForUpload] reports
+     * as [PreparedSave.originalPaths], without building the archive to find it out.
+     *
+     * The resolved save path is one member of that set, not the set: GameCube resolves to the
+     * first matching .gci while the artifact is every matching .gci, and PSP resolves to the
+     * shared parent while the artifact is the prefix-matched siblings under it. A teardown that
+     * acts on the resolved path alone either strands files or destroys unrelated ones.
+     */
+    suspend fun sourcePathsFor(localPath: String, context: SaveContext): List<String> =
+        listOf(localPath)
+
+    /**
      * Locate an existing save folder under [basePath] for [saveId]. Returns null when the
      * platform doesn't store saves per-save-id, or when no match is found.
      */

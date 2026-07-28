@@ -60,7 +60,8 @@ class SyncCoordinator @Inject constructor(
     private val reconcileEffectApplier: ReconcileEffectApplier,
     private val saveRecoveryGate: SaveRecoveryGate,
     private val screenshotUploader: ScreenshotUploader,
-    private val rommApiProvider: RomMApiProvider
+    private val rommApiProvider: RomMApiProvider,
+    private val accountSwitchMarkerStore: com.nendo.argosy.data.preferences.AccountSwitchMarkerStore
 ) {
     companion object {
         private const val TAG = "SyncCoordinator"
@@ -91,6 +92,11 @@ class SyncCoordinator @Inject constructor(
     }
 
     suspend fun reconcileAll(): ReconcileSummary = withContext(Dispatchers.IO) {
+        if (accountSwitchMarkerStore.isSwitching()) {
+            Logger.info(TAG, "reconcileAll: account switch in progress, not touching save files")
+            return@withContext ReconcileSummary(ProcessResult.NotConnected, planConflicts = 0, planApplied = 0)
+        }
+
         val prefs = syncPreferencesRepository.preferences.first()
         val secureSaves = prefs.secureSaves
         canonicalizeStaleEmulatorIds()
@@ -240,6 +246,11 @@ class SyncCoordinator @Inject constructor(
     )
 
     suspend fun processQueue(): ProcessResult = withContext(Dispatchers.IO) {
+        if (accountSwitchMarkerStore.isSwitching()) {
+            Logger.info(TAG, "processQueue: account switch in progress, not touching save files")
+            return@withContext ProcessResult.NotConnected
+        }
+
         val romM = romMRepository.get()
         if (romM.connectionState.value !is ConnectionState.Connected) {
             Logger.debug(TAG, "processQueue: Not connected to RomM, skipping")

@@ -18,7 +18,8 @@ import java.util.concurrent.TimeUnit
 class SocialSyncWorker @AssistedInject constructor(
     @Assisted context: Context,
     @Assisted params: WorkerParameters,
-    private val socialSyncCoordinator: SocialSyncCoordinator
+    private val socialSyncCoordinator: SocialSyncCoordinator,
+    private val accountSwitchMarkerStore: com.nendo.argosy.data.preferences.AccountSwitchMarkerStore
 ) : CoroutineWorker(context, params) {
 
     companion object {
@@ -45,6 +46,11 @@ class SocialSyncWorker @AssistedInject constructor(
     }
 
     override suspend fun doWork(): Result {
+        if (accountSwitchMarkerStore.isSwitching()) {
+            Logger.info(TAG, "Account switch in progress, deferring social sync")
+            return Result.retry()
+        }
+
         Logger.info(TAG, "Starting social sync")
 
         return try {

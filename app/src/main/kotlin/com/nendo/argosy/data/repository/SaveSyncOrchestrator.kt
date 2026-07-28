@@ -50,7 +50,8 @@ class SaveSyncOrchestrator @Inject constructor(
     private val payloadCodec: SyncPayloadCodec,
     private val saveHandlerRegistry: PlatformSaveHandlerRegistry,
     private val saveAccessNotices: SaveAccessNotices,
-    private val saveOwnershipTracker: SaveOwnershipTracker
+    private val saveOwnershipTracker: SaveOwnershipTracker,
+    private val accountSwitchMarkerStore: com.nendo.argosy.data.preferences.AccountSwitchMarkerStore
 ) {
     sealed interface RefreshOutcome {
         data object Dirtied : RefreshOutcome
@@ -115,6 +116,10 @@ class SaveSyncOrchestrator @Inject constructor(
     }
 
     suspend fun scanAndQueueLocalChanges(secureSaves: Boolean): Int = withContext(Dispatchers.IO) {
+        if (accountSwitchMarkerStore.isSwitching()) {
+            Logger.info(TAG, "[SaveSync] SCAN | account switch in progress, not adopting on-disk saves")
+            return@withContext 0
+        }
         val downloadedGames = gameDao.getByIdsChunked(gameDao.getDownloadedRommGameIds())
         var queued = 0
         val client = apiClient.get()
@@ -314,6 +319,10 @@ class SaveSyncOrchestrator @Inject constructor(
     }
 
     suspend fun downloadPendingServerSaves(): Int = withContext(Dispatchers.IO) {
+        if (accountSwitchMarkerStore.isSwitching()) {
+            Logger.info(TAG, "[SaveSync] DOWNLOAD | account switch in progress, not writing save files")
+            return@withContext 0
+        }
         val pendingDownloads = saveSyncDao.getPendingDownloads()
         if (pendingDownloads.isEmpty()) {
             return@withContext 0

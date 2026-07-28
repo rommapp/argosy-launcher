@@ -284,7 +284,52 @@ class SessionStateStore(context: Context) {
 
     fun isFirstRunComplete(): Boolean = prefs.getBoolean(KEY_FIRST_RUN_COMPLETE, false)
 
+    /**
+     * A RomM account switch that is under way. Written with commit() rather than apply() because
+     * the whole point of the marker is that it outlives the process that set it: an apply() that
+     * has not reached disk when the app is killed leaves the disk half torn down with no record
+     * that anything was in flight.
+     */
+    fun setAccountSwitchMarker(fromUserId: Long?, toUserId: Long, startedAtMillis: Long) {
+        prefs.edit()
+            .putBoolean(KEY_SWITCH_ACTIVE, true)
+            .putLong(KEY_SWITCH_FROM_USER, fromUserId ?: NO_USER_ID)
+            .putLong(KEY_SWITCH_TO_USER, toUserId)
+            .putLong(KEY_SWITCH_STARTED_AT, startedAtMillis)
+            .commit()
+    }
+
+    fun getAccountSwitchMarker(): AccountSwitchMarker? {
+        if (!prefs.getBoolean(KEY_SWITCH_ACTIVE, false)) return null
+        val toUserId = prefs.getLong(KEY_SWITCH_TO_USER, NO_USER_ID)
+        if (toUserId == NO_USER_ID) return null
+        val fromUserId = prefs.getLong(KEY_SWITCH_FROM_USER, NO_USER_ID)
+        return AccountSwitchMarker(
+            fromUserId = fromUserId.takeIf { it != NO_USER_ID },
+            toUserId = toUserId,
+            startedAtMillis = prefs.getLong(KEY_SWITCH_STARTED_AT, 0)
+        )
+    }
+
+    fun isAccountSwitchInProgress(): Boolean = prefs.getBoolean(KEY_SWITCH_ACTIVE, false)
+
+    fun clearAccountSwitchMarker() {
+        prefs.edit()
+            .putBoolean(KEY_SWITCH_ACTIVE, false)
+            .remove(KEY_SWITCH_FROM_USER)
+            .remove(KEY_SWITCH_TO_USER)
+            .remove(KEY_SWITCH_STARTED_AT)
+            .commit()
+    }
+
+    data class AccountSwitchMarker(
+        val fromUserId: Long?,
+        val toUserId: Long,
+        val startedAtMillis: Long
+    )
+
     companion object {
+        private const val NO_USER_ID = -1L
         private const val PREFS_NAME = "argosy_session_state"
         private const val KEY_HAS_SESSION = "has_session"
         private const val KEY_GAME_ID = "game_id"
@@ -328,5 +373,9 @@ class SessionStateStore(context: Context) {
         private const val KEY_SCREENSHOT_VIEWER_INDEX = "screenshot_viewer_index"
         private const val KEY_DUAL_SCREEN_ENABLED = "dual_screen_enabled"
         private const val KEY_SAVE_SYNC_ENABLED = "save_sync_enabled"
+        private const val KEY_SWITCH_ACTIVE = "account_switch_active"
+        private const val KEY_SWITCH_FROM_USER = "account_switch_from_user"
+        private const val KEY_SWITCH_TO_USER = "account_switch_to_user"
+        private const val KEY_SWITCH_STARTED_AT = "account_switch_started_at"
     }
 }

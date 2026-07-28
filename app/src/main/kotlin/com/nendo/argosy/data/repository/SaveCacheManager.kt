@@ -101,7 +101,7 @@ class SaveCacheManager @Inject constructor(
             if (unchanged != null && !cachedHash.isNullOrBlank()) {
                 Log.d(TAG, "Cache untouched since ${unchanged.cachedAt} for game $gameId (hash=$cachedHash), skipping rehash")
                 if (!secureSaves && !isHardcore) recordLocalWriteAnchor(gameId, emulatorId, channelName, savePath)
-                saveOwnershipTracker.record(savePath, emulatorId, cachedHash)
+                saveOwnershipTracker.record(savePath, emulatorId, cachedHash, gameId, channelName)
                 return@withContext CacheResult.Duplicate(unchanged.id, cachedHash)
             }
         }
@@ -148,7 +148,7 @@ class SaveCacheManager @Inject constructor(
                     )
                     tempFile?.delete()
                     if (!secureSaves && !isHardcore) recordLocalWriteAnchor(gameId, emulatorId, channelName, savePath)
-                    saveOwnershipTracker.record(savePath, emulatorId, contentHash)
+                    saveOwnershipTracker.record(savePath, emulatorId, contentHash, gameId, channelName)
                     return@withContext CacheResult.Duplicate(existingWithHash.id, contentHash)
                 }
             }
@@ -217,7 +217,7 @@ class SaveCacheManager @Inject constructor(
                 saveCacheDao.clearDirtyFlagForLatest(gameId)
             }
             if (!secureSaves && !isHardcore) recordLocalWriteAnchor(gameId, emulatorId, channelName, savePath)
-            saveOwnershipTracker.record(savePath, emulatorId, contentHash)
+            saveOwnershipTracker.record(savePath, emulatorId, contentHash, gameId, channelName)
             val slotInfo = when {
                 isHardcore -> " [HARDCORE]"
                 channelName != null -> " (channel: $channelName)"
@@ -306,7 +306,8 @@ class SaveCacheManager @Inject constructor(
                 channelName = channelName,
                 needsRemoteSync = needsRemoteSync,
                 rommSaveId = rommSaveId,
-                ownerUserId = ownerUserId
+                ownerUserId = ownerUserId,
+                serverCurrentAtSync = true
             )
             val insertedId = saveCacheDao.insert(entity)
 
@@ -508,7 +509,13 @@ class SaveCacheManager @Inject constructor(
             if (!secureSaves && !entity.isHardcore) {
                 recordLocalWriteAnchor(entity.gameId, entity.emulatorId, entity.channelName, targetPath)
             }
-            saveOwnershipTracker.record(targetPath, entity.emulatorId, entity.contentHash)
+            saveOwnershipTracker.record(
+                targetPath,
+                entity.emulatorId,
+                entity.contentHash,
+                entity.gameId,
+                entity.channelName
+            )
 
             true
         } catch (e: Exception) {
@@ -856,6 +863,68 @@ class SaveCacheManager @Inject constructor(
     }
 
     fun getCacheFile(entity: SaveCacheEntity): File = File(cacheBaseDir, entity.cachePath)
+
+    /**
+     * Reads the archive written for [cacheId] back off disk and re-derives its hash.
+     *
+     * An archive is only evidence that the live bytes are safe to remove once it has been read
+     * back and matched. A write that reported success but landed truncated, unreadable, or
+     * against a full volume is precisely the case that would otherwise cost the save, and it is
+     * indistinguishable from a good one without re-reading.
+     */
+    suspend fun verifyCachedArchive(cacheId: Long): Boolean = withContext(Dispatchers.IO) {
+        val entity = saveCacheDao.getById(cacheId) ?: return@withContext false
+        val expected = entity.contentHash
+        if (expected.isNullOrBlank()) return@withContext false
+        val file = getCacheFile(entity)
+        if (!file.exists() || file.length() == 0L) return@withContext false
+        try {
+            val actual = when {
+                file.name.endsWith(".zip") -> saveArchiver.calculateZipHash(file)
+                saveArchiver.getTrailerSize(file) > 0L ->
+                    saveArchiver.readBytesWithoutTrailer(file)?.let { saveArchiver.calculateBytesHash(it) }
+                else -> saveArchiver.calculateFileHash(file)
+            }
+            val match = actual == expected
+            if (!match) {
+                Log.e(TAG, "Archive verify failed for cache $cacheId: expected=$expected, actual=$actual")
+            }
+            match
+        } catch (e: Exception) {
+            Log.e(TAG, "Archive verify threw for cache $cacheId", e)
+            false
+        }
+    }
+
+    suspend fun reassignCacheOwner(cacheId: Long, ownerUserId: Long?) =
+        withContext(Dispatchers.IO) { saveCacheDao.updateOwner(cacheId, ownerUserId) }
+
+    /**
+     * Hashes exactly the files [cacheCurrentSave] would archive for this game: the game's own
+     * folders on a shared container, never the container itself.
+     *
+     * A container-wide hash can never match an archive holding one title's folders, so a caller
+     * comparing live bytes against an archive has to resolve the same set the archive did or the
+     * comparison reports a change that did not happen.
+     */
+    suspend fun calculateArtifactHash(gameId: Long, savePath: String): String? =
+        withContext(Dispatchers.IO) {
+            if (!fal.exists(savePath)) return@withContext null
+            if (!fal.isDirectory(savePath)) return@withContext calculateLocalSaveHash(savePath)
+            val game = gameDao.getById(gameId)
+            val folders = resolveFoldersToCache(fal.getTransformedFile(savePath), savePath, game)
+            if (folders.isEmpty()) return@withContext null
+            try {
+                if (folders.size == 1) {
+                    saveArchiver.calculateFolderAsZipHash(folders[0])
+                } else {
+                    saveArchiver.calculateFoldersAsZipHash(folders)
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to hash artifact for game $gameId at $savePath", e)
+                null
+            }
+        }
 
     suspend fun calculateLocalSaveHash(savePath: String): String? = withContext(Dispatchers.IO) {
         if (!fal.exists(savePath)) return@withContext null

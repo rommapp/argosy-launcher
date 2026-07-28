@@ -556,6 +556,15 @@ class RetroAchievementsRepository @Inject constructor(
 
     private val unlocksCache = java.util.concurrent.ConcurrentHashMap<Long, Pair<Long, GameUnlocks>>()
 
+    /**
+     * Drops every cached unlock set. Called on an account switch: the cache is keyed by RA game
+     * id with no user dimension, so a hit after the swap would report the previous account's
+     * progress as the new one's.
+     */
+    fun invalidateUnlocksCache() {
+        unlocksCache.clear()
+    }
+
     // Per-game mutex so concurrent fetchUnlocksFresh callers share one network
     // call. Without this, multiple Home prefetches for the same game launch in
     // parallel, each sees an empty cache before any response writes, and all

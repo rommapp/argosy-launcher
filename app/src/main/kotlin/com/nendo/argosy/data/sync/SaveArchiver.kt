@@ -737,6 +737,12 @@ class SaveArchiver @Inject constructor(
         return md.digest().joinToString("") { "%02x".format(it) }
     }
 
+    fun calculateBytesHash(bytes: ByteArray): String {
+        val md = MessageDigest.getInstance("MD5")
+        md.update(bytes)
+        return md.digest().joinToString("") { "%02x".format(it) }
+    }
+
     fun calculateZipHash(file: File): String {
         ZipArchiveInputStream(BufferedInputStream(FileInputStream(file))).use { zis ->
             return calculateZipHashFromStream(zis)

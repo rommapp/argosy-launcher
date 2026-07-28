@@ -93,7 +93,8 @@ class GameLauncher @Inject constructor(
     private val saveHandlerRegistry: com.nendo.argosy.data.sync.platform.PlatformSaveHandlerRegistry,
     private val libretroStatePathResolver: LibretroStatePathResolver,
     private val notificationManager: com.nendo.argosy.core.notification.NotificationManager,
-    private val attributionRepository: StorageAttributionRepository
+    private val attributionRepository: StorageAttributionRepository,
+    private val accountSwitchMarkerStore: com.nendo.argosy.data.preferences.AccountSwitchMarkerStore
 ) {
     private val shellAmAvailable: Boolean by lazy {
         try {
@@ -122,6 +123,11 @@ class GameLauncher @Inject constructor(
         prefetchedGame: GameEntity? = null
     ): LaunchResult {
         Logger.debug(TAG, "launch() called: gameId=$gameId, discId=$discId, forResume=$forResume, variantFileId=$variantFileId, skipVariantPrompt=$skipVariantPrompt")
+
+        if (accountSwitchMarkerStore.isSwitching()) {
+            Logger.warn(TAG, "launch() refused: an account switch is in progress")
+            return LaunchResult.Error("Finishing the account switch - try again in a moment")
+        }
 
         val game = prefetchedGame ?: gameDao.getById(gameId)
             ?: return LaunchResult.Error("Game not found").also {

@@ -67,7 +67,8 @@ class SocialRepository @Inject constructor(
     private val syncPreferencesRepository: SyncPreferencesRepository,
     private val imageCacheManager: ImageCacheManager,
     private val rommPlaySessionUploader: RomMPlaySessionUploader,
-    private val attributionRepository: StorageAttributionRepository
+    private val attributionRepository: StorageAttributionRepository,
+    private val quayPassService: Lazy<com.nendo.argosy.data.quaypass.QuayPassService>
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var hasCompletedInitialSync = false
@@ -600,6 +601,32 @@ class SocialRepository @Inject constructor(
     fun cancelAuth() {
         authManager.cancelAuth()
         _connectionState.value = SocialConnectionState.Disconnected
+    }
+
+    /**
+     * Takes social off the air for the duration of a RomM account switch.
+     *
+     * Presence, the websocket and QuayPass advertising all speak for whoever is signed in, and
+     * the switch moves that out from under them. Going quiet is the only way they cannot
+     * announce the wrong person mid-swap.
+     */
+    suspend fun suspendForAccountSwitch() {
+        hasCompletedInitialSync = false
+        quayPassService.get().holdForAccountSwitch()
+        socialService.disconnect()
+        _connectionState.value = SocialConnectionState.Disconnected
+        clearSocialData()
+    }
+
+    /**
+     * Brings social back up on the account that is now active, if it has a social link.
+     */
+    suspend fun resumeAfterAccountSwitch() {
+        val prefs = preferencesRepository.userPreferences.first()
+        if (prefs.isSocialLinked && prefs.socialSessionToken != null) {
+            connectService()
+        }
+        quayPassService.get().releaseAccountSwitchHold()
     }
 
     suspend fun logout() {

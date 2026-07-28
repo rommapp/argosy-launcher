@@ -165,10 +165,50 @@ interface SaveCacheDao {
 
     @Query("""
         UPDATE save_cache
-        SET needsRemoteSync = 0, lastSyncedAt = :syncedAt, remoteSyncError = NULL
+        SET needsRemoteSync = 0, lastSyncedAt = :syncedAt, remoteSyncError = NULL, serverCurrentAtSync = 1
         WHERE id = :id
     """)
     suspend fun markSynced(id: Long, syncedAt: Instant)
+
+    @Query("UPDATE save_cache SET ownerUserId = :ownerUserId WHERE id = :id")
+    suspend fun updateOwner(id: Long, ownerUserId: Long?)
+
+    @Query("UPDATE save_cache SET serverCurrentAtSync = :serverCurrent WHERE id = :id")
+    suspend fun updateServerCurrentAtSync(id: Long, serverCurrent: Boolean)
+
+    /**
+     * Distinct games the account holds a cache row for, newest first. The account switch uses
+     * this to decide which artifacts the incoming account has anything to place at all.
+     */
+    @Query("""
+        SELECT DISTINCT gameId FROM save_cache
+        WHERE ownerUserId = :ownerUserId
+    """)
+    suspend fun getGameIdsForOwner(ownerUserId: Long): List<Long>
+
+    /**
+     * The newest cache row for this account and game that is safe to write over a live save.
+     * A row that neither reached the server nor is still pending upload is a backup, not the
+     * account's current progress, and placing it would overwrite with a copy nobody chose.
+     */
+    @Query("""
+        SELECT * FROM save_cache
+        WHERE gameId = :gameId
+          AND ownerUserId = :ownerUserId
+          AND isRollback = 0
+          AND (serverCurrentAtSync = 1 OR needsRemoteSync = 1)
+        ORDER BY cachedAt DESC
+        LIMIT 1
+    """)
+    suspend fun getPlaceableForOwner(gameId: Long, ownerUserId: Long): SaveCacheEntity?
+
+    @Query("""
+        SELECT * FROM save_cache
+        WHERE gameId = :gameId AND ownerUserId = :ownerUserId
+        ORDER BY cachedAt DESC
+        LIMIT 1
+    """)
+    suspend fun getNewestForOwner(gameId: Long, ownerUserId: Long): SaveCacheEntity?
 
     @Query("""
         UPDATE save_cache

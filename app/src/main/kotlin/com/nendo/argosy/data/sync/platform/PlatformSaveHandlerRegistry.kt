@@ -204,6 +204,14 @@ private class PspFolderHandler(
         PreparedSave(outputFile, isTemporary = true, matchedPaths)
     }
 
+    override suspend fun sourcePathsFor(
+        localPath: String,
+        context: SaveContext
+    ): List<String> = withContext(Dispatchers.IO) {
+        val saveId = context.saveId ?: return@withContext emptyList()
+        findAllSaveFoldersBySaveId(localPath, saveId)
+    }
+
     override suspend fun extractDownload(
         tempFile: File,
         context: SaveContext

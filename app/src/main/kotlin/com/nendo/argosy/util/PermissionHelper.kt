@@ -58,6 +58,36 @@ class PermissionHelper @Inject constructor() {
         return if (last <= 0) null else last
     }
 
+    /**
+     * Last foreground time for each of [packageNames] that has any, from a single usage-stats
+     * query. Returns an empty map without the permission, which callers must read as "no answer"
+     * rather than "nothing was running".
+     */
+    fun lastForegroundTimestamps(
+        context: Context,
+        packageNames: Set<String>,
+        lookbackMs: Long = 24 * 60 * 60 * 1000L
+    ): Map<String, Long> {
+        if (packageNames.isEmpty()) return emptyMap()
+        if (!hasUsageStatsPermission(context)) return emptyMap()
+        val usageStatsManager = context.getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
+        val now = System.currentTimeMillis()
+        val stats = usageStatsManager.queryUsageStats(
+            UsageStatsManager.INTERVAL_BEST,
+            now - lookbackMs,
+            now
+        ) ?: return emptyMap()
+        val result = HashMap<String, Long>()
+        for (entry in stats) {
+            if (entry.packageName !in packageNames) continue
+            val last = entry.lastTimeUsed
+            if (last <= 0) continue
+            val previous = result[entry.packageName]
+            if (previous == null || last > previous) result[entry.packageName] = last
+        }
+        return result
+    }
+
     fun currentForegroundPackage(context: Context, lookbackMs: Long = 5 * 60 * 1000L): String? {
         if (!hasUsageStatsPermission(context)) return null
         val usm = context.getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager

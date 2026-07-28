@@ -488,6 +488,31 @@ class RomMConnectionManager @Inject constructor(
         Logger.info(TAG, "signOut: cleared stored RomM identity")
     }
 
+    /**
+     * Repoints the live session at whichever account is now stored as active.
+     *
+     * The teardown of the previous session runs first and unconditionally: leaving the old api
+     * object, token or device id in place while the stored identity says otherwise is the
+     * split-brain that makes one account's uploads land under the other's device.
+     */
+    suspend fun rebindToActiveAccount(): RomMResult<String> {
+        disconnect()
+        val prefs = userPreferencesRepository.preferences.first()
+        val url = prefs.rommBaseUrl
+        if (url.isNullOrBlank()) {
+            Logger.info(TAG, "rebindToActiveAccount: no stored server for the active account")
+            return RomMResult.Error("No server configured for this account")
+        }
+        cachedDeviceId = prefs.rommDeviceId
+        saveSyncRepository.get().setDeviceId(cachedDeviceId)
+        val result = attemptConnection(url, prefs.rommToken)
+        if (result is RomMResult.Error) {
+            Logger.info(TAG, "rebindToActiveAccount: offline after swap, scheduling reconnect")
+            scheduleReconnect()
+        }
+        return result
+    }
+
     suspend fun checkConnection() {
         val currentApi = api
         if (currentApi == null) {

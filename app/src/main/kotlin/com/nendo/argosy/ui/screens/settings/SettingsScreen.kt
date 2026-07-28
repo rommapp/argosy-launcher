@@ -61,12 +61,14 @@ import com.nendo.argosy.util.formatBytes
 import com.nendo.argosy.ui.screens.musicbrowser.MusicBrowserMode
 import com.nendo.argosy.ui.screens.musicbrowser.MusicBrowserScreen
 import com.nendo.argosy.data.storage.StorageCategory
+import com.nendo.argosy.data.sync.UnflushedQueuePolicy
 import com.nendo.argosy.ui.screens.settings.components.HardResetModal
 import com.nendo.argosy.ui.screens.settings.components.PlatformSettingsModal
 import com.nendo.argosy.ui.screens.settings.components.ReleaseChangelogModal
 import com.nendo.argosy.ui.screens.settings.components.SoundPickerPopup
 import com.nendo.argosy.ui.screens.settings.delegates.BuiltinNavigationTarget
 import com.nendo.argosy.ui.screens.settings.sections.AboutSection
+import com.nendo.argosy.ui.screens.settings.sections.AccountsSection
 import com.nendo.argosy.ui.screens.settings.sections.BiosSection
 import com.nendo.argosy.ui.screens.settings.sections.DistributeResultModal
 import com.nendo.argosy.ui.screens.settings.sections.GameDataItem
@@ -529,6 +531,7 @@ fun SettingsScreen(
                 SettingsHeader(
                     title = when (uiState.currentSection) {
                         SettingsSection.MAIN -> "SETTINGS"
+                        SettingsSection.ACCOUNTS -> "ACCOUNTS"
                         SettingsSection.SERVER -> "GAME DATA"
                         SettingsSection.SYNC_SETTINGS -> "SYNC SETTINGS"
                         SettingsSection.STEAM_SETTINGS -> "STEAM (EXPERIMENTAL)"
@@ -598,6 +601,7 @@ fun SettingsScreen(
             Box(modifier = Modifier.weight(1f)) {
                 when (uiState.currentSection) {
                     SettingsSection.MAIN -> MainSettingsSection(uiState, viewModel)
+                    SettingsSection.ACCOUNTS -> AccountsSection(uiState, viewModel)
                     SettingsSection.SERVER -> GameDataSection(uiState, viewModel)
                     SettingsSection.SYNC_SETTINGS -> SyncSettingsSection(uiState, viewModel, imageCacheProgress)
                     SettingsSection.STEAM_SETTINGS -> SteamSection(uiState, viewModel)
@@ -881,6 +885,8 @@ fun SettingsScreen(
             onDismiss = { viewModel.dismissStoragePlatformCategoryDelete() }
         )
     }
+
+    AccountModals(uiState, viewModel)
 
     ArgosyConfirmModalHost(
         visible = uiState.server.showRommSignOutConfirm,
@@ -1221,6 +1227,81 @@ private fun getFilePathFromUri(context: Context, uri: Uri): String? {
     }
 }
 
+/**
+ * Every accounts prompt goes through [ArgosyConfirmModalHost] so the modal takes the input stack
+ * as it opens; a rendered-only modal would leave the gamepad driving the list behind it.
+ */
+@Composable
+private fun AccountModals(uiState: SettingsUiState, viewModel: SettingsViewModel) {
+    val accounts = uiState.accounts
+
+    val exitAccount = accounts.exitPromptAccount
+    ArgosyConfirmModalHost(
+        visible = accounts.exitPromptAccountId != null,
+        title = if (accounts.exitPromptIsForAdd) "Add an account?" else "Switch to ${exitAccount?.username ?: "account"}?",
+        message = "Fully exit any game you launched outside Argosy first. Argosy cannot see " +
+            "those sessions, and a game still running can write over the saves this moves. " +
+            "Saves are archived and verified before anything is removed.",
+        confirmLabel = if (accounts.exitPromptIsForAdd) "Games Closed, Continue" else "Games Closed, Switch",
+        onConfirm = { viewModel.confirmAccountExitPrompt() },
+        onDismiss = { viewModel.cancelAccountExitPrompt() }
+    )
+
+    val removalAccount = accounts.removalAccount
+    val removalMessage = buildString {
+        append("Removes this account's saves, states, queued work, achievements and library ")
+        append("overlay from this device. Downloaded games are kept.")
+        accounts.removalPendingSummary?.let { append(" Still unsent: $it.") }
+        if (accounts.removalIsLastAccount) {
+            append(" This is the last account, so the device will be signed out of RomM.")
+        }
+        append(" The device stays registered on the RomM server; revoke it there.")
+    }
+    ArgosyConfirmModalHost(
+        visible = accounts.removalAccountId != null && !accounts.isRemoving,
+        title = "Remove ${removalAccount?.username ?: "account"}?",
+        message = removalMessage,
+        cancelLabel = "Cancel",
+        neutralLabel = if (accounts.removalHasPendingWork) "Keep Queued Work" else null,
+        onNeutral = { viewModel.confirmAccountRemoval(UnflushedQueuePolicy.REFUSE) },
+        confirmLabel = if (accounts.removalHasPendingWork) "Discard and Remove" else "Remove",
+        destructive = true,
+        onConfirm = { viewModel.confirmAccountRemoval(UnflushedQueuePolicy.DISCARD) },
+        onDismiss = { viewModel.cancelAccountRemoval() }
+    )
+
+    ArgosyConfirmModalHost(
+        visible = accounts.switchFailure != null,
+        title = "Switch did not finish",
+        message = "${accounts.switchFailure.orEmpty()} Game launches stay blocked until the " +
+            "switch completes, so no save is left half moved. Retry to finish it.",
+        confirmLabel = "Retry",
+        onConfirm = { viewModel.retryInterruptedAccountSwitch() },
+        onDismiss = { viewModel.dismissAccountNotice() },
+        cancelLabel = "Not Now"
+    )
+
+    ArgosyConfirmModalHost(
+        visible = accounts.switchBlocker != null,
+        title = "Cannot switch yet",
+        message = accounts.switchBlocker.orEmpty(),
+        confirmLabel = "OK",
+        onConfirm = { viewModel.dismissAccountNotice() },
+        onDismiss = { viewModel.dismissAccountNotice() },
+        cancelLabel = "Close"
+    )
+
+    ArgosyConfirmModalHost(
+        visible = accounts.notice != null && accounts.switchBlocker == null && accounts.switchFailure == null,
+        title = "Accounts",
+        message = accounts.notice.orEmpty(),
+        confirmLabel = "OK",
+        onConfirm = { viewModel.dismissAccountNotice() },
+        onDismiss = { viewModel.dismissAccountNotice() },
+        cancelLabel = "Close"
+    )
+}
+
 @Composable
 private fun SettingsFooter(uiState: SettingsUiState, shaderStack: ShaderStackState) {
     if (uiState.emulators.showSavePathModal || uiState.emulators.showEmulatorPicker ||
@@ -1229,6 +1310,9 @@ private fun SettingsFooter(uiState: SettingsUiState, shaderStack: ShaderStackSta
         return
     }
     if (shaderStack.showShaderPicker) {
+        return
+    }
+    if (uiState.currentSection == SettingsSection.ACCOUNTS && uiState.accounts.switchInProgress) {
         return
     }
 
@@ -1304,6 +1388,15 @@ private fun SettingsFooter(uiState: SettingsUiState, shaderStack: ShaderStackSta
             )
             if (steamItem == com.nendo.argosy.ui.screens.settings.sections.SteamItem.SyncLibrary) {
                 add(InputButton.X to "Force Sync")
+            }
+        }
+        if (uiState.currentSection == SettingsSection.ACCOUNTS && !uiState.accounts.pairing.active) {
+            val focusedAccount = com.nendo.argosy.ui.screens.settings.sections
+                .accountsItemAtFocusIndex(uiState.focusedIndex, uiState.accounts)
+            if (focusedAccount is com.nendo.argosy.ui.screens.settings.sections.AccountsItem.Account &&
+                uiState.accounts.actionsFor(focusedAccount.account).size > 1
+            ) {
+                add(InputButton.DPAD_HORIZONTAL to "Switch / Remove")
             }
         }
         if (uiState.currentSection == SettingsSection.STORAGE) {

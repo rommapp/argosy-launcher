@@ -55,6 +55,9 @@ import com.nendo.argosy.R
 import com.nendo.argosy.data.social.Friend
 import com.nendo.argosy.data.social.PresenceStatus
 import com.nendo.argosy.data.social.SocialUser
+import com.nendo.argosy.ui.ACCOUNTS_SECTION_NAME
+import com.nendo.argosy.ui.DRAWER_ACCOUNT_ROW_INDEX
+import com.nendo.argosy.ui.DRAWER_NAV_ITEM_OFFSET
 import com.nendo.argosy.ui.DrawerItem
 import com.nendo.argosy.ui.DrawerModal
 import com.nendo.argosy.ui.DrawerState
@@ -95,7 +98,13 @@ fun MainDrawer(
             DrawerStatusBar(
                 isRommConnected = drawerState.rommConnected,
                 localUser = drawerState.localUser,
-                localAvatarDoodle = drawerState.localAvatarDoodle
+                localAvatarDoodle = drawerState.localAvatarDoodle,
+                rommUsername = drawerState.rommUsername,
+                isFocused = drawerState.currentTab == DrawerTab.NAVIGATION &&
+                    drawerState.navFocusIndex == DRAWER_ACCOUNT_ROW_INDEX,
+                onOpenAccounts = {
+                    onNavigate(Screen.Settings.createRoute(section = ACCOUNTS_SECTION_NAME))
+                }
             )
             HorizontalDivider(
                 modifier = Modifier.padding(horizontal = Dimens.spacingLg, vertical = Dimens.radiusLg),
@@ -112,7 +121,7 @@ fun MainDrawer(
                     NavigationContent(
                         items = items,
                         currentRoute = currentRoute,
-                        focusedIndex = drawerState.navFocusIndex,
+                        focusedIndex = drawerState.navFocusIndex - DRAWER_NAV_ITEM_OFFSET,
                         downloadCount = drawerState.downloadCount,
                         saveSyncAttentionCount = drawerState.saveSyncAttentionCount,
                         emulatorUpdatesAvailable = drawerState.emulatorUpdatesAvailable,
@@ -554,21 +563,39 @@ private fun FriendItem(
     }
 }
 
+/**
+ * The drawer's account row. It is focusable, so it occupies drawer focus index
+ * [DRAWER_ACCOUNT_ROW_INDEX] and every navigation item below it is offset by
+ * [DRAWER_NAV_ITEM_OFFSET].
+ */
 @Composable
 private fun DrawerStatusBar(
     isRommConnected: Boolean,
     localUser: SocialUser?,
-    localAvatarDoodle: String? = null
+    localAvatarDoodle: String? = null,
+    rommUsername: String? = null,
+    isFocused: Boolean = false,
+    onOpenAccounts: () -> Unit = {}
 ) {
+    val theme = LocalArgosyTheme.current
     val mutedColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.35f)
+    val shape = RoundedCornerShape(Dimens.radiusControl)
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = Dimens.spacingLg, vertical = Dimens.spacingSm),
+            .padding(horizontal = Dimens.spacingSm)
+            .clip(shape)
+            .background(
+                if (isFocused) theme.focusAccent.copy(alpha = DRAWER_FOCUS_WASH_ALPHA)
+                else Color.Transparent
+            )
+            .clickableNoFocus(onClick = onOpenAccounts)
+            .padding(horizontal = Dimens.spacingMd, vertical = Dimens.spacingSm),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         Row(
+            modifier = Modifier.weight(1f),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
         ) {
@@ -590,12 +617,22 @@ private fun DrawerStatusBar(
                 tint = if (isRommConnected) Color.Unspecified else mutedColor,
                 modifier = Modifier.size(Dimens.iconMd)
             )
+            Text(
+                text = rommUsername ?: "No account",
+                style = MaterialTheme.typography.labelLarge,
+                color = if (isFocused) theme.focusAccent else MaterialTheme.colorScheme.onSurface,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f, fill = false)
+            )
         }
         SystemStatusBar(
             contentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
         )
     }
 }
+
+private const val DRAWER_FOCUS_WASH_ALPHA = 0.15f
 
 @Composable
 private fun EmulatorUpdateNotice(updateCount: Int) {

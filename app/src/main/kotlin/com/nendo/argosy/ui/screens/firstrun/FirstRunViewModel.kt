@@ -665,6 +665,7 @@ class FirstRunViewModel @Inject constructor(
                 DeviceAuthPoll.SlowDown -> intervalMs += 5000L
                 DeviceAuthPoll.Denied -> { failDevicePairing("Pairing was denied on the server"); return }
                 DeviceAuthPoll.Expired -> { failDevicePairing("Pairing code expired, start again"); return }
+                is DeviceAuthPoll.AddedAccount -> { failDevicePairing("Unexpected pairing result"); return }
                 is DeviceAuthPoll.Failed -> { failDevicePairing(poll.message); return }
             }
         }

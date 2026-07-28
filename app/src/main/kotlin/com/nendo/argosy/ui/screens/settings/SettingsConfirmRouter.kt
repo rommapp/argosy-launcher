@@ -23,6 +23,9 @@ import com.nendo.argosy.ui.screens.settings.sections.ControlsItem
 import com.nendo.argosy.ui.screens.settings.sections.HomeScreenItem
 import com.nendo.argosy.ui.screens.settings.sections.InterfaceItem
 import com.nendo.argosy.ui.screens.settings.sections.InterfaceLayoutState
+import com.nendo.argosy.ui.screens.settings.sections.AccountsItem
+import com.nendo.argosy.ui.screens.settings.sections.accountsItemAtFocusIndex
+import com.nendo.argosy.ui.screens.settings.sections.accountsMaxFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.MainSettingsItem
 import com.nendo.argosy.ui.screens.settings.sections.StorageItem
 import com.nendo.argosy.data.preferences.FontSlot
@@ -131,6 +134,7 @@ internal fun routeConfirm(vm: SettingsViewModel): InputResult {
             when (item) {
                 MainSettingsItem.DeviceSettings -> vm.viewModelScope.launch { vm._openDeviceSettingsEvent.emit(Unit) }
                 MainSettingsItem.GameData -> vm.navigateToSection(SettingsSection.SERVER)
+                MainSettingsItem.Accounts -> vm.navigateToSection(SettingsSection.ACCOUNTS)
                 MainSettingsItem.RetroAchievements -> vm.navigateToSection(SettingsSection.RETRO_ACHIEVEMENTS)
                 MainSettingsItem.Storage -> vm.navigateToSection(SettingsSection.STORAGE)
                 MainSettingsItem.Theme -> vm.navigateToSection(SettingsSection.THEME)
@@ -148,6 +152,7 @@ internal fun routeConfirm(vm: SettingsViewModel): InputResult {
             }
             InputResult.HANDLED
         }
+        SettingsSection.ACCOUNTS -> routeAccountsConfirm(vm, state)
         SettingsSection.SERVER -> {
             routeServerConfirm(vm, state)
         }
@@ -277,6 +282,43 @@ internal fun routeConfirm(vm: SettingsViewModel): InputResult {
         SettingsSection.CORE_OPTIONS -> InputResult.HANDLED
         SettingsSection.SOCIAL -> vm.handleSocialConfirm(state)
     }
+}
+
+/**
+ * Accounts owns its confirm routing rather than reusing the server section's, whose pairing
+ * branch gates the whole section on `rommDevicePairing` and cancels the single stored connection.
+ */
+private fun routeAccountsConfirm(vm: SettingsViewModel, state: SettingsUiState): InputResult {
+    val accounts = state.accounts
+    if (accounts.pairing.active) {
+        if (accounts.pairing.error != null) {
+            vm.retryAddAccountPairing()
+        } else {
+            vm.cancelAddAccount()
+        }
+        return InputResult.HANDLED
+    }
+    if (accounts.switchInProgress) return InputResult.HANDLED
+
+    when (val item = accountsItemAtFocusIndex(state.focusedIndex, accounts)) {
+        is AccountsItem.Account -> {
+            val account = item.account
+            when (accounts.selectedActionFor(account)) {
+                AccountRowAction.SWITCH -> vm.requestAccountSwitch(account.id)
+                AccountRowAction.REMOVE -> if (accounts.canRemove(account)) {
+                    vm.requestAccountRemoval(account.id)
+                }
+                null -> {}
+            }
+            return InputResult.handled(SoundType.OPEN_MODAL)
+        }
+        AccountsItem.AddAccount -> {
+            vm.startAddAccount()
+            return InputResult.handled(SoundType.OPEN_MODAL)
+        }
+        else -> {}
+    }
+    return InputResult.HANDLED
 }
 
 private fun routeServerConfirm(vm: SettingsViewModel, state: SettingsUiState): InputResult {
@@ -901,6 +943,8 @@ internal fun routeNavigateBack(vm: SettingsViewModel): Boolean {
         state.builtinControls.showControllerOrderModal -> { vm.hideControllerOrderModal(); true }
         state.builtinControls.showInputMappingModal -> { vm.hideInputMappingModal(); true }
         state.builtinControls.showHotkeysModal -> { vm.hideHotkeysModal(); true }
+        state.accounts.pairing.active -> { vm.cancelAddAccount(); true }
+        state.accounts.switchInProgress -> true
         state.server.rommConfiguring -> { vm.cancelRommConfig(); true }
         state.currentSection == SettingsSection.SYNC_SETTINGS -> {
             val items = buildGameDataItemsFromState(state)
@@ -1069,6 +1113,9 @@ internal fun routeMoveFocus(vm: SettingsViewModel, delta: Int): Boolean {
         vm.biosDelegate.resetPlatformSubFocus()
         vm.biosDelegate.resetBiosPathActionFocus()
     }
+    if (vm._uiState.value.currentSection == SettingsSection.ACCOUNTS) {
+        vm.accountsDelegate.resetRowActionFocus()
+    }
     return moved
 }
 
@@ -1078,6 +1125,11 @@ private fun computeMaxFocusIndex(
     isConnected: Boolean
 ): Int = when (state.currentSection) {
     SettingsSection.MAIN -> mainSettingsMaxFocusIndex()
+    SettingsSection.ACCOUNTS -> if (state.accounts.pairing.active || state.accounts.switchInProgress) {
+        0
+    } else {
+        accountsMaxFocusIndex(state.accounts)
+    }
     SettingsSection.SERVER -> if (state.server.rommConfiguring) {
         rommConfigMaxIndex(state.server)
     } else {

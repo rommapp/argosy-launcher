@@ -38,6 +38,10 @@ internal fun routeNavigateToSection(vm: SettingsViewModel, section: SettingsSect
     }
     vm._uiState.update { it.copy(currentSection = section, focusedIndex = 0, parentFocusIndex = parentIndex) }
     when (section) {
+        SettingsSection.ACCOUNTS -> {
+            vm.accountsDelegate.resetRowActionFocus()
+            vm.accountsDelegate.dismissNotice()
+        }
         SettingsSection.PLATFORMS -> vm.refreshEmulators()
         SettingsSection.SERVER -> {
             vm.serverDelegate.checkRommConnection(vm.viewModelScope)

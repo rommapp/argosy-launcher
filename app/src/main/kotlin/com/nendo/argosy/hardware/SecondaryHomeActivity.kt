@@ -466,6 +466,16 @@ class SecondaryHomeActivity :
         viewModel.refresh(); dualHomeViewModel.refresh()
     }
 
+    /**
+     * Drops back to Home before reloading. Recents, last-played and the game-detail overlay are
+     * per-account, so a detail screen left open across a switch would be rendering rows the
+     * incoming account does not own.
+     */
+    override fun onAccountSwitched() {
+        returnToHome()
+        onLibraryRefresh()
+    }
+
     override fun onOverlayRequested(eventName: String) {
         if (!isShowcaseRole) return
         when (eventName) {

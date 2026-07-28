@@ -105,12 +105,21 @@ sealed class DrawerModal {
     data object AddFriend : DrawerModal()
 }
 
+/**
+ * Focus index of the drawer's account row, which sits above the [DrawerItem] list and is not one
+ * of them. [DRAWER_NAV_ITEM_OFFSET] converts between a drawerItems index and a drawer focus index.
+ */
+internal const val DRAWER_ACCOUNT_ROW_INDEX = 0
+internal const val DRAWER_NAV_ITEM_OFFSET = 1
+internal const val ACCOUNTS_SECTION_NAME = "ACCOUNTS"
+
 data class DrawerState(
     val rommConnected: Boolean = false,
     val rommConnecting: Boolean = false,
     val socialConnected: Boolean = false,
     val localUser: SocialUser? = null,
     val localAvatarDoodle: String? = null,
+    val rommUsername: String? = null,
     val downloadCount: Int = 0,
     val saveSyncAttentionCount: Int = 0,
     val emulatorUpdatesAvailable: Int = 0,
@@ -517,6 +526,7 @@ class ArgosyViewModel @Inject constructor(
             socialConnected = socialConnection is SocialConnectionState.Connected,
             localUser = (socialConnection as? SocialConnectionState.Connected)?.user,
             localAvatarDoodle = userPrefs.socialAvatarDoodle.takeIf { userPrefs.socialAvatarUseDoodle },
+            rommUsername = userPrefs.rommUsername?.takeIf { it.isNotBlank() },
             downloadCount = downloadCount,
             saveSyncAttentionCount = saveSyncAttentionCount,
             emulatorUpdatesAvailable = emulatorUpdateCount,
@@ -589,6 +599,13 @@ class ArgosyViewModel @Inject constructor(
         modalResetSignal.emit()
     }
 
+    /**
+     * The drawer's navigation column carries one row that is not a [DrawerItem]: the account row
+     * at index 0. Every nav item therefore sits at `drawerItems index + 1`, and this is the only
+     * place that offset is defined.
+     */
+    private val drawerNavLastIndex: Int get() = drawerItems.size
+
     fun initDrawerFocus(currentRoute: String?, parentRoute: String? = null) {
         var index = drawerItems.indexOfFirst { it.route == currentRoute }
         if (index < 0 && parentRoute != null) {
@@ -597,7 +614,7 @@ class ArgosyViewModel @Inject constructor(
         if (index < 0) {
             index = drawerItems.indexOfFirst { it.route == Screen.Home.route }
         }
-        _navFocusIndex.value = if (index >= 0) index else 0
+        _navFocusIndex.value = if (index >= 0) index + DRAWER_NAV_ITEM_OFFSET else 0
     }
 
     fun switchToNavTab() {
@@ -664,7 +681,7 @@ class ArgosyViewModel @Inject constructor(
             val wrapMode = uiState.value.menuWrapMode
             return when (_drawerTab.value) {
                 DrawerTab.NAVIGATION ->
-                    moveWrappedFocus(_navFocusIndex, -1, drawerItems.lastIndex, wrapMode)
+                    moveWrappedFocus(_navFocusIndex, -1, drawerNavLastIndex, wrapMode)
                 DrawerTab.FRIENDS -> {
                     val friends = drawerUiState.value.friends
                     if (friends.isEmpty()) return InputResult.UNHANDLED
@@ -677,7 +694,7 @@ class ArgosyViewModel @Inject constructor(
             val wrapMode = uiState.value.menuWrapMode
             return when (_drawerTab.value) {
                 DrawerTab.NAVIGATION ->
-                    moveWrappedFocus(_navFocusIndex, 1, drawerItems.lastIndex, wrapMode)
+                    moveWrappedFocus(_navFocusIndex, 1, drawerNavLastIndex, wrapMode)
                 DrawerTab.FRIENDS -> {
                     val friends = drawerUiState.value.friends
                     if (friends.isEmpty()) return InputResult.UNHANDLED
@@ -706,9 +723,14 @@ class ArgosyViewModel @Inject constructor(
             return when (_drawerTab.value) {
                 DrawerTab.NAVIGATION -> {
                     val currentIndex = _navFocusIndex.value
-                    if (currentIndex < drawerItems.size) {
-                        Log.d("ArgosyViewModel", "Navigating to drawer item: ${drawerItems[currentIndex].route}")
-                        onNavigate(drawerItems[currentIndex].route)
+                    if (currentIndex == DRAWER_ACCOUNT_ROW_INDEX) {
+                        onNavigate(Screen.Settings.createRoute(section = ACCOUNTS_SECTION_NAME))
+                        return InputResult.HANDLED
+                    }
+                    val itemIndex = currentIndex - DRAWER_NAV_ITEM_OFFSET
+                    if (itemIndex in drawerItems.indices) {
+                        Log.d("ArgosyViewModel", "Navigating to drawer item: ${drawerItems[itemIndex].route}")
+                        onNavigate(drawerItems[itemIndex].route)
                     }
                     InputResult.HANDLED
                 }

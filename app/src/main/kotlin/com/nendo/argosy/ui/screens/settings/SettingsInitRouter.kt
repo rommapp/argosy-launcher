@@ -82,6 +82,11 @@ internal fun routeObserveDelegateStates(vm: SettingsViewModel) {
         vm._uiState.update { it.copy(server = server) }
     }.launchIn(vm.viewModelScope)
 
+    vm.accountsDelegate.state.onEach { accounts ->
+        vm._uiState.update { it.copy(accounts = accounts) }
+    }.launchIn(vm.viewModelScope)
+    vm.accountsDelegate.start(vm.viewModelScope)
+
     vm.storageDelegate.state.onEach { storage ->
         vm._uiState.update { it.copy(storage = storage) }
     }.launchIn(vm.viewModelScope)

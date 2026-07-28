@@ -40,6 +40,7 @@ import com.nendo.argosy.ui.input.InputResult
 import com.nendo.argosy.ui.input.SoundFeedbackManager
 import com.nendo.argosy.core.input.SoundType
 import com.nendo.argosy.core.notification.NotificationManager
+import com.nendo.argosy.ui.screens.settings.delegates.AccountsSettingsDelegate
 import com.nendo.argosy.ui.screens.settings.delegates.AmbientAudioSettingsDelegate
 import com.nendo.argosy.ui.screens.settings.delegates.BiosSettingsDelegate
 import com.nendo.argosy.ui.screens.settings.delegates.ControlsSettingsDelegate
@@ -106,6 +107,7 @@ class SettingsViewModel @Inject constructor(
     val ambientAudioDelegate: AmbientAudioSettingsDelegate,
     val emulatorDelegate: EmulatorSettingsDelegate,
     val serverDelegate: ServerSettingsDelegate,
+    val accountsDelegate: AccountsSettingsDelegate,
     val storageDelegate: StorageSettingsDelegate,
     val attributionDelegate: StorageAttributionDelegate,
     val storagePlatformGamesDelegate: com.nendo.argosy.ui.screens.settings.delegates.StoragePlatformGamesDelegate,
@@ -246,6 +248,37 @@ class SettingsViewModel @Inject constructor(
     fun moveDriverPickerFocus(delta: Int) = driversDelegate.movePickerReleaseFocus(delta)
     fun downloadSelectedDriverRelease() = driversDelegate.downloadFocusedPickerRelease(viewModelScope)
     fun dismissDriverDownload() = driversDelegate.dismissActiveDownload()
+
+    fun requestAccountSwitch(accountId: Long) = accountsDelegate.requestSwitch(accountId)
+    fun requestAccountRemoval(accountId: Long) =
+        accountsDelegate.requestRemoval(viewModelScope, accountId)
+    fun cancelAccountRemoval() = accountsDelegate.cancelRemoval()
+    fun confirmAccountRemoval(policy: com.nendo.argosy.data.sync.UnflushedQueuePolicy) =
+        accountsDelegate.confirmRemoval(viewModelScope, policy)
+    fun startAddAccount() = accountsDelegate.requestAddAccount()
+    fun retryAddAccountPairing() = accountsDelegate.startPairing(viewModelScope)
+    fun cancelAddAccount() = accountsDelegate.cancelPairing()
+    fun confirmAccountExitPrompt() = accountsDelegate.confirmExitPrompt(viewModelScope)
+    fun cancelAccountExitPrompt() = accountsDelegate.cancelExitPrompt()
+    fun retryInterruptedAccountSwitch() = accountsDelegate.retryInterruptedSwitch(viewModelScope)
+    fun dismissAccountNotice() = accountsDelegate.dismissNotice()
+
+    fun setAccountRowAction(account: AccountUi, action: AccountRowAction) {
+        val index = _uiState.value.accounts.actionsFor(account).indexOf(action)
+        if (index >= 0) accountsDelegate.setRowActionIndex(index)
+    }
+
+    fun moveAccountRowAction(direction: Int): Boolean {
+        val state = _uiState.value
+        val item = com.nendo.argosy.ui.screens.settings.sections
+            .accountsItemAtFocusIndex(state.focusedIndex, state.accounts)
+        val account = (item as? com.nendo.argosy.ui.screens.settings.sections.AccountsItem.Account)
+            ?.account ?: return false
+        return accountsDelegate.moveRowActionFocus(
+            direction,
+            state.accounts.actionsFor(account).size
+        )
+    }
 
     fun showEmulatorPicker(config: PlatformEmulatorConfig) = routeShowEmulatorPicker(this, config)
 

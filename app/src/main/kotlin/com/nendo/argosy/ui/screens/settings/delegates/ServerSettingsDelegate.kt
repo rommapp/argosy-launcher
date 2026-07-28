@@ -285,6 +285,7 @@ class ServerSettingsDelegate @Inject constructor(
                 DeviceAuthPoll.SlowDown -> intervalMs += 5000L
                 DeviceAuthPoll.Denied -> { failPairing("Pairing was denied on the server"); return }
                 DeviceAuthPoll.Expired -> { failPairing("Pairing code expired, start again"); return }
+                is DeviceAuthPoll.AddedAccount -> { failPairing("Unexpected pairing result"); return }
                 is DeviceAuthPoll.Failed -> { failPairing(poll.message); return }
             }
         }

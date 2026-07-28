@@ -201,6 +201,7 @@ class DualScreenManager(
         scope = newScope
         companionWatchdogJob?.cancel()
         companionLaunchJob?.cancel()
+        observeActiveAccount()
     }
     interface CompanionHost {
         fun onForegroundChanged(isForeground: Boolean)
@@ -210,6 +211,7 @@ class DualScreenManager(
         fun onSessionEnded()
         fun onHomeAppsChanged(apps: List<String>)
         fun onLibraryRefresh()
+        fun onAccountSwitched()
         fun onOverlayRequested(eventName: String)
         fun onRoleSwapped(isSwapped: Boolean)
         fun onOverlayClosed()
@@ -301,6 +303,8 @@ class DualScreenManager(
     val dualCollectionShowcase: StateFlow<DualCollectionShowcaseState> =
         _dualCollectionShowcase
 
+    private var accountObserverJob: Job? = null
+
     init {
         scope.launch {
             preferencesRepository.userPreferences.collect { prefs ->
@@ -313,6 +317,46 @@ class DualScreenManager(
                 }
             }
         }
+        observeActiveAccount()
+    }
+
+    /**
+     * Watches the stored RomM user id, which `RomMAccountRepository.activate` rewrites as the
+     * identity half of an account switch.
+     *
+     * Nothing else moves the companion off the previous account: its home sections, games and
+     * game-detail state are loaded with one-shot queries rather than DB flows, so recents,
+     * last-played and the rest of the per-account overlay would keep rendering the outgoing
+     * account's library until something pushed a refresh.
+     */
+    private fun observeActiveAccount() {
+        accountObserverJob?.cancel()
+        accountObserverJob = scope.launch {
+            var lastUserId: Long? = null
+            var seeded = false
+            preferencesRepository.userPreferences.collect { prefs ->
+                val userId = prefs.rommUserId
+                if (!seeded) {
+                    seeded = true
+                    lastUserId = userId
+                    return@collect
+                }
+                if (userId == lastUserId) return@collect
+                lastUserId = userId
+                onActiveAccountChanged()
+            }
+        }
+    }
+
+    private fun onActiveAccountChanged() {
+        Log.i(TAG, "Active RomM account changed, resetting companion-visible state")
+        _dualGameDetailState.value = null
+        _swappedGameDetailViewModel = null
+        _swappedCurrentScreen.value = com.nendo.argosy.hardware.CompanionScreen.HOME
+        _dualSyncOverlay.value = null
+        _dualSaveConflict.value = null
+        swappedDualHomeViewModel?.refresh()
+        companionHost?.onAccountSwitched()
     }
 
     @Volatile private var menuWrapMode: com.nendo.argosy.data.preferences.MenuWrapMode =

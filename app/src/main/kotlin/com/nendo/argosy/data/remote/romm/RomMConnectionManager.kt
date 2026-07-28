@@ -67,6 +67,7 @@ sealed class DeviceAuthPoll {
     data object Denied : DeviceAuthPoll()
     data object Expired : DeviceAuthPoll()
     data class Approved(val token: String) : DeviceAuthPoll()
+    data class AddedAccount(val accountId: Long) : DeviceAuthPoll()
     data class Failed(val message: String) : DeviceAuthPoll()
 }
 
@@ -397,15 +398,29 @@ class RomMConnectionManager @Inject constructor(
         return RomMResult.Error(lastError ?: "Pairing failed")
     }
 
-    suspend fun pollDeviceAuthOnce(deviceCode: String): DeviceAuthPoll {
+    /**
+     * [activateOnSuccess] false pairs an ADDITIONAL account: the row is stored but the device
+     * stays signed in as whoever it was. Activating on pair would skip the switch teardown and
+     * leave the new account playing on the previous one's saves.
+     */
+    suspend fun pollDeviceAuthOnce(
+        deviceCode: String,
+        activateOnSuccess: Boolean = true
+    ): DeviceAuthPoll {
         val authApi = deviceAuthApi ?: return DeviceAuthPoll.Failed("Pairing not started")
         val base = deviceAuthBaseUrl ?: return DeviceAuthPoll.Failed("Pairing not started")
         return try {
             val response = authApi.deviceAuthToken(RomMDeviceAuthTokenRequest(deviceCode))
             if (response.isSuccessful) {
                 val body = response.body() ?: return DeviceAuthPoll.Failed("Empty token response")
-                finalizeDeviceAuth(base, body)
-                DeviceAuthPoll.Approved(body.accessToken)
+                if (activateOnSuccess) {
+                    finalizeDeviceAuth(base, body)
+                    DeviceAuthPoll.Approved(body.accessToken)
+                } else {
+                    val accountId = registerAdditionalAccount(base, body)
+                        ?: return DeviceAuthPoll.Failed("Could not identify the paired user")
+                    DeviceAuthPoll.AddedAccount(accountId)
+                }
             } else {
                 when (parseDetail(response.errorBody()?.string())) {
                     "authorization_pending" -> DeviceAuthPoll.Pending
@@ -423,6 +438,26 @@ class RomMConnectionManager @Inject constructor(
     fun cancelDeviceAuth() {
         deviceAuthApi = null
         deviceAuthBaseUrl = null
+    }
+
+    private suspend fun registerAdditionalAccount(
+        base: String,
+        body: RomMDeviceAuthTokenResponse
+    ): Long? {
+        val newApi = createApi(base, body.accessToken)
+        val user = fetchCurrentUser(newApi) ?: return null
+        val accountId = rommAccountRepository.get().registerAdditional(
+            rommUserId = user.id,
+            username = user.username,
+            baseUrl = base,
+            token = body.accessToken,
+            deviceId = body.deviceId,
+            deviceClientVersion = BuildConfig.VERSION_NAME
+        )
+        deviceAuthApi = null
+        deviceAuthBaseUrl = null
+        Logger.info(TAG, "registerAdditionalAccount: stored account $accountId for user ${user.id} without activating")
+        return accountId
     }
 
     private suspend fun finalizeDeviceAuth(base: String, body: RomMDeviceAuthTokenResponse) {

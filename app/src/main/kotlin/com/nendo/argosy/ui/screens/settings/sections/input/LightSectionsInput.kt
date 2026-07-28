@@ -58,6 +58,7 @@ internal class LightSectionsInput(
     private fun handleLeftRight(direction: Int): InputResult {
         val state = viewModel.uiState.value
         return when (state.currentSection) {
+            SettingsSection.ACCOUNTS -> handleAccountsLeftRight(direction)
             SettingsSection.BIOS -> handleBiosLeftRight(direction)
             SettingsSection.SERVER -> handleServerLeftRight(direction)
             SettingsSection.HOME_SCREEN -> handleHomeScreenLeftRight(direction)
@@ -68,6 +69,18 @@ internal class LightSectionsInput(
             SettingsSection.BUILTIN_EMULATOR -> handleBuiltinEmulatorLeftRight(direction)
             SettingsSection.CORE_MANAGEMENT -> handleCoreManagementLeftRight(direction)
             else -> InputResult.UNHANDLED
+        }
+    }
+
+    private fun handleAccountsLeftRight(direction: Int): InputResult {
+        val state = viewModel.uiState.value
+        if (state.accounts.pairing.active || state.accounts.switchInProgress) {
+            return InputResult.HANDLED
+        }
+        return if (viewModel.moveAccountRowAction(direction)) {
+            InputResult.HANDLED
+        } else {
+            InputResult.UNHANDLED
         }
     }
 

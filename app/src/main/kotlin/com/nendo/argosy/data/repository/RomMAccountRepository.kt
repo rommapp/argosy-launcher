@@ -69,6 +69,42 @@ class RomMAccountRepository @Inject constructor(
         return id
     }
 
+    /**
+     * Records a pairing WITHOUT making it live and without touching the credential mirror.
+     *
+     * Pairing a second account must not hand the device to it: the outgoing account's saves are
+     * still on disk unarchived, so activating here would let the new account launch straight into
+     * them. Activation is the switch coordinator's job, which tears down first.
+     */
+    suspend fun registerAdditional(
+        rommUserId: Long,
+        username: String,
+        baseUrl: String,
+        token: String,
+        deviceId: String?,
+        deviceClientVersion: String?
+    ): Long {
+        val now = Instant.now()
+        val existing = rommAccountDao.getByRommUserId(rommUserId)
+        val id = rommAccountDao.upsert(
+            RomMAccountEntity(
+                id = existing?.id ?: 0,
+                rommUserId = rommUserId,
+                username = username,
+                baseUrl = baseUrl,
+                token = token,
+                deviceId = deviceId ?: existing?.deviceId,
+                deviceClientVersion = deviceClientVersion ?: existing?.deviceClientVersion,
+                avatarPath = existing?.avatarPath,
+                isActive = existing?.isActive ?: false,
+                lastLoginAt = now,
+                createdAt = existing?.createdAt ?: now
+            )
+        ).let { if (it > 0) it else existing?.id ?: 0 }
+        rommApiProvider.invalidate(id)
+        return id
+    }
+
     suspend fun recordDeviceRegistration(deviceId: String, clientVersion: String) {
         val active = rommAccountDao.getActive() ?: return
         rommAccountDao.updateDevice(active.id, deviceId, clientVersion)

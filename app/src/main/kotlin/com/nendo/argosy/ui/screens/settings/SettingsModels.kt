@@ -61,6 +61,7 @@ data class MusicRelocationPrompt(
 
 enum class SettingsSection {
     MAIN,
+    ACCOUNTS,
     SERVER,
     SYNC_SETTINGS,
     STEAM_SETTINGS,
@@ -811,6 +812,74 @@ data class ServerState(
     val musicApiSupported: Boolean = false
 )
 
+/**
+ * One paired RomM account as the accounts list renders it.
+ */
+data class AccountUi(
+    val id: Long,
+    val username: String,
+    val serverLabel: String,
+    val isActive: Boolean
+)
+
+/**
+ * The per-row action the d-pad has selected. An account row carries more than one verb, and
+ * A/Confirm commits whichever is selected rather than adjusting anything.
+ */
+enum class AccountRowAction { SWITCH, REMOVE }
+
+data class AccountPairingState(
+    val active: Boolean = false,
+    val connecting: Boolean = false,
+    val userCode: String? = null,
+    val verificationUrl: String? = null,
+    val error: String? = null
+)
+
+data class AccountsState(
+    val accounts: List<AccountUi> = emptyList(),
+    val isLoading: Boolean = true,
+    val rowActionIndex: Int = 0,
+    val pairing: AccountPairingState = AccountPairingState(),
+    val notice: String? = null,
+    val exitPromptAccountId: Long? = null,
+    val exitPromptIsForAdd: Boolean = false,
+    val switchInProgress: Boolean = false,
+    val switchProgressLabel: String? = null,
+    val switchBlocker: String? = null,
+    val switchFailure: String? = null,
+    val isResumingSwitch: Boolean = false,
+    val removalAccountId: Long? = null,
+    val removalPendingSummary: String? = null,
+    val removalHasPendingWork: Boolean = false,
+    val removalIsLastAccount: Boolean = false,
+    val isRemoving: Boolean = false,
+    val needsSyncSaveTitles: List<String> = emptyList(),
+    val needsSyncStateTitles: List<String> = emptyList()
+) {
+    val activeAccount: AccountUi? get() = accounts.firstOrNull { it.isActive }
+    val removalAccount: AccountUi? get() = accounts.firstOrNull { it.id == removalAccountId }
+    val exitPromptAccount: AccountUi? get() = accounts.firstOrNull { it.id == exitPromptAccountId }
+
+    fun actionsFor(account: AccountUi): List<AccountRowAction> = buildList {
+        if (!account.isActive) add(AccountRowAction.SWITCH)
+        add(AccountRowAction.REMOVE)
+    }
+
+    /**
+     * Removing the live account while another is paired would leave the device signed out with
+     * accounts still on it, so the switch has to happen first. The last account is removable:
+     * that case is the sign-out, and the teardown runs with no incoming account.
+     */
+    fun canRemove(account: AccountUi): Boolean = !account.isActive || accounts.size <= 1
+
+    fun selectedActionFor(account: AccountUi): AccountRowAction? {
+        val actions = actionsFor(account)
+        if (actions.isEmpty()) return null
+        return actions[rowActionIndex.mod(actions.size)]
+    }
+}
+
 data class PlatformFilterItem(
     val id: Long,
     val name: String,
@@ -1200,6 +1269,7 @@ data class SettingsUiState(
     val syncSettings: SyncSettingsState = SyncSettingsState(),
     val steam: SteamSettingsState = SteamSettingsState(),
     val retroAchievements: RASettingsState = RASettingsState(),
+    val accounts: AccountsState = AccountsState(),
     val android: AndroidSettingsState = AndroidSettingsState(),
     val bios: BiosState = BiosState(),
     val drivers: DriversState = DriversState(),

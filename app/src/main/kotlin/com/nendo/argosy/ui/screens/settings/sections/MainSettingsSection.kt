@@ -18,6 +18,7 @@ import androidx.compose.material.icons.filled.Dashboard
 import androidx.compose.material.icons.filled.Gamepad
 import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.ManageAccounts
 import androidx.compose.material.icons.filled.Memory
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.PhoneAndroid
@@ -47,6 +48,7 @@ internal sealed class MainSettingsItem(
     val title: String,
 ) {
     data object DeviceSettings : MainSettingsItem("device", Icons.Default.PhoneAndroid, "Device Settings")
+    data object Accounts : MainSettingsItem("accounts", Icons.Default.ManageAccounts, "Accounts")
     data object GameData : MainSettingsItem("gameData", Icons.Default.Dns, "Game Data")
     data object RetroAchievements : MainSettingsItem(
         "retroAchievements",
@@ -69,7 +71,7 @@ internal sealed class MainSettingsItem(
     companion object {
         val ALL: List<MainSettingsItem> = listOf(
             DeviceSettings, Platforms, BuiltinEmulator, Storage, Theme, Interface, Controls,
-            GameData, Bios, Drivers, RetroAchievements, Steam, Social, Permissions, About
+            GameData, Accounts, Bios, Drivers, RetroAchievements, Steam, Social, Permissions, About
         )
     }
 }
@@ -111,6 +113,15 @@ fun MainSettingsSection(uiState: SettingsUiState, viewModel: SettingsViewModel) 
                 } ?: "Never synced"
             }
         }
+        MainSettingsItem.Accounts -> {
+            val accounts = uiState.accounts
+            val active = accounts.activeAccount
+            when {
+                accounts.accounts.isEmpty() -> "No account paired"
+                accounts.accounts.size == 1 -> active?.username ?: "1 account"
+                else -> "${active?.username ?: "No active account"} of ${accounts.accounts.size}"
+            }
+        }
         MainSettingsItem.RetroAchievements -> if (uiState.retroAchievements.isLoggedIn) {
             "Logged in as ${uiState.retroAchievements.username}"
         } else {
@@ -150,6 +161,7 @@ fun MainSettingsSection(uiState: SettingsUiState, viewModel: SettingsViewModel) 
         when (item) {
             MainSettingsItem.DeviceSettings -> context.startActivity(Intent(Settings.ACTION_SETTINGS))
             MainSettingsItem.GameData -> viewModel.navigateToSection(SettingsSection.SERVER)
+            MainSettingsItem.Accounts -> viewModel.navigateToSection(SettingsSection.ACCOUNTS)
             MainSettingsItem.RetroAchievements -> viewModel.navigateToSection(SettingsSection.RETRO_ACHIEVEMENTS)
             MainSettingsItem.Storage -> viewModel.navigateToSection(SettingsSection.STORAGE)
             MainSettingsItem.Theme -> viewModel.navigateToSection(SettingsSection.THEME)

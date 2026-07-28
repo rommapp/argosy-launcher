@@ -58,8 +58,8 @@ class RomMRepository @Inject constructor(
     suspend fun beginDeviceAuth(url: String): RomMResult<RomMDeviceAuthInitResponse> =
         connectionManager.beginDeviceAuth(url)
 
-    suspend fun pollDeviceAuthOnce(deviceCode: String): DeviceAuthPoll =
-        connectionManager.pollDeviceAuthOnce(deviceCode)
+    suspend fun pollDeviceAuthOnce(deviceCode: String, activateOnSuccess: Boolean = true): DeviceAuthPoll =
+        connectionManager.pollDeviceAuthOnce(deviceCode, activateOnSuccess)
 
     fun cancelDeviceAuth() = connectionManager.cancelDeviceAuth()
 

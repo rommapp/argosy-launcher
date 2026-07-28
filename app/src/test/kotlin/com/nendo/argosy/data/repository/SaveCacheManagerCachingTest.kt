@@ -55,7 +55,20 @@ class SaveCacheManagerCachingTest {
 
         val fal = realFsFal()
         val archiver = SaveArchiver(mockk<AndroidDataAccessor>(relaxed = true), fal)
-        manager = SaveCacheManager(context, saveCacheDao, saveSyncDao, gameDao, preferencesRepository, syncPreferencesRepository, savePathResolver, archiver, fal, saveHandlerRegistry)
+        manager = SaveCacheManager(
+            context = context,
+            saveCacheDao = saveCacheDao,
+            saveSyncDao = saveSyncDao,
+            pendingSyncQueueDao = mockk(relaxed = true),
+            gameDao = gameDao,
+            preferencesRepository = preferencesRepository,
+            syncPreferencesRepository = syncPreferencesRepository,
+            savePathResolver = savePathResolver,
+            saveArchiver = archiver,
+            fal = fal,
+            saveHandlerRegistry = saveHandlerRegistry,
+            saveOwnershipTracker = mockk(relaxed = true),
+        )
     }
 
     @After

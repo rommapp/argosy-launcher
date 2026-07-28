@@ -8,6 +8,14 @@ import com.nendo.argosy.data.local.entity.SaveCacheEntity
 import kotlinx.coroutines.flow.Flow
 import java.time.Instant
 
+/**
+ * Pending upload tally for one account; a null [ownerUserId] is unattributed legacy content.
+ */
+data class OwnerPendingUploads(
+    val ownerUserId: Long?,
+    val pendingCount: Int
+)
+
 @Dao
 interface SaveCacheDao {
 
@@ -94,22 +102,14 @@ interface SaveCacheDao {
     suspend fun deleteByGameSources(sourceNames: List<String>)
 
     @Query("""
-        DELETE FROM save_cache
-        WHERE id IN (
-            SELECT id FROM save_cache
-            WHERE gameId = :gameId AND isLocked = 0
-            ORDER BY cachedAt ASC
-            LIMIT :count
-        )
-    """)
-    suspend fun deleteOldestUnlocked(gameId: Long, count: Int)
-
-    @Query("""
         SELECT * FROM save_cache
-        WHERE gameId = :gameId AND isLocked = 0
+        WHERE gameId = :gameId AND isLocked = 0 AND id NOT IN (:pinnedIds)
         ORDER BY cachedAt ASC
     """)
-    suspend fun getOldestUnlocked(gameId: Long): List<SaveCacheEntity>
+    suspend fun getOldestUnlockedExcluding(gameId: Long, pinnedIds: List<Long>): List<SaveCacheEntity>
+
+    @Query("DELETE FROM save_cache WHERE id IN (:ids)")
+    suspend fun deleteByIds(ids: List<Long>)
 
     @Query("SELECT * FROM save_cache WHERE gameId = :gameId ORDER BY cachedAt DESC LIMIT 1")
     suspend fun getMostRecent(gameId: Long): SaveCacheEntity?
@@ -179,6 +179,14 @@ interface SaveCacheDao {
 
     @Query("SELECT COUNT(*) FROM save_cache WHERE needsRemoteSync = 1")
     suspend fun countNeedingRemoteSync(): Int
+
+    @Query("""
+        SELECT ownerUserId AS ownerUserId, COUNT(*) AS pendingCount FROM save_cache
+        WHERE needsRemoteSync = 1
+        GROUP BY ownerUserId
+        ORDER BY pendingCount DESC
+    """)
+    suspend fun countNeedingRemoteSyncByOwner(): List<OwnerPendingUploads>
 
     @Query("SELECT COUNT(*) FROM save_cache WHERE gameId = :gameId AND needsRemoteSync = 1")
     suspend fun countNeedingRemoteSyncForGame(gameId: Long): Int

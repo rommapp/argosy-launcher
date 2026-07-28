@@ -2194,3 +2194,27 @@ object Migration_150_151 : Migration(150, 151) {
         )
     }
 }
+
+object Migration_151_152 : Migration(151, 152) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE `pending_sync_queue` ADD COLUMN `ownerUserId` INTEGER")
+        db.execSQL("ALTER TABLE `pending_sync_queue` ADD COLUMN `cacheId` INTEGER")
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS `index_pending_sync_queue_ownerUserId` " +
+                "ON `pending_sync_queue` (`ownerUserId`)"
+        )
+
+        db.execSQL("ALTER TABLE `save_cache` ADD COLUMN `ownerUserId` INTEGER")
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS `index_save_cache_ownerUserId` " +
+                "ON `save_cache` (`ownerUserId`)"
+        )
+
+        db.execSQL("ALTER TABLE `pending_conflicts` ADD COLUMN `ownerUserId` INTEGER NOT NULL DEFAULT 0")
+        db.execSQL("DROP INDEX IF EXISTS `index_pending_conflicts_gameId_rommSaveId`")
+        db.execSQL(
+            "CREATE UNIQUE INDEX IF NOT EXISTS `index_pending_conflicts_gameId_rommSaveId_ownerUserId` " +
+                "ON `pending_conflicts` (`gameId`, `rommSaveId`, `ownerUserId`)"
+        )
+    }
+}

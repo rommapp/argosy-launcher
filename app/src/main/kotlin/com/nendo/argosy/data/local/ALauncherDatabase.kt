@@ -154,7 +154,7 @@ import com.nendo.argosy.data.local.entity.SteamLicenseEntity
         QuayPassDailyStatsEntity::class,
         QuayPassPendingReportEntity::class
     ],
-    version = 151,
+    version = 152,
     exportSchema = true
 )
 @TypeConverters(Converters::class)

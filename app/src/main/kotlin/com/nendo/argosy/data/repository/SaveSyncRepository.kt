@@ -3,6 +3,7 @@ package com.nendo.argosy.data.repository
 import com.nendo.argosy.data.local.dao.SaveCacheDao
 import com.nendo.argosy.data.local.dao.SaveSyncDao
 import com.nendo.argosy.data.local.entity.SaveSyncEntity
+import com.nendo.argosy.data.remote.romm.AccountApi
 import com.nendo.argosy.data.remote.romm.RomMApi
 import com.nendo.argosy.data.remote.romm.RomMCapabilities
 import com.nendo.argosy.data.remote.romm.RomMSave
@@ -237,8 +238,10 @@ class SaveSyncRepository @Inject constructor(
         cacheFile: File,
         contentHash: String?,
         overwrite: Boolean = false,
-        uploadedCacheId: Long? = null
-    ): SaveSyncResult = apiClient.uploadCacheEntry(gameId, rommId, emulatorId, channelName, cacheFile, contentHash, overwrite, uploadedCacheId)
+        uploadedCacheId: Long? = null,
+        ownerApi: AccountApi? = null
+    ): SaveSyncResult =
+        apiClient.uploadCacheEntry(gameId, rommId, emulatorId, channelName, cacheFile, contentHash, overwrite, uploadedCacheId, ownerApi)
 
     suspend fun downloadSave(
         gameId: Long,
@@ -271,8 +274,12 @@ class SaveSyncRepository @Inject constructor(
         channelName: String?
     ): Boolean = apiClient.downloadAndCacheSave(serverSaveId, gameId, channelName)
 
-    suspend fun queueUpload(gameId: Long, emulatorId: String, localPath: String) =
-        orchestrator.queueUpload(gameId, emulatorId, localPath)
+    suspend fun queueUpload(
+        gameId: Long,
+        emulatorId: String,
+        localPath: String,
+        channelName: String? = null
+    ) = orchestrator.queueUpload(gameId, emulatorId, localPath, channelName)
 
     suspend fun scanAndQueueLocalChanges(secureSaves: Boolean): Int = orchestrator.scanAndQueueLocalChanges(secureSaves)
 

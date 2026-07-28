@@ -13,7 +13,9 @@ import com.nendo.argosy.data.local.entity.SyncType
 import com.nendo.argosy.data.repository.SaveSyncApiClient
 import com.nendo.argosy.data.local.dao.PendingConflictDao
 import com.nendo.argosy.data.local.entity.PendingConflictEntity
+import com.nendo.argosy.data.remote.romm.AccountApi
 import com.nendo.argosy.data.remote.romm.ConnectionState
+import com.nendo.argosy.data.remote.romm.RomMApiProvider
 import com.nendo.argosy.data.remote.romm.RomMRepository
 import com.nendo.argosy.data.preferences.SyncPreferencesRepository
 import com.nendo.argosy.data.repository.SaveCacheManager
@@ -57,7 +59,8 @@ class SyncCoordinator @Inject constructor(
     private val pendingConflictDao: PendingConflictDao,
     private val reconcileEffectApplier: ReconcileEffectApplier,
     private val saveRecoveryGate: SaveRecoveryGate,
-    private val screenshotUploader: ScreenshotUploader
+    private val screenshotUploader: ScreenshotUploader,
+    private val rommApiProvider: RomMApiProvider
 ) {
     companion object {
         private const val TAG = "SyncCoordinator"
@@ -69,6 +72,18 @@ class SyncCoordinator @Inject constructor(
     private var screenshotSweepDone = false
 
     private val mutex = Mutex()
+
+    private sealed interface OwnerRoute {
+        data object Live : OwnerRoute
+        data class Delegated(val account: AccountApi) : OwnerRoute
+        data class Unavailable(val ownerUserId: Long) : OwnerRoute
+    }
+
+    private suspend fun routeForOwner(ownerUserId: Long?, signedInUserId: Long?): OwnerRoute {
+        if (ownerUserId == null || ownerUserId == signedInUserId) return OwnerRoute.Live
+        val account = rommApiProvider.forRommUser(ownerUserId) ?: return OwnerRoute.Unavailable(ownerUserId)
+        return OwnerRoute.Delegated(account)
+    }
 
     sealed class ProcessResult {
         data object NotConnected : ProcessResult()
@@ -240,7 +255,9 @@ class SyncCoordinator @Inject constructor(
             var processed = 0
             var failed = 0
 
-            val saveSyncEnabled = syncPreferencesRepository.preferences.first().saveSyncEnabled
+            val prefs = syncPreferencesRepository.preferences.first()
+            val saveSyncEnabled = prefs.saveSyncEnabled
+            val signedInUserId = prefs.rommUserId
 
             val promoted = pendingSyncQueueDao.promoteEligibleFailedToPending()
             if (promoted > 0) {
@@ -285,7 +302,7 @@ class SyncCoordinator @Inject constructor(
                         break
                     }
 
-                    val result = processItem(item)
+                    val result = processItem(item, signedInUserId)
                     if (result) {
                         if (item.sessionId != null) {
                             pendingSyncQueueDao.markCompleted(item.id)
@@ -301,7 +318,7 @@ class SyncCoordinator @Inject constructor(
             }
 
             if (saveSyncEnabled) {
-                val dirtySaves = processDirtySaveCaches()
+                val dirtySaves = processDirtySaveCaches(signedInUserId)
                 processed += dirtySaves
 
                 val downloaded = saveSyncRepository.get().downloadPendingServerSaves()
@@ -350,12 +367,12 @@ class SyncCoordinator @Inject constructor(
         }
     }
 
-    private suspend fun processItem(item: PendingSyncQueueEntity): Boolean {
+    private suspend fun processItem(item: PendingSyncQueueEntity, signedInUserId: Long?): Boolean {
         pendingSyncQueueDao.markInProgress(item.id)
 
         return try {
             when (item.syncType) {
-                SyncType.SAVE_FILE -> processSaveFile(item)
+                SyncType.SAVE_FILE -> processSaveFile(item, signedInUserId)
                 SyncType.SAVE_STATE -> processSaveState(item)
                 SyncType.RATING -> processProperty(item)
                 SyncType.DIFFICULTY -> processProperty(item)
@@ -370,7 +387,14 @@ class SyncCoordinator @Inject constructor(
         }
     }
 
-    private suspend fun processSaveFile(item: PendingSyncQueueEntity): Boolean {
+    /**
+     * Drains one queued save upload under the account that enqueued it.
+     *
+     * A row carrying a cache id is uploaded from those pinned bytes; the live save path is only
+     * re-resolved for rows with nothing pinned, and never for a row owned by an account other
+     * than the signed-in one, because the bytes on that path are then not the owner's.
+     */
+    private suspend fun processSaveFile(item: PendingSyncQueueEntity, signedInUserId: Long?): Boolean {
         val game = gameDao.getById(item.gameId) ?: return false
         if (game.localPath == null) {
             Logger.debug(TAG, "processSaveFile: dropping queue item for non-local game gameId=${item.gameId}")
@@ -381,6 +405,22 @@ class SyncCoordinator @Inject constructor(
         if (channel != null && Regex("""^state_""", RegexOption.IGNORE_CASE).containsMatchIn(channel)) {
             Logger.debug(TAG, "processSaveFile: dropping queue item for state-shaped channel gameId=${item.gameId} channel=$channel")
             return true
+        }
+
+        val route = routeForOwner(item.ownerUserId, signedInUserId)
+        if (route is OwnerRoute.Unavailable) {
+            Logger.warn(TAG, "processSaveFile: no client for owner ${route.ownerUserId} on gameId=${item.gameId}; leaving row queued")
+            return false
+        }
+        val ownerApi = (route as? OwnerRoute.Delegated)?.account
+        val pinnedCache = item.cacheId?.let { saveCacheDao.getById(it) }
+
+        if (pinnedCache == null && ownerApi != null) {
+            Logger.warn(
+                TAG,
+                "processSaveFile: queue row for gameId=${item.gameId} belongs to user ${item.ownerUserId} but pins no cache row; refusing to upload live-path bytes"
+            )
+            return false
         }
 
         syncQueueManager.addOperation(
@@ -394,12 +434,16 @@ class SyncCoordinator @Inject constructor(
             )
         )
 
-        val result = saveSyncRepository.get().uploadSave(
-            gameId = item.gameId,
-            emulatorId = payload.emulatorId,
-            channelName = payload.channelName,
-            forceOverwrite = false
-        )
+        val result = if (pinnedCache != null) {
+            uploadPinnedCache(item, game.rommId, pinnedCache, payload.emulatorId, ownerApi)
+        } else {
+            saveSyncRepository.get().uploadSave(
+                gameId = item.gameId,
+                emulatorId = payload.emulatorId,
+                channelName = payload.channelName,
+                forceOverwrite = false
+            )
+        }
 
         when (result) {
             is SaveSyncResult.Success -> {
@@ -427,7 +471,8 @@ class SyncCoordinator @Inject constructor(
                         serverUpdatedAt = result.serverTimestamp,
                         localHash = result.localContentHash,
                         serverHash = result.serverContentHash,
-                        reason = result.serverDeviceName?.let { "Server has newer save from $it" } ?: "Server has newer save"
+                        reason = result.serverDeviceName?.let { "Server has newer save from $it" } ?: "Server has newer save",
+                        ownerUserId = item.ownerUserId ?: signedInUserId ?: PendingConflictEntity.UNATTRIBUTED
                     )
                 )
                 syncQueueManager.removeOperation(item.gameId)
@@ -436,6 +481,36 @@ class SyncCoordinator @Inject constructor(
         }
 
         return result is SaveSyncResult.Success
+    }
+
+    private suspend fun uploadPinnedCache(
+        item: PendingSyncQueueEntity,
+        rommId: Long?,
+        cache: SaveCacheEntity,
+        payloadEmulatorId: String,
+        ownerApi: AccountApi?
+    ): SaveSyncResult {
+        val targetRommId = rommId ?: item.rommId
+        val cacheFile = saveCacheManager.get().getCacheFile(cache)
+        if (!cacheFile.exists()) {
+            Logger.warn(TAG, "uploadPinnedCache: pinned cache ${cache.id} missing on disk for gameId=${item.gameId}")
+            return SaveSyncResult.NoSaveFound
+        }
+        val channelName = cache.channelName
+        if (channelName == null) {
+            Logger.warn(TAG, "uploadPinnedCache: pinned cache ${cache.id} has no channel; cannot address a server slot")
+            return SaveSyncResult.NotConfigured
+        }
+        return saveSyncRepository.get().uploadCacheEntry(
+            gameId = item.gameId,
+            rommId = targetRommId,
+            emulatorId = cache.emulatorId.takeIf { it.isNotBlank() && it != "default" } ?: payloadEmulatorId,
+            channelName = channelName,
+            cacheFile = cacheFile,
+            contentHash = cache.contentHash,
+            uploadedCacheId = cache.id,
+            ownerApi = ownerApi
+        )
     }
 
     private suspend fun processSaveState(item: PendingSyncQueueEntity): Boolean {
@@ -544,7 +619,12 @@ class SyncCoordinator @Inject constructor(
         return true
     }
 
-    private suspend fun processDirtySaveCaches(): Int {
+    /**
+     * The second, cache-driven upload queue. Each dirty cache row is drained under the account
+     * that owns it: a row owned by an absent account uploads from its own cached bytes through
+     * that account's client, and never through the live connection or the live save path.
+     */
+    private suspend fun processDirtySaveCaches(signedInUserId: Long?): Int {
         kotlinx.coroutines.withTimeoutOrNull(ORPHAN_RECOVERY_TIMEOUT_MS) { saveRecoveryGate.await() }
             ?: Logger.warn(TAG, "processDirtySaveCaches: orphan-recovery gate timed out, draining anyway")
 
@@ -553,7 +633,11 @@ class SyncCoordinator @Inject constructor(
 
         Logger.debug(TAG, "processDirtySaveCaches: Found ${dirtySaves.size} saves needing sync")
 
-        // Flush any pending device sync notifications before uploading
+        val routes = dirtySaves
+            .map { it.ownerUserId }
+            .distinct()
+            .associateWith { routeForOwner(it, signedInUserId) }
+
         val affectedGameIds = dirtySaves.map { it.gameId }.distinct()
         for (gid in affectedGameIds) {
             saveSyncRepository.get().flushPendingDeviceSync(gid)
@@ -573,6 +657,7 @@ class SyncCoordinator @Inject constructor(
                 Logger.debug(TAG, "processDirtySaveCaches: skipping conflict-check for non-local game gameId=${cache.gameId}")
                 continue
             }
+            if (routes[cache.ownerUserId] !is OwnerRoute.Live) continue
 
             val conflictInfo = saveSyncRepository.get().checkForConflict(
                 gameId = cache.gameId,
@@ -613,6 +698,13 @@ class SyncCoordinator @Inject constructor(
                 continue
             }
 
+            val route = routes[cache.ownerUserId] ?: OwnerRoute.Live
+            if (route is OwnerRoute.Unavailable) {
+                Logger.warn(TAG, "processDirtySaveCaches: no client for owner ${route.ownerUserId}; leaving cache id=${cache.id} dirty")
+                continue
+            }
+            val ownerApi = (route as? OwnerRoute.Delegated)?.account
+
             val cacheFile = saveCacheManager.get().getCacheFile(cache)
             if (!cacheFile.exists()) {
                 Logger.warn(TAG, "processDirtySaveCaches: Cache file missing for id=${cache.id}, path=${cache.cachePath}")
@@ -620,16 +712,18 @@ class SyncCoordinator @Inject constructor(
                 continue
             }
 
-            val conflictInfo = saveSyncRepository.get().checkForConflict(
-                gameId = cache.gameId,
-                emulatorId = cache.emulatorId,
-                channelName = cache.channelName
-            )
-            if (conflictInfo != null) {
-                saveCacheDao.clearDirtyFlagForChannel(cache.gameId, cache.channelName!!, excludeId = -1)
-                syncQueueManager.addConflict(conflictInfo)
-                Logger.warn(TAG, "processDirtySaveCaches: Pre-upload conflict for channel cache id=${cache.id}")
-                continue
+            if (ownerApi == null) {
+                val conflictInfo = saveSyncRepository.get().checkForConflict(
+                    gameId = cache.gameId,
+                    emulatorId = cache.emulatorId,
+                    channelName = cache.channelName
+                )
+                if (conflictInfo != null) {
+                    saveCacheDao.clearDirtyFlagForChannel(cache.gameId, cache.channelName!!, excludeId = -1)
+                    syncQueueManager.addConflict(conflictInfo)
+                    Logger.warn(TAG, "processDirtySaveCaches: Pre-upload conflict for channel cache id=${cache.id}")
+                    continue
+                }
             }
 
             syncQueueManager.addOperation(SyncOperation(
@@ -648,7 +742,8 @@ class SyncCoordinator @Inject constructor(
                 channelName = cache.channelName!!,
                 cacheFile = cacheFile,
                 contentHash = cache.contentHash,
-                uploadedCacheId = cache.id
+                uploadedCacheId = cache.id,
+                ownerApi = ownerApi
             )
 
             when (result) {
@@ -675,17 +770,22 @@ class SyncCoordinator @Inject constructor(
                 }
                 is SaveSyncResult.Conflict -> {
                     saveCacheDao.clearDirtyFlagForChannel(cache.gameId, cache.channelName, excludeId = -1)
-                    syncQueueManager.addConflict(ConflictInfo(
-                        gameId = cache.gameId,
-                        gameName = game.title,
-                        channelName = cache.channelName,
-                        localTimestamp = cache.cachedAt,
-                        serverTimestamp = result.serverTimestamp,
-                        isHashConflict = false,
-                        serverDeviceName = result.serverDeviceName,
-                        serverSaveId = result.serverSaveId
-                    ))
-                    Logger.warn(TAG, "processDirtySaveCaches: Conflict for channel cache id=${cache.id} gameId=${cache.gameId} channel=${cache.channelName} | cleared dirty flag, awaiting resolution")
+                    if (ownerApi != null) {
+                        parkConflictForOwner(cache, game.title, result, ownerApi.rommUserId)
+                        Logger.warn(TAG, "processDirtySaveCaches: Parked conflict for absent owner ${ownerApi.rommUserId} | cacheId=${cache.id} gameId=${cache.gameId} channel=${cache.channelName}")
+                    } else {
+                        syncQueueManager.addConflict(ConflictInfo(
+                            gameId = cache.gameId,
+                            gameName = game.title,
+                            channelName = cache.channelName,
+                            localTimestamp = cache.cachedAt,
+                            serverTimestamp = result.serverTimestamp,
+                            isHashConflict = false,
+                            serverDeviceName = result.serverDeviceName,
+                            serverSaveId = result.serverSaveId
+                        ))
+                        Logger.warn(TAG, "processDirtySaveCaches: Conflict for channel cache id=${cache.id} gameId=${cache.gameId} channel=${cache.channelName} | cleared dirty flag, awaiting resolution")
+                    }
                 }
                 is SaveSyncResult.Error -> {
                     saveCacheDao.markSyncError(cache.id, result.message)
@@ -710,6 +810,13 @@ class SyncCoordinator @Inject constructor(
             if (game.rommId == null) continue
             if (game.localPath == null) {
                 Logger.debug(TAG, "processDirtySaveCaches: skipping non-channel cache for non-local game gameId=${cache.gameId}, cacheId=${cache.id}")
+                continue
+            }
+            if (routes[cache.ownerUserId] !is OwnerRoute.Live) {
+                Logger.warn(
+                    TAG,
+                    "processDirtySaveCaches: non-channel cache id=${cache.id} belongs to user ${cache.ownerUserId}; its upload path reads live disk, leaving it for that account"
+                )
                 continue
             }
 
@@ -804,6 +911,34 @@ class SyncCoordinator @Inject constructor(
         return synced
     }
 
+    /**
+     * Records a conflict against the account that owns the save instead of asking the person at
+     * the device. The signed-in user cannot judge another account's save, and resolving it would
+     * act under the wrong identity, so the row waits until its owner is back.
+     */
+    private suspend fun parkConflictForOwner(
+        cache: SaveCacheEntity,
+        gameTitle: String,
+        result: SaveSyncResult.Conflict,
+        ownerUserId: Long
+    ) {
+        pendingConflictDao.upsert(
+            PendingConflictEntity(
+                gameId = cache.gameId,
+                rommSaveId = result.serverSaveId,
+                fileName = cache.channelName ?: gameTitle,
+                slot = cache.channelName,
+                emulator = cache.emulatorId,
+                localUpdatedAt = cache.cachedAt,
+                serverUpdatedAt = result.serverTimestamp,
+                localHash = cache.contentHash,
+                serverHash = result.serverContentHash,
+                reason = result.serverDeviceName?.let { "Server has newer save from $it" } ?: "Server has newer save",
+                ownerUserId = ownerUserId
+            )
+        )
+    }
+
     suspend fun queueStateUpload(gameId: Long, rommId: Long, stateCacheId: Long, emulatorId: String) {
         val payload = SaveStatePayload(stateCacheId, emulatorId)
         pendingSyncQueueDao.insert(
@@ -812,14 +947,14 @@ class SyncCoordinator @Inject constructor(
                 rommId = rommId,
                 syncType = SyncType.SAVE_STATE,
                 priority = SyncPriority.SAVE_STATE,
-                payloadJson = payloadCodec.encode(payload)
+                payloadJson = payloadCodec.encode(payload),
+                ownerUserId = syncPreferencesRepository.getRommUserId()
             )
         )
     }
 
     suspend fun queuePropertyChange(gameId: Long, rommId: Long, syncType: SyncType, intValue: Int? = null, stringValue: String? = null) {
         val payload = PropertyPayload(intValue, stringValue)
-        // Replace any existing pending for same game+type
         pendingSyncQueueDao.deleteByGameAndType(gameId, syncType)
         pendingSyncQueueDao.insert(
             PendingSyncQueueEntity(
@@ -827,7 +962,8 @@ class SyncCoordinator @Inject constructor(
                 rommId = rommId,
                 syncType = syncType,
                 priority = SyncPriority.PROPERTY,
-                payloadJson = payloadCodec.encode(payload)
+                payloadJson = payloadCodec.encode(payload),
+                ownerUserId = syncPreferencesRepository.getRommUserId()
             )
         )
     }

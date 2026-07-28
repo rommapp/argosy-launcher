@@ -10,7 +10,8 @@ import java.time.Instant
     indices = [
         Index("gameId"),
         Index("cachedAt"),
-        Index("needsRemoteSync")
+        Index("needsRemoteSync"),
+        Index("ownerUserId")
     ]
 )
 data class SaveCacheEntity(
@@ -32,7 +33,8 @@ data class SaveCacheEntity(
     val needsRemoteSync: Boolean = false,
     val lastSyncedAt: Instant? = null,
     val remoteSyncError: String? = null,
-    val rommSaveId: Long? = null
+    val rommSaveId: Long? = null,
+    val ownerUserId: Long? = null
 ) {
     companion object {
         @Deprecated("Hardcore saves now use isHardcore flag instead of special slot name")

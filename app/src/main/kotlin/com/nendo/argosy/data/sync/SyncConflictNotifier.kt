@@ -4,11 +4,15 @@ import com.nendo.argosy.core.notification.NotificationDuration
 import com.nendo.argosy.core.notification.NotificationManager
 import com.nendo.argosy.core.notification.NotificationType
 import com.nendo.argosy.data.local.dao.PendingConflictDao
+import com.nendo.argosy.data.local.entity.PendingConflictEntity
+import com.nendo.argosy.data.preferences.SyncPreferencesRepository
 import com.nendo.argosy.util.Logger
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -19,6 +23,7 @@ private const val NOTIFICATION_KEY = "sync_conflict_pending"
 @Singleton
 class SyncConflictNotifier @Inject constructor(
     private val pendingConflictDao: PendingConflictDao,
+    private val syncPreferencesRepository: SyncPreferencesRepository,
     private val notificationManager: NotificationManager
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
@@ -26,9 +31,13 @@ class SyncConflictNotifier @Inject constructor(
     @Volatile
     private var lastCount: Int = 0
 
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
     fun start() {
         scope.launch {
-            pendingConflictDao.getOpenCountFlow()
+            syncPreferencesRepository.preferences
+                .map { it.rommUserId }
+                .distinctUntilChanged()
+                .flatMapLatest { pendingConflictDao.getOpenCountFlow(PendingConflictEntity.ownerScope(it)) }
                 .distinctUntilChanged()
                 .collect { count -> onCountChanged(count) }
         }

@@ -491,6 +491,14 @@ class SyncPreferencesRepository @Inject constructor(
     suspend fun isSecureSaves(): Boolean =
         dataStore.data.map { it[Keys.SECURE_SAVES] ?: true }.first()
 
+    /**
+     * RomM user id of the signed-in account, or null when no account is paired. Read once at the
+     * start of an operation and passed down; queue and cache rows are stamped from it so deferred
+     * work stays bound to the account that created it.
+     */
+    suspend fun getRommUserId(): Long? =
+        dataStore.data.map { it[Keys.ROMM_USER_ID] }.first()
+
     suspend fun setSecureSaves(enabled: Boolean) {
         dataStore.edit { it[Keys.SECURE_SAVES] = enabled }
     }

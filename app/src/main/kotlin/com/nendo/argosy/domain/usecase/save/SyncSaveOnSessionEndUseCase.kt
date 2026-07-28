@@ -156,7 +156,7 @@ class SyncSaveOnSessionEndUseCase @Inject constructor(
             romMRepository.checkConnection()
         }
         if (!romMRepository.isConnected()) {
-            saveSyncRepository.queueUpload(gameId, emulatorId, savePath)
+            saveSyncRepository.queueUpload(gameId, emulatorId, savePath, activeChannel)
             Logger.info(TAG, "[SaveSync] SESSION gameId=$gameId | Result=QUEUED | Offline at session end, queued for retry on reconnect | path=$savePath")
             return Result.Queued
         }
@@ -185,7 +185,7 @@ class SyncSaveOnSessionEndUseCase @Inject constructor(
             }
             is SaveSyncResult.Error -> {
                 Logger.warn(TAG, "[SaveSync] SESSION gameId=$gameId | Result=QUEUED | Upload failed, queued for retry | error=${syncResult.message}")
-                saveSyncRepository.queueUpload(gameId, emulatorId, savePath)
+                saveSyncRepository.queueUpload(gameId, emulatorId, savePath, activeChannel)
                 Result.Queued
             }
             is SaveSyncResult.NoSaveFound -> {

@@ -288,7 +288,8 @@ class RetroAchievementsRepository @Inject constructor(
             rommId = 0,
             syncType = SyncType.ACHIEVEMENT,
             priority = SyncPriority.PROPERTY,
-            payloadJson = payloadCodec.encode(payload)
+            payloadJson = payloadCodec.encode(payload),
+            ownerUserId = prefsRepository.preferences.first().rommUserId
         )
         pendingSyncQueueDao.insert(entity)
         Logger.info(TAG, "Achievement $achievementRaId queued for later submission")

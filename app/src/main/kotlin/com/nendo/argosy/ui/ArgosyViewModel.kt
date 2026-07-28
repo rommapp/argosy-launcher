@@ -74,7 +74,9 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -408,6 +410,16 @@ class ArgosyViewModel @Inject constructor(
         }
     }
 
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    private fun ownedConflictCount() = preferencesRepository.userPreferences
+        .map { it.rommUserId }
+        .distinctUntilChanged()
+        .flatMapLatest {
+            pendingConflictDao.getOpenCountFlow(
+                com.nendo.argosy.data.local.entity.PendingConflictEntity.ownerScope(it)
+            )
+        }
+
     private fun observeFeedbackSettings(preferencesRepository: UserPreferencesRepository) {
         viewModelScope.launch {
             preferencesRepository.userPreferences.collect { prefs ->
@@ -466,7 +478,7 @@ class ArgosyViewModel @Inject constructor(
             socialRepository.connectionState,
             steamContentManager.activeDownload,
             steamContentManager.downloadQueue,
-            pendingConflictDao.getOpenCountFlow(),
+            ownedConflictCount(),
             preferencesRepository.userPreferences
         )
     ) { values ->

@@ -87,7 +87,8 @@ class SyncCoordinatorUploadCacheIdTest {
             conflictAutoResolver = conflictAutoResolver,
             saveSyncRepository = Lazy { saveSyncRepository },
             saveCacheManager = Lazy { saveCacheManager },
-            payloadCodec = payloadCodec
+            payloadCodec = payloadCodec,
+            syncPreferencesRepository = syncPreferencesRepository
         )
         coordinator = SyncCoordinator(
             context = io.mockk.mockk(relaxed = true) { io.mockk.every { filesDir } returns java.io.File(System.getProperty("java.io.tmpdir")) },
@@ -109,6 +110,7 @@ class SyncCoordinatorUploadCacheIdTest {
             reconcileEffectApplier = effectApplier,
             saveRecoveryGate = mockk(relaxed = true),
             screenshotUploader = mockk(relaxed = true),
+            rommApiProvider = mockk(relaxed = true),
         )
     }
 

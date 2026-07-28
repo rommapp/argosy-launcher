@@ -20,6 +20,7 @@ import com.nendo.argosy.data.local.entity.StateCacheEntity
 import com.nendo.argosy.data.local.entity.SyncPriority
 import com.nendo.argosy.data.local.entity.SyncType
 import com.nendo.argosy.data.sync.SaveStatePayload
+import com.nendo.argosy.data.preferences.SyncPreferencesRepository
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.remote.romm.RomMApi
 import com.nendo.argosy.data.remote.romm.RomMDeleteSavesRequest
@@ -61,6 +62,7 @@ class StateCacheManager @Inject constructor(
     private val pendingSyncQueueDao: PendingSyncQueueDao,
     private val emulatorSaveConfigDao: EmulatorSaveConfigDao,
     private val preferencesRepository: UserPreferencesRepository,
+    private val syncPreferencesRepository: SyncPreferencesRepository,
     private val coreVersionExtractor: CoreVersionExtractor,
     private val retroArchConfigParser: RetroArchConfigParser,
     private val retroArchPathResolver: com.nendo.argosy.data.emulator.RetroArchPathResolver,
@@ -1165,7 +1167,8 @@ class StateCacheManager @Inject constructor(
                 rommId = rommId,
                 syncType = SyncType.SAVE_STATE,
                 priority = SyncPriority.SAVE_STATE,
-                payloadJson = payloadCodec.encode(payload)
+                payloadJson = payloadCodec.encode(payload),
+                ownerUserId = syncPreferencesRepository.getRommUserId()
             )
         )
         Log.d(TAG, "[StateSync] QUEUED stateId=$stateCacheId gameId=$gameId")

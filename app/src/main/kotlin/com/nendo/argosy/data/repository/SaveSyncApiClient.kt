@@ -11,6 +11,7 @@ import com.nendo.argosy.data.local.dao.SaveSyncDao
 import com.nendo.argosy.data.local.dao.getByIdsChunked
 import com.nendo.argosy.data.local.entity.GameEntity
 import com.nendo.argosy.data.local.entity.SaveSyncEntity
+import com.nendo.argosy.data.remote.romm.AccountApi
 import com.nendo.argosy.data.remote.romm.RomMApi
 import com.nendo.argosy.data.remote.romm.RomMCapabilities
 import com.nendo.argosy.data.remote.romm.RomMDeleteSavesRequest
@@ -175,11 +176,27 @@ class SaveSyncApiClient @Inject constructor(
         }
     }
 
-    suspend fun checkSavesForGame(gameId: Long, rommId: Long): List<RomMSave> = withContext(Dispatchers.IO) {
-        val api = this@SaveSyncApiClient.api ?: return@withContext emptyList()
+    suspend fun checkSavesForGame(gameId: Long, rommId: Long): List<RomMSave> =
+        fetchSavesForGame(gameId, rommId, api, deviceId)
+
+    /**
+     * Server saves as seen by a specific account. Save negotiation is evaluated per device and
+     * per user, so a deferred upload owned by another account must read the inventory through
+     * that account's client rather than the live connection.
+     */
+    suspend fun checkSavesForGame(gameId: Long, rommId: Long, account: AccountApi): List<RomMSave> =
+        fetchSavesForGame(gameId, rommId, account.api, account.deviceId)
+
+    private suspend fun fetchSavesForGame(
+        gameId: Long,
+        rommId: Long,
+        api: RomMApi?,
+        deviceId: String?
+    ): List<RomMSave> = withContext(Dispatchers.IO) {
+        if (api == null) return@withContext emptyList()
 
         val response = try {
-            if (deviceId != null) api.getSavesByRomWithDevice(rommId, deviceId!!) else api.getSavesByRom(rommId)
+            if (deviceId != null) api.getSavesByRomWithDevice(rommId, deviceId) else api.getSavesByRom(rommId)
         } catch (e: Exception) {
             Logger.error(TAG, "[SaveSync] UPLOAD | getSavesByRom failed | gameId=$gameId, rommId=$rommId", e)
             return@withContext emptyList()
@@ -302,8 +319,10 @@ class SaveSyncApiClient @Inject constructor(
         cacheFile: File,
         contentHash: String?,
         overwrite: Boolean = false,
-        uploadedCacheId: Long? = null
-    ): SaveSyncResult = saveUploader.get().uploadCacheEntry(gameId, rommId, emulatorId, channelName, cacheFile, contentHash, overwrite, uploadedCacheId)
+        uploadedCacheId: Long? = null,
+        ownerApi: AccountApi? = null
+    ): SaveSyncResult = saveUploader.get()
+        .uploadCacheEntry(gameId, rommId, emulatorId, channelName, cacheFile, contentHash, overwrite, uploadedCacheId, ownerApi)
 
     suspend fun downloadSave(
         gameId: Long,

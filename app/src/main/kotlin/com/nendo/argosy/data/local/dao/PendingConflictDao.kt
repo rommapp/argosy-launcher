@@ -17,23 +17,34 @@ interface PendingConflictDao {
     @Update
     suspend fun update(entity: PendingConflictEntity)
 
-    @Query("SELECT * FROM pending_conflicts WHERE dismissed = 0 ORDER BY discoveredAt DESC")
-    suspend fun getOpenConflicts(): List<PendingConflictEntity>
+    @Query("SELECT * FROM pending_conflicts WHERE dismissed = 0 AND ownerUserId IN (:owners) ORDER BY discoveredAt DESC")
+    suspend fun getOpenConflicts(owners: List<Long>): List<PendingConflictEntity>
 
-    @Query("SELECT * FROM pending_conflicts WHERE dismissed = 0 ORDER BY discoveredAt DESC")
-    fun observeOpenConflicts(): Flow<List<PendingConflictEntity>>
+    @Query("SELECT * FROM pending_conflicts WHERE dismissed = 0 AND ownerUserId IN (:owners) ORDER BY discoveredAt DESC")
+    fun observeOpenConflicts(owners: List<Long>): Flow<List<PendingConflictEntity>>
 
-    @Query("SELECT COUNT(*) FROM pending_conflicts WHERE dismissed = 0")
-    fun getOpenCountFlow(): Flow<Int>
+    @Query("SELECT COUNT(*) FROM pending_conflicts WHERE dismissed = 0 AND ownerUserId IN (:owners)")
+    fun getOpenCountFlow(owners: List<Long>): Flow<Int>
 
-    @Query("SELECT COUNT(*) FROM pending_conflicts WHERE dismissed = 0")
-    suspend fun getOpenCount(): Int
+    @Query("SELECT COUNT(*) FROM pending_conflicts WHERE dismissed = 0 AND ownerUserId IN (:owners)")
+    suspend fun getOpenCount(owners: List<Long>): Int
 
     @Query("SELECT * FROM pending_conflicts WHERE id = :id")
     suspend fun getById(id: Long): PendingConflictEntity?
 
     @Query("SELECT * FROM pending_conflicts WHERE gameId = :gameId AND rommSaveId = :rommSaveId LIMIT 1")
     suspend fun findByGameAndSave(gameId: Long, rommSaveId: Long?): PendingConflictEntity?
+
+    @Query("""
+        SELECT * FROM pending_conflicts
+        WHERE gameId = :gameId AND rommSaveId = :rommSaveId AND ownerUserId = :ownerUserId
+        LIMIT 1
+    """)
+    suspend fun findByGameSaveAndOwner(
+        gameId: Long,
+        rommSaveId: Long?,
+        ownerUserId: Long
+    ): PendingConflictEntity?
 
     @Query("UPDATE pending_conflicts SET dismissed = 1 WHERE id = :id")
     suspend fun dismiss(id: Long)

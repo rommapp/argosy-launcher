@@ -153,4 +153,21 @@ interface PendingSyncQueueDao {
 
     @Query("DELETE FROM pending_sync_queue WHERE sessionId = :sessionId")
     suspend fun deleteBySession(sessionId: Long)
+
+    /**
+     * Cache rows a queue row still points at. Pruning must not evict these: the queue row is the
+     * only remaining reference to the bytes the deferred upload promised to send.
+     */
+    @Query("""
+        SELECT DISTINCT cacheId FROM pending_sync_queue
+        WHERE cacheId IS NOT NULL AND status IN ('PENDING', 'IN_PROGRESS', 'FAILED')
+    """)
+    suspend fun getPinnedCacheIds(): List<Long>
+
+    @Query("""
+        SELECT DISTINCT cacheId FROM pending_sync_queue
+        WHERE gameId = :gameId AND cacheId IS NOT NULL
+          AND status IN ('PENDING', 'IN_PROGRESS', 'FAILED')
+    """)
+    suspend fun getPinnedCacheIdsForGame(gameId: Long): List<Long>
 }

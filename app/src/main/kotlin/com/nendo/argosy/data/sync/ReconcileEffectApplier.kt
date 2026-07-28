@@ -10,6 +10,7 @@ import com.nendo.argosy.data.local.entity.PendingSyncQueueEntity
 import com.nendo.argosy.data.local.entity.SaveSyncEntity
 import com.nendo.argosy.data.local.entity.SyncPriority
 import com.nendo.argosy.data.local.entity.SyncType
+import com.nendo.argosy.data.preferences.SyncPreferencesRepository
 import com.nendo.argosy.data.repository.SaveSyncRepository
 import com.nendo.argosy.data.sync.strategy.ConflictAutoResolver
 import com.nendo.argosy.data.sync.strategy.ReconcileAction
@@ -41,7 +42,8 @@ class ReconcileEffectApplier @Inject constructor(
     private val conflictAutoResolver: ConflictAutoResolver,
     private val saveSyncRepository: Lazy<SaveSyncRepository>,
     private val saveCacheManager: Lazy<com.nendo.argosy.data.repository.SaveCacheManager>,
-    private val payloadCodec: SyncPayloadCodec
+    private val payloadCodec: SyncPayloadCodec,
+    private val syncPreferencesRepository: SyncPreferencesRepository
 ) {
 
     suspend fun apply(op: ReconcileOperation, sessionId: Long?): ReconcileEffectOutcome {
@@ -95,7 +97,8 @@ class ReconcileEffectApplier @Inject constructor(
     ): ReconcileEffectOutcome {
         if (game == null) return ReconcileEffectOutcome.NONE
         val opServerTime = op.serverUpdatedAt?.let { parseInstantOrNull(it) }
-        val existing = pendingConflictDao.findByGameAndSave(game.id, op.saveId)
+        val ownerUserId = syncPreferencesRepository.getRommUserId() ?: PendingConflictEntity.UNATTRIBUTED
+        val existing = pendingConflictDao.findByGameSaveAndOwner(game.id, op.saveId, ownerUserId)
         val previouslyDismissedUnchanged = existing != null &&
             existing.dismissed &&
             existing.serverUpdatedAt == opServerTime &&
@@ -115,7 +118,8 @@ class ReconcileEffectApplier @Inject constructor(
                 serverUpdatedAt = opServerTime,
                 localHash = clientHash,
                 serverHash = op.serverContentHash,
-                reason = op.reason
+                reason = op.reason,
+                ownerUserId = ownerUserId
             )
         )
         return ReconcileEffectOutcome(conflicts = 1, applied = 0)
@@ -139,7 +143,8 @@ class ReconcileEffectApplier @Inject constructor(
                 syncType = SyncType.SAVE_FILE,
                 priority = SyncPriority.SAVE_FILE,
                 payloadJson = payloadCodec.encode(payload),
-                sessionId = sessionId
+                sessionId = sessionId,
+                ownerUserId = syncPreferencesRepository.getRommUserId()
             )
         )
         return true

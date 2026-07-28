@@ -97,7 +97,9 @@ class ScreenshotCaptureMonitor @Inject constructor(
     private suspend fun processNewScreenshots() = processMutex.withLock {
         val gameId = sessionGameId
         if (gameId <= 0) return
-        if (!syncPreferencesRepository.preferences.first().uploadScreenshotsEnabled) return
+        val prefs = syncPreferencesRepository.preferences.first()
+        if (!prefs.uploadScreenshotsEnabled) return
+        val ownerUserId = prefs.rommUserId
         if (!hasMediaPermission()) return
         if (!connectionManager.getCapabilities().supportsScreenshotUpload) return
 
@@ -131,7 +133,8 @@ class ScreenshotCaptureMonitor @Inject constructor(
                     rommId = rommId,
                     syncType = SyncType.SCREENSHOT,
                     priority = SyncPriority.PROPERTY,
-                    payloadJson = payloadCodec.encode(ScreenshotPayload(copied.absolutePath))
+                    payloadJson = payloadCodec.encode(ScreenshotPayload(copied.absolutePath)),
+                    ownerUserId = ownerUserId
                 )
             )
             Logger.info(TAG, "Queued screenshot ${candidate.displayName} for gameId=$gameId rommId=$rommId")

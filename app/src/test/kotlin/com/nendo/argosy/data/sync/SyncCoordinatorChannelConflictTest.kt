@@ -122,7 +122,8 @@ class SyncCoordinatorChannelConflictTest {
             pendingConflictDao = mockk(relaxed = true),
             reconcileEffectApplier = mockk(relaxed = true),
             saveRecoveryGate = mockk(relaxed = true),
-            screenshotUploader = mockk(relaxed = true)
+            screenshotUploader = mockk(relaxed = true),
+            rommApiProvider = mockk(relaxed = true)
         )
 
         coordinator.processQueue()
@@ -175,7 +176,8 @@ class SyncCoordinatorChannelConflictTest {
             pendingConflictDao = mockk(relaxed = true),
             reconcileEffectApplier = mockk(relaxed = true),
             saveRecoveryGate = mockk(relaxed = true),
-            screenshotUploader = mockk(relaxed = true)
+            screenshotUploader = mockk(relaxed = true),
+            rommApiProvider = mockk(relaxed = true)
         )
 
         coordinator.processQueue()
@@ -238,7 +240,8 @@ class SyncCoordinatorChannelConflictTest {
             pendingConflictDao = mockk(relaxed = true),
             reconcileEffectApplier = mockk(relaxed = true),
             saveRecoveryGate = mockk(relaxed = true),
-            screenshotUploader = mockk(relaxed = true)
+            screenshotUploader = mockk(relaxed = true),
+            rommApiProvider = mockk(relaxed = true)
         )
 
         coordinator.processQueue()
@@ -282,7 +285,8 @@ class SyncCoordinatorChannelConflictTest {
             pendingConflictDao = mockk(relaxed = true),
             reconcileEffectApplier = mockk(relaxed = true),
             saveRecoveryGate = mockk(relaxed = true),
-            screenshotUploader = mockk(relaxed = true)
+            screenshotUploader = mockk(relaxed = true),
+            rommApiProvider = mockk(relaxed = true)
         )
 
         coordinator.processQueue()

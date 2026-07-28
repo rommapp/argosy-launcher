@@ -47,6 +47,7 @@ class SaveCacheManagerRestoreTest {
             context = context,
             saveCacheDao = saveCacheDao,
             saveSyncDao = saveSyncDao,
+            pendingSyncQueueDao = mockk(relaxed = true),
             gameDao = gameDao,
             preferencesRepository = preferencesRepository,
             syncPreferencesRepository = syncPreferencesRepository,
@@ -54,6 +55,7 @@ class SaveCacheManagerRestoreTest {
             saveArchiver = saveArchiver,
             fal = fal,
             saveHandlerRegistry = saveHandlerRegistry,
+            saveOwnershipTracker = mockk(relaxed = true),
         )
     }
 

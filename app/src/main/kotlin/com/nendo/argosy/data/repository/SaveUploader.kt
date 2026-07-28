@@ -9,6 +9,7 @@ import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.dao.SaveCacheDao
 import com.nendo.argosy.data.local.dao.SaveSyncDao
 import com.nendo.argosy.data.local.entity.SaveSyncEntity
+import com.nendo.argosy.data.remote.romm.AccountApi
 import com.nendo.argosy.data.remote.romm.RomMDeleteSavesRequest
 import com.nendo.argosy.data.remote.romm.RomMSave
 import com.nendo.argosy.data.remote.romm.originDeviceName
@@ -419,6 +420,13 @@ class SaveUploader @Inject constructor(
         }
     }
 
+    /**
+     * Uploads the bytes held by a cache row rather than whatever is on the live save path.
+     *
+     * [ownerApi], when set, is the client of the account that owns the cache row: a queued upload
+     * belongs to the account that created it, and negotiation is evaluated against that account's
+     * token and device row, so the live connection must not stand in for it.
+     */
     suspend fun uploadCacheEntry(
         gameId: Long,
         rommId: Long,
@@ -427,13 +435,14 @@ class SaveUploader @Inject constructor(
         cacheFile: File,
         contentHash: String?,
         overwrite: Boolean = false,
-        uploadedCacheId: Long? = null
+        uploadedCacheId: Long? = null,
+        ownerApi: AccountApi? = null
     ): SaveSyncResult = withContext(Dispatchers.IO) {
-        Logger.debug(TAG, "[SaveSync] UPLOAD_CACHE gameId=$gameId channel=$channelName | Starting cache upload | file=${cacheFile.name}, size=${cacheFile.length()}, overwrite=$overwrite")
+        Logger.debug(TAG, "[SaveSync] UPLOAD_CACHE gameId=$gameId channel=$channelName | Starting cache upload | file=${cacheFile.name}, size=${cacheFile.length()}, overwrite=$overwrite, owner=${ownerApi?.rommUserId}")
         val client = apiClient.get()
-        val api = client.getApi()
+        val api = ownerApi?.api ?: client.getApi()
             ?: return@withContext SaveSyncResult.NotConfigured
-        val deviceId = client.getDeviceId()
+        val deviceId = ownerApi?.deviceId ?: client.getDeviceId()
 
         if (!cacheFile.exists() || cacheFile.length() <= SaveSyncApiClient.MIN_VALID_SAVE_SIZE_BYTES) {
             Logger.warn(TAG, "[SaveSync] UPLOAD_CACHE gameId=$gameId | Cache file missing or empty | exists=${cacheFile.exists()}, size=${cacheFile.length()}")
@@ -453,7 +462,7 @@ class SaveUploader @Inject constructor(
 
         if (!overwrite && deviceId != null) {
             if (conflictDetector.isSessionOnOlderSave(gameId)) {
-                val serverSaves = client.checkSavesForGame(gameId, rommId)
+                val serverSaves = serverSavesFor(gameId, rommId, ownerApi)
                 val latestForSlot = serverSaves
                     .filter { it.slot != null && SaveSyncApiClient.equalsNormalized(it.slot, channelName) }
                     .maxByOrNull { SaveSyncApiClient.parseTimestamp(it.updatedAt) }
@@ -503,7 +512,7 @@ class SaveUploader @Inject constructor(
             }
 
             if (response.code() == 409) {
-                val conflictSaves = try { client.checkSavesForGame(gameId, rommId) } catch (_: Exception) { emptyList() }
+                val conflictSaves = try { serverSavesFor(gameId, rommId, ownerApi) } catch (_: Exception) { emptyList() }
                 val conflictSlotSave = conflictSaves
                     .filter { it.slot != null && SaveSyncApiClient.equalsNormalized(it.slot, channelName) }
                     .maxByOrNull { SaveSyncApiClient.parseTimestamp(it.updatedAt) }
@@ -580,6 +589,15 @@ class SaveUploader @Inject constructor(
             "[SaveSync] UPLOAD gameId=$gameId | rom $rommId is gone from the server; dropped sync state for $gameTitle, kept its cached saves"
         )
         return true
+    }
+
+    private suspend fun serverSavesFor(gameId: Long, rommId: Long, ownerApi: AccountApi?): List<RomMSave> {
+        val client = apiClient.get()
+        return if (ownerApi != null) {
+            client.checkSavesForGame(gameId, rommId, ownerApi)
+        } else {
+            client.checkSavesForGame(gameId, rommId)
+        }
     }
 
     private suspend fun clearUserSelectedRestorePointIfSet(gameId: Long, emulatorId: String, channelName: String?) {

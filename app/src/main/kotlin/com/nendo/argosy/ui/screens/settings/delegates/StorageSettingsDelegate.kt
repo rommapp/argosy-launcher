@@ -755,11 +755,20 @@ class StorageSettingsDelegate @Inject constructor(
     }
 
     private fun hardResetBlockerMessage(blocker: HardResetBlocker): String = when (blocker) {
-        HardResetBlocker.ACTIVE_SESSION -> "Close the running game before resetting"
-        HardResetBlocker.PENDING_UPLOADS -> "Sync pending save uploads before resetting"
-        HardResetBlocker.ACTIVE_DOWNLOADS -> "Cancel game downloads before resetting"
-        HardResetBlocker.EMULATOR_DOWNLOAD -> "Wait for the emulator download to finish first"
-        HardResetBlocker.STEAM_DOWNLOAD -> "Cancel Steam downloads before resetting"
+        HardResetBlocker.ActiveSession -> "Close the running game before resetting"
+        is HardResetBlocker.PendingUploads -> pendingUploadsMessage(blocker)
+        HardResetBlocker.ActiveDownloads -> "Cancel game downloads before resetting"
+        HardResetBlocker.EmulatorDownload -> "Wait for the emulator download to finish first"
+        HardResetBlocker.SteamDownload -> "Cancel Steam downloads before resetting"
+    }
+
+    private fun pendingUploadsMessage(blocker: HardResetBlocker.PendingUploads): String {
+        val named = blocker.accounts.mapNotNull { it.username }
+        return when {
+            named.isEmpty() -> "Sync pending save uploads before resetting"
+            named.size == 1 -> "Sync ${named.first()}'s pending save uploads before resetting"
+            else -> "Sync pending save uploads for ${named.joinToString(", ")} before resetting"
+        }
     }
 
     fun testManagedStorageAccess(scope: CoroutineScope) {

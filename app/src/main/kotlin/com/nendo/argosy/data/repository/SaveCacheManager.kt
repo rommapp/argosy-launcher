@@ -3,6 +3,7 @@ package com.nendo.argosy.data.repository
 import android.content.Context
 import android.util.Log
 import com.nendo.argosy.data.local.dao.GameDao
+import com.nendo.argosy.data.local.dao.PendingSyncQueueDao
 import com.nendo.argosy.data.local.dao.SaveCacheDao
 import com.nendo.argosy.data.local.dao.SaveSyncDao
 import com.nendo.argosy.data.local.entity.GameEntity
@@ -33,6 +34,7 @@ class SaveCacheManager @Inject constructor(
     @ApplicationContext private val context: Context,
     private val saveCacheDao: SaveCacheDao,
     private val saveSyncDao: SaveSyncDao,
+    private val pendingSyncQueueDao: PendingSyncQueueDao,
     private val gameDao: GameDao,
     private val preferencesRepository: UserPreferencesRepository,
     private val syncPreferencesRepository: SyncPreferencesRepository,
@@ -83,6 +85,7 @@ class SaveCacheManager @Inject constructor(
         @Suppress("NAME_SHADOWING")
         val channelName = resolveDefaultChannel(channelName, isHardcore)
         val secureSaves = syncPreferencesRepository.isSecureSaves()
+        val ownerUserId = syncPreferencesRepository.getRommUserId()
         if (!fal.exists(savePath)) {
             Log.w(TAG, "Save file does not exist: $savePath")
             return@withContext CacheResult.Failed
@@ -202,7 +205,8 @@ class SaveCacheManager @Inject constructor(
                 isHardcore = isHardcore,
                 slotName = slotName,
                 channelName = channelName,
-                needsRemoteSync = needsRemoteSync
+                needsRemoteSync = needsRemoteSync,
+                ownerUserId = ownerUserId
             )
             val insertedId = saveCacheDao.insert(entity)
 
@@ -253,6 +257,7 @@ class SaveCacheManager @Inject constructor(
     ): CacheResult = withContext(Dispatchers.IO) {
         @Suppress("NAME_SHADOWING")
         val channelName = resolveDefaultChannel(channelName, isHardcore = false)
+        val ownerUserId = syncPreferencesRepository.getRommUserId()
         if (!downloadedFile.exists() || downloadedFile.length() == 0L) {
             Log.w(TAG, "Downloaded file missing or empty: ${downloadedFile.absolutePath}")
             return@withContext CacheResult.Failed
@@ -300,7 +305,8 @@ class SaveCacheManager @Inject constructor(
                 contentHash = contentHash,
                 channelName = channelName,
                 needsRemoteSync = needsRemoteSync,
-                rommSaveId = rommSaveId
+                rommSaveId = rommSaveId,
+                ownerUserId = ownerUserId
             )
             val insertedId = saveCacheDao.insert(entity)
 
@@ -715,6 +721,11 @@ class SaveCacheManager @Inject constructor(
     suspend fun getCachesForGameOnce(gameId: Long): List<SaveCacheEntity> =
         saveCacheDao.getByGame(gameId)
 
+    /**
+     * Trims a game's cache down to the configured limit. Rows a pending queue row points at are
+     * never evicted: that cache row is the payload of a deferred upload, and dropping it would
+     * leave the queue row pointing at bytes that no longer exist.
+     */
     suspend fun pruneOldCaches(gameId: Long) = withContext(Dispatchers.IO) {
         val prefs = preferencesRepository.userPreferences.first()
         val limit = prefs.saveCacheLimit
@@ -729,8 +740,9 @@ class SaveCacheManager @Inject constructor(
         val toDeleteCount = totalCount - effectiveLimit
         if (toDeleteCount <= 0) return@withContext
 
-        val unlocked = saveCacheDao.getOldestUnlocked(gameId)
-        val toDelete = unlocked.take(toDeleteCount)
+        val pinnedIds = pendingSyncQueueDao.getPinnedCacheIdsForGame(gameId)
+        val toDelete = saveCacheDao.getOldestUnlockedExcluding(gameId, pinnedIds).take(toDeleteCount)
+        if (toDelete.isEmpty()) return@withContext
 
         for (cache in toDelete) {
             val cacheFile = File(cacheBaseDir, cache.cachePath)
@@ -741,14 +753,14 @@ class SaveCacheManager @Inject constructor(
             }
         }
 
-        saveCacheDao.deleteOldestUnlocked(gameId, toDeleteCount)
-        Log.d(TAG, "Pruned $toDeleteCount old caches for game $gameId")
+        saveCacheDao.deleteByIds(toDelete.map { it.id })
+        Log.d(TAG, "Pruned ${toDelete.size} old caches for game $gameId (pinned=${pinnedIds.size})")
 
         SaveDebugLogger.logCachePruned(
             gameId = gameId,
             gameName = null,
-            prunedCount = toDeleteCount,
-            remainingCount = totalCount - toDeleteCount
+            prunedCount = toDelete.size,
+            remainingCount = totalCount - toDelete.size
         )
     }
 

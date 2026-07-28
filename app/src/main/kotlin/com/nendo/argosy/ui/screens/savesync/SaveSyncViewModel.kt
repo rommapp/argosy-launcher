@@ -35,6 +35,9 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.time.Instant
@@ -88,7 +91,7 @@ class SaveSyncViewModel @Inject constructor(
     val uiState: StateFlow<SaveSyncUiState> = combine(
         listOf(
             saveSyncDao.observeAll(),
-            pendingConflictDao.observeOpenConflicts(),
+            ownedConflicts(),
             syncQueueManager.state,
             preferencesRepository.preferences,
             _focusedRowKey,
@@ -389,6 +392,12 @@ class SaveSyncViewModel @Inject constructor(
         AttentionAction.KEEP_SERVER -> ConflictResolution.KEEP_SERVER
         AttentionAction.SKIP -> ConflictResolution.SKIP
     }
+
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    private fun ownedConflicts() = preferencesRepository.preferences
+        .map { it.rommUserId }
+        .distinctUntilChanged()
+        .flatMapLatest { pendingConflictDao.observeOpenConflicts(PendingConflictEntity.ownerScope(it)) }
 
     private fun resolveAttention(conflictId: Long, resolution: ConflictResolution) {
         viewModelScope.launch {

@@ -25,13 +25,26 @@ import javax.inject.Singleton
 
 private const val TAG = "DatabaseAdminRepository"
 
-enum class HardResetBlocker {
-    ACTIVE_SESSION,
-    PENDING_UPLOADS,
-    ACTIVE_DOWNLOADS,
-    EMULATOR_DOWNLOAD,
-    STEAM_DOWNLOAD
+/**
+ * Why a hard reset refused to run.
+ *
+ * [PendingUploads] names the accounts still holding unsent saves rather than reporting a bare
+ * count, because on a shared device the person asking for the reset may not be the one whose
+ * saves would be destroyed by it.
+ */
+sealed interface HardResetBlocker {
+    data object ActiveSession : HardResetBlocker
+    data class PendingUploads(val accounts: List<PendingUploadAccount>) : HardResetBlocker
+    data object ActiveDownloads : HardResetBlocker
+    data object EmulatorDownload : HardResetBlocker
+    data object SteamDownload : HardResetBlocker
 }
+
+data class PendingUploadAccount(
+    val ownerUserId: Long?,
+    val username: String?,
+    val pendingCount: Int
+)
 
 @Singleton
 class DatabaseAdminRepository @Inject constructor(
@@ -98,15 +111,34 @@ class DatabaseAdminRepository @Inject constructor(
     }
 
     private suspend fun checkHardResetBlockers(): HardResetBlocker? {
-        if (sessionStateStore.hasActiveSession()) return HardResetBlocker.ACTIVE_SESSION
-        if (database.saveCacheDao().countNeedingRemoteSync() > 0) return HardResetBlocker.PENDING_UPLOADS
+        if (sessionStateStore.hasActiveSession()) return HardResetBlocker.ActiveSession
+        pendingUploadsByAccount()?.let { return it }
         val downloadState = downloadManager.get().state.value
         if (downloadState.activeDownloads.isNotEmpty() || downloadState.queue.isNotEmpty()) {
-            return HardResetBlocker.ACTIVE_DOWNLOADS
+            return HardResetBlocker.ActiveDownloads
         }
-        if (emulatorDownloadManager.get().hasActiveDownload()) return HardResetBlocker.EMULATOR_DOWNLOAD
-        if (steamContentManager.get().hasBlockingDownloadState()) return HardResetBlocker.STEAM_DOWNLOAD
+        if (emulatorDownloadManager.get().hasActiveDownload()) return HardResetBlocker.EmulatorDownload
+        if (steamContentManager.get().hasBlockingDownloadState()) return HardResetBlocker.SteamDownload
         return null
+    }
+
+    /**
+     * Pending save uploads grouped by the account that owns them, or null when nothing is pending.
+     */
+    suspend fun pendingUploadsByAccount(): HardResetBlocker.PendingUploads? {
+        val tallies = database.saveCacheDao().countNeedingRemoteSyncByOwner()
+            .filter { it.pendingCount > 0 }
+        if (tallies.isEmpty()) return null
+        val namesByUserId = database.rommAccountDao().getAll().associate { it.rommUserId to it.username }
+        return HardResetBlocker.PendingUploads(
+            tallies.map {
+                PendingUploadAccount(
+                    ownerUserId = it.ownerUserId,
+                    username = it.ownerUserId?.let { id -> namesByUserId[id] },
+                    pendingCount = it.pendingCount
+                )
+            }
+        )
     }
 
     suspend fun purgeDatabase(

@@ -64,7 +64,8 @@ class ReconcileEffectApplierTest {
             conflictAutoResolver = conflictAutoResolver,
             saveSyncRepository = dagger.Lazy { saveSyncRepository },
             saveCacheManager = dagger.Lazy { mockk(relaxed = true) },
-            payloadCodec = SyncPayloadCodec(com.squareup.moshi.Moshi.Builder().build())
+            payloadCodec = SyncPayloadCodec(com.squareup.moshi.Moshi.Builder().build()),
+            syncPreferencesRepository = mockk(relaxed = true)
         )
     }
 
@@ -216,7 +217,9 @@ class ReconcileEffectApplierTest {
             reason = "test",
             dismissed = true
         )
-        coEvery { pendingConflictDao.findByGameAndSave(game.id, 555L) } returns existing
+        coEvery {
+            pendingConflictDao.findByGameSaveAndOwner(game.id, 555L, PendingConflictEntity.UNATTRIBUTED)
+        } returns existing
 
         val outcome = applier.apply(op(ReconcileAction.CONFLICT, saveId = 555L), sessionId = null)
 

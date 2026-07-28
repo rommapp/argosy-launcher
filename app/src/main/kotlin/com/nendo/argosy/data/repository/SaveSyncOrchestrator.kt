@@ -60,11 +60,27 @@ class SaveSyncOrchestrator @Inject constructor(
 
     private data class SystemSaveScan(val newestMillis: Long, val wholePath: Boolean)
 
-    suspend fun queueUpload(gameId: Long, emulatorId: String, localPath: String) {
+    /**
+     * Defers a save upload under the signed-in account.
+     *
+     * When a channel is known the bytes are captured into the save cache now and the queue row is
+     * pinned to that cache id, so the drain uploads what was on disk at enqueue time rather than
+     * re-reading a live path that may by then hold another account's progress. A null channel
+     * (hardcore, or a game with no active channel) is left unpinned and drains through the live
+     * path as before, because the cache-pinned upload addresses a named server slot.
+     */
+    suspend fun queueUpload(
+        gameId: Long,
+        emulatorId: String,
+        localPath: String,
+        channelName: String? = null
+    ) {
         val game = gameDao.getById(gameId) ?: return
         val rommId = game.rommId ?: return
+        val ownerUserId = syncPreferencesRepository.getRommUserId()
+        val cacheId = channelName?.let { pinCacheForQueuedUpload(gameId, emulatorId, localPath, it) }
 
-        val payload = SaveFilePayload(emulatorId)
+        val payload = SaveFilePayload(emulatorId = emulatorId, channelName = channelName)
         pendingSyncQueueDao.deleteByGameAndType(gameId, SyncType.SAVE_FILE)
         pendingSyncQueueDao.insert(
             PendingSyncQueueEntity(
@@ -72,9 +88,30 @@ class SaveSyncOrchestrator @Inject constructor(
                 rommId = rommId,
                 syncType = SyncType.SAVE_FILE,
                 priority = SyncPriority.SAVE_FILE,
-                payloadJson = payloadCodec.encode(payload)
+                payloadJson = payloadCodec.encode(payload),
+                ownerUserId = ownerUserId,
+                cacheId = cacheId
             )
         )
+    }
+
+    private suspend fun pinCacheForQueuedUpload(
+        gameId: Long,
+        emulatorId: String,
+        localPath: String,
+        channel: String
+    ): Long? {
+        val result = saveCacheManager.get().cacheCurrentSave(
+            gameId = gameId,
+            emulatorId = emulatorId,
+            savePath = localPath,
+            channelName = channel
+        )
+        return when (result) {
+            is SaveCacheManager.CacheResult.Created -> result.cacheId.takeIf { it > 0L }
+            is SaveCacheManager.CacheResult.Duplicate -> result.cacheId
+            SaveCacheManager.CacheResult.Failed -> null
+        }
     }
 
     suspend fun scanAndQueueLocalChanges(secureSaves: Boolean): Int = withContext(Dispatchers.IO) {
@@ -125,7 +162,7 @@ class SaveSyncOrchestrator @Inject constructor(
 
             if (lastSynced == null || localModified.isAfter(lastSynced)) {
                 Logger.debug(TAG, "[SaveSync] SCAN gameId=${game.id} | Local newer than sync | local=$localModified, lastSync=$lastSynced")
-                queueUpload(game.id, emulatorId, savePath)
+                queueUpload(game.id, emulatorId, savePath, game.activeSaveChannel)
                 queued++
             }
         }

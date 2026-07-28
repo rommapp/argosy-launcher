@@ -133,7 +133,24 @@ class RomMConnectionManager @Inject constructor(
         registerNetworkCallback()
         val result = attemptConnection(prefs.rommBaseUrl, prefs.rommToken)
         Logger.info(TAG, "initialize: connect result=$result, state=${_connectionState.value}")
-        if (result is RomMResult.Error) scheduleReconnect()
+        if (result is RomMResult.Error) scheduleReconnect() else backfillIdentityIfMissing(prefs.rommToken)
+    }
+
+    /**
+     * Gives an install that predates account identity a user id and an account row.
+     *
+     * Such an install reconnects with a stored token and never passes through a pairing path, so
+     * nothing would ever record who it belongs to and every owner stamp would stay null. Only the
+     * absence of an id triggers this, so it costs one request once.
+     */
+    private suspend fun backfillIdentityIfMissing(token: String?) {
+        if (token.isNullOrBlank()) return
+        val stored = userPreferencesRepository.preferences.first()
+        if (stored.rommUserId != null) return
+        val currentApi = api ?: return
+        val user = fetchCurrentUser(currentApi) ?: return
+        Logger.info(TAG, "backfillIdentityIfMissing: adopting user ${user.id} for an install with no stored identity")
+        persistRommCredentials(baseUrl, token, user)
     }
 
     /**

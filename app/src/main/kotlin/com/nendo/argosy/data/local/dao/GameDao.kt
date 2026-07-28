@@ -176,15 +176,6 @@ interface GameDao {
     @Query("SELECT rommId FROM games WHERE isFavorite = 1 AND rommId IS NOT NULL")
     suspend fun getFavoriteRommIds(): List<Long>
 
-    @Query("UPDATE games SET isFavorite = 1 WHERE rommId IN (:rommIds)")
-    suspend fun setFavoritesByRommIds(rommIds: List<Long>)
-
-    @Query("UPDATE games SET isFavorite = 1 WHERE rommId = :rommId")
-    suspend fun setFavoriteByRommId(rommId: Long)
-
-    @Query("UPDATE games SET isFavorite = 0 WHERE rommId = :rommId")
-    suspend fun clearFavoriteByRommId(rommId: Long)
-
     @Query("SELECT * FROM games WHERE isHidden = 0 AND lastPlayed IS NOT NULL ORDER BY lastPlayed DESC LIMIT :limit")
     fun observeRecentlyPlayed(limit: Int = 20): Flow<List<GameEntity>>
 
@@ -227,9 +218,6 @@ interface GameDao {
     @Query("SELECT * FROM games WHERE igdbId = :igdbId AND platformId = :platformId")
     suspend fun getAllByIgdbIdAndPlatform(igdbId: Long, platformId: Long): List<GameEntity>
 
-    @Query("SELECT * FROM games WHERE rommFileName = :fileName AND platformId = :platformId AND syncDirty = 0 AND rommId IS NOT NULL")
-    suspend fun getCleanSyncedByFileNameAndPlatform(fileName: String, platformId: Long): List<GameEntity>
-
     @Query("SELECT * FROM games WHERE steamAppId = :steamAppId")
     suspend fun getBySteamAppId(steamAppId: Long): GameEntity?
 
@@ -260,9 +248,6 @@ interface GameDao {
     @Update
     suspend fun update(game: GameEntity)
 
-    @Query("UPDATE games SET isFavorite = :favorite WHERE id = :gameId")
-    suspend fun updateFavorite(gameId: Long, favorite: Boolean)
-
     @Query("UPDATE games SET isHidden = :hidden WHERE id = :gameId")
     suspend fun updateHidden(gameId: Long, hidden: Boolean)
 
@@ -274,12 +259,6 @@ interface GameDao {
 
     @Query("UPDATE games SET steamLauncher = :launcherPackage WHERE id = :gameId")
     suspend fun setSteamLauncher(gameId: Long, launcherPackage: String?)
-
-    @Query("UPDATE games SET lastPlayed = :timestamp, playCount = playCount + 1 WHERE id = :gameId")
-    suspend fun recordPlayStart(gameId: Long, timestamp: Instant)
-
-    @Query("UPDATE games SET playTimeMinutes = playTimeMinutes + :minutes WHERE id = :gameId")
-    suspend fun addPlayTime(gameId: Long, minutes: Int)
 
     @Query("UPDATE games SET localPath = :path, source = :source, addedAt = :addedAt WHERE id = :gameId")
     suspend fun updateLocalPath(gameId: Long, path: String?, source: GameSource, addedAt: Instant = Instant.now())
@@ -343,6 +322,44 @@ interface GameDao {
 
     @Query("SELECT * FROM games WHERE source IN (:sources) AND platformId = :platformId")
     suspend fun getBySources(sources: List<GameSource>, platformId: Long): List<GameEntity>
+
+    /**
+     * Same set, minus the rows this account is masked off from. Duplicate cleanup and realignment
+     * pick a survivor and delete the rest, which must never be decided from rows the account
+     * cannot see.
+     */
+    @Query(
+        """
+        SELECT * FROM games
+        WHERE source IN (:sources) AND platformId = :platformId
+          AND id NOT IN (
+              SELECT gameId FROM game_user_overlay
+              WHERE ownerUserId = :ownerUserId AND isMember = 0
+          )
+        """
+    )
+    suspend fun getBySourcesForOwner(
+        sources: List<GameSource>,
+        platformId: Long,
+        ownerUserId: Long?
+    ): List<GameEntity>
+
+    @Query(
+        """
+        SELECT * FROM games
+        WHERE rommFileName = :fileName AND platformId = :platformId
+          AND syncDirty = 0 AND rommId IS NOT NULL
+          AND id NOT IN (
+              SELECT gameId FROM game_user_overlay
+              WHERE ownerUserId = :ownerUserId AND isMember = 0
+          )
+        """
+    )
+    suspend fun getCleanSyncedByFileNameAndPlatformForOwner(
+        fileName: String,
+        platformId: Long,
+        ownerUserId: Long?
+    ): List<GameEntity>
 
     @Query("SELECT * FROM games WHERE packageName = :packageName")
     suspend fun getByPackageName(packageName: String): GameEntity?
@@ -525,24 +542,6 @@ interface GameDao {
     @Query("SELECT COUNT(*) FROM games WHERE cachedScreenshotPaths IS NOT NULL AND rommId IS NOT NULL")
     suspend fun countGamesWithCachedScreenshots(): Int
 
-    @Query("UPDATE games SET userRating = :rating WHERE id = :gameId")
-    suspend fun updateUserRating(gameId: Long, rating: Int)
-
-    @Query("UPDATE games SET userDifficulty = :difficulty WHERE id = :gameId")
-    suspend fun updateUserDifficulty(gameId: Long, difficulty: Int)
-
-    @Query("UPDATE games SET completion = :completion WHERE id = :gameId")
-    suspend fun updateCompletion(gameId: Long, completion: Int)
-
-    @Query("UPDATE games SET status = :status WHERE id = :gameId")
-    suspend fun updateStatus(gameId: Long, status: String?)
-
-    @Query("UPDATE games SET backlogged = :backlogged WHERE id = :gameId")
-    suspend fun updateBacklogged(gameId: Long, backlogged: Boolean)
-
-    @Query("UPDATE games SET nowPlaying = :nowPlaying WHERE id = :gameId")
-    suspend fun updateNowPlaying(gameId: Long, nowPlaying: Boolean)
-
     @Query("UPDATE games SET lastPlayedDiscId = :discId WHERE id = :gameId")
     suspend fun updateLastPlayedDisc(gameId: Long, discId: Long)
 
@@ -554,9 +553,6 @@ interface GameDao {
 
     @Query("UPDATE games SET lastPlayedFileId = :fileId WHERE id = :gameId")
     suspend fun updateLastPlayedFileId(gameId: Long, fileId: Long?)
-
-    @Query("UPDATE games SET achievementCount = :count, earnedAchievementCount = :earnedCount WHERE id = :gameId")
-    suspend fun updateAchievementCount(gameId: Long, count: Int, earnedCount: Int = 0)
 
     @Query("UPDATE games SET achievementsFetchedAt = :timestamp WHERE id = :gameId")
     suspend fun updateAchievementsFetchedAt(gameId: Long, timestamp: Long)
@@ -578,36 +574,6 @@ interface GameDao {
 
     @Query("UPDATE games SET verifiedRaId = :raId, raIdVerified = 1 WHERE id = :gameId")
     suspend fun updateVerifiedRaId(gameId: Long, raId: Long?)
-
-    @Query("UPDATE games SET earnedAchievementCount = earnedAchievementCount + 1 WHERE id = :gameId")
-    suspend fun incrementEarnedAchievementCount(gameId: Long)
-
-    @Query("UPDATE games SET activeSaveChannel = :channelName WHERE id = :gameId")
-    suspend fun updateActiveSaveChannel(gameId: Long, channelName: String?)
-
-    @Query("SELECT activeSaveChannel FROM games WHERE id = :gameId")
-    suspend fun getActiveSaveChannel(gameId: Long): String?
-
-    @Query("UPDATE games SET activeSaveTimestamp = :timestamp WHERE id = :gameId")
-    suspend fun updateActiveSaveTimestamp(gameId: Long, timestamp: Long?)
-
-    @Query("SELECT activeSaveTimestamp FROM games WHERE id = :gameId")
-    suspend fun getActiveSaveTimestamp(gameId: Long): Long?
-
-    @Query("UPDATE games SET activeSaveApplied = :applied WHERE id = :gameId")
-    suspend fun updateActiveSaveApplied(gameId: Long, applied: Boolean)
-
-    @Query("UPDATE games SET activeSaveApplied = 0 WHERE activeSaveApplied = 1")
-    suspend fun resetAllActiveSaveApplied()
-
-    @Query("SELECT activeSaveApplied FROM games WHERE id = :gameId")
-    suspend fun getActiveSaveApplied(gameId: Long): Boolean
-
-    @Query("UPDATE games SET pendingDeviceSyncSaveId = :saveId WHERE id = :gameId")
-    suspend fun setPendingDeviceSyncSaveId(gameId: Long, saveId: Long?)
-
-    @Query("SELECT pendingDeviceSyncSaveId FROM games WHERE id = :gameId")
-    suspend fun getPendingDeviceSyncSaveId(gameId: Long): Long?
 
     @Query("UPDATE games SET titleId = :titleId WHERE id = :gameId AND titleIdLocked = 0")
     suspend fun updateTitleId(gameId: Long, titleId: String?)
@@ -763,8 +729,23 @@ interface GameDao {
     """)
     suspend fun getGamesNeedingCheatSync(staleThreshold: Long, limit: Int = 50): List<GameEntity>
 
-    @Query("UPDATE games SET syncDirty = 1 WHERE platformId = :platformId AND source IN (:sources)")
-    suspend fun markSyncDirty(platformId: Long, sources: List<GameSource>)
+    /**
+     * Marks this account's rows on a platform as unseen, ahead of a sync pass that clears the
+     * flag for everything the server still returns. Rows another account holds and this one is
+     * masked off are left alone, or the pass would treat them as orphans of a library it was
+     * never shown.
+     */
+    @Query(
+        """
+        UPDATE games SET syncDirty = 1
+        WHERE platformId = :platformId AND source IN (:sources)
+          AND id NOT IN (
+              SELECT gameId FROM game_user_overlay
+              WHERE ownerUserId = :ownerUserId AND isMember = 0
+          )
+        """
+    )
+    suspend fun markSyncDirtyForOwner(platformId: Long, sources: List<GameSource>, ownerUserId: Long?)
 
     @Query("UPDATE games SET syncDirty = 0 WHERE platformId = :platformId AND source IN (:sources)")
     suspend fun clearSyncDirty(platformId: Long, sources: List<GameSource>)
@@ -772,8 +753,16 @@ interface GameDao {
     @Query("SELECT * FROM games WHERE platformId = :platformId AND syncDirty = 1 AND source IN (:sources)")
     suspend fun getSyncDirtyGames(platformId: Long, sources: List<GameSource>): List<GameEntity>
 
-    @Query("UPDATE games SET syncDirty = 0")
-    suspend fun clearAllSyncDirty()
+    @Query(
+        """
+        UPDATE games SET syncDirty = 0
+        WHERE id NOT IN (
+            SELECT gameId FROM game_user_overlay
+            WHERE ownerUserId = :ownerUserId AND isMember = 0
+        )
+        """
+    )
+    suspend fun clearAllSyncDirtyForOwner(ownerUserId: Long?)
 
     @Query("SELECT * FROM games WHERE platformId = :platformId AND localPath IS NOT NULL")
     suspend fun getGamesWithLocalPathByPlatform(platformId: Long): List<GameEntity>

@@ -18,6 +18,7 @@ class ReconcileAchievementsOnSessionEndUseCase @Inject constructor(
     private val raRepository: RetroAchievementsRepository,
     private val achievementDao: AchievementDao,
     private val gameDao: GameDao,
+    private val overlayWriter: com.nendo.argosy.data.repository.GameUserOverlayWriter,
     private val achievementUpdateBus: AchievementUpdateBus
 ) {
     suspend operator fun invoke(gameId: Long) {
@@ -46,7 +47,7 @@ class ReconcileAchievementsOnSessionEndUseCase @Inject constructor(
 
         val total = achievementDao.countByGameId(gameId)
         val earned = achievementDao.countUnlockedByGameId(gameId)
-        gameDao.updateAchievementCount(gameId, total, earned)
+        overlayWriter.updateAchievementCount(gameId, total, earned)
         achievementUpdateBus.emit(AchievementUpdateBus.AchievementUpdate(gameId, total, earned))
         Logger.info(TAG, "Session-end reconcile: recovered $changed unlock(s) for gameId=$gameId raId=$gameRaId")
     }

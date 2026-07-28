@@ -52,6 +52,7 @@ class GameRepository @Inject constructor(
     private val gameFileDao: GameFileDao,
     private val platformDao: PlatformDao,
     private val romMRepository: RomMRepository,
+    private val overlayWriter: GameUserOverlayWriter,
     private val preferencesRepository: UserPreferencesRepository,
     private val fileAccessLayer: com.nendo.argosy.data.storage.FileAccessLayer,
     private val attributionRepository: StorageAttributionRepository
@@ -782,43 +783,28 @@ class GameRepository @Inject constructor(
     }
 
     suspend fun updateUserRating(gameId: Long, rating: Int) =
-        gameDao.updateUserRating(gameId, rating)
+        overlayWriter.updateUserRating(gameId, rating)
 
     suspend fun updateUserDifficulty(gameId: Long, difficulty: Int) =
-        gameDao.updateUserDifficulty(gameId, difficulty)
+        overlayWriter.updateUserDifficulty(gameId, difficulty)
 
     suspend fun updateStatus(gameId: Long, status: String?) =
-        gameDao.updateStatus(gameId, status)
+        overlayWriter.updateStatus(gameId, status)
 
     suspend fun updateFavorite(gameId: Long, favorite: Boolean) =
-        gameDao.updateFavorite(gameId, favorite)
+        overlayWriter.updateFavorite(gameId, favorite)
 
     suspend fun updateFavoriteWithSync(gameId: Long, favorite: Boolean) {
         val rommId = gameDao.getById(gameId)?.rommId
         if (rommId != null) {
             romMRepository.toggleFavoriteWithSync(gameId, rommId, favorite)
         } else {
-            gameDao.updateFavorite(gameId, favorite)
+            overlayWriter.updateFavorite(gameId, favorite)
         }
     }
 
     suspend fun updateHidden(gameId: Long, hidden: Boolean) =
         gameDao.updateHidden(gameId, hidden)
-
-    suspend fun getActiveSaveTimestamp(gameId: Long): Long? =
-        gameDao.getActiveSaveTimestamp(gameId)
-
-    suspend fun updateActiveSaveChannel(gameId: Long, channelName: String?) =
-        gameDao.updateActiveSaveChannel(gameId, channelName)
-
-    suspend fun updateActiveSaveTimestamp(gameId: Long, timestamp: Long?) =
-        gameDao.updateActiveSaveTimestamp(gameId, timestamp)
-
-    suspend fun updateActiveSaveApplied(gameId: Long, applied: Boolean) =
-        gameDao.updateActiveSaveApplied(gameId, applied)
-
-    suspend fun getActiveSaveChannel(gameId: Long): String? =
-        gameDao.getActiveSaveChannel(gameId)
 
     suspend fun getBySource(source: GameSource): List<GameEntity> =
         gameDao.getBySource(source)
@@ -905,7 +891,7 @@ class GameRepository @Inject constructor(
         gameId: Long,
         count: Int,
         earnedCount: Int = 0
-    ) = gameDao.updateAchievementCount(gameId, count, earnedCount)
+    ) = overlayWriter.updateAchievementCount(gameId, count, earnedCount)
 
     suspend fun updateFileSize(gameId: Long, sizeBytes: Long) =
         gameDao.updateFileSize(gameId, sizeBytes)

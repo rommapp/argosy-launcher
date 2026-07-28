@@ -194,16 +194,16 @@ class StateCacheManager @Inject constructor(
         }
 
         val now = Instant.now()
-        val coreDir = getCoreDir(gameId, platformSlug, channelName, coreId)
+        val ownerUserId = syncPreferencesRepository.getRommUserId()
+        val relativeDir = stateRelativeDir(ownerUserId, gameId, platformSlug, channelName, coreId)
+        val coreDir = File(cacheBaseDir, relativeDir)
 
         try {
             coreDir.mkdirs()
 
             val cachedFile = File(coreDir, stateFile.name)
             stateFile.copyTo(cachedFile, overwrite = true)
-            val channelDirName = channelName ?: "default"
-            val coreDirName = coreId ?: "unknown"
-            val cachePath = "$platformSlug/$gameId/$channelDirName/$coreDirName/${stateFile.name}"
+            val cachePath = "$relativeDir/${stateFile.name}"
             val stateSize = cachedFile.length()
 
             var screenshotCachePath: String? = null
@@ -212,7 +212,7 @@ class StateCacheManager @Inject constructor(
             if (screenshotFile.exists()) {
                 val cachedScreenshot = File(coreDir, screenshotFile.name)
                 screenshotFile.copyTo(cachedScreenshot, overwrite = true)
-                screenshotCachePath = "$platformSlug/$gameId/$channelDirName/$coreDirName/${screenshotFile.name}"
+                screenshotCachePath = "$relativeDir/${screenshotFile.name}"
                 Log.d(TAG, "Cached screenshot at $screenshotCachePath")
             } else {
                 Log.d(TAG, "No screenshot found for state: $statePath")
@@ -380,15 +380,19 @@ class StateCacheManager @Inject constructor(
             val sourceFile = File(cacheBaseDir, source.cachePath)
             if (!sourceFile.exists()) continue
 
-            val targetDirName = targetChannel
             val coreDirName = source.coreId ?: "unknown"
-            val targetDir = File(cacheBaseDir, "${source.platformSlug}/$gameId/$targetDirName/$coreDirName")
+            val gameRelativeDir = source.cachePath
+                .substringBeforeLast('/')
+                .substringBeforeLast('/')
+                .substringBeforeLast('/')
+            val targetRelativeDir = "$gameRelativeDir/$targetChannel/$coreDirName"
+            val targetDir = File(cacheBaseDir, targetRelativeDir)
             targetDir.mkdirs()
 
             val targetFile = File(targetDir, sourceFile.name)
             sourceFile.copyTo(targetFile, overwrite = true)
 
-            val targetCachePath = "${source.platformSlug}/$gameId/$targetDirName/$coreDirName/${sourceFile.name}"
+            val targetCachePath = "$targetRelativeDir/${sourceFile.name}"
 
             var targetScreenshotPath: String? = null
             source.screenshotPath?.let { ssPath ->
@@ -396,7 +400,7 @@ class StateCacheManager @Inject constructor(
                 if (ssFile.exists()) {
                     val targetSsFile = File(targetDir, ssFile.name)
                     ssFile.copyTo(targetSsFile, overwrite = true)
-                    targetScreenshotPath = "${source.platformSlug}/$gameId/$targetDirName/$coreDirName/${ssFile.name}"
+                    targetScreenshotPath = "$targetRelativeDir/${ssFile.name}"
                 }
             }
 
@@ -525,15 +529,24 @@ class StateCacheManager @Inject constructor(
         return "$baseDir/$fileName"
     }
 
-    fun getChannelDir(gameId: Long, platformSlug: String, channelName: String?): File {
-        val channelDirName = channelName ?: "default"
-        return File(cacheBaseDir, "$platformSlug/$gameId/$channelDirName")
-    }
+    /**
+     * The directory an existing cache row's files live in, read off the row rather than rebuilt.
+     * Rows written before the cache was partitioned per account carry no owner segment, so
+     * reconstructing the path from its parts would miss them.
+     */
+    fun coreDirFor(entity: StateCacheEntity): File =
+        File(cacheBaseDir, entity.cachePath).parentFile ?: cacheBaseDir
 
-    fun getCoreDir(gameId: Long, platformSlug: String, channelName: String?, coreId: String?): File {
+    private fun stateRelativeDir(
+        ownerUserId: Long?,
+        gameId: Long,
+        platformSlug: String,
+        channelName: String?,
+        coreId: String?
+    ): String {
         val channelDirName = channelName ?: "default"
         val coreDirName = coreId ?: "unknown"
-        return File(cacheBaseDir, "$platformSlug/$gameId/$channelDirName/$coreDirName")
+        return "${AppPaths.ownerCacheSegment(ownerUserId)}$platformSlug/$gameId/$channelDirName/$coreDirName"
     }
 
     fun getCacheFile(entity: StateCacheEntity): File? {
@@ -765,9 +778,11 @@ class StateCacheManager @Inject constructor(
             val parsed = parseStateFileName(fileName)
             val channelName = parsed.channelName
             val parsedSlot = parsed.slotNumber
-            val channelDirName = channelName ?: "default"
 
-            val coreDir = getCoreDir(gameId, platformSlug, channelName, coreId)
+            val relativeDir = stateRelativeDir(
+                syncPreferencesRepository.getRommUserId(), gameId, platformSlug, channelName, coreId
+            )
+            val coreDir = File(cacheBaseDir, relativeDir)
             coreDir.mkdirs()
 
             val cachedFile = File(coreDir, fileName)
@@ -787,7 +802,7 @@ class StateCacheManager @Inject constructor(
                         ssResponse.body()?.byteStream()?.use { input ->
                             ssFile.outputStream().use { output -> input.copyTo(output) }
                         }
-                        screenshotCachePath = "$platformSlug/$gameId/$channelDirName/${coreId ?: "unknown"}/${screenshot.fileName}"
+                        screenshotCachePath = "$relativeDir/${screenshot.fileName}"
                         Log.d(TAG, "[StateSync] DOWNLOAD screenshot for rommStateId=$rommStateId")
                     }
                 } catch (e: Exception) {
@@ -796,7 +811,7 @@ class StateCacheManager @Inject constructor(
             }
 
             val contentHash = calculateFileHash(cachedFile)
-            val cachePath = "$platformSlug/$gameId/$channelDirName/${coreId ?: "unknown"}/$fileName"
+            val cachePath = "$relativeDir/$fileName"
             val now = Instant.now()
 
             val entity = StateCacheEntity(

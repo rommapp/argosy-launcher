@@ -2236,3 +2236,86 @@ object Migration_152_153 : Migration(152, 153) {
         db.execSQL("UPDATE `save_cache` SET `serverCurrentAtSync` = 1 WHERE `rommSaveId` IS NOT NULL")
     }
 }
+
+object Migration_153_154 : Migration(153, 154) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            "CREATE TABLE IF NOT EXISTS `game_user_overlay` (" +
+                "`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                "`ownerUserId` INTEGER NOT NULL, " +
+                "`gameId` INTEGER NOT NULL, " +
+                "`isMember` INTEGER NOT NULL, " +
+                "`serverHidden` INTEGER NOT NULL, " +
+                "`isFavorite` INTEGER NOT NULL, " +
+                "`userRating` INTEGER NOT NULL, " +
+                "`userDifficulty` INTEGER NOT NULL, " +
+                "`completion` INTEGER NOT NULL, " +
+                "`status` TEXT, " +
+                "`backlogged` INTEGER NOT NULL, " +
+                "`nowPlaying` INTEGER NOT NULL, " +
+                "`playCount` INTEGER NOT NULL, " +
+                "`playTimeMinutes` INTEGER NOT NULL, " +
+                "`lastPlayed` INTEGER, " +
+                "`earnedAchievementCount` INTEGER NOT NULL, " +
+                "`activeSaveChannel` TEXT, " +
+                "`activeSaveTimestamp` INTEGER, " +
+                "`activeSaveApplied` INTEGER NOT NULL, " +
+                "`pendingDeviceSyncSaveId` INTEGER, " +
+                "FOREIGN KEY(`gameId`) REFERENCES `games`(`id`) " +
+                "ON UPDATE NO ACTION ON DELETE CASCADE )"
+        )
+        db.execSQL(
+            "CREATE UNIQUE INDEX IF NOT EXISTS `index_game_user_overlay_ownerUserId_gameId` " +
+                "ON `game_user_overlay` (`ownerUserId`, `gameId`)"
+        )
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS `index_game_user_overlay_gameId` " +
+                "ON `game_user_overlay` (`gameId`)"
+        )
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS `index_game_user_overlay_ownerUserId` " +
+                "ON `game_user_overlay` (`ownerUserId`)"
+        )
+
+        db.execSQL(
+            "CREATE TABLE IF NOT EXISTS `collection_membership` (" +
+                "`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                "`ownerUserId` INTEGER NOT NULL, " +
+                "`collectionId` INTEGER NOT NULL, " +
+                "`isMember` INTEGER NOT NULL, " +
+                "FOREIGN KEY(`collectionId`) REFERENCES `collections`(`id`) " +
+                "ON UPDATE NO ACTION ON DELETE CASCADE )"
+        )
+        db.execSQL(
+            "CREATE UNIQUE INDEX IF NOT EXISTS `index_collection_membership_ownerUserId_collectionId` " +
+                "ON `collection_membership` (`ownerUserId`, `collectionId`)"
+        )
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS `index_collection_membership_collectionId` " +
+                "ON `collection_membership` (`collectionId`)"
+        )
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS `index_collection_membership_ownerUserId` " +
+                "ON `collection_membership` (`ownerUserId`)"
+        )
+
+        db.execSQL(
+            "INSERT OR IGNORE INTO `game_user_overlay` (" +
+                "`ownerUserId`, `gameId`, `isMember`, `serverHidden`, `isFavorite`, `userRating`, " +
+                "`userDifficulty`, `completion`, `status`, `backlogged`, `nowPlaying`, `playCount`, " +
+                "`playTimeMinutes`, `lastPlayed`, `earnedAchievementCount`, `activeSaveChannel`, " +
+                "`activeSaveTimestamp`, `activeSaveApplied`, `pendingDeviceSyncSaveId`) " +
+                "SELECT a.rommUserId, g.id, 1, 0, g.isFavorite, g.userRating, " +
+                "g.userDifficulty, g.completion, g.status, g.backlogged, g.nowPlaying, g.playCount, " +
+                "g.playTimeMinutes, g.lastPlayed, g.earnedAchievementCount, g.activeSaveChannel, " +
+                "g.activeSaveTimestamp, g.activeSaveApplied, g.pendingDeviceSyncSaveId " +
+                "FROM `games` g CROSS JOIN " +
+                "(SELECT `rommUserId` FROM `romm_accounts` WHERE `isActive` = 1 LIMIT 1) a"
+        )
+        db.execSQL(
+            "INSERT OR IGNORE INTO `collection_membership` (`ownerUserId`, `collectionId`, `isMember`) " +
+                "SELECT a.rommUserId, c.id, 1 FROM `collections` c CROSS JOIN " +
+                "(SELECT `rommUserId` FROM `romm_accounts` WHERE `isActive` = 1 LIMIT 1) a"
+        )
+    }
+}

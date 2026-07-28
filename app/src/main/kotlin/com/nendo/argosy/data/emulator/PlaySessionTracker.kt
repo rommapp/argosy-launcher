@@ -85,6 +85,7 @@ data class SaveConflictEvent(
 class PlaySessionTracker @Inject constructor(
     private val application: Application,
     private val gameDao: GameDao,
+    private val overlayWriter: com.nendo.argosy.data.repository.GameUserOverlayWriter,
     private val playSessionDao: PlaySessionDao,
     private val saveCacheDao: SaveCacheDao,
     private val pendingSyncQueueDao: com.nendo.argosy.data.local.dao.PendingSyncQueueDao,
@@ -268,8 +269,8 @@ class PlaySessionTracker @Inject constructor(
             )
             when (cacheResult) {
                 is SaveCacheManager.CacheResult.Created -> {
-                    gameDao.updateActiveSaveTimestamp(orphaned.gameId, cacheResult.timestamp)
-                    gameDao.updateActiveSaveApplied(orphaned.gameId, false)
+                    overlayWriter.updateActiveSaveTimestamp(orphaned.gameId, cacheResult.timestamp)
+                    overlayWriter.updateActiveSaveApplied(orphaned.gameId, false)
                     Logger.info(TAG, "[SaveSync] ORPHAN gameId=${orphaned.gameId} | Recovery backup created | path=$savePath")
                 }
                 is SaveCacheManager.CacheResult.Duplicate ->
@@ -707,7 +708,7 @@ class PlaySessionTracker @Inject constructor(
             return
         }
 
-        gameDao.addPlayTime(session.gameId, minutes)
+        overlayWriter.addPlayTime(session.gameId, minutes)
         gameDao.getById(session.gameId)?.let { updatedGame ->
             gameUpdateBus.emit(GameUpdateBus.GameUpdate(
                 gameId = session.gameId,
@@ -797,7 +798,7 @@ class PlaySessionTracker @Inject constructor(
         val serverTimestamp = uploadResult.serverTimestamp
         if (serverTimestamp != null) {
             saveCacheDao.updateCachedAt(cacheEntry.id, serverTimestamp)
-            gameDao.updateActiveSaveTimestamp(gameId, serverTimestamp.toEpochMilli())
+            overlayWriter.updateActiveSaveTimestamp(gameId, serverTimestamp.toEpochMilli())
         }
 
         com.nendo.argosy.util.SaveDebugLogger.logLinkCache(
@@ -1060,8 +1061,8 @@ class PlaySessionTracker @Inject constructor(
                 )
                 when (cacheResult) {
                     is SaveCacheManager.CacheResult.Created -> {
-                        gameDao.updateActiveSaveTimestamp(session.gameId, cacheResult.timestamp)
-                        gameDao.updateActiveSaveApplied(session.gameId, false)
+                        overlayWriter.updateActiveSaveTimestamp(session.gameId, cacheResult.timestamp)
+                        overlayWriter.updateActiveSaveApplied(session.gameId, false)
                         Logger.debug(TAG, "[SaveSync] SESSION gameId=${session.gameId} | Cached local save | path=$savePath, channel=$activeChannel")
                     }
                     is SaveCacheManager.CacheResult.Duplicate -> {

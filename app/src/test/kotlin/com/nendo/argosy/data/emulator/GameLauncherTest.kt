@@ -107,6 +107,7 @@ class GameLauncherTest {
         launcher = GameLauncher(
             context = context,
             gameDao = gameDao,
+            overlayWriter = mockk<com.nendo.argosy.data.repository.GameUserOverlayWriter>(relaxed = true),
             platformDao = platformDao,
             gameDiscDao = gameDiscDao,
             emulatorConfigDao = emulatorConfigDao,

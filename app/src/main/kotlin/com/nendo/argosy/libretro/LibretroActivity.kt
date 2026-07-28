@@ -147,6 +147,7 @@ class LibretroActivity : ComponentActivity() {
     @Inject lateinit var inputConfigRepository: InputConfigRepository
     @Inject lateinit var cheatDao: CheatDao
     @Inject lateinit var gameDao: GameDao
+    @Inject lateinit var gameOverlayWriter: com.nendo.argosy.data.repository.GameUserOverlayWriter
     @Inject lateinit var achievementDao: AchievementDao
     @Inject lateinit var cheatsRepository: CheatsRepository
     @Inject lateinit var raRepository: RetroAchievementsRepository
@@ -428,6 +429,7 @@ class LibretroActivity : ComponentActivity() {
         createRetroView(corePath, systemDir, savesDir, settings, restoredSram)
         achievementBridge = LibretroAchievementBridge(
             gameDao = gameDao,
+            overlayWriter = gameOverlayWriter,
             achievementDao = achievementDao,
             raRepository = raRepository,
             verifyRAGameIdUseCase = verifyRAGameIdUseCase,

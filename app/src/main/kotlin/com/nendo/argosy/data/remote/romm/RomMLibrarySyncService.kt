@@ -74,6 +74,9 @@ class RomMLibrarySyncService @Inject constructor(
     private val biosRepository: BiosRepository,
     private val installedAppResolver: InstalledAppResolver,
     private val gameRepository: dagger.Lazy<com.nendo.argosy.data.repository.GameRepository>,
+    private val overlayWriter: com.nendo.argosy.data.repository.GameUserOverlayWriter,
+    private val overlayDao: com.nendo.argosy.data.local.dao.GameUserOverlayDao,
+    private val visibilityService: RomMVisibilityService,
     private val syncVirtualCollectionsUseCase: dagger.Lazy<com.nendo.argosy.domain.usecase.collection.SyncVirtualCollectionsUseCase>,
     private val fileAccessLayer: com.nendo.argosy.data.storage.FileAccessLayer,
     private val androidGameScanner: dagger.Lazy<com.nendo.argosy.data.scanner.AndroidGameScanner>,
@@ -167,6 +170,7 @@ class RomMLibrarySyncService @Inject constructor(
         val prefs = userPreferencesRepository.preferences.first()
         val filters = prefs.syncFilters
         boxArtCacheEnabledForSync = prefs.boxArtCacheEnabled
+        val scope = resolveSyncScope(currentApi)
 
         _syncProgress.value = SyncProgress(isSyncing = true, platformsTotal = 1)
 
@@ -190,13 +194,13 @@ class RomMLibrarySyncService @Inject constructor(
             _syncProgress.value = _syncProgress.value.copy(currentPlatform = platform.name)
 
             val storageId = storagePlatformId(platform)
-            gameDao.markSyncDirty(storageId, ROMM_SOURCES)
+            gameDao.markSyncDirtyForOwner(storageId, ROMM_SOURCES, scope.ownerUserId)
 
-            val result = syncPlatformRoms(currentApi, platform, filters)
+            val result = syncPlatformRoms(currentApi, platform, filters, scope)
 
-            val gamesDeleted = processPostPlatformSync(currentApi, storageId, result, filters)
+            val gamesDeleted = processPostPlatformSync(currentApi, storageId, result, filters, scope)
 
-            gameDao.clearAllSyncDirty()
+            gameDao.clearAllSyncDirtyForOwner(scope.ownerUserId)
 
             androidGameScanner.get().relinkInstalledRommAndroidApps()
 
@@ -214,30 +218,23 @@ class RomMLibrarySyncService @Inject constructor(
         api: RomMApi,
         platformId: Long,
         result: PlatformSyncResult,
-        filters: SyncFilterPreferences
+        filters: SyncFilterPreferences,
+        scope: SyncScope
     ): Int {
         var gamesDeleted = 0
 
-        absorbConsolidatedGames(result.absorptionPairs)
-        consolidateMultiDiscGames(api, result.multiDiscGroups)
+        absorbConsolidatedGames(result.absorptionPairs, scope)
+        consolidateMultiDiscGames(api, result.multiDiscGroups, scope)
 
         if (result.error == null) {
-            realignDirtyGames(platformId)
+            realignDirtyGames(platformId, scope)
         }
 
-        cleanupInvalidExtensionGames(platformId)
-        gamesDeleted += cleanupDuplicateGames(platformId)
+        cleanupInvalidExtensionGames(platformId, scope)
+        gamesDeleted += cleanupDuplicateGames(platformId, scope)
 
         if (filters.deleteOrphans && result.error == null) {
-            val dirtyGames = gameDao.getSyncDirtyGames(platformId, ROMM_SOURCES)
-            for (game in dirtyGames) {
-                if (hasLocalContent(game)) {
-                    preserveOrphanedGame(game)
-                    continue
-                }
-                gameDao.delete(game.id)
-                gamesDeleted++
-            }
+            gamesDeleted += reconcileOrphans(platformId, scope)
         }
 
         gameRepository.get().validateLocalFilesForPlatform(platformId)
@@ -264,6 +261,7 @@ class RomMLibrarySyncService @Inject constructor(
         val prefs = userPreferencesRepository.preferences.first()
         val filters = prefs.syncFilters
         boxArtCacheEnabledForSync = prefs.boxArtCacheEnabled
+        val scope = resolveSyncScope(currentApi)
 
         _syncProgress.value = SyncProgress(isSyncing = true)
 
@@ -320,14 +318,14 @@ class RomMLibrarySyncService @Inject constructor(
                     platformsSynced++
                     continue
                 }
-                gameDao.markSyncDirty(storageId, ROMM_SOURCES)
+                gameDao.markSyncDirtyForOwner(storageId, ROMM_SOURCES, scope.ownerUserId)
 
-                val result = syncPlatformRoms(currentApi, platform, filters)
+                val result = syncPlatformRoms(currentApi, platform, filters, scope)
                 gamesAdded += result.added
                 gamesUpdated += result.updated
                 result.error?.let { errors.add(it) }
 
-                gamesDeleted += processPostPlatformSync(currentApi, storageId, result, filters)
+                gamesDeleted += processPostPlatformSync(currentApi, storageId, result, filters, scope)
 
                 platformsSynced++
                 if (result.error == null) {
@@ -335,7 +333,7 @@ class RomMLibrarySyncService @Inject constructor(
                 }
             }
 
-            gameDao.clearAllSyncDirty()
+            gameDao.clearAllSyncDirtyForOwner(scope.ownerUserId)
 
             userPreferencesRepository.clearSyncResume()
 
@@ -372,6 +370,72 @@ class RomMLibrarySyncService @Inject constructor(
             }
         }
         throw lastError ?: IllegalStateException("retryOnThrow: no attempts made")
+    }
+
+    /**
+     * The account a sync pass runs as, plus what the server withholds from it. Both are read
+     * once when the pass starts and carried down; re-reading mid-pass would let a switch land
+     * halfway through and attribute the remainder to the wrong account.
+     */
+    private data class SyncScope(
+        val ownerUserId: Long?,
+        val visibility: RomMVisibility
+    )
+
+    private suspend fun resolveSyncScope(api: RomMApi): SyncScope {
+        val ownerUserId = overlayWriter.activeOwnerId()
+        if (ownerUserId != null) overlayWriter.adoptLibraryIfUnclaimed(ownerUserId)
+        return SyncScope(ownerUserId, visibilityService.fetch(api))
+    }
+
+    /**
+     * Turns "the server did not return this rom" into either a mask change or a deletion.
+     *
+     * Not-returned is only evidence of deletion when the server has also said, explicitly, that
+     * the rom is not hidden from this account. Without that statement - an older server, a failed
+     * call - nothing is deleted, because for a restricted account absence and invisibility look
+     * identical and one of the two outcomes is unrecoverable.
+     */
+    private suspend fun reconcileOrphans(platformId: Long, scope: SyncScope): Int {
+        val dirtyGames = gameDao.getSyncDirtyGames(platformId, ROMM_SOURCES)
+        if (dirtyGames.isEmpty()) return 0
+
+        val visibility = scope.visibility
+        val ownerUserId = scope.ownerUserId
+        var deleted = 0
+        var masked = 0
+
+        for (game in dirtyGames) {
+            val rommId = game.rommId
+            val provenDeleted = visibility is RomMVisibility.Known &&
+                rommId != null &&
+                !visibility.hides(rommId, game.platformId)
+
+            if (!provenDeleted) {
+                if (ownerUserId != null) {
+                    val serverHidden = visibility is RomMVisibility.Known
+                    overlayWriter.dropMembership(ownerUserId, game.id, serverHidden)
+                    masked++
+                }
+                continue
+            }
+
+            if (hasLocalContent(game)) {
+                preserveOrphanedGame(game)
+                continue
+            }
+            gameDao.delete(game.id)
+            deleted++
+        }
+
+        if (masked > 0) {
+            Logger.info(
+                TAG,
+                "reconcileOrphans: kept $masked rows on platform $platformId as a visibility mask " +
+                    "(visibility=${if (visibility is RomMVisibility.Known) "known" else "unavailable"})"
+            )
+        }
+        return deleted
     }
 
     private fun storagePlatformId(platform: RomMPlatform): Long {
@@ -485,7 +549,7 @@ class RomMLibrarySyncService @Inject constructor(
         }
     }
 
-    private suspend fun syncRom(rom: RomMRom, syncFiles: Boolean = true): Pair<Boolean, GameEntity> {
+    private suspend fun syncRom(rom: RomMRom, scope: SyncScope, syncFiles: Boolean = true): Pair<Boolean, GameEntity> {
         val platformSlug = platformDao.getById(rom.platformId)?.slug
             ?: PlatformDefinitions.resolveImportSlug(rom.platformSlug, rom.platformName)
         val platformId = if (platformSlug == ANDROID_SLUG) LocalPlatformIds.ANDROID else rom.platformId
@@ -619,12 +683,12 @@ class RomMLibrarySyncService @Inject constructor(
             boxBackPath = cachedBoxBack,
             boxSpinePath = cachedBoxSpine,
             screenshotPaths = screenshotUrls.joinToString(","),
-            userRating = rom.romUser?.rating ?: localDataSource?.userRating ?: 0,
-            userDifficulty = rom.romUser?.difficulty ?: localDataSource?.userDifficulty ?: 0,
-            completion = rom.romUser?.completion ?: localDataSource?.completion ?: 0,
-            status = rom.romUser?.status ?: localDataSource?.status,
-            backlogged = rom.romUser?.backlogged ?: localDataSource?.backlogged ?: false,
-            nowPlaying = rom.romUser?.nowPlaying ?: localDataSource?.nowPlaying ?: false,
+            userRating = localDataSource?.userRating ?: 0,
+            userDifficulty = localDataSource?.userDifficulty ?: 0,
+            completion = localDataSource?.completion ?: 0,
+            status = localDataSource?.status,
+            backlogged = localDataSource?.backlogged ?: false,
+            nowPlaying = localDataSource?.nowPlaying ?: false,
             isFavorite = localDataSource?.isFavorite ?: false,
             isHidden = localDataSource?.isHidden ?: false,
             isMultiDisc = when {
@@ -636,7 +700,8 @@ class RomMLibrarySyncService @Inject constructor(
             playTimeMinutes = localDataSource?.playTimeMinutes ?: 0,
             lastPlayed = localDataSource?.lastPlayed,
             addedAt = localDataSource?.addedAt ?: java.time.Instant.now(),
-            achievementCount = localDataSource?.achievementCount ?: 0
+            achievementCount = localDataSource?.achievementCount ?: 0,
+            earnedAchievementCount = localDataSource?.earnedAchievementCount ?: 0
         ).withRomMetadata(rom)
 
         val isNew = existing == null
@@ -650,11 +715,30 @@ class RomMLibrarySyncService @Inject constructor(
         }
 
         val savedGame = gameDao.getByRommId(rom.id)
-        if (savedGame != null && syncFiles) {
-            syncGameFiles(savedGame.id, rom, platformSlug)
+        if (savedGame != null) {
+            applyRomUserProperties(savedGame.id, rom, scope)
+            if (syncFiles) syncGameFiles(savedGame.id, rom, platformSlug)
         }
 
         return isNew to game
+    }
+
+    /**
+     * Records the server's rom_user block against the account that fetched it, and re-grants that
+     * account's membership. The block is per user, so writing it onto the library row alone would
+     * publish one account's rating and status to every other account on the device.
+     */
+    private suspend fun applyRomUserProperties(gameId: Long, rom: RomMRom, scope: SyncScope) {
+        val owner = scope.ownerUserId
+        if (owner != null) overlayWriter.grantMembership(owner, gameId)
+
+        val romUser = rom.romUser ?: return
+        overlayDao.setUserRating(owner, gameId, romUser.rating)
+        overlayDao.setUserDifficulty(owner, gameId, romUser.difficulty)
+        overlayDao.setCompletion(owner, gameId, romUser.completion)
+        overlayDao.setStatus(owner, gameId, romUser.status)
+        overlayDao.setBacklogged(owner, gameId, romUser.backlogged)
+        overlayDao.setNowPlaying(owner, gameId, romUser.nowPlaying)
     }
 
     private suspend fun syncGameFiles(gameId: Long, rom: RomMRom, platformSlug: String) {
@@ -672,7 +756,8 @@ class RomMLibrarySyncService @Inject constructor(
     private suspend fun syncPlatformRoms(
         api: RomMApi,
         platform: RomMPlatform,
-        filters: SyncFilterPreferences
+        filters: SyncFilterPreferences,
+        scope: SyncScope
     ): PlatformSyncResult {
         var added = 0
         var updated = 0
@@ -776,7 +861,7 @@ class RomMLibrarySyncService @Inject constructor(
 
                     if (group.isComplete) {
                         val outcome = consolidateSiblingGroup(
-                            api, group, platform, absorptionPairs, ::trackSiblingMultiDisc
+                            api, group, platform, absorptionPairs, scope, ::trackSiblingMultiDisc
                         )
                         added += outcome.added
                         updated += outcome.updated
@@ -788,7 +873,7 @@ class RomMLibrarySyncService @Inject constructor(
                 if (dedupKey != null && !seenDedupKeys.add(dedupKey)) continue
 
                 try {
-                    val (isNew, _) = syncRom(rom)
+                    val (isNew, _) = syncRom(rom, scope)
                     if (isNew) added++ else updated++
                     trackSiblingMultiDisc(rom)
                 } catch (e: Exception) {
@@ -802,7 +887,7 @@ class RomMLibrarySyncService @Inject constructor(
 
         for (group in siblingGroups.values.distinct()) {
             val outcome = consolidateSiblingGroup(
-                api, group, platform, absorptionPairs, ::trackSiblingMultiDisc
+                api, group, platform, absorptionPairs, scope, ::trackSiblingMultiDisc
             )
             added += outcome.added
             updated += outcome.updated
@@ -824,6 +909,7 @@ class RomMLibrarySyncService @Inject constructor(
         group: SiblingGroup,
         platform: RomMPlatform,
         absorptionPairs: MutableList<Pair<Long, Long>>,
+        scope: SyncScope,
         trackMultiDisc: (RomMRom) -> Unit
     ): ConsolidationOutcome {
         if (group.consolidated) return ConsolidationOutcome(0, 0)
@@ -835,7 +921,7 @@ class RomMLibrarySyncService @Inject constructor(
         var added = 0
         var updated = 0
         try {
-            val (isNew, _) = syncRom(winner, syncFiles = false)
+            val (isNew, _) = syncRom(winner, scope, syncFiles = false)
             if (isNew) added++ else updated++
             trackMultiDisc(winner)
             val gameId = gameDao.getByRommId(winner.id)?.id
@@ -862,7 +948,7 @@ class RomMLibrarySyncService @Inject constructor(
         return ConsolidationOutcome(added, updated)
     }
 
-    private suspend fun absorbConsolidatedGames(pairs: List<Pair<Long, Long>>) {
+    private suspend fun absorbConsolidatedGames(pairs: List<Pair<Long, Long>>, scope: SyncScope) {
         for ((loserId, winnerId) in pairs) {
             if (loserId == winnerId) continue
             val loser = gameDao.getById(loserId) ?: continue
@@ -883,7 +969,8 @@ class RomMLibrarySyncService @Inject constructor(
                     isFavorite = loser.isFavorite,
                     userRating = loser.userRating,
                     userDifficulty = loser.userDifficulty,
-                    status = loser.status
+                    status = loser.status,
+                    ownerUserId = scope.ownerUserId
                 )
                 Logger.info(TAG, "absorbConsolidatedGames: absorbed ${loser.title} ($loserId) into game $winnerId as '$channelPrefix'")
             } catch (e: Exception) {
@@ -960,11 +1047,12 @@ class RomMLibrarySyncService @Inject constructor(
 
     private suspend fun consolidateMultiDiscGames(
         api: RomMApi,
-        groups: List<MultiDiscGroup>
+        groups: List<MultiDiscGroup>,
+        scope: SyncScope
     ) {
         for (group in groups) {
             try {
-                consolidateMultiDiscGroup(api, group)
+                consolidateMultiDiscGroup(api, group, scope)
             } catch (_: Exception) {
             }
         }
@@ -972,7 +1060,8 @@ class RomMLibrarySyncService @Inject constructor(
 
     private suspend fun consolidateMultiDiscGroup(
         api: RomMApi,
-        group: MultiDiscGroup
+        group: MultiDiscGroup,
+        scope: SyncScope
     ) {
         val allRommIds = listOf(group.primaryRommId) + group.siblingRommIds
         val existingGames = allRommIds.mapNotNull { rommId ->
@@ -1005,21 +1094,22 @@ class RomMLibrarySyncService @Inject constructor(
         val mergedNowPlaying = existingGames.any { it.nowPlaying }
         val earliestAddedAt = existingGames.minOf { it.addedAt }
 
-        val updatedGame = primaryGame.copy(
-            isFavorite = mergedIsFavorite,
-            playCount = mergedPlayCount,
-            playTimeMinutes = mergedPlayTime,
-            lastPlayed = mergedLastPlayed ?: primaryGame.lastPlayed,
-            userRating = mergedUserRating,
-            userDifficulty = mergedUserDifficulty,
-            completion = mergedCompletion,
-            backlogged = mergedBacklogged,
-            nowPlaying = mergedNowPlaying,
-            addedAt = earliestAddedAt,
-            isMultiDisc = true
-        )
+        gameDao.update(primaryGame.copy(addedAt = earliestAddedAt, isMultiDisc = true))
 
-        gameDao.update(updatedGame)
+        val owner = scope.ownerUserId
+        overlayDao.setFavorite(owner, primaryGame.id, mergedIsFavorite)
+        overlayDao.setUserRating(owner, primaryGame.id, mergedUserRating)
+        overlayDao.setUserDifficulty(owner, primaryGame.id, mergedUserDifficulty)
+        overlayDao.setCompletion(owner, primaryGame.id, mergedCompletion)
+        overlayDao.setBacklogged(owner, primaryGame.id, mergedBacklogged)
+        overlayDao.setNowPlaying(owner, primaryGame.id, mergedNowPlaying)
+        overlayDao.setMergedPlayTotals(
+            owner,
+            primaryGame.id,
+            mergedPlayCount,
+            mergedPlayTime,
+            mergedLastPlayed ?: primaryGame.lastPlayed
+        )
 
         val localPathsByRommId = existingGames
             .filter { it.localPath != null && it.rommId != null }
@@ -1071,14 +1161,15 @@ class RomMLibrarySyncService @Inject constructor(
         }
     }
 
-    private suspend fun realignDirtyGames(platformId: Long) {
+    private suspend fun realignDirtyGames(platformId: Long, scope: SyncScope) {
         val dirtyGames = gameDao.getSyncDirtyGames(platformId, ROMM_SOURCES)
         if (dirtyGames.isEmpty()) return
 
         var realigned = 0
         for (game in dirtyGames) {
             val fileName = game.rommFileName?.takeIf { it.isNotBlank() } ?: continue
-            val successor = gameDao.getCleanSyncedByFileNameAndPlatform(fileName, platformId)
+            val successor = gameDao
+                .getCleanSyncedByFileNameAndPlatformForOwner(fileName, platformId, scope.ownerUserId)
                 .filter { it.id != game.id && it.rommId != game.rommId && it.localPath == null }
                 .singleOrNull() ?: continue
 
@@ -1123,9 +1214,9 @@ class RomMLibrarySyncService @Inject constructor(
         }
     }
 
-    private suspend fun cleanupInvalidExtensionGames(platformId: Long): Int {
+    private suspend fun cleanupInvalidExtensionGames(platformId: Long, scope: SyncScope): Int {
         var cleared = 0
-        val platformGames = gameDao.getBySources(ROMM_SOURCES, platformId)
+        val platformGames = gameDao.getBySourcesForOwner(ROMM_SOURCES, platformId, scope.ownerUserId)
 
         for (game in platformGames) {
             val localPath = game.localPath ?: continue
@@ -1144,8 +1235,8 @@ class RomMLibrarySyncService @Inject constructor(
         return cleared
     }
 
-    private suspend fun cleanupDuplicateGames(platformId: Long): Int {
-        val platformGames = gameDao.getBySources(ROMM_SOURCES, platformId)
+    private suspend fun cleanupDuplicateGames(platformId: Long, scope: SyncScope): Int {
+        val platformGames = gameDao.getBySourcesForOwner(ROMM_SOURCES, platformId, scope.ownerUserId)
         val deletedIds = mutableSetOf<Long>()
 
         val gamesByIgdb = platformGames

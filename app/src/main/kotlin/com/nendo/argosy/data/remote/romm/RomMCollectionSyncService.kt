@@ -29,6 +29,8 @@ class RomMCollectionSyncService @Inject constructor(
     private val userPreferencesRepository: UserPreferencesRepository,
     private val gameDao: GameDao,
     private val collectionDao: CollectionDao,
+    private val collectionMembershipDao: com.nendo.argosy.data.local.dao.CollectionMembershipDao,
+    private val overlayWriter: com.nendo.argosy.data.repository.GameUserOverlayWriter,
     private val syncCoordinator: dagger.Lazy<SyncCoordinator>
 ) {
     private val api: RomMApi? get() = connectionManager.getApi()
@@ -94,8 +96,13 @@ class RomMCollectionSyncService @Inject constructor(
             val collection = getOrCreateFavoritesCollection()
                 ?: return RomMResult.Error("Failed to get favorites collection")
 
+            val ownerUserId = overlayWriter.activeOwnerId()
             val remoteRommIds = collection.romIds.toSet()
-            val localRommIds = gameDao.getFavoriteRommIds().toSet()
+            val localRommIds = if (ownerUserId != null) {
+                overlayWriter.favoriteRommIdsForOwner(ownerUserId).toSet()
+            } else {
+                gameDao.getFavoriteRommIds().toSet()
+            }
 
             val mergedIds = (remoteRommIds + localRommIds).toList()
             Logger.info(TAG, "syncFavorites: merging ${remoteRommIds.size} remote + ${localRommIds.size} local = ${mergedIds.size} total")
@@ -104,7 +111,7 @@ class RomMCollectionSyncService @Inject constructor(
                 ?: return RomMResult.Error("Failed to update favorites collection")
 
             if (mergedIds.isNotEmpty()) {
-                gameDao.setFavoritesByRommIds(mergedIds)
+                overlayWriter.setFavoritesByRommIds(mergedIds)
             }
             parseTimestamp(result.updatedAt)?.let { userPreferencesRepository.setLastFavoritesSyncTime(it) }
             userPreferencesRepository.setLastFavoritesCheckTime(Instant.now())
@@ -117,7 +124,7 @@ class RomMCollectionSyncService @Inject constructor(
     }
 
     suspend fun toggleFavoriteWithSync(gameId: Long, rommId: Long, isFavorite: Boolean): RomMResult<Unit> {
-        gameDao.updateFavorite(gameId, isFavorite)
+        overlayWriter.updateFavorite(gameId, isFavorite)
         syncCoordinator.get().queueFavoriteChange(gameId, rommId, isFavorite)
         return RomMResult.Success(Unit)
     }
@@ -246,6 +253,7 @@ class RomMCollectionSyncService @Inject constructor(
             val remoteCollections = response.body() ?: emptyList()
             Logger.info(TAG, "syncCollections: received ${remoteCollections.size} remote collections")
             val updatedLocalCollections = collectionDao.getAllCollections()
+            val ownerUserId = overlayWriter.activeOwnerId()
 
             val remoteByRommId = remoteCollections.associateBy { it.id }
             val localByRommId = updatedLocalCollections.filter { it.rommId != null }.associateBy { it.rommId }
@@ -272,13 +280,16 @@ class RomMCollectionSyncService @Inject constructor(
                 }
 
                 val collectionId = collectionDao.getCollectionByRommId(remote.id)?.id ?: continue
+                if (ownerUserId != null) {
+                    collectionMembershipDao.setMembership(ownerUserId, collectionId, true)
+                }
                 syncCollectionGames(collectionId, remote.romIds)
             }
 
             for (local in updatedLocalCollections) {
-                if (local.rommId != null && !remoteByRommId.containsKey(local.rommId)) {
-                    collectionDao.deleteCollection(local)
-                }
+                if (local.rommId == null || remoteByRommId.containsKey(local.rommId)) continue
+                if (ownerUserId == null) continue
+                collectionMembershipDao.setMembership(ownerUserId, local.id, false)
             }
 
             Logger.info(TAG, "syncCollections: synced ${remoteCollections.size} collections")
@@ -297,17 +308,18 @@ class RomMCollectionSyncService @Inject constructor(
 
         try {
             val rommIdToGameId = gameDao.getRommIdMappings().associate { it.rommId to it.id }
+            val ownerUserId = overlayWriter.activeOwnerId()
 
             val virtualResponse = currentApi.getVirtualCollections("collection")
             if (virtualResponse.isSuccessful) {
-                syncAutoType(CollectionType.SERIES, virtualResponse.body() ?: emptyList(), rommIdToGameId)
+                syncAutoType(CollectionType.SERIES, virtualResponse.body() ?: emptyList(), rommIdToGameId, ownerUserId)
             } else {
                 Logger.warn(TAG, "syncAutoCollections: virtual fetch failed ${virtualResponse.code()}")
             }
 
             val smartResponse = currentApi.getSmartCollections()
             if (smartResponse.isSuccessful) {
-                syncAutoType(CollectionType.SMART, smartResponse.body() ?: emptyList(), rommIdToGameId)
+                syncAutoType(CollectionType.SMART, smartResponse.body() ?: emptyList(), rommIdToGameId, ownerUserId)
             } else {
                 Logger.warn(TAG, "syncAutoCollections: smart fetch failed ${smartResponse.code()}")
             }
@@ -322,7 +334,8 @@ class RomMCollectionSyncService @Inject constructor(
     private suspend fun syncAutoType(
         type: CollectionType,
         remote: List<RomMAutoCollection>,
-        rommIdToGameId: Map<Long, Long>
+        rommIdToGameId: Map<Long, Long>,
+        ownerUserId: Long?
     ) {
         val keptNames = mutableSetOf<String>()
         for (rc in remote) {
@@ -340,6 +353,10 @@ class RomMCollectionSyncService @Inject constructor(
                 )
             )
 
+            if (ownerUserId != null) {
+                collectionMembershipDao.setMembership(ownerUserId, collectionId, true)
+            }
+
             val current = collectionDao.getGameIdsInCollection(collectionId).toSet()
             for (gameId in gameIds - current) {
                 collectionDao.addGameToCollection(CollectionGameEntity(collectionId = collectionId, gameId = gameId))
@@ -350,9 +367,9 @@ class RomMCollectionSyncService @Inject constructor(
         }
 
         for (existing in collectionDao.getAllByType(type)) {
-            if (existing.name !in keptNames) {
-                collectionDao.deleteCollection(existing)
-            }
+            if (existing.name in keptNames) continue
+            if (ownerUserId == null) continue
+            collectionMembershipDao.setMembership(ownerUserId, existing.id, false)
         }
     }
 

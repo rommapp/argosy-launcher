@@ -27,6 +27,7 @@ private const val TAG = "DeleteGameUseCase"
 
 class DeleteGameUseCase @Inject constructor(
     private val gameDao: GameDao,
+    private val overlayWriter: com.nendo.argosy.data.repository.GameUserOverlayWriter,
     private val gameRepository: GameRepository,
     private val downloadQueueDao: DownloadQueueDao,
     private val gameFileDao: GameFileDao,
@@ -58,8 +59,8 @@ class DeleteGameUseCase @Inject constructor(
         saveSyncDao.deleteByGame(gameId)
         deleteQueuedScreenshotFiles(gameId)
         pendingSyncQueueDao.deleteByGameId(gameId)
-        gameDao.updateActiveSaveChannel(gameId, null)
-        gameDao.updateActiveSaveTimestamp(gameId, null)
+        overlayWriter.updateActiveSaveChannel(gameId, null)
+        overlayWriter.updateActiveSaveTimestamp(gameId, null)
 
         withContext(Dispatchers.IO) {
             try {

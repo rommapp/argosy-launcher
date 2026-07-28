@@ -1996,8 +1996,8 @@ class DualScreenManager(
                 gameId, game.platformId, game.platformSlug
             )
 
-            gameDao.updateActiveSaveChannel(gameId, channelName)
-            gameDao.updateActiveSaveTimestamp(gameId, null)
+            gameRepository.updateActiveSaveChannel(gameId, channelName)
+            gameRepository.updateActiveSaveTimestamp(gameId, null)
 
             if (emulatorId != null) {
                 val entries = getUnifiedSavesUseCase(gameId, expandHistory = true)
@@ -2012,7 +2012,7 @@ class DualScreenManager(
                     when (result) {
                         is RestoreCachedSaveUseCase.Result.Restored,
                         is RestoreCachedSaveUseCase.Result.RestoredAndSynced -> {
-                            gameDao.updateActiveSaveApplied(gameId, true)
+                            gameRepository.updateActiveSaveApplied(gameId, true)
                         }
                         is RestoreCachedSaveUseCase.Result.Error -> {
                             Log.w(TAG, "Channel switch restore failed: ${result.message}")
@@ -2039,8 +2039,8 @@ class DualScreenManager(
                 gameId, game.platformId, game.platformSlug
             )
 
-            gameDao.updateActiveSaveChannel(gameId, channelName)
-            gameDao.updateActiveSaveTimestamp(gameId, timestamp)
+            gameRepository.updateActiveSaveChannel(gameId, channelName)
+            gameRepository.updateActiveSaveTimestamp(gameId, timestamp)
 
             if (emulatorId != null) {
                 val entries = getUnifiedSavesUseCase(gameId, expandHistory = true)
@@ -2056,7 +2056,7 @@ class DualScreenManager(
                     when (result) {
                         is RestoreCachedSaveUseCase.Result.Restored,
                         is RestoreCachedSaveUseCase.Result.RestoredAndSynced -> {
-                            gameDao.updateActiveSaveApplied(gameId, true)
+                            gameRepository.updateActiveSaveApplied(gameId, true)
                         }
                         is RestoreCachedSaveUseCase.Result.Error -> {
                             Log.w(TAG, "Restore point apply failed: ${result.message}")
@@ -2077,8 +2077,8 @@ class DualScreenManager(
                 gameId, game.platformId, game.platformSlug
             )
 
-            gameDao.updateActiveSaveChannel(gameId, name)
-            gameDao.updateActiveSaveTimestamp(gameId, null)
+            gameRepository.updateActiveSaveChannel(gameId, name)
+            gameRepository.updateActiveSaveTimestamp(gameId, null)
 
             if (emulatorId != null) {
                 restoreCachedSaveUseCase.clearActiveSave(gameId, emulatorId)

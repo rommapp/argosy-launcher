@@ -190,16 +190,29 @@ class DatabaseAdminRepository @Inject constructor(
         attributionRepository.markDirty(StorageCategory.GAMES)
     }
 
+    /**
+     * The cache root plus one per account. Entries written before the cache was partitioned sit
+     * directly under the root, so a purge that only walked the account directories would leave
+     * them behind.
+     */
+    private fun accountCacheRoots(root: File): List<File> =
+        listOf(root) + (root.listFiles { f -> f.isDirectory && AppPaths.isOwnerCacheDir(f.name) }
+            ?.toList() ?: emptyList())
+
     private suspend fun deleteCacheDirs(sources: List<GameSource>) {
         if (sources.containsAll(GameSource.entries)) {
             deleteQuietly(AppPaths.saveCacheDir(context.filesDir))
             deleteQuietly(AppPaths.stateCacheDir(context.filesDir))
             deleteQuietly(AppPaths.romCacheDir(context.filesDir))
         } else {
+            val saveCacheRoots = accountCacheRoots(AppPaths.saveCacheDir(context.filesDir))
+            val stateCacheRoots = accountCacheRoots(AppPaths.stateCacheDir(context.filesDir))
             for (source in sources) {
                 for (game in database.gameDao().getBySource(source)) {
-                    deleteQuietly(File(AppPaths.saveCacheDir(context.filesDir), game.id.toString()))
-                    deleteQuietly(File(AppPaths.stateCacheDir(context.filesDir), "${game.platformSlug}/${game.id}"))
+                    saveCacheRoots.forEach { deleteQuietly(File(it, game.id.toString())) }
+                    stateCacheRoots.forEach {
+                        deleteQuietly(File(it, "${game.platformSlug}/${game.id}"))
+                    }
                     deleteQuietly(File(AppPaths.romCacheDir(context.filesDir), "${game.platformSlug}/${game.id}"))
                 }
             }

@@ -108,6 +108,7 @@ class SyncCoordinatorApplyPlanTest {
             saveSyncDao = saveSyncDao,
             emulatorSaveConfigDao = mockk(relaxed = true),
             gameDao = gameDao,
+            overlayWriter = mockk<com.nendo.argosy.data.repository.GameUserOverlayWriter>(relaxed = true),
             romMRepository = dagger.Lazy { romM },
             saveSyncRepository = dagger.Lazy { mockSaveSyncRepository },
             saveCacheManager = dagger.Lazy { mockk<SaveCacheManager>(relaxed = true) },

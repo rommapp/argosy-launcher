@@ -36,6 +36,7 @@ class SaveDownloader @Inject constructor(
     private val saveCacheDao: SaveCacheDao,
     private val emulatorResolver: EmulatorResolver,
     private val gameDao: GameDao,
+    private val overlayWriter: GameUserOverlayWriter,
     private val titleDbRepository: TitleDbRepository,
     private val titleIdExtractor: com.nendo.argosy.data.emulator.TitleIdExtractor,
     private val saveArchiver: SaveArchiver,
@@ -262,7 +263,7 @@ class SaveDownloader @Inject constructor(
                         saveCacheDao.updateCachedAt(cachedMatch.id, serverTimestamp)
                     }
                     if (serverTimestamp != null) {
-                        gameDao.updateActiveSaveTimestamp(gameId, serverTimestamp.toEpochMilli())
+                        overlayWriter.updateActiveSaveTimestamp(gameId, serverTimestamp.toEpochMilli())
                     }
                     Logger.info(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | Complete (cache-hit) | path=$preDownloadTargetPath")
                     return@withContext SaveSyncResult.Success(rommSaveId = serverSave.id, serverTimestamp = serverTimestamp)
@@ -617,8 +618,8 @@ class SaveDownloader @Inject constructor(
                     precomputedContentHash = serverSave.contentHash
                 )
                 if (cacheResult is SaveCacheManager.CacheResult.Created) {
-                    gameDao.updateActiveSaveTimestamp(gameId, cacheResult.timestamp)
-                    gameDao.updateActiveSaveApplied(gameId, false)
+                    overlayWriter.updateActiveSaveTimestamp(gameId, cacheResult.timestamp)
+                    overlayWriter.updateActiveSaveApplied(gameId, false)
                     if (serverTimestamp != null && cacheResult.cacheId > 0L) {
                         saveCacheDao.updateCachedAt(cacheResult.cacheId, serverTimestamp)
                     }
@@ -997,7 +998,7 @@ class SaveDownloader @Inject constructor(
         Logger.debug(TAG, "[SaveSync] flushPendingDeviceSync | gameId=$gameId, pendingSaveId=$pendingSaveId")
         try {
             confirmDeviceSynced(pendingSaveId)
-            gameDao.setPendingDeviceSyncSaveId(gameId, null)
+            overlayWriter.setPendingDeviceSyncSaveId(gameId, null)
             Logger.debug(TAG, "[SaveSync] flushPendingDeviceSync | gameId=$gameId | Flushed successfully")
         } catch (e: Exception) {
             Logger.warn(TAG, "[SaveSync] flushPendingDeviceSync | gameId=$gameId | Failed, will retry later", e)

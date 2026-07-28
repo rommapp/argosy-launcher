@@ -24,8 +24,10 @@ import com.nendo.argosy.data.local.dao.EmulatorLaunchArgsDao
 import com.nendo.argosy.data.local.dao.EmulatorSaveConfigDao
 import com.nendo.argosy.data.local.dao.EmulatorUpdateDao
 import com.nendo.argosy.data.local.dao.FirmwareDao
+import com.nendo.argosy.data.local.dao.CollectionMembershipDao
 import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.dao.GameDiscDao
+import com.nendo.argosy.data.local.dao.GameUserOverlayDao
 import com.nendo.argosy.data.local.dao.GameFileDao
 import com.nendo.argosy.data.local.dao.OrphanedFileDao
 import com.nendo.argosy.data.local.dao.PendingConflictDao
@@ -73,8 +75,10 @@ import com.nendo.argosy.data.local.entity.EmulatorSaveConfigEntity
 import com.nendo.argosy.data.local.entity.EmulatorUpdateEntity
 import com.nendo.argosy.data.local.entity.FirmwareEntity
 import com.nendo.argosy.data.local.entity.GameDiscEntity
+import com.nendo.argosy.data.local.entity.CollectionMembershipEntity
 import com.nendo.argosy.data.local.entity.GameEntity
 import com.nendo.argosy.data.local.entity.GameFileEntity
+import com.nendo.argosy.data.local.entity.GameUserOverlayEntity
 import com.nendo.argosy.data.local.entity.OrphanedFileEntity
 import com.nendo.argosy.data.local.entity.PendingConflictEntity
 import com.nendo.argosy.data.local.entity.PendingSyncQueueEntity
@@ -103,6 +107,8 @@ import com.nendo.argosy.data.local.entity.SteamLicenseEntity
     entities = [
         PlatformEntity::class,
         GameEntity::class,
+        GameUserOverlayEntity::class,
+        CollectionMembershipEntity::class,
         EmulatorConfigEntity::class,
         DownloadQueueEntity::class,
         SaveSyncEntity::class,
@@ -154,13 +160,15 @@ import com.nendo.argosy.data.local.entity.SteamLicenseEntity
         QuayPassDailyStatsEntity::class,
         QuayPassPendingReportEntity::class
     ],
-    version = 153,
+    version = 154,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
 abstract class ALauncherDatabase : RoomDatabase() {
     abstract fun platformDao(): PlatformDao
     abstract fun gameDao(): GameDao
+    abstract fun gameUserOverlayDao(): GameUserOverlayDao
+    abstract fun collectionMembershipDao(): CollectionMembershipDao
     abstract fun gameDiscDao(): GameDiscDao
     abstract fun emulatorConfigDao(): EmulatorConfigDao
     abstract fun downloadQueueDao(): DownloadQueueDao

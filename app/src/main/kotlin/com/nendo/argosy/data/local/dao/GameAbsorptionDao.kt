@@ -127,6 +127,33 @@ abstract class GameAbsorptionDao {
         status: String?
     )
 
+    @Query("UPDATE OR IGNORE game_user_overlay SET gameId = :winnerId WHERE gameId = :loserId")
+    protected abstract suspend fun repointGameUserOverlay(loserId: Long, winnerId: Long)
+
+    @Query("DELETE FROM game_user_overlay WHERE gameId = :loserId")
+    protected abstract suspend fun deleteLeftoverGameUserOverlay(loserId: Long)
+
+    @Query(
+        "UPDATE game_user_overlay SET " +
+            "playTimeMinutes = playTimeMinutes + :playTimeMinutes, " +
+            "playCount = playCount + :playCount, " +
+            "isFavorite = isFavorite OR :isFavorite, " +
+            "userRating = CASE WHEN userRating = 0 THEN :userRating ELSE userRating END, " +
+            "userDifficulty = CASE WHEN userDifficulty = 0 THEN :userDifficulty ELSE userDifficulty END, " +
+            "status = COALESCE(status, :status) " +
+            "WHERE gameId = :winnerId AND ownerUserId = :ownerUserId"
+    )
+    protected abstract suspend fun mergeOverlayScalars(
+        ownerUserId: Long,
+        winnerId: Long,
+        playTimeMinutes: Int,
+        playCount: Int,
+        isFavorite: Boolean,
+        userRating: Int,
+        userDifficulty: Int,
+        status: String?
+    )
+
     @Query("DELETE FROM games WHERE id = :loserId")
     protected abstract suspend fun deleteLoser(loserId: Long)
 
@@ -143,7 +170,8 @@ abstract class GameAbsorptionDao {
         isFavorite: Boolean,
         userRating: Int,
         userDifficulty: Int,
-        status: String?
+        status: String?,
+        ownerUserId: Long?
     ) {
         if (loserLocalPath != null) {
             transferBaseLocalPath(winnerId, versionGroup, loserLocalPath, loserDownloadedAtEpoch)
@@ -171,10 +199,18 @@ abstract class GameAbsorptionDao {
         repointSpeedrunCategories(loserId, winnerId)
         repointDownloadQueue(loserId, winnerId)
         repointRemainingGameFiles(loserId, winnerId)
+        repointGameUserOverlay(loserId, winnerId)
+        deleteLeftoverGameUserOverlay(loserId)
         mergeGameScalars(
             winnerId, playTimeMinutes, playCount, isFavorite,
             userRating, userDifficulty, status
         )
+        if (ownerUserId != null) {
+            mergeOverlayScalars(
+                ownerUserId, winnerId, playTimeMinutes, playCount, isFavorite,
+                userRating, userDifficulty, status
+            )
+        }
         deleteLoser(loserId)
     }
 }

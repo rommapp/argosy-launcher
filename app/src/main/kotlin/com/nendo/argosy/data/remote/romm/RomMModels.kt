@@ -263,6 +263,27 @@ data class RomMUser(
     @Json(name = "ra_progression") val raProgression: RomMRAProgression? = null
 )
 
+/**
+ * The platform and rom ids the server withholds from the caller. Field names follow RomM's
+ * `HiddenEntitiesSchema`, which nests them under `hidden` rather than exposing them at the
+ * top level.
+ */
+@JsonClass(generateAdapter = true)
+data class RomMHiddenEntities(
+    @Json(name = "platforms") val platforms: List<Long> = emptyList(),
+    @Json(name = "roms") val roms: List<Long> = emptyList()
+)
+
+/**
+ * `GET /api/permissions/me`. The grants list is deliberately not modelled: the client only
+ * needs the hidden sets, which are what tell a missing rom apart from a deleted one.
+ */
+@JsonClass(generateAdapter = true)
+data class RomMPermissionsResponse(
+    @Json(name = "is_admin") val isAdmin: Boolean = false,
+    @Json(name = "hidden") val hidden: RomMHiddenEntities = RomMHiddenEntities()
+)
+
 @JsonClass(generateAdapter = true)
 data class RomMRAProgression(
     @Json(name = "total") val total: Int = 0,

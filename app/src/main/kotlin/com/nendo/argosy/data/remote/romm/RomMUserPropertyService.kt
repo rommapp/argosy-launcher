@@ -21,6 +21,7 @@ class RomMUserPropertyService @Inject constructor(
     private val apiClient: RomMApiClient,
     private val connectionManager: RomMConnectionManager,
     private val gameDao: GameDao,
+    private val overlayWriter: com.nendo.argosy.data.repository.GameUserOverlayWriter,
     private val pendingSyncQueueDao: PendingSyncQueueDao,
     private val imageCacheManager: ImageCacheManager,
     private val syncCoordinator: dagger.Lazy<SyncCoordinator>,
@@ -32,7 +33,7 @@ class RomMUserPropertyService @Inject constructor(
 
     suspend fun updateUserRating(gameId: Long, rating: Int): RomMResult<Unit> {
         val game = gameDao.getById(gameId) ?: return RomMResult.Error("Game not found")
-        gameDao.updateUserRating(gameId, rating)
+        overlayWriter.updateUserRating(gameId, rating)
         val rommId = game.rommId ?: return RomMResult.Success(Unit)
         syncCoordinator.get().queuePropertyChange(gameId, rommId, SyncType.RATING, intValue = rating)
         return RomMResult.Success(Unit)
@@ -40,7 +41,7 @@ class RomMUserPropertyService @Inject constructor(
 
     suspend fun updateUserDifficulty(gameId: Long, difficulty: Int): RomMResult<Unit> {
         val game = gameDao.getById(gameId) ?: return RomMResult.Error("Game not found")
-        gameDao.updateUserDifficulty(gameId, difficulty)
+        overlayWriter.updateUserDifficulty(gameId, difficulty)
         val rommId = game.rommId ?: return RomMResult.Success(Unit)
         syncCoordinator.get().queuePropertyChange(gameId, rommId, SyncType.DIFFICULTY, intValue = difficulty)
         return RomMResult.Success(Unit)
@@ -48,7 +49,7 @@ class RomMUserPropertyService @Inject constructor(
 
     suspend fun updateUserStatus(gameId: Long, status: String?): RomMResult<Unit> {
         val game = gameDao.getById(gameId) ?: return RomMResult.Error("Game not found")
-        gameDao.updateStatus(gameId, status)
+        overlayWriter.updateStatus(gameId, status)
         val rommId = game.rommId ?: return RomMResult.Success(Unit)
         syncCoordinator.get().queuePropertyChange(gameId, rommId, SyncType.STATUS, stringValue = status)
         return RomMResult.Success(Unit)
@@ -73,16 +74,15 @@ class RomMUserPropertyService @Inject constructor(
             val hasDifficulty = pendingSyncQueueDao.hasPending(gameId, SyncType.DIFFICULTY)
             val hasStatus = pendingSyncQueueDao.hasPending(gameId, SyncType.STATUS)
 
-            val updatedGame = game.copy(
-                userRating = if (hasRating) game.userRating else romUser.rating,
-                userDifficulty = if (hasDifficulty) game.userDifficulty else romUser.difficulty,
-                status = if (hasStatus) game.status else romUser.status,
-                backlogged = romUser.backlogged,
-                nowPlaying = romUser.nowPlaying
-            )
-
-            if (updatedGame != game) {
-                gameDao.update(updatedGame)
+            val current = gameDao.getById(gameId) ?: return RomMResult.Success(Unit)
+            if (!hasRating) overlayWriter.updateUserRating(gameId, romUser.rating)
+            if (!hasDifficulty) overlayWriter.updateUserDifficulty(gameId, romUser.difficulty)
+            if (!hasStatus) overlayWriter.updateStatus(gameId, romUser.status)
+            if (current.backlogged != romUser.backlogged) {
+                overlayWriter.updateBacklogged(gameId, romUser.backlogged)
+            }
+            if (current.nowPlaying != romUser.nowPlaying) {
+                overlayWriter.updateNowPlaying(gameId, romUser.nowPlaying)
             }
 
             RomMResult.Success(Unit)
@@ -196,7 +196,8 @@ class RomMUserPropertyService @Inject constructor(
                 rommFileName = rom.fileName ?: game.rommFileName
             )
 
-            gameDao.update(updatedGame)
+            val current = gameDao.getById(game.id) ?: game
+            gameDao.update(updatedGame.withCurrentUserColumns(current))
             gameFileSync.sync(game.id, rom, game.platformSlug, fileListIsAuthoritative = true)
             RomMResult.Success(Unit)
         } catch (e: Exception) {

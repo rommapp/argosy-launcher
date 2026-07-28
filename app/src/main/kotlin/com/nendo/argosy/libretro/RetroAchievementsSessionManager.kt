@@ -28,6 +28,7 @@ class RetroAchievementsSessionManager(
     private val romPath: String,
     private val hardcoreMode: Boolean,
     private val gameDao: GameDao,
+    private val overlayWriter: com.nendo.argosy.data.repository.GameUserOverlayWriter,
     private val achievementDao: AchievementDao,
     private val raRepository: RetroAchievementsRepository,
     private val verifyRAGameIdUseCase: VerifyRAGameIdUseCase,
@@ -130,7 +131,7 @@ class RetroAchievementsSessionManager(
                             }
                         }
                     }
-                    gameDao.updateAchievementCount(gameId, totalAchievements, earnedAchievements)
+                    overlayWriter.updateAchievementCount(gameId, totalAchievements, earnedAchievements)
 
                     raConnectionInfo = RAConnectionInfo(
                         isHardcore = hardcoreMode,
@@ -244,7 +245,7 @@ class RetroAchievementsSessionManager(
                 Log.d(TAG, "Marked achievement $achievementId as unlocked in local DB")
             }
 
-            gameDao.incrementEarnedAchievementCount(gameId)
+            overlayWriter.incrementEarnedAchievementCount(gameId)
             Log.d(TAG, "Incremented earned achievement count for game $gameId")
 
             val totalCount = achievementDao.countByGameId(gameId)

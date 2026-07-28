@@ -123,6 +123,18 @@ object DatabaseModule {
         database.saveOwnershipDao()
 
     @Provides
+    fun provideGameUserOverlayDao(
+        database: ALauncherDatabase
+    ): com.nendo.argosy.data.local.dao.GameUserOverlayDao =
+        database.gameUserOverlayDao()
+
+    @Provides
+    fun provideCollectionMembershipDao(
+        database: ALauncherDatabase
+    ): com.nendo.argosy.data.local.dao.CollectionMembershipDao =
+        database.collectionMembershipDao()
+
+    @Provides
     fun provideStateCacheDao(database: ALauncherDatabase): StateCacheDao =
         database.stateCacheDao()
 

@@ -73,6 +73,7 @@ sealed class LaunchResult {
 class GameLauncher @Inject constructor(
     @ApplicationContext private val context: Context,
     private val gameDao: GameDao,
+    private val overlayWriter: com.nendo.argosy.data.repository.GameUserOverlayWriter,
     private val platformDao: PlatformDao,
     private val gameDiscDao: GameDiscDao,
     private val emulatorConfigDao: EmulatorConfigDao,
@@ -294,7 +295,7 @@ class GameLauncher @Inject constructor(
             }
 
         if (!forResume) {
-            gameDao.recordPlayStart(gameId, Instant.now())
+            overlayWriter.recordPlayStart(gameId, Instant.now())
         }
 
         Logger.info(TAG, buildString {
@@ -323,7 +324,7 @@ class GameLauncher @Inject constructor(
             if (m3u != null && m3u.exists()) {
                 val emulator = resolveEmulator(game) ?: return LaunchResult.NoEmulator(game.platformSlug)
                 val intent = buildIntent(emulator, m3u, game, forResume, variant.id) ?: return LaunchResult.NoCore(game.platformSlug, lastCoreDownloadError)
-                gameDao.recordPlayStart(game.id, java.time.Instant.now())
+                overlayWriter.recordPlayStart(game.id, java.time.Instant.now())
                 val alreadyLaunched = intent.getBooleanExtra(EXTRA_ALREADY_LAUNCHED, false)
                 return LaunchResult.Success(intent, alreadyLaunched = alreadyLaunched)
             }
@@ -426,7 +427,7 @@ class GameLauncher @Inject constructor(
             }
 
         if (!forResume) {
-            gameDao.recordPlayStart(game.id, Instant.now())
+            overlayWriter.recordPlayStart(game.id, Instant.now())
         }
 
         Logger.info(TAG, buildString {
@@ -466,7 +467,7 @@ class GameLauncher @Inject constructor(
         val intent = launcher.createLaunchIntent(steamAppId)
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
 
-        gameDao.recordPlayStart(game.id, Instant.now())
+        overlayWriter.recordPlayStart(game.id, Instant.now())
 
         Logger.info(TAG, "Launching Steam: appId=$steamAppId via ${launcher.displayName}")
         return LaunchResult.Success(intent)
@@ -487,7 +488,7 @@ class GameLauncher @Inject constructor(
 
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
 
-        gameDao.recordPlayStart(game.id, Instant.now())
+        overlayWriter.recordPlayStart(game.id, Instant.now())
 
         Logger.info(TAG, "Launching Android app: $packageName")
         return LaunchResult.Success(intent)

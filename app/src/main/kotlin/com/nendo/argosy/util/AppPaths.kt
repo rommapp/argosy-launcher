@@ -35,6 +35,24 @@ object AppPaths {
 
     fun stateCacheDir(filesDir: File): File = File(filesDir, STATE_CACHE_DIR)
 
+    /**
+     * Cache entries are stored under the owning account so two accounts holding a copy of the
+     * same game's save never collide on one directory. Rows written before accounts existed
+     * carry no owner and keep their unprefixed layout, which is why this returns a relative
+     * segment rather than rewriting the stored path.
+     *
+     * The `u` prefix is load-bearing: the legacy layout puts a bare numeric game id at the same
+     * level, and a state-cache sweep already deletes numeric top-level directories as stale.
+     */
+    fun ownerCacheSegment(ownerUserId: Long?): String =
+        if (ownerUserId != null) "$OWNER_DIR_PREFIX$ownerUserId/" else ""
+
+    fun isOwnerCacheDir(name: String): Boolean =
+        name.startsWith(OWNER_DIR_PREFIX) &&
+            name.removePrefix(OWNER_DIR_PREFIX).toLongOrNull() != null
+
+    private const val OWNER_DIR_PREFIX = "u"
+
     fun romCacheDir(filesDir: File): File = File(filesDir, ROM_CACHE_DIR)
 
     fun libretroSavesDir(filesDir: File): File = File(filesDir, LIBRETRO_SAVES_SUBDIR)

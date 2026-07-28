@@ -36,6 +36,7 @@ class SaveCacheManager @Inject constructor(
     private val saveSyncDao: SaveSyncDao,
     private val pendingSyncQueueDao: PendingSyncQueueDao,
     private val gameDao: GameDao,
+    private val overlayWriter: GameUserOverlayWriter,
     private val preferencesRepository: UserPreferencesRepository,
     private val syncPreferencesRepository: SyncPreferencesRepository,
     private val savePathResolver: SavePathResolver,
@@ -68,6 +69,9 @@ class SaveCacheManager @Inject constructor(
 
     private val cacheBaseDir: File
         get() = com.nendo.argosy.util.AppPaths.saveCacheDir(context.filesDir)
+
+    private fun cacheRelativeDir(ownerUserId: Long?, gameId: Long, timestamp: String): String =
+        "${com.nendo.argosy.util.AppPaths.ownerCacheSegment(ownerUserId)}$gameId/$timestamp"
 
     suspend fun cacheCurrentSave(
         gameId: Long,
@@ -155,7 +159,8 @@ class SaveCacheManager @Inject constructor(
 
             val now = Instant.now()
             val timestamp = TIMESTAMP_FORMAT.format(now)
-            val gameDir = File(cacheBaseDir, "$gameId/$timestamp")
+            val relativeDir = cacheRelativeDir(ownerUserId, gameId, timestamp)
+            val gameDir = File(cacheBaseDir, relativeDir)
             gameDir.mkdirs()
 
             val (cachePath, cachedFile) = if (fal.isDirectory(savePath)) {
@@ -167,11 +172,11 @@ class SaveCacheManager @Inject constructor(
                     }
                 }
                 tempFile = null
-                "$gameId/$timestamp/save.zip" to finalZip
+                "$relativeDir/save.zip" to finalZip
             } else {
                 val destFile = File(gameDir, saveFile.name)
                 saveFile.copyTo(destFile, overwrite = true)
-                "$gameId/$timestamp/${saveFile.name}" to destFile
+                "$relativeDir/${saveFile.name}" to destFile
             }
 
             if (isHardcore) {
@@ -211,7 +216,7 @@ class SaveCacheManager @Inject constructor(
             val insertedId = saveCacheDao.insert(entity)
 
             if (channelName != null) {
-                gameDao.updateActiveSaveChannel(gameId, channelName)
+                saveCacheDao.setActiveRow(gameId, ownerUserId, insertedId)
                 saveCacheDao.clearDirtyFlagForChannel(gameId, channelName, excludeId = insertedId)
             } else {
                 saveCacheDao.clearDirtyFlagForLatest(gameId)
@@ -236,7 +241,7 @@ class SaveCacheManager @Inject constructor(
                 emulatorId = emulatorId
             )
 
-            pruneOldCaches(gameId)
+            pruneOldCaches(gameId, ownerUserId)
             CacheResult.Created(now.toEpochMilli(), insertedId)
         } catch (e: Exception) {
             Log.e(TAG, "Failed to cache save", e)
@@ -279,17 +284,18 @@ class SaveCacheManager @Inject constructor(
 
             val now = serverTimestamp ?: Instant.now()
             val timestamp = TIMESTAMP_FORMAT.format(now)
-            val gameDir = File(cacheBaseDir, "$gameId/$timestamp")
+            val relativeDir = cacheRelativeDir(ownerUserId, gameId, timestamp)
+            val gameDir = File(cacheBaseDir, relativeDir)
             gameDir.mkdirs()
 
             val (cachePath, cachedFile) = if (isZip) {
                 val finalZip = File(gameDir, "save.zip")
                 downloadedFile.copyTo(finalZip, overwrite = true)
-                "$gameId/$timestamp/save.zip" to finalZip
+                "$relativeDir/save.zip" to finalZip
             } else {
                 val destFile = File(gameDir, downloadedFile.name)
                 downloadedFile.copyTo(destFile, overwrite = true)
-                "$gameId/$timestamp/${downloadedFile.name}" to destFile
+                "$relativeDir/${downloadedFile.name}" to destFile
             }
 
             val saveSize = cachedFile.length()
@@ -312,7 +318,7 @@ class SaveCacheManager @Inject constructor(
             val insertedId = saveCacheDao.insert(entity)
 
             if (channelName != null) {
-                gameDao.updateActiveSaveChannel(gameId, channelName)
+                overlayWriter.updateActiveSaveChannel(gameId, channelName)
                 saveCacheDao.clearDirtyFlagForLatest(gameId)
             }
 
@@ -329,7 +335,7 @@ class SaveCacheManager @Inject constructor(
                 emulatorId = emulatorId
             )
 
-            pruneOldCaches(gameId)
+            pruneOldCaches(gameId, ownerUserId)
             CacheResult.Created(now.toEpochMilli(), insertedId)
         } catch (e: Exception) {
             Log.e(TAG, "Failed to cache server download", e)
@@ -348,6 +354,7 @@ class SaveCacheManager @Inject constructor(
         }
 
         val saveFile = fal.getTransformedFile(savePath)
+        val ownerUserId = syncPreferencesRepository.getRommUserId()
         var tempFile: File? = null
 
         try {
@@ -372,7 +379,8 @@ class SaveCacheManager @Inject constructor(
 
             val now = Instant.now()
             val timestamp = TIMESTAMP_FORMAT.format(now)
-            val gameDir = File(cacheBaseDir, "$gameId/$timestamp")
+            val relativeDir = cacheRelativeDir(ownerUserId, gameId, timestamp)
+            val gameDir = File(cacheBaseDir, relativeDir)
             gameDir.mkdirs()
 
             val (cachePath, cachedFile) = if (fal.isDirectory(savePath)) {
@@ -384,11 +392,11 @@ class SaveCacheManager @Inject constructor(
                     }
                 }
                 tempFile = null
-                "$gameId/$timestamp/save.zip" to finalZip
+                "$relativeDir/save.zip" to finalZip
             } else {
                 val destFile = File(gameDir, saveFile.name)
                 saveFile.copyTo(destFile, overwrite = true)
-                "$gameId/$timestamp/${saveFile.name}" to destFile
+                "$relativeDir/${saveFile.name}" to destFile
             }
 
             val saveSize = cachedFile.length()
@@ -402,7 +410,8 @@ class SaveCacheManager @Inject constructor(
                 note = "Rollback",
                 isLocked = false,
                 contentHash = contentHash,
-                isRollback = true
+                isRollback = true,
+                ownerUserId = ownerUserId
             )
             saveCacheDao.insert(entity)
             Log.d(TAG, "Created rollback save for game $gameId at $cachePath")
@@ -576,14 +585,15 @@ class SaveCacheManager @Inject constructor(
 
         val now = Instant.now()
         val timestamp = TIMESTAMP_FORMAT.format(now)
-        val gameDir = File(cacheBaseDir, "${source.gameId}/$timestamp")
+        val relativeDir = cacheRelativeDir(source.ownerUserId, source.gameId, timestamp)
+        val gameDir = File(cacheBaseDir, relativeDir)
 
         try {
             gameDir.mkdirs()
             val destFile = File(gameDir, sourceFile.name)
             sourceFile.copyTo(destFile, overwrite = true)
 
-            val cachePath = "${source.gameId}/$timestamp/${sourceFile.name}"
+            val cachePath = "$relativeDir/${sourceFile.name}"
             val entity = SaveCacheEntity(
                 gameId = source.gameId,
                 emulatorId = source.emulatorId,
@@ -594,7 +604,8 @@ class SaveCacheManager @Inject constructor(
                 isLocked = true,
                 contentHash = source.contentHash,
                 channelName = channelName,
-                needsRemoteSync = true
+                needsRemoteSync = true,
+                ownerUserId = source.ownerUserId
             )
 
             val newId = saveCacheDao.insert(entity)
@@ -733,14 +744,18 @@ class SaveCacheManager @Inject constructor(
      * never evicted: that cache row is the payload of a deferred upload, and dropping it would
      * leave the queue row pointing at bytes that no longer exist.
      */
-    suspend fun pruneOldCaches(gameId: Long) = withContext(Dispatchers.IO) {
+    suspend fun pruneOldCaches(
+        gameId: Long,
+        owner: Long? = null
+    ) = withContext(Dispatchers.IO) {
+        val ownerUserId = owner ?: syncPreferencesRepository.getRommUserId()
         val prefs = preferencesRepository.userPreferences.first()
         val limit = prefs.saveCacheLimit
 
-        val totalCount = saveCacheDao.countByGame(gameId)
+        val totalCount = saveCacheDao.countByGameAndOwner(gameId, ownerUserId)
         if (totalCount <= limit) return@withContext
 
-        val caches = saveCacheDao.getByGame(gameId)
+        val caches = saveCacheDao.getByGameAndOwner(gameId, ownerUserId)
         val lockedCount = caches.count { it.isLocked }
         val effectiveLimit = maxOf(limit, lockedCount + MIN_UNLOCKED_SLOTS)
 
@@ -748,7 +763,9 @@ class SaveCacheManager @Inject constructor(
         if (toDeleteCount <= 0) return@withContext
 
         val pinnedIds = pendingSyncQueueDao.getPinnedCacheIdsForGame(gameId)
-        val toDelete = saveCacheDao.getOldestUnlockedExcluding(gameId, pinnedIds).take(toDeleteCount)
+        val toDelete = saveCacheDao
+            .getOldestUnlockedForOwnerExcluding(gameId, ownerUserId, pinnedIds)
+            .take(toDeleteCount)
         if (toDelete.isEmpty()) return@withContext
 
         for (cache in toDelete) {
@@ -854,9 +871,14 @@ class SaveCacheManager @Inject constructor(
         }
         saveCacheDao.deleteByGame(gameId)
 
-        val gameDir = File(cacheBaseDir, gameId.toString())
-        if (gameDir.exists() && gameDir.isDirectory) {
-            gameDir.deleteRecursively()
+        val gameDirs = listOf(File(cacheBaseDir, gameId.toString())) +
+            (cacheBaseDir.listFiles { f ->
+                f.isDirectory && com.nendo.argosy.util.AppPaths.isOwnerCacheDir(f.name)
+            }?.map { File(it, gameId.toString()) } ?: emptyList())
+        for (gameDir in gameDirs) {
+            if (gameDir.exists() && gameDir.isDirectory) {
+                gameDir.deleteRecursively()
+            }
         }
 
         Log.d(TAG, "Deleted all ${caches.size} cached saves for game $gameId")

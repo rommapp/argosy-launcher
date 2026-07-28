@@ -41,6 +41,9 @@ interface RomMApi {
     @GET("api/users/me")
     suspend fun getCurrentUser(): Response<RomMUser>
 
+    @GET("api/permissions/me")
+    suspend fun getMyPermissions(): Response<RomMPermissionsResponse>
+
     @POST("api/users/{id}/ra/refresh")
     suspend fun refreshRAProgression(
         @Path("id") userId: Long,

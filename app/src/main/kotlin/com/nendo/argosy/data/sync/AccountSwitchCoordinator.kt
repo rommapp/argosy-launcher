@@ -9,6 +9,7 @@ import com.nendo.argosy.data.remote.romm.RomMAchievementService
 import com.nendo.argosy.data.remote.romm.RomMApiProvider
 import com.nendo.argosy.data.remote.romm.RomMConnectionManager
 import com.nendo.argosy.data.repository.RetroAchievementsRepository
+import com.nendo.argosy.data.repository.GameUserOverlayWriter
 import com.nendo.argosy.data.repository.RomMAccountRepository
 import com.nendo.argosy.data.social.SocialRepository
 import com.nendo.argosy.util.Logger
@@ -45,6 +46,7 @@ class AccountSwitchCoordinator @Inject constructor(
     private val blockerService: AccountSwitchBlockerService,
     private val artifactService: AccountSwitchArtifactService,
     private val rommAccountRepository: RomMAccountRepository,
+    private val overlayWriter: GameUserOverlayWriter,
     private val saveOwnershipDao: SaveOwnershipDao,
     private val saveCacheDao: SaveCacheDao,
     private val connectionManager: Lazy<RomMConnectionManager>,
@@ -152,7 +154,7 @@ class AccountSwitchCoordinator @Inject constructor(
             }
 
             _progress.value = AccountSwitchProgress.SwappingIdentity
-            swapIdentity(target)
+            swapIdentity(target, fromUserId)
 
             val artifacts = collectIncoming(toUserId)
             artifacts.forEachIndexed { index, artifact ->
@@ -234,8 +236,10 @@ class AccountSwitchCoordinator @Inject constructor(
      * Points every identity holder at the new account. The stored row moves first so a crash
      * between here and the rebind comes back up on the new account rather than a mix of both.
      */
-    private suspend fun swapIdentity(target: RomMAccountEntity) {
+    private suspend fun swapIdentity(target: RomMAccountEntity, fromUserId: Long?) {
+        fromUserId?.let { overlayWriter.adoptLibraryIfUnclaimed(it) }
         rommAccountRepository.activate(target.id)
+        overlayWriter.materialiseForOwner(target.rommUserId)
         rommApiProvider.invalidateAll()
         connectionManager.get().rebindToActiveAccount()
         rommAchievementService.get().onAppResumed()

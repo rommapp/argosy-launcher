@@ -23,6 +23,7 @@ import kotlinx.coroutines.CoroutineScope
  */
 class LibretroAchievementBridge(
     private val gameDao: GameDao,
+    private val overlayWriter: com.nendo.argosy.data.repository.GameUserOverlayWriter,
     private val achievementDao: AchievementDao,
     private val raRepository: RetroAchievementsRepository,
     private val verifyRAGameIdUseCase: VerifyRAGameIdUseCase,
@@ -54,6 +55,7 @@ class LibretroAchievementBridge(
             romPath = romPath,
             hardcoreMode = hardcoreMode,
             gameDao = gameDao,
+            overlayWriter = overlayWriter,
             achievementDao = achievementDao,
             raRepository = raRepository,
             verifyRAGameIdUseCase = verifyRAGameIdUseCase,

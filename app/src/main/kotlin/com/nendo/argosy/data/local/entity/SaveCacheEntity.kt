@@ -43,7 +43,25 @@ data class SaveCacheEntity(
      * copy or a known-stale one the server has since moved past.
      */
     @ColumnInfo(defaultValue = "0")
-    val serverCurrentAtSync: Boolean = false
+    val serverCurrentAtSync: Boolean = false,
+    /**
+     * The one row per (ownerUserId, gameId) that the game currently resumes from. Room cannot
+     * express a partial unique index, so the invariant is enforced by [SaveCacheDao.setActiveRow]
+     * and nothing else may write this column.
+     */
+    @ColumnInfo(defaultValue = "0")
+    val isActive: Boolean = false,
+    /**
+     * Set when this row was placed on disk by an explicit restore and not yet played. Reset for
+     * every row at boot, since a placed-but-unplayed save cannot survive a process restart.
+     */
+    @ColumnInfo(defaultValue = "0")
+    val activeSaveApplied: Boolean = false,
+    /**
+     * The server save this device has taken but not yet acknowledged to the server. Survives
+     * offline restores so the acknowledgement can be retried on the next sync.
+     */
+    val pendingDeviceSyncSaveId: Long? = null
 ) {
     companion object {
         @Deprecated("Hardcore saves now use isHardcore flag instead of special slot name")

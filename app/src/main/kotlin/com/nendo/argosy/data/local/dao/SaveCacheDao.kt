@@ -3,6 +3,7 @@ package com.nendo.argosy.data.local.dao
 import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.Query
+import androidx.room.Transaction
 import androidx.room.Update
 import com.nendo.argosy.data.local.entity.SaveCacheEntity
 import kotlinx.coroutines.flow.Flow
@@ -74,6 +75,44 @@ interface SaveCacheDao {
     @Query("SELECT COUNT(*) FROM save_cache WHERE gameId = :gameId")
     suspend fun countByGame(gameId: Long): Int
 
+    /**
+     * Cache budget is per account, not per game: one account filling its history must not
+     * evict another's restore points for the same rom. A null [ownerUserId] is its own bucket
+     * of unattributed legacy rows rather than a wildcard.
+     */
+    @Query(
+        """
+        SELECT COUNT(*) FROM save_cache
+        WHERE gameId = :gameId AND IFNULL(ownerUserId, -1) = IFNULL(:ownerUserId, -1)
+        """
+    )
+    suspend fun countByGameAndOwner(gameId: Long, ownerUserId: Long?): Int
+
+    @Query(
+        """
+        SELECT * FROM save_cache
+        WHERE gameId = :gameId AND IFNULL(ownerUserId, -1) = IFNULL(:ownerUserId, -1)
+        ORDER BY cachedAt DESC
+        """
+    )
+    suspend fun getByGameAndOwner(gameId: Long, ownerUserId: Long?): List<SaveCacheEntity>
+
+    @Query(
+        """
+        SELECT * FROM save_cache
+        WHERE gameId = :gameId
+          AND IFNULL(ownerUserId, -1) = IFNULL(:ownerUserId, -1)
+          AND isLocked = 0
+          AND id NOT IN (:pinnedIds)
+        ORDER BY cachedAt ASC
+        """
+    )
+    suspend fun getOldestUnlockedForOwnerExcluding(
+        gameId: Long,
+        ownerUserId: Long?,
+        pinnedIds: List<Long>
+    ): List<SaveCacheEntity>
+
     @Query("SELECT COUNT(*) FROM save_cache WHERE gameId = :gameId AND cachedAt >= :sinceMillis")
     suspend fun countByGameSince(gameId: Long, sinceMillis: Long): Int
 
@@ -100,13 +139,6 @@ interface SaveCacheDao {
 
     @Query("DELETE FROM save_cache WHERE gameId IN (SELECT id FROM games WHERE source IN (:sourceNames))")
     suspend fun deleteByGameSources(sourceNames: List<String>)
-
-    @Query("""
-        SELECT * FROM save_cache
-        WHERE gameId = :gameId AND isLocked = 0 AND id NOT IN (:pinnedIds)
-        ORDER BY cachedAt ASC
-    """)
-    suspend fun getOldestUnlockedExcluding(gameId: Long, pinnedIds: List<Long>): List<SaveCacheEntity>
 
     @Query("DELETE FROM save_cache WHERE id IN (:ids)")
     suspend fun deleteByIds(ids: List<Long>)
@@ -255,4 +287,109 @@ interface SaveCacheDao {
 
     @Query("UPDATE save_cache SET cachedAt = :cachedAt WHERE id = :id")
     suspend fun updateCachedAt(id: Long, cachedAt: Instant)
+
+    @Query(
+        """
+        SELECT * FROM save_cache
+        WHERE gameId = :gameId
+          AND isActive = 1
+          AND (ownerUserId IS NULL OR ownerUserId IS :ownerUserId)
+        ORDER BY cachedAt DESC
+        LIMIT 1
+        """
+    )
+    suspend fun getActive(gameId: Long, ownerUserId: Long?): SaveCacheEntity?
+
+    @Query(
+        """
+        SELECT * FROM save_cache
+        WHERE gameId = :gameId
+          AND isActive = 1
+          AND (ownerUserId IS NULL OR ownerUserId IS :ownerUserId)
+        ORDER BY cachedAt DESC
+        LIMIT 1
+        """
+    )
+    fun observeActive(gameId: Long, ownerUserId: Long?): Flow<List<SaveCacheEntity>>
+
+    @Query(
+        """
+        SELECT id FROM save_cache
+        WHERE gameId = :gameId
+          AND (ownerUserId IS NULL OR ownerUserId IS :ownerUserId)
+          AND channelName IS :channelName
+        ORDER BY cachedAt DESC
+        LIMIT 1
+        """
+    )
+    suspend fun getNewestIdInChannelForOwner(gameId: Long, ownerUserId: Long?, channelName: String?): Long?
+
+    @Query(
+        """
+        SELECT id FROM save_cache
+        WHERE gameId = :gameId
+          AND (ownerUserId IS NULL OR ownerUserId IS :ownerUserId)
+          AND cachedAt = :timestamp
+        ORDER BY cachedAt DESC
+        LIMIT 1
+        """
+    )
+    suspend fun getIdAtTimestampForOwner(gameId: Long, ownerUserId: Long?, timestamp: Long): Long?
+
+    @Query(
+        """
+        UPDATE save_cache SET isActive = 0
+        WHERE gameId = :gameId
+          AND isActive = 1
+          AND (ownerUserId IS NULL OR ownerUserId IS :ownerUserId)
+        """
+    )
+    suspend fun clearActive(gameId: Long, ownerUserId: Long?)
+
+    @Query("UPDATE save_cache SET isActive = 1 WHERE id = :cacheId AND gameId = :gameId")
+    suspend fun markActive(gameId: Long, cacheId: Long)
+
+    /**
+     * The only writer of `isActive`. Room cannot declare a partial unique index, so the
+     * "one active row per owner and game" invariant is held here: the clear and the set are one
+     * transaction and no call site is allowed to perform them separately.
+     */
+    @Transaction
+    suspend fun setActiveRow(gameId: Long, ownerUserId: Long?, cacheId: Long) {
+        clearActive(gameId, ownerUserId)
+        markActive(gameId, cacheId)
+    }
+
+    @Query(
+        """
+        UPDATE save_cache SET activeSaveApplied = :applied
+        WHERE gameId = :gameId
+          AND isActive = 1
+          AND (ownerUserId IS NULL OR ownerUserId IS :ownerUserId)
+        """
+    )
+    suspend fun setActiveSaveApplied(gameId: Long, ownerUserId: Long?, applied: Boolean)
+
+    @Query("UPDATE save_cache SET activeSaveApplied = 0 WHERE activeSaveApplied = 1")
+    suspend fun resetAllActiveSaveApplied()
+
+    @Query(
+        """
+        UPDATE save_cache SET pendingDeviceSyncSaveId = :saveId
+        WHERE gameId = :gameId
+          AND isActive = 1
+          AND (ownerUserId IS NULL OR ownerUserId IS :ownerUserId)
+        """
+    )
+    suspend fun setPendingDeviceSyncSaveId(gameId: Long, ownerUserId: Long?, saveId: Long?)
+
+    @Query(
+        """
+        SELECT EXISTS(
+            SELECT 1 FROM save_cache
+            WHERE gameId = :gameId AND isActive = 1 AND activeSaveApplied = 1
+        )
+        """
+    )
+    suspend fun hasActiveSaveApplied(gameId: Long): Boolean
 }

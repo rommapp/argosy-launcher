@@ -51,6 +51,7 @@ class GameSessionService : Service() {
 
     @Inject lateinit var saveCacheManager: SaveCacheManager
     @Inject lateinit var gameDao: GameDao
+    @Inject lateinit var gameOverlayWriter: com.nendo.argosy.data.repository.GameUserOverlayWriter
     @Inject lateinit var screenshotCaptureMonitor: ScreenshotCaptureMonitor
 
     private val serviceScope = SafeCoroutineScope(Dispatchers.IO, "GameSessionService")
@@ -335,7 +336,7 @@ class GameSessionService : Service() {
                         is SaveCacheManager.CacheResult.Created -> {
                             lastMidGameCacheId = result.cacheId
                             Logger.info(TAG, "Live cache created for gameId=$gameId (cacheId=${result.cacheId}), updating activeSaveTimestamp to ${result.timestamp}")
-                            gameDao.updateActiveSaveTimestamp(gameId, result.timestamp)
+                            gameOverlayWriter.updateActiveSaveTimestamp(gameId, result.timestamp)
                         }
                         is SaveCacheManager.CacheResult.Duplicate -> {
                             Logger.debug(TAG, "Live cache skipped (duplicate) for gameId=$gameId")

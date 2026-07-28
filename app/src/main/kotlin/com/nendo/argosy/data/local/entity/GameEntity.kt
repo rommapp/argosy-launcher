@@ -129,11 +129,6 @@ data class GameEntity(
     val achievementCount: Int = 0,
     val earnedAchievementCount: Int = 0,
 
-    val activeSaveChannel: String? = null,
-    val activeSaveTimestamp: Long? = null,
-    val activeSaveApplied: Boolean = false,
-    val pendingDeviceSyncSaveId: Long? = null,
-
     val titleId: String? = null,
     val titleIdLocked: Boolean = false,
     val storeEnrichStatus: Int = 0,

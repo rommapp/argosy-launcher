@@ -312,12 +312,7 @@ class SaveChannelStatesDelegate @Inject constructor(
                 } else name
             }
 
-            val coreDir = stateCacheManager.getCoreDir(
-                currentGameId,
-                sourceCache.platformSlug,
-                sourceCache.channelName,
-                sourceCache.coreId
-            )
+            val coreDir = stateCacheManager.coreDirFor(sourceCache)
             val autoFile = java.io.File(coreDir, autoFileName)
             sourceFile.copyTo(autoFile, overwrite = true)
 
@@ -329,10 +324,7 @@ class SaveChannelStatesDelegate @Inject constructor(
                 screenshotFile.copyTo(autoScreenshot, overwrite = true)
             }
 
-            val channelDirName = sourceCache.channelName ?: "default"
-            val coreDirName = sourceCache.coreId ?: "unknown"
-            val autoCachePath = "${sourceCache.platformSlug}/" +
-                "${currentGameId}/$channelDirName/$coreDirName/$autoFileName"
+            val autoCachePath = "${sourceCache.cachePath.substringBeforeLast('/')}/$autoFileName"
             val autoScreenshotPath = if (screenshotFile != null) {
                 "$autoCachePath.png"
             } else null

@@ -21,6 +21,7 @@ class FetchAchievementsUseCase @Inject constructor(
     private val verifyRAGameIdUseCase: VerifyRAGameIdUseCase,
     private val achievementDao: AchievementDao,
     private val gameDao: GameDao,
+    private val overlayWriter: com.nendo.argosy.data.repository.GameUserOverlayWriter,
     private val imageCacheManager: ImageCacheManager
 ) {
     suspend operator fun invoke(gameId: Long, rommId: Long? = null, raId: Long? = null): AchievementCounts? {
@@ -55,7 +56,7 @@ class FetchAchievementsUseCase @Inject constructor(
                 ) ?: return null
 
                 gameDao.updateAchievementsFetchedAt(gameId, System.currentTimeMillis())
-                gameDao.updateAchievementCount(gameId, counts.total, counts.earned)
+                overlayWriter.updateAchievementCount(gameId, counts.total, counts.earned)
                 queueBadgeCaching(gameId)
 
                 AchievementCounts(total = counts.total, earned = counts.earned)

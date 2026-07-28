@@ -17,6 +17,28 @@ import java.time.ZoneOffset
  * favourites, disc flags), and image paths, which sync resolves to cached files while
  * refresh resolves to URLs. Those stay with the caller.
  */
+/**
+ * Re-applies the materialised per-account columns from [current] onto a row built from a
+ * pre-network snapshot.
+ *
+ * A full-row `@Update` after a round trip writes back whatever those columns held when the row
+ * was read, which is the wrong account's values if a switch landed in between and stale values
+ * otherwise. The overlay is the record; this keeps the mirror from overwriting it.
+ */
+internal fun GameEntity.withCurrentUserColumns(current: GameEntity): GameEntity = copy(
+    isFavorite = current.isFavorite,
+    userRating = current.userRating,
+    userDifficulty = current.userDifficulty,
+    completion = current.completion,
+    status = current.status,
+    backlogged = current.backlogged,
+    nowPlaying = current.nowPlaying,
+    playCount = current.playCount,
+    playTimeMinutes = current.playTimeMinutes,
+    lastPlayed = current.lastPlayed,
+    earnedAchievementCount = current.earnedAchievementCount
+)
+
 internal fun GameEntity.withRomMetadata(rom: RomMRom): GameEntity = copy(
     title = rom.name,
     sortTitle = RomMUtils.createSortTitle(rom.name),

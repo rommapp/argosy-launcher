@@ -188,6 +188,7 @@ class PlaySessionTracker @Inject constructor(
             val inserted = insertPlaySessionIfAbsent(
                 PlaySessionEntity(
                     userId = prefs.socialUserId,
+                    ownerUserId = prefs.rommUserId,
                     gameId = orphaned.gameId,
                     igdbId = game?.igdbId,
                     gameTitle = game?.title ?: "Unknown",
@@ -601,6 +602,7 @@ class PlaySessionTracker @Inject constructor(
                 val inserted = insertPlaySessionIfAbsent(
                     PlaySessionEntity(
                         userId = prefs.socialUserId,
+                        ownerUserId = prefs.rommUserId,
                         gameId = session.gameId,
                         igdbId = game?.igdbId,
                         gameTitle = game?.title ?: "Unknown",

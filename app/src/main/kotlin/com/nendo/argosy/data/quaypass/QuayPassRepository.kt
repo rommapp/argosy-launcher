@@ -4,6 +4,7 @@ import com.nendo.argosy.data.local.dao.QuayPassDailyStatsDao
 import com.nendo.argosy.data.local.dao.QuayPassEncounterDao
 import com.nendo.argosy.data.local.entity.QuayPassDailyStatsEntity
 import com.nendo.argosy.data.local.entity.QuayPassEncounterEntity
+import com.nendo.argosy.data.preferences.SyncPreferencesRepository
 import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -11,7 +12,8 @@ import javax.inject.Singleton
 @Singleton
 class QuayPassRepository @Inject constructor(
     private val encounterDao: QuayPassEncounterDao,
-    private val dailyStatsDao: QuayPassDailyStatsDao
+    private val dailyStatsDao: QuayPassDailyStatsDao,
+    private val syncPreferencesRepository: SyncPreferencesRepository
 ) {
 
     fun observeEncounters(): Flow<List<QuayPassEncounterEntity>> = encounterDao.observeAll()
@@ -33,7 +35,10 @@ class QuayPassRepository @Inject constructor(
     }
 
     suspend fun deleteEncounter(fingerprint: String) {
-        encounterDao.delete(fingerprint)
+        encounterDao.delete(
+            fingerprint,
+            syncPreferencesRepository.getRommUserId() ?: QuayPassEncounterEntity.NO_OWNER
+        )
     }
 
     suspend fun clearEncounters() {

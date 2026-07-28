@@ -106,6 +106,13 @@ class RetroAchievementsRepository @Inject constructor(
             .create(RAApi::class.java)
     }
 
+    /**
+     * RomM user id that owns the achievement rows written right now, or
+     * [AchievementEntity.NO_OWNER] on a device with no paired account.
+     */
+    suspend fun activeOwnerUserId(): Long =
+        prefsRepository.userPreferences.first().rommUserId ?: AchievementEntity.NO_OWNER
+
     suspend fun isLoggedIn(): Boolean {
         val prefs = prefsRepository.userPreferences.first()
         return !prefs.raUsername.isNullOrBlank() && !prefs.raToken.isNullOrBlank()
@@ -128,6 +135,21 @@ class RetroAchievementsRepository @Inject constructor(
         val creds = getCredentials() ?: return -1
         return kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
             retroArchConfigParser.writeCheevosCredentials(creds.username, creds.token)
+        }
+    }
+
+    /**
+     * Puts RetroArch's device-global cheevos login in step with the signed-in account: the
+     * account's own credentials when it has them, blank when it does not. Returns configs written.
+     */
+    suspend fun syncRetroArchCredentials(): Int {
+        val creds = getCredentials()
+        return kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            if (creds == null) {
+                retroArchConfigParser.clearCheevosCredentials()
+            } else {
+                retroArchConfigParser.writeCheevosCredentials(creds.username, creds.token)
+            }
         }
     }
 
@@ -470,6 +492,7 @@ class RetroAchievementsRepository @Inject constructor(
         if (definitions.isEmpty()) return null
 
         val freshUnlocks = gameRaId?.let { fetchUnlocksFresh(it) }
+        val ownerUserId = activeOwnerUserId()
         val now = System.currentTimeMillis()
 
         Logger.debug(
@@ -497,13 +520,14 @@ class RetroAchievementsRepository @Inject constructor(
                 badgeUrl = def.badgeUrl,
                 badgeUrlLock = def.badgeUrlLock,
                 unlockedAt = unlockedAt,
-                unlockedHardcoreAt = unlockedHardcoreAt
+                unlockedHardcoreAt = unlockedHardcoreAt,
+                ownerUserId = ownerUserId
             )
         }
 
-        achievementDao.replaceForGame(gameId, entities)
+        achievementDao.replaceForGame(gameId, ownerUserId, entities)
 
-        val saved = achievementDao.getByGameId(gameId)
+        val saved = achievementDao.getByGameId(gameId, ownerUserId)
         val earned = saved.count { it.isUnlocked }
         return AchievementCounts(total = saved.size, earned = earned)
     }

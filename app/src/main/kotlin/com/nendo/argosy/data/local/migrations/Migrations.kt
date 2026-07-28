@@ -2664,3 +2664,94 @@ object Migration_157_158 : Migration(157, 158) {
         db.execSQL("PRAGMA foreign_keys=ON")
     }
 }
+
+/**
+ * Gives the last unscoped per-user tables an owner.
+ *
+ * `achievements` matters most: its unique index was `(gameId, raId)` with a REPLACE insert, and
+ * REPLACE deletes the conflicting row, so one account's unlock silently destroyed another's. The
+ * owner has to be folded into that index rather than merely added as a column.
+ *
+ * `quaypass_encounters` is rebuilt because the peer fingerprint was the whole primary key, which
+ * collapses one peer to one row for the entire device; the second local account to meet that peer
+ * was rejected as a duplicate and lost the ticket. Existing rows belong to the active account.
+ */
+object Migration_158_159 : Migration(158, 159) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        val activeUserId = "(SELECT `rommUserId` FROM `romm_accounts` WHERE `isActive` = 1 LIMIT 1)"
+
+        db.execSQL("ALTER TABLE `pending_social_sync` ADD COLUMN `ownerUserId` INTEGER")
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS `index_pending_social_sync_ownerUserId` " +
+                "ON `pending_social_sync` (`ownerUserId`)"
+        )
+        db.execSQL("UPDATE `pending_social_sync` SET `ownerUserId` = $activeUserId")
+
+        db.execSQL("ALTER TABLE `play_sessions` ADD COLUMN `ownerUserId` INTEGER")
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS `index_play_sessions_ownerUserId` " +
+                "ON `play_sessions` (`ownerUserId`)"
+        )
+        db.execSQL("UPDATE `play_sessions` SET `ownerUserId` = $activeUserId")
+
+        db.execSQL("ALTER TABLE `achievements` ADD COLUMN `ownerUserId` INTEGER NOT NULL DEFAULT 0")
+        db.execSQL("UPDATE `achievements` SET `ownerUserId` = COALESCE($activeUserId, 0)")
+        db.execSQL("DROP INDEX IF EXISTS `index_achievements_gameId_raId`")
+        db.execSQL(
+            "CREATE UNIQUE INDEX IF NOT EXISTS `index_achievements_gameId_raId_ownerUserId` " +
+                "ON `achievements` (`gameId`, `raId`, `ownerUserId`)"
+        )
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS `index_achievements_ownerUserId` " +
+                "ON `achievements` (`ownerUserId`)"
+        )
+
+        db.execSQL(
+            "ALTER TABLE `quaypass_pending_reports` " +
+                "ADD COLUMN `localOwnerUserId` INTEGER NOT NULL DEFAULT 0"
+        )
+        db.execSQL("UPDATE `quaypass_pending_reports` SET `localOwnerUserId` = COALESCE($activeUserId, 0)")
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS `index_quaypass_pending_reports_localOwnerUserId` " +
+                "ON `quaypass_pending_reports` (`localOwnerUserId`)"
+        )
+
+        db.execSQL(
+            "CREATE TABLE IF NOT EXISTS `quaypass_encounters_new` (" +
+                "`credentialFingerprint` TEXT NOT NULL, `username` TEXT NOT NULL, " +
+                "`displayName` TEXT, `avatarColor` TEXT, `avatarBlobBase64` TEXT, " +
+                "`greeting` TEXT, `lastGameTitle` TEXT, `lastGamePlatform` TEXT, " +
+                "`lastGamePlaytimeMinutes` INTEGER, `lastGameIgdbId` INTEGER, " +
+                "`encounteredAt` INTEGER NOT NULL, `seenByUser` INTEGER NOT NULL, " +
+                "`accountId` TEXT, `reported` INTEGER NOT NULL, `meetCount` INTEGER NOT NULL, " +
+                "`localOwnerUserId` INTEGER NOT NULL DEFAULT 0, " +
+                "PRIMARY KEY(`credentialFingerprint`, `localOwnerUserId`))"
+        )
+        db.execSQL(
+            "INSERT INTO `quaypass_encounters_new` (" +
+                "`credentialFingerprint`, `username`, `displayName`, `avatarColor`, " +
+                "`avatarBlobBase64`, `greeting`, `lastGameTitle`, `lastGamePlatform`, " +
+                "`lastGamePlaytimeMinutes`, `lastGameIgdbId`, `encounteredAt`, `seenByUser`, " +
+                "`accountId`, `reported`, `meetCount`, `localOwnerUserId`) " +
+                "SELECT `credentialFingerprint`, `username`, `displayName`, `avatarColor`, " +
+                "`avatarBlobBase64`, `greeting`, `lastGameTitle`, `lastGamePlatform`, " +
+                "`lastGamePlaytimeMinutes`, `lastGameIgdbId`, `encounteredAt`, `seenByUser`, " +
+                "`accountId`, `reported`, `meetCount`, COALESCE($activeUserId, 0) " +
+                "FROM `quaypass_encounters`"
+        )
+        db.execSQL("DROP TABLE `quaypass_encounters`")
+        db.execSQL("ALTER TABLE `quaypass_encounters_new` RENAME TO `quaypass_encounters`")
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS `index_quaypass_encounters_encounteredAt` " +
+                "ON `quaypass_encounters` (`encounteredAt`)"
+        )
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS `index_quaypass_encounters_seenByUser` " +
+                "ON `quaypass_encounters` (`seenByUser`)"
+        )
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS `index_quaypass_encounters_localOwnerUserId` " +
+                "ON `quaypass_encounters` (`localOwnerUserId`)"
+        )
+    }
+}

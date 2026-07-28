@@ -4,6 +4,7 @@ import com.nendo.argosy.data.local.dao.PendingSocialSyncDao
 import com.nendo.argosy.data.local.entity.PendingSocialSyncEntity
 import com.nendo.argosy.data.local.entity.SocialSyncStatus
 import com.nendo.argosy.data.local.entity.SocialSyncType
+import com.nendo.argosy.data.preferences.SyncPreferencesRepository
 import com.nendo.argosy.data.social.ArgosSocialService
 import com.nendo.argosy.util.Logger
 import dagger.Lazy
@@ -20,6 +21,7 @@ import javax.inject.Singleton
 @Singleton
 class SocialSyncCoordinator @Inject constructor(
     private val pendingSocialSyncDao: PendingSocialSyncDao,
+    private val syncPreferencesRepository: SyncPreferencesRepository,
     private val socialService: Lazy<ArgosSocialService>
 ) {
     companion object {
@@ -41,6 +43,8 @@ class SocialSyncCoordinator @Inject constructor(
             return@withContext ProcessResult.NotConnected
         }
 
+        val ownerUserId = syncPreferencesRepository.getRommUserId()
+
         mutex.withLock {
             pendingSocialSyncDao.resetInProgress()
             pendingSocialSyncDao.deleteExhausted()
@@ -48,11 +52,11 @@ class SocialSyncCoordinator @Inject constructor(
             var processed = 0
             var failed = 0
 
-            val sessionResult = processPlaySessions(service)
+            val sessionResult = processPlaySessions(service, ownerUserId)
             processed += sessionResult.first
             failed += sessionResult.second
 
-            val feedResult = processFeedEvents(service)
+            val feedResult = processFeedEvents(service, ownerUserId)
             processed += feedResult.first
             failed += feedResult.second
 
@@ -61,8 +65,11 @@ class SocialSyncCoordinator @Inject constructor(
         }
     }
 
-    private suspend fun processPlaySessions(service: ArgosSocialService): Pair<Int, Int> {
-        val pending = pendingSocialSyncDao.getPendingByType(SocialSyncType.PLAY_SESSION, 50)
+    private suspend fun processPlaySessions(
+        service: ArgosSocialService,
+        ownerUserId: Long?
+    ): Pair<Int, Int> {
+        val pending = pendingSocialSyncDao.getPendingByType(SocialSyncType.PLAY_SESSION, ownerUserId, 50)
         if (pending.isEmpty()) return 0 to 0
 
         Logger.debug(TAG, "processPlaySessions: ${pending.size} pending")
@@ -135,8 +142,11 @@ class SocialSyncCoordinator @Inject constructor(
         return processed to failed
     }
 
-    private suspend fun processFeedEvents(service: ArgosSocialService): Pair<Int, Int> {
-        val pending = pendingSocialSyncDao.getPendingByType(SocialSyncType.FEED_EVENT, 50)
+    private suspend fun processFeedEvents(
+        service: ArgosSocialService,
+        ownerUserId: Long?
+    ): Pair<Int, Int> {
+        val pending = pendingSocialSyncDao.getPendingByType(SocialSyncType.FEED_EVENT, ownerUserId, 50)
         if (pending.isEmpty()) return 0 to 0
 
         Logger.debug(TAG, "processFeedEvents: ${pending.size} pending")

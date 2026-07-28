@@ -66,7 +66,7 @@ class FetchAchievementsUseCase @Inject constructor(
     }
 
     private suspend fun queueBadgeCaching(gameId: Long) {
-        achievementDao.getByGameId(gameId).forEach { achievement ->
+        achievementDao.getAllForGame(gameId).forEach { achievement ->
             if (achievement.cachedBadgeUrl == null && achievement.badgeUrl != null) {
                 imageCacheManager.queueBadgeCache(
                     achievement.id,

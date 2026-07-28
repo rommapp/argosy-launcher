@@ -171,7 +171,15 @@ class QuayPassCredentialManager @Inject constructor(
         }
     }
 
-    fun onSocialLinkChanged(isLinked: Boolean, sessionToken: String?) {
+    /**
+     * Re-evaluates the install registration for the identity now in force.
+     *
+     * The held install id is only reusable when it was registered by this very social user with
+     * this very keystore alias. Reusing it across a token swap with no intervening unlink kept
+     * the device advertising the previous person's credential, because only a literal
+     * `unknown_install` from the server forced a re-registration.
+     */
+    fun onSocialLinkChanged(isLinked: Boolean, sessionToken: String?, socialUserId: String?) {
         scope.launch {
             mutex.withLock {
                 if (!isLinked) {
@@ -179,8 +187,13 @@ class QuayPassCredentialManager @Inject constructor(
                     return@withLock
                 }
                 val token = sessionToken ?: return@withLock
+                val alias = currentKeyAlias()
+                if (!isInstallOwnedBy(socialUserId, alias)) {
+                    discardInstall()
+                }
                 val state = dataStore.data.first()
-                val installId = state[Keys.CLIENT_INSTALL_ID] ?: registerNewInstall(token)
+                val installId = state[Keys.CLIENT_INSTALL_ID]
+                    ?: registerNewInstall(token, socialUserId, alias)
                 if (installId != null) {
                     fetchCredential(installId, refresh = false)
                 }
@@ -188,9 +201,34 @@ class QuayPassCredentialManager @Inject constructor(
         }
     }
 
-    private suspend fun registerNewInstall(sessionToken: String): String? {
+    private suspend fun currentKeyAlias(): String =
+        QuayPassKeystore.aliasFor(userPrefs.userPreferences.first().rommUserId)
+
+    private suspend fun isInstallOwnedBy(socialUserId: String?, alias: String): Boolean {
+        val state = dataStore.data.first()
+        if (state[Keys.CLIENT_INSTALL_ID] == null) return true
+        return state[Keys.INSTALL_SOCIAL_USER_ID] == socialUserId &&
+            state[Keys.INSTALL_KEY_ALIAS] == alias
+    }
+
+    private suspend fun discardInstall() {
+        Log.i(TAG, "Install id belongs to a different identity; discarding it")
+        dataStore.edit {
+            it.remove(Keys.CLIENT_INSTALL_ID)
+            it.remove(Keys.CREDENTIAL)
+            it.remove(Keys.CREDENTIAL_EXPIRES_AT)
+            it.remove(Keys.INSTALL_SOCIAL_USER_ID)
+            it.remove(Keys.INSTALL_KEY_ALIAS)
+        }
+    }
+
+    private suspend fun registerNewInstall(
+        sessionToken: String,
+        socialUserId: String?,
+        alias: String
+    ): String? {
         val keyInfo = try {
-            keystore.getOrCreateKeyInfo()
+            keystore.getOrCreateKeyInfo(alias)
         } catch (t: Throwable) {
             Log.e(TAG, "Keystore unavailable; cannot register", t)
             return null
@@ -214,7 +252,7 @@ class QuayPassCredentialManager @Inject constructor(
         } ?: return null
 
         val challengeSignature = try {
-            val sig = keystore.signServerVerifiable(challenge.toByteArray(Charsets.UTF_8))
+            val sig = keystore.signServerVerifiable(challenge.toByteArray(Charsets.UTF_8), alias)
             Base64.encodeToString(sig, Base64.NO_WRAP)
         } catch (t: Throwable) {
             Log.e(TAG, "Failed to sign registration challenge", t)
@@ -238,7 +276,12 @@ class QuayPassCredentialManager @Inject constructor(
                 val body = resp.body()
                 val id = body?.clientInstallId
                 if (id != null) {
-                    dataStore.edit { it[Keys.CLIENT_INSTALL_ID] = id }
+                    dataStore.edit {
+                        it[Keys.CLIENT_INSTALL_ID] = id
+                        it[Keys.INSTALL_KEY_ALIAS] = alias
+                        if (socialUserId != null) it[Keys.INSTALL_SOCIAL_USER_ID] = socialUserId
+                        else it.remove(Keys.INSTALL_SOCIAL_USER_ID)
+                    }
                     Log.i(TAG, "Registered QuayPass install: $id")
                     id
                 } else {
@@ -267,7 +310,8 @@ class QuayPassCredentialManager @Inject constructor(
         refresh: Boolean,
         allowReRegister: Boolean = true
     ): StoredCredential? {
-        val sessionToken = userPrefs.userPreferences.first().socialSessionToken ?: return null
+        val identity = userPrefs.userPreferences.first()
+        val sessionToken = identity.socialSessionToken ?: return null
         val req = IssueCredentialRequest(clientInstallId = installId)
         return try {
             val resp = if (refresh) api.refreshCredential(bearerHeader(sessionToken), req)
@@ -292,12 +336,12 @@ class QuayPassCredentialManager @Inject constructor(
                 val code = errorCodeOf(resp)
                 if (code == "unknown_install" && allowReRegister) {
                     Log.w(TAG, "unknown_install; discarding install id and re-registering")
-                    dataStore.edit {
-                        it.remove(Keys.CLIENT_INSTALL_ID)
-                        it.remove(Keys.CREDENTIAL)
-                        it.remove(Keys.CREDENTIAL_EXPIRES_AT)
-                    }
-                    val newId = registerNewInstall(sessionToken) ?: return null
+                    discardInstall()
+                    val newId = registerNewInstall(
+                        sessionToken,
+                        identity.socialUserId,
+                        QuayPassKeystore.aliasFor(identity.rommUserId)
+                    ) ?: return null
                     fetchCredential(newId, refresh = false, allowReRegister = false)
                 } else {
                     Log.w(TAG, "Credential fetch failed (refresh=$refresh): HTTP ${resp.code()} code=$code")
@@ -317,12 +361,9 @@ class QuayPassCredentialManager @Inject constructor(
     }
 
     private suspend fun clearLocal() {
-        dataStore.edit {
-            it.remove(Keys.CLIENT_INSTALL_ID)
-            it.remove(Keys.CREDENTIAL)
-            it.remove(Keys.CREDENTIAL_EXPIRES_AT)
-        }
-        keystore.clear()
+        val alias = currentKeyAlias()
+        discardInstall()
+        keystore.clear(alias)
         lastFetchRejected = false
         _credentialChanged.tryEmit(Unit)
     }
@@ -343,6 +384,8 @@ class QuayPassCredentialManager @Inject constructor(
         val CLIENT_INSTALL_ID = stringPreferencesKey("quaypass_client_install_id")
         val CREDENTIAL = stringPreferencesKey("quaypass_credential")
         val CREDENTIAL_EXPIRES_AT = longPreferencesKey("quaypass_credential_expires_at")
+        val INSTALL_SOCIAL_USER_ID = stringPreferencesKey("quaypass_install_social_user_id")
+        val INSTALL_KEY_ALIAS = stringPreferencesKey("quaypass_install_key_alias")
     }
 
     companion object {

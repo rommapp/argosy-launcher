@@ -151,6 +151,12 @@ interface PendingSyncQueueDao {
     @Query("SELECT COUNT(*) FROM pending_sync_queue WHERE sessionId = :sessionId AND status = 'FAILED'")
     suspend fun countFailedBySession(sessionId: Long): Int
 
+    @Query("DELETE FROM pending_sync_queue WHERE ownerUserId = :ownerUserId")
+    suspend fun deleteByOwner(ownerUserId: Long)
+
+    @Query("SELECT COUNT(*) FROM pending_sync_queue WHERE ownerUserId = :ownerUserId AND status IN ('PENDING', 'IN_PROGRESS', 'FAILED')")
+    suspend fun countUnflushedForOwner(ownerUserId: Long): Int
+
     @Query("DELETE FROM pending_sync_queue WHERE sessionId = :sessionId")
     suspend fun deleteBySession(sessionId: Long)
 

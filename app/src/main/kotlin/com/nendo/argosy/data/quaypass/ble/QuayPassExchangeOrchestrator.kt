@@ -53,11 +53,12 @@ class QuayPassExchangeOrchestrator @Inject constructor(
 
     suspend fun buildOurWireBytes(profile: OutboundProfile): ByteArray? {
         val credential = credentialManager.getValidCredential() ?: return null
+        val alias = QuayPassKeystore.aliasFor(localOwnerUserId())
         return try {
             QuayPassWireFormat.encode(
                 profile = profile,
                 credentialBytesBase64 = credential.bytesBase64,
-                signer = { keystore.sign(it) }
+                signer = { keystore.sign(it, alias) }
             )
         } catch (t: Throwable) {
             Log.w(TAG, "Failed to encode our wire bytes", t)
@@ -65,8 +66,14 @@ class QuayPassExchangeOrchestrator @Inject constructor(
         }
     }
 
-    fun signAttestationFor(peerAccountId: UUID, peerChallenge: ByteArray, tsSecs: Long): ByteArray =
-        keystore.signServerVerifiable(QuayPassAttestation.preimage(peerAccountId, peerChallenge, tsSecs))
+    suspend fun signAttestationFor(
+        peerAccountId: UUID,
+        peerChallenge: ByteArray,
+        tsSecs: Long
+    ): ByteArray = keystore.signServerVerifiable(
+        QuayPassAttestation.preimage(peerAccountId, peerChallenge, tsSecs),
+        QuayPassKeystore.aliasFor(localOwnerUserId())
+    )
 
     /**
      * Central role: send our profile with a fresh challenge, verify the peer's
@@ -144,6 +151,7 @@ class QuayPassExchangeOrchestrator @Inject constructor(
             return false
         }
 
+        val localOwnerUserId = localOwnerUserId() ?: QuayPassEncounterEntity.NO_OWNER
         val avatarPng = QuayPassRasterPng.fromRasterBytes(profile.avatarBytes.takeIf { it.isNotEmpty() })
         val entity = QuayPassEncounterEntity(
             credentialFingerprint = profile.credentialFingerprint,
@@ -159,7 +167,8 @@ class QuayPassExchangeOrchestrator @Inject constructor(
             encounteredAt = now,
             seenByUser = false,
             accountId = profile.credentialBundle.accountId.toString(),
-            reported = false
+            reported = false,
+            localOwnerUserId = localOwnerUserId
         )
 
         val cooldownCutoff = now.minusSeconds(QuayPassConfig.EXCHANGE_COOLDOWN_SECS)
@@ -176,7 +185,8 @@ class QuayPassExchangeOrchestrator @Inject constructor(
                 tsSecs = meeting.tsSecs,
                 cardMessage = profile.greeting,
                 cardIgdbId = profile.lastGameIgdbId,
-                cardAvatarPngBase64 = avatarPng
+                cardAvatarPngBase64 = avatarPng,
+                localOwnerUserId = localOwnerUserId
             )
         )
 
@@ -186,6 +196,9 @@ class QuayPassExchangeOrchestrator @Inject constructor(
         Log.i(TAG, "Recorded QuayPass meeting with ${entity.username} (${entity.accountId})")
         return true
     }
+
+    private suspend fun localOwnerUserId(): Long? =
+        userPreferencesRepository.userPreferences.first().rommUserId
 
     private suspend fun ourAccountUuid(): UUID? =
         userPreferencesRepository.userPreferences.first().socialUserId

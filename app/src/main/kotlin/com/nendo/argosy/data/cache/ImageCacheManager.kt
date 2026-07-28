@@ -1933,7 +1933,7 @@ class ImageCacheManager @Inject constructor(
         achievementDao.getWithUncachedBadges()
         val allGameIds = gameDao.getAllGameIds()
         allGameIds.forEach { gameId ->
-            val achievements = achievementDao.getByGameId(gameId)
+            val achievements = achievementDao.getAllForGame(gameId)
             achievements.forEach { achievement ->
                 var badgeChanged = false
                 var newBadgePath = achievement.cachedBadgeUrl

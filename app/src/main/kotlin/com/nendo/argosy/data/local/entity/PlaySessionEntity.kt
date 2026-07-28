@@ -12,7 +12,8 @@ import java.time.Instant
         Index("igdbId"),
         Index("startTime"),
         Index("deviceId"),
-        Index("userId")
+        Index("userId"),
+        Index("ownerUserId")
     ]
 )
 data class PlaySessionEntity(
@@ -30,5 +31,11 @@ data class PlaySessionEntity(
     val deviceManufacturer: String,
     val deviceModel: String,
     val activePlayMs: Long = 0,
-    val standbyMs: Long = 0
+    val standbyMs: Long = 0,
+    /**
+     * RomM user id the session belongs to. Separate from [userId], which is the Argosy Social id:
+     * the two identities are independent, a device can be linked to one and not the other, and
+     * the RomM ingest must not upload another account's sessions under whoever is connected.
+     */
+    val ownerUserId: Long? = null
 )

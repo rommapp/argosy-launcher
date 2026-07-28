@@ -11,8 +11,24 @@ interface QuayPassPendingReportDao {
     @Insert
     suspend fun enqueue(report: QuayPassPendingReportEntity)
 
-    @Query("SELECT * FROM quaypass_pending_reports ORDER BY id ASC")
+    /**
+     * Only the live account's reports. A report is signed by that account's install key and is
+     * sent under its bearer token, so draining another account's rows would have the server
+     * attribute the meeting to whoever happens to be signed in.
+     */
+    @Query(
+        "SELECT * FROM quaypass_pending_reports " +
+            "WHERE localOwnerUserId = " +
+            "COALESCE((SELECT rommUserId FROM romm_accounts WHERE isActive = 1 LIMIT 1), 0) " +
+            "ORDER BY id ASC"
+    )
     suspend fun all(): List<QuayPassPendingReportEntity>
+
+    @Query("DELETE FROM quaypass_pending_reports WHERE localOwnerUserId = :localOwnerUserId")
+    suspend fun deleteByOwner(localOwnerUserId: Long)
+
+    @Query("SELECT COUNT(*) FROM quaypass_pending_reports WHERE localOwnerUserId = :localOwnerUserId")
+    suspend fun countForOwner(localOwnerUserId: Long): Int
 
     @Query("DELETE FROM quaypass_pending_reports WHERE id = :id")
     suspend fun delete(id: Long)

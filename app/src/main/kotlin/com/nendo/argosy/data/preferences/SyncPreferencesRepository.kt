@@ -54,6 +54,7 @@ data class SyncPreferences(
     val discordRichPresenceEnabled: Boolean = true,
     val socialSuppressNotificationsInGame: Boolean = false,
     val lastPlaySessionSync: Instant? = null,
+    val lastRomMPlaySessionSync: Instant? = null,
     val lastStateValidation: Instant? = null,
     val quayPassEnabled: Boolean = false,
     val quayPassAvatarSyncPending: Boolean = false,
@@ -115,6 +116,7 @@ class SyncPreferencesRepository @Inject constructor(
         val SOCIAL_SUPPRESS_NOTIFICATIONS_IN_GAME = booleanPreferencesKey("social_suppress_notifications_in_game")
         val LAST_STATE_VALIDATION = stringPreferencesKey("last_state_validation")
         val SOCIAL_LAST_PLAY_SESSION_SYNC = stringPreferencesKey("social_last_play_session_sync")
+        val ROMM_LAST_PLAY_SESSION_SYNC = stringPreferencesKey("romm_last_play_session_sync")
         val SOCIAL_HIDDEN_GAME_IDS = stringPreferencesKey("social_hidden_game_ids")
         val SAVE_SYNC_LOCAL_REKEY_DONE = booleanPreferencesKey("save_sync_local_rekey_done")
         val SAVE_PATH_CACHE_PURGED = booleanPreferencesKey("save_path_cache_purged")
@@ -304,6 +306,7 @@ class SyncPreferencesRepository @Inject constructor(
             discordRichPresenceEnabled = prefs[Keys.DISCORD_RICH_PRESENCE_ENABLED] ?: true,
             socialSuppressNotificationsInGame = prefs[Keys.SOCIAL_SUPPRESS_NOTIFICATIONS_IN_GAME] ?: false,
             lastPlaySessionSync = prefs[Keys.SOCIAL_LAST_PLAY_SESSION_SYNC]?.let { Instant.parse(it) },
+            lastRomMPlaySessionSync = prefs[Keys.ROMM_LAST_PLAY_SESSION_SYNC]?.let { Instant.parse(it) },
             lastStateValidation = prefs[Keys.LAST_STATE_VALIDATION]?.let { Instant.parse(it) },
             quayPassEnabled = prefs[Keys.QUAYPASS_ENABLED] ?: false,
             quayPassAvatarSyncPending = prefs[Keys.QUAYPASS_AVATAR_SYNC_PENDING] ?: false,
@@ -612,8 +615,17 @@ class SyncPreferencesRepository @Inject constructor(
         dataStore.edit { it[Keys.SOCIAL_SUPPRESS_NOTIFICATIONS_IN_GAME] = enabled }
     }
 
+    /**
+     * The social and RomM play-session uploads advance separately. They were one watermark moved
+     * forward on social enqueue, which is before the RomM ingest is even attempted, so a failed
+     * ingest could never be retried: the sessions it missed were already behind the mark.
+     */
     suspend fun setLastPlaySessionSyncTime(time: Instant) {
         dataStore.edit { it[Keys.SOCIAL_LAST_PLAY_SESSION_SYNC] = time.toString() }
+    }
+
+    suspend fun setLastRomMPlaySessionSyncTime(time: Instant) {
+        dataStore.edit { it[Keys.ROMM_LAST_PLAY_SESSION_SYNC] = time.toString() }
     }
 
     fun hiddenGameIds(): Flow<Set<Int>> = dataStore.data.map { prefs ->

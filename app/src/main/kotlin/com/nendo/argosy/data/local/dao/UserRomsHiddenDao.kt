@@ -75,4 +75,7 @@ interface UserRomsHiddenDao {
         """
     )
     suspend fun inheritWhenAllHidden(targetGameId: Long, sourceGameIds: List<Long>, sourceCount: Int)
+
+    @Query("DELETE FROM user_roms_hidden WHERE ownerUserId = :ownerUserId")
+    suspend fun deleteForOwner(ownerUserId: Long)
 }

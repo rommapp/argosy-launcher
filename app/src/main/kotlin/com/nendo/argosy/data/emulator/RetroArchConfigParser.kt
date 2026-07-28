@@ -72,6 +72,22 @@ class RetroArchConfigParser @Inject constructor(
         }
     }
 
+    /**
+     * Blanks the cheevos login and turns achievements off. Needed when the account taking over
+     * the device has no RA login of its own: leaving the previous login in place would credit
+     * that person's unlocks to the account that just left.
+     */
+    fun clearCheevosCredentials(): Int {
+        val updates = linkedMapOf(
+            "cheevos_enable" to "false",
+            "cheevos_username" to "",
+            "cheevos_token" to ""
+        )
+        return configPaths.distinct().count { path ->
+            fileAccessLayer.exists(path) && applyConfigUpdates(path, updates)
+        }
+    }
+
     private fun applyConfigUpdates(path: String, updates: Map<String, String>): Boolean {
         val lines = fileAccessLayer.getInputStream(path)?.use { it.bufferedReader().readLines() }
             ?: return false

@@ -158,6 +158,12 @@ interface SaveCacheDao {
     @Query("DELETE FROM save_cache WHERE gameId IN (SELECT id FROM games WHERE platformId = :platformId)")
     suspend fun deleteByPlatform(platformId: Long)
 
+    @Query("DELETE FROM save_cache WHERE ownerUserId = :ownerUserId")
+    suspend fun deleteByOwner(ownerUserId: Long)
+
+    @Query("SELECT COUNT(*) FROM save_cache WHERE ownerUserId = :ownerUserId AND needsRemoteSync = 1")
+    suspend fun countNeedingRemoteSyncForOwner(ownerUserId: Long): Int
+
     @Query("DELETE FROM save_cache")
     suspend fun deleteAll()
 

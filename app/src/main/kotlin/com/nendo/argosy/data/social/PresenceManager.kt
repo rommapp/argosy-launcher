@@ -36,6 +36,7 @@ class PresenceManager @Inject constructor(
 
     private var lastSentStatus: PresenceStatus? = null
     private var lastSentGameId: Int? = null
+    private var lastSentSocialUserId: String? = null
     private var lastReconnectAttempt = 0L
 
     private val _screenOn = MutableStateFlow(true)
@@ -84,16 +85,22 @@ class PresenceManager @Inject constructor(
             combine(
                 playSessionTracker.activeSession,
                 preferencesRepository.userPreferences.map { prefs ->
-                    Triple(prefs.socialOnlineStatusEnabled, prefs.socialShowNowPlaying, prefs.isSocialLinked)
+                    PresenceFlags(
+                        onlineStatusEnabled = prefs.socialOnlineStatusEnabled,
+                        showNowPlaying = prefs.socialShowNowPlaying,
+                        isSocialLinked = prefs.isSocialLinked,
+                        socialUserId = prefs.socialUserId
+                    )
                 }.distinctUntilChanged(),
                 socialRepository.serviceConnectionState,
                 _screenOn
-            ) { playSession, prefsTriple, serviceState, screenOn ->
+            ) { playSession, flags, serviceState, screenOn ->
                 PresenceContext(
                     playSession = playSession,
-                    onlineStatusEnabled = prefsTriple.first,
-                    showNowPlaying = prefsTriple.second,
-                    isSocialLinked = prefsTriple.third,
+                    onlineStatusEnabled = flags.onlineStatusEnabled,
+                    showNowPlaying = flags.showNowPlaying,
+                    isSocialLinked = flags.isSocialLinked,
+                    socialUserId = flags.socialUserId,
                     isConnected = serviceState is ArgosSocialService.ConnectionState.Connected,
                     isScreenOn = screenOn
                 )
@@ -111,6 +118,7 @@ class PresenceManager @Inject constructor(
         if (!context.isConnected) {
             lastSentStatus = null
             lastSentGameId = null
+            lastSentSocialUserId = null
             if (context.isScreenOn && context.onlineStatusEnabled) {
                 val now = System.currentTimeMillis()
                 if (now - lastReconnectAttempt >= RECONNECT_COOLDOWN_MS) {
@@ -124,16 +132,22 @@ class PresenceManager @Inject constructor(
 
         val presenceInfo = calculatePresence(context)
 
-        if (presenceInfo.status != lastSentStatus || presenceInfo.gameIgdbId != lastSentGameId) {
+        val identityChanged = context.socialUserId != lastSentSocialUserId
+        if (identityChanged ||
+            presenceInfo.status != lastSentStatus ||
+            presenceInfo.gameIgdbId != lastSentGameId
+        ) {
             Log.d(TAG, "Sending presence: ${presenceInfo.status}, game=${presenceInfo.gameTitle}, igdbId=${presenceInfo.gameIgdbId}")
             val sent = socialRepository.sendPresence(presenceInfo.status, presenceInfo.gameIgdbId, presenceInfo.gameTitle)
             if (sent) {
                 lastSentStatus = presenceInfo.status
                 lastSentGameId = presenceInfo.gameIgdbId
+                lastSentSocialUserId = context.socialUserId
             } else {
                 Log.w(TAG, "Presence send failed, will retry on next state change")
                 lastSentStatus = null
                 lastSentGameId = null
+                lastSentSocialUserId = null
             }
         } else {
             Log.d(TAG, "Presence unchanged, skipping: ${presenceInfo.status}, game=${presenceInfo.gameTitle}")
@@ -165,11 +179,24 @@ class PresenceManager @Inject constructor(
         return game.igdbId?.toInt() to game.title
     }
 
+    private data class PresenceFlags(
+        val onlineStatusEnabled: Boolean,
+        val showNowPlaying: Boolean,
+        val isSocialLinked: Boolean,
+        val socialUserId: String?
+    )
+
+    /**
+     * [socialUserId] is part of the state, not decoration. Watching only the linked boolean
+     * makes an A-to-B swap invisible -- it never changes -- and the send dedupe then suppresses
+     * the first post-swap presence because the status and game are the same as the old account's.
+     */
     private data class PresenceContext(
         val playSession: ActiveSession?,
         val onlineStatusEnabled: Boolean,
         val showNowPlaying: Boolean,
         val isSocialLinked: Boolean,
+        val socialUserId: String?,
         val isConnected: Boolean,
         val isScreenOn: Boolean
     )

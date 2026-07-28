@@ -195,6 +195,7 @@ class UserPreferencesRepository @Inject constructor(
             socialSuppressNotificationsInGame = sync.socialSuppressNotificationsInGame,
             discordRichPresenceEnabled = sync.discordRichPresenceEnabled,
             lastPlaySessionSync = sync.lastPlaySessionSync,
+            lastRomMPlaySessionSync = sync.lastRomMPlaySessionSync,
             lastStateValidation = sync.lastStateValidation,
             quayPassEnabled = sync.quayPassEnabled,
             quayPassAvatarSyncPending = sync.quayPassAvatarSyncPending,
@@ -343,6 +344,7 @@ class UserPreferencesRepository @Inject constructor(
     suspend fun setSocialSuppressNotificationsInGame(enabled: Boolean) = syncPrefs.setSocialSuppressNotificationsInGame(enabled)
     suspend fun setDiscordRichPresenceEnabled(enabled: Boolean) = syncPrefs.setDiscordRichPresenceEnabled(enabled)
     suspend fun setLastPlaySessionSyncTime(time: Instant) = syncPrefs.setLastPlaySessionSyncTime(time)
+    suspend fun setLastRomMPlaySessionSyncTime(time: Instant) = syncPrefs.setLastRomMPlaySessionSyncTime(time)
     suspend fun setQuayPassEnabled(enabled: Boolean) = syncPrefs.setQuayPassEnabled(enabled)
     suspend fun setQuayPassAvatarSyncPending(pending: Boolean) = syncPrefs.setQuayPassAvatarSyncPending(pending)
     suspend fun setQuayPassMessageSyncPending(pending: Boolean) = syncPrefs.setQuayPassMessageSyncPending(pending)
@@ -728,6 +730,7 @@ data class UserPreferences(
     val socialSuppressNotificationsInGame: Boolean = false,
     val discordRichPresenceEnabled: Boolean = true,
     val lastPlaySessionSync: Instant? = null,
+    val lastRomMPlaySessionSync: Instant? = null,
     val lastStateValidation: Instant? = null,
     val weeklyIntegrityCheckEnabled: Boolean = true,
     val lastIntegrityCheckTime: Long? = null,

@@ -11,6 +11,7 @@ import com.nendo.argosy.data.local.dao.AchievementDao
 import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.dao.PendingSocialSyncDao
 import com.nendo.argosy.data.local.dao.PlaySessionDao
+import com.nendo.argosy.data.local.entity.AchievementEntity
 import com.nendo.argosy.data.local.entity.PendingSocialSyncEntity
 import com.nendo.argosy.data.local.entity.SocialSyncType
 import com.nendo.argosy.data.preferences.SyncPreferencesRepository
@@ -766,15 +767,21 @@ class SocialRepository @Inject constructor(
         }
     }
 
+    /**
+     * Hands new play sessions to the social queue and to the RomM ingest.
+     *
+     * The two destinations keep separate watermarks. They shared one, advanced the moment the
+     * social rows were enqueued, which is before the RomM upload is even attempted -- so any
+     * RomM-side failure was permanent, its sessions already behind the mark. The RomM watermark
+     * now moves only after the ingest returns success, and both are read once here and scoped to
+     * the account that owns the sessions.
+     */
     suspend fun syncPlaySessions(): SyncResult {
         val prefs = preferencesRepository.userPreferences.first()
-        val lastSync = prefs.lastPlaySessionSync
+        val ownerUserId = prefs.rommUserId
+        val sessions = playSessionDao.getUnsyncedForSocial(prefs.lastPlaySessionSync, ownerUserId)
 
-        val sessions = if (lastSync != null) {
-            playSessionDao.getUnsyncedSessions(lastSync)
-        } else {
-            playSessionDao.getAllUnsyncedSessions()
-        }
+        uploadPlaySessionsToRomM(prefs.lastRomMPlaySessionSync, ownerUserId)
 
         if (sessions.isEmpty()) {
             return SyncResult.Success(0)
@@ -803,7 +810,8 @@ class SocialRepository @Inject constructor(
                 PendingSocialSyncEntity(
                     syncType = SocialSyncType.PLAY_SESSION,
                     payloadJson = payloadJson,
-                    occurredAt = session.startTime
+                    occurredAt = session.startTime,
+                    ownerUserId = ownerUserId
                 )
             )
             queued++
@@ -819,20 +827,25 @@ class SocialRepository @Inject constructor(
             }
         }
 
-        if (rommPlaySessionUploader.canUpload) {
-            scope.launch {
-                when (val result = rommPlaySessionUploader.upload(sessions)) {
-                    is RomMPlaySessionUploader.UploadResult.Success ->
-                        Log.d(TAG, "RomM play session ingest: ${result.ingested} accepted")
-                    is RomMPlaySessionUploader.UploadResult.Skipped ->
-                        Log.d(TAG, "RomM play session ingest skipped: ${result.reason}")
-                    is RomMPlaySessionUploader.UploadResult.Error ->
-                        Log.w(TAG, "RomM play session ingest failed: ${result.message}")
+        return SyncResult.Success(queued)
+    }
+
+    private suspend fun uploadPlaySessionsToRomM(since: Instant?, ownerUserId: Long?) {
+        if (!rommPlaySessionUploader.canUpload) return
+        val sessions = playSessionDao.getUnsyncedForRomM(since, ownerUserId)
+        if (sessions.isEmpty()) return
+        scope.launch {
+            when (val result = rommPlaySessionUploader.upload(sessions)) {
+                is RomMPlaySessionUploader.UploadResult.Success -> {
+                    preferencesRepository.setLastRomMPlaySessionSyncTime(sessions.maxOf { it.endTime })
+                    Log.d(TAG, "RomM play session ingest: ${result.ingested} accepted")
                 }
+                is RomMPlaySessionUploader.UploadResult.Skipped ->
+                    Log.d(TAG, "RomM play session ingest skipped: ${result.reason}")
+                is RomMPlaySessionUploader.UploadResult.Error ->
+                    Log.w(TAG, "RomM play session ingest failed: ${result.message}")
             }
         }
-
-        return SyncResult.Success(queued)
     }
 
     private fun observeAchievementUpdates() {
@@ -847,7 +860,11 @@ class SocialRepository @Inject constructor(
         scope.launch {
             socialService.syncAchievementResult.collect { acceptedIds ->
                 if (acceptedIds.isNotEmpty()) {
-                    achievementDao.markSocialSharedBatch(acceptedIds, System.currentTimeMillis())
+                    achievementDao.markSocialSharedBatch(
+                        acceptedIds,
+                        syncPreferencesRepository.getRommUserId() ?: AchievementEntity.NO_OWNER,
+                        System.currentTimeMillis()
+                    )
                     Log.d(TAG, "Marked ${acceptedIds.size} achievements as socially shared")
                 }
             }
@@ -858,7 +875,8 @@ class SocialRepository @Inject constructor(
         if (!socialService.isConnected()) return
         if (achievementSyncSuppressed) return
 
-        val unshared = achievementDao.getUnsharedUnlocked(50)
+        val ownerUserId = syncPreferencesRepository.getRommUserId() ?: AchievementEntity.NO_OWNER
+        val unshared = achievementDao.getUnsharedUnlocked(ownerUserId = ownerUserId, limit = 50)
         if (unshared.isEmpty()) return
 
         val cutoff = System.currentTimeMillis() - (7L * 24 * 60 * 60 * 1000)
@@ -869,7 +887,11 @@ class SocialRepository @Inject constructor(
             (it.unlockedHardcoreAt ?: it.unlockedAt ?: 0L) < cutoff
         }
         if (stale.isNotEmpty()) {
-            achievementDao.markSocialSharedBatch(stale.map { it.raId }, System.currentTimeMillis())
+            achievementDao.markSocialSharedBatch(
+                stale.map { it.raId },
+                ownerUserId,
+                System.currentTimeMillis()
+            )
             Log.d(TAG, "Pre-marked ${stale.size} stale achievements as shared")
         }
 
@@ -1206,7 +1228,8 @@ class SocialRepository @Inject constructor(
             PendingSocialSyncEntity(
                 syncType = SocialSyncType.FEED_EVENT,
                 payloadJson = payloadJson,
-                occurredAt = Instant.now()
+                occurredAt = Instant.now(),
+                ownerUserId = syncPreferencesRepository.getRommUserId()
             )
         )
 

@@ -13,13 +13,28 @@ interface PendingSocialSyncDao {
     @Insert
     suspend fun insert(entity: PendingSocialSyncEntity): Long
 
+    /**
+     * Rows the account named by [ownerUserId] may send. Rows with no owner predate account
+     * binding and drain under whichever account is live, the same rule the RomM sync queue uses.
+     */
     @Query("""
         SELECT * FROM pending_social_sync
         WHERE syncType = :type AND status = 'PENDING'
+          AND (:ownerUserId IS NULL OR ownerUserId IS NULL OR ownerUserId = :ownerUserId)
         ORDER BY occurredAt ASC
         LIMIT :limit
     """)
-    suspend fun getPendingByType(type: SocialSyncType, limit: Int = 50): List<PendingSocialSyncEntity>
+    suspend fun getPendingByType(
+        type: SocialSyncType,
+        ownerUserId: Long?,
+        limit: Int = 50
+    ): List<PendingSocialSyncEntity>
+
+    @Query("DELETE FROM pending_social_sync WHERE ownerUserId = :ownerUserId")
+    suspend fun deleteByOwner(ownerUserId: Long)
+
+    @Query("SELECT COUNT(*) FROM pending_social_sync WHERE ownerUserId = :ownerUserId AND status != 'FAILED'")
+    suspend fun countPendingForOwner(ownerUserId: Long): Int
 
     @Query("""
         UPDATE pending_social_sync

@@ -42,10 +42,4 @@ class PlayStatsRepository @Inject constructor(
 
     suspend fun deleteByGame(gameId: Long) =
         playSessionDao.deleteByGame(gameId)
-
-    suspend fun getUnsyncedSessions(since: Instant, limit: Int = 100): List<PlaySessionEntity> =
-        playSessionDao.getUnsyncedSessions(since, limit)
-
-    suspend fun getAllUnsyncedSessions(limit: Int = 100): List<PlaySessionEntity> =
-        playSessionDao.getAllUnsyncedSessions(limit)
 }

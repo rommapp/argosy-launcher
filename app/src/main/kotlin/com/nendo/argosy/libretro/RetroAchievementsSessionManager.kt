@@ -122,12 +122,13 @@ class RetroAchievementsSessionManager(
 
                     // Persist pre-unlocked achievements to local DB
                     val now = System.currentTimeMillis()
+                    val ownerUserId = raRepository.activeOwnerUserId()
                     for (achId in preUnlocked) {
                         if (achId in validIds) {
                             if (hardcoreMode) {
-                                achievementDao.markUnlockedHardcore(gameId, achId, now)
+                                achievementDao.markUnlockedHardcore(gameId, achId, ownerUserId, now)
                             } else {
-                                achievementDao.markUnlocked(gameId, achId, now)
+                                achievementDao.markUnlocked(gameId, achId, ownerUserId, now)
                             }
                         }
                     }
@@ -237,19 +238,20 @@ class RetroAchievementsSessionManager(
             }
 
             val now = System.currentTimeMillis()
+            val ownerUserId = raRepository.activeOwnerUserId()
             if (earnedHardcore) {
-                achievementDao.markUnlockedHardcore(gameId, achievementId, now)
+                achievementDao.markUnlockedHardcore(gameId, achievementId, ownerUserId, now)
                 Log.d(TAG, "Marked achievement $achievementId as hardcore unlocked in local DB")
             } else {
-                achievementDao.markUnlocked(gameId, achievementId, now)
+                achievementDao.markUnlocked(gameId, achievementId, ownerUserId, now)
                 Log.d(TAG, "Marked achievement $achievementId as unlocked in local DB")
             }
 
             overlayWriter.incrementEarnedAchievementCount(gameId)
             Log.d(TAG, "Incremented earned achievement count for game $gameId")
 
-            val totalCount = achievementDao.countByGameId(gameId)
-            val earnedCount = achievementDao.countUnlockedByGameId(gameId)
+            val totalCount = achievementDao.countByGameId(gameId, ownerUserId)
+            val earnedCount = achievementDao.countUnlockedByGameId(gameId, ownerUserId)
             achievementUpdateBus.emit(
                 AchievementUpdateBus.AchievementUpdate(
                     gameId = gameId,
@@ -275,7 +277,12 @@ class RetroAchievementsSessionManager(
                     unlockedAt = now
                 )
                 if (sent) {
-                    achievementDao.markSocialShared(gameId, achievementId, System.currentTimeMillis())
+                    achievementDao.markSocialShared(
+                        gameId,
+                        achievementId,
+                        ownerUserId,
+                        System.currentTimeMillis()
+                    )
                 }
                 if (earnedCount == totalCount && totalCount > 0) {
                     socialRepository.emitPerfectGame(

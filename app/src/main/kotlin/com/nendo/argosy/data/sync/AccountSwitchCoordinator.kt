@@ -244,5 +244,20 @@ class AccountSwitchCoordinator @Inject constructor(
         connectionManager.get().rebindToActiveAccount()
         rommAchievementService.get().onAppResumed()
         retroAchievementsRepository.get().invalidateUnlocksCache()
+        pushRetroArchCredentials()
+    }
+
+    /**
+     * RetroArch's cheevos login is one device-global config, and for a game launched outside
+     * Argosy it is the only thing deciding whose RA account earns the unlocks. Leaving the
+     * outgoing account's login in it hands the incoming player's progress to the wrong person.
+     */
+    private suspend fun pushRetroArchCredentials() {
+        val written = runCatching { retroAchievementsRepository.get().syncRetroArchCredentials() }
+            .getOrElse { e ->
+                Logger.error(TAG, "Could not rewrite RetroArch RA credentials after the swap", e)
+                return
+            }
+        Logger.info(TAG, "Rewrote RA credentials into $written RetroArch config(s)")
     }
 }

@@ -3,6 +3,8 @@ package com.nendo.argosy.di
 import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
+import com.nendo.argosy.data.preferences.AccountPreferenceStoreRegistry
+import com.nendo.argosy.data.preferences.AccountScopedDataStore
 import com.nendo.argosy.data.preferences.dataStore
 import com.nendo.argosy.data.storage.FileAccessLayer
 import com.nendo.argosy.data.storage.FileAccessLayerImpl
@@ -16,6 +18,9 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import javax.inject.Singleton
 
 @Module
@@ -34,9 +39,20 @@ abstract class AppModule {
 
         @Provides
         @Singleton
-        fun provideDataStore(@ApplicationContext context: Context): DataStore<Preferences> {
-            return context.dataStore
-        }
+        fun provideAccountPreferenceStoreRegistry(
+            @ApplicationContext context: Context
+        ): AccountPreferenceStoreRegistry = AccountPreferenceStoreRegistry(
+            context = context,
+            globalStore = context.dataStore,
+            scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+        )
+
+        @Provides
+        @Singleton
+        fun provideDataStore(
+            @ApplicationContext context: Context,
+            registry: AccountPreferenceStoreRegistry
+        ): DataStore<Preferences> = AccountScopedDataStore(context.dataStore, registry)
 
         @Provides
         @Singleton

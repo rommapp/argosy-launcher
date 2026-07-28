@@ -15,7 +15,14 @@ import java.security.Signature
 import javax.inject.Inject
 import javax.inject.Singleton
 
-/** Per-install signing keypair (Ed25519 on API 33+, EC P-256 fallback). */
+/**
+ * Per-install signing keypair (Ed25519 on API 33+, EC P-256 fallback).
+ *
+ * One keypair per RomM account: the pass is an identity assertion, and a shared key would let a
+ * peer link two people on the same handheld and would let either account sign for the other. The
+ * alias carries the account, so a switch changes which key is reachable without touching the
+ * other account's.
+ */
 @Singleton
 class QuayPassKeystore @Inject constructor(
     @ApplicationContext private val context: Context
@@ -32,10 +39,10 @@ class QuayPassKeystore @Inject constructor(
     )
 
     @Synchronized
-    fun getOrCreateKeyInfo(): KeyInfo {
+    fun getOrCreateKeyInfo(alias: String): KeyInfo {
         val ks = openKeystore()
-        if (ks.containsAlias(KEY_ALIAS)) {
-            val pub = ks.getCertificate(KEY_ALIAS).publicKey
+        if (ks.containsAlias(alias)) {
+            val pub = ks.getCertificate(alias).publicKey
             return KeyInfo(
                 publicKey = pub,
                 publicKeyEncoded = pub.encoded,
@@ -43,13 +50,15 @@ class QuayPassKeystore @Inject constructor(
                 algorithm = inferAlgorithmFromKey(pub)
             )
         }
-        return generateKey()
+        return generateKey(alias)
     }
 
-    /** Signs with the install key; both algorithms return a fixed 64-byte signature. */
-    fun sign(data: ByteArray): ByteArray {
-        val privateKey = getPrivateKey()
-        val info = getOrCreateKeyInfo()
+    /**
+     * Signs with the install key; both algorithms return a fixed 64-byte signature.
+     */
+    fun sign(data: ByteArray, alias: String): ByteArray {
+        val privateKey = getPrivateKey(alias)
+        val info = getOrCreateKeyInfo(alias)
         val sigAlg = when (info.algorithm) {
             Algorithm.ED25519 -> "Ed25519"
             Algorithm.EC_P256 -> "SHA256withECDSA"
@@ -69,9 +78,9 @@ class QuayPassKeystore @Inject constructor(
      * Ed25519 returns the raw 64-byte signature, EC P-256 returns ASN.1 DER
      * (no P1363 conversion). Used for the registration possession proof.
      */
-    fun signServerVerifiable(data: ByteArray): ByteArray {
-        val privateKey = getPrivateKey()
-        val info = getOrCreateKeyInfo()
+    fun signServerVerifiable(data: ByteArray, alias: String): ByteArray {
+        val privateKey = getPrivateKey(alias)
+        val info = getOrCreateKeyInfo(alias)
         val sigAlg = when (info.algorithm) {
             Algorithm.ED25519 -> "Ed25519"
             Algorithm.EC_P256 -> "SHA256withECDSA"
@@ -83,10 +92,10 @@ class QuayPassKeystore @Inject constructor(
     }
 
     @Synchronized
-    fun clear() {
+    fun clear(alias: String) {
         try {
             val ks = openKeystore()
-            if (ks.containsAlias(KEY_ALIAS)) ks.deleteEntry(KEY_ALIAS)
+            if (ks.containsAlias(alias)) ks.deleteEntry(alias)
         } catch (t: Throwable) {
             Log.w(TAG, "Failed to clear keypair", t)
         }
@@ -95,16 +104,16 @@ class QuayPassKeystore @Inject constructor(
     private fun openKeystore(): KeyStore =
         KeyStore.getInstance(ANDROID_KEYSTORE).apply { load(null) }
 
-    private fun getPrivateKey(): PrivateKey {
+    private fun getPrivateKey(alias: String): PrivateKey {
         val ks = openKeystore()
-        if (!ks.containsAlias(KEY_ALIAS)) {
-            generateKey()
+        if (!ks.containsAlias(alias)) {
+            generateKey(alias)
         }
-        return ks.getKey(KEY_ALIAS, null) as? PrivateKey
+        return ks.getKey(alias, null) as? PrivateKey
             ?: error("QuayPass private key missing or wrong type")
     }
 
-    private fun generateKey(): KeyInfo {
+    private fun generateKey(alias: String): KeyInfo {
         val attempts = sequence {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 yield(Triple(Algorithm.ED25519, /* strongBox = */ true, "Ed25519+StrongBox"))
@@ -121,7 +130,7 @@ class QuayPassKeystore @Inject constructor(
                     KeyProperties.KEY_ALGORITHM_EC, ANDROID_KEYSTORE
                 )
                 val builder = KeyGenParameterSpec.Builder(
-                    KEY_ALIAS,
+                    alias,
                     KeyProperties.PURPOSE_SIGN or KeyProperties.PURPOSE_VERIFY
                 )
 
@@ -144,7 +153,7 @@ class QuayPassKeystore @Inject constructor(
                 }
                 gen.initialize(builder.build())
                 val pair: KeyPair = gen.generateKeyPair()
-                trySign(alg)
+                trySign(alg, alias)
                 Log.i(TAG, "Generated QuayPass keypair via $label")
                 return KeyInfo(
                     publicKey = pair.public,
@@ -155,7 +164,7 @@ class QuayPassKeystore @Inject constructor(
             } catch (t: Throwable) {
                 lastError = t
                 Log.w(TAG, "QuayPass keypair attempt failed ($label): ${t.message}")
-                runCatching { openKeystore().deleteEntry(KEY_ALIAS) }
+                runCatching { openKeystore().deleteEntry(alias) }
             }
         }
 
@@ -164,7 +173,7 @@ class QuayPassKeystore @Inject constructor(
                 KeyProperties.KEY_ALGORITHM_EC, ANDROID_KEYSTORE
             )
             val spec = KeyGenParameterSpec.Builder(
-                KEY_ALIAS,
+                alias,
                 KeyProperties.PURPOSE_SIGN or KeyProperties.PURPOSE_VERIFY
             )
                 .setAlgorithmParameterSpec(java.security.spec.ECGenParameterSpec("secp256r1"))
@@ -172,7 +181,7 @@ class QuayPassKeystore @Inject constructor(
                 .build()
             gen.initialize(spec)
             val pair = gen.generateKeyPair()
-            trySign(Algorithm.EC_P256)
+            trySign(Algorithm.EC_P256, alias)
             Log.w(TAG, "Generated QuayPass keypair in software (no hardware backing available)")
             return KeyInfo(
                 publicKey = pair.public,
@@ -188,8 +197,8 @@ class QuayPassKeystore @Inject constructor(
         }
     }
 
-    private fun trySign(alg: Algorithm) {
-        val key = openKeystore().getKey(KEY_ALIAS, null) as? PrivateKey
+    private fun trySign(alg: Algorithm, alias: String) {
+        val key = openKeystore().getKey(alias, null) as? PrivateKey
             ?: error("generated key not retrievable")
         val signer = Signature.getInstance(
             when (alg) {
@@ -213,7 +222,14 @@ class QuayPassKeystore @Inject constructor(
     companion object {
         private const val TAG = "QuayPassKeystore"
         private const val ANDROID_KEYSTORE = "AndroidKeyStore"
-        private const val KEY_ALIAS = "quaypass_install_v1"
+        private const val LEGACY_KEY_ALIAS = "quaypass_install_v1"
         private const val P256_COMPONENT_BYTES = 32
+
+        /**
+         * The unsuffixed alias is kept for an unpaired device so a QuayPass set up before RomM
+         * pairing keeps its registration; every account gets its own suffixed key.
+         */
+        fun aliasFor(rommUserId: Long?): String =
+            if (rommUserId == null) LEGACY_KEY_ALIAS else "${LEGACY_KEY_ALIAS}_u$rommUserId"
     }
 }

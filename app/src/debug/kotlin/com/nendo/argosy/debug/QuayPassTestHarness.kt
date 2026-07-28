@@ -37,13 +37,10 @@ class QuayPassTestHarness : BroadcastReceiver() {
             HarnessEntryPoint::class.java
         )
         when (intent.action) {
-            ACTION_DUMP_PUBKEY -> dumpPubkey(entryPoint)
+            ACTION_DUMP_PUBKEY -> dumpPubkey(entryPoint, goAsync())
             ACTION_DUMP_STATE -> dumpState(entryPoint, goAsync())
             ACTION_SEED -> seed(entryPoint, intent, goAsync())
-            ACTION_CLEAR_KEY -> {
-                entryPoint.keystore().clear()
-                Log.i(TAG, "keystore alias cleared")
-            }
+            ACTION_CLEAR_KEY -> clearKey(entryPoint, goAsync())
             ACTION_VERIFY -> {
                 val cred = intent.getStringExtra("credential")
                 Log.i(TAG, "baked_pubkeys=${com.nendo.argosy.BuildConfig.QUAYPASS_SERVER_PUBKEYS}")
@@ -56,9 +53,39 @@ class QuayPassTestHarness : BroadcastReceiver() {
         }
     }
 
-    private fun dumpPubkey(entryPoint: HarnessEntryPoint) {
+    private fun clearKey(entryPoint: HarnessEntryPoint, result: PendingResult) {
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                entryPoint.keystore().clear(activeAlias(entryPoint))
+                Log.i(TAG, "keystore alias cleared")
+            } catch (t: Throwable) {
+                Log.e(TAG, "clearKey failed", t)
+            } finally {
+                result.finish()
+            }
+        }
+    }
+
+    private suspend fun activeAlias(entryPoint: HarnessEntryPoint): String =
+        QuayPassKeystore.aliasFor(
+            entryPoint.dataStore().data.first()[longPreferencesKey("romm_user_id")]
+        )
+
+    private fun dumpPubkey(entryPoint: HarnessEntryPoint, result: PendingResult) {
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                dumpPubkeyBlocking(entryPoint, activeAlias(entryPoint))
+            } catch (t: Throwable) {
+                Log.e(TAG, "dumpPubkey failed", t)
+            } finally {
+                result.finish()
+            }
+        }
+    }
+
+    private fun dumpPubkeyBlocking(entryPoint: HarnessEntryPoint, alias: String) {
         runCatching {
-            val info = entryPoint.keystore().getOrCreateKeyInfo()
+            val info = entryPoint.keystore().getOrCreateKeyInfo(alias)
             val alg = when (info.algorithm) {
                 QuayPassKeystore.Algorithm.ED25519 -> "ed25519"
                 QuayPassKeystore.Algorithm.EC_P256 -> "ec-p256"

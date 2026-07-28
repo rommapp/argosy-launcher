@@ -7,28 +7,48 @@ import androidx.room.Query
 import androidx.room.Transaction
 import com.nendo.argosy.data.local.entity.AchievementEntity
 
+/**
+ * Every per-game read and write takes the owning RomM user id.
+ *
+ * Unlock state is the RA account's, not the ROM's, and the insert strategy is REPLACE against a
+ * unique index that now includes the owner; an unscoped query returns and overwrites both
+ * accounts' rows. Badge-cache maintenance is the exception and stays owner-agnostic, because a
+ * cached badge file is a property of the achievement, not of who unlocked it.
+ */
 @Dao
 interface AchievementDao {
 
     @Query("SELECT * FROM achievements WHERE id = :id")
     suspend fun getById(id: Long): AchievementEntity?
 
-    @Query("SELECT * FROM achievements WHERE gameId = :gameId ORDER BY points DESC, title ASC")
-    suspend fun getByGameId(gameId: Long): List<AchievementEntity>
+    @Query(
+        "SELECT * FROM achievements WHERE gameId = :gameId AND ownerUserId = :ownerUserId " +
+            "ORDER BY points DESC, title ASC"
+    )
+    suspend fun getByGameId(gameId: Long, ownerUserId: Long): List<AchievementEntity>
 
-    @Query("SELECT COUNT(*) FROM achievements WHERE gameId = :gameId")
-    suspend fun countByGameId(gameId: Long): Int
+    @Query("SELECT * FROM achievements WHERE gameId = :gameId ORDER BY points DESC, title ASC")
+    suspend fun getAllForGame(gameId: Long): List<AchievementEntity>
+
+    @Query("SELECT COUNT(*) FROM achievements WHERE gameId = :gameId AND ownerUserId = :ownerUserId")
+    suspend fun countByGameId(gameId: Long, ownerUserId: Long): Int
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(achievements: List<AchievementEntity>)
 
-    @Query("DELETE FROM achievements WHERE gameId = :gameId")
-    suspend fun deleteByGameId(gameId: Long)
+    @Query("DELETE FROM achievements WHERE gameId = :gameId AND ownerUserId = :ownerUserId")
+    suspend fun deleteByGameId(gameId: Long, ownerUserId: Long)
+
+    @Query("DELETE FROM achievements WHERE ownerUserId = :ownerUserId")
+    suspend fun deleteByOwner(ownerUserId: Long)
 
     data class SocialSharedRow(val raId: Long, val socialSharedAt: Long?)
 
-    @Query("SELECT raId, socialSharedAt FROM achievements WHERE gameId = :gameId")
-    suspend fun getSocialSharedState(gameId: Long): List<SocialSharedRow>
+    @Query(
+        "SELECT raId, socialSharedAt FROM achievements " +
+            "WHERE gameId = :gameId AND ownerUserId = :ownerUserId"
+    )
+    suspend fun getSocialSharedState(gameId: Long, ownerUserId: Long): List<SocialSharedRow>
 
     data class LocalStateRow(
         val raId: Long,
@@ -39,13 +59,21 @@ interface AchievementDao {
         val cachedBadgeUrlLock: String?
     )
 
-    @Query("SELECT raId, socialSharedAt, unlockedAt, unlockedHardcoreAt, cachedBadgeUrl, cachedBadgeUrlLock FROM achievements WHERE gameId = :gameId")
-    suspend fun getLocalState(gameId: Long): List<LocalStateRow>
+    @Query(
+        "SELECT raId, socialSharedAt, unlockedAt, unlockedHardcoreAt, cachedBadgeUrl, " +
+            "cachedBadgeUrlLock FROM achievements " +
+            "WHERE gameId = :gameId AND ownerUserId = :ownerUserId"
+    )
+    suspend fun getLocalState(gameId: Long, ownerUserId: Long): List<LocalStateRow>
 
     @Transaction
-    suspend fun replaceForGame(gameId: Long, achievements: List<AchievementEntity>) {
-        val existing = getLocalState(gameId).associateBy { it.raId }
-        deleteByGameId(gameId)
+    suspend fun replaceForGame(
+        gameId: Long,
+        ownerUserId: Long,
+        achievements: List<AchievementEntity>
+    ) {
+        val existing = getLocalState(gameId, ownerUserId).associateBy { it.raId }
+        deleteByGameId(gameId, ownerUserId)
         insertAll(achievements.map { ach ->
             val local = existing[ach.raId]
             ach.copy(
@@ -78,14 +106,23 @@ interface AchievementDao {
     @Query("SELECT COUNT(*) FROM achievements WHERE cachedBadgeUrl IS NOT NULL")
     suspend fun countWithCachedBadges(): Int
 
-    @Query("UPDATE achievements SET unlockedAt = :unlockedAt WHERE gameId = :gameId AND raId = :raId")
-    suspend fun markUnlocked(gameId: Long, raId: Long, unlockedAt: Long)
+    @Query(
+        "UPDATE achievements SET unlockedAt = :unlockedAt " +
+            "WHERE gameId = :gameId AND raId = :raId AND ownerUserId = :ownerUserId"
+    )
+    suspend fun markUnlocked(gameId: Long, raId: Long, ownerUserId: Long, unlockedAt: Long)
 
-    @Query("UPDATE achievements SET unlockedHardcoreAt = :unlockedAt WHERE gameId = :gameId AND raId = :raId")
-    suspend fun markUnlockedHardcore(gameId: Long, raId: Long, unlockedAt: Long)
+    @Query(
+        "UPDATE achievements SET unlockedHardcoreAt = :unlockedAt " +
+            "WHERE gameId = :gameId AND raId = :raId AND ownerUserId = :ownerUserId"
+    )
+    suspend fun markUnlockedHardcore(gameId: Long, raId: Long, ownerUserId: Long, unlockedAt: Long)
 
-    @Query("SELECT COUNT(*) FROM achievements WHERE gameId = :gameId AND (unlockedAt IS NOT NULL OR unlockedHardcoreAt IS NOT NULL)")
-    suspend fun countUnlockedByGameId(gameId: Long): Int
+    @Query(
+        "SELECT COUNT(*) FROM achievements WHERE gameId = :gameId AND ownerUserId = :ownerUserId " +
+            "AND (unlockedAt IS NOT NULL OR unlockedHardcoreAt IS NOT NULL)"
+    )
+    suspend fun countUnlockedByGameId(gameId: Long, ownerUserId: Long): Int
 
     data class UnsharedAchievementRow(
         val gameId: Long,
@@ -107,15 +144,26 @@ interface AchievementDao {
                g.title as gameTitle
         FROM achievements a INNER JOIN games g ON a.gameId = g.id
         WHERE (a.unlockedAt IS NOT NULL OR a.unlockedHardcoreAt IS NOT NULL)
+          AND a.ownerUserId = :ownerUserId
           AND (a.socialSharedAt IS NULL OR a.socialSharedAt < :syncCutoff)
         ORDER BY COALESCE(a.unlockedHardcoreAt, a.unlockedAt) DESC
         LIMIT :limit
     """)
-    suspend fun getUnsharedUnlocked(syncCutoff: Long = 0L, limit: Int = 50): List<UnsharedAchievementRow>
+    suspend fun getUnsharedUnlocked(
+        ownerUserId: Long,
+        syncCutoff: Long = 0L,
+        limit: Int = 50
+    ): List<UnsharedAchievementRow>
 
-    @Query("UPDATE achievements SET socialSharedAt = :sharedAt WHERE raId IN (:raIds)")
-    suspend fun markSocialSharedBatch(raIds: List<Long>, sharedAt: Long)
+    @Query(
+        "UPDATE achievements SET socialSharedAt = :sharedAt " +
+            "WHERE raId IN (:raIds) AND ownerUserId = :ownerUserId"
+    )
+    suspend fun markSocialSharedBatch(raIds: List<Long>, ownerUserId: Long, sharedAt: Long)
 
-    @Query("UPDATE achievements SET socialSharedAt = :sharedAt WHERE gameId = :gameId AND raId = :raId")
-    suspend fun markSocialShared(gameId: Long, raId: Long, sharedAt: Long)
+    @Query(
+        "UPDATE achievements SET socialSharedAt = :sharedAt " +
+            "WHERE gameId = :gameId AND raId = :raId AND ownerUserId = :ownerUserId"
+    )
+    suspend fun markSocialShared(gameId: Long, raId: Long, ownerUserId: Long, sharedAt: Long)
 }

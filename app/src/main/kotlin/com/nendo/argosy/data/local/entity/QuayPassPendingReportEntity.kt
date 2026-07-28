@@ -1,6 +1,8 @@
 package com.nendo.argosy.data.local.entity
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
+import androidx.room.Index
 import androidx.room.PrimaryKey
 
 /**
@@ -12,7 +14,10 @@ import androidx.room.PrimaryKey
  * the peer's attestation, our per-meeting nonce, and the frozen card. Drained and
  * deleted by QuayPassEncounterReporter.
  */
-@Entity(tableName = "quaypass_pending_reports")
+@Entity(
+    tableName = "quaypass_pending_reports",
+    indices = [Index("localOwnerUserId")]
+)
 data class QuayPassPendingReportEntity(
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0,
@@ -23,5 +28,7 @@ data class QuayPassPendingReportEntity(
     val tsSecs: Long,
     val cardMessage: String?,
     val cardIgdbId: Long?,
-    val cardAvatarPngBase64: String?
+    val cardAvatarPngBase64: String?,
+    @ColumnInfo(defaultValue = "0")
+    val localOwnerUserId: Long = QuayPassEncounterEntity.NO_OWNER
 )

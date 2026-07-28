@@ -47,6 +47,14 @@ object AppPaths {
     fun ownerCacheSegment(ownerUserId: Long?): String =
         if (ownerUserId != null) "$OWNER_DIR_PREFIX$ownerUserId/" else ""
 
+    /**
+     * The directory holding one account's cache entries under [root], or null for an owner with
+     * no partition of its own -- those entries sit directly under the root alongside every other
+     * account's, so there is nothing that can be removed without taking the rest with it.
+     */
+    fun ownerCacheDir(root: File, ownerUserId: Long?): File? =
+        ownerCacheSegment(ownerUserId).trimEnd('/').takeIf { it.isNotEmpty() }?.let { File(root, it) }
+
     fun isOwnerCacheDir(name: String): Boolean =
         name.startsWith(OWNER_DIR_PREFIX) &&
             name.removePrefix(OWNER_DIR_PREFIX).toLongOrNull() != null

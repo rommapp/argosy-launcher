@@ -35,7 +35,7 @@ class AchievementDelegate @Inject constructor(
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
     suspend fun loadCached(gameId: Long, hasAchievementSource: Boolean) {
-        val cached = achievementDao.getByGameId(gameId)
+        val cached = achievementDao.getByGameId(gameId, raRepository.activeOwnerUserId())
         if (!hasAchievementSource && cached.isEmpty()) {
             _achievements.value = emptyList()
             return
@@ -89,7 +89,8 @@ class AchievementDelegate @Inject constructor(
                     AchievementUpdateBus.AchievementUpdate(gameId, counts.total, counts.earned)
                 )
 
-                val savedAchievements = achievementDao.getByGameId(gameId)
+                val savedAchievements =
+                    achievementDao.getByGameId(gameId, raRepository.activeOwnerUserId())
                 savedAchievements.forEach { achievement ->
                     if (achievement.cachedBadgeUrl == null && achievement.badgeUrl != null) {
                         imageCacheManager.queueBadgeCache(achievement.id, achievement.badgeUrl, achievement.badgeUrlLock)

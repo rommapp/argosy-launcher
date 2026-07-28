@@ -26,7 +26,8 @@ class ReconcileAchievementsOnSessionEndUseCase @Inject constructor(
         val game = gameDao.getById(gameId) ?: return
         val gameRaId = game.effectiveRaId ?: game.raId ?: return
 
-        val existing = achievementDao.getByGameId(gameId)
+        val ownerUserId = raRepository.activeOwnerUserId()
+        val existing = achievementDao.getByGameId(gameId, ownerUserId)
         if (existing.isEmpty()) return
 
         val fresh = raRepository.fetchUnlocksFresh(gameRaId, forceRefresh = true) ?: return
@@ -35,18 +36,18 @@ class ReconcileAchievementsOnSessionEndUseCase @Inject constructor(
         var changed = 0
         for (achievement in existing) {
             if (achievement.raId in fresh.unlockedIds && achievement.unlockedAt == null) {
-                achievementDao.markUnlocked(gameId, achievement.raId, now)
+                achievementDao.markUnlocked(gameId, achievement.raId, ownerUserId, now)
                 changed++
             }
             if (achievement.raId in fresh.hardcoreUnlockedIds && achievement.unlockedHardcoreAt == null) {
-                achievementDao.markUnlockedHardcore(gameId, achievement.raId, now)
+                achievementDao.markUnlockedHardcore(gameId, achievement.raId, ownerUserId, now)
                 changed++
             }
         }
         if (changed == 0) return
 
-        val total = achievementDao.countByGameId(gameId)
-        val earned = achievementDao.countUnlockedByGameId(gameId)
+        val total = achievementDao.countByGameId(gameId, ownerUserId)
+        val earned = achievementDao.countUnlockedByGameId(gameId, ownerUserId)
         overlayWriter.updateAchievementCount(gameId, total, earned)
         achievementUpdateBus.emit(AchievementUpdateBus.AchievementUpdate(gameId, total, earned))
         Logger.info(TAG, "Session-end reconcile: recovered $changed unlock(s) for gameId=$gameId raId=$gameRaId")

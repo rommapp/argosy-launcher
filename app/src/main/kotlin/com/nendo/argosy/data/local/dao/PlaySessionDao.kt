@@ -49,22 +49,44 @@ interface PlaySessionDao {
     @Query("DELETE FROM play_sessions WHERE gameId IN (SELECT id FROM games WHERE source IN (:sourceNames))")
     suspend fun deleteByGameSources(sourceNames: List<String>)
 
+    /**
+     * Sessions the social upload has not seen. Gated on [PlaySessionEntity.userId] because the
+     * social server keys on that id and a session recorded while unlinked has nothing to send.
+     */
     @Query("""
         SELECT * FROM play_sessions
         WHERE userId IS NOT NULL
-        AND endTime > :since
+          AND (:since IS NULL OR endTime > :since)
+          AND ownerUserId IS :ownerUserId
         ORDER BY endTime ASC
         LIMIT :limit
     """)
-    suspend fun getUnsyncedSessions(since: Instant, limit: Int = 100): List<PlaySessionEntity>
+    suspend fun getUnsyncedForSocial(
+        since: Instant?,
+        ownerUserId: Long?,
+        limit: Int = 100
+    ): List<PlaySessionEntity>
 
+    /**
+     * Sessions the RomM ingest has not seen. Deliberately not gated on the social id: RomM
+     * attribution is [PlaySessionEntity.ownerUserId], and a device with no social link still has
+     * play time to report.
+     */
     @Query("""
         SELECT * FROM play_sessions
-        WHERE userId IS NOT NULL
+        WHERE (:since IS NULL OR endTime > :since)
+          AND ownerUserId IS :ownerUserId
         ORDER BY endTime ASC
         LIMIT :limit
     """)
-    suspend fun getAllUnsyncedSessions(limit: Int = 100): List<PlaySessionEntity>
+    suspend fun getUnsyncedForRomM(
+        since: Instant?,
+        ownerUserId: Long?,
+        limit: Int = 100
+    ): List<PlaySessionEntity>
+
+    @Query("DELETE FROM play_sessions WHERE ownerUserId = :ownerUserId")
+    suspend fun deleteByOwner(ownerUserId: Long)
 }
 
 data class PlayTimeSummary(

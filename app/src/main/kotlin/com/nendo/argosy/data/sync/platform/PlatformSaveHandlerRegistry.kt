@@ -387,6 +387,8 @@ private class Ps2FolderHandler(
     saveArchiver: SaveArchiver
 ) : FolderSaveHandler(context, fal, saveArchiver, platformSlug = "ps2") {
 
+    private val appContext = context
+
     companion object {
         private const val TAG = "Ps2FolderHandler"
         private const val CARD_SUFFIX = ".ps2"
@@ -423,8 +425,13 @@ private class Ps2FolderHandler(
             return saveArchiver.unzipToFolder(tempFile, targetFolder)
         }
 
-        Logger.debug(TAG, "unpackArchive: archive is rooted at the card, unwrapping it | roots=$roots")
-        return saveArchiver.unzipSingleFolder(tempFile, targetFolder)
+        if (saveId == null) {
+            Logger.error(TAG, "unpackArchive: card-rooted archive with no save id; refusing to unpack | roots=$roots")
+            return false
+        }
+
+        Logger.debug(TAG, "unpackArchive: archive is rooted at the card, extracting only this game | roots=$roots, saveId=$saveId")
+        return saveArchiver.unzipSelectedRootChildren(tempFile, targetFolder) { folderMatches(it, saveId) }
     }
 
     /**
@@ -527,6 +534,46 @@ private class Ps2FolderHandler(
 
     override fun isCanonicalFolderPath(savePath: String, saveId: String): Boolean =
         isFolderCard(savePath) && findInCard(savePath, saveId).isNotEmpty()
+
+    /**
+     * Bundles only the folders this game owns, not the whole card. The resolved path is the card
+     * directory because that is where a game's entries live, but the card holds every game's
+     * saves, and an upload rooted there ships all of them under one game's save.
+     */
+    override suspend fun prepareForUpload(
+        localPath: String,
+        context: SaveContext
+    ): PreparedSave? = withContext(Dispatchers.IO) {
+        val saveId = context.saveId
+        if (saveId == null) {
+            Logger.debug(TAG, "prepareForUpload: no save id, refusing to bundle a whole card | path=$localPath")
+            return@withContext null
+        }
+        val matchedPaths = findAllSaveFoldersBySaveId(localPath, saveId)
+        if (matchedPaths.isEmpty()) {
+            Logger.debug(TAG, "prepareForUpload: no matches | card=$localPath, saveId=$saveId")
+            return@withContext null
+        }
+        val matchedFolders = matchedPaths.map { fal.getTransformedFile(it) }
+        Logger.debug(
+            TAG,
+            "prepareForUpload: bundling ${matchedFolders.size} folder(s) | saveId=$saveId, names=${matchedFolders.map { it.name }}"
+        )
+        val outputFile = File(appContext.cacheDir, "$saveId.zip")
+        if (!saveArchiver.zipFolders(matchedFolders, outputFile)) {
+            Logger.error(TAG, "prepareForUpload: failed to zip folders | saveId=$saveId")
+            return@withContext null
+        }
+        PreparedSave(outputFile, isTemporary = true, matchedPaths)
+    }
+
+    override suspend fun sourcePathsFor(
+        localPath: String,
+        context: SaveContext
+    ): List<String> = withContext(Dispatchers.IO) {
+        val saveId = context.saveId ?: return@withContext emptyList()
+        findAllSaveFoldersBySaveId(localPath, saveId)
+    }
 
     /**
      * Restores land in the card itself; the archive carries the emulator's own entry names,

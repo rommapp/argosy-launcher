@@ -354,6 +354,69 @@ class SaveArchiver @Inject constructor(
         }
     }
 
+    /**
+     * Unwraps a single-rooted archive but keeps only the root children [keepFolder] accepts.
+     *
+     * A container archive holds entries that belong to other games, so extracting all of it into
+     * the container would overwrite saves this restore has no claim on.
+     */
+    fun unzipSelectedRootChildren(
+        sourceZip: File,
+        targetFolder: File,
+        keepFolder: (String) -> Boolean
+    ): Boolean {
+        if (!sourceZip.exists() || !sourceZip.isFile) {
+            Logger.warn(TAG, "[SaveSync] ARCHIVE | Source zip invalid | path=${sourceZip.absolutePath}")
+            return false
+        }
+        val staging = File(sourceZip.parentFile, "filtered_${System.currentTimeMillis()}")
+        return try {
+            if (!unzipDirect(sourceZip, staging)) {
+                staging.deleteRecursively()
+                return false
+            }
+            val children = staging.listFiles().orEmpty()
+            var dropped = 0
+            children.forEach { child ->
+                if (child.isDirectory && !keepFolder(child.name)) {
+                    child.deleteRecursively()
+                    dropped++
+                }
+            }
+            val kept = staging.listFiles().orEmpty().filter { it.isDirectory }
+            if (kept.isEmpty()) {
+                Logger.error(
+                    TAG,
+                    "[SaveSync] ARCHIVE | No folder in the archive belongs to this save; refusing to extract | zip=${sourceZip.name}"
+                )
+                staging.deleteRecursively()
+                return false
+            }
+            Logger.debug(
+                TAG,
+                "[SaveSync] ARCHIVE | Filtered container archive | kept=${kept.map { it.name }}, dropped=$dropped"
+            )
+            val moved = if (isRestrictedPath(targetFolder.absolutePath)) {
+                androidDataAccessor.moveDirectory(staging.absolutePath, targetFolder.absolutePath)
+            } else {
+                targetFolder.mkdirs()
+                kept.all { folder ->
+                    runCatching { folder.copyRecursively(File(targetFolder, folder.name), overwrite = true) }
+                        .getOrDefault(false)
+                }
+            }
+            if (!moved) {
+                Logger.error(TAG, "[SaveSync] ARCHIVE | Failed to place filtered folders | target=${targetFolder.absolutePath}")
+            }
+            moved
+        } catch (e: Exception) {
+            Logger.error(TAG, "[SaveSync] ARCHIVE | unzipSelectedRootChildren failed | ${e.message}")
+            false
+        } finally {
+            staging.deleteRecursively()
+        }
+    }
+
     fun unzipSingleFolder(sourceZip: File, targetFolder: File): Boolean {
         if (!sourceZip.exists() || !sourceZip.isFile) {
             Logger.warn(TAG, "[SaveSync] ARCHIVE | Source zip invalid | path=${sourceZip.absolutePath}")

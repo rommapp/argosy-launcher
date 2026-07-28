@@ -2341,12 +2341,9 @@ object Migration_154_155 : Migration(154, 155) {
                 "SELECT sc.`id` FROM `save_cache` sc " +
                 "WHERE sc.`gameId` = o.`gameId` " +
                 "AND (sc.`ownerUserId` IS NULL OR sc.`ownerUserId` = o.`ownerUserId`) " +
-                "AND ((o.`activeSaveTimestamp` IS NOT NULL AND sc.`cachedAt` = o.`activeSaveTimestamp`) " +
-                "OR (o.`activeSaveTimestamp` IS NULL AND o.`activeSaveChannel` IS NOT NULL " +
-                "AND sc.`channelName` = o.`activeSaveChannel`)) " +
+                "AND sc.`cachedAt` = o.`activeSaveTimestamp` " +
                 "ORDER BY sc.`cachedAt` DESC LIMIT 1" +
-                ") FROM `game_user_overlay` o " +
-                "WHERE o.`activeSaveTimestamp` IS NOT NULL OR o.`activeSaveChannel` IS NOT NULL" +
+                ") FROM `game_user_overlay` o WHERE o.`activeSaveTimestamp` IS NOT NULL" +
                 ")"
         )
 
@@ -2354,14 +2351,37 @@ object Migration_154_155 : Migration(154, 155) {
             "UPDATE `save_cache` SET `isActive` = 1 WHERE `id` IN (" +
                 "SELECT (" +
                 "SELECT sc.`id` FROM `save_cache` sc " +
-                "WHERE sc.`gameId` = g.`id` " +
-                "AND ((g.`activeSaveTimestamp` IS NOT NULL AND sc.`cachedAt` = g.`activeSaveTimestamp`) " +
-                "OR (g.`activeSaveTimestamp` IS NULL AND g.`activeSaveChannel` IS NOT NULL " +
-                "AND sc.`channelName` = g.`activeSaveChannel`)) " +
+                "WHERE sc.`gameId` = o.`gameId` " +
+                "AND (sc.`ownerUserId` IS NULL OR sc.`ownerUserId` = o.`ownerUserId`) " +
+                "AND sc.`channelName` = o.`activeSaveChannel` " +
                 "ORDER BY sc.`cachedAt` DESC LIMIT 1" +
-                ") FROM `games` g " +
-                "WHERE (g.`activeSaveTimestamp` IS NOT NULL OR g.`activeSaveChannel` IS NOT NULL) " +
+                ") FROM `game_user_overlay` o WHERE o.`activeSaveChannel` IS NOT NULL " +
+                "AND NOT EXISTS (SELECT 1 FROM `save_cache` a " +
+                "WHERE a.`gameId` = o.`gameId` AND a.`isActive` = 1)" +
+                ")"
+        )
+
+        db.execSQL(
+            "UPDATE `save_cache` SET `isActive` = 1 WHERE `id` IN (" +
+                "SELECT (" +
+                "SELECT sc.`id` FROM `save_cache` sc " +
+                "WHERE sc.`gameId` = g.`id` AND sc.`cachedAt` = g.`activeSaveTimestamp` " +
+                "ORDER BY sc.`cachedAt` DESC LIMIT 1" +
+                ") FROM `games` g WHERE g.`activeSaveTimestamp` IS NOT NULL " +
                 "AND NOT EXISTS (SELECT 1 FROM `game_user_overlay` o WHERE o.`gameId` = g.`id`)" +
+                ")"
+        )
+
+        db.execSQL(
+            "UPDATE `save_cache` SET `isActive` = 1 WHERE `id` IN (" +
+                "SELECT (" +
+                "SELECT sc.`id` FROM `save_cache` sc " +
+                "WHERE sc.`gameId` = g.`id` AND sc.`channelName` = g.`activeSaveChannel` " +
+                "ORDER BY sc.`cachedAt` DESC LIMIT 1" +
+                ") FROM `games` g WHERE g.`activeSaveChannel` IS NOT NULL " +
+                "AND NOT EXISTS (SELECT 1 FROM `game_user_overlay` o WHERE o.`gameId` = g.`id`) " +
+                "AND NOT EXISTS (SELECT 1 FROM `save_cache` a " +
+                "WHERE a.`gameId` = g.`id` AND a.`isActive` = 1)" +
                 ")"
         )
 

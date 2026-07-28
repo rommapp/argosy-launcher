@@ -331,16 +331,16 @@ class RomMApiClient @Inject constructor(
         rommId: Long,
         userRating: Int? = null,
         userDifficulty: Int? = null,
-        userStatus: String? = null
+        userStatus: String? = null,
+        hidden: Boolean? = null
     ): Boolean {
         val currentApi = api ?: return false
         return try {
-            val props = RomMUserPropsUpdate(
-                data = RomMUserPropsUpdateData(
-                    rating = userRating,
-                    difficulty = userDifficulty,
-                    status = userStatus
-                )
+            val props = RomMUserPropsUpdateData(
+                rating = userRating,
+                difficulty = userDifficulty,
+                status = userStatus,
+                hidden = hidden
             )
             val response = currentApi.updateRomUserProps(rommId, props)
             response.isSuccessful

@@ -107,7 +107,7 @@ interface RomMApi {
     @PUT("api/roms/{id}/props")
     suspend fun updateRomUserProps(
         @Path("id") romId: Long,
-        @Body props: RomMUserPropsUpdate
+        @Body props: RomMUserPropsUpdateData
     ): Response<Unit>
 
     @GET("api/collections")

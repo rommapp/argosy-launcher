@@ -351,6 +351,19 @@ class SaveSyncConflictResolver @Inject constructor(
             channel = latestCache.channelName,
             details = "from=${latestCache.emulatorId} to=$currentEmulatorId cacheId=${latestCache.id} target=${File(targetPath).name} diskExists=${existingHash != null}"
         )
+        if (existingHash != null) {
+            val backup = saveCacheManager.get().cacheCurrentSave(
+                gameId = gameId,
+                emulatorId = currentEmulatorId,
+                savePath = targetPath,
+                channelName = latestCache.channelName
+            )
+            if (!backup.success) {
+                Logger.warn(TAG, "[SaveSync] PRE_LAUNCH gameId=$gameId | Cross-emulator sync ABORTED | could not archive existing save at $targetPath")
+                return@withContext
+            }
+        }
+
         val restored = saveCacheManager.get().restoreSave(latestCache.id, targetPath)
         if (!restored) {
             Logger.warn(TAG, "[SaveSync] PRE_LAUNCH gameId=$gameId | Cross-emulator restore FAILED | cacheId=${latestCache.id} target=$targetPath")

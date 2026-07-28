@@ -12,6 +12,7 @@ import com.nendo.argosy.data.preferences.SyncPreferencesRepository
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.storage.FileAccessLayer
 import com.nendo.argosy.data.sync.SaveArchiver
+import com.nendo.argosy.data.sync.SaveOwnershipTracker
 import com.nendo.argosy.data.sync.SavePathResolver
 import com.nendo.argosy.data.sync.platform.PlatformSaveHandlerRegistry
 import com.nendo.argosy.util.SaveDebugLogger
@@ -38,7 +39,8 @@ class SaveCacheManager @Inject constructor(
     private val savePathResolver: SavePathResolver,
     private val saveArchiver: SaveArchiver,
     private val fal: FileAccessLayer,
-    private val saveHandlerRegistry: PlatformSaveHandlerRegistry
+    private val saveHandlerRegistry: PlatformSaveHandlerRegistry,
+    private val saveOwnershipTracker: SaveOwnershipTracker
 ) {
     private val TIMESTAMP_FORMAT = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss")
         .withZone(ZoneId.systemDefault())
@@ -96,6 +98,7 @@ class SaveCacheManager @Inject constructor(
             if (unchanged != null && !cachedHash.isNullOrBlank()) {
                 Log.d(TAG, "Cache untouched since ${unchanged.cachedAt} for game $gameId (hash=$cachedHash), skipping rehash")
                 if (!secureSaves && !isHardcore) recordLocalWriteAnchor(gameId, emulatorId, channelName, savePath)
+                saveOwnershipTracker.record(savePath, emulatorId, cachedHash)
                 return@withContext CacheResult.Duplicate(unchanged.id, cachedHash)
             }
         }
@@ -142,6 +145,7 @@ class SaveCacheManager @Inject constructor(
                     )
                     tempFile?.delete()
                     if (!secureSaves && !isHardcore) recordLocalWriteAnchor(gameId, emulatorId, channelName, savePath)
+                    saveOwnershipTracker.record(savePath, emulatorId, contentHash)
                     return@withContext CacheResult.Duplicate(existingWithHash.id, contentHash)
                 }
             }
@@ -209,6 +213,7 @@ class SaveCacheManager @Inject constructor(
                 saveCacheDao.clearDirtyFlagForLatest(gameId)
             }
             if (!secureSaves && !isHardcore) recordLocalWriteAnchor(gameId, emulatorId, channelName, savePath)
+            saveOwnershipTracker.record(savePath, emulatorId, contentHash)
             val slotInfo = when {
                 isHardcore -> " [HARDCORE]"
                 channelName != null -> " (channel: $channelName)"
@@ -497,6 +502,7 @@ class SaveCacheManager @Inject constructor(
             if (!secureSaves && !entity.isHardcore) {
                 recordLocalWriteAnchor(entity.gameId, entity.emulatorId, entity.channelName, targetPath)
             }
+            saveOwnershipTracker.record(targetPath, entity.emulatorId, entity.contentHash)
 
             true
         } catch (e: Exception) {

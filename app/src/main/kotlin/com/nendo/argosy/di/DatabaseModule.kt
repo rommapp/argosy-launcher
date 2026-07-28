@@ -35,6 +35,7 @@ import com.nendo.argosy.data.local.dao.PlatformDao
 import com.nendo.argosy.data.local.dao.PlaySessionDao
 import com.nendo.argosy.data.local.dao.PlatformLibretroSettingsDao
 import com.nendo.argosy.data.local.dao.SaveCacheDao
+import com.nendo.argosy.data.local.dao.SaveOwnershipDao
 import com.nendo.argosy.data.local.dao.SaveSyncDao
 import com.nendo.argosy.data.local.dao.SocialGameCacheDao
 import com.nendo.argosy.data.local.dao.StateCacheDao
@@ -111,6 +112,10 @@ object DatabaseModule {
     @Provides
     fun provideSaveCacheDao(database: ALauncherDatabase): SaveCacheDao =
         database.saveCacheDao()
+
+    @Provides
+    fun provideSaveOwnershipDao(database: ALauncherDatabase): SaveOwnershipDao =
+        database.saveOwnershipDao()
 
     @Provides
     fun provideStateCacheDao(database: ALauncherDatabase): StateCacheDao =

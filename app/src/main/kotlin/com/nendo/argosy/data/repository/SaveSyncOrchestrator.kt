@@ -14,8 +14,10 @@ import com.nendo.argosy.data.local.entity.SyncType
 import com.nendo.argosy.data.preferences.SyncPreferencesRepository
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.sync.SaveAccessNotices
+import com.nendo.argosy.data.sync.SaveClaim
 import com.nendo.argosy.data.sync.SaveFilePayload
 import com.nendo.argosy.data.sync.SaveLookup
+import com.nendo.argosy.data.sync.SaveOwnershipTracker
 import com.nendo.argosy.data.sync.SyncPayloadCodec
 import com.nendo.argosy.data.sync.SavePathResolver
 import com.nendo.argosy.data.sync.SyncDirection
@@ -47,7 +49,8 @@ class SaveSyncOrchestrator @Inject constructor(
     private val apiClient: dagger.Lazy<SaveSyncApiClient>,
     private val payloadCodec: SyncPayloadCodec,
     private val saveHandlerRegistry: PlatformSaveHandlerRegistry,
-    private val saveAccessNotices: SaveAccessNotices
+    private val saveAccessNotices: SaveAccessNotices,
+    private val saveOwnershipTracker: SaveOwnershipTracker
 ) {
     sealed interface RefreshOutcome {
         data object Dirtied : RefreshOutcome
@@ -196,6 +199,15 @@ class SaveSyncOrchestrator @Inject constructor(
                 Logger.debug(TAG, "[SaveSync] REFRESH gameId=${game.id} | resolved path already processed this pass | path=$pathKey")
                 return@withContext RefreshOutcome.Unchanged
             }
+        }
+
+        val claim = saveOwnershipTracker.claim(savePath, emulatorId)
+        if (claim is SaveClaim.Foreign) {
+            Logger.info(
+                TAG,
+                "[SaveSync] REFRESH gameId=${game.id} channel=$channel | on-system save belongs to user ${claim.ownerUserId}, not adopting | path=$savePath"
+            )
+            return@withContext RefreshOutcome.Unchanged
         }
 
         val latest = saveCacheDao.getMostRecentInChannel(game.id, channel)
@@ -375,7 +387,7 @@ class SaveSyncOrchestrator @Inject constructor(
                 )
             )
 
-            val result = client.downloadSave(gameId, canonicalEmulatorId, channelName, skipBackup = true, knownServerSaveId = serverSave.id)
+            val result = client.downloadSave(gameId, canonicalEmulatorId, channelName, skipBackup = false, knownServerSaveId = serverSave.id)
             if (result is SaveSyncResult.Error) {
                 Logger.error(TAG, "syncSavesForNewDownload: failed '${serverSave.fileName}': ${result.message}")
             }

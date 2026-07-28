@@ -2144,3 +2144,26 @@ object Migration_148_149 : Migration(148, 149) {
         )
     }
 }
+
+object Migration_149_150 : Migration(149, 150) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            "CREATE TABLE IF NOT EXISTS `save_ownership` (" +
+                "`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                "`savePath` TEXT NOT NULL, " +
+                "`emulatorId` TEXT NOT NULL, " +
+                "`ownerUserId` INTEGER, " +
+                "`contentHash` TEXT, " +
+                "`transitionState` TEXT NOT NULL, " +
+                "`updatedAt` INTEGER NOT NULL)"
+        )
+        db.execSQL(
+            "CREATE UNIQUE INDEX IF NOT EXISTS `index_save_ownership_savePath_emulatorId` " +
+                "ON `save_ownership` (`savePath`, `emulatorId`)"
+        )
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS `index_save_ownership_ownerUserId` " +
+                "ON `save_ownership` (`ownerUserId`)"
+        )
+    }
+}

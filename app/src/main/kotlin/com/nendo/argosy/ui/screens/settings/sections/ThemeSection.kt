@@ -7,8 +7,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Image
-import androidx.compose.material.icons.outlined.LibraryMusic
-import androidx.compose.material.icons.outlined.MusicNote
 import androidx.compose.material.icons.outlined.TextFields
 import androidx.compose.material.icons.outlined.Texture
 import androidx.compose.material3.MaterialTheme
@@ -47,8 +45,6 @@ internal sealed class ThemeItem(val key: String, val section: String) {
     data object BoxArt : ThemeItem("boxArt", "identity")
     data object Backdrop : ThemeItem("backdrop", "identity")
     data object Fonts : ThemeItem("fonts", "identity")
-    data object Sounds : ThemeItem("sounds", "identity")
-    data object Music : ThemeItem("music", "identity")
 
     companion object {
         private val AppearanceHeader = Header("appearanceHeader", "appearance", "Appearance")
@@ -59,7 +55,7 @@ internal sealed class ThemeItem(val key: String, val section: String) {
             AppearanceHeader,
             Mode, AccentColor, SecondaryColor, TintBleed,
             IdentitySpacer, IdentityHeader,
-            BoxArt, Backdrop, Fonts, Sounds, Music
+            BoxArt, Backdrop, Fonts
         )
     }
 }
@@ -190,22 +186,6 @@ fun ThemeSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                 subtitle = fontsSubtitle(display.displayFontName, display.bodyFontName),
                 isFocused = isFocused(item),
                 onClick = { viewModel.navigateToThemeFonts() }
-            )
-
-            ThemeItem.Sounds -> NavigationPreference(
-                icon = Icons.Outlined.MusicNote,
-                title = "Sounds",
-                subtitle = if (uiState.sounds.enabled) "On, ${uiState.sounds.volume}%" else "Off",
-                isFocused = isFocused(item),
-                onClick = { viewModel.navigateToThemeSounds() }
-            )
-
-            ThemeItem.Music -> NavigationPreference(
-                icon = Icons.Outlined.LibraryMusic,
-                title = "Music",
-                subtitle = if (uiState.ambientAudio.enabled) "On, ${uiState.ambientAudio.volume}%" else "Off",
-                isFocused = isFocused(item),
-                onClick = { viewModel.navigateToThemeMusic() }
             )
         }
     }

@@ -10,6 +10,7 @@ import com.nendo.argosy.ui.screens.settings.sections.input.EmulatorsSectionInput
 import com.nendo.argosy.ui.screens.settings.sections.input.PlatformDetailSectionInput
 import com.nendo.argosy.ui.screens.settings.sections.input.AmbientLedSectionInput
 import com.nendo.argosy.ui.screens.settings.sections.input.CoreOptionsSectionInput
+import com.nendo.argosy.ui.screens.settings.sections.input.DisplaysSectionInput
 import com.nendo.argosy.ui.screens.settings.sections.input.DriversSectionInput
 import com.nendo.argosy.ui.screens.settings.sections.input.InterfaceSectionInput
 import com.nendo.argosy.ui.screens.settings.sections.input.LightSectionsInput
@@ -35,15 +36,17 @@ class SettingsInputHandler(
         internal const val HUE_STEP = 10f
 
         private val TOP_LEVEL_SECTIONS = listOf(
-            SettingsSection.PLATFORMS,
-            SettingsSection.BUILTIN_EMULATOR,
-            SettingsSection.STORAGE,
             SettingsSection.THEME,
             SettingsSection.INTERFACE,
-            SettingsSection.CONTROLS,
-            SettingsSection.SERVER,
-            SettingsSection.BIOS,
+            SettingsSection.NAVIGATION,
+            SettingsSection.AUDIO,
+            SettingsSection.DISPLAYS,
+            SettingsSection.BUILTIN_EMULATOR,
             SettingsSection.RETRO_ACHIEVEMENTS,
+            SettingsSection.BIOS,
+            SettingsSection.PLATFORMS,
+            SettingsSection.STORAGE,
+            SettingsSection.SERVER,
             SettingsSection.SOCIAL,
             SettingsSection.PERMISSIONS,
             SettingsSection.ABOUT
@@ -60,6 +63,7 @@ class SettingsInputHandler(
         put(SettingsSection.BUILTIN_CONTROLS, BuiltinControlsSectionInput(viewModel))
         put(SettingsSection.BOX_ART, BoxArtSectionInput(viewModel))
         put(SettingsSection.INTERFACE, InterfaceSectionInput(viewModel))
+        put(SettingsSection.DISPLAYS, DisplaysSectionInput(viewModel))
         put(SettingsSection.THEME, ThemeSectionInput(viewModel))
         put(SettingsSection.THEME_SOUNDS, ThemeSoundsSectionInput(viewModel))
         put(SettingsSection.THEME_MUSIC, ThemeMusicSectionInput(viewModel))
@@ -76,7 +80,7 @@ class SettingsInputHandler(
         for (s in listOf(
             SettingsSection.ACCOUNTS,
             SettingsSection.BIOS, SettingsSection.SERVER, SettingsSection.HOME_SCREEN,
-            SettingsSection.CONTROLS, SettingsSection.SYNC_SETTINGS,
+            SettingsSection.NAVIGATION, SettingsSection.AUDIO, SettingsSection.SYNC_SETTINGS,
             SettingsSection.ABOUT, SettingsSection.STEAM_SETTINGS, SettingsSection.CORE_MANAGEMENT,
             SettingsSection.SOCIAL, SettingsSection.BUILTIN_EMULATOR
         )) {

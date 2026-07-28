@@ -58,13 +58,6 @@ internal class InterfaceSectionInput(
         when (interfaceItemAtFocusIndex(state.focusedIndex, layoutState)) {
             InterfaceItem.GridDensity -> { viewModel.cycleGridDensity(direction); return InputResult.HANDLED }
             InterfaceItem.UiScale -> { viewModel.adjustUiScale(direction * 5); return InputResult.HANDLED }
-            InterfaceItem.DimAfter -> { viewModel.adjustScreenDimmerTimeout(direction); return InputResult.HANDLED }
-            InterfaceItem.DimLevel -> { viewModel.adjustScreenDimmerLevel(direction); return InputResult.HANDLED }
-            InterfaceItem.DisplayRoles -> { viewModel.cycleDisplayRoleOverride(direction); return InputResult.HANDLED }
-            InterfaceItem.DualScreenEnabled ->
-                return toggleLeftRight(direction, state.display.dualScreenEnabled) { viewModel.setDualScreenEnabled(it) }
-            InterfaceItem.ScreenDimmer ->
-                return toggleLeftRight(direction, state.storage.screenDimmerEnabled) { viewModel.toggleScreenDimmer() }
             else -> {}
         }
         return InputResult.UNHANDLED

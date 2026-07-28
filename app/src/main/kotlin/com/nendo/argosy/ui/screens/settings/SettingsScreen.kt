@@ -76,8 +76,10 @@ import com.nendo.argosy.ui.screens.settings.sections.buildGameDataItemsFromState
 import com.nendo.argosy.ui.screens.settings.sections.gameDataFocusIndexOf
 import com.nendo.argosy.ui.screens.settings.sections.DriversSection
 import com.nendo.argosy.ui.screens.settings.sections.AmbientLedSection
+import com.nendo.argosy.ui.screens.settings.sections.AudioSection
 import com.nendo.argosy.ui.screens.settings.sections.BoxArtSection
-import com.nendo.argosy.ui.screens.settings.sections.ControlsSection
+import com.nendo.argosy.ui.screens.settings.sections.DisplaysSection
+import com.nendo.argosy.ui.screens.settings.sections.NavigationSection
 import com.nendo.argosy.ui.screens.settings.sections.BuiltinEmulatorSection
 import com.nendo.argosy.ui.screens.settings.sections.EmulatorsSection
 import com.nendo.argosy.ui.screens.settings.sections.PlatformDetailSection
@@ -542,6 +544,7 @@ fun SettingsScreen(
                             uiState.storagePlatformGames.platformName.uppercase().ifBlank { "PLATFORM GAMES" }
                         SettingsSection.STORAGE_CACHES -> "CACHES & SYSTEM"
                         SettingsSection.THEME -> "THEME"
+                        SettingsSection.AUDIO -> "AUDIO"
                         SettingsSection.THEME_SOUNDS -> "SOUNDS"
                         SettingsSection.THEME_MUSIC -> "MUSIC"
                         SettingsSection.THEME_FONTS -> "FONTS"
@@ -549,8 +552,9 @@ fun SettingsScreen(
                         SettingsSection.INTERFACE -> "INTERFACE"
                         SettingsSection.BOX_ART -> "BOX ART"
                         SettingsSection.HOME_SCREEN -> "HOME SCREEN"
+                        SettingsSection.DISPLAYS -> "DISPLAYS"
                         SettingsSection.AMBIENT_LED -> "LED CONTROL"
-                        SettingsSection.CONTROLS -> "CONTROLS"
+                        SettingsSection.NAVIGATION -> "NAVIGATION"
                         SettingsSection.PLATFORMS -> "PLATFORMS"
                         SettingsSection.BUILTIN_EMULATOR -> "BUILT-IN EMULATOR"
                         SettingsSection.PLATFORM_DETAIL -> {
@@ -611,6 +615,7 @@ fun SettingsScreen(
                     SettingsSection.STORAGE_PLATFORM_GAMES -> StoragePlatformGamesSection(uiState, viewModel)
                     SettingsSection.STORAGE_CACHES -> StorageCachesSection(uiState, viewModel)
                     SettingsSection.THEME -> ThemeSection(uiState, viewModel)
+                    SettingsSection.AUDIO -> AudioSection(uiState, viewModel)
                     SettingsSection.THEME_SOUNDS -> ThemeSoundsSection(uiState, viewModel)
                     SettingsSection.THEME_MUSIC -> ThemeMusicSection(uiState, viewModel)
                     SettingsSection.THEME_FONTS -> ThemeFontsSection(uiState, viewModel)
@@ -618,8 +623,9 @@ fun SettingsScreen(
                     SettingsSection.INTERFACE -> InterfaceSection(uiState, viewModel)
                     SettingsSection.BOX_ART -> BoxArtSection(uiState, viewModel)
                     SettingsSection.HOME_SCREEN -> HomeScreenSection(uiState, viewModel)
+                    SettingsSection.DISPLAYS -> DisplaysSection(uiState, viewModel)
                     SettingsSection.AMBIENT_LED -> AmbientLedSection(uiState, viewModel)
-                    SettingsSection.CONTROLS -> ControlsSection(uiState, viewModel)
+                    SettingsSection.NAVIGATION -> NavigationSection(uiState, viewModel)
                     SettingsSection.BUILTIN_EMULATOR -> BuiltinEmulatorSection(uiState, viewModel)
                     SettingsSection.PLATFORMS -> EmulatorsSection(
                         uiState = uiState,

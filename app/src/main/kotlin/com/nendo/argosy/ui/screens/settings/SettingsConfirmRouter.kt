@@ -19,7 +19,10 @@ import com.nendo.argosy.ui.screens.settings.sections.platformDetailMaxFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.biosItemAtFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.biosMaxFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.BoxArtItem
-import com.nendo.argosy.ui.screens.settings.sections.ControlsItem
+import com.nendo.argosy.ui.screens.settings.sections.AudioItem
+import com.nendo.argosy.ui.screens.settings.sections.NavigationItem
+import com.nendo.argosy.ui.screens.settings.sections.DisplaysItem
+import com.nendo.argosy.ui.screens.settings.sections.DisplaysLayoutState
 import com.nendo.argosy.ui.screens.settings.sections.HomeScreenItem
 import com.nendo.argosy.ui.screens.settings.sections.InterfaceItem
 import com.nendo.argosy.ui.screens.settings.sections.InterfaceLayoutState
@@ -52,7 +55,12 @@ import com.nendo.argosy.ui.screens.settings.sections.themeSoundsMaxFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.aboutHasChangelog
 import com.nendo.argosy.ui.screens.settings.sections.aboutItemAtFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.boxArtItemAtFocusIndex
-import com.nendo.argosy.ui.screens.settings.sections.controlsItemAtFocusIndex
+import com.nendo.argosy.ui.screens.settings.sections.audioFocusIndexOf
+import com.nendo.argosy.ui.screens.settings.sections.audioItemAtFocusIndex
+import com.nendo.argosy.ui.screens.settings.sections.audioMaxFocusIndex
+import com.nendo.argosy.ui.screens.settings.sections.navigationItemAtFocusIndex
+import com.nendo.argosy.ui.screens.settings.sections.displaysFocusIndexOf
+import com.nendo.argosy.ui.screens.settings.sections.displaysItemAtFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.createStorageLayoutInfo
 import com.nendo.argosy.ui.screens.settings.sections.homeScreenItemAtFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.interfaceFocusIndexOf
@@ -66,7 +74,8 @@ import com.nendo.argosy.ui.screens.settings.sections.steamMaxFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.boxArtMaxFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.builtinControlsMaxFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.builtinVideoMaxFocusIndex
-import com.nendo.argosy.ui.screens.settings.sections.controlsMaxFocusIndex
+import com.nendo.argosy.ui.screens.settings.sections.navigationMaxFocusIndex
+import com.nendo.argosy.ui.screens.settings.sections.displaysMaxFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.emulatorsMaxFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.homeScreenMaxFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.interfaceMaxFocusIndex
@@ -140,7 +149,9 @@ internal fun routeConfirm(vm: SettingsViewModel): InputResult {
                 MainSettingsItem.Storage -> vm.navigateToSection(SettingsSection.STORAGE)
                 MainSettingsItem.Theme -> vm.navigateToSection(SettingsSection.THEME)
                 MainSettingsItem.Interface -> vm.navigateToSection(SettingsSection.INTERFACE)
-                MainSettingsItem.Controls -> vm.navigateToSection(SettingsSection.CONTROLS)
+                MainSettingsItem.Navigation -> vm.navigateToSection(SettingsSection.NAVIGATION)
+                MainSettingsItem.Audio -> vm.navigateToSection(SettingsSection.AUDIO)
+                MainSettingsItem.Displays -> vm.navigateToSection(SettingsSection.DISPLAYS)
                 MainSettingsItem.Platforms -> vm.navigateToSection(SettingsSection.PLATFORMS)
                 MainSettingsItem.BuiltinEmulator -> vm.navigateToSection(SettingsSection.BUILTIN_EMULATOR)
                 MainSettingsItem.Bios -> vm.navigateToSection(SettingsSection.BIOS)
@@ -256,6 +267,7 @@ internal fun routeConfirm(vm: SettingsViewModel): InputResult {
         SettingsSection.STORAGE_PLATFORM_GAMES -> routeStoragePlatformGamesConfirm(vm, state)
         SettingsSection.STORAGE_CACHES -> routeStorageCachesConfirm(vm, state)
         SettingsSection.THEME -> routeThemeConfirm(vm, state)
+        SettingsSection.AUDIO -> routeAudioConfirm(vm, state)
         SettingsSection.THEME_SOUNDS -> routeThemeSoundsConfirm(vm, state)
         SettingsSection.THEME_MUSIC -> routeThemeMusicConfirm(vm, state)
         SettingsSection.THEME_FONTS -> routeThemeFontsConfirm(vm, state)
@@ -263,8 +275,9 @@ internal fun routeConfirm(vm: SettingsViewModel): InputResult {
         SettingsSection.INTERFACE -> routeInterfaceConfirm(vm, state)
         SettingsSection.HOME_SCREEN -> routeHomeScreenConfirm(vm, state)
         SettingsSection.BOX_ART -> routeBoxArtConfirm(vm, state)
+        SettingsSection.DISPLAYS -> routeDisplaysConfirm(vm, state)
         SettingsSection.AMBIENT_LED -> routeAmbientLedConfirm(vm, state)
-        SettingsSection.CONTROLS -> routeControlsConfirm(vm, state)
+        SettingsSection.NAVIGATION -> routeNavigationConfirm(vm, state)
         SettingsSection.PLATFORMS -> routeEmulatorsConfirm(vm, state)
         SettingsSection.BUILTIN_EMULATOR -> routeBuiltinEmulatorConfirm(vm, state)
         SettingsSection.PLATFORM_DETAIL -> routePlatformDetailConfirm(vm, state)
@@ -511,19 +524,36 @@ private fun routeInterfaceConfirm(vm: SettingsViewModel, state: SettingsUiState)
         }
         InterfaceItem.UiScale -> vm.cycleUiScale()
         InterfaceItem.HomeScreen -> vm.navigateToHomeScreen()
-        InterfaceItem.ScreenDimmer -> vm.toggleScreenDimmer()
-        InterfaceItem.DimAfter -> {
-            vm.requestEnumPicker(InterfaceItem.DimAfter.key)
-            return InputResult.handled(SoundType.OPEN_MODAL)
-        }
-        InterfaceItem.DimLevel -> vm.cycleScreenDimmerLevel()
-        InterfaceItem.DualScreenEnabled -> vm.setDualScreenEnabled(!state.display.dualScreenEnabled)
-        InterfaceItem.DisplayRoles -> {
-            vm.requestEnumPicker(InterfaceItem.DisplayRoles.key)
-            return InputResult.handled(SoundType.OPEN_MODAL)
-        }
-        InterfaceItem.AmbientLedSettings -> vm.navigateToAmbientLed()
         else -> {}
+    }
+    return InputResult.HANDLED
+}
+
+private fun routeDisplaysConfirm(vm: SettingsViewModel, state: SettingsUiState): InputResult {
+    val layoutState = DisplaysLayoutState.from(state)
+    when (displaysItemAtFocusIndex(state.focusedIndex, layoutState)) {
+        DisplaysItem.ScreenDimmer -> vm.toggleScreenDimmer()
+        DisplaysItem.DimAfter -> {
+            vm.requestEnumPicker(DisplaysItem.DimAfter.key)
+            return InputResult.handled(SoundType.OPEN_MODAL)
+        }
+        DisplaysItem.DimLevel -> vm.cycleScreenDimmerLevel()
+        DisplaysItem.DualScreenEnabled -> vm.setDualScreenEnabled(!state.display.dualScreenEnabled)
+        DisplaysItem.DisplayRoles -> {
+            vm.requestEnumPicker(DisplaysItem.DisplayRoles.key)
+            return InputResult.handled(SoundType.OPEN_MODAL)
+        }
+        DisplaysItem.AmbientLedSettings -> vm.navigateToAmbientLed()
+        else -> {}
+    }
+    return InputResult.HANDLED
+}
+
+private fun routeAudioConfirm(vm: SettingsViewModel, state: SettingsUiState): InputResult {
+    when (audioItemAtFocusIndex(state.focusedIndex)) {
+        AudioItem.Sounds -> vm.navigateToThemeSounds()
+        AudioItem.Music -> vm.navigateToThemeMusic()
+        null -> {}
     }
     return InputResult.HANDLED
 }
@@ -538,8 +568,6 @@ private fun routeThemeConfirm(vm: SettingsViewModel, state: SettingsUiState): In
         ThemeItem.BoxArt -> vm.navigateToBoxArt()
         ThemeItem.Backdrop -> vm.navigateToThemeBackdrop()
         ThemeItem.Fonts -> vm.navigateToThemeFonts()
-        ThemeItem.Sounds -> vm.navigateToThemeSounds()
-        ThemeItem.Music -> vm.navigateToThemeMusic()
         else -> {}
     }
     return InputResult.HANDLED
@@ -737,34 +765,34 @@ private fun routeAmbientLedConfirm(vm: SettingsViewModel, state: SettingsUiState
     return InputResult.HANDLED
 }
 
-private fun routeControlsConfirm(vm: SettingsViewModel, state: SettingsUiState): InputResult {
-    when (controlsItemAtFocusIndex(state.focusedIndex, state.controls)) {
-        ControlsItem.HapticFeedback -> {
+private fun routeNavigationConfirm(vm: SettingsViewModel, state: SettingsUiState): InputResult {
+    when (navigationItemAtFocusIndex(state.focusedIndex, state.controls)) {
+        NavigationItem.HapticFeedback -> {
             val newEnabled = !state.controls.hapticEnabled
             vm.setHapticEnabled(newEnabled)
             return InputResult.handled(if (newEnabled) SoundType.TOGGLE else SoundType.SILENT)
         }
-        ControlsItem.VibrationStrength -> vm.cycleVibrationStrength()
-        ControlsItem.ControllerLayout -> {
-            vm.requestEnumPicker(ControlsItem.ControllerLayout.key)
+        NavigationItem.VibrationStrength -> vm.cycleVibrationStrength()
+        NavigationItem.ControllerLayout -> {
+            vm.requestEnumPicker(NavigationItem.ControllerLayout.key)
             return InputResult.handled(SoundType.OPEN_MODAL)
         }
-        ControlsItem.SwapAB -> { vm.setSwapAB(!state.controls.swapAB); return InputResult.handled(SoundType.TOGGLE) }
-        ControlsItem.SwapXY -> { vm.setSwapXY(!state.controls.swapXY); return InputResult.handled(SoundType.TOGGLE) }
-        ControlsItem.SwapStartSelect -> { vm.setSwapStartSelect(!state.controls.swapStartSelect); return InputResult.handled(SoundType.TOGGLE) }
-        ControlsItem.SelectLCombo -> {
-            vm.requestEnumPicker(ControlsItem.SelectLCombo.key)
+        NavigationItem.SwapAB -> { vm.setSwapAB(!state.controls.swapAB); return InputResult.handled(SoundType.TOGGLE) }
+        NavigationItem.SwapXY -> { vm.setSwapXY(!state.controls.swapXY); return InputResult.handled(SoundType.TOGGLE) }
+        NavigationItem.SwapStartSelect -> { vm.setSwapStartSelect(!state.controls.swapStartSelect); return InputResult.handled(SoundType.TOGGLE) }
+        NavigationItem.SelectLCombo -> {
+            vm.requestEnumPicker(NavigationItem.SelectLCombo.key)
             return InputResult.handled(SoundType.OPEN_MODAL)
         }
-        ControlsItem.SelectRCombo -> {
-            vm.requestEnumPicker(ControlsItem.SelectRCombo.key)
+        NavigationItem.SelectRCombo -> {
+            vm.requestEnumPicker(NavigationItem.SelectRCombo.key)
             return InputResult.handled(SoundType.OPEN_MODAL)
         }
-        ControlsItem.MenuWrap -> {
-            vm.requestEnumPicker(ControlsItem.MenuWrap.key)
+        NavigationItem.MenuWrap -> {
+            vm.requestEnumPicker(NavigationItem.MenuWrap.key)
             return InputResult.handled(SoundType.OPEN_MODAL)
         }
-        null -> {}
+        else -> {}
     }
     return InputResult.HANDLED
 }
@@ -965,8 +993,8 @@ internal fun routeNavigateBack(vm: SettingsViewModel): Boolean {
             vm._uiState.update { it.copy(currentSection = SettingsSection.THEME, focusedIndex = focusIdx) }; true
         }
         state.currentSection == SettingsSection.THEME_SOUNDS -> {
-            val focusIdx = themeFocusIndexOf(ThemeItem.Sounds)
-            vm._uiState.update { it.copy(currentSection = SettingsSection.THEME, focusedIndex = focusIdx) }; true
+            val focusIdx = audioFocusIndexOf(AudioItem.Sounds)
+            vm._uiState.update { it.copy(currentSection = SettingsSection.AUDIO, focusedIndex = focusIdx) }; true
         }
         state.currentSection == SettingsSection.THEME_MUSIC && state.attribution.musicEnteredFromStorage -> {
             vm.attributionDelegate.setMusicEnteredFromStorage(false)
@@ -975,8 +1003,8 @@ internal fun routeNavigateBack(vm: SettingsViewModel): Boolean {
             vm._uiState.update { it.copy(currentSection = SettingsSection.STORAGE, focusedIndex = focusIdx) }; true
         }
         state.currentSection == SettingsSection.THEME_MUSIC -> {
-            val focusIdx = themeFocusIndexOf(ThemeItem.Music)
-            vm._uiState.update { it.copy(currentSection = SettingsSection.THEME, focusedIndex = focusIdx) }; true
+            val focusIdx = audioFocusIndexOf(AudioItem.Music)
+            vm._uiState.update { it.copy(currentSection = SettingsSection.AUDIO, focusedIndex = focusIdx) }; true
         }
         state.currentSection == SettingsSection.STORAGE_GAMES -> {
             val info = createStorageLayoutInfo(state)
@@ -1005,9 +1033,9 @@ internal fun routeNavigateBack(vm: SettingsViewModel): Boolean {
             vm._uiState.update { it.copy(currentSection = SettingsSection.THEME, focusedIndex = focusIdx) }; true
         }
         state.currentSection == SettingsSection.AMBIENT_LED -> {
-            val layoutState = InterfaceLayoutState.from(state)
-            val focusIdx = interfaceFocusIndexOf(InterfaceItem.AmbientLedSettings, layoutState)
-            vm._uiState.update { it.copy(currentSection = SettingsSection.INTERFACE, focusedIndex = focusIdx) }; true
+            val layoutState = DisplaysLayoutState.from(state)
+            val focusIdx = displaysFocusIndexOf(DisplaysItem.AmbientLedSettings, layoutState)
+            vm._uiState.update { it.copy(currentSection = SettingsSection.DISPLAYS, focusedIndex = focusIdx) }; true
         }
         state.currentSection == SettingsSection.HOME_SCREEN -> {
             val layoutState = InterfaceLayoutState.from(state)
@@ -1152,6 +1180,7 @@ private fun computeMaxFocusIndex(
     SettingsSection.STORAGE_PLATFORM_GAMES -> storagePlatformGamesMaxFocusIndex(createStoragePlatformGamesLayoutInfo(state))
     SettingsSection.STORAGE_CACHES -> storageCachesMaxFocusIndex(createStorageCachesLayoutInfo(state))
     SettingsSection.THEME -> themeMaxFocusIndex()
+    SettingsSection.AUDIO -> audioMaxFocusIndex()
     SettingsSection.THEME_SOUNDS -> themeSoundsMaxFocusIndex(ThemeSoundsLayoutState.from(state))
     SettingsSection.THEME_MUSIC -> themeMusicMaxFocusIndex(ThemeMusicLayoutState.from(state))
     SettingsSection.THEME_FONTS -> themeFontsMaxFocusIndex(ThemeFontsLayoutState.from(state))
@@ -1159,8 +1188,9 @@ private fun computeMaxFocusIndex(
     SettingsSection.INTERFACE -> interfaceMaxFocusIndex(InterfaceLayoutState.from(state))
     SettingsSection.HOME_SCREEN -> homeScreenMaxFocusIndex(state.display)
     SettingsSection.BOX_ART -> boxArtMaxFocusIndex(state.display)
+    SettingsSection.DISPLAYS -> displaysMaxFocusIndex(DisplaysLayoutState.from(state))
     SettingsSection.AMBIENT_LED -> ambientLedMaxFocusIndex(state.display)
-    SettingsSection.CONTROLS -> controlsMaxFocusIndex(state.controls)
+    SettingsSection.NAVIGATION -> navigationMaxFocusIndex(state.controls)
     SettingsSection.PLATFORMS -> emulatorsMaxFocusIndex(
         state.emulators.platforms.size
     )

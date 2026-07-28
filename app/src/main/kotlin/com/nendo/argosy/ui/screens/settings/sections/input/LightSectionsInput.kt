@@ -7,7 +7,7 @@ import com.nendo.argosy.ui.screens.settings.SettingsSection
 import com.nendo.argosy.ui.screens.settings.SettingsViewModel
 import com.nendo.argosy.ui.screens.settings.sections.AboutItem
 import com.nendo.argosy.ui.screens.settings.sections.BiosItem
-import com.nendo.argosy.ui.screens.settings.sections.ControlsItem
+import com.nendo.argosy.ui.screens.settings.sections.NavigationItem
 import com.nendo.argosy.ui.screens.settings.sections.GameDataItem
 import com.nendo.argosy.ui.screens.settings.sections.HomeScreenItem
 import com.nendo.argosy.ui.screens.settings.sections.SyncSettingsItem
@@ -17,7 +17,9 @@ import com.nendo.argosy.ui.screens.settings.sections.aboutSections
 import com.nendo.argosy.ui.screens.settings.sections.biosItemAtFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.biosSections
 import com.nendo.argosy.ui.screens.settings.sections.buildGameDataItemsFromState
-import com.nendo.argosy.ui.screens.settings.sections.controlsItemAtFocusIndex
+import com.nendo.argosy.ui.screens.settings.sections.audioSections
+import com.nendo.argosy.ui.screens.settings.sections.navigationItemAtFocusIndex
+import com.nendo.argosy.ui.screens.settings.sections.navigationSections
 import com.nendo.argosy.ui.screens.settings.sections.gameDataItemAtFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.gameDataSections
 import com.nendo.argosy.ui.screens.settings.sections.homeScreenItemAtFocusIndex
@@ -62,7 +64,7 @@ internal class LightSectionsInput(
             SettingsSection.BIOS -> handleBiosLeftRight(direction)
             SettingsSection.SERVER -> handleServerLeftRight(direction)
             SettingsSection.HOME_SCREEN -> handleHomeScreenLeftRight(direction)
-            SettingsSection.CONTROLS -> handleControlsLeftRight(direction)
+            SettingsSection.NAVIGATION -> handleNavigationLeftRight(direction)
             SettingsSection.SYNC_SETTINGS -> handleSyncSettingsLeftRight(direction)
             SettingsSection.ABOUT -> handleAboutLeftRight(direction)
             SettingsSection.STEAM_SETTINGS -> handleSteamLeftRight(direction)
@@ -158,26 +160,26 @@ internal class LightSectionsInput(
         return InputResult.UNHANDLED
     }
 
-    private fun handleControlsLeftRight(direction: Int): InputResult {
+    private fun handleNavigationLeftRight(direction: Int): InputResult {
         val state = viewModel.uiState.value
         val controls = state.controls
-        when (controlsItemAtFocusIndex(state.focusedIndex, controls)) {
-            ControlsItem.VibrationStrength -> if (controls.hapticEnabled && controls.vibrationSupported) {
+        when (navigationItemAtFocusIndex(state.focusedIndex, controls)) {
+            NavigationItem.VibrationStrength -> if (controls.hapticEnabled && controls.vibrationSupported) {
                 viewModel.adjustVibrationStrength(direction * 0.1f)
                 return InputResult.HANDLED
             }
-            ControlsItem.HapticFeedback ->
+            NavigationItem.HapticFeedback ->
                 return toggleLeftRight(direction, controls.hapticEnabled) { viewModel.setHapticEnabled(it) }
-            ControlsItem.ControllerLayout -> { viewModel.cycleControllerLayout(direction); return InputResult.HANDLED }
-            ControlsItem.SwapAB ->
+            NavigationItem.ControllerLayout -> { viewModel.cycleControllerLayout(direction); return InputResult.HANDLED }
+            NavigationItem.SwapAB ->
                 return toggleLeftRight(direction, controls.swapAB) { viewModel.setSwapAB(it) }
-            ControlsItem.SwapXY ->
+            NavigationItem.SwapXY ->
                 return toggleLeftRight(direction, controls.swapXY) { viewModel.setSwapXY(it) }
-            ControlsItem.SwapStartSelect ->
+            NavigationItem.SwapStartSelect ->
                 return toggleLeftRight(direction, controls.swapStartSelect) { viewModel.setSwapStartSelect(it) }
-            ControlsItem.SelectLCombo -> { viewModel.cycleSelectLCombo(direction); return InputResult.HANDLED }
-            ControlsItem.SelectRCombo -> { viewModel.cycleSelectRCombo(direction); return InputResult.HANDLED }
-            ControlsItem.MenuWrap -> { viewModel.cycleMenuWrapMode(direction); return InputResult.HANDLED }
+            NavigationItem.SelectLCombo -> { viewModel.cycleSelectLCombo(direction); return InputResult.HANDLED }
+            NavigationItem.SelectRCombo -> { viewModel.cycleSelectRCombo(direction); return InputResult.HANDLED }
+            NavigationItem.MenuWrap -> { viewModel.cycleMenuWrapMode(direction); return InputResult.HANDLED }
             else -> {}
         }
         return InputResult.UNHANDLED
@@ -249,6 +251,8 @@ internal class LightSectionsInput(
             SettingsSection.BIOS -> biosSections(state.bios.platformGroups, state.bios.expandedPlatformIndex)
             SettingsSection.SERVER -> gameDataSections(buildGameDataItemsFromState(state))
             SettingsSection.SOCIAL -> socialSections(hasAvatarDoodle = state.social.avatarDoodle != null)
+            SettingsSection.NAVIGATION -> navigationSections(state.controls)
+            SettingsSection.AUDIO -> audioSections()
             SettingsSection.ABOUT -> aboutSections(state.fileLoggingPath != null, aboutHasChangelog(state.updateCheck))
             else -> return InputResult.HANDLED
         }

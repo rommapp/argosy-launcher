@@ -15,7 +15,9 @@ import androidx.compose.material.icons.filled.Dns
 import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.CloudQueue
 import androidx.compose.material.icons.filled.Dashboard
+import androidx.compose.material.icons.filled.Devices
 import androidx.compose.material.icons.filled.Gamepad
+import androidx.compose.material.icons.filled.GraphicEq
 import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.ManageAccounts
@@ -58,7 +60,9 @@ internal sealed class MainSettingsItem(
 
     data object Theme : MainSettingsItem("theme", Icons.Default.Palette, "Theme", "launcher")
     data object Interface : MainSettingsItem("interface", Icons.Default.Dashboard, "Interface", "launcher")
-    data object Controls : MainSettingsItem("controls", Icons.Default.TouchApp, "Navigation", "launcher")
+    data object Navigation : MainSettingsItem("navigation", Icons.Default.TouchApp, "Navigation", "launcher")
+    data object Audio : MainSettingsItem("audio", Icons.Default.GraphicEq, "Audio", "launcher")
+    data object Displays : MainSettingsItem("displays", Icons.Default.Devices, "Displays", "launcher")
 
     data object BuiltinEmulator :
         MainSettingsItem("builtin_emulator", Icons.Default.Build, "Built-in Emulator", "gameplay")
@@ -90,7 +94,7 @@ internal sealed class MainSettingsItem(
     companion object {
         val ALL: List<MainSettingsItem> = listOf(
             Header("launcherHeader", "launcher", "LAUNCHER"),
-            Theme, Interface, Controls,
+            Theme, Interface, Navigation, Audio, Displays,
             Header("gameplayHeader", "gameplay", "GAMEPLAY"),
             BuiltinEmulator, RetroAchievements, Bios, Drivers,
             Header("libraryHeader", "library", "LIBRARY"),
@@ -162,8 +166,10 @@ fun MainSettingsSection(uiState: SettingsUiState, viewModel: SettingsViewModel) 
             "No downloads"
         }
         MainSettingsItem.Theme -> "Colors, backdrop, fonts"
-        MainSettingsItem.Interface -> "Layout, dimmer, displays"
-        MainSettingsItem.Controls -> "Button layout, haptic feedback"
+        MainSettingsItem.Interface -> "Grid density, scale, home screen"
+        MainSettingsItem.Navigation -> "Button layout, haptic feedback"
+        MainSettingsItem.Audio -> "Sounds and music"
+        MainSettingsItem.Displays -> "Dimmer, dual-screen, LED"
         MainSettingsItem.Platforms -> "${uiState.emulators.platforms.size} platforms"
         MainSettingsItem.BuiltinEmulator -> if (uiState.emulators.builtinLibretroEnabled) "Enabled" else "Disabled"
         MainSettingsItem.Bios -> uiState.bios.summaryText
@@ -196,7 +202,9 @@ fun MainSettingsSection(uiState: SettingsUiState, viewModel: SettingsViewModel) 
             MainSettingsItem.Storage -> viewModel.navigateToSection(SettingsSection.STORAGE)
             MainSettingsItem.Theme -> viewModel.navigateToSection(SettingsSection.THEME)
             MainSettingsItem.Interface -> viewModel.navigateToSection(SettingsSection.INTERFACE)
-            MainSettingsItem.Controls -> viewModel.navigateToSection(SettingsSection.CONTROLS)
+            MainSettingsItem.Navigation -> viewModel.navigateToSection(SettingsSection.NAVIGATION)
+            MainSettingsItem.Audio -> viewModel.navigateToSection(SettingsSection.AUDIO)
+            MainSettingsItem.Displays -> viewModel.navigateToSection(SettingsSection.DISPLAYS)
             MainSettingsItem.Platforms -> viewModel.navigateToSection(SettingsSection.PLATFORMS)
             MainSettingsItem.BuiltinEmulator -> viewModel.navigateToSection(SettingsSection.BUILTIN_EMULATOR)
             MainSettingsItem.Bios -> viewModel.navigateToSection(SettingsSection.BIOS)
@@ -210,7 +218,7 @@ fun MainSettingsSection(uiState: SettingsUiState, viewModel: SettingsViewModel) 
 
     FocusedScroll(
         listState = listState,
-        focusedIndex = uiState.focusedIndex
+        focusedIndex = mainSettingsLayout.focusToListIndex(uiState.focusedIndex, Unit)
     )
 
     LazyColumn(

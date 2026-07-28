@@ -74,6 +74,7 @@ class SaveSyncOrchestratorTest {
             saveSyncDao = saveSyncDao,
             saveCacheDao = mockk(relaxed = true),
             saveCacheManager = dagger.Lazy { mockk(relaxed = true) },
+            activeSaveRepository = mockk(relaxed = true),
             pendingSyncQueueDao = pendingSyncQueueDao,
             gameDao = gameDao,
             emulatorResolver = emulatorResolver,

@@ -111,6 +111,7 @@ class GameLaunchDelegate @Inject constructor(
     private val savePathValidator: SavePathValidator,
     private val saveSyncRepository: SaveSyncRepository,
     private val saveCacheManager: SaveCacheManager,
+    private val activeSaveRepository: com.nendo.argosy.data.repository.ActiveSaveRepository,
     private val variantResolver: com.nendo.argosy.data.emulator.VariantResolver,
     private val emulatorSaveConfigRepository: com.nendo.argosy.data.repository.EmulatorSaveConfigRepository,
     private val retroAchievementsRepository: com.nendo.argosy.data.repository.RetroAchievementsRepository
@@ -119,11 +120,8 @@ class GameLaunchDelegate @Inject constructor(
         private const val EMULATOR_KILL_DELAY_MS = 500L
     }
 
-    private suspend fun isActiveSaveHardcore(gameId: Long): Boolean {
-        val activeChannel = gameRepository.getActiveSaveChannel(gameId) ?: return false
-        val save = saveCacheManager.getMostRecentInChannel(gameId, activeChannel)
-        return save?.isHardcore == true
-    }
+    private suspend fun isActiveSaveHardcore(gameId: Long): Boolean =
+        activeSaveRepository.getActiveRow(gameId)?.isHardcore == true
 
     /**
      * "Default to Hardcore": a built-in game resumes in hardcore by default when the setting is on
@@ -334,9 +332,9 @@ class GameLaunchDelegate @Inject constructor(
                                 )
                                 android.util.Log.d("GameLaunchDelegate", "Cache result after LocalModified keep: $cacheResult")
                                 if (cacheResult is SaveCacheManager.CacheResult.Created) {
-                                    gameRepository.updateActiveSaveTimestamp(gameId, cacheResult.timestamp)
+                                    activeSaveRepository.activateCache(gameId, cacheResult.cacheId)
                                 }
-                                gameRepository.updateActiveSaveApplied(gameId, true)
+                                activeSaveRepository.setActiveSaveApplied(gameId, true)
                                 val uploadResult = saveSyncRepository.uploadSave(
                                     gameId = gameId,
                                     emulatorId = emulatorId,
@@ -355,7 +353,7 @@ class GameLaunchDelegate @Inject constructor(
                                     knownServerSaveId = info.serverSaveId
                                 )
                                 android.util.Log.d("GameLaunchDelegate", "Download result after LocalModified restore: $downloadResult")
-                                gameRepository.updateActiveSaveApplied(gameId, true)
+                                activeSaveRepository.setActiveSaveApplied(gameId, true)
                             }
                         }
                     }

@@ -93,8 +93,6 @@ class SaveSyncConflictResolverTest {
         every { mockApiClient.getDeviceId() } returns "device-1"
 
         coEvery { gameDao.getById(1L) } returns testGame
-        coEvery { gameDao.getActiveSaveChannel(1L) } returns null
-        coEvery { gameDao.getActiveSaveApplied(1L) } returns false
 
         resolver = SaveSyncConflictResolver(
             saveSyncDao = saveSyncDao,

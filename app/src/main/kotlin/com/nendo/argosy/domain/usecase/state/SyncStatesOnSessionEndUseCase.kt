@@ -7,6 +7,7 @@ import com.nendo.argosy.data.emulator.StatePathRegistry
 import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.entity.StateCacheEntity
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
+import com.nendo.argosy.data.repository.ActiveSaveRepository
 import com.nendo.argosy.data.repository.StateCacheManager
 import kotlinx.coroutines.flow.first
 import java.io.File
@@ -24,6 +25,7 @@ sealed class StateSyncResult {
 class SyncStatesOnSessionEndUseCase @Inject constructor(
     private val stateCacheManager: StateCacheManager,
     private val gameDao: GameDao,
+    private val activeSaveRepository: ActiveSaveRepository,
     private val emulatorDetector: EmulatorDetector,
     private val coreVersionExtractor: CoreVersionExtractor,
     private val preferencesRepository: UserPreferencesRepository
@@ -86,7 +88,7 @@ class SyncStatesOnSessionEndUseCase @Inject constructor(
         }
 
         var cachedCount = 0
-        val channelName = game.activeSaveChannel
+        val channelName = activeSaveRepository.getActiveChannel(gameId)
 
         for (state in discoveredStates) {
             val existingCache = stateCacheManager.getStateBySlot(

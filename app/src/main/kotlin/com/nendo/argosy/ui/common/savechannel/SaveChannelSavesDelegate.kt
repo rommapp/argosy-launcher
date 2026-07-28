@@ -1,6 +1,7 @@
 package com.nendo.argosy.ui.common.savechannel
 
 import com.nendo.argosy.data.emulator.TitleIdDownloadObserver
+import com.nendo.argosy.data.repository.ActiveSaveRepository
 import com.nendo.argosy.data.repository.GameRepository
 import com.nendo.argosy.data.repository.SaveCacheManager
 import com.nendo.argosy.data.repository.SaveSyncApiClient
@@ -31,6 +32,7 @@ class SaveChannelSavesDelegate @Inject constructor(
     private val saveSyncRepository: SaveSyncRepository,
     private val stateCacheManager: StateCacheManager,
     private val gameRepository: GameRepository,
+    private val activeSaveRepository: ActiveSaveRepository,
     private val notificationManager: NotificationManager,
     private val soundManager: SoundFeedbackManager,
     private val titleIdDownloadObserver: TitleIdDownloadObserver,
@@ -316,8 +318,7 @@ class SaveChannelSavesDelegate @Inject constructor(
         val emulatorPackage = state.emulatorPackage
 
         scope.launch {
-            gameRepository.updateActiveSaveChannel(currentGameId, channelName)
-            gameRepository.updateActiveSaveTimestamp(currentGameId, null)
+            activeSaveRepository.activateChannel(currentGameId, channelName)
             _state.update {
                 it.copy(activeChannel = channelName, activeSaveTimestamp = null, activeSaveCacheId = null)
             }
@@ -353,8 +354,7 @@ class SaveChannelSavesDelegate @Inject constructor(
                 )) {
                     is RestoreCachedSaveUseCase.Result.Restored,
                     is RestoreCachedSaveUseCase.Result.RestoredAndSynced -> {
-                        gameRepository.updateActiveSaveApplied(currentGameId, true)
-                        gameRepository.updateActiveSaveTimestamp(currentGameId, entryTimestamp)
+                        activeSaveRepository.setActiveSaveApplied(currentGameId, true)
                         saveSyncRepository.markUserSelectedRestorePoint(currentGameId, emulatorId, channelName)
                         onSaveStatusChanged(
                             SaveStatusEvent(channelName = channelName, timestamp = entryTimestamp)
@@ -471,7 +471,6 @@ class SaveChannelSavesDelegate @Inject constructor(
                 }
             }
 
-            gameRepository.updateActiveSaveTimestamp(currentGameId, targetTimestamp)
             _state.update {
                 it.copy(
                     showRestoreConfirmation = false,
@@ -490,7 +489,7 @@ class SaveChannelSavesDelegate @Inject constructor(
                 entry, currentGameId, emulatorId, syncToServer
             )) {
                 is RestoreCachedSaveUseCase.Result.Restored -> {
-                    gameRepository.updateActiveSaveApplied(currentGameId, true)
+                    activeSaveRepository.setActiveSaveApplied(currentGameId, true)
                     saveSyncRepository.markUserSelectedRestorePoint(currentGameId, emulatorId, targetChannel)
                     val msg = if (targetChannel != null) {
                         "Restored to $targetChannel"
@@ -500,7 +499,7 @@ class SaveChannelSavesDelegate @Inject constructor(
                     onRestored()
                 }
                 is RestoreCachedSaveUseCase.Result.RestoredAndSynced -> {
-                    gameRepository.updateActiveSaveApplied(currentGameId, true)
+                    activeSaveRepository.setActiveSaveApplied(currentGameId, true)
                     saveSyncRepository.markUserSelectedRestorePoint(currentGameId, emulatorId, targetChannel)
                     val msg = if (targetChannel != null) {
                         "Restored to $targetChannel and synced"
@@ -623,8 +622,7 @@ class SaveChannelSavesDelegate @Inject constructor(
             val game = gameRepository.getById(currentGameId) ?: return@launch
             val emulatorId = _state.value.emulatorId
 
-            gameRepository.updateActiveSaveChannel(currentGameId, name)
-            gameRepository.updateActiveSaveTimestamp(currentGameId, null)
+            activeSaveRepository.activateChannel(currentGameId, name)
 
             if (emulatorId != null) {
                 restoreCachedSaveUseCase.clearActiveSave(currentGameId, emulatorId)
@@ -704,7 +702,7 @@ class SaveChannelSavesDelegate @Inject constructor(
             saveCacheManager.renameSave(cacheId, newName)
 
             if (state.activeChannel == entry.channelName) {
-                gameRepository.updateActiveSaveChannel(currentGameId, newName)
+                activeSaveRepository.activateChannel(currentGameId, newName)
                 _state.update { it.copy(activeChannel = newName) }
             }
 
@@ -772,8 +770,7 @@ class SaveChannelSavesDelegate @Inject constructor(
             deleteChannelEverywhere(channelName)
 
             if (state.activeChannel == channelName) {
-                gameRepository.updateActiveSaveChannel(currentGameId, null)
-                gameRepository.updateActiveSaveTimestamp(currentGameId, null)
+                activeSaveRepository.clearActive(currentGameId)
                 _state.update {
                     it.copy(activeChannel = null, activeSaveTimestamp = null, activeSaveCacheId = null)
                 }

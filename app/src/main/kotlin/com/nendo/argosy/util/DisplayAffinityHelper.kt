@@ -26,8 +26,15 @@ class DisplayAffinityHelper @Inject constructor(
 
     var dualScreenEnabled: Boolean = false
 
+    /**
+     * False once the companion has been proven unable to initialize on the secondary display,
+     * which happens on OS builds that do not let a home activity run there. Gates every
+     * dual-screen entry point until a display change or an explicit user re-enable re-probes it.
+     */
+    var secondaryDisplayUsable: Boolean = true
+
     val hasSecondaryDisplay: Boolean
-        get() = dualScreenEnabled && hasPhysicalSecondaryDisplay
+        get() = dualScreenEnabled && secondaryDisplayUsable && hasPhysicalSecondaryDisplay
 
     val secondaryDisplayType: SecondaryDisplayType
         get() {

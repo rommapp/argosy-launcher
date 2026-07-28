@@ -39,6 +39,7 @@ class SaveSyncOrchestrator @Inject constructor(
     private val saveSyncDao: SaveSyncDao,
     private val saveCacheDao: SaveCacheDao,
     private val saveCacheManager: dagger.Lazy<SaveCacheManager>,
+    private val activeSaveRepository: ActiveSaveRepository,
     private val pendingSyncQueueDao: PendingSyncQueueDao,
     private val gameDao: GameDao,
     private val emulatorResolver: EmulatorResolver,
@@ -128,9 +129,10 @@ class SaveSyncOrchestrator @Inject constructor(
 
         for (game in downloadedGames) {
             val emulatorId = client.resolveEmulatorForGame(game) ?: continue
+            val activeChannel = activeSaveRepository.getActiveChannel(game.id)
 
             if (!secureSaves) {
-                when (val outcome = refreshCacheFromSystem(game, emulatorId, game.activeSaveChannel, processedWholePaths)) {
+                when (val outcome = refreshCacheFromSystem(game, emulatorId, activeChannel, processedWholePaths)) {
                     RefreshOutcome.Dirtied -> queued++
                     is RefreshOutcome.Unreadable ->
                         unreadableLocations.add(SaveAccessNotices.InaccessibleLocation(outcome.dirPath, emulatorId))
@@ -167,7 +169,7 @@ class SaveSyncOrchestrator @Inject constructor(
 
             if (lastSynced == null || localModified.isAfter(lastSynced)) {
                 Logger.debug(TAG, "[SaveSync] SCAN gameId=${game.id} | Local newer than sync | local=$localModified, lastSync=$lastSynced")
-                queueUpload(game.id, emulatorId, savePath, game.activeSaveChannel)
+                queueUpload(game.id, emulatorId, savePath, activeChannel)
                 queued++
             }
         }

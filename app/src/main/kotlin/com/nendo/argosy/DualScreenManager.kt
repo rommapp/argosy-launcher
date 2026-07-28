@@ -70,6 +70,7 @@ class DualScreenManager(
     private var scope: CoroutineScope,
     internal val gameDao: GameDao,
     internal val gameRepository: com.nendo.argosy.data.repository.GameRepository,
+    internal val activeSaveRepository: com.nendo.argosy.data.repository.ActiveSaveRepository,
     internal val platformRepository: PlatformRepository,
     internal val collectionRepository: CollectionRepository,
     internal val downloadQueueDao: DownloadQueueDao,
@@ -123,9 +124,44 @@ class DualScreenManager(
     }
 
     fun applyDualScreenEnabled(enabled: Boolean, isToggle: Boolean) {
-        setSecondaryHomeComponentEnabled(enabled)
+        setSecondaryHomeComponentEnabled(enabled && displayAffinityHelper.secondaryDisplayUsable)
         if (!isToggle) return
-        if (enabled) ensureCompanionLaunched() else teardownCompanion()
+        if (enabled) {
+            reprobeSecondaryDisplay()
+            ensureCompanionLaunched()
+        } else {
+            teardownCompanion()
+        }
+    }
+
+    /**
+     * Clears a recorded companion-initialization failure so the next launch attempt re-probes the
+     * display. Called when the display topology changes or the user re-enables dual screen.
+     */
+    fun reprobeSecondaryDisplay() {
+        companionLaunchAttempts = 0
+        displayAffinityHelper.secondaryDisplayUsable = true
+        sessionStateStore.setSecondaryDisplayUsable(true)
+        setSecondaryHomeComponentEnabled(sessionStateStore.isDualScreenEnabled())
+        _isDualScreenDevice.value = displayAffinityHelper.hasSecondaryDisplay
+    }
+
+    /**
+     * Safety net for a companion that cannot initialize on the secondary display: releases the
+     * display back to the OS, drops the launcher to single-screen, and stops the relaunch loop.
+     * [persistent] records the refusal across restarts, for a display that structurally rejects
+     * the companion rather than a transient launch failure.
+     */
+    fun fallbackToSingleScreen(persistent: Boolean) {
+        if (!displayAffinityHelper.secondaryDisplayUsable) return
+        Log.w(TAG, "Companion could not initialize on the secondary display, falling back to single screen (persistent=$persistent)")
+        displayAffinityHelper.secondaryDisplayUsable = false
+        if (persistent) sessionStateStore.setSecondaryDisplayUsable(false)
+        companionLaunchAttempts = 0
+        cleanupSwappedState()
+        teardownCompanion()
+        setSecondaryHomeComponentEnabled(false)
+        _isDualScreenDevice.value = false
     }
 
     private fun setSecondaryHomeComponentEnabled(enabled: Boolean) {
@@ -454,10 +490,12 @@ class DualScreenManager(
     private var companionLaunchJob: Job? = null
     private var startupGuardJob: Job? = null
     private var companionPausedPending = false
+    private var companionLaunchAttempts = 0
 
     private val displayListener = object : DisplayManager.DisplayListener {
         override fun onDisplayAdded(displayId: Int) {
             if (!displayAffinityHelper.isPhysicalDisplay(displayId)) return
+            reprobeSecondaryDisplay()
             val resolver = DisplayRoleResolver(displayAffinityHelper, sessionStateStore)
             val newSwapped = resolver.isSwapped
             if (newSwapped != _isRolesSwapped.value) {
@@ -542,6 +580,7 @@ class DualScreenManager(
 
     fun onCompanionResumed() {
         companionPausedPending = false
+        companionLaunchAttempts = 0
         companionWatchdogJob?.cancel()
         _isCompanionActive.value = true
         if (!_isDualScreenDevice.value) _isDualScreenDevice.value = true
@@ -1996,8 +2035,7 @@ class DualScreenManager(
                 gameId, game.platformId, game.platformSlug
             )
 
-            gameRepository.updateActiveSaveChannel(gameId, channelName)
-            gameRepository.updateActiveSaveTimestamp(gameId, null)
+            activeSaveRepository.activateChannel(gameId, channelName)
 
             if (emulatorId != null) {
                 val entries = getUnifiedSavesUseCase(gameId, expandHistory = true)
@@ -2012,7 +2050,7 @@ class DualScreenManager(
                     when (result) {
                         is RestoreCachedSaveUseCase.Result.Restored,
                         is RestoreCachedSaveUseCase.Result.RestoredAndSynced -> {
-                            gameRepository.updateActiveSaveApplied(gameId, true)
+                            activeSaveRepository.setActiveSaveApplied(gameId, true)
                         }
                         is RestoreCachedSaveUseCase.Result.Error -> {
                             Log.w(TAG, "Channel switch restore failed: ${result.message}")
@@ -2039,8 +2077,7 @@ class DualScreenManager(
                 gameId, game.platformId, game.platformSlug
             )
 
-            gameRepository.updateActiveSaveChannel(gameId, channelName)
-            gameRepository.updateActiveSaveTimestamp(gameId, timestamp)
+            activeSaveRepository.activateTimestamp(gameId, timestamp)
 
             if (emulatorId != null) {
                 val entries = getUnifiedSavesUseCase(gameId, expandHistory = true)
@@ -2056,7 +2093,7 @@ class DualScreenManager(
                     when (result) {
                         is RestoreCachedSaveUseCase.Result.Restored,
                         is RestoreCachedSaveUseCase.Result.RestoredAndSynced -> {
-                            gameRepository.updateActiveSaveApplied(gameId, true)
+                            activeSaveRepository.setActiveSaveApplied(gameId, true)
                         }
                         is RestoreCachedSaveUseCase.Result.Error -> {
                             Log.w(TAG, "Restore point apply failed: ${result.message}")
@@ -2077,8 +2114,7 @@ class DualScreenManager(
                 gameId, game.platformId, game.platformSlug
             )
 
-            gameRepository.updateActiveSaveChannel(gameId, name)
-            gameRepository.updateActiveSaveTimestamp(gameId, null)
+            activeSaveRepository.activateChannel(gameId, name)
 
             if (emulatorId != null) {
                 restoreCachedSaveUseCase.clearActiveSave(gameId, emulatorId)
@@ -2106,23 +2142,32 @@ class DualScreenManager(
         if (!sessionStateStore.isSaveSyncEnabled()) return
         scope.launch(Dispatchers.Default) {
             try {
-                val game = gameDao.getById(gameId)
-                val activeChannel = game?.activeSaveChannel
-                val activeTimestamp = game?.activeSaveTimestamp
-
+                val activeSave = activeSaveRepository.getActiveRow(gameId)
                 val localEntries = getUnifiedSavesUseCase.localOnly(gameId)
                 val localData = localEntries.map { it.toSaveEntryData() }
-                deliverSaves(gameId, localData, activeChannel, activeTimestamp, syncing = true)
+                deliverSaves(
+                    gameId,
+                    localData,
+                    activeSave?.channelName,
+                    activeSave?.cachedAt?.toEpochMilli(),
+                    syncing = true
+                )
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to load local saves", e)
             }
         }
         scope.launch(Dispatchers.IO) {
             try {
-                val game = gameDao.getById(gameId)
+                val activeSave = activeSaveRepository.getActiveRow(gameId)
                 val fullEntries = getUnifiedSavesUseCase(gameId, expandHistory = true)
                 val fullData = fullEntries.map { it.toSaveEntryData() }
-                deliverSaves(gameId, fullData, game?.activeSaveChannel, game?.activeSaveTimestamp, syncing = false)
+                deliverSaves(
+                    gameId,
+                    fullData,
+                    activeSave?.channelName,
+                    activeSave?.cachedAt?.toEpochMilli(),
+                    syncing = false
+                )
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to sync remote saves", e)
                 deliverSyncingDone(gameId)
@@ -2239,6 +2284,7 @@ class DualScreenManager(
     fun selectGameSwapped(gameId: Long) {
         val vm = com.nendo.argosy.ui.dualscreen.gamedetail.DualGameDetailViewModel(
             gameRepository = gameRepository,
+            activeSaveRepository = activeSaveRepository,
             platformRepository = platformRepository,
             collectionRepository = collectionRepository,
             emulatorConfigDao = emulatorConfigDao,
@@ -2376,9 +2422,17 @@ class DualScreenManager(
         }
         Log.d(TAG, "Launching companion on secondary display")
         activityContext.startActivity(intent, options)
+        companionLaunchAttempts++
         scope.launch {
             delay(300)
             refocusMain()
+        }
+        scope.launch {
+            delay(COMPANION_LAUNCH_VERIFY_MS)
+            if (_isCompanionActive.value) return@launch
+            if (companionLaunchAttempts < MAX_COMPANION_LAUNCH_ATTEMPTS) return@launch
+            if (sessionStateStore.isForeignAppOnSecondary()) return@launch
+            fallbackToSingleScreen(persistent = false)
         }
     }
 
@@ -2390,6 +2444,8 @@ class DualScreenManager(
         const val OVERLAY_QUICK_SETTINGS = "com.nendo.argosy.OVERLAY_QUICK_SETTINGS"
         private const val COMPANION_WATCHDOG_TIMEOUT_MS = 5000L
         private const val COMPANION_LAUNCH_WAIT_MS = 500L
+        private const val COMPANION_LAUNCH_VERIFY_MS = 8000L
+        private const val MAX_COMPANION_LAUNCH_ATTEMPTS = 3
         private const val SWAP_DEBOUNCE_MS = 500L
     }
 

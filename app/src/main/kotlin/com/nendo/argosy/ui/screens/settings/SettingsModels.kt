@@ -242,7 +242,10 @@ data class DisplayState(
     val dualScreenEnabled: Boolean = false,
     val displayRoleOverride: DisplayRoleOverride = DisplayRoleOverride.AUTO,
     val installedOnlyHome: Boolean = false
-)
+) {
+    val secondaryDisplayUnsupported: Boolean
+        get() = dualScreenEnabled && hasPhysicalSecondaryDisplay && !hasSecondaryDisplay
+}
 
 data class ControlsState(
     val hapticEnabled: Boolean = true,

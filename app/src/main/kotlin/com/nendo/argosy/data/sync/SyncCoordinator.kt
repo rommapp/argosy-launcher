@@ -47,7 +47,7 @@ class SyncCoordinator @Inject constructor(
     private val saveSyncDao: com.nendo.argosy.data.local.dao.SaveSyncDao,
     private val emulatorSaveConfigDao: com.nendo.argosy.data.local.dao.EmulatorSaveConfigDao,
     private val gameDao: GameDao,
-    private val overlayWriter: com.nendo.argosy.data.repository.GameUserOverlayWriter,
+    private val activeSaveRepository: com.nendo.argosy.data.repository.ActiveSaveRepository,
     private val romMRepository: Lazy<RomMRepository>,
     private val saveSyncRepository: Lazy<SaveSyncRepository>,
     private val saveCacheManager: Lazy<SaveCacheManager>,
@@ -765,12 +765,7 @@ class SyncCoordinator @Inject constructor(
                         saveCacheDao.updateRommSaveId(cache.id, result.rommSaveId)
                     }
                     if (result.serverTimestamp != null) {
-                        val oldCachedAtMillis = cache.cachedAt.toEpochMilli()
                         saveCacheDao.updateCachedAt(cache.id, result.serverTimestamp)
-                        val game = gameDao.getById(cache.gameId)
-                        if (game?.activeSaveTimestamp == oldCachedAtMillis) {
-                            overlayWriter.updateActiveSaveTimestamp(cache.gameId, result.serverTimestamp.toEpochMilli())
-                        }
                     }
                     if (result.noOp) {
                         syncQueueManager.removeOperation(cache.gameId)
@@ -849,7 +844,7 @@ class SyncCoordinator @Inject constructor(
                 )
                 if (downloadResult is SaveSyncResult.Success) {
                     saveCacheDao.markSynced(cache.id, Instant.now())
-                    overlayWriter.updateActiveSaveApplied(cache.gameId, false)
+                    activeSaveRepository.setActiveSaveApplied(cache.gameId, false)
                     Logger.debug(TAG, "processDirtySaveCaches: Downloaded server save for gameId=${cache.gameId}")
                 } else {
                     Logger.warn(TAG, "processDirtySaveCaches: Failed to download server save for gameId=${cache.gameId}")
@@ -884,12 +879,7 @@ class SyncCoordinator @Inject constructor(
                         saveCacheDao.updateRommSaveId(cache.id, result.rommSaveId)
                     }
                     if (result.serverTimestamp != null) {
-                        val oldCachedAtMillis = cache.cachedAt.toEpochMilli()
                         saveCacheDao.updateCachedAt(cache.id, result.serverTimestamp)
-                        val game = gameDao.getById(cache.gameId)
-                        if (game?.activeSaveTimestamp == oldCachedAtMillis) {
-                            overlayWriter.updateActiveSaveTimestamp(cache.gameId, result.serverTimestamp.toEpochMilli())
-                        }
                     }
                     if (result.noOp) {
                         syncQueueManager.removeOperation(cache.gameId)

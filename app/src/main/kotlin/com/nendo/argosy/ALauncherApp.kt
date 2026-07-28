@@ -63,7 +63,7 @@ class ArgosyApp : Application(), Configuration.Provider, ImageLoaderFactory {
     lateinit var gameDao: GameDao
 
     @Inject
-    lateinit var gameOverlayWriter: com.nendo.argosy.data.repository.GameUserOverlayWriter
+    lateinit var activeSaveRepository: com.nendo.argosy.data.repository.ActiveSaveRepository
 
     @Inject
     lateinit var apkInstallManager: ApkInstallManager
@@ -162,7 +162,7 @@ class ArgosyApp : Application(), Configuration.Provider, ImageLoaderFactory {
             playSessionTracker.checkOrphanedSession()
         }
         appScope.launch { accountSwitchCoordinator.resumeIfInterrupted() }
-        appScope.launch { gameOverlayWriter.resetAllActiveSaveApplied() }
+        appScope.launch { activeSaveRepository.resetAllActiveSaveApplied() }
         appScope.launch { autoConnectSteam() }
         appScope.launch { steamContentManager.discoverLocalSteamGames() }
         syncPlatformSortOrders()

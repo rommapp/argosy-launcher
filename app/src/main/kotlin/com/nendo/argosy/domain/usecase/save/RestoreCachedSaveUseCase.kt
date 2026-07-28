@@ -13,7 +13,7 @@ class RestoreCachedSaveUseCase @Inject constructor(
     private val saveCacheManager: SaveCacheManager,
     private val saveSyncRepository: SaveSyncRepository,
     private val gameDao: GameDao,
-    private val overlayWriter: com.nendo.argosy.data.repository.GameUserOverlayWriter,
+    private val activeSaveRepository: com.nendo.argosy.data.repository.ActiveSaveRepository,
     private val emulatorResolver: EmulatorResolver
 ) {
     private val TAG = "RestoreCachedSaveUseCase"
@@ -92,7 +92,12 @@ class RestoreCachedSaveUseCase @Inject constructor(
 
         val targetChannel = entry.channelName
             ?: com.nendo.argosy.data.repository.SaveSyncApiClient.AUTOSAVE_SLOT_NAME
-        overlayWriter.updateActiveSaveChannel(gameId, targetChannel)
+        val restoredCacheId = entry.localCacheId
+        if (restoredCacheId != null) {
+            activeSaveRepository.activateCache(gameId, restoredCacheId)
+        } else {
+            activeSaveRepository.activateChannel(gameId, entry.channelName)
+        }
 
         if (game.rommId != null) {
             saveSyncRepository.markRestored(
@@ -107,12 +112,11 @@ class RestoreCachedSaveUseCase @Inject constructor(
             )
         }
 
-        // Track which server save this device is now on (persists for offline case)
         if (entry.serverSaveId != null) {
-            overlayWriter.setPendingDeviceSyncSaveId(gameId, entry.serverSaveId)
+            activeSaveRepository.setPendingDeviceSyncSaveId(gameId, entry.serverSaveId)
             try {
                 saveSyncRepository.confirmDeviceSynced(entry.serverSaveId)
-                overlayWriter.setPendingDeviceSyncSaveId(gameId, null)
+                activeSaveRepository.setPendingDeviceSyncSaveId(gameId, null)
             } catch (e: Exception) {
                 Log.w(TAG, "Failed to confirm device sync for saveId=${entry.serverSaveId}, will retry before next sync", e)
             }

@@ -25,7 +25,7 @@ private const val TAG = "LaunchWithSync"
 
 class LaunchWithSyncUseCase @Inject constructor(
     private val gameDao: GameDao,
-    private val overlayWriter: com.nendo.argosy.data.repository.GameUserOverlayWriter,
+    private val activeSaveRepository: com.nendo.argosy.data.repository.ActiveSaveRepository,
     private val emulatorConfigDao: EmulatorConfigDao,
     private val emulatorResolver: EmulatorResolver,
     private val preferencesRepository: UserPreferencesRepository,
@@ -126,9 +126,9 @@ class LaunchWithSyncUseCase @Inject constructor(
         skipPreLaunchSync: Boolean = false
     ): Flow<SyncProgress> = flow {
         if (channelName != null) {
-            val currentChannel = gameDao.getActiveSaveChannel(gameId)
+            val currentChannel = activeSaveRepository.getActiveChannel(gameId)
             if (currentChannel != channelName) {
-                overlayWriter.updateActiveSaveChannel(gameId, channelName)
+                activeSaveRepository.activateChannel(gameId, channelName)
             }
         }
 

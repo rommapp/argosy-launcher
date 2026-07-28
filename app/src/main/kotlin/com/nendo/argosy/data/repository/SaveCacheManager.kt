@@ -36,7 +36,6 @@ class SaveCacheManager @Inject constructor(
     private val saveSyncDao: SaveSyncDao,
     private val pendingSyncQueueDao: PendingSyncQueueDao,
     private val gameDao: GameDao,
-    private val overlayWriter: GameUserOverlayWriter,
     private val preferencesRepository: UserPreferencesRepository,
     private val syncPreferencesRepository: SyncPreferencesRepository,
     private val savePathResolver: SavePathResolver,
@@ -318,7 +317,7 @@ class SaveCacheManager @Inject constructor(
             val insertedId = saveCacheDao.insert(entity)
 
             if (channelName != null) {
-                overlayWriter.updateActiveSaveChannel(gameId, channelName)
+                saveCacheDao.setActiveRow(gameId, ownerUserId, insertedId)
                 saveCacheDao.clearDirtyFlagForLatest(gameId)
             }
 

@@ -74,7 +74,7 @@ internal sealed class InterfaceItem(
     data object DisplayRoles : InterfaceItem(
         key = "displayRoles",
         section = "displays",
-        visibleWhen = { it.dualScreenEnabled }
+        visibleWhen = { it.dualScreenEnabled && !it.display.secondaryDisplayUnsupported }
     )
     data object AmbientLedSettings : InterfaceItem(
         key = "ambientLedSettings",
@@ -229,7 +229,11 @@ fun InterfaceSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
 
                 InterfaceItem.DualScreenEnabled -> SwitchPreference(
                     title = "Enable Dual-screen Mode",
-                    subtitle = "Use secondary display as companion screen",
+                    subtitle = if (display.secondaryDisplayUnsupported) {
+                        "This system does not allow a companion app on the secondary display; toggle off and on to retry"
+                    } else {
+                        "Use secondary display as companion screen"
+                    },
                     isEnabled = display.dualScreenEnabled,
                     isFocused = isFocused(item),
                     onToggle = { viewModel.setDualScreenEnabled(it) }

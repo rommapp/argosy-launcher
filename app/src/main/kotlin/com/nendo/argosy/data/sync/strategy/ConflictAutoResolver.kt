@@ -2,6 +2,7 @@ package com.nendo.argosy.data.sync.strategy
 
 import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.dao.PendingSyncQueueDao
+import com.nendo.argosy.data.local.dao.SaveCacheDao
 import com.nendo.argosy.data.local.dao.SaveSyncDao
 import com.nendo.argosy.data.local.entity.SyncType
 import com.nendo.argosy.util.Logger
@@ -12,6 +13,7 @@ import javax.inject.Singleton
 class ConflictAutoResolver @Inject constructor(
     private val gameDao: GameDao,
     private val saveSyncDao: SaveSyncDao,
+    private val saveCacheDao: SaveCacheDao,
     private val pendingSyncQueueDao: PendingSyncQueueDao
 ) {
     suspend fun classify(
@@ -25,7 +27,7 @@ class ConflictAutoResolver @Inject constructor(
         val gameRow = gameDao.getByRommId(operation.romId)
         val gameId = gameRow?.id
 
-        if (gameId != null && gameRow.activeSaveApplied) {
+        if (gameId != null && saveCacheDao.hasActiveSaveApplied(gameId)) {
             Logger.debug(TAG, "rule 1: activeSaveApplied=true for romId=${operation.romId} -> KEEP_LOCAL")
             return Resolution.KeepLocal("user-restored")
         }

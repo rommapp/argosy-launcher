@@ -121,6 +121,13 @@ class SessionStateStore(context: Context) {
 
     fun isDualScreenEnabled(): Boolean = prefs.getBoolean(KEY_DUAL_SCREEN_ENABLED, false)
 
+    fun setSecondaryDisplayUsable(usable: Boolean) {
+        prefs.edit().putBoolean(KEY_SECONDARY_DISPLAY_USABLE, usable).commit()
+    }
+
+    fun isSecondaryDisplayUsable(): Boolean =
+        prefs.getBoolean(KEY_SECONDARY_DISPLAY_USABLE, true)
+
     fun setSaveSyncEnabled(enabled: Boolean) {
         prefs.edit().putBoolean(KEY_SAVE_SYNC_ENABLED, enabled).apply()
     }
@@ -372,6 +379,7 @@ class SessionStateStore(context: Context) {
         private const val KEY_SCREENSHOT_VIEWER_OPEN = "screenshot_viewer_open"
         private const val KEY_SCREENSHOT_VIEWER_INDEX = "screenshot_viewer_index"
         private const val KEY_DUAL_SCREEN_ENABLED = "dual_screen_enabled"
+        private const val KEY_SECONDARY_DISPLAY_USABLE = "secondary_display_usable"
         private const val KEY_SAVE_SYNC_ENABLED = "save_sync_enabled"
         private const val KEY_SWITCH_ACTIVE = "account_switch_active"
         private const val KEY_SWITCH_FROM_USER = "account_switch_from_user"

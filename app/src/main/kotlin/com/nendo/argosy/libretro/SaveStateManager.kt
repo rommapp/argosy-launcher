@@ -6,8 +6,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.nendo.argosy.data.emulator.EmulatorRegistry
-import com.nendo.argosy.data.local.dao.GameDao
-import com.nendo.argosy.data.local.entity.GameEntity
+import com.nendo.argosy.data.local.entity.SaveCacheEntity
+import com.nendo.argosy.data.repository.ActiveSaveRepository
 import com.nendo.argosy.data.repository.SaveCacheManager
 import com.swordfish.libretrodroid.GLRetroView
 import java.io.File
@@ -19,7 +19,7 @@ class SaveStateManager(
     private val statesDir: File,
     private val romPath: String,
     private val gameId: Long,
-    private val gameDao: GameDao,
+    private val activeSaveRepository: ActiveSaveRepository,
     private val saveCacheManager: SaveCacheManager,
     private val usesExternalMemcard: Boolean = false,
     private val channelName: String? = null,
@@ -123,13 +123,13 @@ class SaveStateManager(
             return RestoreResult(bytes)
         }
 
-        val game = if (launchMode == LaunchMode.RESUME || launchMode == LaunchMode.RESUME_HARDCORE) {
-            gameDao.getById(gameId)
+        val activeSave = if (launchMode == LaunchMode.RESUME || launchMode == LaunchMode.RESUME_HARDCORE) {
+            activeSaveRepository.getActiveRow(gameId)
         } else {
             null
         }
 
-        if (game?.activeSaveApplied == true) {
+        if (activeSave?.activeSaveApplied == true) {
             val sramFile = getSramFile()
             if (sramFile.exists()) {
                 val bytes = sramFile.readBytes()
@@ -178,7 +178,7 @@ class SaveStateManager(
                     RestoreResult(bytes)
                 } else {
                     Log.d(TAG, "No hardcore save; using active save for hardcore session")
-                    val fallback = restoreResumeSave(game)
+                    val fallback = restoreResumeSave(activeSave)
                     if (fallback.sramData != null && !fallback.switchToHardcore) {
                         fallback.copy(casualSaveInHardcore = true)
                     } else {
@@ -186,27 +186,17 @@ class SaveStateManager(
                     }
                 }
             }
-            LaunchMode.RESUME -> restoreResumeSave(game)
+            LaunchMode.RESUME -> restoreResumeSave(activeSave)
         }
     }
 
-    private suspend fun restoreResumeSave(game: GameEntity?): RestoreResult {
-        val activeSaveTimestamp = game?.activeSaveTimestamp
-        val activeChannel = game?.activeSaveChannel
-
-        val targetSave = when {
-            activeSaveTimestamp != null -> {
-                Log.d(TAG, "RESUME: Looking for activated save at timestamp $activeSaveTimestamp")
-                saveCacheManager.getByTimestamp(gameId, activeSaveTimestamp)
-            }
-            activeChannel != null -> {
-                Log.d(TAG, "RESUME: Looking for most recent save in channel '$activeChannel'")
-                saveCacheManager.getMostRecentInChannel(gameId, activeChannel)
-            }
-            else -> {
-                Log.d(TAG, "RESUME: Looking for most recent save overall")
-                saveCacheManager.getMostRecentSave(gameId)
-            }
+    private suspend fun restoreResumeSave(activeSave: SaveCacheEntity?): RestoreResult {
+        val targetSave = if (activeSave != null) {
+            Log.d(TAG, "RESUME: Using active save cacheId=${activeSave.id} channel='${activeSave.channelName}'")
+            activeSave
+        } else {
+            Log.d(TAG, "RESUME: No active save, looking for most recent save overall")
+            saveCacheManager.getMostRecentSave(gameId)
         }
 
         if (targetSave != null) {

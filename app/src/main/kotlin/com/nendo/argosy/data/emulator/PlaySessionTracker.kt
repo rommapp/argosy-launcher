@@ -86,6 +86,7 @@ class PlaySessionTracker @Inject constructor(
     private val application: Application,
     private val gameDao: GameDao,
     private val overlayWriter: com.nendo.argosy.data.repository.GameUserOverlayWriter,
+    private val activeSaveRepository: com.nendo.argosy.data.repository.ActiveSaveRepository,
     private val playSessionDao: PlaySessionDao,
     private val saveCacheDao: SaveCacheDao,
     private val pendingSyncQueueDao: com.nendo.argosy.data.local.dao.PendingSyncQueueDao,
@@ -269,8 +270,8 @@ class PlaySessionTracker @Inject constructor(
             )
             when (cacheResult) {
                 is SaveCacheManager.CacheResult.Created -> {
-                    overlayWriter.updateActiveSaveTimestamp(orphaned.gameId, cacheResult.timestamp)
-                    overlayWriter.updateActiveSaveApplied(orphaned.gameId, false)
+                    activeSaveRepository.activateCache(orphaned.gameId, cacheResult.cacheId)
+                    activeSaveRepository.setActiveSaveApplied(orphaned.gameId, false)
                     Logger.info(TAG, "[SaveSync] ORPHAN gameId=${orphaned.gameId} | Recovery backup created | path=$savePath")
                 }
                 is SaveCacheManager.CacheResult.Duplicate ->
@@ -446,7 +447,8 @@ class PlaySessionTracker @Inject constructor(
 
         scope.launch {
             val game = gameDao.getById(gameId)
-            val channelName = if (isHardcore || variantFileId != null) null else game?.activeSaveChannel
+            val activeSave = activeSaveRepository.getActiveRow(gameId)
+            val channelName = if (isHardcore || variantFileId != null) null else activeSave?.channelName
 
             _activeSession.value = _activeSession.value?.copy(channelName = channelName)
 
@@ -474,7 +476,7 @@ class PlaySessionTracker @Inject constructor(
 
             val prefs = preferencesRepository.userPreferences.first()
             if (prefs.saveSyncEnabled && channelName != null) {
-                val activeSaveTimestamp = game?.activeSaveTimestamp
+                val activeSaveTimestamp = activeSave?.cachedAt?.toEpochMilli()
                 val latestCache = saveCacheDao.getLatestCasualSaveInChannel(gameId, channelName)
                 val sessionEmuId = if (game != null) emulatorResolver.resolveEmulatorId(emulatorPackage) else null
                 val usesBundledSave = if (game != null && sessionEmuId != null) {
@@ -487,18 +489,19 @@ class PlaySessionTracker @Inject constructor(
                     activeSaveTimestamp >= latestCache.cachedAt.toEpochMilli() -> false
                     else -> {
                         val emuId = sessionEmuId
-                        val onDiskPath = emuId?.let {
+                        val sessionGame = game
+                        val onDiskPath = if (emuId != null && sessionGame != null) {
                             saveSyncRepository.get().discoverSavePath(
-                                emulatorId = it,
-                                gameTitle = game.title,
-                                platformSlug = game.platformSlug,
-                                romPath = game.localPath,
-                                cachedSaveId = game.saveId ?: game.titleId,
+                                emulatorId = emuId,
+                                gameTitle = sessionGame.title,
+                                platformSlug = sessionGame.platformSlug,
+                                romPath = sessionGame.localPath,
+                                cachedSaveId = sessionGame.saveId ?: sessionGame.titleId,
                                 coreName = coreName,
                                 emulatorPackage = emulatorPackage,
                                 gameId = gameId
                             )
-                        }
+                        } else null
                         val onDiskHash = onDiskPath?.let { saveCacheManager.get().calculateLocalSaveHash(it) }
                         onDiskHash == null || latestCache.contentHash == null || onDiskHash != latestCache.contentHash
                     }
@@ -548,7 +551,7 @@ class PlaySessionTracker @Inject constructor(
             }
         } else null
 
-        val channelName = if (isHardcore) null else game.activeSaveChannel
+        val channelName = if (isHardcore) null else activeSaveRepository.getActiveChannel(gameId)
 
         Logger.debug(TAG, "[GameSession] Starting service for gameId=$gameId | watchPath=$watchPath | savePath=$savePath")
         GameSessionService.start(
@@ -798,7 +801,6 @@ class PlaySessionTracker @Inject constructor(
         val serverTimestamp = uploadResult.serverTimestamp
         if (serverTimestamp != null) {
             saveCacheDao.updateCachedAt(cacheEntry.id, serverTimestamp)
-            overlayWriter.updateActiveSaveTimestamp(gameId, serverTimestamp.toEpochMilli())
         }
 
         com.nendo.argosy.util.SaveDebugLogger.logLinkCache(
@@ -1061,8 +1063,8 @@ class PlaySessionTracker @Inject constructor(
                 )
                 when (cacheResult) {
                     is SaveCacheManager.CacheResult.Created -> {
-                        overlayWriter.updateActiveSaveTimestamp(session.gameId, cacheResult.timestamp)
-                        overlayWriter.updateActiveSaveApplied(session.gameId, false)
+                        activeSaveRepository.activateCache(session.gameId, cacheResult.cacheId)
+                        activeSaveRepository.setActiveSaveApplied(session.gameId, false)
                         Logger.debug(TAG, "[SaveSync] SESSION gameId=${session.gameId} | Cached local save | path=$savePath, channel=$activeChannel")
                     }
                     is SaveCacheManager.CacheResult.Duplicate -> {

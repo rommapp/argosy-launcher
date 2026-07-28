@@ -23,6 +23,7 @@ import javax.inject.Inject
 
 class SaveManagementDelegate @Inject constructor(
     private val gameRepository: GameRepository,
+    private val activeSaveRepository: com.nendo.argosy.data.repository.ActiveSaveRepository,
     private val saveSyncDao: SaveSyncDao,
     private val emulatorSaveConfigDao: EmulatorSaveConfigDao,
     private val emulatorResolver: EmulatorResolver,
@@ -55,7 +56,7 @@ class SaveManagementDelegate @Inject constructor(
             ?: cacheTimestamp?.toEpochMilli()
 
         if (activeSaveTimestamp == null && effectiveTimestamp != null) {
-            gameRepository.updateActiveSaveTimestamp(gameId, effectiveTimestamp)
+            activeSaveRepository.activateTimestamp(gameId, effectiveTimestamp)
         }
 
         val lastSyncTime = syncEntity?.lastSyncedAt

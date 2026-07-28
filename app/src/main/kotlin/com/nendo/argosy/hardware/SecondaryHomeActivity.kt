@@ -115,6 +115,8 @@ class SecondaryHomeActivity :
             return
         }
 
+        if (releaseUnsupportedDisplay()) return
+
         val existing = DualScreenManagerHolder.instance
         if (existing != null) {
             dsm = existing
@@ -267,6 +269,7 @@ class SecondaryHomeActivity :
 
     override fun onResume() {
         super.onResume()
+        if (releaseUnsupportedDisplay()) return
         hideSystemUI()
         if (!::dsm.isInitialized) return
         val currentDsm = DualScreenManagerHolder.instance
@@ -715,6 +718,7 @@ class SecondaryHomeActivity :
         }
         stateManager = SecondaryHomeStateManager(
             context = applicationContext, gameRepository = gameRepository,
+            activeSaveRepository = dsm.activeSaveRepository,
             platformRepository = platformRepository,
             collectionRepository = collectionRepository,
             emulatorConfigDao = dsm.emulatorConfigDao,
@@ -887,6 +891,30 @@ class SecondaryHomeActivity :
         } catch (_: Exception) {
             launchedExternalApp = false
         }
+    }
+
+    /**
+     * The companion is only ever launched onto the secondary display, so landing on the default
+     * one means the OS refused that placement - it does not permit a home activity there. Left
+     * running it would cover the launcher and be relaunched in a loop, so release the component
+     * and drop to single-screen instead. Returns true when the activity has been finished.
+     */
+    private fun releaseUnsupportedDisplay(): Boolean {
+        val ownDisplayId = try {
+            window.decorView.display?.displayId ?: windowManager.defaultDisplay.displayId
+        } catch (_: Exception) { return false }
+        if (ownDisplayId != android.view.Display.DEFAULT_DISPLAY) return false
+
+        android.util.Log.w(
+            "SecondaryHome",
+            "Companion placed on the default display; this OS does not allow a secondary home"
+        )
+        SessionStateStore(applicationContext).setSecondaryDisplayUsable(false)
+        DualScreenManagerHolder.instance?.fallbackToSingleScreen(persistent = true)
+        com.nendo.argosy.util.SecondaryHomeComponent.setEnabled(this, false)
+        CompanionGuardService.stop(this)
+        finish()
+        return true
     }
 
     private fun registerDisplayListener() {

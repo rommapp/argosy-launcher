@@ -2319,3 +2319,206 @@ object Migration_153_154 : Migration(153, 154) {
         )
     }
 }
+
+/**
+ * Moves the active-save target onto the `save_cache` row it always pointed at.
+ *
+ * The channel and the restore timestamp were two columns on `games` naming a cache row
+ * indirectly, which a re-timestamped upload could leave dangling. The row now carries the flag
+ * itself. The backfill resolves the old pointer per account, preferring the exact timestamp and
+ * falling back to the newest row in the recorded channel; a pointer at a channel that holds no
+ * cache row resolves to nothing, which is the same thing it meant before.
+ */
+object Migration_154_155 : Migration(154, 155) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE `save_cache` ADD COLUMN `isActive` INTEGER NOT NULL DEFAULT 0")
+        db.execSQL("ALTER TABLE `save_cache` ADD COLUMN `activeSaveApplied` INTEGER NOT NULL DEFAULT 0")
+        db.execSQL("ALTER TABLE `save_cache` ADD COLUMN `pendingDeviceSyncSaveId` INTEGER")
+
+        db.execSQL(
+            "UPDATE `save_cache` SET `isActive` = 1 WHERE `id` IN (" +
+                "SELECT (" +
+                "SELECT sc.`id` FROM `save_cache` sc " +
+                "WHERE sc.`gameId` = o.`gameId` " +
+                "AND (sc.`ownerUserId` IS NULL OR sc.`ownerUserId` = o.`ownerUserId`) " +
+                "AND ((o.`activeSaveTimestamp` IS NOT NULL AND sc.`cachedAt` = o.`activeSaveTimestamp`) " +
+                "OR (o.`activeSaveTimestamp` IS NULL AND o.`activeSaveChannel` IS NOT NULL " +
+                "AND sc.`channelName` = o.`activeSaveChannel`)) " +
+                "ORDER BY sc.`cachedAt` DESC LIMIT 1" +
+                ") FROM `game_user_overlay` o " +
+                "WHERE o.`activeSaveTimestamp` IS NOT NULL OR o.`activeSaveChannel` IS NOT NULL" +
+                ")"
+        )
+
+        db.execSQL(
+            "UPDATE `save_cache` SET `isActive` = 1 WHERE `id` IN (" +
+                "SELECT (" +
+                "SELECT sc.`id` FROM `save_cache` sc " +
+                "WHERE sc.`gameId` = g.`id` " +
+                "AND ((g.`activeSaveTimestamp` IS NOT NULL AND sc.`cachedAt` = g.`activeSaveTimestamp`) " +
+                "OR (g.`activeSaveTimestamp` IS NULL AND g.`activeSaveChannel` IS NOT NULL " +
+                "AND sc.`channelName` = g.`activeSaveChannel`)) " +
+                "ORDER BY sc.`cachedAt` DESC LIMIT 1" +
+                ") FROM `games` g " +
+                "WHERE (g.`activeSaveTimestamp` IS NOT NULL OR g.`activeSaveChannel` IS NOT NULL) " +
+                "AND NOT EXISTS (SELECT 1 FROM `game_user_overlay` o WHERE o.`gameId` = g.`id`)" +
+                ")"
+        )
+
+        db.execSQL(
+            "UPDATE `save_cache` SET " +
+                "`activeSaveApplied` = IFNULL((SELECT o.`activeSaveApplied` FROM `game_user_overlay` o " +
+                "WHERE o.`gameId` = `save_cache`.`gameId` " +
+                "AND (`save_cache`.`ownerUserId` IS NULL OR o.`ownerUserId` = `save_cache`.`ownerUserId`) " +
+                "LIMIT 1), 0), " +
+                "`pendingDeviceSyncSaveId` = (SELECT o.`pendingDeviceSyncSaveId` FROM `game_user_overlay` o " +
+                "WHERE o.`gameId` = `save_cache`.`gameId` " +
+                "AND (`save_cache`.`ownerUserId` IS NULL OR o.`ownerUserId` = `save_cache`.`ownerUserId`) " +
+                "LIMIT 1) " +
+                "WHERE `isActive` = 1"
+        )
+    }
+}
+
+/**
+ * Drops the active-save columns now that `save_cache` carries them.
+ *
+ * `games` is the CASCADE parent of nine tables, so the rebuild runs with foreign keys off: an
+ * enforced DROP TABLE on a parent performs an implicit delete and would take every child row with
+ * it. Every index on the rebuilt tables is recreated by hand for the same reason a rebuild is
+ * needed at all -- SQLite carries neither across the rename.
+ */
+object Migration_155_156 : Migration(155, 156) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("PRAGMA foreign_keys=OFF")
+
+        db.execSQL(
+            "CREATE TABLE IF NOT EXISTS `games_new` (" +
+                "`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `platformId` INTEGER NOT NULL, " +
+                "`platformSlug` TEXT NOT NULL, `title` TEXT NOT NULL, `sortTitle` TEXT NOT NULL, " +
+                "`searchTitle` TEXT NOT NULL, `localPath` TEXT, `rommId` INTEGER, " +
+                "`rommFileName` TEXT, `igdbId` INTEGER, `raId` INTEGER, `steamAppId` INTEGER, " +
+                "`steamLauncher` TEXT, `steamInstallDir` TEXT, `packageName` TEXT, " +
+                "`launcherSetManually` INTEGER NOT NULL, `source` TEXT NOT NULL, `coverPath` TEXT, " +
+                "`originalCoverPath` TEXT, `coverSetManually` INTEGER NOT NULL, " +
+                "`gradientColors` TEXT, `backgroundPath` TEXT, `screenshotPaths` TEXT, " +
+                "`cachedScreenshotPaths` TEXT, `boxBackPath` TEXT, `boxSpinePath` TEXT, " +
+                "`developer` TEXT, `publisher` TEXT, `releaseYear` INTEGER, `genre` TEXT, " +
+                "`description` TEXT, `players` TEXT, `rating` REAL, `regions` TEXT, " +
+                "`languages` TEXT, `gameModes` TEXT, `franchises` TEXT, `genres` TEXT, " +
+                "`collections` TEXT, `alternativeNames` TEXT, `ageRatings` TEXT, `mobyId` INTEGER, " +
+                "`sgdbId` INTEGER, `ssId` INTEGER, `launchboxId` INTEGER, `hasheousId` INTEGER, " +
+                "`tgdbId` INTEGER, `hltbId` INTEGER, `timeToBeatMainSec` INTEGER, " +
+                "`timeToBeatExtraSec` INTEGER, `timeToBeatCompletionistSec` INTEGER, " +
+                "`flashpointId` TEXT, `gamelistId` TEXT, `libretroId` TEXT, `crcHash` TEXT, " +
+                "`md5Hash` TEXT, `sha1Hash` TEXT, `raHash` TEXT, `hasManual` INTEGER NOT NULL, " +
+                "`manualPath` TEXT, `remoteHasSoundtrack` INTEGER NOT NULL, " +
+                "`isIdentified` INTEGER NOT NULL, `userRating` INTEGER NOT NULL, " +
+                "`userDifficulty` INTEGER NOT NULL, `completion` INTEGER NOT NULL, `status` TEXT, " +
+                "`backlogged` INTEGER NOT NULL, `nowPlaying` INTEGER NOT NULL, " +
+                "`isFavorite` INTEGER NOT NULL, `isHidden` INTEGER NOT NULL, " +
+                "`playCount` INTEGER NOT NULL, `playTimeMinutes` INTEGER NOT NULL, " +
+                "`lastPlayed` INTEGER, `addedAt` INTEGER NOT NULL, `isMultiDisc` INTEGER NOT NULL, " +
+                "`lastPlayedDiscId` INTEGER, `m3uPath` TEXT, `activeVariantFileId` INTEGER, " +
+                "`lastPlayedFileId` INTEGER, `achievementCount` INTEGER NOT NULL, " +
+                "`earnedAchievementCount` INTEGER NOT NULL, `titleId` TEXT, " +
+                "`titleIdLocked` INTEGER NOT NULL, `storeEnrichStatus` INTEGER NOT NULL, " +
+                "`titleIdCandidates` TEXT, `saveId` TEXT, `youtubeVideoId` TEXT, " +
+                "`cheatsFetched` INTEGER NOT NULL, `cheatsFetchedAt` INTEGER, " +
+                "`cheatsSelectedRegion` TEXT, `cheatsSelectedVersion` TEXT, " +
+                "`achievementsFetchedAt` INTEGER, `romHash` TEXT, `verifiedRaId` INTEGER, " +
+                "`raIdVerified` INTEGER NOT NULL, `fileSizeBytes` INTEGER, " +
+                "`perGameSettingsEnabled` INTEGER NOT NULL, " +
+                "`perGameControlsEnabled` INTEGER NOT NULL, `syncDirty` INTEGER NOT NULL, " +
+                "FOREIGN KEY(`platformId`) REFERENCES `platforms`(`id`) " +
+                "ON UPDATE NO ACTION ON DELETE CASCADE )"
+        )
+
+        val gameColumns = "`id`, `platformId`, `platformSlug`, `title`, `sortTitle`, " +
+            "`searchTitle`, `localPath`, `rommId`, `rommFileName`, `igdbId`, `raId`, " +
+            "`steamAppId`, `steamLauncher`, `steamInstallDir`, `packageName`, " +
+            "`launcherSetManually`, `source`, `coverPath`, `originalCoverPath`, " +
+            "`coverSetManually`, `gradientColors`, `backgroundPath`, `screenshotPaths`, " +
+            "`cachedScreenshotPaths`, `boxBackPath`, `boxSpinePath`, `developer`, `publisher`, " +
+            "`releaseYear`, `genre`, `description`, `players`, `rating`, `regions`, " +
+            "`languages`, `gameModes`, `franchises`, `genres`, `collections`, " +
+            "`alternativeNames`, `ageRatings`, `mobyId`, `sgdbId`, `ssId`, `launchboxId`, " +
+            "`hasheousId`, `tgdbId`, `hltbId`, `timeToBeatMainSec`, `timeToBeatExtraSec`, " +
+            "`timeToBeatCompletionistSec`, `flashpointId`, `gamelistId`, `libretroId`, " +
+            "`crcHash`, `md5Hash`, `sha1Hash`, `raHash`, `hasManual`, `manualPath`, " +
+            "`remoteHasSoundtrack`, `isIdentified`, `userRating`, `userDifficulty`, " +
+            "`completion`, `status`, `backlogged`, `nowPlaying`, `isFavorite`, `isHidden`, " +
+            "`playCount`, `playTimeMinutes`, `lastPlayed`, `addedAt`, `isMultiDisc`, " +
+            "`lastPlayedDiscId`, `m3uPath`, `activeVariantFileId`, `lastPlayedFileId`, " +
+            "`achievementCount`, `earnedAchievementCount`, `titleId`, `titleIdLocked`, " +
+            "`storeEnrichStatus`, `titleIdCandidates`, `saveId`, `youtubeVideoId`, " +
+            "`cheatsFetched`, `cheatsFetchedAt`, `cheatsSelectedRegion`, " +
+            "`cheatsSelectedVersion`, `achievementsFetchedAt`, `romHash`, `verifiedRaId`, " +
+            "`raIdVerified`, `fileSizeBytes`, `perGameSettingsEnabled`, " +
+            "`perGameControlsEnabled`, `syncDirty`"
+
+        db.execSQL("INSERT INTO `games_new` ($gameColumns) SELECT $gameColumns FROM `games`")
+        db.execSQL("DROP TABLE `games`")
+        db.execSQL("ALTER TABLE `games_new` RENAME TO `games`")
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_games_platformId` ON `games` (`platformId`)")
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_games_title` ON `games` (`title`)")
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_games_lastPlayed` ON `games` (`lastPlayed`)")
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_games_source` ON `games` (`source`)")
+        db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_games_rommId` ON `games` (`rommId`)")
+        db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_games_steamAppId` ON `games` (`steamAppId`)")
+        db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_games_packageName` ON `games` (`packageName`)")
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_games_regions` ON `games` (`regions`)")
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_games_gameModes` ON `games` (`gameModes`)")
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_games_franchises` ON `games` (`franchises`)")
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_games_genres` ON `games` (`genres`)")
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_games_collections` ON `games` (`collections`)")
+
+        db.execSQL(
+            "CREATE TABLE IF NOT EXISTS `game_user_overlay_new` (" +
+                "`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                "`ownerUserId` INTEGER NOT NULL, " +
+                "`gameId` INTEGER NOT NULL, " +
+                "`isMember` INTEGER NOT NULL, " +
+                "`serverHidden` INTEGER NOT NULL, " +
+                "`isFavorite` INTEGER NOT NULL, " +
+                "`userRating` INTEGER NOT NULL, " +
+                "`userDifficulty` INTEGER NOT NULL, " +
+                "`completion` INTEGER NOT NULL, " +
+                "`status` TEXT, " +
+                "`backlogged` INTEGER NOT NULL, " +
+                "`nowPlaying` INTEGER NOT NULL, " +
+                "`playCount` INTEGER NOT NULL, " +
+                "`playTimeMinutes` INTEGER NOT NULL, " +
+                "`lastPlayed` INTEGER, " +
+                "`earnedAchievementCount` INTEGER NOT NULL, " +
+                "FOREIGN KEY(`gameId`) REFERENCES `games`(`id`) " +
+                "ON UPDATE NO ACTION ON DELETE CASCADE )"
+        )
+
+        val overlayColumns = "`id`, `ownerUserId`, `gameId`, `isMember`, `serverHidden`, " +
+            "`isFavorite`, `userRating`, `userDifficulty`, `completion`, `status`, " +
+            "`backlogged`, `nowPlaying`, `playCount`, `playTimeMinutes`, `lastPlayed`, " +
+            "`earnedAchievementCount`"
+
+        db.execSQL(
+            "INSERT INTO `game_user_overlay_new` ($overlayColumns) " +
+                "SELECT $overlayColumns FROM `game_user_overlay`"
+        )
+        db.execSQL("DROP TABLE `game_user_overlay`")
+        db.execSQL("ALTER TABLE `game_user_overlay_new` RENAME TO `game_user_overlay`")
+        db.execSQL(
+            "CREATE UNIQUE INDEX IF NOT EXISTS `index_game_user_overlay_ownerUserId_gameId` " +
+                "ON `game_user_overlay` (`ownerUserId`, `gameId`)"
+        )
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS `index_game_user_overlay_gameId` " +
+                "ON `game_user_overlay` (`gameId`)"
+        )
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS `index_game_user_overlay_ownerUserId` " +
+                "ON `game_user_overlay` (`ownerUserId`)"
+        )
+
+        db.execSQL("PRAGMA foreign_keys=ON")
+    }
+}

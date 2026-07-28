@@ -33,6 +33,7 @@ class SaveChannelSavesDelegateTest {
             saveSyncRepository = mockk(relaxed = true),
             stateCacheManager = mockk(relaxed = true),
             gameRepository = mockk(relaxed = true),
+            activeSaveRepository = mockk(relaxed = true),
             notificationManager = mockk(relaxed = true),
             soundManager = mockk(relaxed = true),
             titleIdDownloadObserver = mockk(relaxed = true),

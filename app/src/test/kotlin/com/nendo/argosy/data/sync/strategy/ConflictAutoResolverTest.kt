@@ -2,6 +2,7 @@ package com.nendo.argosy.data.sync.strategy
 
 import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.dao.PendingSyncQueueDao
+import com.nendo.argosy.data.local.dao.SaveCacheDao
 import com.nendo.argosy.data.local.dao.SaveSyncDao
 import com.nendo.argosy.data.local.entity.GameEntity
 import com.nendo.argosy.data.local.entity.PendingSyncQueueEntity
@@ -21,10 +22,12 @@ class ConflictAutoResolverTest {
     private val gameDao: GameDao = mockk()
     private val saveSyncDao: SaveSyncDao = mockk(relaxed = true)
     private val pendingSyncQueueDao: PendingSyncQueueDao = mockk(relaxed = true)
+    private val saveCacheDao: SaveCacheDao = mockk(relaxed = true)
 
-    private val resolver = ConflictAutoResolver(gameDao, saveSyncDao, pendingSyncQueueDao)
+    private val resolver =
+        ConflictAutoResolver(gameDao, saveSyncDao, saveCacheDao, pendingSyncQueueDao)
 
-    private fun game(id: Long = 1L, rommId: Long = 100L, activeApplied: Boolean = false) = GameEntity(
+    private fun game(id: Long = 1L, rommId: Long = 100L) = GameEntity(
         id = id,
         title = "Test",
         sortTitle = "test",
@@ -33,8 +36,7 @@ class ConflictAutoResolverTest {
         localPath = null,
         rommId = rommId,
         igdbId = null,
-        source = GameSource.LOCAL_ONLY,
-        activeSaveApplied = activeApplied
+        source = GameSource.LOCAL_ONLY
     )
 
     private fun op(
@@ -59,7 +61,8 @@ class ConflictAutoResolverTest {
 
     @Test
     fun `rule 1 keeps local when activeSaveApplied is true`() = runTest {
-        coEvery { gameDao.getByRommId(100L) } returns game(activeApplied = true)
+        coEvery { gameDao.getByRommId(100L) } returns game()
+        coEvery { saveCacheDao.hasActiveSaveApplied(1L) } returns true
 
         val result = resolver.classify(op())
 
@@ -143,7 +146,8 @@ class ConflictAutoResolverTest {
 
     @Test
     fun `rule 1 takes precedence over rule 2`() = runTest {
-        coEvery { gameDao.getByRommId(100L) } returns game(activeApplied = true)
+        coEvery { gameDao.getByRommId(100L) } returns game()
+        coEvery { saveCacheDao.hasActiveSaveApplied(1L) } returns true
         coEvery { pendingSyncQueueDao.getByGameId(1L) } returns listOf(
             PendingSyncQueueEntity(
                 gameId = 1L,

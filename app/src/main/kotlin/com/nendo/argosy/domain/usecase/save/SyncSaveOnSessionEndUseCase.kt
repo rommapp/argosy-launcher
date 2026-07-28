@@ -7,6 +7,7 @@ import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.preferences.PersistedSession
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.remote.romm.RomMRepository
+import com.nendo.argosy.data.repository.ActiveSaveRepository
 import com.nendo.argosy.data.repository.SaveSyncRepository
 import com.nendo.argosy.data.repository.SaveSyncResult
 import com.nendo.argosy.util.Logger
@@ -18,6 +19,7 @@ import javax.inject.Inject
 class SyncSaveOnSessionEndUseCase @Inject constructor(
     private val saveSyncRepository: SaveSyncRepository,
     private val gameDao: GameDao,
+    private val activeSaveRepository: ActiveSaveRepository,
     private val emulatorConfigDao: EmulatorConfigDao,
     private val emulatorResolver: EmulatorResolver,
     private val preferencesRepository: UserPreferencesRepository,
@@ -138,7 +140,7 @@ class SyncSaveOnSessionEndUseCase @Inject constructor(
         } else {
             Instant.ofEpochMilli(saveFile.lastModified())
         }
-        val activeChannel = channelName ?: game.activeSaveChannel
+        val activeChannel = channelName ?: activeSaveRepository.getActiveChannel(gameId)
             ?: if (isHardcore) null else com.nendo.argosy.data.repository.SaveSyncApiClient.AUTOSAVE_SLOT_NAME
         Logger.debug(TAG, "[SaveSync] SESSION gameId=$gameId | Save ready for upload | path=$savePath, size=${saveSize}bytes, modified=$localModified, channel=$activeChannel")
 

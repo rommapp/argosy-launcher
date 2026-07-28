@@ -69,6 +69,7 @@ class MainActivity : ComponentActivity() {
 
     @Inject lateinit var gameDao: GameDao
     @Inject lateinit var gameRepository: com.nendo.argosy.data.repository.GameRepository
+    @Inject lateinit var activeSaveRepository: com.nendo.argosy.data.repository.ActiveSaveRepository
     @Inject lateinit var configureEmulatorUseCase: com.nendo.argosy.domain.usecase.game.ConfigureEmulatorUseCase
     @Inject lateinit var platformRepository: PlatformRepository
     @Inject lateinit var collectionRepository: CollectionRepository
@@ -257,6 +258,7 @@ class MainActivity : ComponentActivity() {
         discordPresenceManager.init(this)
 
         displayAffinityHelper.dualScreenEnabled = sessionStateStore.isDualScreenEnabled()
+        displayAffinityHelper.secondaryDisplayUsable = sessionStateStore.isSecondaryDisplayUsable()
         val resolver = DisplayRoleResolver(displayAffinityHelper, sessionStateStore)
         val initialSwapped = resolver.isSwapped
         sessionStateStore.setRolesSwapped(initialSwapped)
@@ -272,6 +274,7 @@ class MainActivity : ComponentActivity() {
                 scope = activityScope,
                 gameDao = gameDao,
                 gameRepository = gameRepository,
+                activeSaveRepository = activeSaveRepository,
                 platformRepository = platformRepository,
                 collectionRepository = collectionRepository,
                 downloadQueueDao = downloadQueueDao,

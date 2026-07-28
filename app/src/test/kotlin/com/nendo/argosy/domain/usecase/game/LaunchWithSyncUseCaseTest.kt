@@ -67,7 +67,7 @@ class LaunchWithSyncUseCaseTest {
         every { SavePathRegistry.canSyncWithSettings(emulatorId, any()) } returns true
 
         useCase = LaunchWithSyncUseCase(
-            gameDao, mockk<com.nendo.argosy.data.repository.GameUserOverlayWriter>(relaxed = true), emulatorConfigDao, emulatorResolver,
+            gameDao, mockk<com.nendo.argosy.data.repository.ActiveSaveRepository>(relaxed = true), emulatorConfigDao, emulatorResolver,
             preferencesRepository, romMRepository, saveSyncRepository,
             titleIdDownloadObserver, preLaunchStateSyncUseCase
         )

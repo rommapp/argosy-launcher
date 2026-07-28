@@ -36,7 +36,7 @@ class SaveDownloader @Inject constructor(
     private val saveCacheDao: SaveCacheDao,
     private val emulatorResolver: EmulatorResolver,
     private val gameDao: GameDao,
-    private val overlayWriter: GameUserOverlayWriter,
+    private val activeSaveRepository: ActiveSaveRepository,
     private val titleDbRepository: TitleDbRepository,
     private val titleIdExtractor: com.nendo.argosy.data.emulator.TitleIdExtractor,
     private val saveArchiver: SaveArchiver,
@@ -262,9 +262,7 @@ class SaveDownloader @Inject constructor(
                     if (serverTimestamp != null && cachedMatch.cachedAt != serverTimestamp) {
                         saveCacheDao.updateCachedAt(cachedMatch.id, serverTimestamp)
                     }
-                    if (serverTimestamp != null) {
-                        overlayWriter.updateActiveSaveTimestamp(gameId, serverTimestamp.toEpochMilli())
-                    }
+                    activeSaveRepository.activateCache(gameId, cachedMatch.id)
                     Logger.info(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | Complete (cache-hit) | path=$preDownloadTargetPath")
                     return@withContext SaveSyncResult.Success(rommSaveId = serverSave.id, serverTimestamp = serverTimestamp)
                 }
@@ -618,11 +616,13 @@ class SaveDownloader @Inject constructor(
                     precomputedContentHash = serverSave.contentHash
                 )
                 if (cacheResult is SaveCacheManager.CacheResult.Created) {
-                    overlayWriter.updateActiveSaveTimestamp(gameId, cacheResult.timestamp)
-                    overlayWriter.updateActiveSaveApplied(gameId, false)
                     if (serverTimestamp != null && cacheResult.cacheId > 0L) {
                         saveCacheDao.updateCachedAt(cacheResult.cacheId, serverTimestamp)
                     }
+                    if (cacheResult.cacheId > 0L) {
+                        activeSaveRepository.activateCache(gameId, cacheResult.cacheId)
+                    }
+                    activeSaveRepository.setActiveSaveApplied(gameId, false)
                 }
             } catch (e: Exception) {
                 Logger.error(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | Cache creation failed", e)
@@ -994,11 +994,11 @@ class SaveDownloader @Inject constructor(
     }
 
     suspend fun flushPendingDeviceSync(gameId: Long) {
-        val pendingSaveId = gameDao.getPendingDeviceSyncSaveId(gameId) ?: return
+        val pendingSaveId = activeSaveRepository.getPendingDeviceSyncSaveId(gameId) ?: return
         Logger.debug(TAG, "[SaveSync] flushPendingDeviceSync | gameId=$gameId, pendingSaveId=$pendingSaveId")
         try {
             confirmDeviceSynced(pendingSaveId)
-            overlayWriter.setPendingDeviceSyncSaveId(gameId, null)
+            activeSaveRepository.setPendingDeviceSyncSaveId(gameId, null)
             Logger.debug(TAG, "[SaveSync] flushPendingDeviceSync | gameId=$gameId | Flushed successfully")
         } catch (e: Exception) {
             Logger.warn(TAG, "[SaveSync] flushPendingDeviceSync | gameId=$gameId | Failed, will retry later", e)

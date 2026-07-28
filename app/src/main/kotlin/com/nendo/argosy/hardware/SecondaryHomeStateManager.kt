@@ -23,6 +23,7 @@ import kotlinx.coroutines.withContext
 class SecondaryHomeStateManager(
     private val context: Context,
     private val gameRepository: GameRepository,
+    private val activeSaveRepository: com.nendo.argosy.data.repository.ActiveSaveRepository,
     private val platformRepository: PlatformRepository,
     private val collectionRepository: CollectionRepository,
     private val emulatorConfigDao: EmulatorConfigDao,
@@ -120,6 +121,7 @@ class SecondaryHomeStateManager(
             val affinityHelper = DisplayAffinityHelper(context)
             val vm = DualGameDetailViewModel(
                 gameRepository = gameRepository,
+                activeSaveRepository = activeSaveRepository,
                 platformRepository = platformRepository,
                 collectionRepository = collectionRepository,
                 emulatorConfigDao = emulatorConfigDao,
@@ -236,6 +238,7 @@ class SecondaryHomeStateManager(
         val affinityHelper = DisplayAffinityHelper(context)
         return DualGameDetailViewModel(
             gameRepository = gameRepository,
+            activeSaveRepository = activeSaveRepository,
             platformRepository = platformRepository,
             collectionRepository = collectionRepository,
             emulatorConfigDao = emulatorConfigDao,

@@ -61,7 +61,6 @@ class SaveCacheManagerCachingTest {
             saveSyncDao = saveSyncDao,
             pendingSyncQueueDao = mockk(relaxed = true),
             gameDao = gameDao,
-            overlayWriter = mockk(relaxed = true),
             preferencesRepository = preferencesRepository,
             syncPreferencesRepository = syncPreferencesRepository,
             savePathResolver = savePathResolver,

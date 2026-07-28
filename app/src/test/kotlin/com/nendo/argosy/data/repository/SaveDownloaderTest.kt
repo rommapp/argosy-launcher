@@ -34,7 +34,7 @@ class SaveDownloaderTest {
         saveCacheDao = mockk(relaxed = true),
         emulatorResolver = mockk(relaxed = true),
         gameDao = mockk(relaxed = true),
-        overlayWriter = mockk(relaxed = true),
+        activeSaveRepository = mockk(relaxed = true),
         titleDbRepository = mockk(relaxed = true),
         titleIdExtractor = mockk(relaxed = true),
         saveArchiver = mockk(relaxed = true),

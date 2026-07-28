@@ -56,6 +56,7 @@ const val MEDIA_GRID_COLUMNS = 3
 
 class DualGameDetailViewModel(
     private val gameRepository: GameRepository,
+    private val activeSaveRepository: com.nendo.argosy.data.repository.ActiveSaveRepository,
     private val platformRepository: PlatformRepository,
     private val collectionRepository: CollectionRepository,
     // TODO: replace with EmulatorConfigRepository once it exists (Agent B settings refactor).
@@ -407,8 +408,9 @@ class DualGameDetailViewModel(
                 downloadedVariants.find { it.id == game.activeVariantFileId }?.fileName
             } else null
 
-            val activeChannel = game.activeSaveChannel
-            val activeSaveTimestamp = game.activeSaveTimestamp
+            val activeSave = activeSaveRepository.getActiveRow(game.id)
+            val activeChannel = activeSave?.channelName
+            val activeSaveTimestamp = activeSave?.cachedAt?.toEpochMilli()
 
             val newState = DualGameDetailUiState(
                 gameId = game.id,

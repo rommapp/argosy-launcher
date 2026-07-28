@@ -86,6 +86,7 @@ class GameDetailViewModel @Inject constructor(
     private val builtinCoreResolver: BuiltinCoreResolver,
     private val notificationManager: NotificationManager,
     private val gameRepository: GameRepository,
+    private val activeSaveRepository: com.nendo.argosy.data.repository.ActiveSaveRepository,
     private val gameNavigationContext: GameNavigationContext,
     private val configureEmulatorUseCase: ConfigureEmulatorUseCase,
     private val romMRepository: RomMRepository,
@@ -140,6 +141,7 @@ class GameDetailViewModel @Inject constructor(
     private var backgroundRepairPending = false
     private var gameFilesObserverJob: kotlinx.coroutines.Job? = null
     private var gameEntityObserverJob: kotlinx.coroutines.Job? = null
+    private var activeSaveObserverJob: kotlinx.coroutines.Job? = null
 
     val saveChannelDelegate get() = saveManagement.saveChannelDelegate
 
@@ -528,8 +530,15 @@ class GameDetailViewModel @Inject constructor(
                 emulatorId != null &&
                 SavePathRegistry.getConfig(emulatorId) != null
 
+            val activeSave = activeSaveRepository.getActiveRow(gameId)
+            val activeSaveChannel = activeSave?.channelName
             val saveStatusInfo = if (canManageSaves) {
-                saveManagement.loadSaveStatusInfo(gameId, emulatorId!!, game.activeSaveChannel, game.activeSaveTimestamp)
+                saveManagement.loadSaveStatusInfo(
+                    gameId,
+                    emulatorId!!,
+                    activeSaveChannel,
+                    activeSave?.cachedAt?.toEpochMilli()
+                )
             } else null
 
             val (updateFilesUi, dlcFilesUi) = loadUpdateAndDlcFiles(gameId, game.platformSlug, game.localPath)
@@ -568,7 +577,7 @@ class GameDetailViewModel @Inject constructor(
                     canSearchCovers = romMRepository.getCapabilities().supportsCoverSearch,
                     isLoading = false,
                     selectedCoreId = selectedCoreId,
-                    saveChannel = state.saveChannel.copy(activeChannel = game.activeSaveChannel),
+                    saveChannel = state.saveChannel.copy(activeChannel = activeSaveChannel),
                     saveStatusInfo = saveStatusInfo,
                     updateFiles = updateFilesUi,
                     dlcFiles = dlcFilesUi,
@@ -605,6 +614,7 @@ class GameDetailViewModel @Inject constructor(
 
             observeGameFiles(gameId, game.platformSlug, game.localPath)
             observeGameEntity(gameId)
+            observeActiveSave(gameId)
         }
     }
 
@@ -684,20 +694,36 @@ class GameDetailViewModel @Inject constructor(
 
                 _uiState.update { state ->
                     val currentGame = state.game ?: return@update state
-                    val gameUpdated = currentGame.titleId != updatedGame.titleId
-                    val oldTimestamp = state.saveStatusInfo?.activeSaveTimestamp
-                    val newTimestamp = updatedGame.activeSaveTimestamp
-                    val oldChannel = state.saveChannel.activeChannel
-                    val newChannel = updatedGame.activeSaveChannel
-                    val saveUpdated = oldTimestamp != newTimestamp || oldChannel != newChannel
-
                     when {
-                        gameUpdated || saveUpdated -> state.copy(
-                            game = currentGame.copy(titleId = updatedGame.titleId),
-                            saveChannel = state.saveChannel.copy(activeChannel = updatedGame.activeSaveChannel),
+                        currentGame.titleId != updatedGame.titleId ->
+                            state.copy(game = currentGame.copy(titleId = updatedGame.titleId))
+                        else -> state
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * The active save lives on its `save_cache` row, so the games row no longer changes when the
+     * user switches slot or restores a point. This is what keeps the save status and slot
+     * highlight live on this screen.
+     */
+    private fun observeActiveSave(gameId: Long) {
+        activeSaveObserverJob?.cancel()
+        activeSaveObserverJob = viewModelScope.launch {
+            activeSaveRepository.observeActiveRow(gameId).collect { activeSave ->
+                val newChannel = activeSave?.channelName
+                val newTimestamp = activeSave?.cachedAt?.toEpochMilli()
+                _uiState.update { state ->
+                    val oldTimestamp = state.saveStatusInfo?.activeSaveTimestamp
+                    val oldChannel = state.saveChannel.activeChannel
+                    when {
+                        oldTimestamp != newTimestamp || oldChannel != newChannel -> state.copy(
+                            saveChannel = state.saveChannel.copy(activeChannel = newChannel),
                             saveStatusInfo = state.saveStatusInfo?.copy(
-                                channelName = updatedGame.activeSaveChannel,
-                                activeSaveTimestamp = updatedGame.activeSaveTimestamp
+                                channelName = newChannel,
+                                activeSaveTimestamp = newTimestamp
                             )
                         )
                         else -> state
@@ -987,8 +1013,7 @@ class GameDetailViewModel @Inject constructor(
     ) {
         if (launchMode == com.nendo.argosy.libretro.LaunchMode.NEW_CASUAL ||
             launchMode == com.nendo.argosy.libretro.LaunchMode.NEW_HARDCORE) {
-            gameRepository.updateActiveSaveChannel(currentGameId, null)
-            gameRepository.updateActiveSaveTimestamp(currentGameId, null)
+            activeSaveRepository.clearActive(currentGameId)
             _uiState.update { state ->
                 state.copy(
                     saveChannel = state.saveChannel.copy(activeChannel = null),

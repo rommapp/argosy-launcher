@@ -1,6 +1,6 @@
 package com.nendo.argosy.ui.common.savechannel
 
-import com.nendo.argosy.data.repository.GameRepository
+import com.nendo.argosy.data.repository.ActiveSaveRepository
 import com.nendo.argosy.data.repository.SaveSyncRepository
 import com.nendo.argosy.ui.input.SoundFeedbackManager
 import com.nendo.argosy.core.input.SoundType
@@ -17,7 +17,7 @@ class SaveChannelDelegate @Inject constructor(
     val savesDelegate: SaveChannelSavesDelegate,
     val statesDelegate: SaveChannelStatesDelegate,
     private val saveSyncRepository: SaveSyncRepository,
-    private val gameRepository: GameRepository,
+    private val activeSaveRepository: ActiveSaveRepository,
     private val soundManager: SoundFeedbackManager
 ) {
     val state: StateFlow<SaveChannelState> = holder.state.asStateFlow()
@@ -58,7 +58,7 @@ class SaveChannelDelegate @Inject constructor(
         soundManager.play(SoundType.OPEN_MODAL)
 
         scope.launch {
-            val activeSaveTimestamp = gameRepository.getActiveSaveTimestamp(gameId)
+            val activeSaveTimestamp = activeSaveRepository.getActiveTimestamp(gameId)
             val localEntries = savesDelegate.loadLocalEntries()
             val localSlots = savesDelegate.buildSaveSlots(localEntries, activeChannel, isDeviceAware)
 

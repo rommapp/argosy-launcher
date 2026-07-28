@@ -154,6 +154,7 @@ class LibretroActivity : ComponentActivity() {
     @Inject lateinit var verifyRAGameIdUseCase: com.nendo.argosy.domain.usecase.achievement.VerifyRAGameIdUseCase
     @Inject lateinit var achievementUpdateBus: AchievementUpdateBus
     @Inject lateinit var saveCacheManager: SaveCacheManager
+    @Inject lateinit var activeSaveRepository: com.nendo.argosy.data.repository.ActiveSaveRepository
     @Inject lateinit var ambientLedManager: AmbientLedManager
     @Inject lateinit var socialRepository: SocialRepository
     @Inject lateinit var argosSocialService: ArgosSocialService
@@ -379,7 +380,9 @@ class LibretroActivity : ComponentActivity() {
         platformId = game?.platformId ?: -1L
         platformSlug = intent.getStringExtra(EXTRA_PLATFORM_SLUG)?.takeIf { it.isNotBlank() }
             ?: game?.platformSlug ?: ""
-        activeSaveChannel = game?.activeSaveChannel
+        activeSaveChannel = kotlinx.coroutines.runBlocking {
+            activeSaveRepository.getActiveChannel(gameId)
+        }
         perGameSettingsEnabled = game?.perGameSettingsEnabled == true
         perGameControlsEnabled = game?.perGameControlsEnabled == true
 
@@ -542,7 +545,7 @@ class LibretroActivity : ComponentActivity() {
             statesDir = statesDir,
             romPath = romPath,
             gameId = gameId,
-            gameDao = gameDao,
+            activeSaveRepository = activeSaveRepository,
             saveCacheManager = saveCacheManager,
             usesExternalMemcard = com.nendo.argosy.data.platform.PlatformDefinitions.getCanonicalSlug(platformSlug) == "gc",
             channelName = channelName,

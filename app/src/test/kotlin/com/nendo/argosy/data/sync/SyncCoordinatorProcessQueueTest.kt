@@ -99,7 +99,7 @@ class SyncCoordinatorProcessQueueTest {
             saveSyncDao = saveSyncDao,
             emulatorSaveConfigDao = emulatorSaveConfigDao,
             gameDao = gameDao,
-            overlayWriter = mockk<com.nendo.argosy.data.repository.GameUserOverlayWriter>(relaxed = true),
+            activeSaveRepository = mockk<com.nendo.argosy.data.repository.ActiveSaveRepository>(relaxed = true),
             romMRepository = Lazy { romMRepository },
             saveSyncRepository = Lazy { saveSyncRepository },
             saveCacheManager = Lazy { saveCacheManager },

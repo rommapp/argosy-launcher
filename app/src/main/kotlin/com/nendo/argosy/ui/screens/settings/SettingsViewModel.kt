@@ -23,7 +23,6 @@ import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.remote.github.UpdateRepository
 import com.nendo.argosy.data.remote.romm.RomMRepository
 import com.nendo.argosy.data.repository.GameRepository
-import com.nendo.argosy.data.scanner.AndroidGameScanner
 import com.nendo.argosy.data.social.SocialAuthManager
 import com.nendo.argosy.data.social.SocialConnectionState
 import com.nendo.argosy.data.social.SocialRepository
@@ -118,7 +117,6 @@ class SettingsViewModel @Inject constructor(
     val permissionsDelegate: PermissionsSettingsDelegate,
     val biosDelegate: BiosSettingsDelegate,
     val driversDelegate: com.nendo.argosy.ui.screens.settings.delegates.DriversSettingsDelegate,
-    internal val androidGameScanner: AndroidGameScanner,
     internal val modalResetSignal: ModalResetSignal,
     internal val gradientColorExtractor: GradientColorExtractor,
     internal val coreManager: LibretroCoreManager,
@@ -754,10 +752,8 @@ class SettingsViewModel @Inject constructor(
 
     fun refreshSteamSettings() = steamDelegate.loadSteamSettings(context, viewModelScope)
 
-    fun moveLauncherActionFocus(delta: Int) = routeMoveLauncherActionFocus(this, delta)
     fun confirmLauncherAction() = routeConfirmLauncherAction(this)
 
-    fun scanForAndroidGames() = routeScanForAndroidGames(this)
 
     // Steam integration (new flow)
     fun connectToSteam() = steamDelegate.connectToSteam(context, viewModelScope)
@@ -784,7 +780,6 @@ class SettingsViewModel @Inject constructor(
     fun resetSteamInstallPath() =
         storageDelegate.resetPlatformToGlobal(viewModelScope, com.nendo.argosy.data.platform.LocalPlatformIds.STEAM)
 
-    fun scanSteamLauncher(packageName: String) = steamDelegate.scanSteamLauncher(context, viewModelScope, packageName)
     fun installSteamLauncher(emulatorId: String) = steamDelegate.installSteamLauncher(emulatorId, viewModelScope)
     fun refreshSteamMetadata() {}
     fun moveSteamVariantFocus(delta: Int) {}

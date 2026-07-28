@@ -33,7 +33,6 @@ internal sealed class EmulatorsItem(
     open val isFocusable: Boolean = true
 ) {
     data object CheckForUpdates : EmulatorsItem("check_updates", "platforms")
-    data object ScanAndroid : EmulatorsItem("scan_android", "platforms")
 
     class SectionHeader(key: String, section: String, val title: String) : EmulatorsItem(
         key = key, section = section
@@ -51,7 +50,6 @@ internal sealed class EmulatorsItem(
             return buildList {
                 add(SectionHeader("header_active", "platforms", "Active Platforms"))
                 add(CheckForUpdates)
-                add(ScanAndroid)
                 active.forEach { config ->
                     add(PlatformItem(config, platforms.indexOf(config)))
                 }
@@ -149,21 +147,6 @@ fun EmulatorsSection(
                         else "Check for emulator updates",
                         isFocused = isFocused(item),
                         onClick = { viewModel.forceCheckEmulatorUpdates() }
-                    )
-
-                    EmulatorsItem.ScanAndroid -> ActionPreference(
-                        icon = Icons.Default.PhoneAndroid,
-                        title = "Scan for Android Games",
-                        subtitle = when {
-                            uiState.android.isScanning ->
-                                "Scanning... ${uiState.android.scanProgressPercent}%"
-                            uiState.android.lastScanGamesAdded != null ->
-                                "${uiState.android.lastScanGamesAdded} games found"
-                            else -> "Detect installed games"
-                        },
-                        isFocused = isFocused(item),
-                        isEnabled = !uiState.android.isScanning,
-                        onClick = { viewModel.scanForAndroidGames() }
                     )
 
                     is EmulatorsItem.PlatformItem -> {

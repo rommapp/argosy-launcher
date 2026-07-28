@@ -810,7 +810,6 @@ private fun routeEmulatorsConfirm(vm: SettingsViewModel, state: SettingsUiState)
     val info = createEmulatorsLayoutInfo(state.emulators.platforms)
     when (val item = emulatorsItemAtFocusIndex(state.focusedIndex, info)) {
         EmulatorsItem.CheckForUpdates -> vm.forceCheckEmulatorUpdates()
-        EmulatorsItem.ScanAndroid -> if (!state.android.isScanning) vm.scanForAndroidGames()
         is EmulatorsItem.PlatformItem -> vm.navigateToPlatformDetail(item.index)
         else -> {}
     }

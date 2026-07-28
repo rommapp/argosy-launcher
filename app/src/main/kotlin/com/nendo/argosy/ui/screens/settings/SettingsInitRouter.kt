@@ -160,20 +160,6 @@ internal fun routeObserveDelegateStates(vm: SettingsViewModel) {
         vm._uiState.update { it.copy(retroAchievements = ra) }
     }.launchIn(vm.viewModelScope)
 
-    vm.androidGameScanner.progress.onEach { progress ->
-        vm._uiState.update {
-            it.copy(
-                android = AndroidSettingsState(
-                    isScanning = progress.isScanning,
-                    scanProgressPercent = progress.progressPercent,
-                    currentApp = progress.currentApp,
-                    gamesFound = progress.gamesFound,
-                    lastScanGamesAdded = it.android.lastScanGamesAdded
-                )
-            )
-        }
-    }.launchIn(vm.viewModelScope)
-
     vm.permissionsDelegate.state.onEach { permissions ->
         vm._uiState.update { it.copy(permissions = permissions) }
     }.launchIn(vm.viewModelScope)

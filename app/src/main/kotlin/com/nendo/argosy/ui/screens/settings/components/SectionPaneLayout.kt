@@ -165,7 +165,7 @@ private fun NavItem(
     }
 
     Text(
-        text = title,
+        text = title.uppercase(),
         style = MaterialTheme.typography.labelMedium,
         color = textColor,
         modifier = Modifier

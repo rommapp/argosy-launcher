@@ -957,7 +957,6 @@ data class InstalledSteamLauncher(
     val packageName: String,
     val displayName: String,
     val gameCount: Int = 0,
-    val supportsScanning: Boolean = false,
     val scanMayIncludeUninstalled: Boolean = false
 )
 
@@ -1010,17 +1009,8 @@ data class SteamSettingsState(
     val isSyncing: Boolean = false,
     val syncingLauncher: String? = null,
     val selectedLauncherPackage: String? = null,
-    val launcherActionIndex: Int = 0,
     val variantPickerInfo: VariantPickerInfo? = null,
     val variantPickerFocusIndex: Int = 0
-)
-
-data class AndroidSettingsState(
-    val isScanning: Boolean = false,
-    val scanProgressPercent: Int = 0,
-    val currentApp: String = "",
-    val gamesFound: Int = 0,
-    val lastScanGamesAdded: Int? = null
 )
 
 data class UpdateCheckState(
@@ -1283,7 +1273,6 @@ data class SettingsUiState(
     val steam: SteamSettingsState = SteamSettingsState(),
     val retroAchievements: RASettingsState = RASettingsState(),
     val accounts: AccountsState = AccountsState(),
-    val android: AndroidSettingsState = AndroidSettingsState(),
     val bios: BiosState = BiosState(),
     val drivers: DriversState = DriversState(),
     val social: SocialState = SocialState(),

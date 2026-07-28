@@ -173,7 +173,6 @@ class SteamSettingsDelegate @Inject constructor(
                     packageName = launcher.packageName,
                     displayName = launcher.displayName,
                     gameCount = 0,
-                    supportsScanning = launcher.supportsScanning,
                     scanMayIncludeUninstalled = launcher.scanMayIncludeUninstalled
                 )
             }
@@ -314,49 +313,6 @@ class SteamSettingsDelegate @Inject constructor(
                     notificationManager.showError("Download failed: ${result.message}")
                 }
             }
-        }
-    }
-
-    fun scanSteamLauncher(context: Context, scope: CoroutineScope, packageName: String) {
-        val launcher = _state.value.installedLaunchers.find { it.packageName == packageName } ?: return
-        val steamLauncher = SteamLaunchers.getByPackage(packageName)
-
-        scope.launch {
-            _state.update { it.copy(isSyncing = true, syncingLauncher = packageName) }
-            notificationManager.show("Scanning ${launcher.displayName}...")
-
-            val scannedGames = if (steamLauncher?.supportsScanning == true) {
-                withContext(Dispatchers.IO) { steamLauncher.scan(context, androidDataAccessor) }
-            } else {
-                emptyList()
-            }
-
-            if (scannedGames.isEmpty()) {
-                _state.update { it.copy(isSyncing = false, syncingLauncher = null) }
-                notificationManager.show("No games found")
-                return@launch
-            }
-
-            var addedCount = 0
-            var skippedCount = 0
-            for (game in scannedGames) {
-                when (steamRepository.addGame(game.appId, packageName)) {
-                    is SteamResult.Success -> addedCount++
-                    is SteamResult.Error -> skippedCount++
-                }
-            }
-
-            steamIgdbResolver.requestResolutionForUnresolved()
-
-            _state.update { it.copy(isSyncing = false, syncingLauncher = null) }
-
-            val message = when {
-                addedCount > 0 && skippedCount > 0 -> "Added $addedCount games, $skippedCount already existed"
-                addedCount > 0 -> "Added $addedCount games"
-                else -> "All ${scannedGames.size} games already in library"
-            }
-            notificationManager.show(message)
-            loadSteamSettings(context, scope)
         }
     }
 

@@ -62,7 +62,7 @@ internal sealed class InterfaceItem(
 
         val ALL: List<InterfaceItem> = listOf(
             LayoutHeader,
-            GridDensity, UiScale, HomeScreen,
+            UiScale, GridDensity, HomeScreen,
             TrackingHeader,
             AccuratePlayTime
         )

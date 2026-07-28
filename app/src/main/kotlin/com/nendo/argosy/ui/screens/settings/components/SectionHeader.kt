@@ -10,7 +10,7 @@ import com.nendo.argosy.ui.theme.Dimens
 @Composable
 fun SectionHeader(title: String) {
     Text(
-        text = title,
+        text = title.uppercase(),
         style = MaterialTheme.typography.labelSmall,
         color = MaterialTheme.colorScheme.primary,
         modifier = Modifier.padding(horizontal = Dimens.spacingSm)

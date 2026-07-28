@@ -416,15 +416,10 @@ fun SteamSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                     val launcher = item.data
                     SteamLauncherPreference(
                         displayName = launcher.displayName,
-                        subtitle = if (launcher.scanMayIncludeUninstalled) {
-                            "Scan may include titles no longer installed"
-                        } else null,
-                        supportsScanning = launcher.supportsScanning,
+                        subtitle = null,
                         isSyncing = steam.isSyncing && steam.syncingLauncher == launcher.packageName,
                         isFocused = isFocused(item),
                         isEnabled = steam.hasStoragePermission && !steam.isSyncing,
-                        actionIndex = steam.launcherActionIndex,
-                        onScan = { viewModel.scanSteamLauncher(launcher.packageName) },
                         onAdd = { viewModel.showAddSteamGameDialog(launcher.packageName) }
                     )
                 }

@@ -71,7 +71,6 @@ internal class LightSectionsInput(
             SettingsSection.NAVIGATION -> handleNavigationLeftRight(direction)
             SettingsSection.SYNC_SETTINGS -> handleSyncSettingsLeftRight(direction)
             SettingsSection.ABOUT -> handleAboutLeftRight(direction)
-            SettingsSection.STEAM_SETTINGS -> handleSteamLeftRight(direction)
             SettingsSection.BUILTIN_EMULATOR -> handleBuiltinEmulatorLeftRight(direction)
             SettingsSection.CORE_MANAGEMENT -> handleCoreManagementLeftRight(direction)
             else -> InputResult.UNHANDLED
@@ -224,15 +223,6 @@ internal class LightSectionsInput(
             AboutItem.AppAffinity ->
                 return toggleLeftRight(direction, state.appAffinityEnabled) { viewModel.setAppAffinityEnabled(it) }
             else -> {}
-        }
-        return InputResult.UNHANDLED
-    }
-
-    private fun handleSteamLeftRight(direction: Int): InputResult {
-        val state = viewModel.uiState.value
-        if (steamItemAtFocusIndex(state.focusedIndex, state.steam) is SteamItem.InstalledLauncher) {
-            viewModel.moveLauncherActionFocus(direction)
-            return InputResult.HANDLED
         }
         return InputResult.UNHANDLED
     }

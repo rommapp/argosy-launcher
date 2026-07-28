@@ -808,16 +808,6 @@ internal fun routeValidateDownloads(vm: SettingsViewModel) {
 
 // --- Scan & Sync ---
 
-internal fun routeScanForAndroidGames(vm: SettingsViewModel) {
-    if (vm._uiState.value.android.isScanning) return
-    vm.viewModelScope.launch {
-        val result = vm.androidGameScanner.scan()
-        vm._uiState.update {
-            it.copy(android = it.android.copy(lastScanGamesAdded = result.totalGames))
-        }
-    }
-}
-
 internal fun routeSyncRomm(vm: SettingsViewModel) {
     vm.platformSyncQueue.enqueueLibrary(initializeFirst = false) {
         vm.viewModelScope.launch { vm.loadSettings() }
@@ -867,37 +857,12 @@ internal fun routeSetRAProxyEnabled(vm: SettingsViewModel, enabled: Boolean) {
 
 // --- Steam ---
 
-internal fun routeGetLauncherIndexFromFocus(state: SettingsUiState): Int {
-    if (state.currentSection != SettingsSection.STEAM_SETTINGS) return -1
-    val item = steamItemAtFocusIndex(state.focusedIndex, state.steam)
-    if (item !is SteamItem.InstalledLauncher) return -1
-    return state.steam.installedLaunchers.indexOf(item.data)
-}
-
-internal fun routeMoveLauncherActionFocus(vm: SettingsViewModel, delta: Int) {
-    val state = vm._uiState.value
-    val index = routeGetLauncherIndexFromFocus(state)
-    if (index < 0) return
-    val launcher = state.steam.installedLaunchers.getOrNull(index) ?: return
-    val maxIndex = if (launcher.supportsScanning) 1 else 0
-    val current = state.steam.launcherActionIndex
-    val newIndex = (current + delta).coerceIn(0, maxIndex)
-    if (newIndex != current) {
-        vm._uiState.update { it.copy(steam = it.steam.copy(launcherActionIndex = newIndex)) }
-    }
-}
-
 internal fun routeConfirmLauncherAction(vm: SettingsViewModel) {
     val state = vm._uiState.value
-    val index = routeGetLauncherIndexFromFocus(state)
-    if (index < 0) return
-    val launcher = state.steam.installedLaunchers.getOrNull(index) ?: return
-    val actionIndex = state.steam.launcherActionIndex
-    if (actionIndex == 0 && launcher.supportsScanning) {
-        vm.scanSteamLauncher(launcher.packageName)
-    } else {
-        vm.showAddSteamGameDialog(launcher.packageName)
-    }
+    if (state.currentSection != SettingsSection.STEAM_SETTINGS) return
+    val item = steamItemAtFocusIndex(state.focusedIndex, state.steam)
+    if (item !is SteamItem.InstalledLauncher) return
+    vm.showAddSteamGameDialog(item.data.packageName)
 }
 
 // --- Bios focus helpers ---

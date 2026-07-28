@@ -201,7 +201,7 @@ fun BuiltinControlsSection(
                         Spacer(modifier = Modifier.height(Dimens.spacingMd))
                     }
                     Text(
-                        text = item.title,
+                        text = item.title.uppercase(),
                         style = MaterialTheme.typography.titleSmall,
                         color = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.padding(

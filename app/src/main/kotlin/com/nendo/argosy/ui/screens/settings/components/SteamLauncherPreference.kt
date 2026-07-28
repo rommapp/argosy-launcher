@@ -32,12 +32,9 @@ import com.nendo.argosy.ui.theme.LocalArgosyTheme
 fun SteamLauncherPreference(
     displayName: String,
     subtitle: String? = null,
-    supportsScanning: Boolean,
     isSyncing: Boolean,
     isFocused: Boolean,
     isEnabled: Boolean,
-    actionIndex: Int,
-    onScan: () -> Unit,
     onAdd: () -> Unit
 ) {
     val theme = LocalArgosyTheme.current
@@ -81,7 +78,6 @@ fun SteamLauncherPreference(
                 color = if (isEnabled) contentColor else contentColor.copy(alpha = 0.5f)
             )
             val subtitleText = when {
-                isSyncing -> "Scanning..."
                 subtitle != null -> subtitle
                 else -> null
             }
@@ -98,19 +94,10 @@ fun SteamLauncherPreference(
             horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            if (supportsScanning) {
-                ActionButton(
-                    label = "Scan",
-                    onClick = onScan,
-                    focused = isFocused && actionIndex == 0,
-                    enabled = isEnabled
-                )
-            }
-
             ActionButton(
                 label = "Add",
                 onClick = onAdd,
-                focused = isFocused && if (supportsScanning) actionIndex == 1 else true,
+                focused = isFocused,
                 enabled = isEnabled
             )
         }

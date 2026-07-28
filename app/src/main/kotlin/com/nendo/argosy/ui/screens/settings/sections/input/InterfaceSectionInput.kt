@@ -58,6 +58,18 @@ internal class InterfaceSectionInput(
         when (interfaceItemAtFocusIndex(state.focusedIndex, layoutState)) {
             InterfaceItem.GridDensity -> { viewModel.cycleGridDensity(direction); return InputResult.HANDLED }
             InterfaceItem.UiScale -> { viewModel.adjustUiScale(direction * 5); return InputResult.HANDLED }
+            InterfaceItem.AccuratePlayTime -> {
+                val controls = state.controls
+                val target = direction > 0
+                if (target != controls.accuratePlayTimeEnabled) {
+                    if (target && !controls.hasUsageStatsPermission) {
+                        viewModel.openUsageStatsSettings()
+                    } else {
+                        viewModel.setAccuratePlayTimeEnabled(target)
+                    }
+                }
+                return InputResult.handled(SoundType.TOGGLE)
+            }
             else -> {}
         }
         return InputResult.UNHANDLED

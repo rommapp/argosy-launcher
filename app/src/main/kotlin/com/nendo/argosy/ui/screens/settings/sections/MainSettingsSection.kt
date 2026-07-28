@@ -20,10 +20,10 @@ import androidx.compose.material.icons.filled.Gamepad
 import androidx.compose.material.icons.filled.GraphicEq
 import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.ManageAccounts
 import androidx.compose.material.icons.filled.Memory
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.PhoneAndroid
+import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material.icons.filled.TouchApp
@@ -66,6 +66,7 @@ internal sealed class MainSettingsItem(
 
     data object BuiltinEmulator :
         MainSettingsItem("builtin_emulator", Icons.Default.Build, "Built-in Emulator", "gameplay")
+    data object Saves : MainSettingsItem("saves", Icons.Default.Save, "Saves", "gameplay")
     data object RetroAchievements : MainSettingsItem(
         "retroAchievements",
         Icons.Default.EmojiEvents,
@@ -79,9 +80,7 @@ internal sealed class MainSettingsItem(
     data object Platforms : MainSettingsItem("platforms", Icons.Default.Gamepad, "Platforms", "library")
     data object Storage : MainSettingsItem("storage", Icons.Default.Storage, "Storage", "library")
 
-    data object GameData : MainSettingsItem("gameData", Icons.Default.Dns, "Game Data", "connections")
-    data object Accounts :
-        MainSettingsItem("accounts", Icons.Default.ManageAccounts, "Accounts", "connections")
+    data object RomM : MainSettingsItem("romm", Icons.Default.Dns, "RomM", "connections")
     data object Steam : MainSettingsItem("steam", Icons.Default.CloudQueue, "Steam", "connections")
     data object Social : MainSettingsItem("social", Icons.Default.Group, "Social", "connections")
 
@@ -96,11 +95,11 @@ internal sealed class MainSettingsItem(
             Header("launcherHeader", "launcher", "LAUNCHER"),
             Theme, Interface, Navigation, Audio, Displays,
             Header("gameplayHeader", "gameplay", "GAMEPLAY"),
-            BuiltinEmulator, RetroAchievements, Bios, Drivers,
+            BuiltinEmulator, Saves, RetroAchievements, Bios, Drivers,
             Header("libraryHeader", "library", "LIBRARY"),
             Platforms, Storage,
             Header("connectionsHeader", "connections", "CONNECTIONS"),
-            GameData, Accounts, Steam, Social,
+            RomM, Steam, Social,
             Header("systemHeader", "system", "SYSTEM"),
             Permissions, DeviceSettings, About
         )
@@ -133,7 +132,7 @@ fun MainSettingsSection(uiState: SettingsUiState, viewModel: SettingsViewModel) 
     fun getSubtitle(item: MainSettingsItem): String = when (item) {
         is MainSettingsItem.Header -> ""
         MainSettingsItem.DeviceSettings -> "System settings"
-        MainSettingsItem.GameData -> when (uiState.server.connectionStatus) {
+        MainSettingsItem.RomM -> when (uiState.server.connectionStatus) {
             ConnectionStatus.NOT_CONFIGURED -> "Server not configured"
             ConnectionStatus.CHECKING -> "Checking connection..."
             ConnectionStatus.OFFLINE -> "Server offline"
@@ -146,14 +145,10 @@ fun MainSettingsSection(uiState: SettingsUiState, viewModel: SettingsViewModel) 
                 } ?: "Never synced"
             }
         }
-        MainSettingsItem.Accounts -> {
-            val accounts = uiState.accounts
-            val active = accounts.activeAccount
-            when {
-                accounts.accounts.isEmpty() -> "No account paired"
-                accounts.accounts.size == 1 -> active?.username ?: "1 account"
-                else -> "${active?.username ?: "No active account"} of ${accounts.accounts.size}"
-            }
+        MainSettingsItem.Saves -> if (uiState.syncSettings.saveSyncEnabled) {
+            "Sync on"
+        } else {
+            "Sync off"
         }
         MainSettingsItem.RetroAchievements -> if (uiState.retroAchievements.isLoggedIn) {
             "Logged in as ${uiState.retroAchievements.username}"
@@ -196,8 +191,8 @@ fun MainSettingsSection(uiState: SettingsUiState, viewModel: SettingsViewModel) 
         when (item) {
             is MainSettingsItem.Header -> Unit
             MainSettingsItem.DeviceSettings -> context.startActivity(Intent(Settings.ACTION_SETTINGS))
-            MainSettingsItem.GameData -> viewModel.navigateToSection(SettingsSection.SERVER)
-            MainSettingsItem.Accounts -> viewModel.navigateToSection(SettingsSection.ACCOUNTS)
+            MainSettingsItem.RomM -> viewModel.navigateToSection(SettingsSection.ROMM)
+            MainSettingsItem.Saves -> viewModel.navigateToSection(SettingsSection.SAVES)
             MainSettingsItem.RetroAchievements -> viewModel.navigateToSection(SettingsSection.RETRO_ACHIEVEMENTS)
             MainSettingsItem.Storage -> viewModel.navigateToSection(SettingsSection.STORAGE)
             MainSettingsItem.Theme -> viewModel.navigateToSection(SettingsSection.THEME)

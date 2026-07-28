@@ -784,7 +784,6 @@ class SettingsViewModel @Inject constructor(
     fun resetSteamInstallPath() =
         storageDelegate.resetPlatformToGlobal(viewModelScope, com.nendo.argosy.data.platform.LocalPlatformIds.STEAM)
 
-    // Legacy Steam methods (used by GameDataSection/routers)
     fun scanSteamLauncher(packageName: String) = steamDelegate.scanSteamLauncher(context, viewModelScope, packageName)
     fun installSteamLauncher(emulatorId: String) = steamDelegate.installSteamLauncher(emulatorId, viewModelScope)
     fun refreshSteamMetadata() {}
@@ -873,6 +872,24 @@ class SettingsViewModel @Inject constructor(
     fun navigateToStorageGames() = routeNavigateToStorageGames(this)
     fun navigateToStorageCaches() = routeNavigateToStorageCaches(this, CACHES_ENTRY_TOP)
     fun navigateToStorageCachesForSteam() = routeNavigateToStorageCaches(this, CACHES_ENTRY_STEAM)
+    fun navigateToStorageCachesForSaves() = routeNavigateToStorageCaches(this, CACHES_ENTRY_SAVES)
+
+    fun navigateToSaveSyncScreen() {
+        viewModelScope.launch {
+            _navigationEvents.emit(
+                NavigationEvent(com.nendo.argosy.ui.navigation.Screen.SaveSync.route)
+            )
+        }
+    }
+
+    /**
+     * Deep links (drawer, notifications) land on Accounts with no parent screen behind it, so
+     * Back has to leave settings rather than surface a RomM screen the user never opened.
+     */
+    fun openAccountsFromDeepLink() {
+        navigateToSection(SettingsSection.ACCOUNTS)
+        _uiState.update { it.copy(accounts = it.accounts.copy(enteredExternally = true)) }
+    }
     fun refreshStorageAttribution(deep: Boolean = false) = attributionDelegate.refresh(force = true, deep = deep)
 
     fun toggleStateCache() = syncDelegate.toggleStateCache(viewModelScope)

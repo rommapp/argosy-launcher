@@ -68,7 +68,6 @@ import com.nendo.argosy.ui.screens.settings.sections.interfaceItemAtFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.mainSettingsItemAtFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.aboutMaxFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.SteamItem
-import com.nendo.argosy.ui.screens.settings.sections.isLoggedIn
 import com.nendo.argosy.ui.screens.settings.sections.steamItemAtFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.steamMaxFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.boxArtMaxFocusIndex
@@ -76,6 +75,9 @@ import com.nendo.argosy.ui.screens.settings.sections.builtinControlsMaxFocusInde
 import com.nendo.argosy.ui.screens.settings.sections.builtinVideoMaxFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.navigationMaxFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.displaysMaxFocusIndex
+import com.nendo.argosy.ui.screens.settings.sections.EmulatorsItem
+import com.nendo.argosy.ui.screens.settings.sections.createEmulatorsLayoutInfo
+import com.nendo.argosy.ui.screens.settings.sections.emulatorsItemAtFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.emulatorsMaxFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.homeScreenMaxFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.interfaceMaxFocusIndex
@@ -97,14 +99,18 @@ import com.nendo.argosy.ui.screens.settings.sections.StorageCachesItem
 import com.nendo.argosy.ui.screens.settings.sections.createStorageCachesLayoutInfo
 import com.nendo.argosy.ui.screens.settings.sections.storageCachesItemAtFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.storageCachesMaxFocusIndex
-import com.nendo.argosy.ui.screens.settings.sections.GameDataItem
+import com.nendo.argosy.ui.screens.settings.sections.RomMItem
+import com.nendo.argosy.ui.screens.settings.sections.SavesItem
+import com.nendo.argosy.ui.screens.settings.sections.SavesLayoutState
 import com.nendo.argosy.ui.screens.settings.sections.SyncSettingsItem
 import com.nendo.argosy.ui.screens.settings.sections.coreManagementMaxFocusIndex
-import com.nendo.argosy.ui.screens.settings.sections.buildGameDataItemsFromState
-import com.nendo.argosy.ui.screens.settings.sections.gameDataItemAtFocusIndex
-import com.nendo.argosy.ui.screens.settings.sections.gameDataMaxFocusIndex
-import com.nendo.argosy.ui.screens.settings.sections.gameDataFocusIndexOf
-import com.nendo.argosy.ui.screens.settings.sections.focusableItems
+import com.nendo.argosy.ui.screens.settings.sections.buildRomMItemsFromState
+import com.nendo.argosy.ui.screens.settings.sections.rommItemAtFocusIndex
+import com.nendo.argosy.ui.screens.settings.sections.rommMaxFocusIndex
+import com.nendo.argosy.ui.screens.settings.sections.rommFocusIndexOf
+import com.nendo.argosy.ui.screens.settings.sections.createSavesLayout
+import com.nendo.argosy.ui.screens.settings.sections.savesItemAtFocusIndex
+import com.nendo.argosy.ui.screens.settings.sections.savesMaxFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.syncSettingsItemAtFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.syncSettingsMaxFocusIndex
 import kotlinx.coroutines.flow.update
@@ -143,8 +149,8 @@ internal fun routeConfirm(vm: SettingsViewModel): InputResult {
             when (item) {
                 is MainSettingsItem.Header -> Unit
                 MainSettingsItem.DeviceSettings -> vm.viewModelScope.launch { vm._openDeviceSettingsEvent.emit(Unit) }
-                MainSettingsItem.GameData -> vm.navigateToSection(SettingsSection.SERVER)
-                MainSettingsItem.Accounts -> vm.navigateToSection(SettingsSection.ACCOUNTS)
+                MainSettingsItem.RomM -> vm.navigateToSection(SettingsSection.ROMM)
+                MainSettingsItem.Saves -> vm.navigateToSection(SettingsSection.SAVES)
                 MainSettingsItem.RetroAchievements -> vm.navigateToSection(SettingsSection.RETRO_ACHIEVEMENTS)
                 MainSettingsItem.Storage -> vm.navigateToSection(SettingsSection.STORAGE)
                 MainSettingsItem.Theme -> vm.navigateToSection(SettingsSection.THEME)
@@ -165,40 +171,9 @@ internal fun routeConfirm(vm: SettingsViewModel): InputResult {
             InputResult.HANDLED
         }
         SettingsSection.ACCOUNTS -> routeAccountsConfirm(vm, state)
-        SettingsSection.SERVER -> {
-            routeServerConfirm(vm, state)
-        }
-        SettingsSection.STEAM_SETTINGS -> {
-            val item = steamItemAtFocusIndex(state.focusedIndex, state.steam)
-            when (item) {
-                SteamItem.GnInstall -> {} // handled by click
-                SteamItem.InstallPath -> vm.openSteamInstallPathPicker()
-                SteamItem.SyncLibrary -> vm.syncSteamLibrary()
-                SteamItem.AddManual -> vm.showAddSteamGameDialog()
-                SteamItem.StoreSync -> {
-                    if (state.steam.gameNativeSyncDir != null) vm.rescanGameNativeStores()
-                    else vm.openGameNativeSyncDirPicker()
-                }
-                SteamItem.Disconnect -> vm.disconnectSteam()
-                SteamItem.ResetLibrary -> vm.resetSteamLibrary()
-                else -> {}
-            }
-            // Pre-login states: focus index 0 is the action button
-            if (!isLoggedIn(state.steam) && state.focusedIndex == 0) {
-                if (!state.steam.gnInstalled) {
-                    // GN install -- handled by click
-                } else if (state.steam.qrUrl != null) {
-                    vm.cancelSteamQrAuth()
-                } else if (!state.steam.authPolling &&
-                    state.steam.connectionState != SteamConnectionState.CONNECTING) {
-                    // Idle state (DISCONNECTED, CONNECTED after cancel, or
-                    // error) -- start a fresh connect + QR auth flow.
-                    vm.connectToSteam()
-                    vm.startSteamQrAuth()
-                }
-            }
-            InputResult.HANDLED
-        }
+        SettingsSection.ROMM -> routeRomMConfirm(vm, state)
+        SettingsSection.SAVES -> routeSavesConfirm(vm, state)
+        SettingsSection.STEAM_SETTINGS -> routeSteamConfirm(vm, state)
         SettingsSection.RETRO_ACHIEVEMENTS -> {
             val ra = state.retroAchievements
             if (ra.showLoginForm) {
@@ -335,7 +310,7 @@ private fun routeAccountsConfirm(vm: SettingsViewModel, state: SettingsUiState):
     return InputResult.HANDLED
 }
 
-private fun routeServerConfirm(vm: SettingsViewModel, state: SettingsUiState): InputResult {
+private fun routeRomMConfirm(vm: SettingsViewModel, state: SettingsUiState): InputResult {
     val isOnline = state.server.connectionStatus == ConnectionStatus.ONLINE
     if (state.server.rommConfiguring) {
         if (state.server.rommDevicePairing) {
@@ -356,46 +331,59 @@ private fun routeServerConfirm(vm: SettingsViewModel, state: SettingsUiState): I
         return InputResult.HANDLED
     }
 
-    val items = buildGameDataItemsFromState(state)
-    when (val item = gameDataItemAtFocusIndex(state.focusedIndex, items)) {
-        GameDataItem.RomManager -> vm.startRommConfig()
-        GameDataItem.RomMSignOut -> vm.requestRommSignOut()
-        GameDataItem.SyncSettings -> vm.navigateToSection(SettingsSection.SYNC_SETTINGS)
-        GameDataItem.SyncLibrary -> if (isOnline) vm.syncRomm()
-        GameDataItem.AccuratePlayTime -> {
-            val hasPermission = state.controls.hasUsageStatsPermission
-            if (!state.controls.accuratePlayTimeEnabled && !hasPermission) {
-                vm.openUsageStatsSettings()
-            } else {
-                vm.setAccuratePlayTimeEnabled(!state.controls.accuratePlayTimeEnabled)
-            }
-            return InputResult.handled(SoundType.TOGGLE)
-        }
-        GameDataItem.SaveSync -> {
+    val items = buildRomMItemsFromState(state)
+    when (rommItemAtFocusIndex(state.focusedIndex, items)) {
+        RomMItem.RomManager -> vm.startRommConfig()
+        RomMItem.RomMSignOut -> vm.requestRommSignOut()
+        RomMItem.Accounts -> vm.navigateToSection(SettingsSection.ACCOUNTS)
+        RomMItem.SyncSettings -> vm.navigateToSection(SettingsSection.SYNC_SETTINGS)
+        RomMItem.SyncLibrary -> if (isOnline) vm.syncRomm()
+        else -> {}
+    }
+    return InputResult.HANDLED
+}
+
+private fun routeSavesConfirm(vm: SettingsViewModel, state: SettingsUiState): InputResult {
+    when (savesItemAtFocusIndex(state.focusedIndex, SavesLayoutState.from(state))) {
+        SavesItem.SaveSync -> {
             vm.toggleSaveSync()
             return InputResult.handled(SoundType.TOGGLE)
         }
-        GameDataItem.SecureSaves -> {
+        SavesItem.SecureSaves -> {
             vm.toggleSecureSaves()
             return InputResult.handled(SoundType.TOGGLE)
         }
-        GameDataItem.SaveCacheLimit -> {
-            vm.requestEnumPicker(GameDataItem.SaveCacheLimit.key)
+        SavesItem.SaveCacheLimit -> {
+            vm.requestEnumPicker(SavesItem.SaveCacheLimit.key)
             return InputResult.handled(SoundType.OPEN_MODAL)
         }
-        GameDataItem.SyncSaves -> if (isOnline) vm.requestSyncSaves()
-        GameDataItem.ClearPathCache -> vm.requestClearPathCache()
-        GameDataItem.ResetSaveCache -> vm.requestResetSaveCache()
-        GameDataItem.ScanAndroid -> vm.scanForAndroidGames()
-        is GameDataItem.InstalledLauncher -> {
+        SavesItem.ManageSaveSync -> vm.navigateToSaveSyncScreen()
+        SavesItem.SaveCaches -> vm.navigateToStorageCachesForSaves()
+        else -> {}
+    }
+    return InputResult.HANDLED
+}
+
+private fun routeSteamConfirm(vm: SettingsViewModel, state: SettingsUiState): InputResult {
+    when (val item = steamItemAtFocusIndex(state.focusedIndex, state.steam)) {
+        SteamItem.PreLogin -> routeSteamPreLoginConfirm(vm, state)
+        SteamItem.GnInstall -> {}
+        SteamItem.InstallPath -> vm.openSteamInstallPathPicker()
+        SteamItem.SyncLibrary -> vm.syncSteamLibrary()
+        SteamItem.AddManual -> vm.showAddSteamGameDialog()
+        SteamItem.StoreSync -> {
+            if (state.steam.gameNativeSyncDir != null) vm.rescanGameNativeStores()
+            else vm.openGameNativeSyncDirPicker()
+        }
+        SteamItem.Disconnect -> vm.disconnectSteam()
+        SteamItem.ResetLibrary -> vm.resetSteamLibrary()
+        is SteamItem.InstalledLauncher -> {
             if (state.steam.hasStoragePermission && !state.steam.isSyncing) {
                 vm.confirmLauncherAction()
             }
         }
-        GameDataItem.RefreshMetadata -> {
-            if (!state.steam.isSyncing) vm.refreshSteamMetadata()
-        }
-        is GameDataItem.NotInstalledLauncher -> {
+        SteamItem.RefreshMetadata -> if (!state.steam.isSyncing) vm.refreshSteamMetadata()
+        is SteamItem.NotInstalledLauncher -> {
             if (state.steam.downloadingLauncherId == null) {
                 vm.installSteamLauncher(item.data.emulatorId)
             }
@@ -403,6 +391,23 @@ private fun routeServerConfirm(vm: SettingsViewModel, state: SettingsUiState): I
         else -> {}
     }
     return InputResult.HANDLED
+}
+
+/**
+ * A GameNative install is handled by the card's own click. A visible QR means A cancels it,
+ * and any idle state (disconnected, connected after a cancel, or errored) starts a fresh
+ * connect plus QR auth rather than resuming a flow that is no longer running.
+ */
+private fun routeSteamPreLoginConfirm(vm: SettingsViewModel, state: SettingsUiState) {
+    val steam = state.steam
+    when {
+        !steam.gnInstalled -> {}
+        steam.qrUrl != null -> vm.cancelSteamQrAuth()
+        !steam.authPolling && steam.connectionState != SteamConnectionState.CONNECTING -> {
+            vm.connectToSteam()
+            vm.startSteamQrAuth()
+        }
+    }
 }
 
 private fun routeStorageConfirm(vm: SettingsViewModel, state: SettingsUiState): InputResult {
@@ -524,6 +529,10 @@ private fun routeInterfaceConfirm(vm: SettingsViewModel, state: SettingsUiState)
         }
         InterfaceItem.UiScale -> vm.cycleUiScale()
         InterfaceItem.HomeScreen -> vm.navigateToHomeScreen()
+        InterfaceItem.AccuratePlayTime -> {
+            routeHandlePlayTimeToggle(vm, state.controls)
+            return InputResult.handled(SoundType.TOGGLE)
+        }
         else -> {}
     }
     return InputResult.HANDLED
@@ -798,11 +807,12 @@ private fun routeNavigationConfirm(vm: SettingsViewModel, state: SettingsUiState
 }
 
 private fun routeEmulatorsConfirm(vm: SettingsViewModel, state: SettingsUiState): InputResult {
-    when {
-        state.focusedIndex == 0 -> vm.forceCheckEmulatorUpdates()
-        state.focusedIndex >= 1 -> {
-            vm.platformArrayIndexAtFocus(state.focusedIndex)?.let { vm.navigateToPlatformDetail(it) }
-        }
+    val info = createEmulatorsLayoutInfo(state.emulators.platforms)
+    when (val item = emulatorsItemAtFocusIndex(state.focusedIndex, info)) {
+        EmulatorsItem.CheckForUpdates -> vm.forceCheckEmulatorUpdates()
+        EmulatorsItem.ScanAndroid -> if (!state.android.isScanning) vm.scanForAndroidGames()
+        is EmulatorsItem.PlatformItem -> vm.navigateToPlatformDetail(item.index)
+        else -> {}
     }
     return InputResult.HANDLED
 }
@@ -976,13 +986,21 @@ internal fun routeNavigateBack(vm: SettingsViewModel): Boolean {
         state.accounts.switchInProgress -> true
         state.server.rommConfiguring -> { vm.cancelRommConfig(); true }
         state.currentSection == SettingsSection.SYNC_SETTINGS -> {
-            val items = buildGameDataItemsFromState(state)
-            val idx = gameDataFocusIndexOf(GameDataItem.SyncSettings, items).coerceAtLeast(0)
-            vm._uiState.update { it.copy(currentSection = SettingsSection.SERVER, focusedIndex = idx) }; true
+            val items = buildRomMItemsFromState(state)
+            val idx = rommFocusIndexOf(RomMItem.SyncSettings, items).coerceAtLeast(0)
+            vm._uiState.update { it.copy(currentSection = SettingsSection.ROMM, focusedIndex = idx) }; true
+        }
+        state.currentSection == SettingsSection.ACCOUNTS && state.accounts.enteredExternally -> false
+        state.currentSection == SettingsSection.ACCOUNTS -> {
+            val items = buildRomMItemsFromState(state)
+            val idx = rommFocusIndexOf(RomMItem.Accounts, items).coerceAtLeast(0)
+            vm._uiState.update { it.copy(currentSection = SettingsSection.ROMM, focusedIndex = idx) }; true
         }
         state.currentSection == SettingsSection.STEAM_SETTINGS -> {
             vm.cancelSteamQrAuth()
-            vm._uiState.update { it.copy(currentSection = SettingsSection.MAIN, focusedIndex = 0) }; true
+            vm._uiState.update {
+                it.copy(currentSection = SettingsSection.MAIN, focusedIndex = state.parentFocusIndex)
+            }; true
         }
         state.retroAchievements.showLoginForm -> { vm.hideRALoginForm(); true }
         state.currentSection == SettingsSection.RETRO_ACHIEVEMENTS -> {
@@ -1015,6 +1033,15 @@ internal fun routeNavigateBack(vm: SettingsViewModel): Boolean {
             val platformId = state.storagePlatformGames.selectedPlatformId
             val focusIdx = storageGamesFocusIndexOfPlatform(platformId, createStorageGamesLayoutInfo(state))
             vm._uiState.update { it.copy(currentSection = SettingsSection.STORAGE_GAMES, focusedIndex = focusIdx) }; true
+        }
+        state.currentSection == SettingsSection.STORAGE_CACHES &&
+            state.attribution.cachesEntryFocus == CACHES_ENTRY_SAVES -> {
+            vm.attributionDelegate.setCachesEntryFocus(CACHES_ENTRY_TOP)
+            val savesLayout = SavesLayoutState.from(state)
+            val focusIdx = createSavesLayout(savesLayout)
+                .focusIndexOf(SavesItem.SaveCaches, savesLayout)
+                .coerceAtLeast(0)
+            vm._uiState.update { it.copy(currentSection = SettingsSection.SAVES, focusedIndex = focusIdx) }; true
         }
         state.currentSection == SettingsSection.STORAGE_CACHES -> {
             val fromSteam = state.attribution.cachesEntryFocus == CACHES_ENTRY_STEAM
@@ -1159,11 +1186,12 @@ private fun computeMaxFocusIndex(
     } else {
         accountsMaxFocusIndex(state.accounts)
     }
-    SettingsSection.SERVER -> if (state.server.rommConfiguring) {
+    SettingsSection.ROMM -> if (state.server.rommConfiguring) {
         rommConfigMaxIndex(state.server)
     } else {
-        gameDataMaxFocusIndex(buildGameDataItemsFromState(state))
+        rommMaxFocusIndex(buildRomMItemsFromState(state))
     }
+    SettingsSection.SAVES -> savesMaxFocusIndex(SavesLayoutState.from(state))
     SettingsSection.SYNC_SETTINGS -> syncSettingsMaxFocusIndex()
     SettingsSection.STEAM_SETTINGS -> steamMaxFocusIndex(state.steam)
     SettingsSection.RETRO_ACHIEVEMENTS -> when {
@@ -1191,9 +1219,7 @@ private fun computeMaxFocusIndex(
     SettingsSection.DISPLAYS -> displaysMaxFocusIndex(DisplaysLayoutState.from(state))
     SettingsSection.AMBIENT_LED -> ambientLedMaxFocusIndex(state.display)
     SettingsSection.NAVIGATION -> navigationMaxFocusIndex(state.controls)
-    SettingsSection.PLATFORMS -> emulatorsMaxFocusIndex(
-        state.emulators.platforms.size
-    )
+    SettingsSection.PLATFORMS -> emulatorsMaxFocusIndex(state.emulators.platforms)
     SettingsSection.BUILTIN_EMULATOR -> if (state.emulators.builtinLibretroEnabled) {
         BuiltinEmulatorItem.TWO_COLUMN.focusIndex
     } else {

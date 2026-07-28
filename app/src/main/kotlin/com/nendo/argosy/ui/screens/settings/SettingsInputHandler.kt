@@ -34,23 +34,6 @@ class SettingsInputHandler(
         internal const val SLIDER_STEP = 10
         internal const val FONT_SCALE_STEP = 5
         internal const val HUE_STEP = 10f
-
-        private val TOP_LEVEL_SECTIONS = listOf(
-            SettingsSection.THEME,
-            SettingsSection.INTERFACE,
-            SettingsSection.NAVIGATION,
-            SettingsSection.AUDIO,
-            SettingsSection.DISPLAYS,
-            SettingsSection.BUILTIN_EMULATOR,
-            SettingsSection.RETRO_ACHIEVEMENTS,
-            SettingsSection.BIOS,
-            SettingsSection.PLATFORMS,
-            SettingsSection.STORAGE,
-            SettingsSection.SERVER,
-            SettingsSection.SOCIAL,
-            SettingsSection.PERMISSIONS,
-            SettingsSection.ABOUT
-        )
     }
 
     private val modalRouter = ModalInputRouter(viewModel)
@@ -79,7 +62,8 @@ class SettingsInputHandler(
         put(SettingsSection.DRIVERS, DriversSectionInput(viewModel))
         for (s in listOf(
             SettingsSection.ACCOUNTS,
-            SettingsSection.BIOS, SettingsSection.SERVER, SettingsSection.HOME_SCREEN,
+            SettingsSection.BIOS, SettingsSection.ROMM, SettingsSection.SAVES,
+            SettingsSection.HOME_SCREEN,
             SettingsSection.NAVIGATION, SettingsSection.AUDIO, SettingsSection.SYNC_SETTINGS,
             SettingsSection.ABOUT, SettingsSection.STEAM_SETTINGS, SettingsSection.CORE_MANAGEMENT,
             SettingsSection.SOCIAL, SettingsSection.BUILTIN_EMULATOR
@@ -173,16 +157,6 @@ class SettingsInputHandler(
 
     override fun onNextTrigger(): InputResult = dispatch(InputMethod.NEXT_TRIGGER) {
         InputResult.UNHANDLED
-    }
-
-    private fun jumpTopLevelSection(direction: Int): InputResult {
-        val current = viewModel.uiState.value.currentSection
-        val index = TOP_LEVEL_SECTIONS.indexOf(current)
-        if (index < 0) return InputResult.UNHANDLED
-        val nextIndex = index + direction
-        if (nextIndex !in TOP_LEVEL_SECTIONS.indices) return InputResult.UNHANDLED
-        viewModel.navigateToSection(TOP_LEVEL_SECTIONS[nextIndex])
-        return InputResult.HANDLED
     }
 
     override fun onMenu(): InputResult = InputResult.UNHANDLED

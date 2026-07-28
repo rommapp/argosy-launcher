@@ -3,6 +3,8 @@ package com.nendo.argosy.ui.screens.settings.sections
 import android.content.Intent
 import android.graphics.Bitmap
 import android.net.Uri
+import android.os.Build
+import android.provider.Settings
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -11,7 +13,6 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -20,15 +21,17 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Cloud
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.filled.GetApp
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.LinkOff
 import androidx.compose.material.icons.filled.Sync
@@ -36,97 +39,155 @@ import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.EncodeHintType
 import com.google.zxing.qrcode.QRCodeWriter
+import com.nendo.argosy.core.input.SoundType
 import com.nendo.argosy.data.steam.LibrarySyncState
 import com.nendo.argosy.data.steam.SteamConnectionState
 import com.nendo.argosy.ui.components.ActionPreference
-import com.nendo.argosy.ui.components.CyclePreference
 import com.nendo.argosy.ui.components.InfoPreference
+import com.nendo.argosy.ui.components.Modal
+import com.nendo.argosy.ui.input.InputHandler
+import com.nendo.argosy.ui.input.InputResult
+import com.nendo.argosy.ui.input.ModalInputEffect
+import com.nendo.argosy.ui.primitives.ModalActionButton
+import com.nendo.argosy.ui.screens.settings.InstalledSteamLauncher
+import com.nendo.argosy.ui.screens.settings.NotInstalledSteamLauncher
 import com.nendo.argosy.ui.screens.settings.SettingsUiState
 import com.nendo.argosy.ui.screens.settings.SettingsViewModel
 import com.nendo.argosy.ui.screens.settings.SteamSettingsState
 import com.nendo.argosy.ui.screens.settings.components.SectionPaneLayout
+import com.nendo.argosy.ui.screens.settings.components.SteamLauncherPreference
 import com.nendo.argosy.ui.screens.settings.menu.SettingsLayout
-import com.nendo.argosy.ui.components.ListSection
 import com.nendo.argosy.ui.theme.Dimens
+import com.nendo.argosy.ui.theme.LocalArgosyTheme
 
-internal data class SteamLayoutState(
-    val isLoggedIn: Boolean,
-    val gnInstalled: Boolean,
-    val gnConfigured: Boolean,
-    val isSyncing: Boolean,
-    val hasInstalledGames: Boolean
-)
+private const val GN_PACKAGE = "app.gamenative"
 
-internal sealed class SteamItem(
-    val key: String,
-    val section: String,
-    val visibleWhen: (SteamLayoutState) -> Boolean = { true }
-) {
+internal sealed class SteamItem(val key: String, val section: String) {
     val isFocusable: Boolean get() = when (this) {
-        is Header, is SectionSpacer, is InstallPathNote -> false
+        is Header, is SectionSpacer, is InstallPathNote, is StorageNote -> false
         else -> true
     }
 
-    class Header(key: String, section: String, val title: String, visibleWhen: (SteamLayoutState) -> Boolean = { true })
-        : SteamItem(key, section, visibleWhen)
+    class Header(key: String, section: String, val title: String) : SteamItem(key, section)
 
-    class SectionSpacer(key: String, section: String, visibleWhen: (SteamLayoutState) -> Boolean = { true })
-        : SteamItem(key, section, visibleWhen)
+    class SectionSpacer(key: String, section: String) : SteamItem(key, section)
 
+    data object PreLogin : SteamItem("preLogin", "login")
     data object GnStatus : SteamItem("gnStatus", "setup")
-    data object GnInstall : SteamItem("gnInstall", "setup", visibleWhen = { !it.gnInstalled })
-    data object GnStorageWarning : SteamItem("gnStorageWarning", "setup",
-        visibleWhen = { it.gnInstalled && !it.gnConfigured })
-    data object InstallPath : SteamItem("installPath", "setup",
-        visibleWhen = { it.gnConfigured })
-    data object InstallPathNote : SteamItem("installPathNote", "setup",
-        visibleWhen = { it.gnConfigured })
-    data object InstallTriage : SteamItem("installTriage", "setup",
-        visibleWhen = { it.gnConfigured && it.hasInstalledGames })
+    data object GnInstall : SteamItem("gnInstall", "setup")
+    data object GnStorageWarning : SteamItem("gnStorageWarning", "setup")
+    data object InstallPath : SteamItem("installPath", "setup")
+    data object InstallPathNote : SteamItem("installPathNote", "setup")
+    data object InstallTriage : SteamItem("installTriage", "setup")
     data object AccountInfo : SteamItem("accountInfo", "account")
     data object SyncLibrary : SteamItem("syncLibrary", "library")
     data object AddManual : SteamItem("addManual", "library")
     data object StoreSync : SteamItem("storeSync", "library")
+    data class InstalledLauncher(val data: InstalledSteamLauncher) :
+        SteamItem("steamLauncher_${data.packageName}", "library")
+    data object RefreshMetadata : SteamItem("refreshMetadata", "library")
+    data class NotInstalledLauncher(val data: NotInstalledSteamLauncher) :
+        SteamItem("steamLauncherInstall_${data.emulatorId}", "library")
+    data object StorageNote : SteamItem("steamStorageNote", "library")
     data object Disconnect : SteamItem("disconnect", "danger")
     data object ResetLibrary : SteamItem("resetLibrary", "danger")
+}
 
-    companion object {
-        private val SetupHeader = Header("setupHeader", "setup", "GAMENATIVE")
-        private val AccountHeader = Header("accountHeader", "account", "ACCOUNT")
-        private val LibraryHeader = Header("libraryHeader", "library", "LIBRARY")
-        private val AccountSpacer = SectionSpacer("accountSpacer", "account")
-        private val LibrarySpacer = SectionSpacer("librarySpacer", "library")
-        private val DangerHeader = Header("dangerHeader", "danger", "DANGER ZONE")
-        private val DangerSpacer = SectionSpacer("dangerSpacer", "danger")
+/**
+ * The launcher rows survive a logged-out Steam account: GameHub and friends are scannable
+ * without ever signing in, so they hang off the library group in both modes.
+ */
+internal fun steamVisibleLaunchers(steam: SteamSettingsState): List<InstalledSteamLauncher> =
+    if (isLoggedIn(steam)) {
+        steam.installedLaunchers.filter { it.packageName != GN_PACKAGE }
+    } else {
+        steam.installedLaunchers
+    }
 
-        val ALL: List<SteamItem> = listOf(
-            SetupHeader, GnStatus, GnInstall, GnStorageWarning, InstallPath, InstallPathNote, InstallTriage,
-            AccountSpacer, AccountHeader, AccountInfo,
-            LibrarySpacer, LibraryHeader, SyncLibrary, AddManual, StoreSync,
-            DangerSpacer, DangerHeader, Disconnect, ResetLibrary
-        )
+internal fun buildSteamItems(steam: SteamSettingsState): List<SteamItem> = buildList {
+    val loggedIn = isLoggedIn(steam)
+    val gnConfigured = steam.gnStoragePath != null
+
+    if (loggedIn) {
+        add(SteamItem.Header("setupHeader", "setup", "GAMENATIVE"))
+        add(SteamItem.GnStatus)
+        if (!steam.gnInstalled) add(SteamItem.GnInstall)
+        if (steam.gnInstalled && !gnConfigured) add(SteamItem.GnStorageWarning)
+        if (gnConfigured) {
+            add(SteamItem.InstallPath)
+            add(SteamItem.InstallPathNote)
+            if (steam.installedGamesByVolume.isNotEmpty()) add(SteamItem.InstallTriage)
+        }
+
+        add(SteamItem.SectionSpacer("accountSpacer", "account"))
+        add(SteamItem.Header("accountHeader", "account", "ACCOUNT"))
+        add(SteamItem.AccountInfo)
+    } else {
+        add(SteamItem.PreLogin)
+    }
+
+    val launchers = steamVisibleLaunchers(steam)
+    val hasLauncherRows = launchers.isNotEmpty() || steam.notInstalledLaunchers.isNotEmpty()
+
+    if (loggedIn || hasLauncherRows) {
+        add(SteamItem.SectionSpacer("librarySpacer", "library"))
+        add(SteamItem.Header("libraryHeader", "library", "LIBRARY"))
+        if (loggedIn) {
+            add(SteamItem.SyncLibrary)
+            add(SteamItem.AddManual)
+            add(SteamItem.StoreSync)
+        }
+        for (launcher in launchers) {
+            add(SteamItem.InstalledLauncher(launcher))
+        }
+        if (launchers.isNotEmpty()) {
+            add(SteamItem.RefreshMetadata)
+        }
+        for (launcher in steam.notInstalledLaunchers) {
+            add(SteamItem.NotInstalledLauncher(launcher))
+        }
+        if (!steam.hasStoragePermission && steam.installedLaunchers.isNotEmpty()) {
+            add(SteamItem.StorageNote)
+        }
+    }
+
+    if (loggedIn) {
+        add(SteamItem.SectionSpacer("dangerSpacer", "danger"))
+        add(SteamItem.Header("dangerHeader", "danger", "DANGER ZONE"))
+        add(SteamItem.Disconnect)
+        add(SteamItem.ResetLibrary)
     }
 }
 
-private val steamLayout = SettingsLayout<SteamItem, SteamLayoutState>(
-    allItems = SteamItem.ALL,
+internal fun createSteamLayout(items: List<SteamItem>) = SettingsLayout<SteamItem, Unit>(
+    allItems = items,
     isFocusable = { it.isFocusable },
-    visibleWhen = { item, state -> item.visibleWhen(state) },
+    visibleWhen = { _, _ -> true },
     sectionOf = { it.section },
     sectionTitle = {
         when (it) {
@@ -139,27 +200,17 @@ private val steamLayout = SettingsLayout<SteamItem, SteamLayoutState>(
     }
 )
 
-internal fun steamMaxFocusIndex(steam: SteamSettingsState): Int {
-    val state = steamLayoutState(steam)
-    return if (isLoggedIn(steam)) steamLayout.maxFocusIndex(state) else 0
-}
+internal fun steamMaxFocusIndex(steam: SteamSettingsState): Int =
+    createSteamLayout(buildSteamItems(steam)).maxFocusIndex(Unit)
 
-internal fun steamItemAtFocusIndex(focusIndex: Int, steam: SteamSettingsState): SteamItem? {
-    return steamLayout.itemAtFocusIndex(focusIndex, steamLayoutState(steam))
-}
+internal fun steamItemAtFocusIndex(focusIndex: Int, steam: SteamSettingsState): SteamItem? =
+    createSteamLayout(buildSteamItems(steam)).itemAtFocusIndex(focusIndex, Unit)
+
+internal fun steamSections(steam: SteamSettingsState) =
+    createSteamLayout(buildSteamItems(steam)).buildSections(Unit)
 
 internal fun isLoggedIn(steam: SteamSettingsState): Boolean =
     steam.connectionState == SteamConnectionState.LOGGED_IN
-
-private fun steamLayoutState(steam: SteamSettingsState) = SteamLayoutState(
-    isLoggedIn = isLoggedIn(steam),
-    gnInstalled = steam.gnInstalled,
-    gnConfigured = steam.gnStoragePath != null,
-    isSyncing = steam.syncState !is LibrarySyncState.Idle &&
-        steam.syncState !is LibrarySyncState.Complete &&
-        steam.syncState !is LibrarySyncState.Error,
-    hasInstalledGames = steam.installedGamesByVolume.isNotEmpty()
-)
 
 @Composable
 fun SteamSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
@@ -170,32 +221,56 @@ fun SteamSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
         viewModel.refreshSteamSettings()
     }
 
-    val layoutState = remember(steam.connectionState, steam.gnInstalled, steam.gnStoragePath, steam.syncState) {
-        steamLayoutState(steam)
+    val allItems = remember(
+        steam.connectionState,
+        steam.gnInstalled,
+        steam.gnStoragePath,
+        steam.installedGamesByVolume,
+        steam.installedLaunchers,
+        steam.notInstalledLaunchers,
+        steam.hasStoragePermission
+    ) {
+        buildSteamItems(steam)
     }
+    val layout = remember(allItems) { createSteamLayout(allItems) }
+    val sections = remember(allItems) { layout.buildSections(Unit) }
+    val isDownloading = steam.downloadingLauncherId != null
 
-    if (isLoggedIn(steam)) {
-        val visibleItems = remember(layoutState) { steamLayout.visibleItems(layoutState) }
-        val sections = remember(layoutState) { steamLayout.buildSections(layoutState) }
+    fun isFocused(item: SteamItem): Boolean =
+        uiState.focusedIndex == layout.focusIndexOf(item, Unit)
 
-        fun isFocused(item: SteamItem): Boolean =
-            uiState.focusedIndex == steamLayout.focusIndexOf(item, layoutState)
-
-        SectionPaneLayout(
-            items = visibleItems,
-            sections = sections,
-            focusedIndex = uiState.focusedIndex,
-            focusToListIndex = { steamLayout.focusToListIndex(it, layoutState) },
-            itemKey = { it.key },
-            isNavItem = { it is SteamItem.SectionSpacer },
-            isHeader = { it is SteamItem.Header },
-            onSectionTap = { viewModel.setFocusIndex(it.focusStartIndex) },
-            modifier = Modifier.fillMaxSize().padding(horizontal = Dimens.spacingMd),
-            verticalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
-        ) { item ->
+    SectionPaneLayout(
+        items = allItems,
+        sections = sections,
+        focusedIndex = uiState.focusedIndex,
+        focusToListIndex = { layout.focusToListIndex(it, Unit) },
+        itemKey = { it.key },
+        isNavItem = { it is SteamItem.SectionSpacer },
+        isHeader = { it is SteamItem.Header },
+        onSectionTap = { viewModel.setFocusIndex(it.focusStartIndex) },
+        modifier = Modifier.fillMaxSize().padding(horizontal = Dimens.spacingMd),
+        verticalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
+    ) { item ->
             when (item) {
                 is SteamItem.Header -> SectionHeader(item.title)
                 is SteamItem.SectionSpacer -> Spacer(modifier = Modifier.height(Dimens.spacingLg))
+
+                SteamItem.PreLogin -> SteamPreLoginPane(
+                    steam = steam,
+                    isFocused = isFocused(item),
+                    onInstallGn = {
+                        val intent = Intent(
+                            Intent.ACTION_VIEW,
+                            Uri.parse("https://github.com/utkarshdalal/GameNative/releases")
+                        )
+                        context.startActivity(intent)
+                    },
+                    onCancelQr = { viewModel.cancelSteamQrAuth() },
+                    onConnect = {
+                        viewModel.connectToSteam()
+                        viewModel.startSteamQrAuth()
+                    }
+                )
 
                 SteamItem.GnStatus -> {
                     val (icon, subtitle, color) = if (steam.gnStoragePath != null) {
@@ -337,6 +412,74 @@ fun SteamSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                     onReset = { viewModel.clearGameNativeSyncDir() }
                 )
 
+                is SteamItem.InstalledLauncher -> {
+                    val launcher = item.data
+                    SteamLauncherPreference(
+                        displayName = launcher.displayName,
+                        subtitle = if (launcher.scanMayIncludeUninstalled) {
+                            "Scan may include titles no longer installed"
+                        } else null,
+                        supportsScanning = launcher.supportsScanning,
+                        isSyncing = steam.isSyncing && steam.syncingLauncher == launcher.packageName,
+                        isFocused = isFocused(item),
+                        isEnabled = steam.hasStoragePermission && !steam.isSyncing,
+                        actionIndex = steam.launcherActionIndex,
+                        onScan = { viewModel.scanSteamLauncher(launcher.packageName) },
+                        onAdd = { viewModel.showAddSteamGameDialog(launcher.packageName) }
+                    )
+                }
+
+                SteamItem.RefreshMetadata -> ActionPreference(
+                    icon = Icons.Default.Sync,
+                    title = "Refresh Metadata",
+                    subtitle = if (steam.isSyncing && steam.syncingLauncher == "refresh") {
+                        "Refreshing..."
+                    } else {
+                        "Update screenshots and backgrounds"
+                    },
+                    isFocused = isFocused(item),
+                    isEnabled = !steam.isSyncing,
+                    onClick = { viewModel.refreshSteamMetadata() }
+                )
+
+                is SteamItem.NotInstalledLauncher -> {
+                    val launcher = item.data
+                    val isThisDownloading = steam.downloadingLauncherId == launcher.emulatorId
+                    ActionPreference(
+                        icon = if (launcher.hasDirectDownload) Icons.Default.GetApp
+                            else Icons.AutoMirrored.Filled.OpenInNew,
+                        title = launcher.displayName,
+                        subtitle = when {
+                            isThisDownloading && steam.downloadProgress != null ->
+                                "Downloading... ${(steam.downloadProgress * 100).toInt()}%"
+                            isThisDownloading -> "Waiting for install..."
+                            launcher.hasDirectDownload -> "Download APK"
+                            else -> "Open Play Store"
+                        },
+                        isFocused = isFocused(item),
+                        isEnabled = !isDownloading,
+                        onClick = { viewModel.installSteamLauncher(launcher.emulatorId) }
+                    )
+                }
+
+                SteamItem.StorageNote -> {
+                    Spacer(modifier = Modifier.height(Dimens.spacingSm))
+                    ActionPreference(
+                        icon = Icons.Default.Cloud,
+                        title = "Grant Storage Permission",
+                        subtitle = "Required for Steam integration",
+                        isFocused = false,
+                        onClick = {
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                                val intent = Intent(
+                                    Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION
+                                ).apply { data = Uri.parse("package:${context.packageName}") }
+                                context.startActivity(intent)
+                            }
+                        }
+                    )
+                }
+
                 SteamItem.Disconnect -> ActionPreference(
                     icon = Icons.Default.LinkOff,
                     title = "Disconnect",
@@ -355,87 +498,6 @@ fun SteamSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                     iconTint = MaterialTheme.colorScheme.error
                 )
             }
-        }
-    } else {
-        val listState = rememberLazyListState()
-
-        LaunchedEffect(uiState.focusedIndex) {
-            if (uiState.focusedIndex == 0) {
-                val layoutInfo = listState.layoutInfo
-                val viewportHeight = layoutInfo.viewportEndOffset - layoutInfo.viewportStartOffset
-                val itemHeight = layoutInfo.visibleItemsInfo.firstOrNull()?.size ?: 60
-                val centerOffset = (viewportHeight - itemHeight) / 2
-                listState.animateScrollToItem(0, -centerOffset)
-            }
-        }
-
-        LazyColumn(
-            state = listState,
-            modifier = Modifier.fillMaxSize().padding(horizontal = Dimens.spacingMd),
-            contentPadding = PaddingValues(top = Dimens.spacingMd, bottom = Dimens.spacingXxl),
-            verticalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
-        ) {
-            // State priority: GN check -> QR visible -> auth in progress ->
-            // connecting -> idle error -> default (connect button).
-            //
-            // Errors are only surfaced when the user is idle (DISCONNECTED, no
-            // active auth flow).  Transient errors during connect/reconnect are
-            // swallowed so the user never sees a flash.
-            //
-            // CONNECTED/LOGGING_IN without an active auth flow means the user
-            // cancelled QR auth while the TCP connection was still alive -- show
-            // the connect button, not a stuck "Logging in" spinner.
-            when {
-                !steam.gnInstalled -> item {
-                    GnNotInstalledContent(
-                        isFocused = uiState.focusedIndex == 0,
-                        onInstall = {
-                            val intent = Intent(Intent.ACTION_VIEW,
-                                Uri.parse("https://github.com/utkarshdalal/GameNative/releases"))
-                            context.startActivity(intent)
-                        }
-                    )
-                }
-
-                steam.qrUrl != null -> item {
-                    QrAuthContent(
-                        qrUrl = steam.qrUrl,
-                        isFocused = uiState.focusedIndex == 0,
-                        onCancel = { viewModel.cancelSteamQrAuth() }
-                    )
-                }
-
-                steam.authPolling -> item {
-                    ConnectingContent()
-                }
-
-                steam.connectionState == SteamConnectionState.CONNECTING -> item {
-                    ConnectingContent()
-                }
-
-                steam.error != null &&
-                    steam.connectionState == SteamConnectionState.DISCONNECTED -> item {
-                    ErrorContent(
-                        message = steam.error,
-                        isFocused = uiState.focusedIndex == 0,
-                        onRetry = {
-                            viewModel.connectToSteam()
-                            viewModel.startSteamQrAuth()
-                        }
-                    )
-                }
-
-                else -> item {
-                    NotConnectedContent(
-                        isFocused = uiState.focusedIndex == 0,
-                        onConnect = {
-                            viewModel.connectToSteam()
-                            viewModel.startSteamQrAuth()
-                        }
-                    )
-                }
-            }
-        }
     }
 
     if (uiState.steam.showAddGameDialog) {
@@ -450,6 +512,40 @@ fun SteamSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
             onConfirm = { viewModel.confirmSteamVariantSelection() },
             onDismiss = { viewModel.dismissSteamVariantPicker() }
         )
+    }
+}
+
+/**
+ * State priority: GameNative check, then a visible QR, then auth in progress, then connecting,
+ * then an idle error, then the connect button. Errors surface only while the user is idle so a
+ * transient connect failure never flashes, and CONNECTED/LOGGING_IN with no auth flow means the
+ * user cancelled QR auth on a live socket, which shows connect rather than a stuck spinner.
+ */
+@Composable
+private fun SteamPreLoginPane(
+    steam: SteamSettingsState,
+    isFocused: Boolean,
+    onInstallGn: () -> Unit,
+    onCancelQr: () -> Unit,
+    onConnect: () -> Unit
+) {
+    when {
+        !steam.gnInstalled -> GnNotInstalledContent(isFocused = isFocused, onInstall = onInstallGn)
+
+        steam.qrUrl != null -> QrAuthContent(
+            qrUrl = steam.qrUrl,
+            isFocused = isFocused,
+            onCancel = onCancelQr
+        )
+
+        steam.authPolling -> ConnectingContent()
+
+        steam.connectionState == SteamConnectionState.CONNECTING -> ConnectingContent()
+
+        steam.error != null && steam.connectionState == SteamConnectionState.DISCONNECTED ->
+            ErrorContent(message = steam.error, isFocused = isFocused, onRetry = onConnect)
+
+        else -> NotConnectedContent(isFocused = isFocused, onConnect = onConnect)
     }
 }
 
@@ -768,4 +864,155 @@ private fun SectionHeader(text: String) {
         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
         modifier = Modifier.padding(start = Dimens.spacingSm, top = Dimens.spacingSm)
     )
+}
+
+private const val ADD_GAME_ROW_FIELD = 0
+private const val ADD_GAME_ROW_BUTTONS = 1
+
+@Composable
+internal fun AddSteamGameDialog(uiState: SettingsUiState, viewModel: SettingsViewModel) {
+    val theme = LocalArgosyTheme.current
+    val selectedLauncherName = uiState.steam.selectedLauncherPackage?.let { pkg ->
+        uiState.steam.installedLaunchers.find { it.packageName == pkg }?.displayName
+    }
+    val isAddingGame = uiState.steam.isAddingGame
+    val canAdd = !isAddingGame && uiState.steam.addGameAppId.isNotBlank()
+
+    var focusRow by remember { mutableIntStateOf(ADD_GAME_ROW_FIELD) }
+    var buttonIndex by remember { mutableIntStateOf(1) }
+    val focusRequester = remember { FocusRequester() }
+    val focusManager = LocalFocusManager.current
+    val currentIsAdding by rememberUpdatedState(isAddingGame)
+    val currentCanAdd by rememberUpdatedState(canAdd)
+
+    LaunchedEffect(focusRow) {
+        if (focusRow == ADD_GAME_ROW_FIELD) focusRequester.requestFocus() else focusManager.clearFocus()
+    }
+
+    val inputHandler = remember {
+        object : InputHandler {
+            override fun onUp(): InputResult {
+                if (!currentIsAdding) focusRow = ADD_GAME_ROW_FIELD
+                return InputResult.HANDLED
+            }
+
+            override fun onDown(): InputResult {
+                if (!currentIsAdding) focusRow = ADD_GAME_ROW_BUTTONS
+                return InputResult.HANDLED
+            }
+
+            override fun onLeft(): InputResult {
+                if (!currentIsAdding && focusRow == ADD_GAME_ROW_BUTTONS) buttonIndex = 0
+                return InputResult.HANDLED
+            }
+
+            override fun onRight(): InputResult {
+                if (!currentIsAdding && focusRow == ADD_GAME_ROW_BUTTONS) buttonIndex = 1
+                return InputResult.HANDLED
+            }
+
+            override fun onConfirm(): InputResult {
+                when {
+                    currentIsAdding -> {}
+                    focusRow == ADD_GAME_ROW_FIELD -> focusRow = ADD_GAME_ROW_BUTTONS
+                    buttonIndex == 0 -> viewModel.dismissAddSteamGameDialog()
+                    currentCanAdd -> viewModel.confirmAddSteamGame()
+                }
+                return InputResult.HANDLED
+            }
+
+            override fun onBack(): InputResult {
+                if (!currentIsAdding) viewModel.dismissAddSteamGameDialog()
+                return InputResult.handled(SoundType.CLOSE_MODAL)
+            }
+
+            override fun onMenu(): InputResult = InputResult.HANDLED
+            override fun onSecondaryAction(): InputResult = InputResult.HANDLED
+            override fun onContextMenu(): InputResult = InputResult.HANDLED
+            override fun onPrevSection(): InputResult = InputResult.HANDLED
+            override fun onNextSection(): InputResult = InputResult.HANDLED
+            override fun onPrevTrigger(): InputResult = InputResult.HANDLED
+            override fun onNextTrigger(): InputResult = InputResult.HANDLED
+            override fun onSelect(): InputResult = InputResult.HANDLED
+            override fun onLeftStickClick(): InputResult = InputResult.HANDLED
+            override fun onRightStickClick(): InputResult = InputResult.HANDLED
+            override fun onLongConfirm(): InputResult = InputResult.HANDLED
+        }
+    }
+    ModalInputEffect(active = true, handler = inputHandler)
+
+    val fieldShape = RoundedCornerShape(Dimens.radiusMd)
+    Modal(
+        title = "Add Steam Game",
+        onDismiss = { if (!isAddingGame) viewModel.dismissAddSteamGameDialog() }
+    ) {
+        val description = if (selectedLauncherName != null) {
+            "Enter the Steam App ID to add a game for $selectedLauncherName. You can find this in the game's Steam store URL."
+        } else {
+            "Enter the Steam App ID to add a game. You can find this in the game's Steam store URL."
+        }
+        Text(
+            text = description,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Spacer(modifier = Modifier.height(Dimens.spacingMd))
+        OutlinedTextField(
+            value = uiState.steam.addGameAppId,
+            onValueChange = { viewModel.setAddGameAppId(it) },
+            label = { Text("Steam App ID") },
+            placeholder = { Text("e.g. 730") },
+            singleLine = true,
+            enabled = !isAddingGame,
+            isError = uiState.steam.addGameError != null,
+            shape = fieldShape,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Done),
+            keyboardActions = KeyboardActions(onDone = { if (canAdd) viewModel.confirmAddSteamGame() }),
+            modifier = Modifier
+                .fillMaxWidth()
+                .focusRequester(focusRequester)
+                .then(
+                    if (focusRow == ADD_GAME_ROW_FIELD) {
+                        Modifier.background(theme.focusAccent.copy(alpha = 0.15f), fieldShape)
+                    } else Modifier
+                )
+        )
+        if (uiState.steam.addGameError != null) {
+            Spacer(modifier = Modifier.height(Dimens.spacingSm))
+            Text(
+                text = uiState.steam.addGameError,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.error
+            )
+        }
+        Spacer(modifier = Modifier.height(Dimens.spacingLg))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm, Alignment.End)
+        ) {
+            ModalActionButton(
+                label = "Cancel",
+                tint = theme.focusAccent,
+                restLabelColor = theme.textPrimary,
+                focused = focusRow == ADD_GAME_ROW_BUTTONS && buttonIndex == 0,
+                onClick = { viewModel.dismissAddSteamGameDialog() },
+                enabled = !isAddingGame
+            )
+            if (isAddingGame) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(Dimens.iconMd),
+                    strokeWidth = Dimens.borderMedium
+                )
+            } else {
+                ModalActionButton(
+                    label = "Add",
+                    tint = theme.focusAccent,
+                    restLabelColor = theme.textPrimary,
+                    focused = focusRow == ADD_GAME_ROW_BUTTONS && buttonIndex == 1,
+                    onClick = { viewModel.confirmAddSteamGame() },
+                    enabled = canAdd
+                )
+            }
+        }
+    }
 }

@@ -15,12 +15,11 @@ import com.nendo.argosy.core.notification.NotificationType
 import com.nendo.argosy.core.notification.showError
 import com.nendo.argosy.ui.screens.settings.sections.BiosItem
 import com.nendo.argosy.ui.screens.settings.sections.biosItemAtFocusIndex
-import com.nendo.argosy.ui.screens.settings.sections.GameDataItem
-import com.nendo.argosy.ui.screens.settings.sections.buildGameDataItemsFromState
+import com.nendo.argosy.ui.screens.settings.sections.SteamItem
 import com.nendo.argosy.ui.screens.settings.sections.StorageItem
 import com.nendo.argosy.ui.screens.settings.sections.createStorageCachesLayoutInfo
 import com.nendo.argosy.ui.screens.settings.sections.createStorageLayoutInfo
-import com.nendo.argosy.ui.screens.settings.sections.gameDataItemAtFocusIndex
+import com.nendo.argosy.ui.screens.settings.sections.steamItemAtFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.storageCachesFocusIndexOfSteam
 import com.nendo.argosy.ui.screens.settings.sections.storageFocusIndexOf
 import com.nendo.argosy.ui.screens.settings.sections.storageSteamVisibleLive
@@ -41,12 +40,14 @@ internal fun routeNavigateToSection(vm: SettingsViewModel, section: SettingsSect
         SettingsSection.ACCOUNTS -> {
             vm.accountsDelegate.resetRowActionFocus()
             vm.accountsDelegate.dismissNotice()
+            vm._uiState.update { it.copy(accounts = it.accounts.copy(enteredExternally = false)) }
         }
         SettingsSection.PLATFORMS -> vm.refreshEmulators()
-        SettingsSection.SERVER -> {
+        SettingsSection.ROMM -> {
             vm.serverDelegate.checkRommConnection(vm.viewModelScope)
             vm.syncDelegate.loadLibrarySettings(vm.viewModelScope)
         }
+        SettingsSection.SAVES -> vm.syncDelegate.loadLibrarySettings(vm.viewModelScope)
         SettingsSection.SYNC_SETTINGS -> vm.syncDelegate.loadLibrarySettings(vm.viewModelScope)
         SettingsSection.STORAGE -> {
             vm.attributionDelegate.latchSteamTileVisible(storageSteamVisibleLive(vm._uiState.value))
@@ -867,17 +868,10 @@ internal fun routeSetRAProxyEnabled(vm: SettingsViewModel, enabled: Boolean) {
 // --- Steam ---
 
 internal fun routeGetLauncherIndexFromFocus(state: SettingsUiState): Int {
-    return when (state.currentSection) {
-        SettingsSection.SERVER -> {
-            val items = buildGameDataItemsFromState(state)
-            val item = gameDataItemAtFocusIndex(state.focusedIndex, items)
-            if (item is GameDataItem.InstalledLauncher) {
-                state.steam.installedLaunchers.indexOf(item.data)
-            } else -1
-        }
-        SettingsSection.STEAM_SETTINGS -> state.focusedIndex - 1
-        else -> -1
-    }
+    if (state.currentSection != SettingsSection.STEAM_SETTINGS) return -1
+    val item = steamItemAtFocusIndex(state.focusedIndex, state.steam)
+    if (item !is SteamItem.InstalledLauncher) return -1
+    return state.steam.installedLaunchers.indexOf(item.data)
 }
 
 internal fun routeMoveLauncherActionFocus(vm: SettingsViewModel, delta: Int) {

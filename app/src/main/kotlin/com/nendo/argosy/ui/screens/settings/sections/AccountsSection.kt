@@ -151,7 +151,7 @@ fun AccountsSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                     title = "Add Account",
                     subtitle = accounts.activeAccount
                         ?.let { "Pair another user on ${it.serverLabel}" }
-                        ?: "Sign in under Game Data first",
+                        ?: "Sign in under RomM first",
                     icon = Icons.Default.PersonAdd,
                     isEnabled = accounts.activeAccount != null,
                     isFocused = focusIndex == uiState.focusedIndex,
@@ -251,7 +251,7 @@ private fun AccountRow(
         if (!removable) {
             Text(
                 text = if (state.accounts.size <= 1) {
-                    "This is the only account on this device. Sign out from Game Data to leave it."
+                    "This is the only account on this device. Sign out from RomM to leave it."
                 } else {
                     "Switch to another account before removing this one."
                 },
@@ -319,7 +319,7 @@ private fun NoAccountsCard() {
             color = MaterialTheme.colorScheme.onSurface
         )
         Text(
-            text = "Sign in under Game Data. Once one account is paired you can add more here.",
+            text = "Sign in under RomM. Once one account is paired you can add more here.",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center

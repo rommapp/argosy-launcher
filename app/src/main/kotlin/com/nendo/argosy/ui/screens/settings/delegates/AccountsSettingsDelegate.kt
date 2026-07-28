@@ -126,7 +126,7 @@ class AccountsSettingsDelegate @Inject constructor(
     fun requestAddAccount() {
         val active = _state.value.activeAccount
         if (active == null) {
-            _state.update { it.copy(notice = "Sign in to a RomM server first, under Game Data.") }
+            _state.update { it.copy(notice = "Sign in to a RomM server first, under RomM.") }
             return
         }
         _state.update {

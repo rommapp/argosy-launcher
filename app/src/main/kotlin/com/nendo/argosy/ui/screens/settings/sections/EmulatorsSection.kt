@@ -5,6 +5,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.PhoneAndroid
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -31,6 +33,7 @@ internal sealed class EmulatorsItem(
     open val isFocusable: Boolean = true
 ) {
     data object CheckForUpdates : EmulatorsItem("check_updates", "platforms")
+    data object ScanAndroid : EmulatorsItem("scan_android", "platforms")
 
     class SectionHeader(key: String, section: String, val title: String) : EmulatorsItem(
         key = key, section = section
@@ -48,6 +51,7 @@ internal sealed class EmulatorsItem(
             return buildList {
                 add(SectionHeader("header_active", "platforms", "Active Platforms"))
                 add(CheckForUpdates)
+                add(ScanAndroid)
                 active.forEach { config ->
                     add(PlatformItem(config, platforms.indexOf(config)))
                 }
@@ -76,9 +80,8 @@ internal fun createEmulatorsLayout(items: List<EmulatorsItem>) = SettingsLayout<
     }
 )
 
-internal fun emulatorsMaxFocusIndex(platformCount: Int): Int {
-    return platformCount.coerceAtLeast(0)
-}
+internal fun emulatorsMaxFocusIndex(platforms: List<PlatformEmulatorConfig>): Int =
+    createEmulatorsLayoutInfo(platforms).layout.maxFocusIndex(Unit)
 
 internal data class EmulatorsLayoutInfo(
     val layout: SettingsLayout<EmulatorsItem, Unit>,
@@ -146,6 +149,21 @@ fun EmulatorsSection(
                         else "Check for emulator updates",
                         isFocused = isFocused(item),
                         onClick = { viewModel.forceCheckEmulatorUpdates() }
+                    )
+
+                    EmulatorsItem.ScanAndroid -> ActionPreference(
+                        icon = Icons.Default.PhoneAndroid,
+                        title = "Scan for Android Games",
+                        subtitle = when {
+                            uiState.android.isScanning ->
+                                "Scanning... ${uiState.android.scanProgressPercent}%"
+                            uiState.android.lastScanGamesAdded != null ->
+                                "${uiState.android.lastScanGamesAdded} games found"
+                            else -> "Detect installed games"
+                        },
+                        isFocused = isFocused(item),
+                        isEnabled = !uiState.android.isScanning,
+                        onClick = { viewModel.scanForAndroidGames() }
                     )
 
                     is EmulatorsItem.PlatformItem -> {

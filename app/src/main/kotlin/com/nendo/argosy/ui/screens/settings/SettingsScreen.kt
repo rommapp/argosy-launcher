@@ -71,9 +71,9 @@ import com.nendo.argosy.ui.screens.settings.sections.AboutSection
 import com.nendo.argosy.ui.screens.settings.sections.AccountsSection
 import com.nendo.argosy.ui.screens.settings.sections.BiosSection
 import com.nendo.argosy.ui.screens.settings.sections.DistributeResultModal
-import com.nendo.argosy.ui.screens.settings.sections.GameDataItem
-import com.nendo.argosy.ui.screens.settings.sections.buildGameDataItemsFromState
-import com.nendo.argosy.ui.screens.settings.sections.gameDataFocusIndexOf
+import com.nendo.argosy.ui.screens.settings.sections.RomMItem
+import com.nendo.argosy.ui.screens.settings.sections.buildRomMItemsFromState
+import com.nendo.argosy.ui.screens.settings.sections.rommFocusIndexOf
 import com.nendo.argosy.ui.screens.settings.sections.DriversSection
 import com.nendo.argosy.ui.screens.settings.sections.AmbientLedSection
 import com.nendo.argosy.ui.screens.settings.sections.AudioSection
@@ -92,7 +92,8 @@ import com.nendo.argosy.ui.screens.settings.sections.CoreManagementSection
 import com.nendo.argosy.ui.screens.settings.sections.CoreOptionItem
 import com.nendo.argosy.ui.screens.settings.sections.CoreOptionsSection
 import com.nendo.argosy.ui.screens.settings.sections.coreOptionsItemAtFocusIndex
-import com.nendo.argosy.ui.screens.settings.sections.GameDataSection
+import com.nendo.argosy.ui.screens.settings.sections.RomMSection
+import com.nendo.argosy.ui.screens.settings.sections.SavesSection
 import com.nendo.argosy.ui.screens.settings.sections.HomeScreenSection
 import com.nendo.argosy.ui.screens.settings.sections.InterfaceSection
 import com.nendo.argosy.ui.screens.settings.sections.MainSettingsSection
@@ -143,14 +144,16 @@ fun SettingsScreen(
             val section = SettingsSection.entries.find { it.name.equals(initialSection, ignoreCase = true) }
             if (section == SettingsSection.PLATFORM_DETAIL && initialPlatformId != null) {
                 viewModel.openPlatformDetailById(initialPlatformId)
+            } else if (section == SettingsSection.ACCOUNTS) {
+                viewModel.openAccountsFromDeepLink()
             } else if (section != null) {
                 viewModel.navigateToSection(section)
                 kotlinx.coroutines.delay(300)
                 when (initialAction) {
                     "rommConfig" -> viewModel.startRommConfig()
                     "syncLibrary" -> {
-                        val items = buildGameDataItemsFromState(viewModel.uiState.value)
-                        viewModel.setFocusIndex(gameDataFocusIndexOf(GameDataItem.SyncLibrary, items))
+                        val items = buildRomMItemsFromState(viewModel.uiState.value)
+                        viewModel.setFocusIndex(rommFocusIndexOf(RomMItem.SyncLibrary, items))
                     }
                 }
             }
@@ -534,7 +537,8 @@ fun SettingsScreen(
                     title = when (uiState.currentSection) {
                         SettingsSection.MAIN -> "SETTINGS"
                         SettingsSection.ACCOUNTS -> "ACCOUNTS"
-                        SettingsSection.SERVER -> "GAME DATA"
+                        SettingsSection.ROMM -> "ROMM"
+                        SettingsSection.SAVES -> "SAVES"
                         SettingsSection.SYNC_SETTINGS -> "SYNC SETTINGS"
                         SettingsSection.STEAM_SETTINGS -> "STEAM (EXPERIMENTAL)"
                         SettingsSection.RETRO_ACHIEVEMENTS -> "RETROACHIEVEMENTS"
@@ -606,7 +610,8 @@ fun SettingsScreen(
                 when (uiState.currentSection) {
                     SettingsSection.MAIN -> MainSettingsSection(uiState, viewModel)
                     SettingsSection.ACCOUNTS -> AccountsSection(uiState, viewModel)
-                    SettingsSection.SERVER -> GameDataSection(uiState, viewModel)
+                    SettingsSection.ROMM -> RomMSection(uiState, viewModel)
+                    SettingsSection.SAVES -> SavesSection(uiState, viewModel)
                     SettingsSection.SYNC_SETTINGS -> SyncSettingsSection(uiState, viewModel, imageCacheProgress)
                     SettingsSection.STEAM_SETTINGS -> SteamSection(uiState, viewModel)
                     SettingsSection.RETRO_ACHIEVEMENTS -> RASettingsSection(uiState, viewModel)

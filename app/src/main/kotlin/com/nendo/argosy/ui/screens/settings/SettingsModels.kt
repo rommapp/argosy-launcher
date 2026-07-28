@@ -62,7 +62,8 @@ data class MusicRelocationPrompt(
 enum class SettingsSection {
     MAIN,
     ACCOUNTS,
-    SERVER,
+    ROMM,
+    SAVES,
     SYNC_SETTINGS,
     STEAM_SETTINGS,
     RETRO_ACHIEVEMENTS,
@@ -719,6 +720,7 @@ enum class StorageGamesSortMode { PLATFORM, SIZE }
 
 internal const val CACHES_ENTRY_TOP = 0
 internal const val CACHES_ENTRY_STEAM = 1
+internal const val CACHES_ENTRY_SAVES = 2
 
 data class StorageAttributionState(
     val snapshot: com.nendo.argosy.data.storage.StorageSnapshot? = null,
@@ -841,6 +843,11 @@ data class AccountPairingState(
 data class AccountsState(
     val accounts: List<AccountUi> = emptyList(),
     val isLoading: Boolean = true,
+    /**
+     * True when the screen was opened by a deep link (drawer, notification) rather than from
+     * the RomM screen; Back then leaves settings instead of surfacing an unopened parent.
+     */
+    val enteredExternally: Boolean = false,
     val rowActionIndex: Int = 0,
     val pairing: AccountPairingState = AccountPairingState(),
     val notice: String? = null,
@@ -995,7 +1002,6 @@ data class SteamSettingsState(
     val addGameError: String? = null,
     val isAddingGame: Boolean = false,
 
-    // Legacy fields (used by GameDataSection/routers -- remove when those are reworked)
     val hasStoragePermission: Boolean = false,
     val installedLaunchers: List<InstalledSteamLauncher> = emptyList(),
     val notInstalledLaunchers: List<NotInstalledSteamLauncher> = emptyList(),

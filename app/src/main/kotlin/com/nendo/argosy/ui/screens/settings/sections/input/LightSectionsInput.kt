@@ -8,25 +8,28 @@ import com.nendo.argosy.ui.screens.settings.SettingsViewModel
 import com.nendo.argosy.ui.screens.settings.sections.AboutItem
 import com.nendo.argosy.ui.screens.settings.sections.BiosItem
 import com.nendo.argosy.ui.screens.settings.sections.NavigationItem
-import com.nendo.argosy.ui.screens.settings.sections.GameDataItem
 import com.nendo.argosy.ui.screens.settings.sections.HomeScreenItem
+import com.nendo.argosy.ui.screens.settings.sections.SavesItem
+import com.nendo.argosy.ui.screens.settings.sections.SavesLayoutState
 import com.nendo.argosy.ui.screens.settings.sections.SyncSettingsItem
 import com.nendo.argosy.ui.screens.settings.sections.aboutHasChangelog
 import com.nendo.argosy.ui.screens.settings.sections.aboutItemAtFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.aboutSections
 import com.nendo.argosy.ui.screens.settings.sections.biosItemAtFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.biosSections
-import com.nendo.argosy.ui.screens.settings.sections.buildGameDataItemsFromState
+import com.nendo.argosy.ui.screens.settings.sections.buildRomMItemsFromState
 import com.nendo.argosy.ui.screens.settings.sections.audioSections
 import com.nendo.argosy.ui.screens.settings.sections.navigationItemAtFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.navigationSections
-import com.nendo.argosy.ui.screens.settings.sections.gameDataItemAtFocusIndex
-import com.nendo.argosy.ui.screens.settings.sections.gameDataSections
+import com.nendo.argosy.ui.screens.settings.sections.rommSections
+import com.nendo.argosy.ui.screens.settings.sections.savesItemAtFocusIndex
+import com.nendo.argosy.ui.screens.settings.sections.savesSections
 import com.nendo.argosy.ui.screens.settings.sections.homeScreenItemAtFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.homeScreenSections
 import com.nendo.argosy.ui.screens.settings.sections.socialSections
 import com.nendo.argosy.ui.screens.settings.sections.SteamItem
 import com.nendo.argosy.ui.screens.settings.sections.steamItemAtFocusIndex
+import com.nendo.argosy.ui.screens.settings.sections.steamSections
 import com.nendo.argosy.ui.screens.settings.sections.syncSettingsItemAtFocusIndex
 
 internal class LightSectionsInput(
@@ -62,7 +65,8 @@ internal class LightSectionsInput(
         return when (state.currentSection) {
             SettingsSection.ACCOUNTS -> handleAccountsLeftRight(direction)
             SettingsSection.BIOS -> handleBiosLeftRight(direction)
-            SettingsSection.SERVER -> handleServerLeftRight(direction)
+            SettingsSection.ROMM -> handleRomMLeftRight(direction)
+            SettingsSection.SAVES -> handleSavesLeftRight(direction)
             SettingsSection.HOME_SCREEN -> handleHomeScreenLeftRight(direction)
             SettingsSection.NAVIGATION -> handleNavigationLeftRight(direction)
             SettingsSection.SYNC_SETTINGS -> handleSyncSettingsLeftRight(direction)
@@ -109,7 +113,7 @@ internal class LightSectionsInput(
         return InputResult.UNHANDLED
     }
 
-    private fun handleServerLeftRight(direction: Int): InputResult {
+    private fun handleRomMLeftRight(direction: Int): InputResult {
         val state = viewModel.uiState.value
         if (state.server.rommConfiguring) {
             if (!state.server.rommDevicePairing && state.focusedIndex == 1) {
@@ -118,19 +122,17 @@ internal class LightSectionsInput(
                 viewModel.setRommAuthMethod(next)
                 return InputResult.HANDLED
             }
-            return InputResult.UNHANDLED
         }
-        val items = buildGameDataItemsFromState(state)
-        when (gameDataItemAtFocusIndex(state.focusedIndex, items)) {
-            is GameDataItem.InstalledLauncher -> {
-                viewModel.moveLauncherActionFocus(direction)
-                return InputResult.HANDLED
-            }
-            GameDataItem.SaveCacheLimit -> {
-                viewModel.cycleSaveCacheLimit(direction)
-                return InputResult.HANDLED
-            }
-            else -> {}
+        return InputResult.UNHANDLED
+    }
+
+    private fun handleSavesLeftRight(direction: Int): InputResult {
+        val state = viewModel.uiState.value
+        if (savesItemAtFocusIndex(state.focusedIndex, SavesLayoutState.from(state)) ==
+            SavesItem.SaveCacheLimit
+        ) {
+            viewModel.cycleSaveCacheLimit(direction)
+            return InputResult.HANDLED
         }
         return InputResult.UNHANDLED
     }
@@ -226,7 +228,12 @@ internal class LightSectionsInput(
         return InputResult.UNHANDLED
     }
 
-    private fun handleSteamLeftRight(@Suppress("UNUSED_PARAMETER") direction: Int): InputResult {
+    private fun handleSteamLeftRight(direction: Int): InputResult {
+        val state = viewModel.uiState.value
+        if (steamItemAtFocusIndex(state.focusedIndex, state.steam) is SteamItem.InstalledLauncher) {
+            viewModel.moveLauncherActionFocus(direction)
+            return InputResult.HANDLED
+        }
         return InputResult.UNHANDLED
     }
 
@@ -249,7 +256,9 @@ internal class LightSectionsInput(
         val sections = when (state.currentSection) {
             SettingsSection.HOME_SCREEN -> homeScreenSections(state.display)
             SettingsSection.BIOS -> biosSections(state.bios.platformGroups, state.bios.expandedPlatformIndex)
-            SettingsSection.SERVER -> gameDataSections(buildGameDataItemsFromState(state))
+            SettingsSection.ROMM -> rommSections(buildRomMItemsFromState(state))
+            SettingsSection.SAVES -> savesSections(SavesLayoutState.from(state))
+            SettingsSection.STEAM_SETTINGS -> steamSections(state.steam)
             SettingsSection.SOCIAL -> socialSections(hasAvatarDoodle = state.social.avatarDoodle != null)
             SettingsSection.NAVIGATION -> navigationSections(state.controls)
             SettingsSection.AUDIO -> audioSections()

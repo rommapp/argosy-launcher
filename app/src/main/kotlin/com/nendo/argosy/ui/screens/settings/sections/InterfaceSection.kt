@@ -8,11 +8,16 @@ import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.repeatOnLifecycle
 import com.nendo.argosy.data.preferences.GridDensity
 import com.nendo.argosy.ui.components.CyclePreference
 import com.nendo.argosy.ui.components.NavigationPreference
+import com.nendo.argosy.ui.components.SwitchPreference
 import com.nendo.argosy.ui.screens.settings.components.SectionPaneLayout
 import com.nendo.argosy.ui.components.SliderPreference
 import com.nendo.argosy.ui.screens.settings.DisplayState
@@ -49,13 +54,17 @@ internal sealed class InterfaceItem(
     data object GridDensity : InterfaceItem("gridDensity", "layout")
     data object UiScale : InterfaceItem("uiScale", "layout")
     data object HomeScreen : InterfaceItem("homeScreen", "layout")
+    data object AccuratePlayTime : InterfaceItem("accuratePlayTime", "tracking")
 
     companion object {
         private val LayoutHeader = Header("layoutHeader", "layout", "Layout")
+        private val TrackingHeader = Header("trackingHeader", "tracking", "Tracking")
 
         val ALL: List<InterfaceItem> = listOf(
             LayoutHeader,
-            GridDensity, UiScale, HomeScreen
+            GridDensity, UiScale, HomeScreen,
+            TrackingHeader,
+            AccuratePlayTime
         )
     }
 }
@@ -68,6 +77,7 @@ private val interfaceLayout = SettingsLayout<InterfaceItem, InterfaceLayoutState
     sectionTitle = {
         when (it) {
             "layout" -> "Layout"
+            "tracking" -> "Tracking"
             else -> null
         }
     }
@@ -86,6 +96,13 @@ internal fun interfaceFocusIndexOf(item: InterfaceItem, state: InterfaceLayoutSt
 @Composable
 fun InterfaceSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
     val display = uiState.display
+    val lifecycleOwner = LocalLifecycleOwner.current
+
+    LaunchedEffect(lifecycleOwner) {
+        lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+            viewModel.refreshUsageStatsPermission()
+        }
+    }
 
     val layoutState = remember(display) { InterfaceLayoutState(display) }
 
@@ -146,6 +163,31 @@ fun InterfaceSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                     isFocused = isFocused(item),
                     onClick = { viewModel.navigateToHomeScreen() }
                 )
+
+                InterfaceItem.AccuratePlayTime -> {
+                    val hasPermission = uiState.controls.hasUsageStatsPermission
+                    val isEnabled = uiState.controls.accuratePlayTimeEnabled
+                    SwitchPreference(
+                        title = "Accurate Play Time",
+                        subtitle = when {
+                            isEnabled && hasPermission -> "Tracking active screen time"
+                            isEnabled && !hasPermission -> "Permission required - tap to grant"
+                            else -> "Track only when screen is on"
+                        },
+                        isEnabled = isEnabled,
+                        isFocused = isFocused(item),
+                        onToggle = { enabled ->
+                            if (enabled && !hasPermission) {
+                                viewModel.openUsageStatsSettings()
+                            } else {
+                                viewModel.setAccuratePlayTimeEnabled(enabled)
+                            }
+                        },
+                        onLabelClick = if (isEnabled && !hasPermission) {
+                            { viewModel.openUsageStatsSettings() }
+                        } else null
+                    )
+                }
             }
     }
 }

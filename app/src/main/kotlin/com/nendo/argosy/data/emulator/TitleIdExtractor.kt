@@ -18,7 +18,10 @@ import javax.inject.Singleton
  *   for UI/logging and cross-referencing external databases.
  * - [usage]: how the platform uses [titleId] for save artifacts on disk.
  *   `EXACT` = single save folder/file per game; `PREFIX` = multiple
- *   artifacts share the ID as a prefix (PSP profiles, GameCube GCI files).
+ *   artifacts share the ID as a prefix (PSP profiles, GameCube GCI files);
+ *   `FOLDER_SPLIT` = one folder, but the id nests as equal-length path
+ *   segments rather than a flat name (3DS `0004000000033500` lands at
+ *   `00040000/00033500`).
  */
 data class TitleIdResult(
     val titleId: String,
@@ -27,7 +30,7 @@ data class TitleIdResult(
     val saveId: String = titleId,
     val usage: SaveUsage = SaveUsage.FOLDER_EXACT
 ) {
-    enum class SaveUsage { FOLDER_EXACT, FOLDER_PREFIX, FILE_EXACT, FILE_PREFIX }
+    enum class SaveUsage { FOLDER_EXACT, FOLDER_PREFIX, FILE_EXACT, FILE_PREFIX, FOLDER_SPLIT }
 }
 
 /**
@@ -80,6 +83,7 @@ class TitleIdExtractor @Inject constructor(
                 SigilResult.Usage.FolderPrefix -> TitleIdResult.SaveUsage.FOLDER_PREFIX
                 SigilResult.Usage.FileExact    -> TitleIdResult.SaveUsage.FILE_EXACT
                 SigilResult.Usage.FilePrefix   -> TitleIdResult.SaveUsage.FILE_PREFIX
+                SigilResult.Usage.FolderSplit  -> TitleIdResult.SaveUsage.FOLDER_SPLIT
             }
         )
     }

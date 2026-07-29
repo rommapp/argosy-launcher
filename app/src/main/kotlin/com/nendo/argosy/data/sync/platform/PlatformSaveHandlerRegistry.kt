@@ -139,6 +139,13 @@ class PlatformSaveHandlerRegistry @Inject constructor(
 }
 
 /**
+ * A save id is the on-disk save location, so it may carry path separators where a platform
+ * nests it (3DS reports `00040000/00033500`). Naming a temp archive after one would resolve
+ * into a directory that does not exist, so the separators collapse for filename use only.
+ */
+private fun String.asArchiveName(): String = replace('/', '_')
+
+/**
  * PSP saves are folders under `PSP/SAVEDATA/` named `<DISC_ID><SAVE_NAME>` where the 9-char
  * disc id (e.g. `ULUS10064`) is shared across all of a game's profile/system folders. A single
  * game commonly produces several siblings (`ULUS10064DATA00`, `ULUS10064SETTINGS`, ...), so the
@@ -195,7 +202,7 @@ private class PspFolderHandler(
 
         Logger.debug(TAG, "prepareForUpload: bundling ${matchedFolders.size} folder(s) | saveId=$saveId, names=${matchedFolders.map { it.name }}")
 
-        val outputFile = File(appContext.cacheDir, "${saveId ?: parent.name}.zip")
+        val outputFile = File(appContext.cacheDir, "${saveId?.asArchiveName() ?: parent.name}.zip")
         if (!saveArchiver.zipFolders(matchedFolders, outputFile)) {
             Logger.error(TAG, "prepareForUpload: failed to zip folders | saveId=$saveId")
             return@withContext null
@@ -559,7 +566,7 @@ private class Ps2FolderHandler(
             TAG,
             "prepareForUpload: bundling ${matchedFolders.size} folder(s) | saveId=$saveId, names=${matchedFolders.map { it.name }}"
         )
-        val outputFile = File(appContext.cacheDir, "$saveId.zip")
+        val outputFile = File(appContext.cacheDir, "${saveId.asArchiveName()}.zip")
         if (!saveArchiver.zipFolders(matchedFolders, outputFile)) {
             Logger.error(TAG, "prepareForUpload: failed to zip folders | saveId=$saveId")
             return@withContext null

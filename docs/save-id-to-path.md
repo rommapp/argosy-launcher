@@ -21,18 +21,19 @@ silently mismatches saves rather than failing loudly.
 | `FOLDER_PREFIX` | the id is a stem several directories share | `startsWith` |
 | `FILE_EXACT` | the id names one file | equality on the stem |
 | `FILE_PREFIX` | the id is a stem several files share | `startsWith` |
+| `FOLDER_SPLIT` | the id names one directory, nested as equal-length path segments rather than a flat name | equality per segment |
 
 ## Per platform
 
 ### 3DS (`N3dsFolderHandler`)
 
-`save_id` is the 16-hex title id. It splits across two directory levels:
+`save_id` is the on-disk location, already split: `00040000/00033500`. The
+title id it derives from stays flat in `title_id`.
 
 ```
-<base>/<id0>/<id1>/title/<high8>/<low8>/data
-                          ^^^^^^^ ^^^^^^
-                          save_id.take(8)
-                                  save_id.takeLast(8)
+<base>/<id0>/<id1>/title/00040000/00033500/data
+                         ^^^^^^^^^^^^^^^^^
+                         save_id, used as-is
 ```
 
 `<base>` is the `Nintendo 3DS` directory under the emulator's `sdmc`.
@@ -40,11 +41,15 @@ silently mismatches saves rather than failing loudly.
 `Nintendo 3DS` folder. `id0`/`id1` are the emulator's own 32-hex directories
 and are discovered, never constructed.
 
-sigil emits the same split as `save_path` (`00040000/00033500`). Argosy does
-not read it: `take(8)`/`takeLast(8)` is exact for every 16-hex title id, so
-persisting the field would duplicate a derivation that already agrees. If a
-platform ever needs a split Argosy cannot recompute, `save_path` is where it
-comes from.
+`FOLDER_SPLIT` flags that the id is nested rather than one flat folder name;
+the split itself arrives in the value, the same way PS2 reports the
+region-prefixed `BASLUS-20565` rather than the disc's `SLUS-20565`. A save id
+goes to the resolver unmodified on every platform, so a nested one needs no
+special derivation.
+
+Argosy's handler still reads the halves with `take(8)`/`takeLast(8)`, which
+lands on the same two segments whether or not the separator is present, so a
+row cached before the split arrived resolves identically to a fresh one.
 
 A `save_id` shorter than 16 characters has no category in it, and the handler
 falls back to `00040000` — correct for retail applications, a guess for

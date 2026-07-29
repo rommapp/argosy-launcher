@@ -53,6 +53,7 @@ class GameSessionService : Service() {
     @Inject lateinit var gameDao: GameDao
     @Inject lateinit var activeSaveRepository: com.nendo.argosy.data.repository.ActiveSaveRepository
     @Inject lateinit var screenshotCaptureMonitor: ScreenshotCaptureMonitor
+    @Inject lateinit var playSessionTracker: dagger.Lazy<PlaySessionTracker>
 
     private val serviceScope = SafeCoroutineScope(Dispatchers.IO, "GameSessionService")
     private val handler = Handler(Looper.getMainLooper())
@@ -273,6 +274,7 @@ class GameSessionService : Service() {
                                 path = "${dir.name}/$path"
                             )
                         }
+                        playSessionTracker.get().markSaveObserved()
                         onSaveDetected()
                     }
                 }

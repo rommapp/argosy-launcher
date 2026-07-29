@@ -496,11 +496,15 @@ class GameLaunchDelegate @Inject constructor(
         }
         val sessionDuration = playSessionTracker.getSessionDuration()
 
-        if (sessionDuration != null && sessionDuration.seconds < 30) {
+        val sawSave = playSessionTracker.sawSaveActivity()
+        if (sessionDuration != null && sessionDuration.seconds < 30 && !sawSave) {
             android.util.Log.d("GameLaunchDelegate", "handleSessionEnd: short session (${sessionDuration.seconds}s), cancelling without backup")
             playSessionTracker.cancelSession()
             onSyncComplete()
             return
+        }
+        if (sawSave && sessionDuration != null && sessionDuration.seconds < 30) {
+            android.util.Log.d("GameLaunchDelegate", "handleSessionEnd: short session (${sessionDuration.seconds}s) but the watcher saw a save, keeping it")
         }
 
         android.util.Log.d("GameLaunchDelegate", "handleSessionEnd: proceeding with session end for gameId=${session.gameId}")

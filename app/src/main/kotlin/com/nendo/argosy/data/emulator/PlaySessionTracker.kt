@@ -112,6 +112,7 @@ class PlaySessionTracker @Inject constructor(
     private val scope = SafeCoroutineScope(Dispatchers.IO, "PlaySessionTracker")
     private val sessionStateStore by lazy { SessionStateStore(application) }
     private val endingSession = AtomicBoolean(false)
+    private val saveObserved = AtomicBoolean(false)
 
     private fun broadcastSessionChanged(gameId: Long?, channelName: String?, isHardcore: Boolean) {
         // Write to SharedPreferences for companion process to read on startup
@@ -427,6 +428,7 @@ class PlaySessionTracker @Inject constructor(
     }
 
     fun startSession(gameId: Long, emulatorPackage: String, coreName: String? = null, isHardcore: Boolean = false, isNewGame: Boolean = false, isNetplayGuest: Boolean = false, variantFileId: Long? = null) {
+        saveObserved.set(false)
         lastScreenOnTime = Instant.now()
         isScreenOn = true
         lastScreenOffTime = null
@@ -911,6 +913,17 @@ class PlaySessionTracker @Inject constructor(
             override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle) {}
             override fun onActivityDestroyed(activity: Activity) {}
         })
+    }
+
+    /**
+     * Whether the save watcher saw the game write during the current session. A short session
+     * that produced a save is still a session worth archiving, so this is stronger evidence than
+     * elapsed time about whether there is anything to keep.
+     */
+    fun sawSaveActivity(): Boolean = saveObserved.get()
+
+    fun markSaveObserved() {
+        saveObserved.set(true)
     }
 
     fun getSessionDuration(): Duration? {

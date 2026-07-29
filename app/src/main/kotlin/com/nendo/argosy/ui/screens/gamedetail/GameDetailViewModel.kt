@@ -1414,6 +1414,10 @@ class GameDetailViewModel @Inject constructor(
                 if (st.pathButtonIndex == 1 && st.isSavePathOverride) clearPerGameSavePath()
                 else openPerGameSavePathBrowser()
             }
+            PerGameSettingsRow.SAVE_BASE_PATH -> {
+                dismissPerGameSettings()
+                _uiState.value.game?.platformId?.let(onNavigateToPlatformSettings)
+            }
             PerGameSettingsRow.MEMCARD -> openPerGameMemcardPicker()
             PerGameSettingsRow.DISPLAY_TARGET -> cyclePerGameDisplayTarget(1)
             PerGameSettingsRow.EXTENSION -> cyclePerGameExtension(1)

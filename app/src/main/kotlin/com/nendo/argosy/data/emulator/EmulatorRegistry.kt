@@ -1731,31 +1731,63 @@ object EmulatorRegistry {
         return platformExtensionOptions.containsKey(canonical)
     }
 
+    private val genericPackageSegments = setOf("android", "app", "apk", "release", "main")
+
+    private fun matchesPattern(packageName: String, pattern: String): Boolean {
+        val regex = pattern
+            .replace(".", "\\.")
+            .replace("*", ".*")
+        return packageName.matches(Regex(regex))
+    }
+
     fun matchesFamily(packageName: String, family: EmulatorFamily): Boolean {
-        return family.packagePatterns.any { pattern ->
-            val regex = pattern
-                .replace(".", "\\.")
-                .replace("*", ".*")
-            packageName.matches(Regex(regex))
-        }
+        return family.packagePatterns.any { matchesPattern(packageName, it) }
     }
 
     fun findFamilyForPackage(packageName: String): EmulatorFamily? {
         return emulatorFamilies.find { matchesFamily(packageName, it) }
     }
 
-    fun createDefFromFamily(family: EmulatorFamily, packageName: String): EmulatorDef {
-        val suffix = packageName
-            .removePrefix(family.packagePatterns.first().substringBefore("*"))
-            .replace(".", " ")
-            .trim()
-            .replaceFirstChar { it.uppercase() }
+    private fun normalizePackageSegment(segment: String): String =
+        segment.lowercase()
+            .filter { it.isLetterOrDigit() }
+            .removeSuffix("emulator")
+            .removeSuffix("emu")
 
-        val displayName = if (suffix.isNotEmpty() && suffix.lowercase() != family.displayNamePrefix.lowercase()) {
-            "${family.displayNamePrefix} ($suffix)"
-        } else {
-            family.displayNamePrefix
-        }
+    private fun titleCasePackageSegment(segment: String): String =
+        segment.split('_', '-')
+            .filter { it.isNotEmpty() }
+            .joinToString(" ") { word -> word.replaceFirstChar { it.uppercase() } }
+
+    private fun variantSuffix(family: EmulatorFamily, packageName: String, baseName: String): String? {
+        val pattern = family.packagePatterns.firstOrNull { matchesPattern(packageName, it) } ?: return null
+        if (!pattern.contains("*")) return null
+
+        val baseTokens = setOf(normalizePackageSegment(family.baseId), normalizePackageSegment(baseName))
+        val distinguishing = packageName
+            .removePrefix(pattern.substringBefore("*"))
+            .split(".")
+            .filter { segment ->
+                val normalized = normalizePackageSegment(segment)
+                normalized.isNotEmpty() &&
+                    normalized !in genericPackageSegments &&
+                    normalized !in baseTokens
+            }
+
+        if (distinguishing.isEmpty()) return null
+        return distinguishing.joinToString(" ") { titleCasePackageSegment(it) }
+    }
+
+    /**
+     * Build a variant [EmulatorDef] for a package matched by family pattern. The label inherits the
+     * canonical base def's display name and only carries a parenthesized suffix when the package
+     * holds a segment that actually distinguishes it from the base (e.g. a fork or nightly channel);
+     * generic segments such as `android` never become part of the name.
+     */
+    fun createDefFromFamily(family: EmulatorFamily, packageName: String): EmulatorDef {
+        val baseName = getById(family.baseId)?.displayName ?: family.displayNamePrefix
+        val suffix = variantSuffix(family, packageName, baseName)
+        val displayName = if (suffix != null) "$baseName ($suffix)" else baseName
 
         return EmulatorDef(
             id = "${family.baseId}_${packageName.replace(".", "_")}",

@@ -10,6 +10,7 @@ import com.nendo.argosy.data.emulator.LaunchConfig
 import com.nendo.argosy.data.emulator.RetroArchPathResolver
 import com.nendo.argosy.data.emulator.SavePathRegistry
 import com.nendo.argosy.data.local.dao.EmulatorConfigDao
+import com.nendo.argosy.data.local.entity.EmulatorConfigEntity
 import com.nendo.argosy.data.repository.EmulatorSaveConfigRepository
 import com.nendo.argosy.data.preferences.EmulatorDisplayTarget
 import com.nendo.argosy.data.preferences.MenuWrapMode
@@ -32,7 +33,7 @@ import kotlinx.coroutines.withContext
 import java.io.File
 import javax.inject.Inject
 
-enum class PerGameSettingsRow { EMULATOR, CORE, SAVE_PATH, MEMCARD, DISPLAY_TARGET, EXTENSION, PLATFORM_SETTINGS }
+enum class PerGameSettingsRow { EMULATOR, CORE, SAVE_PATH, SAVE_BASE_PATH, MEMCARD, DISPLAY_TARGET, EXTENSION, PLATFORM_SETTINGS }
 
 data class PerGameSettingsState(
     val visible: Boolean = false,
@@ -45,6 +46,9 @@ data class PerGameSettingsState(
     val coreName: String? = null,
     val isCoreOverride: Boolean = false,
     val showSavePathRow: Boolean = false,
+    val showSaveBasePathRow: Boolean = false,
+    val saveBasePath: String? = null,
+    val saveBasePathIsInherited: Boolean = false,
     val savePath: String? = null,
     val isSavePathOverride: Boolean = false,
     val showDisplayTargetRow: Boolean = false,
@@ -65,6 +69,7 @@ data class PerGameSettingsState(
             add(PerGameSettingsRow.EMULATOR)
             if (showCoreRow) add(PerGameSettingsRow.CORE)
             if (showSavePathRow) add(PerGameSettingsRow.SAVE_PATH)
+            if (showSaveBasePathRow) add(PerGameSettingsRow.SAVE_BASE_PATH)
             if (showMemcardRow) add(PerGameSettingsRow.MEMCARD)
             if (showDisplayTargetRow) add(PerGameSettingsRow.DISPLAY_TARGET)
             if (extensionOptions.isNotEmpty()) add(PerGameSettingsRow.EXTENSION)
@@ -102,6 +107,17 @@ class PerGameSettingsDelegate @Inject constructor(
     val state: StateFlow<PerGameSettingsState> = _state.asStateFlow()
 
     var menuWrapMode: MenuWrapMode = MenuWrapMode.HARD_STOP
+
+    /**
+     * The emulator's current name, preferring what the registry says now over the name stored
+     * when the override was made. A stored name is a snapshot, and a variant whose label has since
+     * been corrected would otherwise show its old one until the user reselects the emulator.
+     */
+    private fun liveEmulatorName(config: EmulatorConfigEntity?): String? {
+        val stored = config?.displayName
+        val pkg = config?.packageName ?: return stored
+        return emulatorDetector.getByPackage(pkg)?.displayName ?: stored
+    }
 
     suspend fun show(gameId: Long) {
         val loaded = buildState(gameId) ?: return
@@ -225,8 +241,7 @@ class PerGameSettingsDelegate @Inject constructor(
         val gameConfig = emulatorConfigDao.getByGameId(gameId)
         val platformConfig = emulatorConfigDao.getDefaultForPlatform(game.platformId)
 
-        val emulatorName = gameConfig?.displayName
-            ?: platformConfig?.displayName
+        val emulatorName = liveEmulatorName(gameConfig) ?: liveEmulatorName(platformConfig)
             ?: emulatorDetector.getPreferredEmulator(game.platformSlug, prefs.builtinLibretroEnabled)?.def?.displayName
 
         val configuredPackage = gameConfig?.packageName ?: platformConfig?.packageName
@@ -277,6 +292,16 @@ class PerGameSettingsDelegate @Inject constructor(
             else -> SavePathRegistry.resolvePathWithPackage(saveConfig, effectivePackage).firstOrNull()
         }
 
+        val showSaveBasePathRow = !showSavePathRow && saveConfig != null && saveConfig.supported
+        val saveBasePath = if (!showSaveBasePathRow || saveConfig == null) {
+            null
+        } else {
+            emulatorSaveConfigRepository.resolveUserSavePath(saveConfig.emulatorId, game.platformSlug)
+                ?: SavePathRegistry.resolvePathWithPackage(saveConfig, effectivePackage).firstOrNull()
+        }
+        val saveBasePathIsInherited = saveBasePath != null &&
+            userSaveConfig?.takeIf { it.isUserOverride }?.savePathPattern.isNullOrBlank()
+
         val displayTarget = emulatorConfigDao.getDisplayTargetForGame(gameId)
             ?.let { raw -> EmulatorDisplayTarget.entries.find { it.name == raw } }
         val inheritedDisplayTarget = EmulatorDisplayTarget.fromString(
@@ -320,6 +345,9 @@ class PerGameSettingsDelegate @Inject constructor(
             coreName = coreName,
             isCoreOverride = gameConfig?.coreName != null,
             showSavePathRow = showSavePathRow,
+            showSaveBasePathRow = showSaveBasePathRow,
+            saveBasePath = saveBasePath,
+            saveBasePathIsInherited = saveBasePathIsInherited,
             savePath = savePath,
             isSavePathOverride = perGamePath != null,
             showDisplayTargetRow = displayAffinityHelper.hasSecondaryDisplay,

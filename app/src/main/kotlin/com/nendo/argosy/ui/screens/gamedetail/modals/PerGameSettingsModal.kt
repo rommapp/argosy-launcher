@@ -61,6 +61,7 @@ fun PerGameSettingsModal(
                 InputButton.A to when (focusedRow) {
                     PerGameSettingsRow.EMULATOR, PerGameSettingsRow.CORE -> "Select"
                     PerGameSettingsRow.SAVE_PATH -> "Change"
+                    PerGameSettingsRow.SAVE_BASE_PATH -> "Open"
                     PerGameSettingsRow.MEMCARD -> "Change"
                     PerGameSettingsRow.DISPLAY_TARGET, PerGameSettingsRow.EXTENSION -> "Cycle"
                     PerGameSettingsRow.PLATFORM_SETTINGS, null -> "Open"
@@ -95,6 +96,14 @@ fun PerGameSettingsModal(
                     buttonFocusIndex = state.pathButtonIndex,
                     onChange = onChangeSavePath,
                     onReset = if (state.isSavePathOverride) onResetSavePath else null
+                )
+
+                PerGameSettingsRow.SAVE_BASE_PATH -> ValueConfigItem(
+                    label = "Save Location",
+                    value = state.saveBasePath?.let { formatStoragePath(it) } ?: "Not configured",
+                    isOverride = !state.saveBasePathIsInherited && state.saveBasePath != null,
+                    isFocused = isFocused(row),
+                    onClick = onPlatformSettings
                 )
 
                 PerGameSettingsRow.MEMCARD -> ValueConfigItem(

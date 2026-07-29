@@ -367,6 +367,10 @@ class SavePathResolver @Inject constructor(
             cachedSaveId
         }
 
+        val storedGame = gameId?.let { gameDao.getById(it) }
+        val storedSaveIdMissing = gameId != null && storedGame?.saveId.isNullOrBlank()
+        val storedTitleIdPresent = !storedGame?.titleId.isNullOrBlank()
+
         if (validatedCachedSaveId != null) {
             triedTitleIds.add(validatedCachedSaveId.uppercase())
             Logger.debug(TAG, "[SaveSync] DISCOVER | Trying cached titleId=$validatedCachedSaveId")
@@ -386,9 +390,17 @@ class SavePathResolver @Inject constructor(
             triedTitleIds.add(extractedSaveId.uppercase())
             Logger.debug(TAG, "[SaveSync] DISCOVER | Trying extracted titleId=$extractedTitleId saveId=$extractedSaveId (fromBinary=${extractionResult.fromBinary})")
 
-            val shouldCacheExtracted = gameId != null && validatedCachedSaveId == null &&
+            val shouldCacheExtracted = gameId != null &&
+                (validatedCachedSaveId == null || storedSaveIdMissing) &&
                 (!isSwitchPlatform || switchSaveHandler.isValidTitleId(extractedTitleId))
-            if (shouldCacheExtracted) {
+            if (shouldCacheExtracted && storedTitleIdPresent) {
+                Logger.debug(
+                    TAG,
+                    "[SaveSync] DISCOVER | Filling in missing saveId=$extractedSaveId for gameId=$gameId, " +
+                        "leaving the established titleId and its lock alone"
+                )
+                gameDao.setSaveId(gameId, extractedSaveId)
+            } else if (shouldCacheExtracted) {
                 Logger.debug(TAG, "[SaveSync] DISCOVER | Caching extracted titleId=$extractedTitleId saveId=$extractedSaveId for gameId=$gameId, locked=${extractionResult.fromBinary}")
                 gameDao.setTitleAndSaveIdWithLock(gameId, extractedTitleId, extractedSaveId, extractionResult.fromBinary)
             } else if (gameId != null && isSwitchPlatform && !switchSaveHandler.isValidTitleId(extractedTitleId)) {

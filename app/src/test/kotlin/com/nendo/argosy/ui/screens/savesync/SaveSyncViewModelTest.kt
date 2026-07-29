@@ -72,7 +72,7 @@ class SaveSyncViewModelTest {
 
         every { saveSyncDao.observeAll(any()) } returns flowOf(emptyList())
         every { saveSyncDao.observeSaveCountsByDevice(any()) } returns flowOf(emptyList())
-        every { pendingConflictDao.observeOpenConflicts() } returns flowOf(emptyList())
+        every { pendingConflictDao.observeOpenConflicts(any()) } returns flowOf(emptyList())
         every { syncQueueManager.state } returns MutableStateFlow(SyncQueueState())
         every { preferencesRepository.preferences } returns flowOf(UserPreferences())
         every { romMRepository.connectionState } returns MutableStateFlow(
@@ -128,7 +128,7 @@ class SaveSyncViewModelTest {
     @Test
     fun `attention rows are produced from open conflicts and include game title`() = runTest(testDispatcher) {
         val game = makeGame(id = 42, title = "Persona 5")
-        every { pendingConflictDao.observeOpenConflicts() } returns flowOf(
+        every { pendingConflictDao.observeOpenConflicts(any()) } returns flowOf(
             listOf(
                 PendingConflictEntity(
                     id = 7,
@@ -221,7 +221,7 @@ class SaveSyncViewModelTest {
             slot = "Slot 1", emulator = "duckstation",
             localUpdatedAt = Instant.now(), serverUpdatedAt = Instant.now()
         )
-        every { pendingConflictDao.observeOpenConflicts() } returns flowOf(listOf(conflict))
+        every { pendingConflictDao.observeOpenConflicts(any()) } returns flowOf(listOf(conflict))
         coEvery { pendingConflictDao.getById(7L) } returns conflict
         coEvery { gameDao.getByIds(any()) } returns listOf(makeGame(42, "P5"))
 
@@ -245,7 +245,7 @@ class SaveSyncViewModelTest {
             slot = "Slot 1", emulator = "duckstation",
             localUpdatedAt = Instant.now(), serverUpdatedAt = Instant.now()
         )
-        every { pendingConflictDao.observeOpenConflicts() } returns flowOf(listOf(conflict))
+        every { pendingConflictDao.observeOpenConflicts(any()) } returns flowOf(listOf(conflict))
         coEvery { pendingConflictDao.getById(7L) } returns conflict
         coEvery { gameDao.getByIds(any()) } returns listOf(makeGame(42, "P5"))
 

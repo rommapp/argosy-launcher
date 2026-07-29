@@ -82,7 +82,9 @@ class SavePathResolverDiscoveryTest {
         every { saveHandlerRegistry.getFolderHandler(any()) } returns null
 
         resolver = SavePathResolver(
-            context, realFsFal(), emulatorSaveConfigDao, emulatorConfigDao, gameDao, retroArchConfigParser,
+            context, realFsFal(), emulatorSaveConfigDao,
+            com.nendo.argosy.data.repository.EmulatorSaveConfigRepository(emulatorSaveConfigDao),
+            emulatorConfigDao, gameDao, retroArchConfigParser,
             retroArchPathResolver, titleIdExtractor, titleDbRepository, saveArchiver,
             switchSaveHandler, gciSaveHandler, saveHandlerRegistry,
             builtinPreferences, platformLibretroSettingsDao,

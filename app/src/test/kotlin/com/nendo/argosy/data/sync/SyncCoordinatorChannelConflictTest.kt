@@ -124,7 +124,8 @@ class SyncCoordinatorChannelConflictTest {
             reconcileEffectApplier = mockk(relaxed = true),
             saveRecoveryGate = mockk(relaxed = true),
             screenshotUploader = mockk(relaxed = true),
-            rommApiProvider = mockk(relaxed = true)
+            rommApiProvider = mockk(relaxed = true),
+            accountSwitchMarkerStore = mockk(relaxed = true)
         )
 
         coordinator.processQueue()
@@ -179,7 +180,8 @@ class SyncCoordinatorChannelConflictTest {
             reconcileEffectApplier = mockk(relaxed = true),
             saveRecoveryGate = mockk(relaxed = true),
             screenshotUploader = mockk(relaxed = true),
-            rommApiProvider = mockk(relaxed = true)
+            rommApiProvider = mockk(relaxed = true),
+            accountSwitchMarkerStore = mockk(relaxed = true)
         )
 
         coordinator.processQueue()
@@ -244,7 +246,8 @@ class SyncCoordinatorChannelConflictTest {
             reconcileEffectApplier = mockk(relaxed = true),
             saveRecoveryGate = mockk(relaxed = true),
             screenshotUploader = mockk(relaxed = true),
-            rommApiProvider = mockk(relaxed = true)
+            rommApiProvider = mockk(relaxed = true),
+            accountSwitchMarkerStore = mockk(relaxed = true)
         )
 
         coordinator.processQueue()
@@ -290,7 +293,8 @@ class SyncCoordinatorChannelConflictTest {
             reconcileEffectApplier = mockk(relaxed = true),
             saveRecoveryGate = mockk(relaxed = true),
             screenshotUploader = mockk(relaxed = true),
-            rommApiProvider = mockk(relaxed = true)
+            rommApiProvider = mockk(relaxed = true),
+            accountSwitchMarkerStore = mockk(relaxed = true)
         )
 
         coordinator.processQueue()

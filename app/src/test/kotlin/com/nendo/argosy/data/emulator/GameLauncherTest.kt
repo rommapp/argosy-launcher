@@ -128,7 +128,8 @@ class GameLauncherTest {
             saveHandlerRegistry = saveHandlerRegistry,
             libretroStatePathResolver = libretroStatePathResolver,
             notificationManager = mockk(relaxed = true),
-            attributionRepository = mockk(relaxed = true)
+            attributionRepository = mockk(relaxed = true),
+            accountSwitchMarkerStore = mockk(relaxed = true)
         )
     }
 

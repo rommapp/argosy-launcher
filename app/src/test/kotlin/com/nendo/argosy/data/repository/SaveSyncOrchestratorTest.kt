@@ -85,7 +85,9 @@ class SaveSyncOrchestratorTest {
             apiClient = apiClient,
             payloadCodec = com.nendo.argosy.data.sync.SyncPayloadCodec(com.squareup.moshi.Moshi.Builder().build()),
             saveHandlerRegistry = mockk(relaxed = true),
-            saveAccessNotices = com.nendo.argosy.data.sync.SaveAccessNotices()
+            saveAccessNotices = com.nendo.argosy.data.sync.SaveAccessNotices(),
+            saveOwnershipTracker = mockk(relaxed = true),
+            accountSwitchMarkerStore = mockk(relaxed = true)
         )
     }
 

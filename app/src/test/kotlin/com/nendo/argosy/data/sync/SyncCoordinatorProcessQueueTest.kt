@@ -114,6 +114,7 @@ class SyncCoordinatorProcessQueueTest {
             saveRecoveryGate = mockk(relaxed = true),
             screenshotUploader = mockk(relaxed = true),
             rommApiProvider = mockk(relaxed = true),
+            accountSwitchMarkerStore = mockk(relaxed = true),
         )
     }
 

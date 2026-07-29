@@ -12,8 +12,6 @@ import com.nendo.argosy.domain.model.UnifiedSaveEntry
 import com.nendo.argosy.domain.usecase.save.GetUnifiedSavesUseCase
 import com.nendo.argosy.domain.usecase.save.RestoreCachedSaveUseCase
 import com.nendo.argosy.domain.usecase.state.RestoreCachedStatesUseCase
-import com.nendo.argosy.ui.input.SoundFeedbackManager
-import com.nendo.argosy.core.input.SoundType
 import com.nendo.argosy.core.notification.NotificationManager
 import com.nendo.argosy.core.notification.showError
 import com.nendo.argosy.core.notification.showSuccess
@@ -34,7 +32,6 @@ class SaveChannelSavesDelegate @Inject constructor(
     private val gameRepository: GameRepository,
     private val activeSaveRepository: ActiveSaveRepository,
     private val notificationManager: NotificationManager,
-    private val soundManager: SoundFeedbackManager,
     private val titleIdDownloadObserver: TitleIdDownloadObserver,
     private val syncCoordinator: SyncCoordinator
 ) {
@@ -196,7 +193,6 @@ class SaveChannelSavesDelegate @Inject constructor(
 
     fun focusSlotsColumn() {
         _state.update { it.copy(saveFocusColumn = SaveFocusColumn.SLOTS) }
-        soundManager.play(SoundType.NAVIGATE)
     }
 
     fun focusHistoryColumn() {
@@ -209,7 +205,6 @@ class SaveChannelSavesDelegate @Inject constructor(
                     else it.selectedHistoryIndex
             )
         }
-        soundManager.play(SoundType.NAVIGATE)
     }
 
     fun moveSlotSelection(delta: Int) {
@@ -217,7 +212,6 @@ class SaveChannelSavesDelegate @Inject constructor(
             val max = (state.saveSlots.size - 1).coerceAtLeast(0)
             val newIndex = (state.selectedSlotIndex + delta).coerceIn(0, max)
             if (newIndex != state.selectedSlotIndex) {
-                soundManager.play(SoundType.NAVIGATE)
             }
             state.copy(selectedSlotIndex = newIndex)
         }
@@ -229,7 +223,6 @@ class SaveChannelSavesDelegate @Inject constructor(
             val max = (state.saveHistory.size - 1).coerceAtLeast(0)
             val newIndex = (state.selectedHistoryIndex + delta).coerceIn(0, max)
             if (newIndex != state.selectedHistoryIndex) {
-                soundManager.play(SoundType.NAVIGATE)
             }
             state.copy(selectedHistoryIndex = newIndex)
         }

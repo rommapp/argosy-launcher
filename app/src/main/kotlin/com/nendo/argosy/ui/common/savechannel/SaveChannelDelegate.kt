@@ -125,7 +125,6 @@ class SaveChannelDelegate @Inject constructor(
                 focusIndex = 0
             )
         }
-        soundManager.play(SoundType.NAVIGATE)
     }
 
     fun focusSlotsColumn() = savesDelegate.focusSlotsColumn()

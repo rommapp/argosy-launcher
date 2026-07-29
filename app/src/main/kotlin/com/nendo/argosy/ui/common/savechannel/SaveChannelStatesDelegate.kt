@@ -8,8 +8,6 @@ import com.nendo.argosy.domain.model.UnifiedStateEntry
 import com.nendo.argosy.domain.usecase.state.GetUnifiedStatesUseCase
 import com.nendo.argosy.domain.usecase.state.RestoreStateResult
 import com.nendo.argosy.domain.usecase.state.RestoreStateUseCase
-import com.nendo.argosy.ui.input.SoundFeedbackManager
-import com.nendo.argosy.core.input.SoundType
 import com.nendo.argosy.core.notification.NotificationManager
 import com.nendo.argosy.core.notification.showError
 import com.nendo.argosy.core.notification.showSuccess
@@ -26,7 +24,6 @@ class SaveChannelStatesDelegate @Inject constructor(
     private val gameRepository: GameRepository,
     private val emulatorResolver: EmulatorResolver,
     private val notificationManager: NotificationManager,
-    private val soundManager: SoundFeedbackManager
 ) {
     private val _state get() = holder.state
     private val currentGameId get() = holder.currentGameId
@@ -58,7 +55,6 @@ class SaveChannelStatesDelegate @Inject constructor(
             val maxIndex = (size - 1).coerceAtLeast(0)
             val newIndex = (s.focusIndex + delta).coerceIn(0, maxIndex)
             if (newIndex != s.focusIndex) {
-                soundManager.play(SoundType.NAVIGATE)
             }
             s.copy(focusIndex = newIndex)
         }

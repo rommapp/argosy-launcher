@@ -20,11 +20,14 @@ class EmulatorSaveConfigRepository @Inject constructor(
      *
      * Emulator selection already degrades from a per-game pin to the platform default, so a game
      * pinned to one 3DS build resolves happily while asking for its save path by exact id finds
-     * nothing and silently takes the packaged default. The path answers "where this device keeps
-     * its 3DS card", which is the same answer whichever build reads it, so a sibling's override is
-     * a better guess than a default that points somewhere the user moved away from.
+     * nothing and silently takes the packaged default.
      *
-     * Returns null when nobody on the platform has one, leaving the packaged default in charge.
+     * Only builds forked from the same base are treated as siblings. Those share a data directory,
+     * so an override set on one describes the other. Unrelated emulators on a platform do not: they
+     * each keep their own tree, and borrowing a path across them points a game at somewhere its
+     * emulator never writes.
+     *
+     * Returns null when no sibling has one, leaving the packaged default in charge.
      */
     suspend fun resolveUserSavePath(emulatorId: String, platformSlug: String?): String? {
         emulatorSaveConfigDao.getByEmulator(emulatorId)
@@ -34,9 +37,10 @@ class EmulatorSaveConfigRepository @Inject constructor(
             ?.let { return it }
 
         val slug = platformSlug?.takeIf { it.isNotBlank() } ?: return null
+        val base = EmulatorRegistry.familyBaseIdFor(emulatorId)
         val siblings = EmulatorRegistry.getForPlatform(slug)
             .map { it.id }
-            .filter { it != emulatorId }
+            .filter { it != emulatorId && EmulatorRegistry.familyBaseIdFor(it) == base }
             .toSet()
         if (siblings.isEmpty()) return null
 

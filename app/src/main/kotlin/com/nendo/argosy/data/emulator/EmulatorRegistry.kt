@@ -1748,6 +1748,19 @@ object EmulatorRegistry {
         return emulatorFamilies.find { matchesFamily(packageName, it) }
     }
 
+    /**
+     * The id a variant shares with the build it forked from, or the id itself when it is not one.
+     *
+     * Variant ids are the base id joined to the package, and base ids contain underscores of their
+     * own, so the split has to come from the family list rather than from the shape of the string.
+     */
+    fun familyBaseIdFor(emulatorId: String): String =
+        emulatorFamilies
+            .map { it.baseId }
+            .filter { emulatorId == it || emulatorId.startsWith(it + "_") }
+            .maxByOrNull { it.length }
+            ?: emulatorId
+
     private fun normalizePackageSegment(segment: String): String =
         segment.lowercase()
             .filter { it.isLetterOrDigit() }

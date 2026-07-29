@@ -1435,11 +1435,15 @@ private fun SettingsFooter(uiState: SettingsUiState, shaderStack: ShaderStackSta
         if (uiState.currentSection == SettingsSection.PLATFORM_DETAIL) {
             val config = uiState.emulators.platforms.getOrNull(uiState.platformDetail.platformIndex)
             val detail = uiState.platformDetail
-            val syncEnabled = config?.let { c ->
-                uiState.storage.platformConfigs.find { it.platformId == c.platform.id }?.syncEnabled
-            } ?: true
+            val storageConfig = config?.let { c ->
+                uiState.storage.platformConfigs.find { it.platformId == c.platform.id }
+            }
+            val syncEnabled = storageConfig?.syncEnabled ?: true
             val focusedItem = config?.let {
-                platformDetailItemAtFocusIndex(uiState.focusedIndex, it, detail, syncEnabled)
+                platformDetailItemAtFocusIndex(
+                    uiState.focusedIndex, it, detail, syncEnabled,
+                    storageConfig?.folderMemcardCount ?: -1
+                )
             }
             if (focusedItem is PlatformDetailItem.Core ||
                 focusedItem is PlatformDetailItem.Extension ||
@@ -1453,7 +1457,6 @@ private fun SettingsFooter(uiState: SettingsUiState, shaderStack: ShaderStackSta
                     add(InputButton.X to "Update Emulator")
                 }
             }
-            val storageConfig = uiState.storage.platformConfigs.find { it.platformId == config?.platform?.id }
             val canReset = when (focusedItem) {
                 is PlatformDetailItem.RomPath -> storageConfig?.customRomPath != null
                 is PlatformDetailItem.SavePath -> !config!!.effectiveEmulatorIsRetroArch && storageConfig?.isUserSavePathOverride == true

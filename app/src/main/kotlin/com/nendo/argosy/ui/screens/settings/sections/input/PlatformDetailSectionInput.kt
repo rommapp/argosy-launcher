@@ -22,7 +22,9 @@ internal class PlatformDetailSectionInput(
         val detail = state.platformDetail
         val storageConfig = state.storage.platformConfigs.find { it.platformId == config.platform.id }
         val syncEnabled = storageConfig?.syncEnabled ?: true
-        val item = platformDetailItemAtFocusIndex(state.focusedIndex, config, detail, syncEnabled)
+        val item = platformDetailItemAtFocusIndex(
+            state.focusedIndex, config, detail, syncEnabled, storageConfig?.folderMemcardCount ?: -1
+        )
             ?: return InputResult.UNHANDLED
         return when (item) {
             PlatformDetailItem.RomPath -> {
@@ -73,9 +75,11 @@ internal class PlatformDetailSectionInput(
         val state = viewModel.uiState.value
         val config = state.emulators.platforms.getOrNull(state.platformDetail.platformIndex)
             ?: return InputResult.UNHANDLED
-        val syncEnabled = state.storage.platformConfigs
-            .find { it.platformId == config.platform.id }?.syncEnabled ?: true
-        val sections = platformDetailSections(config, state.platformDetail, syncEnabled)
+        val storageConfig = state.storage.platformConfigs.find { it.platformId == config.platform.id }
+        val syncEnabled = storageConfig?.syncEnabled ?: true
+        val sections = platformDetailSections(
+            config, state.platformDetail, syncEnabled, storageConfig?.folderMemcardCount ?: -1
+        )
         val currentFocus = state.focusedIndex
 
         val target = if (direction > 0) {
@@ -108,9 +112,12 @@ internal class PlatformDetailSectionInput(
         val state = viewModel.uiState.value
         val config = state.emulators.platforms.getOrNull(state.platformDetail.platformIndex)
             ?: return InputResult.UNHANDLED
-        val syncEnabled = state.storage.platformConfigs
-            .find { it.platformId == config.platform.id }?.syncEnabled ?: true
-        val item = platformDetailItemAtFocusIndex(state.focusedIndex, config, state.platformDetail, syncEnabled)
+        val storageConfig = state.storage.platformConfigs.find { it.platformId == config.platform.id }
+        val syncEnabled = storageConfig?.syncEnabled ?: true
+        val item = platformDetailItemAtFocusIndex(
+            state.focusedIndex, config, state.platformDetail, syncEnabled,
+            storageConfig?.folderMemcardCount ?: -1
+        )
             ?: return InputResult.UNHANDLED
 
         return when (item) {

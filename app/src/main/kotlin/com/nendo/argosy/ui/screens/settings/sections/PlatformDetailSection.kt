@@ -79,7 +79,7 @@ internal sealed class PlatformDetailItem(
 
     data object RomPath : PlatformDetailItem("rom_path", "sync")
     data object SavePath : PlatformDetailItem("save_path", "sync", { it.showSavePath })
-    data object MemoryCard : PlatformDetailItem("memory_card", "sync", { it.isPs2 && it.showSavePath })
+    data object MemoryCard : PlatformDetailItem("memory_card", "sync", { it.showMemoryCard })
     data object StatePath : PlatformDetailItem("state_path", "sync", { it.showStatePath })
 
     data object SyncToggle : PlatformDetailItem("sync_toggle", "sync")
@@ -127,13 +127,15 @@ internal data class PlatformDetailVisibility(
     val biosMissing: Boolean = false,
     val biosDownloaded: Boolean = false,
     val canDistribute: Boolean = false,
-    val isPs2: Boolean = false
+    val isPs2: Boolean = false,
+    val showMemoryCard: Boolean = false
 ) {
     companion object {
         fun from(
             config: PlatformEmulatorConfig,
             detail: PlatformDetailState,
-            syncEnabled: Boolean
+            syncEnabled: Boolean,
+            memcardCount: Int
         ) = PlatformDetailVisibility(
             showCore = config.showCoreSelection,
             showExtension = config.showExtensionSelection,
@@ -150,7 +152,11 @@ internal data class PlatformDetailVisibility(
             biosDownloaded = detail.biosDownloaded > 0,
             canDistribute = com.nendo.argosy.data.emulator.BiosPathRegistry
                 .getEmulatorsForPlatform(config.platform.slug).isNotEmpty(),
-            isPs2 = config.platform.slug == "ps2"
+            isPs2 = config.platform.slug == "ps2",
+            showMemoryCard = com.nendo.argosy.data.emulator.EmulatorSettingScope.showsMemoryCard(
+                config.platform.slug,
+                memcardCount
+            )
         )
     }
 }
@@ -174,9 +180,11 @@ private fun createPlatformDetailLayout() = SettingsLayout<PlatformDetailItem, Pl
 
 internal fun platformDetailMaxFocusIndex(state: SettingsUiState): Int {
     val config = state.emulators.platforms.getOrNull(state.platformDetail.platformIndex) ?: return 0
-    val syncEnabled = state.storage.platformConfigs
-        .find { it.platformId == config.platform.id }?.syncEnabled ?: true
-    val visibility = PlatformDetailVisibility.from(config, state.platformDetail, syncEnabled)
+    val storageConfig = state.storage.platformConfigs.find { it.platformId == config.platform.id }
+    val syncEnabled = storageConfig?.syncEnabled ?: true
+    val visibility = PlatformDetailVisibility.from(
+        config, state.platformDetail, syncEnabled, storageConfig?.folderMemcardCount ?: -1
+    )
     val layout = createPlatformDetailLayout()
     return layout.maxFocusIndex(visibility)
 }
@@ -185,9 +193,10 @@ internal fun platformDetailItemAtFocusIndex(
     focusIndex: Int,
     config: PlatformEmulatorConfig,
     detail: PlatformDetailState,
-    syncEnabled: Boolean
+    syncEnabled: Boolean,
+    memcardCount: Int
 ): PlatformDetailItem? {
-    val visibility = PlatformDetailVisibility.from(config, detail, syncEnabled)
+    val visibility = PlatformDetailVisibility.from(config, detail, syncEnabled, memcardCount)
     val layout = createPlatformDetailLayout()
     return layout.itemAtFocusIndex(focusIndex, visibility)
 }
@@ -195,8 +204,11 @@ internal fun platformDetailItemAtFocusIndex(
 internal fun platformDetailSections(
     config: PlatformEmulatorConfig,
     detail: PlatformDetailState,
-    syncEnabled: Boolean
-) = createPlatformDetailLayout().buildSections(PlatformDetailVisibility.from(config, detail, syncEnabled))
+    syncEnabled: Boolean,
+    memcardCount: Int
+) = createPlatformDetailLayout().buildSections(
+    PlatformDetailVisibility.from(config, detail, syncEnabled, memcardCount)
+)
 
 // -- Composable --
 
@@ -218,8 +230,9 @@ fun PlatformDetailSection(
     val storageConfig = uiState.storage.platformConfigs.find { it.platformId == config.platform.id }
     val syncEnabled = storageConfig?.syncEnabled ?: true
 
-    val visibility = remember(config, detail, syncEnabled) {
-        PlatformDetailVisibility.from(config, detail, syncEnabled)
+    val memcardCount = storageConfig?.folderMemcardCount ?: -1
+    val visibility = remember(config, detail, syncEnabled, memcardCount) {
+        PlatformDetailVisibility.from(config, detail, syncEnabled, memcardCount)
     }
     val layout = remember { createPlatformDetailLayout() }
     val visibleItems = remember(visibility) { layout.visibleItems(visibility) }
@@ -710,16 +723,6 @@ internal fun formatPath(path: String?): String {
     return if (path.length > maxLen) "...${path.takeLast(maxLen)}" else path
 }
 
-// Keep old function name for confirm router compatibility
-internal fun buildPlatformDetailFocusItems(
-    config: PlatformEmulatorConfig,
-    detail: PlatformDetailState,
-    syncEnabled: Boolean
-): List<PlatformDetailItem> {
-    val visibility = PlatformDetailVisibility.from(config, detail, syncEnabled)
-    val layout = createPlatformDetailLayout()
-    return layout.focusableItems(visibility)
-}
 
 @Composable
 private fun DownloadDefaultsModal(

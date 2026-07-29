@@ -1250,9 +1250,12 @@ private fun computeMaxFocusIndex(
 
 private fun routePlatformDetailConfirm(vm: SettingsViewModel, state: SettingsUiState): InputResult {
     val config = state.emulators.platforms.getOrNull(state.platformDetail.platformIndex) ?: return InputResult.HANDLED
-    val syncEnabled = state.storage.platformConfigs
-        .find { it.platformId == config.platform.id }?.syncEnabled ?: true
-    val item = platformDetailItemAtFocusIndex(state.focusedIndex, config, state.platformDetail, syncEnabled) ?: return InputResult.HANDLED
+    val storageConfig = state.storage.platformConfigs.find { it.platformId == config.platform.id }
+    val syncEnabled = storageConfig?.syncEnabled ?: true
+    val item = platformDetailItemAtFocusIndex(
+        state.focusedIndex, config, state.platformDetail, syncEnabled,
+        storageConfig?.folderMemcardCount ?: -1
+    ) ?: return InputResult.HANDLED
     when (item) {
         PlatformDetailItem.Emulator -> {
             val hasInstallableKnown = config.availableEmulators.isNotEmpty() ||

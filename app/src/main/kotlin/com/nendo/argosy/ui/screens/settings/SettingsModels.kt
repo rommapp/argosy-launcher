@@ -140,10 +140,13 @@ data class PlatformEmulatorConfig(
 ) {
     val hasInstalledEmulators: Boolean get() = availableEmulators.isNotEmpty()
     val isRetroArchSelected: Boolean get() = selectedEmulatorPackage?.startsWith("com.retroarch") == true
-    val showCoreSelection: Boolean get() = (effectiveEmulatorIsRetroArch || effectiveEmulatorId == "builtin") && availableCores.isNotEmpty()
-    val showExtensionSelection: Boolean get() = extensionOptions.isNotEmpty()
+    val showCoreSelection: Boolean get() = com.nendo.argosy.data.emulator.EmulatorSettingScope
+        .showsCoreSelection(effectiveEmulatorIsRetroArch || effectiveEmulatorId == "builtin", availableCores.size)
+    val showExtensionSelection: Boolean get() = com.nendo.argosy.data.emulator.EmulatorSettingScope
+        .showsExtensionSelection(extensionOptions.size)
     val showLegacyModeOption: Boolean get() = effectiveEmulatorId == "drastic"
-    val showDisplayTargetOption: Boolean get() = hasSecondaryDisplay
+    val showDisplayTargetOption: Boolean get() = com.nendo.argosy.data.emulator.EmulatorSettingScope
+        .showsDisplayTarget(hasSecondaryDisplay)
 }
 
 data class EmulatorUpdateInfo(

@@ -5,6 +5,7 @@ import com.nendo.argosy.data.emulator.BuiltinCoreResolver
 import com.nendo.argosy.data.emulator.EmulatorDetector
 import com.nendo.argosy.data.emulator.EmulatorRegistry
 import com.nendo.argosy.data.emulator.EmulatorResolver
+import com.nendo.argosy.data.emulator.EmulatorSettingScope
 import com.nendo.argosy.data.emulator.ExtensionOption
 import com.nendo.argosy.data.emulator.LaunchConfig
 import com.nendo.argosy.data.emulator.RetroArchPathResolver
@@ -250,7 +251,7 @@ class PerGameSettingsDelegate @Inject constructor(
         val isBuiltIn = emulatorDef?.launchConfig is LaunchConfig.BuiltIn
         val isCoreSelectable = emulatorDef?.launchConfig?.isCoreSelectable == true
         val cores = EmulatorRegistry.getSelectableCores(game.platformSlug, isBuiltIn)
-        val showCoreRow = isCoreSelectable && cores.size > 1
+        val showCoreRow = EmulatorSettingScope.showsCoreSelection(isCoreSelectable, cores.size)
         val selectedCoreId = if (isBuiltIn) {
             builtinCoreResolver.resolveCoreId(
                 gameId = gameId,
@@ -268,7 +269,7 @@ class PerGameSettingsDelegate @Inject constructor(
         val effectiveEmulatorId = effectivePackage?.let { emulatorResolver.resolveEmulatorId(it) }
         val saveConfig = effectivePackage?.let { SavePathRegistry.getConfigForPlatformByPackage(it, game.platformSlug) }
             ?: effectiveEmulatorId?.let { SavePathRegistry.getConfigForPlatform(it, game.platformSlug) }
-        val showSavePathRow = SavePathRegistry.supportsPerGameSavePath(saveConfig, game.platformSlug)
+        val showSavePathRow = EmulatorSettingScope.showsPerGameSavePath(saveConfig, game.platformSlug)
 
         val perGamePath = emulatorConfigDao.getSavePathForGame(gameId)?.takeIf { it.isNotBlank() }
         val isRetroArch = emulatorDef?.launchConfig is LaunchConfig.RetroArch
@@ -331,7 +332,7 @@ class PerGameSettingsDelegate @Inject constructor(
         } else {
             emptyList()
         }
-        val showMemcardRow = isPs2 && memcardCards.isNotEmpty()
+        val showMemcardRow = EmulatorSettingScope.showsMemoryCard(game.platformSlug, memcardCards.size)
         val perGameMemcardPath = emulatorConfigDao.getSelectedMemcardForGame(gameId)?.takeIf { it.isNotBlank() }
         val inheritedMemcardPath = memcardUserConfig?.selectedMemcardPath?.takeIf { it.isNotBlank() }
         val inheritedMemcardName = inheritedMemcardPath

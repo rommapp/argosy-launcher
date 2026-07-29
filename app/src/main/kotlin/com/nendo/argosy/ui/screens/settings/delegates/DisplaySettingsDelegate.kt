@@ -608,6 +608,53 @@ class DisplaySettingsDelegate @Inject constructor(
         }
     }
 
+    fun setLibraryDefaultSortIndex(scope: CoroutineScope, index: Int) {
+        val option = com.nendo.argosy.data.model.SortOption.entries
+            .getOrElse(index / 2) { com.nendo.argosy.data.model.SortOption.TITLE }
+        val descending = index % 2 == 1
+        scope.launch {
+            preferencesRepository.setLibraryDefaultSort(option.name, descending)
+            _state.update { it.copy(libraryDefaultSort = option.name, libraryDefaultSortDescending = descending) }
+        }
+    }
+
+    fun cycleLibraryDefaultSort(scope: CoroutineScope, direction: Int) {
+        val entries = com.nendo.argosy.data.model.SortOption.entries
+        val current = entries.firstOrNull { it.name == _state.value.libraryDefaultSort }
+            ?: com.nendo.argosy.data.model.SortOption.TITLE
+        val descending = _state.value.libraryDefaultSortDescending ?: current.defaultDescending
+        val total = entries.size * 2
+        val next = ((entries.indexOf(current) * 2 + (if (descending) 1 else 0)) + direction).mod(total)
+        setLibraryDefaultSortIndex(scope, next)
+    }
+
+    fun setLibraryDefaultSource(scope: CoroutineScope, source: String) {
+        scope.launch {
+            preferencesRepository.setLibraryDefaultSource(source)
+            _state.update { it.copy(libraryDefaultSource = source) }
+        }
+    }
+
+    fun cycleLibraryDefaultSource(scope: CoroutineScope, direction: Int) {
+        val keys = listOf("ALL", "PLAYABLE", "FAVORITES")
+        val next = (keys.indexOf(_state.value.libraryDefaultSource).coerceAtLeast(0) + direction).mod(keys.size)
+        setLibraryDefaultSource(scope, keys[next])
+    }
+
+    fun setLibraryDefaultPlatform(scope: CoroutineScope, name: String) {
+        scope.launch {
+            preferencesRepository.setLibraryDefaultPlatform(name)
+            _state.update { it.copy(libraryDefaultPlatform = name) }
+        }
+    }
+
+    fun cycleLibraryDefaultPlatform(scope: CoroutineScope, direction: Int, options: List<String>) {
+        if (options.isEmpty()) return
+        val current = options.indexOf(_state.value.libraryDefaultPlatform).coerceAtLeast(0)
+        val next = (current + direction).mod(options.size)
+        setLibraryDefaultPlatform(scope, if (next == 0) "" else options[next])
+    }
+
     fun cycleDefaultView(scope: CoroutineScope) {
         val current = _state.value.defaultView
         val next = when (current) {

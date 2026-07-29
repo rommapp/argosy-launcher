@@ -42,6 +42,10 @@ data class DisplayPreferences(
     val displayFontScale: Int = 100,
     val bodyFontScale: Int = 100,
     val gridDensity: GridDensity = GridDensity.NORMAL,
+    val libraryDefaultSort: String = "TITLE",
+    val libraryDefaultSortDescending: Boolean? = null,
+    val libraryDefaultSource: String = "ALL",
+    val libraryDefaultPlatform: String = "",
     val uiScale: Int = 100,
     val backgroundBlur: Int = 0,
     val backgroundSaturation: Int = 100,
@@ -120,6 +124,10 @@ class DisplayPreferencesRepository @Inject constructor(
         val FONT_DISPLAY_SCALE = intPreferencesKey("font_display_scale")
         val FONT_BODY_SCALE = intPreferencesKey("font_body_scale")
         val UI_DENSITY = stringPreferencesKey("ui_density")
+        val LIBRARY_DEFAULT_SORT = stringPreferencesKey("library_default_sort")
+        val LIBRARY_DEFAULT_SORT_DESC = booleanPreferencesKey("library_default_sort_desc")
+        val LIBRARY_DEFAULT_SOURCE = stringPreferencesKey("library_default_source")
+        val LIBRARY_DEFAULT_PLATFORM = stringPreferencesKey("library_default_platform")
         val UI_SCALE = intPreferencesKey("ui_scale")
         val BACKGROUND_BLUR = intPreferencesKey("background_blur")
         val BACKGROUND_SATURATION = intPreferencesKey("background_saturation")
@@ -195,6 +203,10 @@ class DisplayPreferencesRepository @Inject constructor(
             displayFontScale = prefs[Keys.FONT_DISPLAY_SCALE] ?: 100,
             bodyFontScale = prefs[Keys.FONT_BODY_SCALE] ?: 100,
             gridDensity = GridDensity.fromString(prefs[Keys.UI_DENSITY]),
+            libraryDefaultSort = prefs[Keys.LIBRARY_DEFAULT_SORT] ?: "TITLE",
+            libraryDefaultSortDescending = prefs[Keys.LIBRARY_DEFAULT_SORT_DESC],
+            libraryDefaultSource = prefs[Keys.LIBRARY_DEFAULT_SOURCE] ?: "ALL",
+            libraryDefaultPlatform = prefs[Keys.LIBRARY_DEFAULT_PLATFORM] ?: "",
             uiScale = prefs[Keys.UI_SCALE] ?: 100,
             backgroundBlur = prefs[Keys.BACKGROUND_BLUR] ?: 40,
             backgroundSaturation = prefs[Keys.BACKGROUND_SATURATION] ?: 100,
@@ -352,6 +364,21 @@ class DisplayPreferencesRepository @Inject constructor(
 
     suspend fun setGridDensity(density: GridDensity) {
         dataStore.edit { it[Keys.UI_DENSITY] = density.name }
+    }
+
+    suspend fun setLibraryDefaultSort(option: String, descending: Boolean) {
+        dataStore.edit {
+            it[Keys.LIBRARY_DEFAULT_SORT] = option
+            it[Keys.LIBRARY_DEFAULT_SORT_DESC] = descending
+        }
+    }
+
+    suspend fun setLibraryDefaultSource(source: String) {
+        dataStore.edit { it[Keys.LIBRARY_DEFAULT_SOURCE] = source }
+    }
+
+    suspend fun setLibraryDefaultPlatform(slug: String) {
+        dataStore.edit { it[Keys.LIBRARY_DEFAULT_PLATFORM] = slug }
     }
 
     suspend fun setUiScale(scale: Int) {

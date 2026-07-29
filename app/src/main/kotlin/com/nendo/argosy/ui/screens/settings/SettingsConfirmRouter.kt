@@ -115,6 +115,9 @@ import com.nendo.argosy.ui.screens.settings.sections.syncSettingsItemAtFocusInde
 import com.nendo.argosy.ui.screens.settings.sections.syncSettingsMaxFocusIndex
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import com.nendo.argosy.ui.screens.settings.sections.libraryMaxFocusIndex
+import com.nendo.argosy.ui.screens.settings.sections.libraryItemAtFocusIndex
+import com.nendo.argosy.ui.screens.settings.sections.LibraryLayoutState
 
 private fun rommConfigMaxIndex(server: ServerState): Int {
     if (server.rommDevicePairing) return 0
@@ -249,6 +252,7 @@ internal fun routeConfirm(vm: SettingsViewModel): InputResult {
         SettingsSection.THEME_BACKDROP -> routeThemeBackdropConfirm(vm, state)
         SettingsSection.INTERFACE -> routeInterfaceConfirm(vm, state)
         SettingsSection.HOME_SCREEN -> routeHomeScreenConfirm(vm, state)
+        SettingsSection.LIBRARY_VIEW -> routeLibraryViewConfirm(vm, state)
         SettingsSection.BOX_ART -> routeBoxArtConfirm(vm, state)
         SettingsSection.DISPLAYS -> routeDisplaysConfirm(vm, state)
         SettingsSection.AMBIENT_LED -> routeAmbientLedConfirm(vm, state)
@@ -523,12 +527,14 @@ private fun routeStorageCachesConfirm(vm: SettingsViewModel, state: SettingsUiSt
 private fun routeInterfaceConfirm(vm: SettingsViewModel, state: SettingsUiState): InputResult {
     val layoutState = InterfaceLayoutState.from(state)
     when (interfaceItemAtFocusIndex(state.focusedIndex, layoutState)) {
-        InterfaceItem.GridDensity -> {
-            vm.requestEnumPicker(InterfaceItem.GridDensity.key)
-            return InputResult.handled(SoundType.OPEN_MODAL)
-        }
         InterfaceItem.UiScale -> vm.cycleUiScale()
         InterfaceItem.HomeScreen -> vm.navigateToHomeScreen()
+        InterfaceItem.LibraryView -> vm.navigateToLibraryView()
+        InterfaceItem.BoxArt -> vm.navigateToBoxArt()
+        InterfaceItem.StartupView -> {
+            vm.requestEnumPicker(InterfaceItem.StartupView.key)
+            return InputResult.handled(SoundType.OPEN_MODAL)
+        }
         else -> {}
     }
     return InputResult.HANDLED
@@ -570,7 +576,6 @@ private fun routeThemeConfirm(vm: SettingsViewModel, state: SettingsUiState): In
             return InputResult.handled(SoundType.OPEN_MODAL)
         }
         ThemeItem.TintBleed -> vm.cycleSurfaceTintBleed()
-        ThemeItem.BoxArt -> vm.navigateToBoxArt()
         ThemeItem.Backdrop -> vm.navigateToThemeBackdrop()
         ThemeItem.Fonts -> vm.navigateToThemeFonts()
         else -> {}
@@ -802,6 +807,13 @@ private fun routeNavigationConfirm(vm: SettingsViewModel, state: SettingsUiState
     return InputResult.HANDLED
 }
 
+private fun routeLibraryViewConfirm(vm: SettingsViewModel, state: SettingsUiState): InputResult {
+    val layoutState = LibraryLayoutState.from(state)
+    val item = libraryItemAtFocusIndex(state.focusedIndex, layoutState) ?: return InputResult.HANDLED
+    vm.requestEnumPicker(item.key)
+    return InputResult.handled(SoundType.OPEN_MODAL)
+}
+
 private fun routeEmulatorsConfirm(vm: SettingsViewModel, state: SettingsUiState): InputResult {
     val info = createEmulatorsLayoutInfo(state.emulators.platforms)
     when (val item = emulatorsItemAtFocusIndex(state.focusedIndex, info)) {
@@ -1002,7 +1014,8 @@ internal fun routeNavigateBack(vm: SettingsViewModel): Boolean {
             vm._uiState.update { it.copy(currentSection = SettingsSection.MAIN, focusedIndex = state.parentFocusIndex) }; true
         }
         state.currentSection == SettingsSection.BOX_ART -> {
-            val focusIdx = themeFocusIndexOf(ThemeItem.BoxArt)
+            val layoutState = InterfaceLayoutState.from(state)
+            val focusIdx = interfaceFocusIndexOf(InterfaceItem.BoxArt, layoutState)
             vm._uiState.update { it.copy(currentSection = SettingsSection.THEME, focusedIndex = focusIdx) }; true
         }
         state.currentSection == SettingsSection.THEME_SOUNDS -> {
@@ -1210,6 +1223,7 @@ private fun computeMaxFocusIndex(
     SettingsSection.THEME_BACKDROP -> themeBackdropMaxFocusIndex(ThemeBackdropLayoutState.from(state))
     SettingsSection.INTERFACE -> interfaceMaxFocusIndex(InterfaceLayoutState.from(state))
     SettingsSection.HOME_SCREEN -> homeScreenMaxFocusIndex(state.display)
+    SettingsSection.LIBRARY_VIEW -> libraryMaxFocusIndex(LibraryLayoutState.from(state))
     SettingsSection.BOX_ART -> boxArtMaxFocusIndex(state.display)
     SettingsSection.DISPLAYS -> displaysMaxFocusIndex(DisplaysLayoutState.from(state))
     SettingsSection.AMBIENT_LED -> ambientLedMaxFocusIndex(state.display)

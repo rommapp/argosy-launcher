@@ -31,6 +31,11 @@ import com.nendo.argosy.ui.screens.settings.sections.SteamItem
 import com.nendo.argosy.ui.screens.settings.sections.steamItemAtFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.steamSections
 import com.nendo.argosy.ui.screens.settings.sections.syncSettingsItemAtFocusIndex
+import com.nendo.argosy.ui.screens.settings.sections.librarySections
+import com.nendo.argosy.ui.screens.settings.sections.libraryPlatformOptions
+import com.nendo.argosy.ui.screens.settings.sections.libraryItemAtFocusIndex
+import com.nendo.argosy.ui.screens.settings.sections.LibraryLayoutState
+import com.nendo.argosy.ui.screens.settings.sections.LibraryItem
 
 internal class LightSectionsInput(
     private val viewModel: SettingsViewModel
@@ -68,6 +73,7 @@ internal class LightSectionsInput(
             SettingsSection.ROMM -> handleRomMLeftRight(direction)
             SettingsSection.SAVES -> handleSavesLeftRight(direction)
             SettingsSection.HOME_SCREEN -> handleHomeScreenLeftRight(direction)
+            SettingsSection.LIBRARY_VIEW -> handleLibraryViewLeftRight(direction)
             SettingsSection.NAVIGATION -> handleNavigationLeftRight(direction)
             SettingsSection.SYNC_SETTINGS -> handleSyncSettingsLeftRight(direction)
             SettingsSection.ABOUT -> handleAboutLeftRight(direction)
@@ -227,6 +233,20 @@ internal class LightSectionsInput(
         return InputResult.UNHANDLED
     }
 
+    private fun handleLibraryViewLeftRight(direction: Int): InputResult {
+        val state = viewModel.uiState.value
+        val layoutState = LibraryLayoutState.from(state)
+        when (libraryItemAtFocusIndex(state.focusedIndex, layoutState)) {
+            LibraryItem.GridDensityItem -> viewModel.cycleGridDensity(direction)
+            LibraryItem.DefaultSort -> viewModel.cycleLibraryDefaultSort(direction)
+            LibraryItem.DefaultPlatform ->
+                viewModel.cycleLibraryDefaultPlatform(direction, libraryPlatformOptions(layoutState))
+            LibraryItem.DefaultSource -> viewModel.cycleLibraryDefaultSource(direction)
+            else -> return InputResult.UNHANDLED
+        }
+        return InputResult.HANDLED
+    }
+
     private fun handleBuiltinEmulatorLeftRight(direction: Int): InputResult {
         val state = viewModel.uiState.value
         if (state.emulators.builtinLibretroEnabled && state.focusedIndex == 1) {
@@ -245,6 +265,7 @@ internal class LightSectionsInput(
         val state = viewModel.uiState.value
         val sections = when (state.currentSection) {
             SettingsSection.HOME_SCREEN -> homeScreenSections(state.display)
+            SettingsSection.LIBRARY_VIEW -> librarySections(LibraryLayoutState.from(state))
             SettingsSection.BIOS -> biosSections(state.bios.platformGroups, state.bios.expandedPlatformIndex)
             SettingsSection.ROMM -> rommSections(buildRomMItemsFromState(state))
             SettingsSection.SAVES -> savesSections(SavesLayoutState.from(state))

@@ -110,6 +110,10 @@ class UserPreferencesRepository @Inject constructor(
             maxConcurrentDownloads = storage.maxConcurrentDownloads,
             instantDownloadThresholdMb = storage.instantDownloadThresholdMb,
             gridDensity = display.gridDensity,
+            libraryDefaultSort = display.libraryDefaultSort,
+            libraryDefaultSortDescending = display.libraryDefaultSortDescending,
+            libraryDefaultSource = display.libraryDefaultSource,
+            libraryDefaultPlatform = display.libraryDefaultPlatform,
             soundConfigs = controls.soundConfigs,
             betaUpdatesEnabled = app.betaUpdatesEnabled,
             saveSyncEnabled = sync.saveSyncEnabled,
@@ -228,6 +232,13 @@ class UserPreferencesRepository @Inject constructor(
     suspend fun setCustomFont(slot: FontSlot, path: String?, name: String?) = displayPrefs.setCustomFont(slot, path, name)
     suspend fun setFontScale(slot: FontSlot, scale: Int) = displayPrefs.setFontScale(slot, scale)
     suspend fun setGridDensity(density: GridDensity) = displayPrefs.setGridDensity(density)
+
+    suspend fun setLibraryDefaultSort(option: String, descending: Boolean) =
+        displayPrefs.setLibraryDefaultSort(option, descending)
+
+    suspend fun setLibraryDefaultSource(source: String) = displayPrefs.setLibraryDefaultSource(source)
+
+    suspend fun setLibraryDefaultPlatform(slug: String) = displayPrefs.setLibraryDefaultPlatform(slug)
     suspend fun setUiScale(scale: Int) = displayPrefs.setUiScale(scale)
     suspend fun setBackgroundBlur(blur: Int) = displayPrefs.setBackgroundBlur(blur)
     suspend fun setBackgroundSaturation(saturation: Int) = displayPrefs.setBackgroundSaturation(saturation)
@@ -639,6 +650,10 @@ data class UserPreferences(
     val maxConcurrentDownloads: Int = 1,
     val instantDownloadThresholdMb: Int = 50,
     val gridDensity: GridDensity = GridDensity.NORMAL,
+    val libraryDefaultSort: String = "TITLE",
+    val libraryDefaultSortDescending: Boolean? = null,
+    val libraryDefaultSource: String = "ALL",
+    val libraryDefaultPlatform: String = "",
     val soundConfigs: Map<SoundType, SoundConfig> = emptyMap(),
     val betaUpdatesEnabled: Boolean = false,
     val saveSyncEnabled: Boolean = false,

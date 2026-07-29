@@ -4,7 +4,9 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.GridView
 import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.Image
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -14,7 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.repeatOnLifecycle
-import com.nendo.argosy.data.preferences.GridDensity
+import com.nendo.argosy.data.preferences.DefaultView
 import com.nendo.argosy.ui.components.CyclePreference
 import com.nendo.argosy.ui.components.NavigationPreference
 import com.nendo.argosy.ui.components.SwitchPreference
@@ -51,16 +53,15 @@ internal sealed class InterfaceItem(
         visibleWhen: (InterfaceLayoutState) -> Boolean = { true }
     ) : InterfaceItem(key, section, visibleWhen)
 
-    data object GridDensity : InterfaceItem("gridDensity", "layout")
     data object UiScale : InterfaceItem("uiScale", "layout")
     data object HomeScreen : InterfaceItem("homeScreen", "layout")
+    data object StartupView : InterfaceItem("startupView", "layout")
+    data object LibraryView : InterfaceItem("libraryView", "layout")
+    data object BoxArt : InterfaceItem("boxArt", "layout")
 
     companion object {
-        private val LayoutHeader = Header("layoutHeader", "layout", "Layout")
-
         val ALL: List<InterfaceItem> = listOf(
-            LayoutHeader,
-            UiScale, GridDensity, HomeScreen
+            UiScale, StartupView, HomeScreen, LibraryView, BoxArt
         )
     }
 }
@@ -70,12 +71,7 @@ private val interfaceLayout = SettingsLayout<InterfaceItem, InterfaceLayoutState
     isFocusable = { it.isFocusable },
     visibleWhen = { item, state -> item.visibleWhen(state) },
     sectionOf = { it.section },
-    sectionTitle = {
-        when (it) {
-            "layout" -> "Layout"
-            else -> null
-        }
-    }
+    sectionTitle = { null }
 )
 
 internal fun interfaceMaxFocusIndex(state: InterfaceLayoutState): Int = interfaceLayout.maxFocusIndex(state)
@@ -129,17 +125,6 @@ fun InterfaceSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
             when (item) {
                 is InterfaceItem.Header -> InterfaceSectionHeader(item.title)
 
-                InterfaceItem.GridDensity -> CyclePreference(
-                    title = "Grid Density",
-                    value = display.gridDensity.name.lowercase().replaceFirstChar { it.uppercase() },
-                    isFocused = isFocused(item),
-                    onClick = { viewModel.cycleGridDensity(1) },
-                    onPrev = { viewModel.cycleGridDensity(-1) },
-                    options = remember { GridDensity.entries.map { d -> d.name.lowercase().replaceFirstChar { c -> c.uppercase() } } },
-                    onSelect = { viewModel.setGridDensity(GridDensity.entries[it]) },
-                    pickerRequestToken = pickerToken(item)
-                )
-
                 InterfaceItem.UiScale -> SliderPreference(
                     title = "UI Scale",
                     value = display.uiScale,
@@ -157,6 +142,39 @@ fun InterfaceSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                     subtitle = "Background and footer settings",
                     isFocused = isFocused(item),
                     onClick = { viewModel.navigateToHomeScreen() }
+                )
+
+                InterfaceItem.LibraryView -> NavigationPreference(
+                    icon = Icons.Outlined.GridView,
+                    title = "Library",
+                    subtitle = "Grid density and default filters",
+                    isFocused = isFocused(item),
+                    onClick = { viewModel.navigateToLibraryView() }
+                )
+
+                InterfaceItem.BoxArt -> NavigationPreference(
+                    icon = Icons.Outlined.Image,
+                    title = "Box Art",
+                    subtitle = "Cover shape, borders and effects",
+                    isFocused = isFocused(item),
+                    onClick = { viewModel.navigateToBoxArt() }
+                )
+
+                InterfaceItem.StartupView -> CyclePreference(
+                    title = "Startup View",
+                    value = when (display.defaultView) {
+                        DefaultView.HOME -> "Home"
+                        DefaultView.LIBRARY -> "Library"
+                    },
+                    isFocused = isFocused(item),
+                    onClick = { viewModel.cycleDefaultView() },
+                    onPrev = { viewModel.cycleDefaultView() },
+                    options = remember { listOf("Home", "Library") },
+                    onSelect = { index ->
+                        val target = if (index == 0) DefaultView.HOME else DefaultView.LIBRARY
+                        if (target != display.defaultView) viewModel.cycleDefaultView()
+                    },
+                    pickerRequestToken = pickerToken(item)
                 )
 
             }

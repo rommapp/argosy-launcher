@@ -77,6 +77,10 @@ internal fun routeNavigateToHomeScreen(vm: SettingsViewModel) {
     vm._uiState.update { it.copy(currentSection = SettingsSection.HOME_SCREEN, focusedIndex = 0) }
 }
 
+internal fun routeNavigateToLibraryView(vm: SettingsViewModel) {
+    vm._uiState.update { it.copy(currentSection = SettingsSection.LIBRARY_VIEW, focusedIndex = 0) }
+}
+
 internal fun routeNavigateToAmbientLed(vm: SettingsViewModel) {
     vm._uiState.update { it.copy(currentSection = SettingsSection.AMBIENT_LED, focusedIndex = 0) }
 }

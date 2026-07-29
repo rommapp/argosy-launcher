@@ -56,8 +56,8 @@ internal class InterfaceSectionInput(
         val state = viewModel.uiState.value
         val layoutState = layoutState()
         when (interfaceItemAtFocusIndex(state.focusedIndex, layoutState)) {
-            InterfaceItem.GridDensity -> { viewModel.cycleGridDensity(direction); return InputResult.HANDLED }
             InterfaceItem.UiScale -> { viewModel.adjustUiScale(direction * 5); return InputResult.HANDLED }
+            InterfaceItem.StartupView -> { viewModel.cycleDefaultView(); return InputResult.HANDLED }
             else -> {}
         }
         return InputResult.UNHANDLED

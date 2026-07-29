@@ -78,6 +78,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import kotlinx.coroutines.flow.first
 
 enum class FilterCategory(val label: String) {
     SORT("Sort"),
@@ -368,6 +369,7 @@ class LibraryViewModel @Inject constructor(
     private var gamesJob: Job? = null
     private var pendingInitialPlatformId: Long? = null
     private var pendingInitialSourceFilter: SourceFilter? = null
+    private var explicitSourceRequested = false
     private var cachedPlatformDisplayNames: Map<Long, String> = emptyMap()
 
     private val pendingCoverRepairs = mutableSetOf<Long>()
@@ -396,11 +398,47 @@ class LibraryViewModel @Inject constructor(
 
         loadPlatforms()
         loadFilterOptions()
+        applyLibraryDefaults()
         observeGridDensity()
         observeSyncOverlay()
         observeCollectionModal()
         observeGradientChanges()
         observeHiddenCount()
+    }
+
+    /**
+     * Seeds the filter state from the configured library defaults.
+     *
+     * Runs once at construction rather than observing the preference, so a default change never
+     * yanks the filters out from under someone mid-browse. A caller that opened the library at a
+     * specific source (favorites, playable) has asked for something the default must not overwrite,
+     * and the two arrive on independent coroutines, so that request is tracked rather than raced.
+     */
+    private fun applyLibraryDefaults() {
+        viewModelScope.launch {
+            val prefs = preferencesRepository.userPreferences.first()
+            val option = SortOption.entries.firstOrNull { it.name == prefs.libraryDefaultSort }
+                ?: SortOption.TITLE
+            val source = SourceFilter.entries.firstOrNull { it.name == prefs.libraryDefaultSource }
+                ?: SourceFilter.ALL
+            val platforms = prefs.libraryDefaultPlatform
+                .takeIf { it.isNotBlank() }
+                ?.let { setOf(it) }
+                ?: emptySet()
+            _uiState.update {
+                it.copy(
+                    activeFilters = it.activeFilters.copy(
+                        sort = ActiveSort(
+                            option = option,
+                            descending = prefs.libraryDefaultSortDescending ?: option.defaultDescending
+                        ),
+                        source = if (explicitSourceRequested) it.activeFilters.source else source,
+                        platforms = platforms
+                    )
+                )
+            }
+            loadGames()
+        }
     }
 
     private fun observeHiddenCount() {
@@ -907,6 +945,7 @@ class LibraryViewModel @Inject constructor(
     }
 
     fun setInitialSourceFilter(source: SourceFilter) {
+        explicitSourceRequested = true
         val state = _uiState.value
         if (state.platforms.isEmpty()) {
             Log.d(TAG, "setInitialSourceFilter: platforms not loaded yet, storing pending source=$source")

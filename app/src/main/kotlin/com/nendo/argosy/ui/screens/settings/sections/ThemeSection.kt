@@ -42,7 +42,6 @@ internal sealed class ThemeItem(val key: String, val section: String) {
     data object SecondaryColor : ThemeItem("secondaryColor", "appearance")
     data object TintBleed : ThemeItem("tintBleed", "appearance")
 
-    data object BoxArt : ThemeItem("boxArt", "identity")
     data object Backdrop : ThemeItem("backdrop", "identity")
     data object Fonts : ThemeItem("fonts", "identity")
 
@@ -55,7 +54,7 @@ internal sealed class ThemeItem(val key: String, val section: String) {
             AppearanceHeader,
             Mode, AccentColor, SecondaryColor, TintBleed,
             IdentitySpacer, IdentityHeader,
-            BoxArt, Backdrop, Fonts
+            Backdrop, Fonts
         )
     }
 }
@@ -162,14 +161,6 @@ fun ThemeSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                 isFocused = isFocused(item),
                 onClick = { viewModel.cycleSurfaceTintBleed() },
                 onAdjust = { viewModel.adjustSurfaceTintBleed(it) }
-            )
-
-            ThemeItem.BoxArt -> NavigationPreference(
-                icon = Icons.Outlined.Image,
-                title = "Box Art",
-                subtitle = "Customize card appearance",
-                isFocused = isFocused(item),
-                onClick = { viewModel.navigateToBoxArt() }
             )
 
             ThemeItem.Backdrop -> NavigationPreference(

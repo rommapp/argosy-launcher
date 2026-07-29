@@ -124,6 +124,7 @@ import com.nendo.argosy.ui.screens.settings.libretro.libretroSettingsMaxFocusInd
 import com.nendo.argosy.ui.icons.InputIcons
 import com.nendo.argosy.ui.theme.Motion
 import com.nendo.argosy.ui.util.clickableNoFocus
+import com.nendo.argosy.ui.screens.settings.sections.LibrarySection
 
 @Composable
 fun SettingsScreen(
@@ -556,6 +557,7 @@ fun SettingsScreen(
                         SettingsSection.INTERFACE -> "INTERFACE"
                         SettingsSection.BOX_ART -> "BOX ART"
                         SettingsSection.HOME_SCREEN -> "HOME SCREEN"
+                        SettingsSection.LIBRARY_VIEW -> "LIBRARY"
                         SettingsSection.DISPLAYS -> "DISPLAYS"
                         SettingsSection.AMBIENT_LED -> "LED CONTROL"
                         SettingsSection.NAVIGATION -> "NAVIGATION"
@@ -628,6 +630,7 @@ fun SettingsScreen(
                     SettingsSection.INTERFACE -> InterfaceSection(uiState, viewModel)
                     SettingsSection.BOX_ART -> BoxArtSection(uiState, viewModel)
                     SettingsSection.HOME_SCREEN -> HomeScreenSection(uiState, viewModel)
+                    SettingsSection.LIBRARY_VIEW -> LibrarySection(uiState, viewModel)
                     SettingsSection.DISPLAYS -> DisplaysSection(uiState, viewModel)
                     SettingsSection.AMBIENT_LED -> AmbientLedSection(uiState, viewModel)
                     SettingsSection.NAVIGATION -> NavigationSection(uiState, viewModel)

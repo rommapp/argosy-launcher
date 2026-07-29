@@ -82,11 +82,7 @@ jobs:
       - name: Coupling sweep (advisory)
         if: always()
         run: |
-          if [ -f .claude/hooks/coupling-guard.py ]; then
-            python3 .claude/hooks/coupling-guard.py --sweep "origin/${{ github.base_ref }}...HEAD" | tee -a "$GITHUB_STEP_SUMMARY"
-          else
-            echo "coupling sweep: guard not present in checkout (ships with Phase B exposure)" | tee -a "$GITHUB_STEP_SUMMARY"
-          fi
+          python3 scripts/ci/coupling-guard.py --sweep "origin/${{ github.base_ref }}...HEAD" | tee -a "$GITHUB_STEP_SUMMARY"
 
   lint:
     runs-on: ubuntu-latest

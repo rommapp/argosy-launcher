@@ -1,0 +1,168 @@
+{
+  "version": 1,
+  "skip_token": "ARGOSY_SKIP_COUPLING_CHECK",
+  "note": "Machine mirror of Argosy's coupling axes for the git-commit hook and the release sweep; the axis names match AGENTS.md. Each rule carries its own checklist and proof obligations, so a report is actionable without further reading. Heuristics key on ADDED diff content in production sources only (src/test and src/androidTest are exempt), not file co-presence, to stay precise enough to block on.",
+  "axes": [
+    {
+      "id": "ui-dual-modality",
+      "label": "INTERACTIVE UI",
+      "routing": "autonomous-eligible",
+      "rules": [
+        {
+          "id": "plain-clickable",
+          "severity": "block",
+          "when": {
+            "path_glob": "**/ui/**/*.kt",
+            "exclude_path_glob": "**/Modifiers.kt",
+            "added_regex": "Modifier\\s*\\.\\s*clickable\\s*[({]"
+          },
+          "message": "Plain Modifier.clickable() added in UI. Use clickableNoFocus and ensure an InputHandler covers it. Dual-modality (touch AND gamepad) is non-negotiable; a one-modality component is INCOMPLETE."
+        }
+      ]
+    },
+    {
+      "id": "platform",
+      "label": "PLATFORM / EMULATOR / CORE",
+      "routing": "autonomous-eligible",
+      "rules": [
+        {
+          "id": "new-platformdef",
+          "severity": "block",
+          "when": {
+            "path_glob": "**/PlatformDefinitions.kt",
+            "added_regex": "PlatformDef\\s*\\("
+          },
+          "requires_any_added": [
+            {
+              "path_glob": "**/LibretroCoreRegistry.kt",
+              "added_regex": "."
+            },
+            {
+              "path_glob": "**/EmulatorRegistry.kt",
+              "added_regex": "."
+            }
+          ],
+          "checklist": [
+            "LibretroCoreRegistry CoreInfo.platforms (and default core)",
+            "EmulatorRegistry EmulatorDef.supportedPlatforms",
+            "BOTH resolvers agree: EmulatorResolver.getEmulatorPackageForGame and GameLauncher.resolveEmulator",
+            "SavePathRegistry config",
+            "BiosPathRegistry + GameLauncher.mandatoryBios (if BIOS gated)",
+            "PlatformSaveHandlerRegistry (if folder-based saves)",
+            "M3uManager.SUPPORTED_PLATFORMS (if multi-disc)",
+            "slugAliases canonical mapping"
+          ],
+          "message": "New PlatformDef added without a matching core/emulator registry change. Verify the platform/core lockstep set."
+        }
+      ]
+    },
+    {
+      "id": "settings",
+      "label": "SETTINGS / PREFERENCES",
+      "routing": "autonomous-eligible",
+      "rules": [
+        {
+          "id": "new-datastore-key",
+          "severity": "warn",
+          "when": {
+            "path_glob": "**/*PreferencesRepository.kt",
+            "added_regex": "(string|boolean|int|long|float|double)PreferencesKey\\s*\\("
+          },
+          "checklist": [
+            "read path (Flow mapping) + write setter",
+            "UserPreferencesRepository aggregation",
+            "SettingsModels UI state + SettingsInitRouter hydrate",
+            "SettingsGeneralRouter route + SettingsViewModel method",
+            "section render (CyclePreference/SwitchPreference/...)",
+            "CONSUMPTION SITE -- where behavior actually changes (the ghost-setting trap)",
+            "SessionStateStore (if dual-screen/in-game) / RetroArch propagation (if it must reach the emulator)",
+            "label + subtitle"
+          ],
+          "message": "New preference key added. Trace the 15-link chain; the silent failure is a ghost setting that persists and displays but is never read."
+        }
+      ]
+    },
+    {
+      "id": "save-sync",
+      "label": "SAVE-SYNC / PERSISTENCE / DB MIGRATION",
+      "routing": "walkthrough-forced",
+      "rules": [
+        {
+          "id": "entity-field-no-migration",
+          "severity": "block",
+          "when": {
+            "path_glob": "**/SaveSyncEntity.kt",
+            "added_regex": "val\\s+\\w+\\s*:"
+          },
+          "requires_all_added": [
+            {
+              "path_glob": "**/Migrations.kt",
+              "added_regex": "."
+            },
+            {
+              "path_glob": "**/MigrationRegistry.kt",
+              "added_regex": "Migration_\\d+_\\d+"
+            },
+            {
+              "path_glob": "**/ALauncherDatabase.kt",
+              "added_regex": "version"
+            }
+          ],
+          "message": "SaveSyncEntity field added without a staged Room migration AND MigrationRegistry.ALL append AND DB version bump. A Migration_N_M object not listed in MigrationRegistry.ALL silently never runs; old DBs will get a null column or crash on open."
+        },
+        {
+          "id": "save-sync-touch-proof",
+          "severity": "block",
+          "when": {
+            "path_glob_any": [
+              "**/data/sync/**/*.kt",
+              "**/SaveSync*.kt",
+              "**/SaveArchiver.kt",
+              "**/SaveDownloader.kt",
+              "**/SaveUploader.kt",
+              "**/SaveCacheManager.kt",
+              "**/SaveCacheRepository.kt",
+              "**/StateCacheManager.kt",
+              "**/RomMSaveModels.kt",
+              "**/RomMSyncModels.kt"
+            ],
+            "exclude_path_glob": "**/AchievementSubmissionWorker.kt",
+            "added_regex": "."
+          },
+          "proof": [
+            "GET /api/saves shows the expected state",
+            "negotiate returns no_op TWICE on a clean run",
+            "downloaded save appears at the path SaveSyncEntity.localSavePath claims",
+            "discoverSavePath and constructSavePath agree for the affected platform"
+          ],
+          "message": "Save-sync change touched. This is WALKTHROUGH-FORCED: the proof obligations need live data and cannot be auto-verified. Confirm them, then re-commit with the skip token to acknowledge."
+        }
+      ]
+    },
+    {
+      "id": "romm-api",
+      "label": "ROMM API / NETWORK / MODEL",
+      "routing": "walkthrough-forced",
+      "rules": [
+        {
+          "id": "romm-touch-proof",
+          "severity": "block",
+          "when": {
+            "path_glob_any": [
+              "**/remote/romm/RomM*Models.kt",
+              "**/remote/romm/RomMApi.kt",
+              "**/remote/romm/RomMLibrarySyncService.kt"
+            ],
+            "added_regex": "."
+          },
+          "proof": [
+            "diff a live API response against the model -- confirm no field silently nulled by drift",
+            "covers / multi-disc / user-props still populate after sync",
+            "version gating intact for device-aware variants"
+          ],
+          "message": "RomM API/model change touched. This is WALKTHROUGH-FORCED: Moshi nulls drifted fields silently. Confirm the live API diff, then re-commit with the skip token to acknowledge."
+        }
+      ]
+    }
+  ]
+}

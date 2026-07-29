@@ -52,6 +52,7 @@ Thumbs.db
 
 # Claude Code
 .claude/
+__pycache__/
 .plan/
 .ref/
 .refs/

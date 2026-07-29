@@ -1,5 +1,6 @@
 package com.nendo.argosy.data.repository
 
+import com.nendo.argosy.data.emulator.EmulatorRegistry
 import com.nendo.argosy.data.local.dao.EmulatorSaveConfigDao
 import com.nendo.argosy.data.local.entity.EmulatorSaveConfigEntity
 import java.time.Instant
@@ -12,6 +13,39 @@ class EmulatorSaveConfigRepository @Inject constructor(
 ) {
     suspend fun getByEmulator(emulatorId: String): EmulatorSaveConfigEntity? =
         emulatorSaveConfigDao.getByEmulator(emulatorId)
+
+    /**
+     * The save path a user set for [emulatorId], falling back to one they set for a sibling
+     * emulator on the same platform.
+     *
+     * Emulator selection already degrades from a per-game pin to the platform default, so a game
+     * pinned to one 3DS build resolves happily while asking for its save path by exact id finds
+     * nothing and silently takes the packaged default. The path answers "where this device keeps
+     * its 3DS card", which is the same answer whichever build reads it, so a sibling's override is
+     * a better guess than a default that points somewhere the user moved away from.
+     *
+     * Returns null when nobody on the platform has one, leaving the packaged default in charge.
+     */
+    suspend fun resolveUserSavePath(emulatorId: String, platformSlug: String?): String? {
+        emulatorSaveConfigDao.getByEmulator(emulatorId)
+            ?.takeIf { it.isUserOverride }
+            ?.savePathPattern
+            ?.takeIf { it.isNotBlank() }
+            ?.let { return it }
+
+        val slug = platformSlug?.takeIf { it.isNotBlank() } ?: return null
+        val siblings = EmulatorRegistry.getForPlatform(slug)
+            .map { it.id }
+            .filter { it != emulatorId }
+            .toSet()
+        if (siblings.isEmpty()) return null
+
+        return emulatorSaveConfigDao.getAll()
+            .firstOrNull {
+                it.emulatorId in siblings && it.isUserOverride && it.savePathPattern.isNotBlank()
+            }
+            ?.savePathPattern
+    }
 
     suspend fun getAll(): List<EmulatorSaveConfigEntity> =
         emulatorSaveConfigDao.getAll()

@@ -1,17 +1,17 @@
 package com.nendo.argosy.ui.screens.settings.delegates
 
 import android.util.Log
-import com.nendo.argosy.data.remote.romm.DeviceAuthPoll
+import com.nendo.argosy.data.remote.romm.DeviceAuthOutcome
 import com.nendo.argosy.data.remote.romm.RomMCapabilities
 import com.nendo.argosy.data.remote.romm.RomMRepository
 import com.nendo.argosy.data.remote.romm.RomMResult
+import com.nendo.argosy.data.remote.romm.pollDeviceAuthUntilResolved
 import com.nendo.argosy.ui.screens.settings.ConnectionStatus
 import com.nendo.argosy.ui.screens.settings.RomMAuthMethod
 import com.nendo.argosy.ui.screens.settings.ServerState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.currentCoroutineContext
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -258,38 +258,31 @@ class ServerSettingsDelegate @Inject constructor(
         expiresIn: Int,
         onSuccess: suspend () -> Unit
     ) {
-        var intervalMs = interval.coerceAtLeast(1) * 1000L
-        var elapsedMs = 0L
-        val deadlineMs = expiresIn.coerceAtLeast(1) * 1000L
-        while (currentCoroutineContext().isActive && elapsedMs < deadlineMs) {
-            delay(intervalMs)
-            elapsedMs += intervalMs
-            when (val poll = romMRepository.pollDeviceAuthOnce(deviceCode)) {
-                is DeviceAuthPoll.Approved -> {
-                    _state.update {
-                        it.copy(
-                            rommDevicePairing = false,
-                            rommDeviceUserCode = null,
-                            rommDeviceVerificationUrl = null,
-                            rommConfiguring = false,
-                            connectionStatus = ConnectionStatus.ONLINE,
-                            rommUrl = it.rommConfigUrl,
-                            rommUsername = "",
-                            rommConfigError = null
-                        )
-                    }
-                    onSuccess()
-                    return
-                }
-                DeviceAuthPoll.Pending -> {}
-                DeviceAuthPoll.SlowDown -> intervalMs += 5000L
-                DeviceAuthPoll.Denied -> { failPairing("Pairing was denied on the server"); return }
-                DeviceAuthPoll.Expired -> { failPairing("Pairing code expired, start again"); return }
-                is DeviceAuthPoll.AddedAccount -> { failPairing("Unexpected pairing result"); return }
-                is DeviceAuthPoll.Failed -> { failPairing(poll.message); return }
-            }
+        val outcome = pollDeviceAuthUntilResolved(interval, expiresIn) {
+            romMRepository.pollDeviceAuthOnce(deviceCode)
         }
-        if (currentCoroutineContext().isActive) failPairing("Pairing code expired, start again")
+        if (!currentCoroutineContext().isActive) return
+        when (outcome) {
+            is DeviceAuthOutcome.Approved -> {
+                _state.update {
+                    it.copy(
+                        rommDevicePairing = false,
+                        rommDeviceUserCode = null,
+                        rommDeviceVerificationUrl = null,
+                        rommConfiguring = false,
+                        connectionStatus = ConnectionStatus.ONLINE,
+                        rommUrl = it.rommConfigUrl,
+                        rommUsername = "",
+                        rommConfigError = null
+                    )
+                }
+                onSuccess()
+            }
+            DeviceAuthOutcome.Denied -> failPairing("Pairing was denied on the server")
+            DeviceAuthOutcome.Expired -> failPairing("Pairing code expired, start again")
+            is DeviceAuthOutcome.AddedAccount -> failPairing("Unexpected pairing result")
+            is DeviceAuthOutcome.Failed -> failPairing(outcome.message)
+        }
     }
 
     private fun failPairing(message: String) {

@@ -68,7 +68,12 @@ sealed class DeviceAuthPoll {
     data object Expired : DeviceAuthPoll()
     data class Approved(val token: String) : DeviceAuthPoll()
     data class AddedAccount(val accountId: Long) : DeviceAuthPoll()
-    data class Failed(val message: String) : DeviceAuthPoll()
+    /**
+     * [retryable] false means no later poll can succeed either - the approval record was already
+     * consumed server-side, or the flow was never started. Retryable failures are transient
+     * transport or gateway noise and the caller is expected to keep polling.
+     */
+    data class Failed(val message: String, val retryable: Boolean = true) : DeviceAuthPoll()
 }
 
 @Singleton
@@ -424,19 +429,33 @@ class RomMConnectionManager @Inject constructor(
         deviceCode: String,
         activateOnSuccess: Boolean = true
     ): DeviceAuthPoll {
-        val authApi = deviceAuthApi ?: return DeviceAuthPoll.Failed("Pairing not started")
-        val base = deviceAuthBaseUrl ?: return DeviceAuthPoll.Failed("Pairing not started")
+        val authApi = deviceAuthApi
+            ?: return DeviceAuthPoll.Failed("Pairing not started", retryable = false)
+        val base = deviceAuthBaseUrl
+            ?: return DeviceAuthPoll.Failed("Pairing not started", retryable = false)
         return try {
             val response = authApi.deviceAuthToken(RomMDeviceAuthTokenRequest(deviceCode))
             if (response.isSuccessful) {
-                val body = response.body() ?: return DeviceAuthPoll.Failed("Empty token response")
-                if (activateOnSuccess) {
-                    finalizeDeviceAuth(base, body)
-                    DeviceAuthPoll.Approved(body.accessToken)
-                } else {
-                    val accountId = registerAdditionalAccount(base, body)
-                        ?: return DeviceAuthPoll.Failed("Could not identify the paired user")
-                    DeviceAuthPoll.AddedAccount(accountId)
+                val body = response.body()
+                    ?: return DeviceAuthPoll.Failed("Empty token response", retryable = false)
+                try {
+                    if (activateOnSuccess) {
+                        finalizeDeviceAuth(base, body)
+                        DeviceAuthPoll.Approved(body.accessToken)
+                    } else {
+                        val accountId = registerAdditionalAccount(base, body)
+                            ?: return DeviceAuthPoll.Failed(
+                                "Could not identify the paired user",
+                                retryable = false
+                            )
+                        DeviceAuthPoll.AddedAccount(accountId)
+                    }
+                } catch (e: Exception) {
+                    Logger.info(TAG, "pollDeviceAuthOnce: approval landed but sign-in failed: ${e.message}")
+                    DeviceAuthPoll.Failed(
+                        e.message ?: "Approved, but signing in failed",
+                        retryable = false
+                    )
                 }
             } else {
                 when (parseDetail(response.errorBody()?.string())) {

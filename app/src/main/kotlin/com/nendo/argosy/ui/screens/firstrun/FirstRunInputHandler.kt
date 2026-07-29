@@ -11,7 +11,8 @@ class FirstRunInputHandler(
     private val onRequestOverlay: () -> Unit,
     private val onRequestUsageStats: () -> Unit,
     private val onChooseFolder: () -> Unit,
-    private val onChooseImageCacheFolder: () -> Unit
+    private val onChooseImageCacheFolder: () -> Unit,
+    private val onOpenVerificationUrl: () -> Unit
 ) : InputHandler {
 
     override fun onUp(): InputResult {
@@ -44,7 +45,8 @@ class FirstRunInputHandler(
             onRequestOverlay = onRequestOverlay,
             onRequestUsageStats = onRequestUsageStats,
             onChooseFolder = onChooseFolder,
-            onChooseImageCacheFolder = onChooseImageCacheFolder
+            onChooseImageCacheFolder = onChooseImageCacheFolder,
+            onOpenVerificationUrl = onOpenVerificationUrl
         )
         return InputResult.HANDLED
     }
@@ -52,6 +54,10 @@ class FirstRunInputHandler(
     override fun onBack(): InputResult {
         val state = viewModel.uiState.value
         if (state.currentStep == FirstRunStep.WELCOME) {
+            return InputResult.HANDLED
+        }
+        if (state.currentStep == FirstRunStep.ROMM_LOGIN && state.rommDevicePairing) {
+            viewModel.cancelDevicePairing()
             return InputResult.HANDLED
         }
         if (state.currentStep == FirstRunStep.PLATFORM_SELECT) {

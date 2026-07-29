@@ -1,5 +1,6 @@
 package com.nendo.argosy.ui.screens.firstrun
 
+import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
@@ -136,6 +137,21 @@ fun FirstRunScreen(
     val chooseFolder = { viewModel.openFolderPicker() }
     val chooseImageCacheFolder = { viewModel.openImageCachePicker() }
 
+    val openVerificationUrl = {
+        val url = viewModel.uiState.value.rommDeviceVerificationUrl
+        if (url != null) {
+            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url)).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK
+            }
+            try {
+                context.startActivity(intent)
+                viewModel.setBrowserMissing(false)
+            } catch (_: ActivityNotFoundException) {
+                viewModel.setBrowserMissing(true)
+            }
+        }
+    }
+
     var showFileBrowser by remember { mutableStateOf(false) }
     var showImageCacheBrowser by remember { mutableStateOf(false) }
 
@@ -148,7 +164,8 @@ fun FirstRunScreen(
             onRequestOverlay = requestOverlay,
             onRequestUsageStats = requestUsageStats,
             onChooseFolder = chooseFolder,
-            onChooseImageCacheFolder = chooseImageCacheFolder
+            onChooseImageCacheFolder = chooseImageCacheFolder,
+            onOpenVerificationUrl = openVerificationUrl
         )
     }
 
@@ -217,6 +234,8 @@ fun FirstRunScreen(
                     devicePairing = uiState.rommDevicePairing,
                     deviceUserCode = uiState.rommDeviceUserCode,
                     deviceVerificationUrl = uiState.rommDeviceVerificationUrl,
+                    supportsDeviceAuth = uiState.rommSupportsDeviceAuth,
+                    browserMissing = uiState.rommBrowserMissing,
                     hasCamera = uiState.rommHasCamera,
                     isConnecting = uiState.isConnecting,
                     error = uiState.connectionError,
@@ -231,6 +250,9 @@ fun FirstRunScreen(
                     onConnect = { viewModel.connectToRomm() },
                     onScan = { viewModel.showScanner() },
                     onCancelPairing = { viewModel.cancelDevicePairing() },
+                    onOpenVerificationUrl = openVerificationUrl,
+                    onUseManualCode = { viewModel.useManualPairingCode() },
+                    onUseDevicePairing = { viewModel.useDevicePairing() },
                     onBack = { viewModel.previousStep() },
                     onClearFocusField = { viewModel.clearRommFocusField() }
                 )
@@ -395,6 +417,8 @@ private fun RommLoginStep(
     devicePairing: Boolean,
     deviceUserCode: String?,
     deviceVerificationUrl: String?,
+    supportsDeviceAuth: Boolean,
+    browserMissing: Boolean,
     hasCamera: Boolean,
     isConnecting: Boolean,
     error: String?,
@@ -409,6 +433,9 @@ private fun RommLoginStep(
     onConnect: () -> Unit,
     onScan: () -> Unit,
     onCancelPairing: () -> Unit,
+    onOpenVerificationUrl: () -> Unit,
+    onUseManualCode: () -> Unit,
+    onUseDevicePairing: () -> Unit,
     onBack: () -> Unit,
     onClearFocusField: () -> Unit
 ) {
@@ -416,7 +443,11 @@ private fun RommLoginStep(
         DevicePairingStep(
             userCode = deviceUserCode,
             verificationUrl = deviceVerificationUrl,
+            browserMissing = browserMissing,
             error = error,
+            focusedIndex = focusedIndex,
+            onOpenVerificationUrl = onOpenVerificationUrl,
+            onUseManualCode = onUseManualCode,
             onCancel = onCancelPairing
         )
         return
@@ -612,13 +643,25 @@ private fun RommLoginStep(
             )
         }
 
+        var nextIndex = 3
         if (hasCamera) {
             Spacer(modifier = Modifier.height(Dimens.spacingSm))
             FocusableOutlinedButton(
                 text = "Scan QR Code",
-                isFocused = focusedIndex == 3,
+                isFocused = focusedIndex == nextIndex,
                 enabled = !isConnecting,
                 onClick = onScan
+            )
+            nextIndex++
+        }
+
+        if (supportsDeviceAuth) {
+            Spacer(modifier = Modifier.height(Dimens.spacingSm))
+            FocusableOutlinedButton(
+                text = "Use QR pairing instead",
+                isFocused = focusedIndex == nextIndex,
+                enabled = !isConnecting,
+                onClick = onUseDevicePairing
             )
         }
     }
@@ -628,7 +671,11 @@ private fun RommLoginStep(
 private fun DevicePairingStep(
     userCode: String?,
     verificationUrl: String?,
+    browserMissing: Boolean,
     error: String?,
+    focusedIndex: Int,
+    onOpenVerificationUrl: () -> Unit,
+    onUseManualCode: () -> Unit,
     onCancel: () -> Unit
 ) {
     StepColumn {
@@ -636,7 +683,7 @@ private fun DevicePairingStep(
         Spacer(modifier = Modifier.height(Dimens.spacingMd))
 
         Text(
-            text = "Scan this code with your phone, then approve this device in RomM.",
+            text = "Scan this code with your phone, or sign in here on this device, then approve it in RomM.",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
@@ -678,11 +725,40 @@ private fun DevicePairingStep(
             )
         }
 
+        if (browserMissing) {
+            Spacer(modifier = Modifier.height(Dimens.spacingMd))
+            Text(
+                text = "No browser on this device. Scan the code or use a pairing code instead.",
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodyMedium,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth(0.8f)
+            )
+        }
+
         Spacer(modifier = Modifier.height(Dimens.spacingLg))
+
+        Row {
+            FocusableButton(
+                text = "Sign in on this device",
+                isFocused = focusedIndex == 0,
+                enabled = verificationUrl != null,
+                onClick = onOpenVerificationUrl
+            )
+            Spacer(modifier = Modifier.width(Dimens.spacingMd))
+            FocusableOutlinedButton(
+                text = "Use a pairing code",
+                isFocused = focusedIndex == 1,
+                enabled = true,
+                onClick = onUseManualCode
+            )
+        }
+
+        Spacer(modifier = Modifier.height(Dimens.spacingSm))
 
         FocusableOutlinedButton(
             text = "Back",
-            isFocused = true,
+            isFocused = focusedIndex == 2,
             enabled = true,
             onClick = onCancel
         )

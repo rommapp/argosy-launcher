@@ -1,8 +1,9 @@
 package com.nendo.argosy.ui.screens.settings.delegates
 
-import com.nendo.argosy.data.remote.romm.DeviceAuthPoll
+import com.nendo.argosy.data.remote.romm.DeviceAuthOutcome
 import com.nendo.argosy.data.remote.romm.RomMResult
 import com.nendo.argosy.data.remote.romm.RomMRepository
+import com.nendo.argosy.data.remote.romm.pollDeviceAuthUntilResolved
 import com.nendo.argosy.data.repository.GameRepository
 import com.nendo.argosy.data.repository.RomMAccountRepository
 import com.nendo.argosy.data.sync.AccountRemovalResult
@@ -19,7 +20,6 @@ import com.nendo.argosy.ui.screens.settings.AccountsState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.currentCoroutineContext
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -358,56 +358,39 @@ class AccountsSettingsDelegate @Inject constructor(
     }
 
     private suspend fun pollForApproval(deviceCode: String, interval: Int, expiresIn: Int) {
-        var intervalMs = interval.coerceAtLeast(1) * 1000L
-        var elapsedMs = 0L
-        val deadlineMs = expiresIn.coerceAtLeast(1) * 1000L
-        while (currentCoroutineContext().isActive && elapsedMs < deadlineMs) {
-            delay(intervalMs)
-            elapsedMs += intervalMs
+        val outcome = pollDeviceAuthUntilResolved(interval, expiresIn) {
             val hasExisting = accountRepository.accountCount() > 0
-            when (val poll = romMRepository.pollDeviceAuthOnce(deviceCode, activateOnSuccess = !hasExisting)) {
-                is DeviceAuthPoll.AddedAccount -> {
-                    val added = accountRepository.accounts().firstOrNull { it.id == poll.accountId }
-                    _state.update {
-                        it.copy(
-                            pairing = AccountPairingState(),
-                            rowActionIndex = 0,
-                            notice = "Added ${added?.username?.ifBlank { null } ?: "the account"}. " +
-                                "Still signed in as before; switch to start using it."
-                        )
-                    }
-                    return
-                }
-                is DeviceAuthPoll.Approved -> {
-                    val added = accountRepository.activeAccount()
-                    _state.update {
-                        it.copy(
-                            pairing = AccountPairingState(),
-                            rowActionIndex = 0,
-                            notice = added?.let { row ->
-                                "Signed in as ${row.username.ifBlank { "RomM user ${row.rommUserId}" }}."
-                            } ?: "Account added."
-                        )
-                    }
-                    return
-                }
-                DeviceAuthPoll.Pending -> {}
-                DeviceAuthPoll.SlowDown -> intervalMs += SLOW_DOWN_STEP_MS
-                DeviceAuthPoll.Denied -> {
-                    failPairing("Pairing was denied on the server")
-                    return
-                }
-                DeviceAuthPoll.Expired -> {
-                    failPairing("Pairing code expired, start again")
-                    return
-                }
-                is DeviceAuthPoll.Failed -> {
-                    failPairing(poll.message)
-                    return
+            romMRepository.pollDeviceAuthOnce(deviceCode, activateOnSuccess = !hasExisting)
+        }
+        if (!currentCoroutineContext().isActive) return
+        when (outcome) {
+            is DeviceAuthOutcome.AddedAccount -> {
+                val added = accountRepository.accounts().firstOrNull { it.id == outcome.accountId }
+                _state.update {
+                    it.copy(
+                        pairing = AccountPairingState(),
+                        rowActionIndex = 0,
+                        notice = "Added ${added?.username?.ifBlank { null } ?: "the account"}. " +
+                            "Still signed in as before; switch to start using it."
+                    )
                 }
             }
+            is DeviceAuthOutcome.Approved -> {
+                val added = accountRepository.activeAccount()
+                _state.update {
+                    it.copy(
+                        pairing = AccountPairingState(),
+                        rowActionIndex = 0,
+                        notice = added?.let { row ->
+                            "Signed in as ${row.username.ifBlank { "RomM user ${row.rommUserId}" }}."
+                        } ?: "Account added."
+                    )
+                }
+            }
+            DeviceAuthOutcome.Denied -> failPairing("Pairing was denied on the server")
+            DeviceAuthOutcome.Expired -> failPairing("Pairing code expired, start again")
+            is DeviceAuthOutcome.Failed -> failPairing(outcome.message)
         }
-        if (currentCoroutineContext().isActive) failPairing("Pairing code expired, start again")
     }
 
     private fun failPairing(message: String) {
@@ -498,9 +481,5 @@ class AccountsSettingsDelegate @Inject constructor(
             "Confirm that any game launched outside Argosy is fully closed."
         AccountSwitchBlocker.UnknownAccount ->
             "That account is no longer on this device."
-    }
-
-    companion object {
-        private const val SLOW_DOWN_STEP_MS = 5000L
     }
 }

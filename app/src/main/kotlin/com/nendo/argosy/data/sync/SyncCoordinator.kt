@@ -17,6 +17,7 @@ import com.nendo.argosy.data.remote.romm.AccountApi
 import com.nendo.argosy.data.remote.romm.ConnectionState
 import com.nendo.argosy.data.remote.romm.RomMApiProvider
 import com.nendo.argosy.data.remote.romm.RomMRepository
+import com.nendo.argosy.data.remote.romm.RomMUserPropsUpdateData
 import com.nendo.argosy.data.preferences.SyncPreferencesRepository
 import com.nendo.argosy.data.repository.SaveCacheManager
 import com.nendo.argosy.data.repository.SaveSyncRepository
@@ -386,14 +387,14 @@ class SyncCoordinator @Inject constructor(
         return try {
             when (item.syncType) {
                 SyncType.SAVE_FILE -> processSaveFile(item, signedInUserId)
-                SyncType.SAVE_STATE -> processSaveState(item)
-                SyncType.RATING -> processProperty(item)
-                SyncType.DIFFICULTY -> processProperty(item)
-                SyncType.STATUS -> processProperty(item)
-                SyncType.FAVORITE -> processFavorite(item)
-                SyncType.HIDDEN -> processHidden(item)
+                SyncType.SAVE_STATE -> processSaveState(item, signedInUserId)
+                SyncType.RATING -> processProperty(item, signedInUserId)
+                SyncType.DIFFICULTY -> processProperty(item, signedInUserId)
+                SyncType.STATUS -> processProperty(item, signedInUserId)
+                SyncType.FAVORITE -> processFavorite(item, signedInUserId)
+                SyncType.HIDDEN -> processHidden(item, signedInUserId)
                 SyncType.ACHIEVEMENT -> processAchievement(item)
-                SyncType.SCREENSHOT -> processScreenshot(item)
+                SyncType.SCREENSHOT -> processScreenshot(item, signedInUserId)
             }
         } catch (e: Exception) {
             Logger.error(TAG, "processItem: Exception processing ${item.syncType}", e)
@@ -527,10 +528,20 @@ class SyncCoordinator @Inject constructor(
         )
     }
 
-    private suspend fun processSaveState(item: PendingSyncQueueEntity): Boolean {
+    private suspend fun processSaveState(item: PendingSyncQueueEntity, signedInUserId: Long?): Boolean {
         val payload = payloadCodec.decodeSaveState(item.payloadJson) ?: return false
         val state = stateCacheManager.get().getStateById(payload.stateCacheId) ?: return false
-        val api = saveSyncRepository.get().getApi() ?: return false
+        val route = routeForOwner(item.ownerUserId, signedInUserId)
+        if (route is OwnerRoute.Unavailable) {
+            Logger.warn(
+                TAG,
+                "processSaveState: no client for owner ${route.ownerUserId} on gameId=${item.gameId}; leaving row queued"
+            )
+            return false
+        }
+        val api = (route as? OwnerRoute.Delegated)?.account?.api
+            ?: saveSyncRepository.get().getApi()
+            ?: return false
         val game = gameDao.getById(item.gameId)
         val romBaseName = game?.localPath?.let { java.io.File(it).nameWithoutExtension } ?: state.platformSlug
 
@@ -556,34 +567,84 @@ class SyncCoordinator @Inject constructor(
         return migrated
     }
 
-    private suspend fun processProperty(item: PendingSyncQueueEntity): Boolean {
+    /**
+     * Writes user properties under the account that queued them, not whoever is signed in now.
+     * A delegated write goes straight at the owner's client because the repository facade always
+     * resolves the live connection.
+     */
+    private suspend fun processProperty(item: PendingSyncQueueEntity, signedInUserId: Long?): Boolean {
         val payload = payloadCodec.decodeProperty(item.payloadJson) ?: return false
-
-        return romMRepository.get().updateRomUserProps(
-            rommId = item.rommId,
-            userRating = if (item.syncType == SyncType.RATING) payload.intValue else null,
-            userDifficulty = if (item.syncType == SyncType.DIFFICULTY) payload.intValue else null,
-            userStatus = if (item.syncType == SyncType.STATUS) payload.stringValue else null
+        val props = RomMUserPropsUpdateData(
+            rating = if (item.syncType == SyncType.RATING) payload.intValue else null,
+            difficulty = if (item.syncType == SyncType.DIFFICULTY) payload.intValue else null,
+            status = if (item.syncType == SyncType.STATUS) payload.stringValue else null,
+            hidden = null
         )
+        return writeUserProps(item, signedInUserId, props)
     }
 
-    private suspend fun processHidden(item: PendingSyncQueueEntity): Boolean {
+    private suspend fun processHidden(item: PendingSyncQueueEntity, signedInUserId: Long?): Boolean {
         val payload = payloadCodec.decodeProperty(item.payloadJson) ?: return false
-
-        return romMRepository.get().updateRomUserProps(
-            rommId = item.rommId,
-            hidden = payload.intValue == 1
-        )
+        val props = RomMUserPropsUpdateData(hidden = payload.intValue == 1)
+        return writeUserProps(item, signedInUserId, props)
     }
 
-    private suspend fun processFavorite(item: PendingSyncQueueEntity): Boolean {
+    private suspend fun writeUserProps(
+        item: PendingSyncQueueEntity,
+        signedInUserId: Long?,
+        props: RomMUserPropsUpdateData
+    ): Boolean {
+        return when (val route = routeForOwner(item.ownerUserId, signedInUserId)) {
+            is OwnerRoute.Unavailable -> {
+                Logger.warn(
+                    TAG,
+                    "writeUserProps: no client for owner ${route.ownerUserId} on gameId=${item.gameId}; leaving row queued"
+                )
+                false
+            }
+            is OwnerRoute.Delegated -> try {
+                route.account.api.updateRomUserProps(item.rommId, props).isSuccessful
+            } catch (e: Exception) {
+                Logger.error(TAG, "writeUserProps: delegated write failed for gameId=${item.gameId}", e)
+                false
+            }
+            OwnerRoute.Live -> romMRepository.get().updateRomUserProps(
+                rommId = item.rommId,
+                userRating = props.rating,
+                userDifficulty = props.difficulty,
+                userStatus = props.status,
+                hidden = props.hidden
+            )
+        }
+    }
+
+    /**
+     * Favourites are not delegable: the write is a read-modify-write of the account's favourites
+     * collection and it also stamps a device-global last-sync time. A foreign row stays queued
+     * until its own account is signed in rather than being written to the wrong collection.
+     */
+    private suspend fun processFavorite(item: PendingSyncQueueEntity, signedInUserId: Long?): Boolean {
         val payload = payloadCodec.decodeProperty(item.payloadJson) ?: return false
+        if (routeForOwner(item.ownerUserId, signedInUserId) !is OwnerRoute.Live) {
+            Logger.warn(
+                TAG,
+                "processFavorite: row for gameId=${item.gameId} belongs to user ${item.ownerUserId}; leaving row queued"
+            )
+            return false
+        }
         val isFavorite = payload.intValue == 1
 
         return romMRepository.get().syncFavorite(item.rommId, isFavorite)
     }
 
-    private suspend fun processScreenshot(item: PendingSyncQueueEntity): Boolean {
+    private suspend fun processScreenshot(item: PendingSyncQueueEntity, signedInUserId: Long?): Boolean {
+        if (routeForOwner(item.ownerUserId, signedInUserId) !is OwnerRoute.Live) {
+            Logger.warn(
+                TAG,
+                "processScreenshot: row for gameId=${item.gameId} belongs to user ${item.ownerUserId}; leaving row queued"
+            )
+            return false
+        }
         val payload = payloadCodec.decodeScreenshot(item.payloadJson) ?: return false
         val file = File(payload.localPath)
         if (!file.exists()) {

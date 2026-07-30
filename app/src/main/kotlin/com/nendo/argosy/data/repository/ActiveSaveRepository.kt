@@ -48,9 +48,11 @@ class ActiveSaveRepository @Inject constructor(
         emitAll(saveCacheDao.observeActive(gameId, ownerUserId).map { it.firstOrNull() })
     }
 
-    suspend fun activateCache(gameId: Long, cacheId: Long) {
+    /**
+     * False when [cacheId] belongs to another owner, in which case nothing is activated.
+     */
+    suspend fun activateCache(gameId: Long, cacheId: Long): Boolean =
         saveCacheDao.setActiveRow(gameId, activeOwnerId(), cacheId)
-    }
 
     suspend fun activateChannel(gameId: Long, channelName: String?): Boolean {
         val ownerUserId = activeOwnerId()

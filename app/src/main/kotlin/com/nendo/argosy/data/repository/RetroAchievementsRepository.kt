@@ -307,9 +307,17 @@ class RetroAchievementsRepository @Inject constructor(
         Logger.info(TAG, "Achievement $achievementRaId queued for later submission")
     }
 
+    /**
+     * Submits only the rows queued by the account signed in now. RetroAchievements credentials are
+     * device-global and survive an account switch, so draining another RomM account's queued unlock
+     * would award it to whichever RA identity is currently configured - a different person's
+     * account, with the hardcore flag intact.
+     */
     suspend fun submitPendingAchievements(): Int {
         val credentials = getCredentials() ?: return 0
+        val activeOwnerId = activeOwnerUserId()
         val pending = pendingSyncQueueDao.getRetryableBySyncType(SyncType.ACHIEVEMENT)
+            .filter { it.ownerUserId == null || it.ownerUserId == activeOwnerId }
         if (pending.isEmpty()) return 0
 
         Logger.info(TAG, "Submitting ${pending.size} pending achievements")

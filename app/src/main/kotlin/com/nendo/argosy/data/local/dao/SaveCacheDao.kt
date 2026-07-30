@@ -347,23 +347,38 @@ interface SaveCacheDao {
         UPDATE save_cache SET isActive = 0
         WHERE gameId = :gameId
           AND isActive = 1
+          AND id IS NOT :exceptId
           AND (ownerUserId IS NULL OR ownerUserId IS :ownerUserId)
         """
     )
-    suspend fun clearActive(gameId: Long, ownerUserId: Long?)
+    suspend fun clearActive(gameId: Long, ownerUserId: Long?, exceptId: Long? = null)
 
-    @Query("UPDATE save_cache SET isActive = 1 WHERE id = :cacheId AND gameId = :gameId")
-    suspend fun markActive(gameId: Long, cacheId: Long)
+    @Query(
+        """
+        UPDATE save_cache SET isActive = 1
+        WHERE id = :cacheId
+          AND gameId = :gameId
+          AND (ownerUserId IS NULL OR ownerUserId IS :ownerUserId)
+        """
+    )
+    suspend fun markActive(gameId: Long, ownerUserId: Long?, cacheId: Long): Int
 
     /**
      * The only writer of `isActive`. Room cannot declare a partial unique index, so the
      * "one active row per owner and game" invariant is held here: the clear and the set are one
      * transaction and no call site is allowed to perform them separately.
+     *
+     * Returns false when [cacheId] belongs to another owner. The set is owner-scoped for the same
+     * reason the clear is: marking a foreign row leaves the acting owner with no readable active
+     * pointer, and an unset pointer is what lets a resume fall through to another owner's newest
+     * save and write it over the live one.
      */
     @Transaction
-    suspend fun setActiveRow(gameId: Long, ownerUserId: Long?, cacheId: Long) {
-        clearActive(gameId, ownerUserId)
-        markActive(gameId, cacheId)
+    suspend fun setActiveRow(gameId: Long, ownerUserId: Long?, cacheId: Long): Boolean {
+        val marked = markActive(gameId, ownerUserId, cacheId)
+        if (marked == 0) return false
+        clearActive(gameId, ownerUserId, exceptId = cacheId)
+        return true
     }
 
     @Query(

@@ -20,7 +20,7 @@ interface PendingSocialSyncDao {
     @Query("""
         SELECT * FROM pending_social_sync
         WHERE syncType = :type AND status = 'PENDING'
-          AND (:ownerUserId IS NULL OR ownerUserId IS NULL OR ownerUserId = :ownerUserId)
+          AND (ownerUserId IS NULL OR ownerUserId = :ownerUserId)
         ORDER BY occurredAt ASC
         LIMIT :limit
     """)

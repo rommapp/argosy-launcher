@@ -1352,7 +1352,9 @@ class StateCacheManager @Inject constructor(
             return@withContext 0
         }
 
+        val activeOwnerId = syncPreferencesRepository.getRommUserId()
         val pending = pendingSyncQueueDao.getRetryableBySyncType(SyncType.SAVE_STATE)
+            .filter { it.ownerUserId == null || it.ownerUserId == activeOwnerId }
         if (pending.isEmpty()) {
             return@withContext 0
         }

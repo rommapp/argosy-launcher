@@ -14,9 +14,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -33,9 +31,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
-import com.nendo.argosy.ui.icons.InputIcons
-import com.nendo.argosy.ui.input.LocalABIconsSwapped
 import com.nendo.argosy.ui.primitives.FocusIndicators
+import com.nendo.argosy.ui.primitives.InputGlyph
 import com.nendo.argosy.ui.primitives.argosyFocusIndicators
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalArgosyTheme
@@ -104,7 +101,6 @@ fun HoldToConfirmButton(
     onHoldStart: () -> Unit = {}
 ) {
     val theme = LocalArgosyTheme.current
-    val abIconsSwapped = LocalABIconsSwapped.current
     var touchHeld by remember { mutableStateOf(false) }
     var progress by remember { mutableFloatStateOf(0f) }
     val gamepadHeld = gamepadTracker?.isHeld == true
@@ -211,11 +207,10 @@ fun HoldToConfirmButton(
             horizontalArrangement = Arrangement.spacedBy(Dimens.spacingXs),
             modifier = Modifier.padding(horizontal = Dimens.spacingMd)
         ) {
-            Icon(
-                painter = if (abIconsSwapped) InputIcons.FaceRight else InputIcons.FaceBottom,
-                contentDescription = null,
-                tint = labelColor.copy(alpha = 0.7f * contentAlpha),
-                modifier = Modifier.size(Dimens.iconSm)
+            InputGlyph(
+                button = InputButton.A,
+                size = Dimens.iconSm,
+                tint = labelColor.copy(alpha = 0.7f * contentAlpha)
             )
             Text(
                 text = label,

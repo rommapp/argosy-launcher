@@ -66,8 +66,12 @@ private fun InputButton.category(): HintCategory = when (this) {
     InputButton.A, InputButton.B, InputButton.X, InputButton.Y -> HintCategory.FACE
 }
 
+/**
+ * The single icon-side resolution of A/B, X/Y and Start/Select swaps. Call this; never copy the
+ * mapping and never encode a swap by choosing a different InputButton.
+ */
 @Composable
-private fun InputButton.toPainter(): Painter? {
+fun InputButton.toPainter(): Painter? {
     val abIconsSwapped = LocalABIconsSwapped.current
     val xyIconsSwapped = LocalXYIconsSwapped.current
     val swapStartSelect = LocalSwapStartSelect.current

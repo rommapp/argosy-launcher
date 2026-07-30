@@ -349,7 +349,22 @@ object PlatformDefinitions {
         "intv" to "intellivision",
         "mega_duck" to "megaduck",
         "jollycv" to "coleco",
-        "pcxt" to "dos"
+        "pcxt" to "dos",
+        "apple_ii" to "appleii",
+        "apple-ii" to "appleii",
+        "apple2" to "appleii",
+        "mac68k" to "mac",
+        "macintosh" to "mac",
+        "ep128" to "enterprise",
+        "enterprise-64-128" to "enterprise",
+        "ti_83" to "ti83",
+        "ti-83" to "ti83",
+        "commodore_plus4" to "plus4",
+        "c-plus-4" to "plus4",
+        "cplus4" to "plus4",
+        "commodore_pet" to "cpet",
+        "commodore-pet" to "cpet",
+        "pet" to "cpet"
     )
 
     private val localPlatformIdMap = mapOf(
@@ -478,6 +493,8 @@ object PlatformDefinitions {
         PlatformDef("vic20", "VIC-20", "VIC-20", setOf("d64", "t64", "tap", "prg", "p00", "crt", "20", "40", "60", "a0", "b0", "zip", "7z"), 600),
         PlatformDef("c64", "Commodore 64", "C64", setOf("d64", "d81", "g64", "t64", "tap", "prg", "p00", "crt", "bin", "nib", "zip", "7z"), 605),
         PlatformDef("c128", "Commodore 128", "C128", setOf("d64", "d81", "prg", "zip", "7z"), 610),
+        PlatformDef("plus4", "Commodore Plus/4", "Plus/4", setOf("d64", "d81", "t64", "tap", "prg", "p00", "crt", "zip", "7z"), 612),
+        PlatformDef("cpet", "Commodore PET", "PET", setOf("d64", "d80", "d82", "t64", "tap", "prg", "p00", "zip", "7z"), 615),
         PlatformDef("amiga", "Amiga", "Amiga", setOf("adf", "adz", "dms", "fdi", "ipf", "hdf", "hdz", "lha", "slave", "info", "cue", "ccd", "nrg", "mds", "iso", "chd", "uae", "m3u", "rp9", "zip", "7z"), 620),
         PlatformDef("amigacd32", "Amiga CD32", "CD32", setOf("chd", "cue", "iso", "zip", "7z"), 625),
         PlatformDef("cdtv", "CDTV", "CDTV", setOf("chd", "cue", "iso", "zip", "7z"), 627),
@@ -498,7 +515,9 @@ object PlatformDefinitions {
         // =====================================================================
         // COMPUTERS (700-749) - Alphabetical
         // =====================================================================
+        PlatformDef("appleii", "Apple II", "Apple II", setOf("dsk", "do", "po", "nib", "woz", "2mg", "2img", "hdv", "bin", "m3u", "zip", "7z"), 695),
         PlatformDef("amstradcpc", "Amstrad CPC", "CPC", setOf("dsk", "sna", "cdt", "zip", "7z"), 700),
+        PlatformDef("enterprise", "Enterprise", "Enterprise", setOf("img", "dsk", "tap", "dtf", "trn", "128", "bas", "cas", "cdt", "tzx", "zip", "7z"), 712),
         PlatformDef("bbcmicro", "BBC Micro", "BBC", setOf("ssd", "dsd", "uef", "zip", "7z"), 705),
         PlatformDef("dos", "DOS", "DOS", setOf("exe", "com", "bat", "iso", "cue", "img", "ima", "vhd", "dosz", "m3u", "m3u8", "conf", "zip", "7z"), 710),
         PlatformDef("fmtowns", "FM Towns", "FM Towns", setOf("chd", "cue", "iso", "zip", "7z"), 715),
@@ -506,12 +525,15 @@ object PlatformDefinitions {
         PlatformDef("msx2", "MSX2", "MSX2", setOf("rom", "mx2", "dsk", "zip", "7z"), 721),
         PlatformDef("pc8800", "PC-8800", "PC-88", setOf("d88", "zip", "7z"), 725),
         PlatformDef("pc9800", "PC-9800", "PC-98", setOf("hdi", "fdi", "d98", "zip", "7z"), 726),
+        PlatformDef("mac", "Macintosh", "Mac", setOf("dsk", "img", "hvf", "cmd", "zip", "7z"), 723),
         PlatformDef("scummvm", "ScummVM", "ScummVM", setOf("scummvm", "zip", "7z"), 730),
         PlatformDef("sharpx1", "Sharp X1", "X1", setOf("2d", "zip", "7z"), 735),
         PlatformDef("x68000", "X68000", "X68K", setOf("dim", "xdf", "hdm", "zip", "7z"), 736),
         PlatformDef("zx", "ZX Spectrum", "ZX", setOf("tzx", "tap", "z80", "sna", "zip", "7z"), 740),
         PlatformDef("zx81", "ZX81", "ZX81", setOf("p", "81", "zip", "7z"), 741),
         PlatformDef("pc", "PC", "PC", emptySet(), 745),
+        PlatformDef("ti83", "TI-83", "TI-83", setOf("8xp", "8xk", "8xg", "zip", "7z"), 743),
+        PlatformDef("j2me", "Java ME", "J2ME", setOf("jar", "jad", "jam", "zip", "7z"), 744),
         PlatformDef("windows", "Windows", "Windows", setOf("exe", "zip", "7z"), 746),
 
         // =====================================================================

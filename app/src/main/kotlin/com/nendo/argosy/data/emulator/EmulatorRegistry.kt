@@ -334,7 +334,9 @@ object EmulatorRegistry {
                 "msx", "msx2", "coleco",
                 "wonderswan", "wsc", "pokemini", "gameandwatch",
                 "arcade", "fbneo", "mame", "cps1", "cps2", "cps3", "supergrafx",
-                "c64", "vic20", "amiga", "dos", "zx", "pc9800", "amstradcpc", "pico8", "scummvm"
+                "c64", "c128", "plus4", "cpet", "vic20", "amiga", "dos", "windows", "zx", "pc9800",
+                "pc8800", "amstradcpc", "pico8", "scummvm", "appleii", "mac", "enterprise",
+                "ti83", "j2me", "intellivision", "megaduck", "cdi"
             ),
             launchAction = Intent.ACTION_MAIN,
             launchConfig = LaunchConfig.RetroArch(),
@@ -354,7 +356,9 @@ object EmulatorRegistry {
                 "msx", "msx2", "coleco",
                 "wonderswan", "wsc", "pokemini", "gameandwatch",
                 "arcade", "fbneo", "mame", "cps1", "cps2", "cps3", "supergrafx",
-                "c64", "vic20", "amiga", "dos", "zx", "pc9800", "amstradcpc", "pico8", "scummvm"
+                "c64", "c128", "plus4", "cpet", "vic20", "amiga", "dos", "windows", "zx", "pc9800",
+                "pc8800", "amstradcpc", "pico8", "scummvm", "appleii", "mac", "enterprise",
+                "ti83", "j2me", "intellivision", "megaduck", "cdi"
             ),
             launchAction = Intent.ACTION_MAIN,
             launchConfig = LaunchConfig.RetroArch(),
@@ -374,7 +378,9 @@ object EmulatorRegistry {
                 "msx", "msx2", "coleco",
                 "wonderswan", "wsc", "pokemini", "gameandwatch",
                 "arcade", "fbneo", "mame", "cps1", "cps2", "cps3", "supergrafx",
-                "c64", "vic20", "amiga", "dos", "zx", "pc9800", "amstradcpc", "pico8", "scummvm"
+                "c64", "c128", "plus4", "cpet", "vic20", "amiga", "dos", "windows", "zx", "pc9800",
+                "pc8800", "amstradcpc", "pico8", "scummvm", "appleii", "mac", "enterprise",
+                "ti83", "j2me", "intellivision", "megaduck", "cdi"
             ),
             launchAction = Intent.ACTION_MAIN,
             launchConfig = LaunchConfig.RetroArch(),
@@ -1152,6 +1158,18 @@ object EmulatorRegistry {
         "cps3" to listOf("fbneo", "fbalpha2012_cps3"),
         "amstradcpc" to listOf("cap32", "crocods"),
         "dos" to listOf("dosbox_pure", "dosbox_core", "dosbox_svn"),
+        "windows" to listOf("dosbox_pure", "dosbox_core"),
+        "c128" to listOf("vice_x128"),
+        "plus4" to listOf("vice_xplus4"),
+        "cpet" to listOf("vice_xpet"),
+        "appleii" to listOf("applewin"),
+        "mac" to listOf("minivmac"),
+        "enterprise" to listOf("ep128emu_core"),
+        "ti83" to listOf("numero"),
+        "j2me" to listOf("squirreljme"),
+        "megaduck" to listOf("sameduck"),
+        "cdi" to listOf("same_cdi"),
+        "pc8800" to listOf("quasi88"),
         "msx" to listOf("bluemsx", "fmsx"),
         "msx2" to listOf("bluemsx", "fmsx"),
         "wonderswan" to listOf("mednafen_wswan"),
@@ -1319,6 +1337,43 @@ object EmulatorRegistry {
         "amstradcpc" to listOf(
             RetroArchCore("cap32", "Caprice32"),
             RetroArchCore("crocods", "CrocoDS")
+        ),
+        "windows" to listOf(
+            RetroArchCore("dosbox_pure", "DOSBox Pure"),
+            RetroArchCore("dosbox_core", "DOSBox-core")
+        ),
+        "c128" to listOf(
+            RetroArchCore("vice_x128", "VICE x128")
+        ),
+        "plus4" to listOf(
+            RetroArchCore("vice_xplus4", "VICE xplus4")
+        ),
+        "cpet" to listOf(
+            RetroArchCore("vice_xpet", "VICE xpet")
+        ),
+        "appleii" to listOf(
+            RetroArchCore("applewin", "AppleWin")
+        ),
+        "mac" to listOf(
+            RetroArchCore("minivmac", "Mini vMac")
+        ),
+        "enterprise" to listOf(
+            RetroArchCore("ep128emu_core", "ep128emu")
+        ),
+        "ti83" to listOf(
+            RetroArchCore("numero", "Numero")
+        ),
+        "j2me" to listOf(
+            RetroArchCore("squirreljme", "SquirrelJME")
+        ),
+        "megaduck" to listOf(
+            RetroArchCore("sameduck", "SameDuck")
+        ),
+        "cdi" to listOf(
+            RetroArchCore("same_cdi", "SAME CDi")
+        ),
+        "pc8800" to listOf(
+            RetroArchCore("quasi88", "QUASI88")
         ),
         "arcade" to listOf(
             RetroArchCore("fbneo", "FinalBurn Neo"),
@@ -1709,7 +1764,9 @@ object EmulatorRegistry {
                 "msx", "msx2", "coleco",
                 "wonderswan", "wsc", "pokemini", "gameandwatch",
                 "arcade", "fbneo", "mame", "cps1", "cps2", "cps3", "supergrafx",
-                "c64", "vic20", "amiga", "dos", "zx", "pc9800", "amstradcpc", "pico8", "scummvm"
+                "c64", "c128", "plus4", "cpet", "vic20", "amiga", "dos", "windows", "zx", "pc9800",
+                "pc8800", "amstradcpc", "pico8", "scummvm", "appleii", "mac", "enterprise",
+                "ti83", "j2me", "intellivision", "megaduck", "cdi"
             ),
             launchAction = Intent.ACTION_MAIN,
             launchConfig = LaunchConfig.RetroArch(),

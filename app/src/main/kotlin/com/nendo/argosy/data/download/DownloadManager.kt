@@ -616,10 +616,25 @@ class DownloadManager @Inject constructor(
         if (baseFile != null && baseFile.isFile &&
             baseFile.parentFile?.absolutePath == platformDir.absolutePath
         ) {
-            val source = if (gameFolder.absolutePath == baseFile.absolutePath) {
-                val stash = File(platformDir, ".${baseFile.name}.promoting")
-                if (baseFile.renameTo(stash)) stash.also { gameFolder.mkdirs() } else baseFile
-            } else baseFile
+            val stash = if (gameFolder.absolutePath == baseFile.absolutePath) {
+                File(platformDir, ".${baseFile.name}.promoting")
+            } else {
+                null
+            }
+            val source = when {
+                stash == null -> baseFile
+                baseFile.renameTo(stash) && gameFolder.mkdirs() -> stash
+                else -> {
+                    if (stash.exists() && !stash.renameTo(baseFile)) {
+                        Logger.error(
+                            TAG,
+                            "resolveAddonFolder: stranded ${baseFile.name} at ${stash.name}, " +
+                                "could not restore after failed promotion"
+                        )
+                    }
+                    baseFile
+                }
+            }
             val moved = File(gameFolder, baseFile.name)
             if (source.renameTo(moved)) {
                 gameDao.updateLocalPath(gameId, moved.absolutePath, game.source)
@@ -628,6 +643,7 @@ class DownloadManager @Inject constructor(
                 }
                 Logger.info(TAG, "resolveAddonFolder: moved flat base ${baseFile.name} into ${gameFolder.name}")
             } else {
+                if (source == stash) stash.renameTo(baseFile)
                 Logger.warn(TAG, "resolveAddonFolder: failed to move ${baseFile.name} into ${gameFolder.name}")
             }
         }

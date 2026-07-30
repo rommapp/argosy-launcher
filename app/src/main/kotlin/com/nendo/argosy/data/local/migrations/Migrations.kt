@@ -2905,3 +2905,23 @@ object Migration_161_162 : Migration(161, 162) {
         db.execSQL("ALTER TABLE `emulator_configs` ADD COLUMN `controllerTypes` TEXT")
     }
 }
+/**
+ * Clears every Wii title id so it is re-extracted.
+ *
+ * sigil read the game id from offset 0 for anything that was not RVZ, so a WBFS image yielded the
+ * container's own "WBFS" magic, hex-encoded to 57424653, for every game. Wii saves are keyed on
+ * that id, so affected games all pointed at one save folder. Binary extraction sets titleIdLocked,
+ * and the update query skips locked rows, so a fixed reader alone would never repair them.
+ *
+ * Wiping all Wii rows rather than only the known-bad value: a correct read is cheap to redo and
+ * re-derives the same id, while any other misread we have not identified gets corrected too.
+ */
+object Migration_162_163 : Migration(162, 163) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            "UPDATE `games` SET `titleId` = NULL, `saveId` = NULL, `titleIdCandidates` = NULL, " +
+                "`titleIdLocked` = 0 WHERE `platformId` IN " +
+                "(SELECT `id` FROM `platforms` WHERE `slug` = 'wii')"
+        )
+    }
+}

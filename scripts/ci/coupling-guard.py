@@ -190,7 +190,7 @@ def commit_message(cmd, root):
         return m.group(2)
     f = re.search(r"-F\s+(\S+)", cmd)
     if f:
-        path = f.group(1).strip("'\"")
+        path = f.group(1).strip("'\"").rstrip(";&|")
         if not os.path.isabs(path):
             path = os.path.join(root, path)
         try:

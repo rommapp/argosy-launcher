@@ -330,7 +330,26 @@ object PlatformDefinitions {
         "pc_9800" to "pc9800",
         "pc_9800_series" to "pc9800",
         "pc-9800-series" to "pc9800",
-        "nec-pc-9801" to "pc9800"
+        "nec-pc-9801" to "pc9800",
+        "win" to "windows",
+        "win3x" to "windows",
+        "win9x" to "windows",
+        "windows9x" to "windows",
+        "super_nes" to "snes",
+        "fb_alpha" to "fbneo",
+        "hbmame" to "mame",
+        "cpc" to "amstradcpc",
+        "pc_88" to "pc8800",
+        "pc_98" to "pc9800",
+        "commodore_c64" to "c64",
+        "commodore_c64dtv" to "c64",
+        "commodore_c64_supercpu" to "c64",
+        "commodore_c128" to "c128",
+        "cdi2015" to "cdi",
+        "intv" to "intellivision",
+        "mega_duck" to "megaduck",
+        "jollycv" to "coleco",
+        "pcxt" to "dos"
     )
 
     private val localPlatformIdMap = mapOf(

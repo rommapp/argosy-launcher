@@ -18,6 +18,9 @@ the time of writing (except the one marked EXPECT EMPTY). If a grep comes
 back wrong, the code moved: re-anchor by tracing the named symbol, do not
 "fix the code toward the skill."
 
+References are by SYMBOL, never by line number - the greps are the durable
+anchors, offsets are not.
+
 ---
 
 ## RA Hardcore Requirements (behavioral contract)
@@ -39,20 +42,20 @@ From the official docs (https://docs.retroachievements.org/developer-docs/hardco
 Effective hardcore = **requested hardcore AND secure saves enabled**. Secure
 Saves is the user preference that lets Argosy own the save lifecycle; without
 it, hardcore save integrity cannot be guaranteed, so hardcore is stripped at
-three independent layers:
+FOUR independent layers:
 
-1. **Pre-launch strip** - `GameLaunchDelegate.kt:374-381`: when
-   `!prefs.secureSaves`, any hardcore override mode is discarded
-   (`overrideLaunchMode?.takeUnless { it.isHardcore }`).
-2. **Intent-arrival downgrade** - `LibretroActivity.kt:488-494`
-   (`parseIntentExtras`): reads `secureSaves` once, and if disabled downgrades
+1. **Pre-launch strip** - the `val launchMode = when {` block in
+   `GameLaunchDelegate.kt` (grep `takeUnless { it.isHardcore }`): when
+   `!prefs.secureSaves`, any hardcore override mode is discarded.
+2. **Intent-arrival downgrade** - `LibretroActivity.parseIntentExtras`: reads
+   `secureSaves` once, and if disabled downgrades
    `RESUME_HARDCORE -> RESUME`, `NEW_HARDCORE -> NEW_CASUAL`, then derives
    `hardcoreMode = launchMode.isHardcore`. This catches any caller that
    bypassed the delegate.
-3. **switchToHardcore gate** - `LibretroActivity.kt:546-548`: a resume that
-   lands on a hardcore-tagged save only flips the session to hardcore when
-   `secureSavesEnabled` is still true.
-4. **Offer gate** - `PlayOptionsDelegate.kt:38`:
+3. **switchToHardcore gate** - `LibretroActivity` (grep `switchToHardcore`):
+   a resume that lands on a hardcore-tagged save only flips the session to
+   hardcore when `secureSavesEnabled` is still true.
+4. **Offer gate** - `PlayOptionsDelegate`:
    `hardcoreAvailable = hasRASupport && isRALoggedIn && secureSaves`; hardcore
    rows are never shown without all three.
 
@@ -70,24 +73,24 @@ intent strings parse to `RESUME`.
 
 ### The 3-way mode preference
 
-`builtin_default_to_hardcore_mode` (DataStore key,
-`BuiltinEmulatorPreferencesRepository.kt:52`) holds `"ask" | "casual" |
+`builtin_default_to_hardcore_mode` (DataStore key `BUILTIN_DEFAULT_TO_HARDCORE_MODE`
+in `BuiltinEmulatorPreferencesRepository.kt`) holds `"ask" | "casual" |
 "hardcore"`. Consumers:
 
-- **RASettingsSection.kt:190-224** - "Play Mode Preference" cycle row
+- **RASettingsSection** - "Play Mode Preference" cycle row
   (Ask / Default to Casual / Default to Hardcore); rendered disabled with
   subtitle "Requires Secure Saves" when secure saves is off.
-- **GameLaunchDelegate.shouldDefaultToHardcore (:136-143)** - quick-launch
-  resume defaults to `RESUME_HARDCORE` only when token == "hardcore" AND
-  built-in emulator AND `game.achievementCount > 0` AND RA logged in.
-- **PlayOptionsDelegate.shouldShowModeSelection (:133-145)** - the fresh-game
+- **GameLaunchDelegate.shouldDefaultToHardcore** - quick-launch resume
+  defaults to `RESUME_HARDCORE` only when token == "hardcore" AND built-in
+  emulator AND `game.achievementCount > 0` AND RA logged in.
+- **PlayOptionsDelegate.shouldShowModeSelection** - the fresh-game
   mode-selection modal appears only when token == "ask" (plus built-in,
   has achievements, RA logged in, secure saves, and no existing saves).
-- **PlayOptionsDelegate (:91, :160, :164-165)** - token == "hardcore"
-  pre-focuses ResumeHardcore / NewHardcore in the modal.
-- **SyncSettingsDelegate.toggleSecureSaves (:451-458)** - disabling secure
-  saves while the pref is not "casual" and RA is logged in requires an extra
-  confirm (the user is warned they are giving up hardcore).
+- **PlayOptionsDelegate** - token == "hardcore" pre-focuses ResumeHardcore /
+  NewHardcore in the modal.
+- **SyncSettingsDelegate.toggleSecureSaves** - disabling secure saves while
+  the pref is not "casual" and RA is logged in requires an extra confirm
+  (the user is warned they are giving up hardcore).
 
 ```bash
 grep -n "BUILTIN_DEFAULT_TO_HARDCORE_MODE" app/src/main/kotlin/com/nendo/argosy/data/preferences/BuiltinEmulatorPreferencesRepository.kt
@@ -101,8 +104,16 @@ grep -n "tokenOptions" app/src/main/kotlin/com/nendo/argosy/ui/screens/settings/
 ### 2.1 HotkeyDispatcher - state/rewind hotkeys
 
 Invariant: QUICK_SAVE, QUICK_LOAD, and REWIND actions are no-ops with a toast
-in hardcore. File: `libretro/HotkeyDispatcher.kt` (QUICK_SAVE :41-42,
-QUICK_LOAD :59-60, REWIND :78-80; injected `isHardcoreMode` lambda :14).
+in hardcore. File: `libretro/HotkeyDispatcher.kt` - the `HotkeyAction.QUICK_SAVE`,
+`QUICK_LOAD` and `REWIND` branches of `dispatch`, gated by the injected
+`isHardcoreMode` lambda.
+
+NAMING TRAP: `LibretroActivity` does not construct `HotkeyDispatcher`. It
+constructs `LibretroHotkeyDispatcher` (`libretro/LibretroHotkeyDispatcher.kt`),
+a wrapper that owns fast-forward/rewind runtime state and delegates every action
+to an `inner` `HotkeyDispatcher`. It forwards `isHardcoreMode` verbatim and adds
+NO hardcore logic of its own - grepping the activity for `HotkeyDispatcher(`
+lands on the wrapper, not the gates.
 
 ```bash
 grep -n "isHardcoreMode()" app/src/main/kotlin/com/nendo/argosy/libretro/HotkeyDispatcher.kt
@@ -113,17 +124,16 @@ Expect three `isHardcoreMode()` gates and toasts "Save states disabled in
 Hardcore mode" (x2) and "Rewind disabled in Hardcore mode".
 
 Belt-and-suspenders: LibretroActivity never allocates the rewind buffer in
-hardcore (`videoSettings.rewindEnabled && !hardcoreMode` at :453, :602-612),
-and `checkStateSupport()` (:1862-1865) forces `statesSupported = false` when
-`hardcoreMode`. Auto-save state (:1850) and auto-restore (:1924, :1935, :1943)
-each independently bail on `hardcoreMode`.
+hardcore (grep `rewindEnabled && !hardcoreMode`), and `checkStateSupport()`
+forces `statesSupported = false` when `hardcoreMode`. The auto-save-state and
+auto-restore paths each independently bail on `hardcoreMode`.
 
 ### 2.2 InGameMenu - state rows hidden
 
 Invariant: Quick Save / Quick Load / Manage States rows do not exist in
-hardcore. File: `libretro/ui/InGameMenu.kt:132-137`:
+hardcore. File: `libretro/ui/InGameMenu.kt`:
 `val showStates = !isHardcoreMode && statesSupported && !isInNetplaySession`.
-A "HARDCORE" badge renders in the menu header (:305-307).
+A "HARDCORE" badge renders in the menu header.
 
 ```bash
 grep -n "showStates" app/src/main/kotlin/com/nendo/argosy/libretro/ui/InGameMenu.kt
@@ -132,12 +142,11 @@ grep -n "showStates" app/src/main/kotlin/com/nendo/argosy/libretro/ui/InGameMenu
 ### 2.3 CheatSessionManager - cheats never applied
 
 Invariant: no cheat reaches the core in hardcore. File:
-`libretro/CheatSessionManager.kt:142-143` -
-`applyAllEnabledCheats(hardcoreMode)` returns immediately when true;
-`loadCheats` and `selectVariant` route through it. Callers pass the live
-flag: `LibretroActivity.kt:473, :1157, :1718`.
+`libretro/CheatSessionManager.kt` - `applyAllEnabledCheats(hardcoreMode)`
+returns immediately when true; `loadCheats` and `selectVariant` route through
+it. Every LibretroActivity caller passes the live flag.
 
-UI side: the Cheats menu row is gated at `LibretroActivity.kt:1021` -
+UI side: the Cheats menu row is gated in `LibretroActivity` -
 `cheatsAvailable = !hardcoreMode && PlatformWeightRegistry.supportsCheats(platformSlug)`.
 
 ```bash
@@ -147,23 +156,26 @@ grep -n "cheatsAvailable = !hardcoreMode" app/src/main/kotlin/com/nendo/argosy/l
 
 ### 2.4 SaveStateManager - SRAM restore per launch mode
 
-File: `libretro/SaveStateManager.kt`. `restoreSaveForLaunchMode` (:105) is
-the single entry; its KDoc (:98-104) states the two non-obvious rules
-(activeSaveApplied wins; RESUME_HARDCORE SRAM fallback).
+File: `libretro/SaveStateManager.kt`. `restoreSaveForLaunchMode` is the single
+entry; its KDoc states the two non-obvious rules (activeSaveApplied wins;
+RESUME_HARDCORE SRAM fallback). It takes ONLY a `LaunchMode` - there is no
+timestamp parameter anywhere in this path.
 
-- **NEW_HARDCORE / NEW_CASUAL** (:142-163): fresh start. Existing .srm is
-  backed up via `saveCacheManager.cacheAsRollback` (:146) BEFORE deletion,
-  then the .srm and all state slots are deleted. A fresh hardcore run must
-  never destroy the only copy of a prior save.
-- **RESUME_HARDCORE** (:165-188): loads latest hardcore save
-  (`getLatestHardcoreSave`); validates the trailer with
-  `isValidHardcoreSave` (:169) and logs a warning if missing. No hardcore
-  save -> falls back to `restoreResumeSave` with
-  `casualSaveInHardcore = true` (see exceptions).
-- **RESUME** (:193-234, `restoreResumeSave`): picks the target save
-  (explicit timestamp > active channel > most recent). If it is
-  hardcore-tagged, `switchToHardcore = true` ONLY when the trailer validates
-  (:213-222); an invalid trailer demotes the load to casual.
+- **Short-circuit, before the mode branch**: when the active row has
+  `activeSaveApplied == true`, the on-disk `.srm` is read and returned as-is.
+  An explicit save-management restore is never second-guessed.
+- **NEW_HARDCORE / NEW_CASUAL**: fresh start. Existing .srm is backed up via
+  `saveCacheManager.cacheAsRollback` BEFORE deletion, then the .srm and all
+  state slots are deleted. A fresh hardcore run must never destroy the only
+  copy of a prior save.
+- **RESUME_HARDCORE**: loads the latest hardcore save
+  (`getLatestHardcoreSave`); validates the trailer with `isValidHardcoreSave`
+  and logs a warning if missing. No hardcore save -> falls back to
+  `restoreResumeSave` with `casualSaveInHardcore = true` (see exceptions).
+- **RESUME** (`restoreResumeSave`): target precedence is the active row from
+  `activeSaveRepository.getActiveRow`, else `getMostRecentSave`. If the target
+  is hardcore-tagged, `switchToHardcore = true` ONLY when
+  `isValidHardcoreSave` passes; an invalid trailer loads the save as casual.
 
 ```bash
 grep -n "restoreSaveForLaunchMode\|casualSaveInHardcore\|isValidHardcoreSave\|switchToHardcore" app/src/main/kotlin/com/nendo/argosy/libretro/SaveStateManager.kt
@@ -172,15 +184,16 @@ grep -n "cacheAsRollback" app/src/main/kotlin/com/nendo/argosy/libretro/SaveStat
 
 ### 2.5 GameLaunchDelegate - pre-launch mode resolution
 
-File: `ui/screens/common/GameLaunchDelegate.kt:374-381`. Resolution order:
+File: `ui/screens/common/GameLaunchDelegate.kt`, the `val launchMode = when {`
+block. Resolution order:
 
 1. `!prefs.secureSaves` -> strip hardcore from any override.
 2. Hardcore sync conflict resolved as KEEP_HARDCORE -> `RESUME_HARDCORE`.
 3. Explicit `overrideLaunchMode` (from PlayOptionsModal) wins.
-4. `isActiveSaveHardcore(gameId)` (:122-126, active channel's most recent
-   save has `isHardcore`) -> `RESUME_HARDCORE` (hardcore ratchet: a hardcore
-   save resumes hardcore by default).
-5. `shouldDefaultToHardcore` (:136-143) -> `RESUME_HARDCORE`.
+4. `isActiveSaveHardcore(gameId)` (active channel's most recent save has
+   `isHardcore`) -> `RESUME_HARDCORE` (hardcore ratchet: a hardcore save
+   resumes hardcore by default).
+5. `shouldDefaultToHardcore` -> `RESUME_HARDCORE`.
 6. else null (plain resume).
 
 Preference flags are read once at the top of the launch pass and passed down;
@@ -190,15 +203,15 @@ mirror that if touching this path.
 
 File: `ui/screens/gamedetail/delegates/PlayOptionsDelegate.kt`.
 
-- `hardcoreAvailable` (:38) = `hasRASupport && isRALoggedIn && secureSaves`.
-- `showResumeHardcore` (:41-45): offered whenever hardcore is available and
-  ANY resumable save exists (casual or hardcore) - because of the SRAM
-  fallback, continuing a casual save in hardcore is legal.
-- `visibleActions` (:99-105) is the single source of truth for row order:
+- `hardcoreAvailable` = `hasRASupport && isRALoggedIn && secureSaves`.
+- `showResumeHardcore`: offered whenever hardcore is available and ANY
+  resumable save exists (casual or hardcore) - because of the SRAM fallback,
+  continuing a casual save in hardcore is legal.
+- `visibleActions` is the single source of truth for row order:
   Resume / ResumeNoSync / ResumeHardcore / NewCasual / NewHardcore.
-- `confirmPlayOptionSelection` (:129): NewHardcore refused while offline
+- `confirmPlayOptionSelection`: NewHardcore refused while offline
   (hardcore unlocks need a live session).
-- `shouldShowModeSelection` (:133-145): fresh-game Casual-vs-Hardcore modal
+- `shouldShowModeSelection`: fresh-game Casual-vs-Hardcore modal
   only when built-in + has achievements + RA logged in + secure saves +
   pref == "ask" + zero existing saves.
 
@@ -209,28 +222,29 @@ File: `ui/screens/gamedetail/delegates/PlayOptionsDelegate.kt`.
 Hardcore saves are isolated by a **column plus an integrity trailer**, not by
 slot name:
 
-- `data/local/entity/SaveCacheEntity.kt:28` - `val isHardcore: Boolean`.
-  `SLOT_HARDCORE` (:38-39) is `@Deprecated`. **DO NOT resurrect slot-name
-  isolation**; anything keying on the "HARDCORE" slot string is a regression.
-- Session save caching carries the flag end-to-end:
-  `LibretroActivity.kt:472` starts the play session with `hardcoreMode`;
-  `data/emulator/PlaySessionTracker.kt` passes `isHardcore` into
-  `saveCacheManager.cacheCurrentSave` (hardcore sessions also force
-  `channelName = null` - hardcore saves live outside named channels,
-  `SaveCacheManager.resolveDefaultChannel:834-836`).
+- `data/local/entity/SaveCacheEntity.kt` - `val isHardcore: Boolean`.
+  `SLOT_HARDCORE` is `@Deprecated`. **DO NOT resurrect slot-name isolation**;
+  anything keying on the "HARDCORE" slot string is a regression.
+- Session save caching carries the flag end-to-end: `LibretroActivity` starts
+  the play session with `hardcoreMode`; `data/emulator/PlaySessionTracker.kt`
+  passes `isHardcore` into `saveCacheManager.cacheCurrentSave` (hardcore
+  sessions also force `channelName = null` - hardcore saves live outside named
+  channels, see `SaveCacheManager.resolveDefaultChannel`).
 - **Trailer write**: `SaveCacheManager.cacheCurrentSave` appends the trailer
-  to the cached copy when `isHardcore` (:164-165) via
-  `SaveArchiver.appendHardcoreTrailer` (`data/sync/SaveArchiver.kt:782`):
-  `{"h":true,"v":1}` + LE length + magic, appended to the file.
-- **Trailer read/strip**: `readHardcoreTrailer` (:808) /
-  `hasHardcoreTrailer` (:847); `readBytesWithoutTrailer` (:877) strips it
-  before bytes are handed to the core or written to a target path
-  (`SaveCacheManager.kt:436-438, :772`).
-- **Validation**: `SaveCacheManager.isValidHardcoreSave` (:718-722) =
-  `entity.isHardcore` AND trailer present on the cached file. An
-  isHardcore-tagged save whose trailer is missing (modified externally) is
-  **demoted to casual on resume** (`SaveStateManager.kt:213-222`) - the
-  session does not get hardcore credit from a tampered save.
+  to the cached copy when `isHardcore`, via
+  `SaveArchiver.appendHardcoreTrailer`: `{"h":true,"v":1}` + LE length +
+  magic, appended to the file.
+- **Trailer read/strip**: `SaveArchiver.readHardcoreTrailer` /
+  `hasHardcoreTrailer`; `readBytesWithoutTrailer` strips it before bytes are
+  handed to the core or written to a target path (callers in
+  `SaveCacheManager`).
+- **Validation**: `SaveCacheManager.isValidHardcoreSave` = `entity.isHardcore`
+  AND trailer present on the cached file. An isHardcore-tagged save whose
+  trailer is missing (modified externally) is **demoted to casual on resume**:
+  in `SaveStateManager.restoreResumeSave`, `switchToHardcore` is set only
+  inside the `if (isValid)` branch, and the else branch logs "RESUME: Hardcore
+  save missing trailer, loading as casual". The demotion is live; the session
+  does not get hardcore credit from a tampered save.
 
 ```bash
 grep -n "SLOT_HARDCORE\|isHardcore" app/src/main/kotlin/com/nendo/argosy/data/local/entity/SaveCacheEntity.kt
@@ -249,13 +263,12 @@ exception itself.
 
 - **Rule**: hardcore sessions load hardcore saves.
 - **Exception**: `RESUME_HARDCORE` with no hardcore save falls back to the
-  active (casual) SRAM, flagged `casualSaveInHardcore`
-  (`SaveStateManager.kt:180-187`); the UI surfaces "Continuing casual save
-  in hardcore" (`LibretroActivity.kt:703-704`).
+  active (casual) SRAM, flagged `casualSaveInHardcore` in
+  `SaveStateManager.restoreSaveForLaunchMode`; the UI surfaces "Continuing
+  casual save in hardcore" (grep that string in `LibretroActivity.kt`).
 - **Why**: RA forbids save STATES in hardcore, not SRAM battery-save
-  continuity - stated in the `restoreSaveForLaunchMode` KDoc
-  (`SaveStateManager.kt:98-104`) and mirrored in
-  `PlayOptionsState.showResumeHardcore` (:41-45).
+  continuity - stated in the `restoreSaveForLaunchMode` KDoc and mirrored in
+  `PlayOptionsState.showResumeHardcore`.
 - **Boundary**: any save-STATE load in hardcore remains absolutely blocked
   (sections 2.1, 2.2, and the auto-restore gates). If SRAM fallback ever
   starts touching state slots, that is a violation.
@@ -266,9 +279,9 @@ exception itself.
 - **Exception**: the speedrun timer/splits overlay is available regardless of
   mode.
 - **Why**: it only OBSERVES - reset events and hotkey-driven splits
-  (`LibretroActivity.kt:751-756` wires `onGameReset` and the five
-  SPEEDRUN_* hotkeys to `SpeedrunTimerEngine`); it never touches save
-  states, SRAM, rewind, or core memory.
+  (`LibretroActivity.initializeHotkeyDispatcher` wires `onGameReset` and the
+  five `onSpeedrun*` callbacks to `SpeedrunTimerEngine`); it never touches
+  save states, SRAM, rewind, or core memory.
 - **Boundary**: `libretro/speedrun/` must stay hardcore-agnostic. Verify:
 
 ```bash
@@ -283,29 +296,58 @@ grep -rn "hardcore" app/src/main/kotlin/com/nendo/argosy/libretro/speedrun/
 - **Rule**: hardcore unlocks are submitted with the hardcore flag.
 - **Exception (designed behavior)**: if the hardcore award errors, the
   achievement is re-submitted as casual and recorded locally as a casual
-  unlock (`RetroAchievementsSessionManager.kt:215-235`, log line :219).
+  unlock (`RetroAchievementsSessionManager`, the `RAAwardResult.Error` branch
+  of the award handling).
 - **Why**: hardcore awards cannot be queued offline (they need a live
   heartbeat); losing the unlock entirely would be worse than a softcore
   credit.
-- **Boundary**: the fallback only ever DOWNGRADES (`earnedHardcore = false`,
-  :218); nothing may promote a casual unlock to hardcore after the fact.
+- **Enforcement site for "cannot be queued"**: in
+  `RetroAchievementsRepository.awardAchievement`, EVERY `queueAchievement`
+  call sits in the `else` branch of an `if (forHardcoreMode)` - HTTP failure,
+  empty body, error body, and the exception handler each return
+  `RAAwardResult.Error` for hardcore and only queue for casual. Adding a queue
+  path that is not behind that branch would let a hardcore unlock be submitted
+  after the session ended, which RA does not permit.
+- **Boundary**: the fallback only ever DOWNGRADES (`earnedHardcore = false`);
+  nothing may promote a casual unlock to hardcore after the fact.
 
 ---
 
 ## 5. Adjacent gates
 
-- **Netplay guests force NEW_CASUAL**: `LibretroActivity.kt:496-504` - a
-  join intent overrides launchMode to `NEW_CASUAL`; guests never earn
-  hardcore on a host's snapshot. Netplay also independently blocks state
-  saves/loads and reset in `HotkeyDispatcher` and hides state rows in
-  `InGameMenu` (`!isInNetplaySession` in showStates).
+- **Netplay guests force NEW_CASUAL**: `LibretroActivity.parseIntentExtras` -
+  a join intent overrides launchMode to `NEW_CASUAL`; guests never earn
+  hardcore on a host's snapshot. Netplay also blocks state operations in
+  `HotkeyDispatcher` and hides state rows in `InGameMenu`
+  (`!isInNetplaySession` in showStates) - but the netplay gates are NOT
+  uniform:
+  - `QUICK_SAVE` is blocked only for NON-HOSTS
+    (`isNetplayInSession() && getNetplayRole() != NetplayMenuRole.Host`); the
+    host CAN quick-save mid-netplay.
+  - `QUICK_LOAD` and `RESET_GAME` are blocked for everyone in session.
+  The hardcore gate is unconditional in all three cases and sits after the
+  netplay check, so hardcore compliance does not depend on the role.
 - **RA session carries the flag, not the heartbeat**:
   `RetroAchievementsSessionManager` starts the session with `hardcoreMode`
-  (:95 -> `raRepository.startSession(gameRaId, hardcoreMode)`, sent as
-  `hardcore = 0/1`, `RetroAchievementsRepository.kt:347-360`); awards send
-  `forHardcoreMode` (:194-198); the periodic `sendHeartbeat` (:175) carries
-  no mode. Unlocks are stored split (`markUnlockedHardcore` vs
-  `markUnlocked`, :239-245) and social/LED surfaces receive `isHardcore`.
+  (`raRepository.startSession(gameRaId, hardcoreMode)`, sent as
+  `hardcore = 0/1`); awards send `forHardcoreMode`; the periodic
+  `sendHeartbeat` carries no mode. Unlocks are stored split
+  (`markUnlockedHardcore` vs `markUnlocked`) and social/LED surfaces receive
+  `isHardcore`.
+- **Unlock validation hash (upstream-exact, do not "simplify")**:
+  `RetroAchievementsRepository.generateValidation` computes
+  `md5(achievementId + username + hardcoreFlag)` where hardcoreFlag is the
+  literal `"1"` or `"0"`, and sends it with every award. The input order, the
+  string form of the flag, and MD5 itself are RA Connect's contract - a
+  refactor that reorders the concatenation or switches digest produces awards
+  the server silently rejects.
+- **`handleAuthFailure` is a DELIBERATE no-op**: the body in
+  `RetroAchievementsRepository` is empty with a long comment explaining why -
+  the previous implementation cleared stored credentials on any error string
+  containing "invalid"/"expired"/"credentials", which wiped tokens on
+  non-auth errors like "Invalid game ID". Do not "implement" it; if auth
+  handling is genuinely needed, it needs a precise signal, not a substring
+  match.
 
 ```bash
 grep -n "startSession\|sendHeartbeat" app/src/main/kotlin/com/nendo/argosy/libretro/RetroAchievementsSessionManager.kt
@@ -319,9 +361,17 @@ grep -n "launchMode = LaunchMode.NEW_CASUAL" app/src/main/kotlin/com/nendo/argos
 Hardcore semantics, memory addressing, and achievement logic are **verified
 against upstream sources, never inferred**:
 
-- rcheevos is vendored in-tree at `libretrodroid/src/main/cpp/rcheevos/` -
-  that source is the authority for runtime behavior (memory peek semantics,
-  condition evaluation, hardcore flags on the wire).
+- rcheevos is vendored in-tree at `libretrodroid/src/main/cpp/rcheevos/`, but
+  only PART of it is compiled. `CMakeLists.txt` builds `src/rcheevos/*.c`
+  (alloc, condition, condset, consoleinfo, format, lboard, memref, operand,
+  richpresence, runtime, runtime_progress, trigger, value) plus
+  `rcheevos_stubs.c`. `rc_client.c` and `src/rapi/` are NOT in the build.
+  So rcheevos is the authority for condition evaluation, memory peek
+  semantics and runtime progress - NOT for anything on the wire.
+- ALL RA server traffic is Kotlin: `RAApi` (Retrofit) driven by
+  `RetroAchievementsRepository`. Hardcore flags, validation hashes, session
+  start and awards are ours to get right; there is no native client to defer
+  to.
 - RetroAchievements docs (docs.retroachievements.org) are the authority for
   policy: what hardcore must block, award semantics, session rules.
 
@@ -336,7 +386,7 @@ determination.
 ## 7. Manual verification checklist
 
 Run when hardcore logic changed. Log tag anchors:
-`[Startup] gameId=..., core=..., hardcore=...` (LibretroActivity:698) and
+`[Startup] gameId=..., core=..., hardcore=...` (LibretroActivity) and
 `RetroAchievementsSessionManager` session lines.
 
 ### Hardcore entry

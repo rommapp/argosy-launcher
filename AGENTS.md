@@ -2,18 +2,19 @@
 
 Argosy is a controller-first game launcher for emulation handhelds and Android
 TV, built around the RomM backend. This file is the structural law of the
-project for ANY coding agent. Deep domain guidance lives in .claude/skills/
-(Claude Code loads these; other agents should read the files named below
-before touching their domains). Laws here carry their justified exceptions:
-a rule, its exception, why the exception is legitimate, and the boundary
-where it becomes a violation again.
+project for ANY coding agent; CONTRIBUTING.md covers contributor expectations.
+Deep domain guidance lives in the skills named by the routing table at the end.
+Laws here carry their justified exceptions: a rule, its exception, why the
+exception is legitimate, and the boundary where it becomes a violation again.
 
 ## Architecture
 
 - Layers: ui/ -> domain/ -> data/. Dependencies flow inward only.
   - domain/ is Compose-free (hard rule). Android-framework-free is
-    aspirational with known debt (Intent in LaunchGameUseCase, Log in
-    several use cases); do not add new framework imports.
+    aspirational with known debt across 12 files (Intent in LaunchGameUseCase,
+    Log in several use cases, and a whole media-codec pipeline in
+    MeasureTrackLoudnessUseCase); the code-quality skill lists all 12. Existing
+    debt is not a licence - do not add new framework imports.
   - ui/ reaches game/platform/collection data through repositories, never
     GameDao/PlatformDao/CollectionDao directly (aspirational with a known
     violator list in the code-quality skill; do not add new ones).
@@ -21,8 +22,11 @@ where it becomes a violation again.
   ~300 then extract services; routers split method routing (see
   GameDetailViewModel + delegates/, SaveSyncRepository + services).
 - Compose stability contract: app/compose_stability_config.conf declares
-  data.model/entity and ui packages stable. val-only state in covered
-  packages; violations silently skip recomposition. Non-negotiable.
+  data.model.**, data.local.entity.**, ui.screens.**, ui.components.** and
+  ui.dualscreen.** stable - those five, not all of ui/. ui.primitives is NOT
+  covered despite holding FocusIndicators, InputGlyph and ConfirmModal.
+  val-only state in covered packages; violations silently skip recomposition.
+  Non-negotiable.
 - Settings chain: DataStore key -> domain prefs repo -> UserPreferences
   aggregation -> SettingsModels state -> SettingsInitRouter hydrate -> owning
   delegate/router (gamepad A-press routes via SettingsConfirmRouter, not the
@@ -95,9 +99,11 @@ folder resolution); "tidying" them breaks resolution.
 
 ## Structural index (start here, don't crawl)
 
-- Platform/emulator registries: Glob **/*Registry*.kt (13 today; the
-  platform-support skill lists roles). Core three: PlatformDefinitions,
-  EmulatorRegistry, LibretroCoreRegistry.
+- Platform/emulator registries: Glob app/src/main/**/*Registry*.kt (14 today;
+  the platform-support skill lists roles). Always scope to app/src/main - an
+  unscoped glob picks up worktrees and build output. Core three:
+  PlatformDefinitions, EmulatorRegistry, LibretroCoreRegistry - PlatformDefinitions
+  does NOT match the glob, so finding 14 is not finding everything.
 - Two resolvers that MUST agree: EmulatorResolver.getEmulatorPackageForGame
   and GameLauncher.resolveEmulator.
 - Sync engines: SyncCoordinator (negotiate/reconcile), SaveSyncOrchestrator
@@ -105,8 +111,11 @@ folder resolution); "tidying" them breaks resolution.
 - Save id -> on-disk path, per platform: docs/save-id-to-path.md. Read it
   before touching a save handler; the id-to-path rules are upstream-exact and
   a changed archive shape invalidates every save already on a server.
-- Input: InputDispatcher + per-screen InputHandler; index wrap via .mod();
-  no Compose focus anywhere.
+- Input: InputDispatcher + per-screen InputHandler; index wrap via .mod().
+  No Compose focus for navigation or selection - focusable() appears nowhere
+  and must not. The legitimate exception is FocusRequester for soft-keyboard
+  text entry and the root key sink in ArgosyApp; it becomes a violation the
+  moment focus decides what is selected rather than what is typed into.
 - Tokens: design-system-docs/tokens.json -> scripts/gen-tokens.mjs ->
   ui/theme/generated/*.
 - File access: FileAccessLayer + Manage Storage permission. SAF is

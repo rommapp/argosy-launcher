@@ -26,7 +26,10 @@ All interactive UI components MUST have:
 - Visual focus state via `isFocused: Boolean` prop
 
 **Focus Management:**
-- NO Compose focus system (`focusable()`, `FocusRequester`)
+- NO Compose focus for navigation or selection. `focusable()` appears nowhere in the
+  tree and must not. The legitimate exception is `FocusRequester` for soft-keyboard
+  text entry (~20 `ui/` files) and the root key sink in `ArgosyApp`; it becomes a
+  violation the moment focus decides what is SELECTED rather than what is TYPED INTO.
 - Focus index stored in ViewModel
 - Manual focus visuals via `FocusIndicators` (`ui/primitives/Focus.kt`): fill/halo/stripe/ring/lift;
   never movement or scale except lift, which is reserved for cover tiles
@@ -144,6 +147,10 @@ the UI goes stale. Rules for ALL new/edited code in covered packages:
   or params.
 - A class that genuinely needs mutable fields must live OUTSIDE the covered packages,
   or get an explicit exclusion note in the conf.
+- `ui.primitives` is NOT covered, despite hosting `FocusIndicators`, `InputGlyph` and
+  `ConfirmModal`. The compiler still infers stability there, so the val-only promise is
+  not load-bearing for those files - but do not read that as licence to put mutable
+  state in a primitive.
 - If the conf file is absent on the current branch, these rules are still the house
   style; they just aren't load-bearing yet.
 
@@ -256,7 +263,9 @@ The `clickableNoFocus` extension (defined in `ui/util/Modifiers.kt`) disables Co
 **Focus Management:**
 - Use `isFocused: Boolean` prop for visual focus state
 - Manage focus index in ViewModel, not Compose focus system
-- Never use `Modifier.focusable()` or `FocusRequester`
+- Never use `Modifier.focusable()` - it appears nowhere in the tree
+- `FocusRequester` is allowed ONLY for soft-keyboard text entry and the root key
+  sink in `ArgosyApp`. Using it to move selection between rows is the violation
 
 **Material3 Components with Built-in Focus:**
 
@@ -316,7 +325,16 @@ class MyInputHandler : InputHandler {
 - Use `navigateBack()` with proper parent section restoration
 
 ### Preferences
-- New prefs: Add enum, key, default, getter/setter in `UserPreferencesRepository`
+- New prefs do NOT go in `UserPreferencesRepository`. That file holds ZERO DataStore
+  keys - it is a pure aggregator that combines seven domain repos
+  (`displayPrefs`, `syncPrefs`, `controlsPrefs`, `storagePrefs`, `appPrefs`,
+  `builtinPrefs`, `sessionPrefs`) into one `UserPreferences` flow.
+- The chain is: DataStore key + default + getter/setter in the OWNING domain repo
+  under `data/preferences/` (e.g. `DisplayPreferencesRepository`,
+  `BuiltinEmulatorPreferencesRepository`) -> its own `Preferences` data class ->
+  the `UserPreferences` aggregation -> settings state -> consumption site.
+  Mirror the sibling key naming in the repo you are adding to; prefixes differ
+  between repos.
 - Use `companion object { fun fromString() }` pattern for enum persistence
 - Keep display names in UI layer, not data layer
 
@@ -390,7 +408,11 @@ UI (ui/) --> Domain (domain/) --> Data (data/)
 - `domain/usecase/state/RestoreCachedStatesUseCase.kt` (`android.util.Log`)
 - `domain/usecase/state/SyncStatesOnSessionEndUseCase.kt` (`android.util.Log`)
 
-**Known debt: ui/ direct DAO imports** (do not extend this list):
+**Known debt: ui/ direct DAO use** (do not extend this list). It was built by
+import-grep, so it under-reports: a fully-qualified type in a constructor
+parameter or a reach through another ViewModel's public DAO field never shows up
+in an import search. Before saying "this is not on the list", grep for `Dao` in
+the file, not just the import block.
 - `ui/screens/settings/SettingsViewModel.kt` (`SaveCacheDao`)
 - `ui/screens/settings/delegates/BiosSettingsDelegate.kt` (`FirmwareDao`)
 - `ui/screens/savesync/SaveSyncViewModel.kt` (`GameDao`, `PendingConflictDao`, `SaveSyncDao`)
@@ -399,6 +421,9 @@ UI (ui/) --> Domain (domain/) --> Data (data/)
 - `ui/screens/gamedetail/delegates/PerGameSettingsDelegate.kt` (`EmulatorConfigDao`)
 - `ui/screens/gamedetail/delegates/SaveManagementDelegate.kt` (`EmulatorSaveConfigDao`, `SaveSyncDao`)
 - `ui/dualscreen/gamedetail/DualGameDetailViewModel.kt` (`EmulatorConfigDao`)
+- `ui/ArgosyViewModel.kt` (`PendingConflictDao`, fully-qualified constructor param)
+- `ui/screens/gamedetail/delegates/DownloadDelegate.kt` (`GameFileDao`, fully-qualified constructor param)
+- `ui/screens/settings/SettingsInitRouter.kt` (`vm.saveCacheDao.countNeedingRemoteSync()`, reached through SettingsViewModel)
 
 ### Repository Pattern (NON-NEGOTIABLE)
 

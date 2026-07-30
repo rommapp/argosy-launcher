@@ -10,7 +10,7 @@ Everything below is the mapping from `save_id` to a path *below a base
 directory*. The base itself comes from `SavePathRegistry` defaults or a user
 override; see `FolderSaveHandler.resolveBasePath`.
 
-## The four usages
+## The five usages
 
 `usage` is the contract between sigil and the handler, and getting it wrong
 silently mismatches saves rather than failing loudly.
@@ -52,7 +52,7 @@ lands on the same two segments whether or not the separator is present, so a
 row cached before the split arrived resolves identically to a fresh one.
 
 A `save_id` shorter than 16 characters has no category in it, and the handler
-falls back to `00040000` — correct for retail applications, a guess for
+falls back to `00040000` - correct for retail applications, a guess for
 anything else.
 
 The save unit is the `data` directory, so an archive's root entry is `data`
@@ -90,7 +90,7 @@ Nothing fabricates an entry name. If a game has no folder on the card yet, a
 restore lands in the card and the archive's own entry names create it.
 
 Because the save unit is the card, an upload is rooted at the card's own name,
-which identifies nothing — the game's folder is one level below it. Archives
+which identifies nothing - the game's folder is one level below it. Archives
 written before the save unit became the card are rooted at that folder
 directly, and both shapes are on servers. `Ps2FolderHandler.matchArchive`
 therefore looks at folder names at any depth, and `unpackArchive` strips the
@@ -153,7 +153,7 @@ sits beside the ROM.
 ## Why this matters when changing anything
 
 An archive is accepted for a save only if its root entry matches the id under
-one of the tiers in `FolderSaveHandler.matchArchiveRoot` — exact, prefix,
+one of the tiers in `FolderSaveHandler.matchArchiveRoot` - exact, prefix,
 contains, or the per-platform unidentified root. Changing what a handler
 zips changes what every previously uploaded archive matches against, so it is
 not a local change: existing server-side saves were written under the old

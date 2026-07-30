@@ -43,8 +43,8 @@ One control, two access paths (V2).
 **Visual (V2):** small FILLED triangles `< value >` that rhyme with the d-pad glyphs, never
 text chevrons. Tint accent on focus; pressed direction flashes.
 
-**Wrap Configuration:**
-- `wrapAround: Boolean = true` - Controls D-pad wrap behavior
+**Wrap Configuration:** `CyclePreference` takes no wrap parameter. Wrap is decided by the
+section's own input handler when it cycles the value.
 
 **Shipped:** `CyclePreference` (`ui/components/PreferenceItem.kt`) renders
 `EnumValueControl` (`ui/primitives/Controls.kt`) inline and opens `EnumPickerModal`
@@ -91,7 +91,9 @@ val isWideDisplay = aspectRatioClass == AspectRatioClass.ULTRA_WIDE ||
                     aspectRatioClass == AspectRatioClass.WIDE
 ```
 
-**Examples:** LED brightness, vibration strength (in Quick Settings)
+**Examples:** LED brightness. `AmbientLedSection` is the only user of
+`TrackSliderPreference`; the Quick Settings vibration row is a local
+`VibrationStrengthSlider` in `ui/components/QuickSettingsPanel.kt`, not this component.
 
 ---
 
@@ -136,7 +138,12 @@ Read-only display values.
 
 | Input | Behavior |
 |-------|----------|
-| All inputs | Not focusable / no interaction |
+| All inputs | No click/confirm handling |
+
+`InfoPreference` takes `isFocused: Boolean` and renders a focused state. Focusability is
+decided by the sealed item's `isFocusable`, not by the component, and Info rows are commonly
+focusable - see `SteamItem.GnStatus`, `InstallTriage` and `AccountInfo` in
+`ui/screens/settings/sections/SteamSection.kt`.
 
 **Examples:** Version number, stats, storage usage
 
@@ -170,11 +177,12 @@ Collapsible groups with child items.
 
 ### Two-Layer System
 
-**Layer 1: Item Visibility (`visibleWhen`)**
+**Layer 1: Item Visibility (`visibleWhen`)** - real example from
+`ui/components/QuickSettingsPanel.kt`:
 ```kotlin
-data object VibrationStrength : ControlsItem(
-    key = "vibration",
-    visibleWhen = { it.hapticEnabled && it.vibrationSupported }
+data object VibrationStrength : QuickSettingsItem(
+    "vibrationStrength", "audioVisual",
+    visibleWhen = { it.vibrationSupported && it.hapticEnabled }
 )
 ```
 
@@ -239,6 +247,13 @@ private val sectionLayout = SettingsLayout<SectionItem, SectionState>(
 )
 ```
 
+### Render Shell
+`SectionPaneLayout` (`ui/screens/settings/components/SectionPaneLayout.kt`) is the shell
+26 section files render into. It owns `SectionFocusedScroll` and switches between a
+split-pane layout (wide displays with 2+ named sections: nav rail on the left, content on
+the right) and a plain sticky-header LazyColumn. A new section renders through it rather
+than building its own LazyColumn.
+
 ### Focus Check Pattern
 ```kotlin
 fun isFocused(item: SectionItem): Boolean =
@@ -254,7 +269,7 @@ override fun onLeft(): InputResult {
             return InputResult.HANDLED
         }
         is SectionItem.Enum1 -> {
-            viewModel.cycleEnum1(direction = -1, wrap = item.wrapAround)
+            viewModel.cycleEnum1(direction = -1)
             return InputResult.HANDLED
         }
         else -> return InputResult.UNHANDLED
@@ -301,7 +316,8 @@ The footer automatically shows the correct icon based on controller type and use
 
 ### Width-Based Filtering (filterHintsByWidth)
 There is no per-aspect-ratio hint cap. `FooterBar` runs every hint list through
-`filterHintsByWidth` (`ui/components/FooterHint.kt`):
+`filterHintsByWidth` (`ui/components/FooterHint.kt`), which is `private` to that file -
+you cannot call it, you only get its behavior by rendering a footer bar:
 - Estimates each hint's width (icon 22dp, 44dp for composite LB_RB/LT_RT, plus
   ~7dp per label character) against `screenWidthDp` minus padding.
 - If everything fits, shows everything.
@@ -367,6 +383,13 @@ val hints = buildList {
 - `SettingsConfirmRouter` (`ui/screens/settings/SettingsConfirmRouter.kt`) routes
   `onConfirm` per section via file-level `routeConfirm(vm)` + per-section
   `route*Confirm` functions -- trace it before wiring a new confirmable row.
+- `SettingsGeneralRouter` (`ui/screens/settings/SettingsGeneralRouter.kt`) owns section
+  navigation (`routeNavigateToSection` and the `routeNavigateTo*` family) and the LEFT/RIGHT
+  adjust routes, including the `HapticPattern.BOUNDARY_HIT` fired when a value is already
+  clamped.
+- `LightSectionsInput` (`ui/screens/settings/sections/input/LightSectionsInput.kt`) is the
+  shared handler `SettingsInputHandler` installs for 14 sections. A section that only needs
+  standard up/down/confirm needs NO new handler file - add it to that list instead.
 - `ModalScaffold` is visuals only; pair it with one of the capture mechanisms from the
   code-quality skill (modal input capture rules).
 
@@ -473,6 +496,7 @@ val sections: List<ListSection> = layout.buildSections(state)
 ### ListSection Structure
 ```kotlin
 data class ListSection(
+    val name: String? = null,
     val listStartIndex: Int,
     val listEndIndex: Int,
     val focusStartIndex: Int,
@@ -480,23 +504,33 @@ data class ListSection(
 )
 ```
 
+`name` is populated by `SettingsLayout.buildSections` from `sectionTitle(sectionName)`; a null
+name means the section renders no nav entry in the split-pane layout.
+
 ### Section Jump Implementation
+
+The idiom is to hand the section list to the ViewModel and let it move focus. Do not
+hand-roll the search:
 ```kotlin
-override fun onNextSection(): InputResult {  // RB
-    val sections = layout.buildSections(state)
-    val currentFocus = state.focusedIndex
-
-    val nextSection = sections.firstOrNull {
-        it.focusStartIndex > currentFocus
+override fun onPrevSection(): InputResult {  // LB
+    if (viewModel.jumpToPrevSection(themeSections())) {
+        return InputResult.HANDLED
     }
+    return InputResult.UNHANDLED
+}
 
-    if (nextSection != null) {
-        viewModel.setFocusIndex(nextSection.focusStartIndex)
+override fun onNextSection(): InputResult {  // RB
+    if (viewModel.jumpToNextSection(themeSections())) {
         return InputResult.HANDLED
     }
     return InputResult.UNHANDLED
 }
 ```
+
+Followed by `ThemeSectionInput`, `StorageSectionInput` and `AmbientLedSectionInput` in
+`ui/screens/settings/sections/input/`. `EmulatorsSectionInput` still hand-rolls the scan
+because it builds its layout info from live platform state; it is the exception, not the
+model to copy.
 
 ### Context-Specific Section Actions
 LB/RB may be repurposed per screen:
@@ -522,24 +556,31 @@ SectionFocusedScroll(
 )
 ```
 
-### Top-Level Section Jumping (LB/RB Fallback)
+### Top-Level Rows (there is no LB/RB fallback)
 
-When a section handler's `onPrevSection`/`onNextSection` returns UNHANDLED (at sub-section boundaries or sections without sub-headers), the fallback in `SettingsInputHandler` jumps between top-level settings sections.
+LB/RB is per-section only. When a section handler's `onPrevSection`/`onNextSection` returns
+UNHANDLED, `SettingsInputHandler` swallows it - its fallbacks return a bare
+`InputResult.HANDLED` and nothing jumps. There is no `TOP_LEVEL_SECTIONS` constant; the
+companion object holds only `SLIDER_STEP`, `FONT_SCALE_STEP` and `HUE_STEP`.
 
-**Top-level section order** (`SettingsInputHandler.TOP_LEVEL_SECTIONS`):
+The top level is a list of rows, `MainSettingsItem.ALL` in
+`ui/screens/settings/sections/MainSettingsSection.kt`, grouped under headers:
+
 ```
-PLATFORMS -> BUILTIN_EMULATOR -> STORAGE -> THEME -> INTERFACE ->
-CONTROLS -> SERVER -> BIOS -> RETRO_ACHIEVEMENTS -> SOCIAL ->
-PERMISSIONS -> ABOUT
+LAUNCHER     Theme, Interface, Navigation, Audio, Displays
+GAMEPLAY     BuiltinEmulator, Saves, RetroAchievements, Bios, Drivers
+LIBRARY      Platforms, Storage
+CONNECTIONS  RomM, Steam, Social
+SYSTEM       Permissions, DeviceSettings, About
 ```
 
-There is no `EMULATORS` section; emulator config lives under `PLATFORMS` /
-`BUILTIN_EMULATOR`. Theme sub-sections (`THEME_SOUNDS`, `THEME_MUSIC`, `THEME_FONTS`,
-`THEME_BACKDROP`) exist in `SettingsSection` but are not top-level.
+Navigating INTO one of those rows goes through `routeNavigateToSection`, which resets focus
+to 0 and preserves `parentFocusIndex`.
 
-- Clamps at boundaries (does not wrap)
-- Calls `navigateToSection()` which resets focus to 0 and preserves `parentFocusIndex`
-- Sub-sections (BOX_ART, HOME_SCREEN, BUILTIN_VIDEO, etc.) do not participate
+There is no `EMULATORS` section; emulator config lives under `PLATFORMS` (which binds to
+`EmulatorsSectionInput`) and `BUILTIN_EMULATOR`. Theme sub-sections exist in
+`SettingsSection`, but `THEME_SOUNDS` and `THEME_MUSIC` now back out to `AUDIO`, not
+`THEME` - check `SettingsConfirmRouter`'s back routing before assuming a parent.
 
 ---
 
@@ -575,9 +616,12 @@ Modifier.clickableNoFocus(enabled = isEnabled) { onItemClick() }
 | `ui/primitives/ModalScaffold.kt` | V2 modal shell (visuals only) |
 | `ui/primitives/Focus.kt` | FocusIndicators presets, argosyFocusIndicators |
 | `ui/screens/settings/menu/SettingsLayout.kt` | Layout manager |
-| `ui/screens/settings/SettingsInputHandler.kt` | Input routing patterns, TOP_LEVEL_SECTIONS |
+| `ui/screens/settings/components/SectionPaneLayout.kt` | Section render shell (split-pane / sticky-header list) |
+| `ui/screens/settings/SettingsInputHandler.kt` | Per-section handler map, dispatch, fallbacks |
+| `ui/screens/settings/sections/input/LightSectionsInput.kt` | Shared handler for 14 plain sections |
 | `ui/screens/settings/ModalInputRouter.kt` | Modal-first input routing |
 | `ui/screens/settings/SettingsConfirmRouter.kt` | Per-section confirm routing |
+| `ui/screens/settings/SettingsGeneralRouter.kt` | Section navigation, LEFT/RIGHT adjust, boundary haptics |
 | `ui/screens/settings/SettingsModels.kt` | State data classes, SettingsSection enum |
 | `ui/screens/settings/sections/*.kt` | Section examples |
 | `ui/input/HapticFeedback.kt` | HapticPattern enum |

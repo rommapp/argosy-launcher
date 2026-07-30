@@ -92,6 +92,14 @@ Check these files:
 
 A new platform or core can also touch the other registries (BiosPathRegistry, SavePathRegistry, StatePathRegistry, CoreOptionManifestRegistry, CoreControlManifestRegistry, TouchLayoutRegistry, ShaderRegistry, FrameRegistry, PlatformWeightRegistry, PlatformSaveHandlerRegistry). Enumerate them with Glob `**/*Registry*.kt` and check each for relevance - the two-file model above is the minimum, not the whole checklist.
 
+#### The two resolvers must agree
+
+`EmulatorResolver.getEmulatorPackageForGame` and `GameLauncher.resolveEmulator` independently answer "which emulator runs this game". They MUST stay in step: the first decides where saves are read and written, the second decides what actually launches. Divergence means restores land in a directory the running emulator never reads.
+
+Both currently walk the same precedence - game override, then platform default, then ad-hoc (an installed package unknown to the registry), then the detector's preferred emulator - with identical built-in gating (a built-in package is skipped when `builtinLibretroEnabled` is off or the core does not support the platform). Change one, change the other, in the same commit.
+
+One asymmetry is BY DESIGN and must not be "fixed": `EmulatorResolver` collapses family variants to their base id via `resolveEmulatorId` / `canonicalEmulatorId`, because the path registries key on exact ids, while `GameLauncher.resolveEmulator` returns the variant `EmulatorDef` because that is the package it has to start. The family fallback in the path registries is what makes the two views meet.
+
 ### Step 4: Report Discrepancies
 
 Format findings as:
@@ -141,6 +149,13 @@ Contains:
 - `getRetroArchCorePatterns()` - Core detection patterns
 - `platformCores` - Available cores with display names
 - `getRecommendedEmulators()` - Emulator recommendations per platform
+- The family/variant machinery: `EmulatorFamily(baseId, displayNamePrefix, packagePatterns, supportedPlatforms, ...)`, roughly two dozen family entries, `getEmulatorFamilies()`, `matchesFamily()`, `findFamilyForPackage()`, `variantSuffix()`, `createDefFromFamily()`
+
+#### Family variants (read before adding a nightly or fork package)
+
+A package matching a family's `packagePatterns` does not get its own registry entry. `createDefFromFamily` SYNTHESIZES an `EmulatorDef` whose id is `<baseId>_<packageName with dots replaced by underscores>` (e.g. `citra_io_github_lime3ds_android`).
+
+That id shape is load-bearing outside EmulatorRegistry. Both save-path registries carry explicit recovery for it - `familyBaseIdFor` / `familyFallbackConfig` in `SavePathRegistry.kt` and `familyFallbackConfig` in `StatePathRegistry.kt` - which strip the `<baseId>_` prefix (longest matching baseId wins) so a fork resolves the base emulator's save and state paths. Add a fork package under a family and it inherits those paths automatically; give it a hand-written id that does NOT start with `<baseId>_` and it silently falls through to no config, which is how saves land in the wrong directory.
 
 ### PlatformDefinitions.kt
 Location: `app/src/main/kotlin/com/nendo/argosy/data/platform/PlatformDefinitions.kt`
@@ -149,8 +164,9 @@ Contains:
 - `PlatformDef` entries with extensions
 - `slugAliases` for platform name normalization
 - Display names and sort order
-- Local platforms (`localPlatformIdMap`: android, steam, ios) - non-ROM platforms with fixed local IDs; local and RomM android are unified onto one platform
-- `manyToOneSlugs` + `resolveImportSlug` - fs_slug-based re-slugging (arcade split)
+- Local platforms (`localPlatformIdMap`: android, steam, ios) - fixed negative local IDs; local and RomM android are unified onto one platform
+- `LocalPlatformIds` declares SIX constants (ANDROID, STEAM, IOS, GOG, EPIC, AMAZON) but `localPlatformIdMap` maps only three. GOG, EPIC and AMAZON resolve to null through `getLocalPlatformId` and false through `isLocalPlatform`, and `getLocalPlatformEntities` never emits them. Adding a store front means adding the map entry AND a `PlatformDef`, not just the id constant.
+- `manyToOneSlugs` + `resolveImportSlug` - fs_slug-based re-slugging (arcade split). `resolveImportSlug` also carries a name-based case: a `pico` import whose name matches `pico8NamePattern` re-slugs to `pico8`, keeping Sega Pico and PICO-8 apart.
 
 ---
 
@@ -162,7 +178,8 @@ Known traps:
 - **C128**: `c128` is a defined platform with NO core routing anywhere in the tree. There is no `vice_x128` core id in this codebase (a fabricated one previously lived in this skill). Confirm the exact upstream core id before wiring any C128 routing.
 - **Arcade is split**: RomM `arcade` re-slugs by fs_slug via `manyToOneSlugs` + `resolveImportSlug` in `PlatformDefinitions.kt`; `fbneo` and `mame` are distinct platforms. Defaults in `EmulatorRegistry.kt`: arcade/fbneo/neogeo/cps1-3 -> `fbneo`, mame -> `mame2003_plus`.
 - **Arcade ROMs stay zipped** - DO NOT EXTRACT (romset zips are the loadable unit).
-- **Local platforms**: android, steam, ios are launcher-local (no ROM extensions, fixed IDs via `localPlatformIdMap`); do not treat them as emulated platforms.
+- **Local platforms**: android, steam, ios are launcher-local with fixed negative IDs via `localPlatformIdMap`; do not treat them as emulated platforms. They are not uniformly extension-free: `android` carries `setOf("apk", "xapk")`, while `steam` and `ios` are `emptySet()`. Do not "clean up" the android extensions.
+- **`vice_x64sc` has two different display names on purpose**: `RetroArchCore("vice_x64sc", "VICE x64 (Accurate)")` in the user-facing core list, and `"vice_x64sc" to "VICE x64sc"` in the map used for on-disk RetroArch folder resolution. The second is upstream-exact and must match RetroArch's own display name; renaming it to match the first breaks path resolution. This is the exception to the "fix the display name" instruction above - check which map you are editing.
 
 ---
 

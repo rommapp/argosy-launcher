@@ -40,6 +40,104 @@ sealed class PlayOptionAction {
     data object ResumeHardcore : PlayOptionAction()
 }
 
+/** The grouped sections play options are laid out under, with their display headers. */
+enum class PlayOptionSection(val label: String) {
+    Continue("CONTINUE"),
+    NewGame("NEW GAME")
+}
+
+/**
+ * A single play-options row: the action it fires plus everything needed to render it. The ordered
+ * list from [buildPlayOptions] is the single source of truth for row order, visibility, and focus
+ * index -- both [PlayOptionsModal] (rendering) and PlayOptionsDelegate (focus/confirm) walk it, so
+ * the two cannot drift out of lock-step.
+ */
+data class PlayOptionItem(
+    val action: PlayOptionAction,
+    val section: PlayOptionSection,
+    val icon: ImageVector,
+    val label: String,
+    val subtext: String? = null,
+    val iconTint: Color? = null,
+    val isEnabled: Boolean = true
+)
+
+/**
+ * Builds the visible play options in display order. Visibility conditions live here only; callers
+ * must not re-derive them. [canSkipSync] gates the "play without syncing" row; [hardcoreAvailable]
+ * is the already-resolved answer to whether hardcore applies at all. The Continue "Hardcore" row
+ * loads the latest hardcore save if present, else continues the active casual save in a hardcore
+ * session.
+ */
+fun buildPlayOptions(
+    hasSaves: Boolean,
+    hasHardcoreSave: Boolean,
+    hasRASupport: Boolean,
+    hardcoreAvailable: Boolean,
+    isOnline: Boolean,
+    canSkipSync: Boolean
+): List<PlayOptionItem> = buildList {
+    val showHardcoreOptions = hardcoreAvailable
+    val hasContinueSection = hasSaves || hasHardcoreSave
+
+    if (hasSaves) {
+        add(
+            PlayOptionItem(
+                action = PlayOptionAction.Resume,
+                section = PlayOptionSection.Continue,
+                icon = Icons.Default.PlayArrow,
+                label = "Latest"
+            )
+        )
+    }
+    if (hasSaves && canSkipSync) {
+        add(
+            PlayOptionItem(
+                action = PlayOptionAction.ResumeNoSync,
+                section = PlayOptionSection.Continue,
+                icon = Icons.Default.PlayArrow,
+                label = "Play without syncing",
+                subtext = "Skip the pre-launch save sync check"
+            )
+        )
+    }
+    if (hasContinueSection && showHardcoreOptions) {
+        add(
+            PlayOptionItem(
+                action = PlayOptionAction.ResumeHardcore,
+                section = PlayOptionSection.Continue,
+                icon = Icons.Default.EmojiEvents,
+                label = "Hardcore",
+                subtext = if (hasHardcoreSave) null else "Continue this save in hardcore",
+                iconTint = ALauncherColors.StarGold
+            )
+        )
+    }
+
+    add(
+        PlayOptionItem(
+            action = PlayOptionAction.NewCasual,
+            section = PlayOptionSection.NewGame,
+            icon = Icons.Default.SportsEsports,
+            label = "Casual",
+            subtext = if (hasRASupport) "Save states and cheats available" else null
+        )
+    )
+    if (showHardcoreOptions) {
+        add(
+            PlayOptionItem(
+                action = PlayOptionAction.NewHardcore,
+                section = PlayOptionSection.NewGame,
+                icon = Icons.Default.EmojiEvents,
+                label = "Hardcore",
+                subtext = if (isOnline) "Online-only, no save states or cheats" else "Requires internet connection",
+                iconTint = if (isOnline) ALauncherColors.StarGold else null,
+                isEnabled = isOnline
+            )
+        )
+    }
+}
+
 @Composable
 fun PlayOptionsModal(
     focusIndex: Int,
@@ -52,74 +150,32 @@ fun PlayOptionsModal(
     onAction: (PlayOptionAction) -> Unit,
     onDismiss: () -> Unit
 ) {
-    var currentIndex = 0
-    val showHardcoreOptions = hardcoreAvailable
+    val items = buildPlayOptions(
+        hasSaves = hasSaves,
+        hasHardcoreSave = hasHardcoreSave,
+        hasRASupport = hasRASupport,
+        hardcoreAvailable = hardcoreAvailable,
+        isOnline = isOnline,
+        canSkipSync = canSkipSync
+    )
 
     Modal(title = "START GAME", onDismiss = onDismiss) {
-        val hasContinueSection = hasSaves || hasHardcoreSave
-
-        if (hasContinueSection) {
-            SectionLabel("CONTINUE")
-            Spacer(Modifier.height(Dimens.spacingXs))
-
-            if (hasSaves) {
-                val idx = currentIndex++
-                PlayOptionRow(
-                    icon = Icons.Default.PlayArrow,
-                    label = "Latest",
-                    isFocused = focusIndex == idx,
-                    onClick = { onAction(PlayOptionAction.Resume) }
-                )
+        var lastSection: PlayOptionSection? = null
+        items.forEachIndexed { index, item ->
+            if (item.section != lastSection) {
+                if (lastSection != null) Spacer(Modifier.height(Dimens.spacingMd))
+                SectionLabel(item.section.label)
+                Spacer(Modifier.height(Dimens.spacingXs))
+                lastSection = item.section
             }
-
-            if (hasSaves && canSkipSync) {
-                val idx = currentIndex++
-                PlayOptionRow(
-                    icon = Icons.Default.PlayArrow,
-                    label = "Play without syncing",
-                    subtext = "Skip the pre-launch save sync check",
-                    isFocused = focusIndex == idx,
-                    onClick = { onAction(PlayOptionAction.ResumeNoSync) }
-                )
-            }
-
-            if (showHardcoreOptions) {
-                val idx = currentIndex++
-                PlayOptionRow(
-                    icon = Icons.Default.EmojiEvents,
-                    iconTint = ALauncherColors.StarGold,
-                    label = "Hardcore",
-                    subtext = if (hasHardcoreSave) null else "Continue this save in hardcore",
-                    isFocused = focusIndex == idx,
-                    onClick = { onAction(PlayOptionAction.ResumeHardcore) }
-                )
-            }
-
-            Spacer(Modifier.height(Dimens.spacingMd))
-        }
-
-        SectionLabel("NEW GAME")
-        Spacer(Modifier.height(Dimens.spacingXs))
-
-        val casualIdx = currentIndex++
-        PlayOptionRow(
-            icon = Icons.Default.SportsEsports,
-            label = "Casual",
-            subtext = if (hasRASupport) "Save states and cheats available" else null,
-            isFocused = focusIndex == casualIdx,
-            onClick = { onAction(PlayOptionAction.NewCasual) }
-        )
-
-        if (showHardcoreOptions) {
-            val hardcoreIdx = currentIndex++
             PlayOptionRow(
-                icon = Icons.Default.EmojiEvents,
-                iconTint = if (isOnline) ALauncherColors.StarGold else null,
-                label = "Hardcore",
-                subtext = if (isOnline) "Online-only, no save states or cheats" else "Requires internet connection",
-                isFocused = focusIndex == hardcoreIdx,
-                isEnabled = isOnline,
-                onClick = { onAction(PlayOptionAction.NewHardcore) }
+                icon = item.icon,
+                iconTint = item.iconTint,
+                label = item.label,
+                subtext = item.subtext,
+                isFocused = focusIndex == index,
+                isEnabled = item.isEnabled,
+                onClick = { onAction(item.action) }
             )
         }
     }

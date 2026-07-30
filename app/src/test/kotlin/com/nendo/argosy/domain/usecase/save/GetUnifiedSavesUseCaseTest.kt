@@ -49,7 +49,12 @@ class GetUnifiedSavesUseCaseTest {
         saveCacheManager = mockk(relaxed = true)
         saveSyncRepository = mockk(relaxed = true)
         gameDao = mockk(relaxed = true)
-        useCase = GetUnifiedSavesUseCase(saveCacheManager, saveSyncRepository, gameDao)
+        useCase = GetUnifiedSavesUseCase(
+            saveCacheManager,
+            saveSyncRepository,
+            gameDao,
+            mockk(relaxed = true)
+        )
     }
 
     @Test

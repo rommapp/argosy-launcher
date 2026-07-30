@@ -537,7 +537,8 @@ class GameDetailViewModel @Inject constructor(
                     gameId,
                     emulatorId!!,
                     activeSaveChannel,
-                    activeSave?.cachedAt?.toEpochMilli()
+                    activeSave?.cachedAt?.toEpochMilli(),
+                    includeServer = com.nendo.argosy.util.NetworkUtils.isOnline(context)
                 )
             } else null
 
@@ -1350,7 +1351,8 @@ class GameDetailViewModel @Inject constructor(
                 ?: return@launch
             val fresh = saveManagement.loadSaveStatusInfo(
                 currentGameId, emulatorId, event.channelName,
-                event.timestamp ?: state.saveStatusInfo?.activeSaveTimestamp
+                event.timestamp ?: state.saveStatusInfo?.activeSaveTimestamp,
+                includeServer = com.nendo.argosy.util.NetworkUtils.isOnline(context)
             )
             if (fresh != null) {
                 _uiState.update { it.copy(saveStatusInfo = fresh) }

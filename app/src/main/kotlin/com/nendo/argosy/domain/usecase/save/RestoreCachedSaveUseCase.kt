@@ -69,7 +69,7 @@ class RestoreCachedSaveUseCase @Inject constructor(
             UnifiedSaveEntry.Source.SERVER -> {
                 val serverSaveId = entry.serverSaveId
                     ?: return Result.Error("No server save ID")
-                saveSyncRepository.downloadSaveById(
+                val downloaded = saveSyncRepository.downloadSaveById(
                     serverSaveId = serverSaveId,
                     targetPath = targetPath,
                     emulatorId = emulatorId,
@@ -77,6 +77,21 @@ class RestoreCachedSaveUseCase @Inject constructor(
                     gameId = gameId,
                     romPath = game.localPath
                 )
+                // Also persist a local cache entry (tagged with rommSaveId) so after the restore the
+                // unified view sees this save as BOTH rather than SERVER-only -- otherwise cache-only
+                // readers and the next active-save resolution misread it. downloadSaveById stays the
+                // live restore because it is layout-aware (GCI/Switch/folder); caching separately
+                // reuses the proven server-download cache path instead of duplicating that layout logic.
+                // Opportunistic, not part of the restore contract: the save is already on disk, so a
+                // failed cache write only degrades the unified view back to server-only until the
+                // next sync. Log and carry on -- reporting Error here would tell the user a restore
+                // that succeeded had failed.
+                if (downloaded &&
+                    !saveSyncRepository.downloadAndCacheSave(serverSaveId, gameId, entry.channelName)
+                ) {
+                    Log.w(TAG, "Restored server save $serverSaveId but failed to cache it locally; unified view stays server-only until the next sync")
+                }
+                downloaded
             }
         }
 

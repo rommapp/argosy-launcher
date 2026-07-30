@@ -18,6 +18,8 @@
 #include <jni.h>
 
 #include <EGL/egl.h>
+#include <signal.h>
+#include <cerrno>
 
 #include <string>
 #include <utility>
@@ -567,8 +569,52 @@ void LibretroDroid::loadGameFromVirtualFiles(std::vector<VFSFile> virtualFiles) 
     afterGameLoad();
 }
 
+namespace {
+
+/**
+ * Restores this thread's alternate signal stack if a core entry point replaced it.
+ *
+ * PPSSPP installs its fault handler on a short-lived boot thread and records that thread's
+ * altstack, then on shutdown re-registers the recorded pointer onto whichever thread called it -
+ * ours. The pointer belongs to a thread that has already exited, so the runtime's next routine
+ * SIGSEGV (ART takes them for implicit null checks) cannot be delivered and the kernel kills the
+ * process outright, with no handler run and no tombstone written. Snapshotting around the call
+ * costs two syscalls and keeps a core's teardown from disarming signal delivery for the frontend.
+ */
+class ScopedSignalStackGuard {
+public:
+    ScopedSignalStackGuard() {
+        valid = sigaltstack(nullptr, &saved) == 0;
+    }
+
+    ~ScopedSignalStackGuard() {
+        if (!valid) return;
+        stack_t current {};
+        if (sigaltstack(nullptr, &current) != 0) return;
+        bool changed = current.ss_sp != saved.ss_sp ||
+            current.ss_size != saved.ss_size ||
+            current.ss_flags != saved.ss_flags;
+        if (!changed) return;
+        if (sigaltstack(&saved, nullptr) == 0) {
+            LOGE(
+                "GUARD core rewrote this thread's sigaltstack (ss_sp=%p size=%zu -> ss_sp=%p size=%zu); restored original",
+                saved.ss_sp, saved.ss_size, current.ss_sp, current.ss_size
+            );
+        } else {
+            LOGE("GUARD core rewrote this thread's sigaltstack and restore failed (errno=%d)", errno);
+        }
+    }
+
+private:
+    stack_t saved {};
+    bool valid = false;
+};
+
+}
+
 void LibretroDroid::destroy() {
     LOGD("Performing libretrodroid destroy");
+    ScopedSignalStackGuard signalStackGuard;
 
     auto contextDestroy = Environment::getInstance().getHwContextDestroy();
     if (contextDestroy != nullptr && video && video->isHWAccelerated()) {
@@ -1014,6 +1060,7 @@ uintptr_t LibretroDroid::handleGetCurrentFrameBuffer() {
 }
 
 void LibretroDroid::reset() {
+    ScopedSignalStackGuard signalStackGuard;
     core->retro_reset();
 }
 

@@ -440,7 +440,7 @@ class SaveSyncRepository @Inject constructor(
         forceOverwrite: Boolean
     ): ForceSyncResult = when (val result = apiClient.uploadSave(gameId, emulatorId, channelName, forceOverwrite)) {
         is SaveSyncResult.Success -> ForceSyncResult.Uploaded(result.rommSaveId)
-        is SaveSyncResult.Conflict -> ForceSyncResult.Error("Server changed during sync — try again")
+        is SaveSyncResult.Conflict -> ForceSyncResult.Error("Server changed during sync - try again")
         is SaveSyncResult.Error -> ForceSyncResult.Error(result.message)
         is SaveSyncResult.NeedsHardcoreResolution -> ForceSyncResult.Error("Hardcore save requires resolution")
         SaveSyncResult.NoSaveFound -> ForceSyncResult.Error("No local save to upload")

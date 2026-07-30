@@ -151,7 +151,7 @@ private fun String.asArchiveName(): String = replace('/', '_')
  * game commonly produces several siblings (`ULUS10064DATA00`, `ULUS10064SETTINGS`, ...), so the
  * "save unit" spans every prefix-matched folder under the parent.
  *
- * Mirrors the GameCube GCI handler's pattern — bundle all matches on upload, delete all matches
+ * Mirrors the GameCube GCI handler's pattern - bundle all matches on upload, delete all matches
  * on download before extracting back into the parent.
  */
 private class PspFolderHandler(

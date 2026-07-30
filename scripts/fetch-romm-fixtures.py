@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Fetches a curated set of games + platforms from RomM, downloads cover and
-# screenshot images locally, and emits a fixtures manifest. One-shot script —
+# screenshot images locally, and emits a fixtures manifest. One-shot script -
 # run again only when you want to refresh the dummy data.
 #
 # Outputs:
@@ -23,7 +23,7 @@ BASE_URL = "http://romm.nendo.xyz"
 PUBLIC = REPO / "vue-design" / "public" / "fixtures"
 MANIFEST = REPO / "vue-design" / "src" / "fixtures" / "romm-manifest.json"
 
-# (search_term, preferred_platform_slug). Order matters — first match wins.
+# (search_term, preferred_platform_slug). Order matters - first match wins.
 TARGETS = [
     ("Chrono Trigger",                   "snes"),
     ("Super Metroid",                    "snes"),
@@ -176,7 +176,7 @@ def main():
         if p.get("url_logo"):
             dest = PUBLIC / "logos" / f"{slug}.jpg"
             try:
-                # url_logo points to images.igdb.com — no auth needed for public CDN
+                # url_logo points to images.igdb.com - no auth needed for public CDN
                 urllib.request.urlretrieve(p["url_logo"], dest)
                 logo_local = f"/fixtures/logos/{slug}.jpg"
             except Exception as e:

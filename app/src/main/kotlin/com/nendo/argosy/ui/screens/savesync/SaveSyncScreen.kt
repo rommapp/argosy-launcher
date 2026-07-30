@@ -664,7 +664,7 @@ private fun ConflictSide(
         )
         Spacer(modifier = Modifier.width(Dimens.spacingXs))
         Text(
-            text = "$label — ${time?.let { formatRelativeTimeVerbose(it) } ?: "unknown"} ($device)",
+            text = "$label - ${time?.let { formatRelativeTimeVerbose(it) } ?: "unknown"} ($device)",
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurface
         )
@@ -818,9 +818,9 @@ private fun GameSaveRowCard(row: GameSaveRow, isFocused: Boolean) {
                     )
                 )
                 val deviceText = when {
-                    row.isLastSyncThisDevice -> "Last write — this device"
-                    row.lastSyncDeviceName != null -> "Last write — ${row.lastSyncDeviceName}"
-                    else -> "Last write — unknown device"
+                    row.isLastSyncThisDevice -> "Last write - this device"
+                    row.lastSyncDeviceName != null -> "Last write - ${row.lastSyncDeviceName}"
+                    else -> "Last write - unknown device"
                 }
                 val timeSuffix = saveTime?.let { " · ${formatRelativeTimeVerbose(it)}" } ?: ""
                 Text(

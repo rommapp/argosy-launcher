@@ -9,7 +9,7 @@ import androidx.room.PrimaryKey
  * One row per distinct accepted meeting (one per peer per local 12h window),
  * awaiting report to the server. Kept separate from the collapsed display ledger
  * so an offline run of several meetings with the same peer is transmitted in full
- * rather than collapsed to the latest — the server dedups per account. Holds
+ * rather than collapsed to the latest - the server dedups per account. Holds
  * exactly what report_quaypass_encounter needs: the received credential bundle,
  * the peer's attestation, our per-meeting nonce, and the frozen card. Drained and
  * deleted by QuayPassEncounterReporter.

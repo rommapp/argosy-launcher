@@ -69,7 +69,7 @@ fun EffectiveLaunchCommand.toIntent(context: Context): Intent {
             continue
         }
         if (uri.authority != ownFileProviderAuthority) {
-            Logger.warn(TAG, "Refusing URI grant to $packageName for foreign authority '${uri.authority}' — only $ownFileProviderAuthority can be granted")
+            Logger.warn(TAG, "Refusing URI grant to $packageName for foreign authority '${uri.authority}' - only $ownFileProviderAuthority can be granted")
             continue
         }
         try {

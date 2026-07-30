@@ -3,16 +3,11 @@ package com.nendo.argosy.data.emulator
 import com.nendo.argosy.data.platform.PlatformDefinitions
 
 /**
- * When an emulator-dependent setting applies.
+ * Whether an emulator-dependent setting applies. Platform settings and per-game overrides both
+ * ask here so their visibility cannot diverge; do not re-derive either predicate locally.
  *
- * Platform settings and per-game overrides describe the same choices at two scopes, and each used
- * to decide visibility for itself. The predicates drifted: a core row appeared for a platform with
- * one core but not for a game, and a memory card row appeared for any PS2 platform whether or not
- * a card existed. A setting offered in one place and withheld in the other reads as a bug in
- * whichever place the user looked second, so both scopes ask here instead.
- *
- * Whether a scope may override a setting at all is a separate question, and stays with the scope:
- * scanning files or removing them belongs to a platform and never to one game.
+ * Whether a scope may override a setting at all stays with the scope: scanning or removing files
+ * belongs to a platform, never to one game.
  */
 object EmulatorSettingScope {
 

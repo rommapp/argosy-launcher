@@ -528,7 +528,7 @@ class SaveArchiver @Inject constructor(
         } catch (e: java.util.zip.ZipException) {
             Logger.error(
                 TAG,
-                "[SaveSync] ARCHIVE | Corrupt zip — server copy is damaged | zip=${sourceZip.name}, target=${targetFolder.absolutePath}, ${e.message}",
+                "[SaveSync] ARCHIVE | Corrupt zip - server copy is damaged | zip=${sourceZip.name}, target=${targetFolder.absolutePath}, ${e.message}",
                 e
             )
             throw CorruptZipException("Source zip is damaged: ${e.message}", e)

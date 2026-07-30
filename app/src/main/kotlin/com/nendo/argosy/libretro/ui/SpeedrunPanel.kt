@@ -168,7 +168,7 @@ private fun SegmentRow(
         Text(
             text = when {
                 timeMs != null -> formatRunTime(timeMs)
-                isSkipped -> "—"
+                isSkipped -> "-"
                 else -> ""
             },
             fontSize = (13 * scale).sp,

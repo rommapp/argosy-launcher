@@ -162,7 +162,7 @@ class GameLauncher @Inject constructor(
             gameDao.updateLastPlayedFileId(game.id, null)
         }
 
-        // A specific variant was selected — launch its file instead of the primary.
+        // A specific variant was selected - launch its file instead of the primary.
         if (variantFileId != null) {
             val variantFile = gameFileDao.getById(variantFileId)
             if (variantFile != null) {

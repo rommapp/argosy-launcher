@@ -131,7 +131,7 @@ fun SpeedrunSplitsModal(
     FocusedScroll(listState = listState, focusedIndex = state.focusIndex)
 
     Modal(
-        title = if (editing != null) "${editing.name} — Segments" else "Speedrun Splits",
+        title = if (editing != null) "${editing.name} - Segments" else "Speedrun Splits",
         subtitle = if (editing == null) gameTitle else null,
         onDismiss = { delegate.dismiss() },
         footerHints = if (editing != null) {

@@ -150,7 +150,7 @@ class LibretroCoreManager @Inject constructor(
             val coreInfo = LibretroCoreRegistry.getCoreByFileName(fileName)
             val minSize = (coreInfo?.estimatedSizeBytes ?: 0L) / 4
             if (minSize > 0 && downloadedCore.length() < minSize) {
-                // Soft warning only — don't delete. Auto-delete used to brick offline launches
+                // Soft warning only - don't delete. Auto-delete used to brick offline launches
                 // when an estimated size was too generous. dlopen will surface a real failure if
                 // the .so is genuinely broken; size alone isn't enough to throw away a working core.
                 Log.w(TAG, "Core $fileName is ${downloadedCore.length()} bytes (estimated >=$minSize). " +

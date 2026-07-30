@@ -153,24 +153,14 @@ class RetroAchievementsRepository @Inject constructor(
         }
     }
 
-    // RA Connect tokens are long-lived but not eternal. RA can rotate them
-    // server-side (password change, manual revoke, IP-binding triggered).
-    // The client only learns about it when a request comes back HTTP 401 or
-    // Success=false with an "invalid"/"expired" error. Stateless auth on
-    // every endpoint means there is no other signal.
-    //
-    // When that happens, clear the stored creds so isLoggedIn() reflects
-    // RA's real state instead of locally stale prefs. Otherwise every
-    // subsequent call retries forever and the user sees nothing happening
-    // -- no logs, no UI surface, no obvious action to take.
+    /**
+     * Intentional no-op. Do not restore credential-clearing on auth-shaped errors: RA Connect
+     * returns "invalid"/"expired" for non-auth failures ("Invalid game ID", "Invalid hash"), so
+     * clearing wiped valid tokens mid-session. A rotted token is recoverable from Settings; a
+     * wiped valid one is not.
+     */
     @Suppress("UNUSED_PARAMETER")
     private suspend fun handleAuthFailure(httpCode: Int, errorBody: String?, context: String) {
-        // No-op. The previous implementation cleared stored credentials on any
-        // response whose error string contained "invalid"/"expired"/"credentials"
-        // — too broad: RA Connect routinely returns those words for non-auth
-        // errors ("Invalid game ID", "Invalid hash"), which silently wiped users'
-        // tokens mid-session and broke RA from that point until manual re-login.
-        // RA users can re-login from Settings if the token actually rots.
     }
 
     suspend fun resolveGameId(hash: String): Long? {

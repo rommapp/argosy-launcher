@@ -977,7 +977,7 @@ class SecondaryHomeActivity :
     private fun installSystemBarsWatchdog() {
         androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(window.decorView) { _, insets ->
             if (insets.isVisible(WindowInsetsCompat.Type.systemBars())) {
-                // Call hide() inline so it lands within the same insets dispatch — posting
+                // Call hide() inline so it lands within the same insets dispatch - posting
                 // delays the request until the next UI tick, by which point the controller
                 // may again think the bars belong on screen.
                 WindowInsetsControllerCompat(window, window.decorView)

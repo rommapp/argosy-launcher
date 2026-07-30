@@ -295,7 +295,7 @@ class SaveDownloader @Inject constructor(
             if (serverFingerprint.isNotEmpty()) {
                 val cachedCorrupt = saveSyncDao.getCorruptZipTimestamp(gameId, resolvedEmulatorId, channelName, ownerUserId)
                 if (cachedCorrupt == serverFingerprint) {
-                    Logger.warn(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | Skipping — server zip known corrupt at this timestamp; re-upload from device to recover | timestamp=$serverFingerprint")
+                    Logger.warn(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | Skipping - server zip known corrupt at this timestamp; re-upload from device to recover | timestamp=$serverFingerprint")
                     return@withContext SaveSyncResult.Error("Server zip is corrupt; re-upload to recover")
                 } else if (cachedCorrupt != null) {
                     Logger.debug(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | Server timestamp changed since corrupt-zip mark, retrying | wasCorruptAt=$cachedCorrupt, now=$serverFingerprint")
@@ -449,7 +449,7 @@ class SaveDownloader @Inject constructor(
                         // resumes normal flow. If the upload also fails, we fall
                         // through with the original error and the skip-cache prevents
                         // futile retries.
-                        Logger.warn(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | Server zip corrupt — auto-recovering by uploading local save | timestamp=$serverFingerprint")
+                        Logger.warn(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | Server zip corrupt - auto-recovering by uploading local save | timestamp=$serverFingerprint")
                         val recoveryResult = try {
                             saveUploader.get().uploadSave(
                                 gameId = gameId,
@@ -463,7 +463,7 @@ class SaveDownloader @Inject constructor(
                             SaveSyncResult.Error(e.message ?: "auto-recovery threw")
                         }
                         if (recoveryResult is SaveSyncResult.Success) {
-                            Logger.info(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | Auto-recovery succeeded — corrupt server zip overwritten with local copy")
+                            Logger.info(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | Auto-recovery succeeded - corrupt server zip overwritten with local copy")
                             saveSyncDao.clearCorruptZip(gameId, resolvedEmulatorId, channelName, ownerUserId)
                             return@withContext recoveryResult
                         } else {

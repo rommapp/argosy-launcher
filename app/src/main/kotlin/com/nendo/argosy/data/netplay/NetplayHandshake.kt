@@ -216,7 +216,7 @@ class NetplayHandshake(
                     }
                 }
         }
-        // Auto-cancel after grace period — by then the driver's drainIncoming takes over
+        // Auto-cancel after grace period - by then the driver's drainIncoming takes over
         args.scope.launch {
             delay(RTT_BURST_TIMEOUT)
             pingResponderJob.cancel()

@@ -12,7 +12,7 @@ import javax.inject.Singleton
  *
  * - [titleId]: canonical save-matching form expected by the platform.
  * - [fromBinary]: whether [titleId] was decoded from the file content
- *   (high-confidence — locks the game record so filename heuristics can't
+ *   (high-confidence - locks the game record so filename heuristics can't
  *   override) or fell back to a filename pattern (lower confidence).
  * - [rawSerial]: ID as it appears in the binary, before normalization. Useful
  *   for UI/logging and cross-referencing external databases.
@@ -39,7 +39,7 @@ data class TitleIdResult(
  *   - expose the legacy Kotlin API surface used by SavePathResolver,
  *     TitleIdDownloadObserver, and SaveDownloader, and
  *   - resolve the Switch prod.keys path (Android-specific filesystem
- *     discovery — sigil knows about ROMs, not about Android storage).
+ *     discovery - sigil knows about ROMs, not about Android storage).
  */
 @Singleton
 class TitleIdExtractor @Inject constructor(

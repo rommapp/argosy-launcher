@@ -261,7 +261,7 @@ class SaveSyncViewModelTest {
         handler.onLeft()
         advanceUntilIdle()
         assertEquals(AttentionAction.KEEP_LOCAL, vm.uiState.value.attentionAction)
-        // Clamped at the left edge — stays on KEEP_LOCAL
+        // Clamped at the left edge - stays on KEEP_LOCAL
         handler.onLeft()
         advanceUntilIdle()
         assertEquals(AttentionAction.KEEP_LOCAL, vm.uiState.value.attentionAction)

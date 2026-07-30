@@ -346,7 +346,7 @@ private fun buildRows(
         val controlRows = coreControls.map { def ->
             MenuRow.Core(def, coreBinds.find { it.coreInputRetropadId == def.retropadId })
         }
-        val headerTitle = coreName?.let { "Core Hotkeys — $it" } ?: "Core Hotkeys"
+        val headerTitle = coreName?.let { "Core Hotkeys - $it" } ?: "Core Hotkeys"
         add(MenuRow.Header(headerTitle, dimmed = controlRows.isEmpty()))
         if (controlRows.isEmpty()) {
             add(MenuRow.Placeholder("-- no settings available --"))

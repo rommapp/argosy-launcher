@@ -764,7 +764,7 @@ class MainActivity : ComponentActivity() {
     private fun installSystemBarsWatchdog() {
         androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(window.decorView) { _, insets ->
             if (insets.isVisible(WindowInsetsCompat.Type.systemBars())) {
-                // Hide inline rather than via View.post — posting delays the request to the
+                // Hide inline rather than via View.post - posting delays the request to the
                 // next UI tick, which is enough for the bars to stay drawn between insets
                 // dispatch and the post running.
                 WindowInsetsControllerCompat(window, window.decorView)

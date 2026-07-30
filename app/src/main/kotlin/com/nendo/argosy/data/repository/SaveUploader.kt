@@ -376,7 +376,7 @@ class SaveUploader @Inject constructor(
 
                 Logger.debug(TAG, "[SaveSync] UPLOAD gameId=$gameId | wrote lastUploadedHash=${serverSave.contentHash} (server-verified; localHash=$contentHash)")
                 if (serverSave.contentHash != null && serverSave.contentHash != contentHash) {
-                    Logger.warn(TAG, "[SaveSync] HASH-MISMATCH gameId=$gameId | localHash=$contentHash serverHash=${serverSave.contentHash} file=${uploadFile.name} size=${uploadFile.length()} — client zip-hash algorithm has drifted from server _compute_zip_hash")
+                    Logger.warn(TAG, "[SaveSync] HASH-MISMATCH gameId=$gameId | localHash=$contentHash serverHash=${serverSave.contentHash} file=${uploadFile.name} size=${uploadFile.length()} - client zip-hash algorithm has drifted from server _compute_zip_hash")
                 }
 
                 reconcileCacheRowsAfterUpload(

@@ -217,7 +217,18 @@ fun DownloadsScreen(
                 add(InputButton.B to "Back")
             }
 
-            FooterHints(hints = footerHints)
+            FooterHints(
+                hints = footerHints,
+                onHintClick = { button ->
+                    when (button) {
+                        InputButton.A -> { inputHandler.onConfirm() }
+                        InputButton.X -> { inputHandler.onContextMenu() }
+                        InputButton.Y -> { inputHandler.onSecondaryAction() }
+                        InputButton.B -> { inputHandler.onBack() }
+                        else -> Unit
+                    }
+                }
+            )
         }
 
         val failedItem = uiState.focusedItem

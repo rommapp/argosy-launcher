@@ -52,6 +52,7 @@ object Dimens {
 
     val headerHeight: Dp @Composable get() = DimensionTokens.Layout.headerHeight.dp * scale
     val headerHeightLg: Dp @Composable get() = DimensionTokens.Layout.headerHeightLg.dp * scale
+    val breadcrumbMaxWidth: Dp @Composable get() = DimensionTokens.Layout.breadcrumbMaxWidth.dp * scale
     val footerHeight: Dp @Composable get() = DimensionTokens.Layout.footerHeight.dp * scale
     val modalWidth: Dp @Composable get() = DimensionTokens.Layout.modalWidth.dp * scale
     val modalWidthLg: Dp @Composable get() = DimensionTokens.Layout.modalWidthLg.dp * scale

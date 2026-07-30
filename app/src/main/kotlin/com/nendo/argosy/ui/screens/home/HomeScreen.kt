@@ -105,6 +105,8 @@ import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
@@ -621,21 +623,35 @@ fun HomeScreen(
                 )
             }
 
-        val cardSize = rememberCarouselCardSize()
-        val cardWidth = cardSize.width
-        val cardHeight = cardSize.height
-        val focusScale = 1.8f
-        val railHeight = cardHeight * focusScale + 16.dp
+        var gameInfoHeight by remember { mutableStateOf(0.dp) }
+        val defaultHeaderHeight = Dimens.headerHeight
+        var headerBlockHeight by remember { mutableStateOf(defaultHeaderHeight) }
+        val localDensity = LocalDensity.current
 
-        Box(modifier = Modifier
+        BoxWithConstraints(modifier = Modifier
             .fillMaxSize()
             .then(swipeGestureModifier)
         ) {
-            Box(modifier = Modifier.align(Alignment.TopCenter)) {
+            val cardSize = rememberCarouselCardSize(
+                availableHeight = maxHeight - headerBlockHeight - gameInfoHeight -
+                    Dimens.footerHeight - Dimens.spacingLg - Dimens.spacingXl
+            )
+            val railHeight = cardSize.height * CAROUSEL_FOCUS_SCALE + Dimens.spacingMd
+            val isStackedHeader = maxWidth <= maxHeight
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .onSizeChanged { size ->
+                        val measured = with(localDensity) { size.height.toDp() }
+                        if (measured != headerBlockHeight) headerBlockHeight = measured
+                    }
+            ) {
                 HomeHeader(
                     uiState = uiState,
                     onPreviousRow = viewModel::previousRow,
                     onNextRow = viewModel::nextRow,
+                    onSelectRow = viewModel::selectRow,
+                    isStacked = isStackedHeader,
                     headerOffset = videoModeHeaderOffset
                 )
             }
@@ -683,6 +699,7 @@ fun HomeScreen(
                                 onItemTap = { index -> viewModel.handleItemTap(index, onGameSelect) },
                                 onItemLongPress = viewModel::handleItemLongPress,
                                 isVideoPreviewActive = uiState.isVideoPreviewActive,
+                                cardSize = cardSize,
                                 modifier = Modifier.align(Alignment.BottomStart)
                             )
                         }
@@ -729,12 +746,16 @@ fun HomeScreen(
             }
 
             val gameInfoWidth by animateFloatAsState(
-                targetValue = if (uiState.isVideoPreviewActive) 1f else 0.7f,
+                targetValue = 1f,
                 animationSpec = tween(500),
                 label = "gameInfoWidth"
             )
             val gameInfoTopPadding by animateDpAsState(
-                targetValue = if (uiState.isVideoPreviewActive) Dimens.spacingMd else Dimens.headerHeight,
+                targetValue = if (uiState.isVideoPreviewActive) {
+                    Dimens.spacingMd
+                } else {
+                    (headerBlockHeight - Dimens.spacingLg).coerceAtLeast(Dimens.spacingMd)
+                },
                 animationSpec = tween(500),
                 label = "gameInfoTopPadding"
             )
@@ -778,8 +799,12 @@ fun HomeScreen(
                 textColorOverride = if (videoTextColor != Color.Unspecified) videoTextColor else null,
                 modifier = Modifier
                     .fillMaxWidth(gameInfoWidth)
-                    .align(if (uiState.isVideoPreviewActive) Alignment.TopCenter else Alignment.TopEnd)
+                    .align(Alignment.TopCenter)
                     .padding(top = gameInfoTopPadding)
+                    .onSizeChanged { size ->
+                        val measured = with(localDensity) { size.height.toDp() }
+                        if (measured != gameInfoHeight) gameInfoHeight = measured
+                    }
             )
         }
         }
@@ -943,11 +968,35 @@ private fun HomeHeader(
     uiState: HomeUiState,
     onPreviousRow: () -> Unit,
     onNextRow: () -> Unit,
+    onSelectRow: (HomeRow) -> Unit,
+    isStacked: Boolean,
     headerOffset: androidx.compose.ui.unit.Dp = 0.dp
 ) {
-    val rows = uiState.availableRows
-    val currentIdx = rows.indexOf(uiState.currentRow).coerceAtLeast(0)
-    val navIconTint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+    if (isStacked) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(Dimens.spacingLg)
+                .offset(y = headerOffset),
+            verticalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End
+            ) {
+                SystemStatusBar()
+            }
+            PlatformBreadcrumb(
+                uiState = uiState,
+                onPreviousRow = onPreviousRow,
+                onNextRow = onNextRow,
+                onSelectRow = onSelectRow,
+                fillAvailableWidth = true,
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
+        return
+    }
 
     Row(
         modifier = Modifier
@@ -957,6 +1006,33 @@ private fun HomeHeader(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
+        PlatformBreadcrumb(
+            uiState = uiState,
+            onPreviousRow = onPreviousRow,
+            onNextRow = onNextRow,
+            onSelectRow = onSelectRow,
+            fillAvailableWidth = false,
+            modifier = Modifier.weight(1f)
+        )
+
+        SystemStatusBar()
+    }
+}
+
+@Composable
+private fun PlatformBreadcrumb(
+    uiState: HomeUiState,
+    onPreviousRow: () -> Unit,
+    onNextRow: () -> Unit,
+    onSelectRow: (HomeRow) -> Unit,
+    fillAvailableWidth: Boolean,
+    modifier: Modifier = Modifier
+) {
+    val rows = uiState.availableRows
+    val currentIdx = rows.indexOf(uiState.currentRow).coerceAtLeast(0)
+    val navIconTint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+
+    Row(modifier = modifier) {
         Row(
             modifier = Modifier.weight(1f),
             verticalAlignment = Alignment.CenterVertically,
@@ -1040,7 +1116,10 @@ private fun HomeHeader(
 
             Box(
                 modifier = Modifier
-                    .widthIn(max = 360.dp)
+                    .then(
+                        if (fillAvailableWidth) Modifier.weight(1f)
+                        else Modifier.widthIn(max = Dimens.breadcrumbMaxWidth)
+                    )
                     .background(
                         MaterialTheme.colorScheme.surface.copy(alpha = 0.6f),
                         RoundedCornerShape(Dimens.radiusMd)
@@ -1077,7 +1156,10 @@ private fun HomeHeader(
                             style = if (virtualIndex == virtualPosition) MaterialTheme.typography.titleMedium
                                     else MaterialTheme.typography.labelMedium,
                             color = if (virtualIndex == virtualPosition) MaterialTheme.colorScheme.primary
-                                    else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.35f)
+                                    else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.35f),
+                            modifier = Modifier
+                                .clickableNoFocus { onSelectRow(rows[realIndex]) }
+                                .padding(horizontal = Dimens.spacingXs)
                         )
                     }
                 }
@@ -1097,8 +1179,6 @@ private fun HomeHeader(
                 )
             }
         }
-
-        SystemStatusBar()
     }
 }
 
@@ -1233,26 +1313,31 @@ private fun GameInfo(
 }
 
 /**
- * Carousel card size. Wide screens stay width-driven (unchanged); square and
- * taller screens (1:1, 4:3) size off the larger vertical dimension so the
- * boxart does not shrink into the ample space those aspect ratios leave.
+ * Carousel card size, driven by the height actually left over after the header, the game info
+ * block and the footer, so the focused card at [CAROUSEL_FOCUS_SCALE] fills that space exactly
+ * instead of overrunning the platform carousel on extended-widescreen or collapsing to a thin
+ * strip when the window is tall. [CAROUSEL_MAX_WIDTH_FRACTION] keeps one card from dominating the
+ * row on very tall windows, where height alone would size it wider than the screen.
+ *
+ * Callers must subtract a gap of their own for the focused card to grow into: the card scales from
+ * its bottom edge, so without one the only clearance above it is what [CAROUSEL_CARD_SCALE] happens
+ * to leave over, which at square ratios is a few dp and overlaps the game info.
  */
 @Composable
-private fun rememberCarouselCardSize(): DpSize {
+private fun rememberCarouselCardSize(availableHeight: Dp): DpSize {
     val configuration = LocalConfiguration.current
     val screenWidth = configuration.screenWidthDp.dp
-    val screenHeight = configuration.screenHeightDp.dp
     val aspect = LocalBoxArtStyle.current.aspectRatio
-    val aspectClass = LocalUiScale.current.aspectRatioClass
-    val carouselScale = 0.9f
-    val isWide = aspectClass == AspectRatioClass.ULTRA_WIDE || aspectClass == AspectRatioClass.WIDE
-    val cardHeight = if (isWide) {
-        (screenWidth * 0.16f * carouselScale) / aspect
-    } else {
-        minOf(screenHeight * 0.36f, screenWidth * 0.32f) * carouselScale
-    }
+    val heightDriven = (availableHeight / CAROUSEL_FOCUS_SCALE) * CAROUSEL_CARD_SCALE
+    val widthCap = (screenWidth * CAROUSEL_MAX_WIDTH_FRACTION) / aspect
+    val cardHeight = maxOf(minOf(heightDriven, widthCap), Dimens.gameCardHeight * CAROUSEL_MIN_SCALE)
     return DpSize(cardHeight * aspect, cardHeight)
 }
+
+private const val CAROUSEL_FOCUS_SCALE = 1.8f
+private const val CAROUSEL_CARD_SCALE = 0.9f
+private const val CAROUSEL_MAX_WIDTH_FRACTION = 0.28f
+private const val CAROUSEL_MIN_SCALE = 0.4f
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -1269,21 +1354,22 @@ private fun GameRail(
     onItemTap: (Int) -> Unit = {},
     onItemLongPress: (Int) -> Unit = {},
     isVideoPreviewActive: Boolean = false,
+    cardSize: DpSize,
     modifier: Modifier = Modifier
 ) {
     val configuration = LocalConfiguration.current
     val screenWidth = configuration.screenWidthDp.dp
     val boxArtStyle = LocalBoxArtStyle.current
 
-    val cardSize = rememberCarouselCardSize()
     val cardWidth = cardSize.width
     val cardHeight = cardSize.height
-    val focusScale = 1.8f
-    val railHeight = cardHeight * focusScale + 16.dp
+    val focusScale = CAROUSEL_FOCUS_SCALE
+    val railHeight = cardHeight * focusScale + Dimens.spacingMd
 
     val focusSpacingPx = with(LocalDensity.current) { (cardWidth * 0.5f).toPx() }
     val itemSpacing = cardWidth * 0.13f
-    val startPadding = screenWidth * 0.09f
+    val focusOverhang = cardWidth * (focusScale - 1f) / 2f
+    val startPadding = maxOf(screenWidth * 0.09f, focusOverhang + Dimens.spacingMd)
     val endPadding = screenWidth * 0.65f
 
     LazyRow(

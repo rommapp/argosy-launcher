@@ -68,6 +68,7 @@ object DimensionTokens {
         const val buttonPaddingV = 10
         const val headerHeight = 72
         const val headerHeightLg = 140
+        const val breadcrumbMaxWidth = 360
         const val footerHeight = 44
         const val modalWidth = 400
         const val modalWidthLg = 520

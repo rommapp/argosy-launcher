@@ -423,6 +423,14 @@ class HomeViewModel @Inject constructor(
         saveCurrentState()
     }
 
+    fun selectRow(row: HomeRow) {
+        val state = _uiState.value
+        if (row == state.currentRow || row !in state.availableRows) return
+        _uiState.update { it.copy(currentRow = row, focusedGameIndex = 0) }
+        navigationDelegate.loadRowWithDebounce(viewModelScope, row) { loadRowContent(it) }
+        saveCurrentState()
+    }
+
     override fun previousRow() {
         val result = navigationDelegate.previousRow(_uiState.value) ?: return
         _uiState.update { it.copy(currentRow = result.first, focusedGameIndex = result.second) }

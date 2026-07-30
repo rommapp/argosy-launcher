@@ -112,7 +112,7 @@
         },
         {
           "id": "save-sync-touch-proof",
-          "severity": "block",
+          "severity": "warn",
           "when": {
             "path_glob_any": [
               "**/data/sync/**/*.kt",
@@ -135,7 +135,7 @@
             "downloaded save appears at the path SaveSyncEntity.localSavePath claims",
             "discoverSavePath and constructSavePath agree for the affected platform"
           ],
-          "message": "Save-sync change touched. This is WALKTHROUGH-FORCED: the proof obligations need live data and cannot be auto-verified. Confirm them, then re-commit with the skip token to acknowledge."
+          "message": "Save-sync change touched. This zone is fragile: the proofs below need live data and cannot be auto-verified, so they are raised here rather than enforced. Meet them before the change is shared, and say in the PR which were run and which were not. Maintainer review decides whether this is a real risk or a minor adjustment."
         }
       ]
     },

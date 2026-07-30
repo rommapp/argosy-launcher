@@ -416,7 +416,16 @@ class GameLauncher @Inject constructor(
             File(targetDisc.localPath!!)
         }
 
-        val intent = buildIntent(emulator, launchFile, game, forResume)
+        val discM3u = launchFile.takeIf { it.extension.equals("m3u", ignoreCase = true) }?.absolutePath
+        if (discM3u == null) {
+            Logger.warn(
+                TAG,
+                "launchMultiDiscGame: launching ${launchFile.name} without an m3u, " +
+                    "in-game disc switching will be unavailable for gameId=${game.id}"
+            )
+        }
+
+        val intent = buildIntent(emulator, launchFile, game, forResume, discM3uPath = discM3u)
             ?: return if (emulator.launchConfig is LaunchConfig.RetroArch) {
                 LaunchResult.NoCore(game.platformSlug, lastCoreDownloadError).also {
                     Logger.warn(TAG, "launchMultiDiscGame() failed: no core for platform=${game.platformSlug}")

@@ -581,6 +581,27 @@ object SavePathRegistry {
             usesGciFormat = true,
             usesInternalStorage = true,
             supported = true
+        ),
+
+        /**
+         * The two built-in DS cores disagree on the extension: melonds writes a .sav cartridge
+         * battery save, melondsds writes .srm and its own migration guide tells users to rename
+         * .sav to .srm. Both are listed because either core can own the same game.
+         */
+        "${BUILTIN_EMULATOR_ID}_nds" to SavePathConfig(
+            emulatorId = BUILTIN_EMULATOR_ID,
+            defaultPaths = listOf("{filesDir}/${AppPaths.LIBRETRO_SAVES_SUBDIR}"),
+            saveExtensions = listOf("sav", "srm"),
+            usesInternalStorage = true,
+            supported = true
+        ),
+
+        "${BUILTIN_EMULATOR_ID}_dsi" to SavePathConfig(
+            emulatorId = BUILTIN_EMULATOR_ID,
+            defaultPaths = listOf("{filesDir}/${AppPaths.LIBRETRO_SAVES_SUBDIR}"),
+            saveExtensions = listOf("sav", "srm"),
+            usesInternalStorage = true,
+            supported = true
         )
     )
 

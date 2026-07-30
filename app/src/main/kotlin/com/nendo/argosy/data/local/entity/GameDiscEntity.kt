@@ -17,7 +17,8 @@ import androidx.room.PrimaryKey
     ],
     indices = [
         Index("gameId"),
-        Index(value = ["rommId"], unique = true)
+        Index("rommId"),
+        Index(value = ["gameId", "discNumber"], unique = true)
     ]
 )
 data class GameDiscEntity(

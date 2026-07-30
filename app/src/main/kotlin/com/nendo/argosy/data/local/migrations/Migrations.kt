@@ -2925,3 +2925,31 @@ object Migration_162_163 : Migration(162, 163) {
         )
     }
 }
+
+/**
+ * Re-keys game_discs uniqueness from rommId to (gameId, discNumber).
+ *
+ * The unique index on rommId encoded an assumption that every disc is its own RomM rom, which
+ * holds for the sibling shape and not for a folder-based multi-disc rom, where one rom owns every
+ * disc file. Registering those discs put the same rommId on each row, and REPLACE-on-conflict
+ * meant each insert overwrote the last until only the highest-numbered disc survived.
+ *
+ * A disc is identified by which game it belongs to and its number; rommId is where to fetch it
+ * from and is legitimately shared. Rows orphaned by the old collapse are dropped so the next sync
+ * re-registers the full set.
+ */
+object Migration_163_164 : Migration(163, 164) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            "DELETE FROM `game_discs` WHERE `gameId` IN (" +
+                "SELECT `gameId` FROM `game_discs` GROUP BY `gameId` HAVING COUNT(*) = 1" +
+                ") AND `discNumber` > 1"
+        )
+        db.execSQL("DROP INDEX IF EXISTS `index_game_discs_rommId`")
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_game_discs_rommId` ON `game_discs` (`rommId`)")
+        db.execSQL(
+            "CREATE UNIQUE INDEX IF NOT EXISTS `index_game_discs_gameId_discNumber` " +
+                "ON `game_discs` (`gameId`, `discNumber`)"
+        )
+    }
+}

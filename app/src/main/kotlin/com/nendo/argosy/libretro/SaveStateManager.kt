@@ -49,6 +49,13 @@ class SaveStateManager(
 
     fun initializeFromExistingSave(existingSram: ByteArray?) {
         lastSramHash = existingSram?.let { hashBytes(it) }
+        val f = getSramFile()
+        Log.i(
+            TAG,
+            "[SRAM] init | gameId=$gameId rom=$romBaseName restoredBytes=${existingSram?.size ?: -1} " +
+                "seededHash=$lastSramHash savesDir=${savesDir.absolutePath} " +
+                "file=${f.absolutePath} exists=${f.exists()} size=${if (f.exists()) f.length() else -1L}"
+        )
         migrateChannelStatesToFlat()
         statesDir.mkdirs()
         hasQuickSave = quickRingEntries().isNotEmpty()
@@ -219,25 +226,66 @@ class SaveStateManager(
             }
             return RestoreResult(bytes, switchToHardcore)
         } else {
-            Log.d(TAG, "RESUME: No cached saves, using existing .srm if present")
-            val bytes = getSramFile().takeIf { it.exists() }?.readBytes()
+            val f = getSramFile()
+            val bytes = f.takeIf { it.exists() }?.readBytes()
+            Log.i(
+                TAG,
+                "[SRAM] restore fallback | no cached saves, using on-disk .srm | " +
+                    "file=${f.absolutePath} exists=${f.exists()} bytes=${bytes?.size ?: -1} " +
+                    "nonZero=${bytes?.count { it != 0.toByte() } ?: -1}"
+            )
             return RestoreResult(bytes)
         }
     }
 
     @Synchronized
     fun saveSram(retroView: GLRetroView) {
-        if (usesExternalMemcard) return
+        val target = getSramFile()
+        val beforeSize = if (target.exists()) target.length() else -1L
+        Log.i(
+            TAG,
+            "[SRAM] saveSram ENTER | gameId=$gameId rom=$romBaseName external=$usesExternalMemcard " +
+                "variant=$isVariant channel=$channelName file=${target.absolutePath} " +
+                "exists=${target.exists()} sizeBefore=$beforeSize lastHash=$lastSramHash"
+        )
+        if (usesExternalMemcard) {
+            Log.w(TAG, "[SRAM] saveSram SKIP | external memcard platform, nothing written")
+            return
+        }
         try {
             val sramData = retroView.serializeSRAM()
-            if (sramData.isEmpty()) return
+            Log.i(TAG, "[SRAM] serializeSRAM returned ${sramData.size} bytes")
+            if (sramData.isEmpty()) {
+                Log.w(
+                    TAG,
+                    "[SRAM] saveSram SKIP | core returned 0 bytes of save RAM. If this core owns " +
+                        "its own memcard file the frontend copy will never be written"
+                )
+                return
+            }
 
+            val nonZero = sramData.count { it != 0.toByte() }
             val currentHash = hashBytes(sramData)
-            if (currentHash == lastSramHash) return
+            Log.i(TAG, "[SRAM] content | hash=$currentHash nonZeroBytes=$nonZero/${sramData.size}")
+            if (currentHash == lastSramHash) {
+                Log.w(TAG, "[SRAM] saveSram SKIP | hash unchanged since last write, file left alone")
+                return
+            }
 
-            getSramFile().writeBytes(sramData)
+            target.parentFile?.let { dir ->
+                if (!dir.exists()) {
+                    Log.w(TAG, "[SRAM] saves dir missing, creating ${dir.absolutePath} -> ${dir.mkdirs()}")
+                }
+            }
+            target.writeBytes(sramData)
             lastSramHash = currentHash
-        } catch (_: Exception) {
+            Log.i(
+                TAG,
+                "[SRAM] saveSram WROTE | ${sramData.size} bytes -> ${target.absolutePath} " +
+                    "sizeAfter=${target.length()} hash=$currentHash"
+            )
+        } catch (e: Exception) {
+            Log.e(TAG, "[SRAM] saveSram FAILED | ${target.absolutePath}", e)
         }
     }
 

@@ -1058,7 +1058,7 @@ class RomMLibrarySyncService @Inject constructor(
                 localPath = existing?.localPath,
                 downloadedAt = existing?.downloadedAt,
                 isLaunchTarget = category.isLaunchTarget && !(isNested && file.category == null),
-                isMultiDisc = existing?.isMultiDisc ?: false,
+                isMultiDisc = file.isDiscVariant || (existing?.isMultiDisc ?: false),
                 m3uPath = existing?.m3uPath,
                 regions = regions,
                 versionGroup = groupKey,
@@ -1068,7 +1068,61 @@ class RomMLibrarySyncService @Inject constructor(
             )
         }
         gameFileDao.insertAll(entities)
+        promoteFolderDiscsToDiscModel(gameId, member.id, files)
         return files.mapNotNull { if (it.id > 0) it.id else null }
+    }
+
+    /**
+     * Registers the discs of a folder-based multi-disc rom.
+     *
+     * RomM has two multi-disc shapes: separate roms per disc, handled by
+     * [consolidateMultiDiscGroup], and one rom whose folder holds every disc, which reached this
+     * far as ordinary files. Without a disc model those files are indistinguishable from version
+     * variants, so the launcher treats a disc as a variant, isolates its saves under
+     * `saves/variants/<fileId>` and offers neither the disc picker nor the in-game disc menu, and
+     * no m3u is written because the generator requires the game to already be multi-disc.
+     *
+     * Disc numbers come from the file's own `(Disc N)` tag, the same source
+     * [consolidateMultiDiscGroup] uses. Files with no disc tag are extras that happen to share the
+     * folder and are left alone.
+     */
+    private suspend fun promoteFolderDiscsToDiscModel(
+        gameId: Long,
+        rommId: Long,
+        files: List<RomMRomFile>
+    ) {
+        val discFiles = files.filter { it.isDiscVariant }
+        if (discFiles.size < 2) return
+
+        val game = gameDao.getById(gameId) ?: return
+        val existingDiscs = gameDiscDao.getDiscsForGame(gameId)
+        if (existingDiscs.isNotEmpty() && game.isMultiDisc) return
+
+        val rows = discFiles.mapNotNull { file ->
+            val number = file.discNumber ?: return@mapNotNull null
+            val stored = gameFileDao.getByRommFileId(file.id)
+            GameDiscEntity(
+                id = existingDiscs.firstOrNull { it.discNumber == number }?.id ?: 0,
+                gameId = gameId,
+                discNumber = number,
+                rommId = rommId,
+                fileName = file.fileName,
+                localPath = stored?.localPath,
+                fileSize = file.fileSizeBytes,
+                parentRommId = rommId
+            )
+        }.sortedBy { it.discNumber }
+        if (rows.isEmpty()) return
+
+        gameDiscDao.insertAll(rows)
+        if (!game.isMultiDisc) {
+            gameDao.update(game.copy(isMultiDisc = true))
+        }
+        Logger.info(
+            TAG,
+            "promoteFolderDiscs: gameId=$gameId rommId=$rommId registered ${rows.size} discs " +
+                "(${rows.joinToString { "#${it.discNumber}" }}) from a folder-based multi-disc rom"
+        )
     }
 
     private suspend fun consolidateMultiDiscGames(

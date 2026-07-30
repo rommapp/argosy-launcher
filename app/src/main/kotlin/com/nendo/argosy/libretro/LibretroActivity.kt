@@ -2495,10 +2495,20 @@ class LibretroActivity : ComponentActivity() {
 
     override fun onPause() {
         stopRollingSave()
+        Log.i(
+            TAG,
+            "[SRAM] onPause gates | isClosing=$isClosing coreLoaded=$coreLoadedSuccessfully " +
+                "isFinishing=$isFinishing coreDestroyed=$coreDestroyed isHwCore=$isHwCore " +
+                "guest=$isGuestJoinedSession netplayInit=${::netplay.isInitialized}"
+        )
         if (::netplay.isInitialized) netplay.gracefullyEndIfActive()
         if (isClosing) {
+            Log.w(TAG, "[SRAM] onPause SKIP ALL | isClosing=true, no sram write on this path")
             super.onPause()
             return
+        }
+        if (!coreLoadedSuccessfully) {
+            Log.w(TAG, "[SRAM] onPause SKIP ALL | coreLoadedSuccessfully=false, no sram write")
         }
         if (coreLoadedSuccessfully) {
             if (!isFinishing && !coreDestroyed && isHwCore && !isGuestJoinedSession &&

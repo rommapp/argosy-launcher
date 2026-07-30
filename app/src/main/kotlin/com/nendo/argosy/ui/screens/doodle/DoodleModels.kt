@@ -62,6 +62,7 @@ enum class ZoomLevel(val scale: Float) {
 }
 
 data class DoodleUiState(
+    val avatarMode: Boolean = false,
     val canvasSize: CanvasSize = CanvasSize.MEDIUM,
     val pixels: Map<Pair<Int, Int>, DoodleColor> = emptyMap(),
     val selectedColor: DoodleColor = DoodleColor.BLACK,
@@ -93,6 +94,11 @@ data class DoodleUiState(
     val hasContent: Boolean get() = pixels.isNotEmpty()
     val canUndo: Boolean get() = undoStack.isNotEmpty()
     val canRedo: Boolean get() = redoStack.isNotEmpty()
+
+    val availableSizes: List<CanvasSize>
+        get() = if (avatarMode) listOf(CanvasSize.SMALL, CanvasSize.MEDIUM) else CanvasSize.entries
+
+    val maxSizeFocusIndex: Int get() = availableSizes.size - 1
 
     val linePreview: List<Pair<Int, Int>>?
         get() = if (selectedTool == DoodleTool.LINE && lineStartX != null && lineStartY != null) {

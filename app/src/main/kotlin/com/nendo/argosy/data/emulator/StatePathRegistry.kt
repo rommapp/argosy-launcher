@@ -142,6 +142,20 @@ object StatePathRegistry {
             usesCore = true,
             maxSlots = 10
         ),
+        "retroarch_32" to StatePathConfig(
+            emulatorId = "retroarch_32",
+            defaultPaths = listOf(
+                "{extStorage}/RetroArch/states/{core}",
+                "{extStorage}/Android/data/com.retroarch.ra32/files/states/{core}",
+                "/data/data/com.retroarch.ra32/states/{core}"
+            ),
+            slotPattern = StateSlotPattern.SuffixNumber(
+                extension = "state",
+                autoSlotSuffix = "auto"
+            ),
+            usesCore = true,
+            maxSlots = 10
+        ),
 
         "ppsspp" to StatePathConfig(
             emulatorId = "ppsspp",
@@ -291,11 +305,22 @@ object StatePathRegistry {
     )
 
     fun getConfig(emulatorId: String): StatePathConfig? {
-        val config = configs[emulatorId] ?: return null
+        val config = configs[emulatorId] ?: familyFallbackConfig(emulatorId) ?: return null
         return if (config.supported) config else null
     }
 
-    fun getConfigIncludingUnsupported(emulatorId: String): StatePathConfig? = configs[emulatorId]
+    fun getConfigIncludingUnsupported(emulatorId: String): StatePathConfig? =
+        configs[emulatorId] ?: familyFallbackConfig(emulatorId)
+
+    /**
+     * Family-variant ids are `<baseId>_<package>` (EmulatorRegistry.createDefFromFamily);
+     * recover the base config so fork installs resolve state paths.
+     */
+    private fun familyFallbackConfig(emulatorId: String): StatePathConfig? =
+        EmulatorRegistry.getEmulatorFamilies()
+            .filter { emulatorId.length > it.baseId.length + 1 && emulatorId.startsWith(it.baseId + "_") }
+            .maxByOrNull { it.baseId.length }
+            ?.let { configs[it.baseId] }
 
     fun getAllConfigs(): Map<String, StatePathConfig> = configs.filterValues { it.supported }
 

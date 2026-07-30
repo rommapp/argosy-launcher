@@ -378,6 +378,7 @@ class GameLaunchDelegate @Inject constructor(
                 _syncOverlayState.value = null
 
                 val launchMode = when {
+                    !prefs.secureSaves -> overrideLaunchMode?.takeUnless { it.isHardcore }
                     hardcoreConflictChoice == HardcoreConflictChoice.KEEP_HARDCORE -> LaunchMode.RESUME_HARDCORE
                     overrideLaunchMode != null -> overrideLaunchMode
                     isActiveSaveHardcore(gameId) -> LaunchMode.RESUME_HARDCORE

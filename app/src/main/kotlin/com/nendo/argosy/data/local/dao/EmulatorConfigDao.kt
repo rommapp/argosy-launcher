@@ -70,6 +70,12 @@ interface EmulatorConfigDao {
     @Query("UPDATE emulator_configs SET savePath = :savePath WHERE gameId = :gameId")
     suspend fun updateSavePathForGame(gameId: Long, savePath: String?)
 
+    @Query("SELECT selectedMemcardPath FROM emulator_configs WHERE gameId = :gameId LIMIT 1")
+    suspend fun getSelectedMemcardForGame(gameId: Long): String?
+
+    @Query("UPDATE emulator_configs SET selectedMemcardPath = :memcardPath WHERE gameId = :gameId")
+    suspend fun updateSelectedMemcardForGame(gameId: Long, memcardPath: String?)
+
     @Query("UPDATE emulator_configs SET displayTarget = :displayTarget WHERE platformId = :platformId AND gameId IS NULL AND isDefault = 1")
     suspend fun updateDisplayTargetForPlatform(platformId: Long, displayTarget: String?)
 

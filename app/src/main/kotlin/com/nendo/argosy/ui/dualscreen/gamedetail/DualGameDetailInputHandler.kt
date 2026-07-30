@@ -18,9 +18,10 @@ class DualGameDetailInputHandler(
     private val onBroadcastInlineUpdate: (String, Any) -> Unit,
     private val onBroadcastDirectAction: (String, Long, String?) -> Unit,
     private val onBroadcastEmulatorModalOpen: (List<com.nendo.argosy.data.emulator.InstalledEmulator>, String?) -> Unit,
-    private val onBroadcastCoreModalOpen: (List<com.nendo.argosy.data.emulator.RetroArchCore>, String?) -> Unit,
+    private val onBroadcastCoreModalOpen: (List<String>, String?) -> Unit,
     private val onBroadcastSavePathModalOpen: (String?) -> Unit,
     private val onBroadcastDisplayTargetModalOpen: (List<String>, String?, String?) -> Unit,
+    private val onBroadcastMemoryCardModalOpen: (List<String>, String?, String?) -> Unit,
     private val onBroadcastVariantModalOpen: (List<String>, String?) -> Unit,
     private val onBroadcastCollectionModalOpen: (DualGameDetailViewModel) -> Unit,
     private val onBroadcastSteamInstallModalOpen: (DualGameDetailViewModel) -> Unit,
@@ -280,6 +281,35 @@ class DualGameDetailInputHandler(
                         val idx = vm.displayTargetPickerFocusIndex.value
                         vm.confirmDisplayTargetByIndex(idx)
                         onBroadcastModalConfirm(ActiveModal.DISPLAY_TARGET, idx, null)
+                    }
+                    GamepadEvent.Back -> {
+                        vm.dismissPicker()
+                        onBroadcastModalClose()
+                    }
+                    else -> {}
+                }
+                return InputResult.HANDLED
+            }
+            ActiveModal.MEMORY_CARD -> {
+                when (event) {
+                    GamepadEvent.Up -> {
+                        vm.moveMemoryCardPickerFocus(-1)
+                        onBroadcastInlineUpdate(
+                            "memory_card_focus",
+                            vm.memoryCardPickerFocusIndex.value
+                        )
+                    }
+                    GamepadEvent.Down -> {
+                        vm.moveMemoryCardPickerFocus(1)
+                        onBroadcastInlineUpdate(
+                            "memory_card_focus",
+                            vm.memoryCardPickerFocusIndex.value
+                        )
+                    }
+                    GamepadEvent.Confirm -> {
+                        val idx = vm.memoryCardPickerFocusIndex.value
+                        vm.confirmMemoryCardByIndex(idx)
+                        onBroadcastModalConfirm(ActiveModal.MEMORY_CARD, idx, null)
                     }
                     GamepadEvent.Back -> {
                         vm.dismissPicker()
@@ -558,12 +588,8 @@ class DualGameDetailInputHandler(
                 }
             }
             GameDetailOption.CHANGE_CORE -> {
-                lifecycleLaunch {
-                    val cores = com.nendo.argosy.data.emulator.EmulatorRegistry
-                        .getCoresForPlatform(vm.uiState.value.platformSlug)
-                    vm.openCorePicker(cores)
-                    onBroadcastCoreModalOpen(cores, vm.uiState.value.selectedCoreName)
-                }
+                val coreNames = vm.openCorePicker()
+                onBroadcastCoreModalOpen(coreNames, vm.uiState.value.selectedCoreName)
             }
             GameDetailOption.SAVE_PATH -> {
                 vm.openSavePathPicker()
@@ -579,6 +605,14 @@ class DualGameDetailInputHandler(
                     },
                     com.nendo.argosy.data.preferences.EmulatorDisplayTarget
                         .fromString(state.platformDisplayTargetName).displayName
+                )
+            }
+            GameDetailOption.MEMORY_CARD -> {
+                vm.openMemoryCardPicker()
+                onBroadcastMemoryCardModalOpen(
+                    vm.memcardPickerList.value.map { it.name },
+                    vm.uiState.value.selectedMemcardName,
+                    null
                 )
             }
             GameDetailOption.SELECT_VARIANT -> {

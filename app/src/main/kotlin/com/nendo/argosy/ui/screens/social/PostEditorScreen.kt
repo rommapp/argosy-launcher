@@ -66,12 +66,12 @@ import com.nendo.argosy.ui.components.Modal
 import com.nendo.argosy.ui.input.InputHandler
 import com.nendo.argosy.ui.input.InputResult
 import com.nendo.argosy.ui.input.LocalInputDispatcher
-import com.nendo.argosy.ui.screens.doodle.DoodleEncoder
 import com.nendo.argosy.ui.screens.doodle.DoodlePreview
 import com.nendo.argosy.ui.screens.doodle.GamePickerItem
 import com.nendo.argosy.ui.screens.gamedetail.components.OptionItem
 import com.nendo.argosy.ui.theme.LocalArgosyTheme
 import com.nendo.argosy.ui.util.clickableNoFocus
+import com.nendo.argosy.ui.screens.doodle.rememberDecodedDoodle
 
 @Composable
 fun PostEditorScreen(
@@ -324,9 +324,7 @@ private fun DoodleColumn(
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         if (doodleData != null && doodleSize != null) {
-            val decoded = remember(doodleData) {
-                DoodleEncoder.decodeFromBase64(doodleData)
-            }
+            val decoded = rememberDecodedDoodle(doodleData)
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -343,13 +341,15 @@ private fun DoodleColumn(
                     ),
                 contentAlignment = Alignment.Center
             ) {
-                DoodlePreview(
-                    canvasSize = decoded.size,
-                    pixels = decoded.pixels,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(4.dp)
-                )
+                if (decoded != null) {
+                    DoodlePreview(
+                        canvasSize = decoded.size,
+                        pixels = decoded.pixels,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(4.dp)
+                    )
+                }
             }
 
             Box(

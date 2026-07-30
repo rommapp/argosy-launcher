@@ -33,8 +33,11 @@ class SaveCacheManagerCachingTest {
 
     private val context = mockk<Context>(relaxed = true)
     private val saveCacheDao = mockk<SaveCacheDao>(relaxed = true)
+    private val saveSyncDao = mockk<com.nendo.argosy.data.local.dao.SaveSyncDao>(relaxed = true)
     private val gameDao = mockk<GameDao>(relaxed = true)
     private val preferencesRepository = mockk<UserPreferencesRepository>(relaxed = true)
+    private val syncPreferencesRepository = mockk<com.nendo.argosy.data.preferences.SyncPreferencesRepository>(relaxed = true)
+    private val savePathResolver = mockk<com.nendo.argosy.data.sync.SavePathResolver>(relaxed = true)
     private val saveHandlerRegistry = mockk<PlatformSaveHandlerRegistry>(relaxed = true)
 
     @Before
@@ -48,9 +51,11 @@ class SaveCacheManagerCachingTest {
         coEvery { saveCacheDao.getByGameAndHash(any(), any()) } returns null
         coEvery { saveCacheDao.insert(any()) } returns 1L
 
+        coEvery { syncPreferencesRepository.isSecureSaves() } returns true
+
         val fal = realFsFal()
         val archiver = SaveArchiver(mockk<AndroidDataAccessor>(relaxed = true), fal)
-        manager = SaveCacheManager(context, saveCacheDao, gameDao, preferencesRepository, archiver, fal, saveHandlerRegistry)
+        manager = SaveCacheManager(context, saveCacheDao, saveSyncDao, gameDao, preferencesRepository, syncPreferencesRepository, savePathResolver, archiver, fal, saveHandlerRegistry)
     }
 
     @After

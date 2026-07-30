@@ -95,7 +95,7 @@ class SaveUploader @Inject constructor(
         }
 
         val emulatorPackage = emulatorResolver.getEmulatorPackageForGame(gameId, game.platformId, game.platformSlug)
-        val preferredCore = client.resolveCoreForGame(game)
+        val preferredCore = client.resolveCoreForGame(game, resolvedEmulatorId)
         val serverEmulator = EmulatorRegistry.toServerEmulator(resolvedEmulatorId, preferredCore)
 
         val cachedPath = syncEntity?.localSavePath?.takeIf { path ->
@@ -444,7 +444,7 @@ class SaveUploader @Inject constructor(
         } else {
             emulatorId
         }
-        val serverEmulator = EmulatorRegistry.toServerEmulator(resolvedEmulatorId, client.resolveCoreForGame(game))
+        val serverEmulator = EmulatorRegistry.toServerEmulator(resolvedEmulatorId, client.resolveCoreForGame(game, resolvedEmulatorId))
 
         if (!overwrite && deviceId != null) {
             if (conflictDetector.isSessionOnOlderSave(gameId)) {

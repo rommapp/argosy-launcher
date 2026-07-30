@@ -53,6 +53,8 @@ import androidx.compose.ui.graphics.lerp
 import com.nendo.argosy.ui.theme.AspectRatioClass
 import com.nendo.argosy.ui.theme.LocalArgosyTheme
 import com.nendo.argosy.ui.theme.LocalUiScale
+import com.nendo.argosy.ui.components.friends.SocialAvatar
+import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.util.clickableNoFocus
 import java.time.LocalDate
 import kotlin.math.roundToInt
@@ -75,21 +77,23 @@ fun profileFocusToItemIndex(focusIndex: Int, mostPlayedCount: Int): Int {
 @Composable
 fun AccountInfoCard(
     user: SocialUser,
-    profile: UserProfileData?
+    profile: UserProfileData?,
+    avatarDoodle: String? = null,
+    avatarPngBase64: String? = null,
+    onEditAvatar: (() -> Unit)? = null
 ) {
-    val avatarColor = try {
-        Color(android.graphics.Color.parseColor(user.avatarColor))
-    } catch (e: Exception) {
-        Color(0xFF6366F1)
-    }
-
     val isWide = LocalUiScale.current.aspectRatioClass.let {
         it == AspectRatioClass.WIDE || it == AspectRatioClass.ULTRA_WIDE
     }
 
     Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .then(
+                if (onEditAvatar != null) Modifier.clickableNoFocus { onEditAvatar() }
+                else Modifier
+            ),
+        shape = RoundedCornerShape(Dimens.radiusLg),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant
         )
@@ -97,24 +101,18 @@ fun AccountInfoCard(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                .padding(Dimens.spacingMd),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
+            horizontalArrangement = Arrangement.spacedBy(Dimens.spacingMd)
         ) {
-            Box(
-                modifier = Modifier
-                    .size(56.dp)
-                    .clip(CircleShape)
-                    .background(avatarColor),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = user.displayName.take(1).uppercase(),
-                    style = MaterialTheme.typography.headlineSmall,
-                    color = Color.White,
-                    fontWeight = FontWeight.Bold
-                )
-            }
+            SocialAvatar(
+                displayName = user.displayName,
+                avatarColor = user.avatarColor,
+                size = Dimens.avatarXl,
+                avatarDoodle = avatarDoodle,
+                avatarPngBase64 = avatarPngBase64,
+                userId = user.id
+            )
 
             Column(
                 modifier = Modifier.weight(1f),

@@ -66,7 +66,7 @@ class SaveSyncRepositoryPreLaunchTest {
     fun `no deviceId returns NoConnection without an API call`() = runTest {
         every { apiClient.getDeviceId() } returns null
 
-        val result = repo.preLaunchSyncForGame(gameId, rommId, emulatorId, channelName = null)
+        val result = repo.preLaunchSyncForGame(gameId, rommId, emulatorId, channelName = null, secureSaves = true)
 
         assertTrue(result is PreLaunchSyncResult.NoConnection)
     }
@@ -82,7 +82,7 @@ class SaveSyncRepositoryPreLaunchTest {
             userSelectedRestorePoint = true
         )
 
-        val result = repo.preLaunchSyncForGame(gameId, rommId, emulatorId, channelName = null)
+        val result = repo.preLaunchSyncForGame(gameId, rommId, emulatorId, channelName = null, secureSaves = true)
 
         assertTrue(result is PreLaunchSyncResult.LocalIsNewer)
         io.mockk.coVerify(exactly = 0) { apiClient.checkSavesForGame(any(), any()) }
@@ -101,7 +101,7 @@ class SaveSyncRepositoryPreLaunchTest {
             userSelectedRestorePointAt = pinnedLongAgo
         )
 
-        val result = repo.preLaunchSyncForGame(gameId, rommId, emulatorId, channelName = null)
+        val result = repo.preLaunchSyncForGame(gameId, rommId, emulatorId, channelName = null, secureSaves = true)
 
         assertTrue(result is PreLaunchSyncResult.LocalIsNewer)
         io.mockk.coVerify(exactly = 0) { apiClient.checkSavesForGame(any(), any()) }
@@ -113,7 +113,7 @@ class SaveSyncRepositoryPreLaunchTest {
         coEvery { apiClient.checkSavesForGame(gameId, rommId) } returns emptyList()
         coEvery { saveCacheDao.hasNeedingRemoteSync(gameId, null) } returns false
 
-        val result = repo.preLaunchSyncForGame(gameId, rommId, emulatorId, channelName = null)
+        val result = repo.preLaunchSyncForGame(gameId, rommId, emulatorId, channelName = null, secureSaves = true)
 
         assertTrue(result is PreLaunchSyncResult.NoServerSave)
     }
@@ -123,7 +123,7 @@ class SaveSyncRepositoryPreLaunchTest {
         coEvery { apiClient.checkSavesForGame(gameId, rommId) } returns emptyList()
         coEvery { saveCacheDao.hasNeedingRemoteSync(gameId, null) } returns true
 
-        val result = repo.preLaunchSyncForGame(gameId, rommId, emulatorId, channelName = null)
+        val result = repo.preLaunchSyncForGame(gameId, rommId, emulatorId, channelName = null, secureSaves = true)
 
         assertTrue(result is PreLaunchSyncResult.LocalIsNewer)
     }
@@ -135,7 +135,7 @@ class SaveSyncRepositoryPreLaunchTest {
         )
         coEvery { saveCacheDao.hasNeedingRemoteSync(gameId, null) } returns false
 
-        val result = repo.preLaunchSyncForGame(gameId, rommId, emulatorId, channelName = null)
+        val result = repo.preLaunchSyncForGame(gameId, rommId, emulatorId, channelName = null, secureSaves = true)
 
         assertTrue(result is PreLaunchSyncResult.LocalIsNewer)
     }
@@ -147,7 +147,7 @@ class SaveSyncRepositoryPreLaunchTest {
         )
         coEvery { saveCacheDao.hasNeedingRemoteSync(gameId, null) } returns true
 
-        val result = repo.preLaunchSyncForGame(gameId, rommId, emulatorId, channelName = null)
+        val result = repo.preLaunchSyncForGame(gameId, rommId, emulatorId, channelName = null, secureSaves = true)
 
         assertTrue(result is PreLaunchSyncResult.LocalIsNewer)
     }
@@ -161,7 +161,7 @@ class SaveSyncRepositoryPreLaunchTest {
         coEvery { apiClient.checkSavesForGame(gameId, rommId) } returns listOf(server)
         coEvery { saveCacheDao.hasNeedingRemoteSync(gameId, null) } returns false
 
-        val result = repo.preLaunchSyncForGame(gameId, rommId, emulatorId, channelName = null)
+        val result = repo.preLaunchSyncForGame(gameId, rommId, emulatorId, channelName = null, secureSaves = true)
 
         assertTrue("Expected ServerIsNewer, got $result", result is PreLaunchSyncResult.ServerIsNewer)
         assertEquals(77L, (result as PreLaunchSyncResult.ServerIsNewer).serverSaveId)
@@ -176,7 +176,7 @@ class SaveSyncRepositoryPreLaunchTest {
         coEvery { apiClient.checkSavesForGame(gameId, rommId) } returns listOf(server)
         coEvery { saveCacheDao.hasNeedingRemoteSync(gameId, null) } returns true
 
-        val result = repo.preLaunchSyncForGame(gameId, rommId, emulatorId, channelName = null)
+        val result = repo.preLaunchSyncForGame(gameId, rommId, emulatorId, channelName = null, secureSaves = true)
 
         assertTrue("Expected LocalModified, got $result", result is PreLaunchSyncResult.LocalModified)
         assertEquals(99L, (result as PreLaunchSyncResult.LocalModified).serverSaveId)
@@ -189,7 +189,7 @@ class SaveSyncRepositoryPreLaunchTest {
         )
         coEvery { saveCacheDao.hasNeedingRemoteSync(gameId, null) } returns false
 
-        val result = repo.preLaunchSyncForGame(gameId, rommId, emulatorId, channelName = null)
+        val result = repo.preLaunchSyncForGame(gameId, rommId, emulatorId, channelName = null, secureSaves = true)
 
         assertTrue("Expected ServerIsNewer, got $result", result is PreLaunchSyncResult.ServerIsNewer)
     }
@@ -198,7 +198,7 @@ class SaveSyncRepositoryPreLaunchTest {
     fun `checkSavesForGame failure returns NoConnection`() = runTest {
         coEvery { apiClient.checkSavesForGame(any(), any()) } throws RuntimeException("transport")
 
-        val result = repo.preLaunchSyncForGame(gameId, rommId, emulatorId, channelName = null)
+        val result = repo.preLaunchSyncForGame(gameId, rommId, emulatorId, channelName = null, secureSaves = true)
 
         assertTrue(result is PreLaunchSyncResult.NoConnection)
     }
@@ -218,7 +218,7 @@ class SaveSyncRepositoryPreLaunchTest {
         coEvery { apiClient.checkSavesForGame(gameId, rommId) } returns listOf(target, unrelated)
         coEvery { saveCacheDao.hasNeedingRemoteSync(gameId, "slot1") } returns false
 
-        val result = repo.preLaunchSyncForGame(gameId, rommId, emulatorId, channelName = "slot1")
+        val result = repo.preLaunchSyncForGame(gameId, rommId, emulatorId, channelName = "slot1", secureSaves = true)
 
         assertTrue("Expected ServerIsNewer for slot1, got $result", result is PreLaunchSyncResult.ServerIsNewer)
         assertEquals(11L, (result as PreLaunchSyncResult.ServerIsNewer).serverSaveId)
@@ -234,7 +234,7 @@ class SaveSyncRepositoryPreLaunchTest {
         coEvery { apiClient.checkSavesForGame(gameId, rommId) } returns listOf(server)
         coEvery { saveCacheDao.hasNeedingRemoteSync(gameId, null) } returns false
 
-        val result = repo.preLaunchSyncForGame(gameId, rommId, emulatorId, channelName = null)
+        val result = repo.preLaunchSyncForGame(gameId, rommId, emulatorId, channelName = null, secureSaves = true)
 
         assertTrue(result is PreLaunchSyncResult.ServerIsNewer)
     }
@@ -245,7 +245,7 @@ class SaveSyncRepositoryPreLaunchTest {
         coEvery { apiClient.checkSavesForGame(gameId, rommId) } returns listOf(state)
         coEvery { saveCacheDao.hasNeedingRemoteSync(gameId, null) } returns false
 
-        val result = repo.preLaunchSyncForGame(gameId, rommId, emulatorId, channelName = null)
+        val result = repo.preLaunchSyncForGame(gameId, rommId, emulatorId, channelName = null, secureSaves = true)
 
         assertTrue("Expected NoServerSave (state-shaped row filtered), got $result", result is PreLaunchSyncResult.NoServerSave)
     }
@@ -265,7 +265,7 @@ class SaveSyncRepositoryPreLaunchTest {
         )
         coEvery { saveCacheDao.hasNeedingRemoteSync(gameId, null) } returns true
 
-        val result = repo.preLaunchSyncForGame(gameId, rommId, emulatorId, channelName = null)
+        val result = repo.preLaunchSyncForGame(gameId, rommId, emulatorId, channelName = null, secureSaves = true)
 
         assertTrue(result is PreLaunchSyncResult.LocalModified)
         assertEquals("/persisted/save.srm", (result as PreLaunchSyncResult.LocalModified).localSavePath)

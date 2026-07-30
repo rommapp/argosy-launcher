@@ -40,5 +40,6 @@ data class EmulatorConfigEntity(
     val preferredExtension: String? = null,
     val useFileUri: Boolean? = null,
     val displayTarget: String? = null,
-    val savePath: String? = null
+    val savePath: String? = null,
+    val selectedMemcardPath: String? = null
 )

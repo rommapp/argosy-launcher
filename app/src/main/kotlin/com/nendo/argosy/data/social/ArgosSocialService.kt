@@ -24,6 +24,7 @@ import okhttp3.WebSocket
 import okhttp3.WebSocketListener
 import okhttp3.logging.HttpLoggingInterceptor
 import org.json.JSONObject
+import java.time.Instant
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -109,6 +110,14 @@ class ArgosSocialService @Inject constructor(
         ) : IncomingMessage()
         data class FriendRemoved(val userId: String) : IncomingMessage()
         data class FriendCodeData(val code: String, val url: String) : IncomingMessage()
+        data class QuayPassBalance(val balance: Int) : IncomingMessage()
+        data class QuayPassCheckins(val checkins: List<QuayPassCheckin>) : IncomingMessage()
+        data class QuayPassAvatarUpdated(
+            val userId: String,
+            val ownerDoodle: String?,
+            val raster: String?
+        ) : IncomingMessage()
+        data class QuayPassMessageUpdated(val message: String) : IncomingMessage()
         data class FriendsData(val friends: List<Friend>) : IncomingMessage()
         data class SharedCollections(val collections: List<CollectionSummary>) : IncomingMessage()
         data class SavedCollections(val collections: List<CollectionSummary>) : IncomingMessage()
@@ -299,6 +308,36 @@ class ArgosSocialService @Inject constructor(
                         )
                     } else null
                 }
+
+                MessageTypes.QUAYPASS_BALANCE -> {
+                    if (payload != null) IncomingMessage.QuayPassBalance(payload.optInt("balance", 0)) else null
+                }
+
+                MessageTypes.QUAYPASS_CHECKINS -> {
+                    val array = payload?.optJSONArray("check_ins")
+                    val checkins = if (array != null) {
+                        (0 until array.length()).mapNotNull { i ->
+                            parseCheckin(array.optJSONObject(i))
+                        }
+                    } else emptyList()
+                    IncomingMessage.QuayPassCheckins(checkins)
+                }
+
+                MessageTypes.QUAYPASS_AVATAR_UPDATED -> {
+                    val userId = json.optString("user_id", "")
+                    if (userId.isNotEmpty()) {
+                        IncomingMessage.QuayPassAvatarUpdated(
+                            userId = userId,
+                            ownerDoodle = json.optString("avatar", null)?.takeIf { it.isNotEmpty() },
+                            raster = json.optString("raster", null)?.takeIf { it.isNotEmpty() }
+                        )
+                    } else null
+                }
+
+                MessageTypes.QUAYPASS_MESSAGE_UPDATED ->
+                    if (json.has("message")) {
+                        IncomingMessage.QuayPassMessageUpdated(json.optString("message", ""))
+                    } else null
 
                 MessageTypes.FRIEND_ACCEPTED -> {
                     if (payload != null) {
@@ -845,6 +884,82 @@ class ArgosSocialService @Inject constructor(
         ))
     }
 
+    fun sendQuayPassAvatar(sparseBase64: String, rasterPngBase64: String): Boolean {
+        return send(
+            MessageTypes.SET_QUAYPASS_AVATAR,
+            mapOf("avatar" to sparseBase64, "raster" to rasterPngBase64)
+        )
+    }
+
+    fun sendQuayPassMessage(message: String): Boolean {
+        return send(MessageTypes.SET_QUAYPASS_MESSAGE, mapOf("message" to message))
+    }
+
+    fun reportQuayPassEncounter(
+        peerAccountId: String,
+        credentialBase64: String,
+        attestationBase64: String,
+        nonceBase64: String,
+        tsSecs: Long,
+        cardMessage: String?,
+        cardIgdbId: Long?,
+        cardAvatarPngBase64: String?
+    ): Boolean {
+        val peerCard = buildMap<String, Any> {
+            cardMessage?.let { put("message", it) }
+            cardIgdbId?.let { put("igdb_id", it) }
+            cardAvatarPngBase64?.let { put("avatar", it) }
+        }
+        val payload = mapOf(
+            "peer_account_id" to peerAccountId,
+            "credential" to credentialBase64,
+            "attestation" to attestationBase64,
+            "nonce" to nonceBase64,
+            "ts" to tsSecs,
+            "peer_card" to peerCard
+        )
+        return send(MessageTypes.REPORT_QUAYPASS_ENCOUNTER, payload)
+    }
+
+    fun requestQuayPassBalance(): Boolean = send(MessageTypes.GET_QUAYPASS_BALANCE, emptyMap())
+
+    fun requestQuayPassCheckins(limit: Int? = null, beforeId: String? = null): Boolean {
+        val payload = buildMap<String, Any> {
+            limit?.let { put("limit", it) }
+            beforeId?.let { put("before_id", it) }
+        }
+        return send(MessageTypes.GET_QUAYPASS_CHECKINS, payload)
+    }
+
+    private fun parseCheckin(obj: JSONObject?): QuayPassCheckin? {
+        if (obj == null) return null
+        val userId = obj.optString("user_id", "").takeIf { it.isNotEmpty() } ?: return null
+        val lastMet = parseIsoEpoch(obj.optString("last_met_at", null)) ?: return null
+        val firstMet = parseIsoEpoch(obj.optString("first_met_at", null)) ?: lastMet
+        val lastPlayed = obj.optJSONObject("last_played")
+        return QuayPassCheckin(
+            userId = userId,
+            username = obj.optString("username", ""),
+            displayName = obj.optString("display_name", null)?.takeIf { it.isNotEmpty() },
+            avatarColor = obj.optString("avatar_color", null)?.takeIf { it.isNotEmpty() },
+            avatarPng = obj.optString("avatar", null)?.takeIf { it.isNotEmpty() },
+            message = obj.optString("message", null)?.takeIf { it.isNotEmpty() },
+            lastGameIgdbId = lastPlayed?.optLong("igdb_id")?.takeIf { it > 0 },
+            lastGameTitle = lastPlayed?.optString("title", null)?.takeIf { !it.isNullOrEmpty() },
+            coverThumbUrl = lastPlayed?.optString("cover_thumb_url", null)?.takeIf { !it.isNullOrEmpty() },
+            firstMetAtEpochSec = firstMet,
+            lastMetAtEpochSec = lastMet,
+            passCount = obj.optInt("pass_count", 1).coerceAtLeast(1),
+            isFriend = obj.optBoolean("is_friend", false),
+            isBlocked = obj.optBoolean("is_blocked", false),
+            requestSent = obj.optBoolean("request_sent", false),
+            requestReceived = obj.optBoolean("request_received", false)
+        )
+    }
+
+    private fun parseIsoEpoch(value: String?): Long? =
+        value?.takeIf { it.isNotEmpty() }?.let { runCatching { Instant.parse(it).epochSecond }.getOrNull() }
+
     fun sendPresence(status: PresenceStatus, gameIgdbId: Int? = null, gameTitle: String? = null, deviceName: String? = null): Boolean {
         return send(MessageTypes.SET_PRESENCE, mapOf(
             "status" to status.value,
@@ -918,8 +1033,16 @@ class ArgosSocialService @Inject constructor(
         send(MessageTypes.LOOKUP_FRIEND_CODE, mapOf("code" to code))
     }
 
-    fun sendFriendRequest(userId: String) {
-        send(MessageTypes.SEND_FRIEND_REQ, mapOf("user_id" to userId))
+    fun sendFriendRequest(userId: String): Boolean {
+        return send(MessageTypes.SEND_FRIEND_REQ, mapOf("user_id" to userId))
+    }
+
+    fun acceptFriend(userId: String): Boolean {
+        return send(MessageTypes.ACCEPT_FRIEND, mapOf("user_id" to userId))
+    }
+
+    fun removeFriend(userId: String): Boolean {
+        return send(MessageTypes.REMOVE_FRIEND, mapOf("user_id" to userId))
     }
 
     fun getFeed(limit: Int? = null, beforeId: String? = null, userId: String? = null) {
@@ -1292,12 +1415,16 @@ class ArgosSocialService @Inject constructor(
                     displayName = userObj.getString("display_name"),
                     avatarColor = userObj.getString("avatar_color"),
                     status = obj.getString("status"),
+                    requestSent = obj.optBoolean("request_sent", false),
+                    requestReceived = obj.optBoolean("request_received", false),
                     presence = presenceObj?.let {
                         PresenceStatus.fromValue(it.optString("status", "offline"))
                     },
                     currentGame = gameInfo,
                     deviceName = presenceObj?.optString("device_name", null),
-                    isFavorite = obj.optBoolean("is_favorite", false)
+                    isFavorite = obj.optBoolean("is_favorite", false),
+                    quayPassAvatar = userObj.optString("quaypass_avatar_raster", null)?.takeIf { it.isNotEmpty() }
+                        ?: obj.optString("quaypass_avatar_raster", null)?.takeIf { it.isNotEmpty() }
                 )
             } catch (e: Exception) {
                 Log.w(TAG, "Failed to parse friend", e)

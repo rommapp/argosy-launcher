@@ -2071,3 +2071,76 @@ object Migration_143_144 : Migration(143, 144) {
         db.execSQL("ALTER TABLE `games` ADD COLUMN `coverSetManually` INTEGER NOT NULL DEFAULT 0")
     }
 }
+
+object Migration_144_145 : Migration(144, 145) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE `games` ADD COLUMN `timeToBeatMainSec` INTEGER")
+        db.execSQL("ALTER TABLE `games` ADD COLUMN `timeToBeatExtraSec` INTEGER")
+        db.execSQL("ALTER TABLE `games` ADD COLUMN `timeToBeatCompletionistSec` INTEGER")
+    }
+}
+
+object Migration_145_146 : Migration(145, 146) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS quaypass_encounters (
+                credentialFingerprint TEXT NOT NULL PRIMARY KEY,
+                username TEXT NOT NULL,
+                displayName TEXT,
+                avatarColor TEXT,
+                avatarBlobBase64 TEXT,
+                greeting TEXT,
+                lastGameTitle TEXT,
+                lastGamePlatform TEXT,
+                lastGamePlaytimeMinutes INTEGER,
+                lastGameIgdbId INTEGER,
+                encounteredAt INTEGER NOT NULL,
+                seenByUser INTEGER NOT NULL DEFAULT 0,
+                accountId TEXT,
+                reported INTEGER NOT NULL DEFAULT 0
+            )
+            """.trimIndent()
+        )
+        db.execSQL("CREATE INDEX IF NOT EXISTS index_quaypass_encounters_encounteredAt ON quaypass_encounters(encounteredAt)")
+        db.execSQL("CREATE INDEX IF NOT EXISTS index_quaypass_encounters_seenByUser ON quaypass_encounters(seenByUser)")
+        db.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS quaypass_daily_stats (
+                date TEXT NOT NULL PRIMARY KEY,
+                encounterCount INTEGER NOT NULL DEFAULT 0,
+                ticketsEarned INTEGER NOT NULL DEFAULT 0
+            )
+            """.trimIndent()
+        )
+    }
+}
+
+object Migration_146_147 : Migration(146, 147) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE emulator_configs ADD COLUMN selectedMemcardPath TEXT")
+    }
+}
+
+object Migration_147_148 : Migration(147, 148) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE quaypass_encounters ADD COLUMN meetCount INTEGER NOT NULL DEFAULT 1")
+    }
+}
+
+object Migration_148_149 : Migration(148, 149) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            "CREATE TABLE IF NOT EXISTS `quaypass_pending_reports` (" +
+                "`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                "`peerAccountId` TEXT NOT NULL, " +
+                "`credentialBase64` TEXT NOT NULL, " +
+                "`attestationBase64` TEXT NOT NULL, " +
+                "`nonceBase64` TEXT NOT NULL, " +
+                "`tsSecs` INTEGER NOT NULL, " +
+                "`cardMessage` TEXT, " +
+                "`cardIgdbId` INTEGER, " +
+                "`cardAvatarPngBase64` TEXT)"
+        )
+    }
+}

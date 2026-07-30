@@ -23,18 +23,78 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.text.style.TextOverflow
+import com.nendo.argosy.ui.components.SwitchPreference
+import com.nendo.argosy.ui.screens.settings.components.SectionHeader
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.util.touchOnly
 
-private sealed class CheatListItem {
+sealed class CheatListItem {
     data class Header(val title: String) : CheatListItem()
     data class Cheat(val item: CheatDisplayItem, val globalIndex: Int) : CheatListItem()
 }
 
+data class CheatOrderKey(
+    val recent: Boolean,
+    val custom: Boolean,
+    val lastUsedAt: Long,
+    val enabled: Boolean,
+    val description: String
+)
+
 private const val WEEK_MILLIS = 7 * 24 * 60 * 60 * 1000L
+
+fun buildSectionedList(
+    cheats: List<CheatDisplayItem>,
+    now: Long,
+    orderKeys: MutableMap<Long, CheatOrderKey>
+): List<CheatListItem> {
+    val weekAgo = now - WEEK_MILLIS
+    cheats.forEach { cheat ->
+        orderKeys.getOrPut(cheat.id) {
+            CheatOrderKey(
+                recent = cheat.lastUsedAt != null && cheat.lastUsedAt >= weekAgo,
+                custom = cheat.isUserCreated,
+                lastUsedAt = cheat.lastUsedAt ?: 0L,
+                enabled = cheat.enabled,
+                description = cheat.description
+            )
+        }
+    }
+    fun keyOf(cheat: CheatDisplayItem) = orderKeys.getValue(cheat.id)
+
+    val recent = cheats.filter { keyOf(it).recent }
+        .sortedByDescending { keyOf(it).lastUsedAt }
+    val custom = cheats.filter { keyOf(it).let { k -> !k.recent && k.custom } }
+        .sortedWith(
+            compareByDescending<CheatDisplayItem> { keyOf(it).lastUsedAt }
+                .thenBy { keyOf(it).description }
+        )
+    val available = cheats.filter { keyOf(it).let { k -> !k.recent && !k.custom } }
+        .sortedWith(
+            compareByDescending<CheatDisplayItem> { keyOf(it).enabled }
+                .thenBy { keyOf(it).description }
+        )
+
+    val result = mutableListOf<CheatListItem>()
+    var globalIndex = 0
+    if (recent.isNotEmpty()) {
+        result.add(CheatListItem.Header("RECENT"))
+        recent.forEach { result.add(CheatListItem.Cheat(it, globalIndex++)) }
+    }
+    if (custom.isNotEmpty()) {
+        result.add(CheatListItem.Header("CUSTOM"))
+        custom.forEach { result.add(CheatListItem.Cheat(it, globalIndex++)) }
+    }
+    if (available.isNotEmpty()) {
+        result.add(CheatListItem.Header("AVAILABLE"))
+        available.forEach { result.add(CheatListItem.Cheat(it, globalIndex++)) }
+    }
+    return result
+}
 
 @Composable
 fun AvailableTab(
+    listItems: List<CheatListItem>,
     cheats: List<CheatDisplayItem>,
     allCheats: List<CheatDisplayItem>,
     searchQuery: String,
@@ -46,19 +106,6 @@ fun AvailableTab(
     val listState = rememberLazyListState()
     val enabledCount = allCheats.count { it.enabled }
     val searchFieldFocused = focusedIndex == 0
-
-    val now = remember { System.currentTimeMillis() }
-    val weekAgo = now - WEEK_MILLIS
-
-    val listItems = remember(cheats, searchQuery) {
-        if (searchQuery.isNotBlank()) {
-            cheats.mapIndexed { index, cheat ->
-                CheatListItem.Cheat(cheat, index)
-            }
-        } else {
-            buildSectionedList(cheats, weekAgo)
-        }
-    }
 
     val cheatIndexToListIndex = remember(listItems) {
         listItems.mapIndexedNotNull { listIdx, item ->
@@ -135,7 +182,7 @@ fun AvailableTab(
                             SectionHeader(title = item.title)
                         }
                         is CheatListItem.Cheat -> {
-                            CheatRow(
+                            SwitchPreference(
                                 title = item.item.description,
                                 isEnabled = item.item.enabled,
                                 isFocused = item.globalIndex == focusedIndex - 1,
@@ -147,59 +194,6 @@ fun AvailableTab(
             }
         }
     }
-}
-
-private fun buildSectionedList(cheats: List<CheatDisplayItem>, weekAgo: Long): List<CheatListItem> {
-    val recent = cheats.filter { it.lastUsedAt != null && it.lastUsedAt >= weekAgo }
-        .sortedByDescending { it.lastUsedAt }
-
-    val recentIds = recent.map { it.id }.toSet()
-
-    val custom = cheats.filter { it.isUserCreated && it.id !in recentIds }
-        .sortedWith(compareByDescending<CheatDisplayItem> { it.lastUsedAt ?: 0L }.thenBy { it.description })
-
-    val available = cheats.filter { !it.isUserCreated && it.id !in recentIds }
-        .sortedWith(compareByDescending<CheatDisplayItem> { it.enabled }.thenBy { it.description })
-
-    val result = mutableListOf<CheatListItem>()
-    var globalIndex = 0
-
-    if (recent.isNotEmpty()) {
-        result.add(CheatListItem.Header("RECENT"))
-        recent.forEach { cheat ->
-            result.add(CheatListItem.Cheat(cheat, globalIndex++))
-        }
-    }
-
-    if (custom.isNotEmpty()) {
-        result.add(CheatListItem.Header("CUSTOM"))
-        custom.forEach { cheat ->
-            result.add(CheatListItem.Cheat(cheat, globalIndex++))
-        }
-    }
-
-    if (available.isNotEmpty()) {
-        result.add(CheatListItem.Header("AVAILABLE"))
-        available.forEach { cheat ->
-            result.add(CheatListItem.Cheat(cheat, globalIndex++))
-        }
-    }
-
-    return result
-}
-
-@Composable
-private fun SectionHeader(title: String) {
-    Text(
-        text = title,
-        style = MaterialTheme.typography.labelSmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-        modifier = Modifier.padding(
-            start = Dimens.spacingXs,
-            top = Dimens.spacingSm,
-            bottom = Dimens.spacingXs
-        )
-    )
 }
 
 @Composable

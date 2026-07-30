@@ -344,15 +344,21 @@ class DownloadDelegate @Inject constructor(
         }
     }
 
-    fun deleteLocalFile(scope: CoroutineScope, gameId: Long, isSteamGame: Boolean, onGameDeleted: () -> Unit) {
+    fun deleteLocalFile(scope: CoroutineScope, gameId: Long, onGameDeleted: () -> Unit) {
         scope.launch {
             gameActions.deleteLocalFile(gameId)
-            if (isSteamGame) {
-                notificationManager.showSuccess("Game removed")
+            notificationManager.showSuccess("Download deleted")
+            onGameDeleted()
+        }
+    }
+
+    fun removeFromLibrary(scope: CoroutineScope, gameId: Long) {
+        scope.launch {
+            if (gameActions.removeFromLibrary(gameId)) {
+                notificationManager.showSuccess("Removed from library")
                 _launchEvents.emit(LaunchEvent.NavigateBack)
             } else {
-                notificationManager.showSuccess("Download deleted")
-                onGameDeleted()
+                notificationManager.showError("Could not remove this game")
             }
         }
     }

@@ -22,6 +22,7 @@ import com.nendo.argosy.ui.screens.downloads.DownloadsScreen
 import com.nendo.argosy.ui.screens.firstrun.FirstRunScreen
 import com.nendo.argosy.ui.screens.gamedetail.GameDetailScreen
 import com.nendo.argosy.ui.screens.home.HomeScreen
+import com.nendo.argosy.ui.screens.quaypass.QuayPassCheckInScreen
 import com.nendo.argosy.ui.screens.library.LibraryScreen
 import com.nendo.argosy.ui.screens.doodle.DoodleScreen
 import com.nendo.argosy.ui.screens.search.SearchScreen
@@ -227,7 +228,11 @@ fun NavGraph(
                 },
                 initialSection = section,
                 initialAction = action,
-                initialPlatformId = platformId
+                initialPlatformId = platformId,
+                onNavigateToAvatarEditor = {
+                    navController.navigate(Screen.AvatarDoodle.route)
+                },
+                onNavigate = { route -> navController.navigate(route) }
             )
         }
 
@@ -284,6 +289,9 @@ fun NavGraph(
                 },
                 onNavigateToSocialSettings = {
                     navController.navigate(Screen.Settings.createRoute(section = "social"))
+                },
+                onNavigateToAvatarEditor = {
+                    navController.navigate(Screen.AvatarDoodle.route)
                 }
             )
         }
@@ -350,6 +358,15 @@ fun NavGraph(
             )
         }
 
+        composable(Screen.AvatarDoodle.route) {
+            DoodleScreen(
+                onBack = { navController.popBackStack() },
+                onDone = { _, _, _, _, _ -> navController.popBackStack() },
+                avatarMode = true,
+                inputRoute = Screen.AvatarDoodle.route
+            )
+        }
+
         composable(Screen.PostEditor.route) { backStackEntry ->
             val doodleData = backStackEntry.savedStateHandle.get<String>("doodle_data")
             val doodleSize = backStackEntry.savedStateHandle.get<Int>("doodle_size")
@@ -371,6 +388,10 @@ fun NavGraph(
                 initialDoodleGameTitle = doodleGameTitle,
                 initialDoodleGameCoverPath = doodleGameCoverPath
             )
+        }
+
+        composable(Screen.QuayPass.route) {
+            QuayPassCheckInScreen(onBack = navigateToDefault)
         }
     }
 }

@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.nendo.argosy.ui.common.GradientColorExtractor
 import com.nendo.argosy.data.cache.ImageCacheManager
 import com.nendo.argosy.data.cache.ImageCacheProgress
+import com.nendo.argosy.data.emulator.BuiltinCoreResolver
 import com.nendo.argosy.data.emulator.EmulatorDetector
 import com.nendo.argosy.data.emulator.InstalledEmulator
 import com.nendo.argosy.data.emulator.RetroArchConfigParser
@@ -63,9 +64,11 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -83,6 +86,7 @@ class SettingsViewModel @Inject constructor(
     internal val installedAppResolver: com.nendo.argosy.data.platform.InstalledAppResolver,
     internal val emulatorConfigRepo: EmulatorConfigRepository,
     internal val emulatorDetector: EmulatorDetector,
+    internal val builtinCoreResolver: BuiltinCoreResolver,
     internal val romMRepository: RomMRepository,
     internal val notificationManager: NotificationManager,
     internal val gameRepository: GameRepository,
@@ -142,11 +146,19 @@ class SettingsViewModel @Inject constructor(
     internal val _requestNotificationPermissionEvent = MutableSharedFlow<Unit>()
     val requestNotificationPermissionEvent: SharedFlow<Unit> = _requestNotificationPermissionEvent.asSharedFlow()
 
+    internal val _requestBlePermissionEvent = MutableSharedFlow<Unit>()
+    val requestBlePermissionEvent: SharedFlow<Unit> = _requestBlePermissionEvent.asSharedFlow()
+
     internal val _requestScreenCapturePermissionEvent = MutableSharedFlow<Unit>()
     val requestScreenCapturePermissionEvent: SharedFlow<Unit> = _requestScreenCapturePermissionEvent.asSharedFlow()
 
     internal val _requestMediaPermissionEvent = MutableSharedFlow<Unit>()
     val requestMediaPermissionEvent: SharedFlow<Unit> = _requestMediaPermissionEvent.asSharedFlow()
+
+    internal val _navigationEvents = MutableSharedFlow<NavigationEvent>(extraBufferCapacity = 4)
+    val navigationEvents: SharedFlow<NavigationEvent> = _navigationEvents.asSharedFlow()
+
+    data class NavigationEvent(val route: String)
 
     val imageCacheProgress: StateFlow<ImageCacheProgress> = imageCacheManager.progress
 
@@ -160,6 +172,9 @@ class SettingsViewModel @Inject constructor(
     val launchPlatformFolderPicker: SharedFlow<Long> = storageDelegate.launchPlatformFolderPicker
     val launchSavePathPicker: SharedFlow<Unit> = emulatorDelegate.launchSavePathPicker
     val builtinNavigationEvent = emulatorDelegate.builtinNavigationEvent
+
+    private val _avatarEditorEvent = kotlinx.coroutines.flow.MutableSharedFlow<Unit>()
+    val avatarEditorEvent: kotlinx.coroutines.flow.SharedFlow<Unit> = _avatarEditorEvent
     val launchPlatformSavePathPicker: SharedFlow<Long> = storageDelegate.launchSavePathPicker
     val resetPlatformSavePathEvent: SharedFlow<Long> = storageDelegate.resetSavePathEvent
     val launchPlatformStatePathPicker: SharedFlow<Long> = storageDelegate.launchStatePathPicker
@@ -197,6 +212,7 @@ class SettingsViewModel @Inject constructor(
         routeObserveModalResetSignal(this)
         routeObserveConnectionState(this)
         observeSocialConnectionState()
+        observeAvatarPreferences()
         routeObservePlatformLibretroSettings(this)
         routeLoadAvailablePlatformsForLibretro(this)
         loadSettings()
@@ -404,6 +420,7 @@ class SettingsViewModel @Inject constructor(
     fun setBuiltinShader(value: String) = routeSetBuiltinShader(this, value)
     fun setBuiltinFramesEnabled(enabled: Boolean) = routeSetBuiltinFramesEnabled(this, enabled)
     fun setBuiltinLibretroEnabled(enabled: Boolean) = routeSetBuiltinLibretroEnabled(this, enabled)
+    fun setIngameMenuTwoColumn(enabled: Boolean) = routeSetIngameMenuTwoColumn(this, enabled)
     fun setBuiltinFilter(value: String) = routeSetBuiltinFilter(this, value)
     fun setBuiltinAspectRatio(value: String) = routeSetBuiltinAspectRatio(this, value)
     fun setBuiltinPortraitPosition(value: String) = routeSetBuiltinPortraitPosition(this, value)
@@ -1182,6 +1199,9 @@ class SettingsViewModel @Inject constructor(
 
     fun enableSaveSync() = syncDelegate.enableSaveSync(viewModelScope)
     fun toggleSaveSync() = syncDelegate.toggleSaveSync(viewModelScope)
+    fun toggleSecureSaves() = syncDelegate.toggleSecureSaves(viewModelScope)
+    fun confirmDisableSecureSaves() = syncDelegate.confirmDisableSecureSaves(viewModelScope)
+    fun cancelDisableSecureSaves() = syncDelegate.cancelDisableSecureSaves()
     fun cycleSaveCacheLimit(direction: Int = 1) = syncDelegate.cycleSaveCacheLimit(viewModelScope, direction)
     fun setSaveCacheLimit(limit: Int) = syncDelegate.setSaveCacheLimit(viewModelScope, limit)
 
@@ -1413,6 +1433,8 @@ class SettingsViewModel @Inject constructor(
     private var pendingBiosCopyPlatformSlug: String? = null
     val hasPendingBiosCopy: Boolean get() = pendingBiosCopyPlatformSlug != null
 
+    internal var shaderChainPersistJob: kotlinx.coroutines.Job? = null
+
     fun requestRemoveLocalFiles() {
         _uiState.update { it.copy(platformDetail = it.platformDetail.copy(showRemoveConfirm = true)) }
     }
@@ -1525,6 +1547,8 @@ class SettingsViewModel @Inject constructor(
                         username = state.user.username,
                         displayName = state.user.displayName,
                         avatarColor = state.user.avatarColor,
+                        avatarDoodle = prefs.socialAvatarDoodle,
+                        avatarUseDoodle = prefs.socialAvatarUseDoodle,
                         onlineStatusEnabled = prefs.socialOnlineStatusEnabled,
                         showNowPlaying = prefs.socialShowNowPlaying,
                         notifyFriendOnline = prefs.socialNotifyFriendOnline,
@@ -1533,7 +1557,8 @@ class SettingsViewModel @Inject constructor(
                         discordLinked = socialRepository.discordLinked.value,
                         discordUsername = socialRepository.discordUsername.value,
                         discordRichPresenceEnabled = prefs.discordRichPresenceEnabled,
-                        discordPresenceState = discordPresenceManager.state.value
+                        discordPresenceState = discordPresenceManager.state.value,
+                        quayPassEnabled = prefs.quayPassEnabled
                     )) }
                 }
                 is SocialConnectionState.AwaitingAuth -> {
@@ -1564,6 +1589,16 @@ class SettingsViewModel @Inject constructor(
                 discordPresenceState = presenceState
             )) }
         }.launchIn(viewModelScope)
+
+        preferencesRepository.userPreferences
+            .map { it.quayPassEnabled }
+            .distinctUntilChanged()
+            .onEach { enabled ->
+                _uiState.update { it.copy(social = it.social.copy(
+                    quayPassEnabled = enabled
+                )) }
+            }
+            .launchIn(viewModelScope)
     }
 
     internal fun handleSocialConfirm(state: SettingsUiState): InputResult {
@@ -1577,8 +1612,19 @@ class SettingsViewModel @Inject constructor(
                 InputResult.HANDLED
             }
             SocialAuthStatus.CONNECTED -> {
-                val layoutState = com.nendo.argosy.ui.screens.settings.sections.SocialLayoutState(isConnected = true)
+                val layoutState = com.nendo.argosy.ui.screens.settings.sections.SocialLayoutState(
+                    isConnected = true,
+                    hasAvatarDoodle = state.social.avatarDoodle != null
+                )
                 when (com.nendo.argosy.ui.screens.settings.sections.socialItemAtFocusIndex(state.focusedIndex, layoutState)) {
+                    is com.nendo.argosy.ui.screens.settings.sections.SocialItem.EditAvatar -> {
+                        openAvatarEditor()
+                        InputResult.HANDLED
+                    }
+                    is com.nendo.argosy.ui.screens.settings.sections.SocialItem.UseDoodleAvatar -> {
+                        setSocialAvatarUseDoodle(!state.social.avatarUseDoodle)
+                        InputResult.handled(SoundType.TOGGLE)
+                    }
                     is com.nendo.argosy.ui.screens.settings.sections.SocialItem.OnlineStatus -> {
                         setSocialOnlineStatus(!state.social.onlineStatusEnabled)
                         InputResult.handled(SoundType.TOGGLE)
@@ -1597,6 +1643,11 @@ class SettingsViewModel @Inject constructor(
                     }
                     is com.nendo.argosy.ui.screens.settings.sections.SocialItem.SuppressInGame -> {
                         if (state.social.onlineStatusEnabled) setSocialSuppressNotificationsInGame(!state.social.suppressNotificationsInGame)
+                        InputResult.handled(SoundType.TOGGLE)
+                    }
+                    is com.nendo.argosy.ui.screens.settings.sections.SocialItem.QuayPassEnabled -> {
+                        if (state.social.quayPassEnabled) setQuayPassEnabled(false)
+                        else requestEnableQuayPass()
                         InputResult.handled(SoundType.TOGGLE)
                     }
                     is com.nendo.argosy.ui.screens.settings.sections.SocialItem.Unlink -> {
@@ -1671,6 +1722,33 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
+    private fun observeAvatarPreferences() {
+        viewModelScope.launch {
+            preferencesRepository.userPreferences.collect { prefs ->
+                _uiState.update {
+                    if (it.social.avatarDoodle == prefs.socialAvatarDoodle &&
+                        it.social.avatarUseDoodle == prefs.socialAvatarUseDoodle
+                    ) it
+                    else it.copy(social = it.social.copy(
+                        avatarDoodle = prefs.socialAvatarDoodle,
+                        avatarUseDoodle = prefs.socialAvatarUseDoodle
+                    ))
+                }
+            }
+        }
+    }
+
+    fun setSocialAvatarUseDoodle(enabled: Boolean) {
+        viewModelScope.launch {
+            preferencesRepository.setSocialAvatarUseDoodle(enabled)
+            _uiState.update { it.copy(social = it.social.copy(avatarUseDoodle = enabled)) }
+        }
+    }
+
+    fun openAvatarEditor() {
+        viewModelScope.launch { _avatarEditorEvent.emit(Unit) }
+    }
+
     fun setSocialOnlineStatus(enabled: Boolean) {
         viewModelScope.launch {
             preferencesRepository.setSocialOnlineStatusEnabled(enabled)
@@ -1713,6 +1791,26 @@ class SettingsViewModel @Inject constructor(
             _uiState.update { it.copy(social = it.social.copy(
                 suppressNotificationsInGame = enabled
             )) }
+        }
+    }
+
+    fun setQuayPassEnabled(enabled: Boolean) {
+        viewModelScope.launch {
+            preferencesRepository.setQuayPassEnabled(enabled)
+        }
+    }
+
+    /**
+     * Begins enabling QuayPass: requests BLE runtime permissions first (the
+     * service cannot scan/advertise without them on Android 12+).
+     */
+    fun requestEnableQuayPass() {
+        viewModelScope.launch { _requestBlePermissionEvent.emit(Unit) }
+    }
+
+    fun onBlePermissionResult(granted: Boolean) {
+        if (granted) {
+            viewModelScope.launch { preferencesRepository.setQuayPassEnabled(true) }
         }
     }
 

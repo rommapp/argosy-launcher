@@ -299,7 +299,6 @@ fun SteamSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                         is LibrarySyncState.SyncingLicenses -> "Syncing licenses..."
                         is LibrarySyncState.FetchingPackages -> "Fetching packages (${s.current}/${s.total})..."
                         is LibrarySyncState.FetchingApps -> "Fetching games (${s.current}/${s.total})..."
-                        is LibrarySyncState.FetchingProtonDbRatings -> "Fetching ratings..."
                         is LibrarySyncState.Complete -> "Added ${s.gamesAdded}, updated ${s.gamesUpdated}"
                         is LibrarySyncState.Error -> "Error: ${s.message}"
                     }

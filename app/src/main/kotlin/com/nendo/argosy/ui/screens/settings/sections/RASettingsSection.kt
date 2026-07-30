@@ -79,7 +79,8 @@ fun RASettingsSection(
                 raState = raState,
                 focusedIndex = uiState.focusedIndex,
                 viewModel = viewModel,
-                listState = listState
+                listState = listState,
+                secureSaves = uiState.syncSettings.secureSaves
             )
         } else {
             RALoggedOutContent(
@@ -97,7 +98,8 @@ private fun RALoggedInContent(
     raState: RASettingsState,
     focusedIndex: Int,
     viewModel: SettingsViewModel,
-    listState: androidx.compose.foundation.lazy.LazyListState
+    listState: androidx.compose.foundation.lazy.LazyListState,
+    secureSaves: Boolean
 ) {
     LazyColumn(
         state = listState,
@@ -185,31 +187,41 @@ private fun RALoggedInContent(
         }
 
         item {
-            val cycleOptions = listOf("Ask", "Default to Casual", "Default to Hardcore")
-            val tokenOptions = listOf("ask", "casual", "hardcore")
-            val currentLabel = when (raState.defaultToHardcore) {
-                "hardcore" -> "Default to Hardcore"
-                "casual" -> "Default to Casual"
-                else -> "Ask"
-            }
-            CyclePreference(
-                title = "Play Mode Preference",
-                value = currentLabel,
-                isFocused = focusedIndex == 1,
-                onClick = { viewModel.cycleRADefaultMode(1) },
-                onPrev = { viewModel.cycleRADefaultMode(-1) },
-                options = cycleOptions,
-                onSelect = { index ->
-                    val nextToken = tokenOptions.getOrNull(index) ?: "ask"
-                    viewModel.setBuiltinDefaultToHardcore(nextToken)
-                },
-                subtitle = when (raState.defaultToHardcore) {
-                    "ask" -> "Prompt on launch to choose between Casual and Hardcore"
-                    "casual" -> "Allows save states, cheats, and rewind. Earn softcore achievements."
-                    "hardcore" -> "Disables save states, cheats, and rewind. Earn hardcore achievements."
-                    else -> "Preferred mode when launching a game"
+            if (!secureSaves) {
+                ActionPreference(
+                    title = "Play Mode Preference",
+                    subtitle = "Requires Secure Saves",
+                    isFocused = focusedIndex == 1,
+                    isEnabled = false,
+                    onClick = {}
+                )
+            } else {
+                val cycleOptions = listOf("Ask", "Default to Casual", "Default to Hardcore")
+                val tokenOptions = listOf("ask", "casual", "hardcore")
+                val currentLabel = when (raState.defaultToHardcore) {
+                    "hardcore" -> "Default to Hardcore"
+                    "casual" -> "Default to Casual"
+                    else -> "Ask"
                 }
-            )
+                CyclePreference(
+                    title = "Play Mode Preference",
+                    value = currentLabel,
+                    isFocused = focusedIndex == 1,
+                    onClick = { viewModel.cycleRADefaultMode(1) },
+                    onPrev = { viewModel.cycleRADefaultMode(-1) },
+                    options = cycleOptions,
+                    onSelect = { index ->
+                        val nextToken = tokenOptions.getOrNull(index) ?: "ask"
+                        viewModel.setBuiltinDefaultToHardcore(nextToken)
+                    },
+                    subtitle = when (raState.defaultToHardcore) {
+                        "ask" -> "Prompt on launch to choose between Casual and Hardcore"
+                        "casual" -> "Allows save states, cheats, and rewind. Earn softcore achievements."
+                        "hardcore" -> "Disables save states, cheats, and rewind. Earn hardcore achievements."
+                        else -> "Preferred mode when launching a game"
+                    }
+                )
+            }
         }
 
         raProxyItems(raState, focusedIndex, viewModel, proxyToggleIndex = 2, proxyFieldIndex = 3)

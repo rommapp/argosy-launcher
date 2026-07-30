@@ -1,8 +1,11 @@
 package com.nendo.argosy.data.remote.romm
 
 import com.nendo.argosy.data.cache.ImageCacheManager
+import kotlinx.coroutines.flow.first
 import com.nendo.argosy.data.local.dao.GameDao
+import com.nendo.argosy.data.local.dao.GameFileDao
 import com.nendo.argosy.data.local.dao.PendingSyncQueueDao
+import com.nendo.argosy.data.model.VariantCategory
 import com.nendo.argosy.data.local.entity.SyncType
 import com.nendo.argosy.data.sync.SyncCoordinator
 import com.nendo.argosy.util.Logger
@@ -20,7 +23,10 @@ class RomMUserPropertyService @Inject constructor(
     private val gameDao: GameDao,
     private val pendingSyncQueueDao: PendingSyncQueueDao,
     private val imageCacheManager: ImageCacheManager,
-    private val syncCoordinator: dagger.Lazy<SyncCoordinator>
+    private val syncCoordinator: dagger.Lazy<SyncCoordinator>,
+    private val userPreferencesRepository: com.nendo.argosy.data.preferences.UserPreferencesRepository,
+    private val gameFileSync: RomMGameFileSync,
+    private val gameFileDao: GameFileDao
 ) {
     private val api: RomMApi? get() = connectionManager.getApi()
 
@@ -115,6 +121,31 @@ class RomMUserPropertyService @Inject constructor(
         }
     }
 
+    /**
+     * Records a game's files when its row claims a soundtrack but no track was ever stored.
+     * The list endpoint carries no files at all, so a library sync can leave a game
+     * advertising music it has no way to find; only the single-ROM response holds them.
+     * Returns whether anything was fetched, so a caller can retry whatever came up empty.
+     */
+    suspend fun ensureSoundtrackFiles(gameId: Long): Boolean {
+        val currentApi = api ?: return false
+        val game = gameDao.getById(gameId) ?: return false
+        if (!game.remoteHasSoundtrack) return false
+        val rommId = game.rommId ?: return false
+        if (gameFileDao.getFilesByCategory(gameId, VariantCategory.SOUNDTRACK.key).isNotEmpty()) return false
+
+        return try {
+            val response = currentApi.getRom(rommId)
+            val rom = response.body()?.takeIf { response.isSuccessful } ?: return false
+            gameFileSync.sync(gameId, rom, game.platformSlug, fileListIsAuthoritative = true)
+            Logger.info(TAG, "ensureSoundtrackFiles: recorded ${rom.files?.size ?: 0} files for ${game.title}")
+            true
+        } catch (e: Exception) {
+            Logger.warn(TAG, "ensureSoundtrackFiles: failed for ${game.title}: ${e.message}")
+            false
+        }
+    }
+
     suspend fun refreshGameData(gameId: Long): RomMResult<Unit> {
         val currentApi = api ?: return RomMResult.Error("Not connected")
         val game = gameDao.getById(gameId) ?: return RomMResult.Error("Game not found")
@@ -139,34 +170,34 @@ class RomMUserPropertyService @Inject constructor(
                 ?: screenshotUrls.getOrNull(0)
             val coverUrl = rom.coverLarge?.let { apiClient.buildMediaUrl(it) }
 
-            if (backgroundUrl != null) {
-                imageCacheManager.queueBackgroundCache(backgroundUrl, rom.id, rom.name)
-            }
-            if (coverUrl != null) {
-                imageCacheManager.queueCoverCache(coverUrl, rom.id, rom.name)
-            }
+            val boxArtEnabled = userPreferencesRepository.userPreferences.first().boxArtCacheEnabled
+            val boxBackUrl = if (boxArtEnabled) {
+                rom.ssMetadata?.box2dBackPath?.let { apiClient.buildResourceUrl(it) }
+            } else null
+            val boxSpineUrl = if (boxArtEnabled) {
+                rom.ssMetadata?.box2dSidePath?.let { apiClient.buildResourceUrl(it) }
+            } else null
 
-            val updatedGame = game.copy(
-                title = rom.name,
-                sortTitle = RomMUtils.createSortTitle(rom.name),
-                coverPath = coverUrl,
-                backgroundPath = backgroundUrl,
+            val cached = imageCacheManager.cacheGameImagesNow(
+                rommId = rom.id,
+                gameTitle = rom.name,
+                coverUrl = coverUrl,
+                backgroundUrl = backgroundUrl,
+                boxBackUrl = boxBackUrl,
+                boxSpineUrl = boxSpineUrl
+            )
+
+            val updatedGame = game.withRomMetadata(rom).copy(
+                coverPath = cached.coverPath ?: coverUrl,
+                backgroundPath = cached.backgroundPath ?: backgroundUrl,
                 screenshotPaths = screenshotUrls.joinToString(","),
-                description = rom.summary,
-                releaseYear = rom.firstReleaseDateMillis?.let {
-                    java.time.Instant.ofEpochMilli(it).atZone(java.time.ZoneOffset.UTC).year
-                },
-                genre = rom.genres?.firstOrNull(),
-                developer = rom.companies?.firstOrNull(),
-                rating = rom.metadatum?.averageRating?.takeIf { rom.igdbId != null && it < 98f },
-                regions = rom.regions?.joinToString(","),
-                languages = rom.languages?.joinToString(","),
-                gameModes = rom.metadatum?.gameModes?.joinToString(","),
-                franchises = rom.metadatum?.franchises?.joinToString(","),
-                achievementCount = rom.raMetadata?.achievements?.size ?: game.achievementCount
+                boxBackPath = cached.boxBackPath ?: boxBackUrl ?: game.boxBackPath,
+                boxSpinePath = cached.boxSpinePath ?: boxSpineUrl ?: game.boxSpinePath,
+                rommFileName = rom.fileName ?: game.rommFileName
             )
 
             gameDao.update(updatedGame)
+            gameFileSync.sync(game.id, rom, game.platformSlug, fileListIsAuthoritative = true)
             RomMResult.Success(Unit)
         } catch (e: Exception) {
             RomMResult.Error(e.message ?: "Failed to refresh game data")

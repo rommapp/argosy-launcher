@@ -108,6 +108,7 @@ data class DrawerState(
     val rommConnecting: Boolean = false,
     val socialConnected: Boolean = false,
     val localUser: SocialUser? = null,
+    val localAvatarDoodle: String? = null,
     val downloadCount: Int = 0,
     val saveSyncAttentionCount: Int = 0,
     val emulatorUpdatesAvailable: Int = 0,
@@ -133,7 +134,9 @@ data class QuickSettingsUiState(
     val deviceSettingsSupported: Boolean = false,
     val deviceSettingsEnabled: Boolean = false,
     val systemVolume: Float = 1f,
-    val screenBrightness: Float = 0.5f
+    val screenBrightness: Float = 0.5f,
+    val isSocialLinked: Boolean = false,
+    val quayPassEnabled: Boolean = false
 )
 
 data class ScreenDimmerPreferences(
@@ -463,7 +466,8 @@ class ArgosyViewModel @Inject constructor(
             socialRepository.connectionState,
             steamContentManager.activeDownload,
             steamContentManager.downloadQueue,
-            pendingConflictDao.getOpenCountFlow()
+            pendingConflictDao.getOpenCountFlow(),
+            preferencesRepository.userPreferences
         )
     ) { values ->
         val connection = values[0] as ConnectionState
@@ -481,6 +485,7 @@ class ArgosyViewModel @Inject constructor(
         @Suppress("UNCHECKED_CAST")
         val steamQueue = values[11] as List<com.nendo.argosy.data.steam.QueuedSteamDownload>
         val saveSyncAttentionCount = values[12] as Int
+        val userPrefs = values[13] as com.nendo.argosy.data.preferences.UserPreferences
 
         val steamActive = steamActiveDownload != null
         val steamQueued = steamQueue.size
@@ -499,6 +504,7 @@ class ArgosyViewModel @Inject constructor(
             rommConnecting = connection is ConnectionState.Connecting,
             socialConnected = socialConnection is SocialConnectionState.Connected,
             localUser = (socialConnection as? SocialConnectionState.Connected)?.user,
+            localAvatarDoodle = userPrefs.socialAvatarDoodle.takeIf { userPrefs.socialAvatarUseDoodle },
             downloadCount = downloadCount,
             saveSyncAttentionCount = saveSyncAttentionCount,
             emulatorUpdatesAvailable = emulatorUpdateCount,
@@ -519,6 +525,7 @@ class ArgosyViewModel @Inject constructor(
     private val allDrawerItems = listOf(
         DrawerItem(Screen.Home.route, "Home"),
         DrawerItem(Screen.Social.route, "Social"),
+        DrawerItem(Screen.QuayPass.route, "Check-In"),
         DrawerItem(Screen.Collections.route, "Collections"),
         DrawerItem(Screen.Library.route, "Library"),
         DrawerItem(Screen.Downloads.route, "Downloads"),
@@ -554,6 +561,7 @@ class ArgosyViewModel @Inject constructor(
     val isDrawerOpen: StateFlow<Boolean> = _isDrawerOpen.asStateFlow()
 
     fun setDrawerOpen(open: Boolean) {
+        if (open) _drawerTab.value = DrawerTab.NAVIGATION
         _isDrawerOpen.value = open
     }
 
@@ -816,7 +824,9 @@ class ArgosyViewModel @Inject constructor(
             deviceSettingsSupported = device.isSupported,
             deviceSettingsEnabled = device.hasWritePermission,
             systemVolume = volume,
-            screenBrightness = brightness
+            screenBrightness = brightness,
+            isSocialLinked = prefs.isSocialLinked,
+            quayPassEnabled = prefs.quayPassEnabled
         )
     }.stateIn(
         scope = viewModelScope,
@@ -1300,8 +1310,17 @@ class ArgosyViewModel @Inject constructor(
             systemVolume = qs.systemVolume,
             screenBrightness = qs.screenBrightness,
             isDualScreenActive = _isDualScreenMode,
-            isRolesSwapped = false
+            isRolesSwapped = false,
+            isSocialLinked = qs.isSocialLinked,
+            quayPassEnabled = qs.quayPassEnabled
         )
+    }
+
+    fun toggleQuayPassFromQuickSettings() {
+        viewModelScope.launch {
+            val prefs = preferencesRepository.userPreferences.first()
+            preferencesRepository.setQuayPassEnabled(!prefs.quayPassEnabled)
+        }
     }
 
     fun createQuickSettingsInputHandler(
@@ -1393,6 +1412,10 @@ class ArgosyViewModel @Inject constructor(
                 QuickSettingsItem.SwapDisplays -> {
                     onSwapDisplays?.invoke()
                     InputResult.HANDLED
+                }
+                QuickSettingsItem.QuayPass -> {
+                    toggleQuayPassFromQuickSettings()
+                    InputResult.handled(SoundType.TOGGLE)
                 }
                 else -> InputResult.HANDLED
             }

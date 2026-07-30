@@ -910,6 +910,7 @@ private fun GameDetailModals(
             onCoreClick = viewModel::showCorePicker,
             onChangeSavePath = viewModel::openPerGameSavePathBrowser,
             onResetSavePath = viewModel::clearPerGameSavePath,
+            onMemcardClick = viewModel::openPerGameMemcardPicker,
             onCycleDisplayTarget = viewModel::cyclePerGameDisplayTarget,
             onCycleExtension = viewModel::cyclePerGameExtension,
             onPlatformSettings = {
@@ -926,6 +927,16 @@ private fun GameDetailModals(
             title = "Save Path",
             onPathSelected = viewModel::setPerGameSavePath,
             onDismiss = viewModel::dismissPerGameSavePathBrowser
+        )
+    }
+
+    if (uiState.perGameSettings.showMemcardPicker) {
+        com.nendo.argosy.ui.components.MemcardPickerModal(
+            cards = uiState.perGameSettings.memcardPickerCards,
+            focusIndex = uiState.perGameSettings.memcardPickerFocusIndex,
+            selectedCardPath = uiState.perGameSettings.selectedMemcardPath ?: "",
+            onSelectCard = viewModel::selectPerGameMemcard,
+            onDismiss = viewModel::dismissPerGameMemcardPicker
         )
     }
 
@@ -948,7 +959,7 @@ private fun GameDetailModals(
             hasSaves = uiState.hasCasualSaves,
             hasHardcoreSave = uiState.hasHardcoreSave,
             hasRASupport = uiState.hasRASupport,
-            isRALoggedIn = uiState.isRALoggedIn,
+            hardcoreAvailable = uiState.hardcoreAvailable,
             isOnline = uiState.isOnline,
             canSkipSync = uiState.isOnline,
             onAction = viewModel::handlePlayOption,

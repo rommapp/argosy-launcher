@@ -21,7 +21,7 @@ class HotkeyManager(
     private var triggeredConfig: HotkeyConfig? = null
     private var limitToPlayer1 = true
     private var player1ControllerId: String? = null
-    private var platformMappedButtons: Set<Int> = emptySet()
+    private var platformMappedButtonsByController: Map<String, Set<Int>> = emptyMap()
     private var dispatchCallback: ((HotkeyConfig) -> Unit)? = null
 
     private var pendingHoldJob: Job? = null
@@ -70,8 +70,8 @@ class HotkeyManager(
         player1ControllerId = controllerId
     }
 
-    fun setPlatformMappedButtons(buttons: Set<Int>) {
-        platformMappedButtons = buttons
+    fun setPlatformMappedButtons(buttonsByController: Map<String, Set<Int>>) {
+        platformMappedButtonsByController = buttonsByController
     }
 
     /**
@@ -101,7 +101,9 @@ class HotkeyManager(
             if (hotkey.keyCodes.isEmpty()) return@filter false
             if (!pressedKeys.containsAll(hotkey.keyCodes)) return@filter false
             if (alreadyPressed.containsAll(hotkey.keyCodes)) return@filter false
-            if (hotkey.keyCodes.size == 1 && hotkey.keyCodes.first() in platformMappedButtons) return@filter false
+            if (hotkey.keyCodes.size == 1 && isPlatformMappedButton(hotkey.keyCodes.first(), controllerId)) {
+                return@filter false
+            }
             true
         }
 
@@ -121,6 +123,12 @@ class HotkeyManager(
             }
             else -> null
         }
+    }
+
+    private fun isPlatformMappedButton(keyCode: Int, controllerId: String?): Boolean {
+        val controllerButtons = controllerId?.let(platformMappedButtonsByController::get)
+        return controllerButtons?.contains(keyCode)
+            ?: platformMappedButtonsByController.values.any { keyCode in it }
     }
 
     private fun startPending(holdHotkey: HotkeyConfig, instantHotkey: HotkeyConfig?) {

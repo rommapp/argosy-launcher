@@ -66,6 +66,7 @@ import com.nendo.argosy.ui.screens.gamedetail.components.SaveStatusInfo
 import com.nendo.argosy.ui.screens.gamedetail.components.SaveStatusRow
 import com.nendo.argosy.ui.screens.gamedetail.components.SaveSyncStatus
 import com.nendo.argosy.ui.theme.Dimens
+import com.nendo.argosy.ui.theme.LocalLauncherTheme
 import com.nendo.argosy.ui.util.clickableNoFocus
 import com.nendo.argosy.data.local.entity.SaveSyncEntity
 import com.nendo.argosy.data.sync.SyncDirection
@@ -148,6 +149,10 @@ fun SaveSyncScreen(
         ) {
             item { DeviceHeader(uiState.deviceCard, uiState.otherDevices, uiState.otherDevicesHidden) }
 
+            uiState.accessNotice?.let { notice ->
+                item { AccessNoticeCard(notice) }
+            }
+
             if (uiState.isEmpty && !uiState.isLoading) {
                 item { EmptyState(isConnected = uiState.deviceCard.isConnected) }
             }
@@ -205,7 +210,7 @@ fun SaveSyncScreen(
 }
 
 private fun SaveSyncUiState.lazyIndexForFocused(): Int {
-    var lazyIndex = 1
+    var lazyIndex = if (accessNotice != null) 2 else 1
     val attn = attentionRows.size
     val prog = inProgressRows.size
     if (focusedIndex < attn) return lazyIndex + 1 + focusedIndex
@@ -459,6 +464,47 @@ private fun iconForPlatform(platform: String?): androidx.compose.ui.graphics.vec
         "linux" in lower || "windows" in lower || "mac" in lower || "darwin" in lower || "deck" in lower -> Icons.Default.Computer
         "web" in lower || "browser" in lower -> Icons.Default.Language
         else -> Icons.Default.Devices
+    }
+}
+
+@Composable
+private fun AccessNoticeCard(notice: SaveAccessNoticeUi) {
+    val warningColor = LocalLauncherTheme.current.semanticColors.warning
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(Dimens.radiusLg),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(Dimens.spacingMd),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(Dimens.spacingMd)
+        ) {
+            Icon(
+                imageVector = Icons.Default.Warning,
+                contentDescription = null,
+                tint = warningColor,
+                modifier = Modifier.size(Dimens.iconMd)
+            )
+            Column(modifier = Modifier.weight(1f)) {
+                val label = if (notice.count == 1) "1 save location inaccessible" else "${notice.count} save locations inaccessible"
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    text = notice.emulatorNames.joinToString(", "),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+        }
     }
 }
 

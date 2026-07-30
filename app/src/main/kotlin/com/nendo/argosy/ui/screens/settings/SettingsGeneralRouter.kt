@@ -55,7 +55,9 @@ internal fun routeNavigateToSection(vm: SettingsViewModel, section: SettingsSect
         }
         SettingsSection.STEAM_SETTINGS -> vm.steamDelegate.loadSteamSettings(vm.context, vm.viewModelScope)
         SettingsSection.PERMISSIONS -> vm.permissionsDelegate.refreshPermissions()
-        SettingsSection.SHADER_STACK -> vm.shaderChainManager.loadChain(vm._uiState.value.builtinVideo.shaderChainJson)
+        SettingsSection.SHADER_STACK -> vm.shaderChainManager.loadChain(
+            routeResolveShaderChainSettingsScope(vm._uiState.value).chainJson
+        )
         SettingsSection.DRIVERS -> vm.driversDelegate.loadDrivers(vm.viewModelScope)
         else -> {}
     }
@@ -187,8 +189,10 @@ internal fun routeShowSavePathModal(vm: SettingsViewModel, config: PlatformEmula
     val installedEmulator = config.availableEmulators
         .find { it.def.displayName == config.selectedEmulator || it.def.displayName == config.effectiveEmulatorName }
         ?: return
-    val emulatorId = SavePathRegistry.resolveConfigIdForPackage(installedEmulator.def.packageName)
-        ?: installedEmulator.def.id
+    val emulatorId = SavePathRegistry.canonicalConfigId(
+        installedEmulator.def.id,
+        installedEmulator.def.packageName
+    )
     vm.emulatorDelegate.showSavePathModal(
         scope = vm.viewModelScope,
         emulatorId = emulatorId,
@@ -608,8 +612,8 @@ internal fun routeAdjustScreenDimmerLevel(vm: SettingsViewModel, delta: Int) {
 internal fun routeSetPlatformSavePath(vm: SettingsViewModel, platformId: Long, basePath: String) {
     val storageConfig = vm._uiState.value.storage.platformConfigs.find { it.platformId == platformId }
     val emulatorId = storageConfig?.emulatorId ?: return
-    val evaluatedPath = routeComputeEvaluatedSavePath(vm, platformId, basePath)
-    vm.emulatorDelegate.setEmulatorSavePath(vm.viewModelScope, emulatorId, basePath) {
+    vm.emulatorDelegate.setEmulatorSavePath(vm.viewModelScope, emulatorId, basePath) { resolvedPath ->
+        val evaluatedPath = routeComputeEvaluatedSavePath(vm, platformId, resolvedPath)
         vm.storageDelegate.updatePlatformSavePath(platformId, evaluatedPath, true)
     }
 }
@@ -738,7 +742,7 @@ internal fun routeValidateImageCache(vm: SettingsViewModel) {
                 progress = NotificationProgress(0, 100)
             )
 
-            val result = vm.imageCacheManager.validateAndCleanCache { phase, current, total ->
+            val result = vm.imageCacheManager.validateAndCleanCache(force = true) { phase, current, total ->
                 val progress = if (total > 0) (current * 100) / total else 0
                 vm.notificationManager.updatePersistent(
                     key = key,

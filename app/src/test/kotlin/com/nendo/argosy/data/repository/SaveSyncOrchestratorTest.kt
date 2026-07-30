@@ -72,6 +72,8 @@ class SaveSyncOrchestratorTest {
 
         orchestrator = SaveSyncOrchestrator(
             saveSyncDao = saveSyncDao,
+            saveCacheDao = mockk(relaxed = true),
+            saveCacheManager = dagger.Lazy { mockk(relaxed = true) },
             pendingSyncQueueDao = pendingSyncQueueDao,
             gameDao = gameDao,
             emulatorResolver = emulatorResolver,
@@ -80,7 +82,9 @@ class SaveSyncOrchestratorTest {
             syncPreferencesRepository = syncPreferencesRepository,
             syncQueueManager = syncQueueManager,
             apiClient = apiClient,
-            payloadCodec = com.nendo.argosy.data.sync.SyncPayloadCodec(com.squareup.moshi.Moshi.Builder().build())
+            payloadCodec = com.nendo.argosy.data.sync.SyncPayloadCodec(com.squareup.moshi.Moshi.Builder().build()),
+            saveHandlerRegistry = mockk(relaxed = true),
+            saveAccessNotices = com.nendo.argosy.data.sync.SaveAccessNotices()
         )
     }
 

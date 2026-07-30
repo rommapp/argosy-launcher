@@ -40,9 +40,10 @@ object TouchLayoutRegistry {
             "gc", "ngc", "gamecube" -> gamecube()
             "wii" -> wii()
             "nds", "ds", "dsi" -> snes()
-            "arcade", "fbneo", "mame", "cps1", "cps2", "cps3", "neogeocd" -> arcade6()
+            "arcade", "fbneo", "mame", "cps1", "cps2", "cps3", "neogeocd",
+            "naomi", "atomiswave" -> arcade6()
             "neogeo" -> neoGeo()
-            "genesis", "megadrive", "scd", "segacd", "32x", "pico" -> genesis(genesis6Button)
+            "genesis", "megadrive", "scd", "segacd", "32x", "pico", "nomad" -> genesis(genesis6Button)
             "vectrex" -> vectrex()
             "intellivision" -> intellivision()
             "atari2600", "2600" -> atari2600()

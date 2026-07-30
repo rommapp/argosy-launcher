@@ -28,6 +28,7 @@ fun DoodleCanvas(
     panOffsetY: Float,
     onTap: ((Int, Int) -> Unit)? = null,
     onDrag: ((Int, Int) -> Unit)? = null,
+    showCircleGuide: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     val gridPixels = canvasSize.pixels
@@ -109,6 +110,15 @@ fun DoodleCanvas(
                 )
             }
 
+            if (showCircleGuide) {
+                drawCircle(
+                    color = Color.Black.copy(alpha = 0.35f),
+                    radius = baseSize / 2f,
+                    center = Offset(baseSize / 2f, baseSize / 2f),
+                    style = Stroke(width = 2f)
+                )
+            }
+
             if (showCursor) {
                 val cursorPath = Path().apply {
                     val left = cursorX * cellSize
@@ -135,6 +145,19 @@ fun DoodleCanvas(
         }
     }
 }
+
+@Composable
+fun rememberDecodedDoodle(data: String?): DecodedDoodle? =
+    androidx.compose.runtime.remember(data) {
+        data?.let { runCatching { DoodleEncoder.decodeFromBase64(it) }.getOrNull() }
+    }
+
+val CanvasSize.feedPixelGap: Float
+    get() = when (this) {
+        CanvasSize.SMALL -> 2f
+        CanvasSize.MEDIUM -> 1f
+        CanvasSize.LARGE -> 0f
+    }
 
 @Composable
 fun DoodlePreview(

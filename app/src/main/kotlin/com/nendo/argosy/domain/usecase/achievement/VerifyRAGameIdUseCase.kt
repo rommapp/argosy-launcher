@@ -45,7 +45,11 @@ class VerifyRAGameIdUseCase @Inject constructor(
         val hash = if (!forceRehash && game.romHash != null) {
             game.romHash
         } else {
-            computeHash(hashPath, consoleId)?.also { gameDao.updateRomHash(gameId, it) }
+            try {
+                computeHash(hashPath.path, consoleId)?.also { gameDao.updateRomHash(gameId, it) }
+            } finally {
+                if (hashPath.isTemporary) File(hashPath.path).delete()
+            }
         }
 
         if (hash == null) {
@@ -73,22 +77,30 @@ class VerifyRAGameIdUseCase @Inject constructor(
         return game.raId
     }
 
-    private fun resolveHashPath(localPath: String, platformSlug: String): String? {
+    /**
+     * The file rcheevos should hash. Only the archive branch materialises anything: the
+     * m3u branch points at one of the user's real discs, so the caller must not delete
+     * what it is handed without checking [HashSource.isTemporary].
+     */
+    private class HashSource(val path: String, val isTemporary: Boolean)
+
+    private fun resolveHashPath(localPath: String, platformSlug: String): HashSource? {
         if (localPath.endsWith(".m3u", ignoreCase = true)) {
             val firstDisc = M3uManager.parseFirstDisc(File(localPath))
             if (firstDisc == null) {
                 Logger.warn(TAG, "Could not parse first disc from m3u: $localPath")
                 return null
             }
-            return firstDisc.absolutePath
+            return HashSource(firstDisc.absolutePath, isTemporary = false)
         }
 
         val file = File(localPath)
         if (ZipExtractor.isArchiveFile(file) && !ZipExtractor.usesZipAsRomFormat(platformSlug)) {
-            return extractRomFromZipForHash(file)
+            val extracted = extractRomFromZipForHash(file) ?: return null
+            return HashSource(extracted, isTemporary = true)
         }
 
-        return localPath
+        return HashSource(localPath, isTemporary = false)
     }
 
     private fun extractRomFromZipForHash(zipFile: File): String? {
@@ -99,8 +111,10 @@ class VerifyRAGameIdUseCase @Inject constructor(
                     .maxByOrNull { it.size }
                     ?: return null
 
-                val tempFile = File.createTempFile("ra_hash_", "_${entry.name.substringAfterLast('/')}")
-                tempFile.deleteOnExit()
+                val tempFile = File.createTempFile(
+                    "ra_hash_",
+                    "_${entry.name.substringAfterLast('/')}"
+                )
                 zip.getInputStream(entry).use { input ->
                     tempFile.outputStream().use { output -> input.copyTo(output) }
                 }

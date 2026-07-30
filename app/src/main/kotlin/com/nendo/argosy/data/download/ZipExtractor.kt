@@ -69,6 +69,7 @@ private val ZIP_AS_ROM_PLATFORMS = setOf(
     "naomi", "naomi2", "atomiswave",
     "model2", "model3",
     "hyperneogeo64", "hyper-neo-geo-64",
+    "gameandwatch",
     "vita", "psvita",
     "dos"
 )

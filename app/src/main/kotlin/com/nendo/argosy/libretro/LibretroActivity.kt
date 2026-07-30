@@ -61,6 +61,7 @@ import com.nendo.argosy.data.local.dao.CheatDao
 import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.platform.PlatformWeightRegistry
 import com.nendo.argosy.data.preferences.EffectiveLibretroSettingsResolver
+import com.nendo.argosy.data.preferences.UserPreferences
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.repository.InputConfigRepository
 import com.nendo.argosy.data.repository.InputSource
@@ -215,6 +216,13 @@ class LibretroActivity : ComponentActivity() {
     private var restoredSram: ByteArray? = null
     private var casualSaveInHardcore: Boolean = false
     private var hardcoreMode by mutableStateOf(false)
+    private var secureSavesEnabled = true
+
+    /**
+     * Preferences as they stood when the session started. Read once because onCreate blocks
+     * the main thread on each read, and a mid-session change must not alter a running game.
+     */
+    private lateinit var launchPreferences: UserPreferences
     private var launchMode = LaunchMode.RESUME
     private var statesSupported = true
     private var autoSaveEnabled = true
@@ -484,6 +492,13 @@ class LibretroActivity : ComponentActivity() {
             ?.let { M3uManager.parseAllDiscs(File(it)) } ?: emptyList()
         coreName = intent.getStringExtra(EXTRA_CORE_NAME)
         launchMode = LaunchMode.fromString(intent.getStringExtra(LaunchMode.EXTRA_LAUNCH_MODE))
+        launchPreferences = kotlinx.coroutines.runBlocking {
+            preferencesRepository.preferences.first()
+        }
+        secureSavesEnabled = launchPreferences.secureSaves
+        if (!secureSavesEnabled && launchMode.isHardcore) {
+            launchMode = if (launchMode == LaunchMode.RESUME_HARDCORE) LaunchMode.RESUME else LaunchMode.NEW_CASUAL
+        }
         hardcoreMode = launchMode.isHardcore
 
         val joinSessionId = intent.getStringExtra(EXTRA_NETPLAY_JOIN_SESSION_ID)
@@ -536,7 +551,7 @@ class LibretroActivity : ComponentActivity() {
         }
         restoredSram = restoreResult.sramData
         casualSaveInHardcore = restoreResult.casualSaveInHardcore
-        if (restoreResult.switchToHardcore) {
+        if (restoreResult.switchToHardcore && secureSavesEnabled) {
             hardcoreMode = true
         }
         saveStateManager.initializeFromExistingSave(restoreResult.sramData)
@@ -548,9 +563,7 @@ class LibretroActivity : ComponentActivity() {
     }
 
     private fun initializeInputHandlers() {
-        val inputPrefs = kotlinx.coroutines.runBlocking {
-            preferencesRepository.preferences.first()
-        }
+        val inputPrefs = launchPreferences
         menuWrapMode = inputPrefs.menuWrapMode
         val detectedLayout = ControllerDetector.detectFromActiveGamepad().layout
         val isNintendoLayout = when (inputPrefs.controllerLayout) {
@@ -1029,7 +1042,8 @@ class LibretroActivity : ComponentActivity() {
                         speedrunArmed = speedrunState.armed,
                         hasQuickSave = saveStateManager.hasQuickSave,
                         quickHistoryFocused = menuQuickHistoryFocused,
-                        onQuickHistoryFocusChange = { menuQuickHistoryFocused = it }
+                        onQuickHistoryFocusChange = { menuQuickHistoryFocused = it },
+                        twoColumnMenu = touchSettingsState.ingameMenuTwoColumn
                     )
                 }
                 if (discMenuVisible) {

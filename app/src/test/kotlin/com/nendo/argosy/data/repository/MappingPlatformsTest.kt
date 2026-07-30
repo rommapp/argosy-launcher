@@ -1,5 +1,6 @@
 package com.nendo.argosy.data.repository
 
+import android.view.KeyEvent
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -23,6 +24,62 @@ class MappingPlatformsTest {
     fun `platform ids are unique`() {
         val ids = MappingPlatforms.ALL.map { it.id }
         assertEquals(ids.size, ids.toSet().size)
+    }
+
+    @Test
+    fun `hotkey blocking buttons are exposed by their platform`() {
+        MappingPlatforms.ALL.forEach { platform ->
+            assertTrue(
+                "${platform.id} blocks a button it does not expose",
+                platform.buttons.containsAll(platform.hotkeyBlockingButtons)
+            )
+        }
+    }
+
+    @Test
+    fun `gba duplicate turbo controls yield to configured hotkeys`() {
+        val gba = MappingPlatforms.profileForSlug("gba")
+
+        listOf(RetroButton.X, RetroButton.Y, RetroButton.L2, RetroButton.R2).forEach { button ->
+            assertTrue(button in gba.buttons)
+            assertFalse(button in gba.hotkeyBlockingButtons)
+        }
+        assertFalse(InputPresets.keyMapsToConsoleButton(KeyEvent.KEYCODE_BUTTON_L2, "gba"))
+        assertFalse(InputPresets.keyMapsToConsoleButton(KeyEvent.KEYCODE_BUTTON_R2, "gba"))
+        assertTrue(RetroButton.L3 in gba.hotkeyBlockingButtons)
+        assertTrue(RetroButton.R3 in gba.hotkeyBlockingButtons)
+    }
+
+    @Test
+    fun `n64 alternate C button route yields while Z retains priority`() {
+        val n64 = MappingPlatforms.profileForSlug("n64")
+
+        listOf(RetroButton.A, RetroButton.X, RetroButton.R2).forEach { button ->
+            assertTrue(button in n64.buttons)
+            assertFalse(button in n64.hotkeyBlockingButtons)
+        }
+        assertFalse(InputPresets.keyMapsToConsoleButton(KeyEvent.KEYCODE_BUTTON_R2, "n64"))
+        assertTrue(InputPresets.keyMapsToConsoleButton(KeyEvent.KEYCODE_BUTTON_L2, "n64"))
+    }
+
+    @Test
+    fun `ds screen swap yields while microphone retains priority`() {
+        val ds = MappingPlatforms.profileForSlug("nds")
+
+        assertTrue(RetroButton.R2 in ds.buttons)
+        assertFalse(RetroButton.R2 in ds.hotkeyBlockingButtons)
+        assertFalse(InputPresets.keyMapsToConsoleButton(KeyEvent.KEYCODE_BUTTON_R2, "nds"))
+        assertTrue(InputPresets.keyMapsToConsoleButton(KeyEvent.KEYCODE_BUTTON_L2, "nds"))
+    }
+
+    @Test
+    fun `native trigger controls retain gameplay priority`() {
+        val psx = MappingPlatforms.profileForSlug("psx")
+
+        assertTrue(RetroButton.L2 in psx.hotkeyBlockingButtons)
+        assertTrue(RetroButton.R2 in psx.hotkeyBlockingButtons)
+        assertTrue(InputPresets.keyMapsToConsoleButton(KeyEvent.KEYCODE_BUTTON_L2, "psx"))
+        assertTrue(InputPresets.keyMapsToConsoleButton(KeyEvent.KEYCODE_BUTTON_R2, "psx"))
     }
 
     @Test

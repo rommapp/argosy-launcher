@@ -45,6 +45,13 @@ data class ImageCacheRequest(
 
 enum class ImageType { BACKGROUND, SCREENSHOT, COVER, BOX_BACK, BOX_SPINE }
 
+data class CachedGameImages(
+    val coverPath: String?,
+    val backgroundPath: String?,
+    val boxBackPath: String?,
+    val boxSpinePath: String?
+)
+
 data class ImageCacheProgress(
     val isProcessing: Boolean = false,
     val currentGameTitle: String = "",
@@ -139,9 +146,12 @@ class ImageCacheManager @Inject constructor(
     fun getCurrentCachePath(): String = cacheDir.absolutePath
 
     companion object {
+        private const val MAX_IN_MEMORY_IMAGE_BYTES = 8 * 1024 * 1024
+        private const val DEFAULT_IMAGE_BUFFER_BYTES = 64 * 1024
         private const val CACHE_SUBFOLDER = "argosy_images"
         private const val FALLBACK_PLATFORM = "_misc"
         private const val LOGOS_DIR = "_logos"
+        private const val VALIDATION_MARKER = ".validated"
     }
 
     private fun ensureNoMedia(dir: File) {
@@ -345,43 +355,48 @@ class ImageCacheManager @Inject constructor(
         gameDao.updateBackgroundPath(game.id, localPath)
     }
 
+    /**
+     * Downsampling needs the encoded bytes twice, once for the bounds and once for the
+     * real decode, and a network stream cannot be rewound. Artwork is small enough to hold
+     * while that happens; anything past [MAX_IN_MEMORY_IMAGE_BYTES] spills to a temp file
+     * so an unexpectedly huge response cannot be turned into a heap spike.
+     */
     private fun downloadAndResize(url: String, maxWidth: Int): Bitmap? {
         return try {
             val connection = URL(url).openConnection()
             connection.connectTimeout = 10_000
             connection.readTimeout = 30_000
 
-            val tempFile = File.createTempFile("img_", ".tmp", cacheDir)
-            try {
-                connection.getInputStream().use { inputStream ->
-                    tempFile.outputStream().use { out ->
-                        inputStream.copyTo(out)
+            connection.getInputStream().use { inputStream ->
+                val buffered = java.io.ByteArrayOutputStream(DEFAULT_IMAGE_BUFFER_BYTES)
+                val chunk = ByteArray(DEFAULT_IMAGE_BUFFER_BYTES)
+                while (buffered.size() <= MAX_IN_MEMORY_IMAGE_BYTES) {
+                    val read = inputStream.read(chunk)
+                    if (read == -1) break
+                    buffered.write(chunk, 0, read)
+                }
+
+                if (buffered.size() <= MAX_IN_MEMORY_IMAGE_BYTES) {
+                    val bytes = buffered.toByteArray()
+                    decodeSampled(maxWidth) { options ->
+                        BitmapFactory.decodeByteArray(bytes, 0, bytes.size, options)
+                    }
+                } else {
+                    val head = buffered.toByteArray()
+                    val headSize = head.size
+                    val tempFile = File.createTempFile("img_", ".tmp", context.cacheDir)
+                    try {
+                        tempFile.outputStream().use { out ->
+                            out.write(head, 0, headSize)
+                            inputStream.copyTo(out)
+                        }
+                        decodeSampled(maxWidth) { options ->
+                            BitmapFactory.decodeFile(tempFile.absolutePath, options)
+                        }
+                    } finally {
+                        tempFile.delete()
                     }
                 }
-
-                val options = BitmapFactory.Options().apply {
-                    inJustDecodeBounds = true
-                }
-                BitmapFactory.decodeFile(tempFile.absolutePath, options)
-
-                val sampleSize = calculateSampleSize(options.outWidth, options.outHeight, maxWidth)
-                options.inJustDecodeBounds = false
-                options.inSampleSize = sampleSize
-
-                val bitmap = BitmapFactory.decodeFile(tempFile.absolutePath, options)
-                    ?: return null
-
-                if (bitmap.width > maxWidth) {
-                    val ratio = maxWidth.toFloat() / bitmap.width
-                    val newHeight = (bitmap.height * ratio).toInt()
-                    val scaled = Bitmap.createScaledBitmap(bitmap, maxWidth, newHeight, true)
-                    if (scaled != bitmap) bitmap.recycle()
-                    return scaled
-                }
-
-                bitmap
-            } finally {
-                tempFile.delete()
             }
         } catch (e: java.io.FileNotFoundException) {
             Log.w(TAG, "Image not found: $url")
@@ -390,6 +405,22 @@ class ImageCacheManager @Inject constructor(
             Log.e(TAG, "Failed to download image from $url: ${e.javaClass.simpleName}: ${e.message}")
             null
         }
+    }
+
+    private fun decodeSampled(maxWidth: Int, decode: (BitmapFactory.Options) -> Bitmap?): Bitmap? {
+        val options = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+        decode(options)
+
+        options.inSampleSize = calculateSampleSize(options.outWidth, options.outHeight, maxWidth)
+        options.inJustDecodeBounds = false
+
+        val bitmap = decode(options) ?: return null
+        if (bitmap.width <= maxWidth) return bitmap
+
+        val ratio = maxWidth.toFloat() / bitmap.width
+        val scaled = Bitmap.createScaledBitmap(bitmap, maxWidth, (bitmap.height * ratio).toInt(), true)
+        if (scaled != bitmap) bitmap.recycle()
+        return scaled
     }
 
     @Suppress("UNUSED_PARAMETER")
@@ -436,7 +467,17 @@ class ImageCacheManager @Inject constructor(
         }
     }
 
-    suspend fun deleteGameImages(rommId: Long) {
+    /**
+     * Clearing Coil's memory cache evicts every decoded bitmap in the app, so a sync that
+     * touches thousands of games must clear once at the end rather than per game.
+     */
+    suspend fun clearDecodedImageCache() {
+        withContext(Dispatchers.Main) {
+            context.imageLoader.memoryCache?.clear()
+        }
+    }
+
+    suspend fun deleteGameImages(rommId: Long, clearDecoded: Boolean = true) {
         withContext(Dispatchers.IO) {
             val slug = resolveRommPlatformSlug(rommId)
             val prefixes = listOf(
@@ -454,10 +495,7 @@ class ImageCacheManager @Inject constructor(
                 }
             }
         }
-        withContext(Dispatchers.Main) {
-            context.imageLoader.memoryCache?.clear()
-            Log.d(TAG, "Cleared Coil memory cache after deleting images for rommId $rommId")
-        }
+        if (clearDecoded) clearDecodedImageCache()
     }
 
     fun getCacheSize(): Long {
@@ -519,7 +557,9 @@ class ImageCacheManager @Inject constructor(
                 val relativePath = sourceFile.relativeTo(sourceDir).path
                 val destFile = File(destDir, relativePath)
                 destFile.parentFile?.mkdirs()
-                sourceFile.copyTo(destFile, overwrite = true)
+                if (!sourceFile.renameTo(destFile)) {
+                    sourceFile.copyTo(destFile, overwrite = true)
+                }
                 copied++
                 onProgress(copied, total)
             } catch (e: Exception) {
@@ -1141,6 +1181,34 @@ class ImageCacheManager @Inject constructor(
         else gameDao.updateBoxSpinePath(game.id, localPath)
     }
 
+    /**
+     * Caches a game's images and waits for them, for a refresh the player asked for and is
+     * watching. The queue is for background work that may take as long as it takes; a manual
+     * refresh has to finish its own image work before it reports itself done, or the row is
+     * written pointing at a remote url that nothing has fetched yet.
+     */
+    suspend fun cacheGameImagesNow(
+        rommId: Long,
+        gameTitle: String,
+        coverUrl: String?,
+        backgroundUrl: String?,
+        boxBackUrl: String?,
+        boxSpineUrl: String?
+    ): CachedGameImages = withContext(Dispatchers.IO) {
+        coverUrl?.let { processCoverRequest(ImageCacheRequest(it, rommId, ImageType.COVER, gameTitle, isSteam = false)) }
+        backgroundUrl?.let { processRequest(ImageCacheRequest(it, rommId, ImageType.BACKGROUND, gameTitle, isSteam = false)) }
+        boxBackUrl?.let { processBoxFaceRequest(ImageCacheRequest(it, rommId, ImageType.BOX_BACK, gameTitle, isSteam = false)) }
+        boxSpineUrl?.let { processBoxFaceRequest(ImageCacheRequest(it, rommId, ImageType.BOX_SPINE, gameTitle, isSteam = false)) }
+
+        val game = gameDao.getByRommId(rommId)
+        CachedGameImages(
+            coverPath = game?.coverPath,
+            backgroundPath = game?.backgroundPath,
+            boxBackPath = game?.boxBackPath,
+            boxSpinePath = game?.boxSpinePath
+        )
+    }
+
     fun resumePendingBoxFaceCache() {
         scope.launch {
             val uncached = gameDao.getGamesWithUncachedBoxFaces()
@@ -1556,14 +1624,28 @@ class ImageCacheManager @Inject constructor(
         return parent.exists() && parent.isDirectory
     }
 
+    /**
+     * Decoding a header per cached file costs a read per file, and the cache holds one for
+     * every cover, screenshot and box face in the library. Only files written since the last
+     * pass are checked, because a file that gets rewritten carries a newer timestamp. Pass
+     * [force] to sweep everything regardless, which is what the settings action does.
+     */
     suspend fun validateAndCleanCache(
+        force: Boolean = false,
         onProgress: (suspend (phase: String, current: Int, total: Int) -> Unit)? = null
     ): CacheValidationResult {
         var deleted = 0
         var cleared = 0
 
+        val marker = File(cacheDir, VALIDATION_MARKER)
+        val validatedThrough = if (force) 0L else marker.takeIf { it.exists() }?.lastModified() ?: 0L
+        val sweepStartedAt = System.currentTimeMillis()
+
         val files = withContext(Dispatchers.IO) {
-            cacheDir.walk().filter { it.isFile && it.name != ".nomedia" }.toList()
+            cacheDir.walk()
+                .filter { it.isFile && it.name != ".nomedia" && it.name != VALIDATION_MARKER }
+                .filter { it.lastModified() >= validatedThrough }
+                .toList()
         }
         val totalFiles = files.size
         onProgress?.invoke("Checking $totalFiles cached files...", 0, totalFiles)
@@ -1579,51 +1661,59 @@ class ImageCacheManager @Inject constructor(
                     onProgress?.invoke("Checking cached files...", index, totalFiles)
                 }
             }
+            runCatching {
+                if (!marker.exists()) marker.createNewFile()
+                marker.setLastModified(sweepStartedAt)
+            }
         }
 
-        val infos = gameDao.getAllImageCacheInfo()
+        val infos = withContext(Dispatchers.IO) { gameDao.getAllImageCacheInfo() }
         val totalGames = infos.size
         onProgress?.invoke("Validating $totalGames game paths...", 0, totalGames)
 
-        infos.forEachIndexed { index, info ->
-            if (info.coverPath != null && shouldClearMissingPath(info.coverPath)) {
-                gameDao.clearCoverPath(info.id)
-                cleared++
-            }
-            if (info.backgroundPath != null && shouldClearMissingPath(info.backgroundPath)) {
-                gameDao.clearBackgroundPath(info.id)
-                cleared++
-            }
-            if (info.cachedScreenshotPaths != null) {
-                val paths = info.cachedScreenshotPaths.split(",")
-                val validPaths = paths.filter { path -> !shouldClearMissingPath(path) }
-                if (validPaths.size != paths.size) {
-                    if (validPaths.isEmpty()) {
-                        gameDao.clearCachedScreenshotPaths(info.id)
-                    } else {
-                        gameDao.updateCachedScreenshotPaths(info.id, validPaths.joinToString(","))
-                    }
-                    cleared += paths.size - validPaths.size
+        withContext(Dispatchers.IO) {
+            infos.forEachIndexed { index, info ->
+                if (info.coverPath != null && shouldClearMissingPath(info.coverPath)) {
+                    gameDao.clearCoverPath(info.id)
+                    cleared++
                 }
-            }
-            if (index % 100 == 0) {
-                onProgress?.invoke("Validating game paths...", index, totalGames)
+                if (info.backgroundPath != null && shouldClearMissingPath(info.backgroundPath)) {
+                    gameDao.clearBackgroundPath(info.id)
+                    cleared++
+                }
+                if (info.cachedScreenshotPaths != null) {
+                    val paths = info.cachedScreenshotPaths.split(",")
+                    val validPaths = paths.filter { path -> !shouldClearMissingPath(path) }
+                    if (validPaths.size != paths.size) {
+                        if (validPaths.isEmpty()) {
+                            gameDao.clearCachedScreenshotPaths(info.id)
+                        } else {
+                            gameDao.updateCachedScreenshotPaths(info.id, validPaths.joinToString(","))
+                        }
+                        cleared += paths.size - validPaths.size
+                    }
+                }
+                if (index % 100 == 0) {
+                    onProgress?.invoke("Validating game paths...", index, totalGames)
+                }
             }
         }
 
-        val platforms = platformDao.getAllPlatforms()
+        val platforms = withContext(Dispatchers.IO) { platformDao.getAllPlatforms() }
         onProgress?.invoke("Checking ${platforms.size} platform logos...", 0, platforms.size)
 
-        platforms.forEach { platform ->
-            if (platform.logoPath != null && shouldClearMissingPath(platform.logoPath)) {
-                platformDao.clearLogoPath(platform.id)
-                cleared++
+        withContext(Dispatchers.IO) {
+            platforms.forEach { platform ->
+                if (platform.logoPath != null && shouldClearMissingPath(platform.logoPath)) {
+                    platformDao.clearLogoPath(platform.id)
+                    cleared++
+                }
             }
         }
 
         migrateLegacyIgdbCovers()
 
-        val orphanDirs = listOf("image_cache", "steam")
+        val orphanDirs = listOf("steam")
         withContext(Dispatchers.IO) {
             for (name in orphanDirs) {
                 val dir = File(context.cacheDir, name)

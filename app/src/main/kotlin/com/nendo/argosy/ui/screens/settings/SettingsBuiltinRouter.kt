@@ -3,6 +3,7 @@ package com.nendo.argosy.ui.screens.settings
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import androidx.lifecycle.viewModelScope
+import com.nendo.argosy.data.emulator.EmulatorRegistry
 import com.nendo.argosy.data.local.entity.PlatformLibretroSettingsEntity
 import com.nendo.argosy.libretro.LibretroBuildbot
 import com.nendo.argosy.data.platform.PlatformWeightRegistry
@@ -15,10 +16,11 @@ import com.nendo.argosy.ui.input.HapticPattern
 import com.nendo.argosy.core.notification.NotificationType
 import com.nendo.argosy.core.notification.showError
 import com.nendo.argosy.core.emulator.LibretroSettingDef
+import com.nendo.argosy.ui.screens.settings.sections.BuiltinEmulatorItem
 import com.nendo.argosy.util.AppPaths
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -78,17 +80,10 @@ internal fun routeSetBuiltinArchitecture(vm: SettingsViewModel, value: String) {
 }
 
 internal fun routeSetBuiltinLibretroEnabled(vm: SettingsViewModel, enabled: Boolean) {
-    val newToggleIndex = if (enabled) 3 else 0
     vm._uiState.update { state ->
-        val adjustedParentIndex = when {
-            enabled && state.parentFocusIndex >= 2 -> state.parentFocusIndex + 1
-            !enabled && state.parentFocusIndex > 2 -> state.parentFocusIndex - 1
-            else -> state.parentFocusIndex
-        }
         state.copy(
             emulators = state.emulators.copy(builtinLibretroEnabled = enabled),
-            focusedIndex = newToggleIndex,
-            parentFocusIndex = adjustedParentIndex
+            focusedIndex = BuiltinEmulatorItem.ENABLE.focusIndex
         )
     }
     vm.viewModelScope.launch {
@@ -97,6 +92,13 @@ internal fun routeSetBuiltinLibretroEnabled(vm: SettingsViewModel, enabled: Bool
             vm.configureEmulatorUseCase.clearBuiltinSelections()
         }
         vm.loadSettings()
+    }
+}
+
+internal fun routeSetIngameMenuTwoColumn(vm: SettingsViewModel, enabled: Boolean) {
+    vm._uiState.update { it.copy(emulators = it.emulators.copy(ingameMenuTwoColumn = enabled)) }
+    vm.viewModelScope.launch {
+        vm.libretroSettingsRepo.setIngameMenuTwoColumn(enabled)
     }
 }
 
@@ -693,7 +695,10 @@ internal fun routeUpdatePlatformLibretroSetting(vm: SettingsViewModel, setting: 
             ?: PlatformLibretroSettingsEntity(platformId = platformContext.platformId)
 
         val updated = when (setting) {
-            LibretroSettingDef.Shader -> current.copy(shader = value)
+            LibretroSettingDef.Shader -> current.copy(
+                shader = value,
+                shaderChain = if (value == null) null else current.shaderChain
+            )
             LibretroSettingDef.Filter -> current.copy(filter = value)
             LibretroSettingDef.AspectRatio -> current.copy(aspectRatio = value)
             LibretroSettingDef.PortraitPosition -> current.copy(portraitPosition = value)
@@ -733,7 +738,7 @@ internal fun routeResetAllPlatformLibretroSettings(vm: SettingsViewModel) {
     vm.viewModelScope.launch {
         val current = vm.libretroSettingsRepo.getByPlatformId(platformContext.platformId) ?: return@launch
         val updated = current.copy(
-            shader = null, filter = null, aspectRatio = null, portraitPosition = null, rotation = null,
+            shader = null, shaderChain = null, filter = null, aspectRatio = null, portraitPosition = null, rotation = null,
             overscanCrop = null, frame = null, blackFrameInsertion = null, fastForwardEnabled = null, fastForwardSpeed = null,
             rewindEnabled = null, rewindSpeed = null, rewindBufferDuration = null,
             skipDuplicateFrames = null, lowLatencyAudio = null, audioVolume = null, vsync = null
@@ -819,7 +824,6 @@ private suspend fun loadCoreManagementStateInternal(vm: SettingsViewModel, prese
         val currentState = vm._uiState.value.coreManagement
         val isOnline = com.nendo.argosy.util.NetworkUtils.isOnline(vm.context)
         val syncEnabledPlatforms = vm.platformRepository.getSyncEnabledPlatforms()
-        val coreSelections = vm.libretroSettingsRepo.getBuiltinCoreSelections().firstOrNull() ?: emptyMap()
         val installedCoreIds = vm.getInstalledCoreIds()
         val updatableCoreIds = vm.coreManager.getCoreIdsWithUpdatesAvailable()
 
@@ -828,11 +832,14 @@ private suspend fun loadCoreManagementStateInternal(vm: SettingsViewModel, prese
             .distinctBy { it.slug }
             .map { platform ->
                 val availableCores = LibretroCoreRegistry.getCoresForPlatform(platform.slug)
-                val selectedCoreId = coreSelections[platform.slug]
-                val activeCoreId = selectedCoreId
-                    ?: LibretroCoreRegistry.getDefaultCoreForPlatform(platform.slug)?.coreId
+                val activeCoreId = vm.builtinCoreResolver.resolveCoreId(
+                    gameId = null,
+                    platformId = platform.id,
+                    platformSlug = platform.slug
+                )
 
                 PlatformCoreRow(
+                    platformId = platform.id,
                     platformSlug = platform.slug,
                     platformName = platform.name,
                     cores = availableCores.map { core ->
@@ -933,6 +940,10 @@ internal fun routeSelectCoreForPlatform(vm: SettingsViewModel) {
 
     vm.viewModelScope.launch {
         vm.libretroSettingsRepo.setBuiltinCoreForPlatform(platform.platformSlug, core.coreId)
+        val platformConfig = vm.emulatorConfigRepo.getDefaultForPlatform(platform.platformId)
+        if (platformConfig?.packageName == EmulatorRegistry.BUILTIN_PACKAGE && platformConfig.coreName != null) {
+            vm.emulatorConfigRepo.updateCoreNameForPlatform(platform.platformId, null)
+        }
         vm.loadCoreManagementState(preserveFocus = true)
     }
 }
@@ -989,7 +1000,6 @@ internal fun routeDownloadCoreWithNotification(vm: SettingsViewModel, coreId: St
 }
 
 internal fun routeOpenShaderChainConfig(vm: SettingsViewModel) {
-    vm.shaderChainManager.loadChain(vm._uiState.value.builtinVideo.shaderChainJson)
     vm.loadPreviewGames()
     vm.navigateToSection(SettingsSection.SHADER_STACK)
 }
@@ -1039,16 +1049,85 @@ internal fun routeDownloadAndSelectFrame(vm: SettingsViewModel, frameId: String)
 internal fun routePersistShaderChain(vm: SettingsViewModel, config: ShaderChainConfig) {
     val json = config.toJson()
     val shaderMode = if (config.entries.isNotEmpty()) "Custom" else "None"
-    vm._uiState.update {
-        it.copy(builtinVideo = it.builtinVideo.copy(
-            shader = shaderMode,
-            shaderChainJson = json
-        ))
+    val settingsScope = routeResolveShaderChainSettingsScope(vm._uiState.value)
+    val platformId = settingsScope.platformId
+
+    if (platformId == null) {
+        vm._uiState.update {
+            it.copy(
+                builtinVideo = it.builtinVideo.copy(
+                    shader = shaderMode,
+                    shaderChainJson = json
+                )
+            )
+        }
+        routeScheduleShaderChainWrite(vm) {
+            vm.libretroSettingsRepo.setBuiltinShader(shaderMode)
+            vm.libretroSettingsRepo.setBuiltinShaderChain(json)
+        }
+    } else {
+        vm._uiState.update { state ->
+            val current = state.platformLibretro.platformSettings[platformId]
+                ?: PlatformLibretroSettingsEntity(platformId = platformId)
+            state.copy(
+                platformLibretro = state.platformLibretro.copy(
+                    platformSettings = state.platformLibretro.platformSettings +
+                        (platformId to current.copy(shader = shaderMode, shaderChain = json))
+                )
+            )
+        }
+        routeScheduleShaderChainWrite(vm) {
+            vm.libretroSettingsRepo.setPlatformShaderChain(platformId, shaderMode, json)
+        }
     }
+}
+
+private const val SHADER_CHAIN_PERSIST_DEBOUNCE_MS = 150L
+
+private fun routeScheduleShaderChainWrite(vm: SettingsViewModel, write: suspend () -> Unit) {
+    vm.shaderChainPersistJob?.cancel()
+    vm.shaderChainPersistJob = vm.viewModelScope.launch {
+        delay(SHADER_CHAIN_PERSIST_DEBOUNCE_MS)
+        write()
+        vm.shaderChainPersistJob = null
+    }
+}
+
+internal fun routeFlushShaderChain(vm: SettingsViewModel) {
+    val pending = vm.shaderChainPersistJob ?: return
+    if (!pending.isActive) return
+    pending.cancel()
+    vm.shaderChainPersistJob = null
+
+    val state = vm._uiState.value
+    val platformId = routeResolveShaderChainSettingsScope(state).platformId
     vm.viewModelScope.launch {
-        vm.libretroSettingsRepo.setBuiltinShader(shaderMode)
-        vm.libretroSettingsRepo.setBuiltinShaderChain(json)
+        if (platformId == null) {
+            vm.libretroSettingsRepo.setBuiltinShader(state.builtinVideo.shader)
+            vm.libretroSettingsRepo.setBuiltinShaderChain(state.builtinVideo.shaderChainJson)
+        } else {
+            val current = state.platformLibretro.platformSettings[platformId] ?: return@launch
+            vm.libretroSettingsRepo.setPlatformShaderChain(
+                platformId,
+                current.shader ?: "None",
+                current.shaderChain ?: ShaderChainConfig().toJson()
+            )
+        }
     }
+}
+
+internal data class ShaderChainSettingsScope(
+    val platformId: Long?,
+    val chainJson: String
+)
+
+internal fun routeResolveShaderChainSettingsScope(state: SettingsUiState): ShaderChainSettingsScope {
+    val platformId = state.builtinVideo.currentPlatformContext?.platformId
+    val platformChain = platformId?.let { state.platformLibretro.platformSettings[it]?.shaderChain }
+    return ShaderChainSettingsScope(
+        platformId = platformId,
+        chainJson = platformChain ?: state.builtinVideo.shaderChainJson
+    )
 }
 
 internal suspend fun routeResolvePreviewBitmap(vm: SettingsViewModel): Bitmap? {

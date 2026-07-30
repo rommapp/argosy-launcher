@@ -48,6 +48,7 @@ import com.nendo.argosy.ui.theme.ALauncherTheme
 import android.view.Display
 import com.nendo.argosy.hardware.SecondaryHomeActivity
 import com.nendo.argosy.util.DisplayAffinityHelper
+import com.nendo.argosy.util.Logger
 import com.nendo.argosy.util.DisplayRoleResolver
 import dagger.hilt.android.AndroidEntryPoint
 import com.nendo.argosy.util.SafeCoroutineScope
@@ -99,6 +100,8 @@ class MainActivity : ComponentActivity() {
     @Inject lateinit var downloadManagerInstance: com.nendo.argosy.data.download.DownloadManager
     @Inject lateinit var notificationManager: com.nendo.argosy.core.notification.NotificationManager
     @Inject lateinit var emulatorConfigDao: com.nendo.argosy.data.local.dao.EmulatorConfigDao
+    @Inject lateinit var builtinCoreResolver: com.nendo.argosy.data.emulator.BuiltinCoreResolver
+    @Inject lateinit var saveHandlerRegistry: com.nendo.argosy.data.sync.platform.PlatformSaveHandlerRegistry
     @Inject lateinit var steamDownloadQueueDao: com.nendo.argosy.data.local.dao.SteamDownloadQueueDao
     @Inject lateinit var steamRepository: com.nendo.argosy.data.repository.SteamRepository
     @Inject lateinit var playSessionTracker: com.nendo.argosy.data.emulator.PlaySessionTracker
@@ -169,6 +172,9 @@ class MainActivity : ComponentActivity() {
     fun setDualDisplayTargetFocus(index: Int) = dualScreenManager.setDualDisplayTargetFocus(index)
     fun moveDualDisplayTargetFocus(delta: Int) = dualScreenManager.moveDualDisplayTargetFocus(delta)
     fun confirmDualDisplayTargetSelection() = dualScreenManager.confirmDualDisplayTargetSelection()
+    fun setDualMemoryCardFocus(index: Int) = dualScreenManager.setDualMemoryCardFocus(index)
+    fun moveDualMemoryCardFocus(delta: Int) = dualScreenManager.moveDualMemoryCardFocus(delta)
+    fun confirmDualMemoryCardSelection() = dualScreenManager.confirmDualMemoryCardSelection()
     fun setDualVariantFocus(index: Int) = dualScreenManager.setDualVariantFocus(index)
     fun moveDualVariantFocus(delta: Int) = dualScreenManager.moveDualVariantFocus(delta)
     fun confirmDualVariantSelection() = dualScreenManager.confirmDualVariantSelection()
@@ -286,6 +292,8 @@ class MainActivity : ComponentActivity() {
                 notificationManager = notificationManager,
                 emulatorConfigDao = emulatorConfigDao,
                 configureEmulatorUseCase = configureEmulatorUseCase,
+                builtinCoreResolver = builtinCoreResolver,
+                saveHandlerRegistry = saveHandlerRegistry,
                 steamDownloadQueueDao = steamDownloadQueueDao,
                 steamRepository = steamRepository,
                 playSessionTracker = playSessionTracker,
@@ -410,7 +418,7 @@ class MainActivity : ComponentActivity() {
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
         if (!dualScreenManager.claimInput(event)) return true
         if (event.action == KeyEvent.ACTION_DOWN && event.repeatCount == 0) {
-            Log.d(TAG, "dispatchKeyEvent: key=${event.keyCode} isHome=$isOnHomeScreen swapped=${dualScreenManager.isRolesSwapped.value} gameOnSecondary=${dualScreenManager.swappedIsGameActive.value} companion=${dualScreenManager.isCompanionActive.value} overlay=$isOverlayFocused")
+            Logger.verbose(TAG) { "dispatchKeyEvent: key=${event.keyCode} isHome=$isOnHomeScreen swapped=${dualScreenManager.isRolesSwapped.value} gameOnSecondary=${dualScreenManager.swappedIsGameActive.value} companion=${dualScreenManager.isCompanionActive.value} overlay=$isOverlayFocused" }
             if (dualScreenManager.handleConflictInput(
                     event.keyCode,
                     sessionStateStore.getSwapAB(),
@@ -423,7 +431,7 @@ class MainActivity : ComponentActivity() {
         if (dualScreenManager.swappedIsGameActive.value && !isOverlayFocused && isGameOnOtherDisplay()) {
             val emulatorDispatcher = dualScreenManager.emulatorKeyDispatcher
             if (emulatorDispatcher != null) {
-                Log.d(TAG, "dispatchKeyEvent: FORWARDING key=${event.keyCode} to emulator")
+                Logger.verbose(TAG) { "dispatchKeyEvent: FORWARDING key=${event.keyCode} to emulator" }
                 return emulatorDispatcher(event)
             }
             return true
@@ -435,7 +443,7 @@ class MainActivity : ComponentActivity() {
             !isOverlayFocused
         ) {
             if (event.action == KeyEvent.ACTION_DOWN && event.repeatCount == 0) {
-                Log.d(TAG, "dispatchKeyEvent: FORWARDING key=${event.keyCode} to companion")
+                Logger.verbose(TAG) { "dispatchKeyEvent: FORWARDING key=${event.keyCode} to companion" }
                 onDimmerActivity?.invoke()
                 dualScreenManager.companionHost?.onForwardKey(
                     event.keyCode,
@@ -463,7 +471,7 @@ class MainActivity : ComponentActivity() {
         }
 
         if (event.action == KeyEvent.ACTION_DOWN && event.repeatCount == 0) {
-            Log.d(TAG, "dispatchKeyEvent: LOCAL handling key=${event.keyCode}")
+            Logger.verbose(TAG) { "dispatchKeyEvent: LOCAL handling key=${event.keyCode}" }
         }
         if (event.action == KeyEvent.ACTION_DOWN) {
             ambientAudioManager.resumeFromSuspend()
@@ -678,19 +686,20 @@ class MainActivity : ComponentActivity() {
                 imageCacheManager.migrateFlatToSharded()
             }
 
-            val validationResult = imageCacheManager.validateAndCleanCache()
-            if (validationResult.deletedFiles > 0 || validationResult.clearedPaths > 0) {
-                Log.i(TAG, "Cache validation: ${validationResult.deletedFiles} files deleted, ${validationResult.clearedPaths} paths cleared")
-            }
-
             imageCacheManager.resumePendingCache()
             imageCacheManager.resumePendingCoverCache()
             if (preferencesRepository.preferences.first().boxArtCacheEnabled) {
                 imageCacheManager.resumePendingBoxFaceCache()
             }
-            imageCacheManager.recoverMissingCovers()
             imageCacheManager.resumePendingLogoCache()
             imageCacheManager.resumePendingBadgeCache()
+
+            val validationResult = imageCacheManager.validateAndCleanCache()
+            if (validationResult.deletedFiles > 0 || validationResult.clearedPaths > 0) {
+                Log.i(TAG, "Cache validation: ${validationResult.deletedFiles} files deleted, ${validationResult.clearedPaths} paths cleared")
+            }
+
+            imageCacheManager.recoverMissingCovers()
 
             val relinked = androidGameScanner.relinkInstalledRommAndroidApps()
             if (relinked > 0) {

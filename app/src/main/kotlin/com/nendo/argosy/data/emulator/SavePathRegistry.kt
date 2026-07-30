@@ -43,6 +43,16 @@ object SavePathRegistry {
             saveExtensions = listOf("srm", "sav"),
             usesCore = true
         ),
+        "retroarch_32" to SavePathConfig(
+            emulatorId = "retroarch_32",
+            defaultPaths = listOf(
+                "{extStorage}/RetroArch/saves/{core}",
+                "{extStorage}/Android/data/com.retroarch.ra32/files/saves/{core}",
+                "/data/data/com.retroarch.ra32/saves/{core}"
+            ),
+            saveExtensions = listOf("srm", "sav"),
+            usesCore = true
+        ),
 
         "mupen64plus_fz" to SavePathConfig(
             emulatorId = "mupen64plus_fz",
@@ -102,6 +112,15 @@ object SavePathRegistry {
             saveExtensions = listOf("gci"),
             usesGciFormat = true,
         ),
+        "retroarch_32_ngc" to SavePathConfig(
+            emulatorId = "retroarch_32_ngc",
+            defaultPaths = listOf(
+                "{extStorage}/RetroArch/saves/dolphin-emu/User/GC",
+                "{extStorage}/Android/data/com.retroarch.ra32/files/saves/dolphin-emu/User/GC"
+            ),
+            saveExtensions = listOf("gci"),
+            usesGciFormat = true,
+        ),
 
         "retroarch_psp" to SavePathConfig(
             emulatorId = "retroarch_psp",
@@ -121,6 +140,15 @@ object SavePathRegistry {
             saveExtensions = listOf("*"),
             usesFolderBasedSaves = true,
         ),
+        "retroarch_32_psp" to SavePathConfig(
+            emulatorId = "retroarch_32_psp",
+            defaultPaths = listOf(
+                "{extStorage}/RetroArch/saves/PPSSPP/PSP/SAVEDATA",
+                "{extStorage}/Android/data/com.retroarch.ra32/files/saves/PPSSPP/PSP/SAVEDATA"
+            ),
+            saveExtensions = listOf("*"),
+            usesFolderBasedSaves = true,
+        ),
 
         "retroarch_3ds" to SavePathConfig(
             emulatorId = "retroarch_3ds",
@@ -136,6 +164,15 @@ object SavePathRegistry {
             defaultPaths = listOf(
                 "{extStorage}/RetroArch/saves/Citra/sdmc/Nintendo 3DS",
                 "{extStorage}/Android/data/com.retroarch.aarch64/files/saves/Citra/sdmc/Nintendo 3DS"
+            ),
+            saveExtensions = listOf("*"),
+            usesFolderBasedSaves = true,
+        ),
+        "retroarch_32_3ds" to SavePathConfig(
+            emulatorId = "retroarch_32_3ds",
+            defaultPaths = listOf(
+                "{extStorage}/RetroArch/saves/Citra/sdmc/Nintendo 3DS",
+                "{extStorage}/Android/data/com.retroarch.ra32/files/saves/Citra/sdmc/Nintendo 3DS"
             ),
             saveExtensions = listOf("*"),
             usesFolderBasedSaves = true,
@@ -553,6 +590,7 @@ object SavePathRegistry {
         "org.dolphinemu.handheld" to "dolphin",
         "com.retroarch" to "retroarch",
         "com.retroarch.aarch64" to "retroarch_64",
+        "com.retroarch.ra32" to "retroarch_32",
         "org.ppsspp.ppsspp" to "ppsspp",
         "org.ppsspp.ppssppgold" to "ppsspp_gold",
         "org.mupen64plusae.v3.fzurita" to "mupen64plus_fz",

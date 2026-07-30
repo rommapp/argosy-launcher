@@ -150,7 +150,7 @@ class SaveSyncConflictResolver @Inject constructor(
         }
 
         val emulatorPackage = emulatorResolver.getEmulatorPackageForGame(gameId, game.platformId, game.platformSlug)
-        val coreName = apiClient.get().resolveCoreForGame(game)
+        val coreName = apiClient.get().resolveCoreForGame(game, resolvedEmulatorId)
 
         return savePathResolver.discoverSavePath(
             emulatorId = resolvedEmulatorId,
@@ -363,7 +363,7 @@ class SaveSyncConflictResolver @Inject constructor(
         currentEmulatorId: String
     ): String? {
         val emulatorPackage = emulatorResolver.getEmulatorPackageForGame(gameId, game.platformId, game.platformSlug)
-        val coreName = apiClient.get().resolveCoreForGame(game)
+        val coreName = apiClient.get().resolveCoreForGame(game, currentEmulatorId)
 
         val discovered = savePathResolver.discoverSavePath(
             emulatorId = currentEmulatorId,

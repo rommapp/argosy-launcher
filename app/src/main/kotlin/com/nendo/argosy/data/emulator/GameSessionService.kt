@@ -315,10 +315,7 @@ class GameSessionService : Service() {
         serviceScope.launch {
             midGameCacheMutex.withLock {
                 try {
-                    if (lastMidGameCacheId > 0) {
-                        saveCacheManager.deleteCachedSave(lastMidGameCacheId)
-                        lastMidGameCacheId = -1
-                    }
+                    val previousCacheId = lastMidGameCacheId
 
                     val result = saveCacheManager.cacheCurrentSave(
                         gameId = gameId,
@@ -327,9 +324,13 @@ class GameSessionService : Service() {
                         channelName = currentChannelName,
                         isLocked = false,
                         isHardcore = currentIsHardcore,
-                        skipDuplicateCheck = true,
+                        skipDuplicateCheck = false,
                         needsRemoteSync = true
                     )
+
+                    if (result is SaveCacheManager.CacheResult.Created && previousCacheId > 0) {
+                        saveCacheManager.deleteCachedSave(previousCacheId)
+                    }
                     when (result) {
                         is SaveCacheManager.CacheResult.Created -> {
                             lastMidGameCacheId = result.cacheId

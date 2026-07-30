@@ -1,7 +1,5 @@
 package com.nendo.argosy.libretro.ui.cheats
 
-import androidx.compose.foundation.background
-import com.nendo.argosy.ui.util.touchOnly
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -9,23 +7,20 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.focusProperties
-import androidx.compose.ui.text.style.TextOverflow
 import com.nendo.argosy.libretro.scanner.MemoryMatch
+import com.nendo.argosy.ui.components.ActionPreference
+import com.nendo.argosy.ui.components.SliderPreference
 import com.nendo.argosy.ui.theme.Dimens
 
 @Composable
@@ -125,10 +120,9 @@ private fun ActionsView(
         verticalArrangement = Arrangement.spacedBy(Dimens.spacingXs)
     ) {
         if (!hasSnapshot) {
-            DiscoverActionButton(
-                label = "Snapshot",
+            ActionPreference(
+                title = "Snapshot",
                 subtitle = "Capture current RAM state",
-                enabled = true,
                 isFocused = focusedIndex == 0,
                 onClick = { onAction(0) }
             )
@@ -146,27 +140,24 @@ private fun ActionsView(
                 )
             }
         } else if (canCompare) {
-            DiscoverActionButton(
-                label = "Changed",
+            ActionPreference(
+                title = "Changed",
                 subtitle = "Find values that changed since snapshot",
-                enabled = true,
                 isFocused = focusedIndex == 0,
                 onClick = { onAction(0) }
             )
 
-            DiscoverActionButton(
-                label = "Same",
+            ActionPreference(
+                title = "Same",
                 subtitle = "Find values that stayed the same",
-                enabled = true,
                 isFocused = focusedIndex == 1,
                 onClick = { onAction(1) }
             )
 
             if (resultCount > 0) {
-                DiscoverActionButton(
-                    label = "View Results",
+                ActionPreference(
+                    title = "View Results",
                     subtitle = "$resultCount entries from last search",
-                    enabled = true,
                     isFocused = focusedIndex == 2,
                     onClick = { onAction(2) }
                 )
@@ -250,12 +241,17 @@ private fun ResultsView(
     listState: androidx.compose.foundation.lazy.LazyListState
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
-        ValueSearchRow(
-            value = valueSearchText,
-            onValueChange = onValueSearchChange,
-            enabled = true,
+        SliderPreference(
+            title = "Filter by Value",
+            value = valueSearchText.toIntOrNull() ?: 0,
+            minValue = 0,
+            maxValue = 255,
             isFocused = focusedIndex == 0,
-            onSearch = { onAction(0) }
+            onClick = { onAction(0) },
+            onAdjust = { delta ->
+                val current = valueSearchText.toIntOrNull() ?: 0
+                onValueSearchChange((current + delta).coerceIn(0, 255).toString())
+            }
         )
 
         Spacer(Modifier.height(Dimens.spacingSm))
@@ -308,189 +304,21 @@ private fun ResultsView(
                 verticalArrangement = Arrangement.spacedBy(Dimens.spacingXs)
             ) {
                 itemsIndexed(results, key = { _, match -> match.address }) { index, match ->
-                    MemoryMatchRow(
-                        match = match,
-                        knownCheatName = knownAddresses[match.address],
+                    val knownCheatName = knownAddresses[match.address]
+                    val addressHex = "0x${match.address.toString(16).uppercase().padStart(6, '0')}"
+                    val valueHex = match.currentValue.toString(16).uppercase().padStart(2, '0')
+                    val previousText = match.previousValue?.let { prev ->
+                        " (was ${prev.toString(16).uppercase().padStart(2, '0')})"
+                    } ?: ""
+                    ActionPreference(
+                        title = addressHex,
+                        subtitle = knownCheatName?.let { "Saved as $it" } ?: "Value $valueHex$previousText",
                         isFocused = index == focusedIndex - 1,
+                        isEnabled = knownCheatName == null,
                         onClick = { onAction(index + 1) }
                     )
                 }
             }
         }
-    }
-}
-
-@Composable
-private fun DiscoverActionButton(
-    label: String,
-    subtitle: String,
-    enabled: Boolean,
-    isFocused: Boolean,
-    onClick: () -> Unit
-) {
-    val preferenceShape = RoundedCornerShape(Dimens.radiusLg)
-    val disabledAlpha = 0.45f
-
-    val backgroundColor = when {
-        !enabled -> MaterialTheme.colorScheme.surface
-        isFocused -> MaterialTheme.colorScheme.primaryContainer
-        else -> MaterialTheme.colorScheme.surface
-    }
-    val contentColor = when {
-        !enabled -> MaterialTheme.colorScheme.onSurface.copy(alpha = disabledAlpha)
-        isFocused -> MaterialTheme.colorScheme.onPrimaryContainer
-        else -> MaterialTheme.colorScheme.onSurface
-    }
-    val secondaryColor = when {
-        !enabled -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = disabledAlpha)
-        isFocused -> MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
-        else -> MaterialTheme.colorScheme.onSurfaceVariant
-    }
-
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(preferenceShape)
-            .background(backgroundColor, preferenceShape)
-            .then(if (enabled) Modifier.touchOnly(onClick = onClick) else Modifier)
-            .padding(horizontal = Dimens.spacingMd, vertical = Dimens.spacingSm),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Column {
-            Text(
-                text = label,
-                style = MaterialTheme.typography.bodyMedium,
-                color = contentColor
-            )
-            Text(
-                text = subtitle,
-                style = MaterialTheme.typography.bodySmall,
-                color = secondaryColor
-            )
-        }
-    }
-}
-
-@Composable
-private fun ValueSearchRow(
-    value: String,
-    onValueChange: (String) -> Unit,
-    enabled: Boolean,
-    isFocused: Boolean,
-    onSearch: () -> Unit
-) {
-    val preferenceShape = RoundedCornerShape(Dimens.radiusLg)
-
-    val backgroundColor = when {
-        isFocused -> MaterialTheme.colorScheme.primaryContainer
-        else -> MaterialTheme.colorScheme.surface
-    }
-    val contentColor = when {
-        isFocused -> MaterialTheme.colorScheme.onPrimaryContainer
-        else -> MaterialTheme.colorScheme.onSurface
-    }
-    val secondaryColor = when {
-        isFocused -> MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
-        else -> MaterialTheme.colorScheme.onSurfaceVariant
-    }
-
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(preferenceShape)
-            .background(backgroundColor, preferenceShape)
-            .touchOnly(onClick = onSearch)
-            .padding(horizontal = Dimens.spacingMd, vertical = Dimens.spacingSm),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = "Filter by Value",
-                style = MaterialTheme.typography.bodyMedium,
-                color = contentColor
-            )
-            Text(
-                text = "D-pad to adjust, A to apply",
-                style = MaterialTheme.typography.bodySmall,
-                color = secondaryColor
-            )
-        }
-        Text(
-            text = "< ${value.ifEmpty { "0" }} >",
-            style = MaterialTheme.typography.bodyMedium,
-            color = if (isFocused) MaterialTheme.colorScheme.onPrimaryContainer
-                    else MaterialTheme.colorScheme.primary
-        )
-    }
-}
-
-@Composable
-private fun MemoryMatchRow(
-    match: MemoryMatch,
-    knownCheatName: String?,
-    isFocused: Boolean,
-    onClick: () -> Unit
-) {
-    val preferenceShape = RoundedCornerShape(Dimens.radiusLg)
-    val isKnown = knownCheatName != null
-    val dimmedAlpha = 0.5f
-
-    val backgroundColor = when {
-        isFocused -> MaterialTheme.colorScheme.primaryContainer
-        isKnown -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = dimmedAlpha)
-        else -> MaterialTheme.colorScheme.surface
-    }
-    val contentColor = when {
-        isFocused -> MaterialTheme.colorScheme.onPrimaryContainer
-        isKnown -> MaterialTheme.colorScheme.onSurface.copy(alpha = dimmedAlpha)
-        else -> MaterialTheme.colorScheme.onSurface
-    }
-    val addressColor = when {
-        isFocused -> MaterialTheme.colorScheme.onPrimaryContainer
-        isKnown -> MaterialTheme.colorScheme.primary.copy(alpha = dimmedAlpha)
-        else -> MaterialTheme.colorScheme.primary
-    }
-
-    val addressHex = "0x${match.address.toString(16).uppercase().padStart(6, '0')}"
-    val valueHex = match.currentValue.toString(16).uppercase().padStart(2, '0')
-    val previousText = match.previousValue?.let { prev ->
-        " (was ${prev.toString(16).uppercase().padStart(2, '0')})"
-    } ?: ""
-
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(preferenceShape)
-            .background(backgroundColor, preferenceShape)
-            .touchOnly(onClick = onClick)
-            .padding(horizontal = Dimens.spacingMd, vertical = Dimens.spacingSm),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = addressHex,
-                style = MaterialTheme.typography.bodyMedium,
-                color = addressColor
-            )
-            if (knownCheatName != null) {
-                Text(
-                    text = knownCheatName,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = contentColor.copy(alpha = 0.7f),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
-        }
-        Text(
-            text = "$valueHex$previousText",
-            style = MaterialTheme.typography.bodyMedium,
-            color = contentColor,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis
-        )
     }
 }

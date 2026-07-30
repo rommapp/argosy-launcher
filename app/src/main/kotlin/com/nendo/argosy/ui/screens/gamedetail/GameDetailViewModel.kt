@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.nendo.argosy.data.cache.ImageCacheManager
 import com.nendo.argosy.data.download.ZipExtractor
+import com.nendo.argosy.data.emulator.BuiltinCoreResolver
 import com.nendo.argosy.data.emulator.EmulatorDetector
 import com.nendo.argosy.data.emulator.EmulatorRegistry
 import com.nendo.argosy.data.emulator.LaunchConfig
@@ -82,6 +83,7 @@ class GameDetailViewModel @Inject constructor(
     private val emulatorConfigDao: EmulatorConfigDao,
     private val emulatorDetector: EmulatorDetector,
     private val emulatorResolver: EmulatorResolver,
+    private val builtinCoreResolver: BuiltinCoreResolver,
     private val notificationManager: NotificationManager,
     private val gameRepository: GameRepository,
     private val gameNavigationContext: GameNavigationContext,
@@ -116,6 +118,7 @@ class GameDetailViewModel @Inject constructor(
     private val downloadManager: com.nendo.argosy.data.download.DownloadManager,
     private val downloadFileStatusRepository: com.nendo.argosy.data.repository.DownloadFileStatusRepository,
     private val getRelatedGamesUseCase: com.nendo.argosy.domain.usecase.game.GetRelatedGamesUseCase,
+    private val gradientExtractionDelegate: com.nendo.argosy.ui.screens.common.GradientExtractionDelegate,
     private val gameThemeAudio: com.nendo.argosy.ui.audio.GameThemeAudioCoordinator
 ) : ViewModel() {
 
@@ -177,6 +180,18 @@ class GameDetailViewModel @Inject constructor(
 
     init {
         modalResetSignal.signal.onEach { resetAllModals() }.launchIn(viewModelScope)
+
+        viewModelScope.launch {
+            gradientExtractionDelegate.gradients.collect { gradients ->
+                _uiState.update { state ->
+                    state.copy(
+                        relatedGames = state.relatedGames.map { game ->
+                            gradients[game.id]?.let { game.copy(gradientColors = it) } ?: game
+                        }
+                    )
+                }
+            }
+        }
 
         viewModelScope.launch { emulatorDetector.detectEmulators() }
 
@@ -290,7 +305,7 @@ class GameDetailViewModel @Inject constructor(
                         hasCasualSaves = poState.hasCasualSaves,
                         hasHardcoreSave = poState.hasHardcoreSave,
                         hasRASupport = poState.hasRASupport,
-                        isRALoggedIn = poState.isRALoggedIn,
+                        hardcoreAvailable = poState.hardcoreAvailable,
                         isOnline = poState.isOnline
                     )
                 }
@@ -434,9 +449,17 @@ class GameDetailViewModel @Inject constructor(
             val platformCores = EmulatorRegistry.getSelectableCores(game.platformSlug, isBuiltInEmulator)
             val hasMultipleCores = isCoreSelectable && platformCores.size > 1
 
-            val selectedCoreId = gameSpecificConfig?.coreName
-                ?: platformDefaultConfig?.coreName
-                ?: EmulatorRegistry.getDefaultSelectableCore(game.platformSlug, isBuiltInEmulator)?.id
+            val selectedCoreId = if (isBuiltInEmulator) {
+                builtinCoreResolver.resolveCoreId(
+                    gameId = gameId,
+                    platformId = game.platformId,
+                    platformSlug = game.platformSlug
+                )
+            } else {
+                gameSpecificConfig?.coreName
+                    ?: platformDefaultConfig?.coreName
+                    ?: EmulatorRegistry.getDefaultSelectableCore(game.platformSlug, isBuiltInEmulator)?.id
+            }
             val selectedCoreName = if (isCoreSelectable) {
                 platformCores.find { it.id == selectedCoreId }?.displayName
             } else null
@@ -1086,10 +1109,13 @@ class GameDetailViewModel @Inject constructor(
                         viewModelScope.launch { loadGame(currentGameId) }
                     }
                     else -> {
-                        val isSteam = gameUi?.isSteamGame == true
-                        downloadDelegate.deleteLocalFile(viewModelScope, currentGameId, isSteam) { loadGame(currentGameId) }
+                        downloadDelegate.deleteLocalFile(viewModelScope, currentGameId) { loadGame(currentGameId) }
                     }
                 }
+            }
+            MoreOptionAction.RemoveFromLibrary -> {
+                toggleMoreOptions()
+                downloadDelegate.removeFromLibrary(viewModelScope, currentGameId)
             }
             MoreOptionAction.ToggleHide -> { toggleHideGame(); onBack() }
         }
@@ -1339,6 +1365,22 @@ class GameDetailViewModel @Inject constructor(
         viewModelScope.launch { perGameSettingsDelegate.cycleExtension(currentGameId, direction) }
     }
 
+    fun openPerGameMemcardPicker() = perGameSettingsDelegate.openMemcardPicker()
+
+    fun dismissPerGameMemcardPicker() = perGameSettingsDelegate.dismissMemcardPicker()
+
+    fun movePerGameMemcardFocus(delta: Int) = perGameSettingsDelegate.moveMemcardPickerFocus(delta)
+
+    fun selectPerGameMemcard(path: String) {
+        viewModelScope.launch { perGameSettingsDelegate.selectMemcard(currentGameId, path) }
+    }
+
+    fun confirmPerGameMemcardSelection() {
+        val st = perGameSettingsDelegate.state.value
+        val path = st.memcardPickerCards.getOrNull(st.memcardPickerFocusIndex)?.path ?: return
+        selectPerGameMemcard(path)
+    }
+
     fun confirmPerGameSetting(onNavigateToPlatformSettings: (Long) -> Unit) {
         val st = _uiState.value.perGameSettings
         when (st.focusedRow) {
@@ -1348,6 +1390,7 @@ class GameDetailViewModel @Inject constructor(
                 if (st.pathButtonIndex == 1 && st.isSavePathOverride) clearPerGameSavePath()
                 else openPerGameSavePathBrowser()
             }
+            PerGameSettingsRow.MEMCARD -> openPerGameMemcardPicker()
             PerGameSettingsRow.DISPLAY_TARGET -> cyclePerGameDisplayTarget(1)
             PerGameSettingsRow.EXTENSION -> cyclePerGameExtension(1)
             PerGameSettingsRow.PLATFORM_SETTINGS -> {
@@ -1374,6 +1417,7 @@ class GameDetailViewModel @Inject constructor(
         override fun onUp(): InputResult {
             val picker = pickerModalDelegate.state.value
             when {
+                perGameSettingsDelegate.state.value.showMemcardPicker -> movePerGameMemcardFocus(-1)
                 picker.showEmulatorPicker -> moveEmulatorPickerFocus(-1)
                 picker.showCorePicker -> moveCorePickerFocus(-1)
                 else -> movePerGameSettingsFocus(-1)
@@ -1384,6 +1428,7 @@ class GameDetailViewModel @Inject constructor(
         override fun onDown(): InputResult {
             val picker = pickerModalDelegate.state.value
             when {
+                perGameSettingsDelegate.state.value.showMemcardPicker -> movePerGameMemcardFocus(1)
                 picker.showEmulatorPicker -> moveEmulatorPickerFocus(1)
                 picker.showCorePicker -> moveCorePickerFocus(1)
                 else -> movePerGameSettingsFocus(1)
@@ -1392,11 +1437,13 @@ class GameDetailViewModel @Inject constructor(
         }
 
         override fun onLeft(): InputResult {
+            if (perGameSettingsDelegate.state.value.showMemcardPicker) return InputResult.HANDLED
             if (!pickerModalDelegate.state.value.hasAnyPickerOpen) adjustPerGameSetting(-1)
             return InputResult.HANDLED
         }
 
         override fun onRight(): InputResult {
+            if (perGameSettingsDelegate.state.value.showMemcardPicker) return InputResult.HANDLED
             if (!pickerModalDelegate.state.value.hasAnyPickerOpen) adjustPerGameSetting(1)
             return InputResult.HANDLED
         }
@@ -1404,6 +1451,7 @@ class GameDetailViewModel @Inject constructor(
         override fun onConfirm(): InputResult {
             val picker = pickerModalDelegate.state.value
             when {
+                perGameSettingsDelegate.state.value.showMemcardPicker -> confirmPerGameMemcardSelection()
                 picker.showEmulatorPicker -> confirmEmulatorSelection()
                 picker.showCorePicker -> confirmCoreSelection()
                 else -> confirmPerGameSetting(onNavigateToPlatformSettings)
@@ -1414,6 +1462,7 @@ class GameDetailViewModel @Inject constructor(
         override fun onBack(): InputResult {
             val picker = pickerModalDelegate.state.value
             when {
+                perGameSettingsDelegate.state.value.showMemcardPicker -> dismissPerGameMemcardPicker()
                 picker.showEmulatorPicker -> dismissEmulatorPicker()
                 picker.showCorePicker -> dismissCorePicker()
                 else -> dismissPerGameSettings()
@@ -1705,12 +1754,20 @@ class GameDetailViewModel @Inject constructor(
             val platformNames = related.map { it.platformId }.distinct()
                 .mapNotNull { pid -> platformRepository.getById(pid)?.let { pid to it.name } }
                 .toMap()
-            val ui = related.map {
-                it.toHomeGameUi(downloadFileStatusRepository, platformNames[it.platformId])
+            val ui = related.map { item ->
+                val mapped = item.toHomeGameUi(downloadFileStatusRepository, platformNames[item.platformId])
+                gradientExtractionDelegate.getGradient(mapped.id)
+                    ?.let { mapped.copy(gradientColors = it) } ?: mapped
             }
             if (currentGameId == game.id) {
                 _uiState.update { it.copy(relatedGames = ui, relatedFocusIndex = 0) }
             }
+            val requests = related.map {
+                com.nendo.argosy.ui.screens.common.GameGradientRequest(it.id, it.coverPath)
+            }
+            gradientExtractionDelegate.extractForVisibleGames(
+                viewModelScope, requests, focusedIndex = 0, buffer = requests.size
+            )
         }
     }
 

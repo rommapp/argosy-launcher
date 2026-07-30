@@ -19,6 +19,7 @@ import com.nendo.argosy.data.local.entity.GameEntity
 import com.nendo.argosy.data.local.entity.GameFileEntity
 import com.nendo.argosy.data.local.entity.getDisplayName
 import com.nendo.argosy.domain.usecase.game.ConfigureEmulatorUseCase
+import com.nendo.argosy.data.emulator.BuiltinCoreResolver
 import com.nendo.argosy.data.emulator.DiscOption
 import com.nendo.argosy.data.emulator.EmulatorRegistry
 import com.nendo.argosy.data.download.ZipExtractor
@@ -28,6 +29,7 @@ import com.nendo.argosy.ui.common.isAndroidApp
 import com.nendo.argosy.ui.common.isRommGame
 import com.nendo.argosy.ui.common.isSteamGame
 import com.nendo.argosy.data.emulator.InstalledEmulator
+import com.nendo.argosy.data.emulator.LaunchConfig
 import com.nendo.argosy.data.emulator.RetroArchCore
 import com.nendo.argosy.data.model.GameSource
 import com.nendo.argosy.ui.screens.gamedetail.UpdateFileType
@@ -39,8 +41,10 @@ import com.nendo.argosy.ui.common.savechannel.SaveFocusColumn
 import com.nendo.argosy.ui.common.savechannel.SaveHistoryItem
 import com.nendo.argosy.ui.common.savechannel.SaveSlotItem
 import com.nendo.argosy.util.DisplayAffinityHelper
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -59,6 +63,8 @@ class DualGameDetailViewModel(
     private val downloadQueueRepository: DownloadQueueRepository,
     private val steamRepository: SteamRepository,
     private val configureEmulatorUseCase: ConfigureEmulatorUseCase,
+    private val builtinCoreResolver: BuiltinCoreResolver,
+    private val saveHandlerRegistry: com.nendo.argosy.data.sync.platform.PlatformSaveHandlerRegistry,
     private val steamContentManager: com.nendo.argosy.data.steam.SteamContentManager? = null,
     private val displayAffinityHelper: DisplayAffinityHelper,
     private val downloadFileStatusRepository: com.nendo.argosy.data.repository.DownloadFileStatusRepository,
@@ -146,6 +152,12 @@ class DualGameDetailViewModel(
 
     private val _displayTargetPickerFocusIndex = MutableStateFlow(0)
     val displayTargetPickerFocusIndex: StateFlow<Int> = _displayTargetPickerFocusIndex.asStateFlow()
+
+    private val _memcardPickerList = MutableStateFlow<List<com.nendo.argosy.data.sync.platform.MemcardInfo>>(emptyList())
+    val memcardPickerList: StateFlow<List<com.nendo.argosy.data.sync.platform.MemcardInfo>> = _memcardPickerList.asStateFlow()
+
+    private val _memoryCardPickerFocusIndex = MutableStateFlow(0)
+    val memoryCardPickerFocusIndex: StateFlow<Int> = _memoryCardPickerFocusIndex.asStateFlow()
 
     private val _variantPickerList = MutableStateFlow<List<GameFileEntity>>(emptyList())
 
@@ -285,6 +297,7 @@ class DualGameDetailViewModel(
             }
             ActiveModal.EMULATOR, ActiveModal.CORE, ActiveModal.COLLECTION,
             ActiveModal.SAVE_PATH, ActiveModal.DISPLAY_TARGET,
+            ActiveModal.MEMORY_CARD,
             ActiveModal.SAVE_NAME,
             ActiveModal.DISC_PICKER, ActiveModal.VARIANT_PICKER,
             ActiveModal.STEAM_INSTALL -> return
@@ -352,17 +365,37 @@ class DualGameDetailViewModel(
             val hasFileBasedSaves = com.nendo.argosy.data.emulator.SavePathRegistry
                 .supportsPerGameSavePath(saveConfig, game.platformSlug)
 
-            val platformCores = EmulatorRegistry.getCoresForPlatform(game.platformSlug)
+            val ps2Memcards = if (game.platformSlug == "ps2") {
+                withContext(Dispatchers.IO) {
+                    saveHandlerRegistry.listPs2FolderMemcardsForEmulator(
+                        emulatorId = saveConfig?.emulatorId ?: "",
+                        emulatorPackage = effectiveSavePackage
+                    )
+                }
+            } else emptyList()
+            val selectedMemcardPath = emulatorConfigDao.getSelectedMemcardForGame(game.id)
+            val hasMultipleMemcards = ps2Memcards.size > 1
+            val selectedMemcardName = ps2Memcards.find { it.path == selectedMemcardPath }?.name
+
             val emulatorDef = configuredEmulatorPackage?.let { pkg ->
                 EmulatorRegistry.getByPackage(pkg)
-            }
-            // emulatorDef == null means we haven't resolved an emulator yet (auto-pick); still show core picker if cores exist.
+            } ?: detector.getPreferredEmulator(game.platformSlug, builtinEnabled)?.def
+            val isBuiltInEmulator = emulatorDef?.launchConfig is LaunchConfig.BuiltIn
+            val platformCores = EmulatorRegistry.getSelectableCores(game.platformSlug, isBuiltInEmulator)
             val isCoreSelectable = emulatorDef?.launchConfig?.isCoreSelectable ?: true
             val hasMultipleCores = isCoreSelectable && platformCores.size > 1
 
-            val selectedCoreId = gameSpecificConfig?.coreName
-                ?: platformDefaultConfig?.coreName
-                ?: EmulatorRegistry.getDefaultCore(game.platformSlug)?.id
+            val selectedCoreId = if (isBuiltInEmulator) {
+                builtinCoreResolver.resolveCoreId(
+                    gameId = game.id,
+                    platformId = game.platformId,
+                    platformSlug = game.platformSlug
+                )
+            } else {
+                gameSpecificConfig?.coreName
+                    ?: platformDefaultConfig?.coreName
+                    ?: EmulatorRegistry.getDefaultSelectableCore(game.platformSlug, isBuiltInEmulator)?.id
+            }
             val selectedCoreName = if (hasMultipleCores) {
                 platformCores.find { it.id == selectedCoreId }?.displayName
             } else null
@@ -409,6 +442,7 @@ class DualGameDetailViewModel(
                 platformSlug = game.platformSlug,
                 platformId = game.platformId,
                 emulatorName = configuredEmulatorName,
+                isBuiltInEmulator = isBuiltInEmulator,
                 hasMultipleCores = hasMultipleCores,
                 selectedCoreName = selectedCoreName,
                 selectedCoreId = selectedCoreId,
@@ -417,6 +451,8 @@ class DualGameDetailViewModel(
                 hasSecondaryDisplay = displayAffinityHelper.hasSecondaryDisplay,
                 displayTargetName = gameSpecificConfig?.displayTarget,
                 platformDisplayTargetName = platformDefaultConfig?.displayTarget,
+                hasMultipleMemcards = hasMultipleMemcards,
+                selectedMemcardName = selectedMemcardName,
                 hasMultipleVariants = hasMultipleVariants,
                 selectedVariantName = selectedVariantName,
                 activeChannel = activeChannel,
@@ -426,6 +462,7 @@ class DualGameDetailViewModel(
             )
             val sameGame = _uiState.value.gameId == game.id
             _uiState.value = newState
+            _memcardPickerList.value = ps2Memcards
             _visibleOptions.value = newState.visibleOptions()
 
             _selectedScreenshotIndex.value = when {
@@ -950,9 +987,15 @@ class DualGameDetailViewModel(
         val state = _uiState.value
         viewModelScope.launch {
             configureEmulatorUseCase.setForGame(state.gameId, state.platformId, state.platformSlug, selected)
+            val builtinEnabled = preferencesRepository.userPreferences.first().builtinLibretroEnabled
+            val resolvedDef = selected?.def
+                ?: com.nendo.argosy.data.emulator.getSharedEmulatorDetector(context)
+                    .getPreferredEmulator(state.platformSlug, builtinEnabled)?.def
+            val isBuiltIn = resolvedDef?.launchConfig is LaunchConfig.BuiltIn
             _uiState.update {
                 it.copy(
                     emulatorName = selected?.def?.displayName,
+                    isBuiltInEmulator = isBuiltIn,
                     savePathOverride = null,
                     displayTargetName = null
                 )
@@ -961,10 +1004,19 @@ class DualGameDetailViewModel(
         _activeModal.value = ActiveModal.NONE
     }
 
-    fun openCorePicker(cores: List<RetroArchCore>) {
+    /**
+     * Opens the core picker for the game's resolved emulator mode and returns the display
+     * names of the backing core list, in the same order, for the upper-screen modal. The
+     * returned names are the only ones that may be shown: confirm indexes back into the
+     * list stored here.
+     */
+    fun openCorePicker(): List<String> {
+        val state = _uiState.value
+        val cores = EmulatorRegistry.getSelectableCores(state.platformSlug, state.isBuiltInEmulator)
         _corePickerList.value = cores
         _corePickerFocusIndex.value = 0
         _activeModal.value = ActiveModal.CORE
+        return cores.map { it.displayName }
     }
 
     fun confirmCoreByIndex(index: Int) {
@@ -1027,6 +1079,30 @@ class DualGameDetailViewModel(
         viewModelScope.launch {
             configureEmulatorUseCase.setDisplayTargetForGame(state.gameId, selected?.name)
             _uiState.update { it.copy(displayTargetName = selected?.name) }
+        }
+        _activeModal.value = ActiveModal.NONE
+    }
+
+    fun openMemoryCardPicker() {
+        _memoryCardPickerFocusIndex.value = 0
+        _activeModal.value = ActiveModal.MEMORY_CARD
+    }
+
+    fun moveMemoryCardPickerFocus(delta: Int) {
+        val max = _memcardPickerList.value.size
+        _memoryCardPickerFocusIndex.update { (it + delta).coerceIn(0, max) }
+    }
+
+    fun confirmMemoryCardByIndex(index: Int) {
+        val selected = if (index == 0) null else _memcardPickerList.value.getOrNull(index - 1)
+        val state = _uiState.value
+        viewModelScope.launch {
+            if (selected != null) {
+                configureEmulatorUseCase.setMemcardForGame(state.gameId, selected.path)
+            } else {
+                configureEmulatorUseCase.clearMemcardForGame(state.gameId)
+            }
+            _uiState.update { it.copy(selectedMemcardName = selected?.name) }
         }
         _activeModal.value = ActiveModal.NONE
     }

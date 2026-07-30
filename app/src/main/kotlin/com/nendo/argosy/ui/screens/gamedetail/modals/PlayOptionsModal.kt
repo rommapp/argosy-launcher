@@ -64,19 +64,20 @@ data class PlayOptionItem(
 
 /**
  * Builds the visible play options in display order. Visibility conditions live here only; callers
- * must not re-derive them. [canSkipSync] gates the "play without syncing" row; hardcore rows need
- * RetroAchievements support and a logged-in session. The Continue "Hardcore" row loads the latest
- * hardcore save if present, else continues the active casual save in a hardcore session.
+ * must not re-derive them. [canSkipSync] gates the "play without syncing" row; [hardcoreAvailable]
+ * is the already-resolved answer to whether hardcore applies at all. The Continue "Hardcore" row
+ * loads the latest hardcore save if present, else continues the active casual save in a hardcore
+ * session.
  */
 fun buildPlayOptions(
     hasSaves: Boolean,
     hasHardcoreSave: Boolean,
     hasRASupport: Boolean,
-    isRALoggedIn: Boolean,
+    hardcoreAvailable: Boolean,
     isOnline: Boolean,
     canSkipSync: Boolean
 ): List<PlayOptionItem> = buildList {
-    val showHardcoreOptions = hasRASupport && isRALoggedIn
+    val showHardcoreOptions = hardcoreAvailable
     val hasContinueSection = hasSaves || hasHardcoreSave
 
     if (hasSaves) {
@@ -143,7 +144,7 @@ fun PlayOptionsModal(
     hasSaves: Boolean,
     hasHardcoreSave: Boolean,
     hasRASupport: Boolean,
-    isRALoggedIn: Boolean,
+    hardcoreAvailable: Boolean,
     isOnline: Boolean,
     canSkipSync: Boolean = false,
     onAction: (PlayOptionAction) -> Unit,
@@ -153,7 +154,7 @@ fun PlayOptionsModal(
         hasSaves = hasSaves,
         hasHardcoreSave = hasHardcoreSave,
         hasRASupport = hasRASupport,
-        isRALoggedIn = isRALoggedIn,
+        hardcoreAvailable = hardcoreAvailable,
         isOnline = isOnline,
         canSkipSync = canSkipSync
     )

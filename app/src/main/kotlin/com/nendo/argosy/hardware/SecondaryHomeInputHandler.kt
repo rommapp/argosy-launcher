@@ -313,14 +313,10 @@ class SecondaryHomeInputHandler(
                 }
             }
             GameDetailOption.CHANGE_CORE -> {
-                lifecycleLaunch {
-                    val cores = com.nendo.argosy.data.emulator.EmulatorRegistry
-                        .getCoresForPlatform(vm.uiState.value.platformSlug)
-                    vm.openCorePicker(cores)
-                    broadcasts.broadcastCoreModalOpen(
-                        cores, vm.uiState.value.selectedCoreName
-                    )
-                }
+                val coreNames = vm.openCorePicker()
+                broadcasts.broadcastCoreModalOpen(
+                    coreNames, vm.uiState.value.selectedCoreName
+                )
             }
             GameDetailOption.SAVE_PATH -> {
                 vm.openSavePathPicker()
@@ -335,6 +331,14 @@ class SecondaryHomeInputHandler(
                         EmulatorDisplayTarget.fromString(it).displayName
                     },
                     EmulatorDisplayTarget.fromString(state.platformDisplayTargetName).displayName
+                )
+            }
+            GameDetailOption.MEMORY_CARD -> {
+                vm.openMemoryCardPicker()
+                broadcasts.broadcastMemoryCardModalOpen(
+                    vm.memcardPickerList.value.map { it.name },
+                    vm.uiState.value.selectedMemcardName,
+                    null
                 )
             }
             GameDetailOption.SELECT_VARIANT -> {
@@ -890,6 +894,37 @@ class SecondaryHomeInputHandler(
                 }
                 return InputResult.HANDLED
             }
+            ActiveModal.MEMORY_CARD -> {
+                when (event) {
+                    GamepadEvent.Up -> {
+                        vm.moveMemoryCardPickerFocus(-1)
+                        broadcasts.broadcastInlineUpdate(
+                            "memory_card_focus",
+                            vm.memoryCardPickerFocusIndex.value
+                        )
+                    }
+                    GamepadEvent.Down -> {
+                        vm.moveMemoryCardPickerFocus(1)
+                        broadcasts.broadcastInlineUpdate(
+                            "memory_card_focus",
+                            vm.memoryCardPickerFocusIndex.value
+                        )
+                    }
+                    GamepadEvent.Confirm -> {
+                        val idx = vm.memoryCardPickerFocusIndex.value
+                        vm.confirmMemoryCardByIndex(idx)
+                        broadcasts.broadcastModalConfirmResult(
+                            modal, idx, null
+                        )
+                    }
+                    GamepadEvent.Back -> {
+                        vm.dismissPicker()
+                        broadcasts.broadcastModalClose()
+                    }
+                    else -> {}
+                }
+                return InputResult.HANDLED
+            }
             ActiveModal.VARIANT_PICKER -> {
                 when (event) {
                     GamepadEvent.Up -> {
@@ -1055,13 +1090,6 @@ class SecondaryHomeInputHandler(
                         broadcasts.broadcastModalClose()
                     }
                     else -> {}
-                }
-                return InputResult.HANDLED
-            }
-            ActiveModal.VARIANT_PICKER -> {
-                if (event == GamepadEvent.Back) {
-                    vm.dismissPicker()
-                    broadcasts.broadcastModalClose()
                 }
                 return InputResult.HANDLED
             }

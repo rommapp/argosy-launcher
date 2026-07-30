@@ -1,0 +1,50 @@
+{
+  "rules": [
+    {
+      "id": "inline-comment",
+      "summary": "Inline // comment added in a Kotlin source body",
+      "message": "House rule: zero inline // comments inside function bodies. State the WHAT in a concise KDoc if the contract is non-obvious; rationale belongs in the PR description. See CONTRIBUTING.md (AS-1).",
+      "path_include": [
+        "app/src/main/**/*.kt"
+      ],
+      "path_exclude": [],
+      "added_regex": "^\\s*//(?!/)",
+      "skip_line_regex": "^\\s*(\\*|/\\*)"
+    },
+    {
+      "id": "disguised-block-comment",
+      "summary": "Single-line block comment (/* */ or /** */)",
+      "message": "A one-line /* */ or /** */ is an inline comment with different delimiters; the same house rule applies. A KDoc that is genuinely needed uses the multi-line block form above the declaration. See CONTRIBUTING.md (AS-1).",
+      "path_include": [
+        "app/src/main/**/*.kt"
+      ],
+      "path_exclude": [],
+      "added_regex": "^\\s*/\\*.*\\*/\\s*$"
+    },
+    {
+      "id": "plain-clickable",
+      "summary": "Plain clickable() used instead of clickableNoFocus",
+      "message": "Interactive UI must use clickableNoFocus (ui/util/Modifiers.kt) so touch input does not steal gamepad focus. See CONTRIBUTING.md (dual-modality).",
+      "path_include": [
+        "app/src/main/**/*.kt"
+      ],
+      "path_exclude": [
+        "app/src/main/**/ui/util/Modifiers.kt"
+      ],
+      "added_regex": "\\bclickable\\s*\\("
+    },
+    {
+      "id": "raw-dp-literal",
+      "summary": "Hardcoded dp literal added in UI code",
+      "message": "Dimensions route through Dimens / tokens.json, not literals (0.dp excepted). See CONTRIBUTING.md (design tokens).",
+      "path_include": [
+        "app/src/main/**/ui/**/*.kt"
+      ],
+      "path_exclude": [
+        "app/src/main/**/ui/theme/**",
+        "app/src/main/**/Dimens*.kt"
+      ],
+      "added_regex": "\\b(?!0\\.dp)\\d+(?:\\.\\d+)?\\.dp\\b"
+    }
+  ]
+}

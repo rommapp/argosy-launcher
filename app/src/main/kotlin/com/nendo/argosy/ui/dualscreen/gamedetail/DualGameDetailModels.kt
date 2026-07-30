@@ -21,7 +21,7 @@ enum class DualGameDetailTab {
     OPTIONS
 }
 
-enum class ActiveModal { NONE, RATING, DIFFICULTY, STATUS, EMULATOR, CORE, SAVE_PATH, DISPLAY_TARGET, COLLECTION, SAVE_NAME, DISC_PICKER, VARIANT_PICKER, STEAM_INSTALL, FILE_PICKER }
+enum class ActiveModal { NONE, RATING, DIFFICULTY, STATUS, EMULATOR, CORE, SAVE_PATH, DISPLAY_TARGET, MEMORY_CARD, COLLECTION, SAVE_NAME, DISC_PICKER, VARIANT_PICKER, STEAM_INSTALL, FILE_PICKER }
 
 enum class GameDetailOption {
     PLAY,
@@ -33,6 +33,7 @@ enum class GameDetailOption {
     CHANGE_CORE,
     SAVE_PATH,
     DISPLAY_TARGET,
+    MEMORY_CARD,
     SELECT_VARIANT,
     SELECT_DISC,
     FILES,
@@ -78,6 +79,7 @@ data class DualGameDetailUiState(
     val platformSlug: String = "",
     val platformId: Long = 0,
     val emulatorName: String? = null,
+    val isBuiltInEmulator: Boolean = false,
     val saveFocusColumn: SaveFocusColumn = SaveFocusColumn.SLOTS,
     val activeChannel: String? = null,
     val activeSaveTimestamp: Long? = null,
@@ -90,6 +92,8 @@ data class DualGameDetailUiState(
     val hasSecondaryDisplay: Boolean = false,
     val displayTargetName: String? = null,
     val platformDisplayTargetName: String? = null,
+    val hasMultipleMemcards: Boolean = false,
+    val selectedMemcardName: String? = null,
     val hasMultipleVariants: Boolean = false,
     val selectedVariantName: String? = null,
     val downloadProgress: Float? = null,
@@ -111,6 +115,7 @@ fun DualGameDetailUiState.visibleOptions(): List<GameDetailOption> {
         if (hasMultipleCores && isEmulated) add(GameDetailOption.CHANGE_CORE)
         if (hasFileBasedSaves && isEmulated) add(GameDetailOption.SAVE_PATH)
         if (hasSecondaryDisplay && isEmulated) add(GameDetailOption.DISPLAY_TARGET)
+        if (hasMultipleMemcards && isEmulated) add(GameDetailOption.MEMORY_CARD)
         if (hasMultipleVariants && isEmulated) add(GameDetailOption.SELECT_VARIANT)
         if (isMultiDisc && isEmulated) add(GameDetailOption.SELECT_DISC)
         if (isDownloaded && !isDeleting) add(GameDetailOption.FILES)
@@ -160,6 +165,10 @@ data class DualGameDetailUpperState(
     val displayTargetFocusIndex: Int = 0,
     val displayTargetCurrentName: String? = null,
     val displayTargetInheritedName: String? = null,
+    val memoryCardNames: List<String> = emptyList(),
+    val memoryCardFocusIndex: Int = 0,
+    val memoryCardCurrentName: String? = null,
+    val memoryCardInheritedName: String? = null,
     val variantNames: List<String> = emptyList(),
     val variantFocusIndex: Int = 0,
     val variantCurrentName: String? = null,

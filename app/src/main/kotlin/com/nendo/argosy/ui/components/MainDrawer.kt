@@ -32,6 +32,7 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.SportsEsports
 import androidx.compose.material.icons.filled.SystemUpdate
 import androidx.compose.material.icons.filled.VideoLibrary
+import com.nendo.argosy.ui.quaypass.QuayPassIcons
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -93,7 +94,8 @@ fun MainDrawer(
         ) {
             DrawerStatusBar(
                 isRommConnected = drawerState.rommConnected,
-                localUser = drawerState.localUser
+                localUser = drawerState.localUser,
+                localAvatarDoodle = drawerState.localAvatarDoodle
             )
             HorizontalDivider(
                 modifier = Modifier.padding(horizontal = Dimens.spacingLg, vertical = Dimens.radiusLg),
@@ -553,7 +555,11 @@ private fun FriendItem(
 }
 
 @Composable
-private fun DrawerStatusBar(isRommConnected: Boolean, localUser: SocialUser?) {
+private fun DrawerStatusBar(
+    isRommConnected: Boolean,
+    localUser: SocialUser?,
+    localAvatarDoodle: String? = null
+) {
     val mutedColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.35f)
     Row(
         modifier = Modifier
@@ -570,7 +576,9 @@ private fun DrawerStatusBar(isRommConnected: Boolean, localUser: SocialUser?) {
                 SocialAvatar(
                     displayName = localUser.displayName,
                     avatarColor = localUser.avatarColor,
-                    size = Dimens.iconLg
+                    size = Dimens.iconLg,
+                    avatarDoodle = localAvatarDoodle,
+                    userId = localUser.id
                 )
             }
             Icon(
@@ -694,6 +702,7 @@ private fun getIconForRoute(route: String): ImageVector = when (route) {
     Screen.Downloads.route -> Icons.Default.Download
     Screen.SaveSync.route -> Icons.Default.CloudSync
     Screen.Apps.route -> Icons.Default.Apps
+    Screen.QuayPass.route -> QuayPassIcons.Encounter
     Screen.Settings.route -> Icons.Default.Settings
     else -> Icons.Default.Apps
 }

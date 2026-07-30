@@ -461,6 +461,18 @@ class ZipExtractorTest {
     }
 
     @Test
+    fun `shouldExtractArchive keeps game and watch zip zipped because mame mess loads the set`() {
+        val zipFile = File(tempDir, "gnw_ball.zip")
+        createTestZip(
+            zipFile,
+            mapOf("ball.bin" to "rom data", "ball.svg" to "artwork", "ball.lay" to "layout")
+        )
+
+        assertFalse(ZipExtractor.shouldExtractArchive(zipFile, "g-and-w"))
+        assertFalse(ZipExtractor.shouldExtractArchive(zipFile, "gameandwatch"))
+    }
+
+    @Test
     fun `shouldExtractArchive extracts single-file switch zip because switch cannot read zipped roms`() {
         val zipFile = File(tempDir, "switch_game.zip")
         createTestZip(zipFile, mapOf("game.nsp" to "switch rom"))

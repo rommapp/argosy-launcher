@@ -62,19 +62,14 @@ object ControllerDetector {
     )
 
     @SuppressLint("PrivateApi")
-    private fun getGamepadTypeProperty(): Int? {
-        val value = getGamepadTypeViaReflection() ?: getGamepadTypeViaShell()
-        android.util.Log.d("ControllerDetector", "getGamepadTypeProperty result: $value")
-        return value
-    }
+    private fun getGamepadTypeProperty(): Int? =
+        getGamepadTypeViaReflection() ?: getGamepadTypeViaShell()
 
     private fun getGamepadTypeViaReflection(): Int? {
         return try {
             val clazz = Class.forName("android.os.SystemProperties")
             val get = clazz.getDeclaredMethod("get", String::class.java, String::class.java)
-            val value = (get.invoke(null, "persist.sys.gamepad.type", "0") as String).toIntOrNull()
-            android.util.Log.d("ControllerDetector", "getGamepadTypeProperty via reflection: $value")
-            value
+            (get.invoke(null, "persist.sys.gamepad.type", "0") as String).toIntOrNull()
         } catch (e: Exception) {
             null
         }
@@ -87,7 +82,6 @@ object ControllerDetector {
             val value = reader.readLine()?.trim()?.toIntOrNull()
             reader.close()
             process.waitFor()
-            android.util.Log.d("ControllerDetector", "getGamepadTypeProperty via shell: $value")
             value
         } catch (e: Exception) {
             android.util.Log.e("ControllerDetector", "getGamepadTypeProperty failed", e)

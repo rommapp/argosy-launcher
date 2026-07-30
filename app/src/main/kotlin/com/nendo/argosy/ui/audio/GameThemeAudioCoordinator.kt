@@ -56,7 +56,11 @@ class GameThemeAudioCoordinator @Inject constructor(
     private suspend fun resolveSource(gameId: Long): AmbientOverrideSource? {
         val prefs = preferencesRepository.userPreferences.first()
         if (!prefs.gameDetailThemeEnabled || !prefs.ambientAudioEnabled) return null
-        return when (val theme = resolveGameTheme(gameId)) {
+
+        val resolved = resolveGameTheme(gameId)
+            ?: if (romMRepository.ensureSoundtrackFiles(gameId)) resolveGameTheme(gameId) else null
+
+        return when (val theme = resolved) {
             null -> null
             is GameThemeSource.Local -> AmbientOverrideSource.Local(theme.path, theme.title)
             is GameThemeSource.Stream -> buildRemoteSource(theme, prefs.rommToken)

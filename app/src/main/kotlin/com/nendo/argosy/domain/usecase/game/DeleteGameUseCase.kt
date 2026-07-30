@@ -110,19 +110,42 @@ class DeleteGameUseCase @Inject constructor(
         }
     }
 
-    private suspend fun deleteSteamGame(steamAppId: Long?): Boolean {
-        if (steamAppId == null) {
-            Logger.warn(TAG, "Cannot delete Steam game without steamAppId")
+    /**
+     * Drops a Steam game from the library, files included. Deleting a download is
+     * [invoke]; this is the only path that discards the row.
+     */
+    suspend fun removeFromLibrary(gameId: Long): Boolean {
+        val game = gameDao.getById(gameId) ?: return false
+        if (game.source != GameSource.STEAM) return false
+        val steamAppId = game.steamAppId ?: run {
+            Logger.warn(TAG, "Cannot remove Steam game without steamAppId")
             return false
         }
-        val result = steamRepository.removeGame(steamAppId)
-        return when (result) {
+        return when (val result = steamRepository.removeGame(steamAppId)) {
             is SteamResult.Success -> {
-                Logger.debug(TAG, "Deleted Steam game $steamAppId")
+                Logger.debug(TAG, "Removed Steam game $steamAppId from library")
                 true
             }
             is SteamResult.Error -> {
-                Logger.warn(TAG, "Failed to delete Steam game: ${result.message}")
+                Logger.warn(TAG, "Failed to remove Steam game: ${result.message}")
+                false
+            }
+        }
+    }
+
+    private suspend fun deleteSteamGame(steamAppId: Long?): Boolean {
+        if (steamAppId == null) {
+            Logger.warn(TAG, "Cannot uninstall Steam game without steamAppId")
+            return false
+        }
+        val result = steamRepository.uninstallGame(steamAppId)
+        return when (result) {
+            is SteamResult.Success -> {
+                Logger.debug(TAG, "Uninstalled Steam game $steamAppId")
+                true
+            }
+            is SteamResult.Error -> {
+                Logger.warn(TAG, "Failed to uninstall Steam game: ${result.message}")
                 false
             }
         }

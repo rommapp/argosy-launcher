@@ -274,7 +274,7 @@ class SaveSyncRepository @Inject constructor(
     suspend fun queueUpload(gameId: Long, emulatorId: String, localPath: String) =
         orchestrator.queueUpload(gameId, emulatorId, localPath)
 
-    suspend fun scanAndQueueLocalChanges(): Int = orchestrator.scanAndQueueLocalChanges()
+    suspend fun scanAndQueueLocalChanges(secureSaves: Boolean): Int = orchestrator.scanAndQueueLocalChanges(secureSaves)
 
 
     suspend fun downloadPendingServerSaves(): Int = orchestrator.downloadPendingServerSaves()
@@ -312,7 +312,8 @@ class SaveSyncRepository @Inject constructor(
         gameId: Long,
         rommId: Long,
         emulatorId: String,
-        channelName: String?
+        channelName: String?,
+        secureSaves: Boolean
     ): PreLaunchSyncResult = withContext(Dispatchers.IO) {
         val myDeviceId = apiClient.getDeviceId() ?: run {
             Logger.debug(PRE_LAUNCH_TAG, "[SaveSync] PRE_LAUNCH gameId=$gameId | No deviceId (pre-4.7 server or sync disabled) | decision=NoConnection")
@@ -327,6 +328,14 @@ class SaveSyncRepository @Inject constructor(
         }
 
         apiClient.flushPendingDeviceSync(gameId)
+
+        if (!secureSaves) {
+            val refresh = orchestrator.refreshCacheFromSystem(gameId, emulatorId, channelName)
+            if (refresh is SaveSyncOrchestrator.RefreshOutcome.Unreadable) {
+                Logger.debug(PRE_LAUNCH_TAG, "[SaveSync] PRE_LAUNCH gameId=$gameId | save location unreadable (${refresh.dirPath}); skipping sync decision | decision=LocalIsNewer")
+                return@withContext PreLaunchSyncResult.LocalIsNewer
+            }
+        }
 
         val serverSaves = try {
             apiClient.checkSavesForGame(gameId, rommId)

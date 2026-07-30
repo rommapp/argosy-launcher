@@ -235,7 +235,7 @@ internal class LightSectionsInput(
             SettingsSection.HOME_SCREEN -> homeScreenSections(state.display)
             SettingsSection.BIOS -> biosSections(state.bios.platformGroups, state.bios.expandedPlatformIndex)
             SettingsSection.SERVER -> gameDataSections(buildGameDataItemsFromState(state))
-            SettingsSection.SOCIAL -> socialSections()
+            SettingsSection.SOCIAL -> socialSections(hasAvatarDoodle = state.social.avatarDoodle != null)
             SettingsSection.ABOUT -> aboutSections(state.fileLoggingPath != null, aboutHasChangelog(state.updateCheck))
             else -> return InputResult.HANDLED
         }

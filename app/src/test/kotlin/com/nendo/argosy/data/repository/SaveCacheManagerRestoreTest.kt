@@ -28,8 +28,11 @@ class SaveCacheManagerRestoreTest {
 
     private val context = mockk<Context>(relaxed = true)
     private val saveCacheDao = mockk<SaveCacheDao>(relaxed = true)
+    private val saveSyncDao = mockk<com.nendo.argosy.data.local.dao.SaveSyncDao>(relaxed = true)
     private val gameDao = mockk<GameDao>(relaxed = true)
     private val preferencesRepository = mockk<UserPreferencesRepository>(relaxed = true)
+    private val syncPreferencesRepository = mockk<com.nendo.argosy.data.preferences.SyncPreferencesRepository>(relaxed = true)
+    private val savePathResolver = mockk<com.nendo.argosy.data.sync.SavePathResolver>(relaxed = true)
     private val saveArchiver = mockk<SaveArchiver>(relaxed = true)
     private val fal = mockk<FileAccessLayer>(relaxed = true)
     private val saveHandlerRegistry = mockk<PlatformSaveHandlerRegistry>(relaxed = true)
@@ -39,11 +42,15 @@ class SaveCacheManagerRestoreTest {
         tempDir = createTempDirectory("save_cache_restore_test").toFile()
         cacheBaseDir = File(tempDir, "save_cache").apply { mkdirs() }
         every { context.filesDir } returns tempDir
+        coEvery { syncPreferencesRepository.isSecureSaves() } returns true
         manager = SaveCacheManager(
             context = context,
             saveCacheDao = saveCacheDao,
+            saveSyncDao = saveSyncDao,
             gameDao = gameDao,
             preferencesRepository = preferencesRepository,
+            syncPreferencesRepository = syncPreferencesRepository,
+            savePathResolver = savePathResolver,
             saveArchiver = saveArchiver,
             fal = fal,
             saveHandlerRegistry = saveHandlerRegistry,

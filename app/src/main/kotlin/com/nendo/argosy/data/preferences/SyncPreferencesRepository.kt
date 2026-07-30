@@ -31,6 +31,7 @@ data class SyncPreferences(
     val uploadScreenshotsEnabled: Boolean = true,
     val boxArtCacheEnabled: Boolean = true,
     val saveSyncEnabled: Boolean = false,
+    val secureSaves: Boolean = true,
     val stateCacheEnabled: Boolean = true,
     val saveCacheLimit: Int = 10,
     val saveWatcherEnabled: Boolean = false,
@@ -42,6 +43,8 @@ data class SyncPreferences(
     val socialUsername: String? = null,
     val socialDisplayName: String? = null,
     val socialAvatarColor: String? = null,
+    val socialAvatarDoodle: String? = null,
+    val socialAvatarUseDoodle: Boolean = false,
     val socialOnlineStatusEnabled: Boolean = true,
     val socialShowNowPlaying: Boolean = true,
     val socialNotifyFriendOnline: Boolean = true,
@@ -49,7 +52,12 @@ data class SyncPreferences(
     val discordRichPresenceEnabled: Boolean = true,
     val socialSuppressNotificationsInGame: Boolean = false,
     val lastPlaySessionSync: Instant? = null,
-    val lastStateValidation: Instant? = null
+    val lastStateValidation: Instant? = null,
+    val quayPassEnabled: Boolean = false,
+    val quayPassAvatarSyncPending: Boolean = false,
+    val quayPassMessageSyncPending: Boolean = false,
+    val quayPassGreeting: String? = null,
+    val quayPassTicketBalance: Int = 0
 )
 
 @Singleton
@@ -82,6 +90,7 @@ class SyncPreferencesRepository @Inject constructor(
         val UPLOAD_SCREENSHOTS_ENABLED = booleanPreferencesKey("upload_screenshots_enabled")
         val BOX_ART_CACHE_ENABLED = booleanPreferencesKey("box_art_cache_enabled")
         val SAVE_SYNC_ENABLED = booleanPreferencesKey("save_sync_enabled")
+        val SECURE_SAVES = booleanPreferencesKey("secure_saves")
         val STATE_CACHE_ENABLED = booleanPreferencesKey("state_cache_enabled")
         val SAVE_CACHE_LIMIT = intPreferencesKey("save_cache_limit")
         val SAVE_WATCHER_ENABLED = booleanPreferencesKey("save_watcher_enabled")
@@ -93,6 +102,8 @@ class SyncPreferencesRepository @Inject constructor(
         val SOCIAL_USERNAME = stringPreferencesKey("social_username")
         val SOCIAL_DISPLAY_NAME = stringPreferencesKey("social_display_name")
         val SOCIAL_AVATAR_COLOR = stringPreferencesKey("social_avatar_color")
+        val SOCIAL_AVATAR_DOODLE = stringPreferencesKey("social_avatar_doodle")
+        val SOCIAL_AVATAR_USE_DOODLE = booleanPreferencesKey("social_avatar_use_doodle")
         val SOCIAL_ONLINE_STATUS_ENABLED = booleanPreferencesKey("social_online_status_enabled")
         val SOCIAL_SHOW_NOW_PLAYING = booleanPreferencesKey("social_show_now_playing")
         val SOCIAL_NOTIFY_FRIEND_ONLINE = booleanPreferencesKey("social_notify_friend_online")
@@ -104,6 +115,12 @@ class SyncPreferencesRepository @Inject constructor(
         val SOCIAL_HIDDEN_GAME_IDS = stringPreferencesKey("social_hidden_game_ids")
         val SAVE_SYNC_LOCAL_REKEY_DONE = booleanPreferencesKey("save_sync_local_rekey_done")
         val SAVE_PATH_CACHE_PURGED = booleanPreferencesKey("save_path_cache_purged")
+        val QUAYPASS_ENABLED = booleanPreferencesKey("quaypass_enabled")
+        val QUAYPASS_AVATAR_SYNC_PENDING = booleanPreferencesKey("quaypass_avatar_sync_pending")
+        val QUAYPASS_MESSAGE_SYNC_PENDING = booleanPreferencesKey("quaypass_message_sync_pending")
+        val QUAYPASS_GREETING = stringPreferencesKey("quaypass_greeting")
+        val QUAYPASS_TICKET_BALANCE = intPreferencesKey("quaypass_ticket_balance")
+        val QUAYPASS_PENDING_FRIEND_REQUESTS = stringPreferencesKey("quaypass_pending_friend_requests")
         val LAST_NEGOTIATE_AT = stringPreferencesKey("last_negotiate_at")
         val DOWNLOAD_CATEGORY_DEFAULTS = stringPreferencesKey("download_category_defaults")
         val DOWNLOAD_CATEGORY_PLATFORM_OVERRIDES = stringPreferencesKey("download_category_platform_overrides")
@@ -169,6 +186,66 @@ class SyncPreferencesRepository @Inject constructor(
         dataStore.edit { it[Keys.SAVE_PATH_CACHE_PURGED] = true }
     }
 
+    suspend fun setQuayPassEnabled(enabled: Boolean) {
+        dataStore.edit { it[Keys.QUAYPASS_ENABLED] = enabled }
+    }
+
+    suspend fun setQuayPassAvatarSyncPending(pending: Boolean) {
+        dataStore.edit { it[Keys.QUAYPASS_AVATAR_SYNC_PENDING] = pending }
+    }
+
+    suspend fun setQuayPassMessageSyncPending(pending: Boolean) {
+        dataStore.edit { it[Keys.QUAYPASS_MESSAGE_SYNC_PENDING] = pending }
+    }
+
+    suspend fun setQuayPassGreeting(greeting: String) {
+        dataStore.edit {
+            val trimmed = greeting.trim()
+            if (trimmed.isEmpty()) it.remove(Keys.QUAYPASS_GREETING)
+            else it[Keys.QUAYPASS_GREETING] = trimmed
+            it[Keys.QUAYPASS_MESSAGE_SYNC_PENDING] = true
+        }
+    }
+
+    suspend fun setQuayPassGreetingFromServer(greeting: String) {
+        dataStore.edit {
+            val trimmed = greeting.trim()
+            if (trimmed.isEmpty()) it.remove(Keys.QUAYPASS_GREETING)
+            else it[Keys.QUAYPASS_GREETING] = trimmed
+            it[Keys.QUAYPASS_MESSAGE_SYNC_PENDING] = false
+        }
+    }
+
+    suspend fun setQuayPassTicketBalance(balance: Int) {
+        dataStore.edit { it[Keys.QUAYPASS_TICKET_BALANCE] = balance.coerceAtLeast(0) }
+    }
+
+    fun quayPassPendingFriendRequests(): Flow<Set<String>> = dataStore.data.map { prefs ->
+        prefs[Keys.QUAYPASS_PENDING_FRIEND_REQUESTS]
+            ?.split(",")
+            ?.filter { it.isNotBlank() }
+            ?.toSet()
+            ?: emptySet()
+    }
+
+    suspend fun addQuayPassPendingFriendRequest(accountId: String) {
+        dataStore.edit { prefs ->
+            val existing = prefs[Keys.QUAYPASS_PENDING_FRIEND_REQUESTS]
+                ?.split(",")
+                ?.filter { it.isNotBlank() }
+                ?.toSet()
+                ?: emptySet()
+            prefs[Keys.QUAYPASS_PENDING_FRIEND_REQUESTS] = (existing + accountId).joinToString(",")
+        }
+    }
+
+    suspend fun setQuayPassPendingFriendRequests(accountIds: Set<String>) {
+        dataStore.edit { prefs ->
+            if (accountIds.isEmpty()) prefs.remove(Keys.QUAYPASS_PENDING_FRIEND_REQUESTS)
+            else prefs[Keys.QUAYPASS_PENDING_FRIEND_REQUESTS] = accountIds.joinToString(",")
+        }
+    }
+
     val preferences: Flow<SyncPreferences> = dataStore.data.map { prefs ->
         SyncPreferences(
             rommBaseUrl = prefs[Keys.ROMM_URL],
@@ -202,6 +279,7 @@ class SyncPreferencesRepository @Inject constructor(
             boxArtCacheEnabled = prefs[Keys.BOX_ART_CACHE_ENABLED] ?: true,
             uploadScreenshotsEnabled = prefs[Keys.UPLOAD_SCREENSHOTS_ENABLED] ?: true,
             saveSyncEnabled = prefs[Keys.SAVE_SYNC_ENABLED] ?: false,
+            secureSaves = prefs[Keys.SECURE_SAVES] ?: true,
             stateCacheEnabled = prefs[Keys.STATE_CACHE_ENABLED] ?: true,
             saveCacheLimit = prefs[Keys.SAVE_CACHE_LIMIT] ?: 10,
             saveWatcherEnabled = prefs[Keys.SAVE_WATCHER_ENABLED] ?: false,
@@ -213,6 +291,8 @@ class SyncPreferencesRepository @Inject constructor(
             socialUsername = prefs[Keys.SOCIAL_USERNAME],
             socialDisplayName = prefs[Keys.SOCIAL_DISPLAY_NAME],
             socialAvatarColor = prefs[Keys.SOCIAL_AVATAR_COLOR],
+            socialAvatarDoodle = prefs[Keys.SOCIAL_AVATAR_DOODLE],
+            socialAvatarUseDoodle = prefs[Keys.SOCIAL_AVATAR_USE_DOODLE] ?: false,
             socialOnlineStatusEnabled = prefs[Keys.SOCIAL_ONLINE_STATUS_ENABLED] ?: true,
             socialShowNowPlaying = prefs[Keys.SOCIAL_SHOW_NOW_PLAYING] ?: true,
             socialNotifyFriendOnline = prefs[Keys.SOCIAL_NOTIFY_FRIEND_ONLINE] ?: true,
@@ -220,7 +300,12 @@ class SyncPreferencesRepository @Inject constructor(
             discordRichPresenceEnabled = prefs[Keys.DISCORD_RICH_PRESENCE_ENABLED] ?: true,
             socialSuppressNotificationsInGame = prefs[Keys.SOCIAL_SUPPRESS_NOTIFICATIONS_IN_GAME] ?: false,
             lastPlaySessionSync = prefs[Keys.SOCIAL_LAST_PLAY_SESSION_SYNC]?.let { Instant.parse(it) },
-            lastStateValidation = prefs[Keys.LAST_STATE_VALIDATION]?.let { Instant.parse(it) }
+            lastStateValidation = prefs[Keys.LAST_STATE_VALIDATION]?.let { Instant.parse(it) },
+            quayPassEnabled = prefs[Keys.QUAYPASS_ENABLED] ?: false,
+            quayPassAvatarSyncPending = prefs[Keys.QUAYPASS_AVATAR_SYNC_PENDING] ?: false,
+            quayPassMessageSyncPending = prefs[Keys.QUAYPASS_MESSAGE_SYNC_PENDING] ?: false,
+            quayPassGreeting = prefs[Keys.QUAYPASS_GREETING],
+            quayPassTicketBalance = prefs[Keys.QUAYPASS_TICKET_BALANCE] ?: 0
         )
     }
 
@@ -389,6 +474,13 @@ class SyncPreferencesRepository @Inject constructor(
         dataStore.edit { it[Keys.SAVE_SYNC_ENABLED] = enabled }
     }
 
+    suspend fun isSecureSaves(): Boolean =
+        dataStore.data.map { it[Keys.SECURE_SAVES] ?: true }.first()
+
+    suspend fun setSecureSaves(enabled: Boolean) {
+        dataStore.edit { it[Keys.SECURE_SAVES] = enabled }
+    }
+
     suspend fun setStateCacheEnabled(enabled: Boolean) {
         dataStore.edit { it[Keys.STATE_CACHE_ENABLED] = enabled }
     }
@@ -444,6 +536,33 @@ class SyncPreferencesRepository @Inject constructor(
             prefs.remove(Keys.SOCIAL_USERNAME)
             prefs.remove(Keys.SOCIAL_DISPLAY_NAME)
             prefs.remove(Keys.SOCIAL_AVATAR_COLOR)
+        }
+    }
+
+    suspend fun setSocialAvatarDoodle(doodle: String) {
+        dataStore.edit { prefs ->
+            prefs[Keys.SOCIAL_AVATAR_DOODLE] = doodle
+            prefs[Keys.SOCIAL_AVATAR_USE_DOODLE] = true
+            prefs[Keys.QUAYPASS_AVATAR_SYNC_PENDING] = true
+        }
+    }
+
+    suspend fun setSocialAvatarUseDoodle(enabled: Boolean) {
+        dataStore.edit { prefs ->
+            prefs[Keys.SOCIAL_AVATAR_USE_DOODLE] = enabled
+            prefs[Keys.QUAYPASS_AVATAR_SYNC_PENDING] = true
+        }
+    }
+
+    suspend fun setSocialAvatarFromServer(doodle: String?) {
+        dataStore.edit { prefs ->
+            if (doodle.isNullOrEmpty()) {
+                prefs[Keys.SOCIAL_AVATAR_USE_DOODLE] = false
+            } else {
+                prefs[Keys.SOCIAL_AVATAR_DOODLE] = doodle
+                prefs[Keys.SOCIAL_AVATAR_USE_DOODLE] = true
+            }
+            prefs[Keys.QUAYPASS_AVATAR_SYNC_PENDING] = false
         }
     }
 

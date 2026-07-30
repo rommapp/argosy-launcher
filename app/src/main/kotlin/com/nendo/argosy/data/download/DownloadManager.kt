@@ -611,8 +611,12 @@ class DownloadManager @Inject constructor(
         if (baseFile != null && baseFile.isFile &&
             baseFile.parentFile?.absolutePath == platformDir.absolutePath
         ) {
+            val source = if (gameFolder.absolutePath == baseFile.absolutePath) {
+                val stash = File(platformDir, ".${baseFile.name}.promoting")
+                if (baseFile.renameTo(stash)) stash.also { gameFolder.mkdirs() } else baseFile
+            } else baseFile
             val moved = File(gameFolder, baseFile.name)
-            if (baseFile.renameTo(moved)) {
+            if (source.renameTo(moved)) {
                 gameDao.updateLocalPath(gameId, moved.absolutePath, game.source)
                 gameFileDao.getByLocalPath(basePath)?.let { row ->
                     gameFileDao.updateLocalPath(row.id, moved.absolutePath, row.downloadedAt ?: Instant.now())

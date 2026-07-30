@@ -1,6 +1,7 @@
 package com.nendo.argosy.ui.screens.gamedetail.delegates
 
 import com.nendo.argosy.core.input.SoundType
+import com.nendo.argosy.data.emulator.BuiltinCoreResolver
 import com.nendo.argosy.data.emulator.EmulatorDetector
 import com.nendo.argosy.data.emulator.EmulatorRegistry
 import com.nendo.argosy.data.emulator.EmulatorResolver
@@ -13,19 +14,25 @@ import com.nendo.argosy.data.repository.EmulatorSaveConfigRepository
 import com.nendo.argosy.data.preferences.EmulatorDisplayTarget
 import com.nendo.argosy.data.preferences.MenuWrapMode
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
+import com.nendo.argosy.data.platform.PlatformDefinitions
 import com.nendo.argosy.data.repository.GameRepository
+import com.nendo.argosy.data.sync.platform.MemcardInfo
+import com.nendo.argosy.data.sync.platform.PlatformSaveHandlerRegistry
 import com.nendo.argosy.domain.usecase.game.ConfigureEmulatorUseCase
 import com.nendo.argosy.ui.input.InputDispatcher.Companion.computeWrappedIndex
 import com.nendo.argosy.ui.input.SoundFeedbackManager
 import com.nendo.argosy.util.DisplayAffinityHelper
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.withContext
+import java.io.File
 import javax.inject.Inject
 
-enum class PerGameSettingsRow { EMULATOR, CORE, SAVE_PATH, DISPLAY_TARGET, EXTENSION, PLATFORM_SETTINGS }
+enum class PerGameSettingsRow { EMULATOR, CORE, SAVE_PATH, MEMCARD, DISPLAY_TARGET, EXTENSION, PLATFORM_SETTINGS }
 
 data class PerGameSettingsState(
     val visible: Boolean = false,
@@ -45,30 +52,49 @@ data class PerGameSettingsState(
     val inheritedDisplayTarget: EmulatorDisplayTarget = EmulatorDisplayTarget.TOP,
     val extensionOptions: List<ExtensionOption> = emptyList(),
     val preferredExtension: String? = null,
-    val inheritedExtension: String? = null
+    val inheritedExtension: String? = null,
+    val showMemcardRow: Boolean = false,
+    val memcardCards: List<MemcardInfo> = emptyList(),
+    val selectedMemcardPath: String? = null,
+    val inheritedMemcardName: String? = null,
+    val showMemcardPicker: Boolean = false,
+    val memcardPickerFocusIndex: Int = 0
 ) {
     val rows: List<PerGameSettingsRow>
         get() = buildList {
             add(PerGameSettingsRow.EMULATOR)
             if (showCoreRow) add(PerGameSettingsRow.CORE)
             if (showSavePathRow) add(PerGameSettingsRow.SAVE_PATH)
+            if (showMemcardRow) add(PerGameSettingsRow.MEMCARD)
             if (showDisplayTargetRow) add(PerGameSettingsRow.DISPLAY_TARGET)
             if (extensionOptions.isNotEmpty()) add(PerGameSettingsRow.EXTENSION)
             add(PerGameSettingsRow.PLATFORM_SETTINGS)
         }
 
     val focusedRow: PerGameSettingsRow? get() = rows.getOrNull(focusIndex)
+
+    val memcardPickerCards: List<MemcardInfo>
+        get() = listOf(
+            MemcardInfo(
+                name = "Default" + (inheritedMemcardName?.let { " ($it)" } ?: ""),
+                path = "",
+                gameFolderCount = 0,
+                lastModified = 0L
+            )
+        ) + memcardCards
 }
 
 class PerGameSettingsDelegate @Inject constructor(
     private val emulatorConfigDao: EmulatorConfigDao,
     private val emulatorDetector: EmulatorDetector,
     private val emulatorResolver: EmulatorResolver,
+    private val builtinCoreResolver: BuiltinCoreResolver,
     private val retroArchPathResolver: RetroArchPathResolver,
     private val emulatorSaveConfigRepository: EmulatorSaveConfigRepository,
     private val configureEmulatorUseCase: ConfigureEmulatorUseCase,
     private val preferencesRepository: UserPreferencesRepository,
     private val gameRepository: GameRepository,
+    private val saveHandlerRegistry: PlatformSaveHandlerRegistry,
     private val displayAffinityHelper: DisplayAffinityHelper,
     private val soundManager: SoundFeedbackManager
 ) {
@@ -140,6 +166,37 @@ class PerGameSettingsDelegate @Inject constructor(
         refresh(gameId)
     }
 
+    fun openMemcardPicker() {
+        if (!_state.value.showMemcardRow) return
+        _state.update { it.copy(showMemcardPicker = true, memcardPickerFocusIndex = 0) }
+        soundManager.play(SoundType.OPEN_MODAL)
+    }
+
+    fun dismissMemcardPicker() {
+        if (!_state.value.showMemcardPicker) return
+        _state.update { it.copy(showMemcardPicker = false, memcardPickerFocusIndex = 0) }
+        soundManager.play(SoundType.CLOSE_MODAL)
+    }
+
+    fun moveMemcardPickerFocus(delta: Int) {
+        _state.update { st ->
+            if (!st.showMemcardPicker) return@update st
+            val maxIndex = (st.memcardPickerCards.size - 1).coerceAtLeast(0)
+            st.copy(memcardPickerFocusIndex = (st.memcardPickerFocusIndex + delta).coerceIn(0, maxIndex))
+        }
+    }
+
+    suspend fun selectMemcard(gameId: Long, path: String) {
+        if (path.isBlank()) {
+            configureEmulatorUseCase.clearMemcardForGame(gameId)
+        } else {
+            configureEmulatorUseCase.setMemcardForGame(gameId, path)
+        }
+        _state.update { it.copy(showMemcardPicker = false, memcardPickerFocusIndex = 0) }
+        soundManager.play(SoundType.CLOSE_MODAL)
+        refresh(gameId)
+    }
+
     suspend fun cycleDisplayTarget(gameId: Long, direction: Int) {
         val cycle: List<EmulatorDisplayTarget?> = listOf(null) + EmulatorDisplayTarget.entries
         val currentIndex = cycle.indexOf(_state.value.displayTarget).coerceAtLeast(0)
@@ -179,9 +236,17 @@ class PerGameSettingsDelegate @Inject constructor(
         val isCoreSelectable = emulatorDef?.launchConfig?.isCoreSelectable == true
         val cores = EmulatorRegistry.getSelectableCores(game.platformSlug, isBuiltIn)
         val showCoreRow = isCoreSelectable && cores.size > 1
-        val selectedCoreId = gameConfig?.coreName
-            ?: platformConfig?.coreName
-            ?: EmulatorRegistry.getDefaultSelectableCore(game.platformSlug, isBuiltIn)?.id
+        val selectedCoreId = if (isBuiltIn) {
+            builtinCoreResolver.resolveCoreId(
+                gameId = gameId,
+                platformId = game.platformId,
+                platformSlug = game.platformSlug
+            )
+        } else {
+            gameConfig?.coreName
+                ?: platformConfig?.coreName
+                ?: EmulatorRegistry.getDefaultSelectableCore(game.platformSlug, isBuiltIn)?.id
+        }
         val coreName = if (isCoreSelectable) cores.find { it.id == selectedCoreId }?.displayName else null
 
         val effectivePackage = emulatorResolver.getEmulatorPackageForGame(gameId, game.platformId, game.platformSlug)
@@ -222,6 +287,32 @@ class PerGameSettingsDelegate @Inject constructor(
         val preferredExtension = emulatorConfigDao.getPreferredExtensionForGame(gameId)?.takeIf { it.isNotBlank() }
         val inheritedExtension = emulatorConfigDao.getPreferredExtension(game.platformId)?.takeIf { it.isNotBlank() }
 
+        val isPs2 = PlatformDefinitions.getCanonicalSlug(game.platformSlug) == "ps2"
+        val memcardCanonicalId = if (isPs2 && effectivePackage != null && effectiveEmulatorId != null) {
+            SavePathRegistry.canonicalConfigId(effectiveEmulatorId, effectivePackage)
+        } else {
+            null
+        }
+        val memcardUserConfig = memcardCanonicalId?.let { emulatorSaveConfigRepository.getByEmulator(it) }
+        val memcardBaseOverride = memcardUserConfig?.takeIf { it.isUserOverride }?.savePathPattern
+        val memcardCards = if (memcardCanonicalId != null) {
+            withContext(Dispatchers.IO) {
+                saveHandlerRegistry.listPs2FolderMemcardsForEmulator(
+                    emulatorId = memcardCanonicalId,
+                    emulatorPackage = effectivePackage,
+                    basePathOverride = memcardBaseOverride
+                )
+            }
+        } else {
+            emptyList()
+        }
+        val showMemcardRow = isPs2 && memcardCards.isNotEmpty()
+        val perGameMemcardPath = emulatorConfigDao.getSelectedMemcardForGame(gameId)?.takeIf { it.isNotBlank() }
+        val inheritedMemcardPath = memcardUserConfig?.selectedMemcardPath?.takeIf { it.isNotBlank() }
+        val inheritedMemcardName = inheritedMemcardPath
+            ?.let { p -> memcardCards.find { it.path == p }?.name ?: File(p).name }
+            ?: memcardCards.firstOrNull()?.name
+
         return PerGameSettingsState(
             emulatorName = emulatorName,
             isEmulatorOverride = gameConfig?.packageName != null,
@@ -236,7 +327,11 @@ class PerGameSettingsDelegate @Inject constructor(
             inheritedDisplayTarget = inheritedDisplayTarget,
             extensionOptions = extensionOptions,
             preferredExtension = preferredExtension,
-            inheritedExtension = inheritedExtension
+            inheritedExtension = inheritedExtension,
+            showMemcardRow = showMemcardRow,
+            memcardCards = memcardCards,
+            selectedMemcardPath = perGameMemcardPath,
+            inheritedMemcardName = inheritedMemcardName
         )
     }
 }

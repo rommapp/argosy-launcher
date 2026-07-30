@@ -55,6 +55,8 @@ class GameActionsDelegate @Inject constructor(
         deleteGameUseCase(gameId)
     }
 
+    suspend fun removeFromLibrary(gameId: Long): Boolean = deleteGameUseCase.removeFromLibrary(gameId)
+
     suspend fun queueDownload(gameId: Long): DownloadResult {
         return downloadGameUseCase(gameId)
     }

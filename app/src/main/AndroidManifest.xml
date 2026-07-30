@@ -35,6 +35,15 @@
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <uses-permission android:name="android.permission.CAMERA" />
 
+    <!-- QuayPass BLE peer exchange -->
+    <uses-permission android:name="android.permission.BLUETOOTH_SCAN"
+        android:usesPermissionFlags="neverForLocation" />
+    <uses-permission android:name="android.permission.BLUETOOTH_ADVERTISE" />
+    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+
+    <uses-feature
+        android:name="android.hardware.bluetooth_le"
+        android:required="false" />
     <uses-feature
         android:name="android.hardware.touchscreen"
         android:required="false" />
@@ -201,6 +210,10 @@
                 <action android:name="com.nendo.argosy.TOGGLE_AUDIO_LED" />
             </intent-filter>
         </receiver>
+
+        <receiver
+            android:name=".data.quaypass.ble.QuayPassScanReceiver"
+            android:exported="false" />
 
         <activity
             android:name=".hardware.AudioLevelDebugActivity"

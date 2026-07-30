@@ -198,27 +198,35 @@ class SteamRepository @Inject constructor(
         }
     }
 
+    /**
+     * Frees the installed files and leaves the library row, matching what deleting a
+     * download does for every other source. The game stays listed as owned and not
+     * installed, which is the state it was added in.
+     */
+    suspend fun uninstallGame(steamAppId: Long): SteamResult<Unit> = withContext(Dispatchers.IO) {
+        try {
+            val game = gameDao.getBySteamAppId(steamAppId)
+            if (game != null) {
+                deleteInstalledFiles(game.localPath, steamAppId)
+                gameDao.clearLocalPath(game.id)
+                steamDownloadQueueDao.deleteByAppId(steamAppId)
+            }
+            SteamResult.Success(Unit)
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to uninstall Steam game", e)
+            SteamResult.Error(e.message ?: "Unknown error")
+        }
+    }
+
+    /**
+     * Drops the game from the library entirely, undoing the add. A Steam row exists only
+     * because the user asked for it, so this is the one path that may discard it.
+     */
     suspend fun removeGame(steamAppId: Long): SteamResult<Unit> = withContext(Dispatchers.IO) {
         try {
             val game = gameDao.getBySteamAppId(steamAppId)
             if (game != null) {
-                // Delete installed files
-                val localPath = game.localPath
-                if (localPath != null) {
-                    val dir = File(localPath)
-                    if (dir.exists()) {
-                        val deleted = dir.deleteRecursively()
-                        Log.d(TAG, "Deleted game files at $localPath: $deleted")
-                    }
-                }
-
-                // Delete staging dir if it exists
-                val stagingDir = AppPaths.steamStagingDir(context.filesDir, steamAppId)
-                if (stagingDir.exists()) {
-                    stagingDir.deleteRecursively()
-                    Log.d(TAG, "Deleted staging dir for $steamAppId")
-                }
-
+                deleteInstalledFiles(game.localPath, steamAppId)
                 gameDao.delete(game.id)
                 steamDownloadQueueDao.deleteByAppId(steamAppId)
                 deleteCachedImage(steamAppId)
@@ -228,6 +236,22 @@ class SteamRepository @Inject constructor(
         } catch (e: Exception) {
             Log.e(TAG, "Failed to remove Steam game", e)
             SteamResult.Error(e.message ?: "Unknown error")
+        }
+    }
+
+    private fun deleteInstalledFiles(localPath: String?, steamAppId: Long) {
+        if (localPath != null) {
+            val dir = File(localPath)
+            if (dir.exists()) {
+                val deleted = dir.deleteRecursively()
+                Log.d(TAG, "Deleted game files at $localPath: $deleted")
+            }
+        }
+
+        val stagingDir = AppPaths.steamStagingDir(context.filesDir, steamAppId)
+        if (stagingDir.exists()) {
+            stagingDir.deleteRecursively()
+            Log.d(TAG, "Deleted staging dir for $steamAppId")
         }
     }
 

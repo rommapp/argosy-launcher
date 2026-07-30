@@ -112,6 +112,7 @@ class UserPreferencesRepository @Inject constructor(
             soundConfigs = controls.soundConfigs,
             betaUpdatesEnabled = app.betaUpdatesEnabled,
             saveSyncEnabled = sync.saveSyncEnabled,
+            secureSaves = sync.secureSaves,
             stateCacheEnabled = sync.stateCacheEnabled,
             saveCacheLimit = sync.saveCacheLimit,
             fileLoggingEnabled = app.fileLoggingEnabled,
@@ -184,6 +185,8 @@ class UserPreferencesRepository @Inject constructor(
             socialUsername = sync.socialUsername,
             socialDisplayName = sync.socialDisplayName,
             socialAvatarColor = sync.socialAvatarColor,
+            socialAvatarDoodle = sync.socialAvatarDoodle,
+            socialAvatarUseDoodle = sync.socialAvatarUseDoodle,
             socialOnlineStatusEnabled = sync.socialOnlineStatusEnabled,
             socialShowNowPlaying = sync.socialShowNowPlaying,
             socialNotifyFriendOnline = sync.socialNotifyFriendOnline,
@@ -191,7 +194,12 @@ class UserPreferencesRepository @Inject constructor(
             socialSuppressNotificationsInGame = sync.socialSuppressNotificationsInGame,
             discordRichPresenceEnabled = sync.discordRichPresenceEnabled,
             lastPlaySessionSync = sync.lastPlaySessionSync,
-            lastStateValidation = sync.lastStateValidation
+            lastStateValidation = sync.lastStateValidation,
+            quayPassEnabled = sync.quayPassEnabled,
+            quayPassAvatarSyncPending = sync.quayPassAvatarSyncPending,
+            quayPassMessageSyncPending = sync.quayPassMessageSyncPending,
+            quayPassGreeting = sync.quayPassGreeting,
+            quayPassTicketBalance = sync.quayPassTicketBalance
         )
     }
 
@@ -306,6 +314,7 @@ class UserPreferencesRepository @Inject constructor(
     suspend fun setUploadScreenshotsEnabled(enabled: Boolean) = syncPrefs.setUploadScreenshotsEnabled(enabled)
     suspend fun setBoxArtCacheEnabled(enabled: Boolean) = syncPrefs.setBoxArtCacheEnabled(enabled)
     suspend fun setSaveSyncEnabled(enabled: Boolean) = syncPrefs.setSaveSyncEnabled(enabled)
+    suspend fun setSecureSaves(enabled: Boolean) = syncPrefs.setSecureSaves(enabled)
     suspend fun setStateCacheEnabled(enabled: Boolean) = syncPrefs.setStateCacheEnabled(enabled)
     suspend fun setSaveCacheLimit(limit: Int) = syncPrefs.setSaveCacheLimit(limit)
     suspend fun setSaveDebugLoggingEnabled(enabled: Boolean) = syncPrefs.setSaveDebugLoggingEnabled(enabled)
@@ -324,6 +333,7 @@ class UserPreferencesRepository @Inject constructor(
         avatarColor: String?
     ) = syncPrefs.setSocialCredentials(sessionToken, userId, username, displayName, avatarColor)
     suspend fun clearSocialCredentials() = syncPrefs.clearSocialCredentials()
+    suspend fun setSocialAvatarUseDoodle(enabled: Boolean) = syncPrefs.setSocialAvatarUseDoodle(enabled)
     suspend fun setSocialOnlineStatusEnabled(enabled: Boolean) = syncPrefs.setSocialOnlineStatusEnabled(enabled)
     suspend fun setSocialShowNowPlaying(enabled: Boolean) = syncPrefs.setSocialShowNowPlaying(enabled)
     suspend fun setSocialNotifyFriendOnline(enabled: Boolean) = syncPrefs.setSocialNotifyFriendOnline(enabled)
@@ -331,6 +341,13 @@ class UserPreferencesRepository @Inject constructor(
     suspend fun setSocialSuppressNotificationsInGame(enabled: Boolean) = syncPrefs.setSocialSuppressNotificationsInGame(enabled)
     suspend fun setDiscordRichPresenceEnabled(enabled: Boolean) = syncPrefs.setDiscordRichPresenceEnabled(enabled)
     suspend fun setLastPlaySessionSyncTime(time: Instant) = syncPrefs.setLastPlaySessionSyncTime(time)
+    suspend fun setQuayPassEnabled(enabled: Boolean) = syncPrefs.setQuayPassEnabled(enabled)
+    suspend fun setQuayPassAvatarSyncPending(pending: Boolean) = syncPrefs.setQuayPassAvatarSyncPending(pending)
+    suspend fun setQuayPassMessageSyncPending(pending: Boolean) = syncPrefs.setQuayPassMessageSyncPending(pending)
+    suspend fun setQuayPassGreetingFromServer(greeting: String) = syncPrefs.setQuayPassGreetingFromServer(greeting)
+    suspend fun setSocialAvatarFromServer(doodle: String?) = syncPrefs.setSocialAvatarFromServer(doodle)
+    suspend fun setQuayPassGreeting(greeting: String) = syncPrefs.setQuayPassGreeting(greeting)
+    suspend fun setQuayPassTicketBalance(balance: Int) = syncPrefs.setQuayPassTicketBalance(balance)
 
     // --- Controls delegates ---
 
@@ -500,7 +517,8 @@ data class BuiltinEmulatorSettings(
     val touchControlsGenesis6Button: Boolean = false,
     val speedrunStartOnReset: Boolean = true,
     val speedrunPanelSide: String = "Right",
-    val speedrunPanelWidthPercent: Int = 30
+    val speedrunPanelWidthPercent: Int = 30,
+    val ingameMenuTwoColumn: Boolean = false
 ) {
     val shaderConfig: com.swordfish.libretrodroid.ShaderConfig
         get() = when (shader) {
@@ -621,6 +639,7 @@ data class UserPreferences(
     val soundConfigs: Map<SoundType, SoundConfig> = emptyMap(),
     val betaUpdatesEnabled: Boolean = false,
     val saveSyncEnabled: Boolean = false,
+    val secureSaves: Boolean = true,
     val stateCacheEnabled: Boolean = true,
     val saveCacheLimit: Int = 10,
     val backgroundBlur: Int = 0,
@@ -697,6 +716,8 @@ data class UserPreferences(
     val socialUsername: String? = null,
     val socialDisplayName: String? = null,
     val socialAvatarColor: String? = null,
+    val socialAvatarDoodle: String? = null,
+    val socialAvatarUseDoodle: Boolean = false,
     val socialOnlineStatusEnabled: Boolean = true,
     val socialShowNowPlaying: Boolean = true,
     val socialNotifyFriendOnline: Boolean = true,
@@ -707,7 +728,12 @@ data class UserPreferences(
     val lastStateValidation: Instant? = null,
     val weeklyIntegrityCheckEnabled: Boolean = true,
     val lastIntegrityCheckTime: Long? = null,
-    val steamInstallVolume: String? = null
+    val steamInstallVolume: String? = null,
+    val quayPassEnabled: Boolean = false,
+    val quayPassAvatarSyncPending: Boolean = false,
+    val quayPassMessageSyncPending: Boolean = false,
+    val quayPassGreeting: String? = null,
+    val quayPassTicketBalance: Int = 0
 ) {
     val isSocialLinked: Boolean get() = socialSessionToken != null
 }

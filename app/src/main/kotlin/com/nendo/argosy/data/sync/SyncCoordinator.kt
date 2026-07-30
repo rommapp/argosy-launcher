@@ -52,6 +52,7 @@ class SyncCoordinator @Inject constructor(
     private val syncQueueManager: SyncQueueManager,
     private val syncPreferencesRepository: SyncPreferencesRepository,
     private val payloadCodec: SyncPayloadCodec,
+    private val savePathResolver: SavePathResolver,
     private val strategySelector: SaveSyncStrategySelector,
     private val pendingConflictDao: PendingConflictDao,
     private val reconcileEffectApplier: ReconcileEffectApplier,
@@ -75,6 +76,8 @@ class SyncCoordinator @Inject constructor(
     }
 
     suspend fun reconcileAll(): ReconcileSummary = withContext(Dispatchers.IO) {
+        val prefs = syncPreferencesRepository.preferences.first()
+        val secureSaves = prefs.secureSaves
         canonicalizeStaleEmulatorIds()
         val queueResult = processQueue()
 
@@ -92,7 +95,15 @@ class SyncCoordinator @Inject constructor(
         }
         syncPreferencesRepository.setLastNegotiateAt(now)
 
-        val inventory = buildInventory()
+        if (!secureSaves && prefs.saveSyncEnabled) {
+            val refreshed = saveSyncRepository.get().scanAndQueueLocalChanges(secureSaves = false)
+            if (refreshed > 0) {
+                Logger.info(TAG, "reconcileAll: secure-saves-off discovery refreshed $refreshed caches, draining before negotiate")
+            }
+            processQueue()
+        }
+
+        val inventory = buildInventory(secureSaves)
         val plan = strategySelector.current().planReconcile(inventory)
         if (plan.operations.isEmpty()) {
             return@withContext ReconcileSummary(queueResult, planConflicts = 0, planApplied = 0)
@@ -103,7 +114,7 @@ class SyncCoordinator @Inject constructor(
         ReconcileSummary(queueResult, planConflicts = conflicts, planApplied = applied)
     }
 
-    private suspend fun buildInventory(): List<LocalSaveState> {
+    private suspend fun buildInventory(secureSaves: Boolean): List<LocalSaveState> {
         val rows = saveSyncDao.getAllWithLocalPath()
         var skippedNoGame = 0
         var skippedNoRom = 0
@@ -129,7 +140,12 @@ class SyncCoordinator @Inject constructor(
                 romBaseName = romBaseName
             )
 
-            val reportedTime = Instant.ofEpochMilli(file.lastModified())
+            val reportedTime = if (!secureSaves && file.isDirectory) {
+                val newest = savePathResolver.findNewestFileTime(path)
+                Instant.ofEpochMilli(if (newest > 0) newest else file.lastModified())
+            } else {
+                Instant.ofEpochMilli(file.lastModified())
+            }
 
             LocalSaveState(
                 romId = row.rommId,

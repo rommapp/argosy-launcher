@@ -1,0 +1,97 @@
+package com.nendo.argosy.data.remote.romm
+
+import com.nendo.argosy.data.local.dao.GameFileDao
+import com.nendo.argosy.data.local.entity.GameFileEntity
+import com.nendo.argosy.data.model.VariantCategory
+import com.nendo.argosy.data.music.MusicDirectoryManager
+import com.nendo.argosy.util.Logger
+import java.time.Instant
+import javax.inject.Inject
+import javax.inject.Singleton
+
+/**
+ * Writes a ROM's file list - discs, updates, DLC and soundtrack tracks - into `game_files`.
+ *
+ * Shared by the library sync and the per-game refresh because the list endpoint returns an
+ * empty `files` array while the single-ROM endpoint returns the real one, so a game's tracks
+ * only ever arrive through a detail fetch.
+ *
+ * Every file the server reports is recorded. Which of them a platform offers or downloads by
+ * default is a decision for the download and variant layers; dropping references here left
+ * title-id platforms with no soundtrack rows at all, so nothing could play a game's theme.
+ */
+@Singleton
+class RomMGameFileSync @Inject constructor(
+    private val gameFileDao: GameFileDao,
+    private val musicDirectoryManager: MusicDirectoryManager
+) {
+    companion object {
+        private const val TAG = "RomMGameFileSync"
+    }
+
+    /**
+     * An absent file list means the response did not carry one, which is what the list
+     * endpoint always does; it is not a statement that the game has no files. Only a
+     * response that actually enumerated files may remove rows.
+     */
+    suspend fun sync(gameId: Long, rom: RomMRom, platformSlug: String, fileListIsAuthoritative: Boolean) {
+        val files = rom.files?.filter { file ->
+            file.category != null && !file.fileName.startsWith(".")
+        } ?: return
+
+        if (files.isEmpty()) {
+            if (!fileListIsAuthoritative) {
+                Logger.debug(TAG, "sync: no files in this response, keeping existing rows | gameId=$gameId")
+                return
+            }
+            gameFileDao.deleteByGameId(gameId)
+            return
+        }
+
+        val validIds = files.mapNotNull { if (it.id > 0) it.id else null }
+        if (validIds.isNotEmpty() && fileListIsAuthoritative) {
+            gameFileDao.deleteInvalidFiles(gameId, validIds)
+        }
+
+        val entities = files.map { file ->
+            val existing = gameFileDao.getByRommFileId(file.id)
+            val category = VariantCategory.fromKey(file.category)
+            val localPath = existing?.localPath ?: recoverMusicLocalPath(file, category, rom)
+            GameFileEntity(
+                id = existing?.id ?: 0,
+                gameId = gameId,
+                rommFileId = file.id,
+                romId = file.romId,
+                fileName = file.fileName,
+                filePath = file.filePath,
+                category = category.key,
+                fileSize = file.fileSizeBytes,
+                localPath = localPath,
+                downloadedAt = existing?.downloadedAt ?: localPath?.let { Instant.now() },
+                isLaunchTarget = category.isLaunchTarget,
+                isMultiDisc = existing?.isMultiDisc ?: false,
+                m3uPath = existing?.m3uPath,
+                trackTitle = file.trackMeta?.title,
+                trackNumber = file.trackMeta?.track,
+                durationSeconds = file.trackMeta?.durationSeconds
+            )
+        }
+        gameFileDao.insertAll(entities)
+    }
+
+    private suspend fun recoverMusicLocalPath(
+        file: RomMRomFile,
+        category: VariantCategory,
+        rom: RomMRom
+    ): String? {
+        if (category != VariantCategory.SOUNDTRACK) return null
+        val target = musicDirectoryManager.targetFileFor(
+            platformName = rom.platformName ?: rom.platformSlug,
+            gameName = rom.name,
+            trackNumber = file.trackMeta?.track,
+            title = file.trackMeta?.title,
+            fileName = file.fileName
+        )
+        return target.takeIf { it.exists() }?.absolutePath
+    }
+}

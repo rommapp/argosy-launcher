@@ -75,6 +75,9 @@ data class GameDetailUi(
     val description: String?,
     val players: String?,
     val rating: Float?,
+    val timeToBeatMain: String? = null,
+    val timeToBeatExtra: String? = null,
+    val timeToBeatCompletionist: String? = null,
     val userRating: Int,
     val userDifficulty: Int,
     val completion: Int,
@@ -175,6 +178,7 @@ fun buildMoreOptions(ctx: MoreOptionsContext): List<MoreOptionAction> = buildLis
     if (ctx.canSearchCovers) add(MoreOptionAction.ChangeCover)
     if (ctx.coverSetManually) add(MoreOptionAction.ResetCover)
     if (ctx.isDownloaded || ctx.isAndroidApp) add(MoreOptionAction.Delete)
+    if (ctx.isSteamGame) add(MoreOptionAction.RemoveFromLibrary)
     add(MoreOptionAction.ToggleHide)
 }
 
@@ -198,6 +202,7 @@ sealed class MoreOptionAction {
     data object ChangeCover : MoreOptionAction()
     data object ResetCover : MoreOptionAction()
     data object Delete : MoreOptionAction()
+    data object RemoveFromLibrary : MoreOptionAction()
     data object ToggleHide : MoreOptionAction()
 }
 
@@ -217,7 +222,7 @@ data class GameDetailUiState(
     val hasCasualSaves: Boolean = false,
     val hasHardcoreSave: Boolean = false,
     val hasRASupport: Boolean = false,
-    val isRALoggedIn: Boolean = false,
+    val hardcoreAvailable: Boolean = false,
     val isOnline: Boolean = false,
     val canSearchCovers: Boolean = false,
     val isLoading: Boolean = true,

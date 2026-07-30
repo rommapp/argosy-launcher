@@ -66,6 +66,28 @@ jobs:
           name: test-results
           path: app/build/reports/tests/
 
+  rules:
+    if: github.event_name == 'pull_request' && !contains(github.event.pull_request.labels.*.name, 'rules-exempt')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Agentic smell check (blocking)
+        run: |
+          python3 scripts/ci/agentic-smells.py --range "origin/${{ github.base_ref }}...HEAD" | tee -a "$GITHUB_STEP_SUMMARY"
+          exit ${PIPESTATUS[0]}
+
+      - name: Coupling sweep (advisory)
+        if: always()
+        run: |
+          if [ -f .claude/hooks/coupling-guard.py ]; then
+            python3 .claude/hooks/coupling-guard.py --sweep "origin/${{ github.base_ref }}...HEAD" | tee -a "$GITHUB_STEP_SUMMARY"
+          else
+            echo "coupling sweep: guard not present in checkout (ships with Phase B exposure)" | tee -a "$GITHUB_STEP_SUMMARY"
+          fi
+
   lint:
     runs-on: ubuntu-latest
     steps:

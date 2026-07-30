@@ -4,11 +4,46 @@ import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
 @JsonClass(generateAdapter = true)
+data class DeviceKeyRequest(
+    @Json(name = "device_id") val deviceId: String
+)
+
+@JsonClass(generateAdapter = true)
 data class DeviceKeyResponse(
     val key: String,
     @Json(name = "qr_url") val qrUrl: String,
     @Json(name = "pending_ws") val pendingWs: String,
     @Json(name = "expires_at") val expiresAt: String
+)
+
+@JsonClass(generateAdapter = true)
+data class MeResponse(
+    @Json(name = "user") val user: MeUser? = null
+)
+
+@JsonClass(generateAdapter = true)
+data class MeUser(
+    @Json(name = "quaypass_message") val quayPassMessage: String? = null,
+    @Json(name = "quaypass_avatar") val quayPassAvatar: String? = null
+)
+
+data class QuayPassCheckin(
+    val userId: String,
+    val username: String,
+    val displayName: String?,
+    val avatarColor: String?,
+    val avatarPng: String?,
+    val message: String?,
+    val lastGameIgdbId: Long?,
+    val lastGameTitle: String?,
+    val coverThumbUrl: String?,
+    val firstMetAtEpochSec: Long,
+    val lastMetAtEpochSec: Long,
+    val passCount: Int,
+    val isFriend: Boolean,
+    val isBlocked: Boolean,
+    val requestSent: Boolean,
+    val requestReceived: Boolean
 )
 
 @JsonClass(generateAdapter = true)
@@ -109,13 +144,20 @@ data class Friend(
     @Json(name = "display_name") val displayName: String,
     @Json(name = "avatar_color") val avatarColor: String,
     val status: String,
+    @Json(name = "request_sent") val requestSent: Boolean = false,
+    @Json(name = "request_received") val requestReceived: Boolean = false,
     val presence: PresenceStatus? = null,
     @Json(name = "current_game") val currentGame: PresenceGameInfo? = null,
     @Json(name = "device_name") val deviceName: String? = null,
-    @Json(name = "is_favorite") val isFavorite: Boolean = false
+    @Json(name = "is_favorite") val isFavorite: Boolean = false,
+    @Json(name = "quaypass_avatar_raster") val quayPassAvatar: String? = null
 ) {
     val friendshipStatus: FriendshipStatus
         get() = FriendshipStatus.fromValue(status)
+
+    val isAccepted: Boolean get() = friendshipStatus == FriendshipStatus.ACCEPTED
+    val isIncomingRequest: Boolean get() = requestReceived
+    val isOutgoingRequest: Boolean get() = requestSent
 }
 
 @JsonClass(generateAdapter = true)
@@ -141,6 +183,15 @@ object MessageTypes {
     const val LIBRARY_SYNCED = "library_synced"
     const val SYNC_PLAY_SESSIONS = "sync_play_sessions"
     const val PLAY_SESSIONS_SYNCED = "play_sessions_synced"
+    const val SET_QUAYPASS_AVATAR = "set_quaypass_avatar"
+    const val SET_QUAYPASS_MESSAGE = "set_quaypass_message"
+    const val REPORT_QUAYPASS_ENCOUNTER = "report_quaypass_encounter"
+    const val GET_QUAYPASS_BALANCE = "get_quaypass_balance"
+    const val QUAYPASS_BALANCE = "quaypass_balance"
+    const val GET_QUAYPASS_CHECKINS = "get_quaypass_checkins"
+    const val QUAYPASS_CHECKINS = "quaypass_checkins"
+    const val QUAYPASS_AVATAR_UPDATED = "quaypass_avatar_updated"
+    const val QUAYPASS_MESSAGE_UPDATED = "quaypass_message_updated"
     const val GET_FRIEND = "get_friend"
     const val FRIEND_DATA = "friend_data"
     const val SEND_FRIEND_REQ = "send_friend_req"
@@ -153,6 +204,7 @@ object MessageTypes {
     const val FRIEND_CODE_DATA = "friend_code"
     const val FRIEND_ADDED = "friend_added"
     const val FRIEND_REMOVED = "friend_removed"
+    const val REMOVE_FRIEND = "remove_friend"
     const val GET_FEED = "get_feed"
     const val FEED_DATA = "feed_data"
     const val FEED_EVENT = "feed_event"

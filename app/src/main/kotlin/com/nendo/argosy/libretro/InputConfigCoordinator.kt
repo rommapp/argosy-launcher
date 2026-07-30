@@ -58,21 +58,11 @@ class InputConfigCoordinator(
             inputMapper.setExtendedMappings(mappings)
             inputMapper.setPortResolver { device -> portResolver.getPort(device) }
 
-            val platformIndex = MappingPlatforms.indexForPlatformSlug(platformSlug)
-            val platformButtons = MappingPlatforms.getByIndex(platformIndex).buttons.toSet()
-            val platformKeyCodes = mappings.values.firstOrNull()
-                ?.filter { (_, retroButton) -> retroButton in platformButtons }
-                ?.keys
-                ?.filterIsInstance<InputSource.Button>()
-                ?.map { it.keyCode }
-                ?.toSet()
-                ?: emptySet()
-
             inputConfigRepository.initializeDefaultHotkeys()
             val hotkeys = inputConfigRepository.getEnabledHotkeys()
             hotkeyManager.setHotkeys(resolveScopedHotkeys(hotkeys))
             hotkeyList = inputConfigRepository.getHotkeys()
-            hotkeyManager.setPlatformMappedButtons(platformKeyCodes)
+            hotkeyManager.setPlatformMappedButtons(platformMappedButtons(mappings))
             hotkeyManager.setLimitToPlayer1(limitHotkeysToPlayer1)
 
             if (controllerOrder.isNotEmpty()) {
@@ -108,6 +98,7 @@ class InputConfigCoordinator(
             mappings[controller.controllerId] = mapping
         }
         inputMapper.setExtendedMappings(mappings)
+        hotkeyManager.setPlatformMappedButtons(platformMappedButtons(mappings))
     }
 
     suspend fun refreshHotkeys() {
@@ -123,6 +114,19 @@ class InputConfigCoordinator(
             coreId = coreId,
             parseCombo = inputConfigRepository::parseHotkeyCombo
         )
+
+    private fun platformMappedButtons(
+        mappings: Map<String, Map<InputSource, Int>>
+    ): Map<String, Set<Int>> {
+        val blockingButtons = MappingPlatforms.profileForSlug(platformSlug).hotkeyBlockingButtons
+        return mappings.mapValues { (_, mapping) ->
+            mapping
+                .filter { (_, retroButton) -> retroButton in blockingButtons }
+                .keys
+                .filterIsInstance<InputSource.Button>()
+                .mapTo(mutableSetOf()) { it.keyCode }
+        }
+    }
 
     companion object {
         private const val TAG = "InputConfigCoordinator"

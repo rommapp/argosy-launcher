@@ -347,6 +347,7 @@ data class EmulatorState(
     val coreUpdatesAvailable: Int = 0,
     val builtinLibretroEnabled: Boolean = true,
     val architectureDisplay: String = "",
+    val ingameMenuTwoColumn: Boolean = false,
     val emulatorUpdateVersions: Map<String, String> = emptyMap(),
     val showVariantPicker: Boolean = false,
     val variantPickerInfo: VariantPickerInfo? = null,
@@ -572,6 +573,7 @@ data class CoreChipState(
 )
 
 data class PlatformCoreRow(
+    val platformId: Long,
     val platformSlug: String,
     val platformName: String,
     val cores: List<CoreChipState>
@@ -628,6 +630,11 @@ data class CoreOptionsState(
         coresForCurrentPlatform.getOrNull(selectedCoreIndex)
 }
 
+/**
+ * [chosenPath] holds what the user picked when it differed from the root their platform
+ * actually scans from, so the modal can say the path was moved rather than silently
+ * showing something else than what was selected.
+ */
 data class SavePathModalInfo(
     val emulatorId: String,
     val emulatorName: String,
@@ -635,7 +642,9 @@ data class SavePathModalInfo(
     val savePath: String?,
     val isUserOverride: Boolean,
     val savesBesideRom: Boolean = false,
-    val besideRomSupported: Boolean = false
+    val besideRomSupported: Boolean = false,
+    val chosenPath: String? = null,
+    val pathPresent: Boolean = true
 )
 
 data class MemcardPickerInfo(
@@ -830,6 +839,8 @@ data class SyncSettingsState(
     val totalGames: Int = 0,
     val totalPlatforms: Int = 0,
     val saveSyncEnabled: Boolean = false,
+    val secureSaves: Boolean = true,
+    val showSecureSavesConfirm: Boolean = false,
     val saveCacheLimit: Int = 10,
     val pendingUploadsCount: Int = 0,
     val hasStoragePermission: Boolean = false,
@@ -1141,6 +1152,8 @@ data class SocialState(
     val username: String? = null,
     val displayName: String? = null,
     val avatarColor: String? = null,
+    val avatarDoodle: String? = null,
+    val avatarUseDoodle: Boolean = false,
     val errorMessage: String? = null,
     val onlineStatusEnabled: Boolean = true,
     val showNowPlaying: Boolean = true,
@@ -1150,7 +1163,8 @@ data class SocialState(
     val discordLinked: Boolean = false,
     val discordUsername: String? = null,
     val discordRichPresenceEnabled: Boolean = true,
-    val discordPresenceState: DiscordPresenceState = DiscordPresenceState.Disconnected
+    val discordPresenceState: DiscordPresenceState = DiscordPresenceState.Disconnected,
+    val quayPassEnabled: Boolean = false
 )
 
 data class SettingsUiState(

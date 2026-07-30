@@ -276,6 +276,57 @@ class SaveArchiver @Inject constructor(
         }
     }
 
+    /**
+     * Every top-level directory in the archive. Unlike [peekRootFolderName] this reads the
+     * whole index, so a save spanning several sibling folders reports all of them.
+     */
+    fun peekRootEntryNames(zipFile: File): Set<String> {
+        if (!zipFile.exists() || !zipFile.isFile) return emptySet()
+        return try {
+            ZipArchiveInputStream(BufferedInputStream(FileInputStream(zipFile))).use { zis ->
+                val roots = mutableSetOf<String>()
+                var entry = zis.nextEntry
+                while (entry != null) {
+                    val name = entry.name
+                    if (name.contains('/')) {
+                        name.substringBefore('/').takeIf { it.isNotEmpty() }?.let { roots.add(it) }
+                    }
+                    entry = zis.nextEntry
+                }
+                roots
+            }
+        } catch (e: Exception) {
+            Logger.error(TAG, "[SaveSync] ARCHIVE | peekRootEntryNames failed | zip=${zipFile.name}", e)
+            emptySet()
+        }
+    }
+
+    /**
+     * Every directory segment in the archive, at any depth. A platform whose save unit is a
+     * container holding per-game folders needs to look below the root entry to tell whether
+     * an archive holds a given game.
+     */
+    fun peekFolderNames(zipFile: File): Set<String> {
+        if (!zipFile.exists() || !zipFile.isFile) return emptySet()
+        return try {
+            ZipArchiveInputStream(BufferedInputStream(FileInputStream(zipFile))).use { zis ->
+                val folders = mutableSetOf<String>()
+                var entry = zis.nextEntry
+                while (entry != null) {
+                    val name = entry.name.trimEnd('/')
+                    val segments = name.split('/').filter { it.isNotEmpty() }
+                    val depth = if (entry.isDirectory) segments.size else segments.size - 1
+                    for (i in 0 until depth) folders.add(segments[i])
+                    entry = zis.nextEntry
+                }
+                folders
+            }
+        } catch (e: Exception) {
+            Logger.error(TAG, "[SaveSync] ARCHIVE | peekFolderNames failed | zip=${zipFile.name}", e)
+            emptySet()
+        }
+    }
+
     fun unzipSingleFolder(sourceZip: File, targetFolder: File): Boolean {
         if (!sourceZip.exists() || !sourceZip.isFile) {
             Logger.warn(TAG, "[SaveSync] ARCHIVE | Source zip invalid | path=${sourceZip.absolutePath}")

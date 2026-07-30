@@ -10,6 +10,7 @@ import android.media.audiofx.LoudnessEnhancer
 import android.net.Uri
 import android.util.Log
 import com.nendo.argosy.data.music.AudioLoudnessRepository
+import com.nendo.argosy.util.Logger
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -94,7 +95,7 @@ class AmbientAudioManager @Inject constructor(
 
     fun setEnabled(enabled: Boolean) {
         this.enabled = enabled
-        Log.d(TAG, "setEnabled=$enabled")
+        Logger.verbose(TAG) { "setEnabled=$enabled" }
         if (!enabled) {
             stopAndRelease()
         }
@@ -107,7 +108,7 @@ class AmbientAudioManager @Inject constructor(
 
     fun setVolume(volume: Int) {
         this.targetVolume = (volume / 100f).coerceIn(0f, 1f)
-        Log.d(TAG, "setVolume=$volume (${this.targetVolume})")
+        Logger.verbose(TAG) { "setVolume=$volume ($targetVolume)" }
         mediaPlayer?.let { applyPlayerVolume(it, targetVolume) }
     }
 
@@ -164,7 +165,7 @@ class AmbientAudioManager @Inject constructor(
 
     fun setShuffle(shuffle: Boolean) {
         this.shuffle = shuffle
-        Log.d(TAG, "setShuffle=$shuffle")
+        Logger.verbose(TAG) { "setShuffle=$shuffle" }
         if (playlist.isNotEmpty()) {
             reshufflePlaylist()
         }
@@ -239,7 +240,7 @@ class AmbientAudioManager @Inject constructor(
         playlist = playlist.shuffled()
         playlistIndex = 0
         updateCurrentTrackName()
-        Log.d(TAG, "Reshuffled playlist")
+        Logger.verbose(TAG) { "Reshuffled playlist" }
     }
 
     private fun updateCurrentTrackName() {
@@ -479,7 +480,7 @@ class AmbientAudioManager @Inject constructor(
     fun resumeFromSuspend() {
         if (suspended) {
             suspended = false
-            Log.d(TAG, "resumed from suspend")
+            Logger.verbose(TAG) { "resumed from suspend" }
             fadeIn()
         }
     }
@@ -498,15 +499,15 @@ class AmbientAudioManager @Inject constructor(
 
     fun fadeIn(durationMs: Long = 500) {
         if (suspended) {
-            Log.d(TAG, "fadeIn skipped: suspended (awaiting user input)")
+            Logger.verbose(TAG) { "fadeIn skipped: suspended (awaiting user input)" }
             return
         }
         if (silenceHolds > 0) {
-            Log.d(TAG, "fadeIn skipped: silence held")
+            Logger.verbose(TAG) { "fadeIn skipped: silence held" }
             return
         }
         if (!enabled) {
-            Log.d(TAG, "fadeIn skipped: disabled")
+            Logger.verbose(TAG) { "fadeIn skipped: disabled" }
             return
         }
 
@@ -595,7 +596,7 @@ class AmbientAudioManager @Inject constructor(
         }
         mediaPlayer = null
         _isPlaying.value = false
-        Log.d(TAG, "stopped and released")
+        Logger.verbose(TAG) { "stopped and released" }
     }
 
     fun release() {

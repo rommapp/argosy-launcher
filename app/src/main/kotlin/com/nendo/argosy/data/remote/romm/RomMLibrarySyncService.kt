@@ -68,6 +68,7 @@ class RomMLibrarySyncService @Inject constructor(
     private val collectionDao: CollectionDao,
     private val imageCacheManager: ImageCacheManager,
     private val musicDirectoryManager: com.nendo.argosy.data.music.MusicDirectoryManager,
+    private val gameFileSync: RomMGameFileSync,
     private val biosRepository: BiosRepository,
     private val installedAppResolver: InstalledAppResolver,
     private val gameRepository: dagger.Lazy<com.nendo.argosy.data.repository.GameRepository>,
@@ -79,6 +80,7 @@ class RomMLibrarySyncService @Inject constructor(
     private val api: RomMApi? get() = connectionManager.getApi()
     private val syncMutex = Mutex()
     private var boxArtCacheEnabledForSync = true
+    private var decodedImageCacheDirty = false
 
     private val _syncProgress = MutableStateFlow(SyncProgress())
     val syncProgress: StateFlow<SyncProgress> = _syncProgress.asStateFlow()
@@ -112,6 +114,7 @@ class RomMLibrarySyncService @Inject constructor(
         try {
             return@withContext doSyncLibrary(onProgress)
         } finally {
+            flushDecodedImageCache()
             syncMutex.unlock()
         }
     }
@@ -124,8 +127,15 @@ class RomMLibrarySyncService @Inject constructor(
         try {
             return@withContext doSyncPlatform(platformId)
         } finally {
+            flushDecodedImageCache()
             syncMutex.unlock()
         }
+    }
+
+    private suspend fun flushDecodedImageCache() {
+        if (!decodedImageCacheDirty) return
+        decodedImageCacheDirty = false
+        imageCacheManager.clearDecodedImageCache()
     }
 
     suspend fun syncPlatformsOnly(): Result<Int> = withContext(Dispatchers.IO) {
@@ -512,7 +522,8 @@ class RomMLibrarySyncService @Inject constructor(
 
         val contentChanged = existing != null && existing.title != rom.name
         if (contentChanged) {
-            imageCacheManager.deleteGameImages(rom.id)
+            imageCacheManager.deleteGameImages(rom.id, clearDecoded = false)
+            decodedImageCacheDirty = true
         }
 
         val backgroundUrl = rom.backgroundUrls.firstOrNull()
@@ -606,40 +617,6 @@ class RomMLibrarySyncService @Inject constructor(
             boxBackPath = cachedBoxBack,
             boxSpinePath = cachedBoxSpine,
             screenshotPaths = screenshotUrls.joinToString(","),
-            description = rom.summary,
-            releaseYear = rom.firstReleaseDateMillis?.let {
-                java.time.Instant.ofEpochMilli(it).atZone(java.time.ZoneOffset.UTC).year
-            },
-            genre = rom.genres?.firstOrNull(),
-            developer = rom.companies?.firstOrNull(),
-            rating = rom.metadatum?.averageRating?.takeIf { rom.igdbId != null && it < 98f },
-            regions = rom.regions?.joinToString(","),
-            languages = rom.languages?.joinToString(","),
-            gameModes = rom.metadatum?.gameModes?.joinToString(","),
-            franchises = rom.metadatum?.franchises?.joinToString(","),
-            genres = rom.genres?.joinToString(","),
-            collections = rom.metadatum?.collections?.joinToString(","),
-            players = rom.metadatum?.playerCount,
-            ageRatings = rom.metadatum?.ageRatings?.joinToString(","),
-            alternativeNames = rom.alternativeNames?.joinToString(","),
-            mobyId = rom.mobyId,
-            sgdbId = rom.sgdbId,
-            ssId = rom.ssId,
-            launchboxId = rom.launchboxId,
-            hasheousId = rom.hasheousId,
-            tgdbId = rom.tgdbId,
-            hltbId = rom.hltbId,
-            flashpointId = rom.flashpointId,
-            gamelistId = rom.gamelistId,
-            libretroId = rom.libretroId,
-            crcHash = rom.crcHash,
-            md5Hash = rom.md5Hash,
-            sha1Hash = rom.sha1Hash,
-            raHash = rom.raHash,
-            hasManual = rom.hasManual,
-            manualPath = rom.manualPath,
-            remoteHasSoundtrack = rom.hasSoundtrack,
-            isIdentified = rom.isIdentified,
             userRating = rom.romUser?.rating ?: localDataSource?.userRating ?: 0,
             userDifficulty = rom.romUser?.difficulty ?: localDataSource?.userDifficulty ?: 0,
             completion = rom.romUser?.completion ?: localDataSource?.completion ?: 0,
@@ -657,14 +634,8 @@ class RomMLibrarySyncService @Inject constructor(
             playTimeMinutes = localDataSource?.playTimeMinutes ?: 0,
             lastPlayed = localDataSource?.lastPlayed,
             addedAt = localDataSource?.addedAt ?: java.time.Instant.now(),
-            achievementCount = rom.raMetadata?.achievements?.size ?: localDataSource?.achievementCount ?: 0,
-            youtubeVideoId = rom.youtubeVideoId,
-            fileSizeBytes = rom.files
-                ?.filter { it.category == null && !it.fileName.startsWith(".") }
-                ?.maxByOrNull { it.fileSizeBytes }
-                ?.fileSizeBytes
-                ?: rom.fileSize.takeIf { it > 0 }
-        )
+            achievementCount = localDataSource?.achievementCount ?: 0
+        ).withRomMetadata(rom)
 
         val isNew = existing == null
         gameDao.insert(game)
@@ -685,63 +656,7 @@ class RomMLibrarySyncService @Inject constructor(
     }
 
     private suspend fun syncGameFiles(gameId: Long, rom: RomMRom, platformSlug: String) {
-        val isVariantExcluded = platformSlug in com.nendo.argosy.data.model.VariantCategory.VARIANT_EXCLUDED_PLATFORMS
-        val files = rom.files?.filter { file ->
-            val cat = file.category
-            if (cat == null || file.fileName.startsWith(".")) return@filter false
-            if (isVariantExcluded) cat in setOf("update", "dlc") else true
-        } ?: return
-
-        if (files.isEmpty()) {
-            gameFileDao.deleteByGameId(gameId)
-            return
-        }
-
-        val validIds = files.mapNotNull { if (it.id > 0) it.id else null }
-        if (validIds.isNotEmpty()) {
-            gameFileDao.deleteInvalidFiles(gameId, validIds)
-        }
-
-        val entities = files.map { file ->
-            val existing = gameFileDao.getByRommFileId(file.id)
-            val category = com.nendo.argosy.data.model.VariantCategory.fromKey(file.category)
-            val localPath = existing?.localPath ?: recoverMusicLocalPath(file, category, rom)
-            GameFileEntity(
-                id = existing?.id ?: 0,
-                gameId = gameId,
-                rommFileId = file.id,
-                romId = file.romId,
-                fileName = file.fileName,
-                filePath = file.filePath,
-                category = category.key,
-                fileSize = file.fileSizeBytes,
-                localPath = localPath,
-                downloadedAt = existing?.downloadedAt ?: localPath?.let { Instant.now() },
-                isLaunchTarget = category.isLaunchTarget,
-                isMultiDisc = existing?.isMultiDisc ?: false,
-                m3uPath = existing?.m3uPath,
-                trackTitle = file.trackMeta?.title,
-                trackNumber = file.trackMeta?.track,
-                durationSeconds = file.trackMeta?.durationSeconds
-            )
-        }
-        gameFileDao.insertAll(entities)
-    }
-
-    private suspend fun recoverMusicLocalPath(
-        file: RomMRomFile,
-        category: VariantCategory,
-        rom: RomMRom
-    ): String? {
-        if (category != VariantCategory.SOUNDTRACK) return null
-        val target = musicDirectoryManager.targetFileFor(
-            platformName = rom.platformName ?: rom.platformSlug,
-            gameName = rom.name,
-            trackNumber = file.trackMeta?.track,
-            title = file.trackMeta?.title,
-            fileName = file.fileName
-        )
-        return target.takeIf { it.exists() }?.absolutePath
+        gameFileSync.sync(gameId, rom, platformSlug, fileListIsAuthoritative = false)
     }
 
     private data class PlatformSyncResult(
@@ -751,11 +666,6 @@ class RomMLibrarySyncService @Inject constructor(
         val error: String? = null,
         val absorptionPairs: List<Pair<Long, Long>> = emptyList()
     )
-
-    private class SiblingGroup {
-        val memberRoms = mutableListOf<RomMRom>()
-        var mainSiblingId: Long? = null
-    }
 
     private suspend fun syncPlatformRoms(
         api: RomMApi,
@@ -779,9 +689,12 @@ class RomMLibrarySyncService @Inject constructor(
             val existingGroups = ids.mapNotNull { siblingGroups[it] }.distinct()
             val group = existingGroups.firstOrNull() ?: SiblingGroup()
             existingGroups.drop(1).forEach { other ->
-                group.memberRoms.addAll(other.memberRoms)
+                group.members.addAll(other.members)
+                group.expectedIds.addAll(other.expectedIds)
                 if (group.mainSiblingId == null) group.mainSiblingId = other.mainSiblingId
+                if (group.winner == null) group.winner = other.winner
             }
+            group.expectedIds.addAll(ids)
             ids.forEach { siblingGroups[it] = group }
             return group
         }
@@ -852,11 +765,19 @@ class RomMLibrarySyncService @Inject constructor(
                 }
 
                 if (rom.hasNonDiscSiblings) {
-                    groupFor(rom).let { group ->
-                        group.memberRoms.add(rom)
-                        rom.effectiveSiblings
-                            .firstOrNull { !it.isDiscVariant && it.isMainSibling == true }
-                            ?.let { group.mainSiblingId = it.id }
+                    val group = groupFor(rom)
+                    group.members.add(SiblingMember(rom.id, rom.regions, rom.files))
+                    rom.effectiveSiblings
+                        .firstOrNull { !it.isDiscVariant && it.isMainSibling == true }
+                        ?.let { group.mainSiblingId = it.id }
+                    group.winner = chooseWinner(group, rom, filters)
+
+                    if (group.isComplete) {
+                        val outcome = consolidateSiblingGroup(
+                            api, group, platform, absorptionPairs, ::trackSiblingMultiDisc
+                        )
+                        added += outcome.added
+                        updated += outcome.updated
                     }
                     continue
                 }
@@ -878,35 +799,65 @@ class RomMLibrarySyncService @Inject constructor(
         }
 
         for (group in siblingGroups.values.distinct()) {
-            val members = group.memberRoms
-            if (members.isEmpty()) continue
-            val winner = members.firstOrNull { it.id == group.mainSiblingId }
-                ?: members.minByOrNull { filters.regionRank(it.regions) }
-                ?: continue
-            try {
-                val (isNew, _) = syncRom(winner, syncFiles = false)
-                if (isNew) added++ else updated++
-                trackSiblingMultiDisc(winner)
-                val gameId = gameDao.getByRommId(winner.id)?.id ?: continue
-                val validFileIds = mutableListOf<Long>()
-                for (member in members) {
-                    validFileIds += syncVersionFiles(gameId, member, platform.slug)
-                    if (member.id != winner.id) {
-                        gameDao.getByRommId(member.id)?.let { loser ->
-                            absorptionPairs.add(loser.id to gameId)
-                        }
-                    }
-                }
-                if (validFileIds.isNotEmpty()) {
-                    gameFileDao.deleteInvalidFiles(gameId, validFileIds)
-                }
-                Logger.info(TAG, "syncPlatformRoms: consolidated ${members.size} sibling versions under ${winner.name} (${winner.regions})")
-            } catch (e: Exception) {
-                Logger.warn(TAG, "syncPlatformRoms: failed to consolidate sibling group for ${winner.name}: ${e.message}")
-            }
+            val outcome = consolidateSiblingGroup(
+                api, group, platform, absorptionPairs, ::trackSiblingMultiDisc
+            )
+            added += outcome.added
+            updated += outcome.updated
         }
 
         return PlatformSyncResult(added, updated, multiDiscGroups, absorptionPairs = absorptionPairs)
+    }
+
+    private class ConsolidationOutcome(val added: Int, val updated: Int)
+
+    /**
+     * Consolidates one sibling group and drops its retained rom. Runs as soon as a group
+     * has seen every sibling it expects, so only in-flight groups stay resident; the pass
+     * after the last page picks up groups whose siblings were filtered out and never
+     * completed.
+     */
+    private suspend fun consolidateSiblingGroup(
+        api: RomMApi,
+        group: SiblingGroup,
+        platform: RomMPlatform,
+        absorptionPairs: MutableList<Pair<Long, Long>>,
+        trackMultiDisc: (RomMRom) -> Unit
+    ): ConsolidationOutcome {
+        if (group.consolidated) return ConsolidationOutcome(0, 0)
+        val members = group.members
+        if (members.isEmpty()) return ConsolidationOutcome(0, 0)
+        val winner = resolveGroupWinner(api, group) ?: return ConsolidationOutcome(0, 0)
+
+        group.consolidated = true
+        var added = 0
+        var updated = 0
+        try {
+            val (isNew, _) = syncRom(winner, syncFiles = false)
+            if (isNew) added++ else updated++
+            trackMultiDisc(winner)
+            val gameId = gameDao.getByRommId(winner.id)?.id
+                ?: return ConsolidationOutcome(added, updated)
+            val validFileIds = mutableListOf<Long>()
+            for (member in members) {
+                validFileIds += syncVersionFiles(gameId, member, platform.slug)
+                if (member.id != winner.id) {
+                    gameDao.getByRommId(member.id)?.let { loser ->
+                        absorptionPairs.add(loser.id to gameId)
+                    }
+                }
+            }
+            if (validFileIds.isNotEmpty()) {
+                gameFileDao.deleteInvalidFiles(gameId, validFileIds)
+            }
+            Logger.info(TAG, "syncPlatformRoms: consolidated ${members.size} sibling versions under ${winner.name} (${winner.regions})")
+        } catch (e: Exception) {
+            Logger.warn(TAG, "syncPlatformRoms: failed to consolidate sibling group for ${winner.name}: ${e.message}")
+        } finally {
+            group.winner = null
+            group.members.clear()
+        }
+        return ConsolidationOutcome(added, updated)
     }
 
     private suspend fun absorbConsolidatedGames(pairs: List<Pair<Long, Long>>) {
@@ -939,9 +890,29 @@ class RomMLibrarySyncService @Inject constructor(
         }
     }
 
+    /**
+     * A group can learn its declared main sibling from a member fetched after that sibling
+     * was already seen and reduced to a projection. Re-fetch it in that case rather than
+     * consolidating under the wrong ROM.
+     */
+    private suspend fun resolveGroupWinner(api: RomMApi, group: SiblingGroup): RomMRom? {
+        val running = group.winner ?: return null
+        val mainId = group.mainSiblingId
+        if (mainId == null || running.id == mainId) return running
+        if (group.members.none { it.id == mainId }) return running
+
+        return try {
+            val response = api.getRom(mainId)
+            response.body()?.takeIf { response.isSuccessful } ?: running
+        } catch (e: Exception) {
+            Logger.warn(TAG, "resolveGroupWinner: failed to fetch main sibling $mainId: ${e.message}")
+            running
+        }
+    }
+
     private suspend fun syncVersionFiles(
         gameId: Long,
-        member: RomMRom,
+        member: SiblingMember,
         platformSlug: String
     ): List<Long> {
         val files = member.files
@@ -1308,4 +1279,52 @@ class RomMLibrarySyncService @Inject constructor(
         return migrated
     }
 
+}
+
+/**
+ * What consolidation needs from a sibling: its id to re-attribute the losing game, its
+ * regions to rank candidates, and its files to register as versions of the winner.
+ * Retaining the whole [RomMRom] instead holds every metadata blob plus each member's own
+ * sibling list for the entire platform, which is quadratic in group size.
+ */
+internal class SiblingMember(
+    val id: Long,
+    val regions: List<String>?,
+    val files: List<RomMRomFile>?
+)
+
+internal class SiblingGroup {
+    val members = mutableListOf<SiblingMember>()
+    val expectedIds = mutableSetOf<Long>()
+    var mainSiblingId: Long? = null
+    var winner: RomMRom? = null
+    var consolidated = false
+
+    /**
+     * Every rom carries the ids of its whole sibling set, so a group knows its final size
+     * from its first member and can be consolidated and released as soon as the last one
+     * arrives rather than waiting out the platform.
+     */
+    val isComplete: Boolean get() = expectedIds.isNotEmpty() &&
+        members.mapTo(mutableSetOf()) { it.id }.containsAll(expectedIds)
+}
+
+/**
+ * Running pick of the sibling a group consolidates under, so only one full [RomMRom] per
+ * group stays resident. Mirrors the deferred rule it replaced: a declared main sibling
+ * wins outright, otherwise the best region rank wins, ties going to the member seen first.
+ */
+internal fun chooseWinner(
+    group: SiblingGroup,
+    candidate: RomMRom,
+    filters: SyncFilterPreferences
+): RomMRom {
+    val current = group.winner ?: return candidate
+    if (candidate.id == group.mainSiblingId) return candidate
+    if (current.id == group.mainSiblingId) return current
+    return if (filters.regionRank(candidate.regions) < filters.regionRank(current.regions)) {
+        candidate
+    } else {
+        current
+    }
 }

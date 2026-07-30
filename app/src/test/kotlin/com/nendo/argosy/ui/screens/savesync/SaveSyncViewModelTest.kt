@@ -303,7 +303,8 @@ class SaveSyncViewModelTest {
         preferencesRepository = preferencesRepository,
         romMRepository = romMRepository,
         conflictResolutionService = conflictResolutionService,
-        saveSyncRepository = saveSyncRepository
+        saveSyncRepository = saveSyncRepository,
+        saveAccessNotices = com.nendo.argosy.data.sync.SaveAccessNotices()
     )
 
     private fun makeGame(id: Long, title: String): GameEntity = GameEntity(

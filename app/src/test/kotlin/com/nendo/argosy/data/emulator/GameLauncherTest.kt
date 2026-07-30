@@ -119,6 +119,7 @@ class GameLauncherTest {
             installedAppResolver = installedAppResolver,
             platformLibretroSettingsDao = platformLibretroSettingsDao,
             emulatorDetector = emulatorDetector,
+            builtinCoreResolver = BuiltinCoreResolver(emulatorConfigDao, userPreferencesRepository),
             m3uManager = m3uManager,
             libretroCoreMgr = libretroCoreMgr,
             biosRepository = biosRepository,

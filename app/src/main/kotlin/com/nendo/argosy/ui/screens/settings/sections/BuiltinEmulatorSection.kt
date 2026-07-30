@@ -18,6 +18,18 @@ import com.nendo.argosy.ui.screens.settings.SettingsUiState
 import com.nendo.argosy.ui.screens.settings.SettingsViewModel
 import com.nendo.argosy.ui.theme.Dimens
 
+internal enum class BuiltinEmulatorItem {
+    ENABLE,
+    ARCHITECTURE,
+    VIDEO,
+    CONTROLS,
+    CORE_MANAGEMENT,
+    CORE_OPTIONS,
+    TWO_COLUMN;
+
+    val focusIndex: Int get() = ordinal
+}
+
 @Composable
 fun BuiltinEmulatorSection(
     uiState: SettingsUiState,
@@ -39,7 +51,7 @@ fun BuiltinEmulatorSection(
                 title = "Enable Built-in Emulator",
                 subtitle = "Use LibRetro cores for supported platforms",
                 isEnabled = builtinEnabled,
-                isFocused = uiState.focusedIndex == 0,
+                isFocused = uiState.focusedIndex == BuiltinEmulatorItem.ENABLE.focusIndex,
                 onToggle = { viewModel.setBuiltinLibretroEnabled(it) }
             )
         }
@@ -49,7 +61,7 @@ fun BuiltinEmulatorSection(
                 CyclePreference(
                     title = "Architecture",
                     value = emulators.architectureDisplay,
-                    isFocused = uiState.focusedIndex == 1,
+                    isFocused = uiState.focusedIndex == BuiltinEmulatorItem.ARCHITECTURE.focusIndex,
                     onClick = { viewModel.cycleBuiltinArchitecture(1) },
                     onPrev = { viewModel.cycleBuiltinArchitecture(-1) },
                     options = architectureOptions,
@@ -64,7 +76,7 @@ fun BuiltinEmulatorSection(
                 ActionPreference(
                     title = "A/V & Performance",
                     subtitle = "Shaders, display, performance, saving",
-                    isFocused = uiState.focusedIndex == 2,
+                    isFocused = uiState.focusedIndex == BuiltinEmulatorItem.VIDEO.focusIndex,
                     onClick = { viewModel.navigateToBuiltinVideo() }
                 )
             }
@@ -72,7 +84,7 @@ fun BuiltinEmulatorSection(
                 ActionPreference(
                     title = "Controls",
                     subtitle = "Rumble, input mapping, hotkeys",
-                    isFocused = uiState.focusedIndex == 3,
+                    isFocused = uiState.focusedIndex == BuiltinEmulatorItem.CONTROLS.focusIndex,
                     onClick = { viewModel.navigateToBuiltinControls() }
                 )
             }
@@ -81,7 +93,7 @@ fun BuiltinEmulatorSection(
                 ActionPreference(
                     title = "Manage Cores",
                     subtitle = "${emulators.installedCoreCount} of ${emulators.totalCoreCount} cores installed",
-                    isFocused = uiState.focusedIndex == 4,
+                    isFocused = uiState.focusedIndex == BuiltinEmulatorItem.CORE_MANAGEMENT.focusIndex,
                     onClick = { viewModel.navigateToCoreManagement() },
                     badge = if (updatesAvailable > 0) "$updatesAvailable update${if (updatesAvailable > 1) "s" else ""}" else null
                 )
@@ -90,8 +102,21 @@ fun BuiltinEmulatorSection(
                 ActionPreference(
                     title = "Core Options",
                     subtitle = "Per-core settings and overrides",
-                    isFocused = uiState.focusedIndex == 5,
+                    isFocused = uiState.focusedIndex == BuiltinEmulatorItem.CORE_OPTIONS.focusIndex,
                     onClick = { viewModel.navigateToCoreOptions() }
+                )
+            }
+            item(key = "builtin_two_column_menu") {
+                SwitchPreference(
+                    title = "Two-Column Menu",
+                    subtitle = if (emulators.ingameMenuTwoColumn) {
+                        "In-game menu uses two columns on wide displays"
+                    } else {
+                        "In-game menu uses a single column"
+                    },
+                    isEnabled = emulators.ingameMenuTwoColumn,
+                    isFocused = uiState.focusedIndex == BuiltinEmulatorItem.TWO_COLUMN.focusIndex,
+                    onToggle = { viewModel.setIngameMenuTwoColumn(it) }
                 )
             }
         }

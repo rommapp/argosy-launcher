@@ -75,12 +75,18 @@ fun DoodleScreen(
     initialGameId: Int? = null,
     initialGameTitle: String? = null,
     initialGameCoverPath: String? = null,
+    avatarMode: Boolean = false,
+    inputRoute: String = "doodle",
     viewModel: DoodleViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
     LaunchedEffect(initialGameId) {
         viewModel.initGame(initialGameId, initialGameTitle, initialGameCoverPath)
+    }
+
+    LaunchedEffect(avatarMode) {
+        if (avatarMode) viewModel.initAvatarMode()
     }
 
     val inputDispatcher = LocalInputDispatcher.current
@@ -95,11 +101,11 @@ fun DoodleScreen(
     DisposableEffect(lifecycleOwner, inputHandler) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
-                inputDispatcher.subscribeView(inputHandler, forRoute = "doodle")
+                inputDispatcher.subscribeView(inputHandler, forRoute = inputRoute)
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
-        inputDispatcher.subscribeView(inputHandler, forRoute = "doodle")
+        inputDispatcher.subscribeView(inputHandler, forRoute = inputRoute)
         onDispose {
             lifecycleOwner.lifecycle.removeObserver(observer)
         }
@@ -112,6 +118,7 @@ fun DoodleScreen(
                     event.doodleData, event.canvasSize,
                     event.gameId, event.gameTitle, event.gameCoverPath
                 )
+                is DoodleEvent.AvatarSaved -> onBack()
                 is DoodleEvent.Error -> {}
             }
         }
@@ -189,6 +196,7 @@ private fun LandscapeLayout(
                     panOffsetY = uiState.panOffsetY,
                     onTap = { x, y -> viewModel.tapAt(x, y) },
                     onDrag = { x, y -> viewModel.drawAt(x, y) },
+                    showCircleGuide = uiState.avatarMode,
                     modifier = Modifier
                         .aspectRatio(1f)
                         .clip(RoundedCornerShape(8.dp))
@@ -225,7 +233,8 @@ private fun LandscapeLayout(
                     selectedSize = uiState.canvasSize,
                     focusIndex = uiState.sizeFocusIndex,
                     isFocused = uiState.currentSection == DoodleSection.SIZE,
-                    onSizeSelect = { viewModel.setCanvasSize(it) }
+                    onSizeSelect = { viewModel.setCanvasSize(it) },
+                    sizes = uiState.availableSizes
                 )
 
                 UndoRedoButtons(
@@ -237,12 +246,14 @@ private fun LandscapeLayout(
                     onRedo = { viewModel.redo() }
                 )
 
-                GameSection(
-                    linkedGameTitle = uiState.linkedGameTitle,
-                    linkedGameCoverPath = uiState.linkedGameCoverPath,
-                    isFocused = uiState.currentSection == DoodleSection.GAME,
-                    onClick = { viewModel.showGamePicker() }
-                )
+                if (!uiState.avatarMode) {
+                    GameSection(
+                        linkedGameTitle = uiState.linkedGameTitle,
+                        linkedGameCoverPath = uiState.linkedGameCoverPath,
+                        isFocused = uiState.currentSection == DoodleSection.GAME,
+                        onClick = { viewModel.showGamePicker() }
+                    )
+                }
 
                 if (uiState.zoomLevel != ZoomLevel.FIT) {
                     ZoomIndicator(zoomLevel = uiState.zoomLevel)
@@ -286,7 +297,8 @@ private fun PortraitLayout(
                 selectedSize = uiState.canvasSize,
                 focusIndex = uiState.sizeFocusIndex,
                 isFocused = uiState.currentSection == DoodleSection.SIZE,
-                onSizeSelect = { viewModel.setCanvasSize(it) }
+                onSizeSelect = { viewModel.setCanvasSize(it) },
+                sizes = uiState.availableSizes
             )
 
             if (uiState.zoomLevel != ZoomLevel.FIT) {
@@ -315,6 +327,7 @@ private fun PortraitLayout(
                 panOffsetY = uiState.panOffsetY,
                 onTap = { x, y -> viewModel.tapAt(x, y) },
                 onDrag = { x, y -> viewModel.drawAt(x, y) },
+                showCircleGuide = uiState.avatarMode,
                 modifier = Modifier
                     .aspectRatio(1f)
                     .clip(RoundedCornerShape(8.dp))
@@ -354,13 +367,15 @@ private fun PortraitLayout(
                 modifier = Modifier.weight(1f)
             )
 
-            GameSection(
-                linkedGameTitle = uiState.linkedGameTitle,
-                linkedGameCoverPath = uiState.linkedGameCoverPath,
-                isFocused = uiState.currentSection == DoodleSection.GAME,
-                onClick = { viewModel.showGamePicker() },
-                modifier = Modifier.weight(1f)
-            )
+            if (!uiState.avatarMode) {
+                GameSection(
+                    linkedGameTitle = uiState.linkedGameTitle,
+                    linkedGameCoverPath = uiState.linkedGameCoverPath,
+                    isFocused = uiState.currentSection == DoodleSection.GAME,
+                    onClick = { viewModel.showGamePicker() },
+                    modifier = Modifier.weight(1f)
+                )
+            }
         }
 
         Spacer(modifier = Modifier.height(8.dp))
@@ -491,7 +506,8 @@ private fun SizeSelector(
     selectedSize: CanvasSize,
     focusIndex: Int,
     isFocused: Boolean,
-    onSizeSelect: (CanvasSize) -> Unit
+    onSizeSelect: (CanvasSize) -> Unit,
+    sizes: List<CanvasSize> = CanvasSize.entries
 ) {
     Row(
         horizontalArrangement = Arrangement.spacedBy(4.dp),
@@ -508,7 +524,7 @@ private fun SizeSelector(
             )
             .padding(4.dp)
     ) {
-        CanvasSize.entries.forEach { size ->
+        sizes.forEach { size ->
             val isSelected = size == selectedSize
             val isSizeFocused = isFocused && size.sizeEnum == focusIndex
 

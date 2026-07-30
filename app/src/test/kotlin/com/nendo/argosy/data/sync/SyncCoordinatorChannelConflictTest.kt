@@ -117,6 +117,7 @@ class SyncCoordinatorChannelConflictTest {
                 every { preferences } returns kotlinx.coroutines.flow.MutableStateFlow(SyncPreferences(saveSyncEnabled = true))
             },
             payloadCodec = SyncPayloadCodec(com.squareup.moshi.Moshi.Builder().build()),
+            savePathResolver = mockk(relaxed = true),
             strategySelector = mockk(relaxed = true),
             pendingConflictDao = mockk(relaxed = true),
             reconcileEffectApplier = mockk(relaxed = true),
@@ -169,6 +170,7 @@ class SyncCoordinatorChannelConflictTest {
                 every { preferences } returns kotlinx.coroutines.flow.MutableStateFlow(SyncPreferences(saveSyncEnabled = true))
             },
             payloadCodec = SyncPayloadCodec(com.squareup.moshi.Moshi.Builder().build()),
+            savePathResolver = mockk(relaxed = true),
             strategySelector = mockk(relaxed = true),
             pendingConflictDao = mockk(relaxed = true),
             reconcileEffectApplier = mockk(relaxed = true),
@@ -231,6 +233,7 @@ class SyncCoordinatorChannelConflictTest {
                 every { preferences } returns kotlinx.coroutines.flow.MutableStateFlow(SyncPreferences(saveSyncEnabled = true))
             },
             payloadCodec = SyncPayloadCodec(com.squareup.moshi.Moshi.Builder().build()),
+            savePathResolver = mockk(relaxed = true),
             strategySelector = mockk(relaxed = true),
             pendingConflictDao = mockk(relaxed = true),
             reconcileEffectApplier = mockk(relaxed = true),
@@ -274,6 +277,7 @@ class SyncCoordinatorChannelConflictTest {
                 every { preferences } returns kotlinx.coroutines.flow.MutableStateFlow(SyncPreferences(saveSyncEnabled = false))
             },
             payloadCodec = SyncPayloadCodec(com.squareup.moshi.Moshi.Builder().build()),
+            savePathResolver = mockk(relaxed = true),
             strategySelector = mockk(relaxed = true),
             pendingConflictDao = mockk(relaxed = true),
             reconcileEffectApplier = mockk(relaxed = true),

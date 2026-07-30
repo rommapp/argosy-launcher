@@ -48,6 +48,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -59,8 +60,14 @@ data class UserProfileUiState(
     val isLoading: Boolean = true,
     val focusIndex: Int = 0,
     val error: String? = null,
-    val localIgdbIds: Set<Int> = emptySet()
+    val localIgdbIds: Set<Int> = emptySet(),
+    val localUserId: String? = null,
+    val localAvatarDoodle: String? = null,
+    val friendAvatarPng: String? = null
 ) {
+    val ownAvatarDoodle: String?
+        get() = localAvatarDoodle.takeIf { profile?.user?.id == localUserId }
+
     val focusCount: Int
         get() = DISPLAY_SECTIONS + (profile?.mostPlayed?.size ?: 0)
 
@@ -83,6 +90,7 @@ class UserProfileViewModel @Inject constructor(
     private val socialRepository: SocialRepository,
     private val gameRepository: GameRepository,
     val notificationManager: NotificationManager,
+    syncPreferencesRepository: com.nendo.argosy.data.preferences.SyncPreferencesRepository,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -93,16 +101,34 @@ class UserProfileViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
+            syncPreferencesRepository.preferences.collect { prefs ->
+                _uiState.update {
+                    it.copy(
+                        localUserId = prefs.socialUserId,
+                        localAvatarDoodle = prefs.socialAvatarDoodle.takeIf { prefs.socialAvatarUseDoodle }
+                    )
+                }
+            }
+        }
+        viewModelScope.launch {
+            socialRepository.friends.collect { friends ->
+                val png = friends.firstOrNull { it.id == userId }?.quayPassAvatar
+                _uiState.update { it.copy(friendAvatarPng = png) }
+            }
+        }
+        viewModelScope.launch {
             socialRepository.userProfile.collect { profile ->
                 if (profile != null && profile.user.id == userId) {
                     val igdbIds = profile.mostPlayed.map { it.igdbId }
                         .filter { gameRepository.getByIgdbId(it.toLong()) != null }
                         .toSet()
-                    _uiState.value = _uiState.value.copy(
-                        profile = profile,
-                        isLoading = false,
-                        localIgdbIds = igdbIds
-                    )
+                    _uiState.update {
+                        it.copy(
+                            profile = profile,
+                            isLoading = false,
+                            localIgdbIds = igdbIds
+                        )
+                    }
                 }
             }
         }
@@ -259,7 +285,12 @@ fun UserProfileScreen(
                     contentPadding = PaddingValues(horizontal = 24.dp, vertical = 12.dp)
                 ) {
                     item {
-                        AccountInfoCard(user = profile.user, profile = profile)
+                        AccountInfoCard(
+                            user = profile.user,
+                            profile = profile,
+                            avatarDoodle = uiState.ownAvatarDoodle,
+                            avatarPngBase64 = uiState.friendAvatarPng
+                        )
                     }
 
                     item {

@@ -8,5 +8,16 @@
                 <action android:name="com.nendo.argosy.DEBUG_SEED_ROMM" />
             </intent-filter>
         </receiver>
+        <receiver
+            android:name="com.nendo.argosy.debug.QuayPassTestHarness"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.nendo.argosy.debug.QUAYPASS_DUMP_PUBKEY" />
+                <action android:name="com.nendo.argosy.debug.QUAYPASS_DUMP_STATE" />
+                <action android:name="com.nendo.argosy.debug.QUAYPASS_SEED" />
+                <action android:name="com.nendo.argosy.debug.QUAYPASS_CLEAR_KEY" />
+                <action android:name="com.nendo.argosy.debug.QUAYPASS_VERIFY" />
+            </intent-filter>
+        </receiver>
     </application>
 </manifest>

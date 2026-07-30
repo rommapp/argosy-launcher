@@ -2,6 +2,7 @@ package com.nendo.argosy.domain.usecase.game
 
 import com.nendo.argosy.data.emulator.EmulatorRegistry
 import com.nendo.argosy.data.emulator.InstalledEmulator
+import com.nendo.argosy.data.emulator.LaunchConfig
 import com.nendo.argosy.data.local.dao.EmulatorConfigDao
 import com.nendo.argosy.data.local.dao.SaveSyncDao
 import com.nendo.argosy.data.local.entity.EmulatorConfigEntity
@@ -12,7 +13,8 @@ class ConfigureEmulatorUseCase @Inject constructor(
     private val saveSyncDao: SaveSyncDao
 ) {
     suspend fun setForGame(gameId: Long, platformId: Long, platformSlug: String, emulator: InstalledEmulator?) {
-        val hadSavePath = emulatorConfigDao.getByGameId(gameId)?.savePath != null
+        val existing = emulatorConfigDao.getByGameId(gameId)
+        val hadSaveLocation = existing?.savePath != null || existing?.selectedMemcardPath != null
         emulatorConfigDao.deleteGameOverride(gameId)
 
         if (emulator != null) {
@@ -21,12 +23,12 @@ class ConfigureEmulatorUseCase @Inject constructor(
                 gameId = gameId,
                 packageName = emulator.def.packageName,
                 displayName = emulator.def.displayName,
-                coreName = EmulatorRegistry.getDefaultCore(platformSlug)?.id,
+                coreName = defaultCoreFor(platformSlug, emulator),
                 isDefault = false
             )
             emulatorConfigDao.insert(config)
         }
-        if (hadSavePath) saveSyncDao.clearLocalPathsForGame(gameId)
+        if (hadSaveLocation) saveSyncDao.clearLocalPathsForGame(gameId)
     }
 
     suspend fun setForPlatform(platformId: Long, platformSlug: String, emulator: InstalledEmulator?) {
@@ -38,11 +40,22 @@ class ConfigureEmulatorUseCase @Inject constructor(
                 gameId = null,
                 packageName = emulator.def.packageName,
                 displayName = emulator.def.displayName,
-                coreName = EmulatorRegistry.getDefaultCore(platformSlug)?.id,
+                coreName = defaultCoreFor(platformSlug, emulator),
                 isDefault = true
             )
             emulatorConfigDao.insert(config)
         }
+    }
+
+    /**
+     * The core to stamp when a user picks an emulator. Only external RetroArch needs one
+     * written up front: the built-in path resolves through [com.nendo.argosy.data.emulator.BuiltinCoreResolver],
+     * and stamping there would outrank the user's Manage Cores selection.
+     */
+    private fun defaultCoreFor(platformSlug: String, emulator: InstalledEmulator): String? {
+        val launchConfig = emulator.def.launchConfig
+        if (launchConfig !is LaunchConfig.RetroArch) return null
+        return EmulatorRegistry.getDefaultSelectableCore(platformSlug, isBuiltIn = false)?.id
     }
 
     suspend fun setAdHocForPlatform(platformId: Long, packageName: String, displayName: String) {
@@ -59,9 +72,10 @@ class ConfigureEmulatorUseCase @Inject constructor(
     }
 
     suspend fun clearForGame(gameId: Long) {
-        val hadSavePath = emulatorConfigDao.getByGameId(gameId)?.savePath != null
+        val existing = emulatorConfigDao.getByGameId(gameId)
+        val hadSaveLocation = existing?.savePath != null || existing?.selectedMemcardPath != null
         emulatorConfigDao.deleteGameOverride(gameId)
-        if (hadSavePath) saveSyncDao.clearLocalPathsForGame(gameId)
+        if (hadSaveLocation) saveSyncDao.clearLocalPathsForGame(gameId)
     }
 
     suspend fun clearForPlatform(platformId: Long) {
@@ -143,6 +157,32 @@ class ConfigureEmulatorUseCase @Inject constructor(
         val existing = emulatorConfigDao.getByGameId(gameId) ?: return
         if (existing.savePath == null) return
         emulatorConfigDao.updateSavePathForGame(gameId, null)
+        saveSyncDao.clearLocalPathsForGame(gameId)
+    }
+
+    suspend fun setMemcardForGame(gameId: Long, memcardPath: String) {
+        val existing = emulatorConfigDao.getByGameId(gameId)
+        if (existing != null) {
+            emulatorConfigDao.updateSelectedMemcardForGame(gameId, memcardPath)
+        } else {
+            val config = EmulatorConfigEntity(
+                platformId = null,
+                gameId = gameId,
+                packageName = null,
+                displayName = null,
+                coreName = null,
+                isDefault = false,
+                selectedMemcardPath = memcardPath
+            )
+            emulatorConfigDao.insert(config)
+        }
+        saveSyncDao.clearLocalPathsForGame(gameId)
+    }
+
+    suspend fun clearMemcardForGame(gameId: Long) {
+        val existing = emulatorConfigDao.getByGameId(gameId) ?: return
+        if (existing.selectedMemcardPath == null) return
+        emulatorConfigDao.updateSelectedMemcardForGame(gameId, null)
         saveSyncDao.clearLocalPathsForGame(gameId)
     }
 

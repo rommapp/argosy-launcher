@@ -553,6 +553,11 @@ class SecondaryHomeActivity :
                 else vm.dismissPicker()
                 refocusSelf()
             }
+            ActiveModal.MEMORY_CARD.name -> {
+                if (selectedIndex >= 0) vm.confirmMemoryCardByIndex(selectedIndex)
+                else vm.dismissPicker()
+                refocusSelf()
+            }
             ActiveModal.VARIANT_PICKER.name -> {
                 if (selectedIndex >= 0) vm.confirmVariantByIndex(selectedIndex)
                 else vm.dismissPicker()
@@ -656,6 +661,20 @@ class SecondaryHomeActivity :
         lifecycleScope.launch { dsm.dualViewMode.collect { _showcaseViewMode.value = it } }
         lifecycleScope.launch { dsm.dualCollectionShowcase.collect { _showcaseCollectionState.value = it } }
         lifecycleScope.launch { dsm.dualGameDetailState.collect { _showcaseGameDetailState.value = it } }
+        lifecycleScope.launch {
+            dsm.preferencesRepository.userPreferences.collect { prefs ->
+                applyInputSwapState(stateManager.inputSwapStateFrom(prefs))
+            }
+        }
+    }
+
+    private fun applyInputSwapState(state: SecondaryHomeStateManager.InputSwapState) {
+        swapAB = state.swapAB
+        swapXY = state.swapXY
+        swapStartSelect = state.swapStartSelect
+        abIconsSwapped = state.abIconsSwapped
+        xyIconsSwapped = state.xyIconsSwapped
+        startSelectSwapped = state.startSelectSwapped
     }
 
     private fun initializeDependencies() {
@@ -702,6 +721,8 @@ class SecondaryHomeActivity :
             downloadQueueRepository = dsm.downloadQueueRepository,
             steamRepository = dsm.steamRepository,
             configureEmulatorUseCase = dsm.configureEmulatorUseCase,
+            builtinCoreResolver = dsm.builtinCoreResolver,
+            saveHandlerRegistry = dsm.saveHandlerRegistry,
             steamContentManager = dsm.steamContentManager,
             displayAffinityHelper = affinityHelper,
             downloadFileStatusRepository = dsm.downloadFileStatusRepository,
@@ -789,8 +810,9 @@ class SecondaryHomeActivity :
 
     private fun loadCompanionGameData(gameId: Long) {
         lifecycleScope.launch {
-            companionInGameState = stateManager.loadCompanionGameData(gameId).copy(
-                quickActionsAvailable = dsm.sessionQuickActions != null
+            companionInGameState = stateManager.loadCompanionGameData(gameId).withLiveQuickActionState(
+                quickActionsAvailable = dsm.sessionQuickActions != null,
+                hasQuickSave = dsm.companionHasQuickSave
             )
         }
     }

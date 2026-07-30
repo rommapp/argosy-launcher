@@ -2,6 +2,7 @@ package com.nendo.argosy
 
 import android.app.Application
 import androidx.hilt.work.HiltWorkerFactory
+import androidx.lifecycle.ProcessLifecycleOwner
 import androidx.work.Configuration
 import coil.ImageLoader
 import coil.ImageLoaderFactory
@@ -91,12 +92,46 @@ class ArgosyApp : Application(), Configuration.Provider, ImageLoaderFactory {
     @Inject
     lateinit var steamContentManager: SteamContentManager
 
+    @Inject
+    lateinit var quayPassService: com.nendo.argosy.data.quaypass.QuayPassService
+
+    @Inject
+    lateinit var quayPassCredentialManager: com.nendo.argosy.data.quaypass.QuayPassCredentialManager
+
+    @Suppress("unused")
+    @Inject
+    lateinit var quayPassAvatarSyncCoordinator: com.nendo.argosy.data.quaypass.QuayPassAvatarSyncCoordinator
+
+    @Suppress("unused")
+    @Inject
+    lateinit var quayPassMessageSyncCoordinator: com.nendo.argosy.data.quaypass.QuayPassMessageSyncCoordinator
+
+    @Suppress("unused")
+    @Inject
+    lateinit var quayPassFriendRequestQueueCoordinator: com.nendo.argosy.data.quaypass.QuayPassFriendRequestQueueCoordinator
+
+    @Suppress("unused")
+    @Inject
+    lateinit var quayPassEncounterReporter: com.nendo.argosy.data.quaypass.QuayPassEncounterReporter
+
+    @Suppress("unused")
+    @Inject
+    lateinit var quayPassWalletCoordinator: com.nendo.argosy.data.quaypass.QuayPassWalletCoordinator
+
+    private val quayPassForegroundObserver = object : androidx.lifecycle.DefaultLifecycleObserver {
+        override fun onStart(owner: androidx.lifecycle.LifecycleOwner) {
+            appScope.launch { quayPassCredentialManager.refreshIfNeeded() }
+        }
+    }
+
     override fun onCreate() {
         super.onCreate()
         UpdateCheckWorker.schedule(this)
         SaveSyncWorker.schedule(this)
         SocialSyncWorker.schedule(this)
         CoreUpdateCheckWorker.schedule(this)
+        com.nendo.argosy.data.quaypass.QuayPassCredentialRefreshWorker.schedule(this)
+        ProcessLifecycleOwner.get().lifecycle.addObserver(quayPassForegroundObserver)
         saveSyncDownloadObserver.start()
         cheatsDownloadObserver.start()
         titleIdDownloadObserver.start()
@@ -137,7 +172,8 @@ class ArgosyApp : Application(), Configuration.Provider, ImageLoaderFactory {
     private fun syncPlatformSortOrders() {
         appScope.launch {
             PlatformDefinitions.getAll().forEach { def ->
-                platformDao.getBySlug(def.slug)?.let { platform ->
+                val platform = platformDao.getBySlug(def.slug) ?: return@forEach
+                if (platform.sortOrder != def.sortOrder) {
                     platformDao.updateSortOrder(platform.id, def.sortOrder)
                 }
             }

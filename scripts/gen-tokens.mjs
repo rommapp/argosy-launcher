@@ -172,7 +172,7 @@ function emitDimensionTokens(dimension) {
   out.push(`    }`);
   out.push(``);
 
-  for (const group of ["radius", "border", "icon", "dot", "layout", "elevation"]) {
+  for (const group of ["radius", "border", "icon", "dot", "avatar", "layout", "elevation"]) {
     out.push(`    object ${pascal(group)} {`);
     for (const [name, value] of Object.entries(dimension[group])) {
       out.push(`        const val ${name} = ${value}`);

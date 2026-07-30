@@ -52,7 +52,7 @@ class Ps2FolderHandlerDiscoveryTest {
 
         val result = handler.findSaveFolderBySaveId(tempDir.absolutePath, "SLUS-21050")
 
-        assertEquals(save.absolutePath, result)
+        assertEquals(card.absolutePath, result)
     }
 
     @Test
@@ -62,7 +62,7 @@ class Ps2FolderHandlerDiscoveryTest {
 
         val result = handler.findSaveFolderBySaveId(tempDir.absolutePath, "SLUS-21050")
 
-        assertEquals(save.absolutePath, result)
+        assertEquals(card.absolutePath, result)
     }
 
     @Test
@@ -72,7 +72,7 @@ class Ps2FolderHandlerDiscoveryTest {
 
         val result = handler.findSaveFolderBySaveId(tempDir.absolutePath, "SLUS21050")
 
-        assertEquals(save.absolutePath, result)
+        assertEquals(card.absolutePath, result)
     }
 
     @Test
@@ -94,7 +94,7 @@ class Ps2FolderHandlerDiscoveryTest {
 
         val result = handler.findSaveFolderBySaveId(card.absolutePath, "SLUS-21050")
 
-        assertEquals(save.absolutePath, result)
+        assertEquals(card.absolutePath, result)
     }
 
     @Test
@@ -104,7 +104,7 @@ class Ps2FolderHandlerDiscoveryTest {
 
         val result = handler.findSaveFolderBySaveId(tempDir.absolutePath, "BESCES-53133")
 
-        assertEquals(save.absolutePath, result)
+        assertEquals(card.absolutePath, result)
     }
 
     @Test
@@ -114,7 +114,7 @@ class Ps2FolderHandlerDiscoveryTest {
 
         val result = handler.findSaveFolderBySaveId(tempDir.absolutePath, "SCES-53133")
 
-        assertEquals(save.absolutePath, result)
+        assertEquals(card.absolutePath, result)
     }
 
     @Test
@@ -124,7 +124,7 @@ class Ps2FolderHandlerDiscoveryTest {
 
         val result = handler.findSaveFolderBySaveId(tempDir.absolutePath, "SLPS-25088")
 
-        assertEquals(save.absolutePath, result)
+        assertEquals(card.absolutePath, result)
     }
 
     @Test
@@ -133,7 +133,7 @@ class Ps2FolderHandlerDiscoveryTest {
 
         val result = handler.constructSavePath(tempDir.absolutePath, "BESCES-53133")
 
-        assertEquals("${card.absolutePath}/BESCES-53133", result)
+        assertEquals(card.absolutePath, result)
     }
 
     @Test
@@ -142,7 +142,43 @@ class Ps2FolderHandlerDiscoveryTest {
 
         val result = handler.constructSavePath(tempDir.absolutePath, "SCES-53133")
 
-        assertEquals("${card.absolutePath}/BESCES-53133", result)
+        assertEquals(card.absolutePath, result)
+    }
+
+    @Test
+    fun `a game's sibling entries are all part of one save`() {
+        val card = File(tempDir, "Mcd001.ps2").apply { mkdirs() }
+        val data = File(card, "BASLUS-20152AC04").apply { mkdirs() }
+        val system = File(card, "BASLUS-20152SYS").apply { mkdirs() }
+        File(card, "BASLUS-21050").apply { mkdirs() }
+
+        val entries = handler.findAllSaveFoldersBySaveId(card.absolutePath, "BASLUS-20152")
+
+        assertEquals(
+            listOf(data.absolutePath, system.absolutePath).sorted(),
+            entries.sorted()
+        )
+    }
+
+    @Test
+    fun `a save id carrying a stale region prefix still finds the entry`() {
+        val card = File(tempDir, "Mcd001.ps2").apply { mkdirs() }
+        val save = File(card, "BASLUS-20152AC04").apply { mkdirs() }
+
+        val entries = handler.findAllSaveFoldersBySaveId(card.absolutePath, "BISLUS-20152A")
+
+        assertEquals(listOf(save.absolutePath), entries)
+    }
+
+    @Test
+    fun `a card without the dot ps2 suffix is recognised by its superblock`() {
+        val card = File(tempDir, "test").apply { mkdirs() }
+        File(card, "_pcsx2_superblock").writeText("")
+        File(card, "BASLUS-20152AC04").apply { mkdirs() }
+
+        val result = handler.findSaveFolderBySaveId(tempDir.absolutePath, "SLUS-20152")
+
+        assertEquals(card.absolutePath, result)
     }
 
     @Test

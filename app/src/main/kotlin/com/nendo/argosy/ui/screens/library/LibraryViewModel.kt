@@ -776,19 +776,24 @@ class LibraryViewModel @Inject constructor(
     fun jumpToSection(sectionLabel: String, showOverlay: Boolean = true) {
         resetStickyColumn()
         val state = _uiState.value
-        val firstGameInSection = state.gridItems.firstOrNull { item ->
-            item is LibraryGridItem.Game && run {
-                val headerIdx = state.gridItems.indexOf(item) - 1
-                headerIdx >= 0 && state.gridItems[headerIdx].let { it is LibraryGridItem.Header && it.label == sectionLabel }
-            }
-        } as? LibraryGridItem.Game
+        val headerIndex = state.gridItems.indexOfFirst {
+            it is LibraryGridItem.Header && it.label == sectionLabel
+        }
+        val firstGameInSection = if (headerIndex >= 0) {
+            state.gridItems.getOrNull(headerIndex + 1) as? LibraryGridItem.Game
+        } else {
+            null
+        }
 
         if (firstGameInSection == null) {
-            val targetGame = state.gridItems.filterIsInstance<LibraryGridItem.Game>()
-                .firstOrNull { game ->
-                    val gIdx = state.gridItems.indexOf(game)
-                    findSectionLabelForGridItem(state.gridItems, gIdx) == sectionLabel
+            val targetGame = state.gridItems
+                .asSequence()
+                .withIndex()
+                .filter { (_, item) -> item is LibraryGridItem.Game }
+                .firstOrNull { (index, _) ->
+                    findSectionLabelForGridItem(state.gridItems, index) == sectionLabel
                 }
+                ?.value as? LibraryGridItem.Game
             if (targetGame != null) {
                 _uiState.update {
                     it.copy(

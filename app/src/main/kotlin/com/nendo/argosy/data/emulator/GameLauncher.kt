@@ -81,6 +81,7 @@ class GameLauncher @Inject constructor(
     private val installedAppResolver: com.nendo.argosy.data.platform.InstalledAppResolver,
     private val platformLibretroSettingsDao: com.nendo.argosy.data.local.dao.PlatformLibretroSettingsDao,
     private val emulatorDetector: EmulatorDetector,
+    private val builtinCoreResolver: BuiltinCoreResolver,
     private val m3uManager: M3uManager,
     private val libretroCoreMgr: LibretroCoreManager,
     private val biosRepository: BiosRepository,
@@ -443,15 +444,16 @@ class GameLauncher @Inject constructor(
                 Logger.warn(TAG, "launchSteamGame() failed: missing steamAppId")
             }
 
-        val launcherPackage = game.steamLauncher ?: "native"
+        val chosenPackage = game.steamLauncher?.takeIf { it != GameEntity.LAUNCHER_UNSPECIFIED }
 
-        val launcher = when (launcherPackage) {
-            "native" -> GameNativeLauncher
-            else -> SteamLaunchers.getByPackage(launcherPackage) ?: GameNativeLauncher
+        val launcher = if (chosenPackage != null) {
+            SteamLaunchers.getByPackage(chosenPackage) ?: GameNativeLauncher
+        } else {
+            SteamLaunchers.getPreferred(context) ?: GameNativeLauncher
         }
 
         if (!launcher.isInstalled(context)) {
-            return LaunchResult.NoSteamLauncher(launcherPackage).also {
+            return LaunchResult.NoSteamLauncher(launcher.packageName).also {
                 Logger.warn(TAG, "launchSteamGame() failed: ${launcher.displayName} not installed")
             }
         }
@@ -608,6 +610,7 @@ class GameLauncher @Inject constructor(
 
     private suspend fun ps2MemcardGate(gameId: Long, game: GameEntity, emulator: EmulatorDef): LaunchResult? {
         if (game.platformSlug != "ps2") return null
+        if (emulatorConfigDao.getSelectedMemcardForGame(gameId) != null) return null
         val emulatorId = SavePathRegistry.canonicalConfigId(emulator.id, emulator.packageName)
         val userConfig = emulatorSaveConfigRepository.getByEmulator(emulatorId)
         if (userConfig?.selectedMemcardPath != null) return null
@@ -1116,39 +1119,12 @@ class GameLauncher @Inject constructor(
         }
     }
 
-    /**
-     * Core selection for the built-in libretro path. Walks: game override ->
-     * platform default -> legacy built-in pref -> registry default. Accepts
-     * any non-empty core id; the built-in path downloads from the libretro
-     * buildbot, so membership in [com.nendo.argosy.libretro.LibretroCoreRegistry]
-     * is a metadata hint, not a gate. If the chosen id isn't a real core, the
-     * download will 404 and surface via [lastCoreDownloadError].
-     */
     private suspend fun resolveBuiltinCoreId(game: GameEntity): String? {
-        val validCoreIds = com.nendo.argosy.libretro.LibretroCoreRegistry
-            .getCoresForPlatform(game.platformSlug).map { it.coreId }.toSet()
-        var rejectedCore: String? = null
+        val resolution = builtinCoreResolver.resolve(game.id, game.platformId, game.platformSlug)
+        val default = resolution.coreId
+        Logger.debug(TAG, "[BuiltIn] core selection -> $default")
 
-        fun accept(coreId: String?, source: String): String? {
-            if (coreId.isNullOrBlank()) return null
-            if (coreId !in validCoreIds) {
-                Logger.warn(TAG, "[BuiltIn] ignoring unknown core '$coreId' from $source for ${game.platformSlug}")
-                if (rejectedCore == null) rejectedCore = coreId
-                return null
-            }
-            Logger.debug(TAG, "[BuiltIn] core selection: $source -> $coreId")
-            return coreId
-        }
-
-        accept(emulatorConfigDao.getByGameId(game.id)?.coreName, "game override")?.let { return it }
-        accept(emulatorConfigDao.getDefaultForPlatform(game.platformId)?.coreName, "platform default")?.let { return it }
-        accept(userPreferencesRepository.getBuiltinCoreSelections().first()[game.platformSlug], "legacy pref")?.let { return it }
-
-        val default = com.nendo.argosy.libretro.LibretroCoreRegistry
-            .getDefaultCoreForPlatform(game.platformSlug)?.coreId
-        Logger.debug(TAG, "[BuiltIn] core selection: registry default -> $default")
-
-        val rejected = rejectedCore
+        val rejected = resolution.rejectedCoreId
         if (rejected != null && default != null) {
             val registry = com.nendo.argosy.libretro.LibretroCoreRegistry
             notificationManager.show(
@@ -1186,12 +1162,30 @@ class GameLauncher @Inject constructor(
         return preferredCore
     }
 
+    /**
+     * External RetroArch can run cores Argosy does not curate, so an unrecognised id is
+     * passed through untouched. An id belonging to the built-in catalogue is the one
+     * exception: it can only have been written for the built-in path, and pointing
+     * RetroArch at it names a core file it does not have and a save directory it never
+     * writes.
+     */
     private fun normalizeLegacyCoreName(coreName: String, platformSlug: String): String {
-        val validCores = EmulatorRegistry.getCoresForPlatform(platformSlug)
-        if (validCores.any { it.id == coreName }) {
+        val externalCores = EmulatorRegistry.getSelectableCores(platformSlug, isBuiltIn = false)
+        if (externalCores.any { it.id == coreName }) {
             return coreName
         }
-        val match = validCores.find { it.id.startsWith(coreName) }
+
+        val isBuiltinCore = com.nendo.argosy.libretro.LibretroCoreRegistry
+            .getCoresForPlatform(platformSlug).any { it.coreId == coreName }
+        if (isBuiltinCore) {
+            val fallback = EmulatorRegistry.getDefaultSelectableCore(platformSlug, isBuiltIn = false)?.id
+            if (fallback != null) {
+                Logger.warn(TAG, "Core '$coreName' is a built-in core; using '$fallback' for external RetroArch")
+                return fallback
+            }
+        }
+
+        val match = externalCores.find { it.id.startsWith(coreName) }
         if (match != null) {
             Logger.debug(TAG, "Core name corrected: $coreName -> ${match.id}")
             return match.id

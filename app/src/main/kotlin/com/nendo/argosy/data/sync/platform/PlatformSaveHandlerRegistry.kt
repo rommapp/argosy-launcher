@@ -1,6 +1,7 @@
 package com.nendo.argosy.data.sync.platform
 
 import android.content.Context
+import com.nendo.argosy.data.emulator.EmulatorRegistry
 import com.nendo.argosy.data.emulator.SavePathConfig
 import com.nendo.argosy.data.emulator.SavePathRegistry
 import com.nendo.argosy.data.platform.PlatformDefinitions
@@ -80,8 +81,37 @@ class PlatformSaveHandlerRegistry @Inject constructor(
      * layout. Used by [com.nendo.argosy.data.sync.SavePathResolver] for `findSaveFolderBySaveId`,
      * `resolveBasePath`, and `constructSavePath` dispatches.
      */
-    fun getFolderHandler(platformSlug: String): PlatformSaveHandler? =
+    fun getFolderHandler(platformSlug: String): FolderSaveHandler? =
         folderHandlers[canonicalSlug(platformSlug)]
+
+    /**
+     * The folder handler an emulator's saves go through, or null when it isn't a folder-based
+     * platform. Multi-platform emulators (RetroArch, builtin) resolve to nothing on purpose:
+     * they have no single folder layout to normalize a path against.
+     */
+    fun getFolderHandlerForEmulator(emulatorId: String): FolderSaveHandler? {
+        val platforms = EmulatorRegistry.getById(emulatorId)?.supportedPlatforms
+            ?: return null
+        val handlers = platforms.mapNotNull { folderHandlers[canonicalSlug(it)] }.distinct()
+        return handlers.singleOrNull()
+    }
+
+    /**
+     * Resolve a path the user picked to the root their platform actually scans from, so
+     * choosing a parent or a child of it lands in the same place. Returns the path unchanged
+     * for platforms that do not define a layout.
+     */
+    fun normalizeUserChosenSavePath(emulatorId: String, path: String): String {
+        val handler = getFolderHandlerForEmulator(emulatorId) ?: return path
+        val config = SavePathRegistry.getConfig(emulatorId) ?: return path
+        val resolved = handler.resolveBasePath(config, path) ?: return path
+        if (resolved != path) {
+            Logger.debug(TAG, "normalizeUserChosenSavePath: chosen=$path, resolved=$resolved, emulator=$emulatorId")
+        }
+        return resolved
+    }
+
+    fun pathIsPresent(path: String): Boolean = fal.exists(path) && fal.isDirectory(path)
 
     fun listPs2FolderMemcards(basePath: String): List<MemcardInfo> {
         val handler = folderHandlers["ps2"] as? Ps2FolderHandler ?: return emptyList()
@@ -103,7 +133,8 @@ class PlatformSaveHandlerRegistry @Inject constructor(
     }
 
     companion object {
-        private val RETROARCH_EMULATOR_IDS = setOf("retroarch", "retroarch_64")
+        private const val TAG = "PlatformSaveHandlerRegistry"
+        private val RETROARCH_EMULATOR_IDS = setOf("retroarch", "retroarch_64", "retroarch_32")
     }
 }
 
@@ -119,7 +150,7 @@ class PlatformSaveHandlerRegistry @Inject constructor(
 private class PspFolderHandler(
     context: Context,
     private val fal: FileAccessLayer,
-    private val saveArchiver: SaveArchiver
+    saveArchiver: SaveArchiver
 ) : FolderSaveHandler(context, fal, saveArchiver, platformSlug = "psp") {
 
     private val appContext = context
@@ -208,6 +239,10 @@ private class PspFolderHandler(
  * 3DS save layout: `{baseDir}/{id0}/{id1}/title/{category}/{shortTitleId}/data`. The id0/id1
  * folders are randomized per console install, so we walk the tree to find them. Includes a
  * 3DS-specific basePathOverride normalization (mounting `sdmc/Nintendo 3DS` if missing).
+ *
+ * Category and short title id are the two halves of the 16-hex save id. sigil reports the
+ * same split as `save_path`; splitting it here stays equivalent for every 16-hex id. See
+ * docs/save-id-to-path.md.
  */
 private class N3dsFolderHandler(
     context: Context,
@@ -218,6 +253,41 @@ private class N3dsFolderHandler(
     companion object {
         private const val TAG = "N3dsFolderHandler"
         private const val DEFAULT_CATEGORY = "00040000"
+        private const val SDMC_DIR = "sdmc"
+        private const val SD_ROOT = "Nintendo 3DS"
+        private const val TITLE_DATA_ROOT = "data"
+    }
+
+    /**
+     * A 3DS save unit is the `data` directory under `title/<high8>/<low8>`, so that is what
+     * an archive is rooted at and the title never appears inside it. Every archive, current
+     * ones included, lands here; the destination is what identifies the save.
+     */
+    override val unidentifiedArchiveRoots: Set<String> = setOf(TITLE_DATA_ROOT)
+
+    /**
+     * Saves live under `<userDir>/sdmc/Nintendo 3DS/<id0>/<id1>/title/...`, and which part of
+     * that a user considers "the save path" varies by emulator. Any level is accepted: a path
+     * containing the SD root is trimmed back to it, and one above it is walked down.
+     */
+    override fun normalizeBasePath(path: String): String {
+        val trimmed = path.trimEnd('/')
+        val segments = trimmed.split('/')
+        val rootIndex = segments.indexOfLast { it.equals(SD_ROOT, ignoreCase = true) }
+        if (rootIndex >= 0) {
+            return segments.take(rootIndex + 1).joinToString("/")
+        }
+
+        val candidates = listOf(
+            "$trimmed/$SD_ROOT",
+            "$trimmed/$SDMC_DIR/$SD_ROOT"
+        )
+        val resolved = candidates.firstOrNull { fal.exists(it) && fal.isDirectory(it) }
+        if (resolved != null) {
+            Logger.debug(TAG, "normalizeBasePath: resolved SD root below the chosen path | chosen=$path, base=$resolved")
+            return resolved
+        }
+        return trimmed
     }
 
     override fun findSaveFolderBySaveId(basePath: String, saveId: String): String? {
@@ -289,20 +359,6 @@ private class N3dsFolderHandler(
         return savePath
     }
 
-    override fun resolveBasePath(config: SavePathConfig, basePathOverride: String?): String? {
-        if (basePathOverride != null) {
-            return if (basePathOverride.endsWith("/sdmc/Nintendo 3DS") || basePathOverride.endsWith("/sdmc/Nintendo 3DS/")) {
-                basePathOverride.trimEnd('/')
-            } else {
-                "$basePathOverride/sdmc/Nintendo 3DS"
-            }
-        }
-
-        val resolvedPaths = SavePathRegistry.resolvePath(config, "3ds", null)
-        return resolvedPaths.firstOrNull { fal.exists(it) && fal.isDirectory(it) }
-            ?: resolvedPaths.firstOrNull()
-    }
-
     private fun newestFileTime(folderPath: String): Long {
         var newest = 0L
         fal.listFiles(folderPath)?.forEach { child ->
@@ -325,14 +381,74 @@ private class Ps2FolderHandler(
 
     companion object {
         private const val TAG = "Ps2FolderHandler"
-        private const val BA_PREFIX = "BA"
         private const val CARD_SUFFIX = ".ps2"
         private const val SUPERBLOCK_FILE = "_pcsx2_superblock"
+        private val REGION_PREFIXED = Regex("^B[AEI][A-Z]{4}")
+        private val BARE_SERIAL = Regex("^([A-Z]{4})(\\d+.*)$")
+    }
+
+    /**
+     * The save unit is the card, so an upload is rooted at the card's own name and that name
+     * identifies nothing. The game's folder sits one level below it, which is what has to be
+     * matched. Archives written before the save unit became the card are rooted at that
+     * folder directly, and both shapes are on servers now.
+     */
+    override fun matchArchive(tempFile: File, saveId: String): ArchiveRootMatch? {
+        super.matchArchive(tempFile, saveId)?.let { return it }
+        val holdsGameFolder = saveArchiver.peekFolderNames(tempFile).any { folderMatches(it, saveId) }
+        return if (holdsGameFolder) ArchiveRootMatch.CONTAINS else null
+    }
+
+    /**
+     * The target is the card. Stripping the archive's root is only correct when that root is
+     * the card itself; doing it to a game-folder-rooted archive would empty the folder's
+     * contents loose into the card, which is not a save layout any emulator reads.
+     */
+    override fun unpackArchive(tempFile: File, targetFolder: File, saveId: String?): Boolean {
+        val roots = saveArchiver.peekRootEntryNames(tempFile)
+        val rootIsGameFolder = saveId != null && roots.isNotEmpty() &&
+            roots.all { folderMatches(it, saveId) }
+
+        if (rootIsGameFolder) {
+            Logger.debug(TAG, "unpackArchive: archive is rooted at the game folder, keeping it | roots=$roots")
+            repairLooseCardEntries(targetFolder, roots)
+            return saveArchiver.unzipToFolder(tempFile, targetFolder)
+        }
+
+        Logger.debug(TAG, "unpackArchive: archive is rooted at the card, unwrapping it | roots=$roots")
+        return saveArchiver.unzipSingleFolder(tempFile, targetFolder)
+    }
+
+    /**
+     * A card that a previous build restored by stripping the game folder has that folder's
+     * files sitting loose beside the real entries. They are put back under the folder they
+     * came from before the restore overwrites them, so a card repairs itself by being synced
+     * rather than by hand. Anything that cannot be attributed to exactly one folder is left
+     * where it is.
+     */
+    private fun repairLooseCardEntries(card: File, gameFolders: Set<String>) {
+        val owner = gameFolders.singleOrNull() ?: return
+        if (!isFolderCard(card.path)) return
+
+        val loose = fal.listFiles(card.path).orEmpty()
+            .filter { it.isFile && it.name != SUPERBLOCK_FILE }
+        if (loose.isEmpty()) return
+
+        val ownerDir = File(card, owner)
+        if (!ownerDir.exists() && !ownerDir.mkdirs()) return
+
+        loose.forEach { entry ->
+            val moved = runCatching { File(entry.path).renameTo(File(ownerDir, entry.name)) }.getOrDefault(false)
+            Logger.warn(
+                TAG,
+                "repairLooseCardEntries: relocating a stray card entry | file=${entry.name}, into=$owner, moved=$moved"
+            )
+        }
     }
 
     override fun ensureContainerPrepared(targetFolder: File) {
         var dir: File? = targetFolder
-        while (dir != null && !dir.name.endsWith(CARD_SUFFIX, ignoreCase = true)) {
+        while (dir != null && !isFolderCard(dir.path)) {
             dir = dir.parentFile
         }
         val card = dir ?: return
@@ -345,8 +461,12 @@ private class Ps2FolderHandler(
         }
     }
 
+    /**
+     * The save unit is the card, not a single folder: a game owns every entry whose name
+     * starts with sigil's stem, so callers get the card and bundle the matches from it.
+     */
     override fun findSaveFolderBySaveId(basePath: String, saveId: String): String? {
-        Logger.debug(TAG, "findSaveFolderBySaveId: Searching | basePath=$basePath, serial=$saveId, normalized=${toFolderName(saveId)}")
+        Logger.debug(TAG, "findSaveFolderBySaveId: Searching | basePath=$basePath, stem=$saveId")
 
         if (!fal.exists(basePath) || !fal.isDirectory(basePath)) {
             Logger.debug(TAG, "findSaveFolderBySaveId: Base path does not exist | path=$basePath")
@@ -354,26 +474,26 @@ private class Ps2FolderHandler(
         }
 
         if (isFolderCard(basePath)) {
-            Logger.debug(TAG, "findSaveFolderBySaveId: basePath is a folder card, searching subfolders directly")
-            return findInCard(basePath, saveId)
+            val entries = findInCard(basePath, saveId)
+            Logger.debug(TAG, "findSaveFolderBySaveId: basePath is a folder card | matches=${entries.map { File(it).name }}")
+            return if (entries.isEmpty()) null else basePath
         }
 
         val folderCards = listCardDirsIn(basePath)
         Logger.debug(TAG, "findSaveFolderBySaveId: Found ${folderCards.size} memory card(s) | cards=${folderCards.map { it.name }}")
 
         val matches = folderCards.mapNotNull { card ->
-            findInCard(card.path, saveId)?.let { card to it }
+            findInCard(card.path, saveId).takeIf { it.isNotEmpty() }?.let { card to it }
         }
         when {
             matches.isEmpty() -> {
-                val exactMatch = saveId.replace("-", "")
-                Logger.debug(TAG, "findSaveFolderBySaveId: No match | serial=$saveId, tried=${toFolderName(saveId)}, withoutHyphens=$exactMatch.")
+                Logger.debug(TAG, "findSaveFolderBySaveId: No match | stem=$saveId")
                 return null
             }
             matches.size == 1 -> {
-                val (card, match) = matches[0]
-                Logger.debug(TAG, "findSaveFolderBySaveId: Match found | card=${card.name}, path=$match")
-                return match
+                val (card, entries) = matches[0]
+                Logger.debug(TAG, "findSaveFolderBySaveId: Match found | card=${card.name}, entries=${entries.map { File(it).name }}")
+                return card.path
             }
             else -> {
                 Logger.warn(
@@ -388,12 +508,25 @@ private class Ps2FolderHandler(
         }
     }
 
-    override fun isCanonicalFolderPath(savePath: String, saveId: String): Boolean =
-        File(savePath).name.equals(toFolderName(saveId), ignoreCase = true)
+    override fun findAllSaveFoldersBySaveId(basePath: String, saveId: String): List<String> {
+        if (!fal.exists(basePath) || !fal.isDirectory(basePath)) return emptyList()
+        if (isFolderCard(basePath)) return findInCard(basePath, saveId)
+        return listCardDirsIn(basePath)
+            .map { findInCard(it.path, saveId) }
+            .firstOrNull { it.isNotEmpty() }
+            .orEmpty()
+    }
 
+    override fun isCanonicalFolderPath(savePath: String, saveId: String): Boolean =
+        isFolderCard(savePath) && findInCard(savePath, saveId).isNotEmpty()
+
+    /**
+     * Restores land in the card itself; the archive carries the emulator's own entry names,
+     * so nothing here invents one.
+     */
     override fun constructSavePath(baseDir: String, saveId: String): String? {
         if (isFolderCard(baseDir)) {
-            return "$baseDir/${toFolderName(saveId)}"
+            return baseDir
         }
 
         val folderCards = listCardDirsIn(baseDir)
@@ -401,16 +534,17 @@ private class Ps2FolderHandler(
             0 -> "$baseDir/Shared.ps2"
             1 -> folderCards[0].path
             else -> {
+                val active = listFolderMemcards(baseDir).firstOrNull()?.path ?: folderCards[0].path
                 Logger.warn(
                     TAG,
-                    "constructSavePath: $baseDir contains ${folderCards.size} folder memcards " +
-                        "(${folderCards.map { it.name }}). Cannot pick a target -- set a preferred " +
-                        "memcard for PS2 save sync, or remove the unused cards."
+                    "constructSavePath: $baseDir has ${folderCards.size} folder memcards " +
+                        "(${folderCards.map { it.name }}); no preferred memcard set, defaulting to the " +
+                        "most-recently-written card=${File(active).name}. Set a preferred memcard to pin one."
                 )
-                return null
+                active
             }
         }
-        return "$cardDir/${toFolderName(saveId)}"
+        return cardDir
     }
 
     fun listFolderMemcards(basePath: String): List<MemcardInfo> {
@@ -442,11 +576,10 @@ private class Ps2FolderHandler(
                 (it.name.endsWith(CARD_SUFFIX, ignoreCase = true) || fal.exists("${it.path}/$SUPERBLOCK_FILE"))
         }
 
-    private fun findInCard(cardPath: String, saveId: String): String? {
-        val folders = fal.listFilesUnion(cardPath).filter { it.isDirectory }
-        val match = folders.firstOrNull { matchesFolderName(it.name, saveId) }
-        return match?.path
-    }
+    private fun findInCard(cardPath: String, saveId: String): List<String> =
+        fal.listFilesUnion(cardPath)
+            .filter { it.isDirectory && folderMatches(it.name, saveId) }
+            .map { it.path }
 
     private fun memcardInfoFor(cardPath: String): MemcardInfo {
         val name = File(cardPath).name
@@ -460,33 +593,40 @@ private class Ps2FolderHandler(
         )
     }
 
-    /** Normalizes a PS2 serial to its memcard folder name (`B` + territory + serial, per sigil ps2.c). */
-    private fun toFolderName(serial: String): String {
-        val cleaned = serial.replace("-", "").replace("_", "").uppercase()
-        val prefixed = Regex("^(B[A-Z])([A-Z]{4})(\\d+)$").find(cleaned)
-        if (prefixed != null) {
-            val (region, code, digits) = prefixed.destructured
-            return "$region$code-$digits"
-        }
-        val bare = Regex("^([A-Z]{4})(\\d+)$").find(cleaned)
-        return if (bare != null) {
-            val (code, digits) = bare.destructured
-            "${territoryPrefixFor(code)}$code-$digits"
-        } else if (cleaned.startsWith(BA_PREFIX)) {
-            cleaned
-        } else {
-            "$BA_PREFIX$cleaned"
-        }
+    /**
+     * Sigil reports `save_id` as a stem with usage folder-prefix: a game owns every card
+     * entry starting with it (`BASLUS-20152AC04`, `BASLUS-20152SYS`, ...). A stem that
+     * already carries its region prefix is taken as given; a bare serial still gets one
+     * derived, because callers fall back to the raw title id when no save id was extracted.
+     */
+    private fun normalizeForMatch(value: String): String =
+        value.replace("-", "").replace("_", "").uppercase()
+
+    private fun resolveStem(saveId: String): String {
+        val cleaned = normalizeForMatch(saveId)
+        if (REGION_PREFIXED.containsMatchIn(cleaned)) return cleaned
+        val bare = BARE_SERIAL.find(cleaned) ?: return cleaned
+        val (code, rest) = bare.destructured
+        return "${territoryPrefixFor(code)}$code$rest"
     }
 
     private fun territoryPrefixFor(code: String): String = when (code[2]) {
         'E' -> "BE"
         'P', 'J', 'K' -> "BI"
-        else -> BA_PREFIX
+        else -> "BA"
     }
 
-    private fun matchesFolderName(folderName: String, serial: String): Boolean {
-        val expected = toFolderName(serial).replace("-", "")
-        return folderName.replace("-", "").startsWith(expected, ignoreCase = true)
+    /**
+     * Region-agnostic form, used only as a fallback: a `save_id` extracted by an older
+     * sigil can carry the wrong region prefix, and dropping it still identifies the disc.
+     */
+    private fun withoutRegionPrefix(stem: String): String =
+        if (REGION_PREFIXED.containsMatchIn(stem)) stem.substring(2) else stem
+
+    override fun folderMatches(folderName: String, saveId: String): Boolean {
+        val folder = normalizeForMatch(folderName)
+        val stem = resolveStem(saveId)
+        if (folder.startsWith(stem)) return true
+        return withoutRegionPrefix(folder).startsWith(withoutRegionPrefix(stem))
     }
 }

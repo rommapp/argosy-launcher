@@ -45,6 +45,14 @@ object DimensionTokens {
         const val lg = 14
     }
 
+    object Avatar {
+        const val xs = 32
+        const val sm = 36
+        const val md = 40
+        const val lg = 48
+        const val xl = 56
+    }
+
     object Layout {
         const val gameCardWidth = 180
         const val gameCardHeight = 240
@@ -64,6 +72,9 @@ object DimensionTokens {
         const val modalWidth = 400
         const val modalWidthLg = 520
         const val modalWidthXl = 575
+        const val menuBreakpointWide = 600
+        const val inGameMenuWidth = 300
+        const val inGameMenuWidthWide = 560
     }
 
     object Elevation {

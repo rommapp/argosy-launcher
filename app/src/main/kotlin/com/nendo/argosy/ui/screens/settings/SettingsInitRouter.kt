@@ -354,16 +354,22 @@ internal fun routeLoadSettings(vm: SettingsViewModel) {
             val effectiveEmulatorDef = selectedEmulatorDef ?: if (adHocConfig != null) null else autoResolvedEmulator
             val isRetroArch = effectiveEmulatorDef?.launchConfig is com.nendo.argosy.data.emulator.LaunchConfig.RetroArch
             val hasCoreSelection = effectiveEmulatorDef?.launchConfig?.isCoreSelectable == true
+            val isBuiltInEmulator = effectiveEmulatorDef?.launchConfig is com.nendo.argosy.data.emulator.LaunchConfig.BuiltIn
             val availableCores = if (hasCoreSelection) {
-                EmulatorRegistry.getCoresForPlatform(platform.slug)
+                EmulatorRegistry.getSelectableCores(platform.slug, isBuiltInEmulator)
             } else {
                 emptyList()
             }
 
             val storedCore = defaultConfig?.coreName
-            val defaultCore = EmulatorRegistry.getDefaultCore(platform.slug)?.id
+            val defaultCore = EmulatorRegistry.getDefaultSelectableCore(platform.slug, isBuiltInEmulator)?.id
             val selectedCore = when {
                 !hasCoreSelection -> null
+                isBuiltInEmulator -> vm.builtinCoreResolver.resolveCoreId(
+                    gameId = null,
+                    platformId = platform.id,
+                    platformSlug = platform.slug
+                )
                 storedCore != null && availableCores.any { it.id == storedCore } -> storedCore
                 else -> defaultCore ?: availableCores.firstOrNull()?.id
             }
@@ -560,12 +566,14 @@ internal fun routeLoadSettings(vm: SettingsViewModel) {
         val anchoredPlatformId = vm._uiState.value.emulators.platforms
             .getOrNull(vm._uiState.value.platformDetail.platformIndex)?.platform?.id
         val archOverride = vm.libretroSettingsRepo.getArchitectureOverride().first()
+        val ingameMenuTwoColumn = vm.libretroSettingsRepo.getBuiltinEmulatorSettings().first().ingameMenuTwoColumn
         vm.emulatorDelegate.updateState(EmulatorState(
             platforms = filteredPlatformConfigs,
             installedEmulators = installedEmulators,
             platformSubFocusIndex = currentEmulatorState.platformSubFocusIndex,
             builtinLibretroEnabled = prefs.builtinLibretroEnabled,
             architectureDisplay = architectureAbiToDisplay(archOverride),
+            ingameMenuTwoColumn = ingameMenuTwoColumn,
             emulatorUpdateVersions = currentEmulatorState.emulatorUpdateVersions
         ))
         vm.emulatorDelegate.updateCoreCounts()
@@ -677,6 +685,7 @@ internal fun routeLoadSettings(vm: SettingsViewModel) {
             totalPlatforms = platforms.count { it.gameCount > 0 },
             totalGames = platforms.sumOf { it.gameCount },
             saveSyncEnabled = prefs.saveSyncEnabled,
+            secureSaves = prefs.secureSaves,
             stateCacheEnabled = prefs.stateCacheEnabled,
             saveCacheLimit = prefs.saveCacheLimit,
             pendingUploadsCount = vm.saveCacheDao.countNeedingRemoteSync(),

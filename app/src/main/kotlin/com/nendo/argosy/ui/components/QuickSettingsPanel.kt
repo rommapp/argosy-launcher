@@ -30,6 +30,7 @@ import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.MusicOff
 import androidx.compose.material.icons.filled.SettingsBrightness
 import androidx.compose.material.icons.filled.Speed
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material.icons.filled.Toys
 import androidx.compose.material.icons.filled.Vibration
@@ -54,6 +55,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import com.nendo.argosy.data.preferences.ThemeMode
 import com.nendo.argosy.ui.primitives.ArgosyToggle
+import com.nendo.argosy.ui.quaypass.QuayPassIcons
 import com.nendo.argosy.ui.primitives.ArgosyTrackSlider
 import com.nendo.argosy.ui.screens.settings.menu.SettingsLayout
 import com.nendo.argosy.ui.theme.Dimens
@@ -99,7 +101,9 @@ data class QuickSettingsState(
     val systemVolume: Float = 1f,
     val screenBrightness: Float = 0.5f,
     val isDualScreenActive: Boolean = false,
-    val isRolesSwapped: Boolean = false
+    val isRolesSwapped: Boolean = false,
+    val isSocialLinked: Boolean = false,
+    val quayPassEnabled: Boolean = false
 )
 
 sealed class QuickSettingsItem(
@@ -139,14 +143,22 @@ sealed class QuickSettingsItem(
         visibleWhen = { it.isDualScreenActive }
     )
 
+    data object QuayPass : QuickSettingsItem(
+        "quaypass", "social",
+        visibleWhen = { it.isSocialLinked }
+    )
+
     companion object {
         private val DeviceDivider = Divider("device")
+        private val SocialDivider = Divider("social")
 
         val ALL: List<QuickSettingsItem> = listOf(
             Performance, Fan, FanSpeed,
             DeviceDivider,
             Theme, SystemVolume, ScreenBrightness,
-            Haptic, VibrationStrength, UISounds, BGM, SwapDisplays
+            Haptic, VibrationStrength, UISounds, BGM, SwapDisplays,
+            SocialDivider,
+            QuayPass
         )
     }
 }
@@ -183,6 +195,7 @@ fun QuickSettingsPanel(
     onVolumeChange: (Float) -> Unit,
     onBrightnessChange: (Float) -> Unit,
     onSwapDisplays: () -> Unit = {},
+    onQuayPassToggle: () -> Unit = {},
     onDismiss: () -> Unit,
     footerHints: List<Pair<InputButton, String>> = listOf(InputButton.B to "Close"),
     modifier: Modifier = Modifier
@@ -354,6 +367,14 @@ fun QuickSettingsPanel(
                                 isEnabled = state.isRolesSwapped,
                                 isFocused = isFocused(item),
                                 onClick = onSwapDisplays
+                            )
+
+                            QuickSettingsItem.QuayPass -> QuickSettingToggle(
+                                icon = if (state.quayPassEnabled) QuayPassIcons.On else QuayPassIcons.Off,
+                                label = "QuayPass",
+                                isEnabled = state.quayPassEnabled,
+                                isFocused = isFocused(item),
+                                onClick = onQuayPassToggle
                             )
                         }
                     }

@@ -34,8 +34,8 @@ android {
         applicationId = "com.nendo.argosy"
         minSdk = 26
         targetSdk = 35
-        versionCode = 311
-        versionName = "2.4.0-beta.1"
+        versionCode = 314
+        versionName = "2.4.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -58,6 +58,15 @@ android {
         buildConfigField("String", "DISCORD_APP_ID", "\"${envString("DISCORD_APP_ID")}\"")
         buildConfigField("Boolean", "DISCORD_SDK_ENABLED", envString("DISCORD_SDK_ENABLED", "false"))
         buildConfigField("String", "SOCIAL_API_URL", "\"https://api.argosy.dev/\"")
+        // QuayPass server signing pubkey(s): comma-separated base64 Ed25519
+        // public keys. Multiple values supported for zero-downtime rotation.
+        // Empty in dev/CI when no server keypair has been provisioned;
+        // QuayPassCredentialManager fails closed when empty.
+        buildConfigField(
+            "String",
+            "QUAYPASS_SERVER_PUBKEYS",
+            "\"${envString("QUAYPASS_SERVER_PUBKEYS")}\""
+        )
         buildConfigField("int", "DOLPHIN_SYS_VERSION", "2")
         buildConfigField("int", "PPSSPP_SYS_VERSION", "1")
     }
@@ -226,6 +235,9 @@ dependencies {
     implementation(libs.bundles.network)
     ksp(libs.moshi.kotlin)
 
+    // CBOR (QuayPass BLE wire format)
+    implementation(libs.upokecenter.cbor)
+
     // Image loading
     implementation(libs.coil.compose)
     implementation(libs.coil.svg)
@@ -247,6 +259,9 @@ dependencies {
 
     // Steam (JavaSteam)
     implementation(libs.bundles.steam)
+
+    // QuayPass credential Ed25519 verification (Conscrypt lacks an Ed25519 KeyFactory)
+    implementation(libs.bouncycastle)
 
     // argosy-sigil — title id / serial extraction (replaces in-tree :libchdr +
     // Iso9660Utils + AesXts + ZArchiveReader + GameCubeHeaderParser.parseRomHeader)
@@ -275,4 +290,20 @@ dependencies {
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.ui.test.junit4)
     androidTestImplementation(libs.room.testing)
+}
+
+val verifyQuayPassReleaseConfig = tasks.register("verifyQuayPassReleaseConfig") {
+    doLast {
+        if (envString("QUAYPASS_SERVER_PUBKEYS").isBlank()) {
+            throw GradleException(
+                "QUAYPASS_SERVER_PUBKEYS is empty. A release build cannot verify QuayPass " +
+                    "credentials and would ship the feature permanently dark. Set it in .env " +
+                    "or the build environment."
+            )
+        }
+    }
+}
+
+tasks.matching { it.name == "assembleRelease" || it.name == "bundleRelease" }.configureEach {
+    dependsOn(verifyQuayPassReleaseConfig)
 }

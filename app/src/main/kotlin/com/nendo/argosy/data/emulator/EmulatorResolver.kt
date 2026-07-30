@@ -23,6 +23,12 @@ class EmulatorResolver @Inject constructor(
         return emulatorDetector.getByPackage(packageName)?.id
     }
 
+    /**
+     * The id save and state path resolution expect: family-variant defs collapse to their
+     * base id, since [RetroArchPathResolver] and [StatePathRegistry] key on exact ids.
+     */
+    fun canonicalEmulatorId(def: EmulatorDef): String = resolveEmulatorId(def.packageName) ?: def.id
+
     suspend fun ensureDetected() {
         if (emulatorDetector.installedEmulators.value.isEmpty()) {
             emulatorDetector.detectEmulators()
@@ -70,6 +76,16 @@ class EmulatorResolver @Inject constructor(
 
     fun getPreferredEmulator(platformSlug: String): InstalledEmulator? {
         return emulatorDetector.getPreferredEmulator(platformSlug)
+    }
+
+    /**
+     * Preferred emulator for a platform honouring the built-in toggle, as the id save and
+     * state paths key on. Used where a configured package resolves to no known emulator.
+     */
+    suspend fun getPreferredEmulatorId(platformSlug: String): String? {
+        val builtinEnabled = userPreferencesRepository.userPreferences.first().builtinLibretroEnabled
+        val def = emulatorDetector.getPreferredEmulator(platformSlug, builtinEnabled)?.def ?: return null
+        return canonicalEmulatorId(def)
     }
 
     private fun EmulatorConfigEntity?.acceptableLaunchPackage(

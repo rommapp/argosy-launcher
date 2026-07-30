@@ -174,7 +174,7 @@ internal fun routeOpenAppPickerModal(vm: SettingsViewModel, platformId: Long) {
     vm.viewModelScope.launch {
         val config = vm._uiState.value.emulators.platforms.find { it.platform.id == platformId }
             ?: return@launch
-        val apps = vm.installedAppResolver.getLaunchableUserApps()
+        val apps = vm.installedAppResolver.getLaunchableApps()
         vm.emulatorDelegate.showAppPickerModal(
             AppPickerModalState(
                 platformId = platformId,

@@ -84,7 +84,6 @@ import com.nendo.argosy.ui.common.rememberFileImageModel
 import com.nendo.argosy.ui.components.Modal
 import com.nendo.argosy.ui.screens.doodle.GamePickerItem
 import com.nendo.argosy.ui.screens.doodle.CanvasSize
-import com.nendo.argosy.ui.screens.doodle.DoodleEncoder
 import com.nendo.argosy.ui.screens.doodle.DoodlePreview
 import com.nendo.argosy.ui.components.FooterHintsWithState
 import com.nendo.argosy.ui.components.FooterSpacer
@@ -96,6 +95,8 @@ import com.nendo.argosy.ui.navigation.Screen
 import com.nendo.argosy.ui.theme.LocalArgosyTheme
 import com.nendo.argosy.ui.util.clickableNoFocus
 import com.nendo.argosy.util.formatRelativeTime
+import com.nendo.argosy.ui.screens.doodle.rememberDecodedDoodle
+import com.nendo.argosy.ui.screens.doodle.feedPixelGap
 
 @Composable
 fun SocialScreen(
@@ -106,10 +107,11 @@ fun SocialScreen(
     onViewProfile: (String) -> Unit = {},
     onNavigateToGameDetail: (Int) -> Unit = {},
     onNavigateToSocialSettings: () -> Unit = {},
+    onNavigateToAvatarEditor: () -> Unit = {},
     viewModel: SocialViewModel = hiltViewModel()
 ) {
     val inputDispatcher = LocalInputDispatcher.current
-    val inputHandler = remember(onBack, onDrawerToggle, onOpenEventDetail, onCreatePost, onViewProfile, onNavigateToGameDetail, onNavigateToSocialSettings) {
+    val inputHandler = remember(onBack, onDrawerToggle, onOpenEventDetail, onCreatePost, onViewProfile, onNavigateToGameDetail, onNavigateToSocialSettings, onNavigateToAvatarEditor) {
         viewModel.createInputHandler(
             onBack = onBack,
             onOpenEventDetail = onOpenEventDetail,
@@ -120,7 +122,8 @@ fun SocialScreen(
             },
             onDrawerToggle = onDrawerToggle,
             onNavigateToGameDetail = onNavigateToGameDetail,
-            onNavigateToSocialSettings = onNavigateToSocialSettings
+            onNavigateToSocialSettings = onNavigateToSocialSettings,
+            onNavigateToAvatarEditor = onNavigateToAvatarEditor
         )
     }
 
@@ -200,12 +203,19 @@ fun SocialScreen(
     }
 
     LaunchedEffect(uiState.focusedFriendIndex) {
-        if (uiState.selectedTab == SocialTab.FRIENDS && uiState.friends.isNotEmpty() && uiState.focusedFriendIndex in uiState.friends.indices) {
+        val friendsTabCount = uiState.friendsTabCount
+        if (uiState.selectedTab == SocialTab.FRIENDS && friendsTabCount > 0 && uiState.focusedFriendIndex in 0 until friendsTabCount) {
+            val itemIndex = friendsFocusToItemIndex(
+                uiState.focusedFriendIndex,
+                uiState.receivedRequests.size,
+                uiState.sentRequests.size,
+                uiState.friends.size
+            )
             val layoutInfo = friendsListState.layoutInfo
             val viewportHeight = layoutInfo.viewportEndOffset - layoutInfo.viewportStartOffset
             val itemHeight = layoutInfo.visibleItemsInfo.firstOrNull()?.size ?: 80
             val centerOffset = (viewportHeight - itemHeight) / 2
-            friendsListState.animateScrollToItem(uiState.focusedFriendIndex, -centerOffset)
+            friendsListState.animateScrollToItem(itemIndex, -centerOffset)
         }
     }
 
@@ -303,10 +313,15 @@ fun SocialScreen(
                         } else {
                             FriendsTabContent(
                                 friends = uiState.friends,
+                                receivedRequests = uiState.receivedRequests,
+                                sentRequests = uiState.sentRequests,
                                 focusedIndex = uiState.focusedFriendIndex,
                                 listState = friendsListState,
                                 onViewProfile = onViewProfile,
                                 onToggleFavorite = { friendId -> viewModel.toggleFavoriteFriend(friendId) },
+                                onAcceptRequest = { userId -> viewModel.acceptRequest(userId) },
+                                onDeclineRequest = { userId -> viewModel.declineRequest(userId) },
+                                onCancelRequest = { userId -> viewModel.cancelRequest(userId) },
                                 netplayPreflight = { session -> viewModel.runNetplayPreflight(session) },
                                 onJoinNetplaySession = { friend, session ->
                                     viewModel.launchNetplayJoin(friend, session)
@@ -348,7 +363,9 @@ fun SocialScreen(
                                 userProfile = uiState.userProfile,
                                 isLoadingProfile = uiState.isLoadingProfile,
                                 focusIndex = uiState.profileFocusIndex,
-                                listState = profileListState
+                                listState = profileListState,
+                                avatarDoodle = uiState.activeAvatarDoodle,
+                                onEditAvatar = { viewModel.showAvatarModal() }
                             )
                         }
                     }
@@ -368,24 +385,59 @@ fun SocialScreen(
                             add(FooterHintItem(InputButton.SELECT, "Options"))
                         }
                         SocialTab.FRIENDS -> {
-                            val focusedFriend = uiState.friends.getOrNull(uiState.focusedFriendIndex)
-                            val canJoin = focusedFriend != null && focusedFriend.id in uiState.joinableFriendIds
-                            val primaryLabel = if (canJoin) "Join" else "Profile"
-                            add(FooterHintItem(InputButton.A, primaryLabel, enabled = uiState.friends.isNotEmpty()))
-                            add(FooterHintItem(InputButton.Y, "Favorite", enabled = uiState.friends.isNotEmpty()))
+                            val receivedCount = uiState.receivedRequests.size
+                            val sentCount = uiState.sentRequests.size
+                            val idx = uiState.focusedFriendIndex
+                            when {
+                                idx < receivedCount -> {
+                                    add(FooterHintItem(InputButton.A, "Accept"))
+                                    add(FooterHintItem(InputButton.Y, "Decline"))
+                                }
+                                idx < receivedCount + sentCount -> {
+                                    add(FooterHintItem(InputButton.A, "Cancel"))
+                                }
+                                else -> {
+                                    val focusedFriend = uiState.friends.getOrNull(idx - receivedCount - sentCount)
+                                    val canJoin = focusedFriend != null && focusedFriend.id in uiState.joinableFriendIds
+                                    val primaryLabel = if (canJoin) "Join" else "Profile"
+                                    add(FooterHintItem(InputButton.A, primaryLabel, enabled = uiState.friends.isNotEmpty()))
+                                    add(FooterHintItem(InputButton.Y, "Favorite", enabled = uiState.friends.isNotEmpty()))
+                                }
+                            }
                         }
                         SocialTab.NOTIFICATIONS -> {
                             add(FooterHintItem(InputButton.A, "Open", enabled = uiState.notifications.isNotEmpty()))
                             add(FooterHintItem(InputButton.Y, "Read All", enabled = uiState.unreadCount > 0))
                         }
                         SocialTab.PROFILE -> {
-                            add(FooterHintItem(InputButton.A, "View Game", enabled = uiState.focusedGameInLibrary))
+                            if (uiState.profileFocusIndex == 0) {
+                                add(FooterHintItem(InputButton.A, "Avatar"))
+                            } else {
+                                add(FooterHintItem(InputButton.A, "View Game", enabled = uiState.focusedGameInLibrary))
+                            }
                             add(FooterHintItem(InputButton.SELECT, "Settings"))
                         }
                     }
                 }
             )
             FooterSpacer()
+        }
+
+        if (uiState.showAvatarModal) {
+            AvatarOptionsModal(
+                options = uiState.avatarModalOptions,
+                focusIndex = uiState.avatarModalFocusIndex,
+                onAction = { option ->
+                    when (option) {
+                        AvatarModalOption.EDIT_DOODLE -> {
+                            viewModel.hideAvatarModal()
+                            onNavigateToAvatarEditor()
+                        }
+                        else -> viewModel.confirmAvatarModalOption(option)
+                    }
+                },
+                onDismiss = { viewModel.hideAvatarModal() }
+            )
         }
 
         if (optionsState.showOptionsModal) {
@@ -884,21 +936,8 @@ private fun DoodleCard(
     val body = event.payload?.get("body") as? String
     val displayText = caption?.takeIf { it.isNotBlank() } ?: body
 
-    val decodedDoodle = remember(doodleData) {
-        doodleData?.let {
-            try {
-                DoodleEncoder.decodeFromBase64(it)
-            } catch (e: Exception) {
-                null
-            }
-        }
-    }
-
-    val pixelGap = when (decodedDoodle?.size ?: CanvasSize.MEDIUM) {
-        CanvasSize.SMALL -> 2f
-        CanvasSize.MEDIUM -> 1f
-        CanvasSize.LARGE -> 0f
-    }
+    val decodedDoodle = rememberDecodedDoodle(doodleData)
+    val pixelGap = (decodedDoodle?.size ?: CanvasSize.MEDIUM).feedPixelGap
 
     Card(
         modifier = Modifier

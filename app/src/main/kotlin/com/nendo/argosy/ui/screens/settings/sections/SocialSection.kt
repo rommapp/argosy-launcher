@@ -55,7 +55,8 @@ import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalArgosyTheme
 
 internal data class SocialLayoutState(
-    val isConnected: Boolean
+    val isConnected: Boolean,
+    val hasAvatarDoodle: Boolean = false
 )
 
 internal sealed class SocialItem(
@@ -75,11 +76,17 @@ internal sealed class SocialItem(
         : SocialItem(key, section, visibleWhen)
 
     data object AccountInfo : SocialItem("accountInfo", "account")
+    data object EditAvatar : SocialItem("editAvatar", "account")
+    data object UseDoodleAvatar : SocialItem(
+        "useDoodleAvatar", "account",
+        visibleWhen = { it.isConnected && it.hasAvatarDoodle }
+    )
     data object OnlineStatus : SocialItem("onlineStatus", "privacy")
     data object ShowNowPlaying : SocialItem("showNowPlaying", "privacy")
     data object NotifyFriendOnline : SocialItem("notifyFriendOnline", "notifications")
     data object NotifyFriendPlaying : SocialItem("notifyFriendPlaying", "notifications")
     data object SuppressInGame : SocialItem("suppressInGame", "notifications")
+    data object QuayPassEnabled : SocialItem("quayPassEnabled", "quaypass")
     data object Unlink : SocialItem("unlink", "unlink")
 
     companion object {
@@ -87,12 +94,15 @@ internal sealed class SocialItem(
         private val PrivacyHeader = Header("privacyHeader", "privacy", "PRIVACY")
         private val NotificationsHeader = Header("notificationsHeader", "notifications", "NOTIFICATIONS")
         private val NotificationsSpacer = SectionSpacer("notificationsSpacer", "notifications")
+        private val QuayPassSpacer = SectionSpacer("quayPassSpacer", "quaypass")
+        private val QuayPassHeader = Header("quayPassHeader", "quaypass", "QUAYPASS")
         private val UnlinkSpacer = SectionSpacer("unlinkSpacer", "unlink")
 
         val ALL: List<SocialItem> = listOf(
-            AccountHeader, AccountInfo,
+            AccountHeader, AccountInfo, EditAvatar, UseDoodleAvatar,
             PrivacyHeader, OnlineStatus, ShowNowPlaying,
             NotificationsSpacer, NotificationsHeader, NotifyFriendOnline, NotifyFriendPlaying, SuppressInGame,
+            QuayPassSpacer, QuayPassHeader, QuayPassEnabled,
             UnlinkSpacer, Unlink
         )
     }
@@ -108,17 +118,20 @@ private val socialLayout = SettingsLayout<SocialItem, SocialLayoutState>(
             "account" -> "ACCOUNT"
             "privacy" -> "PRIVACY"
             "notifications" -> "NOTIFICATIONS"
+            "quaypass" -> "QUAYPASS"
             else -> null
         }
     }
 )
 
-internal fun socialSections() =
-    socialLayout.buildSections(SocialLayoutState(isConnected = true))
+internal fun socialSections(hasAvatarDoodle: Boolean = false) =
+    socialLayout.buildSections(SocialLayoutState(isConnected = true, hasAvatarDoodle = hasAvatarDoodle))
 
 internal fun socialMaxFocusIndex(social: SocialState): Int {
     return when (social.authStatus) {
-        SocialAuthStatus.CONNECTED -> socialLayout.maxFocusIndex(SocialLayoutState(isConnected = true))
+        SocialAuthStatus.CONNECTED -> socialLayout.maxFocusIndex(
+            SocialLayoutState(isConnected = true, hasAvatarDoodle = social.avatarDoodle != null)
+        )
         else -> 0
     }
 }
@@ -127,11 +140,17 @@ internal fun socialItemAtFocusIndex(focusIndex: Int, state: SocialLayoutState): 
     socialLayout.itemAtFocusIndex(focusIndex, state)
 
 @Composable
-fun SocialSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
+fun SocialSection(
+    uiState: SettingsUiState,
+    viewModel: SettingsViewModel
+) {
     val social = uiState.social
 
-    val layoutState = remember(social.authStatus) {
-        SocialLayoutState(isConnected = social.authStatus == SocialAuthStatus.CONNECTED)
+    val layoutState = remember(social.authStatus, social.avatarDoodle) {
+        SocialLayoutState(
+            isConnected = social.authStatus == SocialAuthStatus.CONNECTED,
+            hasAvatarDoodle = social.avatarDoodle != null
+        )
     }
 
     fun isFocused(item: SocialItem): Boolean =
@@ -162,7 +181,27 @@ fun SocialSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                             username = social.username ?: "",
                             displayName = social.displayName,
                             avatarColor = social.avatarColor,
+                            avatarDoodle = social.avatarDoodle.takeIf { social.avatarUseDoodle },
                             isFocused = isFocused(item)
+                        )
+
+                        SocialItem.EditAvatar -> ActionPreference(
+                            title = "Edit Avatar Doodle",
+                            subtitle = "Draw a custom avatar",
+                            isFocused = isFocused(item),
+                            onClick = { viewModel.openAvatarEditor() }
+                        )
+
+                        SocialItem.UseDoodleAvatar -> SwitchPreference(
+                            title = "Use Doodle Avatar",
+                            subtitle = if (social.avatarUseDoodle) {
+                                "Showing your doodle"
+                            } else {
+                                "Showing your initials"
+                            },
+                            isEnabled = social.avatarUseDoodle,
+                            isFocused = isFocused(item),
+                            onToggle = { viewModel.setSocialAvatarUseDoodle(it) }
                         )
 
                         SocialItem.OnlineStatus -> SwitchPreference(
@@ -231,6 +270,24 @@ fun SocialSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                             isEnabled = social.suppressNotificationsInGame && social.onlineStatusEnabled,
                             isFocused = isFocused(item),
                             onToggle = { if (social.onlineStatusEnabled) viewModel.setSocialSuppressNotificationsInGame(it) }
+                        )
+
+                        SocialItem.QuayPassEnabled -> SwitchPreference(
+                            title = "QuayPass",
+                            subtitle = if (social.quayPassEnabled) {
+                                "Pass nearby travelers at Check-In"
+                            } else {
+                                "Off"
+                            },
+                            isEnabled = social.quayPassEnabled,
+                            isFocused = isFocused(item),
+                            onToggle = { requested ->
+                                if (requested) {
+                                    viewModel.requestEnableQuayPass()
+                                } else {
+                                    viewModel.setQuayPassEnabled(false)
+                                }
+                            }
                         )
 
                         SocialItem.Unlink -> ActionPreference(
@@ -551,6 +608,7 @@ private fun AccountInfoCard(
     username: String,
     displayName: String?,
     avatarColor: String?,
+    avatarDoodle: String?,
     isFocused: Boolean
 ) {
     val backgroundColor = if (isFocused) {
@@ -565,14 +623,6 @@ private fun AccountInfoCard(
         MaterialTheme.colorScheme.onSurface
     }
 
-    val parsedColor = remember(avatarColor) {
-        try {
-            avatarColor?.let { Color(android.graphics.Color.parseColor(it)) }
-        } catch (e: Exception) {
-            null
-        }
-    }
-
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -581,19 +631,12 @@ private fun AccountInfoCard(
             .padding(Dimens.spacingMd),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Box(
-            modifier = Modifier
-                .size(40.dp)
-                .clip(RoundedCornerShape(20.dp))
-                .background(parsedColor ?: MaterialTheme.colorScheme.primary),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = (displayName ?: username).take(1).uppercase(),
-                style = MaterialTheme.typography.titleMedium,
-                color = Color.White
-            )
-        }
+        com.nendo.argosy.ui.components.friends.SocialAvatar(
+            displayName = displayName ?: username,
+            avatarColor = avatarColor,
+            size = Dimens.avatarMd,
+            avatarDoodle = avatarDoodle
+        )
 
         Spacer(modifier = Modifier.width(Dimens.spacingMd))
 

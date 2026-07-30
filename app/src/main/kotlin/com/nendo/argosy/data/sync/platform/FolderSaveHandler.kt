@@ -21,7 +21,7 @@ import java.io.File
 open class FolderSaveHandler(
     private val context: Context,
     private val fal: FileAccessLayer,
-    private val saveArchiver: SaveArchiver,
+    protected val saveArchiver: SaveArchiver,
     val platformSlug: String,
     private val tag: String = "FolderSaveHandler[$platformSlug]"
 ) : PlatformSaveHandler {
@@ -58,15 +58,36 @@ open class FolderSaveHandler(
                 ?: return@withContext ExtractResult(false, null, "Cannot construct $platformSlug save path")
         }
 
+        val saveId = context.saveId
+        if (saveId != null) {
+            val roots = saveArchiver.peekRootEntryNames(tempFile)
+            val tier = matchArchive(tempFile, saveId)
+            if (tier == null) {
+                Logger.error(
+                    tag,
+                    "extractDownload: archive does not hold this save | saveId=$saveId, " +
+                        "roots=$roots, target=$targetPath. Refusing to unpack it."
+                )
+                return@withContext ExtractResult(
+                    false,
+                    null,
+                    "Archive contents do not match $saveId (top level: ${roots.joinToString().ifEmpty { "no directories" }})"
+                )
+            }
+            if (tier != ArchiveRootMatch.EXACT) {
+                Logger.debug(tag, "extractDownload: archive matched on $tier | saveId=$saveId, roots=$roots")
+            }
+        }
+
         val targetFolder = File(targetPath)
         targetFolder.mkdirs()
         ensureContainerPrepared(targetFolder)
 
-        context.saveId?.let { pruneNonCanonicalSiblings(targetFolder, it) }
+        saveId?.let { pruneNonCanonicalSiblings(targetFolder, it) }
 
         val archiveRoot = saveArchiver.peekRootFolderName(tempFile)
         val success = try {
-            saveArchiver.unzipSingleFolder(tempFile, targetFolder)
+            unpackArchive(tempFile, targetFolder, saveId)
         } catch (e: com.nendo.argosy.data.sync.CorruptZipException) {
             Logger.error(tag, "extractDownload: Server zip is corrupt | target=$targetPath, archiveRoot=$archiveRoot, tempFile=${tempFile.name}, ${e.message}")
             return@withContext ExtractResult(false, null, "Corrupt server zip: ${e.message}", corruptZip = true)
@@ -79,6 +100,21 @@ open class FolderSaveHandler(
         Logger.debug(tag, "extractDownload: Complete | target=$targetPath")
         ExtractResult(true, targetPath)
     }
+
+    /**
+     * Whether [tempFile] holds the save [saveId] names, and on what strength. Platforms whose
+     * save unit is a container rather than the game's own folder look deeper than the root
+     * entry, since the root there names the container and identifies nothing.
+     */
+    open fun matchArchive(tempFile: File, saveId: String): ArchiveRootMatch? =
+        saveArchiver.peekRootEntryNames(tempFile).firstNotNullOfOrNull { matchArchiveRoot(it, saveId) }
+
+    /**
+     * Places the archive into the resolved target. The default strips a single common root,
+     * because the archive is the save folder itself and the target is that same folder.
+     */
+    protected open fun unpackArchive(tempFile: File, targetFolder: File, saveId: String?): Boolean =
+        saveArchiver.unzipSingleFolder(tempFile, targetFolder)
 
     /**
      * Default folder lookup uses case-insensitive equality. Platforms with prefix or normalized-
@@ -112,13 +148,66 @@ open class FolderSaveHandler(
 
     override fun constructSavePath(baseDir: String, saveId: String): String? = "$baseDir/$saveId"
 
+    /** True when [folderName] is one of [saveId]'s own per-game entries per this platform's match rule. */
+    fun isEntryForSaveId(folderName: String, saveId: String): Boolean = folderMatches(folderName, saveId)
+
+    /** How strongly an archive's top-level entry corresponds to the save it claims to be. */
+    enum class ArchiveRootMatch {
+        EXACT,
+        PREFIX,
+        CONTAINS,
+
+        /**
+         * A root that names no title, because the platform's save unit is a fixed directory
+         * below the title rather than the title folder itself. It cannot confirm or deny the
+         * save, so it is placed on the strength of the resolved destination alone.
+         */
+        UNIDENTIFIED
+    }
+
+    /**
+     * Sigil reports whether a save id addresses its folder exactly or as a prefix, so an
+     * archive is accepted on the same terms, weakest tier last. Anything that matches on
+     * none of them is not this save and must not be unpacked over it.
+     */
+    fun matchArchiveRoot(rootName: String, saveId: String): ArchiveRootMatch? {
+        val root = normalizeSaveId(rootName)
+        val id = normalizeSaveId(saveId)
+        if (root.isEmpty() || id.isEmpty()) return null
+        return when {
+            root == id -> ArchiveRootMatch.EXACT
+            folderMatches(rootName, saveId) || root.startsWith(id) -> ArchiveRootMatch.PREFIX
+            root.contains(id) -> ArchiveRootMatch.CONTAINS
+            rootName.trimEnd('/') in unidentifiedArchiveRoots -> ArchiveRootMatch.UNIDENTIFIED
+            else -> null
+        }
+    }
+
+    /**
+     * Fixed directory names this platform's saves are rooted at instead of a title. Accepting
+     * one means trusting the resolved destination rather than the archive, so it stays an
+     * explicit per-platform opt-in.
+     */
+    protected open val unidentifiedArchiveRoots: Set<String> = emptySet()
+
+    private fun normalizeSaveId(value: String): String =
+        value.replace("-", "").replace("_", "").uppercase()
+
+
     override fun resolveBasePath(config: SavePathConfig, basePathOverride: String?): String? {
-        if (basePathOverride != null) return basePathOverride
+        if (basePathOverride != null) return normalizeBasePath(basePathOverride)
 
         val resolvedPaths = SavePathRegistry.resolvePath(config, platformSlug, null)
         return resolvedPaths.firstOrNull { fal.exists(it) && fal.isDirectory(it) }
             ?: resolvedPaths.firstOrNull()
     }
+
+    /**
+     * Lets a platform accept a base the user pointed at a parent or a child of the root it
+     * actually scans from, so picking the emulator's folder, its `sdmc`, or somewhere deeper
+     * all land on the same place. Default is to take the path as given.
+     */
+    protected open fun normalizeBasePath(path: String): String = path
 
     /**
      * Per-platform folder-name match predicate. Default is case-insensitive equality. PSP

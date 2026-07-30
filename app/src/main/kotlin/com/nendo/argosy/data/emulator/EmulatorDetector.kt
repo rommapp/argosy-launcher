@@ -200,7 +200,7 @@ class EmulatorDetector @Inject constructor(
             }
         }
 
-        val dominated = setOf("retroarch", "retroarch_64", "lemuroid")
+        val dominated = setOf("retroarch", "retroarch_64", "retroarch_32", "lemuroid")
         val standalone = installed.filterNot { it.def.id in dominated }
         return standalone.firstOrNull() ?: installed.first()
     }

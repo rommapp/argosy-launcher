@@ -536,7 +536,9 @@ class BiosRepository @Inject constructor(
                         val relativePath = file.relativeTo(sourceDir)
                         val targetFile = File(newDir, relativePath.path)
                         targetFile.parentFile?.mkdirs()
-                        file.copyTo(targetFile, overwrite = true)
+                        if (!file.renameTo(targetFile)) {
+                            file.copyTo(targetFile, overwrite = true)
+                        }
                     }
                     Logger.info(TAG, "Copied BIOS files from ${sourceDir.absolutePath} to ${newDir.absolutePath}")
                 }

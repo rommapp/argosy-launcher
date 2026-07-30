@@ -322,6 +322,12 @@ private fun RatingChipContent(game: GameDetailUi) {
     game.rating?.let { rating ->
         CommunityRatingChip(rating = rating)
     }
+    game.timeToBeatMain?.let { time ->
+        MetadataChip(label = "Main Story", value = time)
+    }
+    game.timeToBeatCompletionist?.let { time ->
+        MetadataChip(label = "Completionist", value = time)
+    }
     RatingChip(
         label = "My Rating",
         value = game.userRating,

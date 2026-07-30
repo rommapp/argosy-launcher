@@ -127,7 +127,7 @@ class SyncCoordinatorApplyPlanTest {
         )
 
         every { strategySelector.current() } returns fakeStrategy
-        coEvery { saveSyncDao.getAllWithLocalPath() } returns listOf(
+        coEvery { saveSyncDao.getAllWithLocalPath(any()) } returns listOf(
             SaveSyncEntity(
                 id = 1L,
                 gameId = game.id,
@@ -374,7 +374,7 @@ class SyncCoordinatorApplyPlanTest {
 
         coordinator.reconcileAll()
 
-        coVerify { saveSyncDao.rekeyEmulatorForGame(game.id, "mgba") }
+        coVerify { saveSyncDao.rekeyEmulatorForGame(game.id, any(), "mgba") }
     }
 
     @Test
@@ -392,7 +392,7 @@ class SyncCoordinatorApplyPlanTest {
 
         coordinator.reconcileAll()
 
-        coVerify(exactly = 0) { saveSyncDao.rekeyEmulatorForGame(any(), any()) }
+        coVerify(exactly = 0) { saveSyncDao.rekeyEmulatorForGame(any(), any(), any()) }
     }
 
     @Test
@@ -402,7 +402,7 @@ class SyncCoordinatorApplyPlanTest {
 
         coordinator.reconcileAll()
 
-        coVerify(exactly = 0) { saveSyncDao.rekeyEmulatorForGame(any(), any()) }
+        coVerify(exactly = 0) { saveSyncDao.rekeyEmulatorForGame(any(), any(), any()) }
         coVerify(exactly = 0) { gameDao.getById(any()) }
     }
 }

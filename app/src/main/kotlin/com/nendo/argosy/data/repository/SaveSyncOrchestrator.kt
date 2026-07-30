@@ -211,7 +211,7 @@ class SaveSyncOrchestrator @Inject constructor(
         val channel = channelName ?: SaveSyncApiClient.AUTOSAVE_SLOT_NAME
         if (STATE_CHANNEL_PATTERN.containsMatchIn(channel)) return@withContext RefreshOutcome.Unchanged
         if (game.localPath == null) return@withContext RefreshOutcome.Unchanged
-        if (saveCacheDao.getMostRecent(game.id)?.isHardcore == true) {
+        if (saveCacheDao.getMostRecent(game.id, syncPreferencesRepository.getRommUserId())?.isHardcore == true) {
             Logger.debug(TAG, "[SaveSync] REFRESH gameId=${game.id} | latest cache is hardcore, skipping on-system derivation")
             return@withContext RefreshOutcome.Unchanged
         }
@@ -264,7 +264,7 @@ class SaveSyncOrchestrator @Inject constructor(
             return@withContext RefreshOutcome.Unchanged
         }
 
-        val latest = saveCacheDao.getMostRecentInChannel(game.id, channel)
+        val latest = saveCacheDao.getMostRecentInChannel(game.id, syncPreferencesRepository.getRommUserId(), channel)
         if (latest == null) {
             Logger.debug(TAG, "[SaveSync] REFRESH gameId=${game.id} channel=$channel | no cache entry, adopting on-system save")
             return@withContext if (cacheSystemSave(game.id, emulatorId, savePath, channelName)) RefreshOutcome.Dirtied else RefreshOutcome.Unchanged

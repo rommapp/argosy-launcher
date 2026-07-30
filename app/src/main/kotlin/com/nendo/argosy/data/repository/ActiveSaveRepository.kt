@@ -23,7 +23,7 @@ class ActiveSaveRepository @Inject constructor(
     private val saveCacheDao: SaveCacheDao,
     private val syncPreferencesRepository: SyncPreferencesRepository
 ) {
-    private suspend fun activeOwnerId(): Long? = syncPreferencesRepository.getRommUserId()
+    suspend fun activeOwnerId(): Long? = syncPreferencesRepository.getRommUserId()
 
     suspend fun getActiveRow(gameId: Long): SaveCacheEntity? =
         saveCacheDao.getActive(gameId, activeOwnerId())

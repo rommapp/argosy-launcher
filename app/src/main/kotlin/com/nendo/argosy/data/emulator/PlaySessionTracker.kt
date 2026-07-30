@@ -480,7 +480,7 @@ class PlaySessionTracker @Inject constructor(
             val prefs = preferencesRepository.userPreferences.first()
             if (prefs.saveSyncEnabled && channelName != null) {
                 val activeSaveTimestamp = activeSave?.cachedAt?.toEpochMilli()
-                val latestCache = saveCacheDao.getLatestCasualSaveInChannel(gameId, channelName)
+                val latestCache = saveCacheDao.getLatestCasualSaveInChannel(gameId, activeSaveRepository.activeOwnerId(), channelName)
                 val sessionEmuId = if (game != null) emulatorResolver.resolveEmulatorId(emulatorPackage) else null
                 val usesBundledSave = if (game != null && sessionEmuId != null) {
                     val cfg = SavePathRegistry.getConfigForPlatform(sessionEmuId, game.platformSlug)
@@ -729,7 +729,7 @@ class PlaySessionTracker @Inject constructor(
     }
 
     private suspend fun syncAndCacheSave(session: ActiveSession): SaveCacheManager.CacheResult? {
-        saveCacheDao.clearAllDirtyFlags(session.gameId)
+        saveCacheDao.clearAllDirtyFlags(session.gameId, activeSaveRepository.activeOwnerId())
 
         val cacheResult = cacheCurrentSave(session)
 
@@ -769,6 +769,7 @@ class PlaySessionTracker @Inject constructor(
         uploadedCacheId: Long?
     ) {
         val rommSaveId = uploadResult.rommSaveId ?: return
+        val ownerUserId = activeSaveRepository.activeOwnerId()
 
         val cacheEntry = uploadedCacheId?.let { saveCacheDao.getById(it) }
             ?: run {
@@ -782,9 +783,9 @@ class PlaySessionTracker @Inject constructor(
                     method = "skipped:noUploadedCacheId"
                 )
                 if (channelName != null) {
-                    saveCacheDao.clearDirtyFlagForChannel(gameId, channelName, excludeId = -1)
+                    saveCacheDao.clearDirtyFlagForChannel(gameId, ownerUserId, channelName, excludeId = -1)
                 } else {
-                    saveCacheDao.clearAllDirtyFlags(gameId)
+                    saveCacheDao.clearAllDirtyFlags(gameId, ownerUserId)
                 }
                 return
             }
@@ -806,9 +807,9 @@ class PlaySessionTracker @Inject constructor(
         )
 
         if (channelName != null) {
-            saveCacheDao.clearDirtyFlagForChannel(gameId, channelName, excludeId = -1)
+            saveCacheDao.clearDirtyFlagForChannel(gameId, ownerUserId, channelName, excludeId = -1)
         } else {
-            saveCacheDao.clearAllDirtyFlags(gameId)
+            saveCacheDao.clearAllDirtyFlags(gameId, ownerUserId)
         }
 
         Logger.debug(TAG, "[SaveSync] SESSION gameId=$gameId | Linked cache id=${cacheEntry.id} to rommSaveId=$rommSaveId | channel=$channelName")

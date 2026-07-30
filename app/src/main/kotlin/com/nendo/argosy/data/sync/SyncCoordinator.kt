@@ -138,7 +138,7 @@ class SyncCoordinator @Inject constructor(
     }
 
     private suspend fun buildInventory(secureSaves: Boolean): List<LocalSaveState> {
-        val rows = saveSyncDao.getAllWithLocalPath()
+        val rows = saveSyncDao.getAllWithLocalPath(syncPreferencesRepository.getRommUserId())
         var skippedNoGame = 0
         var skippedNoRom = 0
         var skippedStateShaped = 0
@@ -803,7 +803,7 @@ class SyncCoordinator @Inject constructor(
                     channelName = cache.channelName
                 )
                 if (conflictInfo != null) {
-                    saveCacheDao.clearDirtyFlagForChannel(cache.gameId, cache.channelName!!, excludeId = -1)
+                    saveCacheDao.clearDirtyFlagForChannel(cache.gameId, cache.ownerUserId, cache.channelName!!, excludeId = -1)
                     syncQueueManager.addConflict(conflictInfo)
                     Logger.warn(TAG, "processDirtySaveCaches: Pre-upload conflict for channel cache id=${cache.id}")
                     continue
@@ -848,7 +848,7 @@ class SyncCoordinator @Inject constructor(
                     Logger.debug(TAG, "processDirtySaveCaches: Synced channel cache id=${cache.id} gameId=${cache.gameId} channel=${cache.channelName} rommSaveId=${result.rommSaveId} noOp=${result.noOp}")
                 }
                 is SaveSyncResult.Conflict -> {
-                    saveCacheDao.clearDirtyFlagForChannel(cache.gameId, cache.channelName, excludeId = -1)
+                    saveCacheDao.clearDirtyFlagForChannel(cache.gameId, cache.ownerUserId, cache.channelName, excludeId = -1)
                     if (ownerApi != null) {
                         parkConflictForOwner(cache, game.title, result, ownerApi.rommUserId)
                         Logger.warn(TAG, "processDirtySaveCaches: Parked conflict for absent owner ${ownerApi.rommUserId} | cacheId=${cache.id} gameId=${cache.gameId} channel=${cache.channelName}")
@@ -902,7 +902,7 @@ class SyncCoordinator @Inject constructor(
             val resolution = resolutions[cache.gameId]
 
             if (resolution == ConflictResolution.SKIP) {
-                saveCacheDao.clearAllDirtyFlags(cache.gameId)
+                saveCacheDao.clearAllDirtyFlags(cache.gameId, cache.ownerUserId)
                 Logger.debug(TAG, "processDirtySaveCaches: Skipped gameId=${cache.gameId}, cleared dirty flags")
                 continue
             }
@@ -1047,6 +1047,7 @@ class SyncCoordinator @Inject constructor(
     }
 
     private suspend fun canonicalizeStaleEmulatorIds() {
+        val ownerUserId = syncPreferencesRepository.getRommUserId()
         val stale = saveSyncDao.getStaleDefaultEmulatorRows()
         if (stale.isEmpty()) return
         val gameIds = stale.map { it.gameId }.toSet()
@@ -1054,7 +1055,7 @@ class SyncCoordinator @Inject constructor(
         for (gameId in gameIds) {
             val game = gameDao.getById(gameId) ?: continue
             val canonical = saveSyncRepository.get().resolveEmulatorForGame(game) ?: continue
-            val touched = saveSyncDao.rekeyEmulatorForGame(gameId, canonical)
+            val touched = saveSyncDao.rekeyEmulatorForGame(gameId, ownerUserId, canonical)
             if (touched > 0) rekeyed += touched
         }
         if (rekeyed > 0) {

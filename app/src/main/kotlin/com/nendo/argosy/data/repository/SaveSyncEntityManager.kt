@@ -35,7 +35,8 @@ class SaveSyncEntityManager @Inject constructor(
 
     fun observePendingCount(): Flow<Int> = saveCacheDao.observeNeedingRemoteSyncCount()
 
-    suspend fun clearDirtyFlags(gameId: Long) = saveCacheDao.clearAllDirtyFlags(gameId)
+    suspend fun clearDirtyFlags(gameId: Long) =
+        saveCacheDao.clearAllDirtyFlags(gameId, syncPreferencesRepository.getRommUserId())
 
     suspend fun getSyncStatus(gameId: Long, emulatorId: String): SaveSyncEntity? {
         return saveSyncDao.getByGameAndEmulator(gameId, emulatorId, syncPreferencesRepository.getRommUserId())

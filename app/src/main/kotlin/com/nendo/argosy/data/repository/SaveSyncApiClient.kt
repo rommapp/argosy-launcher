@@ -135,7 +135,7 @@ class SaveSyncApiClient @Inject constructor(
                     saveSyncDao.deleteById(stale.id)
                 }
 
-            val updated = saveSyncDao.rekeyEmulatorForGame(gameId, localEmulator)
+            val updated = saveSyncDao.rekeyEmulatorForGame(gameId, ownerUserId, localEmulator)
             if (updated > 0) {
                 rewritten += updated
                 Logger.debug(TAG, "[SaveSync] REKEY gameId=$gameId | rewrote $updated rows to emulatorId=$localEmulator")

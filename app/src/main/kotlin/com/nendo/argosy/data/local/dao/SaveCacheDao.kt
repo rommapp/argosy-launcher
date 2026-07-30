@@ -47,11 +47,22 @@ interface SaveCacheDao {
     @Query("SELECT * FROM save_cache WHERE gameId = :gameId AND slotName = :slotName LIMIT 1")
     suspend fun getByGameAndSlot(gameId: Long, slotName: String): SaveCacheEntity?
 
-    @Query("SELECT * FROM save_cache WHERE gameId = :gameId AND isHardcore = 1 ORDER BY cachedAt DESC LIMIT 1")
-    suspend fun getLatestHardcoreSave(gameId: Long): SaveCacheEntity?
+    @Query("""
+        SELECT * FROM save_cache
+        WHERE gameId = :gameId AND isHardcore = 1
+          AND (ownerUserId IS NULL OR ownerUserId = :ownerUserId)
+        ORDER BY cachedAt DESC LIMIT 1
+    """)
+    suspend fun getLatestHardcoreSave(gameId: Long, ownerUserId: Long?): SaveCacheEntity?
 
-    @Query("SELECT EXISTS(SELECT 1 FROM save_cache WHERE gameId = :gameId AND isHardcore = 1)")
-    suspend fun hasHardcoreSave(gameId: Long): Boolean
+    @Query("""
+        SELECT EXISTS(
+            SELECT 1 FROM save_cache
+            WHERE gameId = :gameId AND isHardcore = 1
+              AND (ownerUserId IS NULL OR ownerUserId = :ownerUserId)
+        )
+    """)
+    suspend fun hasHardcoreSave(gameId: Long, ownerUserId: Long?): Boolean
 
     @Query("""
         SELECT * FROM save_cache
@@ -64,10 +75,11 @@ interface SaveCacheDao {
     @Query("""
         SELECT * FROM save_cache
         WHERE gameId = :gameId AND isHardcore = 0 AND channelName = :channelName
+          AND (ownerUserId IS NULL OR ownerUserId = :ownerUserId)
         ORDER BY cachedAt DESC
         LIMIT 1
     """)
-    suspend fun getLatestCasualSaveInChannel(gameId: Long, channelName: String): SaveCacheEntity?
+    suspend fun getLatestCasualSaveInChannel(gameId: Long, ownerUserId: Long?, channelName: String): SaveCacheEntity?
 
     @Update
     suspend fun update(entity: SaveCacheEntity)
@@ -143,8 +155,13 @@ interface SaveCacheDao {
     @Query("DELETE FROM save_cache WHERE id IN (:ids)")
     suspend fun deleteByIds(ids: List<Long>)
 
-    @Query("SELECT * FROM save_cache WHERE gameId = :gameId ORDER BY cachedAt DESC LIMIT 1")
-    suspend fun getMostRecent(gameId: Long): SaveCacheEntity?
+    @Query("""
+        SELECT * FROM save_cache
+        WHERE gameId = :gameId
+          AND (ownerUserId IS NULL OR ownerUserId = :ownerUserId)
+        ORDER BY cachedAt DESC LIMIT 1
+    """)
+    suspend fun getMostRecent(gameId: Long, ownerUserId: Long?): SaveCacheEntity?
 
     @Query("SELECT * FROM save_cache WHERE gameId = :gameId AND saveSize = :size AND cachedAt >= :fileMtime ORDER BY cachedAt DESC LIMIT 1")
     suspend fun findUnchangedSinceMtime(gameId: Long, size: Long, fileMtime: Instant): SaveCacheEntity?
@@ -152,8 +169,13 @@ interface SaveCacheDao {
     @Query("SELECT * FROM save_cache WHERE gameId = :gameId AND cachedAt = :timestamp LIMIT 1")
     suspend fun getByTimestamp(gameId: Long, timestamp: Long): SaveCacheEntity?
 
-    @Query("SELECT * FROM save_cache WHERE gameId = :gameId AND channelName = :channelName ORDER BY cachedAt DESC LIMIT 1")
-    suspend fun getMostRecentInChannel(gameId: Long, channelName: String): SaveCacheEntity?
+    @Query("""
+        SELECT * FROM save_cache
+        WHERE gameId = :gameId AND channelName = :channelName
+          AND (ownerUserId IS NULL OR ownerUserId = :ownerUserId)
+        ORDER BY cachedAt DESC LIMIT 1
+    """)
+    suspend fun getMostRecentInChannel(gameId: Long, ownerUserId: Long?, channelName: String): SaveCacheEntity?
 
     @Query("DELETE FROM save_cache WHERE gameId IN (SELECT id FROM games WHERE platformId = :platformId)")
     suspend fun deleteByPlatform(platformId: Long)
@@ -191,15 +213,17 @@ interface SaveCacheDao {
         UPDATE save_cache
         SET needsRemoteSync = 0
         WHERE gameId = :gameId AND channelName = :channelName AND id != :excludeId
+          AND (ownerUserId IS NULL OR ownerUserId = :ownerUserId)
     """)
-    suspend fun clearDirtyFlagForChannel(gameId: Long, channelName: String?, excludeId: Long)
+    suspend fun clearDirtyFlagForChannel(gameId: Long, ownerUserId: Long?, channelName: String?, excludeId: Long)
 
     @Query("""
         UPDATE save_cache
         SET needsRemoteSync = 0
         WHERE gameId = :gameId AND channelName IS NULL
+          AND (ownerUserId IS NULL OR ownerUserId = :ownerUserId)
     """)
-    suspend fun clearDirtyFlagForLatest(gameId: Long)
+    suspend fun clearDirtyFlagForLatest(gameId: Long, ownerUserId: Long?)
 
     @Query("""
         UPDATE save_cache
@@ -282,8 +306,12 @@ interface SaveCacheDao {
     @Query("SELECT COUNT(*) FROM save_cache WHERE needsRemoteSync = 1")
     fun observeNeedingRemoteSyncCount(): Flow<Int>
 
-    @Query("UPDATE save_cache SET needsRemoteSync = 0 WHERE gameId = :gameId AND needsRemoteSync = 1")
-    suspend fun clearAllDirtyFlags(gameId: Long)
+    @Query("""
+        UPDATE save_cache SET needsRemoteSync = 0
+        WHERE gameId = :gameId AND needsRemoteSync = 1
+          AND (ownerUserId IS NULL OR ownerUserId = :ownerUserId)
+    """)
+    suspend fun clearAllDirtyFlags(gameId: Long, ownerUserId: Long?)
 
     @Query("UPDATE save_cache SET rommSaveId = :rommSaveId WHERE id = :id")
     suspend fun updateRommSaveId(id: Long, rommSaveId: Long)

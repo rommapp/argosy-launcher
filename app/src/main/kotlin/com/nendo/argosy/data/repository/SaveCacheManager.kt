@@ -216,9 +216,9 @@ class SaveCacheManager @Inject constructor(
 
             if (channelName != null) {
                 saveCacheDao.setActiveRow(gameId, ownerUserId, insertedId)
-                saveCacheDao.clearDirtyFlagForChannel(gameId, channelName, excludeId = insertedId)
+                saveCacheDao.clearDirtyFlagForChannel(gameId, ownerUserId, channelName, excludeId = insertedId)
             } else {
-                saveCacheDao.clearDirtyFlagForLatest(gameId)
+                saveCacheDao.clearDirtyFlagForLatest(gameId, ownerUserId)
             }
             if (!secureSaves && !isHardcore) recordLocalWriteAnchor(gameId, emulatorId, channelName, savePath, ownerUserId)
             saveOwnershipTracker.record(savePath, emulatorId, contentHash, gameId, channelName)
@@ -318,7 +318,7 @@ class SaveCacheManager @Inject constructor(
 
             if (channelName != null) {
                 saveCacheDao.setActiveRow(gameId, ownerUserId, insertedId)
-                saveCacheDao.clearDirtyFlagForLatest(gameId)
+                saveCacheDao.clearDirtyFlagForLatest(gameId, ownerUserId)
             }
 
             Log.d(TAG, "Cached server download for game $gameId at $cachePath (zip=$isZip, channel=$channelName)")
@@ -614,7 +614,7 @@ class SaveCacheManager @Inject constructor(
             )
 
             val newId = saveCacheDao.insert(entity)
-            saveCacheDao.clearDirtyFlagForChannel(source.gameId, channelName, excludeId = newId)
+            saveCacheDao.clearDirtyFlagForChannel(source.gameId, source.ownerUserId, channelName, excludeId = newId)
             Log.d(TAG, "Created channel '$channelName' from cache $cacheId -> $newId")
             newId
         } catch (e: Exception) {
@@ -797,10 +797,10 @@ class SaveCacheManager @Inject constructor(
         saveCacheDao.getById(cacheId)
 
     suspend fun getLatestHardcoreSave(gameId: Long): SaveCacheEntity? =
-        saveCacheDao.getLatestHardcoreSave(gameId)
+        saveCacheDao.getLatestHardcoreSave(gameId, syncPreferencesRepository.getRommUserId())
 
     suspend fun hasHardcoreSave(gameId: Long): Boolean =
-        saveCacheDao.hasHardcoreSave(gameId)
+        saveCacheDao.hasHardcoreSave(gameId, syncPreferencesRepository.getRommUserId())
 
     suspend fun isValidHardcoreSave(entity: SaveCacheEntity): Boolean = withContext(Dispatchers.IO) {
         if (!entity.isHardcore) return@withContext false
@@ -810,21 +810,22 @@ class SaveCacheManager @Inject constructor(
     }
 
     suspend fun getLatestCasualSave(gameId: Long, channelName: String?): SaveCacheEntity? {
+        val ownerUserId = syncPreferencesRepository.getRommUserId()
         return if (channelName != null) {
-            saveCacheDao.getLatestCasualSaveInChannel(gameId, channelName)
+            saveCacheDao.getLatestCasualSaveInChannel(gameId, ownerUserId, channelName)
         } else {
             saveCacheDao.getLatestCasualSave(gameId)
         }
     }
 
     suspend fun getMostRecentSave(gameId: Long): SaveCacheEntity? =
-        saveCacheDao.getMostRecent(gameId)
+        saveCacheDao.getMostRecent(gameId, syncPreferencesRepository.getRommUserId())
 
     suspend fun getByTimestamp(gameId: Long, timestampMillis: Long): SaveCacheEntity? =
         saveCacheDao.getByTimestamp(gameId, timestampMillis)
 
     suspend fun getMostRecentInChannel(gameId: Long, channelName: String): SaveCacheEntity? =
-        saveCacheDao.getMostRecentInChannel(gameId, channelName)
+        saveCacheDao.getMostRecentInChannel(gameId, syncPreferencesRepository.getRommUserId(), channelName)
 
     suspend fun getByGameAndHash(gameId: Long, hash: String): SaveCacheEntity? =
         saveCacheDao.getByGameAndHash(gameId, hash)

@@ -1202,7 +1202,7 @@ class RomMLibrarySyncService @Inject constructor(
             gameDao.delete(successor.id)
             gameDao.insert(game.copy(rommId = successor.rommId, syncDirty = false))
             successor.rommId?.let { newRommId ->
-                saveSyncDao.realignToRommId(game.id, newRommId)
+                saveSyncDao.realignToRommId(game.id, scope.ownerUserId, newRommId)
                 saveCacheDao.clearRemoteLinkage(game.id)
             }
             realigned++

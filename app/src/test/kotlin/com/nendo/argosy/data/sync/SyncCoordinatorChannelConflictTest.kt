@@ -131,7 +131,7 @@ class SyncCoordinatorChannelConflictTest {
         coordinator.processQueue()
 
         coVerify {
-            saveCacheDao.clearDirtyFlagForChannel(1L, "slot1", excludeId = -1)
+            saveCacheDao.clearDirtyFlagForChannel(1L, any(), "slot1", excludeId = -1)
         }
         coVerify(exactly = 0) {
             mockSyncRepo.uploadCacheEntry(any(), any(), any(), any(), any(), any(), any(), any())
@@ -253,7 +253,7 @@ class SyncCoordinatorChannelConflictTest {
         coordinator.processQueue()
 
         coVerify {
-            saveCacheDao.clearDirtyFlagForChannel(1L, "slot1", excludeId = -1)
+            saveCacheDao.clearDirtyFlagForChannel(1L, any(), "slot1", excludeId = -1)
         }
 
         cacheFile.delete()

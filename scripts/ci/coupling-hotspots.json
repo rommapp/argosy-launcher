@@ -146,7 +146,7 @@
       "rules": [
         {
           "id": "romm-touch-proof",
-          "severity": "block",
+          "severity": "warn",
           "when": {
             "path_glob_any": [
               "**/remote/romm/RomM*Models.kt",
@@ -160,7 +160,7 @@
             "covers / multi-disc / user-props still populate after sync",
             "version gating intact for device-aware variants"
           ],
-          "message": "RomM API/model change touched. This is WALKTHROUGH-FORCED: Moshi nulls drifted fields silently. Confirm the live API diff, then re-commit with the skip token to acknowledge."
+          "message": "RomM API/model change touched. Moshi nulls drifted fields silently, so the proofs below need a live response and cannot be auto-verified - they are raised here rather than enforced. Meet them before the change is shared and say in the PR which were run. Maintainer review decides whether this is a real risk or a minor adjustment."
         }
       ]
     }

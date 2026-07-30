@@ -177,8 +177,9 @@ interface SaveSyncDao {
         UPDATE save_sync
         SET rommId = :newRommId, rommSaveId = NULL, lastUploadedHash = NULL
         WHERE gameId = :gameId
+          AND (ownerUserId IS NULL OR ownerUserId = :ownerUserId)
     """)
-    suspend fun realignToRommId(gameId: Long, newRommId: Long)
+    suspend fun realignToRommId(gameId: Long, ownerUserId: Long?, newRommId: Long)
 
     @Query("DELETE FROM save_sync WHERE gameId IN (SELECT id FROM games WHERE source IN (:sourceNames))")
     suspend fun deleteByGameSources(sourceNames: List<String>)
@@ -204,16 +205,27 @@ interface SaveSyncDao {
     @Query("SELECT DISTINCT gameId FROM save_sync")
     suspend fun getAllGameIds(): List<Long>
 
-    @Query("SELECT * FROM save_sync WHERE localSavePath IS NOT NULL")
-    suspend fun getAllWithLocalPath(): List<SaveSyncEntity>
+    @Query("""
+        SELECT * FROM save_sync
+        WHERE localSavePath IS NOT NULL
+          AND (ownerUserId IS NULL OR ownerUserId = :ownerUserId)
+    """)
+    suspend fun getAllWithLocalPath(ownerUserId: Long?): List<SaveSyncEntity>
 
-    // UPDATE OR REPLACE: when rewriting emulatorId would collide with an
-    // existing row on the unique (gameId, emulatorId, channelName) index,
-    // SQLite drops the conflicting row instead of aborting. Without this
-    // the migration crash-loops the app on a game that already has rows
-    // for both the old and the new emulator under the same channel.
-    @Query("UPDATE OR REPLACE save_sync SET emulatorId = :newEmulatorId WHERE gameId = :gameId AND emulatorId != :newEmulatorId")
-    suspend fun rekeyEmulatorForGame(gameId: Long, newEmulatorId: String): Int
+    /**
+     * UPDATE OR REPLACE: rewriting emulatorId can collide with an existing row on the unique
+     * (gameId, emulatorId, channelName, ownerUserId) index, and SQLite drops the conflicting row
+     * instead of aborting - without it the migration crash-loops on a game holding rows for both
+     * the old and the new emulator in one channel. Scoped by owner because the dropped row would
+     * otherwise be another account's, and the caller only cleans up its own stale rows.
+     */
+    @Query("""
+        UPDATE OR REPLACE save_sync SET emulatorId = :newEmulatorId
+        WHERE gameId = :gameId
+          AND emulatorId != :newEmulatorId
+          AND (ownerUserId IS NULL OR ownerUserId = :ownerUserId)
+    """)
+    suspend fun rekeyEmulatorForGame(gameId: Long, ownerUserId: Long?, newEmulatorId: String): Int
 
     @Query("SELECT * FROM save_sync WHERE emulatorId = 'default' OR emulatorId = ''")
     suspend fun getStaleDefaultEmulatorRows(): List<SaveSyncEntity>

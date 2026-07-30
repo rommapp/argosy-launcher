@@ -28,6 +28,7 @@ class SaveManagementDelegate @Inject constructor(
     private val emulatorResolver: EmulatorResolver,
     private val saveCacheManager: SaveCacheManager,
     private val saveSyncRepository: SaveSyncRepository,
+    private val getUnifiedSavesUseCase: com.nendo.argosy.domain.usecase.save.GetUnifiedSavesUseCase,
     private val notificationManager: NotificationManager,
     private val retroArchPathResolver: com.nendo.argosy.data.emulator.RetroArchPathResolver,
     val saveChannelDelegate: SaveChannelDelegate
@@ -37,31 +38,55 @@ class SaveManagementDelegate @Inject constructor(
         gameId: Long,
         emulatorId: String,
         activeChannel: String?,
-        activeSaveTimestamp: Long?
+        activeSaveTimestamp: Long?,
+        includeServer: Boolean
     ): SaveStatusInfo? {
-        val syncEntity = if (activeChannel != null) {
-            saveSyncDao.getByGameEmulatorAndChannel(gameId, emulatorId, activeChannel)
+        // A literal "autosave" coordinate is the latest bucket, not a named channel.
+        val namedChannel = com.nendo.argosy.data.repository.SaveSyncApiClient
+            .namedChannelOrNull(activeChannel)
+
+        val syncEntity = if (namedChannel != null) {
+            saveSyncDao.getByGameEmulatorAndChannel(gameId, emulatorId, namedChannel)
         } else {
             saveSyncDao.getByGameAndEmulator(gameId, emulatorId)
         }
 
-        val cacheTimestamp = if (activeChannel != null) {
-            saveCacheManager.getMostRecentInChannel(gameId, activeChannel)?.cachedAt
+        val cacheTimestamp = if (namedChannel != null) {
+            saveCacheManager.getMostRecentInChannel(gameId, namedChannel)?.cachedAt
         } else {
             saveCacheManager.getMostRecentSave(gameId)?.cachedAt
         }
 
+        // Unified view so a server-only cloud save (no local cache, no sync row -- the common
+        // freshly-synced case) is not misreported as NO_SAVE.
+        // Resolve against the coordinates passed in, not the game row's -- a save event can carry a
+        // channel the row has not been updated to yet, and mixing the two reports one channel's
+        // timestamp under another channel's status.
+        val serverTimestamp = if (cacheTimestamp == null && syncEntity == null) {
+            getUnifiedSavesUseCase.resolveActive(
+                gameId = gameId,
+                activeChannel = activeChannel,
+                activeSaveTimestamp = activeSaveTimestamp,
+                includeServer = includeServer
+            )?.timestamp
+        } else {
+            null
+        }
+
         val effectiveTimestamp = activeSaveTimestamp
             ?: cacheTimestamp?.toEpochMilli()
+            ?: serverTimestamp?.toEpochMilli()
 
-        if (activeSaveTimestamp == null && effectiveTimestamp != null) {
-            gameRepository.updateActiveSaveTimestamp(gameId, effectiveTimestamp)
+        // Self-heal only from a local cache timestamp -- a server timestamp is not a cache pin.
+        if (activeSaveTimestamp == null && cacheTimestamp != null) {
+            gameRepository.updateActiveSaveTimestamp(gameId, cacheTimestamp.toEpochMilli())
         }
 
         val lastSyncTime = syncEntity?.lastSyncedAt
             ?: syncEntity?.localUpdatedAt
             ?: syncEntity?.serverUpdatedAt
             ?: cacheTimestamp
+            ?: serverTimestamp
 
         return if (syncEntity != null) {
             SaveStatusInfo(
@@ -79,7 +104,11 @@ class SaveManagementDelegate @Inject constructor(
             )
         } else {
             SaveStatusInfo(
-                status = if (cacheTimestamp != null) SaveSyncStatus.LOCAL_ONLY else SaveSyncStatus.NO_SAVE,
+                status = when {
+                    cacheTimestamp != null -> SaveSyncStatus.LOCAL_ONLY
+                    serverTimestamp != null -> SaveSyncStatus.SYNCED
+                    else -> SaveSyncStatus.NO_SAVE
+                },
                 channelName = activeChannel,
                 activeSaveTimestamp = effectiveTimestamp,
                 lastSyncTime = lastSyncTime

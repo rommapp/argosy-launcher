@@ -62,6 +62,7 @@ class GameLauncherTest {
     private lateinit var saveHandlerRegistry: com.nendo.argosy.data.sync.platform.PlatformSaveHandlerRegistry
 
     private lateinit var libretroStatePathResolver: LibretroStatePathResolver
+    private lateinit var libretroSavePathResolver: LibretroSavePathResolver
     private lateinit var launcher: GameLauncher
 
     @Before
@@ -97,6 +98,9 @@ class GameLauncherTest {
         libretroStatePathResolver = mockk(relaxed = true)
         coEvery { libretroStatePathResolver.liveStateBaseDir(any()) } returns
             java.io.File("/data/data/com.nendo.argosy/files/libretro/states")
+        libretroSavePathResolver = mockk(relaxed = true)
+        every { libretroSavePathResolver.liveSaveBaseDir(any(), any(), any()) } returns
+            java.io.File("/data/data/com.nendo.argosy/files/libretro/saves")
 
         every { userPreferencesRepository.userPreferences } returns flowOf(UserPreferences())
         every { userPreferencesRepository.getBuiltinCoreSelections() } returns flowOf(emptyMap())
@@ -126,6 +130,7 @@ class GameLauncherTest {
             emulatorSaveConfigRepository = emulatorSaveConfigRepository,
             saveHandlerRegistry = saveHandlerRegistry,
             libretroStatePathResolver = libretroStatePathResolver,
+            libretroSavePathResolver = libretroSavePathResolver,
             notificationManager = mockk(relaxed = true),
             attributionRepository = mockk(relaxed = true)
         )

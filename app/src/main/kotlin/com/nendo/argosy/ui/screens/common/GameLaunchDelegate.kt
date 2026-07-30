@@ -113,17 +113,23 @@ class GameLaunchDelegate @Inject constructor(
     private val saveCacheManager: SaveCacheManager,
     private val variantResolver: com.nendo.argosy.data.emulator.VariantResolver,
     private val emulatorSaveConfigRepository: com.nendo.argosy.data.repository.EmulatorSaveConfigRepository,
-    private val retroAchievementsRepository: com.nendo.argosy.data.repository.RetroAchievementsRepository
+    private val retroAchievementsRepository: com.nendo.argosy.data.repository.RetroAchievementsRepository,
+    private val getUnifiedSavesUseCase: com.nendo.argosy.domain.usecase.save.GetUnifiedSavesUseCase
 ) {
     companion object {
         private const val EMULATOR_KILL_DELAY_MS = 500L
     }
 
-    private suspend fun isActiveSaveHardcore(gameId: Long): Boolean {
-        val activeChannel = gameRepository.getActiveSaveChannel(gameId) ?: return false
-        val save = saveCacheManager.getMostRecentInChannel(gameId, activeChannel)
-        return save?.isHardcore == true
-    }
+    /**
+     * Whether the active save is hardcore, resolved over the unified cache+server view so a
+     * server-only cloud save (the common freshly-synced case) is not missed. Feeds the launch-mode
+     * [LaunchMode.RESUME_HARDCORE] decision.
+     */
+    private suspend fun isActiveSaveHardcore(gameId: Long): Boolean =
+        getUnifiedSavesUseCase.resolveActive(
+            gameId,
+            includeServer = com.nendo.argosy.util.NetworkUtils.isOnline(application)
+        )?.isHardcore == true
 
     /**
      * "Default to Hardcore": a built-in game resumes in hardcore by default when the setting is on

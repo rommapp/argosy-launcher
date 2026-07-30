@@ -11,6 +11,7 @@ import com.nendo.argosy.ui.input.SoundFeedbackManager
 import com.nendo.argosy.core.input.SoundType
 import com.nendo.argosy.ui.screens.gamedetail.LaunchEvent
 import com.nendo.argosy.ui.screens.gamedetail.modals.PlayOptionAction
+import com.nendo.argosy.ui.screens.gamedetail.modals.buildPlayOptions
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -93,16 +94,20 @@ class PlayOptionsDelegate @Inject constructor(
     }
 
     /**
-     * The play options shown, in display order -- the single source of truth for the modal's row
-     * layout, its focus bounds, and confirm mapping. Must match [PlayOptionsModal]'s rendering.
+     * The play options shown, in display order -- drives the modal's focus bounds and confirm
+     * mapping. Derived from the same [buildPlayOptions] source of truth the modal renders from, so
+     * focus index and row layout cannot diverge. `canSkipSync` mirrors the screen's wiring
+     * (`canSkipSync = isOnline`).
      */
-    private fun visibleActions(state: PlayOptionsState): List<PlayOptionAction> = buildList {
-        if (state.hasCasualSaves) add(PlayOptionAction.Resume)
-        if (state.hasCasualSaves && state.isOnline) add(PlayOptionAction.ResumeNoSync)
-        if (state.showResumeHardcore) add(PlayOptionAction.ResumeHardcore)
-        add(PlayOptionAction.NewCasual)
-        if (state.hardcoreAvailable) add(PlayOptionAction.NewHardcore)
-    }
+    private fun visibleActions(state: PlayOptionsState): List<PlayOptionAction> =
+        buildPlayOptions(
+            hasSaves = state.hasCasualSaves,
+            hasHardcoreSave = state.hasHardcoreSave,
+            hasRASupport = state.hasRASupport,
+            hardcoreAvailable = state.hardcoreAvailable,
+            isOnline = state.isOnline,
+            canSkipSync = state.isOnline
+        ).map { it.action }
 
     /** Show the play-options modal, pre-focusing [preferred] if present (else the first row). */
     private fun openModal(state: PlayOptionsState, preferred: PlayOptionAction?) {

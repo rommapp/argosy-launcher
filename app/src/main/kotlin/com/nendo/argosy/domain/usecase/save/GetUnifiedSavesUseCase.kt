@@ -1,6 +1,7 @@
 package com.nendo.argosy.domain.usecase.save
 
 import com.nendo.argosy.data.local.dao.GameDao
+import com.nendo.argosy.data.local.entity.GameEntity
 import com.nendo.argosy.data.local.entity.SaveCacheEntity
 import com.nendo.argosy.data.remote.romm.RomMSave
 import com.nendo.argosy.data.repository.SaveCacheManager
@@ -25,10 +26,17 @@ class GetUnifiedSavesUseCase @Inject constructor(
         gameId: Long,
         expandHistory: Boolean = false,
         includeServer: Boolean = true
+    ): List<UnifiedSaveEntry> =
+        buildUnifiedSaves(gameId, gameDao.getById(gameId), expandHistory, includeServer)
+
+    private suspend fun buildUnifiedSaves(
+        gameId: Long,
+        game: GameEntity?,
+        expandHistory: Boolean,
+        includeServer: Boolean
     ): List<UnifiedSaveEntry> {
         saveCacheManager.dedupeIdenticalCaches(gameId)
         val localCaches = saveCacheManager.getCachesForGameOnce(gameId)
-        val game = gameDao.getById(gameId)
         val rommId = game?.rommId
         val romBaseName = game?.localPath?.let { File(it).nameWithoutExtension }
 
@@ -70,6 +78,36 @@ class GetUnifiedSavesUseCase @Inject constructor(
         }
         val entries = mergeEntries(localCaches, emptyList(), romBaseName, expandHistory = false)
         return sortEntries(entries)
+    }
+
+    /**
+     * Resolves which save is active over the unified cache+server view -- the single seam for
+     * "which save is active", replacing ad-hoc cache-only checks that miss server-only cloud saves.
+     * [includeServer] should be the caller's online state (mirrors [invoke]); offline callers pass
+     * false to skip the network fetch. Resolves against the game's stored coordinates. Null when
+     * the game has no save at all.
+     */
+    suspend fun resolveActive(gameId: Long, includeServer: Boolean = true): UnifiedSaveEntry? {
+        val game = gameDao.getById(gameId)
+        val entries = buildUnifiedSaves(gameId, game, expandHistory = false, includeServer = includeServer)
+        return resolveActiveEntry(entries, game?.activeSaveChannel, game?.activeSaveTimestamp)
+    }
+
+    /**
+     * [resolveActive] for callers holding coordinates that may differ from the stored ones -- e.g. a
+     * save event carrying a channel the game row has not been updated to yet. Resolving against the
+     * stored coordinates there would mix two channels' data into one status.
+     */
+    suspend fun resolveActive(
+        gameId: Long,
+        activeChannel: String?,
+        activeSaveTimestamp: Long?,
+        includeServer: Boolean
+    ): UnifiedSaveEntry? {
+        val entries = buildUnifiedSaves(
+            gameId, gameDao.getById(gameId), expandHistory = false, includeServer = includeServer
+        )
+        return resolveActiveEntry(entries, activeChannel, activeSaveTimestamp)
     }
 
     private fun mergeEntries(
@@ -277,4 +315,37 @@ class GetUnifiedSavesUseCase @Inject constructor(
         }
     }
 
+}
+
+/**
+ * Decides which of [entries] is the active save from the stored coordinates -- the single place
+ * "which save is active" is resolved over the unified cache+server view. A pinned
+ * [activeSaveTimestamp] wins; else the [activeChannel] (autosave-normalized to the latest bucket via
+ * [SaveSyncApiClient.namedChannelOrNull], so a literal "autosave" coordinate is never looked up as a
+ * named channel); else the most-recent non-archival entry. Null when there is no save at all, or
+ * when a named [activeChannel] holds none.
+ */
+fun resolveActiveEntry(
+    entries: List<UnifiedSaveEntry>,
+    activeChannel: String?,
+    activeSaveTimestamp: Long?
+): UnifiedSaveEntry? {
+    if (entries.isEmpty()) return null
+    if (activeSaveTimestamp != null) {
+        entries.firstOrNull { it.timestamp.toEpochMilli() == activeSaveTimestamp }?.let { return it }
+    }
+    val candidates = entries.filterNot { it.isArchival || it.isRollback }.ifEmpty { entries }
+    val namedChannel = SaveSyncApiClient.namedChannelOrNull(activeChannel)
+    if (namedChannel != null) {
+        // A named channel is an exact coordinate: an empty channel means no active save, not
+        // "whatever is newest". Falling through would disagree with SaveStateManager, which
+        // restores strictly within the channel and finds nothing here -- that mismatch can launch
+        // in hardcore off another channel's save while no save is actually loaded.
+        return candidates
+            .filter { it.channelName != null && equalsNormalized(it.channelName, namedChannel) }
+            .maxByOrNull { it.timestamp }
+    }
+    candidates.firstOrNull { it.isLatest }?.let { return it }
+    candidates.filter { it.channelName == null }.maxByOrNull { it.timestamp }?.let { return it }
+    return candidates.maxByOrNull { it.timestamp }
 }

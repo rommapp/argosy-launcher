@@ -192,16 +192,17 @@ class SaveStateManager(
 
     private suspend fun restoreResumeSave(game: GameEntity?): RestoreResult {
         val activeSaveTimestamp = game?.activeSaveTimestamp
-        val activeChannel = game?.activeSaveChannel
+        val namedChannel = com.nendo.argosy.data.repository.SaveSyncApiClient
+            .namedChannelOrNull(game?.activeSaveChannel)
 
         val targetSave = when {
             activeSaveTimestamp != null -> {
                 Log.d(TAG, "RESUME: Looking for activated save at timestamp $activeSaveTimestamp")
                 saveCacheManager.getByTimestamp(gameId, activeSaveTimestamp)
             }
-            activeChannel != null -> {
-                Log.d(TAG, "RESUME: Looking for most recent save in channel '$activeChannel'")
-                saveCacheManager.getMostRecentInChannel(gameId, activeChannel)
+            namedChannel != null -> {
+                Log.d(TAG, "RESUME: Looking for most recent save in channel '$namedChannel'")
+                saveCacheManager.getMostRecentInChannel(gameId, namedChannel)
             }
             else -> {
                 Log.d(TAG, "RESUME: Looking for most recent save overall")

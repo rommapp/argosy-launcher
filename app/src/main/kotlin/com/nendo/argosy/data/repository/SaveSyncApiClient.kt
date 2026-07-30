@@ -482,6 +482,14 @@ class SaveSyncApiClient @Inject constructor(
         fun isAutosaveChannel(channelName: String?): Boolean =
             channelName == null || channelName.equals(AUTOSAVE_SLOT_NAME, ignoreCase = true)
 
+        /**
+         * The named channel this coordinate refers to, or null for the autosave/latest bucket -- so
+         * callers deciding "named channel vs latest" share one place for the [isAutosaveChannel]
+         * invariant instead of re-inlining `!= null && !isAutosaveChannel(...)`.
+         */
+        fun namedChannelOrNull(channelName: String?): String? =
+            channelName?.takeUnless { isAutosaveChannel(it) }
+
         fun computeUploadFileName(localSavePath: String?, channelName: String?, romBaseName: String?): String {
             val baseName = when {
                 isAutosaveChannel(channelName) -> romBaseName ?: DEFAULT_SAVE_NAME

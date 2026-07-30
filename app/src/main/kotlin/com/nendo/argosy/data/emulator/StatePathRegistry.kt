@@ -2,6 +2,7 @@ package com.nendo.argosy.data.emulator
 
 import android.os.Environment
 import com.nendo.argosy.data.platform.PlatformDefinitions
+import com.nendo.argosy.libretro.LibretroStateSlots
 import com.nendo.argosy.util.AppPaths
 import java.io.File
 
@@ -37,6 +38,22 @@ sealed class StateSlotPattern {
                 else -> "$baseName.$extension$slotNumber"
             }
         }
+    }
+
+    /**
+     * Built-in libretro flat slots. Delegates slot <-> filename to [LibretroStateSlots] -- the
+     * single source of truth shared with the live save-state engine (SaveStateManager) -- so the
+     * write codec ([LibretroStateSlots.fileName]) and read codec ([LibretroStateSlots.parseSlotNumber])
+     * can never drift apart.
+     */
+    data object BuiltinLibretro : StateSlotPattern() {
+        override val extension: String = "state"
+
+        override fun parseSlotNumber(fileName: String, baseName: String): Int? =
+            LibretroStateSlots.parseSlotNumber(baseName, fileName)
+
+        override fun buildFileName(baseName: String, slotNumber: Int): String =
+            LibretroStateSlots.fileName(baseName, slotNumber)
     }
 
     data class NameAndSlot(
@@ -91,10 +108,7 @@ object StatePathRegistry {
         "builtin" to StatePathConfig(
             emulatorId = "builtin",
             defaultPaths = listOf("{filesDir}/${AppPaths.LIBRETRO_STATES_SUBDIR}"),
-            slotPattern = StateSlotPattern.SuffixNumber(
-                extension = "state",
-                autoSlotSuffix = "auto"
-            ),
+            slotPattern = StateSlotPattern.BuiltinLibretro,
             maxSlots = 10
         ),
         "retroarch" to StatePathConfig(

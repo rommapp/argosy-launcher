@@ -34,6 +34,29 @@ libretro / RetroArch / core identifiers are NEVER inferred, guessed, or pattern-
 - **Primary**: https://docs.libretro.com/library/{core_name}/
 - **Fallback**: https://github.com/libretro/{core_name}
 
+### The core-info manifest (fastest authoritative source)
+
+RetroArch bundles ~292 `.info` files in its APK, readable on any device with root at
+`/data/data/com.retroarch/info/`. Each declares `corename`, `display_name`,
+`systemid`, `systemname` and `supported_extensions` - i.e. the core id, its
+platform, and its formats, straight from upstream. Upstream repo:
+`libretro/libretro-core-info`. Prefer this over prose docs for core ids,
+extensions and display names.
+
+TWO sources are required, not one. The info file proves a core EXISTS; only the
+buildbot proves it is BUILT FOR ANDROID:
+
+    https://buildbot.libretro.com/nightly/android/latest/arm64-v8a/
+
+`cdi2015` is the cautionary case - it ships an info file and looks like a valid
+Philips CD-i core, but no `cdi2015_libretro_android.so` exists on the arm64
+buildbot. Routing to it produces a platform that can never launch. `same_cdi` is
+the one that actually ships. Grep the buildbot listing for
+`<coreid>_libretro_android.so` before any core id lands in a registry.
+
+Note the app CANNOT read the info directory at runtime - it is another app's
+private data. Treat it as a build-time reference, not a discovery mechanism.
+
 ### Standalone Emulators
 - Check official GitHub/website for supported formats
 - Look for "supported formats" or "file types" documentation
@@ -175,7 +198,7 @@ Contains:
 Do NOT keep extension/core tables in this skill - they duplicate code as doc and drift. For current slugs, extensions, and core routing, read `PlatformDefinitions.kt`, `LibretroCoreRegistry.kt`, and `EmulatorRegistry.kt` directly.
 
 Known traps:
-- **C128**: `c128` is a defined platform with NO core routing anywhere in the tree. There is no `vice_x128` core id in this codebase (a fabricated one previously lived in this skill). Confirm the exact upstream core id before wiring any C128 routing.
+- **C128**: `vice_x128` is REAL - RetroArch's bundled `commodore_c128` info file declares it and the arm64-v8a buildbot ships `vice_x128_libretro_android.so` (verified 2026-07-30). The earlier warning here was that the id had been asserted without evidence, not that it does not exist; `c128` now routes to it in `EmulatorRegistry`.
 - **Arcade is split**: RomM `arcade` re-slugs by fs_slug via `manyToOneSlugs` + `resolveImportSlug` in `PlatformDefinitions.kt`; `fbneo` and `mame` are distinct platforms. Defaults in `EmulatorRegistry.kt`: arcade/fbneo/neogeo/cps1-3 -> `fbneo`, mame -> `mame2003_plus`.
 - **Arcade ROMs stay zipped** - DO NOT EXTRACT (romset zips are the loadable unit).
 - **Local platforms**: android, steam, ios are launcher-local with fixed negative IDs via `localPlatformIdMap`; do not treat them as emulated platforms. They are not uniformly extension-free: `android` carries `setOf("apk", "xapk")`, while `steam` and `ios` are `emptySet()`. Do not "clean up" the android extensions.

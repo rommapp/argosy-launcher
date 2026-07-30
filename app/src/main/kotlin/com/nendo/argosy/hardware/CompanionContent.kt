@@ -233,7 +233,7 @@ private fun DashboardPanel(
     ) {
         item { HeroGameCard(state) }
         item { SessionTimerCard(sessionMillis) }
-        if (state.quickActionsAvailable) {
+        if (state.quickActionsAvailable && !state.isHardcore) {
             item {
                 QuickActionsRow(
                     hasQuickSave = state.hasQuickSave,

@@ -96,6 +96,7 @@ import com.nendo.argosy.libretro.ui.NetplayReconnectingOverlay
 import com.nendo.argosy.libretro.ui.InGameStateManager
 import com.nendo.argosy.libretro.ui.QuickLoadTimeline
 import com.nendo.argosy.libretro.ui.StateManagerViewMode
+import com.nendo.argosy.libretro.ui.ControllerPortOption
 import com.nendo.argosy.libretro.ui.InGameControlsAction
 import com.nendo.argosy.libretro.ui.InGameControlsState
 import com.nendo.argosy.libretro.ui.InGameModalCallbacks
@@ -163,6 +164,7 @@ class LibretroActivity : ComponentActivity() {
     @Inject lateinit var platformLibretroSettingsDao: com.nendo.argosy.data.local.dao.PlatformLibretroSettingsDao
     @Inject lateinit var frameRegistry: FrameRegistry
     @Inject lateinit var coreOptionsRepository: com.nendo.argosy.data.repository.CoreOptionsRepository
+    @Inject lateinit var configureEmulatorUseCase: com.nendo.argosy.domain.usecase.game.ConfigureEmulatorUseCase
     @Inject lateinit var speedrunRepository: com.nendo.argosy.data.speedrun.SpeedrunRepository
     @Inject lateinit var stateOwnershipTracker: com.nendo.argosy.data.sync.StateOwnershipTracker
 
@@ -270,6 +272,10 @@ class LibretroActivity : ComponentActivity() {
     private var gameCoreOptionOverrides by mutableStateOf<Map<String, String>>(emptyMap())
     private var perGameSettingsEnabled by mutableStateOf(false)
     private var perGameControlsEnabled by mutableStateOf(false)
+    private var corePortDevices by mutableStateOf<List<List<com.swordfish.libretrodroid.Controller>>>(emptyList())
+    private var gameControllerTypes by mutableStateOf<Map<Int, Int>>(emptyMap())
+    private var platformControllerTypes by mutableStateOf<Map<Int, Int>>(emptyMap())
+    private var appliedControllerTypes by mutableStateOf<Map<Int, Int>>(emptyMap())
     private var inputDeviceListener: android.hardware.input.InputManager.InputDeviceListener? = null
     private var splitColumn: android.widget.LinearLayout? = null
     private var splitRow: android.widget.LinearLayout? = null
@@ -430,6 +436,7 @@ class LibretroActivity : ComponentActivity() {
         corePath = intent.getStringExtra(EXTRA_CORE_PATH)!!
         resolvedCoreId = resolveCoreIdFromPath(corePath)
         loadCoreOptionOverrides()
+        loadControllerTypes()
         createRetroView(corePath, systemDir, savesDir, settings, restoredSram)
         achievementBridge = LibretroAchievementBridge(
             gameDao = gameDao,
@@ -745,6 +752,8 @@ class LibretroActivity : ComponentActivity() {
                             } else if (casualSaveInHardcore) {
                                 inGameMessage = "Continuing casual save in hardcore"
                             }
+                            corePortDevices = readCorePortDevices()
+                            applyControllerTypes()
                             attemptAutoRestore()
                             netplay.triggerPendingNetplayJoin()
                             startRollingSave()
@@ -1451,6 +1460,123 @@ class LibretroActivity : ComponentActivity() {
         }
     }
 
+    private fun loadControllerTypes() {
+        lifecycleScope.launch {
+            val (game, platform) = withContext(Dispatchers.IO) {
+                val g = if (gameId != -1L) {
+                    configureEmulatorUseCase.getControllerTypesForGame(gameId)
+                } else {
+                    null
+                }
+                val p = if (platformId != -1L) {
+                    configureEmulatorUseCase.getControllerTypesForPlatform(platformId)
+                } else {
+                    null
+                }
+                g to p
+            }
+            gameControllerTypes = ControllerTypeSelection.decode(game)
+            platformControllerTypes = ControllerTypeSelection.decode(platform)
+            applyControllerTypes()
+        }
+    }
+
+    private fun effectiveControllerType(port: Int): Int? =
+        (if (perGameControlsEnabled && gameId != -1L) gameControllerTypes[port] else null)
+            ?: platformControllerTypes[port]
+
+    /**
+     * Pushes the stored per-port device ids into the core, once per load. Never call this while the
+     * session is running: `retro_set_controller_port_device` reconfigures emulated hardware, and on
+     * a threaded core (Dolphin in dual-core mode) driving it from the GL thread hangs the session
+     * with no recovery. Selections made in-game are stored and land on the next launch.
+     */
+    private fun applyControllerTypes() {
+        if (!::retroView.isInitialized) return
+        if (!firstFrameRendered) return
+        if (appliedControllerTypes.isNotEmpty()) return
+        if (corePortDevices.isEmpty()) corePortDevices = readCorePortDevices()
+        val applied = mutableMapOf<Int, Int>()
+        corePortDevices.indices.forEach { port ->
+            val deviceId = effectiveControllerType(port) ?: return@forEach
+            if (corePortDevices[port].none { it.id == deviceId }) {
+                Log.w(TAG, "Stored controller type $deviceId is not advertised for port $port; ignoring")
+                return@forEach
+            }
+            retroView.queueEvent { retroView.setControllerType(port, deviceId) }
+            applied[port] = deviceId
+            Log.d(TAG, "Controller type applied: port=$port, device=$deviceId")
+        }
+        appliedControllerTypes = applied
+    }
+
+    private fun readCorePortDevices(): List<List<com.swordfish.libretrodroid.Controller>> =
+        runCatching { retroView.getControllers().map { it.toList() } }
+            .onFailure { Log.w(TAG, "Could not read controller info from core: ${it.message}") }
+            .getOrDefault(emptyList())
+
+    private fun buildControllerPortOptions(): List<ControllerPortOption> {
+        val perGame = perGameControlsEnabled && gameId != -1L
+        return corePortDevices.mapIndexedNotNull { port, devices ->
+            if (devices.size < 2) return@mapIndexedNotNull null
+            val stored = if (perGame) gameControllerTypes[port] else platformControllerTypes[port]
+            val effective = effectiveControllerType(port)
+            ControllerPortOption(
+                port = port,
+                options = devices.map { it.description ?: "Device ${it.id}" },
+                selectedIndex = devices.indexOfFirst { it.id == effective }.coerceAtLeast(0),
+                isOverridden = stored != null,
+                pendingRestart = effective != null && effective != appliedControllerTypes[port]
+            )
+        }
+    }
+
+    private fun setControllerType(port: Int, deviceId: Int) {
+        val perGame = perGameControlsEnabled && gameId != -1L
+        if (perGame) {
+            gameControllerTypes = gameControllerTypes + (port to deviceId)
+        } else {
+            platformControllerTypes = platformControllerTypes + (port to deviceId)
+        }
+        persistControllerTypes(perGame)
+    }
+
+    private fun cycleControllerType(port: Int, direction: Int) {
+        val devices = corePortDevices.getOrNull(port) ?: return
+        if (devices.isEmpty()) return
+        val current = effectiveControllerType(port)
+        val currentIndex = devices.indexOfFirst { it.id == current }.coerceAtLeast(0)
+        val next = devices[(currentIndex + direction).mod(devices.size)]
+        setControllerType(port, next.id)
+    }
+
+    private fun selectControllerType(port: Int, optionIndex: Int) {
+        val device = corePortDevices.getOrNull(port)?.getOrNull(optionIndex) ?: return
+        setControllerType(port, device.id)
+    }
+
+    private fun resetControllerType(port: Int) {
+        val perGame = perGameControlsEnabled && gameId != -1L
+        if (perGame) {
+            gameControllerTypes = gameControllerTypes - port
+        } else {
+            platformControllerTypes = platformControllerTypes - port
+        }
+        persistControllerTypes(perGame)
+    }
+
+    private fun persistControllerTypes(perGame: Boolean) {
+        val encodedGame = ControllerTypeSelection.encode(gameControllerTypes)
+        val encodedPlatform = ControllerTypeSelection.encode(platformControllerTypes)
+        lifecycleScope.launch(Dispatchers.IO) {
+            if (perGame) {
+                configureEmulatorUseCase.setControllerTypesForGame(gameId, encodedGame)
+            } else if (platformId != -1L) {
+                configureEmulatorUseCase.setControllerTypesForPlatform(platformId, encodedPlatform)
+            }
+        }
+    }
+
     private fun buildCoreOptionItems(): List<CoreOptionViewItem> {
         val coreId = resolvedCoreId ?: return emptyList()
         val manifest = CoreOptionManifestRegistry.getManifest(coreId) ?: return emptyList()
@@ -1555,6 +1681,7 @@ class LibretroActivity : ComponentActivity() {
         if (::inputConfig.isInitialized) {
             inputConfig.setGameId(perGameMappingId)
         }
+        applyControllerTypes()
         lifecycleScope.launch(Dispatchers.IO) {
             gameDao.setPerGameControlsEnabled(gameId, enabled)
         }
@@ -1585,6 +1712,7 @@ class LibretroActivity : ComponentActivity() {
             controlsState = InGameControlsState(
                 gameSpecificControls = perGameControlsEnabled,
                 supportsGameSpecificControls = gameId != -1L,
+                controllerPorts = buildControllerPortOptions(),
                 rumbleEnabled = videoSettings.currentRumbleEnabled,
                 analogAsDpad = videoSettings.currentAnalogAsDpad,
                 dpadAsAnalog = videoSettings.currentDpadAsAnalog,
@@ -2127,6 +2255,12 @@ class LibretroActivity : ComponentActivity() {
                 videoSettings.currentDpadAsAnalog = action.enabled
                 videoSettings.persistControlSetting("dpadAsAnalog", action.enabled)
             }
+            is InGameControlsAction.CycleControllerType ->
+                cycleControllerType(action.port, action.direction)
+            is InGameControlsAction.SelectControllerType ->
+                selectControllerType(action.port, action.optionIndex)
+            is InGameControlsAction.ResetControllerType ->
+                resetControllerType(action.port)
             is InGameControlsAction.SetLimitHotkeys -> {
                 limitHotkeysToPlayer1 = action.enabled
                 inputConfig.hotkeyManager.setLimitToPlayer1(action.enabled)
@@ -2449,10 +2583,19 @@ class LibretroActivity : ComponentActivity() {
         orientationEventListener = null
     }
 
+    /**
+     * Third door into save states, alongside HotkeyDispatcher and InGameMenu, so it carries the
+     * same hardcore block. Check hardcoreMode per call, not at registration: registration
+     * precedes launch-mode parsing and switchToHardcore promotes mid-session.
+     */
     private fun createSessionQuickActions() = object : com.nendo.argosy.DualScreenManager.SessionQuickActions {
         override fun quickSave() {
             runOnUiThread {
                 if (coreDestroyed || !::retroView.isInitialized) return@runOnUiThread
+                if (hardcoreMode) {
+                    notifyQuickAction(false, "", "Save states are disabled in hardcore")
+                    return@runOnUiThread
+                }
                 val frame = try { retroView.captureRawFrame() } catch (_: Exception) { null }
                 lifecycleScope.launch(Dispatchers.IO) {
                     val stateData = try { retroView.serializeState() } catch (_: Exception) { null }
@@ -2465,6 +2608,10 @@ class LibretroActivity : ComponentActivity() {
         override fun quickLoad() {
             runOnUiThread {
                 if (coreDestroyed || !::retroView.isInitialized) return@runOnUiThread
+                if (hardcoreMode) {
+                    notifyQuickAction(false, "", "Save states are disabled in hardcore")
+                    return@runOnUiThread
+                }
                 lifecycleScope.launch(Dispatchers.IO) {
                     val ok = try { saveStateManager.performQuickLoad(retroView) } catch (_: Exception) { false }
                     notifyQuickAction(ok, "State loaded", "Failed to load state")

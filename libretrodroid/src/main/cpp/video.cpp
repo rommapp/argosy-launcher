@@ -442,6 +442,13 @@ void Video::onNewFrame(const void *data, unsigned width, unsigned height, size_t
 
 void Video::updateScreenSize(unsigned width, unsigned height) {
     videoLayout.updateScreenSize(width, height);
+    if (hwAccelerated && eglDisplay != EGL_NO_DISPLAY) {
+        EGLSurface current = eglGetCurrentSurface(EGL_DRAW);
+        if (current != EGL_NO_SURFACE && current != eglSurface) {
+            LOGI("HW core window surface recreated, refreshing cached EGLSurface");
+            eglSurface = current;
+        }
+    }
 }
 
 void Video::updateViewportSize(Rect viewportRect) {

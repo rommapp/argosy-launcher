@@ -792,6 +792,7 @@ class LibretroActivity : ComponentActivity() {
             getRetroView = { retroView },
             showToast = { msg -> inGameMessage = msg },
             isHardcoreMode = { hardcoreMode },
+            canSerialize = { canSerialize },
             isNetplayInSession = { netplay.inSession },
             getNetplayRole = { netplay.role },
             onShowMenu = ::showMenu,
@@ -1881,10 +1882,15 @@ class LibretroActivity : ComponentActivity() {
                     )
                     val maxSlots = (duration * fps).toInt()
                     val budget = rewindBudgetBytes()
-                    retroView.initRewindBuffer(maxSlots, budget)
-                    retroView.rewindEnabled = true
-                    retroView.rewindSpeed = settings.rewindSpeed
-                    Log.d(TAG, "Rewind requested: $maxSlots slots (${duration}s), budget=${budget / (1024 * 1024)}MiB, speed=${settings.rewindSpeed}x")
+                    if (canSerialize) {
+                        retroView.initRewindBuffer(maxSlots, budget)
+                        retroView.rewindEnabled = true
+                        retroView.rewindSpeed = settings.rewindSpeed
+                        Log.d(TAG, "Rewind requested: $maxSlots slots (${duration}s), budget=${budget / (1024 * 1024)}MiB, speed=${settings.rewindSpeed}x")
+                    } else {
+                        retroView.rewindEnabled = false
+                        Log.d(TAG, "Rewind skipped: core=$resolvedCoreId cannot serialize this content")
+                    }
                     cheatManager.applyAllEnabledCheats(hardcoreMode)
                 }
             }
@@ -1902,7 +1908,11 @@ class LibretroActivity : ComponentActivity() {
             }
             InGameMenuAction.Resume -> hideMenu()
             InGameMenuAction.QuickSave -> {
-                val stateData = try { retroView.serializeState() } catch (_: Exception) { null }
+                val stateData = if (canSerialize) {
+                    try { retroView.serializeState() } catch (_: Exception) { null }
+                } else {
+                    null
+                }
                 inGameMessage = if (stateData != null && saveStateManager.performQuickSave(stateData, pendingSaveScreenshot)) {
                     "State saved"
                 } else {
@@ -2015,9 +2025,18 @@ class LibretroActivity : ComponentActivity() {
             .takeIf { it.isNotBlank() }
     }
 
+    /**
+     * Whether the core can be asked to serialize at all. Every path that reaches retro_serialize
+     * has to check this, not just save states: rewind serializes once per frame, cheat application
+     * round-trips a state, and a core that cannot serialize the loaded content takes the process
+     * with it rather than returning an error. Dolphin does exactly that with a WBFS image.
+     */
+    private val canSerialize: Boolean
+        get() = statesSupported && !hardcoreMode && coreLoadedSuccessfully && !coreDestroyed
+
     private fun performAutoSaveState() {
         if (isGuestJoinedSession) return
-        if (coreDestroyed || hardcoreMode || !coreLoadedSuccessfully || !statesSupported || !autoSaveEnabled) return
+        if (!canSerialize || !autoSaveEnabled) return
         if (autoSaveStateCaptured) return
         try {
             val stateData = retroView.serializeState()

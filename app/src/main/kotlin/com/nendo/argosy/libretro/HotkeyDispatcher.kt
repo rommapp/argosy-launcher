@@ -12,6 +12,7 @@ class HotkeyDispatcher(
     private val getRetroView: () -> GLRetroView,
     private val showToast: (String) -> Unit,
     private val isHardcoreMode: () -> Boolean,
+    private val canSerialize: () -> Boolean,
     private val isNetplayInSession: () -> Boolean,
     private val getNetplayRole: () -> NetplayMenuRole?,
     private val onShowMenu: () -> Unit,
@@ -40,6 +41,8 @@ class HotkeyDispatcher(
                     showToast("Save states disabled during netplay")
                 } else if (isHardcoreMode()) {
                     showToast("Save states disabled in Hardcore mode")
+                } else if (!canSerialize()) {
+                    showToast("Save states unavailable for this core")
                 } else {
                     val rv = getRetroView()
                     val stateData = try { rv.serializeState() } catch (_: Exception) { null }

@@ -589,6 +589,7 @@ class LibretroActivity : ComponentActivity() {
             onLiveStateWritten = { slot, file -> recordStateOwnership(slot, file, channelName) },
             onLiveStateRemoved = { _, file -> clearStateOwnership(file) }
         )
+        saveStateManager.adoptLegacySaveIfMissing()
         val restoreResult = kotlinx.coroutines.runBlocking {
             saveStateManager.restoreSaveForLaunchMode(launchMode)
         }

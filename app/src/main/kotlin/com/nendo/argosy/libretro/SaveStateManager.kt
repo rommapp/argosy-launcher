@@ -2,6 +2,7 @@ package com.nendo.argosy.libretro
 
 import android.graphics.Bitmap
 import android.util.Log
+import com.nendo.argosy.data.emulator.M3uManager
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -72,6 +73,53 @@ class SaveStateManager(
 
     fun getSramFile(): File {
         return File(savesDir, "$romBaseName.srm")
+    }
+
+    /**
+     * Carries a battery save forward when the file it lives under stops being the one we look for.
+     *
+     * A folder-based multi-disc game used to launch as a version variant of its first disc, so its
+     * save sat in `saves/variants/<fileId>` under that disc's filename. Once the discs are
+     * registered the game launches from an m3u instead, and both halves of the name change at
+     * once, leaving a real save under a path nothing reads. The upgrade is invisible to the user:
+     * the card simply comes up blank.
+     *
+     * Only ever copies, and only when nothing exists at the destination, so an existing save is
+     * never overwritten and the original stays where it was.
+     */
+    fun adoptLegacySaveIfMissing() {
+        val target = getSramFile()
+        if (target.exists()) return
+
+        val source = legacySaveCandidates().firstOrNull { it.isFile && it.length() > 0 }
+        if (source == null) {
+            Log.d(TAG, "[SRAM] adopt | nothing at ${target.name} and no predecessor found")
+            return
+        }
+        try {
+            target.parentFile?.mkdirs()
+            source.copyTo(target, overwrite = false)
+            Log.w(
+                TAG,
+                "[SRAM] adopted legacy save | ${source.absolutePath} -> ${target.absolutePath} " +
+                    "(${source.length()} bytes). Original left in place."
+            )
+        } catch (e: Exception) {
+            Log.e(TAG, "[SRAM] adopt FAILED | ${source.absolutePath} -> ${target.absolutePath}", e)
+        }
+    }
+
+    private fun legacySaveCandidates(): List<File> {
+        val names = buildList {
+            add(romBaseName)
+            M3uManager.parseAllDiscs(File(romPath)).forEach { add(it.nameWithoutExtension) }
+        }.distinct()
+
+        val variantDirs = File(savesDir, "variants").listFiles()?.filter { it.isDirectory }.orEmpty()
+        return buildList {
+            names.forEach { name -> add(File(savesDir, "$name.srm")) }
+            variantDirs.forEach { dir -> names.forEach { name -> add(File(dir, "$name.srm")) } }
+        }.filter { it.absolutePath != getSramFile().absolutePath }
     }
 
     fun getSlotInfoList(): List<SlotInfo> {

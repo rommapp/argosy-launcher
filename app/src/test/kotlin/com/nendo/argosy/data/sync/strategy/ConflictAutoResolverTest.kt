@@ -62,7 +62,7 @@ class ConflictAutoResolverTest {
     @Test
     fun `rule 1 keeps local when activeSaveApplied is true`() = runTest {
         coEvery { gameDao.getByRommId(100L) } returns game()
-        coEvery { saveCacheDao.hasActiveSaveApplied(1L) } returns true
+        coEvery { saveCacheDao.hasActiveSaveApplied(1L, any()) } returns true
 
         val result = resolver.classify(op())
 
@@ -73,7 +73,7 @@ class ConflictAutoResolverTest {
     @Test
     fun `rule 2 keeps local when an upload is already queued`() = runTest {
         coEvery { gameDao.getByRommId(100L) } returns game()
-        coEvery { pendingSyncQueueDao.getByGameId(1L) } returns listOf(
+        coEvery { pendingSyncQueueDao.getByGameIdForOwner(1L, any()) } returns listOf(
             PendingSyncQueueEntity(
                 gameId = 1L,
                 rommId = 100L,
@@ -92,7 +92,7 @@ class ConflictAutoResolverTest {
     @Test
     fun `rule 3 picks server when local hash matches lastUploaded but server differs`() = runTest {
         coEvery { gameDao.getByRommId(100L) } returns game()
-        coEvery { pendingSyncQueueDao.getByGameId(any()) } returns emptyList()
+        coEvery { pendingSyncQueueDao.getByGameIdForOwner(any(), any()) } returns emptyList()
         coEvery { saveSyncDao.getByGameAndEmulator(1L, "mgba", any()) } returns SaveSyncEntity(
             gameId = 1L,
             rommId = 100L,
@@ -110,7 +110,7 @@ class ConflictAutoResolverTest {
     @Test
     fun `rule 4 picks local when server hash matches lastUploaded but local differs`() = runTest {
         coEvery { gameDao.getByRommId(100L) } returns game()
-        coEvery { pendingSyncQueueDao.getByGameId(any()) } returns emptyList()
+        coEvery { pendingSyncQueueDao.getByGameIdForOwner(any(), any()) } returns emptyList()
         coEvery { saveSyncDao.getByGameAndEmulator(1L, "mgba", any()) } returns SaveSyncEntity(
             gameId = 1L,
             rommId = 100L,
@@ -129,7 +129,7 @@ class ConflictAutoResolverTest {
     @Test
     fun `genuine conflict with no rule match returns AsIs`() = runTest {
         coEvery { gameDao.getByRommId(100L) } returns game()
-        coEvery { pendingSyncQueueDao.getByGameId(any()) } returns emptyList()
+        coEvery { pendingSyncQueueDao.getByGameIdForOwner(any(), any()) } returns emptyList()
         coEvery { saveSyncDao.getByGameAndEmulator(1L, "mgba", any()) } returns SaveSyncEntity(
             gameId = 1L,
             rommId = 100L,
@@ -147,8 +147,8 @@ class ConflictAutoResolverTest {
     @Test
     fun `rule 1 takes precedence over rule 2`() = runTest {
         coEvery { gameDao.getByRommId(100L) } returns game()
-        coEvery { saveCacheDao.hasActiveSaveApplied(1L) } returns true
-        coEvery { pendingSyncQueueDao.getByGameId(1L) } returns listOf(
+        coEvery { saveCacheDao.hasActiveSaveApplied(1L, any()) } returns true
+        coEvery { pendingSyncQueueDao.getByGameIdForOwner(1L, any()) } returns listOf(
             PendingSyncQueueEntity(
                 gameId = 1L,
                 rommId = 100L,

@@ -34,7 +34,7 @@ class ActiveSaveRepository @Inject constructor(
         getActiveRow(gameId)?.cachedAt?.toEpochMilli()
 
     suspend fun isActiveSaveApplied(gameId: Long): Boolean =
-        saveCacheDao.hasActiveSaveApplied(gameId)
+        saveCacheDao.hasActiveSaveApplied(gameId, activeOwnerId())
 
     suspend fun getPendingDeviceSyncSaveId(gameId: Long): Long? =
         getActiveRow(gameId)?.pendingDeviceSyncSaveId

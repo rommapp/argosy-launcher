@@ -1029,7 +1029,8 @@ class SyncCoordinator @Inject constructor(
 
     suspend fun queuePropertyChange(gameId: Long, rommId: Long, syncType: SyncType, intValue: Int? = null, stringValue: String? = null) {
         val payload = PropertyPayload(intValue, stringValue)
-        pendingSyncQueueDao.deleteByGameAndType(gameId, syncType)
+        val ownerUserId = syncPreferencesRepository.getRommUserId()
+        pendingSyncQueueDao.deleteByGameAndType(gameId, syncType, ownerUserId)
         pendingSyncQueueDao.insert(
             PendingSyncQueueEntity(
                 gameId = gameId,
@@ -1037,7 +1038,7 @@ class SyncCoordinator @Inject constructor(
                 syncType = syncType,
                 priority = SyncPriority.PROPERTY,
                 payloadJson = payloadCodec.encode(payload),
-                ownerUserId = syncPreferencesRepository.getRommUserId()
+                ownerUserId = ownerUserId
             )
         )
     }

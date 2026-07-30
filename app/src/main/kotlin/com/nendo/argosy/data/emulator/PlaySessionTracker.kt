@@ -755,7 +755,11 @@ class PlaySessionTracker @Inject constructor(
                 else -> null
             }
             linkCacheToServer(session.gameId, activeChannel, result, uploadedCacheId)
-            pendingSyncQueueDao.deleteActiveByGameAndType(session.gameId, com.nendo.argosy.data.local.entity.SyncType.SAVE_FILE)
+            pendingSyncQueueDao.deleteActiveByGameAndType(
+                session.gameId,
+                com.nendo.argosy.data.local.entity.SyncType.SAVE_FILE,
+                activeSaveRepository.activeOwnerId()
+            )
         }
 
         handleSaveSyncResult(session, game, result)

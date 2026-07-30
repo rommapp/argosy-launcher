@@ -411,16 +411,7 @@ class AccountsSettingsDelegate @Inject constructor(
         .removePrefix("http://")
         .trimEnd('/')
 
-    private fun pendingSummary(work: AccountPendingWork): String? {
-        val parts = buildList {
-            if (work.queuedSyncOperations > 0) add("${work.queuedSyncOperations} queued sync operations")
-            if (work.savesAwaitingUpload > 0) add("${work.savesAwaitingUpload} saves awaiting upload")
-            if (work.queuedSocialEvents > 0) add("${work.queuedSocialEvents} queued social events")
-            if (work.queuedQuayPassReports > 0) add("${work.queuedQuayPassReports} queued QuayPass reports")
-            if (work.unfinishedDownloads > 0) add("${work.unfinishedDownloads} unfinished downloads")
-        }
-        return parts.takeIf { it.isNotEmpty() }?.joinToString(", ")
-    }
+    private fun pendingSummary(work: AccountPendingWork): String? = work.describe()
 
     private fun removalNotice(result: AccountRemovalResult): String = when (result) {
         AccountRemovalResult.UnknownAccount -> "That account is no longer on this device."

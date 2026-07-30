@@ -173,7 +173,7 @@ class SyncCoordinatorApplyPlanTest {
 
         runWith(listOf(op(ReconcileAction.UPLOAD)))
 
-        coVerify { pendingSyncQueueDao.deleteByGameAndType(game.id, SyncType.SAVE_FILE) }
+        coVerify { pendingSyncQueueDao.deleteByGameAndType(game.id, SyncType.SAVE_FILE, any()) }
         coVerify { pendingSyncQueueDao.insert(any()) }
         assert(captured.captured.gameId == game.id)
         assert(captured.captured.rommId == 100L)

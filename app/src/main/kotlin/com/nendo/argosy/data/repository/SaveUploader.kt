@@ -407,7 +407,7 @@ class SaveUploader @Inject constructor(
                     error = "HTTP ${response.code()}: $errorBody"
                 )
 
-                if (response.code() == 404 && dropSyncStateIfRomIsGone(gameId, rommId, game.title)) {
+                if (response.code() == 404 && dropSyncStateIfRomIsGone(gameId, rommId, game.title, ownerUserId)) {
                     SaveSyncResult.NotConfigured
                 } else {
                     SaveSyncResult.Error("Upload failed: ${response.code()}")
@@ -565,7 +565,7 @@ class SaveUploader @Inject constructor(
             } else {
                 val errorBody = response.errorBody()?.string()
                 Logger.error(TAG, "[SaveSync] UPLOAD_CACHE gameId=$gameId | HTTP failed | status=${response.code()}, body=$errorBody")
-                if (response.code() == 404 && dropSyncStateIfRomIsGone(gameId, rommId, game.title)) {
+                if (response.code() == 404 && dropSyncStateIfRomIsGone(gameId, rommId, game.title, ownerUserId)) {
                     SaveSyncResult.NotConfigured
                 } else {
                     SaveSyncResult.Error("Upload failed: ${response.code()}")
@@ -587,15 +587,20 @@ class SaveUploader @Inject constructor(
      * Returns whether the sync state was dropped. Cached save files are never removed; only
      * their link to the server is.
      */
-    private suspend fun dropSyncStateIfRomIsGone(gameId: Long, rommId: Long, gameTitle: String): Boolean {
+    private suspend fun dropSyncStateIfRomIsGone(
+        gameId: Long,
+        rommId: Long,
+        gameTitle: String,
+        ownerUserId: Long?
+    ): Boolean {
         val confirmedGone = rommId < 0 || apiClient.get().romIsMissing(rommId)
         if (!confirmedGone) {
             Logger.debug(TAG, "[SaveSync] UPLOAD gameId=$gameId | 404 but rom $rommId still exists, leaving sync state alone")
             return false
         }
 
-        saveSyncDao.deleteByGame(gameId)
-        saveCacheDao.clearRemoteLinkage(gameId)
+        saveSyncDao.deleteByGameForOwner(gameId, ownerUserId)
+        saveCacheDao.clearRemoteLinkage(gameId, ownerUserId)
         Logger.warn(
             TAG,
             "[SaveSync] UPLOAD gameId=$gameId | rom $rommId is gone from the server; dropped sync state for $gameTitle, kept its cached saves"

@@ -157,8 +157,8 @@ interface SaveCacheDao {
      * ids name saves on a rom that no longer answers, and a pending upload against it can
      * only fail.
      */
-    @Query("UPDATE save_cache SET rommSaveId = NULL, needsRemoteSync = 0, remoteSyncError = NULL WHERE gameId = :gameId")
-    suspend fun clearRemoteLinkage(gameId: Long)
+    @Query("UPDATE save_cache SET rommSaveId = NULL, needsRemoteSync = 0, remoteSyncError = NULL WHERE gameId = :gameId AND ownerUserId IS :ownerUserId")
+    suspend fun clearRemoteLinkage(gameId: Long, ownerUserId: Long?)
 
     @Query("DELETE FROM save_cache WHERE gameId IN (SELECT id FROM games WHERE source IN (:sourceNames))")
     suspend fun deleteByGameSources(sourceNames: List<String>)
@@ -466,10 +466,11 @@ interface SaveCacheDao {
         SELECT EXISTS(
             SELECT 1 FROM save_cache
             WHERE gameId = :gameId AND isActive = 1 AND activeSaveApplied = 1
+              AND (ownerUserId IS NULL OR ownerUserId IS :ownerUserId)
         )
         """
     )
-    suspend fun hasActiveSaveApplied(gameId: Long): Boolean
+    suspend fun hasActiveSaveApplied(gameId: Long, ownerUserId: Long?): Boolean
 
     @Query("SELECT COUNT(*) FROM save_cache WHERE ownerUserId IS NULL")
     suspend fun countUnowned(): Int

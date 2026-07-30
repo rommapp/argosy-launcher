@@ -24,6 +24,9 @@ interface PendingSyncQueueDao {
     @Query("SELECT * FROM pending_sync_queue WHERE gameId = :gameId")
     suspend fun getByGameId(gameId: Long): List<PendingSyncQueueEntity>
 
+    @Query("SELECT * FROM pending_sync_queue WHERE gameId = :gameId AND ownerUserId IS :ownerUserId")
+    suspend fun getByGameIdForOwner(gameId: Long, ownerUserId: Long?): List<PendingSyncQueueEntity>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(entity: PendingSyncQueueEntity): Long
 
@@ -33,11 +36,11 @@ interface PendingSyncQueueDao {
     @Query("DELETE FROM pending_sync_queue WHERE id = :id")
     suspend fun deleteById(id: Long)
 
-    @Query("DELETE FROM pending_sync_queue WHERE gameId = :gameId AND syncType = :syncType")
-    suspend fun deleteByGameAndType(gameId: Long, syncType: SyncType)
+    @Query("DELETE FROM pending_sync_queue WHERE gameId = :gameId AND syncType = :syncType AND ownerUserId IS :ownerUserId")
+    suspend fun deleteByGameAndType(gameId: Long, syncType: SyncType, ownerUserId: Long?)
 
-    @Query("DELETE FROM pending_sync_queue WHERE gameId = :gameId AND syncType = :syncType AND status IN ('PENDING', 'IN_PROGRESS')")
-    suspend fun deleteActiveByGameAndType(gameId: Long, syncType: SyncType)
+    @Query("DELETE FROM pending_sync_queue WHERE gameId = :gameId AND syncType = :syncType AND ownerUserId IS :ownerUserId AND status IN ('PENDING', 'IN_PROGRESS')")
+    suspend fun deleteActiveByGameAndType(gameId: Long, syncType: SyncType, ownerUserId: Long?)
 
     @Query("""
         UPDATE pending_sync_queue

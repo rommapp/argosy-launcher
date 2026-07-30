@@ -75,13 +75,6 @@ class DatabaseAdminRepository @Inject constructor(
         true
     }
 
-    /** Wipes RomM-sourced library content AND its downloaded files so a server switch starts clean. */
-    suspend fun purgeRomMLibrary() = withContext(Dispatchers.IO) {
-        val sources = listOf(GameSource.ROMM_REMOTE, GameSource.ROMM_SYNCED)
-        deleteDownloadedFiles(sources)
-        purgeDatabase(sources, includeLocalCollections = false, clearImages = true)
-    }
-
     /** Resets the entire library database and per-game caches; downloaded ROM files stay on disk. */
     suspend fun purgeAllLibrary() = withContext(Dispatchers.IO) {
         deleteCacheDirs(GameSource.entries)

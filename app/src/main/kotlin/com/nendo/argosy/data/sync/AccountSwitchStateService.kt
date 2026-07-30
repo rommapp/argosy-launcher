@@ -490,6 +490,21 @@ class AccountSwitchStateService @Inject constructor(
         )
     }
 
+    /**
+     * State-side counterpart to the save service's abandon: settles a row an unresumable attempt
+     * left in transition, so the next unrelated switch does not adopt it.
+     */
+    suspend fun abandonTransition(row: StateOwnershipEntity) {
+        val owner = row.ownerUserId
+        if (owner == null) {
+            stateOwnershipDao.delete(row.statePath, row.emulatorId)
+            Logger.info(TAG, "Dropped abandoned state ownership row for ${row.statePath}: it names no owner")
+            return
+        }
+        restoreStable(row, owner)
+        Logger.info(TAG, "Returned abandoned state ownership row for ${row.statePath} to user $owner")
+    }
+
     private suspend fun restoreStable(row: StateOwnershipEntity, fromUserId: Long) {
         persist(
             row.copy(

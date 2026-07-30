@@ -35,6 +35,14 @@ data class AccountPendingWork(
             queuedSocialEvents == 0 &&
             queuedQuayPassReports == 0 &&
             unfinishedDownloads == 0
+
+    fun describe(): String? = buildList {
+        if (queuedSyncOperations > 0) add("$queuedSyncOperations queued sync operations")
+        if (savesAwaitingUpload > 0) add("$savesAwaitingUpload saves awaiting upload")
+        if (queuedSocialEvents > 0) add("$queuedSocialEvents queued social events")
+        if (queuedQuayPassReports > 0) add("$queuedQuayPassReports queued QuayPass reports")
+        if (unfinishedDownloads > 0) add("$unfinishedDownloads unfinished downloads")
+    }.takeIf { it.isNotEmpty() }?.joinToString(", ")
 }
 
 /**

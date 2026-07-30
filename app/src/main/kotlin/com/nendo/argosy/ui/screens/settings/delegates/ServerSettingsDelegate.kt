@@ -2,6 +2,7 @@ package com.nendo.argosy.ui.screens.settings.delegates
 
 import android.util.Log
 import com.nendo.argosy.data.remote.romm.DeviceAuthOutcome
+import com.nendo.argosy.data.sync.AccountRemovalResult
 import com.nendo.argosy.data.remote.romm.RomMCapabilities
 import com.nendo.argosy.data.remote.romm.RomMRepository
 import com.nendo.argosy.data.remote.romm.RomMResult
@@ -170,7 +171,26 @@ class ServerSettingsDelegate @Inject constructor(
         scope.launch {
             _state.update { it.copy(showRommSignOutConfirm = false, rommSigningOut = true) }
             try {
-                romMRepository.signOut()
+                val result = romMRepository.signOut()
+                if (result is AccountRemovalResult.SwitchInProgress) {
+                    _state.update {
+                        it.copy(
+                            rommSigningOut = false,
+                            rommConfigError = "An account switch is still finishing. Try again in a moment."
+                        )
+                    }
+                    return@launch
+                }
+                if (result is AccountRemovalResult.Refused) {
+                    _state.update {
+                        it.copy(
+                            rommSigningOut = false,
+                            rommConfigError = "Still signed in: ${result.pending.describe()} could not " +
+                                "be sent to your server. Reconnect and sync, then sign out."
+                        )
+                    }
+                    return@launch
+                }
                 _state.update {
                     it.copy(
                         rommSigningOut = false,

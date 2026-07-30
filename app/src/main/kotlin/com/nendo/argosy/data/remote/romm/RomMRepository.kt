@@ -65,7 +65,8 @@ class RomMRepository @Inject constructor(
 
     fun disconnect() = connectionManager.disconnect()
 
-    suspend fun signOut() = connectionManager.signOut()
+    suspend fun signOut(discardUnflushed: Boolean = false) =
+        connectionManager.signOut(discardUnflushed)
 
     suspend fun checkConnection() = connectionManager.checkConnection()
 

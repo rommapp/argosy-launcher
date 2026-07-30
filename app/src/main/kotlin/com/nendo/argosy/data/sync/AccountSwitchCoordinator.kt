@@ -132,8 +132,11 @@ class AccountSwitchCoordinator @Inject constructor(
             if (target == null) {
                 Logger.error(
                     TAG,
-                    "Interrupted switch names user ${marker.toUserId}, which has no account row; clearing the marker"
+                    "Interrupted switch names user ${marker.toUserId}, which has no account row; " +
+                        "settling its rows and clearing the marker"
                 )
+                saveOwnershipDao.getInTransition().forEach { artifactService.abandonTransition(it) }
+                stateOwnershipDao.getInTransition().forEach { stateService.abandonTransition(it) }
                 markerStore.clear()
                 return@withContext AccountSwitchProgress.Failed("Target account no longer exists")
             }

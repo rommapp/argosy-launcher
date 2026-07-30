@@ -10,7 +10,10 @@ import androidx.datastore.preferences.core.Preferences
  * single-store behaviour it had before accounts existed, so a key added elsewhere and forgotten
  * here degrades to "shared between accounts" rather than to "silently empty for everyone".
  *
- * Four groups are deliberately absent and must stay absent. `secure_saves` picks one save mode
+ * Five groups are deliberately absent and must stay absent. `sync_filter_delete_orphans` decides
+ * whether a sync may delete rows from `games`, which is one shared row per rom and carries a
+ * CASCADE onto every account's overlay; a per-account copy meant a newly added account read the
+ * `true` default and re-enabled cleanup the first account had turned off. `secure_saves` picks one save mode
  * for one shared save directory. `builtin_custom_save_path` and `builtin_custom_state_path`
  * define the resolved save path itself, so a per-account value would make teardown and placement
  * target different directories. The `active_session_*` keys are how an interrupted session is
@@ -41,8 +44,7 @@ object AccountScopedPreferenceKeys {
         "sync_filter_exclude_beta",
         "sync_filter_exclude_proto",
         "sync_filter_exclude_demo",
-        "sync_filter_exclude_hack",
-        "sync_filter_delete_orphans"
+        "sync_filter_exclude_hack"
     )
 
     private val DOWNLOAD_CATEGORIES = setOf(

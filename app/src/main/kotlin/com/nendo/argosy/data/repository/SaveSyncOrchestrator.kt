@@ -83,7 +83,7 @@ class SaveSyncOrchestrator @Inject constructor(
         val cacheId = channelName?.let { pinCacheForQueuedUpload(gameId, emulatorId, localPath, it) }
 
         val payload = SaveFilePayload(emulatorId = emulatorId, channelName = channelName)
-        pendingSyncQueueDao.deleteByGameAndType(gameId, SyncType.SAVE_FILE)
+        pendingSyncQueueDao.deleteByGameAndType(gameId, SyncType.SAVE_FILE, ownerUserId)
         pendingSyncQueueDao.insert(
             PendingSyncQueueEntity(
                 gameId = gameId,

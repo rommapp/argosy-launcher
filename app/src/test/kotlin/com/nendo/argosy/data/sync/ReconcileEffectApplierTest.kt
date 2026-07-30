@@ -107,7 +107,7 @@ class ReconcileEffectApplierTest {
 
         assertEquals(1, outcome.applied)
         assertEquals(0, outcome.conflicts)
-        coVerify { pendingSyncQueueDao.deleteByGameAndType(game.id, SyncType.SAVE_FILE) }
+        coVerify { pendingSyncQueueDao.deleteByGameAndType(game.id, SyncType.SAVE_FILE, any()) }
         assertEquals(game.id, captured.captured.gameId)
         assertEquals(SyncType.SAVE_FILE, captured.captured.syncType)
         assertEquals(9L, captured.captured.sessionId)

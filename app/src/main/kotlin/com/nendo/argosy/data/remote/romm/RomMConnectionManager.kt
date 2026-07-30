@@ -7,6 +7,8 @@ import android.provider.Settings
 import com.nendo.argosy.BuildConfig
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.repository.BiosRepository
+import com.nendo.argosy.data.sync.AccountRemovalResult
+import com.nendo.argosy.data.sync.UnflushedQueuePolicy
 import android.net.ConnectivityManager
 import android.net.Network
 import com.nendo.argosy.util.Logger
@@ -81,10 +83,11 @@ class RomMConnectionManager @Inject constructor(
     @ApplicationContext private val context: Context,
     private val userPreferencesRepository: UserPreferencesRepository,
     private val saveSyncRepository: dagger.Lazy<com.nendo.argosy.data.repository.SaveSyncRepository>,
-    private val databaseAdminRepository: dagger.Lazy<com.nendo.argosy.data.repository.DatabaseAdminRepository>,
-    private val saveCacheRepository: dagger.Lazy<com.nendo.argosy.data.repository.SaveCacheRepository>,
     private val biosRepository: BiosRepository,
     private val rommAccountRepository: dagger.Lazy<com.nendo.argosy.data.repository.RomMAccountRepository>,
+    private val accountRemovalService: dagger.Lazy<com.nendo.argosy.data.sync.AccountRemovalService>,
+    private val syncCoordinator: dagger.Lazy<com.nendo.argosy.data.sync.SyncCoordinator>,
+    private val retroAchievementsRepository: dagger.Lazy<com.nendo.argosy.data.repository.RetroAchievementsRepository>,
     private val apiFactory: RomMApiFactory
 ) {
     private var api: RomMApi? = null
@@ -200,9 +203,6 @@ class RomMConnectionManager @Inject constructor(
         })
     }
 
-    private fun normalizeServerKey(url: String): String =
-        url.trim().lowercase().removePrefix("https://").removePrefix("http://").trimEnd('/')
-
     private suspend fun fetchCurrentUser(target: RomMApi): RomMUser? = try {
         val response = target.getCurrentUser()
         if (response.isSuccessful) response.body() else null
@@ -210,28 +210,32 @@ class RomMConnectionManager @Inject constructor(
         null
     }
 
-    private suspend fun persistRommCredentials(newBaseUrl: String, token: String, user: RomMUser?) {
-        val stored = userPreferencesRepository.preferences.first()
-        val storedKey = stored.rommBaseUrl?.let { normalizeServerKey(it) }
+    private fun normalizeServerKey(url: String): String =
+        url.trim().lowercase().removePrefix("https://").removePrefix("http://").trimEnd('/')
+
+    /**
+     * Refuses a sign-in that would put a second server's library alongside the first.
+     *
+     * Rom ids are only unique within one RomM instance, so two servers on one device collide on
+     * every id the library, saves and sync queues are keyed by. Accounts are the supported way to
+     * hold more than one identity, and they share the server the device is already registered to.
+     * Nothing is deleted here; the existing library stays exactly as it is and the sign-in simply
+     * does not happen.
+     */
+    private suspend fun requireSameServer(newBaseUrl: String) {
+        val accounts = rommAccountRepository.get().accounts()
+        val known = accounts.map { normalizeServerKey(it.baseUrl) }.filter { it.isNotBlank() }.toSet()
+        if (known.isEmpty()) return
         val newKey = normalizeServerKey(newBaseUrl)
-        val storedUserId = stored.rommUserId
+        if (newKey in known) return
+        Logger.info(TAG, "persistRommCredentials: refused sign-in to $newKey, device is registered to ${known.joinToString()}")
+        throw IllegalStateException(
+            "This device is already signed in to a different RomM server. Remove the existing accounts before connecting to another server."
+        )
+    }
 
-        val serverChanged = !storedKey.isNullOrBlank() && storedKey != newKey
-        val userChanged = storedUserId != null && user != null && storedUserId != user.id
-
-        if (serverChanged || userChanged) {
-            val pendingUploads = saveCacheRepository.get().getPendingSyncCounts().pendingUploads
-            if (pendingUploads > 0) {
-                Logger.info(TAG, "persistRommCredentials: identity switch blocked, $pendingUploads saves pending upload")
-                throw IllegalStateException(
-                    "Sync saves first - $pendingUploads pending upload. Switching accounts would delete them."
-                )
-            }
-            val reason = if (serverChanged) "server changed ($storedKey -> $newKey)"
-                else "user changed ($storedUserId -> ${user?.id})"
-            Logger.info(TAG, "persistRommCredentials: $reason, purging RomM library")
-            databaseAdminRepository.get().purgeRomMLibrary()
-        }
+    private suspend fun persistRommCredentials(newBaseUrl: String, token: String, user: RomMUser?) {
+        requireSameServer(newBaseUrl)
         userPreferencesRepository.setRomMCredentials(newBaseUrl, token, user?.username, user?.id)
         if (user != null) {
             val stored = userPreferencesRepository.preferences.first()
@@ -548,15 +552,42 @@ class RomMConnectionManager @Inject constructor(
     }
 
     /**
-     * Forgets the stored RomM identity and tears down the live session. Library rows and
-     * downloaded content are left alone; signing back in as the same user reuses them, and
-     * signing in as a different user purges via [persistRommCredentials].
+     * Signs the active account out: its own rows, cached saves, preferences and credentials go,
+     * and nothing another account or the shared library owns is touched.
+     *
+     * This is removal aimed at the account that happens to be live, so it runs through the same
+     * service rather than a second, weaker path - that is what brings the switch-in-progress
+     * guard and the unflushed-work policy with it.
+     *
+     * The queue is drained first, while the token still authenticates. Everything the account
+     * cached and never sent can only be sent as that account, so an upload deferred past sign-out
+     * is an upload that never happens; refusing here is what keeps the local copy that is still
+     * the only copy. [discardUnflushed] gives up on whatever the drain could not deliver.
      */
-    suspend fun signOut() {
+    suspend fun signOut(discardUnflushed: Boolean = false): AccountRemovalResult {
+        val active = rommAccountRepository.get().activeAccount()
+            ?: run {
+                disconnect()
+                userPreferencesRepository.clearRomMCredentials()
+                return AccountRemovalResult.UnknownAccount
+            }
+        val drained = syncCoordinator.get().processQueue()
+        Logger.info(TAG, "signOut: drained queued work before removal, result=$drained")
+        val policy = if (discardUnflushed) {
+            UnflushedQueuePolicy.DISCARD
+        } else {
+            UnflushedQueuePolicy.REFUSE
+        }
+        val result = accountRemovalService.get().remove(active.id, policy)
+        if (result is AccountRemovalResult.Refused || result is AccountRemovalResult.SwitchInProgress) {
+            Logger.info(TAG, "signOut: not signed out, $result")
+            return result
+        }
         disconnect()
-        rommAccountRepository.get().activeAccount()?.let { rommAccountRepository.get().forget(it.id) }
         userPreferencesRepository.clearRomMCredentials()
-        Logger.info(TAG, "signOut: cleared stored RomM identity")
+        retroAchievementsRepository.get().syncRetroArchCredentials()
+        Logger.info(TAG, "signOut: removed user ${active.rommUserId} and cleared the stored identity")
+        return result
     }
 
     /**

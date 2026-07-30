@@ -136,7 +136,8 @@ class ReconcileEffectApplier @Inject constructor(
             return false
         }
         val payload = SaveFilePayload(emulatorId = emulatorId, channelName = op.slot, source = QueueSource.NEGOTIATE)
-        pendingSyncQueueDao.deleteByGameAndType(game.id, SyncType.SAVE_FILE)
+        val ownerUserId = syncPreferencesRepository.getRommUserId()
+        pendingSyncQueueDao.deleteByGameAndType(game.id, SyncType.SAVE_FILE, ownerUserId)
         pendingSyncQueueDao.insert(
             PendingSyncQueueEntity(
                 gameId = game.id,
@@ -145,7 +146,7 @@ class ReconcileEffectApplier @Inject constructor(
                 priority = SyncPriority.SAVE_FILE,
                 payloadJson = payloadCodec.encode(payload),
                 sessionId = sessionId,
-                ownerUserId = syncPreferencesRepository.getRommUserId()
+                ownerUserId = ownerUserId
             )
         )
         return true

@@ -143,6 +143,9 @@ interface SaveSyncDao {
     """)
     suspend fun clearCorruptZip(gameId: Long, emulatorId: String, channelName: String?, ownerUserId: Long?)
 
+    @Query("DELETE FROM save_sync WHERE gameId = :gameId AND ownerUserId IS :ownerUserId")
+    suspend fun deleteByGameForOwner(gameId: Long, ownerUserId: Long?)
+
     @Query("DELETE FROM save_sync WHERE gameId = :gameId")
     suspend fun deleteByGame(gameId: Long)
 

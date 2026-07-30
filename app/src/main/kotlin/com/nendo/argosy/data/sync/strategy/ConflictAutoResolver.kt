@@ -27,14 +27,15 @@ class ConflictAutoResolver @Inject constructor(
 
         val gameRow = gameDao.getByRommId(operation.romId)
         val gameId = gameRow?.id
+        val ownerUserId = syncPreferencesRepository.getRommUserId()
 
-        if (gameId != null && saveCacheDao.hasActiveSaveApplied(gameId)) {
+        if (gameId != null && saveCacheDao.hasActiveSaveApplied(gameId, ownerUserId)) {
             Logger.debug(TAG, "rule 1: activeSaveApplied=true for romId=${operation.romId} -> KEEP_LOCAL")
             return Resolution.KeepLocal("user-restored")
         }
 
         if (gameId != null) {
-            val queued = pendingSyncQueueDao.getByGameId(gameId)
+            val queued = pendingSyncQueueDao.getByGameIdForOwner(gameId, ownerUserId)
                 .any { it.syncType == SyncType.SAVE_FILE }
             if (queued) {
                 Logger.debug(TAG, "rule 2: queued upload exists for romId=${operation.romId} -> KEEP_LOCAL")
@@ -42,7 +43,6 @@ class ConflictAutoResolver @Inject constructor(
             }
         }
 
-        val ownerUserId = syncPreferencesRepository.getRommUserId()
         val syncRow = gameId?.let { gid ->
             operation.emulator?.takeIf { it.isNotBlank() }?.let { emu ->
                 operation.slot?.let { saveSyncDao.getByGameEmulatorAndChannel(gid, emu, it, ownerUserId) }

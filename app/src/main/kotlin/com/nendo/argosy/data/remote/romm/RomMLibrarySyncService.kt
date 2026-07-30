@@ -424,7 +424,7 @@ class RomMLibrarySyncService @Inject constructor(
             }
 
             if (hasLocalContent(game)) {
-                preserveOrphanedGame(game)
+                preserveOrphanedGame(game, ownerUserId)
                 continue
             }
             gameDao.delete(game.id)
@@ -1257,7 +1257,7 @@ class RomMLibrarySyncService @Inject constructor(
             gameDao.insert(game.copy(rommId = successor.rommId, syncDirty = false))
             successor.rommId?.let { newRommId ->
                 saveSyncDao.realignToRommId(game.id, scope.ownerUserId, newRommId)
-                saveCacheDao.clearRemoteLinkage(game.id)
+                saveCacheDao.clearRemoteLinkage(game.id, scope.ownerUserId)
             }
             realigned++
             Logger.info(
@@ -1281,12 +1281,12 @@ class RomMLibrarySyncService @Inject constructor(
      * answers, and leaving them is what makes a device retry an upload against a dead id
      * for as long as the game exists. The cached saves themselves are never touched.
      */
-    private suspend fun preserveOrphanedGame(game: GameEntity) {
+    private suspend fun preserveOrphanedGame(game: GameEntity, ownerUserId: Long?) {
         val syntheticId = game.rommId?.takeIf { it < 0 } ?: -game.id
         gameDao.insert(game.copy(rommId = syntheticId, syncDirty = false))
         if (syntheticId != game.rommId) {
-            saveSyncDao.deleteByGame(game.id)
-            saveCacheDao.clearRemoteLinkage(game.id)
+            saveSyncDao.deleteByGameForOwner(game.id, ownerUserId)
+            saveCacheDao.clearRemoteLinkage(game.id, ownerUserId)
             Logger.info(
                 TAG,
                 "preserveOrphanedGame: ${game.title} has local content, rommId ${game.rommId} -> $syntheticId, dropped remote sync state"

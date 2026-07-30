@@ -920,11 +920,12 @@ fun SettingsScreen(
         visible = uiState.server.showRommSignOutConfirm,
         title = "Sign Out of RomM?",
         message = if (uiState.server.rommSignOutPendingUploads > 0) {
-            "${uiState.server.rommSignOutPendingUploads} save(s) still need uploading. " +
-                "Sign out now and they stay on this device until you sign back in."
+            "${uiState.server.rommSignOutPendingUploads} save(s) will be uploaded first. Once " +
+                "everything is on your server, this account's cached saves, states and settings " +
+                "are removed from this device. Your downloaded games stay."
         } else {
-            "This device will forget your RomM account. Your library, downloaded games and " +
-                "saves stay on this device, and signing back in as the same user picks them up."
+            "This account's cached saves, states and settings are removed from this device, and " +
+                "everything already uploaded stays on your server. Your downloaded games stay."
         },
         confirmLabel = "Sign Out",
         destructive = true,

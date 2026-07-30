@@ -401,6 +401,25 @@ class AccountSwitchArtifactService @Inject constructor(
         )
     }
 
+    /**
+     * Settles a row left mid-transition by an attempt that can never be resumed.
+     *
+     * An unresolved row is not inert: the collect passes read every in-transition row regardless
+     * of owner, so the next unrelated switch would finish this one under its own pair of accounts.
+     * A row that still names an owner goes back to stable under that owner; one that named only
+     * the vanished account holds nothing and no longer identifies anybody, so it goes.
+     */
+    suspend fun abandonTransition(row: SaveOwnershipEntity) {
+        val owner = row.ownerUserId
+        if (owner == null) {
+            saveOwnershipDao.delete(row.savePath, row.emulatorId)
+            Logger.info(TAG, "Dropped abandoned ownership row for ${row.savePath}: it names no owner")
+            return
+        }
+        restoreStable(row, owner)
+        Logger.info(TAG, "Returned abandoned ownership row for ${row.savePath} to user $owner")
+    }
+
     private suspend fun restoreStable(row: SaveOwnershipEntity, fromUserId: Long) {
         persist(
             row.copy(

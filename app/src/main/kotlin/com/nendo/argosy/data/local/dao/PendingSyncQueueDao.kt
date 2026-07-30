@@ -16,29 +16,13 @@ interface PendingSyncQueueDao {
 
     @Query("""
         SELECT * FROM pending_sync_queue
-        WHERE status = 'PENDING'
-        ORDER BY priority ASC, createdAt ASC
-    """)
-    suspend fun getPendingByPriority(): List<PendingSyncQueueEntity>
-
-    @Query("""
-        SELECT * FROM pending_sync_queue
         WHERE status = 'PENDING' AND priority = :priority
         ORDER BY createdAt ASC
     """)
     suspend fun getPendingByPriorityTier(priority: Int): List<PendingSyncQueueEntity>
 
-    @Query("SELECT * FROM pending_sync_queue WHERE id = :id")
-    suspend fun getById(id: Long): PendingSyncQueueEntity?
-
     @Query("SELECT * FROM pending_sync_queue WHERE gameId = :gameId")
     suspend fun getByGameId(gameId: Long): List<PendingSyncQueueEntity>
-
-    @Query("SELECT COUNT(*) FROM pending_sync_queue WHERE status = 'PENDING'")
-    suspend fun getPendingCount(): Int
-
-    @Query("SELECT COUNT(*) FROM pending_sync_queue WHERE status = 'PENDING'")
-    fun observePendingCount(): Flow<Int>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(entity: PendingSyncQueueEntity): Long
@@ -166,14 +150,30 @@ interface PendingSyncQueueDao {
      */
     @Query("""
         SELECT DISTINCT cacheId FROM pending_sync_queue
-        WHERE cacheId IS NOT NULL AND status IN ('PENDING', 'IN_PROGRESS', 'FAILED')
-    """)
-    suspend fun getPinnedCacheIds(): List<Long>
-
-    @Query("""
-        SELECT DISTINCT cacheId FROM pending_sync_queue
         WHERE gameId = :gameId AND cacheId IS NOT NULL
           AND status IN ('PENDING', 'IN_PROGRESS', 'FAILED')
     """)
     suspend fun getPinnedCacheIdsForGame(gameId: Long): List<Long>
+
+    @Query("SELECT COUNT(*) FROM pending_sync_queue WHERE ownerUserId IS NULL")
+    suspend fun countUnowned(): Int
+
+    /**
+     * Attributes pre-accounts rows to one account. Called while that account is still the live one,
+     * so unsent work queued before a switch drains under the identity that created it rather than
+     * under whoever signs in next.
+     */
+    @Query("UPDATE pending_sync_queue SET ownerUserId = :ownerUserId WHERE ownerUserId IS NULL")
+    suspend fun adoptUnowned(ownerUserId: Long)
+
+    /**
+     * Returns an owner's abandoned rows to the queue. Nothing else moves a row out of IN_PROGRESS,
+     * so a drain interrupted by an account switch would otherwise leave it unreachable.
+     */
+    @Query("""
+        UPDATE pending_sync_queue
+        SET status = 'PENDING', updatedAt = :now
+        WHERE status = 'IN_PROGRESS' AND ownerUserId = :ownerUserId
+    """)
+    suspend fun resetInProgressForOwner(ownerUserId: Long, now: Instant = Instant.now()): Int
 }

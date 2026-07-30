@@ -123,20 +123,14 @@ interface StateCacheDao {
     @Update
     suspend fun update(entity: StateCacheEntity)
 
-    @Query("UPDATE state_cache SET channelName = :channelName, isLocked = 1 WHERE id = :id")
-    suspend fun bindToChannel(id: Long, channelName: String)
-
-    @Query("UPDATE state_cache SET channelName = NULL, isLocked = 0 WHERE id = :id")
-    suspend fun unbindFromChannel(id: Long)
-
-    @Query("UPDATE state_cache SET note = :note WHERE id = :id")
-    suspend fun setNote(id: Long, note: String?)
-
     @Query("DELETE FROM state_cache WHERE id = :id")
     suspend fun deleteById(id: Long)
 
-    @Query("DELETE FROM state_cache WHERE gameId = :gameId")
-    suspend fun deleteByGame(gameId: Long)
+    @Query("""
+        DELETE FROM state_cache
+        WHERE gameId = :gameId AND (ownerUserId IS NULL OR ownerUserId = :ownerUserId)
+    """)
+    suspend fun deleteByGame(gameId: Long, ownerUserId: Long?)
 
     @Query("DELETE FROM state_cache WHERE gameId IN (SELECT id FROM games WHERE source IN (:sourceNames))")
     suspend fun deleteByGameSources(sourceNames: List<String>)
@@ -224,20 +218,23 @@ interface StateCacheDao {
     @Query("UPDATE state_cache SET syncStatus = :syncStatus WHERE id = :id")
     suspend fun updateSyncStatus(id: Long, syncStatus: String?)
 
-    @Query("""
-        SELECT * FROM state_cache
-        WHERE rommSaveId IS NOT NULL
-        ORDER BY cachedAt DESC
-    """)
-    suspend fun getSyncedStates(): List<StateCacheEntity>
-
     @Query("DELETE FROM state_cache WHERE gameId IN (SELECT id FROM games WHERE platformId = :platformId)")
     suspend fun deleteByPlatform(platformId: Long)
 
     @Query("DELETE FROM state_cache WHERE ownerUserId = :ownerUserId")
     suspend fun deleteByOwner(ownerUserId: Long)
 
-    @Query("UPDATE state_cache SET ownerUserId = :ownerUserId WHERE id = :id")
+    /**
+     * Attributes a row to [ownerUserId], and only a row that is either unattributed or already
+     * that account's. Matching on the id alone would let a cache id from one account be re-owned
+     * by another, which moves the row out of reach of the account whose files it describes; the
+     * archive paths that call this always target a row they just wrote under the same account, so
+     * the tolerant predicate covers every legitimate case and is a no-op for the rest.
+     */
+    @Query("""
+        UPDATE state_cache SET ownerUserId = :ownerUserId
+        WHERE id = :id AND (ownerUserId IS NULL OR ownerUserId = :ownerUserId)
+    """)
     suspend fun updateOwner(id: Long, ownerUserId: Long?)
 
     /**

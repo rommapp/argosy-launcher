@@ -423,20 +423,6 @@ class StateCacheManager @Inject constructor(
         coreVersionExtractor.validateVersion(entity.coreVersion, currentVersion)
     }
 
-    suspend fun bindToChannel(cacheId: Long, channelName: String) = withContext(Dispatchers.IO) {
-        stateCacheDao.bindToChannel(cacheId, channelName)
-        Log.d(TAG, "Bound state cache $cacheId to channel '$channelName'")
-    }
-
-    suspend fun unbindFromChannel(cacheId: Long) = withContext(Dispatchers.IO) {
-        stateCacheDao.unbindFromChannel(cacheId)
-        Log.d(TAG, "Unbound state cache $cacheId from channel")
-    }
-
-    suspend fun setNote(cacheId: Long, note: String?) = withContext(Dispatchers.IO) {
-        stateCacheDao.setNote(cacheId, note?.takeIf { it.isNotBlank() })
-    }
-
     suspend fun deleteState(cacheId: Long) = withContext(Dispatchers.IO) {
         val entity = stateCacheDao.getById(cacheId) ?: return@withContext
 
@@ -1174,12 +1160,6 @@ class StateCacheManager @Inject constructor(
         Log.i(TAG, "[StateMigrate] Migrated $migratedCount/${misplaced.size} states for rommId=$rommId")
         migratedCount
     }
-
-    suspend fun getPendingUploads(): List<StateCacheEntity> =
-        stateCacheDao.getPendingUploads(syncPreferencesRepository.getRommUserId())
-
-    suspend fun getPendingUploadsByGame(gameId: Long): List<StateCacheEntity> =
-        stateCacheDao.getPendingUploadsByGame(gameId, syncPreferencesRepository.getRommUserId())
 
     suspend fun markForUpload(stateId: Long) {
         stateCacheDao.updateSyncStatus(stateId, StateCacheEntity.STATUS_PENDING_UPLOAD)

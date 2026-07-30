@@ -1,5 +1,8 @@
 package com.nendo.argosy.data.sync
 
+import com.nendo.argosy.data.local.dao.DownloadQueueDao
+import com.nendo.argosy.data.local.dao.PendingSocialSyncDao
+import com.nendo.argosy.data.local.dao.PendingSyncQueueDao
 import com.nendo.argosy.data.local.dao.SaveCacheDao
 import com.nendo.argosy.data.local.dao.SaveOwnershipDao
 import com.nendo.argosy.data.local.dao.StateOwnershipDao
@@ -32,11 +35,11 @@ private const val TAG = "AccountSwitch"
 /**
  * Moves the device from one RomM account to another.
  *
- * The order is forced by what each step needs from the identity: archives have to be written
- * while the outgoing account is still current so they are attributed to it, and placements have
- * to run after the swap so the new owner is recorded against the bytes. Within each pass the
- * work is per artifact and each artifact's state is persisted as it advances, so an interrupted
- * switch resumes file by file rather than restarting a phase.
+ * The order is forced by what each step needs from the identity: unsent queued work and archives
+ * have to be written while the outgoing account is still current so they are attributed to it, and
+ * placements have to run after the swap so the new owner is recorded against the bytes. Within
+ * each pass the work is per artifact and each artifact's state is persisted as it advances, so an
+ * interrupted switch resumes file by file rather than restarting a phase.
  *
  * A marker in SharedPreferences spans the whole run. It blocks launches and a second switch,
  * gates every background writer of save bytes, and is what [resumeIfInterrupted] keys off at
@@ -53,6 +56,9 @@ class AccountSwitchCoordinator @Inject constructor(
     private val saveOwnershipDao: SaveOwnershipDao,
     private val stateOwnershipDao: StateOwnershipDao,
     private val saveCacheDao: SaveCacheDao,
+    private val pendingSyncQueueDao: PendingSyncQueueDao,
+    private val pendingSocialSyncDao: PendingSocialSyncDao,
+    private val downloadQueueDao: DownloadQueueDao,
     private val connectionManager: Lazy<RomMConnectionManager>,
     private val rommApiProvider: RomMApiProvider,
     private val rommAchievementService: Lazy<RomMAchievementService>,
@@ -153,6 +159,7 @@ class AccountSwitchCoordinator @Inject constructor(
         try {
             _progress.value = AccountSwitchProgress.Preparing
             socialRepository.get().suspendForAccountSwitch()
+            bindQueuedWorkToOutgoing(fromUserId)
 
             val outgoing = collectOutgoing(fromUserId)
             val outgoingStates = stateService.outgoingRows(fromUserId)
@@ -232,6 +239,51 @@ class AccountSwitchCoordinator @Inject constructor(
             return AccountSwitchProgress.Failed(e.message ?: "Account switch failed")
                 .also { _progress.value = it }
         }
+    }
+
+    /**
+     * Stamps the outgoing account onto everything it queued and never sent, while it is still the
+     * live identity. Deletes nothing and drains nothing: a queue row belongs to its own account
+     * and waits for that account's token, which is the whole point of the offline-apply path.
+     *
+     * An unowned row is the leak. Every drain reads a null owner as "the account signed in now",
+     * so a row left unattributed here would be sent under the incoming account after the swap.
+     * Null can only mean the outgoing account: every writer stamps the active id, so the row was
+     * either written with no credentials or predates the owner columns, and in both cases the
+     * account being left is the one that was live. Rows owned by a third account are untouched.
+     *
+     * IN_PROGRESS rows go back to PENDING. The switch marker abandons an in-flight drain rather
+     * than finishing it, and nothing else ever moves that status back, so such a row would sit
+     * unreachable instead of being re-offered to its owner on the next pass.
+     *
+     * Only meaningful before the identity swap; a resume that finds another account already live
+     * has run this in its earlier attempt.
+     */
+    private suspend fun bindQueuedWorkToOutgoing(fromUserId: Long?) {
+        if (fromUserId == null) return
+        val liveUserId = rommAccountRepository.activeAccount()?.rommUserId
+        if (liveUserId != fromUserId) {
+            Logger.info(
+                TAG,
+                "Queue binding skipped: live account is user $liveUserId, not the outgoing $fromUserId"
+            )
+            return
+        }
+
+        val adopted = pendingSyncQueueDao.countUnowned()
+        if (adopted > 0) pendingSyncQueueDao.adoptUnowned(fromUserId)
+        val reopened = pendingSyncQueueDao.resetInProgressForOwner(fromUserId)
+
+        val socialUnowned = pendingSocialSyncDao.countUnowned()
+        if (socialUnowned > 0) pendingSocialSyncDao.adoptUnowned(fromUserId)
+        val downloadsUnowned = downloadQueueDao.countUnowned()
+        if (downloadsUnowned > 0) downloadQueueDao.adoptUnowned(fromUserId)
+
+        Logger.info(
+            TAG,
+            "Queued work bound to user $fromUserId | syncAdopted=$adopted, syncReopened=$reopened, " +
+                "socialAdopted=$socialUnowned, downloadsAdopted=$downloadsUnowned"
+        )
     }
 
     /**

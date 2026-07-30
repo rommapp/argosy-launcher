@@ -14,15 +14,6 @@ interface DownloadQueueDao {
     @Query("SELECT * FROM download_queue WHERE state IN ('QUEUED', 'PAUSED', 'DOWNLOADING', 'EXTRACTING', 'WAITING_FOR_STORAGE') ORDER BY createdAt ASC")
     suspend fun getPendingDownloads(): List<DownloadQueueEntity>
 
-    @Query("SELECT * FROM download_queue WHERE state = 'FAILED'")
-    suspend fun getFailedDownloads(): List<DownloadQueueEntity>
-
-    @Query("SELECT * FROM download_queue WHERE state = 'WAITING_FOR_STORAGE'")
-    suspend fun getWaitingForStorage(): List<DownloadQueueEntity>
-
-    @Query("SELECT * FROM download_queue ORDER BY createdAt DESC")
-    fun observeAll(): Flow<List<DownloadQueueEntity>>
-
     @Query("SELECT * FROM download_queue WHERE state IN ('QUEUED', 'DOWNLOADING', 'EXTRACTING', 'PAUSED', 'WAITING_FOR_STORAGE')")
     fun observeActiveDownloads(): Flow<List<DownloadQueueEntity>>
 

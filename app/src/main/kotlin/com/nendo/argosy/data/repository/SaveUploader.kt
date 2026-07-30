@@ -218,7 +218,7 @@ class SaveUploader @Inject constructor(
             val contentHash = saveArchiver.calculateContentHash(uploadFile)
 
             run {
-                val matchingCache = saveCacheDao.getByGameAndHash(gameId, contentHash)
+                val matchingCache = saveCacheDao.getByGameAndHash(gameId, ownerUserId, contentHash)
                 SaveDebugLogger.logUploadHash(
                     gameId = gameId,
                     channel = channelName,
@@ -234,7 +234,7 @@ class SaveUploader @Inject constructor(
                 if (prepared.isTemporary) fileToUpload.delete()
                 tempTrailerFile?.delete()
                 syncEntity.rommSaveId?.let { knownId ->
-                    saveCacheDao.getAllByGameChannelAndHash(gameId, channelName, contentHash).firstOrNull()?.let { cache ->
+                    saveCacheDao.getAllByGameChannelAndHash(gameId, ownerUserId, channelName, contentHash).firstOrNull()?.let { cache ->
                         if (cache.rommSaveId != knownId) {
                             saveCacheDao.updateRommSaveId(cache.id, knownId)
                             Logger.debug(TAG, "[SaveSync] UPLOAD gameId=$gameId | Self-healed orphan cache row | cacheId=${cache.id}, rommSaveId=$knownId")
@@ -381,6 +381,7 @@ class SaveUploader @Inject constructor(
 
                 reconcileCacheRowsAfterUpload(
                     gameId = gameId,
+                    ownerUserId = ownerUserId,
                     channelName = channelName,
                     uploadedCacheId = uploadedCacheId,
                     serverSave = serverSave
@@ -548,6 +549,7 @@ class SaveUploader @Inject constructor(
                 Logger.info(TAG, "[SaveSync] UPLOAD_CACHE gameId=$gameId | Complete | serverSaveId=${serverSave.id}, channel=$channelName, serverTime=$serverTime")
                 reconcileCacheRowsAfterUpload(
                     gameId = gameId,
+                    ownerUserId = ownerUserId,
                     channelName = channelName,
                     uploadedCacheId = uploadedCacheId,
                     serverSave = serverSave
@@ -628,6 +630,7 @@ class SaveUploader @Inject constructor(
 
     private suspend fun reconcileCacheRowsAfterUpload(
         gameId: Long,
+        ownerUserId: Long?,
         channelName: String?,
         uploadedCacheId: Long?,
         serverSave: RomMSave
@@ -635,7 +638,7 @@ class SaveUploader @Inject constructor(
         uploadedCacheId?.let { saveCacheDao.updateServerCurrentAtSync(it, true) }
         val verifiedHash = serverSave.contentHash ?: return
         val serverTimestamp = SaveSyncApiClient.parseTimestamp(serverSave.updatedAt)
-        val matches = saveCacheDao.getAllByGameChannelAndHash(gameId, channelName, verifiedHash)
+        val matches = saveCacheDao.getAllByGameChannelAndHash(gameId, ownerUserId, channelName, verifiedHash)
         val older = matches.firstOrNull { uploadedCacheId == null || it.id != uploadedCacheId }
         if (uploadedCacheId != null && older != null) {
             saveCacheManager.get().deleteCachedSave(uploadedCacheId)

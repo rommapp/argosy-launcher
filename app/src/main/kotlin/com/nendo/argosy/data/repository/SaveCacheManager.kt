@@ -99,7 +99,7 @@ class SaveCacheManager @Inject constructor(
 
         if (!skipDuplicateCheck && !fal.isDirectory(savePath) && precomputedContentHash == null) {
             val fileMtime = Instant.ofEpochMilli(saveFile.lastModified())
-            val unchanged = saveCacheDao.findUnchangedSinceMtime(gameId, saveFile.length(), fileMtime)
+            val unchanged = saveCacheDao.findUnchangedSinceMtime(gameId, ownerUserId, saveFile.length(), fileMtime)
             val cachedHash = unchanged?.contentHash
             if (unchanged != null && !cachedHash.isNullOrBlank()) {
                 Log.d(TAG, "Cache untouched since ${unchanged.cachedAt} for game $gameId (hash=$cachedHash), skipping rehash")
@@ -140,7 +140,7 @@ class SaveCacheManager @Inject constructor(
 
             // Check for duplicate save by hash (skip for new games to allow fresh start saves)
             if (!skipDuplicateCheck) {
-                val existingWithHash = saveCacheDao.getAllByGameChannelAndHash(gameId, channelName, contentHash).firstOrNull()
+                val existingWithHash = saveCacheDao.getAllByGameChannelAndHash(gameId, ownerUserId, channelName, contentHash).firstOrNull()
                 if (existingWithHash != null) {
                     Log.d(TAG, "Duplicate save detected for game $gameId (hash=$contentHash, hardcore=$isHardcore), skipping cache")
                     SaveDebugLogger.logCacheDuplicate(
@@ -369,7 +369,7 @@ class SaveCacheManager @Inject constructor(
                 saveArchiver.calculateFileHash(saveFile) to saveFile
             }
 
-            val existingWithHash = saveCacheDao.getAllByGameChannelAndHash(gameId, null, contentHash).firstOrNull()
+            val existingWithHash = saveCacheDao.getAllByGameChannelAndHash(gameId, ownerUserId, null, contentHash).firstOrNull()
             if (existingWithHash != null) {
                 Log.d(TAG, "Rollback skipped - identical save already cached (hash=$contentHash)")
                 tempFile?.delete()
@@ -424,7 +424,7 @@ class SaveCacheManager @Inject constructor(
     }
 
     suspend fun findCachedByHash(gameId: Long, contentHash: String): com.nendo.argosy.data.local.entity.SaveCacheEntity? =
-        withContext(Dispatchers.IO) { saveCacheDao.getByGameAndHash(gameId, contentHash) }
+        withContext(Dispatchers.IO) { saveCacheDao.getByGameAndHash(gameId, syncPreferencesRepository.getRommUserId(), contentHash) }
 
     suspend fun restoreSave(cacheId: Long, targetPath: String): Boolean = withContext(Dispatchers.IO) {
         val entity = saveCacheDao.getById(cacheId)
@@ -828,7 +828,7 @@ class SaveCacheManager @Inject constructor(
         saveCacheDao.getMostRecentInChannel(gameId, syncPreferencesRepository.getRommUserId(), channelName)
 
     suspend fun getByGameAndHash(gameId: Long, hash: String): SaveCacheEntity? =
-        saveCacheDao.getByGameAndHash(gameId, hash)
+        saveCacheDao.getByGameAndHash(gameId, syncPreferencesRepository.getRommUserId(), hash)
 
     suspend fun getSaveBytes(cacheId: Long): ByteArray? = withContext(Dispatchers.IO) {
         val entity = saveCacheDao.getById(cacheId) ?: return@withContext null

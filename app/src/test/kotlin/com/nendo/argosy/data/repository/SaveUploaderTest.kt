@@ -146,7 +146,7 @@ class SaveUploaderTest {
             saveSyncDao.getByGameAndEmulatorWithDefault(gameId, emulatorId, SaveSyncApiClient.DEFAULT_SAVE_NAME, any())
         } returns syncEntity
         every { saveArchiver.calculateContentHash(any()) } returns "deadbeef"
-        coEvery { saveCacheDao.getByGameAndHash(any(), any()) } returns null
+        coEvery { saveCacheDao.getByGameAndHash(any(), any(), any()) } returns null
 
         val result = uploader.uploadSave(gameId, emulatorId, channelName = null)
 
@@ -194,9 +194,9 @@ class SaveUploaderTest {
             lastUploadedHash = null
         )
         every { saveArchiver.calculateContentHash(any()) } returns "abc123"
-        coEvery { saveCacheDao.getByGameAndHash(any(), any()) } returns newlyUploaded
+        coEvery { saveCacheDao.getByGameAndHash(any(), any(), any()) } returns newlyUploaded
         coEvery {
-            saveCacheDao.getAllByGameChannelAndHash(gameId, "manual", "abc123")
+            saveCacheDao.getAllByGameChannelAndHash(gameId, any(), "manual", "abc123")
         } returns listOf(older, newlyUploaded)
 
         val serverSave = serverSaveOf(id = 999L, contentHash = "abc123")
@@ -239,9 +239,9 @@ class SaveUploaderTest {
             lastUploadedHash = null
         )
         every { saveArchiver.calculateContentHash(any()) } returns "xyz789"
-        coEvery { saveCacheDao.getByGameAndHash(any(), any()) } returns newlyUploaded
+        coEvery { saveCacheDao.getByGameAndHash(any(), any(), any()) } returns newlyUploaded
         coEvery {
-            saveCacheDao.getAllByGameChannelAndHash(gameId, "manual", "xyz789")
+            saveCacheDao.getAllByGameChannelAndHash(gameId, any(), "manual", "xyz789")
         } returns listOf(newlyUploaded)
 
         val serverSave = serverSaveOf(id = 999L, contentHash = "xyz789")
@@ -296,9 +296,9 @@ class SaveUploaderTest {
             localContentHash = "shared-hash"
         )
         every { saveArchiver.calculateContentHash(any()) } returns "shared-hash"
-        coEvery { saveCacheDao.getByGameAndHash(gameId, "shared-hash") } returns channelBCache
+        coEvery { saveCacheDao.getByGameAndHash(gameId, any(), "shared-hash") } returns channelBCache
         coEvery {
-            saveCacheDao.getAllByGameChannelAndHash(gameId, "channel-A", "shared-hash")
+            saveCacheDao.getAllByGameChannelAndHash(gameId, any(), "channel-A", "shared-hash")
         } returns listOf(channelACache)
 
         val result = uploader.uploadSave(gameId, emulatorId, channelName = "channel-A")
@@ -340,9 +340,9 @@ class SaveUploaderTest {
             lastUploadedHash = null
         )
         every { saveArchiver.calculateContentHash(any()) } returns "h-older"
-        coEvery { saveCacheDao.getByGameAndHash(gameId, "h-older") } returns older
+        coEvery { saveCacheDao.getByGameAndHash(gameId, any(), "h-older") } returns older
         coEvery {
-            saveCacheDao.getAllByGameChannelAndHash(gameId, "manual", "h-older")
+            saveCacheDao.getAllByGameChannelAndHash(gameId, any(), "manual", "h-older")
         } returns listOf(older)
 
         val serverSave = serverSaveOf(id = 999L, contentHash = "h-older")
@@ -377,9 +377,9 @@ class SaveUploaderTest {
             lastUploadedHash = null
         )
         every { saveArchiver.calculateContentHash(any()) } returns "local-hash"
-        coEvery { saveCacheDao.getByGameAndHash(any(), any()) } returns null
+        coEvery { saveCacheDao.getByGameAndHash(any(), any(), any()) } returns null
         coEvery {
-            saveCacheDao.getAllByGameChannelAndHash(any(), any(), any())
+            saveCacheDao.getAllByGameChannelAndHash(any(), any(), any(), any())
         } returns emptyList()
 
         val serverSave = RomMSave(
@@ -464,9 +464,9 @@ class SaveUploaderTest {
             lastUploadedHash = null
         )
         every { saveArchiver.calculateContentHash(any()) } returns "shared"
-        coEvery { saveCacheDao.getByGameAndHash(any(), any()) } returns olderA
+        coEvery { saveCacheDao.getByGameAndHash(any(), any(), any()) } returns olderA
         coEvery {
-            saveCacheDao.getAllByGameChannelAndHash(gameId, "manual", "shared")
+            saveCacheDao.getAllByGameChannelAndHash(gameId, any(), "manual", "shared")
         } returns listOf(olderA, olderB, newlyUploaded)
 
         val serverSave = serverSaveOf(id = 999L, contentHash = "shared")
@@ -503,9 +503,9 @@ class SaveUploaderTest {
             lastUploadedHash = null
         )
         every { saveArchiver.calculateContentHash(any()) } returns "hc-hash"
-        coEvery { saveCacheDao.getByGameAndHash(any(), any()) } returns null
+        coEvery { saveCacheDao.getByGameAndHash(any(), any(), any()) } returns null
         coEvery {
-            saveCacheDao.getAllByGameChannelAndHash(gameId, null, "hc-hash")
+            saveCacheDao.getAllByGameChannelAndHash(gameId, any(), null, "hc-hash")
         } returns emptyList()
 
         val serverSave = serverSaveOf(id = 7L, contentHash = "hc-hash")
@@ -523,7 +523,7 @@ class SaveUploaderTest {
 
         assertTrue("expected Success but got $result", result is SaveSyncResult.Success)
         coVerify(exactly = 1) {
-            saveCacheDao.getAllByGameChannelAndHash(gameId, null, "hc-hash")
+            saveCacheDao.getAllByGameChannelAndHash(gameId, any(), null, "hc-hash")
         }
     }
 

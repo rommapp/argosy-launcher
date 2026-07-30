@@ -78,18 +78,6 @@ interface SaveSyncDao {
     """)
     suspend fun getByGame(gameId: Long, ownerUserId: Long?): List<SaveSyncEntity>
 
-    @Query("SELECT * FROM save_sync WHERE syncStatus IN (:statuses)")
-    suspend fun getByStatuses(vararg statuses: String): List<SaveSyncEntity>
-
-    @Query("""
-        SELECT * FROM save_sync
-        WHERE gameId = :gameId
-          AND syncStatus = :status
-          AND IFNULL(channelName, '') = IFNULL(:channelName, '')
-        LIMIT 1
-    """)
-    suspend fun getByGameStatusAndChannel(gameId: Long, status: String, channelName: String?): SaveSyncEntity?
-
     @Query("""
         SELECT * FROM save_sync
         WHERE (syncStatus = 'SERVER_NEWER' OR syncStatus = 'CONFLICT')
@@ -114,9 +102,6 @@ interface SaveSyncDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(entity: SaveSyncEntity): Long
-
-    @Query("UPDATE save_sync SET syncStatus = :status, lastSyncError = :error WHERE id = :id")
-    suspend fun updateStatus(id: Long, status: String, error: String? = null)
 
     @Query("""
         UPDATE save_sync
@@ -157,13 +142,6 @@ interface SaveSyncDao {
           AND (ownerUserId IS NULL OR ownerUserId IS :ownerUserId)
     """)
     suspend fun clearCorruptZip(gameId: Long, emulatorId: String, channelName: String?, ownerUserId: Long?)
-
-    @Query("""
-        UPDATE save_sync
-        SET localSavePath = :path, localUpdatedAt = :updatedAt
-        WHERE gameId = :gameId AND emulatorId = :emulatorId
-    """)
-    suspend fun updateLocalSave(gameId: Long, emulatorId: String, path: String, updatedAt: Long)
 
     @Query("DELETE FROM save_sync WHERE gameId = :gameId")
     suspend fun deleteByGame(gameId: Long)
@@ -251,9 +229,6 @@ interface SaveSyncDao {
         ORDER BY lastSyncedAt DESC, gameId ASC
     """)
     fun observeAll(ownerUserId: Long?): Flow<List<SaveSyncEntity>>
-
-    @Query("UPDATE save_sync SET lastSyncDeviceId = :deviceId, lastSyncDeviceName = :deviceName WHERE id = :id")
-    suspend fun updateDeviceTag(id: Long, deviceId: String?, deviceName: String?)
 
     @Query("DELETE FROM save_sync WHERE ownerUserId = :ownerUserId")
     suspend fun deleteByOwner(ownerUserId: Long)

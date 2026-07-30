@@ -25,16 +25,10 @@ interface StateOwnershipDao {
     suspend fun getInTransition(stableState: String = StateOwnershipEntity.STATE_STABLE): List<StateOwnershipEntity>
 
     @Query("SELECT * FROM state_ownership WHERE needsSync = 1")
-    suspend fun getNeedingSync(): List<StateOwnershipEntity>
-
-    @Query("SELECT * FROM state_ownership WHERE needsSync = 1")
     fun observeNeedingSync(): Flow<List<StateOwnershipEntity>>
 
     @Upsert
     suspend fun upsert(entity: StateOwnershipEntity)
-
-    @Query("UPDATE state_ownership SET transitionState = :state WHERE id = :id")
-    suspend fun setTransitionState(id: Long, state: String)
 
     @Query("DELETE FROM state_ownership WHERE statePath = :statePath AND emulatorId = :emulatorId")
     suspend fun delete(statePath: String, emulatorId: String)

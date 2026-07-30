@@ -32,17 +32,28 @@ interface SaveCacheDao {
     @Query("SELECT * FROM save_cache WHERE gameId = :gameId AND channelName = :channelName LIMIT 1")
     suspend fun getByGameAndChannel(gameId: Long, channelName: String): SaveCacheEntity?
 
-    @Query("SELECT * FROM save_cache WHERE gameId = :gameId AND contentHash = :hash LIMIT 1")
-    suspend fun getByGameAndHash(gameId: Long, hash: String): SaveCacheEntity?
+    @Query("""
+        SELECT * FROM save_cache
+        WHERE gameId = :gameId AND contentHash = :hash
+          AND (ownerUserId IS NULL OR ownerUserId = :ownerUserId)
+        LIMIT 1
+    """)
+    suspend fun getByGameAndHash(gameId: Long, ownerUserId: Long?, hash: String): SaveCacheEntity?
 
     @Query("""
         SELECT * FROM save_cache
         WHERE gameId = :gameId
           AND ((channelName IS NULL AND :channelName IS NULL) OR channelName = :channelName)
           AND contentHash = :hash
+          AND (ownerUserId IS NULL OR ownerUserId = :ownerUserId)
         ORDER BY cachedAt ASC
     """)
-    suspend fun getAllByGameChannelAndHash(gameId: Long, channelName: String?, hash: String): List<SaveCacheEntity>
+    suspend fun getAllByGameChannelAndHash(
+        gameId: Long,
+        ownerUserId: Long?,
+        channelName: String?,
+        hash: String
+    ): List<SaveCacheEntity>
 
     @Query("SELECT * FROM save_cache WHERE gameId = :gameId AND slotName = :slotName LIMIT 1")
     suspend fun getByGameAndSlot(gameId: Long, slotName: String): SaveCacheEntity?
@@ -163,8 +174,18 @@ interface SaveCacheDao {
     """)
     suspend fun getMostRecent(gameId: Long, ownerUserId: Long?): SaveCacheEntity?
 
-    @Query("SELECT * FROM save_cache WHERE gameId = :gameId AND saveSize = :size AND cachedAt >= :fileMtime ORDER BY cachedAt DESC LIMIT 1")
-    suspend fun findUnchangedSinceMtime(gameId: Long, size: Long, fileMtime: Instant): SaveCacheEntity?
+    @Query("""
+        SELECT * FROM save_cache
+        WHERE gameId = :gameId AND saveSize = :size AND cachedAt >= :fileMtime
+          AND (ownerUserId IS NULL OR ownerUserId = :ownerUserId)
+        ORDER BY cachedAt DESC LIMIT 1
+    """)
+    suspend fun findUnchangedSinceMtime(
+        gameId: Long,
+        ownerUserId: Long?,
+        size: Long,
+        fileMtime: Instant
+    ): SaveCacheEntity?
 
     @Query("SELECT * FROM save_cache WHERE gameId = :gameId AND cachedAt = :timestamp LIMIT 1")
     suspend fun getByTimestamp(gameId: Long, timestamp: Long): SaveCacheEntity?
@@ -232,8 +253,16 @@ interface SaveCacheDao {
     """)
     suspend fun markSynced(id: Long, syncedAt: Instant)
 
-    @Query("UPDATE save_cache SET ownerUserId = :ownerUserId WHERE id = :id")
-    suspend fun updateOwner(id: Long, ownerUserId: Long?)
+    /**
+     * Attributes an unowned row, or re-affirms one already owned by [ownerUserId]. A row belonging
+     * to a different account is refused: the duplicate-collapse paths can hand this an id that is
+     * not the caller's, and re-owning it moves another account's restore point.
+     */
+    @Query("""
+        UPDATE save_cache SET ownerUserId = :ownerUserId
+        WHERE id = :id AND (ownerUserId IS NULL OR ownerUserId = :ownerUserId)
+    """)
+    suspend fun updateOwner(id: Long, ownerUserId: Long?): Int
 
     @Query("UPDATE save_cache SET serverCurrentAtSync = :serverCurrent WHERE id = :id")
     suspend fun updateServerCurrentAtSync(id: Long, serverCurrent: Boolean)

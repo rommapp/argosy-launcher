@@ -47,8 +47,8 @@ class SaveCacheManagerCachingTest {
         every { context.cacheDir } returns File(tempDir, "cache").apply { mkdirs() }
         every { preferencesRepository.userPreferences } returns flowOf(UserPreferences())
         every { saveHandlerRegistry.getFolderHandler(any()) } returns null
-        coEvery { saveCacheDao.findUnchangedSinceMtime(any(), any(), any()) } returns null
-        coEvery { saveCacheDao.getByGameAndHash(any(), any()) } returns null
+        coEvery { saveCacheDao.findUnchangedSinceMtime(any(), any(), any(), any()) } returns null
+        coEvery { saveCacheDao.getByGameAndHash(any(), any(), any()) } returns null
         coEvery { saveCacheDao.insert(any()) } returns 1L
 
         coEvery { syncPreferencesRepository.isSecureSaves() } returns true
@@ -103,7 +103,7 @@ class SaveCacheManagerCachingTest {
             channelName = SaveSyncApiClient.AUTOSAVE_SLOT_NAME,
         )
         coEvery {
-            saveCacheDao.getAllByGameChannelAndHash(1L, SaveSyncApiClient.AUTOSAVE_SLOT_NAME, any())
+            saveCacheDao.getAllByGameChannelAndHash(1L, any(), SaveSyncApiClient.AUTOSAVE_SLOT_NAME, any())
         } returns listOf(existing)
 
         val result = manager.cacheCurrentSave(
@@ -125,7 +125,7 @@ class SaveCacheManagerCachingTest {
             cachedAt = Instant.now(), saveSize = 1024L,
             cachePath = "1/old/game.srm", contentHash = "cafebabe",
         )
-        coEvery { saveCacheDao.findUnchangedSinceMtime(1L, 1024L, any()) } returns unchanged
+        coEvery { saveCacheDao.findUnchangedSinceMtime(1L, any(), 1024L, any()) } returns unchanged
 
         val result = manager.cacheCurrentSave(
             gameId = 1L, emulatorId = "retroarch", savePath = save.absolutePath,
@@ -133,14 +133,14 @@ class SaveCacheManagerCachingTest {
 
         assertTrue(result is SaveCacheManager.CacheResult.Duplicate)
         assertEquals("cafebabe", (result as SaveCacheManager.CacheResult.Duplicate).contentHash)
-        coVerify(exactly = 0) { saveCacheDao.getAllByGameChannelAndHash(any(), any(), any()) }
+        coVerify(exactly = 0) { saveCacheDao.getAllByGameChannelAndHash(any(), any(), any(), any()) }
         coVerify(exactly = 0) { saveCacheDao.insert(any()) }
     }
 
     @Test
     fun `skipDuplicateCheck bypasses both mtime shortcut and hash lookup`() = runTest {
         val save = File(tempDir, "game.srm").apply { writeBytes(ByteArray(512)) }
-        coEvery { saveCacheDao.findUnchangedSinceMtime(any(), any(), any()) } returns SaveCacheEntity(
+        coEvery { saveCacheDao.findUnchangedSinceMtime(any(), any(), any(), any()) } returns SaveCacheEntity(
             id = 7L, gameId = 1L, emulatorId = "retroarch",
             cachedAt = Instant.now(), saveSize = 512L,
             cachePath = "1/old/game.srm", contentHash = "should-not-short-circuit",
@@ -227,7 +227,7 @@ class SaveCacheManagerCachingTest {
             channelName = "checkpoint",
             contentHash = "shared-H",
         )
-        coEvery { saveCacheDao.getByGameAndHash(1L, any()) } returns existingInCheckpoint
+        coEvery { saveCacheDao.getByGameAndHash(1L, any(), any()) } returns existingInCheckpoint
 
         val result = manager.cacheCurrentSave(
             gameId = 1L,
@@ -257,7 +257,7 @@ class SaveCacheManagerCachingTest {
             channelName = "checkpoint",
             contentHash = "shared-H",
         )
-        coEvery { saveCacheDao.getByGameAndHash(1L, any()) } returns existingInChannel
+        coEvery { saveCacheDao.getByGameAndHash(1L, any(), any()) } returns existingInChannel
 
         val result = manager.cacheAsRollback(
             gameId = 1L,

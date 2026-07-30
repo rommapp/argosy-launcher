@@ -56,16 +56,6 @@ interface PendingSocialSyncDao {
     @Query("DELETE FROM pending_social_sync WHERE id IN (:ids)")
     suspend fun deleteByIds(ids: List<Long>)
 
-    @Query("SELECT COUNT(*) FROM pending_social_sync WHERE status = 'PENDING'")
-    suspend fun getPendingCount(): Int
-
-    @Query("""
-        SELECT * FROM pending_social_sync
-        WHERE status = 'FAILED' AND retryCount < maxRetries
-        ORDER BY occurredAt ASC
-    """)
-    suspend fun getRetryable(): List<PendingSocialSyncEntity>
-
     @Query("""
         UPDATE pending_social_sync
         SET status = 'PENDING', updatedAt = :now

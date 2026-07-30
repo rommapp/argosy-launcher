@@ -143,7 +143,6 @@ import com.nendo.argosy.ui.input.LocalModifiedInputHandler
 import com.nendo.argosy.domain.model.SyncProgress
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
-import com.nendo.argosy.ui.theme.AspectRatioClass
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalBoxArtStyle
 import com.nendo.argosy.ui.theme.LocalUiScale

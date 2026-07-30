@@ -29,8 +29,8 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import android.content.Intent
 import com.nendo.argosy.ui.util.doubleTapNoFocus
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
 import com.nendo.argosy.libretro.LibretroActivity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -1046,6 +1046,8 @@ fun ArgosyApp(
                     rootFocusRequester.requestFocus()
                 }
 
+                var drawerWidthPx by remember { mutableStateOf(0f) }
+
                 ModalNavigationDrawer(
                 drawerState = drawerState,
                 gesturesEnabled = !uiState.isFirstRun,
@@ -1084,16 +1086,20 @@ fun ArgosyApp(
                                 DrawerTab.NAVIGATION -> viewModel.switchToNavTab()
                                 DrawerTab.FRIENDS -> viewModel.switchToFriendsTab()
                             }
-                        }
+                        },
+                        modifier = Modifier.onSizeChanged { drawerWidthPx = it.width.toFloat() }
                     )
                 }
             ) {
-                val density = LocalDensity.current
-                val drawerWidthPx = remember { with(density) { 360.dp.toPx() } }
                 val drawerBlurProgress by remember(drawerState) {
                     derivedStateOf {
                         val offset = drawerState.currentOffset
-                        if (offset.isNaN()) 0f else (1f + offset / drawerWidthPx).coerceIn(0f, 1f)
+                        val width = drawerWidthPx
+                        if (offset.isNaN() || width <= 0f) {
+                            0f
+                        } else {
+                            (1f + offset / width).coerceIn(0f, 1f)
+                        }
                     }
                 }
                 val drawerBlur = (drawerBlurProgress * Motion.blurRadiusDrawer.value).dp

@@ -182,6 +182,14 @@ def main_sweep(root, rng):
 ACK_TRAILER_RE = re.compile(r"^Coupling-ack:\s*(.+)$", re.M)
 MIN_ACK = 20
 
+"""A `git add` chained ahead of the commit in the same command.
+
+The hook runs before the command does, so the index is still empty at that point and the
+staged diff shows nothing. Without this the guard passes silently on the shape an agent
+reaches for most, and the breakpoint is never seen rather than deliberately waved.
+"""
+STAGES_FIRST_RE = re.compile(r"\bgit\b[^|;&]*\badd\b")
+
 
 def commit_message(cmd, root):
     """The message this commit will carry, from -m or -F. Empty when neither is present."""
@@ -245,7 +253,7 @@ def main():
     skipped = ack is not None and len(ack) >= MIN_ACK
 
     diff = run_git(["git", "diff", "--cached", "--unified=0"], root)
-    if re.search(r"(?:\s-[A-Za-z]*a[A-Za-z]*\b|\s--all\b)", cmd):
+    if STAGES_FIRST_RE.search(cmd) or re.search(r"(?:\s-[A-Za-z]*a[A-Za-z]*\b|\s--all\b)", cmd):
         diff += "\n" + run_git(["git", "diff", "--unified=0"], root)
     added = parse_added(diff)
     if not added:

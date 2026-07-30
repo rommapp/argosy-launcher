@@ -450,7 +450,7 @@ object PlatformDefinitions {
         // MICROSOFT (400-449) - Chronological order
         // =====================================================================
         PlatformDef("xbox", "Xbox", "Xbox", setOf("iso", "xiso", "zip", "7z"), 400),
-        PlatformDef("xbox360", "Xbox 360", "X360", setOf("iso", "xex", "xbla", "god", "zip", "7z"), 410),
+        PlatformDef("xbox360", "Xbox 360", "X360", setOf("iso", "xex", "zar", "xbla", "god", "zip", "7z"), 410),
         PlatformDef("xboxone", "Xbox One", "XB1", emptySet(), 420),
         PlatformDef("xboxseriesx", "Xbox Series X", "XSX", emptySet(), 430),
 

@@ -199,6 +199,17 @@ fun VirtualCategoryScreen(
                         add(InputButton.SELECT to "Download All (${uiState.downloadableGamesCount})")
                     }
                 }
+            },
+            onHintClick = { button ->
+                when (button) {
+                    InputButton.A -> { inputHandler.onConfirm() }
+                    InputButton.B -> { inputHandler.onBack() }
+                    InputButton.X -> { inputHandler.onContextMenu() }
+                    InputButton.Y -> { inputHandler.onSecondaryAction() }
+                    InputButton.SELECT -> { inputHandler.onSelect() }
+                    InputButton.START -> { inputHandler.onMenu() }
+                    else -> Unit
+                }
             }
         )
 

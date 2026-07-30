@@ -186,7 +186,13 @@ fun SyncFiltersModal(
                     InputButton.DPAD to "Navigate",
                     InputButton.A to "Toggle",
                     InputButton.B to "Close"
-                )
+                ),
+                onHintClick = { button ->
+                    when (button) {
+                        InputButton.B -> onDismiss()
+                        else -> Unit
+                    }
+                }
             )
         }
 

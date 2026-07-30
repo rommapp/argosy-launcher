@@ -106,7 +106,14 @@ fun VariantPickerModal(
                     InputButton.DPAD to "Navigate",
                     InputButton.A to "Select",
                     InputButton.B to "Cancel"
-                )
+                ),
+                onHintClick = { button ->
+                    when (button) {
+                        InputButton.A -> onConfirm()
+                        InputButton.B -> onDismiss()
+                        else -> Unit
+                    }
+                }
             )
         }
     }

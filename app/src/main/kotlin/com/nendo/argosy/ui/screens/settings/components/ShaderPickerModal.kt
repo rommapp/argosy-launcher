@@ -158,7 +158,13 @@ fun ShaderPickerModal(
                     InputButton.DPAD_HORIZONTAL to "Section",
                     InputButton.A to "Add",
                     InputButton.B to "Cancel"
-                )
+                ),
+                onHintClick = { button ->
+                    when (button) {
+                        InputButton.B -> onDismiss()
+                        else -> Unit
+                    }
+                }
             )
         }
     }

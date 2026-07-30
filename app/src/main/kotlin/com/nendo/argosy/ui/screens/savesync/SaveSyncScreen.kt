@@ -205,7 +205,17 @@ fun SaveSyncScreen(
             }
         }
 
-        FooterHints(hints = buildFooterHints(uiState))
+        FooterHints(
+            hints = buildFooterHints(uiState),
+            onHintClick = { button ->
+                when (button) {
+                    InputButton.A -> { inputHandler.onConfirm() }
+                    InputButton.Y -> { inputHandler.onSecondaryAction() }
+                    InputButton.B -> { inputHandler.onBack() }
+                    else -> Unit
+                }
+            }
+        )
     }
 }
 

@@ -109,7 +109,14 @@ fun SoundPickerPopup(
                 hints = listOf(
                     InputButton.A to "Select",
                     InputButton.B to "Close"
-                )
+                ),
+                onHintClick = { button ->
+                    when (button) {
+                        InputButton.A -> onConfirm(focusIndex)
+                        InputButton.B -> onDismiss()
+                        else -> Unit
+                    }
+                }
             )
         }
     }

@@ -891,6 +891,20 @@ object EmulatorRegistry {
         ),
 
         EmulatorDef(
+            id = "xendroid",
+            packageName = "xendroid.compose",
+            displayName = "XenDroid",
+            supportedPlatforms = setOf("xbox360"),
+            launchAction = "xendroid.intent.action.xendroid",
+            launchConfig = LaunchConfig.Custom(
+                activityClass = "xendroid.compose.EmulatorHostActivity",
+                intentExtras = mapOf("game_uri" to ExtraValue.FilePath)
+            ),
+            defaultLaunchMethod = LaunchMethod.SHELL,
+            downloadUrl = "https://github.com/rfandango/XenDroid/releases",
+            packagePatterns = listOf("xendroid.compose*")
+        ),
+        EmulatorDef(
             id = "ax360e",
             packageName = "aenu.ax360e",
             displayName = "AX360E",
@@ -1044,7 +1058,7 @@ object EmulatorRegistry {
         "wsc" to listOf("builtin", "retroarch", "retroarch_64", "retroarch_32"),
         "pokemini" to listOf("builtin", "retroarch", "retroarch_64", "retroarch_32"),
         "gameandwatch" to listOf("builtin", "retroarch", "retroarch_64", "retroarch_32"),
-        "xbox360" to listOf("ax360e", "ax360e_free"),
+        "xbox360" to listOf("xendroid", "ax360e", "ax360e_free"),
         "steam" to listOf("gamehub", "gamehub_lite", "gamenative"),
         "windows" to listOf("gamenative"),
         "pc" to listOf("gamenative"),

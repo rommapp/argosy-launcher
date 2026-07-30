@@ -132,7 +132,20 @@ fun DriverVersionPickerModal(
                     InputButton.B to "Cancel"
                 )
             }
-            FooterHints(hints = hints)
+            FooterHints(
+                hints = hints,
+                onHintClick = { button ->
+                    when (button) {
+                        InputButton.A -> when {
+                            download == null -> onConfirm()
+                            terminal -> onDismiss()
+                            else -> Unit
+                        }
+                        InputButton.B -> onDismiss()
+                        else -> Unit
+                    }
+                }
+            )
         }
     }
 }

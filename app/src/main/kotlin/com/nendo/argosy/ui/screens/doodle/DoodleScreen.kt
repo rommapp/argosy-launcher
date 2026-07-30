@@ -130,11 +130,20 @@ fun DoodleScreen(
             .background(MaterialTheme.colorScheme.background)
     ) {
         val isLandscape = maxWidth > maxHeight
+        val onHintClick: (InputButton) -> Unit = { button ->
+            when (button) {
+                InputButton.A -> { inputHandler.onConfirm() }
+                InputButton.B -> { inputHandler.onBack() }
+                InputButton.Y -> { inputHandler.onSecondaryAction() }
+                InputButton.START -> { inputHandler.onMenu() }
+                else -> Unit
+            }
+        }
 
         if (isLandscape) {
-            LandscapeLayout(uiState = uiState, viewModel = viewModel)
+            LandscapeLayout(uiState = uiState, viewModel = viewModel, onHintClick = onHintClick)
         } else {
-            PortraitLayout(uiState = uiState, viewModel = viewModel)
+            PortraitLayout(uiState = uiState, viewModel = viewModel, onHintClick = onHintClick)
         }
     }
 
@@ -168,7 +177,8 @@ fun DoodleScreen(
 @Composable
 private fun LandscapeLayout(
     uiState: DoodleUiState,
-    viewModel: DoodleViewModel
+    viewModel: DoodleViewModel,
+    onHintClick: (InputButton) -> Unit
 ) {
     Column(modifier = Modifier.fillMaxSize()) {
         Row(
@@ -268,7 +278,8 @@ private fun LandscapeLayout(
             hasContent = uiState.hasContent,
             canUndo = uiState.canUndo,
             canRedo = uiState.canRedo,
-            linkedGameTitle = uiState.linkedGameTitle
+            linkedGameTitle = uiState.linkedGameTitle,
+            onHintClick = onHintClick
         )
     }
 }
@@ -276,7 +287,8 @@ private fun LandscapeLayout(
 @Composable
 private fun PortraitLayout(
     uiState: DoodleUiState,
-    viewModel: DoodleViewModel
+    viewModel: DoodleViewModel,
+    onHintClick: (InputButton) -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -387,7 +399,8 @@ private fun PortraitLayout(
             hasContent = uiState.hasContent,
             canUndo = uiState.canUndo,
             canRedo = uiState.canRedo,
-            linkedGameTitle = uiState.linkedGameTitle
+            linkedGameTitle = uiState.linkedGameTitle,
+            onHintClick = onHintClick
         )
     }
 }
@@ -670,7 +683,8 @@ private fun DoodleFooter(
     hasContent: Boolean,
     canUndo: Boolean,
     canRedo: Boolean,
-    linkedGameTitle: String? = null
+    linkedGameTitle: String? = null,
+    onHintClick: ((InputButton) -> Unit)? = null
 ) {
     val hints = buildList {
         when (currentSection) {
@@ -718,7 +732,10 @@ private fun DoodleFooter(
         add(InputButton.B to backLabel)
     }
 
-    FooterHints(hints = hints)
+    FooterHints(
+        hints = hints,
+        onHintClick = onHintClick
+    )
     FooterSpacer()
 }
 

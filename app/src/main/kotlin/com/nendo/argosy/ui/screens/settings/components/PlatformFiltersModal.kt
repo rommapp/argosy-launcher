@@ -26,6 +26,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import com.nendo.argosy.ui.components.FocusedScroll
 import com.nendo.argosy.ui.components.FooterHints
+import com.nendo.argosy.ui.components.InputButton
 import com.nendo.argosy.ui.components.PlatformFilterHeader
 import com.nendo.argosy.ui.components.SwitchPreference
 import com.nendo.argosy.ui.components.platformFilterHints
@@ -167,7 +168,20 @@ fun PlatformFiltersModal(
 
             Spacer(modifier = Modifier.height(Dimens.spacingSm))
 
-            FooterHints(hints = platformFilterHints(searchActive, sortMenuOpen, headerFocused))
+            FooterHints(
+                hints = platformFilterHints(searchActive, sortMenuOpen, headerFocused),
+                onHintClick = { button ->
+                    when (button) {
+                        InputButton.A -> if (searchActive) onCloseSearch() else Unit
+                        InputButton.B -> when {
+                            sortMenuOpen -> onCloseSortMenu()
+                            searchActive -> onCloseSearch()
+                            else -> onDismiss()
+                        }
+                        else -> Unit
+                    }
+                }
+            )
         }
     }
 }

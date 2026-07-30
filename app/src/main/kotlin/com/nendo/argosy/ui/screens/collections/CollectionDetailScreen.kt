@@ -212,7 +212,20 @@ fun CollectionDetailScreen(
             )
             baseHints + pinHint + jumpHint + optionsHint + refreshHint
         }
-        FooterHints(hints = hints)
+        FooterHints(
+            hints = hints,
+            onHintClick = { button ->
+                when (button) {
+                    InputButton.A -> { inputHandler.onConfirm() }
+                    InputButton.B -> { inputHandler.onBack() }
+                    InputButton.X -> { inputHandler.onContextMenu() }
+                    InputButton.Y -> { inputHandler.onSecondaryAction() }
+                    InputButton.SELECT -> { inputHandler.onSelect() }
+                    InputButton.START -> { inputHandler.onMenu() }
+                    else -> Unit
+                }
+            }
+        )
 
         uiState.overlayLetter?.let { letter ->
             Box(

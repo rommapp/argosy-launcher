@@ -161,6 +161,19 @@ fun RegionPickerPopup(
                         InputButton.A to "Toggle",
                         InputButton.B to "Close"
                     )
+                },
+                onHintClick = { button ->
+                    val focusedRegion = regions.getOrNull(focusIndex)
+                    when (button) {
+                        InputButton.A -> when {
+                            heldRegion != null -> onDrop()
+                            focusedRegion != null -> onToggle(focusedRegion)
+                            else -> Unit
+                        }
+                        InputButton.X -> if (focusedRegion != null) onLift(focusedRegion) else Unit
+                        InputButton.B -> onDismiss()
+                        else -> Unit
+                    }
                 }
             )
         }

@@ -223,7 +223,19 @@ fun CollectionsScreen(
             } else {
                 emptyList()
             }
-            FooterHints(hints = baseHints + contextHints)
+            FooterHints(
+                hints = baseHints + contextHints,
+                onHintClick = { button ->
+                    when (button) {
+                        InputButton.A -> { inputHandler.onConfirm() }
+                        InputButton.B -> { inputHandler.onBack() }
+                        InputButton.X -> { inputHandler.onContextMenu() }
+                        InputButton.Y -> { inputHandler.onSecondaryAction() }
+                        InputButton.SELECT -> { inputHandler.onSelect() }
+                        else -> Unit
+                    }
+                }
+            )
         }
     }
 

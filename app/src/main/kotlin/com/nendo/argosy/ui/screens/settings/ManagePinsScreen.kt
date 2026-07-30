@@ -154,7 +154,17 @@ fun ManagePinsScreen(
             )
         }
 
-        FooterHints(hints = hints)
+        FooterHints(
+            hints = hints,
+            onHintClick = { button ->
+                when (button) {
+                    InputButton.A -> { inputHandler.onConfirm() }
+                    InputButton.Y -> { inputHandler.onSecondaryAction() }
+                    InputButton.B -> { inputHandler.onBack() }
+                    else -> Unit
+                }
+            }
+        )
     }
 }
 

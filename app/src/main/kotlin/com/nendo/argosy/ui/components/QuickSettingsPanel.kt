@@ -198,6 +198,7 @@ fun QuickSettingsPanel(
     onQuayPassToggle: () -> Unit = {},
     onDismiss: () -> Unit,
     footerHints: List<Pair<InputButton, String>> = listOf(InputButton.B to "Close"),
+    onHintClick: ((InputButton) -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     val permissionMissing = state.deviceSettingsSupported && !state.deviceSettingsEnabled
@@ -380,7 +381,7 @@ fun QuickSettingsPanel(
                     }
                 }
 
-                FooterHints(hints = footerHints)
+                FooterHints(hints = footerHints, onHintClick = onHintClick)
                 FooterSpacer()
             }
         }

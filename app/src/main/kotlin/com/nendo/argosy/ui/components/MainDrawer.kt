@@ -87,6 +87,7 @@ fun MainDrawer(
     onAddFriendByCode: (String) -> Unit,
     onJoinFriendSession: (Friend) -> Unit,
     onSelectTab: (DrawerTab) -> Unit,
+    onHintClick: ((InputButton) -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     ModalDrawerSheet(modifier = modifier) {
@@ -157,7 +158,8 @@ fun MainDrawer(
                 }
             } else {
                 emptyList()
-            }
+            },
+            onHintClick = onHintClick
         )
     }
 

@@ -223,7 +223,16 @@ fun PostEditorScreen(
             canPost = uiState.canPost,
             hasContent = uiState.hasContent,
             hasDoodle = uiState.hasDoodle,
-            linkedGameTitle = uiState.linkedGameTitle
+            linkedGameTitle = uiState.linkedGameTitle,
+            onHintClick = { button ->
+                when (button) {
+                    InputButton.A -> { inputHandler.onConfirm() }
+                    InputButton.Y -> { inputHandler.onSecondaryAction() }
+                    InputButton.START -> { inputHandler.onMenu() }
+                    InputButton.B -> { inputHandler.onBack() }
+                    else -> Unit
+                }
+            }
         )
     }
 
@@ -521,7 +530,8 @@ private fun PostEditorFooter(
     canPost: Boolean,
     hasContent: Boolean,
     hasDoodle: Boolean,
-    linkedGameTitle: String?
+    linkedGameTitle: String?,
+    onHintClick: ((InputButton) -> Unit)? = null
 ) {
     val hints = buildList {
         when (currentSection) {
@@ -551,7 +561,7 @@ private fun PostEditorFooter(
         val backLabel = if (hasContent) "Discard" else "Back"
         add(InputButton.B to backLabel)
     }
-    FooterHints(hints = hints)
+    FooterHints(hints = hints, onHintClick = onHintClick)
     FooterSpacer()
 }
 

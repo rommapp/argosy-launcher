@@ -669,7 +669,21 @@ fun SettingsScreen(
                 }
             }
 
-            SettingsFooter(uiState, viewModel.shaderChainManager.shaderStack)
+            SettingsFooter(
+                uiState = uiState,
+                shaderStack = viewModel.shaderChainManager.shaderStack,
+                onHintClick = { button ->
+                    when (button) {
+                        InputButton.A -> { inputHandler.onConfirm() }
+                        InputButton.X -> { inputHandler.onContextMenu() }
+                        InputButton.Y -> { inputHandler.onSecondaryAction() }
+                        InputButton.LB_RB -> { inputHandler.onNextSection() }
+                        InputButton.LT_RT -> { inputHandler.onNextTrigger() }
+                        InputButton.B -> { inputHandler.onBack() }
+                        else -> Unit
+                    }
+                }
+            )
         }
 
         AnimatedVisibility(
@@ -1317,7 +1331,11 @@ private fun AccountModals(uiState: SettingsUiState, viewModel: SettingsViewModel
 }
 
 @Composable
-private fun SettingsFooter(uiState: SettingsUiState, shaderStack: ShaderStackState) {
+private fun SettingsFooter(
+    uiState: SettingsUiState,
+    shaderStack: ShaderStackState,
+    onHintClick: ((InputButton) -> Unit)? = null
+) {
     if (uiState.emulators.showSavePathModal || uiState.emulators.showEmulatorPicker ||
         uiState.emulators.updateModal != null || uiState.emulators.showLaunchArgsModal ||
         uiState.emulators.showAppPickerModal || uiState.emulators.showMemcardPicker) {
@@ -1532,7 +1550,7 @@ private fun SettingsFooter(uiState: SettingsUiState, shaderStack: ShaderStackSta
         add(InputButton.B to "Back")
     }
 
-    FooterHints(hints = hints)
+    FooterHints(hints = hints, onHintClick = onHintClick)
     FooterSpacer()
 }
 

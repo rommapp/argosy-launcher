@@ -400,6 +400,16 @@ fun FeedEventDetailScreen(
                 if (uiState.event?.user != null) {
                     add(InputButton.SELECT to "Profile")
                 }
+            },
+            onHintClick = { button ->
+                when (button) {
+                    InputButton.A -> { inputHandler.onConfirm() }
+                    InputButton.X -> { inputHandler.onContextMenu() }
+                    InputButton.Y -> { inputHandler.onSecondaryAction() }
+                    InputButton.SELECT -> { inputHandler.onSelect() }
+                    InputButton.B -> { inputHandler.onBack() }
+                    else -> Unit
+                }
             }
         )
         FooterSpacer()

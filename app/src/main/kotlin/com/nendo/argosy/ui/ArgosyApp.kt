@@ -1087,6 +1087,20 @@ fun ArgosyApp(
                                 DrawerTab.FRIENDS -> viewModel.switchToFriendsTab()
                             }
                         },
+                        onHintClick = { button ->
+                            when (button) {
+                                com.nendo.argosy.ui.components.InputButton.A -> {
+                                    drawerInputHandler.onConfirm()
+                                }
+                                com.nendo.argosy.ui.components.InputButton.X -> {
+                                    drawerInputHandler.onContextMenu()
+                                }
+                                com.nendo.argosy.ui.components.InputButton.Y -> {
+                                    drawerInputHandler.onSecondaryAction()
+                                }
+                                else -> Unit
+                            }
+                        },
                         modifier = Modifier.onSizeChanged { drawerWidthPx = it.width.toFloat() }
                     )
                 }
@@ -1832,6 +1846,9 @@ fun ArgosyApp(
 
             // Quick Settings Panel (right-side drawer)
             QuickSettingsPanel(
+                onHintClick = { button ->
+                    if (button == com.nendo.argosy.ui.components.InputButton.B) closeQuickSettings()
+                },
                 isVisible = isQuickSettingsOpen,
                 state = QuickSettingsState(
                     themeMode = quickSettingsUiState.themeMode,

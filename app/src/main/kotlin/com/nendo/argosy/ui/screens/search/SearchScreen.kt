@@ -124,7 +124,16 @@ fun SearchScreen(
 
         Spacer(modifier = Modifier.weight(1f))
 
-        SearchFooter(resultCount = uiState.results.size)
+        SearchFooter(
+            resultCount = uiState.results.size,
+            onHintClick = { button ->
+                when (button) {
+                    InputButton.A -> { inputHandler.onConfirm() }
+                    InputButton.B -> { inputHandler.onBack() }
+                    else -> Unit
+                }
+            }
+        )
     }
 }
 
@@ -326,13 +335,17 @@ private fun LoadingState() {
 }
 
 @Composable
-private fun SearchFooter(resultCount: Int) {
+private fun SearchFooter(
+    resultCount: Int,
+    onHintClick: ((InputButton) -> Unit)? = null
+) {
     FooterHints(
         hints = listOf(
             InputButton.DPAD to "Navigate",
             InputButton.A to "Select",
             InputButton.B to "Back/Clear"
         ),
+        onHintClick = onHintClick,
         trailingContent = if (resultCount > 0) {
             {
                 Text(

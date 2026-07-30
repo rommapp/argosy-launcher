@@ -2895,3 +2895,13 @@ object Migration_160_161 : Migration(160, 161) {
         )
     }
 }
+
+/**
+ * Per-port libretro controller device ids, encoded as `port:deviceId` pairs. Nullable with no SQL
+ * default: absent means the core keeps the device it auto-assigns on load.
+ */
+object Migration_161_162 : Migration(161, 162) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE `emulator_configs` ADD COLUMN `controllerTypes` TEXT")
+    }
+}

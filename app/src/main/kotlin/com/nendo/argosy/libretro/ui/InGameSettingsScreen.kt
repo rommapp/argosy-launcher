@@ -49,6 +49,7 @@ import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.nendo.argosy.ui.components.CyclePreference
 import com.nendo.argosy.ui.components.FooterBar
 import com.nendo.argosy.ui.components.InputButton
 import com.nendo.argosy.ui.components.NavigationPreference
@@ -77,9 +78,22 @@ enum class InGameSettingsTab(val label: String) {
     CORE_OPTIONS("Core Options")
 }
 
+/**
+ * One libretro port the running core advertises. [options] are the core's own device
+ * descriptions, in the core's order; [selectedIndex] indexes into them.
+ */
+data class ControllerPortOption(
+    val port: Int,
+    val options: List<String>,
+    val selectedIndex: Int,
+    val isOverridden: Boolean,
+    val pendingRestart: Boolean = false
+)
+
 data class InGameControlsState(
     val gameSpecificControls: Boolean = false,
     val supportsGameSpecificControls: Boolean = false,
+    val controllerPorts: List<ControllerPortOption> = emptyList(),
     val rumbleEnabled: Boolean = true,
     val analogAsDpad: Boolean = false,
     val dpadAsAnalog: Boolean = false,
@@ -107,6 +121,9 @@ sealed class InGameControlsAction {
         val mode: com.nendo.argosy.data.local.entity.FastForwardMode
     ) : InGameControlsAction()
     data class SetFastForwardPreservePitch(val enabled: Boolean) : InGameControlsAction()
+    data class CycleControllerType(val port: Int, val direction: Int) : InGameControlsAction()
+    data class SelectControllerType(val port: Int, val optionIndex: Int) : InGameControlsAction()
+    data class ResetControllerType(val port: Int) : InGameControlsAction()
     data object ShowControllerOrder : InGameControlsAction()
     data object ShowInputMapping : InGameControlsAction()
     data object ShowHotkeys : InGameControlsAction()
@@ -146,6 +163,7 @@ internal sealed class InGameControlsItem(
     class Header(key: String, section: String, val title: String) : InGameControlsItem(key, section)
     data object GameSpecificControls : InGameControlsItem("gameSpecificControls", "controllers")
     data object ControllerOrder : InGameControlsItem("controllerOrder", "controllers")
+    data class ControllerType(val port: Int) : InGameControlsItem("controllerType$port", "controllers")
     data object InputMapping : InGameControlsItem("inputMapping", "controllers")
     data object Rumble : InGameControlsItem("rumble", "controllers")
     data object AnalogAsDpad : InGameControlsItem("analogAsDpad", "sticks")
@@ -164,6 +182,10 @@ internal sealed class InGameControlsItem(
             Header("controllersHeader", "controllers", "Controllers"),
             GameSpecificControls,
             ControllerOrder,
+            ControllerType(0),
+            ControllerType(1),
+            ControllerType(2),
+            ControllerType(3),
             InputMapping,
             Rumble,
             Header("sticksHeader", "sticks", "Analog Sticks"),
@@ -186,7 +208,8 @@ internal sealed class InGameControlsItem(
 internal data class InGameControlsVisibility(
     val hasAnalogStick: Boolean,
     val hasRumble: Boolean,
-    val hasGame: Boolean
+    val hasGame: Boolean,
+    val selectablePorts: Set<Int>
 )
 
 private val controlsLayout = SettingsLayout<InGameControlsItem, InGameControlsVisibility>(
@@ -197,6 +220,7 @@ private val controlsLayout = SettingsLayout<InGameControlsItem, InGameControlsVi
             InGameControlsItem.Rumble -> visibility.hasRumble
             InGameControlsItem.DpadAsAnalog -> visibility.hasAnalogStick
             InGameControlsItem.GameSpecificControls -> visibility.hasGame
+            is InGameControlsItem.ControllerType -> item.port in visibility.selectablePorts
             else -> true
         }
     },
@@ -244,11 +268,19 @@ fun InGameSettingsScreen(
     val currentPerGameEnabled = rememberUpdatedState(perGameSettingsEnabled)
     val currentOnTogglePerGame = rememberUpdatedState(onTogglePerGameSettings)
 
-    val controlsVisibility = remember(platformSlug, controlsState.supportsGameSpecificControls) {
+    val selectablePorts = remember(controlsState.controllerPorts) {
+        controlsState.controllerPorts.mapTo(mutableSetOf()) { it.port }
+    }
+    val controlsVisibility = remember(
+        platformSlug,
+        controlsState.supportsGameSpecificControls,
+        selectablePorts
+    ) {
         InGameControlsVisibility(
             hasAnalogStick = platformSlug != null && PlatformWeightRegistry.hasAnalogStick(platformSlug),
             hasRumble = platformSlug != null && PlatformWeightRegistry.hasRumble(platformSlug),
-            hasGame = controlsState.supportsGameSpecificControls
+            hasGame = controlsState.supportsGameSpecificControls,
+            selectablePorts = selectablePorts
         )
     }
     val maxVideoFocusIndex = remember(platformSlug, canEnableBFI) {
@@ -282,6 +314,13 @@ fun InGameSettingsScreen(
         return currentCoreOptions.value.getOrNull(index - offset)?.key
     }
 
+    fun cycleControlsItem(direction: Int): Boolean {
+        val item = controlsLayout.itemAtFocusIndex(focusedIndex, controlsVisibility)
+        if (item !is InGameControlsItem.ControllerType) return false
+        currentOnControlsAction.value(InGameControlsAction.CycleControllerType(item.port, direction))
+        return true
+    }
+
     fun handleControlsConfirm() {
         val item = controlsLayout.itemAtFocusIndex(focusedIndex, controlsVisibility) ?: return
         val state = currentControlsState.value
@@ -290,6 +329,8 @@ fun InGameSettingsScreen(
             InGameControlsItem.GameSpecificControls -> action(InGameControlsAction.SetGameSpecificControls(!state.gameSpecificControls))
             InGameControlsItem.Rumble -> action(InGameControlsAction.SetRumble(!state.rumbleEnabled))
             InGameControlsItem.ControllerOrder -> showControllerOrderModal = true
+            is InGameControlsItem.ControllerType ->
+                action(InGameControlsAction.CycleControllerType(item.port, 1))
             InGameControlsItem.InputMapping -> showInputMappingModal = true
             InGameControlsItem.AnalogAsDpad -> action(InGameControlsAction.SetAnalogAsDpad(!state.analogAsDpad))
             InGameControlsItem.DpadAsAnalog -> action(InGameControlsAction.SetDpadAsAnalog(!state.dpadAsAnalog))
@@ -357,6 +398,10 @@ fun InGameSettingsScreen(
                     }
                     return InputResult.HANDLED
                 }
+                if (currentTab == InGameSettingsTab.CONTROLS) {
+                    cycleControlsItem(-1)
+                    return InputResult.HANDLED
+                }
                 val setting = getSettingAtIndex(focusedIndex) ?: return InputResult.HANDLED
                 if (accessor.isActionItem(setting)) return InputResult.HANDLED
                 if (setting.type is LibretroSettingDef.SettingType.Cycle) {
@@ -372,6 +417,10 @@ fun InGameSettingsScreen(
                     } else {
                         coreOptionKeyAt(focusedIndex)?.let { currentOnCoreOptionCycle.value(it, 1) }
                     }
+                    return InputResult.HANDLED
+                }
+                if (currentTab == InGameSettingsTab.CONTROLS) {
+                    cycleControlsItem(1)
                     return InputResult.HANDLED
                 }
                 val setting = getSettingAtIndex(focusedIndex) ?: return InputResult.HANDLED
@@ -405,6 +454,16 @@ fun InGameSettingsScreen(
             }
 
             override fun onSecondaryAction(): InputResult {
+                if (currentTab == InGameSettingsTab.CONTROLS) {
+                    val item = controlsLayout.itemAtFocusIndex(focusedIndex, controlsVisibility)
+                    if (item !is InGameControlsItem.ControllerType) return InputResult.UNHANDLED
+                    val port = currentControlsState.value.controllerPorts
+                        .firstOrNull { it.port == item.port } ?: return InputResult.HANDLED
+                    if (port.isOverridden) {
+                        currentOnControlsAction.value(InGameControlsAction.ResetControllerType(item.port))
+                    }
+                    return InputResult.HANDLED
+                }
                 if (currentTab != InGameSettingsTab.CORE_OPTIONS) return InputResult.UNHANDLED
                 if (currentPerGameSupported.value && focusedIndex == 0) return InputResult.HANDLED
                 val offset = if (currentPerGameSupported.value) 1 else 0
@@ -579,6 +638,7 @@ private fun buildSettingsFooterHints(tab: InGameSettingsTab): List<Pair<InputBut
                 add(InputButton.A to "Select")
             }
             InGameSettingsTab.CONTROLS -> {
+                add(InputButton.DPAD_HORIZONTAL to "Adjust")
                 add(InputButton.A to "Select")
             }
             InGameSettingsTab.CORE_OPTIONS -> {
@@ -667,6 +727,32 @@ private fun InGameControlsSection(
                     isFocused = isFocused(item),
                     onClick = { onAction(InGameControlsAction.ShowControllerOrder) }
                 )
+
+                is InGameControlsItem.ControllerType -> {
+                    val portState = state.controllerPorts.firstOrNull { it.port == item.port }
+                    if (portState != null) {
+                        val focused = isFocused(item)
+                        CyclePreference(
+                            title = "Player ${item.port + 1} Controller",
+                            value = portState.options.getOrElse(portState.selectedIndex) { "Default" },
+                            isFocused = focused,
+                            subtitle = when {
+                                portState.pendingRestart -> "Applies next time you launch"
+                                portState.isOverridden -> null
+                                else -> "Chosen by the core"
+                            },
+                            isCustom = portState.isOverridden,
+                            showResetButton = portState.isOverridden && focused,
+                            onReset = { onAction(InGameControlsAction.ResetControllerType(item.port)) },
+                            onClick = { onAction(InGameControlsAction.CycleControllerType(item.port, 1)) },
+                            onPrev = { onAction(InGameControlsAction.CycleControllerType(item.port, -1)) },
+                            options = portState.options,
+                            onSelect = { index ->
+                                onAction(InGameControlsAction.SelectControllerType(item.port, index))
+                            }
+                        )
+                    }
+                }
 
                 InGameControlsItem.InputMapping -> NavigationPreference(
                     icon = Icons.Default.Gamepad,

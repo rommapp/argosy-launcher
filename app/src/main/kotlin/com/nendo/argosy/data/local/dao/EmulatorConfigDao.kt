@@ -88,6 +88,18 @@ interface EmulatorConfigDao {
     @Query("UPDATE emulator_configs SET preferredExtension = :extension WHERE gameId = :gameId")
     suspend fun updatePreferredExtensionForGame(gameId: Long, extension: String?)
 
+    @Query("SELECT controllerTypes FROM emulator_configs WHERE gameId = :gameId LIMIT 1")
+    suspend fun getControllerTypesForGame(gameId: Long): String?
+
+    @Query("SELECT controllerTypes FROM emulator_configs WHERE platformId = :platformId AND gameId IS NULL AND isDefault = 1")
+    suspend fun getControllerTypesForPlatform(platformId: Long): String?
+
+    @Query("UPDATE emulator_configs SET controllerTypes = :controllerTypes WHERE gameId = :gameId")
+    suspend fun updateControllerTypesForGame(gameId: Long, controllerTypes: String?)
+
+    @Query("UPDATE emulator_configs SET controllerTypes = :controllerTypes WHERE platformId = :platformId AND gameId IS NULL AND isDefault = 1")
+    suspend fun updateControllerTypesForPlatform(platformId: Long, controllerTypes: String?)
+
     @Query("DELETE FROM emulator_configs WHERE packageName = :packageName AND gameId IS NULL")
     suspend fun clearPlatformConfigsByPackage(packageName: String)
 

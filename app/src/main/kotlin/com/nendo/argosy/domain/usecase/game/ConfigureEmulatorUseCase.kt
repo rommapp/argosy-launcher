@@ -134,6 +134,50 @@ class ConfigureEmulatorUseCase @Inject constructor(
         }
     }
 
+    suspend fun getControllerTypesForGame(gameId: Long): String? =
+        emulatorConfigDao.getControllerTypesForGame(gameId)
+
+    suspend fun getControllerTypesForPlatform(platformId: Long): String? =
+        emulatorConfigDao.getControllerTypesForPlatform(platformId)
+
+    suspend fun setControllerTypesForGame(gameId: Long, encoded: String?) {
+        val existing = emulatorConfigDao.getByGameId(gameId)
+        if (existing != null) {
+            emulatorConfigDao.updateControllerTypesForGame(gameId, encoded)
+        } else if (encoded != null) {
+            emulatorConfigDao.insert(
+                EmulatorConfigEntity(
+                    platformId = null,
+                    gameId = gameId,
+                    packageName = null,
+                    displayName = null,
+                    coreName = null,
+                    isDefault = false,
+                    controllerTypes = encoded
+                )
+            )
+        }
+    }
+
+    suspend fun setControllerTypesForPlatform(platformId: Long, encoded: String?) {
+        val existing = emulatorConfigDao.getDefaultForPlatform(platformId)
+        if (existing != null) {
+            emulatorConfigDao.updateControllerTypesForPlatform(platformId, encoded)
+        } else if (encoded != null) {
+            emulatorConfigDao.insert(
+                EmulatorConfigEntity(
+                    platformId = platformId,
+                    gameId = null,
+                    packageName = null,
+                    displayName = null,
+                    coreName = null,
+                    isDefault = true,
+                    controllerTypes = encoded
+                )
+            )
+        }
+    }
+
     suspend fun setSavePathForGame(gameId: Long, path: String) {
         val existing = emulatorConfigDao.getByGameId(gameId)
         if (existing != null) {

@@ -2953,3 +2953,20 @@ object Migration_163_164 : Migration(163, 164) {
         )
     }
 }
+
+/**
+ * A per-game mapping was stored once per controller, with nothing recording which console profile
+ * it was authored against. That is only sound while a game has one profile; once the profile
+ * follows the port device, the same game needs a separate mapping per device. Existing rows are
+ * back-filled to the empty key, which resolves as the platform's default profile.
+ */
+object Migration_164_165 : Migration(164, 165) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE `game_controller_mappings` ADD COLUMN `profileKey` TEXT NOT NULL DEFAULT ''")
+        db.execSQL("DROP INDEX IF EXISTS `index_game_controller_mappings_gameId_controllerId`")
+        db.execSQL(
+            "CREATE UNIQUE INDEX IF NOT EXISTS `index_game_controller_mappings_gameId_controllerId_profileKey` " +
+                "ON `game_controller_mappings` (`gameId`, `controllerId`, `profileKey`)"
+        )
+    }
+}

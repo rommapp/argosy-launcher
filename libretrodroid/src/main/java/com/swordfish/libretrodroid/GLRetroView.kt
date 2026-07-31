@@ -421,8 +421,10 @@ class GLRetroView(
         val mappedKey = mapKey(device, keyCode)
         val port = resolvePort(device)
 
-        if (event != null && port >= 0 && keyCode in GamepadsManager.GAMEPAD_KEYS) {
-            sendKeyEvent(KeyEvent.ACTION_DOWN, mappedKey, port)
+        if (event != null && port >= 0 && isPadKey(keyCode, mappedKey)) {
+            if (mappedKey in GamepadsManager.GAMEPAD_KEYS) {
+                sendKeyEvent(KeyEvent.ACTION_DOWN, mappedKey, port)
+            }
             return true
         }
         return super.onKeyDown(keyCode, event)
@@ -433,8 +435,10 @@ class GLRetroView(
         val mappedKey = mapKey(device, keyCode)
         val port = resolvePort(device)
 
-        if (event != null && port >= 0 && keyCode in GamepadsManager.GAMEPAD_KEYS) {
-            sendKeyEvent(KeyEvent.ACTION_UP, mappedKey, port)
+        if (event != null && port >= 0 && isPadKey(keyCode, mappedKey)) {
+            if (mappedKey in GamepadsManager.GAMEPAD_KEYS) {
+                sendKeyEvent(KeyEvent.ACTION_UP, mappedKey, port)
+            }
             return true
         }
         return super.onKeyUp(keyCode, event)
@@ -473,6 +477,14 @@ class GLRetroView(
         if (device == null) return -1
         return portResolver?.getPort(device) ?: ((device.controllerNumber - 1).coerceAtLeast(0))
     }
+
+    /**
+     * A pad button the mapper deliberately silenced still has to be swallowed here. Letting it
+     * reach the platform unhandled invites Android's fallback mapping to rewrite it into something
+     * else entirely, so an unbound B would arrive back as BACK and open the menu.
+     */
+    private fun isPadKey(keyCode: Int, mappedKey: Int): Boolean =
+        keyCode in GamepadsManager.GAMEPAD_KEYS || mappedKey in GamepadsManager.GAMEPAD_KEYS
 
     private fun mapKey(device: InputDevice?, keyCode: Int): Int {
         if (device != null && keyMapper != null) {

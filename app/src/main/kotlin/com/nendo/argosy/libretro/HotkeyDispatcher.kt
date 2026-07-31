@@ -61,6 +61,8 @@ class HotkeyDispatcher(
                     showToast("Save states disabled during netplay")
                 } else if (isHardcoreMode()) {
                     showToast("Save states disabled in Hardcore mode")
+                } else if (!canSerialize()) {
+                    showToast("Save states unavailable for this core")
                 } else {
                     if (saveStateManager.performQuickLoad(getRetroView())) {
                         showToast("State loaded")

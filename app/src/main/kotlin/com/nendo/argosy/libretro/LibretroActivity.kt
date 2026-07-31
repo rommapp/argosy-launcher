@@ -65,6 +65,7 @@ import com.nendo.argosy.data.preferences.UserPreferences
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.repository.InputConfigRepository
 import com.nendo.argosy.data.repository.InputSource
+import com.nendo.argosy.ui.screens.settings.components.ScopedMapping
 import com.nendo.argosy.data.repository.MappingPlatforms
 import com.nendo.argosy.data.repository.RetroButton
 import com.nendo.argosy.data.repository.RetroAchievementsRepository
@@ -463,6 +464,7 @@ class LibretroActivity : ComponentActivity() {
             coreId = resolvedCoreId,
             gameId = perGameMappingId,
             limitHotkeysToPlayer1 = limitHotkeysToPlayer1,
+            controllerTypeForPort = { port -> appliedControllerTypes[port] ?: effectiveControllerType(port) },
             scope = lifecycleScope
         )
         inputConfig.initialize()
@@ -779,6 +781,7 @@ class LibretroActivity : ComponentActivity() {
             cheatDao = cheatDao,
             gameDao = gameDao,
             cheatsRepository = cheatsRepository,
+            canSerialize = { canSerialize },
             scope = lifecycleScope
         )
         cheatManager.setRetroView(retroView)
@@ -1301,7 +1304,9 @@ class LibretroActivity : ComponentActivity() {
                         focusedIndex = quickTimelineFocusIndex,
                         onFocusChange = { quickTimelineFocusIndex = it },
                         onLoad = { slot ->
-                            inGameMessage = if (saveStateManager.performSlotLoad(retroView, slot)) {
+                            inGameMessage = if (!canSerialize) {
+                                "Save states unavailable for this core"
+                            } else if (saveStateManager.performSlotLoad(retroView, slot)) {
                                 "State loaded"
                             } else {
                                 "Failed to load state"
@@ -1510,6 +1515,9 @@ class LibretroActivity : ComponentActivity() {
             Log.d(TAG, "Controller type applied: port=$port, device=$deviceId")
         }
         appliedControllerTypes = applied
+        if (applied.isNotEmpty() && ::inputConfig.isInitialized) {
+            lifecycleScope.launch { inputConfig.refreshInputMappings() }
+        }
     }
 
     private fun readCorePortDevices(): List<List<com.swordfish.libretrodroid.Controller>> =
@@ -1768,12 +1776,21 @@ class LibretroActivity : ComponentActivity() {
                     inputConfig.refreshControllerOrder()
                 }
             },
+            lockedProfileIndex = repo.getConnectedControllers()
+                .firstNotNullOfOrNull { InputDevice.getDevice(it.deviceId) }
+                ?.let { device ->
+                    MappingPlatforms.ALL.indexOfFirst { it == inputConfig.profileForDevice(device) }
+                        .takeIf { index -> index >= 0 }
+                },
             onGetMapping = { controller, mappingPlatformId ->
                 val device = InputDevice.getDevice(controller.deviceId)
                 if (device != null) {
-                    repo.getOrCreateExtendedMappingForDevice(device, mappingPlatformId, perGameMappingId) to null
+                    ScopedMapping(
+                        mapping = repo.getOrCreateExtendedMappingForDevice(device, mappingPlatformId, perGameMappingId),
+                        inherited = repo.getInheritedExtendedMappingForDevice(device, mappingPlatformId, perGameMappingId)
+                    )
                 } else {
-                    emptyMap<InputSource, Int>() to null
+                    ScopedMapping()
                 }
             },
             onSaveMapping = { controller, mapping, presetName, isAutoDetected, mappingPlatformId ->
@@ -1922,7 +1939,9 @@ class LibretroActivity : ComponentActivity() {
                 hideMenu()
             }
             InGameMenuAction.QuickLoad -> {
-                inGameMessage = if (saveStateManager.performQuickLoad(retroView)) {
+                inGameMessage = if (!canSerialize) {
+                    "Save states unavailable for this core"
+                } else if (saveStateManager.performQuickLoad(retroView)) {
                     "State loaded"
                 } else {
                     "Failed to load state"
@@ -2028,9 +2047,10 @@ class LibretroActivity : ComponentActivity() {
 
     /**
      * Whether the core can be asked to serialize at all. Every path that reaches retro_serialize
-     * has to check this, not just save states: rewind serializes once per frame, cheat application
-     * round-trips a state, and a core that cannot serialize the loaded content takes the process
-     * with it rather than returning an error. Dolphin does exactly that with a WBFS image.
+     * has to check this, not just save states: rewind serializes once per frame and cheat removal
+     * round-trips a state. A core that cannot serialize the loaded content may take the process
+     * with it rather than returning an error - Beetle Saturn aborts inside retro_serialize_size
+     * when its second save attempt throws, which no Kotlin catch can absorb.
      */
     private val canSerialize: Boolean
         get() = statesSupported && !hardcoreMode && coreLoadedSuccessfully && !coreDestroyed
@@ -2064,16 +2084,39 @@ class LibretroActivity : ComponentActivity() {
             Log.d(TAG, "State support disabled for platform=$platformSlug")
             return
         }
-        try {
-            statesSupported = retroView.getSerializeSize() > 0
-        } catch (_: Exception) {
+        val marker = serializeProbeMarker()
+        if (marker.exists()) {
             statesSupported = false
+            marker.delete()
+            Log.w(TAG, "State support disabled: probing core=$resolvedCoreId took the process down last launch")
+            return
+        }
+        statesSupported = try {
+            runCatching { marker.parentFile?.mkdirs(); marker.createNewFile() }
+            retroView.getSerializeSize() > 0
+        } catch (_: Exception) {
+            false
+        } finally {
+            marker.delete()
         }
         Log.d(TAG, "State support check: statesSupported=$statesSupported")
     }
 
+    /**
+     * Determining state support means asking the core, and a core that cannot serialize this
+     * content may abort instead of answering - which no catch here can survive. The marker is
+     * written before the call and cleared after it returns, so finding one on entry means the
+     * previous launch died inside the probe and this core and game must not be asked again.
+     */
+    private fun serializeProbeMarker(): File =
+        File(File(filesDir, "serialize-probe"), "${resolvedCoreId ?: "unknown"}-$gameId")
+
     private fun handleStateManagerSave(slotNumber: Int) {
         if (slotNumber >= SaveStateManager.QUICK_SLOT_BASE) return
+        if (!canSerialize) {
+            inGameMessage = "Save states unavailable for this core"
+            return
+        }
         val stateData = try { retroView.serializeState() } catch (_: Exception) { null }
         if (stateData != null) {
             val saved = saveStateManager.performSlotSave(slotNumber, stateData, pendingSaveScreenshot)
@@ -2085,6 +2128,10 @@ class LibretroActivity : ComponentActivity() {
     }
 
     private fun handleStateManagerLoad(slotNumber: Int) {
+        if (!canSerialize) {
+            inGameMessage = "Save states unavailable for this core"
+            return
+        }
         val loaded = saveStateManager.performSlotLoad(retroView, slotNumber)
         if (loaded) {
             inGameMessage = "State loaded from ${if (slotNumber == SaveStateManager.AUTO_SLOT) "Auto" else "Slot $slotNumber"}"
@@ -2111,7 +2158,7 @@ class LibretroActivity : ComponentActivity() {
         if (isGuestJoinedSession) return
         val resumeFile = saveStateManager.getSlotFile(SaveStateManager.RESUME_SLOT)
         if (resumeFile.exists()) {
-            if (!hardcoreMode && statesSupported) {
+            if (canSerialize) {
                 if (saveStateManager.performSlotLoad(retroView, SaveStateManager.RESUME_SLOT)) {
                     inGameMessage = "Resumed"
                 } else {
@@ -2122,7 +2169,7 @@ class LibretroActivity : ComponentActivity() {
             resumeFile.delete()
             return
         }
-        if (launchMode != LaunchMode.RESUME || hardcoreMode || !statesSupported) return
+        if (launchMode != LaunchMode.RESUME || !canSerialize) return
         val autoFile = saveStateManager.getSlotFile(SaveStateManager.AUTO_SLOT)
         if (!autoFile.exists()) return
 
@@ -2144,6 +2191,10 @@ class LibretroActivity : ComponentActivity() {
     private fun handleAutoRestoreResponse(restore: Boolean) {
         autoRestorePromptVisible = false
         if (restore) {
+            if (!canSerialize) {
+                inGameMessage = "Save states unavailable for this core"
+                return
+            }
             if (saveStateManager.performSlotLoad(retroView, SaveStateManager.AUTO_SLOT)) {
                 inGameMessage = "State restored"
             } else {
@@ -2421,7 +2472,7 @@ class LibretroActivity : ComponentActivity() {
             }
         }
 
-        if (shouldFilterShoulderButton(keyCode)) return true
+        if (shouldFilterShoulderButton(keyCode, event.device)) return true
 
         val handled = retroView.onKeyDown(keyCode, event)
         if (handled) return true
@@ -2437,7 +2488,7 @@ class LibretroActivity : ComponentActivity() {
     override fun onKeyUp(keyCode: Int, event: KeyEvent): Boolean {
         if (isAnyMenuOpen) return super.onKeyUp(keyCode, event)
 
-        if (shouldFilterShoulderButton(keyCode)) return true
+        if (shouldFilterShoulderButton(keyCode, event.device)) return true
 
         return retroView.onKeyUp(keyCode, event) || super.onKeyUp(keyCode, event)
     }
@@ -2626,6 +2677,10 @@ class LibretroActivity : ComponentActivity() {
                     notifyQuickAction(false, "", "Save states are disabled in hardcore")
                     return@runOnUiThread
                 }
+                if (!canSerialize) {
+                    notifyQuickAction(false, "", "Save states unavailable for this core")
+                    return@runOnUiThread
+                }
                 val frame = try { retroView.captureRawFrame() } catch (_: Exception) { null }
                 lifecycleScope.launch(Dispatchers.IO) {
                     val stateData = try { retroView.serializeState() } catch (_: Exception) { null }
@@ -2640,6 +2695,10 @@ class LibretroActivity : ComponentActivity() {
                 if (coreDestroyed || !::retroView.isInitialized) return@runOnUiThread
                 if (hardcoreMode) {
                     notifyQuickAction(false, "", "Save states are disabled in hardcore")
+                    return@runOnUiThread
+                }
+                if (!canSerialize) {
+                    notifyQuickAction(false, "", "Save states unavailable for this core")
                     return@runOnUiThread
                 }
                 lifecycleScope.launch(Dispatchers.IO) {
@@ -2729,13 +2788,22 @@ class LibretroActivity : ComponentActivity() {
         return keys.zip(values) { k, v -> Variable(k, v) }.toTypedArray()
     }
 
-    private fun shouldFilterShoulderButton(keyCode: Int): Boolean {
-        val isL1R1 = keyCode == KeyEvent.KEYCODE_BUTTON_L1 || keyCode == KeyEvent.KEYCODE_BUTTON_R1
-        val isL2R2 = keyCode == KeyEvent.KEYCODE_BUTTON_L2 || keyCode == KeyEvent.KEYCODE_BUTTON_R2
-
-        if (!isL1R1 && !isL2R2) return false
+    /**
+     * A console without shoulders should not receive a stray trigger press, but the decision has to
+     * follow where the user's mapping sends the key rather than the key itself: a shoulder bound to
+     * a face button is a binding the console can honour, and dropping it by keycode would void an
+     * explicit remap.
+     */
+    private fun shouldFilterShoulderButton(keyCode: Int, device: InputDevice?): Boolean {
+        val isShoulder = keyCode == KeyEvent.KEYCODE_BUTTON_L1 || keyCode == KeyEvent.KEYCODE_BUTTON_R1 ||
+            keyCode == KeyEvent.KEYCODE_BUTTON_L2 || keyCode == KeyEvent.KEYCODE_BUTTON_R2
+        if (!isShoulder) return false
 
         val buttons = MappingPlatforms.profileForSlug(platformSlug).buttons
+        val mappedRetroButton = device?.let { inputMapper.retroButtonFor(it, keyCode) }
+        if (mappedRetroButton != null) return mappedRetroButton !in buttons
+
+        val isL1R1 = keyCode == KeyEvent.KEYCODE_BUTTON_L1 || keyCode == KeyEvent.KEYCODE_BUTTON_R1
         if (isL1R1) return RetroButton.L !in buttons && RetroButton.R !in buttons
         return RetroButton.L2 !in buttons && RetroButton.R2 !in buttons
     }

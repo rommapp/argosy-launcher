@@ -18,7 +18,7 @@ import java.time.Instant
     ],
     indices = [
         Index("gameId"),
-        Index(value = ["gameId", "controllerId"], unique = true)
+        Index(value = ["gameId", "controllerId", "profileKey"], unique = true)
     ]
 )
 data class GameControllerMappingEntity(
@@ -26,6 +26,11 @@ data class GameControllerMappingEntity(
     val id: Long = 0,
     val gameId: Long,
     val controllerId: String,
+    /**
+     * The MappingPlatform id this mapping was authored against. Empty means the platform's default
+     * profile, which is what every row predating per-device profiles carries.
+     */
+    val profileKey: String = "",
     val controllerName: String,
     val vendorId: Int,
     val productId: Int,

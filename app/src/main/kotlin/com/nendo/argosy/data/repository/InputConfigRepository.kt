@@ -97,7 +97,8 @@ class InputConfigRepository @Inject constructor(
 
     private suspend fun findMapping(controllerId: String, platformId: String?, gameId: Long? = null): ControllerMappingEntity? {
         if (gameId != null) {
-            gameControllerMappingDao.getByGameAndController(gameId, controllerId)?.let { return it.asControllerMapping() }
+            gameControllerMappingDao.getByGameAndController(gameId, controllerId, platformId.orEmpty())
+                ?.let { return it.asControllerMapping() }
         }
         if (platformId != null) {
             controllerMappingDao.getByControllerIdAndPlatform(controllerId, platformId)?.let { return it }
@@ -125,11 +126,13 @@ class InputConfigRepository @Inject constructor(
         gameId: Long? = null
     ) {
         if (gameId != null) {
-            val existingGame = gameControllerMappingDao.getByGameAndController(gameId, controllerId)
+            val profileKey = platformId.orEmpty()
+            val existingGame = gameControllerMappingDao.getByGameAndController(gameId, controllerId, profileKey)
             if (existingGame != null) {
                 gameControllerMappingDao.updateMapping(
                     gameId = gameId,
                     controllerId = controllerId,
+                    profileKey = profileKey,
                     mappingJson = mappingJson,
                     presetName = presetName,
                     isAutoDetected = isAutoDetected
@@ -139,6 +142,7 @@ class InputConfigRepository @Inject constructor(
                     GameControllerMappingEntity(
                         gameId = gameId,
                         controllerId = controllerId,
+                        profileKey = profileKey,
                         controllerName = controllerName,
                         vendorId = vendorId,
                         productId = productId,
@@ -281,12 +285,8 @@ class InputConfigRepository @Inject constructor(
                 return@withContext parseExtendedMappingJson(existing.mappingJson)
             }
 
-            val detectionResult = ControllerDetector.detectFromDevice(device)
-            val layout = detectionResult.layout ?: DetectedLayout.XBOX
-            val defaultMapping = InputPresets.getDefaultMappingForLayout(layout)
-            val extendedMapping: Map<InputSource, Int> = defaultMapping.map { (keyCode, retroButton) ->
-                InputSource.Button(keyCode) as InputSource to retroButton
-            }.toMap()
+            val layout = ControllerDetector.detectFromDevice(device).layout ?: DetectedLayout.XBOX
+            val extendedMapping = defaultExtendedMapping(layout)
 
             saveExtendedMapping(
                 device = device,
@@ -297,6 +297,32 @@ class InputConfigRepository @Inject constructor(
 
             extendedMapping
         }
+
+    /**
+     * What the given scope would resolve to if it held no bindings of its own: the platform row for
+     * a game scope, the global row for a platform scope, the detected layout's defaults for either
+     * when nothing is stored below. Callers compare against this to tell an inherited binding from
+     * one the user set at the scope they are editing.
+     */
+    suspend fun getInheritedExtendedMappingForDevice(
+        device: InputDevice,
+        platformId: String? = null,
+        gameId: Long? = null
+    ): Map<InputSource, Int> = withContext(Dispatchers.IO) {
+        val controllerId = getControllerId(device)
+        val lowerScope = when {
+            gameId != null -> findMapping(controllerId, platformId)
+            platformId != null -> controllerMappingDao.getByControllerIdGlobal(controllerId)
+            else -> null
+        }
+        lowerScope?.let { return@withContext parseExtendedMappingJson(it.mappingJson) }
+        defaultExtendedMapping(ControllerDetector.detectFromDevice(device).layout ?: DetectedLayout.XBOX)
+    }
+
+    private fun defaultExtendedMapping(layout: DetectedLayout): Map<InputSource, Int> =
+        InputPresets.getDefaultMappingForLayout(layout)
+            .map { (keyCode, retroButton) -> InputSource.Button(keyCode) as InputSource to retroButton }
+            .toMap()
 
     suspend fun saveExtendedMapping(
         device: InputDevice,

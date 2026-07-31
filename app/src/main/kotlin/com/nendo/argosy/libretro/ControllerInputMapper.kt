@@ -3,6 +3,7 @@ package com.nendo.argosy.libretro
 import android.view.InputDevice
 import android.view.KeyEvent
 import android.view.MotionEvent
+import com.nendo.argosy.data.repository.InputPresets
 import com.nendo.argosy.data.repository.InputSource
 import com.nendo.argosy.data.repository.RetroButton
 import com.swordfish.libretrodroid.KeyMapper
@@ -35,20 +36,8 @@ class ControllerInputMapper : KeyMapper {
         activeAnalogDirections.clear()
     }
 
-    override fun mapKey(device: InputDevice, keyCode: Int): Int {
-        val controllerId = getControllerId(device)
-        val mapping = extendedMappings[controllerId]
-
-        if (mapping != null) {
-            val inputSource = InputSource.Button(keyCode)
-            val targetRetroButton = mapping[inputSource]
-            if (targetRetroButton != null) {
-                return retroButtonToAndroidKeyCode(targetRetroButton)
-            }
-        }
-
-        return defaultSwap(keyCode)
-    }
+    override fun mapKey(device: InputDevice, keyCode: Int): Int =
+        resolveMappedKey(extendedMappings[getControllerId(device)], keyCode)
 
     fun processMotionEvent(event: MotionEvent): List<SyntheticKeyEvent> {
         val device = event.device ?: return emptyList()
@@ -102,6 +91,15 @@ class ControllerInputMapper : KeyMapper {
         return mapping.keys.any { it is InputSource.AnalogDirection && it.axis == axis }
     }
 
+    /**
+     * The retro button this device's resolved mapping sends [keyCode] to, or null when no mapping
+     * was resolved or the key is unbound within it.
+     */
+    fun retroButtonFor(device: InputDevice, keyCode: Int): Int? =
+        extendedMappings[getControllerId(device)]
+            ?.takeIf { it.isNotEmpty() }
+            ?.get(InputSource.Button(keyCode))
+
     fun getMappedButtonsForController(controllerId: String): Set<Int> {
         val mapping = extendedMappings[controllerId] ?: return emptySet()
         return mapping.entries
@@ -114,9 +112,23 @@ class ControllerInputMapper : KeyMapper {
         return "${device.vendorId}:${device.productId}:${device.descriptor}"
     }
 
-    private fun defaultSwap(keyCode: Int): Int = keyCode
-
     companion object {
+        /**
+         * A resolved mapping is the complete binding set for that controller, so a bindable button
+         * the user left unbound must reach the core as nothing at all; the raw keycode would hand
+         * the core the button's default meaning and make every cleared binding a no-op. Two cases
+         * keep their defaults instead: a null or empty mapping, which means no binding set was
+         * resolved at all rather than an empty one, and a keycode outside
+         * [InputPresets.BINDABLE_KEYCODES], which the editor never offered the user any control
+         * over.
+         */
+        fun resolveMappedKey(mapping: Map<InputSource, Int>?, keyCode: Int): Int {
+            if (mapping.isNullOrEmpty()) return keyCode
+            val retroButton = mapping[InputSource.Button(keyCode)]
+                ?: return if (keyCode in InputPresets.BINDABLE_KEYCODES) KeyEvent.KEYCODE_UNKNOWN else keyCode
+            return retroButtonToAndroidKeyCode(retroButton)
+        }
+
         fun retroButtonToAndroidKeyCode(retroButton: Int): Int {
             return when (retroButton) {
                 RetroButton.A -> KeyEvent.KEYCODE_BUTTON_A

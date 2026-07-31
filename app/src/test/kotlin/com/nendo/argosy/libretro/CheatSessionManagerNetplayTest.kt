@@ -40,7 +40,8 @@ class CheatSessionManagerNetplayTest {
 
     private fun buildManager(
         scope: CoroutineScope,
-        initialCheats: List<CheatEntity>
+        initialCheats: List<CheatEntity>,
+        canSerialize: Boolean = true
     ): Triple<CheatSessionManager, CheatDao, CheatsRepository> {
         val cheatDao = mockk<CheatDao>(relaxed = true)
         val gameDao = mockk<GameDao>(relaxed = true)
@@ -55,6 +56,7 @@ class CheatSessionManagerNetplayTest {
             cheatDao = cheatDao,
             gameDao = gameDao,
             cheatsRepository = repository,
+            canSerialize = { canSerialize },
             scope = scope
         )
         manager.loadCheats(hardcoreMode = false)
@@ -83,6 +85,25 @@ class CheatSessionManagerNetplayTest {
         verify(exactly = 1) { view.serializeState() }
         verify(exactly = 1) { view.resetCheat() }
         verify(exactly = 1) { view.unserializeState(any()) }
+        assertFalse(manager.hasAnyEnabledCheats)
+    }
+
+    @Test
+    fun disableAllAndCycleSkipsTheStateRoundTripWhenTheCoreCannotSerialize() = runTest {
+        val scope = CoroutineScope(StandardTestDispatcher(testScheduler) + Job())
+        val view = mockk<GLRetroView>(relaxed = true)
+        every { view.resetCheat() } just Runs
+
+        val enabled = cheatEntity(1L, enabled = true)
+        val (manager, _, _) = buildManager(scope, listOf(enabled), canSerialize = false)
+        manager.setRetroView(view)
+        advanceUntilIdle()
+
+        manager.disableAllAndCycleForNetplay()
+
+        verify(exactly = 0) { view.serializeState() }
+        verify(exactly = 0) { view.unserializeState(any()) }
+        verify(exactly = 1) { view.resetCheat() }
         assertFalse(manager.hasAnyEnabledCheats)
     }
 

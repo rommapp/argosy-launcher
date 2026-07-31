@@ -19,6 +19,7 @@ class CheatSessionManager(
     private val cheatDao: CheatDao,
     private val gameDao: GameDao,
     private val cheatsRepository: CheatsRepository,
+    private val canSerialize: () -> Boolean,
     private val scope: CoroutineScope
 ) {
     val memoryScanner = MemoryScanner()
@@ -164,9 +165,7 @@ class CheatSessionManager(
         cheats = cheatsRepository.getCheatsForGame(gameId)
         val view = retroView
         if (view != null) {
-            val stateData = view.serializeState()
-            view.resetCheat()
-            view.unserializeState(stateData)
+            cycleCheatsThroughState(view)
             Log.d(TAG, "Netplay cheats: disabled all enabled cheats and cycled state")
         } else {
             Log.w(TAG, "Netplay cheats: retroView null during disable-and-cycle")
@@ -177,11 +176,26 @@ class CheatSessionManager(
         if (!cheatsNeedReset) return
         val view = retroView ?: return
         cheatsNeedReset = false
+        cycleCheatsThroughState(view)
+        applyAllEnabledCheats(false)
+        Log.d(TAG, "Flushed cheat reset cycle")
+    }
+
+    /**
+     * Clearing a cheat only takes effect once the core reloads a state, so the round trip is the
+     * point. Where the core cannot serialize the loaded content the attempt can abort the process
+     * rather than fail, so the cheats are dropped without the round trip and the removal lands on
+     * the next launch instead.
+     */
+    private fun cycleCheatsThroughState(view: GLRetroView) {
+        if (!canSerialize()) {
+            view.resetCheat()
+            Log.w(TAG, "Cheat reset without state cycle: core cannot serialize this content")
+            return
+        }
         val stateData = view.serializeState()
         view.resetCheat()
         view.unserializeState(stateData)
-        applyAllEnabledCheats(false)
-        Log.d(TAG, "Flushed cheat reset cycle")
     }
 
     private fun applyCheat(cheatId: Long, enabled: Boolean) {

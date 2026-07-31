@@ -39,6 +39,7 @@ import com.nendo.argosy.ui.input.InputResult
 import com.nendo.argosy.ui.input.SoundFeedbackManager
 import com.nendo.argosy.core.input.SoundType
 import com.nendo.argosy.core.notification.NotificationManager
+import com.nendo.argosy.ui.screens.settings.components.ScopedMapping
 import com.nendo.argosy.ui.screens.settings.delegates.AccountsSettingsDelegate
 import com.nendo.argosy.ui.screens.settings.delegates.AmbientAudioSettingsDelegate
 import com.nendo.argosy.ui.screens.settings.delegates.BiosSettingsDelegate
@@ -533,15 +534,13 @@ class SettingsViewModel @Inject constructor(
     suspend fun getControllerMapping(
         controller: com.nendo.argosy.data.repository.ControllerInfo,
         platformId: String? = null
-    ): Pair<Map<com.nendo.argosy.data.repository.InputSource, Int>, String?> {
+    ): ScopedMapping {
         val device = android.view.InputDevice.getDevice(controller.deviceId)
-            ?: return Pair(emptyMap(), null)
-        val mapping = inputConfigRepository.getOrCreateExtendedMappingForDevice(device, platformId)
-        val entity = inputConfigRepository.observeControllerMappings().first()
-            .find { it.controllerId == controller.controllerId && it.platformId == platformId }
-            ?: inputConfigRepository.observeControllerMappings().first()
-                .find { it.controllerId == controller.controllerId && it.platformId == null }
-        return Pair(mapping, entity?.presetName)
+            ?: return ScopedMapping()
+        return ScopedMapping(
+            mapping = inputConfigRepository.getOrCreateExtendedMappingForDevice(device, platformId),
+            inherited = inputConfigRepository.getInheritedExtendedMappingForDevice(device, platformId)
+        )
     }
 
     suspend fun saveControllerMapping(

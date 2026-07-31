@@ -62,6 +62,7 @@ import com.nendo.argosy.ui.screens.settings.components.ControllerOrderModal
 import com.nendo.argosy.ui.screens.settings.components.HotkeysModal
 import com.nendo.argosy.data.repository.MappingPlatforms
 import com.nendo.argosy.ui.screens.settings.components.InputMappingModal
+import com.nendo.argosy.ui.screens.settings.components.ScopedMapping
 import com.nendo.argosy.core.emulator.LibretroSettingDef
 import com.nendo.argosy.ui.screens.settings.libretro.LibretroSettingsAccessor
 import com.nendo.argosy.data.platform.PlatformWeightRegistry
@@ -139,12 +140,13 @@ data class InGameModalCallbacks(
     val connectedControllers: List<ControllerInfo>,
     val onAssignController: (Int, InputDevice) -> Unit,
     val onClearControllerOrder: () -> Unit,
-    val onGetMapping: suspend (ControllerInfo, String?) -> Pair<Map<InputSource, Int>, String?>,
+    val onGetMapping: suspend (ControllerInfo, String?) -> ScopedMapping,
     val onSaveMapping: suspend (ControllerInfo, Map<InputSource, Int>, String?, Boolean, String?) -> Unit,
     val onApplyPreset: suspend (ControllerInfo, String) -> Unit,
     val onSaveHotkey: suspend (HotkeyAction, List<Int>, HotkeyScopeType, String?) -> Unit,
     val onClearHotkey: suspend (HotkeyAction, HotkeyScopeType, String?) -> Unit,
     val onSetHotkeyHoldMs: suspend (HotkeyAction, Long, HotkeyScopeType, String?) -> Unit,
+    val lockedProfileIndex: Int? = null,
     val coreId: String? = null,
     val coreName: String? = null,
     val platformSlug: String? = null,
@@ -600,7 +602,8 @@ fun InGameSettingsScreen(
         if (showInputMappingModal) {
             InputMappingModal(
                 controllers = modalCallbacks.connectedControllers,
-                lockedPlatformIndex = MappingPlatforms.indexForPlatformSlug(platformSlug ?: ""),
+                lockedPlatformIndex = modalCallbacks.lockedProfileIndex
+                    ?: MappingPlatforms.indexForPlatformSlug(platformSlug ?: ""),
                 onGetMapping = modalCallbacks.onGetMapping,
                 onSaveMapping = modalCallbacks.onSaveMapping,
                 onApplyPreset = modalCallbacks.onApplyPreset,

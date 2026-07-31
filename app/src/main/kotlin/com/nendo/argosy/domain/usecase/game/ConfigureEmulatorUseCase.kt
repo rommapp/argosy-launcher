@@ -24,7 +24,11 @@ class ConfigureEmulatorUseCase @Inject constructor(
                 packageName = emulator.def.packageName,
                 displayName = emulator.def.displayName,
                 coreName = defaultCoreFor(platformSlug, emulator),
-                isDefault = false
+                isDefault = false,
+                preferredExtension = existing?.preferredExtension,
+                useFileUri = existing?.useFileUri,
+                displayTarget = existing?.displayTarget,
+                controllerTypes = existing?.controllerTypes
             )
             emulatorConfigDao.insert(config)
         }
@@ -32,6 +36,7 @@ class ConfigureEmulatorUseCase @Inject constructor(
     }
 
     suspend fun setForPlatform(platformId: Long, platformSlug: String, emulator: InstalledEmulator?) {
+        val existing = emulatorConfigDao.getDefaultForPlatform(platformId)
         emulatorConfigDao.clearPlatformDefaults(platformId)
 
         if (emulator != null) {
@@ -41,7 +46,11 @@ class ConfigureEmulatorUseCase @Inject constructor(
                 packageName = emulator.def.packageName,
                 displayName = emulator.def.displayName,
                 coreName = defaultCoreFor(platformSlug, emulator),
-                isDefault = true
+                isDefault = true,
+                preferredExtension = existing?.preferredExtension,
+                useFileUri = existing?.useFileUri,
+                displayTarget = existing?.displayTarget,
+                controllerTypes = existing?.controllerTypes
             )
             emulatorConfigDao.insert(config)
         }
@@ -59,6 +68,7 @@ class ConfigureEmulatorUseCase @Inject constructor(
     }
 
     suspend fun setAdHocForPlatform(platformId: Long, packageName: String, displayName: String) {
+        val existing = emulatorConfigDao.getDefaultForPlatform(platformId)
         emulatorConfigDao.clearPlatformDefaults(platformId)
         val config = EmulatorConfigEntity(
             platformId = platformId,
@@ -66,7 +76,11 @@ class ConfigureEmulatorUseCase @Inject constructor(
             packageName = packageName,
             displayName = displayName,
             coreName = null,
-            isDefault = true
+            isDefault = true,
+            preferredExtension = existing?.preferredExtension,
+            useFileUri = existing?.useFileUri,
+            displayTarget = existing?.displayTarget,
+            controllerTypes = existing?.controllerTypes
         )
         emulatorConfigDao.insert(config)
     }

@@ -40,22 +40,33 @@ import com.nendo.argosy.ui.theme.generated.ComponentDefaults
 import com.nendo.argosy.ui.util.clickableNoFocus
 
 /**
- * Where focus lands moving [direction] from [currentIndex] over [itemCount] items, or null when
- * the move runs off the grid.
+ * What a d-pad press resolves to inside the grid. Callers act on the verdict rather than deriving
+ * one from a direction, so the boundary policy lives here and cannot drift between the surfaces
+ * that host the grid.
+ */
+sealed interface AutoGridMove {
+    data class Focus(val index: Int) : AutoGridMove
+    data object PreviousSection : AutoGridMove
+    data object NextSection : AutoGridMove
+    data object None : AutoGridMove
+}
+
+/**
+ * Resolves moving [direction] from [currentIndex] over [itemCount] items.
  *
  * Movement across the lanes is confined to the lane group it starts in, so the edge of a visual row
- * is a real boundary rather than a wrap onto the next one. LEFT and RIGHT always end up being the
- * boundary that matters, whichever way the grid scrolls: with a vertical grid they step between
- * columns of one row, with a horizontal grid they step between columns outright. A caller can
- * therefore treat a null from LEFT or RIGHT as "leave this section" without inspecting the axis.
+ * is a real boundary rather than a wrap onto the next one, and pressing into it leaves the section.
+ * That is the axis the lanes run across, which flips with the scroll direction: left and right for a
+ * vertical grid, up and down for a horizontal one. Travel along the scroll axis just runs out at the
+ * ends, because that is the direction the section itself extends in.
  */
-fun autoGridStep(
+fun autoGridMove(
     itemCount: Int,
     config: AutoGridConfig,
     currentIndex: Int,
     direction: GridDirection
-): Int? {
-    if (itemCount <= 0) return null
+): AutoGridMove {
+    if (itemCount <= 0) return AutoGridMove.None
     val lanes = config.laneCount.coerceAtLeast(1)
     val last = itemCount - 1
     val index = currentIndex.coerceIn(0, last)
@@ -64,16 +75,18 @@ fun autoGridStep(
         HomeScrollAxis.VERTICAL -> direction == GridDirection.LEFT || direction == GridDirection.RIGHT
         HomeScrollAxis.HORIZONTAL -> direction == GridDirection.UP || direction == GridDirection.DOWN
     }
+    val leaving = if (forward) AutoGridMove.NextSection else AutoGridMove.PreviousSection
     if (acrossLanes) {
         val lane = index % lanes
-        if (if (forward) lane == lanes - 1 else lane == 0) return null
-        return (if (forward) index + 1 else index - 1).takeIf { it in 0..last }
+        if (if (forward) lane == lanes - 1 else lane == 0) return leaving
+        val target = if (forward) index + 1 else index - 1
+        return if (target in 0..last) AutoGridMove.Focus(target) else leaving
     }
     val target = if (forward) index + lanes else index - lanes
     return when {
-        target in 0..last -> target
-        forward && index / lanes < last / lanes -> last
-        else -> null
+        target in 0..last -> AutoGridMove.Focus(target)
+        forward && index / lanes < last / lanes -> AutoGridMove.Focus(last)
+        else -> AutoGridMove.None
     }
 }
 

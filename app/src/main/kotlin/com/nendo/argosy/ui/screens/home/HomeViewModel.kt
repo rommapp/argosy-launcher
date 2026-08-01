@@ -24,7 +24,8 @@ import com.nendo.argosy.hardware.AmbientLedContext
 import com.nendo.argosy.hardware.AmbientLedManager
 import com.nendo.argosy.ui.common.GridDirection
 import com.nendo.argosy.ui.common.GridFocusNavigator
-import com.nendo.argosy.ui.components.autoGridStep
+import com.nendo.argosy.ui.components.AutoGridMove
+import com.nendo.argosy.ui.components.autoGridMove
 import com.nendo.argosy.ui.screens.home.delegates.GameMenuAction
 import com.nendo.argosy.ui.screens.home.delegates.HomeDownloadDelegate
 import com.nendo.argosy.ui.screens.home.delegates.HomeGameMenuDelegate
@@ -499,20 +500,21 @@ class HomeViewModel @Inject constructor(
         return true
     }
 
-    override fun moveGridFocus(direction: GridDirection): Boolean {
+    override fun moveGridFocus(direction: GridDirection): AutoGridMove {
         val state = _uiState.value
-        val target = autoGridStep(
+        val move = autoGridMove(
             itemCount = state.currentItems.size,
             config = state.autoGridConfig,
             currentIndex = state.focusedGameIndex,
             direction = direction
-        ) ?: return false
+        )
+        val target = (move as? AutoGridMove.Focus)?.index ?: return move
         _uiState.update { it.copy(focusedGameIndex = target) }
         saveCurrentState()
         prefetchAchievementsDebounced()
         navigationDelegate.prefetchAdjacentBackgrounds(viewModelScope, _uiState.value.currentItems, target)
         libraryDelegate.extractGradientsForVisibleGames(viewModelScope, _uiState.value.currentItems, target)
-        return true
+        return move
     }
 
     fun setFocusIndex(index: Int) {

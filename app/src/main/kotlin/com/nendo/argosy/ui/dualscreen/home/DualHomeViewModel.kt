@@ -36,7 +36,8 @@ import com.nendo.argosy.data.model.computeGenericSections
 import com.nendo.argosy.domain.usecase.cache.RepairImageCacheUseCase
 import com.nendo.argosy.ui.common.GridDirection
 import com.nendo.argosy.ui.common.GridFocusNavigator
-import com.nendo.argosy.ui.components.autoGridStep
+import com.nendo.argosy.ui.components.AutoGridMove
+import com.nendo.argosy.ui.components.autoGridMove
 import com.nendo.argosy.ui.common.toHomeGameUi
 import com.nendo.argosy.ui.screens.home.GameDownloadIndicator
 import com.nendo.argosy.ui.screens.home.HomeGameUi
@@ -853,19 +854,20 @@ class DualHomeViewModel(
         persistSection()
     }
 
-    fun moveCarouselGridFocus(direction: GridDirection): Boolean {
+    fun moveCarouselGridFocus(direction: GridDirection): AutoGridMove {
         val state = _uiState.value
-        if (state.games.isEmpty()) return false
+        if (state.games.isEmpty()) return AutoGridMove.None
         val count = if (state.hasMoreGames) state.games.size + 1 else state.games.size
-        val target = autoGridStep(
+        val move = autoGridMove(
             itemCount = count,
             config = state.autoGridConfig,
             currentIndex = state.selectedIndex,
             direction = direction
-        ) ?: return false
+        )
+        val target = (move as? AutoGridMove.Focus)?.index ?: return move
         _uiState.update { it.copy(selectedIndex = target) }
         persistSection()
-        return true
+        return move
     }
 
     fun setSelectedIndex(index: Int) {

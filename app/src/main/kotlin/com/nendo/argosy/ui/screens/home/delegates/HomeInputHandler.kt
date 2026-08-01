@@ -5,6 +5,7 @@ import com.nendo.argosy.ui.input.InputResult
 import com.nendo.argosy.core.input.SoundType
 import com.nendo.argosy.domain.model.HomeLayoutKind
 import com.nendo.argosy.ui.common.GridDirection
+import com.nendo.argosy.ui.components.AutoGridMove
 import com.nendo.argosy.ui.screens.home.HomeRow
 import com.nendo.argosy.ui.screens.home.HomeRowItem
 import com.nendo.argosy.ui.screens.home.HomeUiState
@@ -23,7 +24,7 @@ interface HomeInputActions {
     fun nextRow()
     fun previousGame(): Boolean
     fun nextGame(): Boolean
-    fun moveGridFocus(direction: GridDirection): Boolean
+    fun moveGridFocus(direction: GridDirection): AutoGridMove
     fun installApk(gameId: Long)
     fun launchGame(gameId: Long, channelName: String? = null)
     fun resumeDownload(gameId: Long)
@@ -99,25 +100,19 @@ class HomeInputHandler(
 
     private fun isGrid(state: HomeUiState): Boolean = state.layoutKind == HomeLayoutKind.AUTO_GRID
 
-    /**
-     * Grid movement, falling out of the section at its horizontal edges: pressing into the boundary
-     * a second time lands on the neighbouring platform, which is the same thing the shoulder
-     * buttons do and what the rail did with left and right.
-     */
-    private fun gridMove(direction: GridDirection): InputResult {
-        if (actions.moveGridFocus(direction)) return InputResult.HANDLED
-        return when (direction) {
-            GridDirection.LEFT -> {
+    private fun gridMove(direction: GridDirection): InputResult =
+        when (actions.moveGridFocus(direction)) {
+            is AutoGridMove.Focus -> InputResult.HANDLED
+            AutoGridMove.PreviousSection -> {
                 actions.previousRow()
                 InputResult.handled(SoundType.SECTION_CHANGE)
             }
-            GridDirection.RIGHT -> {
+            AutoGridMove.NextSection -> {
                 actions.nextRow()
                 InputResult.handled(SoundType.SECTION_CHANGE)
             }
-            else -> InputResult.UNHANDLED
+            AutoGridMove.None -> InputResult.HANDLED
         }
-    }
 
     override fun onConfirm(): InputResult {
         val state = actions.uiState.value

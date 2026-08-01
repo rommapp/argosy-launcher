@@ -68,6 +68,7 @@ import com.nendo.argosy.ui.common.coverSizeWithin
 import com.nendo.argosy.ui.common.rememberCoverAspectRatio
 import com.nendo.argosy.ui.common.rememberFileImageModel
 import com.nendo.argosy.ui.components.GameTitle
+import com.nendo.argosy.ui.components.SectionBreadcrumb
 import com.nendo.argosy.ui.icons.InputIcons
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -1028,157 +1029,15 @@ private fun PlatformBreadcrumb(
     modifier: Modifier = Modifier
 ) {
     val rows = uiState.availableRows
-    val currentIdx = rows.indexOf(uiState.currentRow).coerceAtLeast(0)
-    val navIconTint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
-
-    Row(modifier = modifier) {
-        Row(
-            modifier = Modifier.weight(1f),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
-        ) {
-            Row(
-                modifier = Modifier
-                    .clickableNoFocus(onClick = onPreviousRow)
-                    .padding(Dimens.spacingXs),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(
-                    painter = InputIcons.BumperLeft,
-                    contentDescription = "Previous row",
-                    tint = navIconTint,
-                    modifier = Modifier.size(Dimens.iconSm)
-                )
-            }
-
-            val virtualMultiplier = 10000
-            val virtualSize = if (rows.isNotEmpty()) rows.size * virtualMultiplier else 0
-
-            fun virtualCenterFor(idx: Int): Int =
-                if (rows.isNotEmpty()) (virtualMultiplier / 2) * rows.size + idx else 0
-
-            var virtualPosition by remember { mutableStateOf(virtualCenterFor(currentIdx)) }
-            var lastCurrentIdx by remember { mutableStateOf(currentIdx) }
-            var lastRowsSize by remember { mutableStateOf(rows.size) }
-            var snapNext by remember { mutableStateOf(true) }
-
-            LaunchedEffect(rows.size) {
-                if (rows.isEmpty()) return@LaunchedEffect
-                if (rows.size != lastRowsSize) {
-                    snapNext = true
-                    virtualPosition = virtualCenterFor(currentIdx)
-                    lastCurrentIdx = currentIdx
-                    lastRowsSize = rows.size
-                }
-            }
-
-            LaunchedEffect(currentIdx) {
-                if (rows.isEmpty() || rows.size != lastRowsSize) return@LaunchedEffect
-                val delta = when {
-                    lastCurrentIdx == rows.lastIndex && currentIdx == 0 -> 1
-                    lastCurrentIdx == 0 && currentIdx == rows.lastIndex -> -1
-                    else -> currentIdx - lastCurrentIdx
-                }
-                virtualPosition += delta
-                lastCurrentIdx = currentIdx
-            }
-
-            val breadcrumbListState = rememberLazyListState(
-                initialFirstVisibleItemIndex = virtualCenterFor(currentIdx)
-            )
-
-            fun centerOffset(): Int {
-                val info = breadcrumbListState.layoutInfo
-                val viewportWidth = info.viewportSize.width
-                val targetItem = info.visibleItemsInfo.firstOrNull { it.index == virtualPosition }
-                val itemWidth = targetItem?.size
-                    ?: info.visibleItemsInfo.firstOrNull()?.size
-                    ?: 0
-                return (viewportWidth - itemWidth) / 2
-            }
-
-            LaunchedEffect(virtualPosition) {
-                if (snapNext) {
-                    snapNext = false
-                    breadcrumbListState.scrollToItem(virtualPosition, -centerOffset())
-                } else {
-                    breadcrumbListState.animateScrollToItem(virtualPosition, -centerOffset())
-                }
-            }
-
-            val fadeBrush = Brush.horizontalGradient(
-                0f to Color.Transparent,
-                0.15f to Color.Black,
-                0.85f to Color.Black,
-                1f to Color.Transparent
-            )
-
-            Box(
-                modifier = Modifier
-                    .then(
-                        if (fillAvailableWidth) Modifier.weight(1f)
-                        else Modifier.widthIn(max = Dimens.breadcrumbMaxWidth)
-                    )
-                    .background(
-                        MaterialTheme.colorScheme.surface.copy(alpha = 0.6f),
-                        RoundedCornerShape(Dimens.radiusMd)
-                    )
-                    .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
-                    .drawWithContent {
-                        drawContent()
-                        drawRect(
-                            brush = fadeBrush,
-                            blendMode = BlendMode.DstIn
-                        )
-                    }
-                    .padding(vertical = Dimens.spacingXs)
-            ) {
-                LazyRow(
-                    state = breadcrumbListState,
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(Dimens.spacingXs),
-                    contentPadding = PaddingValues(horizontal = 0.dp),
-                    userScrollEnabled = false
-                ) {
-                    items(virtualSize) { virtualIndex ->
-                        val realIndex = virtualIndex.mod(rows.size)
-                        if (virtualIndex > 0) {
-                            Text(
-                                text = "\u00B7",
-                                style = MaterialTheme.typography.labelMedium,
-                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f),
-                                modifier = Modifier.padding(end = Dimens.spacingXs)
-                            )
-                        }
-                        Text(
-                            text = uiState.shortLabelFor(rows[realIndex]),
-                            style = if (virtualIndex == virtualPosition) MaterialTheme.typography.titleMedium
-                                    else MaterialTheme.typography.labelMedium,
-                            color = if (virtualIndex == virtualPosition) MaterialTheme.colorScheme.primary
-                                    else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.35f),
-                            modifier = Modifier
-                                .clickableNoFocus { onSelectRow(rows[realIndex]) }
-                                .padding(horizontal = Dimens.spacingXs)
-                        )
-                    }
-                }
-            }
-
-            Row(
-                modifier = Modifier
-                    .clickableNoFocus(onClick = onNextRow)
-                    .padding(Dimens.spacingXs),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(
-                    painter = InputIcons.BumperRight,
-                    contentDescription = "Next row",
-                    tint = navIconTint,
-                    modifier = Modifier.size(Dimens.iconSm)
-                )
-            }
-        }
-    }
+    SectionBreadcrumb(
+        labels = rows.map { uiState.shortLabelFor(it) },
+        currentIndex = rows.indexOf(uiState.currentRow).coerceAtLeast(0),
+        onPrevious = onPreviousRow,
+        onNext = onNextRow,
+        onSelect = { index -> rows.getOrNull(index)?.let(onSelectRow) },
+        fillAvailableWidth = fillAvailableWidth,
+        modifier = modifier
+    )
 }
 
 @Composable

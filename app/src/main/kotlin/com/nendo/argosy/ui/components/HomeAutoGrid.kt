@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.lazy.grid.LazyHorizontalGrid
@@ -115,33 +116,42 @@ fun HomeAutoGrid(
         val lanes = config.laneCount.coerceAtLeast(1)
         val cells = GridCells.Fixed(lanes)
         val spacing = Arrangement.spacedBy(Dimens.spacingSm)
-        val cell: @Composable (Int, CarouselItem) -> Unit = { index, item ->
-            AutoGridCell(
-                item = item,
-                isFocused = index == focusedIndex,
-                showTitle = config.showTitles,
-                showPlatformBadge = showPlatformBadge,
-                downloadIndicator = downloadIndicatorFor(item),
-                onTap = { onItemTap(index) },
-                onLongPress = { onItemLongPress(index) },
-                onCoverLoadFailed = onCoverLoadFailed,
-                onCoverLoaded = onCoverLoaded
-            )
-        }
         var measured by remember { mutableStateOf(IntSize.Zero) }
         val density = LocalDensity.current
+        val titleStyle = MaterialTheme.typography.labelSmall
+        val titleAllowance = if (config.showTitles) {
+            with(density) { titleStyle.lineHeight.toDp() } + Dimens.spacingXs
+        } else {
+            0.dp
+        }
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .onSizeChanged { measured = it }
         ) {
             val across = if (config.scrollAxis == HomeScrollAxis.VERTICAL) measured.width else measured.height
-            val padding = focusAwarePadding(
+            val metrics = rememberAutoGridMetrics(
                 available = with(density) { across.toDp() },
                 lanes = lanes,
                 scrollAxis = config.scrollAxis,
-                coverAspectRatio = LocalBoxArtStyle.current.aspectRatio
+                coverAspectRatio = LocalBoxArtStyle.current.aspectRatio,
+                titleAllowance = titleAllowance
             )
+            val padding = metrics.padding
+            val cell: @Composable (Int, CarouselItem) -> Unit = { index, item ->
+                AutoGridCell(
+                    item = item,
+                    isFocused = index == focusedIndex,
+                    showTitle = config.showTitles,
+                    showPlatformBadge = showPlatformBadge,
+                    downloadIndicator = downloadIndicatorFor(item),
+                    cellWidth = metrics.cellWidth,
+                    onTap = { onItemTap(index) },
+                    onLongPress = { onItemLongPress(index) },
+                    onCoverLoadFailed = onCoverLoadFailed,
+                    onCoverLoaded = onCoverLoaded
+                )
+            }
             when (config.scrollAxis) {
                 HomeScrollAxis.VERTICAL -> LazyVerticalGrid(
                     columns = cells,
@@ -169,32 +179,60 @@ fun HomeAutoGrid(
 }
 
 /**
- * Content padding wide enough that a focused cover, which grows about its own centre, still lands
- * inside the grid's viewport. The grid clips at that viewport, so without the extra room the cover
- * on an outer lane is cut off by whatever sits beyond the edge rather than overlapping it.
+ * Sizing for one grid: the content padding, and the width a cell must be told to take.
  *
- * The growth is measured off the cover, not the cell, because the title beneath it does not scale.
- * [available] arrives from a measured size rather than BoxWithConstraints on purpose: subcomposing
- * the grid would defer the cells to the layout pass, where a focus change alone does not invalidate
- * anything, and the highlight would sit still while the list scrolled under it.
+ * @param cellWidth non-null only for a horizontal grid, where the scroll axis leaves a cell's width
+ *   unbounded. Left to itself a cell there is as wide as its untruncated title and a cover sized off
+ *   the full lane height, so lanes gape and covers push their titles out of the lane.
+ */
+private data class AutoGridMetrics(val padding: PaddingValues, val cellWidth: Dp?)
+
+/**
+ * Padding is widened past the edge inset so a focused cover, which grows about its own centre, still
+ * lands inside the viewport the grid clips to; the growth is measured off the cover rather than the
+ * cell because the title beneath it does not scale.
+ *
+ * [available] is the measured extent across the lanes rather than one read from BoxWithConstraints:
+ * subcomposing the grid would defer its cells to the layout pass, where a focus change alone
+ * invalidates nothing, and the highlight would sit still while the list scrolled under it.
  */
 @Composable
-private fun focusAwarePadding(
+private fun rememberAutoGridMetrics(
     available: Dp,
     lanes: Int,
     scrollAxis: HomeScrollAxis,
-    coverAspectRatio: Float
-): PaddingValues {
+    coverAspectRatio: Float,
+    titleAllowance: Dp
+): AutoGridMetrics {
     val edge = Dimens.spacingMd
     val gap = Dimens.spacingSm
-    val laneExtent = ((available - edge * 2 - gap * (lanes - 1)) / lanes).coerceAtLeast(0.dp)
-    val coverWidth = if (scrollAxis == HomeScrollAxis.VERTICAL) laneExtent else laneExtent * coverAspectRatio
-    val coverHeight = if (scrollAxis == HomeScrollAxis.VERTICAL) laneExtent / coverAspectRatio else laneExtent
     val overhang = (ComponentDefaults.Focus.scaleFocused - 1f) / 2f
-    return PaddingValues(
-        horizontal = edge + coverWidth * overhang,
-        vertical = edge + coverHeight * overhang
-    )
+    val gaps = gap * (lanes - 1)
+    val roughLane = ((available - edge * 2 - gaps) / lanes).coerceAtLeast(0.dp)
+    val vertical = scrollAxis == HomeScrollAxis.VERTICAL
+    val roughCross = if (vertical) roughLane else (roughLane - titleAllowance).coerceAtLeast(0.dp)
+    val crossPad = edge + roughCross * overhang
+    val lane = ((available - crossPad * 2 - gaps) / lanes).coerceAtLeast(0.dp)
+    return if (vertical) {
+        val coverHeight = lane / coverAspectRatio
+        AutoGridMetrics(
+            padding = PaddingValues(
+                horizontal = crossPad,
+                vertical = edge + coverHeight * overhang
+            ),
+            cellWidth = null
+        )
+    } else {
+        val coverHeight = (lane - titleAllowance).coerceAtLeast(0.dp)
+        val coverWidth = coverHeight * coverAspectRatio
+        AutoGridMetrics(
+            padding = PaddingValues(
+                horizontal = edge + coverWidth * overhang,
+                vertical = crossPad
+            ),
+            cellWidth = coverWidth
+        )
+    }
 }
 
 /**
@@ -243,13 +281,14 @@ private fun AutoGridCell(
     showTitle: Boolean,
     showPlatformBadge: Boolean,
     downloadIndicator: GameDownloadIndicator,
+    cellWidth: Dp?,
     onTap: () -> Unit,
     onLongPress: () -> Unit,
     onCoverLoadFailed: ((Long, String) -> Unit)?,
     onCoverLoaded: ((Long, android.graphics.Bitmap) -> Unit)?
 ) {
     val coverAspectRatio = LocalBoxArtStyle.current.aspectRatio
-    Column(modifier = Modifier.fillMaxWidth()) {
+    Column(modifier = if (cellWidth != null) Modifier.width(cellWidth) else Modifier.fillMaxWidth()) {
         when (item) {
             is CarouselItem.Game -> GameCard(
                 game = item.game,

@@ -6,6 +6,7 @@ import com.nendo.argosy.data.local.entity.PlatformEntity
 import com.nendo.argosy.data.local.entity.getDisplayName
 import com.nendo.argosy.data.platform.PlatformDefinitions
 import com.nendo.argosy.data.preferences.HomeBackgroundMode
+import com.nendo.argosy.domain.model.HomeSectionKind
 import com.nendo.argosy.domain.model.PinnedCollection
 import com.nendo.argosy.domain.usecase.collection.CategoryType
 import com.nendo.argosy.ui.screens.common.DiscPickerState
@@ -99,15 +100,17 @@ fun PlatformEntity.toHomePlatformUi(emulatorDetector: EmulatorDetector) = HomePl
     hasEmulator = emulatorDetector.hasAnyEmulator(slug)
 )
 
-sealed class HomeRow {
-    data object Favorites : HomeRow()
-    data class Platform(val index: Int) : HomeRow()
-    data object Continue : HomeRow()
-    data object Recommendations : HomeRow()
-    data object Android : HomeRow()
-    data object Steam : HomeRow()
-    data class PinnedRegular(val pinId: Long, val collectionId: Long, val name: String) : HomeRow()
-    data class PinnedVirtual(val pinId: Long, val type: CategoryType, val name: String) : HomeRow()
+sealed class HomeRow(val kind: HomeSectionKind) {
+    data object Favorites : HomeRow(HomeSectionKind.FAVORITES)
+    data class Platform(val index: Int) : HomeRow(HomeSectionKind.PLATFORM)
+    data object Continue : HomeRow(HomeSectionKind.CONTINUE)
+    data object Recommendations : HomeRow(HomeSectionKind.RECOMMENDATIONS)
+    data object Android : HomeRow(HomeSectionKind.ANDROID)
+    data object Steam : HomeRow(HomeSectionKind.STEAM)
+    data class PinnedRegular(val pinId: Long, val collectionId: Long, val name: String) :
+        HomeRow(HomeSectionKind.PINNED_REGULAR)
+    data class PinnedVirtual(val pinId: Long, val type: CategoryType, val name: String) :
+        HomeRow(HomeSectionKind.PINNED_VIRTUAL)
 }
 
 data class HomeUiState(
@@ -155,11 +158,17 @@ data class HomeUiState(
 ) {
     val availableRows: List<HomeRow>
         get() = buildList {
-            if (recentGames.isNotEmpty()) add(HomeRow.Continue)
-            if (recommendedGames.isNotEmpty()) add(HomeRow.Recommendations)
-            if (favoriteGames.isNotEmpty()) add(HomeRow.Favorites)
-            if (androidGames.isNotEmpty()) add(HomeRow.Android)
-            if (steamGames.isNotEmpty()) add(HomeRow.Steam)
+            HomeSectionKind.LEADING.forEach { kind ->
+                val row = when (kind) {
+                    HomeSectionKind.CONTINUE -> HomeRow.Continue.takeIf { recentGames.isNotEmpty() }
+                    HomeSectionKind.RECOMMENDATIONS -> HomeRow.Recommendations.takeIf { recommendedGames.isNotEmpty() }
+                    HomeSectionKind.FAVORITES -> HomeRow.Favorites.takeIf { favoriteGames.isNotEmpty() }
+                    HomeSectionKind.ANDROID -> HomeRow.Android.takeIf { androidGames.isNotEmpty() }
+                    HomeSectionKind.STEAM -> HomeRow.Steam.takeIf { steamGames.isNotEmpty() }
+                    else -> null
+                }
+                row?.let { add(it) }
+            }
             platforms.forEachIndexed { index, _ -> add(HomeRow.Platform(index)) }
             pinnedCollections.sortedByDescending { it.displayOrder }.forEach { pinned ->
                 when (pinned) {

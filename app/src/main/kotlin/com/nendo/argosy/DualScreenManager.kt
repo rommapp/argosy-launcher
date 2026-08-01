@@ -582,6 +582,7 @@ class DualScreenManager(
         sessionStateStore.setRolesSwapped(false)
 
         _swappedGameDetailViewModel = null
+        swappedDualHomeViewModel = null
         _swappedCurrentScreen.value = com.nendo.argosy.hardware.CompanionScreen.HOME
         _swappedIsGameActive.value = false
         _swappedCompanionState.value = com.nendo.argosy.hardware.CompanionInGameState()
@@ -623,6 +624,22 @@ class DualScreenManager(
             getGamesForPinnedCollectionUseCase = getGamesForPinnedCollectionUseCase,
             sessionStateStore = sessionStateStore
         )
+        restoreSwappedNavContext()
+    }
+
+    /**
+     * The swapped role persists where the carousel is, so it has to read that back on the way in.
+     * Writing without restoring would let a single move in swapped mode overwrite the saved
+     * position with a section-zero context the user never chose.
+     */
+    private fun restoreSwappedNavContext() {
+        val navContext = sessionStateStore.getCarouselNavContext()
+        val hasSomethingToRestore = navContext.hasContext ||
+            navContext.legacySectionIndex > 0 ||
+            navContext.legacySelectedIndex > 0
+        if (hasSomethingToRestore) {
+            swappedDualHomeViewModel?.restoreNavContext(navContext)
+        }
     }
 
     // --- Public methods for companion -> DSM direction ---

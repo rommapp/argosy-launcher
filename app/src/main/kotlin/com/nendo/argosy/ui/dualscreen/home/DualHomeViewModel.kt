@@ -66,12 +66,16 @@ private const val SECTION_KIND_STEAM = "STEAM"
 private const val SECTION_KIND_PINNED = "PINNED"
 private const val RESTORE_MAX_DEFERRALS = 8
 
-sealed class DualHomeSection(val title: String, val shortTitle: String = title) {
-    data object Recent : DualHomeSection("Continue Playing", "Continue")
-    data object Recommendations : DualHomeSection("Recommended", "For You")
-    data object Favorites : DualHomeSection("Favorites")
-    data object Android : DualHomeSection("Android")
-    data object Steam : DualHomeSection("Steam")
+sealed class DualHomeSection(
+    val kind: HomeSectionKind,
+    val title: String,
+    val shortTitle: String = title
+) {
+    data object Recent : DualHomeSection(HomeSectionKind.CONTINUE, "Continue Playing", "Continue")
+    data object Recommendations : DualHomeSection(HomeSectionKind.RECOMMENDATIONS, "Recommended", "For You")
+    data object Favorites : DualHomeSection(HomeSectionKind.FAVORITES, "Favorites")
+    data object Android : DualHomeSection(HomeSectionKind.ANDROID, "Android")
+    data object Steam : DualHomeSection(HomeSectionKind.STEAM, "Steam")
     data class Platform(
         val id: Long,
         val slug: String,
@@ -79,11 +83,14 @@ sealed class DualHomeSection(val title: String, val shortTitle: String = title) 
         val displayName: String,
         val shortName: String?,
         val logoPath: String?
-    ) : DualHomeSection(displayName, shortName ?: displayName)
+    ) : DualHomeSection(HomeSectionKind.PLATFORM, displayName, shortName ?: displayName)
 
     data class Pinned(
         val pinned: PinnedCollection
-    ) : DualHomeSection(pinned.displayName)
+    ) : DualHomeSection(
+        if (pinned is PinnedCollection.Virtual) HomeSectionKind.PINNED_VIRTUAL else HomeSectionKind.PINNED_REGULAR,
+        pinned.displayName
+    )
 }
 
 enum class DualHomeFocusZone { CAROUSEL, APP_BAR }
@@ -228,8 +235,6 @@ class DualHomeViewModel(
 
     /** Invoked once the lower carousel has settled on its restored section + game. */
     var onRestoreComplete: (() -> Unit)? = null
-
-    /** Invoked after a touch/scroll selection so the position can be persisted. */
 
     fun startDrawerForwarding() { _forwardingMode.value = ForwardingMode.OVERLAY }
     fun startBackgroundForwarding() { _forwardingMode.value = ForwardingMode.BACKGROUND }
@@ -427,26 +432,23 @@ class DualHomeViewModel(
         val sections = mutableListOf<DualHomeSection>()
 
         val newThreshold = Instant.now().minus(NEW_GAME_THRESHOLD_HOURS, ChronoUnit.HOURS)
-        val recentGames = gameRepository.getRecentlyPlayed(limit = 1)
-        val newGames = gameRepository.getNewlyAddedPlayable(newThreshold, 1)
-        if (recentGames.isNotEmpty() || newGames.isNotEmpty()) {
-            sections.add(DualHomeSection.Recent)
-        }
+        val hasRecent = gameRepository.getRecentlyPlayed(limit = 1).isNotEmpty() ||
+            gameRepository.getNewlyAddedPlayable(newThreshold, 1).isNotEmpty()
+        val hasRecommendations = gameRepository.getByIds(recommendedGameIds()).isNotEmpty()
+        val hasFavorites = gameRepository.getFavorites().isNotEmpty()
+        val hasAndroid = gameRepository.getByPlatformSorted(LocalPlatformIds.ANDROID, limit = 1).isNotEmpty()
+        val hasSteam = gameRepository.getByPlatformSorted(LocalPlatformIds.STEAM, limit = 1).isNotEmpty()
 
-        if (recommendedGameIds().isNotEmpty()) {
-            sections.add(DualHomeSection.Recommendations)
-        }
-
-        if (gameRepository.getFavorites().isNotEmpty()) {
-            sections.add(DualHomeSection.Favorites)
-        }
-
-        if (gameRepository.getByPlatformSorted(LocalPlatformIds.ANDROID, limit = 1).isNotEmpty()) {
-            sections.add(DualHomeSection.Android)
-        }
-
-        if (gameRepository.getByPlatformSorted(LocalPlatformIds.STEAM, limit = 1).isNotEmpty()) {
-            sections.add(DualHomeSection.Steam)
+        HomeSectionKind.LEADING.forEach { kind ->
+            val section = when (kind) {
+                HomeSectionKind.CONTINUE -> DualHomeSection.Recent.takeIf { hasRecent }
+                HomeSectionKind.RECOMMENDATIONS -> DualHomeSection.Recommendations.takeIf { hasRecommendations }
+                HomeSectionKind.FAVORITES -> DualHomeSection.Favorites.takeIf { hasFavorites }
+                HomeSectionKind.ANDROID -> DualHomeSection.Android.takeIf { hasAndroid }
+                HomeSectionKind.STEAM -> DualHomeSection.Steam.takeIf { hasSteam }
+                else -> null
+            }
+            section?.let { sections.add(it) }
         }
 
         sections.addAll(platformSections(platformRepository.getPlatformsWithGames()))

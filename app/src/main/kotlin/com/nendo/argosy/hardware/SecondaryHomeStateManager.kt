@@ -256,7 +256,4 @@ class SecondaryHomeStateManager(
         )
     }
 
-    fun persistCarouselPosition(dualHomeViewModel: DualHomeViewModel) {
-        sessionStateStore.setCarouselNavContext(dualHomeViewModel.currentNavContext())
-    }
 }

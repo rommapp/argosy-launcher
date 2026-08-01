@@ -303,11 +303,6 @@ class SecondaryHomeActivity :
     override fun onStop() {
         super.onStop()
         if (::broadcasts.isInitialized) broadcasts.broadcastCompanionPaused()
-        if (homeRestoreSettled && ::stateManager.isInitialized &&
-            currentScreen == CompanionScreen.HOME && !isGameActive
-        ) {
-            stateManager.persistCarouselPosition(dualHomeViewModel)
-        }
     }
 
     override fun finishCompanion() {

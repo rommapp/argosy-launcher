@@ -126,6 +126,8 @@ data class HomeUiState(
     val pinnedGames: Map<Long, List<HomeGameUi>> = emptyMap(),
     val pinnedGamesLoading: Set<Long> = emptySet(),
     val currentRow: HomeRow = HomeRow.Continue,
+    val carouselConfig: com.nendo.argosy.domain.model.CarouselConfig =
+        com.nendo.argosy.domain.model.CarouselConfig(),
     val isLoading: Boolean = true,
     val isRommConfigured: Boolean = false,
     val showGameMenu: Boolean = false,

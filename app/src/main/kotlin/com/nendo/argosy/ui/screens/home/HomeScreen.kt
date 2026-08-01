@@ -626,9 +626,10 @@ fun HomeScreen(
         ) {
             val cardSize = rememberCarouselCardSize(
                 availableHeight = maxHeight - headerBlockHeight - gameInfoHeight -
-                    Dimens.footerHeight - Dimens.spacingLg - Dimens.spacingXl
+                    Dimens.footerHeight - Dimens.spacingLg - Dimens.spacingXl,
+                config = uiState.carouselConfig
             )
-            val railHeight = cardSize.height * CAROUSEL_FOCUS_SCALE + Dimens.spacingMd
+            val railHeight = cardSize.height * uiState.carouselConfig.focusScale + Dimens.spacingMd
             val isStackedHeader = maxWidth <= maxHeight
             Box(
                 modifier = Modifier
@@ -690,14 +691,15 @@ fun HomeScreen(
                                 metrics = CarouselMetrics.hero(
                                     cardWidth = cardSize.width,
                                     cardHeight = cardSize.height,
-                                    focusScale = CAROUSEL_FOCUS_SCALE
+                                    config = uiState.carouselConfig
                                 ),
                                 overrides = CarouselOverrides(
                                     focusedScale = if (uiState.isVideoPreviewActive) 1f else null,
                                     unfocusedAlpha = if (uiState.isVideoPreviewActive) 0f else null,
                                     viewAllAlpha = if (uiState.isVideoPreviewActive) 0f else 1f
                                 ),
-                                showPlatformBadge = uiState.currentRow !is HomeRow.Platform && uiState.currentRow != HomeRow.Steam && uiState.currentRow != HomeRow.Android,
+                                showPlatformBadge = uiState.carouselConfig.showPlatformBadge &&
+                                    uiState.currentRow !is HomeRow.Platform && uiState.currentRow != HomeRow.Steam && uiState.currentRow != HomeRow.Android,
                                 onCoverLoadFailed = viewModel::repairCoverImage,
                                 onCoverLoaded = viewModel::extractGradientForGame,
                                 onItemTap = { index -> viewModel.handleItemTap(index, onGameSelect) },
@@ -1186,17 +1188,17 @@ private fun GameInfo(
  * to leave over, which at square ratios is a few dp and overlaps the game info.
  */
 @Composable
-private fun rememberCarouselCardSize(availableHeight: Dp): DpSize = carouselCardSize(
+private fun rememberCarouselCardSize(
+    availableHeight: Dp,
+    config: com.nendo.argosy.domain.model.CarouselConfig
+): DpSize = carouselCardSize(
     availableHeight = availableHeight,
     availableWidth = LocalConfiguration.current.screenWidthDp.dp,
     coverAspectRatio = LocalBoxArtStyle.current.aspectRatio,
-    focusScale = CAROUSEL_FOCUS_SCALE,
-    restingScale = CAROUSEL_CARD_SCALE,
+    focusScale = config.focusScale,
+    restingScale = config.restingScale,
     minCardHeight = Dimens.gameCardHeight * HERO_MIN_CARD_SCALE
 )
-
-private const val CAROUSEL_FOCUS_SCALE = 1.8f
-private const val CAROUSEL_CARD_SCALE = 0.9f
 
 @Composable
 private fun rememberHomeCarouselItems(

@@ -313,7 +313,8 @@ class HomeViewModel @Inject constructor(
                         backgroundOpacity = prefs.backgroundOpacity,
                         useGameBackground = prefs.useGameBackground,
                         customBackgroundPath = prefs.customBackgroundPath,
-                        homeBackgroundMode = prefs.homeBackgroundMode
+                        homeBackgroundMode = prefs.homeBackgroundMode,
+                        carouselConfig = prefs.homeLayout.carousel
                     )
                 }
 

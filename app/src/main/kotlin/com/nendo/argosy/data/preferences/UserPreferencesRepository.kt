@@ -102,6 +102,7 @@ class UserPreferencesRepository @Inject constructor(
             useGameBackground = display.useGameBackground,
             customBackgroundPath = display.customBackgroundPath,
             homeBackgroundMode = display.homeBackgroundMode,
+            homeLayout = display.homeLayout,
             useAccentColorFooter = display.useAccentColorFooter,
             hiddenApps = app.hiddenApps,
             secondaryHomeApps = app.secondaryHomeApps,
@@ -687,6 +688,8 @@ data class UserPreferences(
     val useGameBackground: Boolean = true,
     val customBackgroundPath: String? = null,
     val homeBackgroundMode: HomeBackgroundMode = HomeBackgroundMode.GAME_ART,
+    val homeLayout: com.nendo.argosy.domain.model.HomeLayoutSettings =
+        com.nendo.argosy.domain.model.HomeLayoutSettings(),
     val useAccentColorFooter: Boolean = false,
     val fileLoggingEnabled: Boolean = false,
     val fileLoggingPath: String? = null,

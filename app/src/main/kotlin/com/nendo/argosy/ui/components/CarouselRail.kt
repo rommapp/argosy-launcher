@@ -29,6 +29,9 @@ import com.nendo.argosy.ui.screens.home.HomeGameUi
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalBoxArtStyle
 import com.nendo.argosy.ui.theme.Motion
+import com.nendo.argosy.domain.model.CarouselConfig
+import com.nendo.argosy.domain.model.HomeFocusPosition
+import com.nendo.argosy.domain.model.HomeRowAlignment
 import com.nendo.argosy.ui.theme.generated.ComponentDefaults
 import com.nendo.argosy.ui.util.clickableNoFocus
 import com.nendo.argosy.ui.util.touchOnly
@@ -97,23 +100,40 @@ data class CarouselMetrics(
     val anchor: CarouselAnchor,
     val itemGap: Dp,
     val neighbourPush: Dp,
-    val allowFocusOverflow: Boolean
+    val allowFocusOverflow: Boolean,
+    /**
+     * Reverses the reading order relative to the ambient layout direction, so it composes with a
+     * right-to-left locale rather than cancelling it out.
+     */
+    val reversed: Boolean = false
 ) {
     val focusedOverlapsNeighbours: Boolean
         get() = focusScale > 1f || neighbourPush > 0.dp
 
     companion object {
-        fun hero(cardWidth: Dp, cardHeight: Dp, focusScale: Float): CarouselMetrics = CarouselMetrics(
+        fun hero(
+            cardWidth: Dp,
+            cardHeight: Dp,
+            config: CarouselConfig = CarouselConfig()
+        ): CarouselMetrics = CarouselMetrics(
             cardWidth = cardWidth,
             cardHeight = cardHeight,
             focusedCardWidth = cardWidth,
             focusedCardHeight = cardHeight,
-            focusScale = focusScale,
-            scaleFromBottom = true,
-            anchor = CarouselAnchor.START,
+            focusScale = config.focusScale,
+            scaleFromBottom = config.rowAlignment == HomeRowAlignment.BOTTOM,
+            anchor = when (config.focusPosition) {
+                HomeFocusPosition.LEADING -> CarouselAnchor.START
+                HomeFocusPosition.CENTER -> CarouselAnchor.CENTER
+            },
             itemGap = cardWidth * HERO_ITEM_GAP_CARD_RATIO,
-            neighbourPush = cardWidth * HERO_NEIGHBOUR_PUSH_CARD_RATIO,
-            allowFocusOverflow = true
+            neighbourPush = if (config.neighbourPush) {
+                cardWidth * HERO_NEIGHBOUR_PUSH_CARD_RATIO
+            } else {
+                0.dp
+            },
+            allowFocusOverflow = true,
+            reversed = config.inverted
         )
 
         fun centered(coverAspectRatio: Float): CarouselMetrics {
@@ -216,6 +236,7 @@ fun CarouselRail(
 
     LazyRow(
         state = listState,
+        reverseLayout = metrics.reversed,
         contentPadding = contentPadding,
         horizontalArrangement = Arrangement.spacedBy(metrics.itemGap),
         verticalAlignment = when (metrics.anchor) {

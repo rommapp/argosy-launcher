@@ -99,8 +99,25 @@ class HomeInputHandler(
 
     private fun isGrid(state: HomeUiState): Boolean = state.layoutKind == HomeLayoutKind.AUTO_GRID
 
-    private fun gridMove(direction: GridDirection): InputResult =
-        if (actions.moveGridFocus(direction)) InputResult.HANDLED else InputResult.UNHANDLED
+    /**
+     * Grid movement, falling out of the section at its horizontal edges: pressing into the boundary
+     * a second time lands on the neighbouring platform, which is the same thing the shoulder
+     * buttons do and what the rail did with left and right.
+     */
+    private fun gridMove(direction: GridDirection): InputResult {
+        if (actions.moveGridFocus(direction)) return InputResult.HANDLED
+        return when (direction) {
+            GridDirection.LEFT -> {
+                actions.previousRow()
+                InputResult.handled(SoundType.SECTION_CHANGE)
+            }
+            GridDirection.RIGHT -> {
+                actions.nextRow()
+                InputResult.handled(SoundType.SECTION_CHANGE)
+            }
+            else -> InputResult.UNHANDLED
+        }
+    }
 
     override fun onConfirm(): InputResult {
         val state = actions.uiState.value

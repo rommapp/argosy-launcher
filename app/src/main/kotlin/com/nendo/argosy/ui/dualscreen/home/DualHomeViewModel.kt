@@ -36,7 +36,7 @@ import com.nendo.argosy.data.model.computeGenericSections
 import com.nendo.argosy.domain.usecase.cache.RepairImageCacheUseCase
 import com.nendo.argosy.ui.common.GridDirection
 import com.nendo.argosy.ui.common.GridFocusNavigator
-import com.nendo.argosy.ui.components.autoGridFocusRows
+import com.nendo.argosy.ui.components.autoGridStep
 import com.nendo.argosy.ui.common.toHomeGameUi
 import com.nendo.argosy.ui.screens.home.GameDownloadIndicator
 import com.nendo.argosy.ui.screens.home.HomeGameUi
@@ -784,7 +784,6 @@ class DualHomeViewModel(
         if (state.sections.isEmpty()) return
 
         val newIndex = (state.currentSectionIndex + 1) % state.sections.size
-        carouselGridNavigator.resetStickyColumn()
         _uiState.update { it.copy(currentSectionIndex = newIndex, selectedIndex = 0) }
         viewModelScope.launch {
             loadGamesForCurrentSectionSuspend()
@@ -801,7 +800,6 @@ class DualHomeViewModel(
         val state = _uiState.value
         if (index !in state.sections.indices || index == state.currentSectionIndex) return
 
-        carouselGridNavigator.resetStickyColumn()
         _uiState.update { it.copy(currentSectionIndex = index, selectedIndex = 0) }
         viewModelScope.launch {
             loadGamesForCurrentSectionSuspend()
@@ -819,7 +817,6 @@ class DualHomeViewModel(
         } else {
             state.currentSectionIndex - 1
         }
-        carouselGridNavigator.resetStickyColumn()
         _uiState.update { it.copy(currentSectionIndex = newIndex, selectedIndex = 0) }
         viewModelScope.launch {
             loadGamesForCurrentSectionSuspend()
@@ -860,8 +857,12 @@ class DualHomeViewModel(
         val state = _uiState.value
         if (state.games.isEmpty()) return false
         val count = if (state.hasMoreGames) state.games.size + 1 else state.games.size
-        val rows = autoGridFocusRows(count, state.autoGridConfig)
-        val target = carouselGridNavigator.navigate(direction, state.selectedIndex, rows) ?: return false
+        val target = autoGridStep(
+            itemCount = count,
+            config = state.autoGridConfig,
+            currentIndex = state.selectedIndex,
+            direction = direction
+        ) ?: return false
         _uiState.update { it.copy(selectedIndex = target) }
         persistSection()
         return true
@@ -1099,7 +1100,6 @@ class DualHomeViewModel(
 
     private val libraryNav = GridFocusNavigator()
 
-    private val carouselGridNavigator = GridFocusNavigator()
 
     fun resetStickyLibraryColumn() { libraryNav.resetStickyColumn() }
 

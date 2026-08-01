@@ -20,6 +20,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import com.nendo.argosy.domain.model.AutoGridConfig
 import com.nendo.argosy.domain.model.HomeScrollAxis
 import com.nendo.argosy.domain.model.HomeSectionStyle
+import com.nendo.argosy.ui.common.GridDirection
 import com.nendo.argosy.ui.screens.home.GameDownloadIndicator
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalBoxArtStyle
@@ -27,21 +28,40 @@ import com.nendo.argosy.ui.theme.generated.ComponentDefaults
 import com.nendo.argosy.ui.util.clickableNoFocus
 
 /**
- * Focus order for the auto grid, expressed as visual rows of item indices. The renderer and the
- * caller's navigator must agree on this or the highlight and the covers drift apart, so both read
- * it from here.
+ * Where focus lands moving [direction] from [currentIndex] over [itemCount] items, or null when
+ * the move runs off the grid.
  *
- * A vertical grid fills row by row, so a row is a contiguous slice. A horizontal grid fills column
- * by column, so visual row `r` is every index congruent to `r` modulo the lane count.
+ * Movement across the lanes is confined to the lane group it starts in, so the edge of a visual row
+ * is a real boundary rather than a wrap onto the next one. LEFT and RIGHT always end up being the
+ * boundary that matters, whichever way the grid scrolls: with a vertical grid they step between
+ * columns of one row, with a horizontal grid they step between columns outright. A caller can
+ * therefore treat a null from LEFT or RIGHT as "leave this section" without inspecting the axis.
  */
-fun autoGridFocusRows(itemCount: Int, config: AutoGridConfig): List<List<Int>> {
-    if (itemCount <= 0) return emptyList()
+fun autoGridStep(
+    itemCount: Int,
+    config: AutoGridConfig,
+    currentIndex: Int,
+    direction: GridDirection
+): Int? {
+    if (itemCount <= 0) return null
     val lanes = config.laneCount.coerceAtLeast(1)
-    return when (config.scrollAxis) {
-        HomeScrollAxis.VERTICAL -> (0 until itemCount).chunked(lanes)
-        HomeScrollAxis.HORIZONTAL -> (0 until lanes).mapNotNull { lane ->
-            (lane until itemCount step lanes).toList().takeIf { it.isNotEmpty() }
-        }
+    val last = itemCount - 1
+    val index = currentIndex.coerceIn(0, last)
+    val forward = direction == GridDirection.RIGHT || direction == GridDirection.DOWN
+    val acrossLanes = when (config.scrollAxis) {
+        HomeScrollAxis.VERTICAL -> direction == GridDirection.LEFT || direction == GridDirection.RIGHT
+        HomeScrollAxis.HORIZONTAL -> direction == GridDirection.UP || direction == GridDirection.DOWN
+    }
+    if (acrossLanes) {
+        val lane = index % lanes
+        if (if (forward) lane == lanes - 1 else lane == 0) return null
+        return (if (forward) index + 1 else index - 1).takeIf { it in 0..last }
+    }
+    val target = if (forward) index + lanes else index - lanes
+    return when {
+        target in 0..last -> target
+        forward && index / lanes < last / lanes -> last
+        else -> null
     }
 }
 

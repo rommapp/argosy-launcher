@@ -94,7 +94,7 @@ fun SpeedrunPanel(
             ) {
                 itemsIndexed(state.segments, key = { index, _ -> index }) { index, name ->
                     val timeMs = state.splitTimesMs.getOrNull(index)
-                    val pbMs = state.pbSplitTimesMs.getOrNull(index)
+                    val pbMs = state.comparisonSplitTimesMs.getOrNull(index)
                     val segmentDuration = timeMs?.let { t ->
                         val previous = if (index == 0) 0L else state.splitTimesMs.getOrNull(index - 1)
                         previous?.let { t - it }

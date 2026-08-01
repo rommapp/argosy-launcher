@@ -825,6 +825,17 @@ class LibretroActivity : ComponentActivity() {
                         finalTimeMs = runEnd.finalTimeMs,
                         splitTimesMs = runEnd.splitTimesMs
                     )
+                    val refreshed = speedrunRepository.getComparison(
+                        categoryId,
+                        runEnd.splitTimesMs.size
+                    )
+                    speedrunTimer.updateComparison(
+                        pbSplitTimesMs = refreshed.pbSplitTimesMs,
+                        comparisonSplitTimesMs = refreshed.comparisonSplitTimesMs,
+                        bestSegmentDurationsMs = refreshed.bestSegmentDurationsMs,
+                        pbTimeMs = refreshed.pbTimeMs,
+                        attemptCount = refreshed.attemptCount
+                    )
                 }
             }
         }
@@ -866,6 +877,7 @@ class LibretroActivity : ComponentActivity() {
                 categoryName = armData.first.name,
                 segments = armData.second,
                 pbSplitTimesMs = armData.third.pbSplitTimesMs,
+                comparisonSplitTimesMs = armData.third.comparisonSplitTimesMs,
                 bestSegmentDurationsMs = armData.third.bestSegmentDurationsMs,
                 pbTimeMs = armData.third.pbTimeMs,
                 attemptCount = armData.third.attemptCount

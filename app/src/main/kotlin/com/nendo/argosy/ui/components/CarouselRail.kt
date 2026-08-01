@@ -44,6 +44,12 @@ internal const val HERO_MAX_WIDTH_FRACTION = 0.28f
 internal const val HERO_MIN_CARD_SCALE = 0.4f
 internal const val COMPANION_NEIGHBOUR_PUSH_CARD_RATIO = 0.2f
 
+internal fun HomeRowAlignment.toVerticalAlignment(): Alignment.Vertical = when (this) {
+    HomeRowAlignment.TOP -> Alignment.Top
+    HomeRowAlignment.CENTER -> Alignment.CenterVertically
+    HomeRowAlignment.BOTTOM -> Alignment.Bottom
+}
+
 /**
  * Where the focused card comes to rest in the viewport. The member carries the pixel offset that
  * the owner of the list state must pass to `animateScrollToItem`, because the snap rule and the
@@ -106,7 +112,12 @@ data class CarouselMetrics(
      * Reverses the reading order relative to the ambient layout direction, so it composes with a
      * right-to-left locale rather than cancelling it out.
      */
-    val reversed: Boolean = false
+    val reversed: Boolean = false,
+    /**
+     * Where the resting cards sit against the taller focused one. Bottom stands them on a shelf,
+     * top hangs them from a rail, centre splits the difference.
+     */
+    val verticalAlignment: Alignment.Vertical = Alignment.Bottom
 ) {
     val focusedOverlapsNeighbours: Boolean
         get() = focusScale > 1f || neighbourPush > 0.dp
@@ -134,7 +145,8 @@ data class CarouselMetrics(
                 0.dp
             },
             allowFocusOverflow = true,
-            reversed = config.inverted
+            reversed = config.inverted,
+            verticalAlignment = config.rowAlignment.toVerticalAlignment()
         )
 
         /**
@@ -170,7 +182,8 @@ data class CarouselMetrics(
                     0.dp
                 },
                 allowFocusOverflow = false,
-                reversed = config.inverted
+                reversed = config.inverted,
+                verticalAlignment = config.rowAlignment.toVerticalAlignment()
             )
         }
     }
@@ -269,10 +282,7 @@ fun CarouselRail(
         reverseLayout = metrics.reversed,
         contentPadding = contentPadding,
         horizontalArrangement = Arrangement.spacedBy(metrics.itemGap),
-        verticalAlignment = when (metrics.anchor) {
-            CarouselAnchor.START -> Alignment.Bottom
-            CarouselAnchor.CENTER -> Alignment.CenterVertically
-        },
+        verticalAlignment = metrics.verticalAlignment,
         modifier = modifier
             .fillMaxWidth()
             .then(

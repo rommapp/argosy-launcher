@@ -77,7 +77,6 @@ import com.nendo.argosy.ui.components.CarouselAnchor
 import com.nendo.argosy.ui.components.CarouselItem
 import com.nendo.argosy.ui.components.CarouselMetrics
 import com.nendo.argosy.ui.components.CarouselOverrides
-import com.nendo.argosy.domain.model.HomeRowAlignment
 import com.nendo.argosy.ui.components.CarouselRail
 import com.nendo.argosy.ui.components.HomeAutoGrid
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
@@ -237,12 +236,8 @@ fun DualHomeLowerScreen(
             }
         }
 
-        if (!isAutoGrid && carouselConfig.rowAlignment != HomeRowAlignment.TOP) {
-            Spacer(
-                modifier = Modifier.weight(
-                    if (carouselConfig.rowAlignment == HomeRowAlignment.CENTER) 1f else 2f
-                )
-            )
+        if (!isAutoGrid) {
+            Spacer(modifier = Modifier.weight(1f))
         }
 
         if (viewMode == DualHomeViewMode.CAROUSEL && sectionLabels.isNotEmpty()) {
@@ -343,13 +338,7 @@ fun DualHomeLowerScreen(
                 .padding(horizontal = 24.dp, vertical = 6.dp)
         )
 
-        if (carouselConfig.rowAlignment != HomeRowAlignment.BOTTOM) {
-            Spacer(
-                modifier = Modifier.weight(
-                    if (carouselConfig.rowAlignment == HomeRowAlignment.CENTER) 1f else 2f
-                )
-            )
-        }
+        Spacer(modifier = Modifier.weight(1f))
         }
 
         val showAppBar = com.nendo.argosy.DualScreenManagerHolder.instance

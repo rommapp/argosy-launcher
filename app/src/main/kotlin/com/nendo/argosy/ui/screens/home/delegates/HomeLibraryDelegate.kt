@@ -658,6 +658,15 @@ class HomeLibraryDelegate @Inject constructor(
         )
     }
 
+    /**
+     * Resolves the games a curated page points at. Looked up by id across the library rather than
+     * taken from a section, because the tiles on a page share nothing but having been placed there.
+     */
+    suspend fun resolveTileGames(gameIds: List<Long>): Map<Long, HomeGameUi> {
+        if (gameIds.isEmpty()) return emptyMap()
+        return gameRepository.getByIds(gameIds).associate { it.id to it.toUi() }
+    }
+
     private suspend fun GameEntity.toUi(): HomeGameUi = toHomeGameUi(
         downloadStatus = downloadFileStatusRepository,
         platformDisplayName = cachedPlatformDisplayNames[platformId],

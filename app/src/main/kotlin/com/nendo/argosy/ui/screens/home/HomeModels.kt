@@ -132,6 +132,13 @@ data class HomeUiState(
         com.nendo.argosy.domain.model.AutoGridConfig(),
     val layoutKind: com.nendo.argosy.domain.model.HomeLayoutKind =
         com.nendo.argosy.domain.model.HomeLayoutKind.CAROUSEL,
+    val customGridConfig: com.nendo.argosy.domain.model.CustomGridConfig =
+        com.nendo.argosy.domain.model.CustomGridConfig(),
+    val homeTiles: List<com.nendo.argosy.domain.model.HomeTile> = emptyList(),
+    val tileGames: Map<Long, HomeGameUi> = emptyMap(),
+    val customGridPage: Int = 0,
+    val customGridCell: com.nendo.argosy.domain.model.GridCell =
+        com.nendo.argosy.domain.model.GridCell(0, 0),
     val isLoading: Boolean = true,
     val isRommConfigured: Boolean = false,
     val showGameMenu: Boolean = false,
@@ -288,6 +295,40 @@ data class HomeUiState(
 
     fun downloadIndicatorFor(gameId: Long): GameDownloadIndicator =
         downloadIndicators[gameId] ?: GameDownloadIndicator.NONE
+
+    val customGridPageCount: Int
+        get() = maxOf(
+            (homeTiles.maxOfOrNull { it.pageIndex } ?: -1) + 1,
+            com.nendo.argosy.data.repository.HomeTileRepository.DEFAULT_PAGE_COUNT
+        )
+
+    /**
+     * The page past the last real one. Landing on it is how a page gets added, so it is a position
+     * rather than a stored page and never holds tiles.
+     */
+    val customGridAddPageIndex: Int get() = customGridPageCount
+
+    fun tilesOnPage(pageIndex: Int): List<com.nendo.argosy.domain.model.HomeTile> =
+        homeTiles.filter { it.pageIndex == pageIndex }
+
+    /**
+     * What a tile draws. A game whose row survived but whose library entry did not resolves to a
+     * missing marker rather than to nothing, so a page keeps its shape and says what is wrong.
+     */
+    fun tileContentFor(
+        tile: com.nendo.argosy.domain.model.HomeTile
+    ): com.nendo.argosy.ui.components.CustomGridTileContent? =
+        when (val target = tile.target) {
+            is com.nendo.argosy.domain.model.HomeTileTargetRef.Game -> {
+                val game = tileGames[target.gameId]
+                com.nendo.argosy.ui.components.CustomGridTileContent(
+                    coverPath = game?.coverPath,
+                    label = game?.title ?: "Missing game",
+                    isMissing = game == null
+                )
+            }
+            else -> null
+        }
 }
 
 data class BreadcrumbItem(val label: String, val isCurrent: Boolean)

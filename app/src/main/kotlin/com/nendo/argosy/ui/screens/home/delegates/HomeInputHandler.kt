@@ -3,6 +3,7 @@ package com.nendo.argosy.ui.screens.home.delegates
 import com.nendo.argosy.ui.input.InputHandler
 import com.nendo.argosy.ui.input.InputResult
 import com.nendo.argosy.core.input.SoundType
+import com.nendo.argosy.domain.model.GridDirection2D
 import com.nendo.argosy.domain.model.HomeLayoutKind
 import com.nendo.argosy.ui.common.GridDirection
 import com.nendo.argosy.ui.components.AutoGridMove
@@ -25,6 +26,8 @@ interface HomeInputActions {
     fun previousGame(): Boolean
     fun nextGame(): Boolean
     fun moveGridFocus(direction: GridDirection): AutoGridMove
+    fun moveCustomGridFocus(direction: com.nendo.argosy.domain.model.GridDirection2D): Boolean
+    fun turnCustomGridPage(delta: Int): Boolean
     fun installApk(gameId: Long)
     fun launchGame(gameId: Long, channelName: String? = null)
     fun resumeDownload(gameId: Long)
@@ -57,6 +60,7 @@ class HomeInputHandler(
                 actions.moveGameMenuFocus(-1)
                 InputResult.HANDLED
             }
+            isCustomGrid(state) -> customMove(GridDirection2D.UP)
             isGrid(state) -> gridMove(GridDirection.UP)
             else -> {
                 actions.previousRow()
@@ -76,6 +80,7 @@ class HomeInputHandler(
                 actions.moveGameMenuFocus(1)
                 InputResult.HANDLED
             }
+            isCustomGrid(state) -> customMove(GridDirection2D.DOWN)
             isGrid(state) -> gridMove(GridDirection.DOWN)
             else -> {
                 actions.nextRow()
@@ -87,6 +92,7 @@ class HomeInputHandler(
     override fun onLeft(): InputResult {
         val state = actions.uiState.value
         if (state.showAddToCollectionModal || state.showGameMenu) return InputResult.HANDLED
+        if (isCustomGrid(state)) return customMove(GridDirection2D.LEFT)
         if (isGrid(state)) return gridMove(GridDirection.LEFT)
         val moved = if (railIsReversed(state)) actions.nextGame() else actions.previousGame()
         return if (moved) InputResult.HANDLED else InputResult.UNHANDLED
@@ -95,12 +101,25 @@ class HomeInputHandler(
     override fun onRight(): InputResult {
         val state = actions.uiState.value
         if (state.showAddToCollectionModal || state.showGameMenu) return InputResult.HANDLED
+        if (isCustomGrid(state)) return customMove(GridDirection2D.RIGHT)
         if (isGrid(state)) return gridMove(GridDirection.RIGHT)
         val moved = if (railIsReversed(state)) actions.previousGame() else actions.nextGame()
         return if (moved) InputResult.HANDLED else InputResult.UNHANDLED
     }
 
     private fun isGrid(state: HomeUiState): Boolean = state.layoutKind == HomeLayoutKind.AUTO_GRID
+
+    private fun isCustomGrid(state: HomeUiState): Boolean =
+        state.layoutKind == HomeLayoutKind.CUSTOM_GRID
+
+    /**
+     * The press is always consumed: a curated page's edges are the end of the grid, and there is no
+     * neighbouring zone for an unhandled move to fall through to.
+     */
+    private fun customMove(direction: GridDirection2D): InputResult {
+        actions.moveCustomGridFocus(direction)
+        return InputResult.HANDLED
+    }
 
     /**
      * A reversed rail draws later items to the left, so the stick has to be read the same way round
@@ -206,6 +225,10 @@ class HomeInputHandler(
     override fun onPrevSection(): InputResult {
         val state = actions.uiState.value
         if (state.showAddToCollectionModal || state.showGameMenu) return InputResult.HANDLED
+        if (isCustomGrid(state)) {
+            actions.turnCustomGridPage(-1)
+            return InputResult.handled(SoundType.SECTION_CHANGE)
+        }
         actions.previousRow()
         return InputResult.handled(SoundType.SECTION_CHANGE)
     }
@@ -213,6 +236,10 @@ class HomeInputHandler(
     override fun onNextSection(): InputResult {
         val state = actions.uiState.value
         if (state.showAddToCollectionModal || state.showGameMenu) return InputResult.HANDLED
+        if (isCustomGrid(state)) {
+            actions.turnCustomGridPage(1)
+            return InputResult.handled(SoundType.SECTION_CHANGE)
+        }
         actions.nextRow()
         return InputResult.handled(SoundType.SECTION_CHANGE)
     }

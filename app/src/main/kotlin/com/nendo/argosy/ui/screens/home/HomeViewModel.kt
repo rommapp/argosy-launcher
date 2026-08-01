@@ -24,6 +24,7 @@ import com.nendo.argosy.hardware.AmbientLedContext
 import com.nendo.argosy.hardware.AmbientLedManager
 import com.nendo.argosy.ui.common.GridDirection
 import com.nendo.argosy.ui.common.GridFocusNavigator
+import com.nendo.argosy.domain.model.HomeTileTargetRef
 import com.nendo.argosy.ui.components.AutoGridMove
 import com.nendo.argosy.ui.components.autoGridMove
 import com.nendo.argosy.ui.screens.home.delegates.GameMenuAction
@@ -76,7 +77,9 @@ class HomeViewModel @Inject constructor(
     val videoPreviewDelegate: HomeVideoPreviewDelegate,
     val gameMenuDelegate: HomeGameMenuDelegate,
     private val steamContentManager: com.nendo.argosy.data.steam.SteamContentManager,
-    private val steamDownloadPromptController: com.nendo.argosy.data.steam.SteamDownloadPromptController
+    private val steamDownloadPromptController: com.nendo.argosy.data.steam.SteamDownloadPromptController,
+    private val homeTileRepository: com.nendo.argosy.data.repository.HomeTileRepository,
+    private val syncPreferencesRepository: com.nendo.argosy.data.preferences.SyncPreferencesRepository
 ) : ViewModel(), HomeInputActions {
 
     private val _uiState = MutableStateFlow(restoreInitialState())
@@ -87,6 +90,9 @@ class HomeViewModel @Inject constructor(
     val events: SharedFlow<HomeEvent> = _events.asSharedFlow()
 
     private val sessionStateStore by lazy { com.nendo.argosy.data.preferences.SessionStateStore(context) }
+
+    private var customGridColumns = 1
+    private var customGridRows = 1
 
     private var achievementPrefetchJob: Job? = null
     private val achievementPrefetchDebounceMs = 300L
@@ -114,6 +120,7 @@ class HomeViewModel @Inject constructor(
         observeFocusedGameForLed()
         observeCollectionModal()
         observeDelegateStates()
+        observeHomeTiles()
         gradientExtractionDelegate.startBackgroundProcessing(viewModelScope)
     }
 
@@ -321,6 +328,7 @@ class HomeViewModel @Inject constructor(
                         homeBackgroundMode = prefs.homeBackgroundMode,
                         carouselConfig = prefs.homeLayout.carousel,
                         autoGridConfig = prefs.homeLayout.autoGrid,
+                        customGridConfig = prefs.homeLayout.customGrid,
                         layoutKind = prefs.homeLayout.selected
                     )
                 }
@@ -498,6 +506,80 @@ class HomeViewModel @Inject constructor(
         navigationDelegate.prefetchAdjacentBackgrounds(viewModelScope, _uiState.value.currentItems, _uiState.value.focusedGameIndex)
         libraryDelegate.extractGradientsForVisibleGames(viewModelScope, _uiState.value.currentItems, _uiState.value.focusedGameIndex)
         return true
+    }
+
+    /**
+     * Tiles and the games they point at. The lookup is by id across the whole library rather than
+     * from the current section, because a curated page is not a section: the games on it have
+     * nothing in common except that someone put them there.
+     */
+    private fun observeHomeTiles() {
+        viewModelScope.launch {
+            homeTileRepository.observeTiles(syncPreferencesRepository.getRommUserId())
+                .collect { tiles ->
+                    val gameIds = tiles.mapNotNull {
+                        (it.target as? HomeTileTargetRef.Game)?.gameId
+                    }.distinct()
+                    val games = libraryDelegate.resolveTileGames(gameIds)
+                    _uiState.update { it.copy(homeTiles = tiles, tileGames = games) }
+                }
+        }
+    }
+
+    /**
+     * Grid shape is a property of the display, so the renderer measures it and reports it back
+     * here; navigation needs the same columns and rows the user can see or the cursor leaves the
+     * page at a different edge than the art does.
+     */
+    fun setCustomGridShape(columns: Int, rows: Int) {
+        if (customGridColumns == columns && customGridRows == rows) return
+        customGridColumns = columns
+        customGridRows = rows
+    }
+
+    override fun moveCustomGridFocus(direction: com.nendo.argosy.domain.model.GridDirection2D): Boolean {
+        val state = _uiState.value
+        val move = com.nendo.argosy.domain.model.customGridStep(
+            cell = state.customGridCell,
+            tiles = state.tilesOnPage(state.customGridPage),
+            columns = customGridColumns,
+            rows = customGridRows,
+            direction = direction
+        )
+        return when (move) {
+            is com.nendo.argosy.domain.model.CustomGridMove.Focus -> {
+                _uiState.update { it.copy(customGridCell = move.cell) }
+                true
+            }
+            com.nendo.argosy.domain.model.CustomGridMove.PreviousPage -> turnCustomGridPage(-1)
+            com.nendo.argosy.domain.model.CustomGridMove.NextPage -> turnCustomGridPage(1)
+            com.nendo.argosy.domain.model.CustomGridMove.None -> false
+        }
+    }
+
+    /**
+     * Turns to an adjacent page, entering from the edge the move came from so the cursor keeps its
+     * line rather than jumping to a corner.
+     */
+    override fun turnCustomGridPage(delta: Int): Boolean {
+        val state = _uiState.value
+        val target = state.customGridPage + delta
+        if (target < 0 || target > state.customGridAddPageIndex) return false
+        val entryColumn = if (delta > 0) 0 else (customGridColumns - 1).coerceAtLeast(0)
+        _uiState.update {
+            it.copy(
+                customGridPage = target,
+                customGridCell = com.nendo.argosy.domain.model.GridCell(
+                    entryColumn,
+                    it.customGridCell.rowIndex.coerceIn(0, (customGridRows - 1).coerceAtLeast(0))
+                )
+            )
+        }
+        return true
+    }
+
+    fun setCustomGridCell(cell: com.nendo.argosy.domain.model.GridCell) {
+        _uiState.update { it.copy(customGridCell = cell) }
     }
 
     override fun moveGridFocus(direction: GridDirection): AutoGridMove {

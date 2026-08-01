@@ -121,6 +121,8 @@ import com.nendo.argosy.ui.components.CarouselMetrics
 import com.nendo.argosy.ui.components.CarouselOverrides
 import com.nendo.argosy.ui.components.CarouselRail
 import com.nendo.argosy.ui.components.HomeAutoGrid
+import com.nendo.argosy.ui.components.HomeCustomGridPage
+import com.nendo.argosy.ui.components.CustomGridShape
 import com.nendo.argosy.domain.model.HomeLayoutKind
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import com.nendo.argosy.ui.components.HERO_MIN_CARD_SCALE
@@ -163,6 +165,8 @@ fun HomeScreen(
     val listState = rememberLazyListState()
     val gridState = rememberLazyGridState()
     val isAutoGrid = uiState.layoutKind == HomeLayoutKind.AUTO_GRID
+    val isCustomGrid = uiState.layoutKind == HomeLayoutKind.CUSTOM_GRID
+    var customGridShape by remember { mutableStateOf(CustomGridShape(1, 1)) }
     val scope = rememberCoroutineScope()
     var isProgrammaticScroll by remember { mutableStateOf(false) }
     var skipNextProgrammaticScroll by remember { mutableStateOf(false) }
@@ -674,6 +678,24 @@ fun HomeScreen(
                     when {
                         uiState.isLoading -> {
                             LoadingState()
+                        }
+                        isCustomGrid -> {
+                            HomeCustomGridPage(
+                                tiles = uiState.tilesOnPage(uiState.customGridPage),
+                                contentFor = { tile -> uiState.tileContentFor(tile) },
+                                shape = customGridShape,
+                                focusedCell = uiState.customGridCell,
+                                onCellTap = { cell -> viewModel.setCustomGridCell(cell) },
+                                onSizeResolved = { size ->
+                                    val shape = CustomGridShape.forSize(
+                                        size,
+                                        uiState.customGridConfig.laneCount
+                                    )
+                                    customGridShape = shape
+                                    viewModel.setCustomGridShape(shape.columns, shape.rows)
+                                },
+                                modifier = Modifier.fillMaxSize()
+                            )
                         }
                         uiState.currentItems.isEmpty() -> {
                             val pinId = when (val row = uiState.currentRow) {

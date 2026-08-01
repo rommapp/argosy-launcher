@@ -151,7 +151,8 @@ class DownloadManager @Inject constructor(
     private val steamContentManager: dagger.Lazy<com.nendo.argosy.data.steam.SteamContentManager>,
     private val musicDirectoryManager: MusicDirectoryManager,
     private val attributionRepository: StorageAttributionRepository,
-    private val syncPreferencesRepository: SyncPreferencesRepository
+    private val syncPreferencesRepository: SyncPreferencesRepository,
+    private val homeTileRepository: com.nendo.argosy.data.repository.HomeTileRepository
 ) {
     private val _state = MutableStateFlow(DownloadQueueState())
     val state: StateFlow<DownloadQueueState> = _state.asStateFlow()
@@ -354,6 +355,26 @@ class DownloadManager @Inject constructor(
 
     private fun broadcastDownloadCompleted(gameId: Long) {
         DualScreenManagerHolder.instance?.onDownloadCompleted(gameId)
+        scope.launch { addToCustomHomeGrid(gameId) }
+    }
+
+    /**
+     * Honours the custom grid's "add new downloads" choice. Both completion paths funnel through
+     * the broadcast above, so hooking it here covers the queue and the direct download alike rather
+     * than guarding one of them.
+     *
+     * Only the automatic mode acts here. Asking first needs a screen to ask on, so that mode is
+     * left to the home surface and deliberately does nothing in the background.
+     */
+    private suspend fun addToCustomHomeGrid(gameId: Long) {
+        val prefs = preferencesRepository.userPreferences.first()
+        val customGrid = prefs.homeLayout.customGrid
+        if (customGrid.autoAdd != com.nendo.argosy.domain.model.HomeTileAutoAdd.AUTO) return
+        homeTileRepository.appendToLastPage(
+            ownerUserId = syncPreferencesRepository.getRommUserId(),
+            target = com.nendo.argosy.domain.model.HomeTileTargetRef.Game(gameId),
+            columns = customGrid.laneCount
+        )
     }
 
     suspend fun enqueueDownload(

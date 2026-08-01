@@ -52,6 +52,40 @@ class HomeTileRepository @Inject constructor(
 
     suspend fun pruneMissingGames() = homeTileDao.deleteTilesForMissingGames()
 
+    /**
+     * Places [target] in the first cell the last page has free, reading left to right then down.
+     *
+     * The page shape depends on the display, and this runs where no display is in scope, so it
+     * searches the anchors already taken rather than a grid: a cell no tile claims is free on every
+     * shape wide enough to contain it. A row that lands outside a narrower screen is trimmed back by
+     * the placement pass on read, which is the same recovery an edited page gets.
+     */
+    suspend fun appendToLastPage(
+        ownerUserId: Long?,
+        target: HomeTileTargetRef,
+        columns: Int
+    ): Long? {
+        val pageIndex = (homeTileDao.getMaxPageIndex(ownerUserId) ?: 0).coerceAtLeast(0)
+        val taken = homeTileDao.getPage(ownerUserId, pageIndex)
+            .flatMap { tile ->
+                (tile.columnIndex until tile.columnIndex + tile.columnSpan).flatMap { column ->
+                    (tile.rowIndex until tile.rowIndex + tile.rowSpan).map { row -> column to row }
+                }
+            }
+            .toSet()
+        val lanes = columns.coerceAtLeast(1)
+        var row = 0
+        while (row < MAX_APPEND_ROWS) {
+            for (column in 0 until lanes) {
+                if (column to row !in taken) {
+                    return place(ownerUserId, pageIndex, TileRect(column, row), target)
+                }
+            }
+            row++
+        }
+        return null
+    }
+
     private fun entityFor(
         ownerUserId: Long?,
         pageIndex: Int,
@@ -79,6 +113,7 @@ class HomeTileRepository @Inject constructor(
 
     companion object {
         const val DEFAULT_PAGE_COUNT = 2
+        private const val MAX_APPEND_ROWS = 64
     }
 }
 

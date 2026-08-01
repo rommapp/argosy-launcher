@@ -58,12 +58,20 @@ data class AutoGridConfig(
 }
 
 /**
+ * What happens to a game the moment its download finishes, for a grid whose contents are otherwise
+ * placed by hand. Off leaves the grid alone; the other two exist because a freshly downloaded game
+ * is the one thing a curator almost always wants to hand.
+ */
+enum class HomeTileAutoAdd { OFF, AUTO, PROMPT }
+
+/**
  * A page is [laneCount] lanes across its short side; how many cells run along the long side follows
  * from the display's shape, so one curated page keeps its proportions on a tall handheld and a wide
  * television instead of being authored for one and stretched on the other.
  */
 data class CustomGridConfig(
-    val laneCount: Int = DEFAULT_LANE_COUNT
+    val laneCount: Int = DEFAULT_LANE_COUNT,
+    val autoAdd: HomeTileAutoAdd = HomeTileAutoAdd.OFF
 ) : HomeLayoutConfig {
     override val kind: HomeLayoutKind get() = HomeLayoutKind.CUSTOM_GRID
 }
@@ -122,6 +130,7 @@ data class HomeLayoutSettings(
             KEY_CUSTOM_GRID,
             JSONObject().apply {
                 put(KEY_LANE_COUNT, customGrid.laneCount)
+                put(KEY_AUTO_ADD, customGrid.autoAdd.name)
             }
         )
     }.toString()
@@ -141,6 +150,7 @@ data class HomeLayoutSettings(
         private const val KEY_LANE_COUNT = "laneCount"
         private const val KEY_SECTION_STYLE = "sectionStyle"
         private const val KEY_SHOW_TITLES = "showTitles"
+        private const val KEY_AUTO_ADD = "autoAdd"
 
         /**
          * Reads what it can and defaults the rest. A layout the user curated is not thrown away
@@ -191,7 +201,11 @@ data class HomeLayoutSettings(
                 ),
                 customGrid = CustomGridConfig(
                     laneCount = customGrid?.optInt(KEY_LANE_COUNT, defaults.customGrid.laneCount)
-                        ?.coerceIn(MIN_LANE_COUNT, MAX_LANE_COUNT) ?: defaults.customGrid.laneCount
+                        ?.coerceIn(MIN_LANE_COUNT, MAX_LANE_COUNT) ?: defaults.customGrid.laneCount,
+                    autoAdd = enumOrDefault(
+                        customGrid?.optString(KEY_AUTO_ADD),
+                        defaults.customGrid.autoAdd
+                    )
                 )
             )
         }

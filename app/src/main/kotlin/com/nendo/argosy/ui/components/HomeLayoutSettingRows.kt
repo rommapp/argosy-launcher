@@ -24,6 +24,7 @@ import com.nendo.argosy.domain.model.MIN_LANE_COUNT
 import com.nendo.argosy.domain.model.HomeLayoutSettings
 import com.nendo.argosy.domain.model.HomeRowAlignment
 import com.nendo.argosy.domain.model.HomeScrollAxis
+import com.nendo.argosy.domain.model.HomeTileAutoAdd
 import com.nendo.argosy.domain.model.HomeSectionStyle
 import com.nendo.argosy.ui.primitives.FocusIndicators
 import com.nendo.argosy.ui.primitives.argosyFocusIndicators
@@ -48,7 +49,8 @@ enum class HomeLayoutSettingField {
     AUTO_GRID_LANES,
     SECTION_STYLE,
     SHOW_TITLES,
-    CUSTOM_GRID_LANES
+    CUSTOM_GRID_LANES,
+    CUSTOM_GRID_AUTO_ADD
 }
 
 private const val SCALE_PERCENT_STEP = 10
@@ -76,7 +78,8 @@ fun homeLayoutFieldsFor(kind: HomeLayoutKind): List<HomeLayoutSettingField> = wh
         HomeLayoutSettingField.SHOW_TITLES
     )
     HomeLayoutKind.CUSTOM_GRID -> listOf(
-        HomeLayoutSettingField.CUSTOM_GRID_LANES
+        HomeLayoutSettingField.CUSTOM_GRID_LANES,
+        HomeLayoutSettingField.CUSTOM_GRID_AUTO_ADD
     )
 }
 
@@ -120,6 +123,8 @@ fun adjustHomeLayoutField(
             settings.copy(autoGrid = settings.autoGrid.copy(laneCount = stepSpan(settings.autoGrid.laneCount, direction)))
         HomeLayoutSettingField.CUSTOM_GRID_LANES ->
             settings.copy(customGrid = settings.customGrid.copy(laneCount = stepSpan(settings.customGrid.laneCount, direction)))
+        HomeLayoutSettingField.CUSTOM_GRID_AUTO_ADD ->
+            settings.copy(customGrid = settings.customGrid.copy(autoAdd = cycle(settings.customGrid.autoAdd, direction)))
 }
 
 /**
@@ -291,7 +296,20 @@ fun HomeLayoutSettingRow(
             isFocused = isFocused,
             onAdjust = { delta -> onAdjust(if (delta < 0) -1 else 1) }
         )
+        HomeLayoutSettingField.CUSTOM_GRID_AUTO_ADD -> CyclePreference(
+            title = "Add New Downloads",
+            value = autoAddLabel(settings.customGrid.autoAdd),
+            isFocused = isFocused,
+            onClick = { onAdjust(1) },
+            onPrev = { onAdjust(-1) }
+        )
     }
+}
+
+private fun autoAddLabel(mode: HomeTileAutoAdd): String = when (mode) {
+    HomeTileAutoAdd.OFF -> "Off"
+    HomeTileAutoAdd.AUTO -> "Automatically"
+    HomeTileAutoAdd.PROMPT -> "Ask First"
 }
 
 private fun layoutLabel(kind: HomeLayoutKind): String = when (kind) {

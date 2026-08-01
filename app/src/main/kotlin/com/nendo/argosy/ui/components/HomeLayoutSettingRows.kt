@@ -19,6 +19,8 @@ import androidx.compose.ui.text.style.TextAlign
 import com.nendo.argosy.data.preferences.GridDensity
 import com.nendo.argosy.domain.model.HomeFocusPosition
 import com.nendo.argosy.domain.model.HomeLayoutKind
+import com.nendo.argosy.domain.model.MAX_LANE_COUNT
+import com.nendo.argosy.domain.model.MIN_LANE_COUNT
 import com.nendo.argosy.domain.model.HomeLayoutSettings
 import com.nendo.argosy.domain.model.HomeRowAlignment
 import com.nendo.argosy.domain.model.HomeScrollAxis
@@ -55,8 +57,6 @@ private const val FOCUS_SCALE_MIN_PERCENT = 100
 private const val FOCUS_SCALE_MAX_PERCENT = 300
 private const val RESTING_SCALE_MIN_PERCENT = 50
 private const val RESTING_SCALE_MAX_PERCENT = 100
-private const val GRID_SPAN_MIN = 2
-private const val GRID_SPAN_MAX = 8
 private const val PERCENT = 100f
 
 /**
@@ -303,16 +303,16 @@ fun HomeLayoutSettingRow(
         HomeLayoutSettingField.AUTO_GRID_LANES -> SliderPreference(
             title = laneCountLabel(settings.autoGrid.scrollAxis),
             value = settings.autoGrid.laneCount,
-            minValue = GRID_SPAN_MIN,
-            maxValue = GRID_SPAN_MAX,
+            minValue = MIN_LANE_COUNT,
+            maxValue = MAX_LANE_COUNT,
             isFocused = isFocused,
             onAdjust = { delta -> onAdjust(if (delta < 0) -1 else 1) }
         )
         HomeLayoutSettingField.CUSTOM_GRID_LANES -> SliderPreference(
             title = "Cells across",
             value = settings.customGrid.laneCount,
-            minValue = GRID_SPAN_MIN,
-            maxValue = GRID_SPAN_MAX,
+            minValue = MIN_LANE_COUNT,
+            maxValue = MAX_LANE_COUNT,
             isFocused = isFocused,
             onAdjust = { delta -> onAdjust(if (delta < 0) -1 else 1) }
         )
@@ -363,7 +363,7 @@ private fun stepScale(current: Float, deltaPercent: Int, minPercent: Int, maxPer
 }
 
 private fun stepSpan(current: Int, direction: Int): Int =
-    (current + direction).coerceIn(GRID_SPAN_MIN, GRID_SPAN_MAX)
+    (current + direction).coerceIn(MIN_LANE_COUNT, MAX_LANE_COUNT)
 
 private inline fun <reified T : Enum<T>> cycle(current: T, direction: Int): T {
     val values = enumValues<T>()

@@ -60,9 +60,16 @@ data class CustomGridConfig(
     override val kind: HomeLayoutKind get() = HomeLayoutKind.CUSTOM_GRID
 }
 
-internal const val DEFAULT_LANE_COUNT = 3
-internal const val MIN_LANE_COUNT = 2
-internal const val MAX_LANE_COUNT = 8
+const val DEFAULT_LANE_COUNT = 3
+
+const val MIN_LANE_COUNT = 2
+
+/**
+ * Ceiling on lanes. Renderers honour whatever is stored within this range rather than second
+ * guessing it against their own dimensions; picking a count that suits the screen is the reader's
+ * call, not the grid's.
+ */
+const val MAX_LANE_COUNT = 8
 
 /**
  * The selected layout plus every layout's settings, so switching back and forth does not discard
@@ -169,7 +176,7 @@ data class HomeLayoutSettings(
                         defaults.autoGrid.scrollAxis
                     ),
                     laneCount = autoGrid?.optInt(KEY_LANE_COUNT, defaults.autoGrid.laneCount)
-                        ?.takeIf { it in MIN_LANE_COUNT..MAX_LANE_COUNT } ?: defaults.autoGrid.laneCount,
+                        ?.coerceIn(MIN_LANE_COUNT, MAX_LANE_COUNT) ?: defaults.autoGrid.laneCount,
                     sectionStyle = enumOrDefault(
                         autoGrid?.optString(KEY_SECTION_STYLE),
                         defaults.autoGrid.sectionStyle
@@ -179,7 +186,7 @@ data class HomeLayoutSettings(
                 ),
                 customGrid = CustomGridConfig(
                     laneCount = customGrid?.optInt(KEY_LANE_COUNT, defaults.customGrid.laneCount)
-                        ?.takeIf { it in MIN_LANE_COUNT..MAX_LANE_COUNT } ?: defaults.customGrid.laneCount
+                        ?.coerceIn(MIN_LANE_COUNT, MAX_LANE_COUNT) ?: defaults.customGrid.laneCount
                 )
             )
         }

@@ -78,7 +78,13 @@ fun DualHomeLowerContent(
                     onOpenDrawer = onOpenDrawer,
                     carouselConfig = uiState.carouselConfig,
                     autoGridConfig = uiState.autoGridConfig,
-                    layoutKind = uiState.layoutKind
+                    layoutKind = uiState.layoutKind,
+                    isPlatformSection = when (uiState.currentSection) {
+                        is DualHomeSection.Platform,
+                        DualHomeSection.Android,
+                        DualHomeSection.Steam -> true
+                        else -> false
+                    }
                 )
             }
             DualHomeViewMode.COLLECTIONS -> {

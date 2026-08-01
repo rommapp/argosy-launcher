@@ -77,6 +77,7 @@ import com.nendo.argosy.ui.components.CarouselAnchor
 import com.nendo.argosy.ui.components.CarouselItem
 import com.nendo.argosy.ui.components.CarouselMetrics
 import com.nendo.argosy.ui.components.CarouselOverrides
+import com.nendo.argosy.domain.model.HomeRowAlignment
 import com.nendo.argosy.ui.components.CarouselRail
 import com.nendo.argosy.ui.components.HomeAutoGrid
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
@@ -129,6 +130,7 @@ fun DualHomeLowerScreen(
         com.nendo.argosy.domain.model.AutoGridConfig(),
     layoutKind: com.nendo.argosy.domain.model.HomeLayoutKind =
         com.nendo.argosy.domain.model.HomeLayoutKind.CAROUSEL,
+    isPlatformSection: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     val isAutoGrid = layoutKind == com.nendo.argosy.domain.model.HomeLayoutKind.AUTO_GRID
@@ -235,8 +237,12 @@ fun DualHomeLowerScreen(
             }
         }
 
-        if (!isAutoGrid) {
-            Spacer(modifier = Modifier.weight(1f))
+        if (!isAutoGrid && carouselConfig.rowAlignment != HomeRowAlignment.TOP) {
+            Spacer(
+                modifier = Modifier.weight(
+                    if (carouselConfig.rowAlignment == HomeRowAlignment.CENTER) 1f else 2f
+                )
+            )
         }
 
         if (viewMode == DualHomeViewMode.CAROUSEL && sectionLabels.isNotEmpty()) {
@@ -302,6 +308,7 @@ fun DualHomeLowerScreen(
                 tapMode = CarouselTapMode.TOUCH,
                 overrides = CarouselOverrides(focusedAlpha = 1f, unfocusedAlpha = 0.5f),
                 showFocusVisuals = !appBarFocused,
+                showPlatformBadge = carouselConfig.showPlatformBadge && !isPlatformSection,
                 showNewBadge = false,
                 viewAllStyle = ViewAllCardStyle.ACCENT_COUNT,
                 onItemTap = { index ->
@@ -336,7 +343,13 @@ fun DualHomeLowerScreen(
                 .padding(horizontal = 24.dp, vertical = 6.dp)
         )
 
-        Spacer(modifier = Modifier.weight(1f))
+        if (carouselConfig.rowAlignment != HomeRowAlignment.BOTTOM) {
+            Spacer(
+                modifier = Modifier.weight(
+                    if (carouselConfig.rowAlignment == HomeRowAlignment.CENTER) 1f else 2f
+                )
+            )
+        }
         }
 
         val showAppBar = com.nendo.argosy.DualScreenManagerHolder.instance

@@ -42,6 +42,7 @@ internal const val HERO_ITEM_GAP_CARD_RATIO = 0.13f
 internal const val HERO_NEIGHBOUR_PUSH_CARD_RATIO = 0.5f
 internal const val HERO_MAX_WIDTH_FRACTION = 0.28f
 internal const val HERO_MIN_CARD_SCALE = 0.4f
+internal const val COMPANION_NEIGHBOUR_PUSH_CARD_RATIO = 0.2f
 
 /**
  * Where the focused card comes to rest in the viewport. The member carries the pixel offset that
@@ -137,29 +138,37 @@ data class CarouselMetrics(
         )
 
         /**
-         * The companion strip grows its focused card rather than scaling it, so [config] supplies
-         * the reading direction and focus anchor while the discrete card widths stay fixed - a
-         * spring-scaled card would overflow a strip that has no room above or below it.
+         * The companion strip grows its focused card to a discrete width rather than spring-scaling
+         * it, because the strip has no room above or below to absorb a transform. The size settings
+         * still apply: they move those two widths, expressed against the defaults so an untouched
+         * config renders the companion exactly as its tokens describe.
          */
         fun centered(
             coverAspectRatio: Float,
             config: CarouselConfig = CarouselConfig()
         ): CarouselMetrics {
-            val cardWidth = ComponentDefaults.Carousel.companionCardWidth.dp
-            val focusedCardWidth = ComponentDefaults.Carousel.companionCardWidthFocused.dp
+            val defaults = CarouselConfig()
+            val cardWidth = ComponentDefaults.Carousel.companionCardWidth.dp *
+                (config.restingScale / defaults.restingScale)
+            val focusedCardWidth = ComponentDefaults.Carousel.companionCardWidthFocused.dp *
+                (config.focusScale / defaults.focusScale)
             return CarouselMetrics(
                 cardWidth = cardWidth,
                 cardHeight = cardWidth / coverAspectRatio,
                 focusedCardWidth = focusedCardWidth,
                 focusedCardHeight = focusedCardWidth / coverAspectRatio,
                 focusScale = 1f,
-                scaleFromBottom = false,
+                scaleFromBottom = config.rowAlignment == HomeRowAlignment.BOTTOM,
                 anchor = when (config.focusPosition) {
                     HomeFocusPosition.LEADING -> CarouselAnchor.START
                     HomeFocusPosition.CENTER -> CarouselAnchor.CENTER
                 },
                 itemGap = ComponentDefaults.Carousel.companionCardGap.dp,
-                neighbourPush = 0.dp,
+                neighbourPush = if (config.neighbourPush) {
+                    cardWidth * COMPANION_NEIGHBOUR_PUSH_CARD_RATIO
+                } else {
+                    0.dp
+                },
                 allowFocusOverflow = false,
                 reversed = config.inverted
             )

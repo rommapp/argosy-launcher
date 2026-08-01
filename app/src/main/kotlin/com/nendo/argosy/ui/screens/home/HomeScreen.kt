@@ -122,6 +122,7 @@ import com.nendo.argosy.ui.components.CarouselOverrides
 import com.nendo.argosy.ui.components.CarouselRail
 import com.nendo.argosy.ui.components.HomeAutoGrid
 import com.nendo.argosy.domain.model.HomeLayoutKind
+import com.nendo.argosy.domain.model.HomeRowAlignment
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import com.nendo.argosy.ui.components.HERO_MIN_CARD_SCALE
 import com.nendo.argosy.ui.components.carouselCardSize
@@ -640,6 +641,17 @@ fun HomeScreen(
             } else {
                 cardSize.height * uiState.carouselConfig.focusScale + Dimens.spacingMd
             }
+            val railBandHeight = if (isAutoGrid) {
+                railHeight
+            } else {
+                (maxHeight - headerBlockHeight - gameInfoHeight - Dimens.footerHeight - Dimens.spacingLg)
+                    .coerceAtLeast(railHeight)
+            }
+            val railAlignment = when (uiState.carouselConfig.rowAlignment) {
+                HomeRowAlignment.TOP -> Alignment.TopStart
+                HomeRowAlignment.CENTER -> Alignment.CenterStart
+                HomeRowAlignment.BOTTOM -> Alignment.BottomStart
+            }
             val isStackedHeader = maxWidth <= maxHeight
             Box(
                 modifier = Modifier
@@ -669,7 +681,7 @@ fun HomeScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(railHeight)
+                        .height(railBandHeight)
                 ) {
                     when {
                         uiState.isLoading -> {
@@ -741,7 +753,7 @@ fun HomeScreen(
                                 onItemTap = { index -> viewModel.handleItemTap(index, onGameSelect) },
                                 onItemLongPress = viewModel::handleItemLongPress,
                                 modifier = Modifier
-                                    .align(Alignment.BottomStart)
+                                    .align(railAlignment)
                                     .height(railHeight)
                             )
                         }

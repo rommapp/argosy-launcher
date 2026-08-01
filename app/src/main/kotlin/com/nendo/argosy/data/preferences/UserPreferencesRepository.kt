@@ -166,6 +166,8 @@ class UserPreferencesRepository @Inject constructor(
             videoWallpaperDelaySeconds = display.videoWallpaperDelaySeconds,
             videoWallpaperMuted = display.videoWallpaperMuted,
             uiScale = display.uiScale,
+            pocketTacoEnabled = display.pocketTacoEnabled,
+            pocketTacoPercent = display.pocketTacoPercent,
             ambientLedEnabled = display.ambientLedEnabled,
             ambientLedBrightness = display.ambientLedBrightness,
             ambientLedAudioBrightness = display.ambientLedAudioBrightness,
@@ -240,6 +242,8 @@ class UserPreferencesRepository @Inject constructor(
 
     suspend fun setLibraryDefaultPlatform(slug: String) = displayPrefs.setLibraryDefaultPlatform(slug)
     suspend fun setUiScale(scale: Int) = displayPrefs.setUiScale(scale)
+    suspend fun setPocketTacoEnabled(enabled: Boolean) = displayPrefs.setPocketTacoEnabled(enabled)
+    suspend fun setPocketTacoPercent(percent: Int) = displayPrefs.setPocketTacoPercent(percent)
     suspend fun setBackgroundBlur(blur: Int) = displayPrefs.setBackgroundBlur(blur)
     suspend fun setBackgroundSaturation(saturation: Int) = displayPrefs.setBackgroundSaturation(saturation)
     suspend fun setBackgroundOpacity(opacity: Int) = displayPrefs.setBackgroundOpacity(opacity)
@@ -710,6 +714,8 @@ data class UserPreferences(
     val videoWallpaperDelaySeconds: Int = 3,
     val videoWallpaperMuted: Boolean = false,
     val uiScale: Int = 100,
+    val pocketTacoEnabled: Boolean = false,
+    val pocketTacoPercent: Int = 20,
     val ambientLedEnabled: Boolean = false,
     val ambientLedBrightness: Int = 100,
     val ambientLedAudioBrightness: Boolean = true,

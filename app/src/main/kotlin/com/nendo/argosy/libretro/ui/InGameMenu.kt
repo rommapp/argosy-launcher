@@ -41,6 +41,7 @@ import androidx.compose.ui.unit.dp
 import com.nendo.argosy.ui.input.InputHandler
 import com.nendo.argosy.ui.input.InputResult
 import com.nendo.argosy.ui.theme.generated.DimensionTokens
+import com.nendo.argosy.ui.theme.pocketTacoBottomInset
 import com.nendo.argosy.ui.util.clickableNoFocus
 
 sealed class InGameMenuAction {
@@ -264,14 +265,20 @@ fun InGameMenu(
         }
     }
 
+    val menuConfiguration = LocalConfiguration.current
+    val menuBottomReserved = pocketTacoBottomInset()
+
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(overlayColor)
+            .padding(bottom = menuBottomReserved)
             .clickableNoFocus { currentOnAction.value(InGameMenuAction.Resume) },
         contentAlignment = Alignment.Center
     ) {
-        val maxHeightDp = (LocalConfiguration.current.screenHeightDp * 0.9f).dp
+        val availableHeightDp = menuConfiguration.screenHeightDp - menuBottomReserved.value
+        val maxHeightDp =
+            (availableHeightDp * DimensionTokens.Layout.inGameMenuMaxHeightPct / 100f).dp
         val menuGridState = rememberLazyGridState()
 
         LaunchedEffect(focusedIndex, menuItems.size) {
@@ -429,14 +436,20 @@ fun DiscMenu(
         }
     }
 
+    val discConfiguration = LocalConfiguration.current
+    val discBottomReserved = pocketTacoBottomInset()
+
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(overlayColor)
+            .padding(bottom = discBottomReserved)
             .focusProperties { canFocus = false },
         contentAlignment = Alignment.Center
     ) {
-        val maxHeightDp = (LocalConfiguration.current.screenHeightDp * 0.9f).dp
+        val availableHeightDp = discConfiguration.screenHeightDp - discBottomReserved.value
+        val maxHeightDp =
+            (availableHeightDp * DimensionTokens.Layout.inGameMenuMaxHeightPct / 100f).dp
         val listState = rememberLazyListState()
 
         LaunchedEffect(focusedIndex, labels.size) {

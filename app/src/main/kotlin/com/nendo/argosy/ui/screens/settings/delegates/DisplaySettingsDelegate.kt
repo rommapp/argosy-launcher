@@ -409,10 +409,27 @@ class DisplaySettingsDelegate @Inject constructor(
         }
     }
 
-    fun cycleUiScale(scope: CoroutineScope) {
-        val current = _state.value.uiScale
-        val newValue = if (current >= 150) 75 else current + 5
-        setUiScale(scope, newValue)
+    fun setPocketTacoEnabled(scope: CoroutineScope, enabled: Boolean) {
+        scope.launch {
+            preferencesRepository.setPocketTacoEnabled(enabled)
+            _state.update { it.copy(pocketTacoEnabled = enabled) }
+        }
+    }
+
+    fun setPocketTacoPercent(scope: CoroutineScope, percent: Int) {
+        val newValue = percent.coerceIn(5, 40)
+        scope.launch {
+            preferencesRepository.setPocketTacoPercent(newValue)
+            _state.update { it.copy(pocketTacoPercent = newValue) }
+        }
+    }
+
+    fun adjustPocketTacoPercent(scope: CoroutineScope, delta: Int) {
+        val current = _state.value.pocketTacoPercent
+        val newValue = (current + delta).coerceIn(5, 40)
+        if (newValue != current) {
+            setPocketTacoPercent(scope, newValue)
+        }
     }
 
     fun adjustBackgroundBlur(scope: CoroutineScope, delta: Int) {

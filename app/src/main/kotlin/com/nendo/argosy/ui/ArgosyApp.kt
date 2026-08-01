@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ModalNavigationDrawer
@@ -30,6 +31,7 @@ import androidx.compose.ui.focus.focusRequester
 import android.content.Intent
 import com.nendo.argosy.ui.util.doubleTapNoFocus
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import com.nendo.argosy.libretro.LibretroActivity
 import androidx.compose.ui.unit.dp
@@ -97,6 +99,7 @@ import com.nendo.argosy.ui.dualscreen.home.DualHomeViewModel
 import com.nendo.argosy.ui.dualscreen.home.toShowcaseState
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalLauncherTheme
+import com.nendo.argosy.ui.theme.LocalUiScale
 import com.nendo.argosy.ui.theme.Motion
 import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.Lifecycle
@@ -1028,6 +1031,11 @@ fun ArgosyApp(
         val isDarkTheme = LocalLauncherTheme.current.isDarkTheme
         val scrimColor = if (isDarkTheme) Color.Black.copy(alpha = 0.5f) else Color.White.copy(alpha = 0.35f)
         val dimmerEnabled = screenDimmerPrefs.enabled && !isEmulatorRunning && !uiState.isFirstRun
+        val screenHeightDp = LocalConfiguration.current.screenHeightDp
+        val bottomReservedFraction = LocalUiScale.current.bottomReservedFraction
+        val bottomReserved = remember(screenHeightDp, bottomReservedFraction) {
+            (screenHeightDp * bottomReservedFraction).dp
+        }
 
         ScreenDimmerOverlay(
             enabled = dimmerEnabled,
@@ -1038,6 +1046,7 @@ fun ArgosyApp(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
+                    .padding(bottom = bottomReserved)
                     .focusRequester(rootFocusRequester)
                     .focusable()
                     .doubleTapNoFocus { openQuickMenu() }

@@ -71,6 +71,7 @@ import com.nendo.argosy.ui.screens.settings.libretro.libretroSettingsMaxFocusInd
 import com.nendo.argosy.ui.screens.settings.menu.SettingsLayout
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.util.touchOnly
+import com.nendo.argosy.ui.theme.pocketTacoBottomInset
 
 enum class InGameSettingsTab(val label: String) {
     VIDEO("Video"),
@@ -494,6 +495,7 @@ fun InGameSettingsScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(overlayColor)
+            .padding(bottom = pocketTacoBottomInset())
             .focusProperties { canFocus = false },
         contentAlignment = Alignment.Center
     ) {

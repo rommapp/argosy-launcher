@@ -49,6 +49,7 @@ import com.nendo.argosy.ui.input.InputResult
 import com.nendo.argosy.ui.util.clickableNoFocus
 import com.nendo.argosy.util.formatSaveSize
 import com.nendo.argosy.util.formatSaveTimestamp
+import com.nendo.argosy.ui.theme.pocketTacoBottomInset
 
 @Composable
 fun QuickLoadTimeline(
@@ -97,6 +98,7 @@ fun QuickLoadTimeline(
         modifier = Modifier
             .fillMaxSize()
             .background(overlayColor)
+            .padding(bottom = pocketTacoBottomInset())
             .focusProperties { canFocus = false },
         contentAlignment = Alignment.Center
     ) {

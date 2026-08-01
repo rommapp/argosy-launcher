@@ -30,6 +30,7 @@ import com.nendo.argosy.ui.input.InputHandler
 import com.nendo.argosy.ui.input.InputResult
 import com.nendo.argosy.ui.util.clickableNoFocus
 import kotlinx.coroutines.delay
+import com.nendo.argosy.ui.theme.pocketTacoBottomInset
 
 @Composable
 fun AutoRestorePrompt(
@@ -77,6 +78,7 @@ fun AutoRestorePrompt(
         modifier = Modifier
             .fillMaxSize()
             .background(overlayColor)
+            .padding(bottom = pocketTacoBottomInset())
             .focusProperties { canFocus = false },
         contentAlignment = Alignment.Center
     ) {

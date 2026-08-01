@@ -65,6 +65,8 @@ data class ThemeState(
     val platformIndicatorContent: PlatformIndicatorContent = PlatformIndicatorContent.NAME,
     val useAccentColorFooter: Boolean = false,
     val uiScale: Int = 100,
+    val pocketTacoEnabled: Boolean = false,
+    val pocketTacoPercent: Int = 20,
     val displayFontScale: Int = 100,
     val bodyFontScale: Int = 100
 )
@@ -193,6 +195,8 @@ fun UserPreferences.toThemeState(): ThemeState = ThemeState(
     platformIndicatorContent = platformIndicatorContent,
     useAccentColorFooter = useAccentColorFooter,
     uiScale = uiScale,
+    pocketTacoEnabled = pocketTacoEnabled,
+    pocketTacoPercent = pocketTacoPercent,
     displayFontScale = displayFontScale,
     bodyFontScale = bodyFontScale
 )

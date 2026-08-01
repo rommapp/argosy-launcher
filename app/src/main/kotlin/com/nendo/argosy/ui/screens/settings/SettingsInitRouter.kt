@@ -488,6 +488,8 @@ internal fun routeLoadSettings(vm: SettingsViewModel) {
             videoWallpaperDelaySeconds = prefs.videoWallpaperDelaySeconds,
             videoWallpaperMuted = prefs.videoWallpaperMuted,
             uiScale = prefs.uiScale,
+            pocketTacoEnabled = prefs.pocketTacoEnabled,
+            pocketTacoPercent = prefs.pocketTacoPercent,
             ambientLedEnabled = prefs.ambientLedEnabled,
             ambientLedBrightness = prefs.ambientLedBrightness,
             ambientLedAudioBrightness = prefs.ambientLedAudioBrightness,

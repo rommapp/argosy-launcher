@@ -527,7 +527,7 @@ private fun routeStorageCachesConfirm(vm: SettingsViewModel, state: SettingsUiSt
 private fun routeInterfaceConfirm(vm: SettingsViewModel, state: SettingsUiState): InputResult {
     val layoutState = InterfaceLayoutState.from(state)
     when (interfaceItemAtFocusIndex(state.focusedIndex, layoutState)) {
-        InterfaceItem.UiScale -> vm.cycleUiScale()
+        InterfaceItem.PocketTaco -> vm.setPocketTacoEnabled(!state.display.pocketTacoEnabled)
         InterfaceItem.HomeScreen -> vm.navigateToHomeScreen()
         InterfaceItem.LibraryView -> vm.navigateToLibraryView()
         InterfaceItem.BoxArt -> vm.navigateToBoxArt()

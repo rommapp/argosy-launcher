@@ -330,6 +330,7 @@ fun ALauncherTheme(
 fun ProvideArgosyThemeLocals(
     themeState: ThemeState,
     palette: ArgosyPalette,
+    isSecondaryDisplay: Boolean = false,
     content: @Composable () -> Unit
 ) {
     val focusGlow = palette.effectivePrimary.copy(alpha = 0.4f)
@@ -381,7 +382,14 @@ fun ProvideArgosyThemeLocals(
 
     val uiScaleConfig = UiScaleConfig(
         scale = themeState.uiScale / 100f,
-        aspectRatioClass = aspectRatioClass
+        aspectRatioClass = aspectRatioClass,
+        bottomReservedFraction = resolvePocketTacoFraction(
+            enabled = themeState.pocketTacoEnabled,
+            percent = themeState.pocketTacoPercent,
+            screenWidthDp = configuration.screenWidthDp,
+            screenHeightDp = configuration.screenHeightDp,
+            isSecondaryDisplay = isSecondaryDisplay
+        )
     )
 
     val context = LocalContext.current

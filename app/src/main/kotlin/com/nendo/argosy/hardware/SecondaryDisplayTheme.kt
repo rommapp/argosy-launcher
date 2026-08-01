@@ -43,7 +43,11 @@ fun SecondaryHomeTheme(
         argosyTypography(fonts, themeState.displayFontScale, themeState.bodyFontScale)
     }
 
-    ProvideArgosyThemeLocals(themeState = themeState, palette = palette) {
+    ProvideArgosyThemeLocals(
+        themeState = themeState,
+        palette = palette,
+        isSecondaryDisplay = true
+    ) {
         MaterialTheme(
             colorScheme = argosyColorScheme(palette),
             typography = typography,

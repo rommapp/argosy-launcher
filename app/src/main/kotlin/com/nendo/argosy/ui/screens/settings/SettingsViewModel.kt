@@ -840,7 +840,10 @@ class SettingsViewModel @Inject constructor(
 
     fun adjustUiScale(delta: Int) = routeAdjustUiScale(this, delta)
 
-    fun cycleUiScale() = displayDelegate.cycleUiScale(viewModelScope)
+    fun setPocketTacoEnabled(enabled: Boolean) =
+        displayDelegate.setPocketTacoEnabled(viewModelScope, enabled)
+
+    fun adjustPocketTacoPercent(delta: Int) = routeAdjustPocketTacoPercent(this, delta)
 
     fun adjustBackgroundBlur(delta: Int) = routeAdjustBackgroundBlur(this, delta)
     fun adjustBackgroundSaturation(delta: Int) = routeAdjustBackgroundSaturation(this, delta)

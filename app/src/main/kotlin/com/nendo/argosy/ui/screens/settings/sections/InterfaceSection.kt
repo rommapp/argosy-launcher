@@ -54,6 +54,12 @@ internal sealed class InterfaceItem(
     ) : InterfaceItem(key, section, visibleWhen)
 
     data object UiScale : InterfaceItem("uiScale", "layout")
+    data object PocketTaco : InterfaceItem("pocketTaco", "layout")
+    data object PocketTacoPercent : InterfaceItem(
+        "pocketTacoPercent",
+        "layout",
+        visibleWhen = { it.display.pocketTacoEnabled }
+    )
     data object HomeScreen : InterfaceItem("homeScreen", "layout")
     data object StartupView : InterfaceItem("startupView", "layout")
     data object LibraryView : InterfaceItem("libraryView", "layout")
@@ -61,7 +67,7 @@ internal sealed class InterfaceItem(
 
     companion object {
         val ALL: List<InterfaceItem> = listOf(
-            UiScale, StartupView, HomeScreen, LibraryView, BoxArt
+            UiScale, PocketTaco, PocketTacoPercent, StartupView, HomeScreen, LibraryView, BoxArt
         )
     }
 }
@@ -133,7 +139,26 @@ fun InterfaceSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                     isFocused = isFocused(item),
                     step = 5,
                     suffix = "%",
-                    onClick = { viewModel.adjustUiScale(5) }
+                    onAdjust = { viewModel.adjustUiScale(it) }
+                )
+
+                InterfaceItem.PocketTaco -> SwitchPreference(
+                    title = "Pocket Taco Mode",
+                    subtitle = "Shifts the UI up in portrait mode",
+                    isEnabled = display.pocketTacoEnabled,
+                    isFocused = isFocused(item),
+                    onToggle = { viewModel.setPocketTacoEnabled(!display.pocketTacoEnabled) }
+                )
+
+                InterfaceItem.PocketTacoPercent -> SliderPreference(
+                    title = "Reserved Area",
+                    value = display.pocketTacoPercent,
+                    minValue = 5,
+                    maxValue = 40,
+                    isFocused = isFocused(item),
+                    step = 5,
+                    suffix = "%",
+                    onAdjust = { viewModel.adjustPocketTacoPercent(it) }
                 )
 
                 InterfaceItem.HomeScreen -> NavigationPreference(

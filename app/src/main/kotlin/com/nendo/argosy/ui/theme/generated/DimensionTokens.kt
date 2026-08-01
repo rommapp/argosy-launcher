@@ -76,6 +76,7 @@ object DimensionTokens {
         const val menuBreakpointWide = 600
         const val inGameMenuWidth = 300
         const val inGameMenuWidthWide = 560
+        const val inGameMenuMaxHeightPct = 90
     }
 
     object Elevation {

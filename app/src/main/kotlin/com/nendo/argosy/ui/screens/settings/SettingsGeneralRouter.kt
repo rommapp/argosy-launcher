@@ -73,10 +73,6 @@ internal fun routeNavigateToBoxArt(vm: SettingsViewModel) {
     vm.loadPreviewGames()
 }
 
-internal fun routeNavigateToHomeLayout(vm: SettingsViewModel) {
-    vm._uiState.update { it.copy(currentSection = SettingsSection.HOME_LAYOUT, focusedIndex = 0) }
-}
-
 internal fun routeNavigateToHomeScreen(vm: SettingsViewModel) {
     vm._uiState.update { it.copy(currentSection = SettingsSection.HOME_SCREEN, focusedIndex = 0) }
 }

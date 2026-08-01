@@ -866,7 +866,6 @@ class SettingsViewModel @Inject constructor(
     fun openBackgroundPicker() = displayDelegate.openBackgroundPicker(viewModelScope)
 
     fun navigateToBoxArt() = routeNavigateToBoxArt(this)
-    fun navigateToHomeLayout() = routeNavigateToHomeLayout(this)
     fun navigateToHomeScreen() = routeNavigateToHomeScreen(this)
     fun navigateToAmbientLed() = routeNavigateToAmbientLed(this)
     fun navigateToThemeSounds() = routeNavigateToThemeSounds(this)

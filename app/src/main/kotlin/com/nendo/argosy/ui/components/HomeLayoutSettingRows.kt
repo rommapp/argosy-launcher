@@ -50,15 +50,6 @@ enum class HomeLayoutSettingField {
     CUSTOM_GRID_LANES
 }
 
-/**
- * A focusable line of the picker, in render order. A row's index in [homeLayoutPickerRows] is its
- * focus index.
- */
-sealed interface HomeLayoutPickerRow {
-    data object LayoutSelector : HomeLayoutPickerRow
-    data class Setting(val field: HomeLayoutSettingField) : HomeLayoutPickerRow
-}
-
 private const val SCALE_PERCENT_STEP = 10
 private const val FOCUS_SCALE_MIN_PERCENT = 100
 private const val FOCUS_SCALE_MAX_PERCENT = 300
@@ -69,46 +60,39 @@ private const val GRID_SPAN_MAX = 8
 private const val PERCENT = 100f
 
 /**
- * Rows the picker renders for [settings]: the layout selector, then the selected layout's own
- * fields. The caller's input handler drives focus against this list, so what gamepad focus can
- * reach and what the picker draws cannot drift apart.
+ * The fields [kind] owns, in render order. The host lays these out among its own rows and drives
+ * focus against them, so what gamepad focus reaches and what is drawn cannot drift apart.
  */
-fun homeLayoutPickerRows(settings: HomeLayoutSettings): List<HomeLayoutPickerRow> = buildList {
-    add(HomeLayoutPickerRow.LayoutSelector)
-    val fields = when (settings.selected) {
-        HomeLayoutKind.CAROUSEL -> listOf(
-            HomeLayoutSettingField.ROW_ALIGNMENT,
-            HomeLayoutSettingField.FOCUS_POSITION,
-            HomeLayoutSettingField.FOCUS_SCALE,
-            HomeLayoutSettingField.RESTING_SCALE,
-            HomeLayoutSettingField.NEIGHBOUR_PUSH,
-            HomeLayoutSettingField.PLATFORM_BADGE,
-            HomeLayoutSettingField.INVERTED
-        )
-        HomeLayoutKind.AUTO_GRID -> listOf(
-            HomeLayoutSettingField.SCROLL_AXIS,
-            HomeLayoutSettingField.AUTO_GRID_LANES,
-            HomeLayoutSettingField.SECTION_STYLE,
-            HomeLayoutSettingField.SHOW_TITLES
-        )
-        HomeLayoutKind.CUSTOM_GRID -> listOf(
-            HomeLayoutSettingField.CUSTOM_GRID_LANES
-        )
-    }
-    fields.forEach { add(HomeLayoutPickerRow.Setting(it)) }
+fun homeLayoutFieldsFor(kind: HomeLayoutKind): List<HomeLayoutSettingField> = when (kind) {
+    HomeLayoutKind.CAROUSEL -> listOf(
+        HomeLayoutSettingField.ROW_ALIGNMENT,
+        HomeLayoutSettingField.FOCUS_POSITION,
+        HomeLayoutSettingField.FOCUS_SCALE,
+        HomeLayoutSettingField.RESTING_SCALE,
+        HomeLayoutSettingField.NEIGHBOUR_PUSH,
+        HomeLayoutSettingField.PLATFORM_BADGE,
+        HomeLayoutSettingField.INVERTED
+    )
+    HomeLayoutKind.AUTO_GRID -> listOf(
+        HomeLayoutSettingField.SCROLL_AXIS,
+        HomeLayoutSettingField.AUTO_GRID_LANES,
+        HomeLayoutSettingField.SECTION_STYLE,
+        HomeLayoutSettingField.SHOW_TITLES
+    )
+    HomeLayoutKind.CUSTOM_GRID -> listOf(
+        HomeLayoutSettingField.CUSTOM_GRID_LANES
+    )
 }
 
 /**
- * Left/right adjustment for [row]. Booleans follow the house rule that left is off and right is on;
- * enums wrap; numbers clamp. Returns [settings] unchanged when the row has nothing to adjust.
+ * Left/right adjustment for [field]. Booleans follow the house rule that left is off and right is
+ * on; enums wrap; numbers clamp.
  */
-fun adjustHomeLayoutRow(
+fun adjustHomeLayoutField(
     settings: HomeLayoutSettings,
-    row: HomeLayoutPickerRow,
+    field: HomeLayoutSettingField,
     direction: Int
-): HomeLayoutSettings = when (row) {
-    HomeLayoutPickerRow.LayoutSelector -> settings.copy(selected = cycle(settings.selected, direction))
-    is HomeLayoutPickerRow.Setting -> when (row.field) {
+): HomeLayoutSettings = when (field) {
         HomeLayoutSettingField.ROW_ALIGNMENT ->
             settings.copy(carousel = settings.carousel.copy(rowAlignment = cycle(settings.carousel.rowAlignment, direction)))
         HomeLayoutSettingField.FOCUS_POSITION ->
@@ -151,16 +135,14 @@ fun adjustHomeLayoutRow(
             settings.copy(autoGrid = settings.autoGrid.copy(laneCount = stepSpan(settings.autoGrid.laneCount, direction)))
         HomeLayoutSettingField.CUSTOM_GRID_LANES ->
             settings.copy(customGrid = settings.customGrid.copy(laneCount = stepSpan(settings.customGrid.laneCount, direction)))
-    }
 }
 
 /**
- * Confirm handling for [row]. Toggles flip; everything else is unchanged, because confirm never
+ * Confirm handling for [field]. Toggles flip; everything else is unchanged, because confirm never
  * adjusts a value in this menu system.
  */
-fun toggleHomeLayoutRow(settings: HomeLayoutSettings, row: HomeLayoutPickerRow): HomeLayoutSettings {
-    if (row !is HomeLayoutPickerRow.Setting) return settings
-    return when (row.field) {
+fun toggleHomeLayoutField(settings: HomeLayoutSettings, field: HomeLayoutSettingField): HomeLayoutSettings {
+    return when (field) {
         HomeLayoutSettingField.INVERTED ->
             settings.copy(carousel = settings.carousel.copy(inverted = !settings.carousel.inverted))
         HomeLayoutSettingField.NEIGHBOUR_PUSH ->
@@ -174,68 +156,11 @@ fun toggleHomeLayoutRow(settings: HomeLayoutSettings, row: HomeLayoutPickerRow):
 }
 
 /**
- * Layout picker: a live schematic of [settings], the layout selector, and the selected layout's own
- * settings. Every change is applied through [onSettingsChange] as it happens; there is no apply
- * step, and the component owns neither the settings nor the focus index so a wizard and a settings
- * pane can drive it from their own state.
- *
- * Renders a plain [Column] rather than a lazy list because it is meant to be placed inside the
- * host's own scrolling container.
- *
- * @param focusedIndex index into [homeLayoutPickerRows]; the caller's input handler owns it.
- * @param onFocusIndex a touch on a row asks the caller to move focus there, so tap and d-pad agree.
+ * The layout selector: one tile per layout, the selected one raised. Kept separate from the picker
+ * so a settings pane can place it among its own rows with the preview sitting directly above it.
  */
 @Composable
-fun HomeLayoutPicker(
-    settings: HomeLayoutSettings,
-    focusedIndex: Int,
-    onSettingsChange: (HomeLayoutSettings) -> Unit,
-    onFocusIndex: (Int) -> Unit,
-    modifier: Modifier = Modifier,
-    animatePreview: Boolean = true,
-    gridDensity: GridDensity = ComponentDefaults.Launcher.gridDensity
-) {
-    val rows = homeLayoutPickerRows(settings)
-    Column(
-        modifier = modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(Dimens.listGap)
-    ) {
-        HomeLayoutPreview(
-            settings = settings,
-            animate = animatePreview,
-            gridDensity = gridDensity,
-            modifier = Modifier.fillMaxWidth()
-        )
-        LayoutSelectorRow(
-            selected = settings.selected,
-            isFocused = focusedIndex == 0,
-            onSelect = { kind ->
-                onFocusIndex(0)
-                onSettingsChange(settings.copy(selected = kind))
-            }
-        )
-        rows.forEachIndexed { index, row ->
-            if (row is HomeLayoutPickerRow.Setting) {
-                SettingRow(
-                    settings = settings,
-                    field = row.field,
-                    isFocused = focusedIndex == index,
-                    onAdjust = { direction ->
-                        onFocusIndex(index)
-                        onSettingsChange(adjustHomeLayoutRow(settings, row, direction))
-                    },
-                    onToggle = {
-                        onFocusIndex(index)
-                        onSettingsChange(toggleHomeLayoutRow(settings, row))
-                    }
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun LayoutSelectorRow(
+fun HomeLayoutSelectorRow(
     selected: HomeLayoutKind,
     isFocused: Boolean,
     onSelect: (HomeLayoutKind) -> Unit
@@ -290,8 +215,12 @@ private fun LayoutSelectorTile(
     }
 }
 
+/**
+ * One layout setting rendered with the standard preference controls, so a layout field looks and
+ * behaves like every other row wherever it is hosted.
+ */
 @Composable
-private fun SettingRow(
+fun HomeLayoutSettingRow(
     settings: HomeLayoutSettings,
     field: HomeLayoutSettingField,
     isFocused: Boolean,

@@ -94,7 +94,6 @@ import com.nendo.argosy.ui.screens.settings.sections.CoreOptionsSection
 import com.nendo.argosy.ui.screens.settings.sections.coreOptionsItemAtFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.RomMSection
 import com.nendo.argosy.ui.screens.settings.sections.SavesSection
-import com.nendo.argosy.ui.screens.settings.sections.HomeLayoutSection
 import com.nendo.argosy.ui.screens.settings.sections.HomeScreenSection
 import com.nendo.argosy.ui.screens.settings.sections.InterfaceSection
 import com.nendo.argosy.ui.screens.settings.sections.MainSettingsSection
@@ -558,7 +557,6 @@ fun SettingsScreen(
                         SettingsSection.INTERFACE -> "INTERFACE"
                         SettingsSection.BOX_ART -> "BOX ART"
                         SettingsSection.HOME_SCREEN -> "HOME SCREEN"
-                        SettingsSection.HOME_LAYOUT -> "HOME LAYOUT"
                         SettingsSection.LIBRARY_VIEW -> "LIBRARY"
                         SettingsSection.DISPLAYS -> "DISPLAYS"
                         SettingsSection.AMBIENT_LED -> "LED CONTROL"
@@ -632,7 +630,6 @@ fun SettingsScreen(
                     SettingsSection.INTERFACE -> InterfaceSection(uiState, viewModel)
                     SettingsSection.BOX_ART -> BoxArtSection(uiState, viewModel)
                     SettingsSection.HOME_SCREEN -> HomeScreenSection(uiState, viewModel)
-                    SettingsSection.HOME_LAYOUT -> HomeLayoutSection(uiState, viewModel)
                     SettingsSection.LIBRARY_VIEW -> LibrarySection(uiState, viewModel)
                     SettingsSection.DISPLAYS -> DisplaysSection(uiState, viewModel)
                     SettingsSection.AMBIENT_LED -> AmbientLedSection(uiState, viewModel)

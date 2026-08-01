@@ -63,7 +63,7 @@ class SettingsInputHandler(
         for (s in listOf(
             SettingsSection.ACCOUNTS,
             SettingsSection.BIOS, SettingsSection.ROMM, SettingsSection.SAVES,
-            SettingsSection.HOME_SCREEN, SettingsSection.HOME_LAYOUT, SettingsSection.LIBRARY_VIEW,
+            SettingsSection.HOME_SCREEN, SettingsSection.LIBRARY_VIEW,
             SettingsSection.NAVIGATION, SettingsSection.AUDIO, SettingsSection.SYNC_SETTINGS,
             SettingsSection.ABOUT, SettingsSection.STEAM_SETTINGS, SettingsSection.CORE_MANAGEMENT,
             SettingsSection.SOCIAL, SettingsSection.BUILTIN_EMULATOR

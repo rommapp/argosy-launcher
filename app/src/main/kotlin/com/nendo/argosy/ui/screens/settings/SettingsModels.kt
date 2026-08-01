@@ -81,7 +81,6 @@ enum class SettingsSection {
     INTERFACE,
     BOX_ART,
     HOME_SCREEN,
-    HOME_LAYOUT,
     LIBRARY_VIEW,
     DISPLAYS,
     AMBIENT_LED,

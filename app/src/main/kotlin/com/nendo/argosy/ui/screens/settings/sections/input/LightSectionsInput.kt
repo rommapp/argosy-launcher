@@ -1,7 +1,7 @@
 package com.nendo.argosy.ui.screens.settings.sections.input
 
-import com.nendo.argosy.ui.components.adjustHomeLayoutRow
-import com.nendo.argosy.ui.components.homeLayoutPickerRows
+import com.nendo.argosy.domain.model.HomeLayoutKind
+import com.nendo.argosy.ui.components.adjustHomeLayoutField
 import com.nendo.argosy.ui.input.InputHandler
 import com.nendo.argosy.ui.input.InputResult
 import com.nendo.argosy.ui.screens.settings.SettingsInputHandler
@@ -76,7 +76,6 @@ internal class LightSectionsInput(
             SettingsSection.ROMM -> handleRomMLeftRight(direction)
             SettingsSection.SAVES -> handleSavesLeftRight(direction)
             SettingsSection.HOME_SCREEN -> handleHomeScreenLeftRight(direction)
-            SettingsSection.HOME_LAYOUT -> handleHomeLayoutLeftRight(direction)
             SettingsSection.LIBRARY_VIEW -> handleLibraryViewLeftRight(direction)
             SettingsSection.NAVIGATION -> handleNavigationLeftRight(direction)
             SettingsSection.SYNC_SETTINGS -> handleSyncSettingsLeftRight(direction)
@@ -150,7 +149,7 @@ internal class LightSectionsInput(
         val state = viewModel.uiState.value
         val display = state.display
         val step = SettingsInputHandler.SLIDER_STEP
-        when (homeScreenItemAtFocusIndex(state.focusedIndex, display)) {
+        when (val focused = homeScreenItemAtFocusIndex(state.focusedIndex, display)) {
             HomeScreenItem.Background -> { viewModel.cycleHomeBackgroundMode(direction); return InputResult.HANDLED }
             HomeScreenItem.Blur -> { viewModel.adjustBackgroundBlur(direction * step); return InputResult.HANDLED }
             HomeScreenItem.Saturation -> { viewModel.adjustBackgroundSaturation(direction * step); return InputResult.HANDLED }
@@ -164,18 +163,19 @@ internal class LightSectionsInput(
                 return toggleLeftRight(direction, display.videoWallpaperMuted) { viewModel.setVideoWallpaperMuted(it) }
             HomeScreenItem.InstalledOnly ->
                 return toggleLeftRight(direction, display.installedOnlyHome) { viewModel.setInstalledOnlyHome(it) }
+            HomeScreenItem.LayoutSelector -> {
+                val kinds = HomeLayoutKind.entries
+                val next = kinds[(kinds.indexOf(display.homeLayout.selected) + direction).mod(kinds.size)]
+                viewModel.setHomeLayout(display.homeLayout.copy(selected = next))
+                return InputResult.HANDLED
+            }
+            is HomeScreenItem.LayoutField -> {
+                viewModel.setHomeLayout(adjustHomeLayoutField(display.homeLayout, focused.field, direction))
+                return InputResult.HANDLED
+            }
             else -> {}
         }
         return InputResult.UNHANDLED
-    }
-
-    private fun handleHomeLayoutLeftRight(direction: Int): InputResult {
-        val state = viewModel.uiState.value
-        val settings = state.display.homeLayout
-        val row = homeLayoutPickerRows(settings).getOrNull(state.focusedIndex) ?: return InputResult.UNHANDLED
-        val updated = adjustHomeLayoutRow(settings, row, direction)
-        if (updated != settings) viewModel.setHomeLayout(updated)
-        return InputResult.HANDLED
     }
 
     private fun handleNavigationLeftRight(direction: Int): InputResult {

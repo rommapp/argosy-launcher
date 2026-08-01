@@ -2,6 +2,7 @@ package com.nendo.argosy.ui.screens.settings.sections
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import com.nendo.argosy.ui.screens.settings.components.SectionPaneLayout
 import androidx.compose.material.icons.Icons
@@ -15,6 +16,13 @@ import com.nendo.argosy.data.preferences.HomeBackgroundMode
 import com.nendo.argosy.domain.model.HomeLayoutKind
 import com.nendo.argosy.ui.components.ActionPreference
 import com.nendo.argosy.ui.components.CyclePreference
+import com.nendo.argosy.ui.components.HomeLayoutPreview
+import com.nendo.argosy.ui.components.HomeLayoutSelectorRow
+import com.nendo.argosy.ui.components.HomeLayoutSettingField
+import com.nendo.argosy.ui.components.HomeLayoutSettingRow
+import com.nendo.argosy.ui.components.adjustHomeLayoutField
+import com.nendo.argosy.ui.components.homeLayoutFieldsFor
+import com.nendo.argosy.ui.components.toggleHomeLayoutField
 import com.nendo.argosy.ui.components.SliderPreference
 import com.nendo.argosy.ui.components.SwitchPreference
 import com.nendo.argosy.ui.screens.settings.DisplayState
@@ -29,7 +37,7 @@ internal sealed class HomeScreenItem(
     val section: String,
     val visibleWhen: (DisplayState) -> Boolean = { true }
 ) {
-    val isFocusable: Boolean get() = this !is Header
+    val isFocusable: Boolean get() = this !is Header && this !is LayoutPreview
 
     class Header(key: String, section: String, val title: String) : HomeScreenItem(key, section)
 
@@ -64,7 +72,15 @@ internal sealed class HomeScreenItem(
         visibleWhen = { it.videoWallpaperEnabled }
     )
 
-    data object Layout : HomeScreenItem("layout", "layout")
+    data object LayoutPreview : HomeScreenItem("layoutPreview", "layout")
+
+    data object LayoutSelector : HomeScreenItem("layoutSelector", "layout")
+
+    data class LayoutField(val field: HomeLayoutSettingField) : HomeScreenItem(
+        key = "layoutField_${field.name}",
+        section = "layout",
+        visibleWhen = { field in homeLayoutFieldsFor(it.homeLayout.selected) }
+    )
 
     data object InstalledOnly : HomeScreenItem(
         key = "installedOnly",
@@ -88,7 +104,13 @@ internal sealed class HomeScreenItem(
 
         val ALL: List<HomeScreenItem> = listOf(
             LayoutHeader,
-            Layout,
+            LayoutPreview,
+            LayoutSelector,
+            *HomeLayoutKind.entries
+                .flatMap { homeLayoutFieldsFor(it) }
+                .distinct()
+                .map { LayoutField(it) }
+                .toTypedArray(),
             ContentHeader,
             InstalledOnly,
             BackgroundHeader,
@@ -267,11 +289,35 @@ fun HomeScreenSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                     )
                 }
 
-                HomeScreenItem.Layout -> ActionPreference(
-                    title = "Home Layout",
-                    subtitle = homeLayoutSummary(display),
+                HomeScreenItem.LayoutPreview -> HomeLayoutPreview(
+                    settings = display.homeLayout,
+                    gridDensity = display.gridDensity,
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                HomeScreenItem.LayoutSelector -> HomeLayoutSelectorRow(
+                    selected = display.homeLayout.selected,
                     isFocused = isFocused(item),
-                    onClick = { viewModel.navigateToHomeLayout() }
+                    onSelect = { kind ->
+                        viewModel.setFocusIndex(homeScreenFocusIndexOf(item, display))
+                        viewModel.setHomeLayout(display.homeLayout.copy(selected = kind))
+                    }
+                )
+
+                is HomeScreenItem.LayoutField -> HomeLayoutSettingRow(
+                    settings = display.homeLayout,
+                    field = item.field,
+                    isFocused = isFocused(item),
+                    onAdjust = { direction ->
+                        viewModel.setFocusIndex(homeScreenFocusIndexOf(item, display))
+                        viewModel.setHomeLayout(
+                            adjustHomeLayoutField(display.homeLayout, item.field, direction)
+                        )
+                    },
+                    onToggle = {
+                        viewModel.setFocusIndex(homeScreenFocusIndexOf(item, display))
+                        viewModel.setHomeLayout(toggleHomeLayoutField(display.homeLayout, item.field))
+                    }
                 )
 
                 HomeScreenItem.InstalledOnly -> SwitchPreference(
@@ -301,8 +347,3 @@ private fun HomeScreenSectionHeader(title: String) {
     )
 }
 
-private fun homeLayoutSummary(display: DisplayState): String = when (display.homeLayout.selected) {
-    HomeLayoutKind.CAROUSEL -> "Carousel"
-    HomeLayoutKind.AUTO_GRID -> "Auto Grid"
-    HomeLayoutKind.CUSTOM_GRID -> "Custom Grid"
-}

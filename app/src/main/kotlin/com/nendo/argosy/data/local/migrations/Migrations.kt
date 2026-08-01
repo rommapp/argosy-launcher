@@ -2970,3 +2970,34 @@ object Migration_164_165 : Migration(164, 165) {
         )
     }
 }
+
+object Migration_165_166 : Migration(165, 166) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            "CREATE TABLE IF NOT EXISTS `home_tiles` (" +
+                "`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                "`ownerUserId` INTEGER, " +
+                "`pageIndex` INTEGER NOT NULL, " +
+                "`columnIndex` INTEGER NOT NULL, " +
+                "`rowIndex` INTEGER NOT NULL, " +
+                "`columnSpan` INTEGER NOT NULL DEFAULT 1, " +
+                "`rowSpan` INTEGER NOT NULL DEFAULT 1, " +
+                "`targetType` TEXT NOT NULL, " +
+                "`gameId` INTEGER, " +
+                "`collectionId` INTEGER, " +
+                "`virtualType` TEXT, " +
+                "`virtualName` TEXT, " +
+                "`packageName` TEXT, " +
+                "`createdAt` INTEGER NOT NULL)"
+        )
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS `index_home_tiles_ownerUserId_pageIndex` " +
+                "ON `home_tiles` (`ownerUserId`, `pageIndex`)"
+        )
+        db.execSQL(
+            "CREATE UNIQUE INDEX IF NOT EXISTS " +
+                "`index_home_tiles_ownerUserId_pageIndex_columnIndex_rowIndex` " +
+                "ON `home_tiles` (`ownerUserId`, `pageIndex`, `columnIndex`, `rowIndex`)"
+        )
+    }
+}

@@ -26,6 +26,7 @@ fun HomeLayoutSection(
         focusedIndex = uiState.focusedIndex,
         onSettingsChange = { viewModel.setHomeLayout(it) },
         onFocusIndex = { viewModel.setFocusIndex(it) },
+        gridDensity = uiState.display.gridDensity,
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())

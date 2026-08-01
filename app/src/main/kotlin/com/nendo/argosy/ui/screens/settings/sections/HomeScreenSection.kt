@@ -12,6 +12,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import com.nendo.argosy.data.preferences.HomeBackgroundMode
+import com.nendo.argosy.domain.model.HomeLayoutKind
 import com.nendo.argosy.ui.components.ActionPreference
 import com.nendo.argosy.ui.components.CyclePreference
 import com.nendo.argosy.ui.components.SliderPreference
@@ -32,16 +33,24 @@ internal sealed class HomeScreenItem(
 
     class Header(key: String, section: String, val title: String) : HomeScreenItem(key, section)
 
-    data object Background : HomeScreenItem("homeBackgroundMode", "background")
-    data object GameArtwork : HomeScreenItem("gameArtwork", "background")
+    data object Background : HomeScreenItem(
+        key = "homeBackgroundMode",
+        section = "background",
+        visibleWhen = { it.surfaceBackdrop.enabled }
+    )
+    data object GameArtwork : HomeScreenItem(
+        key = "gameArtwork",
+        section = "background",
+        visibleWhen = { showsArtLayer(it) }
+    )
     data object CustomImage : HomeScreenItem(
         key = "customImage",
         section = "background",
-        visibleWhen = { !it.useGameBackground }
+        visibleWhen = { showsArtLayer(it) && !it.useGameBackground }
     )
-    data object Blur : HomeScreenItem("blur", "background")
-    data object Saturation : HomeScreenItem("saturation", "background")
-    data object Opacity : HomeScreenItem("opacity", "background")
+    data object Blur : HomeScreenItem("blur", "background", { showsArtLayer(it) })
+    data object Saturation : HomeScreenItem("saturation", "background", { showsArtLayer(it) })
+    data object Opacity : HomeScreenItem("opacity", "background", { showsArtLayer(it) })
 
     data object VideoWallpaper : HomeScreenItem("videoWallpaper", "video")
     data object VideoDelay : HomeScreenItem(
@@ -55,16 +64,25 @@ internal sealed class HomeScreenItem(
         visibleWhen = { it.videoWallpaperEnabled }
     )
 
-    data object AccentFooter : HomeScreenItem("accentFooter", "footer")
-
     data object Layout : HomeScreenItem("layout", "layout")
 
-    data object InstalledOnly : HomeScreenItem("installedOnly", "content")
+    data object InstalledOnly : HomeScreenItem(
+        key = "installedOnly",
+        section = "content",
+        visibleWhen = { it.homeLayout.selected != HomeLayoutKind.CUSTOM_GRID }
+    )
 
     companion object {
+        /**
+         * Mirrors the home screen's own `showArtLayer`: with the theme backdrop off the art layer
+         * always draws, and with it on the background mode decides. Every row that only tunes that
+         * layer is hidden when it is not drawn.
+         */
+        private fun showsArtLayer(state: DisplayState): Boolean =
+            !state.surfaceBackdrop.enabled || state.homeBackgroundMode == HomeBackgroundMode.GAME_ART
+
         private val BackgroundHeader = Header("backgroundHeader", "background", "Background")
         private val VideoHeader = Header("videoHeader", "video", "Video Wallpaper")
-        private val FooterHeader = Header("footerHeader", "footer", "Footer")
         private val LayoutHeader = Header("layoutHeader", "layout", "Layout")
         private val ContentHeader = Header("contentHeader", "content", "Content")
 
@@ -76,9 +94,7 @@ internal sealed class HomeScreenItem(
             BackgroundHeader,
             Background, GameArtwork, CustomImage, Blur, Saturation, Opacity,
             VideoHeader,
-            VideoWallpaper, VideoDelay, VideoMuted,
-            FooterHeader,
-            AccentFooter
+            VideoWallpaper, VideoDelay, VideoMuted
         )
     }
 }
@@ -93,7 +109,6 @@ private val homeScreenLayout = SettingsLayout<HomeScreenItem, DisplayState>(
             "layout" -> "Layout"
             "background" -> "Background"
             "video" -> "Video Wallpaper"
-            "footer" -> "Footer"
             "content" -> "Content"
             else -> null
         }
@@ -107,14 +122,29 @@ internal fun homeScreenSections(display: DisplayState) = homeScreenLayout.buildS
 internal fun homeScreenItemAtFocusIndex(index: Int, display: DisplayState): HomeScreenItem? =
     homeScreenLayout.itemAtFocusIndex(index, display)
 
+internal fun homeScreenFocusIndexOf(item: HomeScreenItem, display: DisplayState): Int =
+    homeScreenLayout.focusIndexOf(item, display)
+
 @Composable
 fun HomeScreenSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
     val display = uiState.display
 
-    val visibleItems = remember(display.useGameBackground, display.videoWallpaperEnabled) {
+    val visibleItems = remember(
+        display.useGameBackground,
+        display.videoWallpaperEnabled,
+        display.surfaceBackdrop.enabled,
+        display.homeBackgroundMode,
+        display.homeLayout.selected
+    ) {
         homeScreenLayout.visibleItems(display)
     }
-    val sections = remember(display.useGameBackground, display.videoWallpaperEnabled) {
+    val sections = remember(
+        display.useGameBackground,
+        display.videoWallpaperEnabled,
+        display.surfaceBackdrop.enabled,
+        display.homeBackgroundMode,
+        display.homeLayout.selected
+    ) {
         homeScreenLayout.buildSections(display)
     }
 
@@ -237,14 +267,6 @@ fun HomeScreenSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                     )
                 }
 
-                HomeScreenItem.AccentFooter -> SwitchPreference(
-                    title = "Accent Color Footer",
-                    subtitle = "Use accent color for footer background",
-                    isEnabled = display.useAccentColorFooter,
-                    isFocused = isFocused(item),
-                    onToggle = { viewModel.setUseAccentColorFooter(it) }
-                )
-
                 HomeScreenItem.Layout -> ActionPreference(
                     title = "Home Layout",
                     subtitle = homeLayoutSummary(display),
@@ -280,7 +302,7 @@ private fun HomeScreenSectionHeader(title: String) {
 }
 
 private fun homeLayoutSummary(display: DisplayState): String = when (display.homeLayout.selected) {
-    com.nendo.argosy.domain.model.HomeLayoutKind.CAROUSEL -> "Carousel"
-    com.nendo.argosy.domain.model.HomeLayoutKind.AUTO_GRID -> "Auto Grid"
-    com.nendo.argosy.domain.model.HomeLayoutKind.CUSTOM_GRID -> "Custom Grid"
+    HomeLayoutKind.CAROUSEL -> "Carousel"
+    HomeLayoutKind.AUTO_GRID -> "Auto Grid"
+    HomeLayoutKind.CUSTOM_GRID -> "Custom Grid"
 }

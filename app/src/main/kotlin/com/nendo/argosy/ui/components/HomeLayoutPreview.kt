@@ -157,7 +157,6 @@ fun HomeLayoutPreview(
                     config = settings.autoGrid,
                     preview = preview,
                     gridDensity = gridDensity,
-                    screenWidthDp = screenWidthDp,
                     animate = animate,
                     modifier = Modifier.padding(horizontal = edge)
                 )

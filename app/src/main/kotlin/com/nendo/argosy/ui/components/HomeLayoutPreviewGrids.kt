@@ -41,19 +41,18 @@ private const val AUTO_GRID_HORIZONTAL_OVERSCAN = 2
 private const val CUSTOM_GRID_PAGES = 3
 
 /**
- * Auto-grid schematic. Column count and cell gap come from [GridUtils] against the real device
- * width, so the preview shows the same number of covers per row the library grid would.
+ * Auto-grid schematic. [AutoGridConfig.laneCount] owns the cross-axis count, so it reads as columns
+ * when scrolling vertically and as rows when scrolling horizontally; grid density supplies only the
+ * cell gap, matching what the library grid puts between covers.
  */
 @Composable
 internal fun AutoGridSchematic(
     config: AutoGridConfig,
     preview: HomeLayoutPreviewMetrics,
     gridDensity: GridDensity,
-    screenWidthDp: Int,
     animate: Boolean,
     modifier: Modifier = Modifier
 ) {
-    val columns = GridUtils.getGameGridColumns(gridDensity, screenWidthDp)
     val gap = GridUtils.getGridSpacingDp(gridDensity).dp * preview.scale
     val progress = if (animate) {
         rememberLoopProgress(ComponentDefaults.HomeLayoutPreview.scrollCycleMs)
@@ -63,7 +62,7 @@ internal fun AutoGridSchematic(
     val showHeadings = config.sectionStyle == HomeSectionStyle.HEADINGS
     Canvas(modifier = modifier.clipToBounds().fillMaxSize()) {
         val geometry = AutoGridGeometry(
-            columns = columns,
+            lanes = config.laneCount,
             gapPx = gap.toPx(),
             coverAspectRatio = preview.coverAspectRatio,
             cornerPx = preview.coverCornerRadius.toPx(),
@@ -80,9 +79,10 @@ internal fun AutoGridSchematic(
 }
 
 /**
- * Custom-grid schematic: one page of [CustomGridConfig.columns] by [CustomGridConfig.rows] covers,
- * paging sideways. Cells keep the cover aspect ratio and are centred in the slot the page division
- * gives them, so a wide grid thins the covers instead of stretching them.
+ * Custom-grid schematic, paging sideways. [CustomGridConfig.laneCount] is read across the short
+ * edge, so a portrait screen gets that many columns and a landscape one that many rows. Cells keep
+ * the cover aspect ratio and are centred in the slot the page division gives them, so a wide grid
+ * thins the covers instead of stretching them.
  */
 @Composable
 internal fun CustomGridSchematic(
@@ -148,7 +148,7 @@ private fun rememberLoopProgress(cycleMs: Int): Float {
 }
 
 private class AutoGridGeometry(
-    val columns: Int,
+    val lanes: Int,
     val gapPx: Float,
     val coverAspectRatio: Float,
     val cornerPx: Float,
@@ -183,7 +183,7 @@ private fun DrawScope.drawVerticalAutoGrid(geometry: AutoGridGeometry, progress:
                 y += headingBlock
             }
             repeat(AUTO_GRID_ROWS_PER_SECTION) {
-                drawCoverRow(geometry, y, cellWidth, cellHeight, 0f, geometry.columns)
+                drawCoverRow(geometry, y, cellWidth, cellHeight, 0f, geometry.lanes)
                 y += rowHeight
             }
         }
@@ -191,18 +191,17 @@ private fun DrawScope.drawVerticalAutoGrid(geometry: AutoGridGeometry, progress:
 }
 
 private fun DrawScope.drawHorizontalAutoGrid(geometry: AutoGridGeometry, progress: Float) {
-    val cellWidth = cellWidthOf(geometry)
-    if (cellWidth <= 0f) return
-    val cellHeight = cellWidth / geometry.coverAspectRatio
     val titleBlock = titleBlockOf(geometry)
     val headingBlock = headingBlockOf(geometry)
-    val rowHeight = headingBlock + cellHeight + titleBlock + geometry.gapPx
-    if (rowHeight <= 0f) return
-    val itemsPerRow = geometry.columns + AUTO_GRID_HORIZONTAL_OVERSCAN
+    val rowHeight = size.height / geometry.lanes
+    val cellHeight = rowHeight - headingBlock - titleBlock - geometry.gapPx
+    if (cellHeight <= 0f) return
+    val cellWidth = cellHeight * geometry.coverAspectRatio
+    val itemsPerRow = ceil(size.width / (cellWidth + geometry.gapPx)).toInt()
+        .coerceAtLeast(1) + AUTO_GRID_HORIZONTAL_OVERSCAN
     val contentWidth = itemsPerRow * (cellWidth + geometry.gapPx)
-    val rows = ceil(size.height / rowHeight).toInt().coerceAtLeast(1)
     var y = 0f
-    repeat(rows) {
+    repeat(geometry.lanes) {
         if (geometry.headingPx > 0f) {
             drawBar(
                 x = 0f,
@@ -245,7 +244,7 @@ private fun DrawScope.drawCoverRow(
 }
 
 private fun DrawScope.cellWidthOf(geometry: AutoGridGeometry): Float =
-    (size.width - geometry.gapPx * (geometry.columns - 1)) / geometry.columns
+    (size.width - geometry.gapPx * (geometry.lanes - 1)) / geometry.lanes
 
 private fun titleBlockOf(geometry: AutoGridGeometry): Float =
     if (geometry.titlePx > 0f) geometry.titlePx + geometry.gapPx / 2f else 0f

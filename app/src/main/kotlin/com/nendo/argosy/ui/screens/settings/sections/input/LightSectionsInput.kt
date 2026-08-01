@@ -1,5 +1,7 @@
 package com.nendo.argosy.ui.screens.settings.sections.input
 
+import com.nendo.argosy.ui.components.adjustHomeLayoutRow
+import com.nendo.argosy.ui.components.homeLayoutPickerRows
 import com.nendo.argosy.ui.input.InputHandler
 import com.nendo.argosy.ui.input.InputResult
 import com.nendo.argosy.ui.screens.settings.SettingsInputHandler
@@ -74,6 +76,7 @@ internal class LightSectionsInput(
             SettingsSection.ROMM -> handleRomMLeftRight(direction)
             SettingsSection.SAVES -> handleSavesLeftRight(direction)
             SettingsSection.HOME_SCREEN -> handleHomeScreenLeftRight(direction)
+            SettingsSection.HOME_LAYOUT -> handleHomeLayoutLeftRight(direction)
             SettingsSection.LIBRARY_VIEW -> handleLibraryViewLeftRight(direction)
             SettingsSection.NAVIGATION -> handleNavigationLeftRight(direction)
             SettingsSection.SYNC_SETTINGS -> handleSyncSettingsLeftRight(direction)
@@ -159,13 +162,20 @@ internal class LightSectionsInput(
             HomeScreenItem.VideoDelay -> { viewModel.cycleVideoWallpaperDelay(direction); return InputResult.HANDLED }
             HomeScreenItem.VideoMuted ->
                 return toggleLeftRight(direction, display.videoWallpaperMuted) { viewModel.setVideoWallpaperMuted(it) }
-            HomeScreenItem.AccentFooter ->
-                return toggleLeftRight(direction, display.useAccentColorFooter) { viewModel.setUseAccentColorFooter(it) }
             HomeScreenItem.InstalledOnly ->
                 return toggleLeftRight(direction, display.installedOnlyHome) { viewModel.setInstalledOnlyHome(it) }
             else -> {}
         }
         return InputResult.UNHANDLED
+    }
+
+    private fun handleHomeLayoutLeftRight(direction: Int): InputResult {
+        val state = viewModel.uiState.value
+        val settings = state.display.homeLayout
+        val row = homeLayoutPickerRows(settings).getOrNull(state.focusedIndex) ?: return InputResult.UNHANDLED
+        val updated = adjustHomeLayoutRow(settings, row, direction)
+        if (updated != settings) viewModel.setHomeLayout(updated)
+        return InputResult.HANDLED
     }
 
     private fun handleNavigationLeftRight(direction: Int): InputResult {

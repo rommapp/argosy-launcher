@@ -184,9 +184,6 @@ data class HomeLayoutSettings(
             )
         }
 
-        private const val MIN_GRID_SPAN = 2
-        private const val MAX_GRID_SPAN = 8
-
         private inline fun <reified T : Enum<T>> enumOrDefault(raw: String?, fallback: T): T =
             raw?.takeIf { it.isNotBlank() }
                 ?.let { name -> enumValues<T>().firstOrNull { it.name == name } }

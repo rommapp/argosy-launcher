@@ -64,6 +64,7 @@ import com.nendo.argosy.ui.screens.settings.sections.navigationItemAtFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.displaysFocusIndexOf
 import com.nendo.argosy.ui.screens.settings.sections.displaysItemAtFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.createStorageLayoutInfo
+import com.nendo.argosy.ui.screens.settings.sections.homeScreenFocusIndexOf
 import com.nendo.argosy.ui.screens.settings.sections.homeScreenItemAtFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.interfaceFocusIndexOf
 import com.nendo.argosy.ui.screens.settings.sections.interfaceItemAtFocusIndex
@@ -579,6 +580,7 @@ private fun routeThemeConfirm(vm: SettingsViewModel, state: SettingsUiState): In
             return InputResult.handled(SoundType.OPEN_MODAL)
         }
         ThemeItem.TintBleed -> vm.cycleSurfaceTintBleed()
+        ThemeItem.AccentFooter -> vm.setUseAccentColorFooter(!state.display.useAccentColorFooter)
         ThemeItem.Backdrop -> vm.navigateToThemeBackdrop()
         ThemeItem.Fonts -> vm.navigateToThemeFonts()
         else -> {}
@@ -713,10 +715,6 @@ private fun routeHomeScreenConfirm(vm: SettingsViewModel, state: SettingsUiState
         }
         HomeScreenItem.VideoMuted -> {
             vm.setVideoWallpaperMuted(!state.display.videoWallpaperMuted)
-            return InputResult.handled(SoundType.TOGGLE)
-        }
-        HomeScreenItem.AccentFooter -> {
-            vm.setUseAccentColorFooter(!state.display.useAccentColorFooter)
             return InputResult.handled(SoundType.TOGGLE)
         }
         HomeScreenItem.InstalledOnly -> {
@@ -1078,6 +1076,10 @@ internal fun routeNavigateBack(vm: SettingsViewModel): Boolean {
             val layoutState = DisplaysLayoutState.from(state)
             val focusIdx = displaysFocusIndexOf(DisplaysItem.AmbientLedSettings, layoutState)
             vm._uiState.update { it.copy(currentSection = SettingsSection.DISPLAYS, focusedIndex = focusIdx) }; true
+        }
+        state.currentSection == SettingsSection.HOME_LAYOUT -> {
+            val focusIdx = homeScreenFocusIndexOf(HomeScreenItem.Layout, state.display).coerceAtLeast(0)
+            vm._uiState.update { it.copy(currentSection = SettingsSection.HOME_SCREEN, focusedIndex = focusIdx) }; true
         }
         state.currentSection == SettingsSection.HOME_SCREEN -> {
             val layoutState = InterfaceLayoutState.from(state)

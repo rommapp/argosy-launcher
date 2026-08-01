@@ -19,6 +19,7 @@ import com.nendo.argosy.ui.components.CyclePreference
 import com.nendo.argosy.ui.components.HueSliderPreference
 import com.nendo.argosy.ui.components.NavigationPreference
 import com.nendo.argosy.ui.components.SliderPreference
+import com.nendo.argosy.ui.components.SwitchPreference
 import com.nendo.argosy.ui.screens.settings.SettingsUiState
 import com.nendo.argosy.ui.screens.settings.SettingsViewModel
 import com.nendo.argosy.ui.screens.settings.components.SectionPaneLayout
@@ -39,6 +40,7 @@ internal sealed class ThemeItem(val key: String, val section: String) {
 
     data object Mode : ThemeItem("theme", "appearance")
     data object AccentColor : ThemeItem("accentColor", "appearance")
+    data object AccentFooter : ThemeItem("accentFooter", "appearance")
     data object SecondaryColor : ThemeItem("secondaryColor", "appearance")
     data object TintBleed : ThemeItem("tintBleed", "appearance")
 
@@ -52,7 +54,7 @@ internal sealed class ThemeItem(val key: String, val section: String) {
 
         val ALL: List<ThemeItem> = listOf(
             AppearanceHeader,
-            Mode, AccentColor, SecondaryColor, TintBleed,
+            Mode, AccentColor, AccentFooter, SecondaryColor, TintBleed,
             IdentitySpacer, IdentityHeader,
             Backdrop, Fonts
         )
@@ -149,6 +151,14 @@ fun ThemeSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                         viewModel.resetToDefaultSecondaryColor()
                     }
                 }
+            )
+
+            ThemeItem.AccentFooter -> SwitchPreference(
+                title = "Accent Color Footer",
+                subtitle = "Use accent color for footer background",
+                isEnabled = display.useAccentColorFooter,
+                isFocused = isFocused(item),
+                onToggle = { viewModel.setUseAccentColorFooter(it) }
             )
 
             ThemeItem.TintBleed -> SliderPreference(

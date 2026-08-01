@@ -201,19 +201,28 @@ internal fun carouselCardSize(
 /**
  * Content padding that places the focused card on [CarouselMetrics.anchor]. [startGutter] is the
  * clearance kept beyond the focused card's overhang so a scaled card never clips the leading edge.
+ *
+ * A reversed rail lays its first item out against the opposite edge while padding keeps its
+ * left-and-right meaning, so the two are swapped: the leading anchor's gutter has to follow the
+ * cards to whichever side they now begin on.
  */
 internal fun carouselContentPadding(
     metrics: CarouselMetrics,
     availableWidth: Dp,
     startGutter: Dp
 ): PaddingValues = when (metrics.anchor) {
-    CarouselAnchor.START -> PaddingValues(
-        start = maxOf(
+    CarouselAnchor.START -> {
+        val leading = maxOf(
             availableWidth * HERO_START_PADDING_SCREEN_RATIO,
             metrics.cardWidth * (metrics.focusScale - 1f) / 2f + startGutter
-        ),
-        end = availableWidth * HERO_END_PADDING_SCREEN_RATIO
-    )
+        )
+        val trailing = availableWidth * HERO_END_PADDING_SCREEN_RATIO
+        if (metrics.reversed) {
+            PaddingValues(start = trailing, end = leading)
+        } else {
+            PaddingValues(start = leading, end = trailing)
+        }
+    }
     CarouselAnchor.CENTER -> PaddingValues(
         horizontal = (availableWidth - metrics.focusedCardWidth) / 2
     )

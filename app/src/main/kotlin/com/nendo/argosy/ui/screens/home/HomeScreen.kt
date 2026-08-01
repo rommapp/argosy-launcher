@@ -120,6 +120,8 @@ import com.nendo.argosy.ui.components.CarouselItem
 import com.nendo.argosy.ui.components.CarouselMetrics
 import com.nendo.argosy.ui.components.CarouselOverrides
 import com.nendo.argosy.ui.components.CarouselRail
+import com.nendo.argosy.ui.components.HERO_MIN_CARD_SCALE
+import com.nendo.argosy.ui.components.carouselCardSize
 import com.nendo.argosy.ui.components.InputButton
 import com.nendo.argosy.ui.components.FooterHints
 import com.nendo.argosy.ui.components.FooterSpacer
@@ -1176,28 +1178,25 @@ private fun GameInfo(
  * Carousel card size, driven by the height actually left over after the header, the game info
  * block and the footer, so the focused card at [CAROUSEL_FOCUS_SCALE] fills that space exactly
  * instead of overrunning the platform carousel on extended-widescreen or collapsing to a thin
- * strip when the window is tall. [CAROUSEL_MAX_WIDTH_FRACTION] keeps one card from dominating the
- * row on very tall windows, where height alone would size it wider than the screen.
+ * strip when the window is tall. The width cap inside [carouselCardSize] keeps one card from
+ * dominating the row on very tall windows, where height alone would size it wider than the screen.
  *
  * Callers must subtract a gap of their own for the focused card to grow into: the card scales from
  * its bottom edge, so without one the only clearance above it is what [CAROUSEL_CARD_SCALE] happens
  * to leave over, which at square ratios is a few dp and overlaps the game info.
  */
 @Composable
-private fun rememberCarouselCardSize(availableHeight: Dp): DpSize {
-    val configuration = LocalConfiguration.current
-    val screenWidth = configuration.screenWidthDp.dp
-    val aspect = LocalBoxArtStyle.current.aspectRatio
-    val heightDriven = (availableHeight / CAROUSEL_FOCUS_SCALE) * CAROUSEL_CARD_SCALE
-    val widthCap = (screenWidth * CAROUSEL_MAX_WIDTH_FRACTION) / aspect
-    val cardHeight = maxOf(minOf(heightDriven, widthCap), Dimens.gameCardHeight * CAROUSEL_MIN_SCALE)
-    return DpSize(cardHeight * aspect, cardHeight)
-}
+private fun rememberCarouselCardSize(availableHeight: Dp): DpSize = carouselCardSize(
+    availableHeight = availableHeight,
+    availableWidth = LocalConfiguration.current.screenWidthDp.dp,
+    coverAspectRatio = LocalBoxArtStyle.current.aspectRatio,
+    focusScale = CAROUSEL_FOCUS_SCALE,
+    restingScale = CAROUSEL_CARD_SCALE,
+    minCardHeight = Dimens.gameCardHeight * HERO_MIN_CARD_SCALE
+)
 
 private const val CAROUSEL_FOCUS_SCALE = 1.8f
 private const val CAROUSEL_CARD_SCALE = 0.9f
-private const val CAROUSEL_MAX_WIDTH_FRACTION = 0.28f
-private const val CAROUSEL_MIN_SCALE = 0.4f
 
 @Composable
 private fun rememberHomeCarouselItems(

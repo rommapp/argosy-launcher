@@ -190,4 +190,18 @@ object ComponentDefaults {
         const val stampCellRatio = 0.6f
     }
 
+    object HomeLayoutPreview {
+        const val headerBarWidthRatio = 0.3f
+        const val titleBarWidthRatio = 0.42f
+        const val subtitleBarWidthRatio = 0.24f
+        const val footerBarWidthRatio = 0.55f
+        const val sectionHeadingWidthRatio = 0.22f
+        const val coverTitleBarWidthRatio = 0.7f
+        const val badgeWidthRatio = 0.45f
+        const val restingBlockAlpha = 0.45f
+        const val stepDwellMs = 900
+        const val scrollCycleMs = 9000
+        const val pageDwellMs = 1800
+    }
+
 }

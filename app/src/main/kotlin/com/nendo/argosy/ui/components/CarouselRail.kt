@@ -33,10 +33,12 @@ import com.nendo.argosy.ui.theme.generated.ComponentDefaults
 import com.nendo.argosy.ui.util.clickableNoFocus
 import com.nendo.argosy.ui.util.touchOnly
 
-private const val HERO_START_PADDING_SCREEN_RATIO = 0.09f
-private const val HERO_END_PADDING_SCREEN_RATIO = 0.65f
-private const val HERO_ITEM_GAP_CARD_RATIO = 0.13f
-private const val HERO_NEIGHBOUR_PUSH_CARD_RATIO = 0.5f
+internal const val HERO_START_PADDING_SCREEN_RATIO = 0.09f
+internal const val HERO_END_PADDING_SCREEN_RATIO = 0.65f
+internal const val HERO_ITEM_GAP_CARD_RATIO = 0.13f
+internal const val HERO_NEIGHBOUR_PUSH_CARD_RATIO = 0.5f
+internal const val HERO_MAX_WIDTH_FRACTION = 0.28f
+internal const val HERO_MIN_CARD_SCALE = 0.4f
 
 /**
  * Where the focused card comes to rest in the viewport. The member carries the pixel offset that
@@ -134,6 +136,49 @@ data class CarouselMetrics(
 }
 
 /**
+ * Card size for a hero rail, driven by the height left over after the surrounding chrome so the
+ * focused card at [focusScale] fills that space exactly. [availableWidth] caps the card so one
+ * cover cannot dominate the row on very tall windows, and [minCardHeight] is the floor below which
+ * the row collapses to a strip.
+ *
+ * Shared so a schematic preview and the live rail cannot disagree about proportions.
+ */
+internal fun carouselCardSize(
+    availableHeight: Dp,
+    availableWidth: Dp,
+    coverAspectRatio: Float,
+    focusScale: Float,
+    restingScale: Float,
+    minCardHeight: Dp
+): DpSize {
+    val heightDriven = (availableHeight / focusScale) * restingScale
+    val widthCap = (availableWidth * HERO_MAX_WIDTH_FRACTION) / coverAspectRatio
+    val cardHeight = maxOf(minOf(heightDriven, widthCap), minCardHeight)
+    return DpSize(cardHeight * coverAspectRatio, cardHeight)
+}
+
+/**
+ * Content padding that places the focused card on [CarouselMetrics.anchor]. [startGutter] is the
+ * clearance kept beyond the focused card's overhang so a scaled card never clips the leading edge.
+ */
+internal fun carouselContentPadding(
+    metrics: CarouselMetrics,
+    availableWidth: Dp,
+    startGutter: Dp
+): PaddingValues = when (metrics.anchor) {
+    CarouselAnchor.START -> PaddingValues(
+        start = maxOf(
+            availableWidth * HERO_START_PADDING_SCREEN_RATIO,
+            metrics.cardWidth * (metrics.focusScale - 1f) / 2f + startGutter
+        ),
+        end = availableWidth * HERO_END_PADDING_SCREEN_RATIO
+    )
+    CarouselAnchor.CENTER -> PaddingValues(
+        horizontal = (availableWidth - metrics.focusedCardWidth) / 2
+    )
+}
+
+/**
  * Horizontal game rail shared by the launcher home row and the companion carousel. The rail owns
  * layout and card rendering only; the focus index, the list state and the scroll effects stay with
  * the caller, which must snap using [CarouselMetrics.anchor]'s `snapOffsetPx`.
@@ -162,20 +207,12 @@ fun CarouselRail(
     val screenWidth = LocalConfiguration.current.screenWidthDp.dp
     val boxArtStyle = LocalBoxArtStyle.current
     val neighbourPushPx = with(LocalDensity.current) { metrics.neighbourPush.toPx() }
-    val focusOverhang = metrics.cardWidth * (metrics.focusScale - 1f) / 2f
 
-    val contentPadding = when (metrics.anchor) {
-        CarouselAnchor.START -> PaddingValues(
-            start = maxOf(
-                screenWidth * HERO_START_PADDING_SCREEN_RATIO,
-                focusOverhang + Dimens.spacingMd
-            ),
-            end = screenWidth * HERO_END_PADDING_SCREEN_RATIO
-        )
-        CarouselAnchor.CENTER -> PaddingValues(
-            horizontal = (screenWidth - metrics.focusedCardWidth) / 2
-        )
-    }
+    val contentPadding = carouselContentPadding(
+        metrics = metrics,
+        availableWidth = screenWidth,
+        startGutter = Dimens.spacingMd
+    )
 
     LazyRow(
         state = listState,

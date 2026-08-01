@@ -111,6 +111,8 @@ class DualHomeInputHandler(
                     ?.isExternalDisplay == true
                 if (moveGrid(GridDirection.DOWN)) {
                     InputResult.HANDLED
+                } else if (inGrid) {
+                    InputResult.HANDLED
                 } else if (!inAppBar && apps.isNotEmpty() && !isExternal) {
                     viewModel.focusAppBar(apps.size)
                     InputResult.HANDLED
@@ -120,7 +122,7 @@ class DualHomeInputHandler(
                 if (inAppBar) {
                     viewModel.focusCarousel()
                     InputResult.HANDLED
-                } else if (moveGrid(GridDirection.UP)) {
+                } else if (moveGrid(GridDirection.UP) || inGrid) {
                     InputResult.HANDLED
                 } else {
                     viewModel.enterCollections()

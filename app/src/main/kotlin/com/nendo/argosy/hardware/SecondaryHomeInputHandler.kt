@@ -3,6 +3,8 @@ package com.nendo.argosy.hardware
 import android.util.Log
 import com.nendo.argosy.data.emulator.EmulatorDetector
 import com.nendo.argosy.data.preferences.EmulatorDisplayTarget
+import com.nendo.argosy.domain.model.HomeLayoutKind
+import com.nendo.argosy.ui.common.GridDirection
 import com.nendo.argosy.ui.common.savechannel.SaveFocusColumn
 import com.nendo.argosy.DualScreenManager
 import com.nendo.argosy.ui.dualscreen.gamedetail.ActiveModal
@@ -386,6 +388,13 @@ class SecondaryHomeInputHandler(
         val state = dualHomeViewModel.uiState.value
         val inAppBar = state.focusZone == DualHomeFocusZone.APP_BAR
         val apps = homeApps()
+        val inGrid = !inAppBar && state.layoutKind == HomeLayoutKind.AUTO_GRID
+
+        fun moveGrid(direction: GridDirection): Boolean {
+            if (!inGrid || !dualHomeViewModel.moveCarouselGridFocus(direction)) return false
+            broadcasts.broadcastCurrentGameSelection()
+            return true
+        }
 
         return when (event) {
             GamepadEvent.Menu, GamepadEvent.LeftStickClick, GamepadEvent.RightStickClick -> {
@@ -394,24 +403,34 @@ class SecondaryHomeInputHandler(
             }
             GamepadEvent.Left -> {
                 if (inAppBar) dualHomeViewModel.selectPreviousApp()
-                else {
-                    dualHomeViewModel.selectPrevious()
-                    broadcasts.broadcastCurrentGameSelection()
+                else if (!moveGrid(GridDirection.LEFT)) {
+                    if (inGrid) dualHomeViewModel.previousSection()
+                    else {
+                        dualHomeViewModel.selectPrevious()
+                        broadcasts.broadcastCurrentGameSelection()
+                    }
                 }
                 InputResult.HANDLED
             }
             GamepadEvent.Right -> {
                 if (inAppBar) dualHomeViewModel.selectNextApp(apps.size)
-                else {
-                    dualHomeViewModel.selectNext()
-                    broadcasts.broadcastCurrentGameSelection()
+                else if (!moveGrid(GridDirection.RIGHT)) {
+                    if (inGrid) dualHomeViewModel.nextSection()
+                    else {
+                        dualHomeViewModel.selectNext()
+                        broadcasts.broadcastCurrentGameSelection()
+                    }
                 }
                 InputResult.HANDLED
             }
             GamepadEvent.Down -> {
                 val isExternal = com.nendo.argosy.DualScreenManagerHolder.instance
                     ?.isExternalDisplay == true
-                if (!inAppBar && !isExternal) {
+                if (moveGrid(GridDirection.DOWN)) {
+                    InputResult.HANDLED
+                } else if (inGrid) {
+                    InputResult.HANDLED
+                } else if (!inAppBar && !isExternal) {
                     dualHomeViewModel.focusAppBar(apps.size)
                     broadcasts.broadcastViewModeChange()
                     InputResult.HANDLED
@@ -421,6 +440,8 @@ class SecondaryHomeInputHandler(
                 if (inAppBar) {
                     dualHomeViewModel.focusCarousel()
                     broadcasts.broadcastViewModeChange()
+                    InputResult.HANDLED
+                } else if (moveGrid(GridDirection.UP) || inGrid) {
                     InputResult.HANDLED
                 } else {
                     dualHomeViewModel.enterCollections()

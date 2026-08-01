@@ -14,7 +14,9 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import com.nendo.argosy.domain.model.AutoGridConfig
@@ -88,6 +90,7 @@ fun HomeAutoGrid(
     onCoverLoadFailed: ((Long, String) -> Unit)? = null,
     onCoverLoaded: ((Long, android.graphics.Bitmap) -> Unit)? = null
 ) {
+    AutoGridFocusSync(gridState, focusedIndex, items.size, config.scrollAxis)
     Column(modifier = modifier.fillMaxSize()) {
         if (showSectionTitle && config.sectionStyle == HomeSectionStyle.HEADINGS) {
             Text(
@@ -141,6 +144,40 @@ fun HomeAutoGrid(
                 itemsIndexed(items, key = { _, item -> item.key }) { index, item -> cell(index, item) }
             }
         }
+    }
+}
+
+/**
+ * Keeps the focused cell on screen without moving the grid under it. Only a cell that is off the
+ * viewport or clipped by its edge causes a scroll, and then by exactly the amount that brings it
+ * fully into view: the d-pad has to read as a cursor travelling over a still grid, which it stops
+ * doing the moment every press re-anchors the list.
+ */
+@Composable
+private fun AutoGridFocusSync(
+    gridState: LazyGridState,
+    focusedIndex: Int,
+    itemCount: Int,
+    scrollAxis: HomeScrollAxis
+) {
+    LaunchedEffect(focusedIndex, itemCount, scrollAxis) {
+        if (itemCount <= 0) return@LaunchedEffect
+        val target = focusedIndex.coerceIn(0, itemCount - 1)
+        val info = gridState.layoutInfo
+        val item = info.visibleItemsInfo.firstOrNull { it.index == target }
+        if (item == null) {
+            gridState.animateScrollToItem(target)
+            return@LaunchedEffect
+        }
+        val vertical = scrollAxis == HomeScrollAxis.VERTICAL
+        val start = if (vertical) item.offset.y else item.offset.x
+        val end = start + if (vertical) item.size.height else item.size.width
+        val delta = when {
+            start < info.viewportStartOffset -> start - info.viewportStartOffset
+            end > info.viewportEndOffset -> end - info.viewportEndOffset
+            else -> 0
+        }
+        if (delta != 0) gridState.animateScrollBy(delta.toFloat())
     }
 }
 

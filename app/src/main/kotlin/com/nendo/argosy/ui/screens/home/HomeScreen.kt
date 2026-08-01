@@ -172,16 +172,6 @@ fun HomeScreen(
 
     val currentOnDrawerToggle by rememberUpdatedState(onDrawerToggle)
 
-    LaunchedEffect(isAutoGrid) {
-        if (!isAutoGrid) return@LaunchedEffect
-        snapshotFlow { Pair(uiState.focusedGameIndex, uiState.currentItems.size) }
-            .collectLatest { (focusedIndex, itemsSize) ->
-                if (itemsSize > 0) {
-                    gridState.animateScrollToItem(focusedIndex.coerceIn(0, itemsSize - 1))
-                }
-            }
-    }
-
     LaunchedEffect(Unit) {
         snapshotFlow { Triple(uiState.focusedGameIndex, uiState.currentRow, uiState.currentItems.size) }
             .collectLatest { (focusedIndex, _, itemsSize) ->

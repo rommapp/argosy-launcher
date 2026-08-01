@@ -457,6 +457,20 @@ class UserPreferencesRepository @Inject constructor(
     suspend fun setTouchControlsAllowLongPressEdit(enabled: Boolean) = builtinPrefs.setTouchControlsAllowLongPressEdit(enabled)
     suspend fun setTouchControlsColouredFaceButtons(enabled: Boolean) = builtinPrefs.setTouchControlsColouredFaceButtons(enabled)
     suspend fun setTouchControlsGenesis6Button(enabled: Boolean) = builtinPrefs.setTouchControlsGenesis6Button(enabled)
+
+    suspend fun setHudEnabled(enabled: Boolean) = builtinPrefs.setHudEnabled(enabled)
+
+    suspend fun setHudCorner(corner: String) = builtinPrefs.setHudCorner(corner)
+
+    suspend fun setHudShowBattery(enabled: Boolean) = builtinPrefs.setHudShowBattery(enabled)
+
+    suspend fun setHudShowClock(enabled: Boolean) = builtinPrefs.setHudShowClock(enabled)
+
+    suspend fun setHudShowPlaytime(enabled: Boolean) = builtinPrefs.setHudShowPlaytime(enabled)
+
+    suspend fun setHudShowFps(enabled: Boolean) = builtinPrefs.setHudShowFps(enabled)
+
+    suspend fun setHudShowLastSave(enabled: Boolean) = builtinPrefs.setHudShowLastSave(enabled)
     fun getArchitectureOverride(): Flow<String?> = builtinPrefs.getArchitectureOverride()
     fun getBuiltinEmulatorSettings(): Flow<BuiltinEmulatorSettings> = builtinPrefs.getBuiltinEmulatorSettings()
     fun getBuiltinCoreSelections(): Flow<Map<String, String>> = builtinPrefs.getBuiltinCoreSelections()

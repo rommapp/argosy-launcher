@@ -947,7 +947,7 @@ class LibretroActivity : ComponentActivity() {
             } else {
                 null
             },
-            fps = if (settings.hudShowFps && !hotkeyDispatcher.isFastForwarding) "$measuredFps fps" else null,
+            fps = if (settings.hudShowFps && !hotkeyDispatcher.isFastForwarding) formatFps(measuredFps) else null,
             lastSave = if (settings.hudShowLastSave && lastSaveAt != null) {
                 formatAgo((nowRealtimeMs - lastSaveAt) / 1000L)
             } else {
@@ -966,12 +966,19 @@ class LibretroActivity : ComponentActivity() {
     private fun formatClock(epochMs: Long): String =
         android.text.format.DateFormat.getTimeFormat(this).format(java.util.Date(epochMs))
 
+    /**
+     * Padded to a stable width so the bar does not resize as the digits change. The readouts are
+     * drawn in a monospaced face, so the leading blanks hold their place rather than collapsing.
+     */
     private fun formatDuration(totalSeconds: Long): String {
         val safe = totalSeconds.coerceAtLeast(0L)
         val hours = safe / 3600
         val minutes = (safe % 3600) / 60
-        return if (hours > 0) "%d:%02d".format(hours, minutes) else "%dm".format(minutes)
+        val text = if (hours > 0) "%d:%02d".format(hours, minutes) else "%dm".format(minutes)
+        return text.padStart(HUD_DURATION_WIDTH)
     }
+
+    private fun formatFps(fps: Int): String = "%s fps".format(fps.toString().padStart(HUD_FPS_DIGITS))
 
     private fun formatAgo(seconds: Long): String {
         val safe = seconds.coerceAtLeast(0L)
@@ -2485,6 +2492,30 @@ class LibretroActivity : ComponentActivity() {
             is InGameControlsAction.SetTouchGenesis6Button -> {
                 lifecycleScope.launch { preferencesRepository.setTouchControlsGenesis6Button(action.enabled) }
             }
+            is InGameControlsAction.SetHudEnabled -> {
+                lifecycleScope.launch { preferencesRepository.setHudEnabled(action.enabled) }
+            }
+            is InGameControlsAction.CycleHudCorner -> {
+                val corners = com.nendo.argosy.ui.screens.settings.sections.HUD_CORNERS
+                val index = corners.indexOf(touchSettingsState.hudCorner).coerceAtLeast(0)
+                val next = corners[(if (action.forward) index + 1 else index - 1).mod(corners.size)]
+                lifecycleScope.launch { preferencesRepository.setHudCorner(next) }
+            }
+            is InGameControlsAction.SetHudShowBattery -> {
+                lifecycleScope.launch { preferencesRepository.setHudShowBattery(action.enabled) }
+            }
+            is InGameControlsAction.SetHudShowClock -> {
+                lifecycleScope.launch { preferencesRepository.setHudShowClock(action.enabled) }
+            }
+            is InGameControlsAction.SetHudShowPlaytime -> {
+                lifecycleScope.launch { preferencesRepository.setHudShowPlaytime(action.enabled) }
+            }
+            is InGameControlsAction.SetHudShowFps -> {
+                lifecycleScope.launch { preferencesRepository.setHudShowFps(action.enabled) }
+            }
+            is InGameControlsAction.SetHudShowLastSave -> {
+                lifecycleScope.launch { preferencesRepository.setHudShowLastSave(action.enabled) }
+            }
         }
     }
 
@@ -2936,6 +2967,9 @@ class LibretroActivity : ComponentActivity() {
         private const val FPS_SAMPLE_INTERVAL_MS = 1_000L
 
         private const val HUD_TICK_INTERVAL_MS = 1_000L
+
+        private const val HUD_DURATION_WIDTH = 4
+        private const val HUD_FPS_DIGITS = 3
 
         private const val SPEEDRUN_PANEL_FRACTION_DEFAULT = 0.30f
         private val SPEEDRUN_PANEL_FRACTION_RANGE = 0.20f..0.40f

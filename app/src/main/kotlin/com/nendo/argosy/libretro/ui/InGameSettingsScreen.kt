@@ -63,6 +63,7 @@ import com.nendo.argosy.ui.screens.settings.components.HotkeysModal
 import com.nendo.argosy.data.repository.MappingPlatforms
 import com.nendo.argosy.ui.screens.settings.components.InputMappingModal
 import com.nendo.argosy.ui.screens.settings.components.ScopedMapping
+import com.nendo.argosy.ui.screens.settings.sections.HUD_CORNERS
 import com.nendo.argosy.core.emulator.LibretroSettingDef
 import com.nendo.argosy.ui.screens.settings.libretro.LibretroSettingsAccessor
 import com.nendo.argosy.data.platform.PlatformWeightRegistry
@@ -109,7 +110,14 @@ data class InGameControlsState(
     val touchSizeScale: Float = 1.0f,
     val touchHaptic: Boolean = true,
     val touchLockOrientation: Boolean = false,
-    val touchGenesis6Button: Boolean = false
+    val touchGenesis6Button: Boolean = false,
+    val hudEnabled: Boolean = false,
+    val hudCorner: String = "Top Left",
+    val hudShowBattery: Boolean = true,
+    val hudShowClock: Boolean = true,
+    val hudShowPlaytime: Boolean = false,
+    val hudShowFps: Boolean = false,
+    val hudShowLastSave: Boolean = false
 )
 
 sealed class InGameControlsAction {
@@ -132,6 +140,13 @@ sealed class InGameControlsAction {
     data class SetTouchHaptic(val enabled: Boolean) : InGameControlsAction()
     data class SetTouchLockOrientation(val enabled: Boolean) : InGameControlsAction()
     data class SetTouchGenesis6Button(val enabled: Boolean) : InGameControlsAction()
+    data class SetHudEnabled(val enabled: Boolean) : InGameControlsAction()
+    data class CycleHudCorner(val forward: Boolean) : InGameControlsAction()
+    data class SetHudShowBattery(val enabled: Boolean) : InGameControlsAction()
+    data class SetHudShowClock(val enabled: Boolean) : InGameControlsAction()
+    data class SetHudShowPlaytime(val enabled: Boolean) : InGameControlsAction()
+    data class SetHudShowFps(val enabled: Boolean) : InGameControlsAction()
+    data class SetHudShowLastSave(val enabled: Boolean) : InGameControlsAction()
 }
 
 data class InGameModalCallbacks(
@@ -178,6 +193,13 @@ internal sealed class InGameControlsItem(
     data object TouchHaptic : InGameControlsItem("touchHaptic", "touchControls")
     data object TouchLockOrientation : InGameControlsItem("touchLockOrientation", "touchControls")
     data object TouchGenesis6Button : InGameControlsItem("touchGenesis6Button", "touchControls")
+    data object HudEnabled : InGameControlsItem("hudEnabled", "statusBar")
+    data object HudCorner : InGameControlsItem("hudCorner", "statusBar")
+    data object HudBattery : InGameControlsItem("hudBattery", "statusBar")
+    data object HudClock : InGameControlsItem("hudClock", "statusBar")
+    data object HudPlaytime : InGameControlsItem("hudPlaytime", "statusBar")
+    data object HudFps : InGameControlsItem("hudFps", "statusBar")
+    data object HudLastSave : InGameControlsItem("hudLastSave", "statusBar")
 
     companion object {
         val ALL = listOf(
@@ -202,7 +224,15 @@ internal sealed class InGameControlsItem(
             TouchEnabled,
             TouchHaptic,
             TouchLockOrientation,
-            TouchGenesis6Button
+            TouchGenesis6Button,
+            Header("statusBarHeader", "statusBar", "Status Bar"),
+            HudEnabled,
+            HudCorner,
+            HudBattery,
+            HudClock,
+            HudPlaytime,
+            HudFps,
+            HudLastSave
         )
     }
 }
@@ -356,6 +386,19 @@ fun InGameSettingsScreen(
                 action(InGameControlsAction.SetTouchLockOrientation(!state.touchLockOrientation))
             InGameControlsItem.TouchGenesis6Button ->
                 action(InGameControlsAction.SetTouchGenesis6Button(!state.touchGenesis6Button))
+            InGameControlsItem.HudEnabled ->
+                action(InGameControlsAction.SetHudEnabled(!state.hudEnabled))
+            InGameControlsItem.HudCorner -> action(InGameControlsAction.CycleHudCorner(true))
+            InGameControlsItem.HudBattery ->
+                action(InGameControlsAction.SetHudShowBattery(!state.hudShowBattery))
+            InGameControlsItem.HudClock ->
+                action(InGameControlsAction.SetHudShowClock(!state.hudShowClock))
+            InGameControlsItem.HudPlaytime ->
+                action(InGameControlsAction.SetHudShowPlaytime(!state.hudShowPlaytime))
+            InGameControlsItem.HudFps ->
+                action(InGameControlsAction.SetHudShowFps(!state.hudShowFps))
+            InGameControlsItem.HudLastSave ->
+                action(InGameControlsAction.SetHudShowLastSave(!state.hudShowLastSave))
             else -> {}
         }
     }
@@ -848,6 +891,65 @@ private fun InGameControlsSection(
                     isEnabled = state.touchGenesis6Button,
                     isFocused = isFocused(item),
                     onToggle = { onAction(InGameControlsAction.SetTouchGenesis6Button(it)) }
+                )
+
+                InGameControlsItem.HudEnabled -> SwitchPreference(
+                    title = "Show status bar",
+                    subtitle = "A small readout pinned to a corner while playing",
+                    isEnabled = state.hudEnabled,
+                    isFocused = isFocused(item),
+                    onToggle = { onAction(InGameControlsAction.SetHudEnabled(it)) }
+                )
+
+                InGameControlsItem.HudCorner -> CyclePreference(
+                    title = "Corner",
+                    value = state.hudCorner,
+                    isFocused = isFocused(item),
+                    onClick = { onAction(InGameControlsAction.CycleHudCorner(true)) },
+                    onPrev = { onAction(InGameControlsAction.CycleHudCorner(false)) },
+                    options = HUD_CORNERS,
+                    onSelect = { index ->
+                        val steps = index - HUD_CORNERS.indexOf(state.hudCorner).coerceAtLeast(0)
+                        repeat(kotlin.math.abs(steps)) {
+                            onAction(InGameControlsAction.CycleHudCorner(steps > 0))
+                        }
+                    }
+                )
+
+                InGameControlsItem.HudBattery -> SwitchPreference(
+                    title = "Battery",
+                    isEnabled = state.hudShowBattery,
+                    isFocused = isFocused(item),
+                    onToggle = { onAction(InGameControlsAction.SetHudShowBattery(it)) }
+                )
+
+                InGameControlsItem.HudClock -> SwitchPreference(
+                    title = "Clock",
+                    isEnabled = state.hudShowClock,
+                    isFocused = isFocused(item),
+                    onToggle = { onAction(InGameControlsAction.SetHudShowClock(it)) }
+                )
+
+                InGameControlsItem.HudPlaytime -> SwitchPreference(
+                    title = "Session time",
+                    isEnabled = state.hudShowPlaytime,
+                    isFocused = isFocused(item),
+                    onToggle = { onAction(InGameControlsAction.SetHudShowPlaytime(it)) }
+                )
+
+                InGameControlsItem.HudFps -> SwitchPreference(
+                    title = "FPS",
+                    subtitle = "Hidden while fast-forwarding",
+                    isEnabled = state.hudShowFps,
+                    isFocused = isFocused(item),
+                    onToggle = { onAction(InGameControlsAction.SetHudShowFps(it)) }
+                )
+
+                InGameControlsItem.HudLastSave -> SwitchPreference(
+                    title = "Last save state",
+                    isEnabled = state.hudShowLastSave,
+                    isFocused = isFocused(item),
+                    onToggle = { onAction(InGameControlsAction.SetHudShowLastSave(it)) }
                 )
             }
         }

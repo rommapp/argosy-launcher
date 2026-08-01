@@ -235,7 +235,9 @@ fun DualHomeLowerScreen(
             }
         }
 
-        Spacer(modifier = Modifier.weight(1f))
+        if (!isAutoGrid) {
+            Spacer(modifier = Modifier.weight(1f))
+        }
 
         if (viewMode == DualHomeViewMode.CAROUSEL && sectionLabels.isNotEmpty()) {
             SectionBreadcrumb(
@@ -268,6 +270,7 @@ fun DualHomeLowerScreen(
                 config = autoGridConfig,
                 gridState = gridState,
                 sectionTitle = platformName,
+                showSectionTitle = false,
                 showPlatformBadge = false,
                 onItemTap = { index ->
                     val game = games.getOrNull(index)

@@ -62,13 +62,14 @@ fun HomeAutoGrid(
     onItemTap: (Int) -> Unit,
     onItemLongPress: (Int) -> Unit,
     modifier: Modifier = Modifier,
+    showSectionTitle: Boolean = true,
     showPlatformBadge: Boolean = true,
     downloadIndicatorFor: (CarouselItem) -> GameDownloadIndicator = { GameDownloadIndicator.NONE },
     onCoverLoadFailed: ((Long, String) -> Unit)? = null,
     onCoverLoaded: ((Long, android.graphics.Bitmap) -> Unit)? = null
 ) {
     Column(modifier = modifier.fillMaxSize()) {
-        if (config.sectionStyle == HomeSectionStyle.HEADINGS) {
+        if (showSectionTitle && config.sectionStyle == HomeSectionStyle.HEADINGS) {
             Text(
                 text = sectionTitle,
                 style = MaterialTheme.typography.titleMedium,

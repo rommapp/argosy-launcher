@@ -161,6 +161,18 @@ object ComponentDefaults {
         const val valueLiftRatio = 0.12f
     }
 
+    object Carousel {
+        const val companionCardWidth = 140
+        const val companionCardWidthFocused = 200
+        const val companionCardGap = 16
+        const val focusSnapOffsetPx = -25
+        const val viewAllIconSize = 28
+        const val dotSize = 6
+        const val dotSizeActive = 10
+        const val dotGap = 6
+        const val dotInactiveAlpha = 0.3f
+    }
+
     object SurfaceBackdrop {
         const val contentMaxAlpha = 0.25f
         const val wallpaperMaxAlpha = 0.5f

@@ -23,7 +23,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -67,17 +66,22 @@ import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.nendo.argosy.hardware.CompanionAppBar
-import com.nendo.argosy.ui.common.coverSizeWithin
 import com.nendo.argosy.ui.common.rememberCoverAspectRatio
 import com.nendo.argosy.ui.common.rememberFileImageModel
 import com.nendo.argosy.ui.components.AlphabetSidebar
+import com.nendo.argosy.ui.components.CarouselAnchor
+import com.nendo.argosy.ui.components.CarouselItem
+import com.nendo.argosy.ui.components.CarouselMetrics
+import com.nendo.argosy.ui.components.CarouselOverrides
+import com.nendo.argosy.ui.components.CarouselRail
+import com.nendo.argosy.ui.components.CarouselTapMode
 import com.nendo.argosy.ui.components.GameCard
+import com.nendo.argosy.ui.components.PositionIndicator
+import com.nendo.argosy.ui.components.ViewAllCardStyle
 import com.nendo.argosy.ui.components.fastAnimateScrollToItem
 import com.nendo.argosy.ui.primitives.ActionButton
 import com.nendo.argosy.ui.screens.home.HomeGameUi
@@ -87,12 +91,9 @@ import com.nendo.argosy.ui.theme.LocalArgosyTheme
 import com.nendo.argosy.ui.theme.LocalBoxArtStyle
 import com.nendo.argosy.ui.theme.backdrop.BackdropRole
 import com.nendo.argosy.ui.theme.backdrop.surfaceBackdrop
+import com.nendo.argosy.ui.theme.generated.ComponentDefaults
 import com.nendo.argosy.ui.util.touchOnly
 import kotlin.math.abs
-
-private val CARD_WIDTH = 140.dp
-private val FOCUSED_CARD_WIDTH = 200.dp
-private val CARD_SPACING = 16.dp
 
 @Composable
 fun DualHomeLowerScreen(
@@ -123,12 +124,13 @@ fun DualHomeLowerScreen(
     modifier: Modifier = Modifier
 ) {
     val listState = rememberLazyListState()
-    val screenWidthDp = LocalConfiguration.current.screenWidthDp.dp
-    val centerPadding = (screenWidthDp - FOCUSED_CARD_WIDTH) / 2
-    val boxArtStyle = LocalBoxArtStyle.current
-    val coverAspectRatio = boxArtStyle.aspectRatio
-    val regularCardHeight = CARD_WIDTH / coverAspectRatio
-    val focusedCardHeight = FOCUSED_CARD_WIDTH / coverAspectRatio
+    val metrics = CarouselMetrics.centered(LocalBoxArtStyle.current.aspectRatio)
+    val railItems = rememberCompanionCarouselItems(
+        games = games,
+        hasMoreGames = hasMoreGames,
+        totalCount = totalCount,
+        repairedCoverPaths = repairedCoverPaths
+    )
 
     val currentSelectedIndex by rememberUpdatedState(selectedIndex)
     val currentGames by rememberUpdatedState(games)
@@ -146,12 +148,12 @@ fun DualHomeLowerScreen(
                 if (selectedIndex in games.indices) {
                     listState.animateScrollToItem(
                         index = selectedIndex,
-                        scrollOffset = 0
+                        scrollOffset = CarouselAnchor.CENTER.snapOffsetPx
                     )
                 } else if (hasMoreGames && selectedIndex == games.size) {
                     listState.animateScrollToItem(
                         index = games.size,
-                        scrollOffset = 0
+                        scrollOffset = CarouselAnchor.CENTER.snapOffsetPx
                     )
                 }
             } else {
@@ -252,16 +254,30 @@ fun DualHomeLowerScreen(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(focusedCardHeight + 16.dp),
+                .height(metrics.focusedCardHeight + ComponentDefaults.Carousel.companionCardGap.dp),
             contentAlignment = Alignment.Center
         ) {
-            LazyRow(
-                state = listState,
-                contentPadding = PaddingValues(horizontal = centerPadding),
-                horizontalArrangement = Arrangement.spacedBy(CARD_SPACING),
-                verticalAlignment = Alignment.CenterVertically,
+            CarouselRail(
+                items = railItems,
+                focusedIndex = selectedIndex,
+                listState = listState,
+                metrics = metrics,
+                tapMode = CarouselTapMode.TOUCH,
+                overrides = CarouselOverrides(focusedAlpha = 1f, unfocusedAlpha = 0.5f),
+                showFocusVisuals = !appBarFocused,
+                showNewBadge = false,
+                viewAllStyle = ViewAllCardStyle.ACCENT_COUNT,
+                onItemTap = { index ->
+                    val game = games.getOrNull(index)
+                    if (game != null) {
+                        onGameTapped(index)
+                        onGameSelected(game.id)
+                    } else {
+                        onViewAllClick()
+                    }
+                },
+                onCoverLoadFailed = onCoverLoadFailed,
                 modifier = Modifier
-                    .fillMaxWidth()
                     .pointerInput(Unit) {
                         awaitPointerEventScope {
                             while (true) {
@@ -272,49 +288,7 @@ fun DualHomeLowerScreen(
                             }
                         }
                     }
-            ) {
-                itemsIndexed(games, key = { _, game -> game.id }) { index, game ->
-                    val isSelected = index == selectedIndex
-                    val maxCardWidth = if (isSelected) FOCUSED_CARD_WIDTH else CARD_WIDTH
-                    val maxCardHeight = if (isSelected) focusedCardHeight else regularCardHeight
-                    val cardSize = if (boxArtStyle.nativeAspectRatio) {
-                        val coverPath = repairedCoverPaths[game.id] ?: game.coverPath
-                        val ratio = rememberCoverAspectRatio(coverPath, coverAspectRatio)
-                        coverSizeWithin(maxCardWidth, maxCardHeight, ratio)
-                    } else {
-                        DpSize(maxCardWidth, maxCardHeight)
-                    }
-                    Box(
-                        modifier = Modifier
-                            .size(cardSize)
-                            .touchOnly {
-                                onGameTapped(index)
-                                onGameSelected(game.id)
-                            }
-                    ) {
-                        GameCard(
-                            game = game,
-                            isFocused = isSelected && !appBarFocused,
-                            modifier = Modifier.fillMaxSize(),
-                            focusScale = 1f,
-                            alphaOverride = if (isSelected) 1f else 0.5f,
-                            showPlatformBadge = true,
-                            onCoverLoadFailed = onCoverLoadFailed,
-                            coverPathOverride = repairedCoverPaths[game.id],
-                            downloadIndicator = game.downloadIndicator
-                        )
-                    }
-                }
-                if (hasMoreGames) {
-                    item(key = "view_all") {
-                        ViewAllCard(
-                            remainingCount = totalCount - games.size,
-                            isFocused = isViewAllFocused,
-                            onClick = onViewAllClick
-                        )
-                    }
-                }
-            }
+            )
         }
 
         PositionIndicator(
@@ -942,78 +916,29 @@ private fun DualSearchContent(
 // --- Shared Composables ---
 
 @Composable
-private fun ViewAllCard(
-    remainingCount: Int,
-    isFocused: Boolean,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    val theme = LocalArgosyTheme.current
-    val cardHeight = CARD_WIDTH / LocalBoxArtStyle.current.aspectRatio
-    Box(
-        modifier = modifier
-            .size(width = CARD_WIDTH, height = cardHeight)
-            .clip(RoundedCornerShape(Dimens.radiusControl))
-            .then(
-                if (isFocused) {
-                    Modifier.border(
-                        width = Dimens.borderThick,
-                        color = theme.focusAccent,
-                        shape = RoundedCornerShape(Dimens.radiusControl)
-                    )
-                } else Modifier
-            )
-            .background(theme.surfaceRaised)
-            .touchOnly(onClick),
-        contentAlignment = Alignment.Center
-    ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Icon(
-                Icons.Default.GridView,
-                contentDescription = null,
-                tint = theme.focusAccent,
-                modifier = Modifier.size(28.dp)
-            )
-            Spacer(modifier = Modifier.height(Dimens.spacingXs))
-            Text(
-                text = "+$remainingCount",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = theme.focusAccent
-            )
-            Text(
-                text = "View All",
-                style = MaterialTheme.typography.labelSmall,
-                color = theme.textDim
+private fun rememberCompanionCarouselItems(
+    games: List<HomeGameUi>,
+    hasMoreGames: Boolean,
+    totalCount: Int,
+    repairedCoverPaths: Map<Long, String>
+): List<CarouselItem> = remember(games, hasMoreGames, totalCount, repairedCoverPaths) {
+    buildList {
+        games.forEach { game ->
+            add(
+                CarouselItem.Game(
+                    key = game.id.toString(),
+                    game = game,
+                    downloadIndicator = game.downloadIndicator,
+                    coverPathOverride = repairedCoverPaths[game.id]
+                )
             )
         }
-    }
-}
-
-@Composable
-private fun PositionIndicator(
-    totalCount: Int,
-    currentIndex: Int,
-    modifier: Modifier = Modifier
-) {
-    Row(
-        horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally),
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = modifier
-    ) {
-        repeat(totalCount) { index ->
-            val isActive = index == (currentIndex % totalCount)
-            Box(
-                modifier = Modifier
-                    .size(if (isActive) 10.dp else 6.dp)
-                    .clip(CircleShape)
-                    .background(
-                        if (isActive) {
-                            LocalArgosyTheme.current.focusAccent
-                        } else {
-                            LocalArgosyTheme.current.textDim.copy(alpha = 0.3f)
-                        }
-                    )
+        if (hasMoreGames) {
+            add(
+                CarouselItem.ViewAll(
+                    key = "view_all",
+                    remainingCount = totalCount - games.size
+                )
             )
         }
     }

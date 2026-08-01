@@ -6,27 +6,21 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import com.nendo.argosy.ui.util.clickableNoFocus
-import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -40,7 +34,6 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.layout.heightIn
@@ -64,8 +57,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import com.nendo.argosy.ui.common.AlwaysCrossfadeFactory
-import com.nendo.argosy.ui.common.coverSizeWithin
-import com.nendo.argosy.ui.common.rememberCoverAspectRatio
 import com.nendo.argosy.ui.common.rememberFileImageModel
 import com.nendo.argosy.ui.components.GameTitle
 import com.nendo.argosy.ui.components.SectionBreadcrumb
@@ -88,7 +79,6 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
-import androidx.compose.ui.zIndex
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -100,7 +90,6 @@ import com.nendo.argosy.ui.theme.LocalArgosyTheme
 import com.nendo.argosy.ui.theme.backdrop.BackdropRole
 import com.nendo.argosy.ui.theme.backdrop.LocalSurfaceBackdrop
 import com.nendo.argosy.ui.theme.backdrop.surfaceBackdrop
-import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.graphicsLayer
@@ -126,8 +115,11 @@ import com.nendo.argosy.ui.components.ChangelogModal
 import com.nendo.argosy.ui.components.CollectionItem
 import com.nendo.argosy.ui.components.FooterHint
 import com.nendo.argosy.ui.screens.collections.dialogs.CreateCollectionDialog
-import com.nendo.argosy.ui.components.GameCard
-import com.nendo.argosy.ui.components.GameCardWithNewBadge
+import com.nendo.argosy.ui.components.CarouselAnchor
+import com.nendo.argosy.ui.components.CarouselItem
+import com.nendo.argosy.ui.components.CarouselMetrics
+import com.nendo.argosy.ui.components.CarouselOverrides
+import com.nendo.argosy.ui.components.CarouselRail
 import com.nendo.argosy.ui.components.InputButton
 import com.nendo.argosy.ui.components.FooterHints
 import com.nendo.argosy.ui.components.FooterSpacer
@@ -151,8 +143,6 @@ import com.nendo.argosy.ui.theme.LocalLauncherTheme
 import com.nendo.argosy.ui.theme.Motion
 import com.nendo.argosy.ui.theme.generated.ColorTokens
 import kotlinx.coroutines.launch
-
-private const val SCROLL_OFFSET = -25
 
 @Composable
 fun HomeScreen(
@@ -185,7 +175,7 @@ fun HomeScreen(
                         isProgrammaticScroll = true
                         listState.animateScrollToItem(
                             index = focusedIndex.coerceIn(0, itemsSize - 1),
-                            scrollOffset = SCROLL_OFFSET
+                            scrollOffset = CarouselAnchor.START.snapOffsetPx
                         )
                         isProgrammaticScroll = false
                     }
@@ -686,21 +676,33 @@ fun HomeScreen(
                             )
                         }
                         else -> {
-                            GameRail(
-                                items = uiState.currentItems,
+                            CarouselRail(
+                                items = rememberHomeCarouselItems(
+                                    items = uiState.currentItems,
+                                    rowKey = uiState.currentRow.toString(),
+                                    downloadIndicators = uiState.downloadIndicators,
+                                    repairedCoverPaths = uiState.repairedCoverPaths
+                                ),
                                 focusedIndex = uiState.focusedGameIndex,
                                 listState = listState,
-                                rowKey = uiState.currentRow.toString(),
-                                downloadIndicators = uiState.downloadIndicators,
+                                metrics = CarouselMetrics.hero(
+                                    cardWidth = cardSize.width,
+                                    cardHeight = cardSize.height,
+                                    focusScale = CAROUSEL_FOCUS_SCALE
+                                ),
+                                overrides = CarouselOverrides(
+                                    focusedScale = if (uiState.isVideoPreviewActive) 1f else null,
+                                    unfocusedAlpha = if (uiState.isVideoPreviewActive) 0f else null,
+                                    viewAllAlpha = if (uiState.isVideoPreviewActive) 0f else 1f
+                                ),
                                 showPlatformBadge = uiState.currentRow !is HomeRow.Platform && uiState.currentRow != HomeRow.Steam && uiState.currentRow != HomeRow.Android,
-                                repairedCoverPaths = uiState.repairedCoverPaths,
                                 onCoverLoadFailed = viewModel::repairCoverImage,
                                 onCoverLoaded = viewModel::extractGradientForGame,
                                 onItemTap = { index -> viewModel.handleItemTap(index, onGameSelect) },
                                 onItemLongPress = viewModel::handleItemLongPress,
-                                isVideoPreviewActive = uiState.isVideoPreviewActive,
-                                cardSize = cardSize,
-                                modifier = Modifier.align(Alignment.BottomStart)
+                                modifier = Modifier
+                                    .align(Alignment.BottomStart)
+                                    .height(railHeight)
                             )
                         }
                     }
@@ -1197,208 +1199,26 @@ private const val CAROUSEL_CARD_SCALE = 0.9f
 private const val CAROUSEL_MAX_WIDTH_FRACTION = 0.28f
 private const val CAROUSEL_MIN_SCALE = 0.4f
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun GameRail(
+private fun rememberHomeCarouselItems(
     items: List<HomeRowItem>,
-    focusedIndex: Int,
-    listState: androidx.compose.foundation.lazy.LazyListState,
     rowKey: String,
     downloadIndicators: Map<Long, GameDownloadIndicator>,
-    showPlatformBadge: Boolean,
-    repairedCoverPaths: Map<Long, String> = emptyMap(),
-    onCoverLoadFailed: ((Long, String) -> Unit)? = null,
-    onCoverLoaded: ((Long, android.graphics.Bitmap) -> Unit)? = null,
-    onItemTap: (Int) -> Unit = {},
-    onItemLongPress: (Int) -> Unit = {},
-    isVideoPreviewActive: Boolean = false,
-    cardSize: DpSize,
-    modifier: Modifier = Modifier
-) {
-    val configuration = LocalConfiguration.current
-    val screenWidth = configuration.screenWidthDp.dp
-    val boxArtStyle = LocalBoxArtStyle.current
-
-    val cardWidth = cardSize.width
-    val cardHeight = cardSize.height
-    val focusScale = CAROUSEL_FOCUS_SCALE
-    val railHeight = cardHeight * focusScale + Dimens.spacingMd
-
-    val focusSpacingPx = with(LocalDensity.current) { (cardWidth * 0.5f).toPx() }
-    val itemSpacing = cardWidth * 0.13f
-    val focusOverhang = cardWidth * (focusScale - 1f) / 2f
-    val startPadding = maxOf(screenWidth * 0.09f, focusOverhang + Dimens.spacingMd)
-    val endPadding = screenWidth * 0.65f
-
-    LazyRow(
-        state = listState,
-        contentPadding = PaddingValues(start = startPadding, end = endPadding),
-        horizontalArrangement = Arrangement.spacedBy(itemSpacing),
-        verticalAlignment = Alignment.Bottom,
-        modifier = modifier
-            .fillMaxWidth()
-            .height(railHeight)
-            .graphicsLayer { clip = false }
-    ) {
-        itemsIndexed(
-            items,
-            key = { _, item ->
-                when (item) {
-                    is HomeRowItem.Game -> "$rowKey-${item.game.id}"
-                    is HomeRowItem.ViewAll -> "$rowKey-viewall-${item.platformId ?: item.sourceFilter ?: "all"}"
-                }
-            }
-        ) { index, item ->
-            val isFocused = index == focusedIndex
-            val translationX by animateFloatAsState(
-                targetValue = when {
-                    index < focusedIndex -> -focusSpacingPx
-                    index > focusedIndex -> focusSpacingPx
-                    else -> 0f
-                },
-                animationSpec = Motion.focusSpring,
-                label = "translationX"
+    repairedCoverPaths: Map<Long, String>
+): List<CarouselItem> = remember(items, rowKey, downloadIndicators, repairedCoverPaths) {
+    items.map { item ->
+        when (item) {
+            is HomeRowItem.Game -> CarouselItem.Game(
+                key = "$rowKey-${item.game.id}",
+                game = item.game,
+                downloadIndicator = downloadIndicators[item.game.id] ?: GameDownloadIndicator.NONE,
+                coverPathOverride = repairedCoverPaths[item.game.id]
             )
-
-            val videoScaleOverride = if (isVideoPreviewActive && isFocused) 1.0f else null
-            val videoAlphaOverride = if (isVideoPreviewActive && !isFocused) 0f else null
-
-            when (item) {
-                is HomeRowItem.Game -> {
-                    val itemSize = if (boxArtStyle.nativeAspectRatio) {
-                        val coverPath = repairedCoverPaths[item.game.id] ?: item.game.coverPath
-                        val ratio = rememberCoverAspectRatio(coverPath, boxArtStyle.aspectRatio)
-                        coverSizeWithin(cardWidth, cardHeight, ratio)
-                    } else {
-                        DpSize(cardWidth, cardHeight)
-                    }
-                    GameCardWithNewBadge(
-                        game = item.game,
-                        isFocused = isFocused,
-                        cardWidth = itemSize.width,
-                        cardHeight = itemSize.height,
-                        focusScale = focusScale,
-                        scaleFromBottom = true,
-                        downloadIndicator = downloadIndicators[item.game.id] ?: GameDownloadIndicator.NONE,
-                        showPlatformBadge = showPlatformBadge,
-                        coverPathOverride = repairedCoverPaths[item.game.id],
-                        onCoverLoadFailed = onCoverLoadFailed,
-                        onCoverLoaded = onCoverLoaded,
-                        scaleOverride = videoScaleOverride,
-                        alphaOverride = videoAlphaOverride,
-                        modifier = Modifier
-                            .graphicsLayer {
-                                this.translationX = translationX
-                            }
-                            .zIndex(if (isFocused) 1f else 0f)
-                            .combinedClickable(
-                                onClick = { onItemTap(index) },
-                                onLongClick = { onItemLongPress(index) },
-                                indication = null,
-                                interactionSource = remember { MutableInteractionSource() }
-                            )
-                    )
-                }
-                is HomeRowItem.ViewAll -> {
-                    val viewAllAlpha by animateFloatAsState(
-                        targetValue = if (isVideoPreviewActive) 0f else 1f,
-                        animationSpec = Motion.focusSpring,
-                        label = "viewAllAlpha"
-                    )
-                    ViewAllCard(
-                        isFocused = isFocused,
-                        onClick = { onItemTap(index) },
-                        modifier = Modifier
-                            .graphicsLayer {
-                                this.translationX = translationX
-                                alpha = viewAllAlpha
-                            }
-                            .width(cardWidth)
-                            .height(cardHeight)
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun ViewAllCard(
-    isFocused: Boolean,
-    onClick: () -> Unit = {},
-    modifier: Modifier = Modifier
-) {
-    val scale by animateFloatAsState(
-        targetValue = if (isFocused) 1.8f else 1f,
-        animationSpec = spring(stiffness = 300f),
-        label = "viewAllScale"
-    )
-
-    val onSurfaceColor = MaterialTheme.colorScheme.onSurface
-    val borderColor by animateColorAsState(
-        targetValue = if (isFocused) onSurfaceColor else onSurfaceColor.copy(alpha = 0.3f),
-        animationSpec = tween(200),
-        label = "viewAllBorder"
-    )
-
-    Box(
-        contentAlignment = Alignment.Center,
-        modifier = modifier
-            .graphicsLayer {
-                scaleX = scale
-                scaleY = scale
-                transformOrigin = TransformOrigin(0.5f, 1f)
-            }
-            .background(
-                Brush.verticalGradient(
-                    colors = listOf(
-                        onSurfaceColor.copy(alpha = 0.15f),
-                        onSurfaceColor.copy(alpha = 0.05f)
-                    )
-                ),
-                RoundedCornerShape(Dimens.radiusMd)
-            )
-            .border(Dimens.borderThin, borderColor, RoundedCornerShape(Dimens.radiusMd))
-            .clickableNoFocus(onClick = onClick)
-    ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center,
-            modifier = Modifier.padding(Dimens.radiusLg)
-        ) {
-            Column(
-                verticalArrangement = Arrangement.spacedBy(Dimens.spacingXs),
-                modifier = Modifier.padding(bottom = Dimens.radiusLg)
-            ) {
-                Row(horizontalArrangement = Arrangement.spacedBy(Dimens.spacingXs)) {
-                    GridBox()
-                    GridBox()
-                }
-                Row(horizontalArrangement = Arrangement.spacedBy(Dimens.spacingXs)) {
-                    GridBox()
-                    GridBox()
-                }
-            }
-            Text(
-                text = "View All",
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
-                textAlign = TextAlign.Center
+            is HomeRowItem.ViewAll -> CarouselItem.ViewAll(
+                key = "$rowKey-viewall-${item.platformId ?: item.sourceFilter ?: "all"}"
             )
         }
     }
-}
-
-@Composable
-private fun GridBox() {
-    Box(
-        modifier = Modifier
-            .size(Dimens.iconMd)
-            .background(
-                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
-                RoundedCornerShape(Dimens.radiusSm)
-            )
-    )
 }
 
 @Composable

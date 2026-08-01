@@ -98,6 +98,7 @@ object ColorTokens {
         }
         object Battery {
             val low = Color(0xFFE53935)
+            val charging = Color(0xFF4CAF50)
         }
         object Code {
             val background = Color(0x1A888888)

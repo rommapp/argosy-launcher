@@ -136,7 +136,15 @@ data class CarouselMetrics(
             reversed = config.inverted
         )
 
-        fun centered(coverAspectRatio: Float): CarouselMetrics {
+        /**
+         * The companion strip grows its focused card rather than scaling it, so [config] supplies
+         * the reading direction and focus anchor while the discrete card widths stay fixed - a
+         * spring-scaled card would overflow a strip that has no room above or below it.
+         */
+        fun centered(
+            coverAspectRatio: Float,
+            config: CarouselConfig = CarouselConfig()
+        ): CarouselMetrics {
             val cardWidth = ComponentDefaults.Carousel.companionCardWidth.dp
             val focusedCardWidth = ComponentDefaults.Carousel.companionCardWidthFocused.dp
             return CarouselMetrics(
@@ -146,10 +154,14 @@ data class CarouselMetrics(
                 focusedCardHeight = focusedCardWidth / coverAspectRatio,
                 focusScale = 1f,
                 scaleFromBottom = false,
-                anchor = CarouselAnchor.CENTER,
+                anchor = when (config.focusPosition) {
+                    HomeFocusPosition.LEADING -> CarouselAnchor.START
+                    HomeFocusPosition.CENTER -> CarouselAnchor.CENTER
+                },
                 itemGap = ComponentDefaults.Carousel.companionCardGap.dp,
                 neighbourPush = 0.dp,
-                allowFocusOverflow = false
+                allowFocusOverflow = false,
+                reversed = config.inverted
             )
         }
     }

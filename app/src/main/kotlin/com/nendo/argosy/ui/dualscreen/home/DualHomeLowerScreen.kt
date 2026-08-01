@@ -121,10 +121,12 @@ fun DualHomeLowerScreen(
     onLibraryToggle: () -> Unit,
     onViewAllClick: () -> Unit,
     onOpenDrawer: () -> Unit = {},
+    carouselConfig: com.nendo.argosy.domain.model.CarouselConfig =
+        com.nendo.argosy.domain.model.CarouselConfig(),
     modifier: Modifier = Modifier
 ) {
     val listState = rememberLazyListState()
-    val metrics = CarouselMetrics.centered(LocalBoxArtStyle.current.aspectRatio)
+    val metrics = CarouselMetrics.centered(LocalBoxArtStyle.current.aspectRatio, carouselConfig)
     val railItems = rememberCompanionCarouselItems(
         games = games,
         hasMoreGames = hasMoreGames,

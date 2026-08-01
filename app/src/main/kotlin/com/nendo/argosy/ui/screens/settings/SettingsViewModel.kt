@@ -858,12 +858,15 @@ class SettingsViewModel @Inject constructor(
 
     fun setUseGameBackground(use: Boolean) = displayDelegate.setUseGameBackground(viewModelScope, use)
     fun setHomeBackgroundMode(mode: HomeBackgroundMode) = displayDelegate.setHomeBackgroundMode(viewModelScope, mode)
+    fun setHomeLayout(settings: com.nendo.argosy.domain.model.HomeLayoutSettings) =
+        displayDelegate.setHomeLayout(viewModelScope, settings)
     fun cycleHomeBackgroundMode(direction: Int = 1) = displayDelegate.cycleHomeBackgroundMode(viewModelScope, direction)
     fun setUseAccentColorFooter(use: Boolean) = displayDelegate.setUseAccentColorFooter(viewModelScope, use)
     fun setCustomBackgroundPath(path: String?) = displayDelegate.setCustomBackgroundPath(viewModelScope, path)
     fun openBackgroundPicker() = displayDelegate.openBackgroundPicker(viewModelScope)
 
     fun navigateToBoxArt() = routeNavigateToBoxArt(this)
+    fun navigateToHomeLayout() = routeNavigateToHomeLayout(this)
     fun navigateToHomeScreen() = routeNavigateToHomeScreen(this)
     fun navigateToAmbientLed() = routeNavigateToAmbientLed(this)
     fun navigateToThemeSounds() = routeNavigateToThemeSounds(this)

@@ -156,6 +156,8 @@ data class DualHomeUiState(
     val libraryGridItems: List<DualLibraryGridItem> = emptyList(),
     val libraryFocusedIndex: Int = 0,
     val sectionLabels: List<String> = emptyList(),
+    val carouselConfig: com.nendo.argosy.domain.model.CarouselConfig =
+        com.nendo.argosy.domain.model.CarouselConfig(),
     val currentSectionLabel: String = "",
     val libraryColumns: Int = LIBRARY_GRID_COLUMNS,
     val showFilterOverlay: Boolean = false,
@@ -245,6 +247,16 @@ class DualHomeViewModel(
         observeDownloads()
         observePlatformChanges()
         observeGradientChanges()
+        observeLayoutConfig()
+    }
+
+    private fun observeLayoutConfig() {
+        val prefs = preferencesRepository ?: return
+        viewModelScope.launch {
+            prefs.userPreferences.collect { preferences ->
+                _uiState.update { it.copy(carouselConfig = preferences.homeLayout.carousel) }
+            }
+        }
     }
 
     private fun observeGradientChanges() {

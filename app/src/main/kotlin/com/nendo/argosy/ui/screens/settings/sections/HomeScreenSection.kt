@@ -57,15 +57,20 @@ internal sealed class HomeScreenItem(
 
     data object AccentFooter : HomeScreenItem("accentFooter", "footer")
 
+    data object Layout : HomeScreenItem("layout", "layout")
+
     data object InstalledOnly : HomeScreenItem("installedOnly", "content")
 
     companion object {
         private val BackgroundHeader = Header("backgroundHeader", "background", "Background")
         private val VideoHeader = Header("videoHeader", "video", "Video Wallpaper")
         private val FooterHeader = Header("footerHeader", "footer", "Footer")
+        private val LayoutHeader = Header("layoutHeader", "layout", "Layout")
         private val ContentHeader = Header("contentHeader", "content", "Content")
 
         val ALL: List<HomeScreenItem> = listOf(
+            LayoutHeader,
+            Layout,
             ContentHeader,
             InstalledOnly,
             BackgroundHeader,
@@ -85,6 +90,7 @@ private val homeScreenLayout = SettingsLayout<HomeScreenItem, DisplayState>(
     sectionOf = { it.section },
     sectionTitle = {
         when (it) {
+            "layout" -> "Layout"
             "background" -> "Background"
             "video" -> "Video Wallpaper"
             "footer" -> "Footer"
@@ -239,6 +245,13 @@ fun HomeScreenSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                     onToggle = { viewModel.setUseAccentColorFooter(it) }
                 )
 
+                HomeScreenItem.Layout -> ActionPreference(
+                    title = "Home Layout",
+                    subtitle = homeLayoutSummary(display),
+                    isFocused = isFocused(item),
+                    onClick = { viewModel.navigateToHomeLayout() }
+                )
+
                 HomeScreenItem.InstalledOnly -> SwitchPreference(
                     title = "Installed Games Only",
                     subtitle = "Only show downloaded games on home screen",
@@ -264,4 +277,10 @@ private fun HomeScreenSectionHeader(title: String) {
         color = MaterialTheme.colorScheme.primary,
         modifier = Modifier.padding(vertical = Dimens.spacingXs)
     )
+}
+
+private fun homeLayoutSummary(display: DisplayState): String = when (display.homeLayout.selected) {
+    com.nendo.argosy.domain.model.HomeLayoutKind.CAROUSEL -> "Carousel"
+    com.nendo.argosy.domain.model.HomeLayoutKind.AUTO_GRID -> "Auto Grid"
+    com.nendo.argosy.domain.model.HomeLayoutKind.CUSTOM_GRID -> "Custom Grid"
 }

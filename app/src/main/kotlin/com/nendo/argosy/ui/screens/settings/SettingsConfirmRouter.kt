@@ -12,6 +12,8 @@ import com.nendo.argosy.ui.screens.settings.sections.AmbientLedItem
 import com.nendo.argosy.ui.screens.settings.sections.ambientLedItemAtFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.ambientLedMaxFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.BiosItem
+import com.nendo.argosy.ui.components.homeLayoutPickerRows
+import com.nendo.argosy.ui.components.toggleHomeLayoutRow
 import com.nendo.argosy.ui.screens.settings.sections.BuiltinEmulatorItem
 import com.nendo.argosy.ui.screens.settings.sections.PlatformDetailItem
 import com.nendo.argosy.ui.screens.settings.sections.platformDetailItemAtFocusIndex
@@ -252,6 +254,7 @@ internal fun routeConfirm(vm: SettingsViewModel): InputResult {
         SettingsSection.THEME_BACKDROP -> routeThemeBackdropConfirm(vm, state)
         SettingsSection.INTERFACE -> routeInterfaceConfirm(vm, state)
         SettingsSection.HOME_SCREEN -> routeHomeScreenConfirm(vm, state)
+        SettingsSection.HOME_LAYOUT -> routeHomeLayoutConfirm(vm, state)
         SettingsSection.LIBRARY_VIEW -> routeLibraryViewConfirm(vm, state)
         SettingsSection.BOX_ART -> routeBoxArtConfirm(vm, state)
         SettingsSection.DISPLAYS -> routeDisplaysConfirm(vm, state)
@@ -719,6 +722,10 @@ private fun routeHomeScreenConfirm(vm: SettingsViewModel, state: SettingsUiState
         HomeScreenItem.InstalledOnly -> {
             vm.setInstalledOnlyHome(!state.display.installedOnlyHome)
             return InputResult.handled(SoundType.TOGGLE)
+        }
+        HomeScreenItem.Layout -> {
+            vm.navigateToHomeLayout()
+            return InputResult.HANDLED
         }
         else -> {}
     }
@@ -1223,6 +1230,7 @@ private fun computeMaxFocusIndex(
     SettingsSection.THEME_BACKDROP -> themeBackdropMaxFocusIndex(ThemeBackdropLayoutState.from(state))
     SettingsSection.INTERFACE -> interfaceMaxFocusIndex(InterfaceLayoutState.from(state))
     SettingsSection.HOME_SCREEN -> homeScreenMaxFocusIndex(state.display)
+    SettingsSection.HOME_LAYOUT -> homeLayoutPickerRows(state.display.homeLayout).lastIndex
     SettingsSection.LIBRARY_VIEW -> libraryMaxFocusIndex(LibraryLayoutState.from(state))
     SettingsSection.BOX_ART -> boxArtMaxFocusIndex(state.display)
     SettingsSection.DISPLAYS -> displaysMaxFocusIndex(DisplaysLayoutState.from(state))
@@ -1338,5 +1346,18 @@ private fun routeBuiltinEmulatorConfirm(vm: SettingsViewModel, state: SettingsUi
             if (builtinEnabled) vm.setHudShowLastSave(!state.emulators.hudShowLastSave)
         null -> {}
     }
+    return InputResult.HANDLED
+}
+
+
+/**
+ * Confirm on the picker only flips toggles; cycles and steppers move on LEFT/RIGHT, so a press
+ * that would otherwise jump an enum by one is deliberately inert here.
+ */
+internal fun routeHomeLayoutConfirm(vm: SettingsViewModel, state: SettingsUiState): InputResult {
+    val rows = homeLayoutPickerRows(state.display.homeLayout)
+    val row = rows.getOrNull(state.focusedIndex) ?: return InputResult.HANDLED
+    val updated = toggleHomeLayoutRow(state.display.homeLayout, row)
+    if (updated != state.display.homeLayout) vm.setHomeLayout(updated)
     return InputResult.HANDLED
 }

@@ -81,6 +81,7 @@ enum class SettingsSection {
     INTERFACE,
     BOX_ART,
     HOME_SCREEN,
+    HOME_LAYOUT,
     LIBRARY_VIEW,
     DISPLAYS,
     AMBIENT_LED,
@@ -209,6 +210,8 @@ data class DisplayState(
     val useGameBackground: Boolean = true,
     val customBackgroundPath: String? = null,
     val homeBackgroundMode: HomeBackgroundMode = HomeBackgroundMode.GAME_ART,
+    val homeLayout: com.nendo.argosy.domain.model.HomeLayoutSettings =
+        com.nendo.argosy.domain.model.HomeLayoutSettings(),
     val useAccentColorFooter: Boolean = false,
     val boxArtShape: BoxArtShape = BoxArtShape.STANDARD,
     val boxArtCornerRadius: BoxArtCornerRadius = BoxArtCornerRadius.MEDIUM,

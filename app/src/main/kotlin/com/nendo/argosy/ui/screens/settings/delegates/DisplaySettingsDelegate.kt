@@ -462,6 +462,11 @@ class DisplaySettingsDelegate @Inject constructor(
         }
     }
 
+    fun setHomeLayout(scope: CoroutineScope, settings: com.nendo.argosy.domain.model.HomeLayoutSettings) {
+        _state.update { it.copy(homeLayout = settings) }
+        scope.launch { preferencesRepository.setHomeLayout(settings) }
+    }
+
     fun cycleHomeBackgroundMode(scope: CoroutineScope, direction: Int = 1) =
         setHomeBackgroundMode(scope, cycleEnum(_state.value.homeBackgroundMode, direction))
 

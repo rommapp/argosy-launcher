@@ -461,6 +461,7 @@ internal fun routeLoadSettings(vm: SettingsViewModel) {
             useGameBackground = prefs.useGameBackground,
             customBackgroundPath = prefs.customBackgroundPath,
             homeBackgroundMode = prefs.homeBackgroundMode,
+            homeLayout = prefs.homeLayout,
             useAccentColorFooter = prefs.useAccentColorFooter,
             boxArtShape = prefs.boxArtShape,
             boxArtCornerRadius = prefs.boxArtCornerRadius,

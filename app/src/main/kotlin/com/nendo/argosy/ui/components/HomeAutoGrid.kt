@@ -15,7 +15,6 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -100,7 +99,7 @@ fun HomeAutoGrid(
     onCoverLoadFailed: ((Long, String) -> Unit)? = null,
     onCoverLoaded: ((Long, android.graphics.Bitmap) -> Unit)? = null
 ) {
-    AutoGridFocusSync(gridState, focusedIndex, items.size, config.scrollAxis)
+    AutoGridFocusSync(gridState, focusedIndex, items.size, config)
     Column(modifier = modifier.fillMaxSize()) {
         if (showSectionTitle && config.sectionStyle == HomeSectionStyle.HEADINGS) {
             Text(
@@ -199,36 +198,41 @@ private fun focusAwarePadding(
 }
 
 /**
- * Keeps the focused cell on screen without moving the grid under it. Only a cell that is off the
- * viewport or clipped by its edge causes a scroll, and then by exactly the amount that brings it
- * fully into view: the d-pad has to read as a cursor travelling over a still grid, which it stops
- * doing the moment every press re-anchors the list.
+ * Anchors the focused row to one of three slots: the first row sits flush against the start of the
+ * content, the last row flush against the end, and everything between is centred.
+ *
+ * Scrolling by the smallest amount that reveals a row is what produces the clipping. A row here is
+ * close to a full viewport tall, so "just barely visible" and "cut off by the header" are the same
+ * position, and the amount scrolled differs every time. Three fixed slots make the travel
+ * predictable and leave the focused row whole. Moving within a row resolves to the slot it already
+ * occupies, so the grid stays still until focus actually changes rows.
  */
 @Composable
 private fun AutoGridFocusSync(
     gridState: LazyGridState,
     focusedIndex: Int,
     itemCount: Int,
-    scrollAxis: HomeScrollAxis
+    config: AutoGridConfig
 ) {
-    LaunchedEffect(focusedIndex, itemCount, scrollAxis) {
+    LaunchedEffect(focusedIndex, itemCount, config) {
         if (itemCount <= 0) return@LaunchedEffect
+        val lanes = config.laneCount.coerceAtLeast(1)
         val target = focusedIndex.coerceIn(0, itemCount - 1)
         val info = gridState.layoutInfo
-        val item = info.visibleItemsInfo.firstOrNull { it.index == target }
-        if (item == null) {
-            gridState.animateScrollToItem(target)
-            return@LaunchedEffect
+        val gauge = info.visibleItemsInfo.firstOrNull() ?: return@LaunchedEffect
+        val vertical = config.scrollAxis == HomeScrollAxis.VERTICAL
+        val itemExtent = if (vertical) gauge.size.height else gauge.size.width
+        val viewportExtent = if (vertical) info.viewportSize.height else info.viewportSize.width
+        val contentExtent = viewportExtent - info.beforeContentPadding - info.afterContentPadding
+        val slack = (contentExtent - itemExtent).coerceAtLeast(0)
+        val row = target / lanes
+        val lastRow = (itemCount - 1) / lanes
+        val offsetFromContentStart = when (row) {
+            0 -> 0
+            lastRow -> slack
+            else -> slack / 2
         }
-        val vertical = scrollAxis == HomeScrollAxis.VERTICAL
-        val start = if (vertical) item.offset.y else item.offset.x
-        val end = start + if (vertical) item.size.height else item.size.width
-        val delta = when {
-            start < info.viewportStartOffset -> start - info.viewportStartOffset
-            end > info.viewportEndOffset -> end - info.viewportEndOffset
-            else -> 0
-        }
-        if (delta != 0) gridState.animateScrollBy(delta.toFloat())
+        gridState.animateScrollToItem(target, -offsetFromContentStart)
     }
 }
 

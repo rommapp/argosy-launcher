@@ -38,7 +38,7 @@ data class BatteryState(
     val isCharging: Boolean = false
 )
 
-private const val BATTERY_LOW_PERCENT = 20
+internal const val BATTERY_LOW_PERCENT = 20
 
 @Composable
 fun rememberBatteryState(): State<BatteryState> {

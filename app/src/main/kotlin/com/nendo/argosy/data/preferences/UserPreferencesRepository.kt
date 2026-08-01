@@ -533,7 +533,7 @@ data class BuiltinEmulatorSettings(
     val speedrunPanelWidthPercent: Int = 30,
     val ingameMenuTwoColumn: Boolean = false,
     val hudEnabled: Boolean = false,
-    val hudCorner: String = "Top Right",
+    val hudCorner: String = "Top Left",
     val hudShowBattery: Boolean = true,
     val hudShowClock: Boolean = true,
     val hudShowPlaytime: Boolean = false,

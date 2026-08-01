@@ -140,7 +140,7 @@ class BuiltinEmulatorPreferencesRepository @Inject constructor(
             speedrunPanelWidthPercent = prefs[Keys.BUILTIN_SPEEDRUN_PANEL_WIDTH] ?: 30,
             ingameMenuTwoColumn = prefs[Keys.INGAME_MENU_TWO_COLUMN] ?: false,
             hudEnabled = prefs[Keys.HUD_ENABLED] ?: false,
-            hudCorner = prefs[Keys.HUD_CORNER] ?: "Top Right",
+            hudCorner = prefs[Keys.HUD_CORNER] ?: "Top Left",
             hudShowBattery = prefs[Keys.HUD_SHOW_BATTERY] ?: true,
             hudShowClock = prefs[Keys.HUD_SHOW_CLOCK] ?: true,
             hudShowPlaytime = prefs[Keys.HUD_SHOW_PLAYTIME] ?: false,

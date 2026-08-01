@@ -20,7 +20,6 @@ import com.nendo.argosy.ui.theme.generated.ColorTokens
 
 private const val HUD_BACKGROUND_ALPHA = 0.45f
 private const val HUD_TEXT_ALPHA = 0.85f
-private const val BATTERY_LOW_PERCENT = 20
 
 enum class HudCorner { TOP_LEFT, TOP_RIGHT, BOTTOM_LEFT, BOTTOM_RIGHT }
 

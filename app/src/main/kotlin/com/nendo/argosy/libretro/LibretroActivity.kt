@@ -36,7 +36,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -735,6 +734,9 @@ class LibretroActivity : ComponentActivity() {
         startFpsSampling()
         lifecycleScope.launch {
             retroView.getGLRetroEvents().collect { event ->
+                if (event is GLRetroView.GLRetroEvents.FrameRendered && fpsReadoutWanted) {
+                    framesSinceSample++
+                }
                 when (event) {
                     is GLRetroView.GLRetroEvents.SurfaceCreated -> {
                         coreLoadedSuccessfully = true
@@ -894,16 +896,10 @@ class LibretroActivity : ComponentActivity() {
     }
 
     /**
-     * Counts presented frames and republishes a rate once a second. The frame flow emits from the
-     * GL thread through a replay-1 SharedFlow with suspending overflow, so the collector stays a
-     * single increment and the arithmetic happens on the sampling tick instead.
+     * Counts presented frames and republishes a rate once a second, so the per-frame work stays a
+     * single increment and the arithmetic happens on the tick instead.
      */
     private fun startFpsSampling() {
-        lifecycleScope.launch {
-            retroView.getGLRetroEvents().collect { event ->
-                if (event is GLRetroView.GLRetroEvents.FrameRendered) framesSinceSample++
-            }
-        }
         lifecycleScope.launch {
             var lastSampleMs = android.os.SystemClock.elapsedRealtime()
             while (true) {
@@ -913,10 +909,15 @@ class LibretroActivity : ComponentActivity() {
                 val counted = framesSinceSample
                 framesSinceSample = 0
                 lastSampleMs = now
-                measuredFps = (counted * 1000L / elapsed).toInt()
+                if (fpsReadoutWanted) {
+                    measuredFps = (counted * 1000L / elapsed).toInt()
+                }
             }
         }
     }
+
+    private val fpsReadoutWanted: Boolean
+        get() = touchSettingsState.hudEnabled && touchSettingsState.hudShowFps
 
     @androidx.compose.runtime.Composable
     private fun rememberHudState(): com.nendo.argosy.ui.components.InGameStatusHudState {

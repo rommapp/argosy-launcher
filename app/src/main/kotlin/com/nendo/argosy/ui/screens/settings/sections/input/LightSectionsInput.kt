@@ -7,6 +7,7 @@ import com.nendo.argosy.ui.screens.settings.SettingsSection
 import com.nendo.argosy.ui.screens.settings.SettingsViewModel
 import com.nendo.argosy.ui.screens.settings.sections.AboutItem
 import com.nendo.argosy.ui.screens.settings.sections.BiosItem
+import com.nendo.argosy.ui.screens.settings.sections.BuiltinEmulatorItem
 import com.nendo.argosy.ui.screens.settings.sections.NavigationItem
 import com.nendo.argosy.ui.screens.settings.sections.HomeScreenItem
 import com.nendo.argosy.ui.screens.settings.sections.SavesItem
@@ -249,11 +250,18 @@ internal class LightSectionsInput(
 
     private fun handleBuiltinEmulatorLeftRight(direction: Int): InputResult {
         val state = viewModel.uiState.value
-        if (state.emulators.builtinLibretroEnabled && state.focusedIndex == 1) {
-            viewModel.cycleBuiltinArchitecture(direction)
-            return InputResult.HANDLED
+        if (!state.emulators.builtinLibretroEnabled) return InputResult.UNHANDLED
+        return when (state.focusedIndex) {
+            BuiltinEmulatorItem.ARCHITECTURE.focusIndex -> {
+                viewModel.cycleBuiltinArchitecture(direction)
+                InputResult.HANDLED
+            }
+            BuiltinEmulatorItem.HUD_CORNER.focusIndex -> {
+                viewModel.cycleHudCorner(direction > 0)
+                InputResult.HANDLED
+            }
+            else -> InputResult.UNHANDLED
         }
-        return InputResult.UNHANDLED
     }
 
     private fun handleCoreManagementLeftRight(direction: Int): InputResult {

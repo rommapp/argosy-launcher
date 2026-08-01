@@ -364,7 +364,7 @@ class SaveStateManager(
      * cannot make it read as the future. Null until one is written; the rolling SRAM save does not
      * count, because it fires on a timer whether or not the game saved anything.
      */
-    var lastStateWriteRealtimeMs: Long? = null
+    var lastStateWriteRealtimeMs: Long? by androidx.compose.runtime.mutableStateOf(null)
         private set
 
     fun performQuickSave(stateData: ByteArray, screenshot: Bitmap? = null): Boolean {

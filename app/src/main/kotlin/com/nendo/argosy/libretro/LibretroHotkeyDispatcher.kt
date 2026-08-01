@@ -4,6 +4,8 @@ import com.nendo.argosy.data.local.entity.CoreInputMode
 import com.nendo.argosy.data.local.entity.FastForwardMode
 import com.nendo.argosy.data.local.entity.HotkeyAction
 import com.nendo.argosy.libretro.ui.NetplayMenuRole
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import com.swordfish.libretrodroid.GLRetroView
 
 /**
@@ -37,7 +39,7 @@ class LibretroHotkeyDispatcher(
     private val onSpeedrunToggleTimer: () -> Unit,
     private val onSpeedrunResetTimer: () -> Unit
 ) {
-    var isFastForwarding: Boolean = false
+    var isFastForwarding: Boolean by androidx.compose.runtime.mutableStateOf(false)
         private set
     var isRewinding: Boolean = false
         private set

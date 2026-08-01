@@ -647,6 +647,52 @@ class HomeViewModel @Inject constructor(
         viewModelScope.launch { homeTileRepository.remove(tile.id) }
     }
 
+    fun enterTileMoveMode() {
+        if (focusedTile() == null) return
+        _uiState.update { it.copy(tileMoveMode = true, showGameMenu = false) }
+    }
+
+    override fun exitTileMoveMode() {
+        _uiState.update { it.copy(tileMoveMode = false) }
+    }
+
+    /**
+     * Carries the focused tile one cell in [direction], taking the cursor with it. The move is
+     * refused rather than partially applied when the destination is off the page or already held,
+     * so a tile can never be parked on top of another.
+     */
+    override fun moveFocusedTile(
+        direction: com.nendo.argosy.domain.model.GridDirection2D
+    ): Boolean {
+        val state = _uiState.value
+        val tile = focusedTile() ?: return false
+        val moved = when (direction) {
+            com.nendo.argosy.domain.model.GridDirection2D.LEFT ->
+                tile.rect.copy(columnIndex = tile.rect.columnIndex - 1)
+            com.nendo.argosy.domain.model.GridDirection2D.RIGHT ->
+                tile.rect.copy(columnIndex = tile.rect.columnIndex + 1)
+            com.nendo.argosy.domain.model.GridDirection2D.UP ->
+                tile.rect.copy(rowIndex = tile.rect.rowIndex - 1)
+            com.nendo.argosy.domain.model.GridDirection2D.DOWN ->
+                tile.rect.copy(rowIndex = tile.rect.rowIndex + 1)
+        }
+        if (!moved.withinBounds(customGridColumns, customGridRows)) return false
+        val others = state.tilesOnPage(state.customGridPage).filter { it.id != tile.id }
+        if (others.any { it.rect.overlaps(moved) }) return false
+        _uiState.update {
+            it.copy(
+                customGridCell = com.nendo.argosy.domain.model.GridCell(
+                    moved.columnIndex,
+                    moved.rowIndex
+                )
+            )
+        }
+        viewModelScope.launch {
+            homeTileRepository.move(tile, syncPreferencesRepository.getRommUserId(), moved)
+        }
+        return true
+    }
+
     override fun moveGridFocus(direction: GridDirection): AutoGridMove {
         val state = _uiState.value
         val move = autoGridMove(

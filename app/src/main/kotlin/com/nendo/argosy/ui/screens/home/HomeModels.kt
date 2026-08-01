@@ -139,6 +139,7 @@ data class HomeUiState(
     val customGridPage: Int = 0,
     val customGridCell: com.nendo.argosy.domain.model.GridCell =
         com.nendo.argosy.domain.model.GridCell(0, 0),
+    val tileMoveMode: Boolean = false,
     val isLoading: Boolean = true,
     val isRommConfigured: Boolean = false,
     val showGameMenu: Boolean = false,

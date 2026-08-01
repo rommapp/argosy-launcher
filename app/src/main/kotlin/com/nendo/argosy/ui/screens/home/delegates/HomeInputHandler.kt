@@ -28,6 +28,8 @@ interface HomeInputActions {
     fun moveGridFocus(direction: GridDirection): AutoGridMove
     fun moveCustomGridFocus(direction: com.nendo.argosy.domain.model.GridDirection2D): Boolean
     fun turnCustomGridPage(delta: Int): Boolean
+    fun moveFocusedTile(direction: com.nendo.argosy.domain.model.GridDirection2D): Boolean
+    fun exitTileMoveMode()
     fun installApk(gameId: Long)
     fun launchGame(gameId: Long, channelName: String? = null)
     fun resumeDownload(gameId: Long)
@@ -117,6 +119,10 @@ class HomeInputHandler(
      * neighbouring zone for an unhandled move to fall through to.
      */
     private fun customMove(direction: GridDirection2D): InputResult {
+        if (actions.uiState.value.tileMoveMode) {
+            actions.moveFocusedTile(direction)
+            return InputResult.HANDLED
+        }
         actions.moveCustomGridFocus(direction)
         return InputResult.HANDLED
     }
@@ -144,6 +150,7 @@ class HomeInputHandler(
     override fun onConfirm(): InputResult {
         val state = actions.uiState.value
         when {
+            state.tileMoveMode -> actions.exitTileMoveMode()
             state.showAddToCollectionModal -> actions.confirmCollectionSelection()
             state.showGameMenu -> actions.confirmGameMenuSelection(onGameSelect)
             else -> {
@@ -173,6 +180,10 @@ class HomeInputHandler(
 
     override fun onBack(): InputResult {
         val state = actions.uiState.value
+        if (state.tileMoveMode) {
+            actions.exitTileMoveMode()
+            return InputResult.HANDLED
+        }
         if (state.showAddToCollectionModal) {
             actions.dismissAddToCollectionModal()
             return InputResult.HANDLED

@@ -39,10 +39,23 @@ import com.nendo.argosy.ui.util.touchOnly
 internal const val HERO_START_PADDING_SCREEN_RATIO = 0.09f
 internal const val HERO_END_PADDING_SCREEN_RATIO = 0.65f
 internal const val HERO_ITEM_GAP_CARD_RATIO = 0.13f
-internal const val HERO_NEIGHBOUR_PUSH_CARD_RATIO = 0.5f
 internal const val HERO_MAX_WIDTH_FRACTION = 0.28f
 internal const val HERO_MIN_CARD_SCALE = 0.4f
-internal const val COMPANION_NEIGHBOUR_PUSH_CARD_RATIO = 0.2f
+
+/**
+ * How far neighbours step aside for the focused card: exactly the half-width it grows past its own
+ * slot, so the visible gap either side of it stays the layout's item gap whatever the sizes are.
+ * Deriving it from the overflow rather than from the card width is what keeps the setting useful at
+ * every resting size instead of only where the two happened to be in proportion.
+ */
+internal fun neighbourPushFor(cardWidth: Dp, focusScale: Float): Dp =
+    (cardWidth * (focusScale - 1f) / 2f).coerceAtLeast(0.dp)
+
+internal fun HomeRowAlignment.toScalePivotY(): Float = when (this) {
+    HomeRowAlignment.TOP -> 0f
+    HomeRowAlignment.CENTER -> 0.5f
+    HomeRowAlignment.BOTTOM -> 1f
+}
 
 internal fun HomeRowAlignment.toVerticalAlignment(): Alignment.Vertical = when (this) {
     HomeRowAlignment.TOP -> Alignment.Top
@@ -103,7 +116,12 @@ data class CarouselMetrics(
     val focusedCardWidth: Dp,
     val focusedCardHeight: Dp,
     val focusScale: Float,
-    val scaleFromBottom: Boolean,
+    /**
+     * The edge the focused card grows away from, as a fraction down the card. It has to match the
+     * rail's own alignment: a card aligned to the top of the row but scaling about its centre grows
+     * back over the row's edge and is clipped there.
+     */
+    val scalePivotY: Float,
     val anchor: CarouselAnchor,
     val itemGap: Dp,
     val neighbourPush: Dp,
@@ -133,14 +151,14 @@ data class CarouselMetrics(
             focusedCardWidth = cardWidth,
             focusedCardHeight = cardHeight,
             focusScale = config.focusScale,
-            scaleFromBottom = config.rowAlignment == HomeRowAlignment.BOTTOM,
+            scalePivotY = config.rowAlignment.toScalePivotY(),
             anchor = when (config.focusPosition) {
                 HomeFocusPosition.LEADING -> CarouselAnchor.START
                 HomeFocusPosition.CENTER -> CarouselAnchor.CENTER
             },
             itemGap = cardWidth * HERO_ITEM_GAP_CARD_RATIO,
             neighbourPush = if (config.neighbourPush) {
-                cardWidth * HERO_NEIGHBOUR_PUSH_CARD_RATIO
+                neighbourPushFor(cardWidth, config.focusScale)
             } else {
                 0.dp
             },
@@ -150,38 +168,47 @@ data class CarouselMetrics(
         )
 
         /**
-         * The companion strip grows its focused card to a discrete width rather than spring-scaling
-         * it, because the strip has no room above or below to absorb a transform. The size settings
-         * still apply: they move those two widths, expressed against the defaults so an untouched
-         * config renders the companion exactly as its tokens describe.
+         * The companion strip, sized from the height it is given so it fills its display the way
+         * the hero rail fills a phone's. [availableHeight] of zero means the caller has not measured
+         * yet and falls back to the card token, so the first frame is a sane strip rather than
+         * nothing.
          */
         fun centered(
             coverAspectRatio: Float,
-            config: CarouselConfig = CarouselConfig()
+            config: CarouselConfig = CarouselConfig(),
+            availableHeight: Dp = 0.dp,
+            availableWidth: Dp = 0.dp
         ): CarouselMetrics {
-            val defaults = CarouselConfig()
-            val cardWidth = ComponentDefaults.Carousel.companionCardWidth.dp *
-                (config.restingScale / defaults.restingScale)
-            val focusedCardWidth = ComponentDefaults.Carousel.companionCardWidthFocused.dp *
-                (config.focusScale / defaults.focusScale)
+            val fallback = ComponentDefaults.Carousel.companionCardWidth.dp / coverAspectRatio
+            val cardSize = if (availableHeight > 0.dp && availableWidth > 0.dp) {
+                carouselCardSize(
+                    availableHeight = availableHeight,
+                    availableWidth = availableWidth,
+                    coverAspectRatio = coverAspectRatio,
+                    restingScale = config.restingScale,
+                    minCardHeight = fallback * HERO_MIN_CARD_SCALE
+                )
+            } else {
+                DpSize(fallback * coverAspectRatio, fallback)
+            }
             return CarouselMetrics(
-                cardWidth = cardWidth,
-                cardHeight = cardWidth / coverAspectRatio,
-                focusedCardWidth = focusedCardWidth,
-                focusedCardHeight = focusedCardWidth / coverAspectRatio,
-                focusScale = 1f,
-                scaleFromBottom = config.rowAlignment == HomeRowAlignment.BOTTOM,
+                cardWidth = cardSize.width,
+                cardHeight = cardSize.height,
+                focusedCardWidth = cardSize.width,
+                focusedCardHeight = cardSize.height,
+                focusScale = config.focusScale,
+                scalePivotY = config.rowAlignment.toScalePivotY(),
                 anchor = when (config.focusPosition) {
                     HomeFocusPosition.LEADING -> CarouselAnchor.START
                     HomeFocusPosition.CENTER -> CarouselAnchor.CENTER
                 },
                 itemGap = ComponentDefaults.Carousel.companionCardGap.dp,
                 neighbourPush = if (config.neighbourPush) {
-                    cardWidth * COMPANION_NEIGHBOUR_PUSH_CARD_RATIO
+                    neighbourPushFor(cardSize.width, config.focusScale)
                 } else {
                     0.dp
                 },
-                allowFocusOverflow = false,
+                allowFocusOverflow = true,
                 reversed = config.inverted,
                 verticalAlignment = config.rowAlignment.toVerticalAlignment()
             )
@@ -190,10 +217,10 @@ data class CarouselMetrics(
 }
 
 /**
- * Card size for a hero rail, driven by the height left over after the surrounding chrome so the
- * focused card at [focusScale] fills that space exactly. [availableWidth] caps the card so one
- * cover cannot dominate the row on very tall windows, and [minCardHeight] is the floor below which
- * the row collapses to a strip.
+ * Resting card size for a rail given the height it has to work with. The focused card always fills
+ * that height, so the resting card is [restingScale] of it and the focus transform is whatever
+ * closes the gap. [availableWidth] caps the card so one cover cannot dominate the row on very tall
+ * windows, and [minCardHeight] is the floor below which the row collapses to a strip.
  *
  * Shared so a schematic preview and the live rail cannot disagree about proportions.
  */
@@ -201,11 +228,10 @@ internal fun carouselCardSize(
     availableHeight: Dp,
     availableWidth: Dp,
     coverAspectRatio: Float,
-    focusScale: Float,
     restingScale: Float,
     minCardHeight: Dp
 ): DpSize {
-    val heightDriven = (availableHeight / focusScale) * restingScale
+    val heightDriven = availableHeight * restingScale
     val widthCap = (availableWidth * HERO_MAX_WIDTH_FRACTION) / coverAspectRatio
     val cardHeight = maxOf(minOf(heightDriven, widthCap), minCardHeight)
     return DpSize(cardHeight * coverAspectRatio, cardHeight)
@@ -269,6 +295,11 @@ fun CarouselRail(
 ) {
     val screenWidth = LocalConfiguration.current.screenWidthDp.dp
     val boxArtStyle = LocalBoxArtStyle.current
+    /**
+     * The push is a screen-space translation while the item order is not, so a reversed rail has to
+     * flip it: the indices below the focused one sit to its right there, and pushing them the way
+     * their index suggests drives both neighbours into it instead of apart.
+     */
     val neighbourPushPx = with(LocalDensity.current) { metrics.neighbourPush.toPx() }
 
     val contentPadding = carouselContentPadding(
@@ -291,9 +322,10 @@ fun CarouselRail(
     ) {
         itemsIndexed(items, key = { _, item -> item.key }) { index, item ->
             val isFocused = index == focusedIndex
+            val pushAway = if (metrics.reversed) -neighbourPushPx else neighbourPushPx
             val pushTargetPx = when {
-                index < focusedIndex -> -neighbourPushPx
-                index > focusedIndex -> neighbourPushPx
+                index < focusedIndex -> -pushAway
+                index > focusedIndex -> pushAway
                 else -> 0f
             }
             val translationX by animateFloatAsState(
@@ -353,7 +385,7 @@ fun CarouselRail(
                         tapMode = tapMode,
                         remainingCount = item.remainingCount,
                         focusScale = metrics.focusScale,
-                        scaleFromBottom = metrics.scaleFromBottom,
+                        scalePivotY = metrics.scalePivotY,
                         modifier = Modifier
                             .graphicsLayer {
                                 this.translationX = translationX
@@ -403,7 +435,7 @@ private fun CarouselGameCard(
             cardWidth = cardSize.width,
             cardHeight = cardSize.height,
             focusScale = metrics.focusScale,
-            scaleFromBottom = metrics.scaleFromBottom,
+            scalePivotY = metrics.scalePivotY,
             downloadIndicator = item.downloadIndicator,
             showPlatformBadge = showPlatformBadge,
             coverPathOverride = item.coverPathOverride,
@@ -420,7 +452,7 @@ private fun CarouselGameCard(
                 isFocused = isFocused && showFocusVisuals,
                 modifier = Modifier.fillMaxSize(),
                 focusScale = metrics.focusScale,
-                scaleFromBottom = metrics.scaleFromBottom,
+                scalePivotY = metrics.scalePivotY,
                 downloadIndicator = item.downloadIndicator,
                 showPlatformBadge = showPlatformBadge,
                 coverPathOverride = item.coverPathOverride,

@@ -88,17 +88,25 @@ class HomeInputHandler(
         val state = actions.uiState.value
         if (state.showAddToCollectionModal || state.showGameMenu) return InputResult.HANDLED
         if (isGrid(state)) return gridMove(GridDirection.LEFT)
-        return if (actions.previousGame()) InputResult.HANDLED else InputResult.UNHANDLED
+        val moved = if (railIsReversed(state)) actions.nextGame() else actions.previousGame()
+        return if (moved) InputResult.HANDLED else InputResult.UNHANDLED
     }
 
     override fun onRight(): InputResult {
         val state = actions.uiState.value
         if (state.showAddToCollectionModal || state.showGameMenu) return InputResult.HANDLED
         if (isGrid(state)) return gridMove(GridDirection.RIGHT)
-        return if (actions.nextGame()) InputResult.HANDLED else InputResult.UNHANDLED
+        val moved = if (railIsReversed(state)) actions.previousGame() else actions.nextGame()
+        return if (moved) InputResult.HANDLED else InputResult.UNHANDLED
     }
 
     private fun isGrid(state: HomeUiState): Boolean = state.layoutKind == HomeLayoutKind.AUTO_GRID
+
+    /**
+     * A reversed rail draws later items to the left, so the stick has to be read the same way round
+     * or pressing right walks the highlight left.
+     */
+    private fun railIsReversed(state: HomeUiState): Boolean = state.carouselConfig.inverted
 
     private fun gridMove(direction: GridDirection): InputResult =
         when (actions.moveGridFocus(direction)) {

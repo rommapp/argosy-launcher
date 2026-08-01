@@ -1233,7 +1233,6 @@ private fun rememberCarouselCardSize(
     availableHeight = availableHeight,
     availableWidth = LocalConfiguration.current.screenWidthDp.dp,
     coverAspectRatio = LocalBoxArtStyle.current.aspectRatio,
-    focusScale = config.focusScale,
     restingScale = config.restingScale,
     minCardHeight = Dimens.gameCardHeight * HERO_MIN_CARD_SCALE
 )

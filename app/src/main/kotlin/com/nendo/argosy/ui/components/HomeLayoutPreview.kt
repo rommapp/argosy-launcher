@@ -274,7 +274,6 @@ private fun CarouselSchematic(
         availableHeight = availableHeight,
         availableWidth = availableWidth,
         coverAspectRatio = preview.coverAspectRatio,
-        focusScale = config.focusScale,
         restingScale = config.restingScale,
         minCardHeight = Dimens.gameCardHeight * HERO_MIN_CARD_SCALE * preview.scale
     )
@@ -284,14 +283,14 @@ private fun CarouselSchematic(
         focusedCardWidth = cardSize.width,
         focusedCardHeight = cardSize.height,
         focusScale = config.focusScale,
-        scaleFromBottom = config.rowAlignment == HomeRowAlignment.BOTTOM,
+        scalePivotY = config.rowAlignment.toScalePivotY(),
         anchor = when (config.focusPosition) {
             HomeFocusPosition.LEADING -> CarouselAnchor.START
             HomeFocusPosition.CENTER -> CarouselAnchor.CENTER
         },
         itemGap = cardSize.width * HERO_ITEM_GAP_CARD_RATIO,
         neighbourPush = if (config.neighbourPush) {
-            cardSize.width * HERO_NEIGHBOUR_PUSH_CARD_RATIO
+            neighbourPushFor(cardSize.width, config.focusScale)
         } else {
             0.dp
         },
@@ -316,6 +315,13 @@ private fun CarouselSchematic(
     val pushPx = with(LocalDensity.current) { metrics.neighbourPush.toPx() }
     val ambientDirection = LocalLayoutDirection.current
     val railDirection = if (config.inverted) invert(ambientDirection) else ambientDirection
+
+    /**
+     * The rail is reversed by flipping layout direction, but the push is a raw translation that the
+     * flip does not touch, so it has to be mirrored to match or both neighbours crowd the focused
+     * card instead of parting from it.
+     */
+    val pushAwayPx = if (railDirection == ambientDirection) pushPx else -pushPx
     val railHeight = cardSize.height * config.focusScale + Dimens.spacingMd * preview.scale
 
     Column(modifier = modifier) {
@@ -371,8 +377,8 @@ private fun CarouselSchematic(
                         focusScale = config.focusScale,
                         rowAlignment = config.rowAlignment,
                         pushPx = when {
-                            index < focusedIndex -> -pushPx
-                            index > focusedIndex -> pushPx
+                            index < focusedIndex -> -pushAwayPx
+                            index > focusedIndex -> pushAwayPx
                             else -> 0f
                         },
                         showBadge = config.showPlatformBadge,

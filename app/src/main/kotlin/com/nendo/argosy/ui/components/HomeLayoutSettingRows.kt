@@ -41,7 +41,6 @@ enum class HomeLayoutSettingField {
     ROW_ALIGNMENT,
     FOCUS_POSITION,
     INVERTED,
-    FOCUS_SCALE,
     RESTING_SCALE,
     NEIGHBOUR_PUSH,
     PLATFORM_BADGE,
@@ -53,8 +52,6 @@ enum class HomeLayoutSettingField {
 }
 
 private const val SCALE_PERCENT_STEP = 10
-private const val FOCUS_SCALE_MIN_PERCENT = 100
-private const val FOCUS_SCALE_MAX_PERCENT = 300
 private const val RESTING_SCALE_MIN_PERCENT = 50
 private const val RESTING_SCALE_MAX_PERCENT = 100
 private const val PERCENT = 100f
@@ -67,7 +64,6 @@ fun homeLayoutFieldsFor(kind: HomeLayoutKind): List<HomeLayoutSettingField> = wh
     HomeLayoutKind.CAROUSEL -> listOf(
         HomeLayoutSettingField.ROW_ALIGNMENT,
         HomeLayoutSettingField.FOCUS_POSITION,
-        HomeLayoutSettingField.FOCUS_SCALE,
         HomeLayoutSettingField.RESTING_SCALE,
         HomeLayoutSettingField.NEIGHBOUR_PUSH,
         HomeLayoutSettingField.PLATFORM_BADGE,
@@ -99,17 +95,6 @@ fun adjustHomeLayoutField(
             settings.copy(carousel = settings.carousel.copy(focusPosition = cycle(settings.carousel.focusPosition, direction)))
         HomeLayoutSettingField.INVERTED ->
             settings.copy(carousel = settings.carousel.copy(inverted = direction > 0))
-        HomeLayoutSettingField.FOCUS_SCALE ->
-            settings.copy(
-                carousel = settings.carousel.copy(
-                    focusScale = stepScale(
-                        settings.carousel.focusScale,
-                        direction * SCALE_PERCENT_STEP,
-                        FOCUS_SCALE_MIN_PERCENT,
-                        FOCUS_SCALE_MAX_PERCENT
-                    )
-                )
-            )
         HomeLayoutSettingField.RESTING_SCALE ->
             settings.copy(
                 carousel = settings.carousel.copy(
@@ -247,16 +232,6 @@ fun HomeLayoutSettingRow(
             isEnabled = settings.carousel.inverted,
             isFocused = isFocused,
             onToggle = { onToggle() }
-        )
-        HomeLayoutSettingField.FOCUS_SCALE -> SliderPreference(
-            title = "Focused Size",
-            value = percentOf(settings.carousel.focusScale),
-            minValue = FOCUS_SCALE_MIN_PERCENT,
-            maxValue = FOCUS_SCALE_MAX_PERCENT,
-            isFocused = isFocused,
-            step = SCALE_PERCENT_STEP,
-            suffix = "%",
-            onAdjust = { delta -> onAdjust(if (delta < 0) -1 else 1) }
         )
         HomeLayoutSettingField.RESTING_SCALE -> SliderPreference(
             title = "Resting Size",

@@ -77,6 +77,7 @@ class DualHomeInputHandler(
         val inAppBar = state.focusZone == DualHomeFocusZone.APP_BAR
         val apps = homeApps()
         val inGrid = !inAppBar && state.layoutKind == HomeLayoutKind.AUTO_GRID
+        val reversed = state.carouselConfig.inverted
 
         fun moveGrid(direction: GridDirection): Boolean {
             if (!inGrid) return false
@@ -93,7 +94,7 @@ class DualHomeInputHandler(
             com.nendo.argosy.ui.input.GamepadEvent.Left -> {
                 if (inAppBar) viewModel.selectPreviousApp()
                 else if (!moveGrid(GridDirection.LEFT)) {
-                    viewModel.selectPrevious()
+                    if (reversed) viewModel.selectNext() else viewModel.selectPrevious()
                     onBroadcastCurrentGameSelection()
                 }
                 InputResult.HANDLED
@@ -101,7 +102,7 @@ class DualHomeInputHandler(
             com.nendo.argosy.ui.input.GamepadEvent.Right -> {
                 if (inAppBar) viewModel.selectNextApp(apps.size)
                 else if (!moveGrid(GridDirection.RIGHT)) {
-                    viewModel.selectNext()
+                    if (reversed) viewModel.selectPrevious() else viewModel.selectNext()
                     onBroadcastCurrentGameSelection()
                 }
                 InputResult.HANDLED

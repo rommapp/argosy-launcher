@@ -64,6 +64,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -135,7 +136,14 @@ fun DualHomeLowerScreen(
     val isAutoGrid = layoutKind == com.nendo.argosy.domain.model.HomeLayoutKind.AUTO_GRID
     val gridState = rememberLazyGridState()
     val listState = rememberLazyListState()
-    val metrics = CarouselMetrics.centered(LocalBoxArtStyle.current.aspectRatio, carouselConfig)
+    var railBand by remember { mutableStateOf(androidx.compose.ui.unit.IntSize.Zero) }
+    val density = androidx.compose.ui.platform.LocalDensity.current
+    val metrics = CarouselMetrics.centered(
+        coverAspectRatio = LocalBoxArtStyle.current.aspectRatio,
+        config = carouselConfig,
+        availableHeight = with(density) { railBand.height.toDp() },
+        availableWidth = with(density) { railBand.width.toDp() }
+    )
     val railItems = rememberCompanionCarouselItems(
         games = games,
         hasMoreGames = hasMoreGames,
@@ -236,10 +244,6 @@ fun DualHomeLowerScreen(
             }
         }
 
-        if (!isAutoGrid) {
-            Spacer(modifier = Modifier.weight(1f))
-        }
-
         if (viewMode == DualHomeViewMode.CAROUSEL && sectionLabels.isNotEmpty()) {
             SectionBreadcrumb(
                 labels = sectionLabels,
@@ -292,7 +296,9 @@ fun DualHomeLowerScreen(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(metrics.focusedCardHeight + ComponentDefaults.Carousel.companionCardGap.dp),
+                .weight(1f)
+                .padding(vertical = Dimens.spacingSm)
+                .onSizeChanged { railBand = it },
             contentAlignment = Alignment.Center
         ) {
             CarouselRail(
@@ -317,6 +323,7 @@ fun DualHomeLowerScreen(
                 },
                 onCoverLoadFailed = onCoverLoadFailed,
                 modifier = Modifier
+                    .fillMaxHeight()
                     .pointerInput(Unit) {
                         awaitPointerEventScope {
                             while (true) {
@@ -337,8 +344,6 @@ fun DualHomeLowerScreen(
                 .fillMaxWidth()
                 .padding(horizontal = 24.dp, vertical = 6.dp)
         )
-
-        Spacer(modifier = Modifier.weight(1f))
         }
 
         val showAppBar = com.nendo.argosy.DualScreenManagerHolder.instance

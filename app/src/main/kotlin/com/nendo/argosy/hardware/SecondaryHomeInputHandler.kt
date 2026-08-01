@@ -390,6 +390,7 @@ class SecondaryHomeInputHandler(
         val inAppBar = state.focusZone == DualHomeFocusZone.APP_BAR
         val apps = homeApps()
         val inGrid = !inAppBar && state.layoutKind == HomeLayoutKind.AUTO_GRID
+        val reversed = state.carouselConfig.inverted
 
         fun moveGrid(direction: GridDirection): Boolean {
             if (!inGrid) return false
@@ -410,7 +411,7 @@ class SecondaryHomeInputHandler(
             GamepadEvent.Left -> {
                 if (inAppBar) dualHomeViewModel.selectPreviousApp()
                 else if (!moveGrid(GridDirection.LEFT)) {
-                    dualHomeViewModel.selectPrevious()
+                    if (reversed) dualHomeViewModel.selectNext() else dualHomeViewModel.selectPrevious()
                     broadcasts.broadcastCurrentGameSelection()
                 }
                 InputResult.HANDLED
@@ -418,7 +419,7 @@ class SecondaryHomeInputHandler(
             GamepadEvent.Right -> {
                 if (inAppBar) dualHomeViewModel.selectNextApp(apps.size)
                 else if (!moveGrid(GridDirection.RIGHT)) {
-                    dualHomeViewModel.selectNext()
+                    if (reversed) dualHomeViewModel.selectPrevious() else dualHomeViewModel.selectNext()
                     broadcasts.broadcastCurrentGameSelection()
                 }
                 InputResult.HANDLED

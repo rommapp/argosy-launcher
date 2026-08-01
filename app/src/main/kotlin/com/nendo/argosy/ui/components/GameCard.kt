@@ -97,7 +97,7 @@ fun GameCard(
     isFocused: Boolean,
     modifier: Modifier = Modifier,
     focusScale: Float = ComponentDefaults.Focus.scaleFocused,
-    scaleFromBottom: Boolean = false,
+    scalePivotY: Float = 0.5f,
     downloadIndicator: GameDownloadIndicator = GameDownloadIndicator.NONE,
     showPlatformBadge: Boolean = true,
     showStatusOverlays: Boolean = true,
@@ -204,7 +204,7 @@ fun GameCard(
             .graphicsLayer {
                 scaleX = scale
                 scaleY = scale
-                transformOrigin = if (scaleFromBottom) TransformOrigin(0.5f, 1f) else TransformOrigin.Center
+                transformOrigin = TransformOrigin(0.5f, scalePivotY)
                 this.alpha = alpha
                 this.clip = false
             }
@@ -885,7 +885,7 @@ fun GameCardWithNewBadge(
     cardHeight: Dp,
     modifier: Modifier = Modifier,
     focusScale: Float = ComponentDefaults.Focus.scaleFocused,
-    scaleFromBottom: Boolean = false,
+    scalePivotY: Float = 0.5f,
     downloadIndicator: GameDownloadIndicator = GameDownloadIndicator.NONE,
     showPlatformBadge: Boolean = true,
     coverPathOverride: String? = null,
@@ -918,7 +918,7 @@ fun GameCardWithNewBadge(
                 game = game,
                 isFocused = isFocused,
                 focusScale = 1f,
-                scaleFromBottom = scaleFromBottom,
+                scalePivotY = scalePivotY,
                 downloadIndicator = downloadIndicator,
                 showPlatformBadge = showPlatformBadge,
                 coverPathOverride = coverPathOverride,
@@ -939,7 +939,7 @@ fun GameCardWithNewBadge(
         modifier = modifier.graphicsLayer {
             scaleX = scale
             scaleY = scale
-            transformOrigin = if (scaleFromBottom) TransformOrigin(0.5f, 1f) else TransformOrigin.Center
+            transformOrigin = TransformOrigin(0.5f, scalePivotY)
             this.alpha = alpha
         }
     ) { measurables, constraints ->

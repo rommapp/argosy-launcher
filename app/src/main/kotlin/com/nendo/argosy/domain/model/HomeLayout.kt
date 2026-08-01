@@ -23,17 +23,25 @@ sealed interface HomeLayoutConfig {
     val kind: HomeLayoutKind
 }
 
+/**
+ * @param restingScale how large an unfocused cover is against the focused one. The focused cover
+ *   always fills the height its rail is given, so its size is not a setting; the only thing left to
+ *   choose is how much its neighbours shrink away from it.
+ */
 data class CarouselConfig(
     val rowAlignment: HomeRowAlignment = HomeRowAlignment.BOTTOM,
     val focusPosition: HomeFocusPosition = HomeFocusPosition.LEADING,
     val inverted: Boolean = false,
-    val focusScale: Float = 1.8f,
-    val restingScale: Float = 0.9f,
+    val restingScale: Float = 0.5f,
     val neighbourPush: Boolean = true,
     val showPlatformBadge: Boolean = true
 ) : HomeLayoutConfig {
     override val kind: HomeLayoutKind get() = HomeLayoutKind.CAROUSEL
+
+    val focusScale: Float get() = 1f / restingScale.coerceAtLeast(MIN_RESTING_SCALE)
 }
+
+const val MIN_RESTING_SCALE = 0.5f
 
 /**
  * [laneCount] counts the lanes across the axis you are not scrolling along, so it reads as columns
@@ -96,7 +104,6 @@ data class HomeLayoutSettings(
                 put(KEY_ROW_ALIGNMENT, carousel.rowAlignment.name)
                 put(KEY_FOCUS_POSITION, carousel.focusPosition.name)
                 put(KEY_INVERTED, carousel.inverted)
-                put(KEY_FOCUS_SCALE, carousel.focusScale.toDouble())
                 put(KEY_RESTING_SCALE, carousel.restingScale.toDouble())
                 put(KEY_NEIGHBOUR_PUSH, carousel.neighbourPush)
                 put(KEY_PLATFORM_BADGE, carousel.showPlatformBadge)
@@ -127,7 +134,6 @@ data class HomeLayoutSettings(
         private const val KEY_ROW_ALIGNMENT = "rowAlignment"
         private const val KEY_FOCUS_POSITION = "focusPosition"
         private const val KEY_INVERTED = "inverted"
-        private const val KEY_FOCUS_SCALE = "focusScale"
         private const val KEY_RESTING_SCALE = "restingScale"
         private const val KEY_NEIGHBOUR_PUSH = "neighbourPush"
         private const val KEY_PLATFORM_BADGE = "showPlatformBadge"
@@ -161,10 +167,9 @@ data class HomeLayoutSettings(
                     ),
                     inverted = carousel?.optBoolean(KEY_INVERTED, defaults.carousel.inverted)
                         ?: defaults.carousel.inverted,
-                    focusScale = carousel?.optDouble(KEY_FOCUS_SCALE)?.toFloat()
-                        ?.takeIf { it.isFinite() && it > 0f } ?: defaults.carousel.focusScale,
                     restingScale = carousel?.optDouble(KEY_RESTING_SCALE)?.toFloat()
-                        ?.takeIf { it.isFinite() && it > 0f } ?: defaults.carousel.restingScale,
+                        ?.takeIf { it.isFinite() && it > 0f }
+                        ?.coerceIn(MIN_RESTING_SCALE, 1f) ?: defaults.carousel.restingScale,
                     neighbourPush = carousel?.optBoolean(KEY_NEIGHBOUR_PUSH, defaults.carousel.neighbourPush)
                         ?: defaults.carousel.neighbourPush,
                     showPlatformBadge = carousel?.optBoolean(KEY_PLATFORM_BADGE, defaults.carousel.showPlatformBadge)

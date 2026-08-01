@@ -59,7 +59,7 @@ fun ViewAllCard(
     tapMode: CarouselTapMode = CarouselTapMode.CLICK,
     remainingCount: Int = 0,
     focusScale: Float = 1f,
-    scaleFromBottom: Boolean = false
+    scalePivotY: Float = 0.5f
 ) {
     val scale by animateFloatAsState(
         targetValue = if (isFocused) focusScale else 1f,
@@ -73,7 +73,7 @@ fun ViewAllCard(
     val scaledModifier = modifier.graphicsLayer {
         scaleX = scale
         scaleY = scale
-        transformOrigin = if (scaleFromBottom) TransformOrigin(0.5f, 1f) else TransformOrigin.Center
+        transformOrigin = TransformOrigin(0.5f, scalePivotY)
     }
 
     when (style) {

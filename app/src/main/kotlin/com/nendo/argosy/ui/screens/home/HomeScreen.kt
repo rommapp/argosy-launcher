@@ -120,6 +120,9 @@ import com.nendo.argosy.ui.components.CarouselItem
 import com.nendo.argosy.ui.components.CarouselMetrics
 import com.nendo.argosy.ui.components.CarouselOverrides
 import com.nendo.argosy.ui.components.CarouselRail
+import com.nendo.argosy.ui.components.HomeAutoGrid
+import com.nendo.argosy.domain.model.HomeLayoutKind
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import com.nendo.argosy.ui.components.HERO_MIN_CARD_SCALE
 import com.nendo.argosy.ui.components.carouselCardSize
 import com.nendo.argosy.ui.components.InputButton
@@ -158,6 +161,8 @@ fun HomeScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val listState = rememberLazyListState()
+    val gridState = rememberLazyGridState()
+    val isAutoGrid = uiState.layoutKind == HomeLayoutKind.AUTO_GRID
     val scope = rememberCoroutineScope()
     var isProgrammaticScroll by remember { mutableStateOf(false) }
     var skipNextProgrammaticScroll by remember { mutableStateOf(false) }
@@ -166,6 +171,16 @@ fun HomeScreen(
     val swipeThreshold = with(LocalDensity.current) { 50.dp.toPx() }
 
     val currentOnDrawerToggle by rememberUpdatedState(onDrawerToggle)
+
+    LaunchedEffect(isAutoGrid) {
+        if (!isAutoGrid) return@LaunchedEffect
+        snapshotFlow { Pair(uiState.focusedGameIndex, uiState.currentItems.size) }
+            .collectLatest { (focusedIndex, itemsSize) ->
+                if (itemsSize > 0) {
+                    gridState.animateScrollToItem(focusedIndex.coerceIn(0, itemsSize - 1))
+                }
+            }
+    }
 
     LaunchedEffect(Unit) {
         snapshotFlow { Triple(uiState.focusedGameIndex, uiState.currentRow, uiState.currentItems.size) }
@@ -629,7 +644,12 @@ fun HomeScreen(
                     Dimens.footerHeight - Dimens.spacingLg - Dimens.spacingXl,
                 config = uiState.carouselConfig
             )
-            val railHeight = cardSize.height * uiState.carouselConfig.focusScale + Dimens.spacingMd
+            val railHeight = if (isAutoGrid) {
+                (maxHeight - headerBlockHeight - Dimens.footerHeight - Dimens.spacingLg)
+                    .coerceAtLeast(Dimens.spacingXl)
+            } else {
+                cardSize.height * uiState.carouselConfig.focusScale + Dimens.spacingMd
+            }
             val isStackedHeader = maxWidth <= maxHeight
             Box(
                 modifier = Modifier
@@ -678,6 +698,32 @@ fun HomeScreen(
                                 onSync = { viewModel.syncFromRomm() }
                             )
                         }
+                        isAutoGrid -> {
+                            HomeAutoGrid(
+                                items = rememberHomeCarouselItems(
+                                    items = uiState.currentItems,
+                                    rowKey = uiState.currentRow.toString(),
+                                    downloadIndicators = uiState.downloadIndicators,
+                                    repairedCoverPaths = uiState.repairedCoverPaths
+                                ),
+                                focusedIndex = uiState.focusedGameIndex,
+                                config = uiState.autoGridConfig,
+                                gridState = gridState,
+                                sectionTitle = uiState.rowTitle,
+                                showPlatformBadge = uiState.currentRow !is HomeRow.Platform &&
+                                    uiState.currentRow != HomeRow.Steam && uiState.currentRow != HomeRow.Android,
+                                downloadIndicatorFor = { item ->
+                                    (item as? CarouselItem.Game)
+                                        ?.let { uiState.downloadIndicatorFor(it.game.id) }
+                                        ?: GameDownloadIndicator.NONE
+                                },
+                                onCoverLoadFailed = viewModel::repairCoverImage,
+                                onCoverLoaded = viewModel::extractGradientForGame,
+                                onItemTap = { index -> viewModel.handleItemTap(index, onGameSelect) },
+                                onItemLongPress = viewModel::handleItemLongPress,
+                                modifier = Modifier.fillMaxSize()
+                            )
+                        }
                         else -> {
                             CarouselRail(
                                 items = rememberHomeCarouselItems(
@@ -717,8 +763,8 @@ fun HomeScreen(
                     if (!uiState.isVideoPreviewActive) {
                         FooterHints(
                             hints = listOf(
-                                InputButton.DPAD_HORIZONTAL to "Game",
-                                InputButton.DPAD_VERTICAL to "Platform",
+                                if (isAutoGrid) InputButton.DPAD to "Game" else InputButton.DPAD_HORIZONTAL to "Game",
+                                if (isAutoGrid) InputButton.LB_RB to "Section" else InputButton.DPAD_VERTICAL to "Platform",
                                 InputButton.A to when {
                                     focusedGame.needsInstall -> "Install"
                                     focusedGame.isDownloaded -> "Play"
@@ -751,6 +797,7 @@ fun HomeScreen(
                 }
             }
 
+            if (!isAutoGrid) {
             val gameInfoWidth by animateFloatAsState(
                 targetValue = 1f,
                 animationSpec = tween(500),
@@ -812,6 +859,7 @@ fun HomeScreen(
                         if (measured != gameInfoHeight) gameInfoHeight = measured
                     }
             )
+            }
         }
         }
 

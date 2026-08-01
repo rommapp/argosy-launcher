@@ -22,6 +22,9 @@ import com.nendo.argosy.ui.screens.common.GameLaunchDelegate
 import com.nendo.argosy.ui.ModalResetSignal
 import com.nendo.argosy.hardware.AmbientLedContext
 import com.nendo.argosy.hardware.AmbientLedManager
+import com.nendo.argosy.ui.common.GridDirection
+import com.nendo.argosy.ui.common.GridFocusNavigator
+import com.nendo.argosy.ui.components.autoGridFocusRows
 import com.nendo.argosy.ui.screens.home.delegates.GameMenuAction
 import com.nendo.argosy.ui.screens.home.delegates.HomeDownloadDelegate
 import com.nendo.argosy.ui.screens.home.delegates.HomeGameMenuDelegate
@@ -77,6 +80,8 @@ class HomeViewModel @Inject constructor(
 
     private val _uiState = MutableStateFlow(restoreInitialState())
     override val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
+
+    private val gridNavigator = GridFocusNavigator()
 
     private val _events = MutableSharedFlow<HomeEvent>()
     val events: SharedFlow<HomeEvent> = _events.asSharedFlow()
@@ -314,7 +319,9 @@ class HomeViewModel @Inject constructor(
                         useGameBackground = prefs.useGameBackground,
                         customBackgroundPath = prefs.customBackgroundPath,
                         homeBackgroundMode = prefs.homeBackgroundMode,
-                        carouselConfig = prefs.homeLayout.carousel
+                        carouselConfig = prefs.homeLayout.carousel,
+                        autoGridConfig = prefs.homeLayout.autoGrid,
+                        layoutKind = prefs.homeLayout.selected
                     )
                 }
 
@@ -417,6 +424,7 @@ class HomeViewModel @Inject constructor(
 
     override fun nextRow() {
         val result = navigationDelegate.nextRow(_uiState.value) ?: return
+        gridNavigator.resetStickyColumn()
         _uiState.update { it.copy(currentRow = result.first, focusedGameIndex = result.second) }
         navigationDelegate.loadRowWithDebounce(viewModelScope, result.first) { row ->
             loadRowContent(row)
@@ -427,6 +435,7 @@ class HomeViewModel @Inject constructor(
     fun selectRow(row: HomeRow) {
         val state = _uiState.value
         if (row == state.currentRow || row !in state.availableRows) return
+        gridNavigator.resetStickyColumn()
         _uiState.update { it.copy(currentRow = row, focusedGameIndex = 0) }
         navigationDelegate.loadRowWithDebounce(viewModelScope, row) { loadRowContent(it) }
         saveCurrentState()
@@ -434,6 +443,7 @@ class HomeViewModel @Inject constructor(
 
     override fun previousRow() {
         val result = navigationDelegate.previousRow(_uiState.value) ?: return
+        gridNavigator.resetStickyColumn()
         _uiState.update { it.copy(currentRow = result.first, focusedGameIndex = result.second) }
         navigationDelegate.loadRowWithDebounce(viewModelScope, result.first) { row ->
             loadRowContent(row)
@@ -490,6 +500,18 @@ class HomeViewModel @Inject constructor(
         prefetchAchievementsDebounced()
         navigationDelegate.prefetchAdjacentBackgrounds(viewModelScope, _uiState.value.currentItems, _uiState.value.focusedGameIndex)
         libraryDelegate.extractGradientsForVisibleGames(viewModelScope, _uiState.value.currentItems, _uiState.value.focusedGameIndex)
+        return true
+    }
+
+    override fun moveGridFocus(direction: GridDirection): Boolean {
+        val state = _uiState.value
+        val rows = autoGridFocusRows(state.currentItems.size, state.autoGridConfig)
+        val target = gridNavigator.navigate(direction, state.focusedGameIndex, rows) ?: return false
+        _uiState.update { it.copy(focusedGameIndex = target) }
+        saveCurrentState()
+        prefetchAchievementsDebounced()
+        navigationDelegate.prefetchAdjacentBackgrounds(viewModelScope, _uiState.value.currentItems, target)
+        libraryDelegate.extractGradientsForVisibleGames(viewModelScope, _uiState.value.currentItems, target)
         return true
     }
 

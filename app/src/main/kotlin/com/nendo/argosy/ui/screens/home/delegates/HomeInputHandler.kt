@@ -3,6 +3,8 @@ package com.nendo.argosy.ui.screens.home.delegates
 import com.nendo.argosy.ui.input.InputHandler
 import com.nendo.argosy.ui.input.InputResult
 import com.nendo.argosy.core.input.SoundType
+import com.nendo.argosy.domain.model.HomeLayoutKind
+import com.nendo.argosy.ui.common.GridDirection
 import com.nendo.argosy.ui.screens.home.HomeRow
 import com.nendo.argosy.ui.screens.home.HomeRowItem
 import com.nendo.argosy.ui.screens.home.HomeUiState
@@ -21,6 +23,7 @@ interface HomeInputActions {
     fun nextRow()
     fun previousGame(): Boolean
     fun nextGame(): Boolean
+    fun moveGridFocus(direction: GridDirection): Boolean
     fun installApk(gameId: Long)
     fun launchGame(gameId: Long, channelName: String? = null)
     fun resumeDownload(gameId: Long)
@@ -53,6 +56,7 @@ class HomeInputHandler(
                 actions.moveGameMenuFocus(-1)
                 InputResult.HANDLED
             }
+            isGrid(state) -> gridMove(GridDirection.UP)
             else -> {
                 actions.previousRow()
                 InputResult.handled(SoundType.SECTION_CHANGE)
@@ -71,6 +75,7 @@ class HomeInputHandler(
                 actions.moveGameMenuFocus(1)
                 InputResult.HANDLED
             }
+            isGrid(state) -> gridMove(GridDirection.DOWN)
             else -> {
                 actions.nextRow()
                 InputResult.handled(SoundType.SECTION_CHANGE)
@@ -81,14 +86,21 @@ class HomeInputHandler(
     override fun onLeft(): InputResult {
         val state = actions.uiState.value
         if (state.showAddToCollectionModal || state.showGameMenu) return InputResult.HANDLED
+        if (isGrid(state)) return gridMove(GridDirection.LEFT)
         return if (actions.previousGame()) InputResult.HANDLED else InputResult.UNHANDLED
     }
 
     override fun onRight(): InputResult {
         val state = actions.uiState.value
         if (state.showAddToCollectionModal || state.showGameMenu) return InputResult.HANDLED
+        if (isGrid(state)) return gridMove(GridDirection.RIGHT)
         return if (actions.nextGame()) InputResult.HANDLED else InputResult.UNHANDLED
     }
+
+    private fun isGrid(state: HomeUiState): Boolean = state.layoutKind == HomeLayoutKind.AUTO_GRID
+
+    private fun gridMove(direction: GridDirection): InputResult =
+        if (actions.moveGridFocus(direction)) InputResult.HANDLED else InputResult.UNHANDLED
 
     override fun onConfirm(): InputResult {
         val state = actions.uiState.value

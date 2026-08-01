@@ -128,6 +128,10 @@ data class HomeUiState(
     val currentRow: HomeRow = HomeRow.Continue,
     val carouselConfig: com.nendo.argosy.domain.model.CarouselConfig =
         com.nendo.argosy.domain.model.CarouselConfig(),
+    val autoGridConfig: com.nendo.argosy.domain.model.AutoGridConfig =
+        com.nendo.argosy.domain.model.AutoGridConfig(),
+    val layoutKind: com.nendo.argosy.domain.model.HomeLayoutKind =
+        com.nendo.argosy.domain.model.HomeLayoutKind.CAROUSEL,
     val isLoading: Boolean = true,
     val isRommConfigured: Boolean = false,
     val showGameMenu: Boolean = false,

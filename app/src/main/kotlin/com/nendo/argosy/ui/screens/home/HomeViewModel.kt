@@ -582,6 +582,71 @@ class HomeViewModel @Inject constructor(
         _uiState.update { it.copy(customGridCell = cell) }
     }
 
+    fun focusedTile(): com.nendo.argosy.domain.model.HomeTile? {
+        val state = _uiState.value
+        return state.tilesOnPage(state.customGridPage).firstOrNull {
+            it.rect.covers(state.customGridCell.columnIndex, state.customGridCell.rowIndex)
+        }
+    }
+
+    fun placeGameOnFocusedCell(gameId: Long) {
+        val state = _uiState.value
+        if (focusedTile() != null) return
+        viewModelScope.launch {
+            homeTileRepository.place(
+                ownerUserId = syncPreferencesRepository.getRommUserId(),
+                pageIndex = state.customGridPage,
+                rect = com.nendo.argosy.domain.model.TileRect(
+                    state.customGridCell.columnIndex,
+                    state.customGridCell.rowIndex
+                ),
+                target = HomeTileTargetRef.Game(gameId)
+            )
+        }
+    }
+
+    /**
+     * Grows the focused tile by one cell right or down, refusing when the cells it would take are
+     * already held or fall off the page. Growth runs away from the anchor so extending never moves
+     * the tile out from under the cursor.
+     */
+    fun extendFocusedTile(horizontal: Boolean): Boolean {
+        val state = _uiState.value
+        val tile = focusedTile() ?: return false
+        val grown = if (horizontal) {
+            tile.rect.copy(columnSpan = tile.rect.columnSpan + 1)
+        } else {
+            tile.rect.copy(rowSpan = tile.rect.rowSpan + 1)
+        }
+        if (!grown.withinBounds(customGridColumns, customGridRows)) return false
+        val others = state.tilesOnPage(state.customGridPage).filter { it.id != tile.id }
+        if (others.any { it.rect.overlaps(grown) }) return false
+        viewModelScope.launch {
+            homeTileRepository.move(tile, syncPreferencesRepository.getRommUserId(), grown)
+        }
+        return true
+    }
+
+    fun shrinkFocusedTile(horizontal: Boolean): Boolean {
+        val tile = focusedTile() ?: return false
+        val shrunk = if (horizontal) {
+            if (tile.rect.columnSpan <= 1) return false
+            tile.rect.copy(columnSpan = tile.rect.columnSpan - 1)
+        } else {
+            if (tile.rect.rowSpan <= 1) return false
+            tile.rect.copy(rowSpan = tile.rect.rowSpan - 1)
+        }
+        viewModelScope.launch {
+            homeTileRepository.move(tile, syncPreferencesRepository.getRommUserId(), shrunk)
+        }
+        return true
+    }
+
+    fun removeFocusedTile() {
+        val tile = focusedTile() ?: return
+        viewModelScope.launch { homeTileRepository.remove(tile.id) }
+    }
+
     override fun moveGridFocus(direction: GridDirection): AutoGridMove {
         val state = _uiState.value
         val move = autoGridMove(

@@ -531,7 +531,14 @@ data class BuiltinEmulatorSettings(
     val speedrunStartOnReset: Boolean = true,
     val speedrunPanelSide: String = "Right",
     val speedrunPanelWidthPercent: Int = 30,
-    val ingameMenuTwoColumn: Boolean = false
+    val ingameMenuTwoColumn: Boolean = false,
+    val hudEnabled: Boolean = false,
+    val hudCorner: String = "Top Right",
+    val hudShowBattery: Boolean = true,
+    val hudShowClock: Boolean = true,
+    val hudShowPlaytime: Boolean = false,
+    val hudShowFps: Boolean = false,
+    val hudShowLastSave: Boolean = false
 ) {
     val shaderConfig: com.swordfish.libretrodroid.ShaderConfig
         get() = when (shader) {

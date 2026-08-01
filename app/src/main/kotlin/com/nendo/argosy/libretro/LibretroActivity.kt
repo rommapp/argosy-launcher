@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
@@ -35,6 +36,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -210,6 +214,8 @@ class LibretroActivity : ComponentActivity() {
 
     private var limitHotkeysToPlayer1 by mutableStateOf(true)
     private var firstFrameRendered = false
+    private var framesSinceSample = 0
+    private var measuredFps by mutableIntStateOf(0)
     private lateinit var audioController: LibretroAudioController
     private var swapAB by mutableStateOf(false)
     private var swapXY by mutableStateOf(false)
@@ -726,6 +732,7 @@ class LibretroActivity : ComponentActivity() {
             }
         }
 
+        startFpsSampling()
         lifecycleScope.launch {
             retroView.getGLRetroEvents().collect { event ->
                 when (event) {
@@ -883,6 +890,94 @@ class LibretroActivity : ComponentActivity() {
                 attemptCount = armData.third.attemptCount
             )
             setSpeedrunPanelSide(speedrunPanelSidePref)
+        }
+    }
+
+    /**
+     * Counts presented frames and republishes a rate once a second. The frame flow emits from the
+     * GL thread through a replay-1 SharedFlow with suspending overflow, so the collector stays a
+     * single increment and the arithmetic happens on the sampling tick instead.
+     */
+    private fun startFpsSampling() {
+        lifecycleScope.launch {
+            retroView.getGLRetroEvents().collect { event ->
+                if (event is GLRetroView.GLRetroEvents.FrameRendered) framesSinceSample++
+            }
+        }
+        lifecycleScope.launch {
+            var lastSampleMs = android.os.SystemClock.elapsedRealtime()
+            while (true) {
+                kotlinx.coroutines.delay(FPS_SAMPLE_INTERVAL_MS)
+                val now = android.os.SystemClock.elapsedRealtime()
+                val elapsed = (now - lastSampleMs).coerceAtLeast(1L)
+                val counted = framesSinceSample
+                framesSinceSample = 0
+                lastSampleMs = now
+                measuredFps = (counted * 1000L / elapsed).toInt()
+            }
+        }
+    }
+
+    @androidx.compose.runtime.Composable
+    private fun rememberHudState(): com.nendo.argosy.ui.components.InGameStatusHudState {
+        val settings = touchSettingsState
+        val battery = com.nendo.argosy.ui.components.rememberBatteryState().value
+        val sessionStart = playSessionTracker.activeSession.collectAsState().value?.startTime
+        var nowMs by androidx.compose.runtime.remember { mutableLongStateOf(System.currentTimeMillis()) }
+        var nowRealtimeMs by androidx.compose.runtime.remember {
+            mutableLongStateOf(android.os.SystemClock.elapsedRealtime())
+        }
+        androidx.compose.runtime.LaunchedEffect(Unit) {
+            while (true) {
+                nowMs = System.currentTimeMillis()
+                nowRealtimeMs = android.os.SystemClock.elapsedRealtime()
+                kotlinx.coroutines.delay(HUD_TICK_INTERVAL_MS)
+            }
+        }
+        val lastSaveAt = saveStateManager.lastStateWriteRealtimeMs
+        return com.nendo.argosy.ui.components.InGameStatusHudState(
+            batteryLevel = battery.level.takeIf { settings.hudShowBattery && it >= 0 },
+            batteryCharging = battery.isCharging,
+            clock = if (settings.hudShowClock) formatClock(nowMs) else null,
+            sessionElapsed = if (settings.hudShowPlaytime && sessionStart != null) {
+                formatDuration(
+                    java.time.Duration.between(sessionStart, java.time.Instant.ofEpochMilli(nowMs)).seconds
+                )
+            } else {
+                null
+            },
+            fps = if (settings.hudShowFps && !hotkeyDispatcher.isFastForwarding) "$measuredFps fps" else null,
+            lastSave = if (settings.hudShowLastSave && lastSaveAt != null) {
+                formatAgo((nowRealtimeMs - lastSaveAt) / 1000L)
+            } else {
+                null
+            }
+        )
+    }
+
+    private fun hudCornerFor(value: String): com.nendo.argosy.ui.components.HudCorner = when (value) {
+        "Top Left" -> com.nendo.argosy.ui.components.HudCorner.TOP_LEFT
+        "Bottom Left" -> com.nendo.argosy.ui.components.HudCorner.BOTTOM_LEFT
+        "Bottom Right" -> com.nendo.argosy.ui.components.HudCorner.BOTTOM_RIGHT
+        else -> com.nendo.argosy.ui.components.HudCorner.TOP_RIGHT
+    }
+
+    private fun formatClock(epochMs: Long): String =
+        android.text.format.DateFormat.getTimeFormat(this).format(java.util.Date(epochMs))
+
+    private fun formatDuration(totalSeconds: Long): String {
+        val safe = totalSeconds.coerceAtLeast(0L)
+        val hours = safe / 3600
+        val minutes = (safe % 3600) / 60
+        return if (hours > 0) "%d:%02d".format(hours, minutes) else "%dm".format(minutes)
+    }
+
+    private fun formatAgo(seconds: Long): String {
+        val safe = seconds.coerceAtLeast(0L)
+        return when {
+            safe < 60 -> "saved just now"
+            safe < 3600 -> "saved ${safe / 60}m ago"
+            else -> "saved ${safe / 3600}h ago"
         }
     }
 
@@ -1386,6 +1481,16 @@ class LibretroActivity : ComponentActivity() {
                         modifier = Modifier
                             .align(Alignment.BottomCenter)
                             .padding(bottom = 24.dp)
+                    )
+                }
+
+                if (touchSettingsState.hudEnabled && !isAnyMenuOpen) {
+                    com.nendo.argosy.ui.components.InGameStatusHud(
+                        state = rememberHudState(),
+                        corner = hudCornerFor(touchSettingsState.hudCorner),
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .safeDrawingPadding()
                     )
                 }
 
@@ -2826,6 +2931,10 @@ class LibretroActivity : ComponentActivity() {
         private const val CORE_INPUT_PULSE_MS = 50L
 
         private const val ROLLING_SAVE_INTERVAL_MS = 30_000L
+
+        private const val FPS_SAMPLE_INTERVAL_MS = 1_000L
+
+        private const val HUD_TICK_INTERVAL_MS = 1_000L
 
         private const val SPEEDRUN_PANEL_FRACTION_DEFAULT = 0.30f
         private val SPEEDRUN_PANEL_FRACTION_RANGE = 0.20f..0.40f

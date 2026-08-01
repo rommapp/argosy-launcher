@@ -25,7 +25,14 @@ internal enum class BuiltinEmulatorItem {
     CONTROLS,
     CORE_MANAGEMENT,
     CORE_OPTIONS,
-    TWO_COLUMN;
+    TWO_COLUMN,
+    HUD_ENABLED,
+    HUD_CORNER,
+    HUD_BATTERY,
+    HUD_CLOCK,
+    HUD_PLAYTIME,
+    HUD_FPS,
+    HUD_LAST_SAVE;
 
     val focusIndex: Int get() = ordinal
 }
@@ -119,6 +126,77 @@ fun BuiltinEmulatorSection(
                     onToggle = { viewModel.setIngameMenuTwoColumn(it) }
                 )
             }
+            item(key = "builtin_hud_enabled") {
+                SwitchPreference(
+                    title = "In-Game Status Bar",
+                    subtitle = if (emulators.hudEnabled) {
+                        "Shows a small status bar over the game"
+                    } else {
+                        "No status bar while playing"
+                    },
+                    isEnabled = emulators.hudEnabled,
+                    isFocused = uiState.focusedIndex == BuiltinEmulatorItem.HUD_ENABLED.focusIndex,
+                    onToggle = { viewModel.setHudEnabled(it) }
+                )
+            }
+            if (emulators.hudEnabled) {
+                item(key = "builtin_hud_corner") {
+                    CyclePreference(
+                        title = "Status Bar Corner",
+                        value = emulators.hudCorner,
+                        isFocused = uiState.focusedIndex == BuiltinEmulatorItem.HUD_CORNER.focusIndex,
+                        onClick = { viewModel.cycleHudCorner(true) },
+                        onPrev = { viewModel.cycleHudCorner(false) },
+                        options = HUD_CORNERS,
+                        onSelect = { index -> HUD_CORNERS.getOrNull(index)?.let { viewModel.setHudCorner(it) } }
+                    )
+                }
+                item(key = "builtin_hud_battery") {
+                    SwitchPreference(
+                        title = "Show Battery",
+                        isEnabled = emulators.hudShowBattery,
+                        isFocused = uiState.focusedIndex == BuiltinEmulatorItem.HUD_BATTERY.focusIndex,
+                        onToggle = { viewModel.setHudShowBattery(it) }
+                    )
+                }
+                item(key = "builtin_hud_clock") {
+                    SwitchPreference(
+                        title = "Show Clock",
+                        isEnabled = emulators.hudShowClock,
+                        isFocused = uiState.focusedIndex == BuiltinEmulatorItem.HUD_CLOCK.focusIndex,
+                        onToggle = { viewModel.setHudShowClock(it) }
+                    )
+                }
+                item(key = "builtin_hud_playtime") {
+                    SwitchPreference(
+                        title = "Show Session Time",
+                        subtitle = "Time since this session started",
+                        isEnabled = emulators.hudShowPlaytime,
+                        isFocused = uiState.focusedIndex == BuiltinEmulatorItem.HUD_PLAYTIME.focusIndex,
+                        onToggle = { viewModel.setHudShowPlaytime(it) }
+                    )
+                }
+                item(key = "builtin_hud_fps") {
+                    SwitchPreference(
+                        title = "Show FPS",
+                        subtitle = "Presented frames per second; hidden while fast-forwarding",
+                        isEnabled = emulators.hudShowFps,
+                        isFocused = uiState.focusedIndex == BuiltinEmulatorItem.HUD_FPS.focusIndex,
+                        onToggle = { viewModel.setHudShowFps(it) }
+                    )
+                }
+                item(key = "builtin_hud_last_save") {
+                    SwitchPreference(
+                        title = "Show Last Save State",
+                        subtitle = "How long ago a save state was written",
+                        isEnabled = emulators.hudShowLastSave,
+                        isFocused = uiState.focusedIndex == BuiltinEmulatorItem.HUD_LAST_SAVE.focusIndex,
+                        onToggle = { viewModel.setHudShowLastSave(it) }
+                    )
+                }
+            }
         }
     }
 }
+
+internal val HUD_CORNERS = listOf("Top Left", "Top Right", "Bottom Left", "Bottom Right")

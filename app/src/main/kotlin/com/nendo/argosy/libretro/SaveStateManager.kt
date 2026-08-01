@@ -359,6 +359,14 @@ class SaveStateManager(
             }
     }
 
+    /**
+     * When a state was last written this session, on the monotonic clock so a device clock change
+     * cannot make it read as the future. Null until one is written; the rolling SRAM save does not
+     * count, because it fires on a timer whether or not the game saved anything.
+     */
+    var lastStateWriteRealtimeMs: Long? = null
+        private set
+
     fun performQuickSave(stateData: ByteArray, screenshot: Bitmap? = null): Boolean {
         val emptyIndex = (0 until QUICK_RING_SIZE).firstOrNull {
             !getSlotFile(QUICK_SLOT_BASE + it).exists()
@@ -385,6 +393,7 @@ class SaveStateManager(
             if (slotNumber in QUICK_SLOT_BASE until QUICK_SLOT_BASE + QUICK_RING_SIZE) {
                 hasQuickSave = true
             }
+            lastStateWriteRealtimeMs = android.os.SystemClock.elapsedRealtime()
             onLiveStateWritten?.invoke(slotNumber, stateFile)
             Log.d(TAG, "Saved state to slot $slotNumber (${stateData.size} bytes)")
             true

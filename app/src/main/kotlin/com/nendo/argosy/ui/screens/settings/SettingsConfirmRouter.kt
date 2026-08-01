@@ -1229,10 +1229,10 @@ private fun computeMaxFocusIndex(
     SettingsSection.AMBIENT_LED -> ambientLedMaxFocusIndex(state.display)
     SettingsSection.NAVIGATION -> navigationMaxFocusIndex(state.controls)
     SettingsSection.PLATFORMS -> emulatorsMaxFocusIndex(state.emulators.platforms)
-    SettingsSection.BUILTIN_EMULATOR -> if (state.emulators.builtinLibretroEnabled) {
-        BuiltinEmulatorItem.TWO_COLUMN.focusIndex
-    } else {
-        BuiltinEmulatorItem.ENABLE.focusIndex
+    SettingsSection.BUILTIN_EMULATOR -> when {
+        !state.emulators.builtinLibretroEnabled -> BuiltinEmulatorItem.ENABLE.focusIndex
+        state.emulators.hudEnabled -> BuiltinEmulatorItem.HUD_LAST_SAVE.focusIndex
+        else -> BuiltinEmulatorItem.HUD_ENABLED.focusIndex
     }
     SettingsSection.PLATFORM_DETAIL -> platformDetailMaxFocusIndex(state)
     SettingsSection.BUILTIN_VIDEO -> builtinVideoMaxFocusIndex(state.builtinVideo, state.platformLibretro.platformSettings)
@@ -1323,6 +1323,19 @@ private fun routeBuiltinEmulatorConfirm(vm: SettingsViewModel, state: SettingsUi
         BuiltinEmulatorItem.CORE_OPTIONS -> if (builtinEnabled) vm.navigateToCoreOptions()
         BuiltinEmulatorItem.TWO_COLUMN ->
             if (builtinEnabled) vm.setIngameMenuTwoColumn(!state.emulators.ingameMenuTwoColumn)
+        BuiltinEmulatorItem.HUD_ENABLED ->
+            if (builtinEnabled) vm.setHudEnabled(!state.emulators.hudEnabled)
+        BuiltinEmulatorItem.HUD_CORNER -> if (builtinEnabled) vm.cycleHudCorner(true)
+        BuiltinEmulatorItem.HUD_BATTERY ->
+            if (builtinEnabled) vm.setHudShowBattery(!state.emulators.hudShowBattery)
+        BuiltinEmulatorItem.HUD_CLOCK ->
+            if (builtinEnabled) vm.setHudShowClock(!state.emulators.hudShowClock)
+        BuiltinEmulatorItem.HUD_PLAYTIME ->
+            if (builtinEnabled) vm.setHudShowPlaytime(!state.emulators.hudShowPlaytime)
+        BuiltinEmulatorItem.HUD_FPS ->
+            if (builtinEnabled) vm.setHudShowFps(!state.emulators.hudShowFps)
+        BuiltinEmulatorItem.HUD_LAST_SAVE ->
+            if (builtinEnabled) vm.setHudShowLastSave(!state.emulators.hudShowLastSave)
         null -> {}
     }
     return InputResult.HANDLED

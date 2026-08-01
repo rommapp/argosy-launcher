@@ -714,7 +714,10 @@ class SecondaryHomeActivity :
             preferencesRepository = dsm.preferencesRepository,
             repairImageCacheUseCase = dsm.repairImageCacheUseCase,
             downloadFileStatusRepository = dsm.downloadFileStatusRepository,
-            gradientExtractionDelegate = dsm.gradientExtractionDelegate
+            gradientExtractionDelegate = dsm.gradientExtractionDelegate,
+            getPinnedCollectionsUseCase = dsm.getPinnedCollectionsUseCase,
+            getGamesForPinnedCollectionUseCase = dsm.getGamesForPinnedCollectionUseCase,
+            sessionStateStore = dsm.sessionStateStore
         )
         broadcasts = SecondaryHomeBroadcastHelper(
             dsm = dsm, dualHomeViewModel = dualHomeViewModel,
@@ -743,10 +746,6 @@ class SecondaryHomeActivity :
             preferencesRepository = dsm.preferencesRepository
         )
 
-        dualHomeViewModel.onSelectionPersist = {
-            stateManager.persistCarouselPosition(dualHomeViewModel)
-        }
-
         inputHandler = SecondaryHomeInputHandler(
             viewModel = viewModel,
             dualHomeViewModel = dualHomeViewModel,
@@ -760,9 +759,6 @@ class SecondaryHomeActivity :
             onLaunchApp = ::launchApp,
             onLaunchAppOnOtherDisplay = ::launchAppOnOtherDisplay,
             onRefocusSelf = ::refocusSelf,
-            onPersistCarouselPosition = {
-                stateManager.persistCarouselPosition(dualHomeViewModel)
-            },
             context = applicationContext,
             lifecycleLaunch = { block -> lifecycleScope.launch { block() } }
         )

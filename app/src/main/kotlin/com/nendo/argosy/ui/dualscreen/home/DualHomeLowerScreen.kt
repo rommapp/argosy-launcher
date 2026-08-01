@@ -81,6 +81,7 @@ import com.nendo.argosy.ui.components.GameCard
 import com.nendo.argosy.ui.components.fastAnimateScrollToItem
 import com.nendo.argosy.ui.primitives.ActionButton
 import com.nendo.argosy.ui.screens.home.HomeGameUi
+import com.nendo.argosy.ui.components.SectionBreadcrumb
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalArgosyTheme
 import com.nendo.argosy.ui.theme.LocalBoxArtStyle
@@ -105,6 +106,11 @@ fun DualHomeLowerScreen(
     appBarFocused: Boolean,
     appBarIndex: Int,
     viewMode: DualHomeViewMode,
+    sectionLabels: List<String> = emptyList(),
+    currentSectionIndex: Int = 0,
+    onPreviousSection: () -> Unit = {},
+    onNextSection: () -> Unit = {},
+    onSelectSection: (Int) -> Unit = {},
     repairedCoverPaths: Map<Long, String> = emptyMap(),
     onGameTapped: (Int) -> Unit,
     onGameSelected: (Long) -> Unit,
@@ -218,6 +224,20 @@ fun DualHomeLowerScreen(
         }
 
         Spacer(modifier = Modifier.weight(1f))
+
+        if (viewMode == DualHomeViewMode.CAROUSEL && sectionLabels.isNotEmpty()) {
+            SectionBreadcrumb(
+                labels = sectionLabels,
+                currentIndex = currentSectionIndex,
+                onPrevious = onPreviousSection,
+                onNext = onNextSection,
+                onSelect = onSelectSection,
+                fillAvailableWidth = true,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = Dimens.spacingLg)
+            )
+        }
 
         Text(
             text = "$platformName ($totalCount)",

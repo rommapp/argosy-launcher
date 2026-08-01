@@ -19,6 +19,12 @@ import com.nendo.argosy.ui.common.toIndicator
 import com.nendo.argosy.data.repository.CollectionRepository
 import com.nendo.argosy.data.repository.PlatformRepository
 import com.nendo.argosy.data.local.entity.CollectionType
+import com.nendo.argosy.data.local.entity.PlatformEntity
+import com.nendo.argosy.data.platform.LocalPlatformIds
+import com.nendo.argosy.domain.model.HomeSectionKind
+import com.nendo.argosy.domain.model.PinnedCollection
+import com.nendo.argosy.domain.usecase.collection.GetGamesForPinnedCollectionUseCase
+import com.nendo.argosy.domain.usecase.collection.GetPinnedCollectionsUseCase
 import com.nendo.argosy.data.local.entity.GameEntity
 import com.nendo.argosy.data.local.entity.getDisplayName
 import com.nendo.argosy.data.model.ActiveSort
@@ -54,18 +60,30 @@ private const val LIBRARY_GRID_COLUMNS = 6
 private const val SECTION_KIND_RECENT = "RECENT"
 private const val SECTION_KIND_FAVORITES = "FAVORITES"
 private const val SECTION_KIND_PLATFORM = "PLATFORM"
+private const val SECTION_KIND_RECOMMENDATIONS = "RECOMMENDATIONS"
+private const val SECTION_KIND_ANDROID = "ANDROID"
+private const val SECTION_KIND_STEAM = "STEAM"
+private const val SECTION_KIND_PINNED = "PINNED"
 private const val RESTORE_MAX_DEFERRALS = 8
 
-sealed class DualHomeSection(val title: String) {
-    data object Recent : DualHomeSection("Continue Playing")
+sealed class DualHomeSection(val title: String, val shortTitle: String = title) {
+    data object Recent : DualHomeSection("Continue Playing", "Continue")
+    data object Recommendations : DualHomeSection("Recommended", "For You")
     data object Favorites : DualHomeSection("Favorites")
+    data object Android : DualHomeSection("Android")
+    data object Steam : DualHomeSection("Steam")
     data class Platform(
         val id: Long,
         val slug: String,
         val name: String,
         val displayName: String,
+        val shortName: String?,
         val logoPath: String?
-    ) : DualHomeSection(displayName)
+    ) : DualHomeSection(displayName, shortName ?: displayName)
+
+    data class Pinned(
+        val pinned: PinnedCollection
+    ) : DualHomeSection(pinned.displayName)
 }
 
 enum class DualHomeFocusZone { CAROUSEL, APP_BAR }
@@ -176,7 +194,10 @@ class DualHomeViewModel(
     private val steamContentManager: com.nendo.argosy.data.steam.SteamContentManager? = null,
     private val repairImageCacheUseCase: RepairImageCacheUseCase? = null,
     private val downloadFileStatusRepository: com.nendo.argosy.data.repository.DownloadFileStatusRepository,
-    private val gradientExtractionDelegate: com.nendo.argosy.ui.screens.common.GradientExtractionDelegate? = null
+    private val gradientExtractionDelegate: com.nendo.argosy.ui.screens.common.GradientExtractionDelegate? = null,
+    private val getPinnedCollectionsUseCase: GetPinnedCollectionsUseCase? = null,
+    private val getGamesForPinnedCollectionUseCase: GetGamesForPinnedCollectionUseCase? = null,
+    private val sessionStateStore: SessionStateStore? = null
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(DualHomeUiState())
@@ -194,6 +215,7 @@ class DualHomeViewModel(
     private data class PendingRestore(
         val sectionKind: String,
         val platformId: Long,
+        val pinId: Long,
         val gameId: Long,
         val filters: DualActiveFilters?,
         val legacySectionIndex: Int,
@@ -208,7 +230,6 @@ class DualHomeViewModel(
     var onRestoreComplete: (() -> Unit)? = null
 
     /** Invoked after a touch/scroll selection so the position can be persisted. */
-    var onSelectionPersist: (() -> Unit)? = null
 
     fun startDrawerForwarding() { _forwardingMode.value = ForwardingMode.OVERLAY }
     fun startBackgroundForwarding() { _forwardingMode.value = ForwardingMode.BACKGROUND }
@@ -255,19 +276,14 @@ class DualHomeViewModel(
     private fun observePlatformChanges() {
         viewModelScope.launch {
             platformRepository.observePlatformsWithGames().collect { platforms ->
-                val newPlatformSections = platforms.map { platform ->
-                    DualHomeSection.Platform(
-                        id = platform.id,
-                        slug = platform.slug,
-                        name = platform.name,
-                        displayName = platform.getDisplayName(),
-                        logoPath = platform.logoPath
-                    )
-                }
+                val newPlatformSections = platformSections(platforms)
 
                 val state = _uiState.value
-                val nonPlatformSections = state.sections.filterNot { it is DualHomeSection.Platform }
-                val updatedSections = nonPlatformSections + newPlatformSections
+                val leading = state.sections.filterNot {
+                    it is DualHomeSection.Platform || it is DualHomeSection.Pinned
+                }
+                val pinned = state.sections.filterIsInstance<DualHomeSection.Pinned>()
+                val updatedSections = leading + newPlatformSections + pinned
 
                 _uiState.update {
                     it.copy(
@@ -402,6 +418,11 @@ class DualHomeViewModel(
         }
     }
 
+    /**
+     * The same listing the single-screen home offers, in the order [HomeSectionKind] declares. A row
+     * appears only when it has content, matching home's own rule, and the Steam and Android
+     * platforms are held back from the platform run because they are rows in their own right.
+     */
     private suspend fun buildSections(): List<DualHomeSection> {
         val sections = mutableListOf<DualHomeSection>()
 
@@ -412,26 +433,49 @@ class DualHomeViewModel(
             sections.add(DualHomeSection.Recent)
         }
 
-        val favorites = gameRepository.getFavorites()
-        if (favorites.isNotEmpty()) {
+        if (recommendedGameIds().isNotEmpty()) {
+            sections.add(DualHomeSection.Recommendations)
+        }
+
+        if (gameRepository.getFavorites().isNotEmpty()) {
             sections.add(DualHomeSection.Favorites)
         }
 
-        val platforms = platformRepository.getPlatformsWithGames()
-        platforms.forEach { platform ->
-            sections.add(
+        if (gameRepository.getByPlatformSorted(LocalPlatformIds.ANDROID, limit = 1).isNotEmpty()) {
+            sections.add(DualHomeSection.Android)
+        }
+
+        if (gameRepository.getByPlatformSorted(LocalPlatformIds.STEAM, limit = 1).isNotEmpty()) {
+            sections.add(DualHomeSection.Steam)
+        }
+
+        sections.addAll(platformSections(platformRepository.getPlatformsWithGames()))
+        sections.addAll(pinnedSections())
+
+        return sections
+    }
+
+    private fun platformSections(platforms: List<PlatformEntity>): List<DualHomeSection.Platform> =
+        platforms
+            .filter { it.id != LocalPlatformIds.STEAM && it.id != LocalPlatformIds.ANDROID }
+            .map { platform ->
                 DualHomeSection.Platform(
                     id = platform.id,
                     slug = platform.slug,
                     name = platform.name,
                     displayName = platform.getDisplayName(),
+                    shortName = platform.shortName,
                     logoPath = platform.logoPath
                 )
-            )
-        }
+            }
 
-        return sections
-    }
+    private suspend fun pinnedSections(): List<DualHomeSection> =
+        (getPinnedCollectionsUseCase?.invoke()?.first() ?: emptyList())
+            .sortedByDescending { it.displayOrder }
+            .map { DualHomeSection.Pinned(it) }
+
+    private suspend fun recommendedGameIds(): List<Long> =
+        preferencesRepository?.userPreferences?.first()?.recommendedGameIds ?: emptyList()
 
     private fun loadGamesForCurrentSection() {
         viewModelScope.launch { loadGamesForCurrentSectionSuspend() }
@@ -483,6 +527,28 @@ class DualHomeViewModel(
                 if (installedOnly) platformGames = filterPlayable(platformGames)
                 platformGames.map { it.toUi() }
             }
+            is DualHomeSection.Recommendations -> {
+                val ids = recommendedGameIds()
+                val byId = gameRepository.getByIds(ids).associateBy { it.id }
+                ids.mapNotNull { byId[it] }.map { it.toUi() }
+            }
+            is DualHomeSection.Android -> {
+                var androidGames = gameRepository.getByPlatformSorted(
+                    LocalPlatformIds.ANDROID, limit = PLATFORM_GAMES_LIMIT
+                )
+                if (installedOnly) androidGames = filterPlayable(androidGames)
+                androidGames.map { it.toUi() }
+            }
+            is DualHomeSection.Steam -> {
+                gameRepository.getByPlatformSorted(
+                    LocalPlatformIds.STEAM, limit = PLATFORM_GAMES_LIMIT
+                ).map { it.toUi() }
+            }
+            is DualHomeSection.Pinned -> {
+                var pinnedGames = getGamesForPinnedCollectionUseCase?.invoke(section.pinned)?.first().orEmpty()
+                if (installedOnly) pinnedGames = filterPlayable(pinnedGames)
+                pinnedGames.map { it.toUi() }
+            }
         }
 
         _uiState.update {
@@ -518,6 +584,7 @@ class DualHomeViewModel(
         pendingRestore = PendingRestore(
             sectionKind = ctx.sectionKind,
             platformId = ctx.platformId,
+            pinId = ctx.pinId,
             gameId = ctx.gameId,
             filters = if (ctx.hasContext) ctx.toActiveFilters() else null,
             legacySectionIndex = ctx.legacySectionIndex,
@@ -532,6 +599,7 @@ class DualHomeViewModel(
         pendingRestore = PendingRestore(
             sectionKind = "",
             platformId = -1L,
+            pinId = -1L,
             gameId = -1L,
             filters = null,
             legacySectionIndex = sectionIndex,
@@ -561,9 +629,15 @@ class DualHomeViewModel(
         sections: List<DualHomeSection>
     ): Int = when (pending.sectionKind) {
         SECTION_KIND_RECENT -> sections.indexOfFirst { it is DualHomeSection.Recent }
+        SECTION_KIND_RECOMMENDATIONS -> sections.indexOfFirst { it is DualHomeSection.Recommendations }
         SECTION_KIND_FAVORITES -> sections.indexOfFirst { it is DualHomeSection.Favorites }
+        SECTION_KIND_ANDROID -> sections.indexOfFirst { it is DualHomeSection.Android }
+        SECTION_KIND_STEAM -> sections.indexOfFirst { it is DualHomeSection.Steam }
         SECTION_KIND_PLATFORM -> sections.indexOfFirst {
             it is DualHomeSection.Platform && it.id == pending.platformId
+        }
+        SECTION_KIND_PINNED -> sections.indexOfFirst {
+            it is DualHomeSection.Pinned && it.pinned.id == pending.pinId
         }
         else -> -1
     }
@@ -629,8 +703,12 @@ class DualHomeViewModel(
         val section = state.currentSection
         val kind = when (section) {
             is DualHomeSection.Recent -> SECTION_KIND_RECENT
+            is DualHomeSection.Recommendations -> SECTION_KIND_RECOMMENDATIONS
             is DualHomeSection.Favorites -> SECTION_KIND_FAVORITES
+            is DualHomeSection.Android -> SECTION_KIND_ANDROID
+            is DualHomeSection.Steam -> SECTION_KIND_STEAM
             is DualHomeSection.Platform -> SECTION_KIND_PLATFORM
+            is DualHomeSection.Pinned -> SECTION_KIND_PINNED
             null -> ""
         }
         val filters = state.activeFilters
@@ -638,6 +716,7 @@ class DualHomeViewModel(
             hasContext = section != null,
             sectionKind = kind,
             platformId = (section as? DualHomeSection.Platform)?.id ?: -1L,
+            pinId = (section as? DualHomeSection.Pinned)?.pinned?.id ?: -1L,
             gameId = state.selectedGame?.id ?: -1L,
             legacySectionIndex = state.currentSectionIndex,
             legacySelectedIndex = state.selectedIndex,
@@ -683,6 +762,23 @@ class DualHomeViewModel(
         _uiState.update { it.copy(currentSectionIndex = newIndex, selectedIndex = 0) }
         viewModelScope.launch {
             loadGamesForCurrentSectionSuspend()
+            persistSection()
+            onLoaded?.invoke()
+        }
+    }
+
+    /**
+     * Jump straight to a section, as tapping its name in the breadcrumb does. Mirrors what the
+     * bumper navigation does on arrival so a tap and a bumper leave the same state behind.
+     */
+    fun setSectionIndex(index: Int, onLoaded: (() -> Unit)? = null) {
+        val state = _uiState.value
+        if (index !in state.sections.indices || index == state.currentSectionIndex) return
+
+        _uiState.update { it.copy(currentSectionIndex = index, selectedIndex = 0) }
+        viewModelScope.launch {
+            loadGamesForCurrentSectionSuspend()
+            persistSection()
             onLoaded?.invoke()
         }
     }
@@ -699,8 +795,20 @@ class DualHomeViewModel(
         _uiState.update { it.copy(currentSectionIndex = newIndex, selectedIndex = 0) }
         viewModelScope.launch {
             loadGamesForCurrentSectionSuspend()
+            persistSection()
             onLoaded?.invoke()
         }
+    }
+
+    /**
+     * Records where the carousel is so the next launch resumes here. Owned by the view model rather
+     * than the input handlers because a section can change from a bumper, a tap, or either of the
+     * two handlers, and persisting per call site is how the companion and swapped-roles paths
+     * drifted apart in the first place.
+     */
+    private fun persistSection() {
+        val store = sessionStateStore ?: return
+        store.setCarouselNavContext(currentNavContext())
     }
 
     fun selectNext() {
@@ -709,6 +817,7 @@ class DualHomeViewModel(
         val maxIndex = if (state.hasMoreGames) state.games.size else state.games.size - 1
         val newIndex = (state.selectedIndex + 1).coerceAtMost(maxIndex)
         _uiState.update { it.copy(selectedIndex = newIndex) }
+        persistSection()
     }
 
     fun selectPrevious() {
@@ -716,6 +825,7 @@ class DualHomeViewModel(
         if (state.games.isEmpty()) return
         val newIndex = (state.selectedIndex - 1).coerceAtLeast(0)
         _uiState.update { it.copy(selectedIndex = newIndex) }
+        persistSection()
     }
 
     fun setSelectedIndex(index: Int) {
@@ -724,7 +834,7 @@ class DualHomeViewModel(
 
     fun selectByTouch(index: Int) {
         setSelectedIndex(index)
-        onSelectionPersist?.invoke()
+        persistSection()
     }
 
     fun focusAppBar(appCount: Int) {

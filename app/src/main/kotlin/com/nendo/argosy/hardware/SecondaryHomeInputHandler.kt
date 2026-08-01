@@ -33,7 +33,6 @@ class SecondaryHomeInputHandler(
     private val onLaunchApp: (String) -> Unit,
     private val onLaunchAppOnOtherDisplay: (String) -> Unit,
     private val onRefocusSelf: () -> Unit,
-    private val onPersistCarouselPosition: () -> Unit,
     private val context: android.content.Context,
     private val lifecycleLaunch: (suspend () -> Unit) -> Unit
 ) {
@@ -398,7 +397,6 @@ class SecondaryHomeInputHandler(
                 else {
                     dualHomeViewModel.selectPrevious()
                     broadcasts.broadcastCurrentGameSelection()
-                    onPersistCarouselPosition()
                 }
                 InputResult.HANDLED
             }
@@ -407,7 +405,6 @@ class SecondaryHomeInputHandler(
                 else {
                     dualHomeViewModel.selectNext()
                     broadcasts.broadcastCurrentGameSelection()
-                    onPersistCarouselPosition()
                 }
                 InputResult.HANDLED
             }
@@ -437,7 +434,7 @@ class SecondaryHomeInputHandler(
                     dualHomeViewModel.focusCarousel()
                     broadcasts.broadcastViewModeChange()
                 }
-                dualHomeViewModel.previousSection { onPersistCarouselPosition() }
+                dualHomeViewModel.previousSection()
                 InputResult.HANDLED
             }
             GamepadEvent.NextSection -> {
@@ -445,7 +442,7 @@ class SecondaryHomeInputHandler(
                     dualHomeViewModel.focusCarousel()
                     broadcasts.broadcastViewModeChange()
                 }
-                dualHomeViewModel.nextSection { onPersistCarouselPosition() }
+                dualHomeViewModel.nextSection()
                 InputResult.HANDLED
             }
             GamepadEvent.Select -> {

@@ -102,6 +102,8 @@ class DualScreenManager(
     internal val gradientExtractionDelegate: com.nendo.argosy.ui.screens.common.GradientExtractionDelegate,
     private val filePickerFlow: com.nendo.argosy.domain.usecase.download.FilePickerFlowUseCase,
     private val gameThemeAudioCoordinator: com.nendo.argosy.ui.audio.GameThemeAudioCoordinator,
+    internal val getPinnedCollectionsUseCase: com.nendo.argosy.domain.usecase.collection.GetPinnedCollectionsUseCase? = null,
+    internal val getGamesForPinnedCollectionUseCase: com.nendo.argosy.domain.usecase.collection.GetGamesForPinnedCollectionUseCase? = null,
     initialRolesSwapped: Boolean = false
 ) {
 
@@ -616,7 +618,10 @@ class DualScreenManager(
             preferencesRepository = preferencesRepository,
             repairImageCacheUseCase = repairImageCacheUseCase,
             downloadFileStatusRepository = downloadFileStatusRepository,
-            gradientExtractionDelegate = gradientExtractionDelegate
+            gradientExtractionDelegate = gradientExtractionDelegate,
+            getPinnedCollectionsUseCase = getPinnedCollectionsUseCase,
+            getGamesForPinnedCollectionUseCase = getGamesForPinnedCollectionUseCase,
+            sessionStateStore = sessionStateStore
         )
     }
 

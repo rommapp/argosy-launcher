@@ -91,6 +91,8 @@ class MainActivity : ComponentActivity() {
     @Inject lateinit var permissionHelper: com.nendo.argosy.util.PermissionHelper
     @Inject lateinit var gameActionsDelegate: GameActionsDelegate
     @Inject lateinit var gameThemeAudioCoordinator: com.nendo.argosy.ui.audio.GameThemeAudioCoordinator
+    @Inject lateinit var getPinnedCollectionsUseCase: com.nendo.argosy.domain.usecase.collection.GetPinnedCollectionsUseCase
+    @Inject lateinit var getGamesForPinnedCollectionUseCase: com.nendo.argosy.domain.usecase.collection.GetGamesForPinnedCollectionUseCase
     @Inject lateinit var gameLaunchDelegate: GameLaunchDelegate
     @Inject lateinit var saveCacheManager: SaveCacheManager
     @Inject lateinit var getUnifiedSavesUseCase: GetUnifiedSavesUseCase
@@ -306,6 +308,8 @@ class MainActivity : ComponentActivity() {
                 gradientExtractionDelegate = gradientExtractionDelegate,
                 filePickerFlow = filePickerFlowUseCase,
                 gameThemeAudioCoordinator = gameThemeAudioCoordinator,
+                getPinnedCollectionsUseCase = getPinnedCollectionsUseCase,
+                getGamesForPinnedCollectionUseCase = getGamesForPinnedCollectionUseCase,
                 initialRolesSwapped = initialSwapped
             )
             DualScreenManagerHolder.instance = dualScreenManager

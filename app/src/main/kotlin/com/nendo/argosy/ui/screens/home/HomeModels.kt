@@ -140,6 +140,10 @@ data class HomeUiState(
     val customGridCell: com.nendo.argosy.domain.model.GridCell =
         com.nendo.argosy.domain.model.GridCell(0, 0),
     val tileMoveMode: Boolean = false,
+    val showTilePicker: Boolean = false,
+    val tilePickerQuery: String = "",
+    val tilePickerFocusIndex: Int = 0,
+    val tilePickerEntries: List<com.nendo.argosy.ui.components.TilePickerEntry> = emptyList(),
     val isLoading: Boolean = true,
     val isRommConfigured: Boolean = false,
     val showGameMenu: Boolean = false,

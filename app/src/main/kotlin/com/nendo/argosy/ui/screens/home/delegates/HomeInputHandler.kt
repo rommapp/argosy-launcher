@@ -30,6 +30,11 @@ interface HomeInputActions {
     fun turnCustomGridPage(delta: Int): Boolean
     fun moveFocusedTile(direction: com.nendo.argosy.domain.model.GridDirection2D): Boolean
     fun exitTileMoveMode()
+    fun openTilePicker()
+    fun closeTilePicker()
+    fun moveTilePickerFocus(delta: Int)
+    fun confirmTilePickerSelection()
+    fun focusedTileGameId(): Long?
     fun installApk(gameId: Long)
     fun launchGame(gameId: Long, channelName: String? = null)
     fun resumeDownload(gameId: Long)
@@ -62,6 +67,10 @@ class HomeInputHandler(
                 actions.moveGameMenuFocus(-1)
                 InputResult.HANDLED
             }
+            state.showTilePicker -> {
+                actions.moveTilePickerFocus(-1)
+                InputResult.HANDLED
+            }
             isCustomGrid(state) -> customMove(GridDirection2D.UP)
             isGrid(state) -> gridMove(GridDirection.UP)
             else -> {
@@ -80,6 +89,10 @@ class HomeInputHandler(
             }
             state.showGameMenu -> {
                 actions.moveGameMenuFocus(1)
+                InputResult.HANDLED
+            }
+            state.showTilePicker -> {
+                actions.moveTilePickerFocus(1)
                 InputResult.HANDLED
             }
             isCustomGrid(state) -> customMove(GridDirection2D.DOWN)
@@ -118,6 +131,19 @@ class HomeInputHandler(
      * The press is always consumed: a curated page's edges are the end of the grid, and there is no
      * neighbouring zone for an unhandled move to fall through to.
      */
+    /**
+     * Confirm on a curated cell either launches what is there or offers to fill it, so the same
+     * button reads as "use this" whether or not the cell holds anything yet.
+     */
+    private fun confirmCustomGridCell() {
+        val gameId = actions.focusedTileGameId()
+        if (gameId == null) {
+            actions.openTilePicker()
+            return
+        }
+        actions.launchGame(gameId)
+    }
+
     private fun customMove(direction: GridDirection2D): InputResult {
         if (actions.uiState.value.tileMoveMode) {
             actions.moveFocusedTile(direction)
@@ -150,9 +176,11 @@ class HomeInputHandler(
     override fun onConfirm(): InputResult {
         val state = actions.uiState.value
         when {
+            state.showTilePicker -> actions.confirmTilePickerSelection()
             state.tileMoveMode -> actions.exitTileMoveMode()
             state.showAddToCollectionModal -> actions.confirmCollectionSelection()
             state.showGameMenu -> actions.confirmGameMenuSelection(onGameSelect)
+            isCustomGrid(state) -> confirmCustomGridCell()
             else -> {
                 when (val item = state.focusedItem) {
                     is HomeRowItem.Game -> {
@@ -180,6 +208,10 @@ class HomeInputHandler(
 
     override fun onBack(): InputResult {
         val state = actions.uiState.value
+        if (state.showTilePicker) {
+            actions.closeTilePicker()
+            return InputResult.HANDLED
+        }
         if (state.tileMoveMode) {
             actions.exitTileMoveMode()
             return InputResult.HANDLED

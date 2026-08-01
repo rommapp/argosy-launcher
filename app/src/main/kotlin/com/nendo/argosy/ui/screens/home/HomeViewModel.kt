@@ -647,6 +647,52 @@ class HomeViewModel @Inject constructor(
         viewModelScope.launch { homeTileRepository.remove(tile.id) }
     }
 
+    /**
+     * Opens the picker for the focused cell. Offers installed games only, since a grid you curate
+     * is somewhere you reach for something to play rather than something to fetch.
+     */
+    override fun openTilePicker() {
+        if (focusedTile() != null) return
+        viewModelScope.launch {
+            _uiState.update {
+                it.copy(showTilePicker = true, tilePickerQuery = "", tilePickerFocusIndex = 0)
+            }
+            refreshTilePickerEntries()
+        }
+    }
+
+    override fun focusedTileGameId(): Long? =
+        (focusedTile()?.target as? HomeTileTargetRef.Game)?.gameId
+
+    override fun closeTilePicker() {
+        _uiState.update { it.copy(showTilePicker = false, tilePickerQuery = "") }
+    }
+
+    fun setTilePickerQuery(query: String) {
+        _uiState.update { it.copy(tilePickerQuery = query, tilePickerFocusIndex = 0) }
+        viewModelScope.launch { refreshTilePickerEntries() }
+    }
+
+    override fun moveTilePickerFocus(delta: Int) {
+        _uiState.update {
+            val maxIndex = (it.tilePickerEntries.size - 1).coerceAtLeast(0)
+            it.copy(tilePickerFocusIndex = (it.tilePickerFocusIndex + delta).coerceIn(0, maxIndex))
+        }
+    }
+
+    override fun confirmTilePickerSelection() {
+        val state = _uiState.value
+        val entry = state.tilePickerEntries.getOrNull(state.tilePickerFocusIndex) ?: return
+        placeGameOnFocusedCell(entry.gameId)
+        closeTilePicker()
+    }
+
+    private suspend fun refreshTilePickerEntries() {
+        val query = _uiState.value.tilePickerQuery
+        val entries = libraryDelegate.searchInstalledForTiles(query)
+        _uiState.update { it.copy(tilePickerEntries = entries) }
+    }
+
     fun enterTileMoveMode() {
         if (focusedTile() == null) return
         _uiState.update { it.copy(tileMoveMode = true, showGameMenu = false) }

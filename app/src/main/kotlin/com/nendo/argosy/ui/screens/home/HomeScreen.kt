@@ -122,6 +122,7 @@ import com.nendo.argosy.ui.components.CarouselOverrides
 import com.nendo.argosy.ui.components.CarouselRail
 import com.nendo.argosy.ui.components.HomeAutoGrid
 import com.nendo.argosy.ui.components.HomeCustomGridPage
+import com.nendo.argosy.ui.components.HomeTilePickerModal
 import com.nendo.argosy.ui.components.CustomGridShape
 import com.nendo.argosy.domain.model.HomeLayoutKind
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
@@ -924,6 +925,23 @@ fun HomeScreen(
                     }
                 )
             }
+        }
+
+        AnimatedVisibility(
+            visible = uiState.showTilePicker,
+            enter = fadeIn(),
+            exit = fadeOut()
+        ) {
+            HomeTilePickerModal(
+                entries = uiState.tilePickerEntries,
+                query = uiState.tilePickerQuery,
+                focusIndex = uiState.tilePickerFocusIndex,
+                onSelect = { gameId ->
+                    viewModel.placeGameOnFocusedCell(gameId)
+                    viewModel.closeTilePicker()
+                },
+                onDismiss = viewModel::closeTilePicker
+            )
         }
 
         AnimatedVisibility(

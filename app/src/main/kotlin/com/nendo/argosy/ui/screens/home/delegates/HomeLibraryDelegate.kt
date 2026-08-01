@@ -47,6 +47,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 private const val PLATFORM_GAMES_LIMIT = 20
+private const val TILE_PICKER_LIMIT = 60
 private const val MAX_DISPLAYED_RECOMMENDATIONS = 8
 private const val RECOMMENDATION_PENALTY = 0.9f
 private val EXCLUDED_RECOMMENDATION_STATUSES = setOf(
@@ -656,6 +657,25 @@ class HomeLibraryDelegate @Inject constructor(
                 game.lastPlayed?.toEpochMilli() ?: game.addedAt.toEpochMilli()
             }
         )
+    }
+
+    /**
+     * Installed games matching [query], for the custom grid's picker. Filtering to what is on the
+     * device is the point: a tile is a shortcut to play something, so offering a game that would
+     * first have to download makes the grid a second download queue.
+     */
+    suspend fun searchInstalledForTiles(query: String): List<com.nendo.argosy.ui.components.TilePickerEntry> {
+        val matches = gameRepository
+            .searchForQuickMenu(query.trim(), TILE_PICKER_LIMIT)
+            .first()
+        return filterPlayable(matches).map { game ->
+            com.nendo.argosy.ui.components.TilePickerEntry(
+                gameId = game.id,
+                title = game.title,
+                platformName = cachedPlatformDisplayNames[game.platformId].orEmpty(),
+                coverPath = game.coverPath
+            )
+        }
     }
 
     /**

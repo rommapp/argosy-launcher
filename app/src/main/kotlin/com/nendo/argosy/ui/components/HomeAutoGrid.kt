@@ -1,6 +1,7 @@
 package com.nendo.argosy.ui.components
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.aspectRatio
@@ -19,6 +20,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import com.nendo.argosy.domain.model.AutoGridConfig
 import com.nendo.argosy.domain.model.HomeScrollAxis
 import com.nendo.argosy.domain.model.HomeSectionStyle
@@ -103,12 +106,9 @@ fun HomeAutoGrid(
                 )
             )
         }
-        val cells = GridCells.Fixed(config.laneCount.coerceAtLeast(1))
+        val lanes = config.laneCount.coerceAtLeast(1)
+        val cells = GridCells.Fixed(lanes)
         val spacing = Arrangement.spacedBy(Dimens.spacingSm)
-        val padding = PaddingValues(
-            horizontal = Dimens.spacingMd,
-            vertical = Dimens.spacingSm
-        )
         val cell: @Composable (Int, CarouselItem) -> Unit = { index, item ->
             AutoGridCell(
                 item = item,
@@ -122,29 +122,63 @@ fun HomeAutoGrid(
                 onCoverLoaded = onCoverLoaded
             )
         }
-        when (config.scrollAxis) {
-            HomeScrollAxis.VERTICAL -> LazyVerticalGrid(
-                columns = cells,
-                state = gridState,
-                contentPadding = padding,
-                horizontalArrangement = spacing,
-                verticalArrangement = spacing,
-                modifier = Modifier.fillMaxSize()
-            ) {
-                itemsIndexed(items, key = { _, item -> item.key }) { index, item -> cell(index, item) }
-            }
-            HomeScrollAxis.HORIZONTAL -> LazyHorizontalGrid(
-                rows = cells,
-                state = gridState,
-                contentPadding = padding,
-                horizontalArrangement = spacing,
-                verticalArrangement = spacing,
-                modifier = Modifier.fillMaxSize()
-            ) {
-                itemsIndexed(items, key = { _, item -> item.key }) { index, item -> cell(index, item) }
+        BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+            val padding = focusAwarePadding(
+                available = if (config.scrollAxis == HomeScrollAxis.VERTICAL) maxWidth else maxHeight,
+                lanes = lanes,
+                scrollAxis = config.scrollAxis,
+                coverAspectRatio = LocalBoxArtStyle.current.aspectRatio
+            )
+            when (config.scrollAxis) {
+                HomeScrollAxis.VERTICAL -> LazyVerticalGrid(
+                    columns = cells,
+                    state = gridState,
+                    contentPadding = padding,
+                    horizontalArrangement = spacing,
+                    verticalArrangement = spacing,
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    itemsIndexed(items, key = { _, item -> item.key }) { index, item -> cell(index, item) }
+                }
+                HomeScrollAxis.HORIZONTAL -> LazyHorizontalGrid(
+                    rows = cells,
+                    state = gridState,
+                    contentPadding = padding,
+                    horizontalArrangement = spacing,
+                    verticalArrangement = spacing,
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    itemsIndexed(items, key = { _, item -> item.key }) { index, item -> cell(index, item) }
+                }
             }
         }
     }
+}
+
+/**
+ * Content padding wide enough that a focused cover, which grows about its own centre, still lands
+ * inside the grid's viewport. The grid clips at that viewport, so without the extra room the cover
+ * on an outer lane is cut off by whatever sits beyond the edge rather than overlapping it.
+ *
+ * The growth is measured off the cover, not the cell, because the title beneath it does not scale.
+ */
+@Composable
+private fun focusAwarePadding(
+    available: Dp,
+    lanes: Int,
+    scrollAxis: HomeScrollAxis,
+    coverAspectRatio: Float
+): PaddingValues {
+    val edge = Dimens.spacingMd
+    val gap = Dimens.spacingSm
+    val laneExtent = ((available - edge * 2 - gap * (lanes - 1)) / lanes).coerceAtLeast(0.dp)
+    val coverWidth = if (scrollAxis == HomeScrollAxis.VERTICAL) laneExtent else laneExtent * coverAspectRatio
+    val coverHeight = if (scrollAxis == HomeScrollAxis.VERTICAL) laneExtent / coverAspectRatio else laneExtent
+    val overhang = (ComponentDefaults.Focus.scaleFocused - 1f) / 2f
+    return PaddingValues(
+        horizontal = edge + coverWidth * overhang,
+        vertical = edge + coverHeight * overhang
+    )
 }
 
 /**

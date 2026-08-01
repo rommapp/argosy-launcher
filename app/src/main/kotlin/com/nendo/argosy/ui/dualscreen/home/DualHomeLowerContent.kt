@@ -76,7 +76,9 @@ fun DualHomeLowerContent(
                     onLibraryToggle = onLibraryToggle,
                     onViewAllClick = onViewAllClick,
                     onOpenDrawer = onOpenDrawer,
-                    carouselConfig = uiState.carouselConfig
+                    carouselConfig = uiState.carouselConfig,
+                    autoGridConfig = uiState.autoGridConfig,
+                    layoutKind = uiState.layoutKind
                 )
             }
             DualHomeViewMode.COLLECTIONS -> {

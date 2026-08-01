@@ -1,5 +1,7 @@
 package com.nendo.argosy.ui.dualscreen.home
 
+import com.nendo.argosy.domain.model.HomeLayoutKind
+import com.nendo.argosy.ui.common.GridDirection
 import com.nendo.argosy.ui.input.GamepadEvent
 import com.nendo.argosy.ui.input.InputHandler
 import com.nendo.argosy.ui.input.InputResult
@@ -73,11 +75,19 @@ class DualHomeInputHandler(
         val state = viewModel.uiState.value
         val inAppBar = state.focusZone == DualHomeFocusZone.APP_BAR
         val apps = homeApps()
+        val inGrid = !inAppBar && state.layoutKind == HomeLayoutKind.AUTO_GRID
+
+        fun moveGrid(direction: GridDirection): Boolean {
+            if (!inGrid || !viewModel.moveCarouselGridFocus(direction)) return false
+            onBroadcastCurrentGameSelection()
+            return true
+        }
 
         return when (event) {
             com.nendo.argosy.ui.input.GamepadEvent.Left -> {
                 if (inAppBar) viewModel.selectPreviousApp()
-                else {
+                else if (!moveGrid(GridDirection.LEFT)) {
+                    if (inGrid) return InputResult.HANDLED
                     viewModel.selectPrevious()
                     onBroadcastCurrentGameSelection()
                 }
@@ -85,7 +95,8 @@ class DualHomeInputHandler(
             }
             com.nendo.argosy.ui.input.GamepadEvent.Right -> {
                 if (inAppBar) viewModel.selectNextApp(apps.size)
-                else {
+                else if (!moveGrid(GridDirection.RIGHT)) {
+                    if (inGrid) return InputResult.HANDLED
                     viewModel.selectNext()
                     onBroadcastCurrentGameSelection()
                 }
@@ -94,7 +105,9 @@ class DualHomeInputHandler(
             com.nendo.argosy.ui.input.GamepadEvent.Down -> {
                 val isExternal = com.nendo.argosy.DualScreenManagerHolder.instance
                     ?.isExternalDisplay == true
-                if (!inAppBar && apps.isNotEmpty() && !isExternal) {
+                if (moveGrid(GridDirection.DOWN)) {
+                    InputResult.HANDLED
+                } else if (!inAppBar && apps.isNotEmpty() && !isExternal) {
                     viewModel.focusAppBar(apps.size)
                     InputResult.HANDLED
                 } else InputResult.UNHANDLED
@@ -102,6 +115,8 @@ class DualHomeInputHandler(
             com.nendo.argosy.ui.input.GamepadEvent.Up -> {
                 if (inAppBar) {
                     viewModel.focusCarousel()
+                    InputResult.HANDLED
+                } else if (moveGrid(GridDirection.UP)) {
                     InputResult.HANDLED
                 } else {
                     viewModel.enterCollections()

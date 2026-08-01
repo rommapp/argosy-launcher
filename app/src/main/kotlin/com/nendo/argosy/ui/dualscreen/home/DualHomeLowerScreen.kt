@@ -78,6 +78,8 @@ import com.nendo.argosy.ui.components.CarouselItem
 import com.nendo.argosy.ui.components.CarouselMetrics
 import com.nendo.argosy.ui.components.CarouselOverrides
 import com.nendo.argosy.ui.components.CarouselRail
+import com.nendo.argosy.ui.components.HomeAutoGrid
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import com.nendo.argosy.ui.components.CarouselTapMode
 import com.nendo.argosy.ui.components.GameCard
 import com.nendo.argosy.ui.components.PositionIndicator
@@ -123,8 +125,14 @@ fun DualHomeLowerScreen(
     onOpenDrawer: () -> Unit = {},
     carouselConfig: com.nendo.argosy.domain.model.CarouselConfig =
         com.nendo.argosy.domain.model.CarouselConfig(),
+    autoGridConfig: com.nendo.argosy.domain.model.AutoGridConfig =
+        com.nendo.argosy.domain.model.AutoGridConfig(),
+    layoutKind: com.nendo.argosy.domain.model.HomeLayoutKind =
+        com.nendo.argosy.domain.model.HomeLayoutKind.CAROUSEL,
     modifier: Modifier = Modifier
 ) {
+    val isAutoGrid = layoutKind == com.nendo.argosy.domain.model.HomeLayoutKind.AUTO_GRID
+    val gridState = rememberLazyGridState()
     val listState = rememberLazyListState()
     val metrics = CarouselMetrics.centered(LocalBoxArtStyle.current.aspectRatio, carouselConfig)
     val railItems = rememberCompanionCarouselItems(
@@ -253,6 +261,30 @@ fun DualHomeLowerScreen(
             textAlign = androidx.compose.ui.text.style.TextAlign.Center
         )
 
+        if (isAutoGrid) {
+            HomeAutoGrid(
+                items = railItems,
+                focusedIndex = selectedIndex,
+                config = autoGridConfig,
+                gridState = gridState,
+                sectionTitle = platformName,
+                showPlatformBadge = false,
+                onItemTap = { index ->
+                    val game = games.getOrNull(index)
+                    if (game != null) {
+                        onGameTapped(index)
+                        onGameSelected(game.id)
+                    } else {
+                        onViewAllClick()
+                    }
+                },
+                onItemLongPress = { index -> onGameTapped(index) },
+                onCoverLoadFailed = onCoverLoadFailed,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+            )
+        } else {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -302,6 +334,7 @@ fun DualHomeLowerScreen(
         )
 
         Spacer(modifier = Modifier.weight(1f))
+        }
 
         val showAppBar = com.nendo.argosy.DualScreenManagerHolder.instance
             ?.isExternalDisplay != true

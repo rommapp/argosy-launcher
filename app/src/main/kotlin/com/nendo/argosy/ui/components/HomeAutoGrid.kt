@@ -1,7 +1,7 @@
 package com.nendo.argosy.ui.components
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.aspectRatio
@@ -18,7 +18,14 @@ import androidx.compose.material3.Text
 import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -122,9 +129,16 @@ fun HomeAutoGrid(
                 onCoverLoaded = onCoverLoaded
             )
         }
-        BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+        var measured by remember { mutableStateOf(IntSize.Zero) }
+        val density = LocalDensity.current
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .onSizeChanged { measured = it }
+        ) {
+            val across = if (config.scrollAxis == HomeScrollAxis.VERTICAL) measured.width else measured.height
             val padding = focusAwarePadding(
-                available = if (config.scrollAxis == HomeScrollAxis.VERTICAL) maxWidth else maxHeight,
+                available = with(density) { across.toDp() },
                 lanes = lanes,
                 scrollAxis = config.scrollAxis,
                 coverAspectRatio = LocalBoxArtStyle.current.aspectRatio
@@ -161,6 +175,9 @@ fun HomeAutoGrid(
  * on an outer lane is cut off by whatever sits beyond the edge rather than overlapping it.
  *
  * The growth is measured off the cover, not the cell, because the title beneath it does not scale.
+ * [available] arrives from a measured size rather than BoxWithConstraints on purpose: subcomposing
+ * the grid would defer the cells to the layout pass, where a focus change alone does not invalidate
+ * anything, and the highlight would sit still while the list scrolled under it.
  */
 @Composable
 private fun focusAwarePadding(

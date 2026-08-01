@@ -79,3 +79,51 @@ fun placeTiles(tiles: List<HomeTile>, columns: Int, rows: Int): TilePlacement {
 }
 
 data class TilePlacement(val placed: List<HomeTile>, val displaced: List<HomeTile>)
+
+/**
+ * A cell on a page. Focus lives on a cell rather than on a tile so an empty slot is somewhere the
+ * cursor can be, which is what lets a tile be placed at a chosen spot rather than appended.
+ */
+data class GridCell(val columnIndex: Int, val rowIndex: Int)
+
+sealed interface CustomGridMove {
+    data class Focus(val cell: GridCell) : CustomGridMove
+    data object PreviousPage : CustomGridMove
+    data object NextPage : CustomGridMove
+    data object None : CustomGridMove
+}
+
+/**
+ * Where focus lands moving [direction] from [cell] across a page of [columns] by [rows].
+ *
+ * A step starts from the edge of whatever tile currently holds the cell, not from the cell itself,
+ * so leaving a tile that spans three columns takes one press rather than three. Running off the
+ * left or right edge turns the page, because a curated grid has no sections to switch between;
+ * running off the top or bottom stops, since that is the direction a page does not continue in.
+ */
+fun customGridStep(
+    cell: GridCell,
+    tiles: List<HomeTile>,
+    columns: Int,
+    rows: Int,
+    direction: GridDirection2D
+): CustomGridMove {
+    if (columns <= 0 || rows <= 0) return CustomGridMove.None
+    val origin = tiles.firstOrNull { it.rect.covers(cell.columnIndex, cell.rowIndex) }?.rect
+        ?: TileRect(cell.columnIndex, cell.rowIndex)
+    val target = when (direction) {
+        GridDirection2D.LEFT -> GridCell(origin.columnIndex - 1, cell.rowIndex)
+        GridDirection2D.RIGHT -> GridCell(origin.lastColumn + 1, cell.rowIndex)
+        GridDirection2D.UP -> GridCell(cell.columnIndex, origin.rowIndex - 1)
+        GridDirection2D.DOWN -> GridCell(cell.columnIndex, origin.lastRow + 1)
+    }
+    val offPage = target.columnIndex !in 0 until columns || target.rowIndex !in 0 until rows
+    if (!offPage) return CustomGridMove.Focus(target)
+    return when (direction) {
+        GridDirection2D.LEFT -> CustomGridMove.PreviousPage
+        GridDirection2D.RIGHT -> CustomGridMove.NextPage
+        else -> CustomGridMove.None
+    }
+}
+
+enum class GridDirection2D { LEFT, RIGHT, UP, DOWN }

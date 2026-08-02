@@ -3001,3 +3001,16 @@ object Migration_165_166 : Migration(165, 166) {
         )
     }
 }
+
+object Migration_166_167 : Migration(166, 167) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            "DROP INDEX IF EXISTS `index_home_tiles_ownerUserId_pageIndex_columnIndex_rowIndex`"
+        )
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS " +
+                "`index_home_tiles_ownerUserId_pageIndex_columnIndex_rowIndex` " +
+                "ON `home_tiles` (`ownerUserId`, `pageIndex`, `columnIndex`, `rowIndex`)"
+        )
+    }
+}

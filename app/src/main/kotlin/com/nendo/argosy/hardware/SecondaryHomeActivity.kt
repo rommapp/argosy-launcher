@@ -399,11 +399,11 @@ class SecondaryHomeActivity :
      */
     private fun deferConfirm(): Boolean {
         if (isShowcaseRole || currentScreen != CompanionScreen.HOME) return false
+        if (!::dualHomeViewModel.isInitialized) return false
         val state = dualHomeViewModel.uiState.value
+        if (state.viewMode != DualHomeViewMode.CAROUSEL) return false
         if (state.layoutKind != com.nendo.argosy.domain.model.HomeLayoutKind.CUSTOM_GRID) return false
-        if (state.showTilePicker || state.showTileMenu) return false
-        return state.tileEditMode != com.nendo.argosy.ui.dualscreen.home.TileEditMode.NONE ||
-            state.focusedTileGameId != null
+        return !state.showTilePicker && !state.showTileMenu
     }
 
     private fun beginConfirmHold() {

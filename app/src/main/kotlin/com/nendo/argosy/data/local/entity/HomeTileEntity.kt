@@ -18,12 +18,17 @@ import androidx.room.PrimaryKey
  *
  * [ownerUserId] is null for a tile placed before any account existed; those count for whoever is
  * signed in, matching how the other user-scoped tables treat pre-account rows.
+ *
+ * Anchors are indexed but not unique. Two tiles may share a cell while one is being dragged over
+ * another, and that state is written as it happens so a move survives the app being killed mid
+ * arrangement; the overlap is resolved when the arrangement is committed, not forbidden by the
+ * schema.
  */
 @Entity(
     tableName = "home_tiles",
     indices = [
         Index(value = ["ownerUserId", "pageIndex"]),
-        Index(value = ["ownerUserId", "pageIndex", "columnIndex", "rowIndex"], unique = true)
+        Index(value = ["ownerUserId", "pageIndex", "columnIndex", "rowIndex"])
     ]
 )
 data class HomeTileEntity(

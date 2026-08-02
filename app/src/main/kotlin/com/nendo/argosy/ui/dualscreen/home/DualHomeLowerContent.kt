@@ -79,24 +79,14 @@ fun DualHomeLowerContent(
                     carouselConfig = uiState.carouselConfig,
                     autoGridConfig = uiState.autoGridConfig,
                     layoutKind = uiState.layoutKind,
-                    customGridTiles = uiState.tilesOnPage(uiState.customGridPage),
+                    customGridState = uiState.customGrid,
                     customGridContentFor = { tile -> uiState.tileContentFor(tile) },
                     customGridConfig = uiState.customGridConfig,
-                    customGridCell = uiState.customGridCell,
                     onCustomGridCellTap = { cell -> viewModel.setCustomGridCell(cell) },
                     onCustomGridShape = { columns, rows ->
                         viewModel.setCustomGridShape(columns, rows)
                     },
-                    customGridPage = uiState.customGridPage,
-                    customGridPageCount = uiState.customGridPageCount,
                     onCustomGridAddPage = { viewModel.confirmAddPage() },
-                    customGridOverlappedIds = uiState.overlappedTileIds,
-                    customGridEditingTileId = uiState.editingTileId,
-                    customGridEditLabel = when (uiState.tileEditMode) {
-                        TileEditMode.MOVE -> "Move"
-                        TileEditMode.RESIZE -> "Resize"
-                        TileEditMode.NONE -> null
-                    },
                     isPlatformSection = when (uiState.currentSection) {
                         is DualHomeSection.Platform,
                         DualHomeSection.Android,
@@ -161,7 +151,7 @@ fun DualHomeLowerContent(
             val tile = viewModel.focusedTile()
             com.nendo.argosy.ui.components.CustomTileMenuModal(
                 title = tile?.let { uiState.tileContentFor(it)?.label }.orEmpty(),
-                entries = viewModel.tileMenuActions().map { it.label },
+                entries = uiState.customGrid.menuActions.map { it.label },
                 focusIndex = uiState.tileMenuFocusIndex,
                 onSelect = { index ->
                     viewModel.moveTileMenuFocus(index - uiState.tileMenuFocusIndex)

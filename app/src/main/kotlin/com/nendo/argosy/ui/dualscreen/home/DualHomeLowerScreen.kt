@@ -132,21 +132,15 @@ fun DualHomeLowerScreen(
     layoutKind: com.nendo.argosy.domain.model.HomeLayoutKind =
         com.nendo.argosy.domain.model.HomeLayoutKind.CAROUSEL,
     isPlatformSection: Boolean = false,
-    customGridTiles: List<com.nendo.argosy.domain.model.HomeTile> = emptyList(),
+    customGridState: com.nendo.argosy.ui.components.CustomGridState =
+        com.nendo.argosy.ui.components.CustomGridState(),
     customGridContentFor: (com.nendo.argosy.domain.model.HomeTile) ->
     com.nendo.argosy.ui.components.CustomGridTileContent? = { null },
     customGridConfig: com.nendo.argosy.domain.model.CustomGridConfig =
         com.nendo.argosy.domain.model.CustomGridConfig(),
-    customGridCell: com.nendo.argosy.domain.model.GridCell =
-        com.nendo.argosy.domain.model.GridCell(0, 0),
     onCustomGridCellTap: (com.nendo.argosy.domain.model.GridCell) -> Unit = {},
     onCustomGridShape: (Int, Int) -> Unit = { _, _ -> },
-    customGridPage: Int = 0,
-    customGridPageCount: Int = 1,
     onCustomGridAddPage: () -> Unit = {},
-    customGridEditLabel: String? = null,
-    customGridOverlappedIds: Set<Long> = emptySet(),
-    customGridEditingTileId: Long? = null,
     modifier: Modifier = Modifier
 ) {
     val isAutoGrid = layoutKind == com.nendo.argosy.domain.model.HomeLayoutKind.AUTO_GRID
@@ -288,52 +282,15 @@ fun DualHomeLowerScreen(
         }
 
         if (isCustomGrid) {
-            androidx.compose.animation.AnimatedContent(
-                targetState = customGridPage,
-                transitionSpec = {
-                    val forward = targetState > initialState
-                    val slide = androidx.compose.animation.core.tween<androidx.compose.ui.unit.IntOffset>(
-                        durationMillis = com.nendo.argosy.ui.theme.Motion.durationSlide,
-                        easing = com.nendo.argosy.ui.theme.Motion.argosyEase
-                    )
-                    androidx.compose.animation.slideInHorizontally(slide) { width ->
-                        if (forward) width else -width
-                    } togetherWith androidx.compose.animation.slideOutHorizontally(slide) { width ->
-                        if (forward) -width else width
-                    }
-                },
-                label = "custom-grid-page",
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f)
-            ) { page ->
-                if (page >= customGridPageCount) {
-                    com.nendo.argosy.ui.components.CustomGridAddPage(
-                        isFocused = true,
-                        onClick = onCustomGridAddPage
-                    )
-                } else {
-                    com.nendo.argosy.ui.components.HomeCustomGridPage(
-                        tiles = customGridTiles,
-                        contentFor = customGridContentFor,
-                        laneCount = customGridConfig.laneCount,
-                        focusedCell = customGridCell,
-                        onCellTap = onCustomGridCellTap,
-                        onShapeResolved = onCustomGridShape,
-                        editModeLabel = customGridEditLabel,
-                        overlappedTileIds = customGridOverlappedIds,
-                        editingTileId = customGridEditingTileId,
-                        onCoverLoadFailed = onCoverLoadFailed,
-                        modifier = Modifier.fillMaxSize()
-                    )
-                }
-            }
-            com.nendo.argosy.ui.components.CustomGridPageDots(
-                pageCount = customGridPageCount,
-                currentPage = customGridPage,
-                modifier = Modifier
-                    .align(Alignment.CenterHorizontally)
-                    .padding(vertical = Dimens.spacingSm)
+            com.nendo.argosy.ui.components.CustomGridSurface(
+                state = customGridState,
+                contentFor = customGridContentFor,
+                laneCount = customGridConfig.laneCount,
+                onCellTap = onCustomGridCellTap,
+                onShapeResolved = onCustomGridShape,
+                onAddPage = onCustomGridAddPage,
+                onCoverLoadFailed = onCoverLoadFailed,
+                modifier = Modifier.fillMaxWidth().weight(1f)
             )
         } else if (isAutoGrid) {
             HomeAutoGrid(

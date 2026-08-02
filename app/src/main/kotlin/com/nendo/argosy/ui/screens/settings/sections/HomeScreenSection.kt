@@ -44,7 +44,7 @@ internal sealed class HomeScreenItem(
     data object Background : HomeScreenItem(
         key = "homeBackgroundMode",
         section = "background",
-        visibleWhen = { it.surfaceBackdrop.enabled }
+        visibleWhen = { it.surfaceBackdrop.enabled && drawsBackgroundArt(it) }
     )
     data object GameArtwork : HomeScreenItem(
         key = "gameArtwork",
@@ -60,16 +60,20 @@ internal sealed class HomeScreenItem(
     data object Saturation : HomeScreenItem("saturation", "background", { showsArtLayer(it) })
     data object Opacity : HomeScreenItem("opacity", "background", { showsArtLayer(it) })
 
-    data object VideoWallpaper : HomeScreenItem("videoWallpaper", "video")
+    data object VideoWallpaper : HomeScreenItem(
+        key = "videoWallpaper",
+        section = "video",
+        visibleWhen = { drawsBackgroundArt(it) }
+    )
     data object VideoDelay : HomeScreenItem(
         key = "videoDelay",
         section = "video",
-        visibleWhen = { it.videoWallpaperEnabled }
+        visibleWhen = { it.videoWallpaperEnabled && drawsBackgroundArt(it) }
     )
     data object VideoMuted : HomeScreenItem(
         key = "videoMuted",
         section = "video",
-        visibleWhen = { it.videoWallpaperEnabled }
+        visibleWhen = { it.videoWallpaperEnabled && drawsBackgroundArt(it) }
     )
 
     data object LayoutPreview : HomeScreenItem("layoutPreview", "layout")
@@ -95,7 +99,16 @@ internal sealed class HomeScreenItem(
          * layer is hidden when it is not drawn.
          */
         private fun showsArtLayer(state: DisplayState): Boolean =
-            !state.surfaceBackdrop.enabled || state.homeBackgroundMode == HomeBackgroundMode.GAME_ART
+            drawsBackgroundArt(state) &&
+                (!state.surfaceBackdrop.enabled ||
+                    state.homeBackgroundMode == HomeBackgroundMode.GAME_ART)
+
+        /**
+         * A grid fills the screen with covers, so nothing is drawn behind it and every row that
+         * tunes a backdrop would be a setting with no effect. Only the carousel has room for art.
+         */
+        private fun drawsBackgroundArt(state: DisplayState): Boolean =
+            state.homeLayout.selected == HomeLayoutKind.CAROUSEL
 
         private val BackgroundHeader = Header("backgroundHeader", "background", "Background")
         private val VideoHeader = Header("videoHeader", "video", "Video Wallpaper")

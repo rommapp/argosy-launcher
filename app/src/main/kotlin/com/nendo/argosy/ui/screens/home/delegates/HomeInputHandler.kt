@@ -7,6 +7,7 @@ import com.nendo.argosy.domain.model.GridDirection2D
 import com.nendo.argosy.domain.model.HomeLayoutKind
 import com.nendo.argosy.ui.common.GridDirection
 import com.nendo.argosy.ui.components.AutoGridMove
+import com.nendo.argosy.ui.components.TileEditMode
 import com.nendo.argosy.ui.screens.home.HomeRow
 import com.nendo.argosy.ui.screens.home.HomeRowItem
 import com.nendo.argosy.ui.screens.home.HomeUiState
@@ -29,7 +30,17 @@ interface HomeInputActions {
     fun moveCustomGridFocus(direction: com.nendo.argosy.domain.model.GridDirection2D): Boolean
     fun turnCustomGridPage(delta: Int): Boolean
     fun moveFocusedTile(direction: com.nendo.argosy.domain.model.GridDirection2D): Boolean
+    fun resizeFocusedTile(direction: com.nendo.argosy.domain.model.GridDirection2D): Boolean
+    fun enterTileMoveMode()
     fun exitTileMoveMode()
+    fun commitTileEdit()
+    fun cancelTileEdit()
+    fun toggleTileEditMode()
+    fun openTileMenu()
+    fun closeTileMenu()
+    fun moveTileMenuFocus(delta: Int)
+    fun confirmTileMenu()
+    fun confirmAddPage()
     fun openTilePicker()
     fun closeTilePicker()
     fun moveTilePickerFocus(delta: Int)
@@ -58,6 +69,10 @@ class HomeInputHandler(
 
     override fun onUp(): InputResult {
         val state = actions.uiState.value
+        if (state.customGrid.showMenu) {
+            actions.moveTileMenuFocus(-1)
+            return InputResult.HANDLED
+        }
         return when {
             state.showAddToCollectionModal -> {
                 actions.moveCollectionFocusUp()
@@ -82,6 +97,10 @@ class HomeInputHandler(
 
     override fun onDown(): InputResult {
         val state = actions.uiState.value
+        if (state.customGrid.showMenu) {
+            actions.moveTileMenuFocus(1)
+            return InputResult.HANDLED
+        }
         return when {
             state.showAddToCollectionModal -> {
                 actions.moveCollectionFocusDown()
@@ -136,6 +155,10 @@ class HomeInputHandler(
      * button reads as "use this" whether or not the cell holds anything yet.
      */
     private fun confirmCustomGridCell() {
+        if (actions.uiState.value.customGrid.isOnAddPage) {
+            actions.confirmAddPage()
+            return
+        }
         val gameId = actions.focusedTileGameId()
         if (gameId == null) {
             actions.openTilePicker()
@@ -145,11 +168,11 @@ class HomeInputHandler(
     }
 
     private fun customMove(direction: GridDirection2D): InputResult {
-        if (actions.uiState.value.tileMoveMode) {
-            actions.moveFocusedTile(direction)
-            return InputResult.HANDLED
+        when (actions.uiState.value.customGrid.editMode) {
+            TileEditMode.MOVE -> actions.moveFocusedTile(direction)
+            TileEditMode.RESIZE -> actions.resizeFocusedTile(direction)
+            TileEditMode.NONE -> actions.moveCustomGridFocus(direction)
         }
-        actions.moveCustomGridFocus(direction)
         return InputResult.HANDLED
     }
 
@@ -177,7 +200,8 @@ class HomeInputHandler(
         val state = actions.uiState.value
         when {
             state.showTilePicker -> actions.confirmTilePickerSelection()
-            state.tileMoveMode -> actions.exitTileMoveMode()
+            state.customGrid.showMenu -> actions.confirmTileMenu()
+            state.customGrid.isEditing -> actions.commitTileEdit()
             state.showAddToCollectionModal -> actions.confirmCollectionSelection()
             state.showGameMenu -> actions.confirmGameMenuSelection(onGameSelect)
             isCustomGrid(state) -> confirmCustomGridCell()
@@ -212,8 +236,12 @@ class HomeInputHandler(
             actions.closeTilePicker()
             return InputResult.HANDLED
         }
-        if (state.tileMoveMode) {
-            actions.exitTileMoveMode()
+        if (state.customGrid.showMenu) {
+            actions.closeTileMenu()
+            return InputResult.HANDLED
+        }
+        if (state.customGrid.isEditing) {
+            actions.cancelTileEdit()
             return InputResult.HANDLED
         }
         if (state.showAddToCollectionModal) {
@@ -252,9 +280,32 @@ class HomeInputHandler(
     }
 
     override fun onSelect(): InputResult {
-        if (actions.uiState.value.showAddToCollectionModal) return InputResult.HANDLED
-        if (actions.uiState.value.focusedGame != null) {
+        val state = actions.uiState.value
+        if (state.showAddToCollectionModal) return InputResult.HANDLED
+        if (isCustomGrid(state)) {
+            if (state.customGrid.isEditing) return InputResult.HANDLED
+            actions.openTileMenu()
+            return InputResult.HANDLED
+        }
+        if (state.focusedGame != null) {
             actions.toggleGameMenu()
+        }
+        return InputResult.HANDLED
+    }
+
+    /**
+     * Holding confirm picks a tile up and puts it down again, so arranging never has to go through
+     * the select menu. Committing on the second hold matches the press that started it.
+     */
+    override fun onLongConfirm(): InputResult {
+        val state = actions.uiState.value
+        if (!isCustomGrid(state) || state.showTilePicker || state.customGrid.showMenu) {
+            return InputResult.UNHANDLED
+        }
+        if (state.customGrid.isEditing) {
+            actions.commitTileEdit()
+        } else {
+            actions.enterTileMoveMode()
         }
         return InputResult.HANDLED
     }
@@ -289,6 +340,10 @@ class HomeInputHandler(
 
     override fun onContextMenu(): InputResult {
         val state = actions.uiState.value
+        if (isCustomGrid(state) && state.customGrid.isEditing) {
+            actions.toggleTileEditMode()
+            return InputResult.HANDLED
+        }
         val game = state.focusedGame ?: return InputResult.UNHANDLED
         actions.setNavigationContext(
             state.currentItems.filterIsInstance<HomeRowItem.Game>().map { it.game.id }

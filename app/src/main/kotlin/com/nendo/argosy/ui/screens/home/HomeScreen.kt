@@ -123,6 +123,7 @@ import com.nendo.argosy.ui.components.CarouselRail
 import com.nendo.argosy.ui.components.HomeAutoGrid
 import com.nendo.argosy.ui.components.HomeCustomGridPage
 import com.nendo.argosy.ui.components.HomeTilePickerModal
+import com.nendo.argosy.ui.components.TileEditMode
 import com.nendo.argosy.domain.model.HomeLayoutKind
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import com.nendo.argosy.ui.components.HERO_MIN_CARD_SCALE
@@ -414,6 +415,7 @@ fun HomeScreen(
     LaunchedEffect(uiState.focusedGameIndex, uiState.focusedGame?.youtubeVideoId, uiState.videoWallpaperEnabled) {
         viewModel.deactivateVideoPreview()
         if (!uiState.videoWallpaperEnabled) return@LaunchedEffect
+        if (uiState.layoutKind != HomeLayoutKind.CAROUSEL) return@LaunchedEffect
         val game = uiState.focusedGame ?: return@LaunchedEffect
         val videoId = game.youtubeVideoId ?: return@LaunchedEffect
         val shouldSkip = uiState.showGameMenu ||
@@ -495,7 +497,9 @@ fun HomeScreen(
     val overlayBaseColor = if (isDarkTheme) Color.Black else Color.White
 
     val backdropEnabled = LocalSurfaceBackdrop.current.enabled
-    val showArtLayer = !backdropEnabled || uiState.homeBackgroundMode == HomeBackgroundMode.GAME_ART
+    val isGridLayout = uiState.layoutKind != HomeLayoutKind.CAROUSEL
+    val showArtLayer = !isGridLayout &&
+        (!backdropEnabled || uiState.homeBackgroundMode == HomeBackgroundMode.GAME_ART)
 
     val effectiveBackgroundPath = if (uiState.useGameBackground) {
         uiState.focusedGame?.let { game ->
@@ -637,7 +641,7 @@ fun HomeScreen(
                     Dimens.footerHeight - Dimens.spacingLg - Dimens.spacingXl,
                 config = uiState.carouselConfig
             )
-            val railHeight = if (isAutoGrid) {
+            val railHeight = if (isAutoGrid || isCustomGrid) {
                 (maxHeight - headerBlockHeight - Dimens.footerHeight - Dimens.spacingLg)
                     .coerceAtLeast(Dimens.spacingXl)
             } else {
@@ -652,7 +656,7 @@ fun HomeScreen(
                         if (measured != headerBlockHeight) headerBlockHeight = measured
                     }
             ) {
-                HomeHeader(
+                if (!isCustomGrid) HomeHeader(
                     uiState = uiState,
                     onPreviousRow = viewModel::previousRow,
                     onNextRow = viewModel::nextRow,
@@ -679,15 +683,15 @@ fun HomeScreen(
                             LoadingState()
                         }
                         isCustomGrid -> {
-                            HomeCustomGridPage(
-                                tiles = uiState.tilesOnPage(uiState.customGridPage),
+                            com.nendo.argosy.ui.components.CustomGridSurface(
+                                state = uiState.customGrid,
                                 contentFor = { tile -> uiState.tileContentFor(tile) },
                                 laneCount = uiState.customGridConfig.laneCount,
-                                focusedCell = uiState.customGridCell,
                                 onCellTap = { cell -> viewModel.setCustomGridCell(cell) },
                                 onShapeResolved = { columns, rows ->
                                     viewModel.setCustomGridShape(columns, rows)
                                 },
+                                onAddPage = { viewModel.confirmAddPage() },
                                 downloadIndicatorFor = { uiState.downloadIndicatorFor(it) },
                                 onCoverLoadFailed = viewModel::repairCoverImage,
                                 onCoverLoaded = viewModel::extractGradientForGame,
@@ -768,7 +772,31 @@ fun HomeScreen(
                 }
 
                 val focusedGame = uiState.focusedGame
-                if (focusedGame != null && !uiState.showGameMenu) {
+                if (isCustomGrid) {
+                    val grid = uiState.customGrid
+                    FooterHints(
+                        hints = if (grid.isEditing) {
+                            listOf(
+                                InputButton.DPAD to grid.editLabel.orEmpty(),
+                                InputButton.X to if (grid.editMode == TileEditMode.MOVE) {
+                                    "Resize"
+                                } else {
+                                    "Move"
+                                },
+                                InputButton.A to "Place",
+                                InputButton.B to "Cancel"
+                            )
+                        } else {
+                            listOf(
+                                InputButton.LB_RB to "Page",
+                                InputButton.A to if (grid.focusedGameId != null) "Play" else "Add",
+                                InputButton.SELECT to "Options"
+                            )
+                        },
+                        variant = FooterVariant.SUBTLE
+                    )
+                    FooterSpacer()
+                } else if (focusedGame != null && !uiState.showGameMenu) {
                     if (!uiState.isVideoPreviewActive) {
                         FooterHints(
                             hints = listOf(
@@ -806,7 +834,7 @@ fun HomeScreen(
                 }
             }
 
-            if (!isAutoGrid) {
+            if (!isAutoGrid && !isCustomGrid) {
             val gameInfoWidth by animateFloatAsState(
                 targetValue = 1f,
                 animationSpec = tween(500),
@@ -921,6 +949,20 @@ fun HomeScreen(
                     }
                 )
             }
+        }
+
+        if (uiState.customGrid.showMenu) {
+            val menuTile = uiState.customGrid.focusedTile
+            com.nendo.argosy.ui.components.CustomTileMenuModal(
+                title = menuTile?.let { uiState.tileContentFor(it)?.label }.orEmpty(),
+                entries = uiState.customGrid.menuActions.map { it.label },
+                focusIndex = uiState.customGrid.menuFocusIndex,
+                onSelect = { index ->
+                    viewModel.moveTileMenuFocus(index - uiState.customGrid.menuFocusIndex)
+                    viewModel.confirmTileMenu()
+                },
+                onDismiss = viewModel::closeTileMenu
+            )
         }
 
         AnimatedVisibility(

@@ -91,8 +91,14 @@ class HomeViewModel @Inject constructor(
 
     private val sessionStateStore by lazy { com.nendo.argosy.data.preferences.SessionStateStore(context) }
 
-    private var customGridColumns = 1
-    private var customGridRows = 1
+    private val customGrid = com.nendo.argosy.ui.home.grid.CustomGridCoordinator(
+        scope = viewModelScope,
+        repository = homeTileRepository,
+        ownerUserId = { syncPreferencesRepository.getRommUserId() },
+        pickerEntries = { query -> libraryDelegate.searchInstalledForTiles(query) },
+        read = { _uiState.value.customGrid },
+        write = { transform -> _uiState.update { it.copy(customGrid = transform(it.customGrid)) } }
+    )
 
     private var achievementPrefetchJob: Job? = null
     private val achievementPrefetchDebounceMs = 300L
@@ -521,7 +527,8 @@ class HomeViewModel @Inject constructor(
                         (it.target as? HomeTileTargetRef.Game)?.gameId
                     }.distinct()
                     val games = libraryDelegate.resolveTileGames(gameIds)
-                    _uiState.update { it.copy(homeTiles = tiles, tileGames = games) }
+                    customGrid.setTiles(tiles)
+                    _uiState.update { it.copy(tileGames = games) }
                 }
         }
     }
@@ -531,213 +538,72 @@ class HomeViewModel @Inject constructor(
      * here; navigation needs the same columns and rows the user can see or the cursor leaves the
      * page at a different edge than the art does.
      */
-    fun setCustomGridShape(columns: Int, rows: Int) {
-        if (customGridColumns == columns && customGridRows == rows) return
-        customGridColumns = columns
-        customGridRows = rows
-    }
+    fun setCustomGridShape(columns: Int, rows: Int) = customGrid.setShape(columns, rows)
 
-    override fun moveCustomGridFocus(direction: com.nendo.argosy.domain.model.GridDirection2D): Boolean {
-        val state = _uiState.value
-        val move = com.nendo.argosy.domain.model.customGridStep(
-            cell = state.customGridCell,
-            tiles = state.tilesOnPage(state.customGridPage),
-            columns = customGridColumns,
-            rows = customGridRows,
-            direction = direction
-        )
-        return when (move) {
-            is com.nendo.argosy.domain.model.CustomGridMove.Focus -> {
-                _uiState.update { it.copy(customGridCell = move.cell) }
-                true
-            }
-            com.nendo.argosy.domain.model.CustomGridMove.PreviousPage -> turnCustomGridPage(-1)
-            com.nendo.argosy.domain.model.CustomGridMove.NextPage -> turnCustomGridPage(1)
-            com.nendo.argosy.domain.model.CustomGridMove.None -> false
-        }
-    }
+    override fun moveCustomGridFocus(
+        direction: com.nendo.argosy.domain.model.GridDirection2D
+    ): Boolean = customGrid.moveFocus(direction)
 
-    /**
-     * Turns to an adjacent page, entering from the edge the move came from so the cursor keeps its
-     * line rather than jumping to a corner.
-     */
-    override fun turnCustomGridPage(delta: Int): Boolean {
-        val state = _uiState.value
-        val target = state.customGridPage + delta
-        if (target < 0 || target > state.customGridAddPageIndex) return false
-        val entryColumn = if (delta > 0) 0 else (customGridColumns - 1).coerceAtLeast(0)
-        _uiState.update {
-            it.copy(
-                customGridPage = target,
-                customGridCell = com.nendo.argosy.domain.model.GridCell(
-                    entryColumn,
-                    it.customGridCell.rowIndex.coerceIn(0, (customGridRows - 1).coerceAtLeast(0))
-                )
-            )
-        }
-        return true
-    }
+    override fun turnCustomGridPage(delta: Int): Boolean = customGrid.turnPage(delta)
 
-    fun setCustomGridCell(cell: com.nendo.argosy.domain.model.GridCell) {
-        _uiState.update { it.copy(customGridCell = cell) }
-    }
+    fun setCustomGridCell(cell: com.nendo.argosy.domain.model.GridCell) = customGrid.setCell(cell)
 
-    fun focusedTile(): com.nendo.argosy.domain.model.HomeTile? {
-        val state = _uiState.value
-        return state.tilesOnPage(state.customGridPage).firstOrNull {
-            it.rect.covers(state.customGridCell.columnIndex, state.customGridCell.rowIndex)
-        }
-    }
+    fun focusedTile(): com.nendo.argosy.domain.model.HomeTile? = customGrid.focusedTile()
 
-    fun placeGameOnFocusedCell(gameId: Long) {
-        val state = _uiState.value
-        if (focusedTile() != null) return
-        viewModelScope.launch {
-            homeTileRepository.place(
-                ownerUserId = syncPreferencesRepository.getRommUserId(),
-                pageIndex = state.customGridPage,
-                rect = com.nendo.argosy.domain.model.TileRect(
-                    state.customGridCell.columnIndex,
-                    state.customGridCell.rowIndex
-                ),
-                target = HomeTileTargetRef.Game(gameId)
-            )
-        }
-    }
+    override fun focusedTileGameId(): Long? = customGrid.focusedGameId()
 
-    /**
-     * Grows the focused tile by one cell right or down, refusing when the cells it would take are
-     * already held or fall off the page. Growth runs away from the anchor so extending never moves
-     * the tile out from under the cursor.
-     */
-    fun extendFocusedTile(horizontal: Boolean): Boolean {
-        val state = _uiState.value
-        val tile = focusedTile() ?: return false
-        val grown = if (horizontal) {
-            tile.rect.copy(columnSpan = tile.rect.columnSpan + 1)
-        } else {
-            tile.rect.copy(rowSpan = tile.rect.rowSpan + 1)
-        }
-        if (!grown.withinBounds(customGridColumns, customGridRows)) return false
-        val others = state.tilesOnPage(state.customGridPage).filter { it.id != tile.id }
-        if (others.any { it.rect.overlaps(grown) }) return false
-        viewModelScope.launch {
-            homeTileRepository.move(tile, syncPreferencesRepository.getRommUserId(), grown)
-        }
-        return true
-    }
+    fun placeGameOnFocusedCell(gameId: Long) =
+        customGrid.placeOnFocusedCell(HomeTileTargetRef.Game(gameId))
 
-    fun shrinkFocusedTile(horizontal: Boolean): Boolean {
-        val tile = focusedTile() ?: return false
-        val shrunk = if (horizontal) {
-            if (tile.rect.columnSpan <= 1) return false
-            tile.rect.copy(columnSpan = tile.rect.columnSpan - 1)
-        } else {
-            if (tile.rect.rowSpan <= 1) return false
-            tile.rect.copy(rowSpan = tile.rect.rowSpan - 1)
-        }
-        viewModelScope.launch {
-            homeTileRepository.move(tile, syncPreferencesRepository.getRommUserId(), shrunk)
-        }
-        return true
-    }
+    fun tileMenuActions(): List<com.nendo.argosy.ui.components.CustomTileMenuAction> =
+        _uiState.value.customGrid.menuActions
 
-    fun removeFocusedTile() {
-        val tile = focusedTile() ?: return
-        viewModelScope.launch { homeTileRepository.remove(tile.id) }
-    }
+    override fun openTileMenu() = customGrid.openMenu()
+
+    override fun closeTileMenu() = customGrid.closeMenu()
+
+    override fun moveTileMenuFocus(delta: Int) = customGrid.moveMenuFocus(delta)
+
+    override fun confirmTileMenu() = customGrid.confirmMenu()
+
+    fun removeFocusedTile() = customGrid.removeFocusedTile()
+
+    val isOnAddPage: Boolean
+        get() = _uiState.value.customGrid.isOnAddPage
+
+    override fun confirmAddPage() = customGrid.confirmAddPage()
 
     /**
      * Opens the picker for the focused cell. Offers installed games only, since a grid you curate
      * is somewhere you reach for something to play rather than something to fetch.
      */
-    override fun openTilePicker() {
-        if (focusedTile() != null) return
-        viewModelScope.launch {
-            _uiState.update {
-                it.copy(showTilePicker = true, tilePickerQuery = "", tilePickerFocusIndex = 0)
-            }
-            refreshTilePickerEntries()
-        }
-    }
+    override fun openTilePicker() = customGrid.openPicker()
 
-    override fun focusedTileGameId(): Long? =
-        (focusedTile()?.target as? HomeTileTargetRef.Game)?.gameId
+    override fun closeTilePicker() = customGrid.closePicker()
 
-    override fun closeTilePicker() {
-        _uiState.update { it.copy(showTilePicker = false, tilePickerQuery = "") }
-    }
+    fun setTilePickerQuery(query: String) = customGrid.setPickerQuery(query)
 
-    fun setTilePickerQuery(query: String) {
-        _uiState.update { it.copy(tilePickerQuery = query, tilePickerFocusIndex = 0) }
-        viewModelScope.launch { refreshTilePickerEntries() }
-    }
+    override fun moveTilePickerFocus(delta: Int) = customGrid.movePickerFocus(delta)
 
-    override fun moveTilePickerFocus(delta: Int) {
-        _uiState.update {
-            val maxIndex = (it.tilePickerEntries.size - 1).coerceAtLeast(0)
-            it.copy(tilePickerFocusIndex = (it.tilePickerFocusIndex + delta).coerceIn(0, maxIndex))
-        }
-    }
+    override fun confirmTilePickerSelection() = customGrid.confirmPickerSelection()
 
-    override fun confirmTilePickerSelection() {
-        val state = _uiState.value
-        val entry = state.tilePickerEntries.getOrNull(state.tilePickerFocusIndex) ?: return
-        placeGameOnFocusedCell(entry.gameId)
-        closeTilePicker()
-    }
+    override fun enterTileMoveMode() = customGrid.enterMoveMode()
 
-    private suspend fun refreshTilePickerEntries() {
-        val query = _uiState.value.tilePickerQuery
-        val entries = libraryDelegate.searchInstalledForTiles(query)
-        _uiState.update { it.copy(tilePickerEntries = entries) }
-    }
+    override fun exitTileMoveMode() = customGrid.commitEdit()
 
-    fun enterTileMoveMode() {
-        if (focusedTile() == null) return
-        _uiState.update { it.copy(tileMoveMode = true, showGameMenu = false) }
-    }
+    override fun commitTileEdit() = customGrid.commitEdit()
 
-    override fun exitTileMoveMode() {
-        _uiState.update { it.copy(tileMoveMode = false) }
-    }
+    override fun cancelTileEdit() = customGrid.cancelEdit()
 
-    /**
-     * Carries the focused tile one cell in [direction], taking the cursor with it. The move is
-     * refused rather than partially applied when the destination is off the page or already held,
-     * so a tile can never be parked on top of another.
-     */
+    override fun toggleTileEditMode() = customGrid.toggleEditMode()
+
     override fun moveFocusedTile(
         direction: com.nendo.argosy.domain.model.GridDirection2D
-    ): Boolean {
-        val state = _uiState.value
-        val tile = focusedTile() ?: return false
-        val moved = when (direction) {
-            com.nendo.argosy.domain.model.GridDirection2D.LEFT ->
-                tile.rect.copy(columnIndex = tile.rect.columnIndex - 1)
-            com.nendo.argosy.domain.model.GridDirection2D.RIGHT ->
-                tile.rect.copy(columnIndex = tile.rect.columnIndex + 1)
-            com.nendo.argosy.domain.model.GridDirection2D.UP ->
-                tile.rect.copy(rowIndex = tile.rect.rowIndex - 1)
-            com.nendo.argosy.domain.model.GridDirection2D.DOWN ->
-                tile.rect.copy(rowIndex = tile.rect.rowIndex + 1)
-        }
-        if (!moved.withinBounds(customGridColumns, customGridRows)) return false
-        val others = state.tilesOnPage(state.customGridPage).filter { it.id != tile.id }
-        if (others.any { it.rect.overlaps(moved) }) return false
-        _uiState.update {
-            it.copy(
-                customGridCell = com.nendo.argosy.domain.model.GridCell(
-                    moved.columnIndex,
-                    moved.rowIndex
-                )
-            )
-        }
-        viewModelScope.launch {
-            homeTileRepository.move(tile, syncPreferencesRepository.getRommUserId(), moved)
-        }
-        return true
-    }
+    ): Boolean = customGrid.moveFocusedTile(direction)
+
+    override fun resizeFocusedTile(
+        direction: com.nendo.argosy.domain.model.GridDirection2D
+    ): Boolean = customGrid.resizeFocusedTile(direction)
 
     override fun moveGridFocus(direction: GridDirection): AutoGridMove {
         val state = _uiState.value

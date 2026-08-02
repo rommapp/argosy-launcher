@@ -134,16 +134,9 @@ data class HomeUiState(
         com.nendo.argosy.domain.model.HomeLayoutKind.CAROUSEL,
     val customGridConfig: com.nendo.argosy.domain.model.CustomGridConfig =
         com.nendo.argosy.domain.model.CustomGridConfig(),
-    val homeTiles: List<com.nendo.argosy.domain.model.HomeTile> = emptyList(),
+    val customGrid: com.nendo.argosy.ui.components.CustomGridState =
+        com.nendo.argosy.ui.components.CustomGridState(),
     val tileGames: Map<Long, HomeGameUi> = emptyMap(),
-    val customGridPage: Int = 0,
-    val customGridCell: com.nendo.argosy.domain.model.GridCell =
-        com.nendo.argosy.domain.model.GridCell(0, 0),
-    val tileMoveMode: Boolean = false,
-    val showTilePicker: Boolean = false,
-    val tilePickerQuery: String = "",
-    val tilePickerFocusIndex: Int = 0,
-    val tilePickerEntries: List<com.nendo.argosy.ui.components.TilePickerEntry> = emptyList(),
     val isLoading: Boolean = true,
     val isRommConfigured: Boolean = false,
     val showGameMenu: Boolean = false,
@@ -265,9 +258,7 @@ data class HomeUiState(
         }
 
     val focusedTile: com.nendo.argosy.domain.model.HomeTile?
-        get() = tilesOnPage(customGridPage).firstOrNull {
-            it.rect.covers(customGridCell.columnIndex, customGridCell.rowIndex)
-        }
+        get() = customGrid.focusedTile
 
     val focusedTileGame: HomeGameUi?
         get() = (focusedTile?.target as? com.nendo.argosy.domain.model.HomeTileTargetRef.Game)
@@ -320,20 +311,25 @@ data class HomeUiState(
     fun downloadIndicatorFor(gameId: Long): GameDownloadIndicator =
         downloadIndicators[gameId] ?: GameDownloadIndicator.NONE
 
-    val customGridPageCount: Int
-        get() = maxOf(
-            (homeTiles.maxOfOrNull { it.pageIndex } ?: -1) + 1,
-            com.nendo.argosy.data.repository.HomeTileRepository.DEFAULT_PAGE_COUNT
-        )
+    val homeTiles: List<com.nendo.argosy.domain.model.HomeTile> get() = customGrid.tiles
 
-    /**
-     * The page past the last real one. Landing on it is how a page gets added, so it is a position
-     * rather than a stored page and never holds tiles.
-     */
-    val customGridAddPageIndex: Int get() = customGridPageCount
+    val customGridPage: Int get() = customGrid.page
+
+    val customGridPageCount: Int get() = customGrid.pageCount
+
+    val customGridCell: com.nendo.argosy.domain.model.GridCell get() = customGrid.cell
+
+    val showTilePicker: Boolean get() = customGrid.showPicker
+
+    val tilePickerQuery: String get() = customGrid.pickerQuery
+
+    val tilePickerFocusIndex: Int get() = customGrid.pickerFocusIndex
+
+    val tilePickerEntries: List<com.nendo.argosy.ui.components.TilePickerEntry>
+        get() = customGrid.pickerEntries
 
     fun tilesOnPage(pageIndex: Int): List<com.nendo.argosy.domain.model.HomeTile> =
-        homeTiles.filter { it.pageIndex == pageIndex }
+        customGrid.tilesOnPage(pageIndex)
 
     /**
      * What a tile draws. A game whose row survived but whose library entry did not resolves to a

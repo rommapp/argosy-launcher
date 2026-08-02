@@ -33,9 +33,14 @@ class HomeTileRepository @Inject constructor(
         target: HomeTileTargetRef
     ): Long = homeTileDao.insert(entityFor(ownerUserId, pageIndex, rect, target))
 
-    suspend fun move(tile: HomeTile, ownerUserId: Long?, rect: TileRect) {
+    suspend fun move(
+        tile: HomeTile,
+        ownerUserId: Long?,
+        rect: TileRect,
+        pageIndex: Int = tile.pageIndex
+    ) {
         homeTileDao.update(
-            entityFor(ownerUserId, tile.pageIndex, rect, tile.target).copy(id = tile.id)
+            entityFor(ownerUserId, pageIndex, rect, tile.target).copy(id = tile.id)
         )
     }
 

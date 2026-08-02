@@ -705,6 +705,7 @@ fun HomeScreen(
                                 onTileDrag = { cell -> viewModel.moveEditingTileTo(cell) },
                                 onTileResize = { cell -> viewModel.resizeEditingTileTo(cell) },
                                 onToggleEditMode = { viewModel.toggleTileEditMode() },
+                                showEmptySlots = uiState.customGridConfig.showEmptySlots,
                                 onShapeResolved = { columns, rows ->
                                     viewModel.setCustomGridShape(columns, rows)
                                 },

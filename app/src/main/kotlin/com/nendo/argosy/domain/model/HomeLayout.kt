@@ -71,7 +71,11 @@ enum class HomeTileAutoAdd { OFF, AUTO, PROMPT }
  */
 data class CustomGridConfig(
     val laneCount: Int = DEFAULT_LANE_COUNT,
-    val autoAdd: HomeTileAutoAdd = HomeTileAutoAdd.OFF
+    val autoAdd: HomeTileAutoAdd = HomeTileAutoAdd.OFF,
+    val showEmptySlots: Boolean = true,
+    val persistBlankPages: Boolean = false,
+    val autoFit: Boolean = true,
+    val pageCount: Int = 0
 ) : HomeLayoutConfig {
     override val kind: HomeLayoutKind get() = HomeLayoutKind.CUSTOM_GRID
 }
@@ -131,6 +135,10 @@ data class HomeLayoutSettings(
             JSONObject().apply {
                 put(KEY_LANE_COUNT, customGrid.laneCount)
                 put(KEY_AUTO_ADD, customGrid.autoAdd.name)
+                put(KEY_EMPTY_SLOTS, customGrid.showEmptySlots)
+                put(KEY_PERSIST_PAGES, customGrid.persistBlankPages)
+                put(KEY_AUTO_FIT, customGrid.autoFit)
+                put(KEY_PAGE_COUNT, customGrid.pageCount)
             }
         )
     }.toString()
@@ -151,6 +159,10 @@ data class HomeLayoutSettings(
         private const val KEY_SECTION_STYLE = "sectionStyle"
         private const val KEY_SHOW_TITLES = "showTitles"
         private const val KEY_AUTO_ADD = "autoAdd"
+        private const val KEY_EMPTY_SLOTS = "showEmptySlots"
+        private const val KEY_PERSIST_PAGES = "persistBlankPages"
+        private const val KEY_AUTO_FIT = "autoFit"
+        private const val KEY_PAGE_COUNT = "pageCount"
 
         /**
          * Reads what it can and defaults the rest. A layout the user curated is not thrown away
@@ -205,7 +217,19 @@ data class HomeLayoutSettings(
                     autoAdd = enumOrDefault(
                         customGrid?.optString(KEY_AUTO_ADD),
                         defaults.customGrid.autoAdd
-                    )
+                    ),
+                    showEmptySlots = customGrid?.optBoolean(
+                        KEY_EMPTY_SLOTS,
+                        defaults.customGrid.showEmptySlots
+                    ) ?: defaults.customGrid.showEmptySlots,
+                    persistBlankPages = customGrid?.optBoolean(
+                        KEY_PERSIST_PAGES,
+                        defaults.customGrid.persistBlankPages
+                    ) ?: defaults.customGrid.persistBlankPages,
+                    autoFit = customGrid?.optBoolean(KEY_AUTO_FIT, defaults.customGrid.autoFit)
+                        ?: defaults.customGrid.autoFit,
+                    pageCount = customGrid?.optInt(KEY_PAGE_COUNT, defaults.customGrid.pageCount)
+                        ?.coerceAtLeast(0) ?: defaults.customGrid.pageCount
                 )
             )
         }

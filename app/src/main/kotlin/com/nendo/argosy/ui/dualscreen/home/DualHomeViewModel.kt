@@ -99,6 +99,25 @@ enum class DualHomeFocusZone { CAROUSEL, APP_BAR }
 
 enum class DualHomeViewMode { CAROUSEL, COLLECTIONS, COLLECTION_GAMES, LIBRARY_GRID }
 
+data class DualCollectionPickerEntry(val id: Long, val name: String, val isMember: Boolean)
+
+enum class DualLibraryMenuAction(val label: String) {
+    PLAY("Play"),
+    INSTALL("Install"),
+    DOWNLOAD("Download"),
+    FAVORITE("Favorite"),
+    UNFAVORITE("Unfavorite"),
+    DETAILS("Details"),
+    ADD_TO_COLLECTION("Add to Collection"),
+    ADD_TO_GRID("Add to Grid"),
+    REFRESH("Refresh Data"),
+    RESYNC_PLATFORM("Resync Platform"),
+    DELETE("Delete Download"),
+    UNINSTALL("Uninstall"),
+    HIDE("Hide"),
+    SHOW("Show")
+}
+
 enum class ForwardingMode { NONE, OVERLAY, BACKGROUND }
 
 sealed class DualCollectionListItem {
@@ -170,6 +189,11 @@ data class DualHomeUiState(
     val customGridConfig: com.nendo.argosy.domain.model.CustomGridConfig =
         com.nendo.argosy.domain.model.CustomGridConfig(),
     val collectionOpenedFromTile: Boolean = false,
+    val showLibraryMenu: Boolean = false,
+    val libraryMenuFocusIndex: Int = 0,
+    val collectionPickerGameId: Long? = null,
+    val collectionPickerEntries: List<DualCollectionPickerEntry> = emptyList(),
+    val collectionPickerFocusIndex: Int = 0,
     val customGrid: com.nendo.argosy.ui.components.CustomGridState =
         com.nendo.argosy.ui.components.CustomGridState(),
     val tileGames: Map<Long, HomeGameUi> = emptyMap(),
@@ -242,11 +266,7 @@ data class DualHomeUiState(
         customGrid.tilesOnPage(pageIndex)
 
     val focusedTileGameId: Long?
-        get() = (
-            tilesOnPage(customGridPage)
-                .firstOrNull { it.rect.covers(customGridCell.columnIndex, customGridCell.rowIndex) }
-                ?.target as? com.nendo.argosy.domain.model.HomeTileTargetRef.Game
-            )?.gameId
+        get() = customGrid.focusedGameId
 
     fun tileContentFor(
         tile: com.nendo.argosy.domain.model.HomeTile
@@ -346,6 +366,7 @@ class DualHomeViewModel(
         scope = viewModelScope,
         repository = homeTileRepository,
         ownerUserId = { syncPreferencesRepository?.getRommUserId() },
+        onPageAdded = { count -> persistCustomGridPageCount(count) },
         pickerEntries = { category, query -> tilePickerEntriesFor(category, query) },
         read = { _uiState.value.customGrid },
         write = { transform -> _uiState.update { it.copy(customGrid = transform(it.customGrid)) } }
@@ -455,6 +476,10 @@ class DualHomeViewModel(
                         layoutKind = preferences.homeLayout.selected
                     )
                 }
+                customGrid.applyConfig(
+                    autoFit = preferences.homeLayout.customGrid.autoFit,
+                    storedPages = preferences.homeLayout.customGrid.pageCount
+                )
             }
         }
     }
@@ -1185,6 +1210,22 @@ class DualHomeViewModel(
 
     fun confirmAddPage() = customGrid.confirmAddPage()
 
+    /**
+     * Remembers a page that holds nothing, when the layout is set to keep blank pages. Pages are
+     * otherwise implied by the tiles on them, so an empty one has nowhere to live but the config.
+     */
+    private fun persistCustomGridPageCount(count: Int) {
+        val prefs = preferencesRepository ?: return
+        val config = _uiState.value.customGridConfig
+        if (!config.persistBlankPages || count <= config.pageCount) return
+        viewModelScope.launch {
+            val settings = prefs.userPreferences.first().homeLayout
+            prefs.setHomeLayout(
+                settings.copy(customGrid = settings.customGrid.copy(pageCount = count))
+            )
+        }
+    }
+
     fun openTilePicker() = customGrid.openPicker()
 
     fun closeTilePicker() = customGrid.closePicker()
@@ -1513,6 +1554,139 @@ class DualHomeViewModel(
         val newIndex = (state.collectionGamesFocusedIndex + delta)
             .coerceIn(0, state.collectionGames.size - 1)
         _uiState.update { it.copy(collectionGamesFocusedIndex = newIndex) }
+    }
+
+    /**
+     * The options a library game offers on the companion. Mirrors the primary screen's quick menu
+     * as far as this surface can act: launching, favouriting, details and, when the home is a
+     * curated grid, putting the game on it.
+     */
+    fun libraryMenuActions(): List<DualLibraryMenuAction> {
+        val game = focusedLibraryGame() ?: return emptyList()
+        return buildList {
+            add(
+                when {
+                    game.needsInstall -> DualLibraryMenuAction.INSTALL
+                    game.isDownloaded -> DualLibraryMenuAction.PLAY
+                    else -> DualLibraryMenuAction.DOWNLOAD
+                }
+            )
+            add(if (game.isFavorite) DualLibraryMenuAction.UNFAVORITE else DualLibraryMenuAction.FAVORITE)
+            add(DualLibraryMenuAction.DETAILS)
+            add(DualLibraryMenuAction.ADD_TO_COLLECTION)
+            if (_uiState.value.layoutKind == com.nendo.argosy.domain.model.HomeLayoutKind.CUSTOM_GRID) {
+                add(DualLibraryMenuAction.ADD_TO_GRID)
+            }
+            if (game.isRommGame || game.isAndroidApp) add(DualLibraryMenuAction.REFRESH)
+            add(DualLibraryMenuAction.RESYNC_PLATFORM)
+            if (game.isDownloaded || game.needsInstall) {
+                add(
+                    if (game.isAndroidApp && game.isDownloaded) {
+                        DualLibraryMenuAction.UNINSTALL
+                    } else {
+                        DualLibraryMenuAction.DELETE
+                    }
+                )
+            }
+            add(if (game.isHidden) DualLibraryMenuAction.SHOW else DualLibraryMenuAction.HIDE)
+        }
+    }
+
+    fun focusedLibraryGame(): HomeGameUi? {
+        val state = _uiState.value
+        return state.libraryGames.getOrNull(state.libraryFocusedIndex)
+    }
+
+    fun openLibraryGameMenu() {
+        if (focusedLibraryGame() == null) return
+        _uiState.update { it.copy(showLibraryMenu = true, libraryMenuFocusIndex = 0) }
+    }
+
+    fun closeLibraryGameMenu() = _uiState.update { it.copy(showLibraryMenu = false) }
+
+    fun moveLibraryMenuFocus(delta: Int) = _uiState.update {
+        val maxIndex = (libraryMenuActions().size - 1).coerceAtLeast(0)
+        it.copy(libraryMenuFocusIndex = (it.libraryMenuFocusIndex + delta).coerceIn(0, maxIndex))
+    }
+
+    /**
+     * Closes the menu and reports what was chosen, because launching a game belongs to the host
+     * activity rather than here; the actions this layer owns are applied on the way out.
+     */
+    fun confirmLibraryMenu(): DualLibraryMenuAction? {
+        val action = libraryMenuActions().getOrNull(_uiState.value.libraryMenuFocusIndex)
+        val game = focusedLibraryGame()
+        closeLibraryGameMenu()
+        if (action == null || game == null) return null
+        when (action) {
+            DualLibraryMenuAction.FAVORITE, DualLibraryMenuAction.UNFAVORITE ->
+                viewModelScope.launch {
+                    gameRepository.updateFavoriteWithSync(game.id, !game.isFavorite)
+                }
+            DualLibraryMenuAction.ADD_TO_GRID -> viewModelScope.launch {
+                homeTileRepository?.appendToLastPage(
+                    ownerUserId = syncPreferencesRepository?.getRommUserId(),
+                    target = com.nendo.argosy.domain.model.HomeTileTargetRef.Game(game.id),
+                    columns = _uiState.value.customGridConfig.laneCount
+                )
+            }
+            DualLibraryMenuAction.ADD_TO_COLLECTION -> openLibraryCollectionPicker(game.id)
+            else -> Unit
+        }
+        return action
+    }
+
+    /**
+     * Collection membership for the focused game, read straight from the repository. The primary
+     * screen's picker is driven by its own view model, which this process cannot reach, so the
+     * companion builds the same list from the same source rather than asking for it.
+     */
+    private fun openLibraryCollectionPicker(gameId: Long) {
+        viewModelScope.launch {
+            val member = collectionRepository.getCollectionIdsForGame(gameId).toSet()
+            val entries = collectionRepository.getAllCollections()
+                .filter { it.name.isNotBlank() }
+                .map { DualCollectionPickerEntry(it.id, it.name, it.id in member) }
+            _uiState.update {
+                it.copy(
+                    collectionPickerGameId = gameId,
+                    collectionPickerEntries = entries,
+                    collectionPickerFocusIndex = 0
+                )
+            }
+        }
+    }
+
+    fun closeCollectionPicker() = _uiState.update {
+        it.copy(collectionPickerGameId = null, collectionPickerEntries = emptyList())
+    }
+
+    fun moveCollectionPickerFocus(delta: Int) = _uiState.update {
+        val maxIndex = (it.collectionPickerEntries.size - 1).coerceAtLeast(0)
+        it.copy(
+            collectionPickerFocusIndex =
+                (it.collectionPickerFocusIndex + delta).coerceIn(0, maxIndex)
+        )
+    }
+
+    fun confirmCollectionPicker() {
+        val state = _uiState.value
+        val gameId = state.collectionPickerGameId ?: return
+        val entry = state.collectionPickerEntries.getOrNull(state.collectionPickerFocusIndex)
+            ?: return
+        viewModelScope.launch {
+            if (entry.isMember) {
+                collectionRepository.removeGameFromCollection(entry.id, gameId)
+            } else {
+                collectionRepository.addGameToCollection(
+                    com.nendo.argosy.data.local.entity.CollectionGameEntity(
+                        collectionId = entry.id,
+                        gameId = gameId
+                    )
+                )
+            }
+            openLibraryCollectionPicker(gameId)
+        }
     }
 
     fun focusedCollectionGame(): HomeGameUi? {

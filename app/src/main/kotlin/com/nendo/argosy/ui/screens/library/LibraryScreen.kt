@@ -42,6 +42,7 @@ import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.InstallMobile
@@ -508,6 +509,14 @@ fun LibraryScreen(
                     onAddToCollection = {
                         viewModel.toggleQuickMenu()
                         viewModel.showAddToCollectionModal(game.id)
+                    },
+                    onAddToGrid = if (uiState.isCustomGridHome) {
+                        {
+                            viewModel.toggleQuickMenu()
+                            viewModel.addGameToHomeGrid(game.id)
+                        }
+                    } else {
+                        null
                     },
                     onRefresh = { viewModel.refreshGameData(game.id) },
                     onResyncPlatform = {
@@ -1461,7 +1470,8 @@ private fun QuickMenuOverlay(
     onRefresh: () -> Unit,
     onResyncPlatform: () -> Unit,
     onDelete: () -> Unit,
-    onHide: () -> Unit
+    onHide: () -> Unit,
+    onAddToGrid: (() -> Unit)? = null
 ) {
     val primaryIcon = when {
         game.needsInstall -> Icons.Default.InstallMobile
@@ -1486,6 +1496,9 @@ private fun QuickMenuOverlay(
         add(MenuEntry(if (game.isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder, if (game.isFavorite) "Unfavorite" else "Favorite", onClick = onFavorite))
         add(MenuEntry(Icons.Default.Info, "Details", onClick = onDetails))
         add(MenuEntry(Icons.AutoMirrored.Filled.PlaylistAdd, "Add to Collection", onClick = onAddToCollection))
+        if (onAddToGrid != null) {
+            add(MenuEntry(Icons.Default.GridView, "Add to Grid", onClick = onAddToGrid))
+        }
         if (game.isRommGame || game.isAndroidApp) {
             add(MenuEntry(Icons.Default.Refresh, "Refresh Data", onClick = onRefresh))
         }

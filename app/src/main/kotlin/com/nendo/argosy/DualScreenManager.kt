@@ -78,6 +78,7 @@ class DualScreenManager(
     internal val gameFileDao: GameFileDao,
     private val downloadManager: DownloadManager,
     private val gameActionsDelegate: GameActionsDelegate,
+    private val syncPlatformUseCase: com.nendo.argosy.domain.usecase.sync.SyncPlatformUseCase,
     private val gameLaunchDelegate: GameLaunchDelegate,
     private val saveCacheManager: SaveCacheManager,
     private val getUnifiedSavesUseCase: GetUnifiedSavesUseCase,
@@ -1011,6 +1012,7 @@ class DualScreenManager(
             "PLAY" -> handleDualPlay(gameId, channelName)
             "DOWNLOAD" -> handleDualDownload(gameId)
             "REFRESH_METADATA" -> handleDualRefresh(gameId)
+            "RESYNC_PLATFORM" -> handleDualResyncPlatform(gameId)
             "DELETE" -> handleDualDelete(gameId)
             "HIDE" -> handleDualHide(gameId)
             "UNHIDE" -> handleDualUnhide(gameId)
@@ -2062,6 +2064,18 @@ class DualScreenManager(
         val localPath = game.localPath ?: return false
         return downloadFileStatusRepository.pathExists(localPath) &&
             downloadFileStatusRepository.isDownloadComplete(localPath)
+    }
+
+    /**
+     * Resyncs the platform a game belongs to. Named by game rather than by platform because that is
+     * what the companion has in hand; the platform is looked up here where the row already lives.
+     */
+    private fun handleDualResyncPlatform(gameId: Long) {
+        scope.launch(Dispatchers.IO) {
+            val game = gameDao.getById(gameId) ?: return@launch
+            val platform = platformRepository.getById(game.platformId) ?: return@launch
+            syncPlatformUseCase(platform.id, platform.name)
+        }
     }
 
     private fun handleDualRefresh(gameId: Long) {

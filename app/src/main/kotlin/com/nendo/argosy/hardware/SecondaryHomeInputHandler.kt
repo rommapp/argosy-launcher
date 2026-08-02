@@ -16,6 +16,7 @@ import com.nendo.argosy.ui.dualscreen.home.DualFilterCategory
 import com.nendo.argosy.ui.dualscreen.home.DualHomeFocusZone
 import com.nendo.argosy.ui.dualscreen.home.DualHomeViewModel
 import com.nendo.argosy.ui.dualscreen.home.DualHomeViewMode
+import com.nendo.argosy.ui.dualscreen.home.DualLibraryMenuAction
 import com.nendo.argosy.ui.dualscreen.home.ForwardingMode
 import com.nendo.argosy.hardware.CompanionScreen
 import com.nendo.argosy.ui.input.GamepadEvent
@@ -806,6 +807,12 @@ class SecondaryHomeInputHandler(
         if (dualHomeViewModel.uiState.value.showFilterOverlay) {
             return handleFilterInput(event)
         }
+        if (dualHomeViewModel.uiState.value.collectionPickerGameId != null) {
+            return handleCollectionPickerInput(event)
+        }
+        if (dualHomeViewModel.uiState.value.showLibraryMenu) {
+            return handleLibraryMenuInput(event)
+        }
 
         return when (event) {
             GamepadEvent.Left -> {
@@ -854,14 +861,14 @@ class SecondaryHomeInputHandler(
             GamepadEvent.Confirm -> {
                 val s = dualHomeViewModel.uiState.value
                 val game = s.libraryGames.getOrNull(s.libraryFocusedIndex)
-                if (game != null) confirmGame(game)
-                InputResult.HANDLED
-            }
-            GamepadEvent.ContextMenu -> {
-                val s = dualHomeViewModel.uiState.value
-                val game = s.libraryGames.getOrNull(s.libraryFocusedIndex)
                 if (game != null) onSelectGame(game.id)
                 InputResult.HANDLED
+            }
+            GamepadEvent.ContextMenu, GamepadEvent.LongConfirm -> {
+                val s = dualHomeViewModel.uiState.value
+                val game = s.libraryGames.getOrNull(s.libraryFocusedIndex)
+                if (game != null) dualHomeViewModel.openLibraryGameMenu()
+                InputResult.handled(SoundType.OPEN_MODAL)
             }
             GamepadEvent.PrevSection -> {
                 dualHomeViewModel.cycleLibraryPlatform(-1) {
@@ -884,6 +891,78 @@ class SecondaryHomeInputHandler(
                 InputResult.HANDLED
             }
             else -> InputResult.HANDLED
+        }
+    }
+
+    private fun handleCollectionPickerInput(event: GamepadEvent): InputResult = when (event) {
+        GamepadEvent.Up -> {
+            dualHomeViewModel.moveCollectionPickerFocus(-1)
+            InputResult.HANDLED
+        }
+        GamepadEvent.Down -> {
+            dualHomeViewModel.moveCollectionPickerFocus(1)
+            InputResult.HANDLED
+        }
+        GamepadEvent.Confirm -> {
+            dualHomeViewModel.confirmCollectionPicker()
+            InputResult.handled(SoundType.TOGGLE)
+        }
+        GamepadEvent.Back -> {
+            dualHomeViewModel.closeCollectionPicker()
+            InputResult.handled(SoundType.CLOSE_MODAL)
+        }
+        else -> InputResult.HANDLED
+    }
+
+    /**
+     * The library's per-game menu on the companion. Launching and opening details belong to the
+     * activity, so the view model reports which entry was taken and the acting happens here.
+     */
+    private fun handleLibraryMenuInput(event: GamepadEvent): InputResult = when (event) {
+        GamepadEvent.Up -> {
+            dualHomeViewModel.moveLibraryMenuFocus(-1)
+            InputResult.HANDLED
+        }
+        GamepadEvent.Down -> {
+            dualHomeViewModel.moveLibraryMenuFocus(1)
+            InputResult.HANDLED
+        }
+        GamepadEvent.Back, GamepadEvent.ContextMenu -> {
+            dualHomeViewModel.closeLibraryGameMenu()
+            InputResult.handled(SoundType.CLOSE_MODAL)
+        }
+        GamepadEvent.Confirm -> {
+            val game = dualHomeViewModel.focusedLibraryGame()
+            val action = dualHomeViewModel.confirmLibraryMenu()
+            if (game != null) applyLibraryMenuAction(action, game)
+            InputResult.HANDLED
+        }
+        else -> InputResult.HANDLED
+    }
+
+    /**
+     * Carries out a library menu choice. Anything that edits the library itself is done by the
+     * primary process through the direct-action channel, which already owns those flows and their
+     * confirmations - duplicating them here would give a game two ways to be deleted.
+     */
+    private fun applyLibraryMenuAction(
+        action: DualLibraryMenuAction?,
+        game: HomeGameUi
+    ) {
+        when (action) {
+            DualLibraryMenuAction.PLAY, DualLibraryMenuAction.INSTALL -> confirmGame(game)
+            DualLibraryMenuAction.DOWNLOAD ->
+                broadcasts.broadcastDirectAction("DOWNLOAD", game.id)
+            DualLibraryMenuAction.DETAILS -> onSelectGame(game.id)
+            DualLibraryMenuAction.REFRESH ->
+                broadcasts.broadcastDirectAction("REFRESH_METADATA", game.id)
+            DualLibraryMenuAction.RESYNC_PLATFORM ->
+                broadcasts.broadcastDirectAction("RESYNC_PLATFORM", game.id)
+            DualLibraryMenuAction.DELETE, DualLibraryMenuAction.UNINSTALL ->
+                broadcasts.broadcastDirectAction("DELETE", game.id)
+            DualLibraryMenuAction.HIDE -> broadcasts.broadcastDirectAction("HIDE", game.id)
+            DualLibraryMenuAction.SHOW -> broadcasts.broadcastDirectAction("UNHIDE", game.id)
+            else -> Unit
         }
     }
 

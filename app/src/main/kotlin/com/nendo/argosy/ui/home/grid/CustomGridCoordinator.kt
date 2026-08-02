@@ -30,6 +30,7 @@ class CustomGridCoordinator(
     private val repository: HomeTileRepository?,
     private val ownerUserId: suspend () -> Long?,
     private val pickerEntries: suspend (TilePickerCategory, String) -> List<TilePickerEntry>,
+    private val onPageAdded: ((Int) -> Unit)? = null,
     private val read: () -> CustomGridState,
     private val write: ((CustomGridState) -> CustomGridState) -> Unit
 ) {
@@ -37,6 +38,14 @@ class CustomGridCoordinator(
     val state: CustomGridState get() = read()
 
     fun setTiles(tiles: List<HomeTile>) = write { it.copy(tiles = tiles) }
+
+    /**
+     * Applies the parts of the layout config the grid itself has to obey. Kept on the state rather
+     * than read from preferences at each decision point, so a placement and the page it lands on
+     * cannot disagree about the rules mid-edit.
+     */
+    fun applyConfig(autoFit: Boolean, storedPages: Int) =
+        write { it.copy(autoFit = autoFit, storedPages = storedPages) }
 
     fun setShape(columns: Int, rows: Int) = write { it.copy(columns = columns, rows = rows) }
 
@@ -278,6 +287,10 @@ class CustomGridCoordinator(
         val page = current.editingPage ?: stored.pageIndex
         val edited = stored.copy(rect = draft, pageIndex = page)
         val others = current.tiles.filter { it.pageIndex == page && it.id != stored.id }
+        if (!current.autoFit && others.any { it.rect.overlaps(edited.rect) }) {
+            cancelEdit()
+            return
+        }
         val settled = settleAfterEdit(
             editing = edited,
             others = others,
@@ -340,6 +353,7 @@ class CustomGridCoordinator(
         val current = read()
         if (!current.isOnAddPage) return
         write { it.copy(pendingPage = current.page, cell = GridCell(0, 0)) }
+        onPageAdded?.invoke(current.page + 1)
     }
 
     fun openPicker() {

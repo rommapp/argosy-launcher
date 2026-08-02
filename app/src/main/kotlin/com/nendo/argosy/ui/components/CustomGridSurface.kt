@@ -43,6 +43,7 @@ fun CustomGridSurface(
     onTileDrag: ((GridCell) -> Unit)? = null,
     onTileResize: ((GridCell) -> Unit)? = null,
     onToggleEditMode: (() -> Unit)? = null,
+    showEmptySlots: Boolean = true,
     downloadIndicatorFor: (Long) -> GameDownloadIndicator = { GameDownloadIndicator.NONE },
     onCoverLoadFailed: ((Long, String) -> Unit)? = null,
     onCoverLoaded: ((Long, android.graphics.Bitmap) -> Unit)? = null
@@ -96,6 +97,7 @@ fun CustomGridSurface(
                     focusedCell = state.cell,
                     onCellTap = onCellTap,
                     onShapeResolved = onShapeResolved,
+                    showEmptyCells = showEmptySlots,
                     onTileLongPress = onTileLongPress,
                     onTileDrag = onTileDrag,
                     onTileResize = onTileResize,

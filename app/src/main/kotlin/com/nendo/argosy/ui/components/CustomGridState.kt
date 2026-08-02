@@ -36,6 +36,8 @@ data class CustomGridState(
     val editingRect: TileRect? = null,
     val editingPage: Int? = null,
     val pendingPage: Int? = null,
+    val autoFit: Boolean = true,
+    val storedPages: Int = 0,
     val showMenu: Boolean = false,
     val menuFocusIndex: Int = 0,
     val showPicker: Boolean = false,
@@ -51,6 +53,7 @@ data class CustomGridState(
     val storedPageCount: Int
         get() = maxOf(
             (tiles.maxOfOrNull { it.pageIndex } ?: -1) + 1,
+            storedPages,
             HomeTileRepository.DEFAULT_PAGE_COUNT
         )
 

@@ -182,6 +182,39 @@ fun DualHomeLowerContent(
             )
         }
 
+        if (uiState.collectionPickerGameId != null) {
+            com.nendo.argosy.ui.components.CustomTileMenuModal(
+                title = "Add to Collection",
+                entries = uiState.collectionPickerEntries.map { entry ->
+                    if (entry.isMember) "${entry.name}  -  added" else entry.name
+                },
+                focusIndex = uiState.collectionPickerFocusIndex,
+                onSelect = { index ->
+                    viewModel.moveCollectionPickerFocus(index - uiState.collectionPickerFocusIndex)
+                    viewModel.confirmCollectionPicker()
+                },
+                onDismiss = viewModel::closeCollectionPicker
+            )
+        }
+
+        if (uiState.showLibraryMenu) {
+            val libraryGame = viewModel.focusedLibraryGame()
+            com.nendo.argosy.ui.components.CustomTileMenuModal(
+                title = libraryGame?.title.orEmpty(),
+                entries = viewModel.libraryMenuActions().map { it.label },
+                focusIndex = uiState.libraryMenuFocusIndex,
+                onSelect = { index ->
+                    viewModel.moveLibraryMenuFocus(index - uiState.libraryMenuFocusIndex)
+                    when (viewModel.confirmLibraryMenu()) {
+                        DualLibraryMenuAction.PLAY -> libraryGame?.let { onGameSelected(it.id) }
+                        DualLibraryMenuAction.DETAILS -> libraryGame?.let { onGameSelected(it.id) }
+                        else -> Unit
+                    }
+                },
+                onDismiss = viewModel::closeLibraryGameMenu
+            )
+        }
+
         if (uiState.showTileMenu) {
             val tile = viewModel.focusedTile()
             com.nendo.argosy.ui.components.CustomTileMenuModal(

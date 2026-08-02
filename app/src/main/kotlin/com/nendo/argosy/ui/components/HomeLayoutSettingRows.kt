@@ -50,7 +50,10 @@ enum class HomeLayoutSettingField {
     SECTION_STYLE,
     SHOW_TITLES,
     CUSTOM_GRID_LANES,
-    CUSTOM_GRID_AUTO_ADD
+    CUSTOM_GRID_AUTO_ADD,
+    CUSTOM_GRID_EMPTY_SLOTS,
+    CUSTOM_GRID_PERSIST_PAGES,
+    CUSTOM_GRID_AUTO_FIT
 }
 
 private const val SCALE_PERCENT_STEP = 10
@@ -79,6 +82,9 @@ fun homeLayoutFieldsFor(kind: HomeLayoutKind): List<HomeLayoutSettingField> = wh
     )
     HomeLayoutKind.CUSTOM_GRID -> listOf(
         HomeLayoutSettingField.CUSTOM_GRID_LANES,
+        HomeLayoutSettingField.CUSTOM_GRID_EMPTY_SLOTS,
+        HomeLayoutSettingField.CUSTOM_GRID_AUTO_FIT,
+        HomeLayoutSettingField.CUSTOM_GRID_PERSIST_PAGES,
         HomeLayoutSettingField.CUSTOM_GRID_AUTO_ADD
     )
 }
@@ -125,6 +131,12 @@ fun adjustHomeLayoutField(
             settings.copy(customGrid = settings.customGrid.copy(laneCount = stepSpan(settings.customGrid.laneCount, direction)))
         HomeLayoutSettingField.CUSTOM_GRID_AUTO_ADD ->
             settings.copy(customGrid = settings.customGrid.copy(autoAdd = cycle(settings.customGrid.autoAdd, direction)))
+        HomeLayoutSettingField.CUSTOM_GRID_EMPTY_SLOTS ->
+            settings.copy(customGrid = settings.customGrid.copy(showEmptySlots = direction > 0))
+        HomeLayoutSettingField.CUSTOM_GRID_PERSIST_PAGES ->
+            settings.copy(customGrid = settings.customGrid.copy(persistBlankPages = direction > 0))
+        HomeLayoutSettingField.CUSTOM_GRID_AUTO_FIT ->
+            settings.copy(customGrid = settings.customGrid.copy(autoFit = direction > 0))
 }
 
 /**
@@ -141,6 +153,20 @@ fun toggleHomeLayoutField(settings: HomeLayoutSettings, field: HomeLayoutSetting
             settings.copy(carousel = settings.carousel.copy(showPlatformBadge = !settings.carousel.showPlatformBadge))
         HomeLayoutSettingField.SHOW_TITLES ->
             settings.copy(autoGrid = settings.autoGrid.copy(showTitles = !settings.autoGrid.showTitles))
+        HomeLayoutSettingField.CUSTOM_GRID_EMPTY_SLOTS ->
+            settings.copy(
+                customGrid = settings.customGrid.copy(
+                    showEmptySlots = !settings.customGrid.showEmptySlots
+                )
+            )
+        HomeLayoutSettingField.CUSTOM_GRID_PERSIST_PAGES ->
+            settings.copy(
+                customGrid = settings.customGrid.copy(
+                    persistBlankPages = !settings.customGrid.persistBlankPages
+                )
+            )
+        HomeLayoutSettingField.CUSTOM_GRID_AUTO_FIT ->
+            settings.copy(customGrid = settings.customGrid.copy(autoFit = !settings.customGrid.autoFit))
         else -> settings
     }
 }
@@ -302,6 +328,27 @@ fun HomeLayoutSettingRow(
             isFocused = isFocused,
             onClick = { onAdjust(1) },
             onPrev = { onAdjust(-1) }
+        )
+        HomeLayoutSettingField.CUSTOM_GRID_EMPTY_SLOTS -> SwitchPreference(
+            title = "Show Blank Slots",
+            subtitle = "Outline the cells nothing sits on",
+            isEnabled = settings.customGrid.showEmptySlots,
+            isFocused = isFocused,
+            onToggle = { onToggle() }
+        )
+        HomeLayoutSettingField.CUSTOM_GRID_PERSIST_PAGES -> SwitchPreference(
+            title = "Keep Blank Pages",
+            subtitle = "An added page stays even while it holds nothing",
+            isEnabled = settings.customGrid.persistBlankPages,
+            isFocused = isFocused,
+            onToggle = { onToggle() }
+        )
+        HomeLayoutSettingField.CUSTOM_GRID_AUTO_FIT -> SwitchPreference(
+            title = "Auto-fit Cells",
+            subtitle = "Move or shrink tiles a placement lands on, instead of refusing it",
+            isEnabled = settings.customGrid.autoFit,
+            isFocused = isFocused,
+            onToggle = { onToggle() }
         )
     }
 }

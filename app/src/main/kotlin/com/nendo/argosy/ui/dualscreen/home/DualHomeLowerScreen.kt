@@ -299,6 +299,7 @@ fun DualHomeLowerScreen(
                 onTileDrag = onCustomGridTileDrag,
                 onTileResize = onCustomGridTileResize,
                 onToggleEditMode = onCustomGridToggleEditMode,
+                showEmptySlots = customGridConfig.showEmptySlots,
                 onCoverLoadFailed = onCoverLoadFailed,
                 modifier = Modifier.fillMaxWidth().weight(1f)
             )

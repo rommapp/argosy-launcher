@@ -98,6 +98,7 @@ class HomeViewModel @Inject constructor(
         scope = viewModelScope,
         repository = homeTileRepository,
         ownerUserId = { syncPreferencesRepository.getRommUserId() },
+        onPageAdded = { count -> persistCustomGridPageCount(count) },
         pickerEntries = { category, query ->
             when (category) {
                 com.nendo.argosy.ui.components.TilePickerCategory.GAMES ->
@@ -351,6 +352,10 @@ class HomeViewModel @Inject constructor(
                         layoutKind = prefs.homeLayout.selected
                     )
                 }
+                customGrid.applyConfig(
+                    autoFit = prefs.homeLayout.customGrid.autoFit,
+                    storedPages = prefs.homeLayout.customGrid.pageCount
+                )
 
                 videoPreviewDelegate.updateFromPreferences(
                     muteVideoPreview = prefs.videoWallpaperMuted,
@@ -633,6 +638,21 @@ class HomeViewModel @Inject constructor(
         get() = _uiState.value.customGrid.isOnAddPage
 
     override fun confirmAddPage() = customGrid.confirmAddPage()
+
+    /**
+     * Remembers a page that holds nothing, when the layout is set to keep blank pages. Pages are
+     * otherwise implied by the tiles on them, so an empty one has nowhere to live but the config.
+     */
+    private fun persistCustomGridPageCount(count: Int) {
+        val config = _uiState.value.customGridConfig
+        if (!config.persistBlankPages || count <= config.pageCount) return
+        viewModelScope.launch {
+            val settings = preferencesRepository.userPreferences.first().homeLayout
+            preferencesRepository.setHomeLayout(
+                settings.copy(customGrid = settings.customGrid.copy(pageCount = count))
+            )
+        }
+    }
 
     /**
      * Opens the picker for the focused cell. Offers installed games only, since a grid you curate

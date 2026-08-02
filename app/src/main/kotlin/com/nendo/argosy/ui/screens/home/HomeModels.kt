@@ -56,6 +56,7 @@ data class HomeGameUi(
     val needsInstall: Boolean = false,
     val youtubeVideoId: String? = null,
     val isNew: Boolean = false,
+    val isHidden: Boolean = false,
     val sortTitle: String = "",
     val gameModes: String? = null,
     val franchises: String? = null,

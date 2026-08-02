@@ -193,17 +193,19 @@ fun HomeCustomGridPage(
             }
         }.toSet()
 
-        if (showEmptyCells) {
-            for (column in 0 until metrics.columns) {
+        for (column in 0 until metrics.columns) {
                 for (row in 0 until metrics.rows) {
                     if (column to row in occupied) continue
+                    val isCursor = focusedCell.columnIndex == column &&
+                        focusedCell.rowIndex == row
+                    if (!showEmptyCells && !isCursor) continue
                     CustomGridCellBox(
                         rect = TileRect(column, row),
                         cellSize = cellSize,
                         gap = gap,
                         originX = originX,
                         originY = originY,
-                        isFocused = focusedCell.columnIndex == column && focusedCell.rowIndex == row,
+                        isFocused = isCursor,
                         onClick = { onCellTap(GridCell(column, row)) },
                         onLongClick = null,
                         content = null,
@@ -215,7 +217,6 @@ fun HomeCustomGridPage(
                     )
                 }
             }
-        }
 
         tiles.sortedBy { it.id == editingTileId }.forEach { tile ->
             key(tile.id) {
@@ -225,7 +226,11 @@ fun HomeCustomGridPage(
                 gap = gap,
                 originX = originX,
                 originY = originY,
-                isFocused = tile.rect.covers(focusedCell.columnIndex, focusedCell.rowIndex),
+                isFocused = if (editingTileId != null) {
+                    tile.id == editingTileId
+                } else {
+                    tile.rect.covers(focusedCell.columnIndex, focusedCell.rowIndex)
+                },
                 onClick = { onCellTap(GridCell(tile.rect.columnIndex, tile.rect.rowIndex)) },
                 onLongClick = onTileLongPress?.let { handler ->
                     {
@@ -233,7 +238,7 @@ fun HomeCustomGridPage(
                     }
                 },
                 content = contentFor(tile),
-                editModeLabel = editModeLabel,
+                editModeLabel = editModeLabel.takeIf { tile.id == editingTileId },
                 isOverlapped = tile.id in overlappedTileIds,
                 dragOffset = if (tile.id == editingTileId) dragOffset else
                     androidx.compose.ui.geometry.Offset.Zero,

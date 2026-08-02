@@ -545,9 +545,27 @@ class SecondaryHomeActivity :
         dualHomeViewModel.startBackgroundForwarding()
     }
 
-    override fun onForwardKey(keyCode: Int, swapAB: Boolean, swapXY: Boolean, swapStartSelect: Boolean) {
+    override fun onForwardKey(
+        keyCode: Int,
+        action: Int,
+        repeatCount: Int,
+        swapAB: Boolean,
+        swapXY: Boolean,
+        swapStartSelect: Boolean
+    ) {
         val gamepadEvent = mapKeycodeToGamepadEvent(keyCode, swapAB, swapXY, swapStartSelect) ?: return
-        inputHandler.routeInput(gamepadEvent, true, isGameActive, currentScreen)
+        if (gamepadEvent == com.nendo.argosy.ui.input.GamepadEvent.Confirm &&
+            (confirmHoldJob != null || deferConfirm())
+        ) {
+            when (action) {
+                android.view.KeyEvent.ACTION_DOWN -> if (repeatCount == 0) beginConfirmHold()
+                android.view.KeyEvent.ACTION_UP -> endConfirmHold()
+            }
+            return
+        }
+        if (action == android.view.KeyEvent.ACTION_DOWN && repeatCount == 0) {
+            inputHandler.routeInput(gamepadEvent, true, isGameActive, currentScreen)
+        }
     }
 
     override fun refocusSelf() = startActivity(

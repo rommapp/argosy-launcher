@@ -451,11 +451,15 @@ class MainActivity : ComponentActivity() {
             dualScreenManager.isCompanionActive.value &&
             !isOverlayFocused
         ) {
-            if (event.action == KeyEvent.ACTION_DOWN && event.repeatCount == 0) {
-                Logger.verbose(TAG) { "dispatchKeyEvent: FORWARDING key=${event.keyCode} to companion" }
-                onDimmerActivity?.invoke()
+            if (event.action == KeyEvent.ACTION_DOWN || event.action == KeyEvent.ACTION_UP) {
+                if (event.action == KeyEvent.ACTION_DOWN && event.repeatCount == 0) {
+                    Logger.verbose(TAG) { "dispatchKeyEvent: FORWARDING key=${event.keyCode} to companion" }
+                    onDimmerActivity?.invoke()
+                }
                 dualScreenManager.companionHost?.onForwardKey(
                     event.keyCode,
+                    event.action,
+                    event.repeatCount,
                     sessionStateStore.getSwapAB(),
                     sessionStateStore.getSwapXY(),
                     sessionStateStore.getSwapStartSelect()
@@ -527,6 +531,8 @@ class MainActivity : ComponentActivity() {
                 if (keyCode != null) {
                     dualScreenManager.companionHost?.onForwardKey(
                         keyCode,
+                        KeyEvent.ACTION_DOWN,
+                        0,
                         sessionStateStore.getSwapAB(),
                         sessionStateStore.getSwapXY(),
                         sessionStateStore.getSwapStartSelect()

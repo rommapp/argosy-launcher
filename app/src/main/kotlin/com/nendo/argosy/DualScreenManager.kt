@@ -219,7 +219,19 @@ class DualScreenManager(
         fun onRoleSwapped(isSwapped: Boolean)
         fun onOverlayClosed()
         fun onBackgroundForward()
-        fun onForwardKey(keyCode: Int, swapAB: Boolean, swapXY: Boolean, swapStartSelect: Boolean)
+        /**
+         * A key from the primary display. [action] and [repeatCount] come straight from the source
+         * event because the companion cannot tell a tap from a hold without them, and a forwarded
+         * down-only stream makes every press look instantaneous.
+         */
+        fun onForwardKey(
+            keyCode: Int,
+            action: Int,
+            repeatCount: Int,
+            swapAB: Boolean,
+            swapXY: Boolean,
+            swapStartSelect: Boolean
+        )
         fun refocusSelf()
         fun onGameDetailOpened(gameId: Long)
         fun onGameDetailClosed()

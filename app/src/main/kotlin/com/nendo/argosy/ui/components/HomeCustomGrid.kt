@@ -20,6 +20,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -186,6 +187,7 @@ fun HomeCustomGridPage(
         }
 
         tiles.sortedBy { it.id == editingTileId }.forEach { tile ->
+            key(tile.id) {
             CustomGridCellBox(
                 rect = tile.rect,
                 cellSize = cellSize,
@@ -201,6 +203,7 @@ fun HomeCustomGridPage(
                 onCoverLoadFailed = onCoverLoadFailed,
                 onCoverLoaded = onCoverLoaded
             )
+            }
         }
     }
 }
@@ -234,7 +237,6 @@ private fun CustomGridCellBox(
     val width = cellSize * rect.columnSpan + gap * (rect.columnSpan - 1)
     val height = cellSize * rect.rowSpan + gap * (rect.rowSpan - 1)
     val placement = Modifier
-        .graphicsLayer { alpha = if (isOverlapped) OVERLAPPED_ALPHA else 1f }
         .offset(
             x = originX + stride * rect.columnIndex,
             y = originY + stride * rect.rowIndex
@@ -251,6 +253,7 @@ private fun CustomGridCellBox(
                 downloadIndicator = downloadIndicatorFor(game.id),
                 showPlatformBadge = false,
                 saturationOverride = if (isOverlapped) OVERLAPPED_SATURATION else null,
+                alphaOverride = if (isOverlapped) OVERLAPPED_ALPHA else null,
                 onCoverLoadFailed = onCoverLoadFailed,
                 onCoverLoaded = onCoverLoaded,
                 modifier = Modifier.fillMaxSize().clickableNoFocus(onClick = onClick)
@@ -398,9 +401,9 @@ fun CustomGridPageDots(
 
 private const val DOT_IDLE_ALPHA = 0.35f
 /**
- * Overlapped tiles are dimmed and drained of colour rather than only dimmed. A card already renders
- * unfocused at [ComponentDefaults.Focus.alphaUnfocused], so the two multiply, and on a dark backdrop
- * a low alpha alone reads as the tile having been deleted rather than being about to move.
+ * Overlapped tiles are dimmed and drained of colour. Both are handed to the card's own overrides
+ * rather than applied as a parent layer: a cover composites with blend modes internally, and
+ * wrapping that in an alpha layer flattens it to black instead of fading it.
  */
 private const val OVERLAPPED_ALPHA = 0.6f
 private const val OVERLAPPED_SATURATION = 0.15f

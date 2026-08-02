@@ -238,13 +238,10 @@ data class DualHomeUiState(
      * page exactly as it was.
      */
     fun tilesOnPage(pageIndex: Int): List<com.nendo.argosy.domain.model.HomeTile> {
-        val onPage = homeTiles.filter { it.pageIndex == pageIndex }
-        val editing = editingRect?.let { rect ->
-            onPage.firstOrNull { it.id == editingTileId }?.copy(rect = rect)
-        }
-        val others = onPage.filter { it.id != editing?.id }
-        val fitted = com.nendo.argosy.domain.model.fitTilesToPage(others, gridColumns, gridRows)
-        return if (editing == null) fitted else fitted + editing
+        val stored = homeTiles.filter { it.pageIndex == pageIndex }
+        val fitted = com.nendo.argosy.domain.model.fitTilesToPage(stored, gridColumns, gridRows)
+        val rect = editingRect ?: return fitted
+        return fitted.map { if (it.id == editingTileId) it.copy(rect = rect) else it }
     }
 
     /**

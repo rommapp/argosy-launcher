@@ -603,9 +603,9 @@ class SecondaryHomeInputHandler(
                     return InputResult.HANDLED
                 }
                 if (inAppBar) return InputResult.UNHANDLED
-                val game = state.selectedGame
-                if (game != null) {
-                    onSelectGame(game.id)
+                val gameId = focusedGameId(state)
+                if (gameId != null) {
+                    onSelectGame(gameId)
                     InputResult.HANDLED
                 } else InputResult.UNHANDLED
             }
@@ -616,6 +616,11 @@ class SecondaryHomeInputHandler(
                         onLaunchAppOnOtherDisplay(packageName)
                         InputResult.HANDLED
                     } else InputResult.UNHANDLED
+                } else if (inCustomGrid) {
+                    dualHomeViewModel.focusedTileGameId()?.let {
+                        dualHomeViewModel.toggleFavoriteById(it)
+                    }
+                    InputResult.HANDLED
                 } else {
                     dualHomeViewModel.toggleFavorite()
                     InputResult.HANDLED
@@ -624,6 +629,17 @@ class SecondaryHomeInputHandler(
             else -> InputResult.UNHANDLED
         }
     }
+
+    /**
+     * The game under the cursor, whichever layout is showing. A curated grid tracks a cell, so the
+     * carousel's selection is not just stale there, it belongs to a list this view never displays.
+     */
+    private fun focusedGameId(state: com.nendo.argosy.ui.dualscreen.home.DualHomeUiState): Long? =
+        if (state.layoutKind == HomeLayoutKind.CUSTOM_GRID) {
+            dualHomeViewModel.focusedTileGameId()
+        } else {
+            state.selectedGame?.id
+        }
 
     private fun handleCollectionsInput(event: GamepadEvent): InputResult {
         return when (event) {

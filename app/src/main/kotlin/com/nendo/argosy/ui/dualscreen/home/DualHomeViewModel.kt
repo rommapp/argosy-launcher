@@ -1269,6 +1269,17 @@ class DualHomeViewModel(
         }
     }
 
+    /**
+     * Favourites a game by id rather than by carousel position, for the curated grid where the
+     * selection is a cell and the section's game list is not on screen at all.
+     */
+    fun toggleFavoriteById(gameId: Long) {
+        val current = _uiState.value.tileGames[gameId] ?: return
+        viewModelScope.launch {
+            gameRepository.updateFavoriteWithSync(gameId, !current.isFavorite)
+        }
+    }
+
     fun getGameDetailIntent(gameId: Long): Pair<Intent, android.os.Bundle?> {
         val intent = Intent(Intent.ACTION_VIEW).apply {
             data = Uri.parse("argosy://game/$gameId")

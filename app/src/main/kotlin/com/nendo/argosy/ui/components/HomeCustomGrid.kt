@@ -26,6 +26,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
@@ -387,7 +388,7 @@ private fun TileModeTab(label: String, modifier: Modifier = Modifier) {
         style = MaterialTheme.typography.labelSmall,
         color = theme.surfaceBase,
         modifier = modifier
-            .offset(x = Dimens.spacingSm, y = -Dimens.spacingSm)
+            .graphicsLayer { translationY = -size.height }
             .clip(shape)
             .background(theme.focusAccent)
             .padding(horizontal = Dimens.spacingSm, vertical = Dimens.spacingXs)

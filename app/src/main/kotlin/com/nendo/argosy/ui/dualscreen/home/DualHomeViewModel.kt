@@ -100,13 +100,15 @@ enum class DualHomeFocusZone { CAROUSEL, APP_BAR }
 enum class DualHomeViewMode { CAROUSEL, COLLECTIONS, COLLECTION_GAMES, LIBRARY_GRID }
 
 enum class CustomTileMenuAction(val label: String) {
-    MOVE("Move"),
-    EXTEND_RIGHT("Extend right"),
-    EXTEND_DOWN("Extend down"),
-    SHRINK_RIGHT("Shrink width"),
-    SHRINK_DOWN("Shrink height"),
+    ARRANGE("Move or resize"),
     REMOVE("Remove from grid")
 }
+
+/**
+ * Editing a placed tile. Moving and resizing are the same activity with the d-pad meaning two
+ * different things, so they are one mode you switch within rather than two you enter separately.
+ */
+enum class TileEditMode { NONE, MOVE, RESIZE }
 
 enum class ForwardingMode { NONE, OVERLAY, BACKGROUND }
 
@@ -180,7 +182,7 @@ data class DualHomeUiState(
     val customGridPage: Int = 0,
     val customGridCell: com.nendo.argosy.domain.model.GridCell =
         com.nendo.argosy.domain.model.GridCell(0, 0),
-    val tileMoveMode: Boolean = false,
+    val tileEditMode: TileEditMode = TileEditMode.NONE,
     val showTileMenu: Boolean = false,
     val tileMenuFocusIndex: Int = 0,
     val showTilePicker: Boolean = false,
@@ -1001,26 +1003,8 @@ class DualHomeViewModel(
      * here and now, so an entry never appears that would be refused: extending is absent when the
      * cells beyond are held or off the page, shrinking when the tile is already one cell.
      */
-    fun tileMenuActions(): List<CustomTileMenuAction> {
-        val tile = focusedTile() ?: return emptyList()
-        val state = _uiState.value
-        val others = state.tilesOnPage(state.customGridPage).filter { it.id != tile.id }
-        fun fits(rect: com.nendo.argosy.domain.model.TileRect): Boolean =
-            rect.withinBounds(customGridColumns, customGridRows) &&
-                others.none { it.rect.overlaps(rect) }
-        return buildList {
-            add(CustomTileMenuAction.MOVE)
-            if (fits(tile.rect.copy(columnSpan = tile.rect.columnSpan + 1))) {
-                add(CustomTileMenuAction.EXTEND_RIGHT)
-            }
-            if (fits(tile.rect.copy(rowSpan = tile.rect.rowSpan + 1))) {
-                add(CustomTileMenuAction.EXTEND_DOWN)
-            }
-            if (tile.rect.columnSpan > 1) add(CustomTileMenuAction.SHRINK_RIGHT)
-            if (tile.rect.rowSpan > 1) add(CustomTileMenuAction.SHRINK_DOWN)
-            add(CustomTileMenuAction.REMOVE)
-        }
-    }
+    fun tileMenuActions(): List<CustomTileMenuAction> =
+        if (focusedTile() == null) emptyList() else CustomTileMenuAction.entries
 
     fun openTileMenu() {
         if (focusedTile() == null) return
@@ -1042,11 +1026,7 @@ class DualHomeViewModel(
         val action = tileMenuActions().getOrNull(_uiState.value.tileMenuFocusIndex) ?: return
         closeTileMenu()
         when (action) {
-            CustomTileMenuAction.MOVE -> enterTileMoveMode()
-            CustomTileMenuAction.EXTEND_RIGHT -> resizeFocusedTile(horizontal = true, grow = true)
-            CustomTileMenuAction.EXTEND_DOWN -> resizeFocusedTile(horizontal = false, grow = true)
-            CustomTileMenuAction.SHRINK_RIGHT -> resizeFocusedTile(horizontal = true, grow = false)
-            CustomTileMenuAction.SHRINK_DOWN -> resizeFocusedTile(horizontal = false, grow = false)
+            CustomTileMenuAction.ARRANGE -> enterTileMoveMode()
             CustomTileMenuAction.REMOVE -> removeFocusedTile()
         }
     }
@@ -1156,12 +1136,41 @@ class DualHomeViewModel(
 
     fun enterTileMoveMode() {
         if (focusedTile() == null) return
-        _uiState.update { it.copy(tileMoveMode = true) }
+        _uiState.update { it.copy(tileEditMode = TileEditMode.MOVE) }
     }
 
     fun exitTileMoveMode() {
-        _uiState.update { it.copy(tileMoveMode = false) }
+        _uiState.update { it.copy(tileEditMode = TileEditMode.NONE) }
     }
+
+    fun toggleTileEditMode() {
+        _uiState.update {
+            it.copy(
+                tileEditMode = when (it.tileEditMode) {
+                    TileEditMode.MOVE -> TileEditMode.RESIZE
+                    TileEditMode.RESIZE -> TileEditMode.MOVE
+                    TileEditMode.NONE -> TileEditMode.NONE
+                }
+            )
+        }
+    }
+
+    /**
+     * Resize driven by the d-pad: a press away from the anchor grows that edge, a press back toward
+     * it shrinks. Since growth already runs down and right, right and down extend while left and up
+     * pull in.
+     */
+    fun resizeFocusedTileBy(direction: com.nendo.argosy.domain.model.GridDirection2D): Boolean =
+        when (direction) {
+            com.nendo.argosy.domain.model.GridDirection2D.RIGHT ->
+                resizeFocusedTile(horizontal = true, grow = true)
+            com.nendo.argosy.domain.model.GridDirection2D.LEFT ->
+                resizeFocusedTile(horizontal = true, grow = false)
+            com.nendo.argosy.domain.model.GridDirection2D.DOWN ->
+                resizeFocusedTile(horizontal = false, grow = true)
+            com.nendo.argosy.domain.model.GridDirection2D.UP ->
+                resizeFocusedTile(horizontal = false, grow = false)
+        }
 
     fun moveFocusedTile(direction: com.nendo.argosy.domain.model.GridDirection2D): Boolean {
         val state = _uiState.value

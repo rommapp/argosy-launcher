@@ -131,9 +131,22 @@ fun DualHomeLowerScreen(
     layoutKind: com.nendo.argosy.domain.model.HomeLayoutKind =
         com.nendo.argosy.domain.model.HomeLayoutKind.CAROUSEL,
     isPlatformSection: Boolean = false,
+    customGridTiles: List<com.nendo.argosy.domain.model.HomeTile> = emptyList(),
+    customGridContentFor: (com.nendo.argosy.domain.model.HomeTile) ->
+    com.nendo.argosy.ui.components.CustomGridTileContent? = { null },
+    customGridConfig: com.nendo.argosy.domain.model.CustomGridConfig =
+        com.nendo.argosy.domain.model.CustomGridConfig(),
+    customGridCell: com.nendo.argosy.domain.model.GridCell =
+        com.nendo.argosy.domain.model.GridCell(0, 0),
+    onCustomGridCellTap: (com.nendo.argosy.domain.model.GridCell) -> Unit = {},
+    onCustomGridShape: (Int, Int) -> Unit = { _, _ -> },
     modifier: Modifier = Modifier
 ) {
     val isAutoGrid = layoutKind == com.nendo.argosy.domain.model.HomeLayoutKind.AUTO_GRID
+    val isCustomGrid = layoutKind == com.nendo.argosy.domain.model.HomeLayoutKind.CUSTOM_GRID
+    var customGridShape by remember {
+        mutableStateOf(com.nendo.argosy.ui.components.CustomGridShape(1, 1))
+    }
     val gridState = rememberLazyGridState()
     val listState = rememberLazyListState()
     var railBand by remember { mutableStateOf(androidx.compose.ui.unit.IntSize.Zero) }
@@ -268,7 +281,26 @@ fun DualHomeLowerScreen(
             textAlign = androidx.compose.ui.text.style.TextAlign.Center
         )
 
-        if (isAutoGrid) {
+        if (isCustomGrid) {
+            com.nendo.argosy.ui.components.HomeCustomGridPage(
+                tiles = customGridTiles,
+                contentFor = customGridContentFor,
+                shape = customGridShape,
+                focusedCell = customGridCell,
+                onCellTap = onCustomGridCellTap,
+                onSizeResolved = { size ->
+                    val shape = com.nendo.argosy.ui.components.CustomGridShape.forSize(
+                        size,
+                        customGridConfig.laneCount
+                    )
+                    customGridShape = shape
+                    onCustomGridShape(shape.columns, shape.rows)
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+            )
+        } else if (isAutoGrid) {
             HomeAutoGrid(
                 items = railItems,
                 focusedIndex = selectedIndex,

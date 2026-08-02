@@ -390,7 +390,28 @@ class SecondaryHomeInputHandler(
         val inAppBar = state.focusZone == DualHomeFocusZone.APP_BAR
         val apps = homeApps()
         val inGrid = !inAppBar && state.layoutKind == HomeLayoutKind.AUTO_GRID
+        val inCustomGrid = !inAppBar && state.layoutKind == HomeLayoutKind.CUSTOM_GRID
         val reversed = state.carouselConfig.inverted
+
+        fun moveCustom(direction: com.nendo.argosy.domain.model.GridDirection2D): Boolean {
+            if (!inCustomGrid) return false
+            if (state.showTilePicker) {
+                val delta = when (direction) {
+                    com.nendo.argosy.domain.model.GridDirection2D.UP -> -1
+                    com.nendo.argosy.domain.model.GridDirection2D.DOWN -> 1
+                    else -> return true
+                }
+                dualHomeViewModel.moveTilePickerFocus(delta)
+                return true
+            }
+            if (state.tileMoveMode) {
+                dualHomeViewModel.moveFocusedTile(direction)
+                return true
+            }
+            dualHomeViewModel.moveCustomGridFocus(direction)
+            broadcasts.broadcastCurrentGameSelection()
+            return true
+        }
 
         fun moveGrid(direction: GridDirection): Boolean {
             if (!inGrid) return false
@@ -410,6 +431,7 @@ class SecondaryHomeInputHandler(
             }
             GamepadEvent.Left -> {
                 if (inAppBar) dualHomeViewModel.selectPreviousApp()
+                else if (moveCustom(com.nendo.argosy.domain.model.GridDirection2D.LEFT)) Unit
                 else if (!moveGrid(GridDirection.LEFT)) {
                     if (reversed) dualHomeViewModel.selectNext() else dualHomeViewModel.selectPrevious()
                     broadcasts.broadcastCurrentGameSelection()
@@ -418,6 +440,7 @@ class SecondaryHomeInputHandler(
             }
             GamepadEvent.Right -> {
                 if (inAppBar) dualHomeViewModel.selectNextApp(apps.size)
+                else if (moveCustom(com.nendo.argosy.domain.model.GridDirection2D.RIGHT)) Unit
                 else if (!moveGrid(GridDirection.RIGHT)) {
                     if (reversed) dualHomeViewModel.selectPrevious() else dualHomeViewModel.selectNext()
                     broadcasts.broadcastCurrentGameSelection()
@@ -427,7 +450,9 @@ class SecondaryHomeInputHandler(
             GamepadEvent.Down -> {
                 val isExternal = com.nendo.argosy.DualScreenManagerHolder.instance
                     ?.isExternalDisplay == true
-                if (moveGrid(GridDirection.DOWN)) {
+                if (moveCustom(com.nendo.argosy.domain.model.GridDirection2D.DOWN)) {
+                    InputResult.HANDLED
+                } else if (moveGrid(GridDirection.DOWN)) {
                     InputResult.HANDLED
                 } else if (!inAppBar && !isExternal) {
                     dualHomeViewModel.focusAppBar(apps.size)
@@ -439,6 +464,8 @@ class SecondaryHomeInputHandler(
                 if (inAppBar) {
                     dualHomeViewModel.focusCarousel()
                     broadcasts.broadcastViewModeChange()
+                    InputResult.HANDLED
+                } else if (moveCustom(com.nendo.argosy.domain.model.GridDirection2D.UP)) {
                     InputResult.HANDLED
                 } else if (moveGrid(GridDirection.UP)) {
                     InputResult.HANDLED
@@ -466,6 +493,14 @@ class SecondaryHomeInputHandler(
                 InputResult.HANDLED
             }
             GamepadEvent.Select -> {
+                if (inCustomGrid && dualHomeViewModel.focusedTile() != null) {
+                    if (state.tileMoveMode) {
+                        dualHomeViewModel.exitTileMoveMode()
+                    } else {
+                        dualHomeViewModel.enterTileMoveMode()
+                    }
+                    return InputResult.HANDLED
+                }
                 if (inAppBar) {
                     viewModel.openDrawer()
                     broadcasts.broadcastViewModeChange(drawerOpen = true)
@@ -482,7 +517,17 @@ class SecondaryHomeInputHandler(
                 InputResult.HANDLED
             }
             GamepadEvent.Confirm -> {
-                if (inAppBar && state.appBarIndex == -1) {
+                if (inCustomGrid && state.showTilePicker) {
+                    dualHomeViewModel.confirmTilePickerSelection()
+                    InputResult.HANDLED
+                } else if (inCustomGrid && state.tileMoveMode) {
+                    dualHomeViewModel.exitTileMoveMode()
+                    InputResult.HANDLED
+                } else if (inCustomGrid) {
+                    val gameId = dualHomeViewModel.focusedTileGameId()
+                    if (gameId == null) dualHomeViewModel.openTilePicker() else onSelectGame(gameId)
+                    InputResult.HANDLED
+                } else if (inAppBar && state.appBarIndex == -1) {
                     viewModel.openDrawer()
                     broadcasts.broadcastViewModeChange(drawerOpen = true)
                     InputResult.HANDLED
@@ -512,6 +557,17 @@ class SecondaryHomeInputHandler(
                         confirmGame(game)
                         InputResult.HANDLED
                     } else InputResult.UNHANDLED
+                }
+            }
+            GamepadEvent.Back -> {
+                if (inCustomGrid && state.showTilePicker) {
+                    dualHomeViewModel.closeTilePicker()
+                    InputResult.HANDLED
+                } else if (inCustomGrid && state.tileMoveMode) {
+                    dualHomeViewModel.exitTileMoveMode()
+                    InputResult.HANDLED
+                } else {
+                    InputResult.UNHANDLED
                 }
             }
             GamepadEvent.ContextMenu -> {

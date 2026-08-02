@@ -49,6 +49,15 @@ fun DualHomeLowerContent(
             .then(if (!isSearchActive) Modifier.focusProperties { canFocus = false } else Modifier)
             .background(MaterialTheme.colorScheme.background)
     ) {
+        if (uiState.showTilePicker) {
+            com.nendo.argosy.ui.components.HomeTilePickerModal(
+                entries = uiState.tilePickerEntries,
+                query = uiState.tilePickerQuery,
+                focusIndex = uiState.tilePickerFocusIndex,
+                onSelect = { viewModel.confirmTilePickerSelection() },
+                onDismiss = viewModel::closeTilePicker
+            )
+        }
         when (uiState.viewMode) {
             DualHomeViewMode.CAROUSEL -> {
                 DualHomeLowerScreen(
@@ -79,6 +88,14 @@ fun DualHomeLowerContent(
                     carouselConfig = uiState.carouselConfig,
                     autoGridConfig = uiState.autoGridConfig,
                     layoutKind = uiState.layoutKind,
+                    customGridTiles = uiState.tilesOnPage(uiState.customGridPage),
+                    customGridContentFor = { tile -> uiState.tileContentFor(tile) },
+                    customGridConfig = uiState.customGridConfig,
+                    customGridCell = uiState.customGridCell,
+                    onCustomGridCellTap = { cell -> viewModel.setCustomGridCell(cell) },
+                    onCustomGridShape = { columns, rows ->
+                        viewModel.setCustomGridShape(columns, rows)
+                    },
                     isPlatformSection = when (uiState.currentSection) {
                         is DualHomeSection.Platform,
                         DualHomeSection.Android,

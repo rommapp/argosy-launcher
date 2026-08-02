@@ -712,8 +712,11 @@ class SecondaryHomeActivity :
             gradientExtractionDelegate = dsm.gradientExtractionDelegate,
             getPinnedCollectionsUseCase = dsm.getPinnedCollectionsUseCase,
             getGamesForPinnedCollectionUseCase = dsm.getGamesForPinnedCollectionUseCase,
-            sessionStateStore = dsm.sessionStateStore
+            sessionStateStore = dsm.sessionStateStore,
+            homeTileRepository = dsm.homeTileRepository,
+            syncPreferencesRepository = dsm.syncPreferencesRepository
         )
+        dualHomeViewModel.observeHomeTiles()
         broadcasts = SecondaryHomeBroadcastHelper(
             dsm = dsm, dualHomeViewModel = dualHomeViewModel,
             secondaryHomeViewModel = { viewModel }

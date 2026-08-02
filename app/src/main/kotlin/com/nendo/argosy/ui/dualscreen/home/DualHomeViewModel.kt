@@ -164,6 +164,18 @@ data class DualHomeUiState(
         com.nendo.argosy.domain.model.AutoGridConfig(),
     val layoutKind: com.nendo.argosy.domain.model.HomeLayoutKind =
         com.nendo.argosy.domain.model.HomeLayoutKind.CAROUSEL,
+    val customGridConfig: com.nendo.argosy.domain.model.CustomGridConfig =
+        com.nendo.argosy.domain.model.CustomGridConfig(),
+    val homeTiles: List<com.nendo.argosy.domain.model.HomeTile> = emptyList(),
+    val tileGames: Map<Long, HomeGameUi> = emptyMap(),
+    val customGridPage: Int = 0,
+    val customGridCell: com.nendo.argosy.domain.model.GridCell =
+        com.nendo.argosy.domain.model.GridCell(0, 0),
+    val tileMoveMode: Boolean = false,
+    val showTilePicker: Boolean = false,
+    val tilePickerQuery: String = "",
+    val tilePickerFocusIndex: Int = 0,
+    val tilePickerEntries: List<com.nendo.argosy.ui.components.TilePickerEntry> = emptyList(),
     val currentSectionLabel: String = "",
     val libraryColumns: Int = LIBRARY_GRID_COLUMNS,
     val showFilterOverlay: Boolean = false,
@@ -196,6 +208,30 @@ data class DualHomeUiState(
 
     val selectedGame: HomeGameUi?
         get() = games.getOrNull(selectedIndex)
+
+    val customGridPageCount: Int
+        get() = maxOf(
+            (homeTiles.maxOfOrNull { it.pageIndex } ?: -1) + 1,
+            com.nendo.argosy.data.repository.HomeTileRepository.DEFAULT_PAGE_COUNT
+        )
+
+    fun tilesOnPage(pageIndex: Int): List<com.nendo.argosy.domain.model.HomeTile> =
+        homeTiles.filter { it.pageIndex == pageIndex }
+
+    fun tileContentFor(
+        tile: com.nendo.argosy.domain.model.HomeTile
+    ): com.nendo.argosy.ui.components.CustomGridTileContent? =
+        when (val target = tile.target) {
+            is com.nendo.argosy.domain.model.HomeTileTargetRef.Game -> {
+                val game = tileGames[target.gameId]
+                com.nendo.argosy.ui.components.CustomGridTileContent(
+                    coverPath = game?.coverPath,
+                    label = game?.title ?: "Missing game",
+                    isMissing = game == null
+                )
+            }
+            else -> null
+        }
 }
 
 class DualHomeViewModel(
@@ -212,7 +248,9 @@ class DualHomeViewModel(
     private val gradientExtractionDelegate: com.nendo.argosy.ui.screens.common.GradientExtractionDelegate? = null,
     private val getPinnedCollectionsUseCase: GetPinnedCollectionsUseCase? = null,
     private val getGamesForPinnedCollectionUseCase: GetGamesForPinnedCollectionUseCase? = null,
-    private val sessionStateStore: SessionStateStore? = null
+    private val sessionStateStore: SessionStateStore? = null,
+    private val homeTileRepository: com.nendo.argosy.data.repository.HomeTileRepository? = null,
+    private val syncPreferencesRepository: com.nendo.argosy.data.preferences.SyncPreferencesRepository? = null
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(DualHomeUiState())
@@ -223,6 +261,11 @@ class DualHomeViewModel(
 
     private var allLibraryGames: List<HomeGameUi> = emptyList()
     private var libraryLoadedHidden = false
+
+    private var customGridColumns = 1
+    private var customGridRows = 1
+
+    private val tilePickerLimit = 60
     private var latestDownloads: Map<Long, com.nendo.argosy.data.local.entity.DownloadQueueEntity> = emptyMap()
     private val pendingCoverRepairs = mutableSetOf<Long>()
     private var letterOverlayJob: kotlinx.coroutines.Job? = null
@@ -264,6 +307,7 @@ class DualHomeViewModel(
                     it.copy(
                         carouselConfig = preferences.homeLayout.carousel,
                         autoGridConfig = preferences.homeLayout.autoGrid,
+                        customGridConfig = preferences.homeLayout.customGrid,
                         layoutKind = preferences.homeLayout.selected
                     )
                 }
@@ -852,6 +896,197 @@ class DualHomeViewModel(
         val newIndex = (state.selectedIndex - 1).coerceAtLeast(0)
         _uiState.update { it.copy(selectedIndex = newIndex) }
         persistSection()
+    }
+
+    /**
+     * Mirrors the phone's tile observation so both surfaces read one curated grid. The companion
+     * only shows it; placement and editing stay on the primary screen, which is where the picker
+     * and the move mode live.
+     */
+    fun observeHomeTiles() {
+        val tiles = homeTileRepository ?: return
+        viewModelScope.launch {
+            tiles.observeTiles(syncPreferencesRepository?.getRommUserId())
+                .collect { rows ->
+                    val gameIds = rows.mapNotNull {
+                        (it.target as? com.nendo.argosy.domain.model.HomeTileTargetRef.Game)?.gameId
+                    }.distinct()
+                    val games = if (gameIds.isEmpty()) {
+                        emptyMap()
+                    } else {
+                        gameRepository.getByIds(gameIds).associate { entity ->
+                            entity.id to entity.toUi()
+                        }
+                    }
+                    _uiState.update { it.copy(homeTiles = rows, tileGames = games) }
+                }
+        }
+    }
+
+    fun setCustomGridShape(columns: Int, rows: Int) {
+        customGridColumns = columns
+        customGridRows = rows
+    }
+
+    fun moveCustomGridFocus(
+        direction: com.nendo.argosy.domain.model.GridDirection2D
+    ): Boolean {
+        val state = _uiState.value
+        val move = com.nendo.argosy.domain.model.customGridStep(
+            cell = state.customGridCell,
+            tiles = state.tilesOnPage(state.customGridPage),
+            columns = customGridColumns,
+            rows = customGridRows,
+            direction = direction
+        )
+        return when (move) {
+            is com.nendo.argosy.domain.model.CustomGridMove.Focus -> {
+                _uiState.update { it.copy(customGridCell = move.cell) }
+                true
+            }
+            com.nendo.argosy.domain.model.CustomGridMove.PreviousPage -> turnCustomGridPage(-1)
+            com.nendo.argosy.domain.model.CustomGridMove.NextPage -> turnCustomGridPage(1)
+            com.nendo.argosy.domain.model.CustomGridMove.None -> false
+        }
+    }
+
+    fun turnCustomGridPage(delta: Int): Boolean {
+        val state = _uiState.value
+        val target = state.customGridPage + delta
+        if (target < 0 || target >= state.customGridPageCount) return false
+        val entryColumn = if (delta > 0) 0 else (customGridColumns - 1).coerceAtLeast(0)
+        _uiState.update {
+            it.copy(
+                customGridPage = target,
+                customGridCell = com.nendo.argosy.domain.model.GridCell(
+                    entryColumn,
+                    it.customGridCell.rowIndex.coerceIn(0, (customGridRows - 1).coerceAtLeast(0))
+                )
+            )
+        }
+        return true
+    }
+
+    fun setCustomGridCell(cell: com.nendo.argosy.domain.model.GridCell) {
+        _uiState.update { it.copy(customGridCell = cell) }
+    }
+
+    fun focusedTile(): com.nendo.argosy.domain.model.HomeTile? {
+        val state = _uiState.value
+        return state.tilesOnPage(state.customGridPage).firstOrNull {
+            it.rect.covers(state.customGridCell.columnIndex, state.customGridCell.rowIndex)
+        }
+    }
+
+    fun focusedTileGameId(): Long? =
+        (focusedTile()?.target as? com.nendo.argosy.domain.model.HomeTileTargetRef.Game)?.gameId
+
+    /**
+     * The grid is edited on the screen it lives on. On a dual-screen handheld the lower display is
+     * where the hands are, so the picker and the move mode belong here rather than on the showcase.
+     */
+    fun openTilePicker() {
+        if (focusedTile() != null) return
+        _uiState.update {
+            it.copy(showTilePicker = true, tilePickerQuery = "", tilePickerFocusIndex = 0)
+        }
+        refreshTilePickerEntries()
+    }
+
+    fun closeTilePicker() {
+        _uiState.update { it.copy(showTilePicker = false, tilePickerQuery = "") }
+    }
+
+    fun moveTilePickerFocus(delta: Int) {
+        _uiState.update {
+            val maxIndex = (it.tilePickerEntries.size - 1).coerceAtLeast(0)
+            it.copy(tilePickerFocusIndex = (it.tilePickerFocusIndex + delta).coerceIn(0, maxIndex))
+        }
+    }
+
+    fun confirmTilePickerSelection() {
+        val state = _uiState.value
+        val entry = state.tilePickerEntries.getOrNull(state.tilePickerFocusIndex) ?: return
+        val tiles = homeTileRepository ?: return
+        viewModelScope.launch {
+            tiles.place(
+                ownerUserId = syncPreferencesRepository?.getRommUserId(),
+                pageIndex = state.customGridPage,
+                rect = com.nendo.argosy.domain.model.TileRect(
+                    state.customGridCell.columnIndex,
+                    state.customGridCell.rowIndex
+                ),
+                target = com.nendo.argosy.domain.model.HomeTileTargetRef.Game(entry.gameId)
+            )
+        }
+        closeTilePicker()
+    }
+
+    private fun refreshTilePickerEntries() {
+        val query = _uiState.value.tilePickerQuery.trim().lowercase()
+        val entries = allLibraryGames
+            .filter { it.isPlayable }
+            .filter { query.isBlank() || it.title.lowercase().contains(query) }
+            .take(tilePickerLimit)
+            .map { game ->
+                com.nendo.argosy.ui.components.TilePickerEntry(
+                    gameId = game.id,
+                    title = game.title,
+                    platformName = game.platformDisplayName,
+                    coverPath = game.coverPath
+                )
+            }
+        _uiState.update { it.copy(tilePickerEntries = entries) }
+    }
+
+    fun enterTileMoveMode() {
+        if (focusedTile() == null) return
+        _uiState.update { it.copy(tileMoveMode = true) }
+    }
+
+    fun exitTileMoveMode() {
+        _uiState.update { it.copy(tileMoveMode = false) }
+    }
+
+    fun moveFocusedTile(direction: com.nendo.argosy.domain.model.GridDirection2D): Boolean {
+        val state = _uiState.value
+        val tile = focusedTile() ?: return false
+        val tiles = homeTileRepository ?: return false
+        val moved = when (direction) {
+            com.nendo.argosy.domain.model.GridDirection2D.LEFT ->
+                tile.rect.copy(columnIndex = tile.rect.columnIndex - 1)
+            com.nendo.argosy.domain.model.GridDirection2D.RIGHT ->
+                tile.rect.copy(columnIndex = tile.rect.columnIndex + 1)
+            com.nendo.argosy.domain.model.GridDirection2D.UP ->
+                tile.rect.copy(rowIndex = tile.rect.rowIndex - 1)
+            com.nendo.argosy.domain.model.GridDirection2D.DOWN ->
+                tile.rect.copy(rowIndex = tile.rect.rowIndex + 1)
+        }
+        if (!moved.withinBounds(customGridColumns, customGridRows)) return false
+        if (state.tilesOnPage(state.customGridPage).any {
+                it.id != tile.id && it.rect.overlaps(moved)
+            }
+        ) {
+            return false
+        }
+        _uiState.update {
+            it.copy(
+                customGridCell = com.nendo.argosy.domain.model.GridCell(
+                    moved.columnIndex,
+                    moved.rowIndex
+                )
+            )
+        }
+        viewModelScope.launch {
+            tiles.move(tile, syncPreferencesRepository?.getRommUserId(), moved)
+        }
+        return true
+    }
+
+    fun removeFocusedTile() {
+        val tile = focusedTile() ?: return
+        val tiles = homeTileRepository ?: return
+        viewModelScope.launch { tiles.remove(tile.id) }
     }
 
     fun moveCarouselGridFocus(direction: GridDirection): AutoGridMove {

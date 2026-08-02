@@ -231,6 +231,17 @@ data class DualHomeUiState(
     fun tilesOnPage(pageIndex: Int): List<com.nendo.argosy.domain.model.HomeTile> =
         homeTiles.filter { it.pageIndex == pageIndex }
 
+    /**
+     * The game the grid cursor is on. Exposed on the state rather than only as a view model call so
+     * an observer can key on it directly and re-broadcast whenever it changes, whatever moved it.
+     */
+    val focusedTileGameId: Long?
+        get() = (
+            tilesOnPage(customGridPage)
+                .firstOrNull { it.rect.covers(customGridCell.columnIndex, customGridCell.rowIndex) }
+                ?.target as? com.nendo.argosy.domain.model.HomeTileTargetRef.Game
+            )?.gameId
+
     fun tileContentFor(
         tile: com.nendo.argosy.domain.model.HomeTile
     ): com.nendo.argosy.ui.components.CustomGridTileContent? =

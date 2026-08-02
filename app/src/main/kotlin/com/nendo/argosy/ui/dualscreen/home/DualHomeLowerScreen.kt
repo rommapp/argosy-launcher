@@ -172,8 +172,8 @@ fun DualHomeLowerScreen(
     var skipNextProgrammatic by remember { mutableStateOf(false) }
     var isUserScroll by remember { mutableStateOf(false) }
 
-    LaunchedEffect(selectedIndex, games) {
-        if (games.isNotEmpty()) {
+    LaunchedEffect(selectedIndex, games, isCustomGrid) {
+        if (games.isNotEmpty() && !isCustomGrid) {
             if (selectedIndex in games.indices) {
                 com.nendo.argosy.DualScreenManagerHolder.instance
                     ?.onGameSelected(games[selectedIndex].toShowcaseState())

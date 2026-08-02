@@ -646,7 +646,7 @@ class SecondaryHomeActivity :
         lifecycleScope.launch {
             dualHomeViewModel.uiState
                 .map {
-                    Triple(it.layoutKind, it.customGridCell, it.tileGames.size)
+                    Triple(it.layoutKind, it.focusedTileGameId, it.tileGames.size)
                 }
                 .distinctUntilChanged()
                 .collect { (layout, _, _) ->

@@ -128,7 +128,8 @@ fun HomeCustomGridPage(
     onCellTap: (GridCell) -> Unit,
     onShapeResolved: (Int, Int) -> Unit,
     modifier: Modifier = Modifier,
-    showEmptyCells: Boolean = true
+    showEmptyCells: Boolean = true,
+    editModeLabel: String? = null
 ) {
     val density = LocalDensity.current
     var measured by remember { mutableStateOf(IntSize.Zero) }
@@ -165,7 +166,8 @@ fun HomeCustomGridPage(
                         originY = originY,
                         isFocused = focusedCell.columnIndex == column && focusedCell.rowIndex == row,
                         onClick = { onCellTap(GridCell(column, row)) },
-                        content = null
+                        content = null,
+                        editModeLabel = null
                     )
                 }
             }
@@ -180,7 +182,8 @@ fun HomeCustomGridPage(
                 originY = originY,
                 isFocused = tile.rect.covers(focusedCell.columnIndex, focusedCell.rowIndex),
                 onClick = { onCellTap(GridCell(tile.rect.columnIndex, tile.rect.rowIndex)) },
-                content = contentFor(tile)
+                content = contentFor(tile),
+                editModeLabel = editModeLabel
             )
         }
     }
@@ -201,7 +204,8 @@ private fun CustomGridCellBox(
     originY: Dp,
     isFocused: Boolean,
     onClick: () -> Unit,
-    content: CustomGridTileContent?
+    content: CustomGridTileContent?,
+    editModeLabel: String?
 ) {
     val theme = LocalArgosyTheme.current
     val boxArtStyle = com.nendo.argosy.ui.theme.LocalBoxArtStyle.current
@@ -218,13 +222,21 @@ private fun CustomGridCellBox(
 
     val game = content?.game
     if (game != null) {
-        GameCard(
-            game = game,
-            isFocused = isFocused,
-            focusScale = focusScaleForSpan(rect),
-            showPlatformBadge = false,
-            modifier = placement.clickableNoFocus(onClick = onClick)
-        )
+        Box(modifier = placement, contentAlignment = Alignment.Center) {
+            GameCard(
+                game = game,
+                isFocused = isFocused,
+                focusScale = focusScaleForSpan(rect),
+                showPlatformBadge = false,
+                modifier = Modifier.fillMaxSize().clickableNoFocus(onClick = onClick)
+            )
+            if (editModeLabel != null && isFocused) {
+                TileModeTab(
+                    label = editModeLabel,
+                    modifier = Modifier.align(Alignment.TopEnd)
+                )
+            }
+        }
         return
     }
 
@@ -360,6 +372,27 @@ fun CustomGridPageDots(
 }
 
 private const val DOT_IDLE_ALPHA = 0.35f
+
+/**
+ * A tab hanging off the tile's lower edge naming the mode the d-pad is currently in. It is the
+ * inverse of the platform tab, which sits inset within the cover: this one belongs to the cursor
+ * rather than to the game, so it reads as attached from outside.
+ */
+@Composable
+private fun TileModeTab(label: String, modifier: Modifier = Modifier) {
+    val theme = LocalArgosyTheme.current
+    val shape = RoundedCornerShape(Dimens.radiusSm)
+    Text(
+        text = label.uppercase(),
+        style = MaterialTheme.typography.labelSmall,
+        color = theme.surfaceBase,
+        modifier = modifier
+            .offset(x = Dimens.spacingSm, y = -Dimens.spacingSm)
+            .clip(shape)
+            .background(theme.focusAccent)
+            .padding(horizontal = Dimens.spacingSm, vertical = Dimens.spacingXs)
+    )
+}
 
 /**
  * Focus scale for a tile covering [rect]. A scale is a proportion, so applying the same one to a

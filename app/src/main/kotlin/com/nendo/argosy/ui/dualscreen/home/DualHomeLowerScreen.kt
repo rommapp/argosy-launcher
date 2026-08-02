@@ -144,6 +144,7 @@ fun DualHomeLowerScreen(
     customGridPage: Int = 0,
     customGridPageCount: Int = 1,
     onCustomGridAddPage: () -> Unit = {},
+    customGridEditLabel: String? = null,
     modifier: Modifier = Modifier
 ) {
     val isAutoGrid = layoutKind == com.nendo.argosy.domain.model.HomeLayoutKind.AUTO_GRID
@@ -317,6 +318,7 @@ fun DualHomeLowerScreen(
                         focusedCell = customGridCell,
                         onCellTap = onCustomGridCellTap,
                         onShapeResolved = onCustomGridShape,
+                        editModeLabel = customGridEditLabel,
                         modifier = Modifier.fillMaxSize()
                     )
                 }

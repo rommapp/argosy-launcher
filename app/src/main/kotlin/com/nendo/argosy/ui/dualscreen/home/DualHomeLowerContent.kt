@@ -90,6 +90,11 @@ fun DualHomeLowerContent(
                     customGridPage = uiState.customGridPage,
                     customGridPageCount = uiState.customGridPageCount,
                     onCustomGridAddPage = { viewModel.confirmAddPage() },
+                    customGridEditLabel = when (uiState.tileEditMode) {
+                        TileEditMode.MOVE -> "Move"
+                        TileEditMode.RESIZE -> "Resize"
+                        TileEditMode.NONE -> null
+                    },
                     isPlatformSection = when (uiState.currentSection) {
                         is DualHomeSection.Platform,
                         DualHomeSection.Android,

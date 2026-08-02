@@ -68,6 +68,7 @@ fun NavGraph(
         composable(Screen.Home.route) {
             HomeScreen(
                 isDefaultView = true,
+                onNavigateToCollections = { navController.navigate(Screen.Collections.route) },
                 onGameSelect = { gameId ->
                     navController.navigate(Screen.GameDetail.createRoute(gameId))
                 },

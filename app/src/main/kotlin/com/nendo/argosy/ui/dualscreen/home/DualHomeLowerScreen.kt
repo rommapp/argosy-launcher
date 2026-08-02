@@ -141,6 +141,7 @@ fun DualHomeLowerScreen(
     onCustomGridCellTap: (com.nendo.argosy.domain.model.GridCell) -> Unit = {},
     onCustomGridShape: (Int, Int) -> Unit = { _, _ -> },
     onCustomGridAddPage: () -> Unit = {},
+    onCustomGridTileLongPress: (com.nendo.argosy.domain.model.GridCell) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val isAutoGrid = layoutKind == com.nendo.argosy.domain.model.HomeLayoutKind.AUTO_GRID
@@ -289,6 +290,7 @@ fun DualHomeLowerScreen(
                 onCellTap = onCustomGridCellTap,
                 onShapeResolved = onCustomGridShape,
                 onAddPage = onCustomGridAddPage,
+                onTileLongPress = onCustomGridTileLongPress,
                 onCoverLoadFailed = onCoverLoadFailed,
                 modifier = Modifier.fillMaxWidth().weight(1f)
             )

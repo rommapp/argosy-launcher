@@ -33,6 +33,7 @@ fun CustomGridSurface(
     onShapeResolved: (Int, Int) -> Unit,
     onAddPage: () -> Unit,
     modifier: Modifier = Modifier,
+    onTileLongPress: ((GridCell) -> Unit)? = null,
     downloadIndicatorFor: (Long) -> GameDownloadIndicator = { GameDownloadIndicator.NONE },
     onCoverLoadFailed: ((Long, String) -> Unit)? = null,
     onCoverLoaded: ((Long, android.graphics.Bitmap) -> Unit)? = null
@@ -67,6 +68,7 @@ fun CustomGridSurface(
                     focusedCell = state.cell,
                     onCellTap = onCellTap,
                     onShapeResolved = onShapeResolved,
+                    onTileLongPress = onTileLongPress,
                     editModeLabel = state.editLabel,
                     overlappedTileIds = state.overlappedTileIds,
                     editingTileId = state.editingTileId,

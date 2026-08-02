@@ -111,7 +111,10 @@ sealed class DualCollectionListItem {
         val coverPaths: List<String>,
         val type: CollectionType,
         val platformSummary: String,
-        val totalPlaytimeMinutes: Int
+        val totalPlaytimeMinutes: Int,
+        val installedCount: Int = 0,
+        val achievementsEarned: Int = 0,
+        val achievementsTotal: Int = 0
     ) : DualCollectionListItem()
 }
 
@@ -166,9 +169,12 @@ data class DualHomeUiState(
         com.nendo.argosy.domain.model.HomeLayoutKind.CAROUSEL,
     val customGridConfig: com.nendo.argosy.domain.model.CustomGridConfig =
         com.nendo.argosy.domain.model.CustomGridConfig(),
+    val collectionOpenedFromTile: Boolean = false,
     val customGrid: com.nendo.argosy.ui.components.CustomGridState =
         com.nendo.argosy.ui.components.CustomGridState(),
     val tileGames: Map<Long, HomeGameUi> = emptyMap(),
+    val tileCollections: Map<Long, com.nendo.argosy.ui.components.TileCollectionUi> = emptyMap(),
+    val tileApps: Map<String, String> = emptyMap(),
     val currentSectionLabel: String = "",
     val libraryColumns: Int = LIBRARY_GRID_COLUMNS,
     val showFilterOverlay: Boolean = false,
@@ -251,10 +257,50 @@ data class DualHomeUiState(
                 com.nendo.argosy.ui.components.CustomGridTileContent(
                     game = game,
                     label = game?.title ?: "Missing game",
-                    isMissing = game == null
+                    isMissing = game == null,
+                    subtitle = game?.platformDisplayName,
+                    stats = game?.let { com.nendo.argosy.ui.components.tileStatsFor(it) }.orEmpty()
                 )
             }
-            else -> null
+            is com.nendo.argosy.domain.model.HomeTileTargetRef.Collection -> {
+                val collection = tileCollections[target.collectionId]
+                com.nendo.argosy.ui.components.CustomGridTileContent(
+                    game = null,
+                    label = collection?.name ?: "Missing collection",
+                    isMissing = collection == null,
+                    coverPath = collection?.coverPath,
+                    subtitle = "Collection",
+                    stats = collection?.let {
+                        listOf(
+                            com.nendo.argosy.ui.components.TileStat(
+                                "Games",
+                                it.gameCount.toString()
+                            )
+                        )
+                    }.orEmpty()
+                )
+            }
+            is com.nendo.argosy.domain.model.HomeTileTargetRef.VirtualCollection ->
+                com.nendo.argosy.ui.components.CustomGridTileContent(
+                    game = null,
+                    label = target.name
+                )
+            is com.nendo.argosy.domain.model.HomeTileTargetRef.App -> {
+                val name = tileApps[target.packageName]
+                com.nendo.argosy.ui.components.CustomGridTileContent(
+                    game = null,
+                    label = name ?: "Missing app",
+                    isMissing = name == null,
+                    packageName = target.packageName,
+                    subtitle = "App"
+                )
+            }
+            com.nendo.argosy.domain.model.HomeTileTargetRef.Unresolvable ->
+                com.nendo.argosy.ui.components.CustomGridTileContent(
+                    game = null,
+                    label = "Unavailable",
+                    isMissing = true
+                )
         }
 }
 
@@ -274,6 +320,8 @@ class DualHomeViewModel(
     private val getGamesForPinnedCollectionUseCase: GetGamesForPinnedCollectionUseCase? = null,
     private val sessionStateStore: SessionStateStore? = null,
     private val homeTileRepository: com.nendo.argosy.data.repository.HomeTileRepository? = null,
+    private val homeTilePromptQueue: com.nendo.argosy.data.repository.HomeTilePromptQueue? = null,
+    private val appsRepository: com.nendo.argosy.data.repository.AppsRepository? = null,
     private val syncPreferencesRepository: com.nendo.argosy.data.preferences.SyncPreferencesRepository? = null
 ) : ViewModel() {
 
@@ -288,11 +336,17 @@ class DualHomeViewModel(
 
     private val tilePickerLimit = 60
 
+    private val emulatorPackages: Set<String> by lazy {
+        com.nendo.argosy.data.emulator.EmulatorRegistry.getAll()
+            .map { it.packageName }
+            .toSet()
+    }
+
     private val customGrid = com.nendo.argosy.ui.home.grid.CustomGridCoordinator(
         scope = viewModelScope,
         repository = homeTileRepository,
         ownerUserId = { syncPreferencesRepository?.getRommUserId() },
-        pickerEntries = { query -> tilePickerEntriesFor(query) },
+        pickerEntries = { category, query -> tilePickerEntriesFor(category, query) },
         read = { _uiState.value.customGrid },
         write = { transform -> _uiState.update { it.copy(customGrid = transform(it.customGrid)) } }
     )
@@ -302,21 +356,59 @@ class DualHomeViewModel(
      * library grid has been opened and the picker has to work on a first run too.
      */
     private suspend fun tilePickerEntriesFor(
+        category: com.nendo.argosy.ui.components.TilePickerCategory,
         query: String
-    ): List<com.nendo.argosy.ui.components.TilePickerEntry> =
-        gameRepository.getAllSortedByTitle()
-            .map { it.toUi() }
-            .filter { it.isPlayable }
-            .filter { query.isBlank() || it.title.lowercase().contains(query) }
-            .take(tilePickerLimit)
-            .map { game ->
-                com.nendo.argosy.ui.components.TilePickerEntry(
-                    gameId = game.id,
-                    title = game.title,
-                    platformName = game.platformDisplayName,
-                    coverPath = game.coverPath
+    ): List<com.nendo.argosy.ui.components.TilePickerEntry> = when (category) {
+        com.nendo.argosy.ui.components.TilePickerCategory.GAMES ->
+            gameRepository.getAllSortedByTitle()
+                .map { it.toUi() }
+                .filter { it.isPlayable }
+                .filter { query.isBlank() || it.title.lowercase().contains(query) }
+                .take(tilePickerLimit)
+                .map { game ->
+                    com.nendo.argosy.ui.components.TilePickerEntry(
+                        target = com.nendo.argosy.domain.model.HomeTileTargetRef.Game(game.id),
+                        title = game.title,
+                        subtitle = game.platformDisplayName,
+                        coverPath = game.coverPath
+                    )
+                }
+        com.nendo.argosy.ui.components.TilePickerCategory.COLLECTIONS ->
+            collectionRepository.getAllCollections()
+                .filter { it.name.isNotBlank() }
+                .filter { query.isBlank() || it.name.lowercase().contains(query) }
+                .take(tilePickerLimit)
+                .map { collection ->
+                    val count = collectionRepository.getGameCountInCollection(collection.id)
+                    com.nendo.argosy.ui.components.TilePickerEntry(
+                        target = com.nendo.argosy.domain.model.HomeTileTargetRef
+                            .Collection(collection.id),
+                        title = collection.name,
+                        subtitle = if (count == 1) "1 game" else "$count games",
+                        coverPath = collectionRepository
+                            .getCollectionCoverPaths(collection.id)
+                            .firstOrNull()
+                    )
+                }
+        com.nendo.argosy.ui.components.TilePickerCategory.APPS ->
+            appsRepository?.getInstalledApps(includeSystemApps = false).orEmpty()
+                .filter { query.isBlank() || it.label.lowercase().contains(query) }
+                .sortedWith(
+                    compareByDescending<com.nendo.argosy.data.repository.InstalledApp> {
+                        it.packageName in emulatorPackages
+                    }.thenBy { it.label.lowercase() }
                 )
-            }
+                .take(tilePickerLimit)
+                .map { app ->
+                    com.nendo.argosy.ui.components.TilePickerEntry(
+                        target = com.nendo.argosy.domain.model.HomeTileTargetRef
+                            .App(app.packageName),
+                        title = app.label,
+                        subtitle = if (app.packageName in emulatorPackages) "Emulator" else "App",
+                        packageName = app.packageName
+                    )
+                }
+    }
 
     private var latestDownloads: Map<Long, com.nendo.argosy.data.local.entity.DownloadQueueEntity> = emptyMap()
     private val pendingCoverRepairs = mutableSetOf<Long>()
@@ -969,13 +1061,89 @@ class DualHomeViewModel(
                             entity.id to entity.toUi()
                         }
                     }
+                    val collectionIds = rows.mapNotNull {
+                        (it.target as? com.nendo.argosy.domain.model.HomeTileTargetRef.Collection)
+                            ?.collectionId
+                    }.distinct()
+                    val collections = if (collectionIds.isEmpty()) {
+                        emptyMap()
+                    } else {
+                        collectionRepository.getAllCollections()
+                            .filter { it.id in collectionIds }
+                            .associate { collection ->
+                                collection.id to com.nendo.argosy.ui.components.TileCollectionUi(
+                                    name = collection.name,
+                                    coverPath = collectionRepository
+                                        .getCollectionCoverPaths(collection.id)
+                                        .firstOrNull(),
+                                    gameCount = collectionRepository
+                                        .getGameCountInCollection(collection.id)
+                                )
+                            }
+                    }
+                    val packageNames = rows.mapNotNull {
+                        (it.target as? com.nendo.argosy.domain.model.HomeTileTargetRef.App)
+                            ?.packageName
+                    }.distinct()
+                    val apps = if (packageNames.isEmpty()) {
+                        emptyMap()
+                    } else {
+                        appsRepository?.getInstalledApps(includeSystemApps = true).orEmpty()
+                            .filter { it.packageName in packageNames }
+                            .associate { it.packageName to it.label }
+                    }
                     customGrid.setTiles(rows)
-                    _uiState.update { it.copy(tileGames = games) }
+                    _uiState.update {
+                        it.copy(
+                            tileGames = games,
+                            tileCollections = collections,
+                            tileApps = apps
+                        )
+                    }
                 }
         }
     }
 
     fun setCustomGridShape(columns: Int, rows: Int) = customGrid.setShape(columns, rows)
+
+    /**
+     * Offers left by finished downloads while the launcher was elsewhere. Drained one at a time and
+     * only while the curated grid is the layout in use, since that is the only place a tile means
+     * anything.
+     */
+    fun observeTilePrompts() {
+        val queue = homeTilePromptQueue ?: return
+        viewModelScope.launch {
+            queue.pending.collect { pending ->
+                val gameId = pending.firstOrNull() ?: return@collect
+                val state = _uiState.value
+                if (state.layoutKind != com.nendo.argosy.domain.model.HomeLayoutKind.CUSTOM_GRID) {
+                    return@collect
+                }
+                val game = gameRepository.getByIds(listOf(gameId)).firstOrNull()?.toUi()
+                if (game == null) {
+                    queue.resolve(gameId)
+                    return@collect
+                }
+                customGrid.showPendingAdd(
+                    com.nendo.argosy.ui.components.TilePickerEntry(
+                        target = com.nendo.argosy.domain.model.HomeTileTargetRef.Game(game.id),
+                        title = game.title,
+                        subtitle = game.platformDisplayName,
+                        coverPath = game.coverPath
+                    )
+                )
+            }
+        }
+    }
+
+    fun confirmPendingTileAdd() =
+        customGrid.confirmPendingAdd { id -> homeTilePromptQueue?.resolve(id) }
+
+    fun dismissPendingTileAdd() =
+        customGrid.dismissPendingAdd { id -> homeTilePromptQueue?.resolve(id) }
+
+    fun movePendingTileAddFocus(delta: Int) = customGrid.movePendingAddFocus(delta)
 
     fun moveCustomGridFocus(
         direction: com.nendo.argosy.domain.model.GridDirection2D
@@ -1019,7 +1187,14 @@ class DualHomeViewModel(
 
     fun setTilePickerQuery(query: String) = customGrid.setPickerQuery(query)
 
+    fun toggleTilePickerSearch() = customGrid.togglePickerSearch()
+
     fun confirmTilePickerSelection() = customGrid.confirmPickerSelection()
+
+    fun selectTilePickerEntry(entry: com.nendo.argosy.ui.components.TilePickerEntry) =
+        customGrid.selectPickerEntry(entry)
+
+    fun cycleTilePickerCategory(delta: Int) = customGrid.cyclePickerCategory(delta)
 
     fun enterTileMoveMode() = customGrid.enterMoveMode()
 
@@ -1141,6 +1316,7 @@ class DualHomeViewModel(
     fun enterCollectionGames(
         collectionId: Long,
         preserveFocus: Boolean = false,
+        fromTile: Boolean = false,
         onLoaded: (() -> Unit)? = null
     ) {
         viewModelScope.launch {
@@ -1153,11 +1329,15 @@ class DualHomeViewModel(
                 .find { it.id == collectionId }
             _uiState.update { it.copy(
                 viewMode = DualHomeViewMode.COLLECTION_GAMES,
+                collectionOpenedFromTile = fromTile,
                 collectionGames = games,
                 collectionGamesFocusedIndex = if (preserveFocus) {
                     remapFocusIndex(it.collectionGames, it.collectionGamesFocusedIndex, games)
                 } else 0,
-                activeCollectionName = item?.name ?: ""
+                activeCollectionName = item?.name
+                    ?: collectionRepository.getAllCollections()
+                        .firstOrNull { c -> c.id == collectionId }?.name
+                    ?: ""
             )}
             onLoaded?.invoke()
         }
@@ -1178,9 +1358,19 @@ class DualHomeViewModel(
     private fun remapFocusIndex(old: List<HomeGameUi>, oldIndex: Int, new: List<HomeGameUi>): Int =
         remapFocusIndex(old, oldIndex, new) { it.id }
 
+    /**
+     * Leaves a collection for wherever it was opened from. A collection reached by tile was never
+     * on the collections list, so returning there lands on a list that was never loaded; back has to
+     * mean the grid in that case.
+     */
     fun exitCollectionGames() {
         _uiState.update { it.copy(
-            viewMode = DualHomeViewMode.COLLECTIONS,
+            viewMode = if (it.collectionOpenedFromTile) {
+                DualHomeViewMode.CAROUSEL
+            } else {
+                DualHomeViewMode.COLLECTIONS
+            },
+            collectionOpenedFromTile = false,
             collectionGames = emptyList(),
             collectionGamesFocusedIndex = 0
         )}
@@ -1269,6 +1459,35 @@ class DualHomeViewModel(
         if (items[nextIdx] is DualCollectionListItem.Header) return
 
         _uiState.update { it.copy(selectedCollectionIndex = nextIdx) }
+    }
+
+    /**
+     * The showcase for a collection named by id rather than picked from the list. A tile opens a
+     * collection the list never loaded, so the summary has to be built from the repository instead
+     * of read out of a list that may be empty.
+     */
+    fun loadCollectionShowcase(
+        collectionId: Long,
+        onReady: (DualCollectionShowcaseState) -> Unit
+    ) {
+        viewModelScope.launch { collectionShowcaseFor(collectionId)?.let(onReady) }
+    }
+
+    suspend fun collectionShowcaseFor(collectionId: Long): DualCollectionShowcaseState? {
+        val entity = collectionRepository.getAllCollections()
+            .firstOrNull { it.id == collectionId } ?: return null
+        val item = buildCollectionItem(entity)
+        return DualCollectionShowcaseState(
+            name = item.name,
+            description = item.description,
+            coverPaths = item.coverPaths,
+            gameCount = item.gameCount,
+            platformSummary = item.platformSummary,
+            totalPlaytimeMinutes = item.totalPlaytimeMinutes,
+            installedCount = item.installedCount,
+            achievementsEarned = item.achievementsEarned,
+            achievementsTotal = item.achievementsTotal
+        )
     }
 
     fun selectedCollectionItem(): DualCollectionListItem.Collection? {
@@ -1600,7 +1819,10 @@ class DualHomeViewModel(
             coverPaths = coverPaths,
             type = entity.type,
             platformSummary = platformSummary,
-            totalPlaytimeMinutes = totalPlaytime
+            totalPlaytimeMinutes = totalPlaytime,
+            installedCount = games.count { it.isDownloaded },
+            achievementsEarned = games.sumOf { it.earnedAchievementCount },
+            achievementsTotal = games.sumOf { it.achievementCount }
         )
     }
 

@@ -19,6 +19,7 @@ import com.nendo.argosy.ui.dualscreen.home.DualHomeViewMode
 import com.nendo.argosy.ui.dualscreen.home.ForwardingMode
 import com.nendo.argosy.hardware.CompanionScreen
 import com.nendo.argosy.ui.input.GamepadEvent
+import com.nendo.argosy.core.input.SoundType
 import com.nendo.argosy.ui.input.InputResult
 import com.nendo.argosy.ui.screens.home.HomeGameUi
 import com.nendo.argosy.ui.screens.secondaryhome.SecondaryHomeViewModel
@@ -447,6 +448,10 @@ class SecondaryHomeInputHandler(
                 InputResult.HANDLED
             }
             GamepadEvent.Left -> {
+                if (state.customGrid.pendingAdd != null) {
+                    dualHomeViewModel.movePendingTileAddFocus(-1)
+                    return InputResult.HANDLED
+                }
                 if (inAppBar) dualHomeViewModel.selectPreviousApp()
                 else if (moveCustom(com.nendo.argosy.domain.model.GridDirection2D.LEFT)) Unit
                 else if (!moveGrid(GridDirection.LEFT)) {
@@ -456,6 +461,10 @@ class SecondaryHomeInputHandler(
                 InputResult.HANDLED
             }
             GamepadEvent.Right -> {
+                if (state.customGrid.pendingAdd != null) {
+                    dualHomeViewModel.movePendingTileAddFocus(1)
+                    return InputResult.HANDLED
+                }
                 if (inAppBar) dualHomeViewModel.selectNextApp(apps.size)
                 else if (moveCustom(com.nendo.argosy.domain.model.GridDirection2D.RIGHT)) Unit
                 else if (!moveGrid(GridDirection.RIGHT)) {
@@ -498,6 +507,10 @@ class SecondaryHomeInputHandler(
                     dualHomeViewModel.focusCarousel()
                     broadcasts.broadcastViewModeChange()
                 }
+                if (inCustomGrid && state.showTilePicker) {
+                    dualHomeViewModel.cycleTilePickerCategory(-1)
+                    return InputResult.handled(SoundType.SECTION_CHANGE)
+                }
                 if (inCustomGrid) {
                     dualHomeViewModel.turnCustomGridPage(-1)
                 } else {
@@ -510,6 +523,10 @@ class SecondaryHomeInputHandler(
                     dualHomeViewModel.focusCarousel()
                     broadcasts.broadcastViewModeChange()
                 }
+                if (inCustomGrid && state.showTilePicker) {
+                    dualHomeViewModel.cycleTilePickerCategory(1)
+                    return InputResult.handled(SoundType.SECTION_CHANGE)
+                }
                 if (inCustomGrid) {
                     dualHomeViewModel.turnCustomGridPage(1)
                 } else {
@@ -519,12 +536,12 @@ class SecondaryHomeInputHandler(
             }
             GamepadEvent.LongConfirm -> {
                 if (!inCustomGrid) return InputResult.UNHANDLED
-                if (!state.customGrid.isEditing) {
-                    dualHomeViewModel.enterTileMoveMode()
+                if (state.customGrid.isEditing) {
+                    dualHomeViewModel.commitTileEdit()
                 } else {
-                    dualHomeViewModel.toggleTileEditMode()
+                    dualHomeViewModel.enterTileMoveMode()
                 }
-                InputResult.HANDLED
+                InputResult.handled(SoundType.TOGGLE)
             }
             GamepadEvent.Select -> {
                 if (inCustomGrid && dualHomeViewModel.focusedTile() != null) {
@@ -551,6 +568,14 @@ class SecondaryHomeInputHandler(
                 InputResult.HANDLED
             }
             GamepadEvent.Confirm -> {
+                if (state.customGrid.pendingAdd != null) {
+                    if (state.customGrid.pendingAddFocusIndex == 0) {
+                        dualHomeViewModel.confirmPendingTileAdd()
+                    } else {
+                        dualHomeViewModel.dismissPendingTileAdd()
+                    }
+                    return InputResult.HANDLED
+                }
                 if (inCustomGrid && state.showTileMenu) {
                     dualHomeViewModel.confirmTileMenu()
                     InputResult.HANDLED
@@ -559,17 +584,31 @@ class SecondaryHomeInputHandler(
                     InputResult.HANDLED
                 } else if (inCustomGrid && state.customGrid.isEditing) {
                     dualHomeViewModel.commitTileEdit()
-                    InputResult.HANDLED
+                    InputResult.handled(SoundType.SELECT)
                 } else if (inCustomGrid && dualHomeViewModel.isOnAddPage) {
                     dualHomeViewModel.confirmAddPage()
                     InputResult.HANDLED
                 } else if (inCustomGrid) {
-                    val tileGame = dualHomeViewModel.focusedTileGameId()
-                        ?.let { state.tileGames[it] }
-                    if (tileGame == null) {
-                        dualHomeViewModel.openTilePicker()
-                    } else {
-                        confirmGame(tileGame)
+                    when (val target = dualHomeViewModel.focusedTile()?.target) {
+                        is com.nendo.argosy.domain.model.HomeTileTargetRef.Game -> {
+                            val tileGame = state.tileGames[target.gameId]
+                            if (tileGame == null) {
+                                dualHomeViewModel.openTilePicker()
+                            } else {
+                                confirmGame(tileGame)
+                            }
+                        }
+                        is com.nendo.argosy.domain.model.HomeTileTargetRef.App ->
+                            onLaunchApp(target.packageName)
+                        is com.nendo.argosy.domain.model.HomeTileTargetRef.Collection ->
+                            dualHomeViewModel.enterCollectionGames(
+                                target.collectionId,
+                                fromTile = true
+                            ) {
+                                broadcasts.broadcastViewModeChange()
+                                broadcasts.broadcastCollectionGameSelection()
+                            }
+                        else -> dualHomeViewModel.openTilePicker()
                     }
                     InputResult.HANDLED
                 } else if (inAppBar && state.appBarIndex == -1) {
@@ -605,15 +644,22 @@ class SecondaryHomeInputHandler(
                 }
             }
             GamepadEvent.Back -> {
+                if (state.customGrid.pendingAdd != null) {
+                    dualHomeViewModel.dismissPendingTileAdd()
+                    return InputResult.HANDLED
+                }
                 if (inCustomGrid && state.showTileMenu) {
                     dualHomeViewModel.closeTileMenu()
+                    InputResult.HANDLED
+                } else if (inCustomGrid && state.customGrid.pickerSearchActive) {
+                    dualHomeViewModel.toggleTilePickerSearch()
                     InputResult.HANDLED
                 } else if (inCustomGrid && state.showTilePicker) {
                     dualHomeViewModel.closeTilePicker()
                     InputResult.HANDLED
                 } else if (inCustomGrid && state.customGrid.isEditing) {
                     dualHomeViewModel.cancelTileEdit()
-                    InputResult.HANDLED
+                    InputResult.handled(SoundType.BACK)
                 } else {
                     InputResult.UNHANDLED
                 }
@@ -623,7 +669,7 @@ class SecondaryHomeInputHandler(
                     state.customGrid.isEditing
                 ) {
                     dualHomeViewModel.toggleTileEditMode()
-                    return InputResult.HANDLED
+                    return InputResult.handled(SoundType.TOGGLE)
                 }
                 if (inAppBar) return InputResult.UNHANDLED
                 val gameId = focusedGameId(state)
@@ -633,6 +679,10 @@ class SecondaryHomeInputHandler(
                 } else InputResult.UNHANDLED
             }
             GamepadEvent.SecondaryAction -> {
+                if (inCustomGrid && state.showTilePicker) {
+                    dualHomeViewModel.toggleTilePickerSearch()
+                    return InputResult.HANDLED
+                }
                 if (inAppBar) {
                     val packageName = apps.getOrNull(state.appBarIndex)
                     if (packageName != null) {
@@ -734,9 +784,14 @@ class SecondaryHomeInputHandler(
                 InputResult.HANDLED
             }
             GamepadEvent.Back -> {
+                val fromTile = dualHomeViewModel.uiState.value.collectionOpenedFromTile
                 dualHomeViewModel.exitCollectionGames()
                 broadcasts.broadcastViewModeChange()
-                broadcasts.broadcastCollectionFocused()
+                if (fromTile) {
+                    broadcasts.broadcastCurrentGameSelection()
+                } else {
+                    broadcasts.broadcastCollectionFocused()
+                }
                 InputResult.HANDLED
             }
             GamepadEvent.Menu, GamepadEvent.LeftStickClick, GamepadEvent.RightStickClick -> {

@@ -43,6 +43,13 @@ interface HomeInputActions {
     fun confirmAddPage()
     fun openTilePicker()
     fun closeTilePicker()
+    fun toggleTilePickerSearch()
+    fun cycleTilePickerCategory(delta: Int)
+    fun launchTileApp(packageName: String)
+    fun openTileCollection(collectionId: Long)
+    fun confirmPendingTileAdd()
+    fun dismissPendingTileAdd()
+    fun movePendingTileAddFocus(delta: Int)
     fun moveTilePickerFocus(delta: Int)
     fun confirmTilePickerSelection()
     fun focusedTileGameId(): Long?
@@ -124,6 +131,10 @@ class HomeInputHandler(
     }
 
     override fun onLeft(): InputResult {
+        if (actions.uiState.value.customGrid.pendingAdd != null) {
+            actions.movePendingTileAddFocus(-1)
+            return InputResult.HANDLED
+        }
         val state = actions.uiState.value
         if (state.showAddToCollectionModal || state.showGameMenu) return InputResult.HANDLED
         if (isCustomGrid(state)) return customMove(GridDirection2D.LEFT)
@@ -133,6 +144,10 @@ class HomeInputHandler(
     }
 
     override fun onRight(): InputResult {
+        if (actions.uiState.value.customGrid.pendingAdd != null) {
+            actions.movePendingTileAddFocus(1)
+            return InputResult.HANDLED
+        }
         val state = actions.uiState.value
         if (state.showAddToCollectionModal || state.showGameMenu) return InputResult.HANDLED
         if (isCustomGrid(state)) return customMove(GridDirection2D.RIGHT)
@@ -155,25 +170,29 @@ class HomeInputHandler(
      * button reads as "use this" whether or not the cell holds anything yet.
      */
     private fun confirmCustomGridCell() {
-        if (actions.uiState.value.customGrid.isOnAddPage) {
+        val state = actions.uiState.value
+        if (state.customGrid.isOnAddPage) {
             actions.confirmAddPage()
             return
         }
-        val gameId = actions.focusedTileGameId()
-        if (gameId == null) {
-            actions.openTilePicker()
-            return
+        when (val target = state.customGrid.focusedTile?.target) {
+            is com.nendo.argosy.domain.model.HomeTileTargetRef.Game ->
+                actions.launchGame(target.gameId)
+            is com.nendo.argosy.domain.model.HomeTileTargetRef.App ->
+                actions.launchTileApp(target.packageName)
+            is com.nendo.argosy.domain.model.HomeTileTargetRef.Collection ->
+                actions.openTileCollection(target.collectionId)
+            else -> actions.openTilePicker()
         }
-        actions.launchGame(gameId)
     }
 
     private fun customMove(direction: GridDirection2D): InputResult {
-        when (actions.uiState.value.customGrid.editMode) {
+        val moved = when (actions.uiState.value.customGrid.editMode) {
             TileEditMode.MOVE -> actions.moveFocusedTile(direction)
             TileEditMode.RESIZE -> actions.resizeFocusedTile(direction)
             TileEditMode.NONE -> actions.moveCustomGridFocus(direction)
         }
-        return InputResult.HANDLED
+        return if (moved) InputResult.HANDLED else InputResult.handled(SoundType.BOUNDARY)
     }
 
     /**
@@ -198,10 +217,21 @@ class HomeInputHandler(
 
     override fun onConfirm(): InputResult {
         val state = actions.uiState.value
+        if (state.customGrid.pendingAdd != null) {
+            if (state.customGrid.pendingAddFocusIndex == 0) {
+                actions.confirmPendingTileAdd()
+            } else {
+                actions.dismissPendingTileAdd()
+            }
+            return InputResult.HANDLED
+        }
         when {
             state.showTilePicker -> actions.confirmTilePickerSelection()
             state.customGrid.showMenu -> actions.confirmTileMenu()
-            state.customGrid.isEditing -> actions.commitTileEdit()
+            state.customGrid.isEditing -> {
+                actions.commitTileEdit()
+                return InputResult.handled(SoundType.SELECT)
+            }
             state.showAddToCollectionModal -> actions.confirmCollectionSelection()
             state.showGameMenu -> actions.confirmGameMenuSelection(onGameSelect)
             isCustomGrid(state) -> confirmCustomGridCell()
@@ -232,17 +262,25 @@ class HomeInputHandler(
 
     override fun onBack(): InputResult {
         val state = actions.uiState.value
+        if (state.customGrid.pendingAdd != null) {
+            actions.dismissPendingTileAdd()
+            return InputResult.HANDLED
+        }
+        if (state.customGrid.pickerSearchActive) {
+            actions.toggleTilePickerSearch()
+            return InputResult.HANDLED
+        }
         if (state.showTilePicker) {
             actions.closeTilePicker()
             return InputResult.HANDLED
         }
         if (state.customGrid.showMenu) {
             actions.closeTileMenu()
-            return InputResult.HANDLED
+            return InputResult.handled(SoundType.CLOSE_MODAL)
         }
         if (state.customGrid.isEditing) {
             actions.cancelTileEdit()
-            return InputResult.HANDLED
+            return InputResult.handled(SoundType.BACK)
         }
         if (state.showAddToCollectionModal) {
             actions.dismissAddToCollectionModal()
@@ -285,7 +323,7 @@ class HomeInputHandler(
         if (isCustomGrid(state)) {
             if (state.customGrid.isEditing) return InputResult.HANDLED
             actions.openTileMenu()
-            return InputResult.HANDLED
+            return InputResult.handled(SoundType.OPEN_MODAL)
         }
         if (state.focusedGame != null) {
             actions.toggleGameMenu()
@@ -307,10 +345,14 @@ class HomeInputHandler(
         } else {
             actions.enterTileMoveMode()
         }
-        return InputResult.HANDLED
+        return InputResult.handled(SoundType.TOGGLE)
     }
 
     override fun onSecondaryAction(): InputResult {
+        if (actions.uiState.value.showTilePicker) {
+            actions.toggleTilePickerSearch()
+            return InputResult.HANDLED
+        }
         val game = actions.uiState.value.focusedGame ?: return InputResult.UNHANDLED
         actions.toggleFavorite(game.id)
         return InputResult.HANDLED
@@ -319,6 +361,10 @@ class HomeInputHandler(
     override fun onPrevSection(): InputResult {
         val state = actions.uiState.value
         if (state.showAddToCollectionModal || state.showGameMenu) return InputResult.HANDLED
+        if (state.showTilePicker) {
+            actions.cycleTilePickerCategory(-1)
+            return InputResult.handled(SoundType.SECTION_CHANGE)
+        }
         if (isCustomGrid(state)) {
             actions.turnCustomGridPage(-1)
             return InputResult.handled(SoundType.SECTION_CHANGE)
@@ -330,6 +376,10 @@ class HomeInputHandler(
     override fun onNextSection(): InputResult {
         val state = actions.uiState.value
         if (state.showAddToCollectionModal || state.showGameMenu) return InputResult.HANDLED
+        if (state.showTilePicker) {
+            actions.cycleTilePickerCategory(1)
+            return InputResult.handled(SoundType.SECTION_CHANGE)
+        }
         if (isCustomGrid(state)) {
             actions.turnCustomGridPage(1)
             return InputResult.handled(SoundType.SECTION_CHANGE)
@@ -342,7 +392,7 @@ class HomeInputHandler(
         val state = actions.uiState.value
         if (isCustomGrid(state) && state.customGrid.isEditing) {
             actions.toggleTileEditMode()
-            return InputResult.HANDLED
+            return InputResult.handled(SoundType.TOGGLE)
         }
         val game = state.focusedGame ?: return InputResult.UNHANDLED
         actions.setNavigationContext(

@@ -39,9 +39,12 @@ fun DualHomeLowerContent(
     val uiState by viewModel.uiState.collectAsState()
     val forwardingMode by viewModel.forwardingMode.collectAsState()
 
-    val isSearchActive = uiState.viewMode == DualHomeViewMode.LIBRARY_GRID
-        && uiState.showFilterOverlay
-        && uiState.filterCategory == DualFilterCategory.SEARCH
+    val isSearchActive = uiState.customGrid.pickerSearchActive ||
+        (
+            uiState.viewMode == DualHomeViewMode.LIBRARY_GRID &&
+                uiState.showFilterOverlay &&
+                uiState.filterCategory == DualFilterCategory.SEARCH
+            )
 
     Box(
         modifier = modifier
@@ -87,6 +90,10 @@ fun DualHomeLowerContent(
                         viewModel.setCustomGridShape(columns, rows)
                     },
                     onCustomGridAddPage = { viewModel.confirmAddPage() },
+                    onCustomGridTileLongPress = { cell ->
+                        viewModel.setCustomGridCell(cell)
+                        viewModel.openTileMenu()
+                    },
                     isPlatformSection = when (uiState.currentSection) {
                         is DualHomeSection.Platform,
                         DualHomeSection.Android,
@@ -147,6 +154,19 @@ fun DualHomeLowerContent(
             }
         }
 
+        val pendingTileAdd = uiState.customGrid.pendingAdd
+        if (pendingTileAdd != null) {
+            com.nendo.argosy.ui.primitives.ArgosyConfirmModal(
+                title = "Add to home grid?",
+                message = "${pendingTileAdd.title} finished downloading.",
+                confirmLabel = "Add",
+                cancelLabel = "Not now",
+                focusedIndex = uiState.customGrid.pendingAddFocusIndex,
+                onConfirm = viewModel::confirmPendingTileAdd,
+                onDismiss = viewModel::dismissPendingTileAdd
+            )
+        }
+
         if (uiState.showTileMenu) {
             val tile = viewModel.focusedTile()
             com.nendo.argosy.ui.components.CustomTileMenuModal(
@@ -166,8 +186,11 @@ fun DualHomeLowerContent(
                 entries = uiState.tilePickerEntries,
                 query = uiState.tilePickerQuery,
                 focusIndex = uiState.tilePickerFocusIndex,
-                onSelect = { viewModel.confirmTilePickerSelection() },
-                onDismiss = viewModel::closeTilePicker
+                onSelect = { entry -> viewModel.selectTilePickerEntry(entry) },
+                onDismiss = viewModel::closeTilePicker,
+                searchActive = uiState.customGrid.pickerSearchActive,
+                onQueryChange = viewModel::setTilePickerQuery,
+                category = uiState.customGrid.pickerCategory
             )
         }
 

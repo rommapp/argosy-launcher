@@ -12,6 +12,7 @@ import com.nendo.argosy.domain.model.settleAfterEdit
 import com.nendo.argosy.ui.components.CustomGridState
 import com.nendo.argosy.ui.components.CustomTileMenuAction
 import com.nendo.argosy.ui.components.TileEditMode
+import com.nendo.argosy.ui.components.TilePickerCategory
 import com.nendo.argosy.ui.components.TilePickerEntry
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -28,7 +29,7 @@ class CustomGridCoordinator(
     private val scope: CoroutineScope,
     private val repository: HomeTileRepository?,
     private val ownerUserId: suspend () -> Long?,
-    private val pickerEntries: suspend (String) -> List<TilePickerEntry>,
+    private val pickerEntries: suspend (TilePickerCategory, String) -> List<TilePickerEntry>,
     private val read: () -> CustomGridState,
     private val write: ((CustomGridState) -> CustomGridState) -> Unit
 ) {
@@ -302,11 +303,32 @@ class CustomGridCoordinator(
 
     fun openPicker() {
         if (read().focusedTile != null) return
-        write { it.copy(showPicker = true, pickerQuery = "", pickerFocusIndex = 0) }
+        write {
+            it.copy(
+                showPicker = true,
+                pickerQuery = "",
+                pickerFocusIndex = 0,
+                pickerSearchActive = false,
+                pickerCategory = TilePickerCategory.GAMES
+            )
+        }
         refreshPicker()
     }
 
-    fun closePicker() = write { it.copy(showPicker = false, pickerQuery = "") }
+    fun closePicker() = write {
+        it.copy(showPicker = false, pickerQuery = "", pickerSearchActive = false)
+    }
+
+    /**
+     * Opens the search field, which is the one place the grid hands focus to Compose: a soft
+     * keyboard has to reach a text field, and there is nothing else on the modal competing for it.
+     * Closing it clears the query so the list a dismissed search leaves behind is the full one.
+     */
+    fun togglePickerSearch() {
+        val active = !read().pickerSearchActive
+        write { it.copy(pickerSearchActive = active, pickerQuery = if (active) it.pickerQuery else "") }
+        if (!active) refreshPicker()
+    }
 
     fun movePickerFocus(delta: Int) = write {
         val maxIndex = (it.pickerEntries.size - 1).coerceAtLeast(0)
@@ -320,16 +342,72 @@ class CustomGridCoordinator(
 
     private fun refreshPicker() {
         scope.launch {
-            val entries = pickerEntries(read().pickerQuery.trim().lowercase())
+            val current = read()
+            val entries = pickerEntries(current.pickerCategory, current.pickerQuery.trim().lowercase())
             write { it.copy(pickerEntries = entries) }
         }
+    }
+
+    /**
+     * Moves between what the picker lists. The focus index resets because the lists have nothing to
+     * do with each other, so keeping a position from one in another lands somewhere arbitrary.
+     */
+    fun cyclePickerCategory(delta: Int) {
+        val entries = TilePickerCategory.entries
+        val next = entries[(read().pickerCategory.ordinal + delta).mod(entries.size)]
+        write { it.copy(pickerCategory = next, pickerFocusIndex = 0) }
+        refreshPicker()
     }
 
     fun confirmPickerSelection() {
         val current = read()
         val entry = current.pickerEntries.getOrNull(current.pickerFocusIndex) ?: return
-        placeOnFocusedCell(HomeTileTargetRef.Game(entry.gameId))
+        placeOnFocusedCell(entry.target)
         closePicker()
+    }
+
+    fun selectPickerEntry(entry: TilePickerEntry) {
+        placeOnFocusedCell(entry.target)
+        closePicker()
+    }
+
+    /**
+     * Raises the offer a finished download left behind. Only one is shown at a time: a batch of
+     * downloads would otherwise stack modals over the grid, and the rest stay queued until this one
+     * is answered.
+     */
+    fun showPendingAdd(entry: TilePickerEntry) {
+        if (read().pendingAdd != null) return
+        write { it.copy(pendingAdd = entry, pendingAddFocusIndex = 0) }
+    }
+
+    fun movePendingAddFocus(delta: Int) = write {
+        it.copy(pendingAddFocusIndex = (it.pendingAddFocusIndex + delta).coerceIn(0, 1))
+    }
+
+    /**
+     * Accepts the offer by appending to the last page, the same placement the automatic mode uses,
+     * so the two modes differ only in whether they ask.
+     */
+    fun confirmPendingAdd(onResolved: (Long) -> Unit) {
+        val entry = read().pendingAdd ?: return
+        val tiles = repository
+        write { it.copy(pendingAdd = null) }
+        entry.gameId?.let(onResolved)
+        if (tiles == null) return
+        scope.launch {
+            tiles.appendToLastPage(
+                ownerUserId = ownerUserId(),
+                target = entry.target,
+                columns = read().columns.coerceAtLeast(1)
+            )
+        }
+    }
+
+    fun dismissPendingAdd(onResolved: (Long) -> Unit) {
+        val entry = read().pendingAdd ?: return
+        write { it.copy(pendingAdd = null) }
+        entry.gameId?.let(onResolved)
     }
 
     fun placeOnFocusedCell(target: HomeTileTargetRef) {

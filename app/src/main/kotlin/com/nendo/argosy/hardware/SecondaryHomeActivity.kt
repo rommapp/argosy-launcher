@@ -810,9 +810,12 @@ class SecondaryHomeActivity :
             getGamesForPinnedCollectionUseCase = dsm.getGamesForPinnedCollectionUseCase,
             sessionStateStore = dsm.sessionStateStore,
             homeTileRepository = dsm.homeTileRepository,
+            homeTilePromptQueue = dsm.homeTilePromptQueue,
+            appsRepository = dsm.appsRepository,
             syncPreferencesRepository = dsm.syncPreferencesRepository
         )
         dualHomeViewModel.observeHomeTiles()
+        dualHomeViewModel.observeTilePrompts()
         observeCustomGridSelection()
         broadcasts = SecondaryHomeBroadcastHelper(
             dsm = dsm, dualHomeViewModel = dualHomeViewModel,

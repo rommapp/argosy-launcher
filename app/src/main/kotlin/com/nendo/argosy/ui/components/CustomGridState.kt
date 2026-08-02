@@ -39,8 +39,12 @@ data class CustomGridState(
     val menuFocusIndex: Int = 0,
     val showPicker: Boolean = false,
     val pickerQuery: String = "",
+    val pickerSearchActive: Boolean = false,
+    val pickerCategory: TilePickerCategory = TilePickerCategory.GAMES,
     val pickerFocusIndex: Int = 0,
-    val pickerEntries: List<TilePickerEntry> = emptyList()
+    val pickerEntries: List<TilePickerEntry> = emptyList(),
+    val pendingAdd: TilePickerEntry? = null,
+    val pendingAddFocusIndex: Int = 0
 ) {
 
     val storedPageCount: Int

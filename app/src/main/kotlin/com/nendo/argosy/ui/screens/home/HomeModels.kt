@@ -137,6 +137,8 @@ data class HomeUiState(
     val customGrid: com.nendo.argosy.ui.components.CustomGridState =
         com.nendo.argosy.ui.components.CustomGridState(),
     val tileGames: Map<Long, HomeGameUi> = emptyMap(),
+    val tileCollections: Map<Long, com.nendo.argosy.ui.components.TileCollectionUi> = emptyMap(),
+    val tileApps: Map<String, String> = emptyMap(),
     val isLoading: Boolean = true,
     val isRommConfigured: Boolean = false,
     val showGameMenu: Boolean = false,
@@ -344,10 +346,50 @@ data class HomeUiState(
                 com.nendo.argosy.ui.components.CustomGridTileContent(
                     game = game,
                     label = game?.title ?: "Missing game",
-                    isMissing = game == null
+                    isMissing = game == null,
+                    subtitle = game?.platformDisplayName,
+                    stats = game?.let { com.nendo.argosy.ui.components.tileStatsFor(it) }.orEmpty()
                 )
             }
-            else -> null
+            is com.nendo.argosy.domain.model.HomeTileTargetRef.Collection -> {
+                val collection = tileCollections[target.collectionId]
+                com.nendo.argosy.ui.components.CustomGridTileContent(
+                    game = null,
+                    label = collection?.name ?: "Missing collection",
+                    isMissing = collection == null,
+                    coverPath = collection?.coverPath,
+                    subtitle = "Collection",
+                    stats = collection?.let {
+                        listOf(
+                            com.nendo.argosy.ui.components.TileStat(
+                                "Games",
+                                it.gameCount.toString()
+                            )
+                        )
+                    }.orEmpty()
+                )
+            }
+            is com.nendo.argosy.domain.model.HomeTileTargetRef.VirtualCollection ->
+                com.nendo.argosy.ui.components.CustomGridTileContent(
+                    game = null,
+                    label = target.name
+                )
+            is com.nendo.argosy.domain.model.HomeTileTargetRef.App -> {
+                val name = tileApps[target.packageName]
+                com.nendo.argosy.ui.components.CustomGridTileContent(
+                    game = null,
+                    label = name ?: "Missing app",
+                    isMissing = name == null,
+                    packageName = target.packageName,
+                    subtitle = "App"
+                )
+            }
+            com.nendo.argosy.domain.model.HomeTileTargetRef.Unresolvable ->
+                com.nendo.argosy.ui.components.CustomGridTileContent(
+                    game = null,
+                    label = "Unavailable",
+                    isMissing = true
+                )
         }
 }
 
@@ -355,6 +397,7 @@ data class BreadcrumbItem(val label: String, val isCurrent: Boolean)
 
 sealed class HomeEvent {
     data class LaunchIntent(val intent: Intent, val options: android.os.Bundle? = null) : HomeEvent()
+    data class NavigateToCollections(val collectionId: Long) : HomeEvent()
     data class NavigateToLibrary(
         val platformId: Long? = null,
         val sourceFilter: String? = null

@@ -84,6 +84,8 @@ class MainActivity : ComponentActivity() {
     @Inject lateinit var preferencesRepository: UserPreferencesRepository
     @Inject lateinit var syncPreferencesRepository: com.nendo.argosy.data.preferences.SyncPreferencesRepository
     @Inject lateinit var homeTileRepository: com.nendo.argosy.data.repository.HomeTileRepository
+    @Inject lateinit var homeTilePromptQueue: com.nendo.argosy.data.repository.HomeTilePromptQueue
+    @Inject lateinit var appsRepository: com.nendo.argosy.data.repository.AppsRepository
     @Inject lateinit var ambientAudioManager: AmbientAudioManager
     @Inject lateinit var bgmPlaylistCoordinator: com.nendo.argosy.ui.audio.BgmPlaylistCoordinator
     @Inject lateinit var ambientLedManager: AmbientLedManager
@@ -296,6 +298,8 @@ class MainActivity : ComponentActivity() {
                 preferencesRepository = preferencesRepository,
                 syncPreferencesRepository = syncPreferencesRepository,
                 homeTileRepository = homeTileRepository,
+                homeTilePromptQueue = homeTilePromptQueue,
+                appsRepository = appsRepository,
                 notificationManager = notificationManager,
                 emulatorConfigDao = emulatorConfigDao,
                 configureEmulatorUseCase = configureEmulatorUseCase,

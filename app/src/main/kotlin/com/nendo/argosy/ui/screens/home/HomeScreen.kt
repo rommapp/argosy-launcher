@@ -157,6 +157,7 @@ fun HomeScreen(
     isDefaultView: Boolean,
     onGameSelect: (Long) -> Unit,
     onNavigateToLibrary: (platformId: Long?, sourceFilter: String?) -> Unit = { _, _ -> },
+    onNavigateToCollections: () -> Unit = {},
     onNavigateToDefault: () -> Unit,
     onDrawerToggle: () -> Unit,
     onChangelogAction: (RequiredAction) -> Unit = {},
@@ -235,6 +236,7 @@ fun HomeScreen(
                 is HomeEvent.NavigateToLibrary -> {
                     onNavigateToLibrary(event.platformId, event.sourceFilter)
                 }
+                is HomeEvent.NavigateToCollections -> onNavigateToCollections()
             }
         }
     }
@@ -656,13 +658,14 @@ fun HomeScreen(
                         if (measured != headerBlockHeight) headerBlockHeight = measured
                     }
             ) {
-                if (!isCustomGrid) HomeHeader(
+                HomeHeader(
                     uiState = uiState,
                     onPreviousRow = viewModel::previousRow,
                     onNextRow = viewModel::nextRow,
                     onSelectRow = viewModel::selectRow,
                     isStacked = isStackedHeader,
-                    headerOffset = videoModeHeaderOffset
+                    headerOffset = videoModeHeaderOffset,
+                    showSections = !isCustomGrid
                 )
             }
 
@@ -692,6 +695,10 @@ fun HomeScreen(
                                     viewModel.setCustomGridShape(columns, rows)
                                 },
                                 onAddPage = { viewModel.confirmAddPage() },
+                                onTileLongPress = { cell ->
+                                    viewModel.setCustomGridCell(cell)
+                                    viewModel.openTileMenu()
+                                },
                                 downloadIndicatorFor = { uiState.downloadIndicatorFor(it) },
                                 onCoverLoadFailed = viewModel::repairCoverImage,
                                 onCoverLoaded = viewModel::extractGradientForGame,
@@ -951,6 +958,19 @@ fun HomeScreen(
             }
         }
 
+        val pendingTileAdd = uiState.customGrid.pendingAdd
+        if (pendingTileAdd != null) {
+            com.nendo.argosy.ui.primitives.ArgosyConfirmModal(
+                title = "Add to home grid?",
+                message = "${pendingTileAdd.title} finished downloading.",
+                confirmLabel = "Add",
+                cancelLabel = "Not now",
+                focusedIndex = uiState.customGrid.pendingAddFocusIndex,
+                onConfirm = viewModel::confirmPendingTileAdd,
+                onDismiss = viewModel::dismissPendingTileAdd
+            )
+        }
+
         if (uiState.customGrid.showMenu) {
             val menuTile = uiState.customGrid.focusedTile
             com.nendo.argosy.ui.components.CustomTileMenuModal(
@@ -974,11 +994,11 @@ fun HomeScreen(
                 entries = uiState.tilePickerEntries,
                 query = uiState.tilePickerQuery,
                 focusIndex = uiState.tilePickerFocusIndex,
-                onSelect = { gameId ->
-                    viewModel.placeGameOnFocusedCell(gameId)
-                    viewModel.closeTilePicker()
-                },
-                onDismiss = viewModel::closeTilePicker
+                onSelect = { entry -> viewModel.selectTilePickerEntry(entry) },
+                onDismiss = viewModel::closeTilePicker,
+                searchActive = uiState.customGrid.pickerSearchActive,
+                onQueryChange = viewModel::setTilePickerQuery,
+                category = uiState.customGrid.pickerCategory
             )
         }
 
@@ -1092,8 +1112,23 @@ private fun HomeHeader(
     onNextRow: () -> Unit,
     onSelectRow: (HomeRow) -> Unit,
     isStacked: Boolean,
-    headerOffset: androidx.compose.ui.unit.Dp = 0.dp
+    headerOffset: androidx.compose.ui.unit.Dp = 0.dp,
+    showSections: Boolean = true
 ) {
+    if (!showSections) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(Dimens.spacingLg)
+                .offset(y = headerOffset),
+            horizontalArrangement = Arrangement.End,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            SystemStatusBar()
+        }
+        return
+    }
+
     if (isStacked) {
         Column(
             modifier = Modifier

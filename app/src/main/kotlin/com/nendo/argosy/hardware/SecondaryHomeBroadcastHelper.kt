@@ -135,7 +135,10 @@ class SecondaryHomeBroadcastHelper(
                 coverPaths = item.coverPaths,
                 gameCount = item.gameCount,
                 platformSummary = item.platformSummary,
-                totalPlaytimeMinutes = item.totalPlaytimeMinutes
+                totalPlaytimeMinutes = item.totalPlaytimeMinutes,
+                installedCount = item.installedCount,
+                achievementsEarned = item.achievementsEarned,
+                achievementsTotal = item.achievementsTotal
             )
         )
     }
@@ -159,6 +162,13 @@ class SecondaryHomeBroadcastHelper(
      */
     fun broadcastCurrentGameSelection() {
         val state = dualHomeViewModel.uiState.value
+        if (state.layoutKind == com.nendo.argosy.domain.model.HomeLayoutKind.CUSTOM_GRID) {
+            val target = dualHomeViewModel.focusedTile()?.target
+            if (target is com.nendo.argosy.domain.model.HomeTileTargetRef.Collection) {
+                broadcastTileCollection(target.collectionId)
+                return
+            }
+        }
         val game = if (state.layoutKind == com.nendo.argosy.domain.model.HomeLayoutKind.CUSTOM_GRID) {
             dualHomeViewModel.focusedTileGameId()?.let { state.tileGames[it] }
         } else {
@@ -166,6 +176,14 @@ class SecondaryHomeBroadcastHelper(
         }
         if (game != null) dsm.onGameSelected(game.toShowcaseState())
         else dsm.onGameSelected(com.nendo.argosy.ui.dualscreen.home.DualHomeShowcaseState())
+    }
+
+    /**
+     * Shows the summary for a collection sitting under the grid cursor. Built on demand because a
+     * curated tile can point at a collection the collections list has never loaded.
+     */
+    fun broadcastTileCollection(collectionId: Long) {
+        dualHomeViewModel.loadCollectionShowcase(collectionId) { dsm.onCollectionFocused(it) }
     }
 
     fun broadcastDirectAction(

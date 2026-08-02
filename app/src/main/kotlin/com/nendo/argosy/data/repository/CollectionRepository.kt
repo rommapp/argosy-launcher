@@ -50,6 +50,9 @@ class CollectionRepository @Inject constructor(
     suspend fun getCollectionCoverPaths(collectionId: Long): List<String> =
         collectionDao.getCollectionCoverPaths(collectionId)
 
+    suspend fun getGameCountInCollection(collectionId: Long): Int =
+        collectionDao.getGameCountInCollection(collectionId)
+
     suspend fun insertCollection(collection: CollectionEntity): Long =
         collectionDao.insertCollection(collection)
 

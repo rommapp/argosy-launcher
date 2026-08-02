@@ -41,6 +41,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -78,7 +79,9 @@ class HomeViewModel @Inject constructor(
     val gameMenuDelegate: HomeGameMenuDelegate,
     private val steamContentManager: com.nendo.argosy.data.steam.SteamContentManager,
     private val steamDownloadPromptController: com.nendo.argosy.data.steam.SteamDownloadPromptController,
+    private val appsRepository: com.nendo.argosy.data.repository.AppsRepository,
     private val homeTileRepository: com.nendo.argosy.data.repository.HomeTileRepository,
+    private val homeTilePromptQueue: com.nendo.argosy.data.repository.HomeTilePromptQueue,
     private val syncPreferencesRepository: com.nendo.argosy.data.preferences.SyncPreferencesRepository
 ) : ViewModel(), HomeInputActions {
 
@@ -95,7 +98,16 @@ class HomeViewModel @Inject constructor(
         scope = viewModelScope,
         repository = homeTileRepository,
         ownerUserId = { syncPreferencesRepository.getRommUserId() },
-        pickerEntries = { query -> libraryDelegate.searchInstalledForTiles(query) },
+        pickerEntries = { category, query ->
+            when (category) {
+                com.nendo.argosy.ui.components.TilePickerCategory.GAMES ->
+                    libraryDelegate.searchInstalledForTiles(query)
+                com.nendo.argosy.ui.components.TilePickerCategory.COLLECTIONS ->
+                    libraryDelegate.collectionsForTiles(query)
+                com.nendo.argosy.ui.components.TilePickerCategory.APPS ->
+                    libraryDelegate.appsForTiles(query)
+            }
+        },
         read = { _uiState.value.customGrid },
         write = { transform -> _uiState.update { it.copy(customGrid = transform(it.customGrid)) } }
     )
@@ -127,6 +139,7 @@ class HomeViewModel @Inject constructor(
         observeCollectionModal()
         observeDelegateStates()
         observeHomeTiles()
+        observeTilePrompts()
         gradientExtractionDelegate.startBackgroundProcessing(viewModelScope)
     }
 
@@ -519,6 +532,36 @@ class HomeViewModel @Inject constructor(
      * from the current section, because a curated page is not a section: the games on it have
      * nothing in common except that someone put them there.
      */
+    /**
+     * Offers left by finished downloads while the launcher was elsewhere. Drained one at a time and
+     * only while the curated grid is the layout in use, since that is the only place a tile means
+     * anything.
+     */
+    private fun observeTilePrompts() {
+        viewModelScope.launch {
+            homeTilePromptQueue.pending.collect { pending ->
+                val gameId = pending.firstOrNull() ?: return@collect
+                if (_uiState.value.layoutKind !=
+                    com.nendo.argosy.domain.model.HomeLayoutKind.CUSTOM_GRID
+                ) return@collect
+                val entry = libraryDelegate.tilePickerEntryFor(gameId)
+                if (entry == null) {
+                    homeTilePromptQueue.resolve(gameId)
+                    return@collect
+                }
+                customGrid.showPendingAdd(entry)
+            }
+        }
+    }
+
+    override fun confirmPendingTileAdd() =
+        customGrid.confirmPendingAdd { homeTilePromptQueue.resolve(it) }
+
+    override fun dismissPendingTileAdd() =
+        customGrid.dismissPendingAdd { homeTilePromptQueue.resolve(it) }
+
+    override fun movePendingTileAddFocus(delta: Int) = customGrid.movePendingAddFocus(delta)
+
     private fun observeHomeTiles() {
         viewModelScope.launch {
             homeTileRepository.observeTiles(syncPreferencesRepository.getRommUserId())
@@ -527,8 +570,20 @@ class HomeViewModel @Inject constructor(
                         (it.target as? HomeTileTargetRef.Game)?.gameId
                     }.distinct()
                     val games = libraryDelegate.resolveTileGames(gameIds)
+                    val collections = libraryDelegate.resolveTileCollections(
+                        tiles.mapNotNull {
+                            (it.target as? HomeTileTargetRef.Collection)?.collectionId
+                        }.distinct()
+                    )
+                    val apps = libraryDelegate.resolveTileApps(
+                        tiles.mapNotNull {
+                            (it.target as? HomeTileTargetRef.App)?.packageName
+                        }.distinct()
+                    )
                     customGrid.setTiles(tiles)
-                    _uiState.update { it.copy(tileGames = games) }
+                    _uiState.update {
+                        it.copy(tileGames = games, tileCollections = collections, tileApps = apps)
+                    }
                 }
         }
     }
@@ -583,9 +638,38 @@ class HomeViewModel @Inject constructor(
 
     fun setTilePickerQuery(query: String) = customGrid.setPickerQuery(query)
 
+    override fun toggleTilePickerSearch() = customGrid.togglePickerSearch()
+
     override fun moveTilePickerFocus(delta: Int) = customGrid.movePickerFocus(delta)
 
     override fun confirmTilePickerSelection() = customGrid.confirmPickerSelection()
+
+    fun selectTilePickerEntry(entry: com.nendo.argosy.ui.components.TilePickerEntry) =
+        customGrid.selectPickerEntry(entry)
+
+    override fun cycleTilePickerCategory(delta: Int) = customGrid.cyclePickerCategory(delta)
+
+    /**
+     * Activates a tile that is not a game. An app launches through the same intent path the apps
+     * screen uses; a collection has no destination of its own on this surface, so it opens the
+     * collections screen rather than pretending to filter something.
+     */
+    override fun launchTileApp(packageName: String) {
+        val intent = appsRepository.getLaunchIntent(packageName) ?: return
+        viewModelScope.launch {
+            val prefs = preferencesRepository.preferences.first()
+            val options = if (prefs.appAffinityEnabled) {
+                displayAffinityHelper.getActivityOptions(forEmulator = false)
+            } else {
+                null
+            }
+            _events.emit(HomeEvent.LaunchIntent(intent, options))
+        }
+    }
+
+    override fun openTileCollection(collectionId: Long) {
+        viewModelScope.launch { _events.emit(HomeEvent.NavigateToCollections(collectionId)) }
+    }
 
     override fun enterTileMoveMode() = customGrid.enterMoveMode()
 

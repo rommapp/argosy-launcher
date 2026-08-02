@@ -3,6 +3,9 @@ package com.nendo.argosy.ui.components
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -112,8 +115,25 @@ fun customGridMetrics(size: IntSize, laneCount: Int, gapPx: Float): CustomGridMe
 data class CustomGridTileContent(
     val game: com.nendo.argosy.ui.screens.home.HomeGameUi?,
     val label: String,
-    val isMissing: Boolean = false
+    val isMissing: Boolean = false,
+    val packageName: String? = null,
+    val coverPath: String? = null,
+    val subtitle: String? = null,
+    val stats: List<TileStat> = emptyList()
 )
+
+/**
+ * One fact worth reading at a glance on a tile with room for it. Kept as a label and value pair so
+ * the tile decides how many fit rather than each caller guessing.
+ */
+data class TileStat(val label: String, val value: String)
+
+
+/**
+ * A collection a tile points at, resolved for drawing: the name it shows and one cover from inside
+ * it, since a collection has no art of its own.
+ */
+data class TileCollectionUi(val name: String, val coverPath: String?, val gameCount: Int = 0)
 
 /**
  * One page of the custom grid. Tiles are placed absolutely from their anchor and span, because a
@@ -130,6 +150,7 @@ fun HomeCustomGridPage(
     onCellTap: (GridCell) -> Unit,
     onShapeResolved: (Int, Int) -> Unit,
     modifier: Modifier = Modifier,
+    onTileLongPress: ((GridCell) -> Unit)? = null,
     showEmptyCells: Boolean = true,
     editModeLabel: String? = null,
     downloadIndicatorFor: (Long) -> com.nendo.argosy.ui.screens.home.GameDownloadIndicator = {
@@ -175,6 +196,7 @@ fun HomeCustomGridPage(
                         originY = originY,
                         isFocused = focusedCell.columnIndex == column && focusedCell.rowIndex == row,
                         onClick = { onCellTap(GridCell(column, row)) },
+                        onLongClick = null,
                         content = null,
                         editModeLabel = null,
                         isOverlapped = false,
@@ -196,6 +218,11 @@ fun HomeCustomGridPage(
                 originY = originY,
                 isFocused = tile.rect.covers(focusedCell.columnIndex, focusedCell.rowIndex),
                 onClick = { onCellTap(GridCell(tile.rect.columnIndex, tile.rect.rowIndex)) },
+                onLongClick = onTileLongPress?.let { handler ->
+                    {
+                        handler(GridCell(tile.rect.columnIndex, tile.rect.rowIndex))
+                    }
+                },
                 content = contentFor(tile),
                 editModeLabel = editModeLabel,
                 isOverlapped = tile.id in overlappedTileIds,
@@ -223,6 +250,7 @@ private fun CustomGridCellBox(
     originY: Dp,
     isFocused: Boolean,
     onClick: () -> Unit,
+    onLongClick: (() -> Unit)?,
     content: CustomGridTileContent?,
     editModeLabel: String?,
     isOverlapped: Boolean,
@@ -243,6 +271,20 @@ private fun CustomGridCellBox(
         )
         .size(width, height)
 
+    if (rect.columnSpan > rect.rowSpan && content != null && !content.isMissing) {
+        WideTileBox(
+            placement = placement,
+            content = content,
+            isFocused = isFocused,
+            isOverlapped = isOverlapped,
+            focusScale = focusScaleForSpan(rect),
+            editModeLabel = editModeLabel,
+            onClick = onClick,
+            onLongClick = onLongClick
+        )
+        return
+    }
+
     val game = content?.game
     if (game != null) {
         Box(modifier = placement, contentAlignment = Alignment.Center) {
@@ -256,7 +298,15 @@ private fun CustomGridCellBox(
                 alphaOverride = if (isOverlapped) OVERLAPPED_ALPHA else null,
                 onCoverLoadFailed = onCoverLoadFailed,
                 onCoverLoaded = onCoverLoaded,
-                modifier = Modifier.fillMaxSize().clickableNoFocus(onClick = onClick)
+                modifier = Modifier
+                    .fillMaxSize()
+                    .then(
+                        if (onLongClick == null) {
+                            Modifier.clickableNoFocus(onClick = onClick)
+                        } else {
+                            Modifier.clickableNoFocus(onClick = onClick, onLongClick = onLongClick)
+                        }
+                    )
             )
             if (editModeLabel != null && isFocused) {
                 TileModeTab(
@@ -268,8 +318,13 @@ private fun CustomGridCellBox(
         return
     }
 
-    Box(
-        modifier = placement
+    Box(modifier = placement) {
+        if (editModeLabel != null && isFocused) {
+            TileModeTab(label = editModeLabel, modifier = Modifier.align(Alignment.TopEnd))
+        }
+        Box(
+        modifier = Modifier
+            .fillMaxSize()
             .clip(shape)
             .then(
                 if (content == null) {
@@ -283,7 +338,13 @@ private fun CustomGridCellBox(
                 indicators = FocusIndicators.Ring,
                 shape = shape
             )
-            .clickableNoFocus(onClick = onClick),
+            .then(
+                if (onLongClick == null) {
+                    Modifier.clickableNoFocus(onClick = onClick)
+                } else {
+                    Modifier.clickableNoFocus(onClick = onClick, onLongClick = onLongClick)
+                }
+            ),
         contentAlignment = Alignment.Center
     ) {
         when {
@@ -295,12 +356,39 @@ private fun CustomGridCellBox(
                     modifier = Modifier.size(Dimens.iconMd)
                 )
             }
-            else -> Text(
-                text = content.label,
-                style = MaterialTheme.typography.labelMedium,
-                color = theme.textDim,
+            else -> Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(Dimens.spacingXs),
                 modifier = Modifier.padding(Dimens.spacingSm)
-            )
+            ) {
+                val appIcon = content.packageName?.let {
+                    com.nendo.argosy.ui.coil.AppIconData(it)
+                }
+                val cover = com.nendo.argosy.ui.common.rememberFileImageModel(content.coverPath)
+                when {
+                    appIcon != null -> coil.compose.AsyncImage(
+                        model = appIcon,
+                        contentDescription = null,
+                        modifier = Modifier.size(Dimens.iconXl)
+                    )
+                    cover != null -> coil.compose.AsyncImage(
+                        model = cover,
+                        contentDescription = null,
+                        contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                        modifier = Modifier
+                            .size(Dimens.iconXl)
+                            .clip(RoundedCornerShape(Dimens.radiusSm))
+                    )
+                }
+                Text(
+                    text = content.label,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = theme.textDim,
+                    maxLines = 2,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                )
+            }
+        }
         }
     }
 }
@@ -438,4 +526,147 @@ private fun TileModeTab(label: String, modifier: Modifier = Modifier) {
 private fun focusScaleForSpan(rect: TileRect): Float {
     val span = maxOf(rect.columnSpan, rect.rowSpan).coerceAtLeast(1)
     return 1f + (ComponentDefaults.Focus.scaleFocused - 1f) / span
+}
+
+/**
+ * A tile wider than it is tall. The extra width is spent on what the cover cannot say - how long
+ * this has been played, how many achievements are left, how much is in a collection - rather than
+ * on stretching the art, which is the one thing a wide box cannot do to a portrait cover.
+ */
+@Composable
+private fun WideTileBox(
+    placement: Modifier,
+    content: CustomGridTileContent,
+    isFocused: Boolean,
+    isOverlapped: Boolean,
+    focusScale: Float,
+    editModeLabel: String?,
+    onClick: () -> Unit,
+    onLongClick: (() -> Unit)?
+) {
+    val theme = LocalArgosyTheme.current
+    val boxArtStyle = com.nendo.argosy.ui.theme.LocalBoxArtStyle.current
+    val shape = RoundedCornerShape(boxArtStyle.cornerRadiusDp)
+    val scale by androidx.compose.animation.core.animateFloatAsState(
+        targetValue = if (isFocused) focusScale else 1f,
+        label = "wide-tile-scale"
+    )
+
+    Box(modifier = placement) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .graphicsLayer {
+                    scaleX = scale
+                    scaleY = scale
+                    alpha = if (isOverlapped) OVERLAPPED_ALPHA else 1f
+                }
+                .clip(shape)
+                .background(theme.surfaceRaised)
+                .argosyFocusIndicators(
+                    focused = isFocused,
+                    indicators = FocusIndicators.Ring,
+                    shape = shape
+                )
+                .then(
+                    if (onLongClick == null) {
+                        Modifier.clickableNoFocus(onClick = onClick)
+                    } else {
+                        Modifier.clickableNoFocus(onClick = onClick, onLongClick = onLongClick)
+                    }
+                )
+        ) {
+        Row(modifier = Modifier.fillMaxSize()) {
+            val coverPath = content.game?.coverPath ?: content.coverPath
+            val cover = com.nendo.argosy.ui.common.rememberFileImageModel(coverPath)
+            val appIcon = content.packageName?.let { com.nendo.argosy.ui.coil.AppIconData(it) }
+            Box(
+                modifier = Modifier
+                    .fillMaxHeight()
+                    .aspectRatio(WIDE_TILE_COVER_ASPECT)
+                    .background(theme.surfaceBase)
+            ) {
+                when {
+                    appIcon != null -> coil.compose.AsyncImage(
+                        model = appIcon,
+                        contentDescription = null,
+                        modifier = Modifier.fillMaxSize().padding(Dimens.spacingSm)
+                    )
+                    cover != null -> coil.compose.AsyncImage(
+                        model = cover,
+                        contentDescription = null,
+                        contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
+            }
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(Dimens.spacingSm),
+                verticalArrangement = Arrangement.spacedBy(Dimens.spacingXs)
+            ) {
+                Text(
+                    text = content.label,
+                    style = MaterialTheme.typography.titleSmall,
+                    color = theme.textPrimary,
+                    maxLines = 2,
+                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                )
+                val subtitle = content.subtitle
+                if (subtitle != null) {
+                    Text(
+                        text = subtitle,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = theme.textDim,
+                        maxLines = 1,
+                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                    )
+                }
+                content.stats.forEach { stat ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(
+                            text = stat.label,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = theme.textMute,
+                            maxLines = 1
+                        )
+                        Text(
+                            text = stat.value,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = theme.textDim,
+                            maxLines = 1
+                        )
+                    }
+                }
+            }
+        }
+        }
+        if (editModeLabel != null && isFocused) {
+            TileModeTab(label = editModeLabel, modifier = Modifier.align(Alignment.TopEnd))
+        }
+    }
+}
+
+private const val WIDE_TILE_COVER_ASPECT = 0.7f
+
+/**
+ * What a wide game tile says beside its cover. Only facts that exist are offered: a game with no
+ * achievements and no play time shows nothing rather than a row of zeroes, which reads as broken.
+ */
+fun tileStatsFor(game: com.nendo.argosy.ui.screens.home.HomeGameUi): List<TileStat> = buildList {
+    if (game.playTimeMinutes > 0) add(TileStat("Played", formatPlayTime(game.playTimeMinutes)))
+    if (game.achievementCount > 0) {
+        add(TileStat("Achievements", "${game.earnedAchievementCount}/${game.achievementCount}"))
+    }
+    if (game.releaseYear != null) add(TileStat("Released", game.releaseYear.toString()))
+}
+
+private fun formatPlayTime(minutes: Int): String {
+    val hours = minutes / 60
+    val remainder = minutes % 60
+    return if (hours > 0) "${hours}h ${remainder}m" else "${remainder}m"
 }

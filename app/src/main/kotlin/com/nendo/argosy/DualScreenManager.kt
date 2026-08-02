@@ -89,6 +89,8 @@ class DualScreenManager(
     internal val preferencesRepository: UserPreferencesRepository,
     internal val syncPreferencesRepository: com.nendo.argosy.data.preferences.SyncPreferencesRepository,
     internal val homeTileRepository: com.nendo.argosy.data.repository.HomeTileRepository,
+    internal val homeTilePromptQueue: com.nendo.argosy.data.repository.HomeTilePromptQueue,
+    internal val appsRepository: com.nendo.argosy.data.repository.AppsRepository,
     private val notificationManager: com.nendo.argosy.core.notification.NotificationManager,
     internal val emulatorConfigDao: com.nendo.argosy.data.local.dao.EmulatorConfigDao,
     internal val configureEmulatorUseCase: com.nendo.argosy.domain.usecase.game.ConfigureEmulatorUseCase,
@@ -637,9 +639,12 @@ class DualScreenManager(
             getGamesForPinnedCollectionUseCase = getGamesForPinnedCollectionUseCase,
             sessionStateStore = sessionStateStore,
             homeTileRepository = homeTileRepository,
+            homeTilePromptQueue = homeTilePromptQueue,
+            appsRepository = appsRepository,
             syncPreferencesRepository = syncPreferencesRepository
         )
         swappedDualHomeViewModel?.observeHomeTiles()
+        swappedDualHomeViewModel?.observeTilePrompts()
         restoreSwappedNavContext()
     }
 

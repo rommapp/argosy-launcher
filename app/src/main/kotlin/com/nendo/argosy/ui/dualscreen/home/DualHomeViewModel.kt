@@ -183,6 +183,7 @@ data class DualHomeUiState(
     val customGridCell: com.nendo.argosy.domain.model.GridCell =
         com.nendo.argosy.domain.model.GridCell(0, 0),
     val tileEditMode: TileEditMode = TileEditMode.NONE,
+    val editingTileId: Long? = null,
     val showTileMenu: Boolean = false,
     val tileMenuFocusIndex: Int = 0,
     val showTilePicker: Boolean = false,
@@ -242,14 +243,20 @@ data class DualHomeUiState(
     val overlappedTileIds: Set<Long>
         get() {
             if (tileEditMode == TileEditMode.NONE) return emptySet()
-            val editing = tilesOnPage(customGridPage).firstOrNull {
-                it.rect.covers(customGridCell.columnIndex, customGridCell.rowIndex)
-            } ?: return emptySet()
+            val editing = editingTile ?: return emptySet()
             return tilesOnPage(customGridPage)
                 .filter { it.id != editing.id && it.rect.overlaps(editing.rect) }
                 .map { it.id }
                 .toSet()
         }
+
+    /**
+     * The tile being arranged. Held by id rather than found under the cursor, because once overlap
+     * is allowed two tiles can cover the same cell and the one picked up has to stay the one that
+     * moves.
+     */
+    val editingTile: com.nendo.argosy.domain.model.HomeTile?
+        get() = editingTileId?.let { id -> homeTiles.firstOrNull { it.id == id } }
 
     val focusedTileGameId: Long?
         get() = (
@@ -308,7 +315,6 @@ class DualHomeViewModel(
     private val tilePickerLimit = 60
 
     private var editingOriginalRect: com.nendo.argosy.domain.model.TileRect? = null
-    private var editingTileId: Long? = null
     private var latestDownloads: Map<Long, com.nendo.argosy.data.local.entity.DownloadQueueEntity> = emptyMap()
     private val pendingCoverRepairs = mutableSetOf<Long>()
     private var letterOverlayJob: kotlinx.coroutines.Job? = null
@@ -1014,8 +1020,13 @@ class DualHomeViewModel(
         _uiState.update { it.copy(customGridCell = cell) }
     }
 
+    /**
+     * The tile the next action applies to. While arranging that is the tile picked up, not whatever
+     * happens to sit under the cursor: overlap is allowed there, so the cell can belong to two.
+     */
     fun focusedTile(): com.nendo.argosy.domain.model.HomeTile? {
         val state = _uiState.value
+        state.editingTile?.let { return it }
         return state.tilesOnPage(state.customGridPage).firstOrNull {
             it.rect.covers(state.customGridCell.columnIndex, state.customGridCell.rowIndex)
         }
@@ -1161,8 +1172,13 @@ class DualHomeViewModel(
     fun enterTileMoveMode() {
         val tile = focusedTile() ?: return
         editingOriginalRect = tile.rect
-        editingTileId = tile.id
-        _uiState.update { it.copy(tileEditMode = TileEditMode.MOVE, showTileMenu = false) }
+        _uiState.update {
+            it.copy(
+                tileEditMode = TileEditMode.MOVE,
+                editingTileId = tile.id,
+                showTileMenu = false
+            )
+        }
     }
 
     /**
@@ -1204,7 +1220,7 @@ class DualHomeViewModel(
         val tile = focusedTile()
         val original = editingOriginalRect
         val tiles = homeTileRepository
-        if (tile != null && original != null && tile.id == editingTileId && tiles != null) {
+        if (tile != null && original != null && tiles != null) {
             viewModelScope.launch {
                 tiles.move(tile, syncPreferencesRepository?.getRommUserId(), original)
             }
@@ -1222,8 +1238,7 @@ class DualHomeViewModel(
 
     private fun clearTileEdit() {
         editingOriginalRect = null
-        editingTileId = null
-        _uiState.update { it.copy(tileEditMode = TileEditMode.NONE) }
+        _uiState.update { it.copy(tileEditMode = TileEditMode.NONE, editingTileId = null) }
     }
 
     fun exitTileMoveMode() = commitTileEdit()

@@ -146,6 +146,7 @@ fun DualHomeLowerScreen(
     onCustomGridAddPage: () -> Unit = {},
     customGridEditLabel: String? = null,
     customGridOverlappedIds: Set<Long> = emptySet(),
+    customGridEditingTileId: Long? = null,
     modifier: Modifier = Modifier
 ) {
     val isAutoGrid = layoutKind == com.nendo.argosy.domain.model.HomeLayoutKind.AUTO_GRID
@@ -321,6 +322,7 @@ fun DualHomeLowerScreen(
                         onShapeResolved = onCustomGridShape,
                         editModeLabel = customGridEditLabel,
                         overlappedTileIds = customGridOverlappedIds,
+                        editingTileId = customGridEditingTileId,
                         onCoverLoadFailed = onCoverLoadFailed,
                         modifier = Modifier.fillMaxSize()
                     )

@@ -136,7 +136,8 @@ fun HomeCustomGridPage(
     },
     onCoverLoadFailed: ((Long, String) -> Unit)? = null,
     onCoverLoaded: ((Long, android.graphics.Bitmap) -> Unit)? = null,
-    overlappedTileIds: Set<Long> = emptySet()
+    overlappedTileIds: Set<Long> = emptySet(),
+    editingTileId: Long? = null
 ) {
     val density = LocalDensity.current
     var measured by remember { mutableStateOf(IntSize.Zero) }
@@ -184,7 +185,7 @@ fun HomeCustomGridPage(
             }
         }
 
-        tiles.forEach { tile ->
+        tiles.sortedBy { it.id == editingTileId }.forEach { tile ->
             CustomGridCellBox(
                 rect = tile.rect,
                 cellSize = cellSize,

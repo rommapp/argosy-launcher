@@ -199,6 +199,7 @@ object ComponentDefaults {
         const val coverTitleBarWidthRatio = 0.7f
         const val badgeWidthRatio = 0.45f
         const val restingBlockAlpha = 0.45f
+        const val maxHeightDp = 260
         const val stepDwellMs = 900
         const val scrollCycleMs = 9000
         const val pageDwellMs = 1800

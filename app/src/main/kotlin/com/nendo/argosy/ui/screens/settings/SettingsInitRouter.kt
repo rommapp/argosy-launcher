@@ -480,7 +480,6 @@ internal fun routeLoadSettings(vm: SettingsViewModel) {
             systemIconPadding = prefs.systemIconPadding,
             platformIndicatorStyle = prefs.platformIndicatorStyle,
             platformIndicatorContent = prefs.platformIndicatorContent,
-            defaultView = prefs.defaultView,
             libraryDefaultSort = prefs.libraryDefaultSort,
             libraryDefaultSortDescending = prefs.libraryDefaultSortDescending,
             libraryDefaultSource = prefs.libraryDefaultSource,

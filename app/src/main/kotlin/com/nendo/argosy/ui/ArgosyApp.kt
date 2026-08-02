@@ -55,7 +55,6 @@ import com.nendo.argosy.ui.components.CoreCrashModal
 import com.nendo.argosy.ui.components.SaveConflictModal
 import com.nendo.argosy.ui.components.ScreenDimmerOverlay
 import com.nendo.argosy.ui.components.rememberScreenDimmerState
-import com.nendo.argosy.data.preferences.DefaultView
 import com.nendo.argosy.ui.input.GamepadEvent
 import com.nendo.argosy.ui.input.InputDispatcher
 import com.nendo.argosy.ui.input.InputHandler
@@ -306,7 +305,6 @@ fun ArgosyApp(
     val startDestination = remember(uiState.isLoading) {
         when {
             uiState.isFirstRun -> Screen.FirstRun.route
-            uiState.defaultView == DefaultView.LIBRARY -> Screen.Library.route
             else -> Screen.Home.route
         }
     }
@@ -1815,7 +1813,6 @@ fun ArgosyApp(
                     NavGraph(
                         navController = navController,
                         startDestination = startDestination,
-                        defaultView = uiState.defaultView,
                         onDrawerToggle = { if (isDrawerOpen) closeDrawer() else openDrawer() },
                         modifier = Modifier.blur(contentBlur)
                     )

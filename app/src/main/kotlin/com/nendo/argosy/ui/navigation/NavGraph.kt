@@ -12,7 +12,6 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import androidx.navigation.navDeepLink
-import com.nendo.argosy.data.preferences.DefaultView
 import com.nendo.argosy.ui.screens.apps.AppsScreen
 import com.nendo.argosy.ui.screens.collections.CollectionDetailScreen
 import com.nendo.argosy.ui.screens.collections.CollectionsScreen
@@ -37,17 +36,12 @@ import com.nendo.argosy.ui.screens.social.UserProfileScreen
 fun NavGraph(
     navController: NavHostController,
     startDestination: String,
-    defaultView: DefaultView,
     onDrawerToggle: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val navigateToDefault = remember(defaultView) {
+    val navigateToDefault = remember {
         {
-            val route = when (defaultView) {
-                DefaultView.HOME -> Screen.Home.route
-                DefaultView.LIBRARY -> Screen.Library.route
-            }
-            navController.navigate(route) {
+            navController.navigate(Screen.Home.route) {
                 popUpTo(0) { inclusive = true }
             }
         }
@@ -73,7 +67,7 @@ fun NavGraph(
 
         composable(Screen.Home.route) {
             HomeScreen(
-                isDefaultView = defaultView == DefaultView.HOME,
+                isDefaultView = true,
                 onGameSelect = { gameId ->
                     navController.navigate(Screen.GameDetail.createRoute(gameId))
                 },
@@ -107,7 +101,7 @@ fun NavGraph(
             val platformId = backStackEntry.arguments?.getString("platformId")?.toLongOrNull()
             val source = backStackEntry.arguments?.getString("source")
             LibraryScreen(
-                isDefaultView = defaultView == DefaultView.LIBRARY,
+                isDefaultView = false,
                 initialPlatformId = platformId,
                 initialSource = source,
                 onGameSelect = { gameId ->

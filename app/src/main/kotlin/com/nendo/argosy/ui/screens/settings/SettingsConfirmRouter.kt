@@ -534,10 +534,6 @@ private fun routeInterfaceConfirm(vm: SettingsViewModel, state: SettingsUiState)
         InterfaceItem.HomeScreen -> vm.navigateToHomeScreen()
         InterfaceItem.LibraryView -> vm.navigateToLibraryView()
         InterfaceItem.BoxArt -> vm.navigateToBoxArt()
-        InterfaceItem.StartupView -> {
-            vm.requestEnumPicker(InterfaceItem.StartupView.key)
-            return InputResult.handled(SoundType.OPEN_MODAL)
-        }
         else -> {}
     }
     return InputResult.HANDLED

@@ -23,7 +23,6 @@ import com.nendo.argosy.data.preferences.BoxArtInnerEffectThickness
 import com.nendo.argosy.data.preferences.BoxArtOuterEffect
 import com.nendo.argosy.data.preferences.BoxArtOuterEffectThickness
 import com.nendo.argosy.data.preferences.GlowColorMode
-import com.nendo.argosy.data.preferences.DefaultView
 import com.nendo.argosy.data.preferences.GridDensity
 import com.nendo.argosy.data.preferences.HomeBackgroundMode
 import com.nendo.argosy.data.preferences.SyncFilterPreferences
@@ -229,7 +228,6 @@ data class DisplayState(
     val systemIconPadding: SystemIconPadding = SystemIconPadding.MEDIUM,
     val platformIndicatorStyle: PlatformIndicatorStyle = PlatformIndicatorStyle.TAB,
     val platformIndicatorContent: PlatformIndicatorContent = PlatformIndicatorContent.NAME,
-    val defaultView: DefaultView = DefaultView.HOME,
     val libraryDefaultSort: String = "TITLE",
     val libraryDefaultSortDescending: Boolean? = null,
     val libraryDefaultSource: String = "ALL",

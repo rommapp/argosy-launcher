@@ -21,7 +21,6 @@ import com.nendo.argosy.data.preferences.GlassBorderTint
 import com.nendo.argosy.data.preferences.BoxArtInnerEffectThickness
 import com.nendo.argosy.data.preferences.BoxArtOuterEffect
 import com.nendo.argosy.data.preferences.BoxArtOuterEffectThickness
-import com.nendo.argosy.data.preferences.DefaultView
 import com.nendo.argosy.data.preferences.FontSlot
 import com.nendo.argosy.data.preferences.GridDensity
 import com.nendo.argosy.data.preferences.HomeBackgroundMode
@@ -658,18 +657,6 @@ class DisplaySettingsDelegate @Inject constructor(
         val current = options.indexOf(_state.value.libraryDefaultPlatform).coerceAtLeast(0)
         val next = (current + direction).mod(options.size)
         setLibraryDefaultPlatform(scope, if (next == 0) "" else options[next])
-    }
-
-    fun cycleDefaultView(scope: CoroutineScope) {
-        val current = _state.value.defaultView
-        val next = when (current) {
-            DefaultView.HOME -> DefaultView.LIBRARY
-            DefaultView.LIBRARY -> DefaultView.HOME
-        }
-        scope.launch {
-            preferencesRepository.setDefaultView(next)
-            _state.update { it.copy(defaultView = next) }
-        }
     }
 
     fun setGradientPreset(scope: CoroutineScope, preset: GradientPreset) {

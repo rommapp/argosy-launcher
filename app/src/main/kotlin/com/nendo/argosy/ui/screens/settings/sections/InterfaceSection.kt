@@ -16,7 +16,6 @@ import androidx.compose.ui.Modifier
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.repeatOnLifecycle
-import com.nendo.argosy.data.preferences.DefaultView
 import com.nendo.argosy.ui.components.CyclePreference
 import com.nendo.argosy.ui.components.NavigationPreference
 import com.nendo.argosy.ui.components.SwitchPreference
@@ -55,13 +54,12 @@ internal sealed class InterfaceItem(
 
     data object UiScale : InterfaceItem("uiScale", "layout")
     data object HomeScreen : InterfaceItem("homeScreen", "layout")
-    data object StartupView : InterfaceItem("startupView", "layout")
     data object LibraryView : InterfaceItem("libraryView", "layout")
     data object BoxArt : InterfaceItem("boxArt", "layout")
 
     companion object {
         val ALL: List<InterfaceItem> = listOf(
-            UiScale, StartupView, HomeScreen, LibraryView, BoxArt
+            UiScale, HomeScreen, LibraryView, BoxArt
         )
     }
 }
@@ -158,23 +156,6 @@ fun InterfaceSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                     subtitle = "Cover shape, borders and effects",
                     isFocused = isFocused(item),
                     onClick = { viewModel.navigateToBoxArt() }
-                )
-
-                InterfaceItem.StartupView -> CyclePreference(
-                    title = "Startup View",
-                    value = when (display.defaultView) {
-                        DefaultView.HOME -> "Home"
-                        DefaultView.LIBRARY -> "Library"
-                    },
-                    isFocused = isFocused(item),
-                    onClick = { viewModel.cycleDefaultView() },
-                    onPrev = { viewModel.cycleDefaultView() },
-                    options = remember { listOf("Home", "Library") },
-                    onSelect = { index ->
-                        val target = if (index == 0) DefaultView.HOME else DefaultView.LIBRARY
-                        if (target != display.defaultView) viewModel.cycleDefaultView()
-                    },
-                    pickerRequestToken = pickerToken(item)
                 )
 
             }

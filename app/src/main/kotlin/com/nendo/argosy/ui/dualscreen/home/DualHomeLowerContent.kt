@@ -150,6 +150,20 @@ fun DualHomeLowerContent(
             }
         }
 
+        if (uiState.showTileMenu) {
+            val tile = viewModel.focusedTile()
+            com.nendo.argosy.ui.components.CustomTileMenuModal(
+                title = tile?.let { uiState.tileContentFor(it)?.label }.orEmpty(),
+                entries = viewModel.tileMenuActions().map { it.label },
+                focusIndex = uiState.tileMenuFocusIndex,
+                onSelect = { index ->
+                    viewModel.moveTileMenuFocus(index - uiState.tileMenuFocusIndex)
+                    viewModel.confirmTileMenu()
+                },
+                onDismiss = viewModel::closeTileMenu
+            )
+        }
+
         if (uiState.showTilePicker) {
             com.nendo.argosy.ui.components.HomeTilePickerModal(
                 entries = uiState.tilePickerEntries,

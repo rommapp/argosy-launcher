@@ -99,6 +99,15 @@ enum class DualHomeFocusZone { CAROUSEL, APP_BAR }
 
 enum class DualHomeViewMode { CAROUSEL, COLLECTIONS, COLLECTION_GAMES, LIBRARY_GRID }
 
+enum class CustomTileMenuAction(val label: String) {
+    MOVE("Move"),
+    EXTEND_RIGHT("Extend right"),
+    EXTEND_DOWN("Extend down"),
+    SHRINK_RIGHT("Shrink width"),
+    SHRINK_DOWN("Shrink height"),
+    REMOVE("Remove from grid")
+}
+
 enum class ForwardingMode { NONE, OVERLAY, BACKGROUND }
 
 sealed class DualCollectionListItem {
@@ -172,6 +181,8 @@ data class DualHomeUiState(
     val customGridCell: com.nendo.argosy.domain.model.GridCell =
         com.nendo.argosy.domain.model.GridCell(0, 0),
     val tileMoveMode: Boolean = false,
+    val showTileMenu: Boolean = false,
+    val tileMenuFocusIndex: Int = 0,
     val showTilePicker: Boolean = false,
     val tilePickerQuery: String = "",
     val tilePickerFocusIndex: Int = 0,
@@ -985,6 +996,89 @@ class DualHomeViewModel(
      * The grid is edited on the screen it lives on. On a dual-screen handheld the lower display is
      * where the hands are, so the picker and the move mode belong here rather than on the showcase.
      */
+    /**
+     * What the select menu offers for the focused tile. Built from what the tile can actually do
+     * here and now, so an entry never appears that would be refused: extending is absent when the
+     * cells beyond are held or off the page, shrinking when the tile is already one cell.
+     */
+    fun tileMenuActions(): List<CustomTileMenuAction> {
+        val tile = focusedTile() ?: return emptyList()
+        val state = _uiState.value
+        val others = state.tilesOnPage(state.customGridPage).filter { it.id != tile.id }
+        fun fits(rect: com.nendo.argosy.domain.model.TileRect): Boolean =
+            rect.withinBounds(customGridColumns, customGridRows) &&
+                others.none { it.rect.overlaps(rect) }
+        return buildList {
+            add(CustomTileMenuAction.MOVE)
+            if (fits(tile.rect.copy(columnSpan = tile.rect.columnSpan + 1))) {
+                add(CustomTileMenuAction.EXTEND_RIGHT)
+            }
+            if (fits(tile.rect.copy(rowSpan = tile.rect.rowSpan + 1))) {
+                add(CustomTileMenuAction.EXTEND_DOWN)
+            }
+            if (tile.rect.columnSpan > 1) add(CustomTileMenuAction.SHRINK_RIGHT)
+            if (tile.rect.rowSpan > 1) add(CustomTileMenuAction.SHRINK_DOWN)
+            add(CustomTileMenuAction.REMOVE)
+        }
+    }
+
+    fun openTileMenu() {
+        if (focusedTile() == null) return
+        _uiState.update { it.copy(showTileMenu = true, tileMenuFocusIndex = 0) }
+    }
+
+    fun closeTileMenu() {
+        _uiState.update { it.copy(showTileMenu = false) }
+    }
+
+    fun moveTileMenuFocus(delta: Int) {
+        val maxIndex = (tileMenuActions().size - 1).coerceAtLeast(0)
+        _uiState.update {
+            it.copy(tileMenuFocusIndex = (it.tileMenuFocusIndex + delta).coerceIn(0, maxIndex))
+        }
+    }
+
+    fun confirmTileMenu() {
+        val action = tileMenuActions().getOrNull(_uiState.value.tileMenuFocusIndex) ?: return
+        closeTileMenu()
+        when (action) {
+            CustomTileMenuAction.MOVE -> enterTileMoveMode()
+            CustomTileMenuAction.EXTEND_RIGHT -> resizeFocusedTile(horizontal = true, grow = true)
+            CustomTileMenuAction.EXTEND_DOWN -> resizeFocusedTile(horizontal = false, grow = true)
+            CustomTileMenuAction.SHRINK_RIGHT -> resizeFocusedTile(horizontal = true, grow = false)
+            CustomTileMenuAction.SHRINK_DOWN -> resizeFocusedTile(horizontal = false, grow = false)
+            CustomTileMenuAction.REMOVE -> removeFocusedTile()
+        }
+    }
+
+    /**
+     * Grows or shrinks the focused tile by one cell. Growth runs down and right from the anchor so
+     * resizing never moves the tile out from under the cursor.
+     */
+    fun resizeFocusedTile(horizontal: Boolean, grow: Boolean): Boolean {
+        val state = _uiState.value
+        val tile = focusedTile() ?: return false
+        val tiles = homeTileRepository ?: return false
+        val step = if (grow) 1 else -1
+        val resized = if (horizontal) {
+            tile.rect.copy(columnSpan = tile.rect.columnSpan + step)
+        } else {
+            tile.rect.copy(rowSpan = tile.rect.rowSpan + step)
+        }
+        if (resized.columnSpan < 1 || resized.rowSpan < 1) return false
+        if (!resized.withinBounds(customGridColumns, customGridRows)) return false
+        if (state.tilesOnPage(state.customGridPage).any {
+                it.id != tile.id && it.rect.overlaps(resized)
+            }
+        ) {
+            return false
+        }
+        viewModelScope.launch {
+            tiles.move(tile, syncPreferencesRepository?.getRommUserId(), resized)
+        }
+        return true
+    }
+
     val isOnAddPage: Boolean
         get() = _uiState.value.let { it.customGridPage >= it.customGridPageCount }
 

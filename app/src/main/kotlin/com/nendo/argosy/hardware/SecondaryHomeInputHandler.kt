@@ -395,6 +395,15 @@ class SecondaryHomeInputHandler(
 
         fun moveCustom(direction: com.nendo.argosy.domain.model.GridDirection2D): Boolean {
             if (!inCustomGrid) return false
+            if (state.showTileMenu) {
+                val delta = when (direction) {
+                    com.nendo.argosy.domain.model.GridDirection2D.UP -> -1
+                    com.nendo.argosy.domain.model.GridDirection2D.DOWN -> 1
+                    else -> return true
+                }
+                dualHomeViewModel.moveTileMenuFocus(delta)
+                return true
+            }
             if (state.showTilePicker) {
                 val delta = when (direction) {
                     com.nendo.argosy.domain.model.GridDirection2D.UP -> -1
@@ -497,7 +506,7 @@ class SecondaryHomeInputHandler(
                     if (state.tileMoveMode) {
                         dualHomeViewModel.exitTileMoveMode()
                     } else {
-                        dualHomeViewModel.enterTileMoveMode()
+                        dualHomeViewModel.openTileMenu()
                     }
                     return InputResult.HANDLED
                 }
@@ -517,7 +526,10 @@ class SecondaryHomeInputHandler(
                 InputResult.HANDLED
             }
             GamepadEvent.Confirm -> {
-                if (inCustomGrid && state.showTilePicker) {
+                if (inCustomGrid && state.showTileMenu) {
+                    dualHomeViewModel.confirmTileMenu()
+                    InputResult.HANDLED
+                } else if (inCustomGrid && state.showTilePicker) {
                     dualHomeViewModel.confirmTilePickerSelection()
                     InputResult.HANDLED
                 } else if (inCustomGrid && state.tileMoveMode) {
@@ -563,7 +575,10 @@ class SecondaryHomeInputHandler(
                 }
             }
             GamepadEvent.Back -> {
-                if (inCustomGrid && state.showTilePicker) {
+                if (inCustomGrid && state.showTileMenu) {
+                    dualHomeViewModel.closeTileMenu()
+                    InputResult.HANDLED
+                } else if (inCustomGrid && state.showTilePicker) {
                     dualHomeViewModel.closeTilePicker()
                     InputResult.HANDLED
                 } else if (inCustomGrid && state.tileMoveMode) {

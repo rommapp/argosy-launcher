@@ -497,7 +497,11 @@ class SecondaryHomeInputHandler(
                     dualHomeViewModel.focusCarousel()
                     broadcasts.broadcastViewModeChange()
                 }
-                dualHomeViewModel.previousSection()
+                if (inCustomGrid) {
+                    dualHomeViewModel.turnCustomGridPage(-1)
+                } else {
+                    dualHomeViewModel.previousSection()
+                }
                 InputResult.HANDLED
             }
             GamepadEvent.NextSection -> {
@@ -505,7 +509,11 @@ class SecondaryHomeInputHandler(
                     dualHomeViewModel.focusCarousel()
                     broadcasts.broadcastViewModeChange()
                 }
-                dualHomeViewModel.nextSection()
+                if (inCustomGrid) {
+                    dualHomeViewModel.turnCustomGridPage(1)
+                } else {
+                    dualHomeViewModel.nextSection()
+                }
                 InputResult.HANDLED
             }
             GamepadEvent.Select -> {

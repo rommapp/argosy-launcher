@@ -152,8 +152,18 @@ class SecondaryHomeBroadcastHelper(
         dsm.onGameSelected(game.toShowcaseState())
     }
 
+    /**
+     * The showcase follows whatever the lower screen has under its cursor, which is not always the
+     * carousel's selection: a curated grid tracks a cell instead, so the focused tile is the thing
+     * to send when that layout is showing.
+     */
     fun broadcastCurrentGameSelection() {
-        val game = dualHomeViewModel.uiState.value.selectedGame
+        val state = dualHomeViewModel.uiState.value
+        val game = if (state.layoutKind == com.nendo.argosy.domain.model.HomeLayoutKind.CUSTOM_GRID) {
+            dualHomeViewModel.focusedTileGameId()?.let { state.tileGames[it] }
+        } else {
+            state.selectedGame
+        }
         if (game != null) dsm.onGameSelected(game.toShowcaseState())
         else dsm.onGameSelected(com.nendo.argosy.ui.dualscreen.home.DualHomeShowcaseState())
     }

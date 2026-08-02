@@ -221,6 +221,7 @@ private fun CustomGridCellBox(
         GameCard(
             game = game,
             isFocused = isFocused,
+            focusScale = focusScaleForSpan(rect),
             showPlatformBadge = false,
             modifier = placement.clickableNoFocus(onClick = onClick)
         )
@@ -359,3 +360,14 @@ fun CustomGridPageDots(
 }
 
 private const val DOT_IDLE_ALPHA = 0.35f
+
+/**
+ * Focus scale for a tile covering [rect]. A scale is a proportion, so applying the same one to a
+ * tile spanning three cells moves its edge three times as far as a single cell's. Dividing by the
+ * longest span keeps the growth a constant distance whatever the tile's size, which is both what a
+ * cursor should look like and what the page reserved room for.
+ */
+private fun focusScaleForSpan(rect: TileRect): Float {
+    val span = maxOf(rect.columnSpan, rect.rowSpan).coerceAtLeast(1)
+    return 1f + (ComponentDefaults.Focus.scaleFocused - 1f) / span
+}

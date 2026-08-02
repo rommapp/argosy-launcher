@@ -402,13 +402,24 @@ class SecondaryHomeActivity :
      * delay on every confirm on this screen. The companion dispatches on key-down, so the wait has
      * to be introduced deliberately and kept to where it earns its cost.
      */
+    /**
+     * Whether confirm should wait to see if it becomes a hold. Only the surfaces that do something
+     * with a hold defer it, because deferring costs every press its immediacy: the curated grid,
+     * where a hold picks a tile up, and the library, where it opens the game's menu.
+     */
     private fun deferConfirm(): Boolean {
         if (isShowcaseRole || currentScreen != CompanionScreen.HOME) return false
         if (!::dualHomeViewModel.isInitialized) return false
         val state = dualHomeViewModel.uiState.value
-        if (state.viewMode != DualHomeViewMode.CAROUSEL) return false
-        if (state.layoutKind != com.nendo.argosy.domain.model.HomeLayoutKind.CUSTOM_GRID) return false
-        return !state.showTilePicker && !state.showTileMenu
+        return when (state.viewMode) {
+            DualHomeViewMode.CAROUSEL ->
+                state.layoutKind == com.nendo.argosy.domain.model.HomeLayoutKind.CUSTOM_GRID &&
+                    !state.showTilePicker && !state.showTileMenu
+            DualHomeViewMode.LIBRARY_GRID ->
+                !state.showFilterOverlay && !state.showLibraryMenu &&
+                    state.collectionPickerGameId == null
+            else -> false
+        }
     }
 
     private fun beginConfirmHold() {

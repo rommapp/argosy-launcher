@@ -614,6 +614,7 @@ fun DualHomeLibraryGrid(
     onGameTapped: (Int) -> Unit,
     onCoverLoadFailed: (Long, String) -> Unit = { _, _ -> },
     onSectionClick: (String) -> Unit,
+    onGameLongPressed: (Int) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val gridState = rememberLazyGridState()
@@ -690,7 +691,12 @@ fun DualHomeLibraryGrid(
                                         modifier = Modifier
                                             .fillMaxWidth()
                                             .aspectRatio(ratio)
-                                            .touchOnly { onGameTapped(gridItem.gameIndex) }
+                                            .touchOnly(
+                                                onClick = { onGameTapped(gridItem.gameIndex) },
+                                                onLongPress = {
+                                                    onGameLongPressed(gridItem.gameIndex)
+                                                }
+                                            )
                                     ) {
                                         GameCard(
                                             game = gridItem.game,
@@ -740,7 +746,10 @@ fun DualHomeLibraryGrid(
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .aspectRatio(coverAspectRatio)
-                                        .touchOnly { onGameTapped(item.gameIndex) }
+                                        .touchOnly(
+                                            onClick = { onGameTapped(item.gameIndex) },
+                                            onLongPress = { onGameLongPressed(item.gameIndex) }
+                                        )
                                 ) {
                                     GameCard(
                                         game = item.game,

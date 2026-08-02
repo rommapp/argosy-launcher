@@ -79,6 +79,11 @@ fun Modifier.touchOnly(onClick: () -> Unit): Modifier = pointerInput(Unit) {
     detectTapGestures(onTap = { onClick() })
 }
 
+fun Modifier.touchOnly(onClick: () -> Unit, onLongPress: () -> Unit): Modifier =
+    pointerInput(Unit) {
+        detectTapGestures(onTap = { onClick() }, onLongPress = { onLongPress() })
+    }
+
 fun Modifier.pressScale(
     interactionSource: MutableInteractionSource,
     pressedScale: Float = 0.97f

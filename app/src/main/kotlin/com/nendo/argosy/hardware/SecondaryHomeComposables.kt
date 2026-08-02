@@ -305,8 +305,8 @@ fun ShowcaseRoleContent(
                                     "LIBRARY_GRID" -> listOf(
                                         InputButton.LB_RB to "Platform",
                                         InputButton.LT_RT to "Letter",
-                                        InputButton.A to actionLabel,
-                                        InputButton.X to "Details",
+                                        InputButton.A to "Details",
+                                        InputButton.X to "Options",
                                         InputButton.Y to "Filters",
                                         InputButton.B to "Back"
                                     )

@@ -162,6 +162,10 @@ fun DualHomeLowerContent(
                         overlaySectionLabel = uiState.overlaySectionLabel,
                         repairedCoverPaths = uiState.repairedCoverPaths,
                         onGameTapped = onGridGameTapped,
+                        onGameLongPressed = { index ->
+                            viewModel.setLibraryFocusIndex(index)
+                            viewModel.openLibraryGameMenu()
+                        },
                         onCoverLoadFailed = { gameId, path -> viewModel.repairCoverImage(gameId, path) },
                         onSectionClick = onLetterClick
                     )

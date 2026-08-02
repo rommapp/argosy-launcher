@@ -30,6 +30,14 @@ class DualHomeInputHandler(
         }
     }
 
+    private val customGrid = com.nendo.argosy.ui.home.grid.DualCustomGridInputRouter(
+        viewModel = viewModel,
+        onBroadcastSelection = onBroadcastCurrentGameSelection,
+        onOpenDetails = onSelectGame,
+        onLaunchGame = ::confirmGame,
+        onLaunchApp = onLaunchApp
+    )
+
     fun handleForViewMode(): InputResult {
         if (viewModel.forwardingMode.value != ForwardingMode.NONE) {
             return InputResult.HANDLED
@@ -75,6 +83,7 @@ class DualHomeInputHandler(
     private fun handleCarousel(event: com.nendo.argosy.ui.input.GamepadEvent): InputResult {
         val state = viewModel.uiState.value
         val inAppBar = state.focusZone == DualHomeFocusZone.APP_BAR
+        if (!inAppBar) customGrid.route(event)?.let { return it }
         val apps = homeApps()
         val inGrid = !inAppBar && state.layoutKind == HomeLayoutKind.AUTO_GRID
         val reversed = state.carouselConfig.inverted

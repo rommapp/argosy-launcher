@@ -38,6 +38,7 @@ import com.nendo.argosy.ui.primitives.FocusIndicators
 import com.nendo.argosy.ui.primitives.argosyFocusIndicators
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalArgosyTheme
+import com.nendo.argosy.ui.theme.generated.ComponentDefaults
 import com.nendo.argosy.ui.util.clickableNoFocus
 
 /**
@@ -61,6 +62,11 @@ data class CustomGridShape(val columns: Int, val rows: Int) {
  *
  * The two margins are computed separately because a page rarely divides evenly on both axes; forcing
  * them equal would push the grid off centre on one of them.
+ *
+ * The cell is sized as though there were one extra lane's worth of focus growth to fit, because a
+ * focused tile scales about its centre and the outermost lane would otherwise grow over whatever
+ * sits beyond the grid. Reserving the room rather than clipping it keeps the cursor whole: clipping
+ * cuts the one cell that most has to read clearly.
  */
 data class CustomGridMetrics(
     val columns: Int,
@@ -79,8 +85,10 @@ fun customGridMetrics(size: IntSize, laneCount: Int, gapPx: Float): CustomGridMe
     val widthIsShort = size.width <= size.height
     val shortEdge = if (widthIsShort) size.width else size.height
     val longEdge = if (widthIsShort) size.height else size.width
-    val cell = ((shortEdge - gapPx * (lanes - 1)) / lanes).coerceAtLeast(1f)
-    val alongLanes = (((longEdge + gapPx) / (cell + gapPx)).toInt()).coerceAtLeast(1)
+    val overhangLanes = (ComponentDefaults.Focus.scaleFocused - 1f).coerceAtLeast(0f)
+    val cell = ((shortEdge - gapPx * (lanes - 1)) / (lanes + overhangLanes)).coerceAtLeast(1f)
+    val longOverhang = cell * overhangLanes
+    val alongLanes = (((longEdge - longOverhang + gapPx) / (cell + gapPx)).toInt()).coerceAtLeast(1)
     val columns = if (widthIsShort) lanes else alongLanes
     val rows = if (widthIsShort) alongLanes else lanes
     val gridWidth = columns * cell + gapPx * (columns - 1)

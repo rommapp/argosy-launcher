@@ -100,7 +100,7 @@ fun customGridMetrics(size: IntSize, laneCount: Int, gapPx: Float): CustomGridMe
  * one of these per tile and an unresolvable target is simply absent from the map.
  */
 data class CustomGridTileContent(
-    val coverPath: String?,
+    val game: com.nendo.argosy.ui.screens.home.HomeGameUi?,
     val label: String,
     val isMissing: Boolean = false
 )
@@ -178,6 +178,12 @@ fun HomeCustomGridPage(
     }
 }
 
+/**
+ * One cell of the grid. A tile that resolves to a game renders as a [GameCard], so the cursor,
+ * corner radius, border style and glow are the box art container's rather than a second look that
+ * has to be kept in step with it. An empty cell borrows the same corner radius so the two read as
+ * the same family.
+ */
 @Composable
 private fun CustomGridCellBox(
     rect: TileRect,
@@ -190,28 +196,42 @@ private fun CustomGridCellBox(
     content: CustomGridTileContent?
 ) {
     val theme = LocalArgosyTheme.current
-    val shape = RoundedCornerShape(Dimens.radiusControl)
+    val boxArtStyle = com.nendo.argosy.ui.theme.LocalBoxArtStyle.current
+    val shape = RoundedCornerShape(boxArtStyle.cornerRadiusDp)
     val stride = cellSize + gap
     val width = cellSize * rect.columnSpan + gap * (rect.columnSpan - 1)
     val height = cellSize * rect.rowSpan + gap * (rect.rowSpan - 1)
+    val placement = Modifier
+        .offset(
+            x = originX + stride * rect.columnIndex,
+            y = originY + stride * rect.rowIndex
+        )
+        .size(width, height)
+
+    val game = content?.game
+    if (game != null) {
+        GameCard(
+            game = game,
+            isFocused = isFocused,
+            showPlatformBadge = false,
+            modifier = placement.clickableNoFocus(onClick = onClick)
+        )
+        return
+    }
+
     Box(
-        modifier = Modifier
-            .offset(
-                x = originX + stride * rect.columnIndex,
-                y = originY + stride * rect.rowIndex
-            )
-            .size(width, height)
+        modifier = placement
             .clip(shape)
             .then(
                 if (content == null) {
-                    Modifier.border(Dimens.borderThin, theme.surfaceRaised, shape)
+                    Modifier.border(boxArtStyle.borderThicknessDp, theme.surfaceRaised, shape)
                 } else {
                     Modifier.background(theme.surfaceRaised)
                 }
             )
             .argosyFocusIndicators(
                 focused = isFocused,
-                indicators = if (content == null) FocusIndicators.Ring else FocusIndicators.Tile,
+                indicators = FocusIndicators.Ring,
                 shape = shape
             )
             .clickableNoFocus(onClick = onClick),
@@ -226,12 +246,12 @@ private fun CustomGridCellBox(
                     modifier = Modifier.size(Dimens.iconMd)
                 )
             }
-            content.isMissing -> Text(
-                text = "Missing",
+            else -> Text(
+                text = content.label,
                 style = MaterialTheme.typography.labelMedium,
-                color = theme.textDim
+                color = theme.textDim,
+                modifier = Modifier.padding(Dimens.spacingSm)
             )
-            else -> CustomGridTileArt(content = content)
         }
     }
 }
@@ -331,24 +351,3 @@ fun CustomGridPageDots(
 }
 
 private const val DOT_IDLE_ALPHA = 0.35f
-
-@Composable
-private fun CustomGridTileArt(content: CustomGridTileContent) {
-    val theme = LocalArgosyTheme.current
-    val cover = com.nendo.argosy.ui.common.rememberFileImageModel(content.coverPath)
-    if (cover != null) {
-        coil.compose.AsyncImage(
-            model = cover,
-            contentDescription = content.label,
-            contentScale = androidx.compose.ui.layout.ContentScale.Crop,
-            modifier = Modifier.fillMaxSize()
-        )
-    } else {
-        Text(
-            text = content.label,
-            style = MaterialTheme.typography.labelMedium,
-            color = theme.textPrimary,
-            modifier = Modifier.padding(Dimens.spacingSm)
-        )
-    }
-}

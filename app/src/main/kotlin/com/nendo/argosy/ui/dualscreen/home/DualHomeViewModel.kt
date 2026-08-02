@@ -236,7 +236,7 @@ data class DualHomeUiState(
             is com.nendo.argosy.domain.model.HomeTileTargetRef.Game -> {
                 val game = tileGames[target.gameId]
                 com.nendo.argosy.ui.components.CustomGridTileContent(
-                    coverPath = game?.coverPath,
+                    game = game,
                     label = game?.title ?: "Missing game",
                     isMissing = game == null
                 )

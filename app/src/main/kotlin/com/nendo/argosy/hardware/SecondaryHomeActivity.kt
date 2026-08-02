@@ -43,6 +43,8 @@ import com.nendo.argosy.ui.input.LocalSwapStartSelect
 import com.nendo.argosy.ui.input.mapKeycodeToGamepadEvent
 import com.nendo.argosy.ui.screens.secondaryhome.SecondaryHomeViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
 class SecondaryHomeActivity :
@@ -632,6 +634,29 @@ class SecondaryHomeActivity :
         }
     }
 
+    /**
+     * Keeps the showcase on whatever the grid has under its cursor.
+     *
+     * The one-shot broadcasts fire at moments chosen for the carousel, and tiles arrive from the
+     * database after the section does, so on a cold start the carousel's game would win the race and
+     * stay. Following the cursor means the upper screen is right whenever it settles, including on
+     * first load and on the way back from a game's details.
+     */
+    private fun observeCustomGridSelection() {
+        lifecycleScope.launch {
+            dualHomeViewModel.uiState
+                .map {
+                    Triple(it.layoutKind, it.customGridCell, it.tileGames.size)
+                }
+                .distinctUntilChanged()
+                .collect { (layout, _, _) ->
+                    if (layout != com.nendo.argosy.domain.model.HomeLayoutKind.CUSTOM_GRID) return@collect
+                    if (currentScreen != CompanionScreen.HOME) return@collect
+                    broadcasts.broadcastCurrentGameSelection()
+                }
+        }
+    }
+
     fun returnToHome() {
         isScreenshotViewerOpen = false
         currentScreen = CompanionScreen.HOME
@@ -717,6 +742,7 @@ class SecondaryHomeActivity :
             syncPreferencesRepository = dsm.syncPreferencesRepository
         )
         dualHomeViewModel.observeHomeTiles()
+        observeCustomGridSelection()
         broadcasts = SecondaryHomeBroadcastHelper(
             dsm = dsm, dualHomeViewModel = dualHomeViewModel,
             secondaryHomeViewModel = { viewModel }

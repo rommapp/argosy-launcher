@@ -184,6 +184,7 @@ data class DualHomeUiState(
         com.nendo.argosy.domain.model.GridCell(0, 0),
     val tileEditMode: TileEditMode = TileEditMode.NONE,
     val editingTileId: Long? = null,
+    val editingRect: com.nendo.argosy.domain.model.TileRect? = null,
     val showTileMenu: Boolean = false,
     val tileMenuFocusIndex: Int = 0,
     val showTilePicker: Boolean = false,
@@ -229,8 +230,15 @@ data class DualHomeUiState(
             com.nendo.argosy.data.repository.HomeTileRepository.DEFAULT_PAGE_COUNT
         )
 
+    /**
+     * The page as it currently looks, with the tile being arranged shown at its draft rectangle.
+     * The draft lives here rather than in the database so an interrupted edit leaves the stored
+     * page exactly as it was.
+     */
     fun tilesOnPage(pageIndex: Int): List<com.nendo.argosy.domain.model.HomeTile> =
-        homeTiles.filter { it.pageIndex == pageIndex }
+        homeTiles.filter { it.pageIndex == pageIndex }.map { tile ->
+            if (tile.id == editingTileId && editingRect != null) tile.copy(rect = editingRect) else tile
+        }
 
     /**
      * The game the grid cursor is on. Exposed on the state rather than only as a view model call so
@@ -256,7 +264,10 @@ data class DualHomeUiState(
      * moves.
      */
     val editingTile: com.nendo.argosy.domain.model.HomeTile?
-        get() = editingTileId?.let { id -> homeTiles.firstOrNull { it.id == id } }
+        get() = editingTileId?.let { id ->
+            homeTiles.firstOrNull { it.id == id }
+                ?.let { if (editingRect != null) it.copy(rect = editingRect) else it }
+        }
 
     val focusedTileGameId: Long?
         get() = (
@@ -314,7 +325,6 @@ class DualHomeViewModel(
 
     private val tilePickerLimit = 60
 
-    private var editingOriginalRect: com.nendo.argosy.domain.model.TileRect? = null
     private var latestDownloads: Map<Long, com.nendo.argosy.data.local.entity.DownloadQueueEntity> = emptyMap()
     private val pendingCoverRepairs = mutableSetOf<Long>()
     private var letterOverlayJob: kotlinx.coroutines.Job? = null
@@ -1077,9 +1087,7 @@ class DualHomeViewModel(
      * resizing never moves the tile out from under the cursor.
      */
     fun resizeFocusedTile(horizontal: Boolean, grow: Boolean): Boolean {
-        val state = _uiState.value
         val tile = focusedTile() ?: return false
-        val tiles = homeTileRepository ?: return false
         val step = if (grow) 1 else -1
         val resized = if (horizontal) {
             tile.rect.copy(columnSpan = tile.rect.columnSpan + step)
@@ -1088,9 +1096,7 @@ class DualHomeViewModel(
         }
         if (resized.columnSpan < 1 || resized.rowSpan < 1) return false
         if (!resized.withinBounds(customGridColumns, customGridRows)) return false
-        viewModelScope.launch {
-            tiles.move(tile, syncPreferencesRepository?.getRommUserId(), resized)
-        }
+        _uiState.update { it.copy(editingRect = resized) }
         return true
     }
 
@@ -1171,11 +1177,11 @@ class DualHomeViewModel(
 
     fun enterTileMoveMode() {
         val tile = focusedTile() ?: return
-        editingOriginalRect = tile.rect
         _uiState.update {
             it.copy(
                 tileEditMode = TileEditMode.MOVE,
                 editingTileId = tile.id,
+                editingRect = tile.rect,
                 showTileMenu = false
             )
         }
@@ -1185,50 +1191,54 @@ class DualHomeViewModel(
      * Commits the arrangement, settling anything the edited tile came to rest on top of. Overlap is
      * allowed while dragging so a full page can be rearranged at all; this is where the page is made
      * consistent again.
+     *
+     * A tile the settle cannot find room for is left exactly where it is rather than deleted. The
+     * page tolerates an overlap - the schema no longer forbids one - and a curated tile is the
+     * user's work: losing one to a full page would be a far worse outcome than a page that still
+     * needs tidying.
      */
     fun commitTileEdit() {
         val state = _uiState.value
-        val tile = focusedTile()
+        val draft = state.editingRect
+        val stored = state.editingTileId?.let { id -> state.homeTiles.firstOrNull { it.id == id } }
         val tiles = homeTileRepository
-        if (tile != null && tiles != null) {
-            val others = state.tilesOnPage(state.customGridPage).filter { it.id != tile.id }
-            if (others.any { it.rect.overlaps(tile.rect) }) {
-                val settled = com.nendo.argosy.domain.model.settleAfterEdit(
-                    editing = tile,
-                    others = others,
-                    columns = customGridColumns,
-                    rows = customGridRows
-                )
-                viewModelScope.launch {
-                    val owner = syncPreferencesRepository?.getRommUserId()
-                    settled.placed.filter { it.id != tile.id }.forEach { moved ->
-                        val was = others.firstOrNull { it.id == moved.id }
-                        if (was != null && was.rect != moved.rect) tiles.move(was, owner, moved.rect)
-                    }
-                    settled.displaced.forEach { tiles.remove(it.id) }
-                }
+        if (draft == null || stored == null || tiles == null) {
+            clearTileEdit()
+            return
+        }
+        val edited = stored.copy(rect = draft)
+        val others = state.homeTiles
+            .filter { it.pageIndex == state.customGridPage && it.id != stored.id }
+        val settled = com.nendo.argosy.domain.model.settleAfterEdit(
+            editing = edited,
+            others = others,
+            columns = customGridColumns,
+            rows = customGridRows
+        )
+        viewModelScope.launch {
+            val owner = syncPreferencesRepository?.getRommUserId()
+            if (stored.rect != draft) tiles.move(stored, owner, draft)
+            settled.placed.filter { it.id != stored.id }.forEach { moved ->
+                val was = others.firstOrNull { it.id == moved.id }
+                if (was != null && was.rect != moved.rect) tiles.move(was, owner, moved.rect)
             }
         }
         clearTileEdit()
     }
 
     /**
-     * Abandons the arrangement, putting the tile back where it was picked up. Nothing else moved
-     * while dragging, so restoring the one rect is the whole undo.
+     * Abandons the arrangement. The draft never reached the database, so dropping it is the whole
+     * undo and the stored page was never disturbed.
      */
     fun cancelTileEdit() {
-        val tile = focusedTile()
-        val original = editingOriginalRect
-        val tiles = homeTileRepository
-        if (tile != null && original != null && tiles != null) {
-            viewModelScope.launch {
-                tiles.move(tile, syncPreferencesRepository?.getRommUserId(), original)
-            }
+        val stored = _uiState.value.editingTileId
+            ?.let { id -> _uiState.value.homeTiles.firstOrNull { it.id == id } }
+        if (stored != null) {
             _uiState.update {
                 it.copy(
                     customGridCell = com.nendo.argosy.domain.model.GridCell(
-                        original.columnIndex,
-                        original.rowIndex
+                        stored.rect.columnIndex,
+                        stored.rect.rowIndex
                     )
                 )
             }
@@ -1237,8 +1247,9 @@ class DualHomeViewModel(
     }
 
     private fun clearTileEdit() {
-        editingOriginalRect = null
-        _uiState.update { it.copy(tileEditMode = TileEditMode.NONE, editingTileId = null) }
+        _uiState.update {
+            it.copy(tileEditMode = TileEditMode.NONE, editingTileId = null, editingRect = null)
+        }
     }
 
     fun exitTileMoveMode() = commitTileEdit()
@@ -1273,9 +1284,7 @@ class DualHomeViewModel(
         }
 
     fun moveFocusedTile(direction: com.nendo.argosy.domain.model.GridDirection2D): Boolean {
-        val state = _uiState.value
         val tile = focusedTile() ?: return false
-        val tiles = homeTileRepository ?: return false
         val moved = when (direction) {
             com.nendo.argosy.domain.model.GridDirection2D.LEFT ->
                 tile.rect.copy(columnIndex = tile.rect.columnIndex - 1)
@@ -1289,14 +1298,12 @@ class DualHomeViewModel(
         if (!moved.withinBounds(customGridColumns, customGridRows)) return false
         _uiState.update {
             it.copy(
+                editingRect = moved,
                 customGridCell = com.nendo.argosy.domain.model.GridCell(
                     moved.columnIndex,
                     moved.rowIndex
                 )
             )
-        }
-        viewModelScope.launch {
-            tiles.move(tile, syncPreferencesRepository?.getRommUserId(), moved)
         }
         return true
     }

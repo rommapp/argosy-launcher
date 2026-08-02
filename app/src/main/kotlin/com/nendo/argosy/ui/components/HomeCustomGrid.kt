@@ -250,6 +250,7 @@ private fun CustomGridCellBox(
                 focusScale = focusScaleForSpan(rect),
                 downloadIndicator = downloadIndicatorFor(game.id),
                 showPlatformBadge = false,
+                saturationOverride = if (isOverlapped) OVERLAPPED_SATURATION else null,
                 onCoverLoadFailed = onCoverLoadFailed,
                 onCoverLoaded = onCoverLoaded,
                 modifier = Modifier.fillMaxSize().clickableNoFocus(onClick = onClick)
@@ -396,7 +397,13 @@ fun CustomGridPageDots(
 }
 
 private const val DOT_IDLE_ALPHA = 0.35f
-private const val OVERLAPPED_ALPHA = 0.35f
+/**
+ * Overlapped tiles are dimmed and drained of colour rather than only dimmed. A card already renders
+ * unfocused at [ComponentDefaults.Focus.alphaUnfocused], so the two multiply, and on a dark backdrop
+ * a low alpha alone reads as the tile having been deleted rather than being about to move.
+ */
+private const val OVERLAPPED_ALPHA = 0.6f
+private const val OVERLAPPED_SATURATION = 0.15f
 
 /**
  * A tab hanging off the tile's lower edge naming the mode the d-pad is currently in. It is the

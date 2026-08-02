@@ -18,6 +18,7 @@ object Motion {
 
     val durationMicro = MotionTokens.Tween.microMs
     val durationContent = MotionTokens.Tween.contentMs
+    val durationSlide = MotionTokens.Tween.slideMs
     val durationPage = MotionTokens.Tween.pageMs
     val durationDrawer = MotionTokens.Tween.drawerMs
 

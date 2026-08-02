@@ -985,6 +985,22 @@ class DualHomeViewModel(
      * The grid is edited on the screen it lives on. On a dual-screen handheld the lower display is
      * where the hands are, so the picker and the move mode belong here rather than on the showcase.
      */
+    val isOnAddPage: Boolean
+        get() = _uiState.value.let { it.customGridPage >= it.customGridPageCount }
+
+    /**
+     * Turns the stub into a real page by placing the first tile on it. A page exists because tiles
+     * reference it, so there is nothing to create until something is put there; opening the picker
+     * is the whole action.
+     */
+    fun confirmAddPage() {
+        if (!isOnAddPage) return
+        _uiState.update {
+            it.copy(customGridCell = com.nendo.argosy.domain.model.GridCell(0, 0))
+        }
+        openTilePicker()
+    }
+
     fun openTilePicker() {
         if (focusedTile() != null) return
         _uiState.update {

@@ -44,6 +44,8 @@ object MotionTokens {
         val micro: AnimationSpec<Float> = tween(durationMillis = microMs)
         const val contentMs = 180
         val content: AnimationSpec<Float> = tween(durationMillis = contentMs)
+        const val slideMs = 200
+        val slide: AnimationSpec<Float> = tween(durationMillis = slideMs)
         const val pageMs = 250
         val page: AnimationSpec<Float> = tween(durationMillis = pageMs)
         const val drawerMs = 450

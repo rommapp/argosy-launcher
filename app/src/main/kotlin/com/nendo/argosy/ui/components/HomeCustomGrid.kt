@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
@@ -231,6 +232,52 @@ private fun CustomGridCellBox(
                 color = theme.textDim
             )
             else -> CustomGridTileArt(content = content)
+        }
+    }
+}
+
+/**
+ * The page past the last one. It is a single tile filling the grid rather than an empty page of
+ * cells, because an empty page and the offer to make one look identical otherwise, and only one of
+ * them does anything when you press A.
+ */
+@Composable
+fun CustomGridAddPage(
+    isFocused: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val theme = LocalArgosyTheme.current
+    val shape = RoundedCornerShape(Dimens.radiusControl)
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .padding(Dimens.spacingLg)
+            .clip(shape)
+            .border(Dimens.borderThin, theme.surfaceRaised, shape)
+            .argosyFocusIndicators(
+                focused = isFocused,
+                indicators = FocusIndicators.Ring,
+                shape = shape
+            )
+            .clickableNoFocus(onClick = onClick),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
+        ) {
+            Icon(
+                imageVector = Icons.Filled.Add,
+                contentDescription = null,
+                tint = if (isFocused) theme.focusAccent else theme.textDim,
+                modifier = Modifier.size(Dimens.iconXl)
+            )
+            Text(
+                text = "Add a page",
+                style = MaterialTheme.typography.bodyMedium,
+                color = if (isFocused) theme.textPrimary else theme.textDim
+            )
         }
     }
 }

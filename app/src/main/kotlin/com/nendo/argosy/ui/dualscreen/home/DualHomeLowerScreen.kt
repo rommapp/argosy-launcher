@@ -6,6 +6,7 @@
  */
 package com.nendo.argosy.ui.dualscreen.home
 
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -142,6 +143,7 @@ fun DualHomeLowerScreen(
     onCustomGridShape: (Int, Int) -> Unit = { _, _ -> },
     customGridPage: Int = 0,
     customGridPageCount: Int = 1,
+    onCustomGridAddPage: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val isAutoGrid = layoutKind == com.nendo.argosy.domain.model.HomeLayoutKind.AUTO_GRID
@@ -283,17 +285,42 @@ fun DualHomeLowerScreen(
         }
 
         if (isCustomGrid) {
-            com.nendo.argosy.ui.components.HomeCustomGridPage(
-                tiles = customGridTiles,
-                contentFor = customGridContentFor,
-                laneCount = customGridConfig.laneCount,
-                focusedCell = customGridCell,
-                onCellTap = onCustomGridCellTap,
-                onShapeResolved = onCustomGridShape,
+            androidx.compose.animation.AnimatedContent(
+                targetState = customGridPage,
+                transitionSpec = {
+                    val forward = targetState > initialState
+                    val slide = androidx.compose.animation.core.tween<androidx.compose.ui.unit.IntOffset>(
+                        durationMillis = com.nendo.argosy.ui.theme.Motion.durationSlide,
+                        easing = com.nendo.argosy.ui.theme.Motion.argosyEase
+                    )
+                    androidx.compose.animation.slideInHorizontally(slide) { width ->
+                        if (forward) width else -width
+                    } togetherWith androidx.compose.animation.slideOutHorizontally(slide) { width ->
+                        if (forward) -width else width
+                    }
+                },
+                label = "custom-grid-page",
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f)
-            )
+            ) { page ->
+                if (page >= customGridPageCount) {
+                    com.nendo.argosy.ui.components.CustomGridAddPage(
+                        isFocused = true,
+                        onClick = onCustomGridAddPage
+                    )
+                } else {
+                    com.nendo.argosy.ui.components.HomeCustomGridPage(
+                        tiles = customGridTiles,
+                        contentFor = customGridContentFor,
+                        laneCount = customGridConfig.laneCount,
+                        focusedCell = customGridCell,
+                        onCellTap = onCustomGridCellTap,
+                        onShapeResolved = onCustomGridShape,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
+            }
             com.nendo.argosy.ui.components.CustomGridPageDots(
                 pageCount = customGridPageCount,
                 currentPage = customGridPage,

@@ -185,6 +185,8 @@ data class DualHomeUiState(
     val tileEditMode: TileEditMode = TileEditMode.NONE,
     val editingTileId: Long? = null,
     val editingRect: com.nendo.argosy.domain.model.TileRect? = null,
+    val gridColumns: Int = 0,
+    val gridRows: Int = 0,
     val showTileMenu: Boolean = false,
     val tileMenuFocusIndex: Int = 0,
     val showTilePicker: Boolean = false,
@@ -235,10 +237,15 @@ data class DualHomeUiState(
      * The draft lives here rather than in the database so an interrupted edit leaves the stored
      * page exactly as it was.
      */
-    fun tilesOnPage(pageIndex: Int): List<com.nendo.argosy.domain.model.HomeTile> =
-        homeTiles.filter { it.pageIndex == pageIndex }.map { tile ->
-            if (tile.id == editingTileId && editingRect != null) tile.copy(rect = editingRect) else tile
+    fun tilesOnPage(pageIndex: Int): List<com.nendo.argosy.domain.model.HomeTile> {
+        val onPage = homeTiles.filter { it.pageIndex == pageIndex }
+        val editing = editingRect?.let { rect ->
+            onPage.firstOrNull { it.id == editingTileId }?.copy(rect = rect)
         }
+        val others = onPage.filter { it.id != editing?.id }
+        val fitted = com.nendo.argosy.domain.model.fitTilesToPage(others, gridColumns, gridRows)
+        return if (editing == null) fitted else fitted + editing
+    }
 
     /**
      * The game the grid cursor is on. Exposed on the state rather than only as a view model call so
@@ -985,6 +992,7 @@ class DualHomeViewModel(
     fun setCustomGridShape(columns: Int, rows: Int) {
         customGridColumns = columns
         customGridRows = rows
+        _uiState.update { it.copy(gridColumns = columns, gridRows = rows) }
     }
 
     fun moveCustomGridFocus(

@@ -81,6 +81,31 @@ fun placeTiles(tiles: List<HomeTile>, columns: Int, rows: Int): TilePlacement {
 data class TilePlacement(val placed: List<HomeTile>, val displaced: List<HomeTile>)
 
 /**
+ * The page as it can actually be shown on a grid of [columns] by [rows].
+ *
+ * A stored tile can fall outside the current shape whenever the shape changes - a different lane
+ * count, a rotated handheld, a page authored on a wider screen. Without this pass such a tile is
+ * still in the database and still owned by the user, but is drawn beyond the viewport and reads as
+ * having vanished. Anything that cannot stay where it is gets the first free cell instead, so a
+ * tile is always somewhere its owner can see and move it.
+ */
+fun fitTilesToPage(tiles: List<HomeTile>, columns: Int, rows: Int): List<HomeTile> {
+    if (columns <= 0 || rows <= 0) return tiles
+    val placement = placeTiles(tiles, columns, rows)
+    if (placement.displaced.isEmpty()) return placement.placed
+    val settled = placement.placed.toMutableList()
+    for (tile in placement.displaced) {
+        val free = firstFreeCell(settled, columns, rows)
+        if (free == null) {
+            settled += tile
+            continue
+        }
+        settled += tile.copy(rect = TileRect(free.columnIndex, free.rowIndex))
+    }
+    return settled
+}
+
+/**
  * A cell on a page. Focus lives on a cell rather than on a tile so an empty slot is somewhere the
  * cursor can be, which is what lets a tile be placed at a chosen spot rather than appended.
  */

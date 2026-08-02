@@ -76,6 +76,9 @@ class SecondaryHomeActivity :
     private var companionSessionTimer: CompanionSessionTimer? = null
     private var homeRestoreSettled = false
 
+    private var confirmHoldJob: kotlinx.coroutines.Job? = null
+    private var confirmHoldFired = false
+
     private lateinit var viewModel: SecondaryHomeViewModel
     private lateinit var dualHomeViewModel: DualHomeViewModel
     private lateinit var stateManager: SecondaryHomeStateManager
@@ -366,18 +369,68 @@ class SecondaryHomeActivity :
             }
             return super.onKeyDown(keyCode, event)
         }
-        if (event.repeatCount == 0) {
-            val gamepadEvent = mapKeycodeToGamepadEvent(
-                keyCode, swapAB, swapXY, swapStartSelect
+        val gamepadEvent = mapKeycodeToGamepadEvent(keyCode, swapAB, swapXY, swapStartSelect)
+        if (gamepadEvent == com.nendo.argosy.ui.input.GamepadEvent.Confirm && deferConfirm()) {
+            if (event.repeatCount == 0) beginConfirmHold()
+            return true
+        }
+        if (event.repeatCount == 0 && gamepadEvent != null) {
+            val result = inputHandler.routeInput(
+                gamepadEvent, true, isGameActive, currentScreen
             )
-            if (gamepadEvent != null) {
-                val result = inputHandler.routeInput(
-                    gamepadEvent, true, isGameActive, currentScreen
-                )
-                if (result.handled) return true
-            }
+            if (result.handled) return true
         }
         return super.onKeyDown(keyCode, event)
+    }
+
+    override fun onKeyUp(keyCode: Int, event: android.view.KeyEvent): Boolean {
+        val gamepadEvent = mapKeycodeToGamepadEvent(keyCode, swapAB, swapXY, swapStartSelect)
+        if (gamepadEvent == com.nendo.argosy.ui.input.GamepadEvent.Confirm && confirmHoldJob != null) {
+            endConfirmHold()
+            return true
+        }
+        return super.onKeyUp(keyCode, event)
+    }
+
+    /**
+     * Only the curated grid needs a held A, and deferring the press everywhere else would put a
+     * delay on every confirm on this screen. The companion dispatches on key-down, so the wait has
+     * to be introduced deliberately and kept to where it earns its cost.
+     */
+    private fun deferConfirm(): Boolean {
+        if (isShowcaseRole || currentScreen != CompanionScreen.HOME) return false
+        val state = dualHomeViewModel.uiState.value
+        if (state.layoutKind != com.nendo.argosy.domain.model.HomeLayoutKind.CUSTOM_GRID) return false
+        if (state.showTilePicker || state.showTileMenu) return false
+        return state.tileEditMode != com.nendo.argosy.ui.dualscreen.home.TileEditMode.NONE ||
+            state.focusedTileGameId != null
+    }
+
+    private fun beginConfirmHold() {
+        confirmHoldFired = false
+        confirmHoldJob?.cancel()
+        confirmHoldJob = lifecycleScope.launch {
+            kotlinx.coroutines.delay(CONFIRM_HOLD_MS)
+            confirmHoldFired = true
+            inputHandler.routeInput(
+                com.nendo.argosy.ui.input.GamepadEvent.LongConfirm,
+                true,
+                isGameActive,
+                currentScreen
+            )
+        }
+    }
+
+    private fun endConfirmHold() {
+        confirmHoldJob?.cancel()
+        confirmHoldJob = null
+        if (confirmHoldFired) return
+        inputHandler.routeInput(
+            com.nendo.argosy.ui.input.GamepadEvent.Confirm,
+            true,
+            isGameActive,
+            currentScreen
+        )
     }
 
     override fun onForegroundChanged(isForeground: Boolean) {
@@ -1011,3 +1064,5 @@ class SecondaryHomeActivity :
     }
 
 }
+
+private const val CONFIRM_HOLD_MS = 500L

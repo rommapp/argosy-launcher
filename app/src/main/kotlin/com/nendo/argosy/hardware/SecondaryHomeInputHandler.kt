@@ -563,8 +563,13 @@ class SecondaryHomeInputHandler(
                     dualHomeViewModel.confirmAddPage()
                     InputResult.HANDLED
                 } else if (inCustomGrid) {
-                    val gameId = dualHomeViewModel.focusedTileGameId()
-                    if (gameId == null) dualHomeViewModel.openTilePicker() else onSelectGame(gameId)
+                    val tileGame = dualHomeViewModel.focusedTileGameId()
+                        ?.let { state.tileGames[it] }
+                    if (tileGame == null) {
+                        dualHomeViewModel.openTilePicker()
+                    } else {
+                        confirmGame(tileGame)
+                    }
                     InputResult.HANDLED
                 } else if (inAppBar && state.appBarIndex == -1) {
                     viewModel.openDrawer()

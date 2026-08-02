@@ -2,11 +2,14 @@ package com.nendo.argosy.ui.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -14,6 +17,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -42,18 +46,52 @@ import com.nendo.argosy.ui.util.clickableNoFocus
  */
 data class CustomGridShape(val columns: Int, val rows: Int) {
     companion object {
-        fun forSize(size: IntSize, laneCount: Int): CustomGridShape {
-            val lanes = laneCount.coerceAtLeast(1)
-            if (size.width <= 0 || size.height <= 0) return CustomGridShape(lanes, lanes)
-            return if (size.height >= size.width) {
-                val cell = size.width.toFloat() / lanes
-                CustomGridShape(lanes, ((size.height / cell).toInt()).coerceAtLeast(1))
-            } else {
-                val cell = size.height.toFloat() / lanes
-                CustomGridShape(((size.width / cell).toInt()).coerceAtLeast(1), lanes)
-            }
+        fun forSize(size: IntSize, laneCount: Int, gapPx: Float): CustomGridShape {
+            val metrics = customGridMetrics(size, laneCount, gapPx)
+            return CustomGridShape(metrics.columns, metrics.rows)
         }
     }
+}
+
+/**
+ * A page's geometry in pixels. Cells are square, so a tile reads the same whichever way it spans,
+ * and whatever the square grid cannot fill becomes margin: the block is centred rather than stretched
+ * to the edges, which keeps the spacing between cells equal to the spacing around them.
+ *
+ * The two margins are computed separately because a page rarely divides evenly on both axes; forcing
+ * them equal would push the grid off centre on one of them.
+ */
+data class CustomGridMetrics(
+    val columns: Int,
+    val rows: Int,
+    val cellPx: Float,
+    val gapPx: Float,
+    val offsetXPx: Float,
+    val offsetYPx: Float
+)
+
+fun customGridMetrics(size: IntSize, laneCount: Int, gapPx: Float): CustomGridMetrics {
+    val lanes = laneCount.coerceAtLeast(1)
+    if (size.width <= 0 || size.height <= 0) {
+        return CustomGridMetrics(lanes, lanes, 0f, gapPx, 0f, 0f)
+    }
+    val widthIsShort = size.width <= size.height
+    val shortEdge = if (widthIsShort) size.width else size.height
+    val longEdge = if (widthIsShort) size.height else size.width
+    val cell = ((shortEdge - gapPx * (lanes - 1)) / lanes).coerceAtLeast(1f)
+    val alongLanes = (((longEdge + gapPx) / (cell + gapPx)).toInt()).coerceAtLeast(1)
+    val columns = if (widthIsShort) lanes else alongLanes
+    val rows = if (widthIsShort) alongLanes else lanes
+    val gridWidth = columns * cell + gapPx * (columns - 1)
+    val gridHeight = rows * cell + gapPx * (rows - 1)
+    return CustomGridMetrics(
+        columns = columns,
+        rows = rows,
+        cellPx = cell,
+        gapPx = gapPx,
+        offsetXPx = ((size.width - gridWidth) / 2f).coerceAtLeast(0f),
+        offsetYPx = ((size.height - gridHeight) / 2f).coerceAtLeast(0f)
+    )
 }
 
 /**
@@ -76,27 +114,30 @@ data class CustomGridTileContent(
 fun HomeCustomGridPage(
     tiles: List<HomeTile>,
     contentFor: (HomeTile) -> CustomGridTileContent?,
-    shape: CustomGridShape,
+    laneCount: Int,
     focusedCell: GridCell,
     onCellTap: (GridCell) -> Unit,
-    onSizeResolved: (IntSize) -> Unit,
+    onShapeResolved: (Int, Int) -> Unit,
     modifier: Modifier = Modifier,
     showEmptyCells: Boolean = true
 ) {
     val density = LocalDensity.current
     var measured by remember { mutableStateOf(IntSize.Zero) }
+    val gap = Dimens.spacingSm
+    val gapPx = with(density) { gap.toPx() }
     Box(
         modifier = modifier
             .fillMaxSize()
-            .onSizeChanged {
-                measured = it
-                onSizeResolved(it)
-            }
+            .onSizeChanged { measured = it }
     ) {
         if (measured.width <= 0 || measured.height <= 0) return@Box
-        val gap = Dimens.spacingSm
-        val cellWidth = with(density) { (measured.width / shape.columns).toDp() }
-        val cellHeight = with(density) { (measured.height / shape.rows).toDp() }
+        val metrics = customGridMetrics(measured, laneCount, gapPx)
+        LaunchedEffect(metrics.columns, metrics.rows) {
+            onShapeResolved(metrics.columns, metrics.rows)
+        }
+        val cellSize = with(density) { metrics.cellPx.toDp() }
+        val originX = with(density) { metrics.offsetXPx.toDp() }
+        val originY = with(density) { metrics.offsetYPx.toDp() }
         val occupied = tiles.flatMap { tile ->
             (tile.rect.columnIndex..tile.rect.lastColumn).flatMap { column ->
                 (tile.rect.rowIndex..tile.rect.lastRow).map { row -> column to row }
@@ -104,102 +145,87 @@ fun HomeCustomGridPage(
         }.toSet()
 
         if (showEmptyCells) {
-            for (column in 0 until shape.columns) {
-                for (row in 0 until shape.rows) {
+            for (column in 0 until metrics.columns) {
+                for (row in 0 until metrics.rows) {
                     if (column to row in occupied) continue
-                    CustomGridSlot(
+                    CustomGridCellBox(
                         rect = TileRect(column, row),
-                        cellWidth = cellWidth,
-                        cellHeight = cellHeight,
+                        cellSize = cellSize,
                         gap = gap,
+                        originX = originX,
+                        originY = originY,
                         isFocused = focusedCell.columnIndex == column && focusedCell.rowIndex == row,
-                        onClick = { onCellTap(GridCell(column, row)) }
+                        onClick = { onCellTap(GridCell(column, row)) },
+                        content = null
                     )
                 }
             }
         }
 
         tiles.forEach { tile ->
-            val content = contentFor(tile)
-            CustomGridTile(
-                tile = tile,
-                content = content,
-                cellWidth = cellWidth,
-                cellHeight = cellHeight,
+            CustomGridCellBox(
+                rect = tile.rect,
+                cellSize = cellSize,
                 gap = gap,
+                originX = originX,
+                originY = originY,
                 isFocused = tile.rect.covers(focusedCell.columnIndex, focusedCell.rowIndex),
-                onClick = {
-                    onCellTap(GridCell(tile.rect.columnIndex, tile.rect.rowIndex))
+                onClick = { onCellTap(GridCell(tile.rect.columnIndex, tile.rect.rowIndex)) },
+                content = contentFor(tile)
+            )
+        }
+    }
+}
+
+@Composable
+private fun CustomGridCellBox(
+    rect: TileRect,
+    cellSize: Dp,
+    gap: Dp,
+    originX: Dp,
+    originY: Dp,
+    isFocused: Boolean,
+    onClick: () -> Unit,
+    content: CustomGridTileContent?
+) {
+    val theme = LocalArgosyTheme.current
+    val shape = RoundedCornerShape(Dimens.radiusControl)
+    val stride = cellSize + gap
+    val width = cellSize * rect.columnSpan + gap * (rect.columnSpan - 1)
+    val height = cellSize * rect.rowSpan + gap * (rect.rowSpan - 1)
+    Box(
+        modifier = Modifier
+            .offset(
+                x = originX + stride * rect.columnIndex,
+                y = originY + stride * rect.rowIndex
+            )
+            .size(width, height)
+            .clip(shape)
+            .then(
+                if (content == null) {
+                    Modifier.border(Dimens.borderThin, theme.surfaceRaised, shape)
+                } else {
+                    Modifier.background(theme.surfaceRaised)
                 }
             )
-        }
-    }
-}
-
-@Composable
-private fun CustomGridSlot(
-    rect: TileRect,
-    cellWidth: Dp,
-    cellHeight: Dp,
-    gap: Dp,
-    isFocused: Boolean,
-    onClick: () -> Unit
-) {
-    val theme = LocalArgosyTheme.current
-    val shape = RoundedCornerShape(Dimens.radiusControl)
-    Box(
-        modifier = Modifier
-            .offset(x = cellWidth * rect.columnIndex, y = cellHeight * rect.rowIndex)
-            .size(cellWidth - gap, cellHeight - gap)
-            .clip(shape)
-            .border(Dimens.borderThin, theme.surfaceRaised, shape)
             .argosyFocusIndicators(
                 focused = isFocused,
-                indicators = FocusIndicators.Ring,
-                shape = shape
-            )
-            .clickableNoFocus(onClick = onClick),
-        contentAlignment = Alignment.Center
-    ) {
-        if (isFocused) {
-            Icon(
-                imageVector = Icons.Filled.Add,
-                contentDescription = null,
-                tint = theme.textDim,
-                modifier = Modifier.size(Dimens.iconMd)
-            )
-        }
-    }
-}
-
-@Composable
-private fun CustomGridTile(
-    tile: HomeTile,
-    content: CustomGridTileContent?,
-    cellWidth: Dp,
-    cellHeight: Dp,
-    gap: Dp,
-    isFocused: Boolean,
-    onClick: () -> Unit
-) {
-    val theme = LocalArgosyTheme.current
-    val shape = RoundedCornerShape(Dimens.radiusControl)
-    Box(
-        modifier = Modifier
-            .offset(x = cellWidth * tile.rect.columnIndex, y = cellHeight * tile.rect.rowIndex)
-            .size(cellWidth * tile.rect.columnSpan - gap, cellHeight * tile.rect.rowSpan - gap)
-            .clip(shape)
-            .background(theme.surfaceRaised)
-            .argosyFocusIndicators(
-                focused = isFocused,
-                indicators = FocusIndicators.Tile,
+                indicators = if (content == null) FocusIndicators.Ring else FocusIndicators.Tile,
                 shape = shape
             )
             .clickableNoFocus(onClick = onClick),
         contentAlignment = Alignment.Center
     ) {
         when {
-            content == null || content.isMissing -> Text(
+            content == null -> if (isFocused) {
+                Icon(
+                    imageVector = Icons.Filled.Add,
+                    contentDescription = null,
+                    tint = theme.textDim,
+                    modifier = Modifier.size(Dimens.iconMd)
+                )
+            }
+            content.isMissing -> Text(
                 text = "Missing",
                 style = MaterialTheme.typography.labelMedium,
                 color = theme.textDim
@@ -208,6 +234,56 @@ private fun CustomGridTile(
         }
     }
 }
+
+/**
+ * Page position for a curated grid: one dot per page plus a distinct stub for the page that does not
+ * exist yet. Sections have names worth listing; pages are just positions, so a count and a cursor is
+ * the whole story.
+ */
+@Composable
+fun CustomGridPageDots(
+    pageCount: Int,
+    currentPage: Int,
+    modifier: Modifier = Modifier
+) {
+    val theme = LocalArgosyTheme.current
+    Row(
+        modifier = modifier,
+        horizontalArrangement = Arrangement.spacedBy(Dimens.spacingXs),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        repeat(pageCount) { index ->
+            Box(
+                modifier = Modifier
+                    .size(Dimens.spacingSm)
+                    .clip(CircleShape)
+                    .background(
+                        if (index == currentPage) theme.focusAccent else theme.textDim.copy(alpha = DOT_IDLE_ALPHA)
+                    )
+            )
+        }
+        Box(
+            modifier = Modifier
+                .size(Dimens.spacingSm)
+                .clip(CircleShape)
+                .border(
+                    Dimens.borderThin,
+                    if (currentPage == pageCount) theme.focusAccent else theme.textDim.copy(alpha = DOT_IDLE_ALPHA),
+                    CircleShape
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = Icons.Filled.Add,
+                contentDescription = null,
+                tint = if (currentPage == pageCount) theme.focusAccent else theme.textDim,
+                modifier = Modifier.size(Dimens.spacingSm)
+            )
+        }
+    }
+}
+
+private const val DOT_IDLE_ALPHA = 0.35f
 
 @Composable
 private fun CustomGridTileArt(content: CustomGridTileContent) {

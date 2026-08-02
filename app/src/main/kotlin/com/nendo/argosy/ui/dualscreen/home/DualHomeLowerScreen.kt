@@ -140,13 +140,12 @@ fun DualHomeLowerScreen(
         com.nendo.argosy.domain.model.GridCell(0, 0),
     onCustomGridCellTap: (com.nendo.argosy.domain.model.GridCell) -> Unit = {},
     onCustomGridShape: (Int, Int) -> Unit = { _, _ -> },
+    customGridPage: Int = 0,
+    customGridPageCount: Int = 1,
     modifier: Modifier = Modifier
 ) {
     val isAutoGrid = layoutKind == com.nendo.argosy.domain.model.HomeLayoutKind.AUTO_GRID
     val isCustomGrid = layoutKind == com.nendo.argosy.domain.model.HomeLayoutKind.CUSTOM_GRID
-    var customGridShape by remember {
-        mutableStateOf(com.nendo.argosy.ui.components.CustomGridShape(1, 1))
-    }
     val gridState = rememberLazyGridState()
     val listState = rememberLazyListState()
     var railBand by remember { mutableStateOf(androidx.compose.ui.unit.IntSize.Zero) }
@@ -257,7 +256,7 @@ fun DualHomeLowerScreen(
             }
         }
 
-        if (viewMode == DualHomeViewMode.CAROUSEL && sectionLabels.isNotEmpty()) {
+        if (viewMode == DualHomeViewMode.CAROUSEL && !isCustomGrid && sectionLabels.isNotEmpty()) {
             SectionBreadcrumb(
                 labels = sectionLabels,
                 currentIndex = currentSectionIndex,
@@ -271,34 +270,36 @@ fun DualHomeLowerScreen(
             )
         }
 
-        Text(
-            text = "$platformName ($totalCount)",
-            style = MaterialTheme.typography.bodyMedium,
-            color = LocalArgosyTheme.current.textDim,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = Dimens.spacingLg, vertical = Dimens.spacingXs),
-            textAlign = androidx.compose.ui.text.style.TextAlign.Center
-        )
+        if (!isCustomGrid) {
+            Text(
+                text = "$platformName ($totalCount)",
+                style = MaterialTheme.typography.bodyMedium,
+                color = LocalArgosyTheme.current.textDim,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = Dimens.spacingLg, vertical = Dimens.spacingXs),
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+            )
+        }
 
         if (isCustomGrid) {
             com.nendo.argosy.ui.components.HomeCustomGridPage(
                 tiles = customGridTiles,
                 contentFor = customGridContentFor,
-                shape = customGridShape,
+                laneCount = customGridConfig.laneCount,
                 focusedCell = customGridCell,
                 onCellTap = onCustomGridCellTap,
-                onSizeResolved = { size ->
-                    val shape = com.nendo.argosy.ui.components.CustomGridShape.forSize(
-                        size,
-                        customGridConfig.laneCount
-                    )
-                    customGridShape = shape
-                    onCustomGridShape(shape.columns, shape.rows)
-                },
+                onShapeResolved = onCustomGridShape,
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f)
+            )
+            com.nendo.argosy.ui.components.CustomGridPageDots(
+                pageCount = customGridPageCount,
+                currentPage = customGridPage,
+                modifier = Modifier
+                    .align(Alignment.CenterHorizontally)
+                    .padding(vertical = Dimens.spacingSm)
             )
         } else if (isAutoGrid) {
             HomeAutoGrid(

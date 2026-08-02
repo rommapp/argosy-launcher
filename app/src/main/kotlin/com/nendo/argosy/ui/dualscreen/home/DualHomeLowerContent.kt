@@ -96,6 +96,8 @@ fun DualHomeLowerContent(
                     onCustomGridShape = { columns, rows ->
                         viewModel.setCustomGridShape(columns, rows)
                     },
+                    customGridPage = uiState.customGridPage,
+                    customGridPageCount = uiState.customGridPageCount,
                     isPlatformSection = when (uiState.currentSection) {
                         is DualHomeSection.Platform,
                         DualHomeSection.Android,

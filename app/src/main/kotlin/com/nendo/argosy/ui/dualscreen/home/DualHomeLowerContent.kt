@@ -49,15 +49,6 @@ fun DualHomeLowerContent(
             .then(if (!isSearchActive) Modifier.focusProperties { canFocus = false } else Modifier)
             .background(MaterialTheme.colorScheme.background)
     ) {
-        if (uiState.showTilePicker) {
-            com.nendo.argosy.ui.components.HomeTilePickerModal(
-                entries = uiState.tilePickerEntries,
-                query = uiState.tilePickerQuery,
-                focusIndex = uiState.tilePickerFocusIndex,
-                onSelect = { viewModel.confirmTilePickerSelection() },
-                onDismiss = viewModel::closeTilePicker
-            )
-        }
         when (uiState.viewMode) {
             DualHomeViewMode.CAROUSEL -> {
                 DualHomeLowerScreen(
@@ -156,6 +147,16 @@ fun DualHomeLowerContent(
                     )
                 }
             }
+        }
+
+        if (uiState.showTilePicker) {
+            com.nendo.argosy.ui.components.HomeTilePickerModal(
+                entries = uiState.tilePickerEntries,
+                query = uiState.tilePickerQuery,
+                focusIndex = uiState.tilePickerFocusIndex,
+                onSelect = { viewModel.confirmTilePickerSelection() },
+                onDismiss = viewModel::closeTilePicker
+            )
         }
 
         if (forwardingMode == ForwardingMode.OVERLAY) {

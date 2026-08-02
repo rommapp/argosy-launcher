@@ -953,7 +953,7 @@ class DualHomeViewModel(
     fun turnCustomGridPage(delta: Int): Boolean {
         val state = _uiState.value
         val target = state.customGridPage + delta
-        if (target < 0 || target >= state.customGridPageCount) return false
+        if (target < 0 || target > state.customGridPageCount) return false
         val entryColumn = if (delta > 0) 0 else (customGridColumns - 1).coerceAtLeast(0)
         _uiState.update {
             it.copy(
@@ -990,7 +990,7 @@ class DualHomeViewModel(
         _uiState.update {
             it.copy(showTilePicker = true, tilePickerQuery = "", tilePickerFocusIndex = 0)
         }
-        refreshTilePickerEntries()
+        viewModelScope.launch { refreshTilePickerEntries() }
     }
 
     fun closeTilePicker() {
@@ -1022,9 +1022,14 @@ class DualHomeViewModel(
         closeTilePicker()
     }
 
-    private fun refreshTilePickerEntries() {
+    /**
+     * Reads the library rather than the cached list, because that cache is only filled once the
+     * library grid has been opened and the picker has to work on a first run too.
+     */
+    private suspend fun refreshTilePickerEntries() {
         val query = _uiState.value.tilePickerQuery.trim().lowercase()
-        val entries = allLibraryGames
+        val entries = gameRepository.getAllSortedByTitle()
+            .map { it.toUi() }
             .filter { it.isPlayable }
             .filter { query.isBlank() || it.title.lowercase().contains(query) }
             .take(tilePickerLimit)

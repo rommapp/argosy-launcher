@@ -319,6 +319,7 @@ fun DualHomeLowerScreen(
                         onCellTap = onCustomGridCellTap,
                         onShapeResolved = onCustomGridShape,
                         editModeLabel = customGridEditLabel,
+                        onCoverLoadFailed = onCoverLoadFailed,
                         modifier = Modifier.fillMaxSize()
                     )
                 }

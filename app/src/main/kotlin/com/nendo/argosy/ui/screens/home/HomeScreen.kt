@@ -688,6 +688,9 @@ fun HomeScreen(
                                 onShapeResolved = { columns, rows ->
                                     viewModel.setCustomGridShape(columns, rows)
                                 },
+                                downloadIndicatorFor = { uiState.downloadIndicatorFor(it) },
+                                onCoverLoadFailed = viewModel::repairCoverImage,
+                                onCoverLoaded = viewModel::extractGradientForGame,
                                 modifier = Modifier.fillMaxSize()
                             )
                         }

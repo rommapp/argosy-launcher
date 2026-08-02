@@ -130,7 +130,12 @@ fun HomeCustomGridPage(
     onShapeResolved: (Int, Int) -> Unit,
     modifier: Modifier = Modifier,
     showEmptyCells: Boolean = true,
-    editModeLabel: String? = null
+    editModeLabel: String? = null,
+    downloadIndicatorFor: (Long) -> com.nendo.argosy.ui.screens.home.GameDownloadIndicator = {
+        com.nendo.argosy.ui.screens.home.GameDownloadIndicator.NONE
+    },
+    onCoverLoadFailed: ((Long, String) -> Unit)? = null,
+    onCoverLoaded: ((Long, android.graphics.Bitmap) -> Unit)? = null
 ) {
     val density = LocalDensity.current
     var measured by remember { mutableStateOf(IntSize.Zero) }
@@ -168,7 +173,10 @@ fun HomeCustomGridPage(
                         isFocused = focusedCell.columnIndex == column && focusedCell.rowIndex == row,
                         onClick = { onCellTap(GridCell(column, row)) },
                         content = null,
-                        editModeLabel = null
+                        editModeLabel = null,
+                        downloadIndicatorFor = downloadIndicatorFor,
+                        onCoverLoadFailed = null,
+                        onCoverLoaded = null
                     )
                 }
             }
@@ -184,7 +192,10 @@ fun HomeCustomGridPage(
                 isFocused = tile.rect.covers(focusedCell.columnIndex, focusedCell.rowIndex),
                 onClick = { onCellTap(GridCell(tile.rect.columnIndex, tile.rect.rowIndex)) },
                 content = contentFor(tile),
-                editModeLabel = editModeLabel
+                editModeLabel = editModeLabel,
+                downloadIndicatorFor = downloadIndicatorFor,
+                onCoverLoadFailed = onCoverLoadFailed,
+                onCoverLoaded = onCoverLoaded
             )
         }
     }
@@ -206,7 +217,10 @@ private fun CustomGridCellBox(
     isFocused: Boolean,
     onClick: () -> Unit,
     content: CustomGridTileContent?,
-    editModeLabel: String?
+    editModeLabel: String?,
+    downloadIndicatorFor: (Long) -> com.nendo.argosy.ui.screens.home.GameDownloadIndicator,
+    onCoverLoadFailed: ((Long, String) -> Unit)?,
+    onCoverLoaded: ((Long, android.graphics.Bitmap) -> Unit)?
 ) {
     val theme = LocalArgosyTheme.current
     val boxArtStyle = com.nendo.argosy.ui.theme.LocalBoxArtStyle.current
@@ -228,7 +242,10 @@ private fun CustomGridCellBox(
                 game = game,
                 isFocused = isFocused,
                 focusScale = focusScaleForSpan(rect),
+                downloadIndicator = downloadIndicatorFor(game.id),
                 showPlatformBadge = false,
+                onCoverLoadFailed = onCoverLoadFailed,
+                onCoverLoaded = onCoverLoaded,
                 modifier = Modifier.fillMaxSize().clickableNoFocus(onClick = onClick)
             )
             if (editModeLabel != null && isFocused) {

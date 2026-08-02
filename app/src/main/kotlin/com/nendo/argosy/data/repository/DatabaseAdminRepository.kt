@@ -158,6 +158,7 @@ class DatabaseAdminRepository @Inject constructor(
             database.gameDao().deleteBySources(sources)
             database.platformDao().deleteEmptyPlatforms()
             database.pinnedCollectionDao().deleteOrphaned()
+            database.homeTileDao().deleteTilesForMissingGames()
             database.bgmPlaylistDao().clearDanglingGameFileIds()
         }
 

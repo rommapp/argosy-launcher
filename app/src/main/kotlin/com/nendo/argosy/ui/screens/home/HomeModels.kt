@@ -251,8 +251,27 @@ data class HomeUiState(
     val focusedItem: HomeRowItem?
         get() = currentItems.getOrNull(focusedGameIndex)
 
+    /**
+     * The game under the cursor, whichever layout is showing. Everything downstream reads this one
+     * accessor - background art, the info panel, favourites, details, the ambient LED - so a curated
+     * grid has to answer it from its own cursor rather than leave them all reading a section list
+     * that this layout never puts on screen.
+     */
     val focusedGame: HomeGameUi?
-        get() = (focusedItem as? HomeRowItem.Game)?.game
+        get() = if (layoutKind == com.nendo.argosy.domain.model.HomeLayoutKind.CUSTOM_GRID) {
+            focusedTileGame
+        } else {
+            (focusedItem as? HomeRowItem.Game)?.game
+        }
+
+    val focusedTile: com.nendo.argosy.domain.model.HomeTile?
+        get() = tilesOnPage(customGridPage).firstOrNull {
+            it.rect.covers(customGridCell.columnIndex, customGridCell.rowIndex)
+        }
+
+    val focusedTileGame: HomeGameUi?
+        get() = (focusedTile?.target as? com.nendo.argosy.domain.model.HomeTileTargetRef.Game)
+            ?.let { tileGames[it.gameId] }
 
     val rowTitle: String
         get() = when (currentRow) {

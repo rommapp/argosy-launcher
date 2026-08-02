@@ -135,7 +135,8 @@ fun HomeCustomGridPage(
         com.nendo.argosy.ui.screens.home.GameDownloadIndicator.NONE
     },
     onCoverLoadFailed: ((Long, String) -> Unit)? = null,
-    onCoverLoaded: ((Long, android.graphics.Bitmap) -> Unit)? = null
+    onCoverLoaded: ((Long, android.graphics.Bitmap) -> Unit)? = null,
+    overlappedTileIds: Set<Long> = emptySet()
 ) {
     val density = LocalDensity.current
     var measured by remember { mutableStateOf(IntSize.Zero) }
@@ -174,6 +175,7 @@ fun HomeCustomGridPage(
                         onClick = { onCellTap(GridCell(column, row)) },
                         content = null,
                         editModeLabel = null,
+                        isOverlapped = false,
                         downloadIndicatorFor = downloadIndicatorFor,
                         onCoverLoadFailed = null,
                         onCoverLoaded = null
@@ -193,6 +195,7 @@ fun HomeCustomGridPage(
                 onClick = { onCellTap(GridCell(tile.rect.columnIndex, tile.rect.rowIndex)) },
                 content = contentFor(tile),
                 editModeLabel = editModeLabel,
+                isOverlapped = tile.id in overlappedTileIds,
                 downloadIndicatorFor = downloadIndicatorFor,
                 onCoverLoadFailed = onCoverLoadFailed,
                 onCoverLoaded = onCoverLoaded
@@ -218,6 +221,7 @@ private fun CustomGridCellBox(
     onClick: () -> Unit,
     content: CustomGridTileContent?,
     editModeLabel: String?,
+    isOverlapped: Boolean,
     downloadIndicatorFor: (Long) -> com.nendo.argosy.ui.screens.home.GameDownloadIndicator,
     onCoverLoadFailed: ((Long, String) -> Unit)?,
     onCoverLoaded: ((Long, android.graphics.Bitmap) -> Unit)?
@@ -229,6 +233,7 @@ private fun CustomGridCellBox(
     val width = cellSize * rect.columnSpan + gap * (rect.columnSpan - 1)
     val height = cellSize * rect.rowSpan + gap * (rect.rowSpan - 1)
     val placement = Modifier
+        .graphicsLayer { alpha = if (isOverlapped) OVERLAPPED_ALPHA else 1f }
         .offset(
             x = originX + stride * rect.columnIndex,
             y = originY + stride * rect.rowIndex
@@ -390,6 +395,7 @@ fun CustomGridPageDots(
 }
 
 private const val DOT_IDLE_ALPHA = 0.35f
+private const val OVERLAPPED_ALPHA = 0.35f
 
 /**
  * A tab hanging off the tile's lower edge naming the mode the d-pad is currently in. It is the

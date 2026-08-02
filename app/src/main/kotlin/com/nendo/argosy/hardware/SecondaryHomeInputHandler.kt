@@ -516,6 +516,15 @@ class SecondaryHomeInputHandler(
                 }
                 InputResult.HANDLED
             }
+            GamepadEvent.LongConfirm -> {
+                if (!inCustomGrid) return InputResult.UNHANDLED
+                if (state.tileEditMode == com.nendo.argosy.ui.dualscreen.home.TileEditMode.NONE) {
+                    dualHomeViewModel.enterTileMoveMode()
+                } else {
+                    dualHomeViewModel.toggleTileEditMode()
+                }
+                InputResult.HANDLED
+            }
             GamepadEvent.Select -> {
                 if (inCustomGrid && dualHomeViewModel.focusedTile() != null) {
                     if (state.tileEditMode != com.nendo.argosy.ui.dualscreen.home.TileEditMode.NONE) {
@@ -548,7 +557,7 @@ class SecondaryHomeInputHandler(
                     dualHomeViewModel.confirmTilePickerSelection()
                     InputResult.HANDLED
                 } else if (inCustomGrid && state.tileEditMode != com.nendo.argosy.ui.dualscreen.home.TileEditMode.NONE) {
-                    dualHomeViewModel.exitTileMoveMode()
+                    dualHomeViewModel.commitTileEdit()
                     InputResult.HANDLED
                 } else if (inCustomGrid && dualHomeViewModel.isOnAddPage) {
                     dualHomeViewModel.confirmAddPage()
@@ -597,7 +606,7 @@ class SecondaryHomeInputHandler(
                     dualHomeViewModel.closeTilePicker()
                     InputResult.HANDLED
                 } else if (inCustomGrid && state.tileEditMode != com.nendo.argosy.ui.dualscreen.home.TileEditMode.NONE) {
-                    dualHomeViewModel.exitTileMoveMode()
+                    dualHomeViewModel.cancelTileEdit()
                     InputResult.HANDLED
                 } else {
                     InputResult.UNHANDLED

@@ -127,3 +127,91 @@ fun customGridStep(
 }
 
 enum class GridDirection2D { LEFT, RIGHT, UP, DOWN }
+
+/**
+ * Settles a page after a tile has been dropped somewhere it overlaps others.
+ *
+ * Editing is deliberately unconstrained: refusing a move mid-drag makes arranging a full page a
+ * puzzle, so the collision is allowed to happen and resolved once. Displaced tiles are pushed clear
+ * first, then shrunk, then relocated to the first free cell, in that order, because moving a tile
+ * keeps it the size its owner chose while shrinking changes it, and relocating loses its place.
+ *
+ * [placed] holds the settled tiles including [editing]; [dropped] holds any that could not be fitted
+ * anywhere and are reported rather than silently deleted.
+ */
+fun settleAfterEdit(
+    editing: HomeTile,
+    others: List<HomeTile>,
+    columns: Int,
+    rows: Int
+): TilePlacement {
+    val settled = mutableListOf(editing)
+    val dropped = mutableListOf<HomeTile>()
+    val untouched = others.filterNot { it.rect.overlaps(editing.rect) }
+    settled += untouched
+    for (tile in others.filter { it.rect.overlaps(editing.rect) }) {
+        val pushed = pushClear(tile, editing.rect, settled, columns, rows)
+        if (pushed != null) {
+            settled += tile.copy(rect = pushed)
+            continue
+        }
+        val shrunk = shrinkClear(tile, settled, columns, rows)
+        if (shrunk != null) {
+            settled += tile.copy(rect = shrunk)
+            continue
+        }
+        val relocated = firstFreeCell(settled, columns, rows)
+        if (relocated != null) {
+            settled += tile.copy(rect = TileRect(relocated.columnIndex, relocated.rowIndex))
+            continue
+        }
+        dropped += tile
+    }
+    return TilePlacement(settled, dropped)
+}
+
+private fun fits(rect: TileRect, taken: List<HomeTile>, columns: Int, rows: Int): Boolean =
+    rect.withinBounds(columns, rows) && taken.none { it.rect.overlaps(rect) }
+
+private fun pushClear(
+    tile: HomeTile,
+    against: TileRect,
+    taken: List<HomeTile>,
+    columns: Int,
+    rows: Int
+): TileRect? {
+    val candidates = listOf(
+        tile.rect.copy(columnIndex = against.lastColumn + 1),
+        tile.rect.copy(columnIndex = against.columnIndex - tile.rect.columnSpan),
+        tile.rect.copy(rowIndex = against.lastRow + 1),
+        tile.rect.copy(rowIndex = against.rowIndex - tile.rect.rowSpan)
+    )
+    return candidates.firstOrNull { fits(it, taken, columns, rows) }
+}
+
+private fun shrinkClear(
+    tile: HomeTile,
+    taken: List<HomeTile>,
+    columns: Int,
+    rows: Int
+): TileRect? {
+    var rect = tile.rect
+    while (rect.columnSpan > 1 || rect.rowSpan > 1) {
+        rect = if (rect.columnSpan >= rect.rowSpan) {
+            rect.copy(columnSpan = rect.columnSpan - 1)
+        } else {
+            rect.copy(rowSpan = rect.rowSpan - 1)
+        }
+        if (fits(rect, taken, columns, rows)) return rect
+    }
+    return null
+}
+
+private fun firstFreeCell(taken: List<HomeTile>, columns: Int, rows: Int): GridCell? {
+    for (row in 0 until rows) {
+        for (column in 0 until columns) {
+            if (fits(TileRect(column, row), taken, columns, rows)) return GridCell(column, row)
+        }
+    }
+    return null
+}

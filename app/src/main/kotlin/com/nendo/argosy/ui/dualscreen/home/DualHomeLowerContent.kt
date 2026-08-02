@@ -90,6 +90,7 @@ fun DualHomeLowerContent(
                     customGridPage = uiState.customGridPage,
                     customGridPageCount = uiState.customGridPageCount,
                     onCustomGridAddPage = { viewModel.confirmAddPage() },
+                    customGridOverlappedIds = uiState.overlappedTileIds,
                     customGridEditLabel = when (uiState.tileEditMode) {
                         TileEditMode.MOVE -> "Move"
                         TileEditMode.RESIZE -> "Resize"

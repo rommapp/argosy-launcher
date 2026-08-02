@@ -30,9 +30,19 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.gestures.animateScrollBy
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.runtime.LaunchedEffect
 import com.nendo.argosy.ui.common.rememberFileImageModel
+import com.nendo.argosy.ui.theme.generated.ComponentDefaults
+import kotlinx.coroutines.delay
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalArgosyTheme
+import com.nendo.argosy.ui.theme.backdrop.BackdropRole
+import com.nendo.argosy.ui.theme.backdrop.surfaceBackdrop
 import com.nendo.argosy.ui.theme.LocalBoxArtStyle
 import java.io.File
 
@@ -45,7 +55,8 @@ data class DualCollectionShowcaseState(
     val totalPlaytimeMinutes: Int = 0,
     val installedCount: Int = 0,
     val achievementsEarned: Int = 0,
-    val achievementsTotal: Int = 0
+    val achievementsTotal: Int = 0,
+    val focused: Boolean = false
 )
 
 @Composable
@@ -58,7 +69,7 @@ fun DualCollectionShowcase(
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(theme.surfaceBase)
+            .surfaceBackdrop(BackdropRole.CONTENT)
     ) {
         Column(
             modifier = Modifier.fillMaxSize()
@@ -247,24 +258,41 @@ private fun CollectionCoverGrid(
     modifier: Modifier = Modifier
 ) {
     val aspect = LocalBoxArtStyle.current.aspectRatio
-    val shown = coverPaths.take(COLLECTION_GRID_COVERS)
-    Row(
+    val across = ComponentDefaults.CollectionShowcase.coversAcross
+    val listState = rememberLazyListState()
+
+    LaunchedEffect(coverPaths) {
+        if (coverPaths.size <= across) return@LaunchedEffect
+        val hidden = coverPaths.size - across
+        val duration = ComponentDefaults.CollectionShowcase.coverScrollMsPerCover * hidden
+        val dwell = ComponentDefaults.CollectionShowcase.coverScrollDwellMs.toLong()
+        while (true) {
+            delay(dwell)
+            val viewport = listState.layoutInfo.viewportEndOffset.toFloat()
+            if (viewport <= 0f) continue
+            val distance = viewport / across * hidden
+            listState.animateScrollBy(distance, tween(duration, easing = LinearEasing))
+            delay(dwell)
+            listState.animateScrollBy(-distance, tween(duration, easing = LinearEasing))
+        }
+    }
+
+    LazyRow(
+        state = listState,
         modifier = modifier,
-        horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm, Alignment.CenterHorizontally)
+        userScrollEnabled = false,
+        horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
     ) {
-        shown.forEach { path ->
+        items(coverPaths.size) { index ->
             AsyncImage(
-                model = rememberFileImageModel(path),
+                model = rememberFileImageModel(coverPaths[index]),
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier
-                    .weight(1f)
+                    .fillParentMaxWidth(1f / across)
                     .aspectRatio(aspect)
                     .clip(RoundedCornerShape(Dimens.radiusSm))
             )
-        }
-        repeat(COLLECTION_GRID_COVERS - shown.size) {
-            Spacer(modifier = Modifier.weight(1f))
         }
     }
 }
@@ -327,4 +355,3 @@ private fun CollectionStat(label: String, value: String) {
     }
 }
 
-private const val COLLECTION_GRID_COVERS = 6

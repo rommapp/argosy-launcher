@@ -29,6 +29,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.layout.ContentScale
@@ -84,7 +85,8 @@ fun HomeTilePickerModal(
     onDismiss: () -> Unit,
     searchActive: Boolean = false,
     onQueryChange: (String) -> Unit = {},
-    category: TilePickerCategory = TilePickerCategory.GAMES
+    category: TilePickerCategory = TilePickerCategory.GAMES,
+    onSelectCategory: (TilePickerCategory) -> Unit = {}
 ) {
     val listState = rememberLazyListState()
     FocusedScroll(listState = listState, focusedIndex = focusIndex)
@@ -97,6 +99,7 @@ fun HomeTilePickerModal(
     ) {
         TilePickerTabs(
             category = category,
+            onSelectCategory = onSelectCategory,
             modifier = Modifier.padding(bottom = Dimens.spacingSm)
         )
         if (searchActive) {
@@ -271,19 +274,26 @@ private fun TilePickerSearchField(
 @Composable
 private fun TilePickerTabs(
     category: TilePickerCategory,
+    onSelectCategory: (TilePickerCategory) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val theme = LocalArgosyTheme.current
+    val shape = RoundedCornerShape(Dimens.radiusSm)
     Row(
         modifier = modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(Dimens.spacingMd)
+        horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
     ) {
         TilePickerCategory.entries.forEach { entry ->
             val isCurrent = entry == category
             Text(
                 text = entry.label.uppercase(),
                 style = MaterialTheme.typography.labelMedium,
-                color = if (isCurrent) theme.focusAccent else theme.textDim
+                color = if (isCurrent) theme.focusAccent else theme.textDim,
+                modifier = Modifier
+                    .clip(shape)
+                    .background(if (isCurrent) theme.surfaceRaised else Color.Transparent)
+                    .clickableNoFocus { onSelectCategory(entry) }
+                    .padding(horizontal = Dimens.spacingSm, vertical = Dimens.spacingXs)
             )
         }
     }

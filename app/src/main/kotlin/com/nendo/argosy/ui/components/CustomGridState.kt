@@ -35,6 +35,7 @@ data class CustomGridState(
     val editingTileId: Long? = null,
     val editingRect: TileRect? = null,
     val editingPage: Int? = null,
+    val pendingPage: Int? = null,
     val showMenu: Boolean = false,
     val menuFocusIndex: Int = 0,
     val showPicker: Boolean = false,
@@ -59,7 +60,11 @@ data class CustomGridState(
      * takes the page away again because nothing was ever stored there.
      */
     val pageCount: Int
-        get() = maxOf(storedPageCount, (editingPage ?: -1) + 1)
+        get() = maxOf(
+            storedPageCount,
+            (editingPage ?: -1) + 1,
+            (pendingPage ?: -1) + 1
+        )
 
     val isOnAddPage: Boolean
         get() = page >= pageCount
@@ -110,6 +115,9 @@ data class CustomGridState(
         get() = editingTile ?: tilesOnPage(page).firstOrNull {
             it.rect.covers(cell.columnIndex, cell.rowIndex)
         }
+
+    fun tileAt(target: GridCell): HomeTile? =
+        tilesOnPage(page).firstOrNull { it.rect.covers(target.columnIndex, target.rowIndex) }
 
     val focusedGameId: Long?
         get() = (focusedTile?.target as? HomeTileTargetRef.Game)?.gameId

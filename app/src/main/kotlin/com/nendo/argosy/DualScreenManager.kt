@@ -699,11 +699,20 @@ class DualScreenManager(
         _dualDrawerOpen.value = drawerOpen
     }
 
+    /**
+     * A collection is what the other screen has under its cursor. The flag travels with the state so
+     * the showcase can be raised outside the collections browser too: a curated grid stays in the
+     * carousel view mode while pointing at a collection, and the upper screen has no other way to
+     * know the difference.
+     */
     fun onCollectionFocused(state: DualCollectionShowcaseState) {
-        _dualCollectionShowcase.value = state
+        _dualCollectionShowcase.value = state.copy(focused = true)
     }
 
     fun onGameSelected(showcase: DualHomeShowcaseState) {
+        if (_dualCollectionShowcase.value.focused) {
+            _dualCollectionShowcase.value = _dualCollectionShowcase.value.copy(focused = false)
+        }
         val withWallpaper = showcase.copy(
             useGameBackground = _dualScreenShowcase.value.useGameBackground,
             customWallpaperPath = _dualScreenShowcase.value.customWallpaperPath

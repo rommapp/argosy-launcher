@@ -1153,6 +1153,12 @@ class DualHomeViewModel(
 
     fun setCustomGridCell(cell: com.nendo.argosy.domain.model.GridCell) = customGrid.setCell(cell)
 
+    fun moveEditingTileTo(cell: com.nendo.argosy.domain.model.GridCell) =
+        customGrid.moveEditingTileTo(cell)
+
+    fun resizeEditingTileTo(cell: com.nendo.argosy.domain.model.GridCell) =
+        customGrid.resizeEditingTileTo(cell)
+
     fun focusedTile(): com.nendo.argosy.domain.model.HomeTile? = customGrid.focusedTile()
 
     fun focusedTileGameId(): Long? = customGrid.focusedGameId()
@@ -1195,6 +1201,9 @@ class DualHomeViewModel(
         customGrid.selectPickerEntry(entry)
 
     fun cycleTilePickerCategory(delta: Int) = customGrid.cyclePickerCategory(delta)
+
+    fun setTilePickerCategory(category: com.nendo.argosy.ui.components.TilePickerCategory) =
+        customGrid.setPickerCategory(category)
 
     fun enterTileMoveMode() = customGrid.enterMoveMode()
 

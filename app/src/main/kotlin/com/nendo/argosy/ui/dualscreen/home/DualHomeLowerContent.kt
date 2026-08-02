@@ -34,6 +34,7 @@ fun DualHomeLowerContent(
     onSearchQueryChange: (String) -> Unit = {},
     onOpenDrawer: () -> Unit = {},
     onDimTapped: () -> Unit = {},
+    onCustomGridActivate: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -85,7 +86,21 @@ fun DualHomeLowerContent(
                     customGridState = uiState.customGrid,
                     customGridContentFor = { tile -> uiState.tileContentFor(tile) },
                     customGridConfig = uiState.customGridConfig,
-                    onCustomGridCellTap = { cell -> viewModel.setCustomGridCell(cell) },
+                    onCustomGridCellTap = { cell ->
+                        val grid = uiState.customGrid
+                        val onFocused = grid.tileAt(cell)
+                            ?.let { it == grid.focusedTile }
+                            ?: (cell == grid.cell)
+                        when {
+                            grid.isEditing -> viewModel.moveEditingTileTo(cell)
+                            onFocused -> onCustomGridActivate()
+                            else -> viewModel.setCustomGridCell(cell)
+                        }
+                    },
+                    onCustomGridSwipePage = { delta -> viewModel.turnCustomGridPage(delta) },
+                    onCustomGridTileDrag = { cell -> viewModel.moveEditingTileTo(cell) },
+                    onCustomGridTileResize = { cell -> viewModel.resizeEditingTileTo(cell) },
+                    onCustomGridToggleEditMode = { viewModel.toggleTileEditMode() },
                     onCustomGridShape = { columns, rows ->
                         viewModel.setCustomGridShape(columns, rows)
                     },
@@ -190,7 +205,8 @@ fun DualHomeLowerContent(
                 onDismiss = viewModel::closeTilePicker,
                 searchActive = uiState.customGrid.pickerSearchActive,
                 onQueryChange = viewModel::setTilePickerQuery,
-                category = uiState.customGrid.pickerCategory
+                category = uiState.customGrid.pickerCategory,
+                onSelectCategory = { viewModel.setTilePickerCategory(it) }
             )
         }
 

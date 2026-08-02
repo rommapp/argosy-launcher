@@ -690,7 +690,21 @@ fun HomeScreen(
                                 state = uiState.customGrid,
                                 contentFor = { tile -> uiState.tileContentFor(tile) },
                                 laneCount = uiState.customGridConfig.laneCount,
-                                onCellTap = { cell -> viewModel.setCustomGridCell(cell) },
+                                onCellTap = { cell ->
+                                    val grid = uiState.customGrid
+                                    val onFocused = grid.tileAt(cell)
+                                        ?.let { it == grid.focusedTile }
+                                        ?: (cell == grid.cell)
+                                    when {
+                                        grid.isEditing -> viewModel.moveEditingTileTo(cell)
+                                        onFocused -> inputHandler.onConfirm()
+                                        else -> viewModel.setCustomGridCell(cell)
+                                    }
+                                },
+                                onSwipePage = { delta -> viewModel.turnCustomGridPage(delta) },
+                                onTileDrag = { cell -> viewModel.moveEditingTileTo(cell) },
+                                onTileResize = { cell -> viewModel.resizeEditingTileTo(cell) },
+                                onToggleEditMode = { viewModel.toggleTileEditMode() },
                                 onShapeResolved = { columns, rows ->
                                     viewModel.setCustomGridShape(columns, rows)
                                 },
@@ -998,7 +1012,8 @@ fun HomeScreen(
                 onDismiss = viewModel::closeTilePicker,
                 searchActive = uiState.customGrid.pickerSearchActive,
                 onQueryChange = viewModel::setTilePickerQuery,
-                category = uiState.customGrid.pickerCategory
+                category = uiState.customGrid.pickerCategory,
+                onSelectCategory = { viewModel.setTilePickerCategory(it) }
             )
         }
 

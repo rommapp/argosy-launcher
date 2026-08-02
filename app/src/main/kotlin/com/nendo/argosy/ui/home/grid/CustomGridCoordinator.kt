@@ -161,6 +161,46 @@ class CustomGridCoordinator(
     }
 
     /**
+     * Drops the tile being arranged on a cell chosen by touch. The anchor goes where the finger
+     * went, clamped so the whole tile stays on the page: a touch has no direction to step in, so it
+     * names a destination rather than a move.
+     */
+    fun moveEditingTileTo(target: GridCell): Boolean {
+        val current = read()
+        val tile = current.editingTile ?: return false
+        val column = target.columnIndex.coerceIn(
+            0,
+            (current.columns - tile.rect.columnSpan).coerceAtLeast(0)
+        )
+        val row = target.rowIndex.coerceIn(0, (current.rows - tile.rect.rowSpan).coerceAtLeast(0))
+        write {
+            it.copy(
+                editingRect = tile.rect.copy(columnIndex = column, rowIndex = row),
+                cell = GridCell(column, row)
+            )
+        }
+        return true
+    }
+
+    /**
+     * Reshapes the tile being arranged so its far corner reaches the dragged cell. The anchor never
+     * moves, which is what keeps resizing and moving distinguishable: one changes where a tile is,
+     * the other only how much it covers.
+     */
+    fun resizeEditingTileTo(target: GridCell): Boolean {
+        val current = read()
+        val tile = current.editingTile ?: return false
+        val columnSpan = (target.columnIndex - tile.rect.columnIndex + 1)
+            .coerceIn(1, (current.columns - tile.rect.columnIndex).coerceAtLeast(1))
+        val rowSpan = (target.rowIndex - tile.rect.rowIndex + 1)
+            .coerceIn(1, (current.rows - tile.rect.rowIndex).coerceAtLeast(1))
+        write {
+            it.copy(editingRect = tile.rect.copy(columnSpan = columnSpan, rowSpan = rowSpan))
+        }
+        return true
+    }
+
+    /**
      * Takes the tile being arranged onto the neighbouring page. Left and right already turn the page
      * when only the cursor moves, so a tile pushed past the same edge follows it rather than stopping
      * dead; without this a tile can only change page by being removed and added again.
@@ -291,14 +331,15 @@ class CustomGridCoordinator(
     }
 
     /**
-     * Turns the stub into a real page by placing the first tile on it. A page exists because tiles
-     * reference it, so there is nothing to create until something is put there; opening the picker
-     * is the whole action.
+     * Adds a page and moves onto it. Nothing is stored yet - a page exists because tiles reference
+     * it - so the new page is held here until something is placed on it, and the stub moves along
+     * to sit after it. Confirming here used to open the picker, which answered a different question
+     * than the one the stub asks.
      */
     fun confirmAddPage() {
-        if (!read().isOnAddPage) return
-        write { it.copy(cell = GridCell(0, 0)) }
-        openPicker()
+        val current = read()
+        if (!current.isOnAddPage) return
+        write { it.copy(pendingPage = current.page, cell = GridCell(0, 0)) }
     }
 
     fun openPicker() {
@@ -352,6 +393,12 @@ class CustomGridCoordinator(
      * Moves between what the picker lists. The focus index resets because the lists have nothing to
      * do with each other, so keeping a position from one in another lands somewhere arbitrary.
      */
+    fun setPickerCategory(category: TilePickerCategory) {
+        if (read().pickerCategory == category) return
+        write { it.copy(pickerCategory = category, pickerFocusIndex = 0) }
+        refreshPicker()
+    }
+
     fun cyclePickerCategory(delta: Int) {
         val entries = TilePickerCategory.entries
         val next = entries[(read().pickerCategory.ordinal + delta).mod(entries.size)]

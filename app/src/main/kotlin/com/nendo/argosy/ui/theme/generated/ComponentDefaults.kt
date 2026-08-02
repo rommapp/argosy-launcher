@@ -190,6 +190,16 @@ object ComponentDefaults {
         const val stampCellRatio = 0.6f
     }
 
+    object CustomGrid {
+        const val swipePageThresholdDp = 48
+    }
+
+    object CollectionShowcase {
+        const val coverScrollMsPerCover = 1400
+        const val coverScrollDwellMs = 2200
+        const val coversAcross = 6
+    }
+
     object HomeLayoutPreview {
         const val headerBarWidthRatio = 0.3f
         const val titleBarWidthRatio = 0.42f

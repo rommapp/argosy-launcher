@@ -2,7 +2,10 @@ package com.nendo.argosy.ui.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -31,6 +34,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
@@ -159,10 +163,15 @@ fun HomeCustomGridPage(
     onCoverLoadFailed: ((Long, String) -> Unit)? = null,
     onCoverLoaded: ((Long, android.graphics.Bitmap) -> Unit)? = null,
     overlappedTileIds: Set<Long> = emptySet(),
-    editingTileId: Long? = null
+    editingTileId: Long? = null,
+    onTileDrag: ((GridCell) -> Unit)? = null,
+    onTileResize: ((GridCell) -> Unit)? = null,
+    onToggleEditMode: (() -> Unit)? = null,
+    isResizing: Boolean = false
 ) {
     val density = LocalDensity.current
     var measured by remember { mutableStateOf(IntSize.Zero) }
+    var dragOffset by remember { mutableStateOf(androidx.compose.ui.geometry.Offset.Zero) }
     val gap = Dimens.spacingSm
     val gapPx = with(density) { gap.toPx() }
     Box(
@@ -226,11 +235,25 @@ fun HomeCustomGridPage(
                 content = contentFor(tile),
                 editModeLabel = editModeLabel,
                 isOverlapped = tile.id in overlappedTileIds,
+                dragOffset = if (tile.id == editingTileId) dragOffset else
+                    androidx.compose.ui.geometry.Offset.Zero,
                 downloadIndicatorFor = downloadIndicatorFor,
                 onCoverLoadFailed = onCoverLoadFailed,
                 onCoverLoaded = onCoverLoaded
             )
             }
+        }
+
+        if (editingTileId != null && onTileDrag != null) {
+            TileDragSurface(
+                metrics = metrics,
+                anchor = tiles.firstOrNull { it.id == editingTileId }?.rect,
+                isResizing = isResizing,
+                onOffsetChange = { dragOffset = it },
+                onTileDrag = onTileDrag,
+                onTileResize = onTileResize,
+                onTap = { onToggleEditMode?.invoke() }
+            )
         }
     }
 }
@@ -252,6 +275,7 @@ private fun CustomGridCellBox(
     onClick: () -> Unit,
     onLongClick: (() -> Unit)?,
     content: CustomGridTileContent?,
+    dragOffset: androidx.compose.ui.geometry.Offset = androidx.compose.ui.geometry.Offset.Zero,
     editModeLabel: String?,
     isOverlapped: Boolean,
     downloadIndicatorFor: (Long) -> com.nendo.argosy.ui.screens.home.GameDownloadIndicator,
@@ -269,6 +293,10 @@ private fun CustomGridCellBox(
             x = originX + stride * rect.columnIndex,
             y = originY + stride * rect.rowIndex
         )
+        .graphicsLayer {
+            translationX = dragOffset.x
+            translationY = dragOffset.y
+        }
         .size(width, height)
 
     if (rect.columnSpan > rect.rowSpan && content != null && !content.isMissing) {
@@ -669,4 +697,104 @@ private fun formatPlayTime(minutes: Int): String {
     val hours = minutes / 60
     val remainder = minutes % 60
     return if (hours > 0) "${hours}h ${remainder}m" else "${remainder}m"
+}
+
+/**
+ * Drag handling for the tile being arranged, laid over the page while a move is in progress.
+ *
+ * A drag only counts when it starts on the tile itself. Anywhere else does nothing, because a drag
+ * that begins on empty space says nothing about where the tile should go, and treating it as a move
+ * makes the tile lurch away from a finger that never touched it.
+ *
+ * The anchor stays where it was grabbed, so picking a wide tile up by its right half does not
+ * teleport its corner under the touch.
+ */
+@Composable
+private fun BoxScope.TileDragSurface(
+    metrics: CustomGridMetrics,
+    anchor: TileRect?,
+    isResizing: Boolean,
+    onOffsetChange: (androidx.compose.ui.geometry.Offset) -> Unit,
+    onTileDrag: (GridCell) -> Unit,
+    onTileResize: ((GridCell) -> Unit)?,
+    onTap: () -> Unit
+) {
+    val currentAnchor by androidx.compose.runtime.rememberUpdatedState(anchor)
+    val resizing by androidx.compose.runtime.rememberUpdatedState(isResizing)
+    Box(
+        modifier = Modifier
+            .matchParentSize()
+            .pointerInput(metrics) {
+                var grabColumn = 0
+                var grabRow = 0
+                var carrying = false
+                var travelled = androidx.compose.ui.geometry.Offset.Zero
+                var landing: GridCell? = null
+                detectDragGestures(
+                    onDragStart = { offset ->
+                        val touched = cellAtOffset(offset, metrics)
+                        val grabbed = currentAnchor
+                        carrying = grabbed != null &&
+                            grabbed.covers(touched.columnIndex, touched.rowIndex)
+                        travelled = androidx.compose.ui.geometry.Offset.Zero
+                        landing = null
+                        if (carrying && grabbed != null) {
+                            grabColumn = touched.columnIndex - grabbed.columnIndex
+                            grabRow = touched.rowIndex - grabbed.rowIndex
+                        }
+                    },
+                    onDragEnd = {
+                        if (carrying && !resizing) landing?.let(onTileDrag)
+                        carrying = false
+                        travelled = androidx.compose.ui.geometry.Offset.Zero
+                        onOffsetChange(androidx.compose.ui.geometry.Offset.Zero)
+                    },
+                    onDragCancel = {
+                        carrying = false
+                        travelled = androidx.compose.ui.geometry.Offset.Zero
+                        onOffsetChange(androidx.compose.ui.geometry.Offset.Zero)
+                    },
+                    onDrag = { change, amount ->
+                        if (!carrying) return@detectDragGestures
+                        change.consume()
+                        val touched = cellAtOffset(change.position, metrics)
+                        if (resizing) {
+                            onTileResize?.invoke(touched)
+                            return@detectDragGestures
+                        }
+                        travelled += amount
+                        onOffsetChange(travelled)
+                        landing = GridCell(
+                            touched.columnIndex - grabColumn,
+                            touched.rowIndex - grabRow
+                        )
+                    }
+                )
+            }
+            .pointerInput(metrics) {
+                detectTapGestures { offset ->
+                    val touched = cellAtOffset(offset, metrics)
+                    val grabbed = currentAnchor ?: return@detectTapGestures
+                    if (grabbed.covers(touched.columnIndex, touched.rowIndex)) onTap()
+                }
+            }
+    )
+}
+
+/**
+ * The cell a point falls in. Points in the margin around the grid clamp to the nearest cell rather
+ * than resolving to nothing, so a drag that strays past the edge keeps tracking the finger.
+ */
+private fun cellAtOffset(
+    offset: androidx.compose.ui.geometry.Offset,
+    metrics: CustomGridMetrics
+): GridCell {
+    val stride = metrics.cellPx + metrics.gapPx
+    if (stride <= 0f) return GridCell(0, 0)
+    val column = ((offset.x - metrics.offsetXPx) / stride).toInt()
+    val row = ((offset.y - metrics.offsetYPx) / stride).toInt()
+    return GridCell(
+        column.coerceIn(0, (metrics.columns - 1).coerceAtLeast(0)),
+        row.coerceIn(0, (metrics.rows - 1).coerceAtLeast(0))
+    )
 }

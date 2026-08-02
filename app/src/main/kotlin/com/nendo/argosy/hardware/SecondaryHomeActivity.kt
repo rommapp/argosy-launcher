@@ -257,6 +257,11 @@ class SecondaryHomeActivity :
                                 broadcasts.broadcastScreenshotSelected(index)
                             },
                             onDimTapped = { broadcasts.broadcastRefocusUpper() },
+                            onCustomGridActivate = {
+                                inputHandler.handleDualHomeInput(
+                                    com.nendo.argosy.ui.input.GamepadEvent.Confirm
+                                )
+                            },
                             onTabChanged = { panel ->
                                 companionInGameState = companionInGameState.copy(
                                     currentPanel = panel
@@ -717,7 +722,7 @@ class SecondaryHomeActivity :
         lifecycleScope.launch {
             dualHomeViewModel.uiState
                 .map {
-                    Triple(it.layoutKind, it.focusedTileGameId, it.tileGames.size)
+                    Triple(it.layoutKind, it.customGrid.focusedTile?.target, it.customGrid.tiles.size)
                 }
                 .distinctUntilChanged()
                 .collect { (layout, _, _) ->

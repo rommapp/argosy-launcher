@@ -603,6 +603,12 @@ class HomeViewModel @Inject constructor(
 
     fun setCustomGridCell(cell: com.nendo.argosy.domain.model.GridCell) = customGrid.setCell(cell)
 
+    fun moveEditingTileTo(cell: com.nendo.argosy.domain.model.GridCell) =
+        customGrid.moveEditingTileTo(cell)
+
+    fun resizeEditingTileTo(cell: com.nendo.argosy.domain.model.GridCell) =
+        customGrid.resizeEditingTileTo(cell)
+
     fun focusedTile(): com.nendo.argosy.domain.model.HomeTile? = customGrid.focusedTile()
 
     override fun focusedTileGameId(): Long? = customGrid.focusedGameId()
@@ -648,6 +654,9 @@ class HomeViewModel @Inject constructor(
         customGrid.selectPickerEntry(entry)
 
     override fun cycleTilePickerCategory(delta: Int) = customGrid.cyclePickerCategory(delta)
+
+    fun setTilePickerCategory(category: com.nendo.argosy.ui.components.TilePickerCategory) =
+        customGrid.setPickerCategory(category)
 
     /**
      * Activates a tile that is not a game. An app launches through the same intent path the apps

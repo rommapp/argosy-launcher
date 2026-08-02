@@ -78,6 +78,7 @@ fun SecondaryHomeContent(
     onOptionAction: (DualGameDetailViewModel, GameDetailOption) -> Unit,
     onScreenshotViewed: (Int) -> Unit,
     onDimTapped: () -> Unit = {},
+    onCustomGridActivate: () -> Unit = {},
     onTabChanged: (CompanionPanel) -> Unit = {},
     onQuickSave: () -> Unit = {},
     onQuickLoad: () -> Unit = {},
@@ -127,7 +128,8 @@ fun SecondaryHomeContent(
                 onDetailBack = onDetailBack,
                 onOptionAction = onOptionAction,
                 onScreenshotViewed = onScreenshotViewed,
-                onDimTapped = onDimTapped
+                onDimTapped = onDimTapped,
+                onCustomGridActivate = onCustomGridActivate
             )
         }
 
@@ -274,7 +276,7 @@ fun ShowcaseRoleContent(
                             )
                         }
                     )
-                } else if (viewMode == "COLLECTIONS") {
+                } else if (viewMode == "COLLECTIONS" || collectionState.focused) {
                     DualCollectionShowcase(
                         state = collectionState,
                         footerHints = {

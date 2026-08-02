@@ -11,8 +11,13 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.dp
+import com.nendo.argosy.ui.theme.generated.ComponentDefaults
 import com.nendo.argosy.domain.model.GridCell
 import com.nendo.argosy.domain.model.HomeTile
 import com.nendo.argosy.ui.screens.home.GameDownloadIndicator
@@ -34,11 +39,34 @@ fun CustomGridSurface(
     onAddPage: () -> Unit,
     modifier: Modifier = Modifier,
     onTileLongPress: ((GridCell) -> Unit)? = null,
+    onSwipePage: ((Int) -> Unit)? = null,
+    onTileDrag: ((GridCell) -> Unit)? = null,
+    onTileResize: ((GridCell) -> Unit)? = null,
+    onToggleEditMode: (() -> Unit)? = null,
     downloadIndicatorFor: (Long) -> GameDownloadIndicator = { GameDownloadIndicator.NONE },
     onCoverLoadFailed: ((Long, String) -> Unit)? = null,
     onCoverLoaded: ((Long, android.graphics.Bitmap) -> Unit)? = null
 ) {
-    Column(modifier = modifier) {
+    val swipeThresholdPx = with(LocalDensity.current) {
+        ComponentDefaults.CustomGrid.swipePageThresholdDp.dp.toPx()
+    }
+    val swipeModifier = if (onSwipePage == null || state.isEditing) {
+        Modifier
+    } else {
+        Modifier.pointerInput(onSwipePage) {
+            var dragged = 0f
+            detectHorizontalDragGestures(
+                onDragStart = { dragged = 0f },
+                onDragEnd = {
+                    if (kotlin.math.abs(dragged) >= swipeThresholdPx) {
+                        onSwipePage(if (dragged < 0) 1 else -1)
+                    }
+                }
+            ) { _, amount -> dragged += amount }
+        }
+    }
+
+    Column(modifier = modifier.then(swipeModifier)) {
         AnimatedContent(
             targetState = state.page,
             transitionSpec = {
@@ -69,6 +97,10 @@ fun CustomGridSurface(
                     onCellTap = onCellTap,
                     onShapeResolved = onShapeResolved,
                     onTileLongPress = onTileLongPress,
+                    onTileDrag = onTileDrag,
+                    onTileResize = onTileResize,
+                    onToggleEditMode = onToggleEditMode,
+                    isResizing = state.editMode == TileEditMode.RESIZE,
                     editModeLabel = state.editLabel,
                     overlappedTileIds = state.overlappedTileIds,
                     editingTileId = state.editingTileId,

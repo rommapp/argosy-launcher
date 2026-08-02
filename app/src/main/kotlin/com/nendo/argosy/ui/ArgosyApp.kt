@@ -1234,7 +1234,7 @@ fun ArgosyApp(
                             },
                             modifier = Modifier.blur(contentBlur)
                         )
-                    } else if (viewMode == "COLLECTIONS") {
+                    } else if (viewMode == "COLLECTIONS" || collectionShowcaseState.focused) {
                         DualCollectionShowcase(
                             state = collectionShowcaseState,
                             footerHints = {

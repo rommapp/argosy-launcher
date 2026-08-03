@@ -164,9 +164,10 @@ import com.nendo.argosy.data.local.entity.SteamLicenseEntity
         AudioLoudnessEntity::class,
         QuayPassEncounterEntity::class,
         QuayPassDailyStatsEntity::class,
-        QuayPassPendingReportEntity::class
+        QuayPassPendingReportEntity::class,
+        com.nendo.argosy.data.local.entity.HomeTileEntity::class
     ],
-    version = 165,
+    version = 167,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -224,5 +225,6 @@ abstract class ALauncherDatabase : RoomDatabase() {
     abstract fun quayPassEncounterDao(): QuayPassEncounterDao
     abstract fun quayPassDailyStatsDao(): QuayPassDailyStatsDao
     abstract fun quayPassPendingReportDao(): QuayPassPendingReportDao
+    abstract fun homeTileDao(): com.nendo.argosy.data.local.dao.HomeTileDao
 
 }

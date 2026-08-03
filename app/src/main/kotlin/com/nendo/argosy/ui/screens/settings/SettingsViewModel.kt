@@ -858,6 +858,8 @@ class SettingsViewModel @Inject constructor(
 
     fun setUseGameBackground(use: Boolean) = displayDelegate.setUseGameBackground(viewModelScope, use)
     fun setHomeBackgroundMode(mode: HomeBackgroundMode) = displayDelegate.setHomeBackgroundMode(viewModelScope, mode)
+    fun setHomeLayout(settings: com.nendo.argosy.domain.model.HomeLayoutSettings) =
+        displayDelegate.setHomeLayout(viewModelScope, settings)
     fun cycleHomeBackgroundMode(direction: Int = 1) = displayDelegate.cycleHomeBackgroundMode(viewModelScope, direction)
     fun setUseAccentColorFooter(use: Boolean) = displayDelegate.setUseAccentColorFooter(viewModelScope, use)
     fun setCustomBackgroundPath(path: String?) = displayDelegate.setCustomBackgroundPath(viewModelScope, path)
@@ -1023,7 +1025,6 @@ class SettingsViewModel @Inject constructor(
     fun cyclePlatformIndicatorContent(direction: Int = 1) = displayDelegate.cyclePlatformIndicatorContent(viewModelScope, direction)
     fun cycleBoxArtInnerEffect(direction: Int = 1) = displayDelegate.cycleBoxArtInnerEffect(viewModelScope, direction)
     fun cycleBoxArtInnerEffectThickness(direction: Int = 1) = displayDelegate.cycleBoxArtInnerEffectThickness(viewModelScope, direction)
-    fun cycleDefaultView() = displayDelegate.cycleDefaultView(viewModelScope)
     fun setLibraryDefaultSortIndex(index: Int) = displayDelegate.setLibraryDefaultSortIndex(viewModelScope, index)
     fun cycleLibraryDefaultSort(direction: Int) = displayDelegate.cycleLibraryDefaultSort(viewModelScope, direction)
     fun setLibraryDefaultSource(source: String) = displayDelegate.setLibraryDefaultSource(viewModelScope, source)

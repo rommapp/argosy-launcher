@@ -69,7 +69,7 @@ class AppsRepository @Inject constructor(
             }
             .distinctBy { it.packageName }
             .filter { includeSystemApps || !it.isSystemApp }
-            .filter { it.packageName != context.packageName }
+            .filterNot { isArgosy(it.packageName) }
             .sortedBy { it.label.lowercase() }
             .toList()
     }
@@ -77,4 +77,16 @@ class AppsRepository @Inject constructor(
     fun getLaunchIntent(packageName: String): Intent? {
         return packageManager.getLaunchIntentForPackage(packageName)
     }
+
+    /**
+     * Every Argosy on the device, not just this one. A second build installed alongside - a debug
+     * flavour next to a release - is a launcher too, and starting it hands it the display this one
+     * is running on, which ends the session that opened the drawer.
+     */
+    private fun isArgosy(packageName: String): Boolean =
+        packageName == context.packageName ||
+            packageName == ARGOSY_BASE_PACKAGE ||
+            packageName.startsWith("$ARGOSY_BASE_PACKAGE.")
 }
+
+private const val ARGOSY_BASE_PACKAGE = "com.nendo.argosy"

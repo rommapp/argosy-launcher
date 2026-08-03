@@ -6,27 +6,21 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import com.nendo.argosy.ui.util.clickableNoFocus
-import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -40,7 +34,6 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.layout.heightIn
@@ -64,8 +57,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import com.nendo.argosy.ui.common.AlwaysCrossfadeFactory
-import com.nendo.argosy.ui.common.coverSizeWithin
-import com.nendo.argosy.ui.common.rememberCoverAspectRatio
 import com.nendo.argosy.ui.common.rememberFileImageModel
 import com.nendo.argosy.ui.components.GameTitle
 import com.nendo.argosy.ui.components.SectionBreadcrumb
@@ -88,7 +79,6 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
-import androidx.compose.ui.zIndex
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -100,7 +90,6 @@ import com.nendo.argosy.ui.theme.LocalArgosyTheme
 import com.nendo.argosy.ui.theme.backdrop.BackdropRole
 import com.nendo.argosy.ui.theme.backdrop.LocalSurfaceBackdrop
 import com.nendo.argosy.ui.theme.backdrop.surfaceBackdrop
-import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.graphicsLayer
@@ -126,8 +115,23 @@ import com.nendo.argosy.ui.components.ChangelogModal
 import com.nendo.argosy.ui.components.CollectionItem
 import com.nendo.argosy.ui.components.FooterHint
 import com.nendo.argosy.ui.screens.collections.dialogs.CreateCollectionDialog
-import com.nendo.argosy.ui.components.GameCard
-import com.nendo.argosy.ui.components.GameCardWithNewBadge
+import com.nendo.argosy.ui.components.CarouselAnchor
+import com.nendo.argosy.ui.components.CarouselItem
+import com.nendo.argosy.ui.components.CarouselMetrics
+import com.nendo.argosy.ui.components.CarouselOverrides
+import com.nendo.argosy.ui.components.CarouselRail
+import com.nendo.argosy.ui.components.HomeAutoGrid
+import com.nendo.argosy.ui.components.HomeCustomGridPage
+import com.nendo.argosy.ui.components.HomeTilePickerModal
+import com.nendo.argosy.ui.components.TileEditMode
+import androidx.compose.foundation.layout.ColumnScope
+import com.nendo.argosy.ui.theme.generated.ComponentDefaults
+import com.nendo.argosy.domain.model.HomeFocusPosition
+import com.nendo.argosy.domain.model.HomeLayoutKind
+import com.nendo.argosy.domain.model.HomeRowAlignment
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
+import com.nendo.argosy.ui.components.HERO_MIN_CARD_SCALE
+import com.nendo.argosy.ui.components.carouselCardSize
 import com.nendo.argosy.ui.components.InputButton
 import com.nendo.argosy.ui.components.FooterHints
 import com.nendo.argosy.ui.components.FooterSpacer
@@ -144,6 +148,7 @@ import com.nendo.argosy.ui.input.LocalModifiedInputHandler
 import com.nendo.argosy.domain.model.SyncProgress
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.first
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalBoxArtStyle
 import com.nendo.argosy.ui.theme.LocalUiScale
@@ -152,13 +157,12 @@ import com.nendo.argosy.ui.theme.Motion
 import com.nendo.argosy.ui.theme.generated.ColorTokens
 import kotlinx.coroutines.launch
 
-private const val SCROLL_OFFSET = -25
-
 @Composable
 fun HomeScreen(
     isDefaultView: Boolean,
     onGameSelect: (Long) -> Unit,
     onNavigateToLibrary: (platformId: Long?, sourceFilter: String?) -> Unit = { _, _ -> },
+    onNavigateToCollections: () -> Unit = {},
     onNavigateToDefault: () -> Unit,
     onDrawerToggle: () -> Unit,
     onChangelogAction: (RequiredAction) -> Unit = {},
@@ -166,6 +170,9 @@ fun HomeScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val listState = rememberLazyListState()
+    val gridState = rememberLazyGridState()
+    val isAutoGrid = uiState.layoutKind == HomeLayoutKind.AUTO_GRID
+    val isCustomGrid = uiState.layoutKind == HomeLayoutKind.CUSTOM_GRID
     val scope = rememberCoroutineScope()
     var isProgrammaticScroll by remember { mutableStateOf(false) }
     var skipNextProgrammaticScroll by remember { mutableStateOf(false) }
@@ -185,8 +192,9 @@ fun HomeScreen(
                         isProgrammaticScroll = true
                         listState.animateScrollToItem(
                             index = focusedIndex.coerceIn(0, itemsSize - 1),
-                            scrollOffset = SCROLL_OFFSET
+                            scrollOffset = CarouselAnchor.START.snapOffsetPx
                         )
+                        snapshotFlow { listState.isScrollInProgress }.first { !it }
                         isProgrammaticScroll = false
                     }
                 }
@@ -205,12 +213,19 @@ fun HomeScreen(
                 val viewportStart = layoutInfo.viewportStartOffset
                 val visibleItems = layoutInfo.visibleItemsInfo
                 if (visibleItems.isNotEmpty()) {
-                    val firstFullyVisible = visibleItems
-                        .filter { it.offset >= viewportStart }
-                        .minByOrNull { it.offset }
-                    if (firstFullyVisible != null && firstFullyVisible.index != uiState.focusedGameIndex) {
+                    val landedOn = if (
+                        uiState.carouselConfig.focusPosition == HomeFocusPosition.CENTER
+                    ) {
+                        val centre = (viewportStart + layoutInfo.viewportEndOffset) / 2
+                        visibleItems.minByOrNull {
+                            kotlin.math.abs(it.offset + it.size / 2 - centre)
+                        }
+                    } else {
+                        visibleItems.filter { it.offset >= viewportStart }.minByOrNull { it.offset }
+                    }
+                    if (landedOn != null && landedOn.index != uiState.focusedGameIndex) {
                         skipNextProgrammaticScroll = true
-                        viewModel.setFocusIndex(firstFullyVisible.index)
+                        viewModel.setFocusIndex(landedOn.index)
                     }
                 }
             }
@@ -234,6 +249,7 @@ fun HomeScreen(
                 is HomeEvent.NavigateToLibrary -> {
                     onNavigateToLibrary(event.platformId, event.sourceFilter)
                 }
+                is HomeEvent.NavigateToCollections -> onNavigateToCollections()
             }
         }
     }
@@ -414,6 +430,7 @@ fun HomeScreen(
     LaunchedEffect(uiState.focusedGameIndex, uiState.focusedGame?.youtubeVideoId, uiState.videoWallpaperEnabled) {
         viewModel.deactivateVideoPreview()
         if (!uiState.videoWallpaperEnabled) return@LaunchedEffect
+        if (uiState.layoutKind != HomeLayoutKind.CAROUSEL) return@LaunchedEffect
         val game = uiState.focusedGame ?: return@LaunchedEffect
         val videoId = game.youtubeVideoId ?: return@LaunchedEffect
         val shouldSkip = uiState.showGameMenu ||
@@ -495,7 +512,9 @@ fun HomeScreen(
     val overlayBaseColor = if (isDarkTheme) Color.Black else Color.White
 
     val backdropEnabled = LocalSurfaceBackdrop.current.enabled
-    val showArtLayer = !backdropEnabled || uiState.homeBackgroundMode == HomeBackgroundMode.GAME_ART
+    val isGridLayout = uiState.layoutKind != HomeLayoutKind.CAROUSEL
+    val showArtLayer = !isGridLayout &&
+        (!backdropEnabled || uiState.homeBackgroundMode == HomeBackgroundMode.GAME_ART)
 
     val effectiveBackgroundPath = if (uiState.useGameBackground) {
         uiState.focusedGame?.let { game ->
@@ -634,9 +653,21 @@ fun HomeScreen(
         ) {
             val cardSize = rememberCarouselCardSize(
                 availableHeight = maxHeight - headerBlockHeight - gameInfoHeight -
-                    Dimens.footerHeight - Dimens.spacingLg - Dimens.spacingXl
+                    Dimens.footerHeight - Dimens.spacingLg - Dimens.spacingXl,
+                config = uiState.carouselConfig
             )
-            val railHeight = cardSize.height * CAROUSEL_FOCUS_SCALE + Dimens.spacingMd
+            val infoAtBottom = uiState.carouselConfig.rowAlignment == HomeRowAlignment.TOP
+            val railHeight = when {
+                isAutoGrid || isCustomGrid ->
+                    (maxHeight - headerBlockHeight - Dimens.footerHeight - Dimens.spacingLg)
+                        .coerceAtLeast(Dimens.spacingXl)
+                infoAtBottom ->
+                    (
+                        maxHeight - headerBlockHeight - gameInfoHeight -
+                            Dimens.footerHeight - Dimens.spacingLg
+                        ).coerceAtLeast(Dimens.spacingXl)
+                else -> cardSize.height * uiState.carouselConfig.focusScale + Dimens.spacingMd
+            }
             val isStackedHeader = maxWidth <= maxHeight
             Box(
                 modifier = Modifier
@@ -652,7 +683,8 @@ fun HomeScreen(
                     onNextRow = viewModel::nextRow,
                     onSelectRow = viewModel::selectRow,
                     isStacked = isStackedHeader,
-                    headerOffset = videoModeHeaderOffset
+                    headerOffset = videoModeHeaderOffset,
+                    showSections = !isCustomGrid
                 )
             }
 
@@ -666,11 +698,54 @@ fun HomeScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .padding(
+                            bottom = if (infoAtBottom && !isAutoGrid && !isCustomGrid) {
+                                gameInfoHeight
+                            } else {
+                                0.dp
+                            }
+                        )
                         .height(railHeight)
                 ) {
                     when {
                         uiState.isLoading -> {
                             LoadingState()
+                        }
+                        isCustomGrid -> {
+                            com.nendo.argosy.ui.components.CustomGridSurface(
+                                state = uiState.customGrid,
+                                contentFor = { tile -> uiState.tileContentFor(tile) },
+                                laneCount = uiState.customGridConfig.laneCount,
+                                onCellTap = { cell ->
+                                    val grid = uiState.customGrid
+                                    val onFocused = grid.tileAt(cell)
+                                        ?.let { it == grid.focusedTile }
+                                        ?: (cell == grid.cell)
+                                    when {
+                                        grid.isEditing -> viewModel.moveEditingTileTo(cell)
+                                        onFocused -> inputHandler.onConfirm()
+                                        else -> viewModel.setCustomGridCell(cell)
+                                    }
+                                },
+                                onSwipePage = { delta -> viewModel.turnCustomGridPage(delta) },
+                                onTileDrag = { cell -> viewModel.moveEditingTileTo(cell) },
+                                onTileResize = { cell -> viewModel.resizeEditingTileTo(cell) },
+                                onToggleEditMode = { viewModel.toggleTileEditMode() },
+                                onCommitEdit = { viewModel.commitTileEdit() },
+                                showEmptySlots = uiState.customGridConfig.showEmptySlots,
+                                onShapeResolved = { columns, rows ->
+                                    viewModel.setCustomGridShape(columns, rows)
+                                },
+                                onAddPage = { viewModel.confirmAddPage() },
+                                onTileLongPress = { cell ->
+                                    viewModel.setCustomGridCell(cell)
+                                    viewModel.openTileMenu()
+                                },
+                                downloadIndicatorFor = { uiState.downloadIndicatorFor(it) },
+                                onCoverLoadFailed = viewModel::repairCoverImage,
+                                onCoverLoaded = viewModel::extractGradientForGame,
+                                modifier = Modifier.fillMaxSize()
+                            )
                         }
                         uiState.currentItems.isEmpty() -> {
                             val pinId = when (val row = uiState.currentRow) {
@@ -685,34 +760,97 @@ fun HomeScreen(
                                 onSync = { viewModel.syncFromRomm() }
                             )
                         }
-                        else -> {
-                            GameRail(
-                                items = uiState.currentItems,
+                        isAutoGrid -> {
+                            HomeAutoGrid(
+                                items = rememberHomeCarouselItems(
+                                    items = uiState.currentItems,
+                                    rowKey = uiState.currentRow.toString(),
+                                    downloadIndicators = uiState.downloadIndicators,
+                                    repairedCoverPaths = uiState.repairedCoverPaths
+                                ),
                                 focusedIndex = uiState.focusedGameIndex,
-                                listState = listState,
-                                rowKey = uiState.currentRow.toString(),
-                                downloadIndicators = uiState.downloadIndicators,
-                                showPlatformBadge = uiState.currentRow !is HomeRow.Platform && uiState.currentRow != HomeRow.Steam && uiState.currentRow != HomeRow.Android,
-                                repairedCoverPaths = uiState.repairedCoverPaths,
+                                config = uiState.autoGridConfig,
+                                gridState = gridState,
+                                sectionTitle = uiState.rowTitle,
+                                showPlatformBadge = uiState.currentRow !is HomeRow.Platform &&
+                                    uiState.currentRow != HomeRow.Steam && uiState.currentRow != HomeRow.Android,
+                                downloadIndicatorFor = { item ->
+                                    (item as? CarouselItem.Game)
+                                        ?.let { uiState.downloadIndicatorFor(it.game.id) }
+                                        ?: GameDownloadIndicator.NONE
+                                },
                                 onCoverLoadFailed = viewModel::repairCoverImage,
                                 onCoverLoaded = viewModel::extractGradientForGame,
                                 onItemTap = { index -> viewModel.handleItemTap(index, onGameSelect) },
                                 onItemLongPress = viewModel::handleItemLongPress,
-                                isVideoPreviewActive = uiState.isVideoPreviewActive,
-                                cardSize = cardSize,
-                                modifier = Modifier.align(Alignment.BottomStart)
+                                modifier = Modifier.fillMaxSize()
+                            )
+                        }
+                        else -> {
+                            CarouselRail(
+                                items = rememberHomeCarouselItems(
+                                    items = uiState.currentItems,
+                                    rowKey = uiState.currentRow.toString(),
+                                    downloadIndicators = uiState.downloadIndicators,
+                                    repairedCoverPaths = uiState.repairedCoverPaths
+                                ),
+                                focusedIndex = uiState.focusedGameIndex,
+                                listState = listState,
+                                metrics = CarouselMetrics.hero(
+                                    cardWidth = cardSize.width,
+                                    cardHeight = cardSize.height,
+                                    config = uiState.carouselConfig
+                                ),
+                                overrides = CarouselOverrides(
+                                    focusedScale = if (uiState.isVideoPreviewActive) 1f else null,
+                                    unfocusedAlpha = if (uiState.isVideoPreviewActive) 0f else null,
+                                    viewAllAlpha = if (uiState.isVideoPreviewActive) 0f else 1f
+                                ),
+                                showPlatformBadge = uiState.carouselConfig.showPlatformBadge &&
+                                    uiState.currentRow !is HomeRow.Platform && uiState.currentRow != HomeRow.Steam && uiState.currentRow != HomeRow.Android,
+                                onCoverLoadFailed = viewModel::repairCoverImage,
+                                onCoverLoaded = viewModel::extractGradientForGame,
+                                onItemTap = { index -> viewModel.handleItemTap(index, onGameSelect) },
+                                onItemLongPress = viewModel::handleItemLongPress,
+                                modifier = Modifier
+                                    .align(Alignment.BottomStart)
+                                    .height(railHeight)
                             )
                         }
                     }
                 }
 
                 val focusedGame = uiState.focusedGame
-                if (focusedGame != null && !uiState.showGameMenu) {
+                if (isCustomGrid) {
+                    val grid = uiState.customGrid
+                    FooterHints(
+                        hints = if (grid.isEditing) {
+                            listOf(
+                                InputButton.DPAD to grid.editLabel.orEmpty(),
+                                InputButton.X to if (grid.editMode == TileEditMode.MOVE) {
+                                    "Resize"
+                                } else {
+                                    "Move"
+                                },
+                                InputButton.A to "Place",
+                                InputButton.B to "Cancel"
+                            )
+                        } else {
+                            listOf(
+                                InputButton.LB_RB to "Page",
+                                InputButton.A to if (grid.focusedGameId != null) "Play" else "Add",
+                                InputButton.SELECT to "Options"
+                            )
+                        },
+                        variant = FooterVariant.SUBTLE
+                    )
+                    FooterSpacer()
+                } else if (focusedGame != null && !uiState.showGameMenu) {
                     if (!uiState.isVideoPreviewActive) {
                         FooterHints(
                             hints = listOf(
-                                InputButton.DPAD_HORIZONTAL to "Game",
-                                InputButton.DPAD_VERTICAL to "Platform",
+                                if (isAutoGrid) InputButton.DPAD to "Game" else InputButton.DPAD_HORIZONTAL to "Game",
+                                if (isAutoGrid) InputButton.LB_RB to "Section" else InputButton.DPAD_VERTICAL to "Platform",
                                 InputButton.A to when {
                                     focusedGame.needsInstall -> "Install"
                                     focusedGame.isDownloaded -> "Play"
@@ -741,10 +879,33 @@ fun HomeScreen(
                     }
                     FooterSpacer()
                 } else {
-                    Spacer(modifier = Modifier.height(Dimens.spacingXl))
+                    val viewAll = uiState.focusedItem as? HomeRowItem.ViewAll
+                    FooterHints(
+                        hints = listOf(
+                            if (isAutoGrid) {
+                                InputButton.DPAD to "Game"
+                            } else {
+                                InputButton.DPAD_HORIZONTAL to "Game"
+                            },
+                            if (isAutoGrid) {
+                                InputButton.LB_RB to "Section"
+                            } else {
+                                InputButton.DPAD_VERTICAL to "Platform"
+                            },
+                            InputButton.A to "Library"
+                        ),
+                        variant = FooterVariant.SUBTLE,
+                        onHintClick = { button ->
+                            if (button == InputButton.A) {
+                                onNavigateToLibrary(viewAll?.platformId, viewAll?.sourceFilter)
+                            }
+                        }
+                    )
+                    FooterSpacer()
                 }
             }
 
+            if (!isAutoGrid && !isCustomGrid) {
             val gameInfoWidth by animateFloatAsState(
                 targetValue = 1f,
                 animationSpec = tween(500),
@@ -797,15 +958,47 @@ fun HomeScreen(
                 earnedAchievementCount = uiState.focusedGame?.earnedAchievementCount ?: 0,
                 showMetadata = !uiState.isVideoPreviewActive,
                 textColorOverride = if (videoTextColor != Color.Unspecified) videoTextColor else null,
+                placement = if (
+                    uiState.carouselConfig.focusPosition == HomeFocusPosition.CENTER
+                ) {
+                    GameInfoPlacement.SPLIT
+                } else {
+                    GameInfoPlacement.CENTERED
+                },
                 modifier = Modifier
-                    .fillMaxWidth(gameInfoWidth)
-                    .align(Alignment.TopCenter)
-                    .padding(top = gameInfoTopPadding)
+                    .fillMaxWidth(
+                        if (uiState.carouselConfig.focusPosition == HomeFocusPosition.CENTER) {
+                            gameInfoWidth
+                        } else {
+                            GAME_INFO_SIDE_WIDTH_FRACTION
+                        }
+                    )
+                    .align(
+                        gameInfoAlignment(
+                            atBottom = uiState.carouselConfig.rowAlignment == HomeRowAlignment.TOP,
+                            centred = uiState.carouselConfig.focusPosition ==
+                                HomeFocusPosition.CENTER,
+                            inverted = uiState.carouselConfig.inverted
+                        )
+                    )
+                    .padding(
+                        top = if (uiState.carouselConfig.rowAlignment == HomeRowAlignment.TOP) {
+                            0.dp
+                        } else {
+                            gameInfoTopPadding
+                        },
+                        bottom = if (uiState.carouselConfig.rowAlignment == HomeRowAlignment.TOP) {
+                            Dimens.footerHeight + Dimens.spacingLg
+                        } else {
+                            0.dp
+                        }
+                    )
                     .onSizeChanged { size ->
                         val measured = with(localDensity) { size.height.toDp() }
                         if (measured != gameInfoHeight) gameInfoHeight = measured
                     }
             )
+            }
         }
         }
 
@@ -858,6 +1051,54 @@ fun HomeScreen(
                     }
                 )
             }
+        }
+
+        val pendingTileAdd = uiState.customGrid.pendingAdd
+        if (pendingTileAdd != null) {
+            com.nendo.argosy.ui.primitives.ArgosyConfirmModal(
+                title = "Add to home grid?",
+                message = "${pendingTileAdd.title} finished downloading.",
+                confirmLabel = "Add",
+                cancelLabel = "Not now",
+                focusedIndex = uiState.customGrid.pendingAddFocusIndex,
+                onConfirm = viewModel::confirmPendingTileAdd,
+                onDismiss = viewModel::dismissPendingTileAdd
+            )
+        }
+
+        if (uiState.customGrid.showMenu) {
+            val menuTile = uiState.customGrid.focusedTile
+            com.nendo.argosy.ui.components.CustomTileMenuModal(
+                title = menuTile?.let { uiState.tileContentFor(it)?.label }.orEmpty(),
+                entries = uiState.customGrid.menuActions.map { it.label },
+                focusIndex = uiState.customGrid.menuFocusIndex,
+                onSelect = { index ->
+                    viewModel.moveTileMenuFocus(index - uiState.customGrid.menuFocusIndex)
+                    viewModel.confirmTileMenu()
+                },
+                onDismiss = viewModel::closeTileMenu,
+                dangerFromIndex = uiState.customGrid.menuDangerFromIndex
+            )
+        }
+
+        AnimatedVisibility(
+            visible = uiState.showTilePicker,
+            enter = fadeIn(),
+            exit = fadeOut()
+        ) {
+            HomeTilePickerModal(
+                entries = uiState.tilePickerEntries,
+                query = uiState.tilePickerQuery,
+                focusIndex = uiState.tilePickerFocusIndex,
+                onSelect = { entry -> viewModel.selectTilePickerEntry(entry) },
+                onDismiss = viewModel::closeTilePicker,
+                searchActive = uiState.customGrid.pickerSearchActive,
+                onQueryChange = viewModel::setTilePickerQuery,
+                category = uiState.customGrid.pickerCategory,
+                onSelectCategory = { viewModel.setTilePickerCategory(it) },
+                canDeletePage = uiState.customGrid.canDeletePage,
+                onDeletePage = viewModel::deleteCustomGridPage
+            )
         }
 
         AnimatedVisibility(
@@ -970,8 +1211,23 @@ private fun HomeHeader(
     onNextRow: () -> Unit,
     onSelectRow: (HomeRow) -> Unit,
     isStacked: Boolean,
-    headerOffset: androidx.compose.ui.unit.Dp = 0.dp
+    headerOffset: androidx.compose.ui.unit.Dp = 0.dp,
+    showSections: Boolean = true
 ) {
+    if (!showSections) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(Dimens.spacingLg)
+                .offset(y = headerOffset),
+            horizontalArrangement = Arrangement.End,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            SystemStatusBar()
+        }
+        return
+    }
+
     if (isStacked) {
         Column(
             modifier = Modifier
@@ -1040,6 +1296,42 @@ private fun PlatformBreadcrumb(
     )
 }
 
+/**
+ * Where the focused game's details sit relative to the rail.
+ *
+ * A centred focus leaves no room above the card for a centred block, so the two halves split to
+ * either side of it; an edge-anchored focus keeps them together on the side the rail leaves free.
+ */
+enum class GameInfoPlacement { CENTERED, SPLIT }
+
+/**
+ * How much of the row's width the details block occupies when it sits to one side.
+ */
+private const val GAME_INFO_SIDE_WIDTH_FRACTION = 0.6f
+
+/**
+ * Width each half takes when the details split around a centred focus, leaving the remainder as a
+ * gutter down the middle so neither half crowds the focused card.
+ */
+private const val GAME_INFO_SPLIT_WIDTH_FRACTION = 0.45f
+
+/**
+ * Which corner the details block occupies. It sits opposite the focused card, on the half of the
+ * row the rail leaves free, and moves below the cards when they are hung from the top.
+ */
+private fun gameInfoAlignment(
+    atBottom: Boolean,
+    centred: Boolean,
+    inverted: Boolean
+): Alignment = when {
+    centred && atBottom -> Alignment.BottomCenter
+    centred -> Alignment.TopCenter
+    atBottom && inverted -> Alignment.BottomStart
+    atBottom -> Alignment.BottomEnd
+    inverted -> Alignment.TopStart
+    else -> Alignment.TopEnd
+}
+
 @Composable
 private fun GameInfo(
     title: String,
@@ -1051,6 +1343,7 @@ private fun GameInfo(
     earnedAchievementCount: Int,
     showMetadata: Boolean = true,
     textColorOverride: Color? = null,
+    placement: GameInfoPlacement = GameInfoPlacement.SPLIT,
     modifier: Modifier = Modifier
 ) {
     val metadataAlpha by animateFloatAsState(
@@ -1062,32 +1355,36 @@ private fun GameInfo(
     val titleColor = textColorOverride ?: MaterialTheme.colorScheme.onSurface
     val subtitleColor = textColorOverride?.copy(alpha = 0.8f) ?: MaterialTheme.colorScheme.onSurfaceVariant
 
-    Column(
-        modifier = modifier
-            .padding(horizontal = Dimens.spacingXxl),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        GameTitle(
-            title = title,
-            titleStyle = MaterialTheme.typography.headlineMedium,
-            titleColor = titleColor,
-            textAlign = TextAlign.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
-        )
+    val isSplit = placement == GameInfoPlacement.SPLIT
 
-        if (developer != null) {
-            Spacer(modifier = Modifier.height(Dimens.spacingXs))
-            Text(
-                text = developer,
-                style = MaterialTheme.typography.bodyMedium,
-                color = subtitleColor,
-                modifier = Modifier.graphicsLayer { alpha = metadataAlpha }
-            )
+    GameInfoLayout(
+        isSplit = isSplit,
+        modifier = modifier.padding(horizontal = Dimens.spacingXxl),
+        details = {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                GameTitle(
+                    title = title,
+                    titleStyle = MaterialTheme.typography.headlineMedium,
+                    titleColor = titleColor,
+                    textAlign = TextAlign.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally
+                )
+
+                if (developer != null) {
+                    Spacer(modifier = Modifier.height(Dimens.spacingXs))
+                    Text(
+                        text = developer,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = subtitleColor,
+                        modifier = Modifier.graphicsLayer { alpha = metadataAlpha }
+                    )
+                }
+            }
         }
-
+    ) {
         val hasBadges = rating != null || userRating > 0 || userDifficulty > 0 || achievementCount > 0
         if (hasBadges) {
-            Spacer(modifier = Modifier.height(Dimens.spacingXs))
+            if (!isSplit) Spacer(modifier = Modifier.height(Dimens.spacingXs))
             Row(
                 modifier = Modifier.graphicsLayer { alpha = metadataAlpha },
                 verticalAlignment = Alignment.CenterVertically,
@@ -1171,234 +1468,91 @@ private fun GameInfo(
 }
 
 /**
+ * Puts the title block and the badges either above one another or on opposite sides, so the same
+ * content serves a rail that hugs an edge and one that sits in the middle.
+ */
+@Composable
+private fun GameInfoLayout(
+    isSplit: Boolean,
+    modifier: Modifier = Modifier,
+    details: @Composable () -> Unit,
+    badges: @Composable ColumnScope.() -> Unit
+) {
+    if (isSplit) {
+        Row(
+            modifier = modifier
+                .fillMaxWidth()
+                .padding(vertical = Dimens.spacingLg),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier.weight(GAME_INFO_SPLIT_WIDTH_FRACTION),
+                contentAlignment = Alignment.Center
+            ) {
+                details()
+            }
+            Spacer(modifier = Modifier.weight(1f - GAME_INFO_SPLIT_WIDTH_FRACTION * 2f))
+            Box(
+                modifier = Modifier.weight(GAME_INFO_SPLIT_WIDTH_FRACTION),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally, content = badges)
+            }
+        }
+        return
+    }
+    Column(
+        modifier = modifier,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        details()
+        badges()
+    }
+}
+
+/**
  * Carousel card size, driven by the height actually left over after the header, the game info
  * block and the footer, so the focused card at [CAROUSEL_FOCUS_SCALE] fills that space exactly
  * instead of overrunning the platform carousel on extended-widescreen or collapsing to a thin
- * strip when the window is tall. [CAROUSEL_MAX_WIDTH_FRACTION] keeps one card from dominating the
- * row on very tall windows, where height alone would size it wider than the screen.
+ * strip when the window is tall. The width cap inside [carouselCardSize] keeps one card from
+ * dominating the row on very tall windows, where height alone would size it wider than the screen.
  *
  * Callers must subtract a gap of their own for the focused card to grow into: the card scales from
  * its bottom edge, so without one the only clearance above it is what [CAROUSEL_CARD_SCALE] happens
  * to leave over, which at square ratios is a few dp and overlaps the game info.
  */
 @Composable
-private fun rememberCarouselCardSize(availableHeight: Dp): DpSize {
-    val configuration = LocalConfiguration.current
-    val screenWidth = configuration.screenWidthDp.dp
-    val aspect = LocalBoxArtStyle.current.aspectRatio
-    val heightDriven = (availableHeight / CAROUSEL_FOCUS_SCALE) * CAROUSEL_CARD_SCALE
-    val widthCap = (screenWidth * CAROUSEL_MAX_WIDTH_FRACTION) / aspect
-    val cardHeight = maxOf(minOf(heightDriven, widthCap), Dimens.gameCardHeight * CAROUSEL_MIN_SCALE)
-    return DpSize(cardHeight * aspect, cardHeight)
-}
+private fun rememberCarouselCardSize(
+    availableHeight: Dp,
+    config: com.nendo.argosy.domain.model.CarouselConfig
+): DpSize = carouselCardSize(
+    availableHeight = availableHeight,
+    availableWidth = LocalConfiguration.current.screenWidthDp.dp,
+    coverAspectRatio = LocalBoxArtStyle.current.aspectRatio,
+    restingScale = config.restingScale,
+    minCardHeight = Dimens.gameCardHeight * HERO_MIN_CARD_SCALE
+)
 
-private const val CAROUSEL_FOCUS_SCALE = 1.8f
-private const val CAROUSEL_CARD_SCALE = 0.9f
-private const val CAROUSEL_MAX_WIDTH_FRACTION = 0.28f
-private const val CAROUSEL_MIN_SCALE = 0.4f
-
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun GameRail(
+private fun rememberHomeCarouselItems(
     items: List<HomeRowItem>,
-    focusedIndex: Int,
-    listState: androidx.compose.foundation.lazy.LazyListState,
     rowKey: String,
     downloadIndicators: Map<Long, GameDownloadIndicator>,
-    showPlatformBadge: Boolean,
-    repairedCoverPaths: Map<Long, String> = emptyMap(),
-    onCoverLoadFailed: ((Long, String) -> Unit)? = null,
-    onCoverLoaded: ((Long, android.graphics.Bitmap) -> Unit)? = null,
-    onItemTap: (Int) -> Unit = {},
-    onItemLongPress: (Int) -> Unit = {},
-    isVideoPreviewActive: Boolean = false,
-    cardSize: DpSize,
-    modifier: Modifier = Modifier
-) {
-    val configuration = LocalConfiguration.current
-    val screenWidth = configuration.screenWidthDp.dp
-    val boxArtStyle = LocalBoxArtStyle.current
-
-    val cardWidth = cardSize.width
-    val cardHeight = cardSize.height
-    val focusScale = CAROUSEL_FOCUS_SCALE
-    val railHeight = cardHeight * focusScale + Dimens.spacingMd
-
-    val focusSpacingPx = with(LocalDensity.current) { (cardWidth * 0.5f).toPx() }
-    val itemSpacing = cardWidth * 0.13f
-    val focusOverhang = cardWidth * (focusScale - 1f) / 2f
-    val startPadding = maxOf(screenWidth * 0.09f, focusOverhang + Dimens.spacingMd)
-    val endPadding = screenWidth * 0.65f
-
-    LazyRow(
-        state = listState,
-        contentPadding = PaddingValues(start = startPadding, end = endPadding),
-        horizontalArrangement = Arrangement.spacedBy(itemSpacing),
-        verticalAlignment = Alignment.Bottom,
-        modifier = modifier
-            .fillMaxWidth()
-            .height(railHeight)
-            .graphicsLayer { clip = false }
-    ) {
-        itemsIndexed(
-            items,
-            key = { _, item ->
-                when (item) {
-                    is HomeRowItem.Game -> "$rowKey-${item.game.id}"
-                    is HomeRowItem.ViewAll -> "$rowKey-viewall-${item.platformId ?: item.sourceFilter ?: "all"}"
-                }
-            }
-        ) { index, item ->
-            val isFocused = index == focusedIndex
-            val translationX by animateFloatAsState(
-                targetValue = when {
-                    index < focusedIndex -> -focusSpacingPx
-                    index > focusedIndex -> focusSpacingPx
-                    else -> 0f
-                },
-                animationSpec = Motion.focusSpring,
-                label = "translationX"
+    repairedCoverPaths: Map<Long, String>
+): List<CarouselItem> = remember(items, rowKey, downloadIndicators, repairedCoverPaths) {
+    items.map { item ->
+        when (item) {
+            is HomeRowItem.Game -> CarouselItem.Game(
+                key = "$rowKey-${item.game.id}",
+                game = item.game,
+                downloadIndicator = downloadIndicators[item.game.id] ?: GameDownloadIndicator.NONE,
+                coverPathOverride = repairedCoverPaths[item.game.id]
             )
-
-            val videoScaleOverride = if (isVideoPreviewActive && isFocused) 1.0f else null
-            val videoAlphaOverride = if (isVideoPreviewActive && !isFocused) 0f else null
-
-            when (item) {
-                is HomeRowItem.Game -> {
-                    val itemSize = if (boxArtStyle.nativeAspectRatio) {
-                        val coverPath = repairedCoverPaths[item.game.id] ?: item.game.coverPath
-                        val ratio = rememberCoverAspectRatio(coverPath, boxArtStyle.aspectRatio)
-                        coverSizeWithin(cardWidth, cardHeight, ratio)
-                    } else {
-                        DpSize(cardWidth, cardHeight)
-                    }
-                    GameCardWithNewBadge(
-                        game = item.game,
-                        isFocused = isFocused,
-                        cardWidth = itemSize.width,
-                        cardHeight = itemSize.height,
-                        focusScale = focusScale,
-                        scaleFromBottom = true,
-                        downloadIndicator = downloadIndicators[item.game.id] ?: GameDownloadIndicator.NONE,
-                        showPlatformBadge = showPlatformBadge,
-                        coverPathOverride = repairedCoverPaths[item.game.id],
-                        onCoverLoadFailed = onCoverLoadFailed,
-                        onCoverLoaded = onCoverLoaded,
-                        scaleOverride = videoScaleOverride,
-                        alphaOverride = videoAlphaOverride,
-                        modifier = Modifier
-                            .graphicsLayer {
-                                this.translationX = translationX
-                            }
-                            .zIndex(if (isFocused) 1f else 0f)
-                            .combinedClickable(
-                                onClick = { onItemTap(index) },
-                                onLongClick = { onItemLongPress(index) },
-                                indication = null,
-                                interactionSource = remember { MutableInteractionSource() }
-                            )
-                    )
-                }
-                is HomeRowItem.ViewAll -> {
-                    val viewAllAlpha by animateFloatAsState(
-                        targetValue = if (isVideoPreviewActive) 0f else 1f,
-                        animationSpec = Motion.focusSpring,
-                        label = "viewAllAlpha"
-                    )
-                    ViewAllCard(
-                        isFocused = isFocused,
-                        onClick = { onItemTap(index) },
-                        modifier = Modifier
-                            .graphicsLayer {
-                                this.translationX = translationX
-                                alpha = viewAllAlpha
-                            }
-                            .width(cardWidth)
-                            .height(cardHeight)
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun ViewAllCard(
-    isFocused: Boolean,
-    onClick: () -> Unit = {},
-    modifier: Modifier = Modifier
-) {
-    val scale by animateFloatAsState(
-        targetValue = if (isFocused) 1.8f else 1f,
-        animationSpec = spring(stiffness = 300f),
-        label = "viewAllScale"
-    )
-
-    val onSurfaceColor = MaterialTheme.colorScheme.onSurface
-    val borderColor by animateColorAsState(
-        targetValue = if (isFocused) onSurfaceColor else onSurfaceColor.copy(alpha = 0.3f),
-        animationSpec = tween(200),
-        label = "viewAllBorder"
-    )
-
-    Box(
-        contentAlignment = Alignment.Center,
-        modifier = modifier
-            .graphicsLayer {
-                scaleX = scale
-                scaleY = scale
-                transformOrigin = TransformOrigin(0.5f, 1f)
-            }
-            .background(
-                Brush.verticalGradient(
-                    colors = listOf(
-                        onSurfaceColor.copy(alpha = 0.15f),
-                        onSurfaceColor.copy(alpha = 0.05f)
-                    )
-                ),
-                RoundedCornerShape(Dimens.radiusMd)
-            )
-            .border(Dimens.borderThin, borderColor, RoundedCornerShape(Dimens.radiusMd))
-            .clickableNoFocus(onClick = onClick)
-    ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center,
-            modifier = Modifier.padding(Dimens.radiusLg)
-        ) {
-            Column(
-                verticalArrangement = Arrangement.spacedBy(Dimens.spacingXs),
-                modifier = Modifier.padding(bottom = Dimens.radiusLg)
-            ) {
-                Row(horizontalArrangement = Arrangement.spacedBy(Dimens.spacingXs)) {
-                    GridBox()
-                    GridBox()
-                }
-                Row(horizontalArrangement = Arrangement.spacedBy(Dimens.spacingXs)) {
-                    GridBox()
-                    GridBox()
-                }
-            }
-            Text(
-                text = "View All",
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
-                textAlign = TextAlign.Center
+            is HomeRowItem.ViewAll -> CarouselItem.ViewAll(
+                key = "$rowKey-viewall-${item.platformId ?: item.sourceFilter ?: "all"}"
             )
         }
     }
-}
-
-@Composable
-private fun GridBox() {
-    Box(
-        modifier = Modifier
-            .size(Dimens.iconMd)
-            .background(
-                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
-                RoundedCornerShape(Dimens.radiusSm)
-            )
-    )
 }
 
 @Composable

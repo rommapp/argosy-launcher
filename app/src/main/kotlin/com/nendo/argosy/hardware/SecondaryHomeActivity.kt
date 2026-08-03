@@ -43,6 +43,8 @@ import com.nendo.argosy.ui.input.LocalSwapStartSelect
 import com.nendo.argosy.ui.input.mapKeycodeToGamepadEvent
 import com.nendo.argosy.ui.screens.secondaryhome.SecondaryHomeViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
 class SecondaryHomeActivity :
@@ -73,6 +75,9 @@ class SecondaryHomeActivity :
     private var companionInGameState by mutableStateOf(CompanionInGameState())
     private var companionSessionTimer: CompanionSessionTimer? = null
     private var homeRestoreSettled = false
+
+    private var confirmHoldJob: kotlinx.coroutines.Job? = null
+    private var confirmHoldFired = false
 
     private lateinit var viewModel: SecondaryHomeViewModel
     private lateinit var dualHomeViewModel: DualHomeViewModel
@@ -252,6 +257,11 @@ class SecondaryHomeActivity :
                                 broadcasts.broadcastScreenshotSelected(index)
                             },
                             onDimTapped = { broadcasts.broadcastRefocusUpper() },
+                            onCustomGridActivate = {
+                                inputHandler.handleDualHomeInput(
+                                    com.nendo.argosy.ui.input.GamepadEvent.Confirm
+                                )
+                            },
                             onTabChanged = { panel ->
                                 companionInGameState = companionInGameState.copy(
                                     currentPanel = panel
@@ -339,7 +349,31 @@ class SecondaryHomeActivity :
         return result
     }
 
-    override fun onKeyDown(keyCode: Int, event: android.view.KeyEvent): Boolean {
+    /**
+     * Gamepad keys are taken before the view hierarchy sees them, exactly as the primary activity
+     * does it.
+     *
+     * onKeyDown is the fallback Android calls only once every view has declined the key, so a single
+     * focused composable anywhere on this display silently owns the d-pad - after closing the app
+     * drawer its grid held focus, and eight presses went into walking out of it before the carousel
+     * saw one. The launcher decides selection itself, so the window has no business consulting focus
+     * first; typing is the sole exception, and it says so.
+     */
+    override fun dispatchKeyEvent(event: android.view.KeyEvent): Boolean {
+        if (isCompanionTextEntryActive()) return super.dispatchKeyEvent(event)
+        when (event.action) {
+            android.view.KeyEvent.ACTION_DOWN ->
+                if (handleGamepadKeyDown(event.keyCode, event)) return true
+            android.view.KeyEvent.ACTION_UP ->
+                if (handleGamepadKeyUp(event.keyCode, event)) return true
+        }
+        return super.dispatchKeyEvent(event)
+    }
+
+    private fun isCompanionTextEntryActive(): Boolean =
+        ::dualHomeViewModel.isInitialized && dualHomeViewModel.uiState.value.isTextEntryActive
+
+    private fun handleGamepadKeyDown(keyCode: Int, event: android.view.KeyEvent): Boolean {
         if (::dsm.isInitialized && !dsm.claimInput(event)) return true
         if (event.repeatCount == 0) {
             val conflictEvent = mapKeycodeToGamepadEvent(keyCode, swapAB, swapXY, swapStartSelect)
@@ -362,20 +396,91 @@ class SecondaryHomeActivity :
                     ) return true
                 }
             }
-            return super.onKeyDown(keyCode, event)
+            return false
         }
-        if (event.repeatCount == 0) {
-            val gamepadEvent = mapKeycodeToGamepadEvent(
-                keyCode, swapAB, swapXY, swapStartSelect
+        val gamepadEvent = mapKeycodeToGamepadEvent(keyCode, swapAB, swapXY, swapStartSelect)
+        if (gamepadEvent == com.nendo.argosy.ui.input.GamepadEvent.Confirm && deferConfirm()) {
+            if (event.repeatCount == 0) beginConfirmHold()
+            return true
+        }
+        if (event.repeatCount == 0 && gamepadEvent != null) {
+            val result = inputHandler.routeInput(
+                gamepadEvent, true, isGameActive, currentScreen
             )
-            if (gamepadEvent != null) {
-                val result = inputHandler.routeInput(
-                    gamepadEvent, true, isGameActive, currentScreen
-                )
-                if (result.handled) return true
-            }
+            if (result.handled) return true
         }
-        return super.onKeyDown(keyCode, event)
+        return false
+    }
+
+    private fun handleGamepadKeyUp(keyCode: Int, event: android.view.KeyEvent): Boolean {
+        val gamepadEvent = mapKeycodeToGamepadEvent(keyCode, swapAB, swapXY, swapStartSelect)
+        if (gamepadEvent == com.nendo.argosy.ui.input.GamepadEvent.Confirm && confirmHoldJob != null) {
+            endConfirmHold()
+            return true
+        }
+        return false
+    }
+
+    /**
+     * Only the curated grid needs a held A, and deferring the press everywhere else would put a
+     * delay on every confirm on this screen. The companion dispatches on key-down, so the wait has
+     * to be introduced deliberately and kept to where it earns its cost.
+     */
+    /**
+     * Whether confirm should wait to see if it becomes a hold. Only the surfaces that do something
+     * with a hold defer it, because deferring costs every press its immediacy: the curated grid,
+     * where a hold picks a tile up, and the library, where it opens the game's menu.
+     */
+    private fun deferConfirm(): Boolean {
+        if (isShowcaseRole || currentScreen != CompanionScreen.HOME) return false
+        if (!::dualHomeViewModel.isInitialized) return false
+        if (viewModel.uiState.value.isDrawerOpen) return true
+        val state = dualHomeViewModel.uiState.value
+        return when (state.viewMode) {
+            DualHomeViewMode.CAROUSEL ->
+                state.layoutKind == com.nendo.argosy.domain.model.HomeLayoutKind.CUSTOM_GRID &&
+                    !state.showTilePicker && !state.showTileMenu
+            DualHomeViewMode.LIBRARY_GRID ->
+                !state.showFilterOverlay && !state.showLibraryMenu &&
+                    state.collectionPickerGameId == null
+            else -> false
+        }
+    }
+
+    private fun beginConfirmHold() {
+        confirmHoldFired = false
+        confirmHoldJob?.cancel()
+        confirmHoldJob = lifecycleScope.launch {
+            kotlinx.coroutines.delay(CONFIRM_HOLD_MS)
+            confirmHoldFired = true
+            inputHandler.routeInput(
+                com.nendo.argosy.ui.input.GamepadEvent.LongConfirm,
+                true,
+                isGameActive,
+                currentScreen
+            )
+        }
+    }
+
+    /**
+     * Completes a press that [beginConfirmHold] started, and does nothing otherwise.
+     *
+     * Whether a press is deferred is decided again when the button comes up, and by then the press
+     * itself may have changed the answer - opening the drawer makes the release deferrable when the
+     * push was not. Without the guard the release invents a second Confirm the user never gave, and
+     * it lands on whatever the first one just opened.
+     */
+    private fun endConfirmHold() {
+        val job = confirmHoldJob ?: return
+        job.cancel()
+        confirmHoldJob = null
+        if (confirmHoldFired) return
+        inputHandler.routeInput(
+            com.nendo.argosy.ui.input.GamepadEvent.Confirm,
+            true,
+            isGameActive,
+            currentScreen
+        )
     }
 
     override fun onForegroundChanged(isForeground: Boolean) {
@@ -490,9 +595,27 @@ class SecondaryHomeActivity :
         dualHomeViewModel.startBackgroundForwarding()
     }
 
-    override fun onForwardKey(keyCode: Int, swapAB: Boolean, swapXY: Boolean, swapStartSelect: Boolean) {
+    override fun onForwardKey(
+        keyCode: Int,
+        action: Int,
+        repeatCount: Int,
+        swapAB: Boolean,
+        swapXY: Boolean,
+        swapStartSelect: Boolean
+    ) {
         val gamepadEvent = mapKeycodeToGamepadEvent(keyCode, swapAB, swapXY, swapStartSelect) ?: return
-        inputHandler.routeInput(gamepadEvent, true, isGameActive, currentScreen)
+        if (gamepadEvent == com.nendo.argosy.ui.input.GamepadEvent.Confirm &&
+            (confirmHoldJob != null || deferConfirm())
+        ) {
+            when (action) {
+                android.view.KeyEvent.ACTION_DOWN -> if (repeatCount == 0) beginConfirmHold()
+                android.view.KeyEvent.ACTION_UP -> endConfirmHold()
+            }
+            return
+        }
+        if (action == android.view.KeyEvent.ACTION_DOWN && repeatCount == 0) {
+            inputHandler.routeInput(gamepadEvent, true, isGameActive, currentScreen)
+        }
     }
 
     override fun refocusSelf() = startActivity(
@@ -632,6 +755,29 @@ class SecondaryHomeActivity :
         }
     }
 
+    /**
+     * Keeps the showcase on whatever the grid has under its cursor.
+     *
+     * The one-shot broadcasts fire at moments chosen for the carousel, and tiles arrive from the
+     * database after the section does, so on a cold start the carousel's game would win the race and
+     * stay. Following the cursor means the upper screen is right whenever it settles, including on
+     * first load and on the way back from a game's details.
+     */
+    private fun observeCustomGridSelection() {
+        lifecycleScope.launch {
+            dualHomeViewModel.uiState
+                .map {
+                    Triple(it.layoutKind, it.customGrid.focusedTile?.target, it.customGrid.tiles.size)
+                }
+                .distinctUntilChanged()
+                .collect { (layout, _, _) ->
+                    if (layout != com.nendo.argosy.domain.model.HomeLayoutKind.CUSTOM_GRID) return@collect
+                    if (currentScreen != CompanionScreen.HOME) return@collect
+                    broadcasts.broadcastCurrentGameSelection()
+                }
+        }
+    }
+
     fun returnToHome() {
         isScreenshotViewerOpen = false
         currentScreen = CompanionScreen.HOME
@@ -712,8 +858,15 @@ class SecondaryHomeActivity :
             gradientExtractionDelegate = dsm.gradientExtractionDelegate,
             getPinnedCollectionsUseCase = dsm.getPinnedCollectionsUseCase,
             getGamesForPinnedCollectionUseCase = dsm.getGamesForPinnedCollectionUseCase,
-            sessionStateStore = dsm.sessionStateStore
+            sessionStateStore = dsm.sessionStateStore,
+            homeTileRepository = dsm.homeTileRepository,
+            homeTilePromptQueue = dsm.homeTilePromptQueue,
+            appsRepository = dsm.appsRepository,
+            syncPreferencesRepository = dsm.syncPreferencesRepository
         )
+        dualHomeViewModel.observeHomeTiles()
+        dualHomeViewModel.observeTilePrompts()
+        observeCustomGridSelection()
         broadcasts = SecondaryHomeBroadcastHelper(
             dsm = dsm, dualHomeViewModel = dualHomeViewModel,
             secondaryHomeViewModel = { viewModel }
@@ -982,3 +1135,5 @@ class SecondaryHomeActivity :
     }
 
 }
+
+private const val CONFIRM_HOLD_MS = 500L

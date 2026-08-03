@@ -12,6 +12,8 @@ import com.nendo.argosy.ui.screens.settings.sections.AmbientLedItem
 import com.nendo.argosy.ui.screens.settings.sections.ambientLedItemAtFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.ambientLedMaxFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.BiosItem
+import com.nendo.argosy.domain.model.HomeLayoutKind
+import com.nendo.argosy.ui.components.toggleHomeLayoutField
 import com.nendo.argosy.ui.screens.settings.sections.BuiltinEmulatorItem
 import com.nendo.argosy.ui.screens.settings.sections.PlatformDetailItem
 import com.nendo.argosy.ui.screens.settings.sections.platformDetailItemAtFocusIndex
@@ -62,6 +64,7 @@ import com.nendo.argosy.ui.screens.settings.sections.navigationItemAtFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.displaysFocusIndexOf
 import com.nendo.argosy.ui.screens.settings.sections.displaysItemAtFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.createStorageLayoutInfo
+import com.nendo.argosy.ui.screens.settings.sections.homeScreenFocusIndexOf
 import com.nendo.argosy.ui.screens.settings.sections.homeScreenItemAtFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.interfaceFocusIndexOf
 import com.nendo.argosy.ui.screens.settings.sections.interfaceItemAtFocusIndex
@@ -531,10 +534,6 @@ private fun routeInterfaceConfirm(vm: SettingsViewModel, state: SettingsUiState)
         InterfaceItem.HomeScreen -> vm.navigateToHomeScreen()
         InterfaceItem.LibraryView -> vm.navigateToLibraryView()
         InterfaceItem.BoxArt -> vm.navigateToBoxArt()
-        InterfaceItem.StartupView -> {
-            vm.requestEnumPicker(InterfaceItem.StartupView.key)
-            return InputResult.handled(SoundType.OPEN_MODAL)
-        }
         else -> {}
     }
     return InputResult.HANDLED
@@ -576,6 +575,7 @@ private fun routeThemeConfirm(vm: SettingsViewModel, state: SettingsUiState): In
             return InputResult.handled(SoundType.OPEN_MODAL)
         }
         ThemeItem.TintBleed -> vm.cycleSurfaceTintBleed()
+        ThemeItem.AccentFooter -> vm.setUseAccentColorFooter(!state.display.useAccentColorFooter)
         ThemeItem.Backdrop -> vm.navigateToThemeBackdrop()
         ThemeItem.Fonts -> vm.navigateToThemeFonts()
         else -> {}
@@ -687,7 +687,7 @@ private fun routeThemeBackdropConfirm(vm: SettingsViewModel, state: SettingsUiSt
 }
 
 private fun routeHomeScreenConfirm(vm: SettingsViewModel, state: SettingsUiState): InputResult {
-    when (homeScreenItemAtFocusIndex(state.focusedIndex, state.display)) {
+    when (val focused = homeScreenItemAtFocusIndex(state.focusedIndex, state.display)) {
         HomeScreenItem.Background -> {
             vm.requestEnumPicker(HomeScreenItem.Background.key)
             return InputResult.handled(SoundType.OPEN_MODAL)
@@ -712,12 +712,20 @@ private fun routeHomeScreenConfirm(vm: SettingsViewModel, state: SettingsUiState
             vm.setVideoWallpaperMuted(!state.display.videoWallpaperMuted)
             return InputResult.handled(SoundType.TOGGLE)
         }
-        HomeScreenItem.AccentFooter -> {
-            vm.setUseAccentColorFooter(!state.display.useAccentColorFooter)
-            return InputResult.handled(SoundType.TOGGLE)
-        }
         HomeScreenItem.InstalledOnly -> {
             vm.setInstalledOnlyHome(!state.display.installedOnlyHome)
+            return InputResult.handled(SoundType.TOGGLE)
+        }
+        HomeScreenItem.LayoutSelector -> {
+            val kinds = HomeLayoutKind.entries
+            val next = kinds[(kinds.indexOf(state.display.homeLayout.selected) + 1).mod(kinds.size)]
+            vm.setHomeLayout(state.display.homeLayout.copy(selected = next))
+            return InputResult.HANDLED
+        }
+        is HomeScreenItem.LayoutField -> {
+            val updated = toggleHomeLayoutField(state.display.homeLayout, focused.field)
+            if (updated == state.display.homeLayout) return InputResult.HANDLED
+            vm.setHomeLayout(updated)
             return InputResult.handled(SoundType.TOGGLE)
         }
         else -> {}
@@ -1340,3 +1348,5 @@ private fun routeBuiltinEmulatorConfirm(vm: SettingsViewModel, state: SettingsUi
     }
     return InputResult.HANDLED
 }
+
+

@@ -102,6 +102,7 @@ class UserPreferencesRepository @Inject constructor(
             useGameBackground = display.useGameBackground,
             customBackgroundPath = display.customBackgroundPath,
             homeBackgroundMode = display.homeBackgroundMode,
+            homeLayout = display.homeLayout,
             useAccentColorFooter = display.useAccentColorFooter,
             hiddenApps = app.hiddenApps,
             secondaryHomeApps = app.secondaryHomeApps,
@@ -246,6 +247,8 @@ class UserPreferencesRepository @Inject constructor(
     suspend fun setUseGameBackground(use: Boolean) = displayPrefs.setUseGameBackground(use)
     suspend fun setCustomBackgroundPath(path: String?) = displayPrefs.setCustomBackgroundPath(path)
     suspend fun setHomeBackgroundMode(mode: HomeBackgroundMode) = displayPrefs.setHomeBackgroundMode(mode)
+    suspend fun setHomeLayout(settings: com.nendo.argosy.domain.model.HomeLayoutSettings) =
+        displayPrefs.setHomeLayout(settings)
     suspend fun setUseAccentColorFooter(use: Boolean) = displayPrefs.setUseAccentColorFooter(use)
     suspend fun setBoxArtShape(shape: BoxArtShape) = displayPrefs.setBoxArtShape(shape)
     suspend fun setBoxArtCornerRadius(radius: BoxArtCornerRadius) = displayPrefs.setBoxArtCornerRadius(radius)
@@ -687,6 +690,8 @@ data class UserPreferences(
     val useGameBackground: Boolean = true,
     val customBackgroundPath: String? = null,
     val homeBackgroundMode: HomeBackgroundMode = HomeBackgroundMode.GAME_ART,
+    val homeLayout: com.nendo.argosy.domain.model.HomeLayoutSettings =
+        com.nendo.argosy.domain.model.HomeLayoutSettings(),
     val useAccentColorFooter: Boolean = false,
     val fileLoggingEnabled: Boolean = false,
     val fileLoggingPath: String? = null,

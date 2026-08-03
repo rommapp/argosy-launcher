@@ -35,6 +35,7 @@ fun ControlRoleContent(
     onOptionAction: (DualGameDetailViewModel, GameDetailOption) -> Unit,
     onScreenshotViewed: (Int) -> Unit,
     onDimTapped: () -> Unit = {},
+    onCustomGridActivate: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     when (currentScreen) {
@@ -55,6 +56,7 @@ fun ControlRoleContent(
                 onSearchQueryChange = onSearchQueryChange,
                 onOpenDrawer = onOpenDrawer,
                 onDimTapped = onDimTapped,
+                onCustomGridActivate = onCustomGridActivate,
                 modifier = modifier
             )
         }

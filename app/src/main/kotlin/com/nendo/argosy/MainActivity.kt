@@ -83,6 +83,9 @@ class MainActivity : ComponentActivity() {
     @Inject lateinit var romMRepository: RomMRepository
     @Inject lateinit var preferencesRepository: UserPreferencesRepository
     @Inject lateinit var syncPreferencesRepository: com.nendo.argosy.data.preferences.SyncPreferencesRepository
+    @Inject lateinit var homeTileRepository: com.nendo.argosy.data.repository.HomeTileRepository
+    @Inject lateinit var homeTilePromptQueue: com.nendo.argosy.data.repository.HomeTilePromptQueue
+    @Inject lateinit var appsRepository: com.nendo.argosy.data.repository.AppsRepository
     @Inject lateinit var ambientAudioManager: AmbientAudioManager
     @Inject lateinit var bgmPlaylistCoordinator: com.nendo.argosy.ui.audio.BgmPlaylistCoordinator
     @Inject lateinit var ambientLedManager: AmbientLedManager
@@ -90,6 +93,7 @@ class MainActivity : ComponentActivity() {
     @Inject lateinit var displayAffinityHelper: DisplayAffinityHelper
     @Inject lateinit var permissionHelper: com.nendo.argosy.util.PermissionHelper
     @Inject lateinit var gameActionsDelegate: GameActionsDelegate
+    @Inject lateinit var syncPlatformUseCase: com.nendo.argosy.domain.usecase.sync.SyncPlatformUseCase
     @Inject lateinit var gameThemeAudioCoordinator: com.nendo.argosy.ui.audio.GameThemeAudioCoordinator
     @Inject lateinit var getPinnedCollectionsUseCase: com.nendo.argosy.domain.usecase.collection.GetPinnedCollectionsUseCase
     @Inject lateinit var getGamesForPinnedCollectionUseCase: com.nendo.argosy.domain.usecase.collection.GetGamesForPinnedCollectionUseCase
@@ -245,7 +249,11 @@ class MainActivity : ComponentActivity() {
             val options = android.app.ActivityOptions.makeBasic()
                 .setLaunchDisplayId(display!!.displayId)
                 .toBundle()
-            startActivity(companionIntent, options)
+            try {
+                startActivity(companionIntent, options)
+            } catch (e: android.content.ActivityNotFoundException) {
+                Log.w(TAG, "Companion activity unavailable on this install, yielding display", e)
+            }
             finish()
             return
         }
@@ -284,6 +292,7 @@ class MainActivity : ComponentActivity() {
                 gameFileDao = gameFileDao,
                 downloadManager = downloadManagerInstance,
                 gameActionsDelegate = gameActionsDelegate,
+                syncPlatformUseCase = syncPlatformUseCase,
                 gameLaunchDelegate = gameLaunchDelegate,
                 saveCacheManager = saveCacheManager,
                 getUnifiedSavesUseCase = getUnifiedSavesUseCase,
@@ -294,6 +303,9 @@ class MainActivity : ComponentActivity() {
                 sessionStateStore = sessionStateStore,
                 preferencesRepository = preferencesRepository,
                 syncPreferencesRepository = syncPreferencesRepository,
+                homeTileRepository = homeTileRepository,
+                homeTilePromptQueue = homeTilePromptQueue,
+                appsRepository = appsRepository,
                 notificationManager = notificationManager,
                 emulatorConfigDao = emulatorConfigDao,
                 configureEmulatorUseCase = configureEmulatorUseCase,
@@ -449,11 +461,15 @@ class MainActivity : ComponentActivity() {
             dualScreenManager.isCompanionActive.value &&
             !isOverlayFocused
         ) {
-            if (event.action == KeyEvent.ACTION_DOWN && event.repeatCount == 0) {
-                Logger.verbose(TAG) { "dispatchKeyEvent: FORWARDING key=${event.keyCode} to companion" }
-                onDimmerActivity?.invoke()
+            if (event.action == KeyEvent.ACTION_DOWN || event.action == KeyEvent.ACTION_UP) {
+                if (event.action == KeyEvent.ACTION_DOWN && event.repeatCount == 0) {
+                    Logger.verbose(TAG) { "dispatchKeyEvent: FORWARDING key=${event.keyCode} to companion" }
+                    onDimmerActivity?.invoke()
+                }
                 dualScreenManager.companionHost?.onForwardKey(
                     event.keyCode,
+                    event.action,
+                    event.repeatCount,
                     sessionStateStore.getSwapAB(),
                     sessionStateStore.getSwapXY(),
                     sessionStateStore.getSwapStartSelect()
@@ -525,6 +541,8 @@ class MainActivity : ComponentActivity() {
                 if (keyCode != null) {
                     dualScreenManager.companionHost?.onForwardKey(
                         keyCode,
+                        KeyEvent.ACTION_DOWN,
+                        0,
                         sessionStateStore.getSwapAB(),
                         sessionStateStore.getSwapXY(),
                         sessionStateStore.getSwapStartSelect()

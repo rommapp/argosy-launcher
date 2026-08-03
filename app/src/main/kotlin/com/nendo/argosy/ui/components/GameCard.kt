@@ -97,7 +97,7 @@ fun GameCard(
     isFocused: Boolean,
     modifier: Modifier = Modifier,
     focusScale: Float = ComponentDefaults.Focus.scaleFocused,
-    scaleFromBottom: Boolean = false,
+    scalePivotY: Float = 0.5f,
     downloadIndicator: GameDownloadIndicator = GameDownloadIndicator.NONE,
     showPlatformBadge: Boolean = true,
     showStatusOverlays: Boolean = true,
@@ -204,7 +204,7 @@ fun GameCard(
             .graphicsLayer {
                 scaleX = scale
                 scaleY = scale
-                transformOrigin = if (scaleFromBottom) TransformOrigin(0.5f, 1f) else TransformOrigin.Center
+                transformOrigin = TransformOrigin(0.5f, scalePivotY)
                 this.alpha = alpha
                 this.clip = false
             }
@@ -877,6 +877,13 @@ fun GameCardWithBadge(
     }
 }
 
+/**
+ * How far the new-game badge rises above the card it belongs to. The badge is laid out inside the
+ * card's own bounds so nothing clips it, which makes a badged card this much taller than a plain
+ * one; a caller that lines cards up has to take the difference back out.
+ */
+val NEW_BADGE_TOP_OVERFLOW = ComponentDefaults.Carousel.newBadgeOverflowDp.dp
+
 @Composable
 fun GameCardWithNewBadge(
     game: HomeGameUi,
@@ -885,7 +892,7 @@ fun GameCardWithNewBadge(
     cardHeight: Dp,
     modifier: Modifier = Modifier,
     focusScale: Float = ComponentDefaults.Focus.scaleFocused,
-    scaleFromBottom: Boolean = false,
+    scalePivotY: Float = 0.5f,
     downloadIndicator: GameDownloadIndicator = GameDownloadIndicator.NONE,
     showPlatformBadge: Boolean = true,
     coverPathOverride: String? = null,
@@ -897,8 +904,7 @@ fun GameCardWithNewBadge(
     val showNewBadge = game.isNew && !downloadIndicator.isActive
     val badgeWidthDp = 44.dp
     val badgeHeightDp = 30.dp
-    val badgeOffsetXDp = 8.dp
-    val badgeTopOverflow = 20.dp
+
 
     val scale by animateFloatAsState(
         targetValue = scaleOverride ?: if (isFocused) focusScale else ComponentDefaults.Focus.scaleDefault,
@@ -918,7 +924,7 @@ fun GameCardWithNewBadge(
                 game = game,
                 isFocused = isFocused,
                 focusScale = 1f,
-                scaleFromBottom = scaleFromBottom,
+                scalePivotY = scalePivotY,
                 downloadIndicator = downloadIndicator,
                 showPlatformBadge = showPlatformBadge,
                 coverPathOverride = coverPathOverride,
@@ -939,7 +945,16 @@ fun GameCardWithNewBadge(
         modifier = modifier.graphicsLayer {
             scaleX = scale
             scaleY = scale
-            transformOrigin = if (scaleFromBottom) TransformOrigin(0.5f, 1f) else TransformOrigin.Center
+            val overflowPx = NEW_BADGE_TOP_OVERFLOW.toPx()
+            val artHeight = (size.height - overflowPx).coerceAtLeast(1f)
+            transformOrigin = TransformOrigin(
+                pivotFractionX = 0.5f,
+                pivotFractionY = if (size.height <= 0f) {
+                    scalePivotY
+                } else {
+                    (overflowPx + scalePivotY * artHeight) / size.height
+                }
+            )
             this.alpha = alpha
         }
     ) { measurables, constraints ->
@@ -952,17 +967,13 @@ fun GameCardWithNewBadge(
             measurables[1].measure(Constraints())
         } else null
 
-        val badgeOffsetX = badgeOffsetXDp.roundToPx()
-        val topOverflow = if (showNewBadge) badgeTopOverflow.roundToPx() else 0
-        val rightOverflow = if (showNewBadge) badgeOffsetX else 0
-
-        val layoutWidth = cardPlaceable.width + rightOverflow
+        val topOverflow = NEW_BADGE_TOP_OVERFLOW.roundToPx()
         val layoutHeight = cardPlaceable.height + topOverflow
 
-        layout(layoutWidth, layoutHeight) {
+        layout(cardPlaceable.width, layoutHeight) {
             cardPlaceable.placeRelative(0, topOverflow)
             badgePlaceable?.placeRelative(
-                x = cardPlaceable.width - badgePlaceable.width + badgeOffsetX,
+                x = cardPlaceable.width - badgePlaceable.width,
                 y = topOverflow - (badgePlaceable.height / 2)
             )
         }

@@ -22,6 +22,11 @@ import com.nendo.argosy.ui.screens.common.GameLaunchDelegate
 import com.nendo.argosy.ui.ModalResetSignal
 import com.nendo.argosy.hardware.AmbientLedContext
 import com.nendo.argosy.hardware.AmbientLedManager
+import com.nendo.argosy.ui.common.GridDirection
+import com.nendo.argosy.ui.common.GridFocusNavigator
+import com.nendo.argosy.domain.model.HomeTileTargetRef
+import com.nendo.argosy.ui.components.AutoGridMove
+import com.nendo.argosy.ui.components.autoGridMove
 import com.nendo.argosy.ui.screens.home.delegates.GameMenuAction
 import com.nendo.argosy.ui.screens.home.delegates.HomeDownloadDelegate
 import com.nendo.argosy.ui.screens.home.delegates.HomeGameMenuDelegate
@@ -36,6 +41,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -72,16 +78,41 @@ class HomeViewModel @Inject constructor(
     val videoPreviewDelegate: HomeVideoPreviewDelegate,
     val gameMenuDelegate: HomeGameMenuDelegate,
     private val steamContentManager: com.nendo.argosy.data.steam.SteamContentManager,
-    private val steamDownloadPromptController: com.nendo.argosy.data.steam.SteamDownloadPromptController
+    private val steamDownloadPromptController: com.nendo.argosy.data.steam.SteamDownloadPromptController,
+    private val appsRepository: com.nendo.argosy.data.repository.AppsRepository,
+    private val homeTileRepository: com.nendo.argosy.data.repository.HomeTileRepository,
+    private val homeTilePromptQueue: com.nendo.argosy.data.repository.HomeTilePromptQueue,
+    private val syncPreferencesRepository: com.nendo.argosy.data.preferences.SyncPreferencesRepository
 ) : ViewModel(), HomeInputActions {
 
     private val _uiState = MutableStateFlow(restoreInitialState())
     override val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
+
     private val _events = MutableSharedFlow<HomeEvent>()
     val events: SharedFlow<HomeEvent> = _events.asSharedFlow()
 
     private val sessionStateStore by lazy { com.nendo.argosy.data.preferences.SessionStateStore(context) }
+
+    private val customGrid = com.nendo.argosy.ui.home.grid.CustomGridCoordinator(
+        scope = viewModelScope,
+        repository = homeTileRepository,
+        ownerUserId = { syncPreferencesRepository.getRommUserId() },
+        onPageAdded = { count -> persistCustomGridPageCount(count) },
+        onPageRemoved = { count -> persistCustomGridPageRemoval(count) },
+        pickerEntries = { category, query ->
+            when (category) {
+                com.nendo.argosy.ui.components.TilePickerCategory.GAMES ->
+                    libraryDelegate.searchInstalledForTiles(query)
+                com.nendo.argosy.ui.components.TilePickerCategory.COLLECTIONS ->
+                    libraryDelegate.collectionsForTiles(query)
+                com.nendo.argosy.ui.components.TilePickerCategory.APPS ->
+                    libraryDelegate.appsForTiles(query)
+            }
+        },
+        read = { _uiState.value.customGrid },
+        write = { transform -> _uiState.update { it.copy(customGrid = transform(it.customGrid)) } }
+    )
 
     private var achievementPrefetchJob: Job? = null
     private val achievementPrefetchDebounceMs = 300L
@@ -109,6 +140,8 @@ class HomeViewModel @Inject constructor(
         observeFocusedGameForLed()
         observeCollectionModal()
         observeDelegateStates()
+        observeHomeTiles()
+        observeTilePrompts()
         gradientExtractionDelegate.startBackgroundProcessing(viewModelScope)
     }
 
@@ -313,9 +346,17 @@ class HomeViewModel @Inject constructor(
                         backgroundOpacity = prefs.backgroundOpacity,
                         useGameBackground = prefs.useGameBackground,
                         customBackgroundPath = prefs.customBackgroundPath,
-                        homeBackgroundMode = prefs.homeBackgroundMode
+                        homeBackgroundMode = prefs.homeBackgroundMode,
+                        carouselConfig = prefs.homeLayout.carousel,
+                        autoGridConfig = prefs.homeLayout.autoGrid,
+                        customGridConfig = prefs.homeLayout.customGrid,
+                        layoutKind = prefs.homeLayout.selected
                     )
                 }
+                customGrid.applyConfig(
+                    autoFit = prefs.homeLayout.customGrid.autoFit,
+                    storedPages = prefs.homeLayout.customGrid.pageCount
+                )
 
                 videoPreviewDelegate.updateFromPreferences(
                     muteVideoPreview = prefs.videoWallpaperMuted,
@@ -490,6 +531,226 @@ class HomeViewModel @Inject constructor(
         navigationDelegate.prefetchAdjacentBackgrounds(viewModelScope, _uiState.value.currentItems, _uiState.value.focusedGameIndex)
         libraryDelegate.extractGradientsForVisibleGames(viewModelScope, _uiState.value.currentItems, _uiState.value.focusedGameIndex)
         return true
+    }
+
+    /**
+     * Tiles and the games they point at. The lookup is by id across the whole library rather than
+     * from the current section, because a curated page is not a section: the games on it have
+     * nothing in common except that someone put them there.
+     */
+    /**
+     * Offers left by finished downloads while the launcher was elsewhere. Drained one at a time and
+     * only while the curated grid is the layout in use, since that is the only place a tile means
+     * anything.
+     */
+    private fun observeTilePrompts() {
+        viewModelScope.launch {
+            homeTilePromptQueue.pending.collect { pending ->
+                val gameId = pending.firstOrNull() ?: return@collect
+                if (_uiState.value.layoutKind !=
+                    com.nendo.argosy.domain.model.HomeLayoutKind.CUSTOM_GRID
+                ) return@collect
+                val entry = libraryDelegate.tilePickerEntryFor(gameId)
+                if (entry == null) {
+                    homeTilePromptQueue.resolve(gameId)
+                    return@collect
+                }
+                customGrid.showPendingAdd(entry)
+            }
+        }
+    }
+
+    override fun confirmPendingTileAdd() =
+        customGrid.confirmPendingAdd { homeTilePromptQueue.resolve(it) }
+
+    override fun dismissPendingTileAdd() =
+        customGrid.dismissPendingAdd { homeTilePromptQueue.resolve(it) }
+
+    override fun movePendingTileAddFocus(delta: Int) = customGrid.movePendingAddFocus(delta)
+
+    private fun observeHomeTiles() {
+        viewModelScope.launch {
+            homeTileRepository.observeTiles(syncPreferencesRepository.getRommUserId())
+                .collect { tiles ->
+                    val gameIds = tiles.mapNotNull {
+                        (it.target as? HomeTileTargetRef.Game)?.gameId
+                    }.distinct()
+                    val games = libraryDelegate.resolveTileGames(gameIds)
+                    val collections = libraryDelegate.resolveTileCollections(
+                        tiles.mapNotNull {
+                            (it.target as? HomeTileTargetRef.Collection)?.collectionId
+                        }.distinct()
+                    )
+                    val apps = libraryDelegate.resolveTileApps(
+                        tiles.mapNotNull {
+                            (it.target as? HomeTileTargetRef.App)?.packageName
+                        }.distinct()
+                    )
+                    customGrid.setTiles(tiles)
+                    _uiState.update {
+                        it.copy(tileGames = games, tileCollections = collections, tileApps = apps)
+                    }
+                }
+        }
+    }
+
+    /**
+     * Grid shape is a property of the display, so the renderer measures it and reports it back
+     * here; navigation needs the same columns and rows the user can see or the cursor leaves the
+     * page at a different edge than the art does.
+     */
+    fun setCustomGridShape(columns: Int, rows: Int) = customGrid.setShape(columns, rows)
+
+    override fun moveCustomGridFocus(
+        direction: com.nendo.argosy.domain.model.GridDirection2D
+    ): Boolean = customGrid.moveFocus(direction)
+
+    override fun turnCustomGridPage(delta: Int): Boolean = customGrid.turnPage(delta)
+
+    fun setCustomGridCell(cell: com.nendo.argosy.domain.model.GridCell) = customGrid.setCell(cell)
+
+    fun moveEditingTileTo(cell: com.nendo.argosy.domain.model.GridCell) =
+        customGrid.moveEditingTileTo(cell)
+
+    fun resizeEditingTileTo(cell: com.nendo.argosy.domain.model.GridCell) =
+        customGrid.resizeEditingTileTo(cell)
+
+    fun focusedTile(): com.nendo.argosy.domain.model.HomeTile? = customGrid.focusedTile()
+
+    override fun focusedTileGameId(): Long? = customGrid.focusedGameId()
+
+    fun placeGameOnFocusedCell(gameId: Long) =
+        customGrid.placeOnFocusedCell(HomeTileTargetRef.Game(gameId))
+
+    fun tileMenuActions(): List<com.nendo.argosy.ui.components.CustomTileMenuAction> =
+        _uiState.value.customGrid.menuActions
+
+    override fun openTileMenu() = customGrid.openMenu()
+
+    override fun closeTileMenu() = customGrid.closeMenu()
+
+    override fun moveTileMenuFocus(delta: Int) = customGrid.moveMenuFocus(delta)
+
+    override fun confirmTileMenu() = customGrid.confirmMenu()
+
+    fun removeFocusedTile() = customGrid.removeFocusedTile()
+
+    val isOnAddPage: Boolean
+        get() = _uiState.value.customGrid.isOnAddPage
+
+    override fun confirmAddPage() = customGrid.confirmAddPage()
+
+    fun deleteCustomGridPage() = customGrid.deleteCurrentPage()
+
+    /**
+     * Remembers a page that holds nothing, when the layout is set to keep blank pages. Pages are
+     * otherwise implied by the tiles on them, so an empty one has nowhere to live but the config.
+     */
+    private fun persistCustomGridPageCount(count: Int) {
+        val config = _uiState.value.customGridConfig
+        if (!config.persistBlankPages || count <= config.pageCount) return
+        viewModelScope.launch {
+            val settings = preferencesRepository.userPreferences.first().homeLayout
+            preferencesRepository.setHomeLayout(
+                settings.copy(customGrid = settings.customGrid.copy(pageCount = count))
+            )
+        }
+    }
+
+    /**
+     * Forgets a remembered blank page. Without this the config keeps claiming the page the delete
+     * just removed, and the next preferences emission puts it straight back.
+     */
+    private fun persistCustomGridPageRemoval(count: Int) {
+        val config = _uiState.value.customGridConfig
+        if (config.pageCount <= count) return
+        viewModelScope.launch {
+            val settings = preferencesRepository.userPreferences.first().homeLayout
+            preferencesRepository.setHomeLayout(
+                settings.copy(customGrid = settings.customGrid.copy(pageCount = count))
+            )
+        }
+    }
+
+    /**
+     * Opens the picker for the focused cell. Offers installed games only, since a grid you curate
+     * is somewhere you reach for something to play rather than something to fetch.
+     */
+    override fun openTilePicker() = customGrid.openPicker()
+
+    override fun closeTilePicker() = customGrid.closePicker()
+
+    fun setTilePickerQuery(query: String) = customGrid.setPickerQuery(query)
+
+    override fun toggleTilePickerSearch() = customGrid.togglePickerSearch()
+
+    override fun moveTilePickerFocus(delta: Int) = customGrid.movePickerFocus(delta)
+
+    override fun confirmTilePickerSelection() = customGrid.confirmPickerSelection()
+
+    fun selectTilePickerEntry(entry: com.nendo.argosy.ui.components.TilePickerEntry) =
+        customGrid.selectPickerEntry(entry)
+
+    override fun cycleTilePickerCategory(delta: Int) = customGrid.cyclePickerCategory(delta)
+
+    fun setTilePickerCategory(category: com.nendo.argosy.ui.components.TilePickerCategory) =
+        customGrid.setPickerCategory(category)
+
+    /**
+     * Activates a tile that is not a game. An app launches through the same intent path the apps
+     * screen uses; a collection has no destination of its own on this surface, so it opens the
+     * collections screen rather than pretending to filter something.
+     */
+    override fun launchTileApp(packageName: String) {
+        val intent = appsRepository.getLaunchIntent(packageName) ?: return
+        viewModelScope.launch {
+            val prefs = preferencesRepository.preferences.first()
+            val options = if (prefs.appAffinityEnabled) {
+                displayAffinityHelper.getActivityOptions(forEmulator = false)
+            } else {
+                null
+            }
+            _events.emit(HomeEvent.LaunchIntent(intent, options))
+        }
+    }
+
+    override fun openTileCollection(collectionId: Long) {
+        viewModelScope.launch { _events.emit(HomeEvent.NavigateToCollections(collectionId)) }
+    }
+
+    override fun enterTileMoveMode() = customGrid.enterMoveMode()
+
+    override fun exitTileMoveMode() = customGrid.commitEdit()
+
+    override fun commitTileEdit() = customGrid.commitEdit()
+
+    override fun cancelTileEdit() = customGrid.cancelEdit()
+
+    override fun toggleTileEditMode() = customGrid.toggleEditMode()
+
+    override fun moveFocusedTile(
+        direction: com.nendo.argosy.domain.model.GridDirection2D
+    ): Boolean = customGrid.moveFocusedTile(direction)
+
+    override fun resizeFocusedTile(
+        direction: com.nendo.argosy.domain.model.GridDirection2D
+    ): Boolean = customGrid.resizeFocusedTile(direction)
+
+    override fun moveGridFocus(direction: GridDirection): AutoGridMove {
+        val state = _uiState.value
+        val move = autoGridMove(
+            itemCount = state.currentItems.size,
+            config = state.autoGridConfig,
+            currentIndex = state.focusedGameIndex,
+            direction = direction
+        )
+        val target = (move as? AutoGridMove.Focus)?.index ?: return move
+        _uiState.update { it.copy(focusedGameIndex = target) }
+        saveCurrentState()
+        prefetchAchievementsDebounced()
+        navigationDelegate.prefetchAdjacentBackgrounds(viewModelScope, _uiState.value.currentItems, target)
+        libraryDelegate.extractGradientsForVisibleGames(viewModelScope, _uiState.value.currentItems, target)
+        return move
     }
 
     fun setFocusIndex(index: Int) {

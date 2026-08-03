@@ -2937,6 +2937,11 @@ object Migration_162_163 : Migration(162, 163) {
  * A disc is identified by which game it belongs to and its number; rommId is where to fetch it
  * from and is legitimately shared. Rows orphaned by the old collapse are dropped so the next sync
  * re-registers the full set.
+ *
+ * Duplicate pairs have to go before the index exists, or creating it throws and Room retries the
+ * whole migration on every launch - a crash loop with no way out of it from the device. Where a
+ * pair is duplicated the downloaded row is kept, since it is the one pointing at a file on disk;
+ * between equal candidates the oldest wins, and the next sync re-registers whatever was dropped.
  */
 object Migration_163_164 : Migration(163, 164) {
     override fun migrate(db: SupportSQLiteDatabase) {
@@ -2944,6 +2949,13 @@ object Migration_163_164 : Migration(163, 164) {
             "DELETE FROM `game_discs` WHERE `gameId` IN (" +
                 "SELECT `gameId` FROM `game_discs` GROUP BY `gameId` HAVING COUNT(*) = 1" +
                 ") AND `discNumber` > 1"
+        )
+        db.execSQL(
+            "DELETE FROM `game_discs` WHERE `id` NOT IN (" +
+                "SELECT COALESCE(" +
+                "MIN(CASE WHEN `localPath` IS NOT NULL THEN `id` END), MIN(`id`)" +
+                ") FROM `game_discs` GROUP BY `gameId`, `discNumber`" +
+                ")"
         )
         db.execSQL("DROP INDEX IF EXISTS `index_game_discs_rommId`")
         db.execSQL("CREATE INDEX IF NOT EXISTS `index_game_discs_rommId` ON `game_discs` (`rommId`)")
@@ -2967,6 +2979,50 @@ object Migration_164_165 : Migration(164, 165) {
         db.execSQL(
             "CREATE UNIQUE INDEX IF NOT EXISTS `index_game_controller_mappings_gameId_controllerId_profileKey` " +
                 "ON `game_controller_mappings` (`gameId`, `controllerId`, `profileKey`)"
+        )
+    }
+}
+
+object Migration_165_166 : Migration(165, 166) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            "CREATE TABLE IF NOT EXISTS `home_tiles` (" +
+                "`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                "`ownerUserId` INTEGER, " +
+                "`pageIndex` INTEGER NOT NULL, " +
+                "`columnIndex` INTEGER NOT NULL, " +
+                "`rowIndex` INTEGER NOT NULL, " +
+                "`columnSpan` INTEGER NOT NULL DEFAULT 1, " +
+                "`rowSpan` INTEGER NOT NULL DEFAULT 1, " +
+                "`targetType` TEXT NOT NULL, " +
+                "`gameId` INTEGER, " +
+                "`collectionId` INTEGER, " +
+                "`virtualType` TEXT, " +
+                "`virtualName` TEXT, " +
+                "`packageName` TEXT, " +
+                "`createdAt` INTEGER NOT NULL)"
+        )
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS `index_home_tiles_ownerUserId_pageIndex` " +
+                "ON `home_tiles` (`ownerUserId`, `pageIndex`)"
+        )
+        db.execSQL(
+            "CREATE UNIQUE INDEX IF NOT EXISTS " +
+                "`index_home_tiles_ownerUserId_pageIndex_columnIndex_rowIndex` " +
+                "ON `home_tiles` (`ownerUserId`, `pageIndex`, `columnIndex`, `rowIndex`)"
+        )
+    }
+}
+
+object Migration_166_167 : Migration(166, 167) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            "DROP INDEX IF EXISTS `index_home_tiles_ownerUserId_pageIndex_columnIndex_rowIndex`"
+        )
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS " +
+                "`index_home_tiles_ownerUserId_pageIndex_columnIndex_rowIndex` " +
+                "ON `home_tiles` (`ownerUserId`, `pageIndex`, `columnIndex`, `rowIndex`)"
         )
     }
 }

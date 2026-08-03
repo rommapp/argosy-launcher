@@ -1,5 +1,7 @@
 package com.nendo.argosy.ui.screens.settings.sections.input
 
+import com.nendo.argosy.domain.model.HomeLayoutKind
+import com.nendo.argosy.ui.components.adjustHomeLayoutField
 import com.nendo.argosy.ui.input.InputHandler
 import com.nendo.argosy.ui.input.InputResult
 import com.nendo.argosy.ui.screens.settings.SettingsInputHandler
@@ -147,7 +149,7 @@ internal class LightSectionsInput(
         val state = viewModel.uiState.value
         val display = state.display
         val step = SettingsInputHandler.SLIDER_STEP
-        when (homeScreenItemAtFocusIndex(state.focusedIndex, display)) {
+        when (val focused = homeScreenItemAtFocusIndex(state.focusedIndex, display)) {
             HomeScreenItem.Background -> { viewModel.cycleHomeBackgroundMode(direction); return InputResult.HANDLED }
             HomeScreenItem.Blur -> { viewModel.adjustBackgroundBlur(direction * step); return InputResult.HANDLED }
             HomeScreenItem.Saturation -> { viewModel.adjustBackgroundSaturation(direction * step); return InputResult.HANDLED }
@@ -159,10 +161,18 @@ internal class LightSectionsInput(
             HomeScreenItem.VideoDelay -> { viewModel.cycleVideoWallpaperDelay(direction); return InputResult.HANDLED }
             HomeScreenItem.VideoMuted ->
                 return toggleLeftRight(direction, display.videoWallpaperMuted) { viewModel.setVideoWallpaperMuted(it) }
-            HomeScreenItem.AccentFooter ->
-                return toggleLeftRight(direction, display.useAccentColorFooter) { viewModel.setUseAccentColorFooter(it) }
             HomeScreenItem.InstalledOnly ->
                 return toggleLeftRight(direction, display.installedOnlyHome) { viewModel.setInstalledOnlyHome(it) }
+            HomeScreenItem.LayoutSelector -> {
+                val kinds = HomeLayoutKind.entries
+                val next = kinds[(kinds.indexOf(display.homeLayout.selected) + direction).mod(kinds.size)]
+                viewModel.setHomeLayout(display.homeLayout.copy(selected = next))
+                return InputResult.HANDLED
+            }
+            is HomeScreenItem.LayoutField -> {
+                viewModel.setHomeLayout(adjustHomeLayoutField(display.homeLayout, focused.field, direction))
+                return InputResult.HANDLED
+            }
             else -> {}
         }
         return InputResult.UNHANDLED

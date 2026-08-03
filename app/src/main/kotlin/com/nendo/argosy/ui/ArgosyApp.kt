@@ -27,6 +27,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.ime
+import androidx.compose.ui.platform.LocalDensity
 import android.content.Intent
 import com.nendo.argosy.ui.util.doubleTapNoFocus
 import androidx.compose.ui.layout.onSizeChanged
@@ -55,7 +59,6 @@ import com.nendo.argosy.ui.components.CoreCrashModal
 import com.nendo.argosy.ui.components.SaveConflictModal
 import com.nendo.argosy.ui.components.ScreenDimmerOverlay
 import com.nendo.argosy.ui.components.rememberScreenDimmerState
-import com.nendo.argosy.data.preferences.DefaultView
 import com.nendo.argosy.ui.input.GamepadEvent
 import com.nendo.argosy.ui.input.InputDispatcher
 import com.nendo.argosy.ui.input.InputHandler
@@ -77,6 +80,8 @@ import com.nendo.argosy.hardware.CompanionScreen
 import com.nendo.argosy.data.repository.AppsRepository
 import com.nendo.argosy.ui.screens.secondaryhome.DrawerAppUi
 import com.nendo.argosy.DualScreenManager
+import com.nendo.argosy.domain.model.HomeLayoutKind
+import com.nendo.argosy.domain.model.HomeTileTargetRef
 import com.nendo.argosy.ui.dualscreen.gamedetail.ActiveModal
 import com.nendo.argosy.ui.dualscreen.gamedetail.DualGameDetailInputHandler
 import com.nendo.argosy.ui.dualscreen.gamedetail.DualGameDetailUpperScreen
@@ -102,6 +107,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
 @Composable
@@ -306,7 +313,6 @@ fun ArgosyApp(
     val startDestination = remember(uiState.isLoading) {
         when {
             uiState.isFirstRun -> Screen.FirstRun.route
-            uiState.defaultView == DefaultView.LIBRARY -> Screen.Library.route
             else -> Screen.Home.route
         }
     }
@@ -1035,15 +1041,34 @@ fun ArgosyApp(
             dimLevel = screenDimmerPrefs.level / 100f,
             dimmerState = screenDimmerState
         ) {
+            var keySinkFocused by remember { mutableStateOf(false) }
+            val imeVisible = WindowInsets.ime.getBottom(LocalDensity.current) > 0
+
             Box(
                 modifier = Modifier
                     .fillMaxSize()
+                    .onFocusChanged { keySinkFocused = it.isFocused }
                     .focusRequester(rootFocusRequester)
                     .focusable()
                     .doubleTapNoFocus { openQuickMenu() }
             ) {
-                LaunchedEffect(Unit) {
-                    rootFocusRequester.requestFocus()
+                /**
+                 * The key sink has to take focus back whenever something else has had it.
+                 *
+                 * Gamepad input reaches the app through this node, and on a dual-screen handheld it
+                 * is also what forwards keys to the lower display, so a composable that takes focus
+                 * and does not give it back leaves both screens deaf until a touch clears it.
+                 *
+                 * Every tap is a way to lose it: Compose makes a clickable node focusable and moves
+                 * focus to it on press, so watching for a lost sink is the only reclaim that covers
+                 * the real cause rather than the few state changes we thought to enumerate. Typing
+                 * is the one time something else is meant to hold focus, and a raised keyboard is
+                 * what says so.
+                 */
+                LaunchedEffect(keySinkFocused, imeVisible, drawerState.isOpen, uiState.isFirstRun) {
+                    if (!keySinkFocused && !imeVisible && !drawerState.isOpen) {
+                        rootFocusRequester.requestFocus()
+                    }
                 }
 
                 var drawerWidthPx by remember { mutableStateOf(0f) }
@@ -1236,7 +1261,7 @@ fun ArgosyApp(
                             },
                             modifier = Modifier.blur(contentBlur)
                         )
-                    } else if (viewMode == "COLLECTIONS") {
+                    } else if (viewMode == "COLLECTIONS" || collectionShowcaseState.focused) {
                         DualCollectionShowcase(
                             state = collectionShowcaseState,
                             footerHints = {
@@ -1269,8 +1294,8 @@ fun ArgosyApp(
                                         "LIBRARY_GRID" -> listOf(
                                             com.nendo.argosy.ui.components.InputButton.LB_RB to "Platform",
                                             com.nendo.argosy.ui.components.InputButton.LT_RT to "Letter",
-                                            com.nendo.argosy.ui.components.InputButton.A to actionLabel,
-                                            com.nendo.argosy.ui.components.InputButton.X to "Details",
+                                            com.nendo.argosy.ui.components.InputButton.A to "Details",
+                                            com.nendo.argosy.ui.components.InputButton.X to "Options",
                                             com.nendo.argosy.ui.components.InputButton.Y to "Filters",
                                             com.nendo.argosy.ui.components.InputButton.B to "Back"
                                         )
@@ -1337,6 +1362,55 @@ fun ArgosyApp(
                         val swappedHomeApps = remember { activity.homeAppsList }
                         val swappedScreen by dualScreenManager.swappedCurrentScreen.collectAsState()
 
+                        val pushSwappedCollectionShowcase: () -> Unit =
+                            remember(swappedVm, dualScreenManager) {
+                                {
+                                    val item = swappedVm.selectedCollectionItem()
+                                    if (item != null) {
+                                        dualScreenManager.onCollectionFocused(
+                                            DualCollectionShowcaseState(
+                                                name = item.name,
+                                                description = item.description,
+                                                coverPaths = item.coverPaths,
+                                                gameCount = item.gameCount,
+                                                platformSummary = item.platformSummary,
+                                                totalPlaytimeMinutes = item.totalPlaytimeMinutes,
+                                                installedCount = item.installedCount,
+                                                achievementsEarned = item.achievementsEarned,
+                                                achievementsTotal = item.achievementsTotal
+                                            )
+                                        )
+                                    }
+                                }
+                            }
+
+                        val pushSwappedGameSelection: () -> Unit =
+                            remember(swappedVm, dualScreenManager) {
+                                {
+                                    val state = swappedVm.uiState.value
+                                    val inCustomGrid = state.layoutKind == HomeLayoutKind.CUSTOM_GRID
+                                    val target = if (inCustomGrid) swappedVm.focusedTile()?.target else null
+                                    if (target is HomeTileTargetRef.Collection) {
+                                        swappedVm.loadCollectionShowcase(target.collectionId) {
+                                            dualScreenManager.onCollectionFocused(it)
+                                        }
+                                    } else {
+                                        if (inCustomGrid) {
+                                            val tileGame = swappedVm.focusedTileGameId()
+                                                ?.let { state.tileGames[it] }
+                                            dualScreenManager.onGameSelected(
+                                                tileGame?.toShowcaseState() ?: DualHomeShowcaseState()
+                                            )
+                                        } else {
+                                            val game = state.selectedGame
+                                            if (game != null) {
+                                                dualScreenManager.onGameSelected(game.toShowcaseState())
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
                         val swappedInputHandler = remember(swappedVm) {
                             DualHomeInputHandler(
                                 viewModel = swappedVm,
@@ -1346,23 +1420,8 @@ fun ArgosyApp(
                                         swappedVm.uiState.value.viewMode.name, false, false
                                     )
                                 },
-                                onBroadcastCollectionFocused = {
-                                    val item = swappedVm.selectedCollectionItem() ?: return@DualHomeInputHandler
-                                    dualScreenManager.onCollectionFocused(
-                                        DualCollectionShowcaseState(
-                                            name = item.name,
-                                            description = item.description,
-                                            coverPaths = item.coverPaths,
-                                            gameCount = item.gameCount,
-                                            platformSummary = item.platformSummary,
-                                            totalPlaytimeMinutes = item.totalPlaytimeMinutes
-                                        )
-                                    )
-                                },
-                                onBroadcastCurrentGameSelection = {
-                                    val game = swappedVm.uiState.value.selectedGame ?: return@DualHomeInputHandler
-                                    dualScreenManager.onGameSelected(game.toShowcaseState())
-                                },
+                                onBroadcastCollectionFocused = pushSwappedCollectionShowcase,
+                                onBroadcastCurrentGameSelection = pushSwappedGameSelection,
                                 onBroadcastLibraryGameSelection = {
                                     val state = swappedVm.uiState.value
                                     val game = state.libraryGames.getOrNull(state.libraryFocusedIndex)
@@ -1500,6 +1559,23 @@ fun ArgosyApp(
                             }
                         }
 
+                        LaunchedEffect(swappedVm, swappedScreen, pushSwappedGameSelection) {
+                            if (swappedScreen != CompanionScreen.HOME) return@LaunchedEffect
+                            swappedVm.uiState
+                                .map {
+                                    Triple(
+                                        it.layoutKind,
+                                        it.customGrid.focusedTile?.target,
+                                        it.customGrid.tiles.size
+                                    )
+                                }
+                                .distinctUntilChanged()
+                                .collect { (layout, _, _) ->
+                                    if (layout != HomeLayoutKind.CUSTOM_GRID) return@collect
+                                    pushSwappedGameSelection()
+                                }
+                        }
+
                         LaunchedEffect(isDrawerOpen, isQuickSettingsOpen, quickMenuState.isVisible) {
                             if (isDrawerOpen || isQuickSettingsOpen || quickMenuState.isVisible) {
                                 swappedVm.startDrawerForwarding()
@@ -1590,19 +1666,7 @@ fun ArgosyApp(
                             onCollectionsClick = {
                                 swappedVm.enterCollections()
                                 dualScreenManager.onViewModeChanged(DualHomeViewMode.COLLECTIONS.name, false, false)
-                                val item = swappedVm.selectedCollectionItem()
-                                if (item != null) {
-                                    dualScreenManager.onCollectionFocused(
-                                        DualCollectionShowcaseState(
-                                            name = item.name,
-                                            description = item.description,
-                                            coverPaths = item.coverPaths,
-                                            gameCount = item.gameCount,
-                                            platformSummary = item.platformSummary,
-                                            totalPlaytimeMinutes = item.totalPlaytimeMinutes
-                                        )
-                                    )
-                                }
+                                pushSwappedCollectionShowcase()
                             },
                             onLibraryToggle = {
                                 swappedVm.toggleLibraryGrid {
@@ -1807,6 +1871,7 @@ fun ArgosyApp(
                                     dualScreenManager.dismissDualModal()
                                 }
                             },
+                            onCustomGridActivate = { swappedInputHandler.onConfirm() },
                             modifier = Modifier.blur(contentBlur)
                         )
                         }
@@ -1815,7 +1880,6 @@ fun ArgosyApp(
                     NavGraph(
                         navController = navController,
                         startDestination = startDestination,
-                        defaultView = uiState.defaultView,
                         onDrawerToggle = { if (isDrawerOpen) closeDrawer() else openDrawer() },
                         modifier = Modifier.blur(contentBlur)
                     )

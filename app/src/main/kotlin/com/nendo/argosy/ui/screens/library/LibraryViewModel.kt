@@ -206,6 +206,8 @@ data class LibraryUiState(
     val showFilterMenu: Boolean = false,
     val showQuickMenu: Boolean = false,
     val quickMenuFocusIndex: Int = 0,
+    val isCustomGridHome: Boolean = false,
+    val customGridLanes: Int = 0,
     val gridDensity: GridDensity = GridDensity.NORMAL,
     val isLoading: Boolean = true,
     val activeFilters: ActiveFilters = ActiveFilters(),
@@ -340,6 +342,8 @@ class LibraryViewModel @Inject constructor(
     private val gameNavigationContext: GameNavigationContext,
     private val notificationManager: NotificationManager,
     private val preferencesRepository: UserPreferencesRepository,
+    private val homeTileRepository: com.nendo.argosy.data.repository.HomeTileRepository,
+    private val syncPreferencesRepository: com.nendo.argosy.data.preferences.SyncPreferencesRepository,
     private val soundManager: SoundFeedbackManager,
     private val gameActions: GameActionsDelegate,
     private val gameLaunchDelegate: GameLaunchDelegate,
@@ -558,7 +562,10 @@ class LibraryViewModel @Inject constructor(
                 _uiState.update {
                     it.copy(
                         gridDensity = prefs.gridDensity,
-                        recentSearches = prefs.libraryRecentSearches
+                        recentSearches = prefs.libraryRecentSearches,
+                        isCustomGridHome = prefs.homeLayout.selected ==
+                            com.nendo.argosy.domain.model.HomeLayoutKind.CUSTOM_GRID,
+                        customGridLanes = prefs.homeLayout.customGrid.laneCount
                     )
                 }
             }
@@ -1202,6 +1209,22 @@ class LibraryViewModel @Inject constructor(
         loadGames()
     }
 
+    /**
+     * Puts a game on the curated home grid, in the first free cell of its last page - the same
+     * placement a finished download gets. The library has no page in view to aim at, so appending
+     * is the only placement it can honestly offer.
+     */
+    fun addGameToHomeGrid(gameId: Long) {
+        viewModelScope.launch {
+            homeTileRepository.appendToLastPage(
+                ownerUserId = syncPreferencesRepository.getRommUserId(),
+                target = com.nendo.argosy.domain.model.HomeTileTargetRef.Game(gameId),
+                columns = _uiState.value.customGridLanes.coerceAtLeast(1)
+            )
+            notificationManager.showSuccess("Added to home grid")
+        }
+    }
+
     fun toggleQuickMenu() {
         val wasShowing = _uiState.value.showQuickMenu
         _uiState.update { it.copy(showQuickMenu = !it.showQuickMenu, quickMenuFocusIndex = 0) }
@@ -1218,6 +1241,7 @@ class LibraryViewModel @Inject constructor(
             val canRefresh = game.isRommGame || game.isAndroidApp
             val hasDelete = game.isDownloaded || game.needsInstall
             var maxIndex = 5
+            if (it.isCustomGridHome) maxIndex++
             if (canRefresh) maxIndex++
             if (hasDelete) maxIndex++
             val newIndex = (it.quickMenuFocusIndex + delta).coerceIn(0, maxIndex)
@@ -1239,6 +1263,7 @@ class LibraryViewModel @Inject constructor(
         val favoriteIdx = currentIdx++
         val detailsIdx = currentIdx++
         val addToCollectionIdx = currentIdx++
+        val addToGridIdx = if (_uiState.value.isCustomGridHome) currentIdx++ else -1
         val refreshIdx = if (canRefresh) currentIdx++ else -1
         val resyncPlatformIdx = currentIdx++
         val deleteIdx = if (isDownloaded || needsInstall) currentIdx++ else -1
@@ -1269,6 +1294,11 @@ class LibraryViewModel @Inject constructor(
             addToCollectionIdx -> {
                 toggleQuickMenu()
                 showAddToCollectionModal(game.id)
+                InputResult.HANDLED
+            }
+            addToGridIdx -> {
+                toggleQuickMenu()
+                addGameToHomeGrid(game.id)
                 InputResult.HANDLED
             }
             refreshIdx -> {

@@ -161,6 +161,20 @@ object ComponentDefaults {
         const val valueLiftRatio = 0.12f
     }
 
+    object Carousel {
+        const val badgeHeadroomDp = 24
+        const val newBadgeOverflowDp = 20
+        const val companionCardWidth = 140
+        const val companionCardWidthFocused = 200
+        const val companionCardGap = 16
+        const val focusSnapOffsetPx = -25
+        const val viewAllIconSize = 28
+        const val dotSize = 6
+        const val dotSizeActive = 10
+        const val dotGap = 6
+        const val dotInactiveAlpha = 0.3f
+    }
+
     object SurfaceBackdrop {
         const val contentMaxAlpha = 0.25f
         const val wallpaperMaxAlpha = 0.5f
@@ -176,6 +190,31 @@ object ComponentDefaults {
         const val jitterMaxScaleDropRatio = 0.5f
         const val jitterMaxRotationDegrees = 60
         const val stampCellRatio = 0.6f
+    }
+
+    object CustomGrid {
+        const val swipePageThresholdDp = 48
+    }
+
+    object CollectionShowcase {
+        const val coverScrollMsPerCover = 1400
+        const val coverScrollDwellMs = 2200
+        const val coversAcross = 6
+    }
+
+    object HomeLayoutPreview {
+        const val headerBarWidthRatio = 0.3f
+        const val titleBarWidthRatio = 0.42f
+        const val subtitleBarWidthRatio = 0.24f
+        const val footerBarWidthRatio = 0.55f
+        const val sectionHeadingWidthRatio = 0.22f
+        const val coverTitleBarWidthRatio = 0.7f
+        const val badgeWidthRatio = 0.45f
+        const val restingBlockAlpha = 0.45f
+        const val maxHeightDp = 260
+        const val stepDwellMs = 900
+        const val scrollCycleMs = 9000
+        const val pageDwellMs = 1800
     }
 
 }

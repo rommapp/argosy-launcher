@@ -3,6 +3,9 @@ package com.nendo.argosy.hardware
 import android.util.Log
 import com.nendo.argosy.data.emulator.EmulatorDetector
 import com.nendo.argosy.data.preferences.EmulatorDisplayTarget
+import com.nendo.argosy.domain.model.HomeLayoutKind
+import com.nendo.argosy.ui.common.GridDirection
+import com.nendo.argosy.ui.components.AutoGridMove
 import com.nendo.argosy.ui.common.savechannel.SaveFocusColumn
 import com.nendo.argosy.DualScreenManager
 import com.nendo.argosy.ui.dualscreen.gamedetail.ActiveModal
@@ -13,9 +16,12 @@ import com.nendo.argosy.ui.dualscreen.home.DualFilterCategory
 import com.nendo.argosy.ui.dualscreen.home.DualHomeFocusZone
 import com.nendo.argosy.ui.dualscreen.home.DualHomeViewModel
 import com.nendo.argosy.ui.dualscreen.home.DualHomeViewMode
+import com.nendo.argosy.ui.dualscreen.home.DualLibraryMenuAction
 import com.nendo.argosy.ui.dualscreen.home.ForwardingMode
 import com.nendo.argosy.hardware.CompanionScreen
+import com.nendo.argosy.ui.home.grid.DualCustomGridInputRouter
 import com.nendo.argosy.ui.input.GamepadEvent
+import com.nendo.argosy.core.input.SoundType
 import com.nendo.argosy.ui.input.InputResult
 import com.nendo.argosy.ui.screens.home.HomeGameUi
 import com.nendo.argosy.ui.screens.secondaryhome.SecondaryHomeViewModel
@@ -382,10 +388,36 @@ class SecondaryHomeInputHandler(
         }
     }
 
+    private val customGrid = DualCustomGridInputRouter(
+        viewModel = dualHomeViewModel,
+        onBroadcastSelection = broadcasts::broadcastCurrentGameSelection,
+        onOpenDetails = onSelectGame,
+        onLaunchGame = ::confirmGame,
+        onLaunchApp = onLaunchApp,
+        onEnterCollectionGames = {
+            broadcasts.broadcastViewModeChange()
+            broadcasts.broadcastCollectionGameSelection()
+        }
+    )
+
     private fun handleCarouselInput(event: GamepadEvent): InputResult {
         val state = dualHomeViewModel.uiState.value
         val inAppBar = state.focusZone == DualHomeFocusZone.APP_BAR
+        if (!inAppBar) customGrid.route(event)?.let { return it }
         val apps = homeApps()
+        val inGrid = !inAppBar && state.layoutKind == HomeLayoutKind.AUTO_GRID
+        val reversed = state.carouselConfig.inverted
+
+        fun moveGrid(direction: GridDirection): Boolean {
+            if (!inGrid) return false
+            when (dualHomeViewModel.moveCarouselGridFocus(direction)) {
+                is AutoGridMove.Focus -> broadcasts.broadcastCurrentGameSelection()
+                AutoGridMove.PreviousSection -> dualHomeViewModel.previousSection()
+                AutoGridMove.NextSection -> dualHomeViewModel.nextSection()
+                AutoGridMove.None -> {}
+            }
+            return true
+        }
 
         return when (event) {
             GamepadEvent.Menu, GamepadEvent.LeftStickClick, GamepadEvent.RightStickClick -> {
@@ -394,16 +426,16 @@ class SecondaryHomeInputHandler(
             }
             GamepadEvent.Left -> {
                 if (inAppBar) dualHomeViewModel.selectPreviousApp()
-                else {
-                    dualHomeViewModel.selectPrevious()
+                else if (!moveGrid(GridDirection.LEFT)) {
+                    if (reversed) dualHomeViewModel.selectNext() else dualHomeViewModel.selectPrevious()
                     broadcasts.broadcastCurrentGameSelection()
                 }
                 InputResult.HANDLED
             }
             GamepadEvent.Right -> {
                 if (inAppBar) dualHomeViewModel.selectNextApp(apps.size)
-                else {
-                    dualHomeViewModel.selectNext()
+                else if (!moveGrid(GridDirection.RIGHT)) {
+                    if (reversed) dualHomeViewModel.selectPrevious() else dualHomeViewModel.selectNext()
                     broadcasts.broadcastCurrentGameSelection()
                 }
                 InputResult.HANDLED
@@ -411,7 +443,9 @@ class SecondaryHomeInputHandler(
             GamepadEvent.Down -> {
                 val isExternal = com.nendo.argosy.DualScreenManagerHolder.instance
                     ?.isExternalDisplay == true
-                if (!inAppBar && !isExternal) {
+                if (moveGrid(GridDirection.DOWN)) {
+                    InputResult.HANDLED
+                } else if (!inAppBar && apps.isNotEmpty() && !isExternal) {
                     dualHomeViewModel.focusAppBar(apps.size)
                     broadcasts.broadcastViewModeChange()
                     InputResult.HANDLED
@@ -421,6 +455,8 @@ class SecondaryHomeInputHandler(
                 if (inAppBar) {
                     dualHomeViewModel.focusCarousel()
                     broadcasts.broadcastViewModeChange()
+                    InputResult.HANDLED
+                } else if (moveGrid(GridDirection.UP)) {
                     InputResult.HANDLED
                 } else {
                     dualHomeViewModel.enterCollections()
@@ -588,9 +624,14 @@ class SecondaryHomeInputHandler(
                 InputResult.HANDLED
             }
             GamepadEvent.Back -> {
+                val fromTile = dualHomeViewModel.uiState.value.collectionOpenedFromTile
                 dualHomeViewModel.exitCollectionGames()
                 broadcasts.broadcastViewModeChange()
-                broadcasts.broadcastCollectionFocused()
+                if (fromTile) {
+                    broadcasts.broadcastCurrentGameSelection()
+                } else {
+                    broadcasts.broadcastCollectionFocused()
+                }
                 InputResult.HANDLED
             }
             GamepadEvent.Menu, GamepadEvent.LeftStickClick, GamepadEvent.RightStickClick -> {
@@ -604,6 +645,12 @@ class SecondaryHomeInputHandler(
     private fun handleLibraryGridInput(event: GamepadEvent): InputResult {
         if (dualHomeViewModel.uiState.value.showFilterOverlay) {
             return handleFilterInput(event)
+        }
+        if (dualHomeViewModel.uiState.value.collectionPickerGameId != null) {
+            return handleCollectionPickerInput(event)
+        }
+        if (dualHomeViewModel.uiState.value.showLibraryMenu) {
+            return handleLibraryMenuInput(event)
         }
 
         return when (event) {
@@ -653,14 +700,14 @@ class SecondaryHomeInputHandler(
             GamepadEvent.Confirm -> {
                 val s = dualHomeViewModel.uiState.value
                 val game = s.libraryGames.getOrNull(s.libraryFocusedIndex)
-                if (game != null) confirmGame(game)
-                InputResult.HANDLED
-            }
-            GamepadEvent.ContextMenu -> {
-                val s = dualHomeViewModel.uiState.value
-                val game = s.libraryGames.getOrNull(s.libraryFocusedIndex)
                 if (game != null) onSelectGame(game.id)
                 InputResult.HANDLED
+            }
+            GamepadEvent.ContextMenu, GamepadEvent.LongConfirm -> {
+                val s = dualHomeViewModel.uiState.value
+                val game = s.libraryGames.getOrNull(s.libraryFocusedIndex)
+                if (game != null) dualHomeViewModel.openLibraryGameMenu()
+                InputResult.handled(SoundType.OPEN_MODAL)
             }
             GamepadEvent.PrevSection -> {
                 dualHomeViewModel.cycleLibraryPlatform(-1) {
@@ -685,6 +732,62 @@ class SecondaryHomeInputHandler(
             else -> InputResult.HANDLED
         }
     }
+
+    private fun handleCollectionPickerInput(event: GamepadEvent): InputResult = when (event) {
+        GamepadEvent.Up -> {
+            dualHomeViewModel.moveCollectionPickerFocus(-1)
+            InputResult.HANDLED
+        }
+        GamepadEvent.Down -> {
+            dualHomeViewModel.moveCollectionPickerFocus(1)
+            InputResult.HANDLED
+        }
+        GamepadEvent.Confirm -> {
+            dualHomeViewModel.confirmCollectionPicker()
+            InputResult.handled(SoundType.TOGGLE)
+        }
+        GamepadEvent.Back -> {
+            dualHomeViewModel.closeCollectionPicker()
+            InputResult.handled(SoundType.CLOSE_MODAL)
+        }
+        else -> InputResult.HANDLED
+    }
+
+    /**
+     * The library's per-game menu on the companion. Launching and opening details belong to the
+     * activity, so the view model reports which entry was taken and the acting happens here.
+     */
+    private fun handleLibraryMenuInput(event: GamepadEvent): InputResult = when (event) {
+        GamepadEvent.Up -> {
+            dualHomeViewModel.moveLibraryMenuFocus(-1)
+            InputResult.HANDLED
+        }
+        GamepadEvent.Down -> {
+            dualHomeViewModel.moveLibraryMenuFocus(1)
+            InputResult.HANDLED
+        }
+        GamepadEvent.Back, GamepadEvent.ContextMenu -> {
+            dualHomeViewModel.closeLibraryGameMenu()
+            InputResult.handled(SoundType.CLOSE_MODAL)
+        }
+        GamepadEvent.Confirm -> {
+            val game = dualHomeViewModel.focusedLibraryGame()
+            val action = dualHomeViewModel.confirmLibraryMenu()
+            if (game != null) applyLibraryMenuAction(action, game)
+            InputResult.HANDLED
+        }
+        else -> InputResult.HANDLED
+    }
+
+    /**
+     * Carries out a library menu choice. Anything that edits the library itself is done by the
+     * primary process through the direct-action channel, which already owns those flows and their
+     * confirmations - duplicating them here would give a game two ways to be deleted.
+     */
+    private fun applyLibraryMenuAction(
+        action: DualLibraryMenuAction?,
+        game: HomeGameUi
+    ) = dualHomeViewModel.applyLibraryMenuAction(action, game, onSelectGame)
 
     private fun handleFilterInput(event: GamepadEvent): InputResult {
         val isSearch = dualHomeViewModel.uiState.value.filterCategory == DualFilterCategory.SEARCH
@@ -1191,9 +1294,9 @@ class SecondaryHomeInputHandler(
                 }
                 InputResult.HANDLED
             }
-            GamepadEvent.ContextMenu -> {
+            GamepadEvent.ContextMenu, GamepadEvent.LongConfirm -> {
                 viewModel.toggleDrawerFocusedPin()
-                InputResult.HANDLED
+                InputResult.handled(SoundType.TOGGLE)
             }
             GamepadEvent.SecondaryAction -> {
                 val packageName = viewModel.focusedDrawerAppPackageName()

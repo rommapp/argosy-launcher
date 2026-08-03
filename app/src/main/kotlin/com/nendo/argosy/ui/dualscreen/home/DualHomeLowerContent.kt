@@ -13,7 +13,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.graphics.Color
 import com.nendo.argosy.ui.util.touchOnly
 
@@ -34,19 +33,15 @@ fun DualHomeLowerContent(
     onSearchQueryChange: (String) -> Unit = {},
     onOpenDrawer: () -> Unit = {},
     onDimTapped: () -> Unit = {},
+    onCustomGridActivate: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val forwardingMode by viewModel.forwardingMode.collectAsState()
 
-    val isSearchActive = uiState.viewMode == DualHomeViewMode.LIBRARY_GRID
-        && uiState.showFilterOverlay
-        && uiState.filterCategory == DualFilterCategory.SEARCH
-
     Box(
         modifier = modifier
             .fillMaxSize()
-            .then(if (!isSearchActive) Modifier.focusProperties { canFocus = false } else Modifier)
             .background(MaterialTheme.colorScheme.background)
     ) {
         when (uiState.viewMode) {
@@ -75,7 +70,43 @@ fun DualHomeLowerContent(
                     onCollectionsClick = onCollectionsClick,
                     onLibraryToggle = onLibraryToggle,
                     onViewAllClick = onViewAllClick,
-                    onOpenDrawer = onOpenDrawer
+                    onOpenDrawer = onOpenDrawer,
+                    carouselConfig = uiState.carouselConfig,
+                    autoGridConfig = uiState.autoGridConfig,
+                    layoutKind = uiState.layoutKind,
+                    customGridState = uiState.customGrid,
+                    customGridContentFor = { tile -> uiState.tileContentFor(tile) },
+                    customGridConfig = uiState.customGridConfig,
+                    onCustomGridCellTap = { cell ->
+                        val grid = uiState.customGrid
+                        val onFocused = grid.tileAt(cell)
+                            ?.let { it == grid.focusedTile }
+                            ?: (cell == grid.cell)
+                        when {
+                            grid.isEditing -> viewModel.moveEditingTileTo(cell)
+                            onFocused -> onCustomGridActivate()
+                            else -> viewModel.setCustomGridCell(cell)
+                        }
+                    },
+                    onCustomGridSwipePage = { delta -> viewModel.turnCustomGridPage(delta) },
+                    onCustomGridTileDrag = { cell -> viewModel.moveEditingTileTo(cell) },
+                    onCustomGridTileResize = { cell -> viewModel.resizeEditingTileTo(cell) },
+                    onCustomGridToggleEditMode = { viewModel.toggleTileEditMode() },
+                    onCustomGridCommitEdit = { viewModel.commitTileEdit() },
+                    onCustomGridShape = { columns, rows ->
+                        viewModel.setCustomGridShape(columns, rows)
+                    },
+                    onCustomGridAddPage = { viewModel.confirmAddPage() },
+                    onCustomGridTileLongPress = { cell ->
+                        viewModel.setCustomGridCell(cell)
+                        viewModel.openTileMenu()
+                    },
+                    isPlatformSection = when (uiState.currentSection) {
+                        is DualHomeSection.Platform,
+                        DualHomeSection.Android,
+                        DualHomeSection.Steam -> true
+                        else -> false
+                    }
                 )
             }
             DualHomeViewMode.COLLECTIONS -> {
@@ -123,11 +154,91 @@ fun DualHomeLowerContent(
                         overlaySectionLabel = uiState.overlaySectionLabel,
                         repairedCoverPaths = uiState.repairedCoverPaths,
                         onGameTapped = onGridGameTapped,
+                        onGameLongPressed = { index ->
+                            viewModel.setLibraryFocusIndex(index)
+                            viewModel.openLibraryGameMenu()
+                        },
                         onCoverLoadFailed = { gameId, path -> viewModel.repairCoverImage(gameId, path) },
                         onSectionClick = onLetterClick
                     )
                 }
             }
+        }
+
+        val pendingTileAdd = uiState.customGrid.pendingAdd
+        if (pendingTileAdd != null) {
+            com.nendo.argosy.ui.primitives.ArgosyConfirmModal(
+                title = "Add to home grid?",
+                message = "${pendingTileAdd.title} finished downloading.",
+                confirmLabel = "Add",
+                cancelLabel = "Not now",
+                focusedIndex = uiState.customGrid.pendingAddFocusIndex,
+                onConfirm = viewModel::confirmPendingTileAdd,
+                onDismiss = viewModel::dismissPendingTileAdd
+            )
+        }
+
+        if (uiState.collectionPickerGameId != null) {
+            com.nendo.argosy.ui.components.CustomTileMenuModal(
+                title = "Add to Collection",
+                entries = uiState.collectionPickerEntries.map { entry ->
+                    if (entry.isMember) "${entry.name}  -  added" else entry.name
+                },
+                focusIndex = uiState.collectionPickerFocusIndex,
+                onSelect = { index ->
+                    viewModel.moveCollectionPickerFocus(index - uiState.collectionPickerFocusIndex)
+                    viewModel.confirmCollectionPicker()
+                },
+                onDismiss = viewModel::closeCollectionPicker
+            )
+        }
+
+        if (uiState.showLibraryMenu) {
+            val libraryGame = viewModel.focusedLibraryGame()
+            com.nendo.argosy.ui.components.CustomTileMenuModal(
+                title = libraryGame?.title.orEmpty(),
+                entries = viewModel.libraryMenuActions().map { it.label },
+                focusIndex = uiState.libraryMenuFocusIndex,
+                onSelect = { index ->
+                    viewModel.moveLibraryMenuFocus(index - uiState.libraryMenuFocusIndex)
+                    val action = viewModel.confirmLibraryMenu()
+                    libraryGame?.let { game ->
+                        viewModel.applyLibraryMenuAction(action, game, onGameSelected)
+                    }
+                },
+                onDismiss = viewModel::closeLibraryGameMenu
+            )
+        }
+
+        if (uiState.showTileMenu) {
+            val tile = viewModel.focusedTile()
+            com.nendo.argosy.ui.components.CustomTileMenuModal(
+                title = tile?.let { uiState.tileContentFor(it)?.label }.orEmpty(),
+                entries = uiState.customGrid.menuActions.map { it.label },
+                focusIndex = uiState.tileMenuFocusIndex,
+                onSelect = { index ->
+                    viewModel.moveTileMenuFocus(index - uiState.tileMenuFocusIndex)
+                    viewModel.confirmTileMenu()
+                },
+                onDismiss = viewModel::closeTileMenu,
+                dangerFromIndex = uiState.customGrid.menuDangerFromIndex
+            )
+        }
+
+        if (uiState.showTilePicker) {
+            com.nendo.argosy.ui.components.HomeTilePickerModal(
+                entries = uiState.tilePickerEntries,
+                query = uiState.tilePickerQuery,
+                focusIndex = uiState.tilePickerFocusIndex,
+                onSelect = { entry -> viewModel.selectTilePickerEntry(entry) },
+                onDismiss = viewModel::closeTilePicker,
+                searchActive = uiState.customGrid.pickerSearchActive,
+                onQueryChange = viewModel::setTilePickerQuery,
+                category = uiState.customGrid.pickerCategory,
+                onSelectCategory = { viewModel.setTilePickerCategory(it) },
+                canDeletePage = uiState.customGrid.canDeletePage,
+                onDeletePage = viewModel::deleteCustomGridPage
+            )
         }
 
         if (forwardingMode == ForwardingMode.OVERLAY) {

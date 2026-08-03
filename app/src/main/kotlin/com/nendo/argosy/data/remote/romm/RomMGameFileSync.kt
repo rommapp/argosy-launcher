@@ -30,14 +30,18 @@ class RomMGameFileSync @Inject constructor(
     }
 
     /**
-     * An absent file list means the response did not carry one, which is what the list
-     * endpoint always does; it is not a statement that the game has no files. Only a
-     * response that actually enumerated files may remove rows.
+     * An absent file list means the response did not carry one; it is not a statement that
+     * the game has no files. Only a response that actually enumerated files may remove rows.
+     *
+     * A root game file is reported with no category on RomM 4.9 and as `game` from 5.0, so
+     * shape alone cannot classify it. Depth does: anything below the rom's own directory
+     * that the server did not categorise is content we do not model, never a launch target.
      */
     suspend fun sync(gameId: Long, rom: RomMRom, platformSlug: String, fileListIsAuthoritative: Boolean) {
         val files = rom.files?.filter { file ->
-            file.category != null && !file.fileName.startsWith(".")
+            !file.fileName.startsWith(".")
         } ?: return
+        val rootPathLength = files.minOfOrNull { it.filePath.length }
 
         if (files.isEmpty()) {
             if (!fileListIsAuthoritative) {
@@ -55,7 +59,12 @@ class RomMGameFileSync @Inject constructor(
 
         val entities = files.map { file ->
             val existing = gameFileDao.getByRommFileId(file.id)
-            val category = VariantCategory.fromKey(file.category)
+            val isNested = rootPathLength != null && file.filePath.length > rootPathLength
+            val category = when {
+                file.category != null -> VariantCategory.fromKey(file.category)
+                isNested -> VariantCategory.UNKNOWN
+                else -> VariantCategory.GAME
+            }
             val localPath = existing?.localPath ?: recoverMusicLocalPath(file, category, rom)
             GameFileEntity(
                 id = existing?.id ?: 0,
@@ -68,7 +77,7 @@ class RomMGameFileSync @Inject constructor(
                 fileSize = file.fileSizeBytes,
                 localPath = localPath,
                 downloadedAt = existing?.downloadedAt ?: localPath?.let { Instant.now() },
-                isLaunchTarget = category.isLaunchTarget,
+                isLaunchTarget = category.isLaunchTarget && !(isNested && file.category == null),
                 isMultiDisc = existing?.isMultiDisc ?: false,
                 m3uPath = existing?.m3uPath,
                 trackTitle = file.trackMeta?.title,

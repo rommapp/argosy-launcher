@@ -202,38 +202,39 @@ internal sealed class InGameControlsItem(
     data object HudLastSave : InGameControlsItem("hudLastSave", "statusBar")
 
     companion object {
-        val ALL = listOf(
-            Header("controllersHeader", "controllers", "Controllers"),
-            GameSpecificControls,
-            ControllerOrder,
-            ControllerType(0),
-            ControllerType(1),
-            ControllerType(2),
-            ControllerType(3),
-            InputMapping,
-            Rumble,
-            Header("sticksHeader", "sticks", "Analog Sticks"),
-            AnalogAsDpad,
-            DpadAsAnalog,
-            Header("hotkeysHeader", "hotkeys", "Hotkeys"),
-            Hotkeys,
-            LimitHotkeysToPlayer1,
-            ToggleFastForward,
-            PreserveFastForwardPitch,
-            Header("touchControlsHeader", "touchControls", "Touch Controls"),
-            TouchEnabled,
-            TouchHaptic,
-            TouchLockOrientation,
-            TouchGenesis6Button,
-            Header("statusBarHeader", "statusBar", "Status Bar"),
-            HudEnabled,
-            HudCorner,
-            HudBattery,
-            HudClock,
-            HudPlaytime,
-            HudFps,
-            HudLastSave
-        )
+        val ALL: List<InGameControlsItem>
+            get() = listOf(
+                Header("controllersHeader", "controllers", "Controllers"),
+                GameSpecificControls,
+                ControllerOrder,
+                ControllerType(0),
+                ControllerType(1),
+                ControllerType(2),
+                ControllerType(3),
+                InputMapping,
+                Rumble,
+                Header("sticksHeader", "sticks", "Analog Sticks"),
+                AnalogAsDpad,
+                DpadAsAnalog,
+                Header("hotkeysHeader", "hotkeys", "Hotkeys"),
+                Hotkeys,
+                LimitHotkeysToPlayer1,
+                ToggleFastForward,
+                PreserveFastForwardPitch,
+                Header("touchControlsHeader", "touchControls", "Touch Controls"),
+                TouchEnabled,
+                TouchHaptic,
+                TouchLockOrientation,
+                TouchGenesis6Button,
+                Header("statusBarHeader", "statusBar", "Status Bar"),
+                HudEnabled,
+                HudCorner,
+                HudBattery,
+                HudClock,
+                HudPlaytime,
+                HudFps,
+                HudLastSave
+            )
     }
 }
 

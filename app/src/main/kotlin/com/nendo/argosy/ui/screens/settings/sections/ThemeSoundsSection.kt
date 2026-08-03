@@ -91,10 +91,11 @@ internal sealed class ThemeSoundsItem(
             visibleWhen = { it.uiSoundsEnabled }
         )
 
-        val ALL: List<ThemeSoundsItem> = listOf(
-            UiSoundsToggle, UiSoundsVolume,
-            CustomizeSpacer, CustomizeHeader
-        ) + SoundType.entries.filterNot { it == SoundType.SILENT }.map { SoundTypeItem(it) }
+        val ALL: List<ThemeSoundsItem>
+            get() = listOf(
+                UiSoundsToggle, UiSoundsVolume,
+                CustomizeSpacer, CustomizeHeader
+            ) + SoundType.entries.filterNot { it == SoundType.SILENT }.map { SoundTypeItem(it) }
     }
 }
 

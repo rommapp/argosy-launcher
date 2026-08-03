@@ -65,14 +65,15 @@ internal sealed class NavigationItem(
         private val MenusSpacer = SectionSpacer("menusSpacer", "menus")
         private val MenusHeader = Header("menusHeader", "menus", "Menus")
 
-        val ALL: List<NavigationItem> = listOf(
-            ControllerHeader,
-            ControllerLayout, SwapAB, SwapXY, SwapStartSelect,
-            FeedbackSpacer, FeedbackHeader,
-            HapticFeedback, VibrationStrength,
-            MenusSpacer, MenusHeader,
-            MenuWrap, SelectLCombo, SelectRCombo
-        )
+        val ALL: List<NavigationItem>
+            get() = listOf(
+                ControllerHeader,
+                ControllerLayout, SwapAB, SwapXY, SwapStartSelect,
+                FeedbackSpacer, FeedbackHeader,
+                HapticFeedback, VibrationStrength,
+                MenusSpacer, MenusHeader,
+                MenuWrap, SelectLCombo, SelectRCombo
+            )
     }
 }
 

@@ -152,14 +152,15 @@ sealed class QuickSettingsItem(
         private val DeviceDivider = Divider("device")
         private val SocialDivider = Divider("social")
 
-        val ALL: List<QuickSettingsItem> = listOf(
-            Performance, Fan, FanSpeed,
-            DeviceDivider,
-            Theme, SystemVolume, ScreenBrightness,
-            Haptic, VibrationStrength, UISounds, BGM, SwapDisplays,
-            SocialDivider,
-            QuayPass
-        )
+        val ALL: List<QuickSettingsItem>
+            get() = listOf(
+                Performance, Fan, FanSpeed,
+                DeviceDivider,
+                Theme, SystemVolume, ScreenBrightness,
+                Haptic, VibrationStrength, UISounds, BGM, SwapDisplays,
+                SocialDivider,
+                QuayPass
+            )
     }
 }
 

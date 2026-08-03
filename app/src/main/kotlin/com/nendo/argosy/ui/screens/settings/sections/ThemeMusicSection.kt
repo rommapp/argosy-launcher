@@ -72,10 +72,11 @@ internal sealed class ThemeMusicItem(
         private val StorageSpacer = SectionSpacer("storageSpacer", "storage", { it.bgmEnabled })
         private val StorageHeader = Header("storageHeader", "storage", "Storage", { it.bgmEnabled })
 
-        val ALL: List<ThemeMusicItem> = listOf(
-            BgmToggle, BgmVolume, BgmPlaylist, BrowseServerMusic, BrowseLocalMusic, BgmShuffle, GameThemeToggle,
-            StorageSpacer, StorageHeader, MusicLocation
-        )
+        val ALL: List<ThemeMusicItem>
+            get() = listOf(
+                BgmToggle, BgmVolume, BgmPlaylist, BrowseServerMusic, BrowseLocalMusic, BgmShuffle, GameThemeToggle,
+                StorageSpacer, StorageHeader, MusicLocation
+            )
     }
 }
 

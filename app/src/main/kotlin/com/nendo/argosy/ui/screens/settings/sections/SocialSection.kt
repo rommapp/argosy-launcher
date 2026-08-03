@@ -98,13 +98,14 @@ internal sealed class SocialItem(
         private val QuayPassHeader = Header("quayPassHeader", "quaypass", "QUAYPASS")
         private val UnlinkSpacer = SectionSpacer("unlinkSpacer", "unlink")
 
-        val ALL: List<SocialItem> = listOf(
-            AccountHeader, AccountInfo, EditAvatar, UseDoodleAvatar,
-            PrivacyHeader, OnlineStatus, ShowNowPlaying,
-            NotificationsSpacer, NotificationsHeader, NotifyFriendOnline, NotifyFriendPlaying, SuppressInGame,
-            QuayPassSpacer, QuayPassHeader, QuayPassEnabled,
-            UnlinkSpacer, Unlink
-        )
+        val ALL: List<SocialItem>
+            get() = listOf(
+                AccountHeader, AccountInfo, EditAvatar, UseDoodleAvatar,
+                PrivacyHeader, OnlineStatus, ShowNowPlaying,
+                NotificationsSpacer, NotificationsHeader, NotifyFriendOnline, NotifyFriendPlaying, SuppressInGame,
+                QuayPassSpacer, QuayPassHeader, QuayPassEnabled,
+                UnlinkSpacer, Unlink
+            )
     }
 }
 

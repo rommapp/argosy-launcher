@@ -94,19 +94,20 @@ internal sealed class PlatformDetailItem(
     data object BiosCopy : PlatformDetailItem("bios_copy", "bios", { it.hasBios && it.biosDownloaded })
 
     companion object {
-        val ALL: List<PlatformDetailItem> = listOf(
-            Header("header_emulator", "emulator", "Emulator"),
-            Emulator, Core, Extension, DisplayTarget, LegacyMode, LaunchArgs, BuiltinVideo, BuiltinControls, BuiltinCoreOptions,
-            Header("header_platform", "platform", "Platform"),
-            InfoItem("info_platform_stats", "platform"),
-            ScanFiles,
-            Header("header_bios", "bios", "BIOS", { it.hasBios }),
-            InfoItem("info_bios_status", "bios", { it.hasBios }), BiosDownload, BiosInstall, BiosCopy,
-            Header("header_sync", "sync", "Storage & Sync"),
-            SyncToggle, SyncNow, DownloadDefaults, InfoItem("info_package_path", "sync", { it.showSavePath && !it.isBuiltin && !it.isRetroArch }),
-            RomPath, SavePath, MemoryCard, StatePath,
-            RemoveFiles
-        )
+        val ALL: List<PlatformDetailItem>
+            get() = listOf(
+                Header("header_emulator", "emulator", "Emulator"),
+                Emulator, Core, Extension, DisplayTarget, LegacyMode, LaunchArgs, BuiltinVideo, BuiltinControls, BuiltinCoreOptions,
+                Header("header_platform", "platform", "Platform"),
+                InfoItem("info_platform_stats", "platform"),
+                ScanFiles,
+                Header("header_bios", "bios", "BIOS", { it.hasBios }),
+                InfoItem("info_bios_status", "bios", { it.hasBios }), BiosDownload, BiosInstall, BiosCopy,
+                Header("header_sync", "sync", "Storage & Sync"),
+                SyncToggle, SyncNow, DownloadDefaults, InfoItem("info_package_path", "sync", { it.showSavePath && !it.isBuiltin && !it.isRetroArch }),
+                RomPath, SavePath, MemoryCard, StatePath,
+                RemoveFiles
+            )
     }
 }
 

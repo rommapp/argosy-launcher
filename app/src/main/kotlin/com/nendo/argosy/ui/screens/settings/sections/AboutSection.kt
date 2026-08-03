@@ -91,11 +91,12 @@ internal sealed class AboutItem(
         private val SystemHeader = Header("systemHeader", "system", "SYSTEM APP")
         private val DebugHeader = Header("debugHeader", "debug", "DEBUG")
 
-        val ALL: List<AboutItem> = listOf(
-            VersionHeader, VersionInfo, CheckUpdates, ChangelogPreview, BetaUpdates,
-            SystemSpacer, SystemHeader, SystemizeHelper,
-            SectionSpacer, DebugHeader, FileLogging, LogLevel, SaveDebugLogging
-        )
+        val ALL: List<AboutItem>
+            get() = listOf(
+                VersionHeader, VersionInfo, CheckUpdates, ChangelogPreview, BetaUpdates,
+                SystemSpacer, SystemHeader, SystemizeHelper,
+                SectionSpacer, DebugHeader, FileLogging, LogLevel, SaveDebugLogging
+            )
     }
 }
 

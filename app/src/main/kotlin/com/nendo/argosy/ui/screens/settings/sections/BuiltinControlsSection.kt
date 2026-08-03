@@ -85,38 +85,39 @@ internal sealed class BuiltinControlsItem(
         private val SpeedrunHeader = Header("speedrunHeader", "speedrun", "Speedrun Timer")
         private val TouchHeader = Header("touchControlsHeader", "touchControls", "Touch Controls")
 
-        val ALL: List<BuiltinControlsItem> = listOf(
-            ControllersHeader,
-            ControllerOrder,
-            InputMapping,
-            Rumble,
-            SticksHeader,
-            AnalogAsDpad,
-            DpadAsAnalog,
-            HotkeysHeader,
-            Hotkeys,
-            LimitHotkeysToPlayer1,
-            ToggleFastForward,
-            PreserveFastForwardPitch,
-            ResetAllToGlobal,
-            SpeedrunHeader,
-            SpeedrunStartOnReset,
-            SpeedrunPanelSide,
-            SpeedrunPanelWidth,
-            TouchHeader,
-            TouchEnabled,
-            TouchOpacityLandscape,
-            TouchOpacityPortrait,
-            TouchSizeScale,
-            TouchHaptic,
-            TouchFadeOnIdle,
-            TouchSwapHanded,
-            TouchLockOrientation,
-            TouchMirror180,
-            TouchColouredFaceButtons,
-            TouchGenesis6Button,
-            TouchCustomizeLayouts
-        )
+        val ALL: List<BuiltinControlsItem>
+            get() = listOf(
+                ControllersHeader,
+                ControllerOrder,
+                InputMapping,
+                Rumble,
+                SticksHeader,
+                AnalogAsDpad,
+                DpadAsAnalog,
+                HotkeysHeader,
+                Hotkeys,
+                LimitHotkeysToPlayer1,
+                ToggleFastForward,
+                PreserveFastForwardPitch,
+                ResetAllToGlobal,
+                SpeedrunHeader,
+                SpeedrunStartOnReset,
+                SpeedrunPanelSide,
+                SpeedrunPanelWidth,
+                TouchHeader,
+                TouchEnabled,
+                TouchOpacityLandscape,
+                TouchOpacityPortrait,
+                TouchSizeScale,
+                TouchHaptic,
+                TouchFadeOnIdle,
+                TouchSwapHanded,
+                TouchLockOrientation,
+                TouchMirror180,
+                TouchColouredFaceButtons,
+                TouchGenesis6Button,
+                TouchCustomizeLayouts
+            )
     }
 }
 

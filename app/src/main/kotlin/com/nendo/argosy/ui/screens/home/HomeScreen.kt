@@ -668,7 +668,7 @@ fun HomeScreen(
                         ).coerceAtLeast(Dimens.spacingXl)
                 else -> cardSize.height * uiState.carouselConfig.focusScale + Dimens.spacingMd
             }
-            val isStackedHeader = maxWidth <= maxHeight
+            val isPortrait = maxWidth <= maxHeight
             Box(
                 modifier = Modifier
                     .align(Alignment.TopCenter)
@@ -682,7 +682,7 @@ fun HomeScreen(
                     onPreviousRow = viewModel::previousRow,
                     onNextRow = viewModel::nextRow,
                     onSelectRow = viewModel::selectRow,
-                    isStacked = isStackedHeader,
+                    isStacked = isPortrait,
                     headerOffset = videoModeHeaderOffset,
                     showSections = !isCustomGrid
                 )
@@ -959,6 +959,7 @@ fun HomeScreen(
                 showMetadata = !uiState.isVideoPreviewActive,
                 textColorOverride = if (videoTextColor != Color.Unspecified) videoTextColor else null,
                 placement = if (
+                    !isPortrait &&
                     uiState.carouselConfig.focusPosition == HomeFocusPosition.CENTER
                 ) {
                     GameInfoPlacement.SPLIT
@@ -967,17 +968,18 @@ fun HomeScreen(
                 },
                 modifier = Modifier
                     .fillMaxWidth(
-                        if (uiState.carouselConfig.focusPosition == HomeFocusPosition.CENTER) {
-                            gameInfoWidth
-                        } else {
-                            GAME_INFO_SIDE_WIDTH_FRACTION
+                        when {
+                            isPortrait -> 1f
+                            uiState.carouselConfig.focusPosition == HomeFocusPosition.CENTER ->
+                                gameInfoWidth
+                            else -> GAME_INFO_SIDE_WIDTH_FRACTION
                         }
                     )
                     .align(
                         gameInfoAlignment(
                             atBottom = uiState.carouselConfig.rowAlignment == HomeRowAlignment.TOP,
-                            centred = uiState.carouselConfig.focusPosition ==
-                                HomeFocusPosition.CENTER,
+                            centred = isPortrait ||
+                                uiState.carouselConfig.focusPosition == HomeFocusPosition.CENTER,
                             inverted = uiState.carouselConfig.inverted
                         )
                     )
@@ -1318,6 +1320,9 @@ private const val GAME_INFO_SPLIT_WIDTH_FRACTION = 0.45f
 /**
  * Which corner the details block occupies. It sits opposite the focused card, on the half of the
  * row the rail leaves free, and moves below the cards when they are hung from the top.
+ *
+ * Portrait passes [centred] regardless of the configured focus position: there is no free half
+ * beside the rail on a narrow screen, so the block spans the full width above or below it.
  */
 private fun gameInfoAlignment(
     atBottom: Boolean,

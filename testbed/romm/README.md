@@ -60,6 +60,16 @@ curl -s -b jar -X POST http://localhost:8093/api/users \
 request fails 403 with "CSRF token verification failed", which reads like an auth
 problem and is not one.
 
+State-changing calls after login also need `Origin` and `Referer` set to the
+instance, on top of the CSRF header and the `romm_session` cookie.
+
+**The library scan has to be started from each instance's web UI.** There is no
+API route for it on 5.1: `scan_library` reports `manual_run: false` and
+`POST /api/tasks/run/scan_library` answers 400 "cannot be run". The only
+manual-runnable tasks are `cleanup_orphaned_resources`, `cleanup_missing_roms`
+and `recompute_save_content_hashes`. The real scan is driven over socket.io from
+the frontend, so it is three browser visits and one button each.
+
 Tear down with `docker compose -f docker-compose.base.yml -f romm-<v>.yml down`;
 add `-v` to discard that version's database, resources and assets.
 

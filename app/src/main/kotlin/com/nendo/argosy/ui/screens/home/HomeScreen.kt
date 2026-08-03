@@ -731,6 +731,7 @@ fun HomeScreen(
                                 onTileDrag = { cell -> viewModel.moveEditingTileTo(cell) },
                                 onTileResize = { cell -> viewModel.resizeEditingTileTo(cell) },
                                 onToggleEditMode = { viewModel.toggleTileEditMode() },
+                                onCommitEdit = { viewModel.commitTileEdit() },
                                 showEmptySlots = uiState.customGridConfig.showEmptySlots,
                                 onShapeResolved = { columns, rows ->
                                     viewModel.setCustomGridShape(columns, rows)
@@ -1075,7 +1076,8 @@ fun HomeScreen(
                     viewModel.moveTileMenuFocus(index - uiState.customGrid.menuFocusIndex)
                     viewModel.confirmTileMenu()
                 },
-                onDismiss = viewModel::closeTileMenu
+                onDismiss = viewModel::closeTileMenu,
+                dangerFromIndex = uiState.customGrid.menuDangerFromIndex
             )
         }
 
@@ -1093,7 +1095,9 @@ fun HomeScreen(
                 searchActive = uiState.customGrid.pickerSearchActive,
                 onQueryChange = viewModel::setTilePickerQuery,
                 category = uiState.customGrid.pickerCategory,
-                onSelectCategory = { viewModel.setTilePickerCategory(it) }
+                onSelectCategory = { viewModel.setTilePickerCategory(it) },
+                canDeletePage = uiState.customGrid.canDeletePage,
+                onDeletePage = viewModel::deleteCustomGridPage
             )
         }
 

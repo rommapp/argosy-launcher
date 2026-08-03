@@ -13,7 +13,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.graphics.Color
 import com.nendo.argosy.ui.util.touchOnly
 
@@ -40,17 +39,9 @@ fun DualHomeLowerContent(
     val uiState by viewModel.uiState.collectAsState()
     val forwardingMode by viewModel.forwardingMode.collectAsState()
 
-    val isSearchActive = uiState.customGrid.pickerSearchActive ||
-        (
-            uiState.viewMode == DualHomeViewMode.LIBRARY_GRID &&
-                uiState.showFilterOverlay &&
-                uiState.filterCategory == DualFilterCategory.SEARCH
-            )
-
     Box(
         modifier = modifier
             .fillMaxSize()
-            .then(if (!isSearchActive) Modifier.focusProperties { canFocus = false } else Modifier)
             .background(MaterialTheme.colorScheme.background)
     ) {
         when (uiState.viewMode) {
@@ -101,6 +92,7 @@ fun DualHomeLowerContent(
                     onCustomGridTileDrag = { cell -> viewModel.moveEditingTileTo(cell) },
                     onCustomGridTileResize = { cell -> viewModel.resizeEditingTileTo(cell) },
                     onCustomGridToggleEditMode = { viewModel.toggleTileEditMode() },
+                    onCustomGridCommitEdit = { viewModel.commitTileEdit() },
                     onCustomGridShape = { columns, rows ->
                         viewModel.setCustomGridShape(columns, rows)
                     },
@@ -209,10 +201,9 @@ fun DualHomeLowerContent(
                 focusIndex = uiState.libraryMenuFocusIndex,
                 onSelect = { index ->
                     viewModel.moveLibraryMenuFocus(index - uiState.libraryMenuFocusIndex)
-                    when (viewModel.confirmLibraryMenu()) {
-                        DualLibraryMenuAction.PLAY -> libraryGame?.let { onGameSelected(it.id) }
-                        DualLibraryMenuAction.DETAILS -> libraryGame?.let { onGameSelected(it.id) }
-                        else -> Unit
+                    val action = viewModel.confirmLibraryMenu()
+                    libraryGame?.let { game ->
+                        viewModel.applyLibraryMenuAction(action, game, onGameSelected)
                     }
                 },
                 onDismiss = viewModel::closeLibraryGameMenu
@@ -229,7 +220,8 @@ fun DualHomeLowerContent(
                     viewModel.moveTileMenuFocus(index - uiState.tileMenuFocusIndex)
                     viewModel.confirmTileMenu()
                 },
-                onDismiss = viewModel::closeTileMenu
+                onDismiss = viewModel::closeTileMenu,
+                dangerFromIndex = uiState.customGrid.menuDangerFromIndex
             )
         }
 
@@ -243,7 +235,9 @@ fun DualHomeLowerContent(
                 searchActive = uiState.customGrid.pickerSearchActive,
                 onQueryChange = viewModel::setTilePickerQuery,
                 category = uiState.customGrid.pickerCategory,
-                onSelectCategory = { viewModel.setTilePickerCategory(it) }
+                onSelectCategory = { viewModel.setTilePickerCategory(it) },
+                canDeletePage = uiState.customGrid.canDeletePage,
+                onDeletePage = viewModel::deleteCustomGridPage
             )
         }
 

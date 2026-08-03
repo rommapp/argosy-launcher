@@ -9,7 +9,8 @@ import com.nendo.argosy.domain.model.fitTilesToPage
 
 enum class CustomTileMenuAction(val label: String) {
     ARRANGE("Move or resize"),
-    REMOVE("Remove from grid")
+    REMOVE("Remove from grid"),
+    DELETE_PAGE("Delete Page")
 }
 
 /**
@@ -68,6 +69,25 @@ data class CustomGridState(
             (editingPage ?: -1) + 1,
             (pendingPage ?: -1) + 1
         )
+
+    /**
+     * Pages that actually exist, as opposed to pages the grid shows. The trailing stub and the
+     * two-page display floor are conveniences of the view, so neither is something a delete can act
+     * on: deleting one would remove nothing and leave the count where it was.
+     */
+    val realPageCount: Int
+        get() = maxOf(
+            (tiles.maxOfOrNull { it.pageIndex } ?: -1) + 1,
+            storedPages,
+            (pendingPage ?: -1) + 1
+        )
+
+    /**
+     * Whether the current page can be deleted. The last remaining page is not offered: a grid with
+     * no page at all is not a state the rest of the surface can render.
+     */
+    val canDeletePage: Boolean
+        get() = !isEditing && realPageCount > 1 && page in 0 until realPageCount
 
     val isOnAddPage: Boolean
         get() = page >= pageCount
@@ -139,6 +159,29 @@ data class CustomGridState(
                 .toSet()
         }
 
+    /**
+     * What the tile menu offers. Deleting the page is listed even on an empty cell, because it acts
+     * on the page rather than on whatever the cursor happens to be sitting over.
+     */
     val menuActions: List<CustomTileMenuAction>
-        get() = if (focusedTile == null) emptyList() else CustomTileMenuAction.entries
+        get() = buildList {
+            if (focusedTile != null) {
+                add(CustomTileMenuAction.ARRANGE)
+                add(CustomTileMenuAction.REMOVE)
+            }
+            if (canDeletePage) add(CustomTileMenuAction.DELETE_PAGE)
+        }
+
+    val menuDangerFromIndex: Int?
+        get() = menuActions.indexOf(CustomTileMenuAction.DELETE_PAGE).takeIf { it >= 0 }
+
+    /**
+     * Rows the picker can focus. Deleting the page sits after the entries rather than among them,
+     * so a search that empties the list still leaves it reachable.
+     */
+    val pickerFocusCount: Int
+        get() = pickerEntries.size + if (canDeletePage) 1 else 0
+
+    val isPickerDeletePageFocused: Boolean
+        get() = canDeletePage && pickerFocusIndex >= pickerEntries.size
 }

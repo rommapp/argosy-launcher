@@ -232,6 +232,19 @@ data class DualHomeUiState(
     val selectedGame: HomeGameUi?
         get() = games.getOrNull(selectedIndex)
 
+    /**
+     * Whether a text field on this display is meant to hold Compose focus. Nothing else on the
+     * companion may take it: a focused card swallows the d-pad, and the launcher decides selection
+     * itself, so focus is granted only for typing and only while a field is on screen.
+     */
+    val isTextEntryActive: Boolean
+        get() = customGrid.pickerSearchActive ||
+            (
+                viewMode == DualHomeViewMode.LIBRARY_GRID &&
+                    showFilterOverlay &&
+                    filterCategory == DualFilterCategory.SEARCH
+                )
+
     val homeTiles: List<com.nendo.argosy.domain.model.HomeTile>
         get() = customGrid.tiles
 
@@ -367,6 +380,7 @@ class DualHomeViewModel(
         repository = homeTileRepository,
         ownerUserId = { syncPreferencesRepository?.getRommUserId() },
         onPageAdded = { count -> persistCustomGridPageCount(count) },
+        onPageRemoved = { count -> persistCustomGridPageRemoval(count) },
         pickerEntries = { category, query -> tilePickerEntriesFor(category, query) },
         read = { _uiState.value.customGrid },
         write = { transform -> _uiState.update { it.copy(customGrid = transform(it.customGrid)) } }
@@ -1210,6 +1224,8 @@ class DualHomeViewModel(
 
     fun confirmAddPage() = customGrid.confirmAddPage()
 
+    fun deleteCustomGridPage() = customGrid.deleteCurrentPage()
+
     /**
      * Remembers a page that holds nothing, when the layout is set to keep blank pages. Pages are
      * otherwise implied by the tiles on them, so an empty one has nowhere to live but the config.
@@ -1218,6 +1234,22 @@ class DualHomeViewModel(
         val prefs = preferencesRepository ?: return
         val config = _uiState.value.customGridConfig
         if (!config.persistBlankPages || count <= config.pageCount) return
+        viewModelScope.launch {
+            val settings = prefs.userPreferences.first().homeLayout
+            prefs.setHomeLayout(
+                settings.copy(customGrid = settings.customGrid.copy(pageCount = count))
+            )
+        }
+    }
+
+    /**
+     * Forgets a remembered blank page. Without this the config keeps claiming the page the delete
+     * just removed, and the next preferences emission puts it straight back.
+     */
+    private fun persistCustomGridPageRemoval(count: Int) {
+        val prefs = preferencesRepository ?: return
+        val config = _uiState.value.customGridConfig
+        if (config.pageCount <= count) return
         viewModelScope.launch {
             val settings = prefs.userPreferences.first().homeLayout
             prefs.setHomeLayout(
@@ -1634,6 +1666,41 @@ class DualHomeViewModel(
             else -> Unit
         }
         return action
+    }
+
+    /**
+     * Carries out the library menu choices this surface cannot apply itself. Anything that edits the
+     * library is done by the primary process through the direct-action channel, which already owns
+     * those flows and their confirmations; opening details stays with the caller because only the
+     * host knows which display the detail screen belongs on.
+     *
+     * Touch and gamepad both come through here, so a choice cannot mean one thing when it is tapped
+     * and another when it is confirmed with a button.
+     */
+    fun applyLibraryMenuAction(
+        action: DualLibraryMenuAction?,
+        game: HomeGameUi,
+        onOpenDetails: (Long) -> Unit
+    ) {
+        val dsm = com.nendo.argosy.DualScreenManagerHolder.instance
+        when (action) {
+            DualLibraryMenuAction.PLAY, DualLibraryMenuAction.INSTALL ->
+                if (game.isSteamGame && !game.isPlayable) {
+                    dsm?.openSteamChooserForHome(game.id)
+                } else {
+                    dsm?.handleDirectAction(if (game.isPlayable) "PLAY" else "DOWNLOAD", game.id)
+                }
+            DualLibraryMenuAction.DOWNLOAD -> dsm?.handleDirectAction("DOWNLOAD", game.id)
+            DualLibraryMenuAction.DETAILS -> onOpenDetails(game.id)
+            DualLibraryMenuAction.REFRESH -> dsm?.handleDirectAction("REFRESH_METADATA", game.id)
+            DualLibraryMenuAction.RESYNC_PLATFORM ->
+                dsm?.handleDirectAction("RESYNC_PLATFORM", game.id)
+            DualLibraryMenuAction.DELETE, DualLibraryMenuAction.UNINSTALL ->
+                dsm?.handleDirectAction("DELETE", game.id)
+            DualLibraryMenuAction.HIDE -> dsm?.handleDirectAction("HIDE", game.id)
+            DualLibraryMenuAction.SHOW -> dsm?.handleDirectAction("UNHIDE", game.id)
+            else -> Unit
+        }
     }
 
     /**

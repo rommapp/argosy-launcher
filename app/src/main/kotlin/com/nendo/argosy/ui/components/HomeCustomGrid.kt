@@ -167,6 +167,7 @@ fun HomeCustomGridPage(
     onTileDrag: ((GridCell) -> Unit)? = null,
     onTileResize: ((GridCell) -> Unit)? = null,
     onToggleEditMode: (() -> Unit)? = null,
+    onCommitEdit: (() -> Unit)? = null,
     isResizing: Boolean = false
 ) {
     val density = LocalDensity.current
@@ -257,6 +258,7 @@ fun HomeCustomGridPage(
                 onOffsetChange = { dragOffset = it },
                 onTileDrag = onTileDrag,
                 onTileResize = onTileResize,
+                onCommit = { onCommitEdit?.invoke() },
                 onTap = { onToggleEditMode?.invoke() }
             )
         }
@@ -722,6 +724,7 @@ private fun BoxScope.TileDragSurface(
     onOffsetChange: (androidx.compose.ui.geometry.Offset) -> Unit,
     onTileDrag: (GridCell) -> Unit,
     onTileResize: ((GridCell) -> Unit)?,
+    onCommit: () -> Unit,
     onTap: () -> Unit
 ) {
     val currentAnchor by androidx.compose.runtime.rememberUpdatedState(anchor)
@@ -777,11 +780,14 @@ private fun BoxScope.TileDragSurface(
                 )
             }
             .pointerInput(metrics) {
-                detectTapGestures { offset ->
-                    val touched = cellAtOffset(offset, metrics)
-                    val grabbed = currentAnchor ?: return@detectTapGestures
-                    if (grabbed.covers(touched.columnIndex, touched.rowIndex)) onTap()
-                }
+                detectTapGestures(
+                    onTap = { offset ->
+                        val touched = cellAtOffset(offset, metrics)
+                        val grabbed = currentAnchor ?: return@detectTapGestures
+                        if (grabbed.covers(touched.columnIndex, touched.rowIndex)) onTap()
+                    },
+                    onDoubleTap = { onCommit() }
+                )
             }
     )
 }

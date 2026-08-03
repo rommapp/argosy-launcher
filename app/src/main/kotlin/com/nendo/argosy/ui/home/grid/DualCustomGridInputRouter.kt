@@ -16,14 +16,16 @@ import com.nendo.argosy.ui.screens.home.HomeGameUi
  * The lower screen is driven by two different handlers depending on which display has the control
  * role, and the grid behaves identically on both. Written twice it drifted silently - the swapped
  * display simply did nothing - so the routing lives here and each handler supplies only the actions
- * it alone can perform: launching a game, opening details, starting an app.
+ * it alone can perform: launching a game, opening details, starting an app, and telling its own
+ * display that a collection tile changed the view.
  */
 class DualCustomGridInputRouter(
     private val viewModel: DualHomeViewModel,
     private val onBroadcastSelection: () -> Unit,
     private val onOpenDetails: (Long) -> Unit,
     private val onLaunchGame: (HomeGameUi) -> Unit,
-    private val onLaunchApp: (String) -> Unit
+    private val onLaunchApp: (String) -> Unit,
+    private val onEnterCollectionGames: () -> Unit = onBroadcastSelection
 ) {
 
     private val isActive: Boolean
@@ -103,7 +105,9 @@ class DualCustomGridInputRouter(
             }
 
             GamepadEvent.Select -> {
-                if (grid.isEditing || grid.showPicker) return InputResult.HANDLED
+                if (grid.isEditing || grid.showPicker || grid.pendingAdd != null) {
+                    return InputResult.HANDLED
+                }
                 viewModel.openTileMenu()
                 InputResult.handled(SoundType.OPEN_MODAL)
             }
@@ -119,8 +123,11 @@ class DualCustomGridInputRouter(
             }
 
             GamepadEvent.SecondaryAction -> {
-                if (!grid.showPicker) return null
-                viewModel.toggleTilePickerSearch()
+                if (grid.showPicker) {
+                    viewModel.toggleTilePickerSearch()
+                    return InputResult.HANDLED
+                }
+                grid.focusedGameId?.let { viewModel.toggleFavoriteById(it) }
                 InputResult.HANDLED
             }
 
@@ -189,7 +196,7 @@ class DualCustomGridInputRouter(
             is HomeTileTargetRef.App -> onLaunchApp(target.packageName)
             is HomeTileTargetRef.Collection ->
                 viewModel.enterCollectionGames(target.collectionId, fromTile = true) {
-                    onBroadcastSelection()
+                    onEnterCollectionGames()
                 }
             else -> viewModel.openTilePicker()
         }

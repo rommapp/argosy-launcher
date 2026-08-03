@@ -35,7 +35,11 @@ class DualHomeInputHandler(
         onBroadcastSelection = onBroadcastCurrentGameSelection,
         onOpenDetails = onSelectGame,
         onLaunchGame = ::confirmGame,
-        onLaunchApp = onLaunchApp
+        onLaunchApp = onLaunchApp,
+        onEnterCollectionGames = {
+            onBroadcastViewModeChange()
+            onBroadcastCollectionGameSelection()
+        }
     )
 
     fun handleForViewMode(): InputResult {
@@ -278,9 +282,14 @@ class DualHomeInputHandler(
                 InputResult.HANDLED
             }
             com.nendo.argosy.ui.input.GamepadEvent.Back -> {
+                val fromTile = viewModel.uiState.value.collectionOpenedFromTile
                 viewModel.exitCollectionGames()
                 onBroadcastViewModeChange()
-                onBroadcastCollectionFocused()
+                if (fromTile) {
+                    onBroadcastCurrentGameSelection()
+                } else {
+                    onBroadcastCollectionFocused()
+                }
                 InputResult.HANDLED
             }
             else -> InputResult.HANDLED
@@ -380,6 +389,7 @@ class DualHomeInputHandler(
     override fun onLeft() = dispatch(GamepadEvent.Left)
     override fun onRight() = dispatch(GamepadEvent.Right)
     override fun onConfirm() = dispatch(GamepadEvent.Confirm)
+    override fun onLongConfirm() = dispatch(GamepadEvent.LongConfirm)
     override fun onBack() = dispatch(GamepadEvent.Back)
     override fun onSecondaryAction() = dispatch(GamepadEvent.SecondaryAction)
     override fun onContextMenu() = dispatch(GamepadEvent.ContextMenu)

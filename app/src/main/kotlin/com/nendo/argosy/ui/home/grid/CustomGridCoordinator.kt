@@ -31,6 +31,7 @@ class CustomGridCoordinator(
     private val ownerUserId: suspend () -> Long?,
     private val pickerEntries: suspend (TilePickerCategory, String) -> List<TilePickerEntry>,
     private val onPageAdded: ((Int) -> Unit)? = null,
+    private val onPageRemoved: ((Int) -> Unit)? = null,
     private val read: () -> CustomGridState,
     private val write: ((CustomGridState) -> CustomGridState) -> Unit
 ) {
@@ -100,7 +101,7 @@ class CustomGridCoordinator(
     }
 
     fun openMenu() {
-        if (read().focusedTile == null) return
+        if (read().menuActions.isEmpty()) return
         write { it.copy(showMenu = true, menuFocusIndex = 0) }
     }
 
@@ -118,6 +119,7 @@ class CustomGridCoordinator(
         when (action) {
             CustomTileMenuAction.ARRANGE -> enterMoveMode()
             CustomTileMenuAction.REMOVE -> removeFocusedTile()
+            CustomTileMenuAction.DELETE_PAGE -> deleteCurrentPage()
         }
     }
 
@@ -356,6 +358,49 @@ class CustomGridCoordinator(
         onPageAdded?.invoke(current.page + 1)
     }
 
+    /**
+     * Removes the page under the cursor and closes the gap behind it. The tiles go with the page;
+     * nothing they pointed at is touched, so the games themselves stay on the device.
+     *
+     * The cursor lands on the page that took the deleted one's place, or on the new last page when
+     * the deleted one was last - never past the end, where it would be sitting on the trailing stub
+     * with nothing to go back to. A page that was only ever pending has nothing stored to delete, so
+     * it is simply forgotten.
+     */
+    fun deleteCurrentPage() {
+        val current = read()
+        if (!current.canDeletePage) return
+        val target = current.page
+        val remaining = (current.realPageCount - 1).coerceAtLeast(1)
+        val landing = target.coerceAtMost(remaining - 1).coerceAtLeast(0)
+        val wasPending = current.pendingPage == target
+        val pending = when {
+            wasPending -> null
+            current.pendingPage != null && current.pendingPage > target -> current.pendingPage - 1
+            else -> current.pendingPage
+        }
+        write {
+            it.copy(
+                page = landing,
+                cell = GridCell(0, 0),
+                pendingPage = pending,
+                storedPages = it.storedPages.coerceAtMost(remaining),
+                showMenu = false,
+                menuFocusIndex = 0,
+                showPicker = false,
+                pickerQuery = "",
+                pickerSearchActive = false,
+                pickerFocusIndex = 0
+            )
+        }
+        if (!wasPending) {
+            repository?.let { tiles ->
+                scope.launch { tiles.removePage(ownerUserId(), target) }
+            }
+        }
+        onPageRemoved?.invoke(remaining)
+    }
+
     fun openPicker() {
         if (read().focusedTile != null) return
         write {
@@ -386,7 +431,7 @@ class CustomGridCoordinator(
     }
 
     fun movePickerFocus(delta: Int) = write {
-        val maxIndex = (it.pickerEntries.size - 1).coerceAtLeast(0)
+        val maxIndex = (it.pickerFocusCount - 1).coerceAtLeast(0)
         it.copy(pickerFocusIndex = (it.pickerFocusIndex + delta).coerceIn(0, maxIndex))
     }
 
@@ -395,11 +440,22 @@ class CustomGridCoordinator(
         refreshPicker()
     }
 
+    /**
+     * Focus is clamped as the entries land, because a list that arrives shorter than the one it
+     * replaces would otherwise leave the cursor past its end - and past the end is where the
+     * destructive footer sits.
+     */
     private fun refreshPicker() {
         scope.launch {
             val current = read()
             val entries = pickerEntries(current.pickerCategory, current.pickerQuery.trim().lowercase())
-            write { it.copy(pickerEntries = entries) }
+            write { state ->
+                val updated = state.copy(pickerEntries = entries)
+                updated.copy(
+                    pickerFocusIndex = updated.pickerFocusIndex
+                        .coerceIn(0, (updated.pickerFocusCount - 1).coerceAtLeast(0))
+                )
+            }
         }
     }
 
@@ -422,6 +478,10 @@ class CustomGridCoordinator(
 
     fun confirmPickerSelection() {
         val current = read()
+        if (current.isPickerDeletePageFocused) {
+            deleteCurrentPage()
+            return
+        }
         val entry = current.pickerEntries.getOrNull(current.pickerFocusIndex) ?: return
         placeOnFocusedCell(entry.target)
         closePicker()

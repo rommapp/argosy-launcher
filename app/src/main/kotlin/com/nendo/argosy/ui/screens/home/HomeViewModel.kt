@@ -99,6 +99,7 @@ class HomeViewModel @Inject constructor(
         repository = homeTileRepository,
         ownerUserId = { syncPreferencesRepository.getRommUserId() },
         onPageAdded = { count -> persistCustomGridPageCount(count) },
+        onPageRemoved = { count -> persistCustomGridPageRemoval(count) },
         pickerEntries = { category, query ->
             when (category) {
                 com.nendo.argosy.ui.components.TilePickerCategory.GAMES ->
@@ -639,6 +640,8 @@ class HomeViewModel @Inject constructor(
 
     override fun confirmAddPage() = customGrid.confirmAddPage()
 
+    fun deleteCustomGridPage() = customGrid.deleteCurrentPage()
+
     /**
      * Remembers a page that holds nothing, when the layout is set to keep blank pages. Pages are
      * otherwise implied by the tiles on them, so an empty one has nowhere to live but the config.
@@ -646,6 +649,21 @@ class HomeViewModel @Inject constructor(
     private fun persistCustomGridPageCount(count: Int) {
         val config = _uiState.value.customGridConfig
         if (!config.persistBlankPages || count <= config.pageCount) return
+        viewModelScope.launch {
+            val settings = preferencesRepository.userPreferences.first().homeLayout
+            preferencesRepository.setHomeLayout(
+                settings.copy(customGrid = settings.customGrid.copy(pageCount = count))
+            )
+        }
+    }
+
+    /**
+     * Forgets a remembered blank page. Without this the config keeps claiming the page the delete
+     * just removed, and the next preferences emission puts it straight back.
+     */
+    private fun persistCustomGridPageRemoval(count: Int) {
+        val config = _uiState.value.customGridConfig
+        if (config.pageCount <= count) return
         viewModelScope.launch {
             val settings = preferencesRepository.userPreferences.first().homeLayout
             preferencesRepository.setHomeLayout(

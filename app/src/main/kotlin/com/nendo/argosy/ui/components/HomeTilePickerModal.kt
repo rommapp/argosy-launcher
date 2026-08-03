@@ -18,6 +18,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -31,6 +32,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextOverflow
@@ -75,6 +77,9 @@ enum class TilePickerCategory(val label: String) {
  *
  * Owns no state: the query and the focus index belong to the caller, so the gamepad drives it
  * through the same input handler as everything else on the screen.
+ *
+ * When [canDeletePage] the last focus index belongs to the destructive footer rather than to an
+ * entry, which is why it is pinned below the list instead of scrolling with it.
  */
 @Composable
 fun HomeTilePickerModal(
@@ -86,7 +91,9 @@ fun HomeTilePickerModal(
     searchActive: Boolean = false,
     onQueryChange: (String) -> Unit = {},
     category: TilePickerCategory = TilePickerCategory.GAMES,
-    onSelectCategory: (TilePickerCategory) -> Unit = {}
+    onSelectCategory: (TilePickerCategory) -> Unit = {},
+    canDeletePage: Boolean = false,
+    onDeletePage: () -> Unit = {}
 ) {
     val listState = rememberLazyListState()
     FocusedScroll(listState = listState, focusedIndex = focusIndex)
@@ -124,21 +131,62 @@ fun HomeTilePickerModal(
                 color = LocalArgosyTheme.current.textDim,
                 modifier = Modifier.padding(Dimens.spacingMd)
             )
-            return@Modal
-        }
-        LazyColumn(
-            state = listState,
-            verticalArrangement = Arrangement.spacedBy(Dimens.listGap)
-        ) {
-            itemsIndexed(entries, key = { _, entry -> entry.key }) { index, entry ->
-                TilePickerRow(
-                    entry = entry,
-                    isFocused = index == focusIndex,
-                    onClick = { onSelect(entry) }
-                )
+        } else {
+            LazyColumn(
+                state = listState,
+                modifier = Modifier.weight(1f, fill = false),
+                verticalArrangement = Arrangement.spacedBy(Dimens.listGap)
+            ) {
+                itemsIndexed(entries, key = { _, entry -> entry.key }) { index, entry ->
+                    TilePickerRow(
+                        entry = entry,
+                        isFocused = index == focusIndex,
+                        onClick = { onSelect(entry) }
+                    )
+                }
             }
         }
+        if (canDeletePage) {
+            HorizontalDivider(
+                modifier = Modifier.padding(vertical = Dimens.spacingXs),
+                color = LocalArgosyTheme.current.hairlineLow
+            )
+            TileDangerRow(
+                label = "Delete Page",
+                isFocused = focusIndex >= entries.size,
+                onClick = onDeletePage
+            )
+        }
     }
+}
+
+/**
+ * The destructive footer of a tile modal. Kept visually apart from the rows above it so the action
+ * that throws work away never sits in the same run as the ones that make it.
+ */
+@Composable
+private fun TileDangerRow(
+    label: String,
+    isFocused: Boolean,
+    onClick: () -> Unit
+) {
+    val theme = LocalArgosyTheme.current
+    val shape = RoundedCornerShape(Dimens.radiusControl)
+    Text(
+        text = label,
+        style = MaterialTheme.typography.bodyMedium,
+        color = if (isFocused) lerp(theme.destructive, Color.White, 0.45f) else theme.destructive,
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(shape)
+            .argosyFocusIndicators(
+                focused = isFocused,
+                indicators = FocusIndicators.ListRow,
+                shape = shape
+            )
+            .clickableNoFocus(onClick = onClick)
+            .padding(Dimens.spacingSm)
+    )
 }
 
 @Composable

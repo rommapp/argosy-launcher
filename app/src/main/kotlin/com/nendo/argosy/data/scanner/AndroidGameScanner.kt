@@ -38,9 +38,25 @@ class AndroidGameScanner @Inject constructor(
      *
      * Existing rows are left alone. An app already in the library, however it got there, is not
      * touched, so re-running this cannot disturb a RomM-sourced Android game.
+     *
+     * A RomM-sourced Android game the server has given us but that is not yet tied to a package
+     * is claimed by [relinkInstalledRommAndroidApps] first, and any that stay unclaimed are held
+     * back from insertion. Inserting alongside one of those is how this feature historically
+     * produced duplicate rows for a single game.
      */
     suspend fun scanInstalledGames(): Int = withContext(Dispatchers.IO) {
         ensureAndroidPlatformExists()
+        relinkInstalledRommAndroidApps()
+
+        val unclaimed = gameDao
+            .getByPlatform(LocalPlatformIds.ANDROID, syncPreferencesRepository.getRommUserId())
+            .filter { it.packageName == null && it.source != GameSource.ANDROID_APP }
+        val spokenFor = buildSet {
+            unclaimed.forEach { game ->
+                game.titleId?.let { add(it) }
+                matchKey(game.title).takeIf { it.isNotEmpty() }?.let { add(it) }
+            }
+        }
 
         val installed = appsRepository.getInstalledApps(includeSystemApps = false)
             .filter { !isEmulatorPackage(it.packageName) }
@@ -48,6 +64,10 @@ class AndroidGameScanner @Inject constructor(
 
         for (app in installed) {
             if (gameDao.getByPackageName(app.packageName) != null) continue
+            if (app.packageName in spokenFor || matchKey(app.label) in spokenFor) {
+                Log.d(TAG, "scanInstalledGames: ${app.packageName} matches an unlinked RomM row, skipping")
+                continue
+            }
             val flagged = appCategoryDao.getByPackageName(app.packageName)
             val isGame = when {
                 flagged?.isManualOverride == true -> flagged.isGame
@@ -73,12 +93,7 @@ class AndroidGameScanner @Inject constructor(
             added++
         }
 
-        if (added > 0) {
-            platformDao.updateGameCount(
-                LocalPlatformIds.ANDROID,
-                gameDao.countByPlatform(LocalPlatformIds.ANDROID, syncPreferencesRepository.getRommUserId())
-            )
-        }
+        if (added > 0) updatePlatformGameCount()
         Log.d(TAG, "scanInstalledGames: added $added of ${installed.size} installed apps")
         added
     }

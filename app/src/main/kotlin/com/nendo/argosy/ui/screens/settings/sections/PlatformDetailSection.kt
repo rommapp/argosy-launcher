@@ -129,7 +129,6 @@ internal data class PlatformDetailVisibility(
     val biosMissing: Boolean = false,
     val biosDownloaded: Boolean = false,
     val canDistribute: Boolean = false,
-    val isPs2: Boolean = false,
     val showMemoryCard: Boolean = false,
     /**
      * Installed apps, not rom files. Nothing on this platform is downloaded, emulated or stored
@@ -161,7 +160,6 @@ internal data class PlatformDetailVisibility(
             biosDownloaded = detail.biosDownloaded > 0,
             canDistribute = com.nendo.argosy.data.emulator.BiosPathRegistry
                 .getEmulatorsForPlatform(config.platform.slug).isNotEmpty(),
-            isPs2 = config.platform.slug == "ps2",
             showMemoryCard = com.nendo.argosy.data.emulator.EmulatorSettingScope.showsMemoryCard(
                 config.platform.slug,
                 memcardCount

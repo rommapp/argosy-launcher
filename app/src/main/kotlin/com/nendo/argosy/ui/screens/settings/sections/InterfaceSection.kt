@@ -131,7 +131,7 @@ fun InterfaceSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                     isFocused = isFocused(item),
                     step = 5,
                     suffix = "%",
-                    onClick = { viewModel.adjustUiScale(5) }
+                    onAdjust = { viewModel.adjustUiScale(it) }
                 )
 
                 InterfaceItem.HomeScreen -> NavigationPreference(

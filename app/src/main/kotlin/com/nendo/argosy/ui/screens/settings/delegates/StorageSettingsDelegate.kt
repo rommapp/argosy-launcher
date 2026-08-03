@@ -145,14 +145,14 @@ class StorageSettingsDelegate @Inject constructor(
         _launchFolderPicker.value = false
     }
 
-    fun setStoragePath(uriString: String) {
+    fun setStoragePath(scope: CoroutineScope, uriString: String) {
         if (rejectIfPrivateAppPath(uriString)) return
         val currentState = _state.value
         if (currentState.downloadedGamesCount > 0 && currentState.romStoragePath.isNotBlank()) {
             _showMigrationDialog.value = true
             _pendingStoragePath.value = uriString
         } else {
-            applyStoragePath(uriString)
+            applyStoragePath(uriString, scope)
         }
     }
 
@@ -192,15 +192,14 @@ class StorageSettingsDelegate @Inject constructor(
         _pendingStoragePath.value = null
     }
 
-    fun skipMigration() {
+    fun skipMigration(scope: CoroutineScope) {
         val pendingPath = _pendingStoragePath.value ?: return
         _showMigrationDialog.value = false
-        applyStoragePath(pendingPath)
+        applyStoragePath(pendingPath, scope)
     }
 
-    private fun applyStoragePath(uriString: String, scope: CoroutineScope? = null) {
-        val applyScope = scope ?: kotlinx.coroutines.GlobalScope
-        applyScope.launch {
+    private fun applyStoragePath(uriString: String, scope: CoroutineScope) {
+        scope.launch {
             preferencesRepository.setRomStoragePath(uriString)
             val availableSpace = gameRepository.getAvailableStorageBytes()
             _state.update {
@@ -210,7 +209,20 @@ class StorageSettingsDelegate @Inject constructor(
                 )
             }
             _pendingStoragePath.value = null
+            rediscoverAllPlatforms()
         }
+    }
+
+    /**
+     * The global folder is the other half of the per-platform one: pointing Argosy at a library
+     * that is already on disk has to look at it, or every game keeps offering Download until an
+     * unrelated trigger happens to fire.
+     *
+     * Fill-null-only, so it can add links but never move or drop one.
+     */
+    private suspend fun rediscoverAllPlatforms() {
+        runCatching { gameRepository.discoverLocalFiles() }
+            .onFailure { Logger.warn(TAG, "rediscoverAllPlatforms failed", it) }
     }
 
     private fun migrateDownloads(scope: CoroutineScope, newPath: String) {
@@ -223,6 +235,7 @@ class StorageSettingsDelegate @Inject constructor(
 
             _state.update { it.copy(romStoragePath = newPath) }
             _isMigrating.value = false
+            rediscoverAllPlatforms()
             refreshCollectionStats(scope)
         }
     }

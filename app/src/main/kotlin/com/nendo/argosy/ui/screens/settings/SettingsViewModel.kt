@@ -1311,10 +1311,10 @@ class SettingsViewModel @Inject constructor(
 
     fun openFolderPicker() = storageDelegate.openFolderPicker()
     fun clearFolderPickerFlag() = storageDelegate.clearFolderPickerFlag()
-    fun setStoragePath(uriString: String) = storageDelegate.setStoragePath(uriString)
+    fun setStoragePath(uriString: String) = storageDelegate.setStoragePath(viewModelScope, uriString)
     fun confirmMigration() = storageDelegate.confirmMigration(viewModelScope)
     fun cancelMigration() = storageDelegate.cancelMigration()
-    fun skipMigration() = storageDelegate.skipMigration()
+    fun skipMigration() = storageDelegate.skipMigration(viewModelScope)
     fun confirmBuiltinPathMigration() = routeConfirmBuiltinPathMigration(this)
     fun cancelBuiltinPathMigration() = routeCancelBuiltinPathMigration(this)
     fun skipBuiltinPathMigration() = routeSkipBuiltinPathMigration(this)

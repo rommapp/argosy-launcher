@@ -1,0 +1,25 @@
+volumes:
+  testbed_db_data:
+
+services:
+  romm-testbed-db:
+    image: mariadb:11.3.2
+    container_name: romm-testbed-db
+    restart: unless-stopped
+    environment:
+      - MARIADB_ROOT_PASSWORD=${DB_ROOT_PASSWORD}
+      - MARIADB_DATABASE=romm_v49
+      - MARIADB_USER=${DB_USER}
+      - MARIADB_PASSWORD=${DB_PASSWORD}
+    volumes:
+      - testbed_db_data:/var/lib/mysql
+      - ./initdb:/docker-entrypoint-initdb.d:ro
+    ports:
+      - "${DB_PORT:-3399}:3306"
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      start_period: 30s
+      start_interval: 10s
+      interval: 10s
+      timeout: 5s
+      retries: 5

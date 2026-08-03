@@ -1,0 +1,28 @@
+volumes:
+  v51_resources:
+  v51_redis:
+  v51_assets:
+
+services:
+  romm-v51:
+    image: ghcr.io/rommapp/romm:5.1.0
+    container_name: romm-v51
+    restart: unless-stopped
+    environment:
+      - DB_HOST=romm-testbed-db
+      - DB_NAME=romm_v51
+      - DB_USER=${DB_USER}
+      - DB_PASSWD=${DB_PASSWORD}
+      - ROMM_AUTH_SECRET_KEY=${ROMM_AUTH_SECRET_KEY}
+      - HASHEOUS_API_ENABLED=true
+    volumes:
+      - v51_resources:/romm/resources
+      - v51_redis:/redis-data
+      - v51_assets:/romm/assets
+      - ${TESTBED_LIBRARY}:/romm/library:ro
+    ports:
+      - "8093:8080"
+    depends_on:
+      romm-testbed-db:
+        condition: service_healthy
+        restart: true

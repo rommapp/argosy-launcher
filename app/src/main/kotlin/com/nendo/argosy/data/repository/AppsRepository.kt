@@ -6,6 +6,7 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
+import android.os.Build
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.awaitClose
@@ -18,8 +19,25 @@ import javax.inject.Singleton
 data class InstalledApp(
     val packageName: String,
     val label: String,
-    val isSystemApp: Boolean
+    val isSystemApp: Boolean,
+    val declaresGameCategory: Boolean = false
 )
+
+/**
+ * Whether the package itself claims to be a game.
+ *
+ * `category` is what the Play Store listing sets and is the reliable signal on anything
+ * installed from a store; the deprecated flag is the only thing older sideloaded builds set, so
+ * both are consulted. A package that declares neither is not evidence of anything either way -
+ * plenty of games set no category at all.
+ */
+private fun ApplicationInfo.declaresGameCategory(): Boolean {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && category == ApplicationInfo.CATEGORY_GAME) {
+        return true
+    }
+    @Suppress("DEPRECATION")
+    return (flags and ApplicationInfo.FLAG_IS_GAME) != 0
+}
 
 @Singleton
 class AppsRepository @Inject constructor(
@@ -64,7 +82,8 @@ class AppsRepository @Inject constructor(
                 InstalledApp(
                     packageName = appInfo.packageName,
                     label = resolveInfo.loadLabel(packageManager).toString(),
-                    isSystemApp = isSystem
+                    isSystemApp = isSystem,
+                    declaresGameCategory = appInfo.declaresGameCategory()
                 )
             }
             .distinctBy { it.packageName }

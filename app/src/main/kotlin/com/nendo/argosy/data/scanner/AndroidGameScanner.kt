@@ -16,6 +16,7 @@ import javax.inject.Singleton
 import com.nendo.argosy.data.platform.LocalPlatformIds
 
 private const val TAG = "AndroidGameScanner"
+private const val ANDROID_SLUG = "android"
 
 
 @Singleton
@@ -27,7 +28,77 @@ class AndroidGameScanner @Inject constructor(
     private val syncPreferencesRepository: com.nendo.argosy.data.preferences.SyncPreferencesRepository
 ) {
 
+    /**
+     * Adds installed apps that declare themselves games to the Android platform.
+     *
+     * Classification is local: the package's own category, plus anything the user has already
+     * flagged by hand in the Apps screen. Nothing is asked over the network, so this is instant
+     * and works offline, and the cost is that a game shipping no category at all is not found -
+     * the Apps screen stays the way to add those, and a manual flag is remembered here.
+     *
+     * Existing rows are left alone. An app already in the library, however it got there, is not
+     * touched, so re-running this cannot disturb a RomM-sourced Android game.
+     */
+    suspend fun scanInstalledGames(): Int = withContext(Dispatchers.IO) {
+        ensureAndroidPlatformExists()
 
+        val installed = appsRepository.getInstalledApps(includeSystemApps = false)
+            .filter { !isEmulatorPackage(it.packageName) }
+        var added = 0
+
+        for (app in installed) {
+            if (gameDao.getByPackageName(app.packageName) != null) continue
+            val flagged = appCategoryDao.getByPackageName(app.packageName)
+            val isGame = when {
+                flagged?.isManualOverride == true -> flagged.isGame
+                app.declaresGameCategory -> true
+                else -> false
+            }
+            if (!isGame) continue
+
+            gameDao.insert(
+                GameEntity(
+                    platformId = LocalPlatformIds.ANDROID,
+                    platformSlug = ANDROID_SLUG,
+                    title = app.label,
+                    sortTitle = sortTitleFor(app.label),
+                    localPath = null,
+                    rommId = null,
+                    igdbId = null,
+                    source = GameSource.ANDROID_APP,
+                    packageName = app.packageName,
+                    titleId = app.packageName
+                )
+            )
+            added++
+        }
+
+        if (added > 0) {
+            platformDao.updateGameCount(
+                LocalPlatformIds.ANDROID,
+                gameDao.countByPlatform(LocalPlatformIds.ANDROID, syncPreferencesRepository.getRommUserId())
+            )
+        }
+        Log.d(TAG, "scanInstalledGames: added $added of ${installed.size} installed apps")
+        added
+    }
+
+    /**
+     * The Android platform exists whether or not anything is on it, because its own settings
+     * screen is where a user goes to scan apps onto it.
+     */
+    suspend fun ensureAndroidPlatformExists() = withContext(Dispatchers.IO) {
+        if (platformDao.getById(LocalPlatformIds.ANDROID) != null) return@withContext
+        com.nendo.argosy.data.platform.PlatformDefinitions.getBySlug(ANDROID_SLUG)
+            ?.let { com.nendo.argosy.data.platform.PlatformDefinitions.toLocalPlatformEntity(it) }
+            ?.let { platformDao.insert(it) }
+    }
+
+    private fun sortTitleFor(label: String): String = label.lowercase()
+        .removePrefix("the ")
+        .removePrefix("a ")
+        .removePrefix("an ")
+        .trim()
 
     suspend fun relinkInstalledRommAndroidApps(): Int = withContext(Dispatchers.IO) {
         val candidates = gameDao

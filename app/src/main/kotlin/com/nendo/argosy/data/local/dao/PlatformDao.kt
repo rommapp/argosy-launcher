@@ -6,6 +6,7 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
 import com.nendo.argosy.data.local.entity.PlatformEntity
+import com.nendo.argosy.data.platform.LocalPlatformIds
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -80,7 +81,17 @@ interface PlatformDao {
     @Query("DELETE FROM platforms WHERE id = :id")
     suspend fun deleteById(id: Long)
 
-    @Query("DELETE FROM platforms WHERE id NOT IN (SELECT DISTINCT platformId FROM games)")
+    /**
+     * Android is exempt: it is the only platform whose own settings screen is how a user adds
+     * games to it, so removing it when empty would take away the way to fill it.
+     */
+    @Query(
+        """
+        DELETE FROM platforms
+        WHERE id NOT IN (SELECT DISTINCT platformId FROM games)
+        AND id != ${LocalPlatformIds.ANDROID}
+        """
+    )
     suspend fun deleteEmptyPlatforms()
 
     @Query("SELECT * FROM platforms")

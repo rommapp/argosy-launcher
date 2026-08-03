@@ -91,6 +91,7 @@ class SettingsViewModel @Inject constructor(
     internal val romMRepository: RomMRepository,
     internal val notificationManager: NotificationManager,
     internal val gameRepository: GameRepository,
+    private val androidGameScanner: com.nendo.argosy.data.scanner.AndroidGameScanner,
     internal val imageCacheManager: ImageCacheManager,
     internal val syncLibraryUseCase: SyncLibraryUseCase,
     internal val platformSyncQueue: com.nendo.argosy.data.sync.PlatformSyncQueue,
@@ -409,6 +410,27 @@ class SettingsViewModel @Inject constructor(
             notificationManager.show(
                 title = "Scan Complete",
                 subtitle = "$platformName: ${parts.joinToString(", ")}",
+                type = com.nendo.argosy.core.notification.NotificationType.SUCCESS,
+                duration = com.nendo.argosy.core.notification.NotificationDuration.MEDIUM
+            )
+        }
+    }
+
+    fun scanInstalledAndroidGames() {
+        val platformIndex = _uiState.value.platformDetail.platformIndex
+        _uiState.update { it.copy(platformDetail = it.platformDetail.copy(isScanning = true)) }
+        viewModelScope.launch {
+            val added = runCatching { androidGameScanner.scanInstalledGames() }.getOrDefault(0)
+            _uiState.update { it.copy(platformDetail = it.platformDetail.copy(isScanning = false)) }
+            loadPlatformDetailStats(platformIndex)
+
+            notificationManager.show(
+                title = "Scan Complete",
+                subtitle = if (added > 0) {
+                    "Android: $added added"
+                } else {
+                    "Android: nothing new. Add others from Apps."
+                },
                 type = com.nendo.argosy.core.notification.NotificationType.SUCCESS,
                 duration = com.nendo.argosy.core.notification.NotificationDuration.MEDIUM
             )

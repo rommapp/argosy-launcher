@@ -65,44 +65,45 @@ internal sealed class PlatformDetailItem(
     class Header(key: String, section: String, val title: String, visibleWhen: (PlatformDetailVisibility) -> Boolean = { true }) : PlatformDetailItem(key, section, visibleWhen)
     class InfoItem(key: String, section: String, visibleWhen: (PlatformDetailVisibility) -> Boolean = { true }) : PlatformDetailItem(key, section, visibleWhen)
 
-    data object Emulator : PlatformDetailItem("emulator", "emulator")
-    data object Core : PlatformDetailItem("core", "emulator", { it.showCore })
-    data object Extension : PlatformDetailItem("extension", "emulator", { it.showExtension })
-    data object DisplayTarget : PlatformDetailItem("display_target", "emulator", { it.showDisplayTarget })
-    data object LegacyMode : PlatformDetailItem("legacy_mode", "emulator", { it.showLegacyMode })
-    data object LaunchArgs : PlatformDetailItem("launch_args", "emulator", { !it.isBuiltin })
-    data object BuiltinVideo : PlatformDetailItem("builtin_video", "emulator", { it.isBuiltin })
-    data object BuiltinControls : PlatformDetailItem("builtin_controls", "emulator", { it.isBuiltin })
-    data object BuiltinCoreOptions : PlatformDetailItem("builtin_core_options", "emulator", { it.isBuiltin })
+    data object Emulator : PlatformDetailItem("emulator", "emulator", { !it.isAndroid })
+    data object Core : PlatformDetailItem("core", "emulator", { it.showCore && !it.isAndroid })
+    data object Extension : PlatformDetailItem("extension", "emulator", { it.showExtension && !it.isAndroid })
+    data object DisplayTarget : PlatformDetailItem("display_target", "emulator", { it.showDisplayTarget && !it.isAndroid })
+    data object LegacyMode : PlatformDetailItem("legacy_mode", "emulator", { it.showLegacyMode && !it.isAndroid })
+    data object LaunchArgs : PlatformDetailItem("launch_args", "emulator", { !it.isBuiltin && !it.isAndroid })
+    data object BuiltinVideo : PlatformDetailItem("builtin_video", "emulator", { it.isBuiltin && !it.isAndroid })
+    data object BuiltinControls : PlatformDetailItem("builtin_controls", "emulator", { it.isBuiltin && !it.isAndroid })
+    data object BuiltinCoreOptions : PlatformDetailItem("builtin_core_options", "emulator", { it.isBuiltin && !it.isAndroid })
 
-    data object ScanFiles : PlatformDetailItem("scan_files", "platform")
+    data object ScanFiles : PlatformDetailItem("scan_files", "platform", { !it.isAndroid })
+    data object ScanApps : PlatformDetailItem("scan_apps", "platform", { it.isAndroid })
 
-    data object RomPath : PlatformDetailItem("rom_path", "sync")
-    data object SavePath : PlatformDetailItem("save_path", "sync", { it.showSavePath })
-    data object MemoryCard : PlatformDetailItem("memory_card", "sync", { it.showMemoryCard })
-    data object StatePath : PlatformDetailItem("state_path", "sync", { it.showStatePath })
+    data object RomPath : PlatformDetailItem("rom_path", "sync", { !it.isAndroid })
+    data object SavePath : PlatformDetailItem("save_path", "sync", { it.showSavePath && !it.isAndroid })
+    data object MemoryCard : PlatformDetailItem("memory_card", "sync", { it.showMemoryCard && !it.isAndroid })
+    data object StatePath : PlatformDetailItem("state_path", "sync", { it.showStatePath && !it.isAndroid })
 
     data object SyncToggle : PlatformDetailItem("sync_toggle", "sync")
     data object SyncNow : PlatformDetailItem("sync_now", "sync", { it.syncEnabled })
-    data object DownloadDefaults : PlatformDetailItem("download_defaults", "sync")
-    data object PackagePath : PlatformDetailItem("package_path", "sync", { it.showSavePath })
-    data object RemoveFiles : PlatformDetailItem("remove_files", "sync", { it.hasDownloads })
+    data object DownloadDefaults : PlatformDetailItem("download_defaults", "sync", { !it.isAndroid })
+    data object PackagePath : PlatformDetailItem("package_path", "sync", { it.showSavePath && !it.isAndroid })
+    data object RemoveFiles : PlatformDetailItem("remove_files", "sync", { it.hasDownloads && !it.isAndroid })
 
-    data object BiosStatus : PlatformDetailItem("bios_status", "bios", { it.hasBios })
-    data object BiosDownload : PlatformDetailItem("bios_download", "bios", { it.hasBios && it.biosMissing })
-    data object BiosInstall : PlatformDetailItem("bios_install", "bios", { it.hasBios && it.biosDownloaded && it.canDistribute })
-    data object BiosCopy : PlatformDetailItem("bios_copy", "bios", { it.hasBios && it.biosDownloaded })
+    data object BiosStatus : PlatformDetailItem("bios_status", "bios", { it.hasBios && !it.isAndroid })
+    data object BiosDownload : PlatformDetailItem("bios_download", "bios", { it.hasBios && it.biosMissing && !it.isAndroid })
+    data object BiosInstall : PlatformDetailItem("bios_install", "bios", { it.hasBios && it.biosDownloaded && it.canDistribute && !it.isAndroid })
+    data object BiosCopy : PlatformDetailItem("bios_copy", "bios", { it.hasBios && it.biosDownloaded && !it.isAndroid })
 
     companion object {
         val ALL: List<PlatformDetailItem>
             get() = listOf(
-                Header("header_emulator", "emulator", "Emulator"),
+                Header("header_emulator", "emulator", "Emulator", { !it.isAndroid }),
                 Emulator, Core, Extension, DisplayTarget, LegacyMode, LaunchArgs, BuiltinVideo, BuiltinControls, BuiltinCoreOptions,
                 Header("header_platform", "platform", "Platform"),
                 InfoItem("info_platform_stats", "platform"),
-                ScanFiles,
-                Header("header_bios", "bios", "BIOS", { it.hasBios }),
-                InfoItem("info_bios_status", "bios", { it.hasBios }), BiosDownload, BiosInstall, BiosCopy,
+                ScanFiles, ScanApps,
+                Header("header_bios", "bios", "BIOS", { it.hasBios && !it.isAndroid }),
+                InfoItem("info_bios_status", "bios", { it.hasBios && !it.isAndroid }), BiosDownload, BiosInstall, BiosCopy,
                 Header("header_sync", "sync", "Storage & Sync"),
                 SyncToggle, SyncNow, DownloadDefaults, InfoItem("info_package_path", "sync", { it.showSavePath && !it.isBuiltin && !it.isRetroArch }),
                 RomPath, SavePath, MemoryCard, StatePath,
@@ -129,7 +130,14 @@ internal data class PlatformDetailVisibility(
     val biosDownloaded: Boolean = false,
     val canDistribute: Boolean = false,
     val isPs2: Boolean = false,
-    val showMemoryCard: Boolean = false
+    val showMemoryCard: Boolean = false,
+    /**
+     * Installed apps, not rom files. Nothing on this platform is downloaded, emulated or stored
+     * by us, so the emulator, BIOS and storage rows have nothing to act on and an emulator
+     * chosen here would never be read - [com.nendo.argosy.data.emulator.GameLauncher] sends
+     * Android games straight to their package.
+     */
+    val isAndroid: Boolean = false
 ) {
     companion object {
         fun from(
@@ -157,7 +165,8 @@ internal data class PlatformDetailVisibility(
             showMemoryCard = com.nendo.argosy.data.emulator.EmulatorSettingScope.showsMemoryCard(
                 config.platform.slug,
                 memcardCount
-            )
+            ),
+            isAndroid = config.platform.id == com.nendo.argosy.data.platform.LocalPlatformIds.ANDROID
         )
     }
 }
@@ -438,6 +447,14 @@ fun PlatformDetailSection(
                     icon = Icons.Default.Search,
                     isEnabled = !detail.isScanning,
                     onClick = { viewModel.scanFilesForPlatform(config.platform.id) }
+                )
+                PlatformDetailItem.ScanApps -> ActionPreference(
+                    title = if (detail.isScanning) "Scanning..." else "Scan for Games",
+                    subtitle = "Add installed apps that identify as games",
+                    isFocused = isFocused(item),
+                    icon = Icons.Default.Search,
+                    isEnabled = !detail.isScanning,
+                    onClick = { viewModel.scanInstalledAndroidGames() }
                 )
 
 

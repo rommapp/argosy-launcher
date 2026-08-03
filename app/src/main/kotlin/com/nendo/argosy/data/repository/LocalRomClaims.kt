@@ -2,8 +2,7 @@ package com.nendo.argosy.data.repository
 
 data class ClaimCandidate(
     val name: String,
-    val isDirectory: Boolean,
-    val rootIndex: Int = 0
+    val isDirectory: Boolean
 )
 
 data class ClaimTarget(
@@ -54,6 +53,10 @@ private fun matches(tier: Tier, target: ClaimTarget, candidate: ClaimCandidate):
  *
  * Name-based only. Callers that can afford to read sizes or hashes may resolve what this
  * refuses, but refusing is the safe default.
+ *
+ * Candidates are identified by name and kind alone. A caller listing several directories must
+ * collapse the same name across them to one candidate and keep the most specific directory's
+ * copy, or every game whose rom exists in two of those directories claims nothing.
  */
 fun claimLocalEntries(
     targets: List<ClaimTarget>,

@@ -19,6 +19,7 @@ import com.nendo.argosy.data.local.entity.GameEntity
 import com.nendo.argosy.data.local.entity.GameFileEntity
 import com.nendo.argosy.data.local.entity.GameListItem
 import com.nendo.argosy.data.local.entity.PlatformEntity
+import com.nendo.argosy.data.platform.platformRomRoots
 import com.nendo.argosy.data.model.GameSource
 import com.nendo.argosy.data.model.VariantCategory
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
@@ -91,34 +92,11 @@ class GameRepository @Inject constructor(
         downloadDirFor(platform, platform?.slug ?: return@withContext defaultDownloadDir)
     }
 
-    /**
-     * Directories a platform's roms may already be sitting in, most specific first.
-     *
-     * Resolution is read-only: unlike [getDownloadDir] nothing here creates a directory, so a
-     * scan cannot leave empty folders behind for roots that turned out not to exist.
-     *
-     * The `fs_slug` root is RomM's own on-disk layout, which is the structure users mirroring an
-     * ES-DE or RomM library end up with. It is dropped when another platform already owns that
-     * directory by slug or fs_slug, because a Famicom whose `fs_slug` is `nes` must not go
-     * shopping in the NES platform's folder.
-     */
     private suspend fun candidateRootsFor(platform: PlatformEntity): List<File> {
-        val roots = mutableListOf<File>()
-        platform.customRomPath?.let { roots += File(it) }
-
         val base = preferencesRepository.userPreferences.first().romStoragePath
             ?.let { File(it) }
             ?: defaultDownloadDir
-        roots += File(base, platform.slug)
-
-        val fsSlug = platform.fsSlug?.takeIf { it.isNotBlank() && it != platform.slug }
-        if (fsSlug != null) {
-            val claimedByAnother = platformDao.getAllPlatforms().any { other ->
-                other.id != platform.id && (other.slug == fsSlug || other.fsSlug == fsSlug)
-            }
-            if (!claimedByAnother) roots += File(base, fsSlug)
-        }
-        return roots.distinctBy { it.absolutePath }
+        return platformRomRoots(platform, base, platformDao.getAllPlatforms())
     }
 
     private suspend fun getGlobalDownloadDir(): File {
@@ -274,13 +252,12 @@ class GameRepository @Inject constructor(
     private suspend fun claimInto(platform: PlatformEntity, games: List<GameEntity>): Int {
         val roots = candidateRootsFor(platform)
         val entries = mutableMapOf<ClaimCandidate, File>()
-        for ((index, root) in roots.withIndex()) {
+        for (root in roots) {
             val listed = root.listFiles() ?: continue
             for (entry in listed) {
                 if (entry.isFile && entry.name.endsWith(".tmp")) continue
                 if (entry.name.startsWith("._")) continue
-                val candidate = ClaimCandidate(entry.name, entry.isDirectory, index)
-                entries.putIfAbsent(candidate, entry)
+                entries.putIfAbsent(ClaimCandidate(entry.name, entry.isDirectory), entry)
             }
         }
         if (entries.isEmpty()) return 0
@@ -483,59 +460,6 @@ class GameRepository @Inject constructor(
             .filter { it.isFile && !it.name.startsWith("._") }
             .forEach { file -> if (file.name !in index) index[file.name] = file }
         return index
-    }
-
-    suspend fun recoverDownloadPaths(): Int = withContext(Dispatchers.IO) {
-        val startTime = System.currentTimeMillis()
-        val gamesWithoutPath = gameDao.getGamesWithRommIdButNoPath()
-        if (gamesWithoutPath.isEmpty()) return@withContext 0
-
-        var recovered = 0
-
-        for (game in gamesWithoutPath) {
-            val rommId = game.rommId ?: continue
-
-            when (val result = romMRepository.getRom(rommId)) {
-                is RomMResult.Success -> {
-                    val rom = result.data
-                    val fileName = rom.fileName ?: continue
-
-                    val platformDir = getDownloadDir(game.platformSlug)
-                    val entries = platformDir.listFiles() ?: continue
-                    val files = entries.filter { it.isFile && !it.name.endsWith(".tmp") }
-                    val folders = entries.filter { it.isDirectory }
-
-                    // Exact direct-child first (cheapest), then case-insensitive
-                    // filename match (covers rename-by-magic), then folder by title.
-                    val expectedFile = File(platformDir, fileName)
-                    val fileMatch = expectedFile.takeIf { it.exists() }
-                        ?: files.find { filenamesMatch(it.name, fileName) }
-                    if (fileMatch != null) {
-                        gameDao.updateLocalPath(game.id, fileMatch.absolutePath, GameSource.ROMM_SYNCED)
-                        recovered++
-                        Log.d(TAG, "Recovered download path for: ${game.title} -> ${fileMatch.name}")
-                        continue
-                    }
-
-                    val matchingFolder = folders.find { folder -> titlesMatch(folder.name, game.title) }
-                    if (matchingFolder != null) {
-                        val gameFile = findPrimaryRomInFolder(matchingFolder, game.platformSlug)
-                        if (gameFile != null) {
-                            gameDao.updateLocalPath(game.id, gameFile.absolutePath, GameSource.ROMM_SYNCED)
-                            recovered++
-                            Log.d(TAG, "Recovered folder path for: ${game.title} -> ${matchingFolder.name}/${gameFile.name}")
-                        }
-                    }
-                }
-                is RomMResult.Error -> {
-                    Log.w(TAG, "Failed to get ROM info for ${game.title}: ${result.message}")
-                }
-            }
-        }
-
-        val elapsed = System.currentTimeMillis() - startTime
-        Log.d(TAG, "Download recovery complete: $recovered paths recovered in ${elapsed}ms")
-        recovered
     }
 
     suspend fun checkGameFileExists(gameId: Long): Boolean = withContext(Dispatchers.IO) {

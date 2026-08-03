@@ -118,6 +118,17 @@ class LocalRomClaimsTest {
     }
 
     @Test
+    fun `the same name listed from two roots is one candidate, not a conflict`() {
+        val collapsed = listOf(file("Game.zip"), file("Game.zip")).distinct()
+        val claims = claimLocalEntries(listOf(ClaimTarget(1, "Game.zip", "Game")), collapsed)
+        assertEquals(
+            "a rom present in both a custom folder and the shared one must still be claimed",
+            "Game.zip",
+            claims[1]?.name
+        )
+    }
+
+    @Test
     fun `one entry is never handed to two games`() {
         val claims = claimLocalEntries(
             listOf(ClaimTarget(1, "Game.zip", "Game"), ClaimTarget(2, null, "Game")),

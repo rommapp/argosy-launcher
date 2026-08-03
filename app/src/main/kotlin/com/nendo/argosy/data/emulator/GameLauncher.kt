@@ -28,6 +28,7 @@ import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.libretro.coreoptions.CoreOptionResolver
 import kotlinx.coroutines.flow.first
 import com.nendo.argosy.data.local.entity.GameDiscEntity
+import com.nendo.argosy.data.platform.platformRomRoots
 import com.nendo.argosy.data.local.entity.GameEntity
 import com.nendo.argosy.data.model.GameSource
 import com.nendo.argosy.data.model.VariantCategory
@@ -1797,10 +1798,28 @@ class GameLauncher @Inject constructor(
         return UPDATE_DLC_TAG.containsMatchIn(stem) || UPDATE_DLC_SUFFIX.containsMatchIn(stem)
     }
 
+    /**
+     * True when [dir] is a directory roms sit directly inside rather than a game's own folder.
+     *
+     * Checked against every root discovery is allowed to link from, not just the download
+     * destination: a rom found in one of the other roots would otherwise look like it lived in a
+     * game folder, and the folder logic would repoint the game at the platform directory's
+     * largest file.
+     */
     private suspend fun isPlatformRoot(dir: File, platformSlug: String): Boolean {
         val target = runCatching { dir.canonicalFile }.getOrDefault(dir.absoluteFile)
-        val root = platformDownloadDir(platformSlug)
-        return runCatching { root.canonicalFile }.getOrDefault(root.absoluteFile) == target
+        return platformRootsFor(platformSlug).any { root ->
+            runCatching { root.canonicalFile }.getOrDefault(root.absoluteFile) == target
+        }
+    }
+
+    private suspend fun platformRootsFor(platformSlug: String): List<File> {
+        val platform = platformDao.getAllBySlug(platformSlug).singleOrNull()
+        val base = userPreferencesRepository.userPreferences.first().romStoragePath
+            ?.let { File(it) }
+            ?: File(context.getExternalFilesDir(null), "downloads")
+        if (platform == null) return listOf(File(base, platformSlug))
+        return platformRomRoots(platform, base, platformDao.getAllPlatforms())
     }
 
     /**

@@ -160,10 +160,7 @@ fun ThemeMusicSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                     minValue = 1,
                     maxValue = 5,
                     isFocused = isFocused(item),
-                    onClick = {
-                        val nextIndex = (currentIndex + 1).mod(volumeLevels.size)
-                        viewModel.setAmbientAudioVolume(volumeLevels[nextIndex])
-                    }
+                    onAdjust = { viewModel.adjustAmbientAudioVolume(if (it < 0) -1 else 1) }
                 )
             }
 

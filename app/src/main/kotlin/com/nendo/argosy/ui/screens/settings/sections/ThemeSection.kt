@@ -169,7 +169,6 @@ fun ThemeSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                 step = 10,
                 suffix = "%",
                 isFocused = isFocused(item),
-                onClick = { viewModel.cycleSurfaceTintBleed() },
                 onAdjust = { viewModel.adjustSurfaceTintBleed(it) }
             )
 

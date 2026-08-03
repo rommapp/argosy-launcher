@@ -172,10 +172,7 @@ fun ThemeSoundsSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                     minValue = volumeLevels.first(),
                     maxValue = volumeLevels.last(),
                     isFocused = isFocused(item),
-                    onClick = {
-                        val nextIndex = (currentIndex + 1).mod(volumeLevels.size)
-                        viewModel.setSoundVolume(volumeLevels[nextIndex])
-                    }
+                    onAdjust = { viewModel.adjustSoundVolume(if (it < 0) -1 else 1) }
                 )
             }
 

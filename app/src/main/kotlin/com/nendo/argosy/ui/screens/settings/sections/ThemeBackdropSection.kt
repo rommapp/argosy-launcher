@@ -183,7 +183,6 @@ fun ThemeBackdropSection(uiState: SettingsUiState, viewModel: SettingsViewModel)
                 step = ComponentDefaults.SurfaceBackdrop.cellSizeStepDp,
                 suffix = "dp",
                 isFocused = isFocused(item),
-                onClick = { viewModel.cycleBackdropCellSize() },
                 onAdjust = { viewModel.adjustBackdropCellSize(it) }
             )
 
@@ -195,7 +194,6 @@ fun ThemeBackdropSection(uiState: SettingsUiState, viewModel: SettingsViewModel)
                 step = 10,
                 suffix = "%",
                 isFocused = isFocused(item),
-                onClick = { viewModel.cycleBackdropScatter() },
                 onAdjust = { viewModel.adjustBackdropScatter(it) }
             )
 
@@ -207,7 +205,6 @@ fun ThemeBackdropSection(uiState: SettingsUiState, viewModel: SettingsViewModel)
                 step = 10,
                 suffix = "%",
                 isFocused = isFocused(item),
-                onClick = { viewModel.cycleBackdropScaleJitter() },
                 onAdjust = { viewModel.adjustBackdropScaleJitter(it) }
             )
 
@@ -219,7 +216,6 @@ fun ThemeBackdropSection(uiState: SettingsUiState, viewModel: SettingsViewModel)
                 step = 10,
                 suffix = "%",
                 isFocused = isFocused(item),
-                onClick = { viewModel.cycleBackdropStrength() },
                 onAdjust = { viewModel.adjustBackdropStrength(it) }
             )
 
@@ -264,7 +260,6 @@ fun ThemeBackdropSection(uiState: SettingsUiState, viewModel: SettingsViewModel)
                 step = 25,
                 suffix = "%",
                 isFocused = isFocused(item),
-                onClick = { viewModel.cycleBackdropMotionSpeed() },
                 onAdjust = { viewModel.adjustBackdropMotionSpeed(it) }
             )
 

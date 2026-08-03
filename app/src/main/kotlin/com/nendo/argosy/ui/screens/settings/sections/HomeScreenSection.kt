@@ -30,6 +30,7 @@ import com.nendo.argosy.ui.components.toggleHomeLayoutField
 import com.nendo.argosy.ui.components.SliderPreference
 import com.nendo.argosy.ui.components.SwitchPreference
 import com.nendo.argosy.ui.screens.settings.DisplayState
+import com.nendo.argosy.ui.screens.settings.SettingsInputHandler
 import com.nendo.argosy.ui.screens.settings.SettingsUiState
 import com.nendo.argosy.ui.screens.settings.SettingsViewModel
 import com.nendo.argosy.ui.screens.settings.delegates.DisplaySettingsDelegate
@@ -250,7 +251,7 @@ fun HomeScreenSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                     minValue = 0,
                     maxValue = 10,
                     isFocused = isFocused(item),
-                    onClick = { viewModel.cycleBackgroundBlur() }
+                    onAdjust = { viewModel.adjustBackgroundBlur(it * SettingsInputHandler.SLIDER_STEP) }
                 )
 
                 HomeScreenItem.Saturation -> SliderPreference(
@@ -259,7 +260,7 @@ fun HomeScreenSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                     minValue = 0,
                     maxValue = 10,
                     isFocused = isFocused(item),
-                    onClick = { viewModel.cycleBackgroundSaturation() }
+                    onAdjust = { viewModel.adjustBackgroundSaturation(it * SettingsInputHandler.SLIDER_STEP) }
                 )
 
                 HomeScreenItem.Opacity -> SliderPreference(
@@ -268,7 +269,7 @@ fun HomeScreenSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                     minValue = 0,
                     maxValue = 10,
                     isFocused = isFocused(item),
-                    onClick = { viewModel.cycleBackgroundOpacity() }
+                    onAdjust = { viewModel.adjustBackgroundOpacity(it * SettingsInputHandler.SLIDER_STEP) }
                 )
 
                 HomeScreenItem.VideoWallpaper -> SwitchPreference(

@@ -74,9 +74,10 @@ private fun preferenceAccent(isDangerous: Boolean = false): Color =
 /**
  * Row chrome shared by every preference item.
  *
- * A row takes either a whole-row [onClick] or a split [onDirectionalTap], never both.
- * The split form hands the tap -1 for the left half of the row and +1 for the right,
- * so a stepper reads by touch the way it reads on the d-pad.
+ * [onDirectionalTap] splits the row: the tap gets -1 for the left half and +1 for the
+ * right, so a stepper reads by touch the way it reads on the d-pad. A row that also
+ * carries a whole-row [onClick] keeps it, because an explicit confirm action is a
+ * stronger claim on the tap than an adjustment the -/+ glyphs already offer.
  */
 @Composable
 internal fun preferenceModifier(
@@ -108,12 +109,12 @@ internal fun preferenceModifier(
         .border(Dimens.borderThin, accent.copy(alpha = borderAlpha), preferenceShape)
         .then(
             when {
+                onClick != null -> Modifier.clickableNoFocus(onClick = onClick)
                 onDirectionalTap != null -> Modifier.pointerInput(Unit) {
                     detectTapGestures { offset ->
                         currentDirectionalTap?.invoke(if (offset.x < size.width / 2f) -1 else 1)
                     }
                 }
-                onClick != null -> Modifier.clickableNoFocus(onClick = onClick)
                 else -> Modifier
             }
         )
@@ -306,7 +307,7 @@ fun SliderPreference(
     Row(
         modifier = preferenceModifier(
             isFocused,
-            onClick = if (onAdjust == null) onClick else null,
+            onClick = onClick,
             onDirectionalTap = onAdjust?.let { adjust -> { direction: Int -> adjust(direction * step) } }
         ),
         horizontalArrangement = Arrangement.SpaceBetween,

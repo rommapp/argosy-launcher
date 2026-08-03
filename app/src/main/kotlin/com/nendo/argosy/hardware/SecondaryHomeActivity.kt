@@ -1,5 +1,6 @@
 package com.nendo.argosy.hardware
 
+import android.annotation.SuppressLint
 import android.content.Intent
 import android.hardware.display.DisplayManager
 import android.os.Bundle
@@ -359,6 +360,7 @@ class SecondaryHomeActivity :
      * saw one. The launcher decides selection itself, so the window has no business consulting focus
      * first; typing is the sole exception, and it says so.
      */
+    @SuppressLint("RestrictedApi")
     override fun dispatchKeyEvent(event: android.view.KeyEvent): Boolean {
         if (isCompanionTextEntryActive()) return super.dispatchKeyEvent(event)
         when (event.action) {

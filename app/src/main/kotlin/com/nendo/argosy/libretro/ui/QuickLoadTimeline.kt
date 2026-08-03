@@ -46,11 +46,11 @@ import com.nendo.argosy.ui.components.FooterHintItem
 import com.nendo.argosy.ui.components.InputButton
 import com.nendo.argosy.ui.input.InputHandler
 import com.nendo.argosy.ui.input.InputResult
+import com.nendo.argosy.ui.theme.gripReserveBottomInset
 import com.nendo.argosy.ui.util.clickableNoFocus
 import com.nendo.argosy.util.formatSaveSize
 import com.nendo.argosy.util.formatSaveTimestamp
 import com.nendo.argosy.ui.theme.generated.DimensionTokens
-import com.nendo.argosy.ui.theme.pocketTacoBottomInset
 
 @Composable
 fun QuickLoadTimeline(
@@ -95,7 +95,7 @@ fun QuickLoadTimeline(
     val overlayColor = if (isDarkTheme) Color.Black.copy(alpha = 0.7f) else Color.White.copy(alpha = 0.5f)
     val focused = entries.getOrNull(focusedIndex)
 
-    val bottomReserved = pocketTacoBottomInset()
+    val bottomReserved = gripReserveBottomInset()
 
     Box(
         modifier = Modifier

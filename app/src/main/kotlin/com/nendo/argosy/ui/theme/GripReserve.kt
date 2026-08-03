@@ -7,14 +7,13 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
 /**
- * Resolves the fraction of screen height Pocket Taco Mode reserves at the
- * bottom of the primary display.
+ * Resolves the fraction of screen height the grip reserve takes at the bottom
+ * of the primary display.
  *
- * Returns 0 unless all three hold: the mode is enabled, the display is
- * portrait, and this is not the companion display. The companion never
- * reserves space - it is a second screen, not a screen held in a grip.
+ * Returns 0 unless all three hold: the reserve is enabled, the display is
+ * portrait, and this is not the companion display.
  */
-fun resolvePocketTacoFraction(
+fun resolveGripReserveFraction(
     enabled: Boolean,
     percent: Int,
     screenWidthDp: Int,
@@ -28,11 +27,11 @@ fun resolvePocketTacoFraction(
 
 /**
  * Bottom inset any full-screen overlay should apply so it does not render into
- * the band Pocket Taco Mode reserves. Resolves to 0.dp whenever the mode is
+ * the band the grip reserve takes. Resolves to 0.dp whenever the reserve is
  * inactive, so applying it unconditionally is safe.
  */
 @Composable
-fun pocketTacoBottomInset(): Dp {
+fun gripReserveBottomInset(): Dp {
     val screenHeightDp = LocalConfiguration.current.screenHeightDp
     val fraction = LocalUiScale.current.bottomReservedFraction
     return remember(screenHeightDp, fraction) { (screenHeightDp * fraction).dp }

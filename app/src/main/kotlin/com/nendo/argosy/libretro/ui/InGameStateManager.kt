@@ -52,8 +52,8 @@ import com.nendo.argosy.ui.components.InputButton
 import com.nendo.argosy.ui.components.NestedModal
 import com.nendo.argosy.ui.input.InputHandler
 import com.nendo.argosy.ui.input.InputResult
+import com.nendo.argosy.ui.theme.gripReserveBottomInset
 import com.nendo.argosy.ui.util.clickableNoFocus
-import com.nendo.argosy.ui.theme.pocketTacoBottomInset
 
 enum class StateManagerViewMode { SPLIT, CAROUSEL }
 
@@ -201,7 +201,7 @@ fun InGameStateManager(
         modifier = Modifier
             .fillMaxSize()
             .background(overlayColor)
-            .padding(bottom = pocketTacoBottomInset())
+            .padding(bottom = gripReserveBottomInset())
             .focusProperties { canFocus = false }
     ) {
         val isSquarish = maxWidth < 500.dp || (maxWidth / maxHeight < 1.4f)

@@ -52,6 +52,7 @@ import com.nendo.argosy.ui.theme.LocalArgosyTheme
 import com.nendo.argosy.ui.theme.LocalBoxArtStyle
 import com.nendo.argosy.ui.theme.Motion
 import com.nendo.argosy.ui.theme.generated.ComponentDefaults
+import com.nendo.argosy.ui.theme.gripReserveBottomInset
 import kotlinx.coroutines.delay
 
 private const val PREVIEW_CAROUSEL_ITEMS = 8
@@ -98,14 +99,14 @@ fun HomeLayoutPreview(
 ) {
     val configuration = LocalConfiguration.current
     val screenWidthDp = configuration.screenWidthDp
-    val screenHeightDp = configuration.screenHeightDp
+    val screenHeightDp = configuration.screenHeightDp - gripReserveBottomInset().value
     val theme = LocalArgosyTheme.current
     val boxArt = LocalBoxArtStyle.current
     val frameShape = RoundedCornerShape(Dimens.radiusLg)
 
     BoxWithConstraints(
         modifier = modifier
-            .aspectRatio(screenWidthDp.toFloat() / screenHeightDp.toFloat())
+            .aspectRatio(screenWidthDp.toFloat() / screenHeightDp)
             .clip(frameShape)
             .background(theme.surfaceBase)
             .border(Dimens.borderThin, theme.hairlineHigh, frameShape)

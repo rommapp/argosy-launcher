@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.DrawerValue
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
@@ -103,8 +104,8 @@ import com.nendo.argosy.ui.dualscreen.home.DualHomeViewModel
 import com.nendo.argosy.ui.dualscreen.home.toShowcaseState
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalLauncherTheme
-import com.nendo.argosy.ui.theme.pocketTacoBottomInset
 import com.nendo.argosy.ui.theme.Motion
+import com.nendo.argosy.ui.theme.gripReserveBottomInset
 import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
@@ -1036,7 +1037,7 @@ fun ArgosyApp(
         val isDarkTheme = LocalLauncherTheme.current.isDarkTheme
         val scrimColor = if (isDarkTheme) Color.Black.copy(alpha = 0.5f) else Color.White.copy(alpha = 0.35f)
         val dimmerEnabled = screenDimmerPrefs.enabled && !isEmulatorRunning && !uiState.isFirstRun
-        val bottomReserved = pocketTacoBottomInset()
+        val bottomReserved = gripReserveBottomInset()
 
         ScreenDimmerOverlay(
             enabled = dimmerEnabled,
@@ -1050,6 +1051,7 @@ fun ArgosyApp(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.background)
                     .padding(bottom = bottomReserved)
                     .onFocusChanged { keySinkFocused = it.isFocused }
                     .focusRequester(rootFocusRequester)

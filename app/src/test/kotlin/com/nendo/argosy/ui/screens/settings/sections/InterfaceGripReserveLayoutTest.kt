@@ -6,10 +6,10 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-class InterfacePocketTacoLayoutTest {
+class InterfaceGripReserveLayoutTest {
 
     private fun layout(enabled: Boolean) =
-        InterfaceLayoutState(DisplayState(pocketTacoEnabled = enabled))
+        InterfaceLayoutState(DisplayState(gripReserveEnabled = enabled))
 
     private fun focusableItems(enabled: Boolean): List<InterfaceItem?> {
         val state = layout(enabled)
@@ -17,23 +17,23 @@ class InterfacePocketTacoLayoutTest {
     }
 
     @Test
-    fun `percent row is not reachable while pocket taco is off`() {
-        assertFalse(focusableItems(enabled = false).contains(InterfaceItem.PocketTacoPercent))
+    fun `percent row is not reachable while the grip reserve is off`() {
+        assertFalse(focusableItems(enabled = false).contains(InterfaceItem.GripReservePercent))
     }
 
     @Test
-    fun `percent row is reachable once pocket taco is on`() {
-        assertTrue(focusableItems(enabled = true).contains(InterfaceItem.PocketTacoPercent))
+    fun `percent row is reachable once the grip reserve is on`() {
+        assertTrue(focusableItems(enabled = true).contains(InterfaceItem.GripReservePercent))
     }
 
     @Test
     fun `the toggle itself is always reachable`() {
-        assertTrue(focusableItems(enabled = false).contains(InterfaceItem.PocketTaco))
-        assertTrue(focusableItems(enabled = true).contains(InterfaceItem.PocketTaco))
+        assertTrue(focusableItems(enabled = false).contains(InterfaceItem.GripReserve))
+        assertTrue(focusableItems(enabled = true).contains(InterfaceItem.GripReserve))
     }
 
     @Test
-    fun `enabling pocket taco adds exactly one focusable row`() {
+    fun `enabling the grip reserve adds exactly one focusable row`() {
         assertEquals(
             interfaceMaxFocusIndex(layout(enabled = false)) + 1,
             interfaceMaxFocusIndex(layout(enabled = true))
@@ -44,8 +44,8 @@ class InterfacePocketTacoLayoutTest {
     fun `percent row sits directly beneath its toggle`() {
         val state = layout(enabled = true)
         assertEquals(
-            interfaceFocusIndexOf(InterfaceItem.PocketTaco, state) + 1,
-            interfaceFocusIndexOf(InterfaceItem.PocketTacoPercent, state)
+            interfaceFocusIndexOf(InterfaceItem.GripReserve, state) + 1,
+            interfaceFocusIndexOf(InterfaceItem.GripReservePercent, state)
         )
     }
 

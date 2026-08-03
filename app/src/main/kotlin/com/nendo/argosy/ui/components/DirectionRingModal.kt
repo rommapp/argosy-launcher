@@ -55,6 +55,7 @@ import com.nendo.argosy.ui.theme.LocalArgosyTheme
 import com.nendo.argosy.ui.theme.LocalUiScale
 import com.nendo.argosy.ui.theme.Motion
 import com.nendo.argosy.ui.theme.generated.ComponentDefaults
+import com.nendo.argosy.ui.theme.gripReserveBottomInset
 import com.nendo.argosy.ui.util.clickableNoFocus
 import kotlin.math.PI
 import kotlin.math.atan2
@@ -175,6 +176,7 @@ fun DirectionRingModal(
                 modifier = modifier
                     .fillMaxSize()
                     .background(Color.Black.copy(alpha = 0.55f))
+                    .padding(bottom = gripReserveBottomInset())
                     .clickableNoFocus { onDismiss() },
                 contentAlignment = Alignment.Center,
             ) {

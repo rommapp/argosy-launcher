@@ -47,12 +47,12 @@ import com.nendo.argosy.ui.components.InputButton
 import com.nendo.argosy.ui.input.InputHandler
 import com.nendo.argosy.ui.input.InputResult
 import com.nendo.argosy.ui.theme.Dimens
+import com.nendo.argosy.ui.theme.gripReserveBottomInset
 import com.nendo.argosy.ui.util.clickableNoFocus
 import com.nendo.argosy.ui.util.touchOnly
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import com.nendo.argosy.ui.theme.pocketTacoBottomInset
 
 enum class CheatsTab(val label: String) {
     CHEATS("Cheats"),
@@ -546,7 +546,7 @@ fun CheatsScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(overlayColor)
-            .padding(bottom = pocketTacoBottomInset())
+            .padding(bottom = gripReserveBottomInset())
             .focusProperties { canFocus = false },
         contentAlignment = Alignment.Center
     ) {

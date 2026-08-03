@@ -47,8 +47,8 @@ data class DisplayPreferences(
     val libraryDefaultSource: String = "ALL",
     val libraryDefaultPlatform: String = "",
     val uiScale: Int = 100,
-    val pocketTacoEnabled: Boolean = false,
-    val pocketTacoPercent: Int = 20,
+    val gripReserveEnabled: Boolean = false,
+    val gripReservePercent: Int = 20,
     val backgroundBlur: Int = 0,
     val backgroundSaturation: Int = 100,
     val backgroundOpacity: Int = 100,
@@ -133,8 +133,8 @@ class DisplayPreferencesRepository @Inject constructor(
         val LIBRARY_DEFAULT_SOURCE = stringPreferencesKey("library_default_source")
         val LIBRARY_DEFAULT_PLATFORM = stringPreferencesKey("library_default_platform")
         val UI_SCALE = intPreferencesKey("ui_scale")
-        val POCKET_TACO_ENABLED = booleanPreferencesKey("pocket_taco_enabled")
-        val POCKET_TACO_PERCENT = intPreferencesKey("pocket_taco_percent")
+        val GRIP_RESERVE_ENABLED = booleanPreferencesKey("grip_reserve_enabled")
+        val GRIP_RESERVE_PERCENT = intPreferencesKey("grip_reserve_percent")
         val BACKGROUND_BLUR = intPreferencesKey("background_blur")
         val BACKGROUND_SATURATION = intPreferencesKey("background_saturation")
         val BACKGROUND_OPACITY = intPreferencesKey("background_opacity")
@@ -215,8 +215,8 @@ class DisplayPreferencesRepository @Inject constructor(
             libraryDefaultSource = prefs[Keys.LIBRARY_DEFAULT_SOURCE] ?: "ALL",
             libraryDefaultPlatform = prefs[Keys.LIBRARY_DEFAULT_PLATFORM] ?: "",
             uiScale = prefs[Keys.UI_SCALE] ?: 100,
-            pocketTacoEnabled = prefs[Keys.POCKET_TACO_ENABLED] ?: false,
-            pocketTacoPercent = prefs[Keys.POCKET_TACO_PERCENT] ?: 20,
+            gripReserveEnabled = prefs[Keys.GRIP_RESERVE_ENABLED] ?: false,
+            gripReservePercent = prefs[Keys.GRIP_RESERVE_PERCENT] ?: 20,
             backgroundBlur = prefs[Keys.BACKGROUND_BLUR] ?: 40,
             backgroundSaturation = prefs[Keys.BACKGROUND_SATURATION] ?: 100,
             backgroundOpacity = prefs[Keys.BACKGROUND_OPACITY] ?: 100,
@@ -397,12 +397,12 @@ class DisplayPreferencesRepository @Inject constructor(
         dataStore.edit { it[Keys.UI_SCALE] = scale.coerceIn(50, 150) }
     }
 
-    suspend fun setPocketTacoEnabled(enabled: Boolean) {
-        dataStore.edit { it[Keys.POCKET_TACO_ENABLED] = enabled }
+    suspend fun setGripReserveEnabled(enabled: Boolean) {
+        dataStore.edit { it[Keys.GRIP_RESERVE_ENABLED] = enabled }
     }
 
-    suspend fun setPocketTacoPercent(percent: Int) {
-        dataStore.edit { it[Keys.POCKET_TACO_PERCENT] = percent.coerceIn(5, 40) }
+    suspend fun setGripReservePercent(percent: Int) {
+        dataStore.edit { it[Keys.GRIP_RESERVE_PERCENT] = percent.coerceIn(5, 40) }
     }
 
     suspend fun setBackgroundBlur(blur: Int) {

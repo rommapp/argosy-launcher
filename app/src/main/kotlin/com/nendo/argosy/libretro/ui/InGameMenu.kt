@@ -41,7 +41,7 @@ import androidx.compose.ui.unit.dp
 import com.nendo.argosy.ui.input.InputHandler
 import com.nendo.argosy.ui.input.InputResult
 import com.nendo.argosy.ui.theme.generated.DimensionTokens
-import com.nendo.argosy.ui.theme.pocketTacoBottomInset
+import com.nendo.argosy.ui.theme.gripReserveBottomInset
 import com.nendo.argosy.ui.util.clickableNoFocus
 
 sealed class InGameMenuAction {
@@ -266,7 +266,7 @@ fun InGameMenu(
     }
 
     val menuConfiguration = LocalConfiguration.current
-    val menuBottomReserved = pocketTacoBottomInset()
+    val menuBottomReserved = gripReserveBottomInset()
 
     Box(
         modifier = Modifier
@@ -437,7 +437,7 @@ fun DiscMenu(
     }
 
     val discConfiguration = LocalConfiguration.current
-    val discBottomReserved = pocketTacoBottomInset()
+    val discBottomReserved = gripReserveBottomInset()
 
     Box(
         modifier = Modifier

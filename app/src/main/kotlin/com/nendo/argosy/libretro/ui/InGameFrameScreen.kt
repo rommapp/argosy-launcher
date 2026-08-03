@@ -36,8 +36,8 @@ import com.nendo.argosy.ui.components.FooterBar
 import com.nendo.argosy.ui.components.InputButton
 import com.nendo.argosy.ui.input.InputHandler
 import com.nendo.argosy.ui.input.InputResult
+import com.nendo.argosy.ui.theme.gripReserveBottomInset
 import com.nendo.argosy.ui.util.clickableNoFocus
-import com.nendo.argosy.ui.theme.pocketTacoBottomInset
 
 @Composable
 fun InGameFrameScreen(
@@ -81,7 +81,7 @@ fun InGameFrameScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .padding(bottom = pocketTacoBottomInset())
+            .padding(bottom = gripReserveBottomInset())
             .focusProperties { canFocus = false }
     ) {
         Row(

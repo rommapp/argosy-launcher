@@ -40,8 +40,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.nendo.argosy.ui.input.InputHandler
 import com.nendo.argosy.ui.input.InputResult
+import com.nendo.argosy.ui.theme.gripReserveBottomInset
 import com.nendo.argosy.ui.util.clickableNoFocus
-import com.nendo.argosy.ui.theme.pocketTacoBottomInset
 
 enum class NetplayProgressStage { RequestingJoin, WaitingForHost, Connecting, Measuring, LoadingState, Ready, Failed }
 
@@ -504,7 +504,7 @@ private fun NetplayScrim(content: @Composable () -> Unit) {
         modifier = Modifier
             .fillMaxSize()
             .background(overlayColor)
-            .padding(bottom = pocketTacoBottomInset())
+            .padding(bottom = gripReserveBottomInset())
             .focusProperties { canFocus = false },
         contentAlignment = Alignment.Center
     ) {

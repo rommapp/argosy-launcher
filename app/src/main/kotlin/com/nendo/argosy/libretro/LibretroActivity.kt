@@ -120,6 +120,7 @@ import com.nendo.argosy.libretro.shader.ShaderDownloader
 import com.nendo.argosy.libretro.shader.ShaderPreviewRenderer
 import com.nendo.argosy.libretro.shader.ShaderRegistry
 import com.nendo.argosy.ui.theme.ALauncherTheme
+import com.nendo.argosy.ui.theme.resolveGripReserveFraction
 import com.nendo.argosy.data.preferences.BuiltinEmulatorSettings
 import com.nendo.argosy.util.AppPaths
 import com.swordfish.libretrodroid.GLRetroView
@@ -274,6 +275,7 @@ class LibretroActivity : ComponentActivity() {
     private var currentRotationState by mutableStateOf(0)
     private var touchSettingsState by mutableStateOf(com.nendo.argosy.data.preferences.BuiltinEmulatorSettings())
     private var portraitPositionState by mutableStateOf("Auto")
+    private var gripReserveFractionState by mutableStateOf(0f)
     private var coreOptionOverrides by mutableStateOf<Map<String, String>>(emptyMap())
     private var gameCoreOptionOverrides by mutableStateOf<Map<String, String>>(emptyMap())
     private var perGameSettingsEnabled by mutableStateOf(false)
@@ -677,7 +679,26 @@ class LibretroActivity : ComponentActivity() {
             portraitPositionState = value
             splitColumn?.let { applyPortraitSplit(it) }
         }
+        lifecycleScope.launch {
+            preferencesRepository.preferences.collect { prefs ->
+                val fraction = resolveGripReserveFraction(
+                    enabled = prefs.gripReserveEnabled,
+                    percent = prefs.gripReservePercent,
+                    screenWidthDp = resources.configuration.screenWidthDp,
+                    screenHeightDp = resources.configuration.screenHeightDp,
+                    isSecondaryDisplay = onSecondaryDisplay()
+                )
+                if (fraction != gripReserveFractionState) {
+                    gripReserveFractionState = fraction
+                    splitColumn?.let { applyPortraitSplit(it) }
+                }
+            }
+        }
     }
+
+    @Suppress("DEPRECATION")
+    private fun onSecondaryDisplay(): Boolean =
+        windowManager.defaultDisplay.displayId != android.view.Display.DEFAULT_DISPLAY
 
     private fun detectBFICapability() {
         val displayManager = getSystemService(android.content.Context.DISPLAY_SERVICE) as android.hardware.display.DisplayManager
@@ -1082,15 +1103,12 @@ class LibretroActivity : ComponentActivity() {
             portraitPositionState == "Bottom" -> "Bottom"
             else -> if (overlayWouldShow) "Top" else "Center"
         }
-        val (topWeight, bottomWeight) = when (position) {
-            "Top" -> 0f to 1f
-            "Bottom" -> 1f to 0f
-            else -> 0f to 0f
-        }
+        val reserved = if (portrait) gripReserveFractionState else 0f
+        val (topWeight, gameWeight, bottomWeight) = portraitSplitWeights(position, reserved)
         val spacerTop = column.getChildAt(0)
         val spacerBottom = column.getChildAt(2)
         (spacerTop.layoutParams as android.widget.LinearLayout.LayoutParams).weight = topWeight
-        (retroView.layoutParams as android.widget.LinearLayout.LayoutParams).weight = 1f
+        (retroView.layoutParams as android.widget.LinearLayout.LayoutParams).weight = gameWeight
         (spacerBottom.layoutParams as android.widget.LinearLayout.LayoutParams).weight = bottomWeight
         spacerTop.layoutParams = spacerTop.layoutParams
         retroView.layoutParams = retroView.layoutParams
@@ -1137,9 +1155,7 @@ class LibretroActivity : ComponentActivity() {
 
     @androidx.compose.runtime.Composable
     private fun InGameOverlay() {
-        @Suppress("DEPRECATION")
-        val onSecondaryDisplay = windowManager.defaultDisplay.displayId != android.view.Display.DEFAULT_DISPLAY
-        ALauncherTheme(isSecondaryDisplay = onSecondaryDisplay) {
+        ALauncherTheme(isSecondaryDisplay = onSecondaryDisplay()) {
             CompositionLocalProvider(
                 LocalGamepadInputHandler provides gamepadInputBridge,
                 LocalABIconsSwapped provides swapAB,

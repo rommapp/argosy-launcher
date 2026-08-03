@@ -23,7 +23,7 @@ import com.nendo.argosy.ui.input.InputHandler
 import com.nendo.argosy.ui.input.InputResult
 import com.nendo.argosy.ui.screens.settings.sections.ShaderStackSection
 import com.nendo.argosy.ui.theme.Dimens
-import com.nendo.argosy.ui.theme.pocketTacoBottomInset
+import com.nendo.argosy.ui.theme.gripReserveBottomInset
 
 @Composable
 fun InGameShaderChainScreen(
@@ -136,7 +136,7 @@ fun InGameShaderChainScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(overlayColor)
-            .padding(bottom = pocketTacoBottomInset())
+            .padding(bottom = gripReserveBottomInset())
             .focusProperties { canFocus = false },
         contentAlignment = Alignment.Center
     ) {

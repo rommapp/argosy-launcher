@@ -49,6 +49,7 @@ import com.nendo.argosy.ui.primitives.argosyFocusIndicators
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalArgosyTheme
 import com.nendo.argosy.ui.theme.Motion
+import com.nendo.argosy.ui.theme.gripReserveBottomInset
 import com.nendo.argosy.ui.util.clickableNoFocus
 import com.nendo.argosy.ui.util.verticalEdgeFade
 
@@ -130,6 +131,7 @@ fun EnumPickerModal(
                 modifier = modifier
                     .fillMaxSize()
                     .background(Color.Black.copy(alpha = 0.55f))
+                    .padding(bottom = gripReserveBottomInset())
                     .clickableNoFocus { onDismiss() },
                 contentAlignment = Alignment.Center,
             ) {

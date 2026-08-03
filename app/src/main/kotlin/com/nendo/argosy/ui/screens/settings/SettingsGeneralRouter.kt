@@ -270,13 +270,13 @@ internal fun routeAdjustUiScale(vm: SettingsViewModel, delta: Int) {
     vm.displayDelegate.adjustUiScale(vm.viewModelScope, delta)
 }
 
-internal fun routeAdjustPocketTacoPercent(vm: SettingsViewModel, delta: Int) {
-    val current = vm.uiState.value.display.pocketTacoPercent
+internal fun routeAdjustGripReservePercent(vm: SettingsViewModel, delta: Int) {
+    val current = vm.uiState.value.display.gripReservePercent
     val wouldBe = (current + delta).coerceIn(5, 40)
     if (wouldBe == current && delta != 0) {
         vm.hapticManager.vibrate(HapticPattern.BOUNDARY_HIT)
     }
-    vm.displayDelegate.adjustPocketTacoPercent(vm.viewModelScope, delta)
+    vm.displayDelegate.adjustGripReservePercent(vm.viewModelScope, delta)
 }
 
 internal fun routeAdjustBackgroundBlur(vm: SettingsViewModel, delta: Int) {

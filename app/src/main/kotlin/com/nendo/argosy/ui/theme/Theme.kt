@@ -388,9 +388,9 @@ fun ProvideArgosyThemeLocals(
     val uiScaleConfig = UiScaleConfig(
         scale = themeState.uiScale / 100f,
         aspectRatioClass = aspectRatioClass,
-        bottomReservedFraction = resolvePocketTacoFraction(
-            enabled = themeState.pocketTacoEnabled,
-            percent = themeState.pocketTacoPercent,
+        bottomReservedFraction = resolveGripReserveFraction(
+            enabled = themeState.gripReserveEnabled,
+            percent = themeState.gripReservePercent,
             screenWidthDp = configuration.screenWidthDp,
             screenHeightDp = configuration.screenHeightDp,
             isSecondaryDisplay = isSecondaryDisplay

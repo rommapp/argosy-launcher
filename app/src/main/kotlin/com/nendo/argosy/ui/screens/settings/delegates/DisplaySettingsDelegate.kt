@@ -408,26 +408,26 @@ class DisplaySettingsDelegate @Inject constructor(
         }
     }
 
-    fun setPocketTacoEnabled(scope: CoroutineScope, enabled: Boolean) {
+    fun setGripReserveEnabled(scope: CoroutineScope, enabled: Boolean) {
         scope.launch {
-            preferencesRepository.setPocketTacoEnabled(enabled)
-            _state.update { it.copy(pocketTacoEnabled = enabled) }
+            preferencesRepository.setGripReserveEnabled(enabled)
+            _state.update { it.copy(gripReserveEnabled = enabled) }
         }
     }
 
-    fun setPocketTacoPercent(scope: CoroutineScope, percent: Int) {
+    fun setGripReservePercent(scope: CoroutineScope, percent: Int) {
         val newValue = percent.coerceIn(5, 40)
         scope.launch {
-            preferencesRepository.setPocketTacoPercent(newValue)
-            _state.update { it.copy(pocketTacoPercent = newValue) }
+            preferencesRepository.setGripReservePercent(newValue)
+            _state.update { it.copy(gripReservePercent = newValue) }
         }
     }
 
-    fun adjustPocketTacoPercent(scope: CoroutineScope, delta: Int) {
-        val current = _state.value.pocketTacoPercent
+    fun adjustGripReservePercent(scope: CoroutineScope, delta: Int) {
+        val current = _state.value.gripReservePercent
         val newValue = (current + delta).coerceIn(5, 40)
         if (newValue != current) {
-            setPocketTacoPercent(scope, newValue)
+            setGripReservePercent(scope, newValue)
         }
     }
 

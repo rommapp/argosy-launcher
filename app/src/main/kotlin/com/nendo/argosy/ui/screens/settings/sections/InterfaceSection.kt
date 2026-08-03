@@ -53,30 +53,43 @@ internal sealed class InterfaceItem(
     ) : InterfaceItem(key, section, visibleWhen)
 
     data object UiScale : InterfaceItem("uiScale", "layout")
-    data object PocketTaco : InterfaceItem("pocketTaco", "layout")
-    data object PocketTacoPercent : InterfaceItem(
-        "pocketTacoPercent",
+    data object GripReserve : InterfaceItem("gripReserve", "layout")
+    data object GripReservePercent : InterfaceItem(
+        "gripReservePercent",
         "layout",
-        visibleWhen = { it.display.pocketTacoEnabled }
+        visibleWhen = { it.display.gripReserveEnabled }
     )
     data object HomeScreen : InterfaceItem("homeScreen", "layout")
     data object LibraryView : InterfaceItem("libraryView", "layout")
     data object BoxArt : InterfaceItem("boxArt", "layout")
 
     companion object {
-        val ALL: List<InterfaceItem> = listOf(
-            UiScale, PocketTaco, PocketTacoPercent, HomeScreen, LibraryView, BoxArt
-        )
+        /**
+         * A getter, not a stored list. As a `val` this is a static of the sealed class
+         * itself, so it is computed during that class's initialization, which is the same
+         * initialization the `data object` entries below are waiting on: the list would be
+         * built out of entries that are still null.
+         */
+        val ALL: List<InterfaceItem>
+            get() = listOf(UiScale, GripReserve, GripReservePercent, HomeScreen, LibraryView, BoxArt)
     }
 }
 
-private val interfaceLayout = SettingsLayout<InterfaceItem, InterfaceLayoutState>(
-    allItems = InterfaceItem.ALL,
-    isFocusable = { it.isFocusable },
-    visibleWhen = { item, state -> item.visibleWhen(state) },
-    sectionOf = { it.section },
-    sectionTitle = { null }
-)
+/**
+ * Built on first use, not at class load. `ALL` lives in the companion and names the
+ * `data object` entries of its own sealed class, so touching it from this file's
+ * initializer re-enters a class initialization already in progress and the list comes
+ * back holding nulls.
+ */
+private val interfaceLayout by lazy {
+    SettingsLayout<InterfaceItem, InterfaceLayoutState>(
+        allItems = InterfaceItem.ALL,
+        isFocusable = { it.isFocusable },
+        visibleWhen = { item, state -> item.visibleWhen(state) },
+        sectionOf = { it.section },
+        sectionTitle = { null }
+    )
+}
 
 internal fun interfaceMaxFocusIndex(state: InterfaceLayoutState): Int = interfaceLayout.maxFocusIndex(state)
 
@@ -140,23 +153,23 @@ fun InterfaceSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                     onAdjust = { viewModel.adjustUiScale(it) }
                 )
 
-                InterfaceItem.PocketTaco -> SwitchPreference(
-                    title = "Pocket Taco Mode",
-                    subtitle = "Shifts the UI up in portrait mode",
-                    isEnabled = display.pocketTacoEnabled,
+                InterfaceItem.GripReserve -> SwitchPreference(
+                    title = "Controller Grip",
+                    subtitle = "Shift the UI up out of the area a grip covers in portrait",
+                    isEnabled = display.gripReserveEnabled,
                     isFocused = isFocused(item),
-                    onToggle = { viewModel.setPocketTacoEnabled(!display.pocketTacoEnabled) }
+                    onToggle = { viewModel.setGripReserveEnabled(!display.gripReserveEnabled) }
                 )
 
-                InterfaceItem.PocketTacoPercent -> SliderPreference(
-                    title = "Reserved Area",
-                    value = display.pocketTacoPercent,
+                InterfaceItem.GripReservePercent -> SliderPreference(
+                    title = "Reserved Height",
+                    value = display.gripReservePercent,
                     minValue = 5,
                     maxValue = 40,
                     isFocused = isFocused(item),
                     step = 5,
                     suffix = "%",
-                    onAdjust = { viewModel.adjustPocketTacoPercent(it) }
+                    onAdjust = { viewModel.adjustGripReservePercent(it) }
                 )
 
                 InterfaceItem.HomeScreen -> NavigationPreference(

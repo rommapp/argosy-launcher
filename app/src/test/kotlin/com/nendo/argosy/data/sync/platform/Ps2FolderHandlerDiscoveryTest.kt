@@ -182,6 +182,51 @@ class Ps2FolderHandlerDiscoveryTest {
     }
 
     @Test
+    fun `finds a card nested one level below the base`() {
+        val card = File(tempDir, "memcards/MemoryCard").apply { mkdirs() }
+        File(card, "_pcsx2_superblock").writeText("")
+        File(card, "BASLUS-21050").mkdirs()
+
+        val result = handler.findSaveFolderBySaveId(tempDir.absolutePath, "SLUS-21050")
+
+        assertEquals(card.absolutePath, result)
+    }
+
+    @Test
+    fun `constructSavePath resolves a card nested one level below the base`() {
+        val card = File(tempDir, "memcards/MemoryCard").apply { mkdirs() }
+        File(card, "_pcsx2_superblock").writeText("")
+
+        val result = handler.constructSavePath(tempDir.absolutePath, "BASLUS-21050")
+
+        assertEquals(card.absolutePath, result)
+    }
+
+    @Test
+    fun `a card directly under the base is preferred over a nested one`() {
+        val direct = File(tempDir, "Mcd001.ps2").apply { mkdirs() }
+        File(direct, "BASLUS-21050").mkdirs()
+        val nested = File(tempDir, "memcards/MemoryCard").apply { mkdirs() }
+        File(nested, "_pcsx2_superblock").writeText("")
+        File(nested, "BASLUS-21050").mkdirs()
+
+        val result = handler.findSaveFolderBySaveId(tempDir.absolutePath, "SLUS-21050")
+
+        assertEquals(direct.absolutePath, result)
+    }
+
+    @Test
+    fun `discovery does not descend more than one level`() {
+        val card = File(tempDir, "files/memcards/MemoryCard").apply { mkdirs() }
+        File(card, "_pcsx2_superblock").writeText("")
+        File(card, "BASLUS-21050").mkdirs()
+
+        val result = handler.findSaveFolderBySaveId(tempDir.absolutePath, "SLUS-21050")
+
+        assertNull("Only one level of descent is allowed", result)
+    }
+
+    @Test
     fun `returns null when no card contains the save`() {
         File(tempDir, "Mcd001.ps2").apply { mkdirs() }
 

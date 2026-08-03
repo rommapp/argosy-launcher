@@ -481,7 +481,7 @@ class SecondaryHomeInputHandler(
                     InputResult.HANDLED
                 } else if (moveGrid(GridDirection.DOWN)) {
                     InputResult.HANDLED
-                } else if (!inAppBar && !isExternal) {
+                } else if (!inAppBar && apps.isNotEmpty() && !isExternal) {
                     dualHomeViewModel.focusAppBar(apps.size)
                     broadcasts.broadcastViewModeChange()
                     InputResult.HANDLED
@@ -1471,9 +1471,9 @@ class SecondaryHomeInputHandler(
                 }
                 InputResult.HANDLED
             }
-            GamepadEvent.ContextMenu -> {
+            GamepadEvent.ContextMenu, GamepadEvent.LongConfirm -> {
                 viewModel.toggleDrawerFocusedPin()
-                InputResult.HANDLED
+                InputResult.handled(SoundType.TOGGLE)
             }
             GamepadEvent.SecondaryAction -> {
                 val packageName = viewModel.focusedDrawerAppPackageName()

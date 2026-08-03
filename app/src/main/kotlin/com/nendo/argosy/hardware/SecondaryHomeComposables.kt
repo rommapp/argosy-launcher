@@ -27,6 +27,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.nendo.argosy.R
 import com.nendo.argosy.ui.dualscreen.ControlRoleContent
+import com.nendo.argosy.ui.util.clickableNoFocus
 import com.nendo.argosy.ui.dualscreen.ShowcaseViewModel
 import com.nendo.argosy.ui.dualscreen.gamedetail.ActiveModal
 import com.nendo.argosy.ui.dualscreen.gamedetail.DualGameDetailLowerScreen
@@ -163,11 +164,7 @@ fun SecondaryHomeContent(
                     .background(
                         androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.5f)
                     )
-                    .clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null,
-                        onClick = { viewModel.closeDrawer() }
-                    )
+                    .clickableNoFocus { viewModel.closeDrawer() }
             )
         }
 
@@ -361,11 +358,7 @@ fun ShowcaseRoleContent(
                 modifier = Modifier
                     .fillMaxSize()
                     .background(Color.Black.copy(alpha = 0.5f))
-                    .clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null,
-                        onClick = { viewModel.closeDrawer() }
-                    )
+                    .clickableNoFocus { viewModel.closeDrawer() }
             )
         }
 

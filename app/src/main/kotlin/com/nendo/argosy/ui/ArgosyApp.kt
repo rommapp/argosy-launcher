@@ -1040,8 +1040,15 @@ fun ArgosyApp(
                     .focusable()
                     .doubleTapNoFocus { openQuickMenu() }
             ) {
-                LaunchedEffect(Unit) {
-                    rootFocusRequester.requestFocus()
+                /**
+                 * The key sink has to take focus back whenever something else has had it.
+                 *
+                 * Gamepad input reaches the app through this node, and on a dual-screen handheld it
+                 * is also what forwards keys to the lower display, so a composable that takes focus
+                 * and does not give it back leaves both screens deaf until a touch clears it.
+                 */
+                LaunchedEffect(drawerState.isOpen, uiState.isFirstRun) {
+                    if (!drawerState.isOpen) rootFocusRequester.requestFocus()
                 }
 
                 var drawerWidthPx by remember { mutableStateOf(0f) }

@@ -410,6 +410,7 @@ class SecondaryHomeActivity :
     private fun deferConfirm(): Boolean {
         if (isShowcaseRole || currentScreen != CompanionScreen.HOME) return false
         if (!::dualHomeViewModel.isInitialized) return false
+        if (viewModel.uiState.value.isDrawerOpen) return true
         val state = dualHomeViewModel.uiState.value
         return when (state.viewMode) {
             DualHomeViewMode.CAROUSEL ->

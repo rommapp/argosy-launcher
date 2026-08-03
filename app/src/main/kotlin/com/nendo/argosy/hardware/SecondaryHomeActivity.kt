@@ -302,8 +302,10 @@ class SecondaryHomeActivity :
         if (isGameActive && !dsm.isLaunchingGame) {
             val emulatorDisplay = dsm.emulatorDisplayId
             val ownDisplay = window.decorView.display?.displayId
-            if (emulatorDisplay != null && ownDisplay != null && emulatorDisplay == ownDisplay) {
-                android.util.Log.d("SecondaryHome", "Companion resumed on the emulator's display, ending session")
+            if (emulatorDisplay != null && ownDisplay != null && emulatorDisplay == ownDisplay &&
+                !dsm.isEmulatorStillOnScreen(this)
+            ) {
+                android.util.Log.d("SecondaryHome", "Companion resumed and the emulator is gone, ending session")
                 dsm.emulatorDisplayId = null
                 dsm.playSessionTracker.endSessionInBackground()
                 dsm.broadcastSessionCleared()

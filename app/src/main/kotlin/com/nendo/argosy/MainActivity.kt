@@ -314,6 +314,7 @@ class MainActivity : ComponentActivity() {
                 steamDownloadQueueDao = steamDownloadQueueDao,
                 steamRepository = steamRepository,
                 playSessionTracker = playSessionTracker,
+                permissionHelper = permissionHelper,
                 steamContentManager = steamContentManager,
                 repairImageCacheUseCase = repairImageCacheUseCase,
                 downloadFileStatusRepository = downloadFileStatusRepository,
@@ -658,12 +659,12 @@ class MainActivity : ComponentActivity() {
     }
 
     /**
-     * On dual-screen devices the launcher UI returning to the foreground means the
-     * session on this display is over: end it and restore the companion immediately.
-     * Only a session on a different display (swapped roles / per-game display target)
-     * survives, since the game and the launcher UI legitimately coexist there.
-     * Single-screen devices keep the resume-friendly grace: a session whose emulator
-     * was foregrounded within the last 15s stays alive so relaunching resumes it.
+     * The launcher UI returning to the foreground ends the session only once the emulator is
+     * actually gone. An emulator that hands off between its own activities drops the launcher
+     * in front for an instant, and a two-display device leaves the game running unfocused on the
+     * other panel, so neither the launcher resuming nor the display it resumed on says anything
+     * about whether the game is still there. Only a session on a different display survives
+     * outright, since the game and the launcher UI legitimately coexist.
      */
     private fun cleanupStaleSession() {
         activityScope.launch {
@@ -672,12 +673,7 @@ class MainActivity : ComponentActivity() {
             val emulatorDisplay = dualScreenManager.emulatorDisplayId
             val ownDisplay = window.decorView.display?.displayId
             if (emulatorDisplay != null && ownDisplay != null && emulatorDisplay != ownDisplay) return@launch
-            if (!displayAffinityHelper.hasSecondaryDisplay && emulatorDisplay != null) {
-                val emulatorPkg = sessionStateStore.getEmulatorPackage()
-                if (emulatorPkg != null &&
-                    permissionHelper.isPackageInForeground(this@MainActivity, emulatorPkg, 15_000)
-                ) return@launch
-            }
+            if (dualScreenManager.isEmulatorStillOnScreen(this@MainActivity)) return@launch
             if (playSessionTracker.activeSession.value == null &&
                 preferencesRepository.getPersistedSession() == null
             ) return@launch

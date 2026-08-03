@@ -88,6 +88,47 @@ class PermissionHelper @Inject constructor() {
         return result
     }
 
+    /**
+     * Whether [packageName] still has an activity on a screen, focused or not, or null when the
+     * question cannot be answered and the caller must not read the silence as "gone".
+     *
+     * A second display keeps its app resumed while the launcher holds focus on the other one, so
+     * recency of use reports a perfectly live emulator as backgrounded the moment it stops being
+     * the focused app. The lifecycle stream does not: ACTIVITY_STOPPED is the only event that means
+     * no longer visible, and a paused-but-visible activity never reaches it. Each activity is
+     * tracked separately because a package hands off between its own activities, and the one being
+     * torn down can report STOPPED after its successor has already resumed.
+     */
+    fun isPackageOnScreen(
+        context: Context,
+        packageName: String,
+        lookbackMs: Long = 10 * 60 * 1000L
+    ): Boolean? {
+        if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.Q) return null
+        if (!hasUsageStatsPermission(context)) return null
+        val usm = context.getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
+        val now = System.currentTimeMillis()
+        val events = usm.queryEvents(now - lookbackMs, now)
+        val event = UsageEvents.Event()
+        val lastByActivity = HashMap<String, Pair<Long, Int>>()
+        while (events.hasNextEvent()) {
+            events.getNextEvent(event)
+            if (event.packageName != packageName) continue
+            val type = event.eventType
+            if (type != UsageEvents.Event.ACTIVITY_RESUMED &&
+                type != UsageEvents.Event.ACTIVITY_PAUSED &&
+                type != UsageEvents.Event.ACTIVITY_STOPPED
+            ) continue
+            val key = event.className ?: continue
+            val previous = lastByActivity[key]
+            if (previous == null || event.timeStamp >= previous.first) {
+                lastByActivity[key] = event.timeStamp to type
+            }
+        }
+        if (lastByActivity.isEmpty()) return null
+        return lastByActivity.values.any { it.second != UsageEvents.Event.ACTIVITY_STOPPED }
+    }
+
     fun currentForegroundPackage(context: Context, lookbackMs: Long = 5 * 60 * 1000L): String? {
         if (!hasUsageStatsPermission(context)) return null
         val usm = context.getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager

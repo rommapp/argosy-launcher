@@ -100,6 +100,7 @@ class DualScreenManager(
     internal val steamDownloadQueueDao: com.nendo.argosy.data.local.dao.SteamDownloadQueueDao,
     internal val steamRepository: com.nendo.argosy.data.repository.SteamRepository,
     internal val playSessionTracker: com.nendo.argosy.data.emulator.PlaySessionTracker,
+    internal val permissionHelper: com.nendo.argosy.util.PermissionHelper,
     internal val steamContentManager: com.nendo.argosy.data.steam.SteamContentManager,
     internal val repairImageCacheUseCase: com.nendo.argosy.domain.usecase.cache.RepairImageCacheUseCase? = null,
     internal val downloadFileStatusRepository: com.nendo.argosy.data.repository.DownloadFileStatusRepository,
@@ -614,6 +615,19 @@ class DualScreenManager(
         }
 
         Log.d(TAG, "HDMI disconnected: cleaned up swapped state")
+    }
+
+    /**
+     * Whether the running session's emulator is still on a screen. Both the launcher and the
+     * companion tear a session down when they come back to the front, and neither of them can tell
+     * from that alone whether the game ended or merely stopped being the focused thing, so both ask
+     * here. Answering false without evidence would end a live session and archive its save mid-play,
+     * so an emulator that cannot be observed is treated as still running.
+     */
+    fun isEmulatorStillOnScreen(context: Context): Boolean {
+        val emulatorPackage = sessionStateStore.getEmulatorPackage() ?: return false
+        permissionHelper.isPackageOnScreen(context, emulatorPackage)?.let { return it }
+        return permissionHelper.isPackageInForeground(context, emulatorPackage, 15_000)
     }
 
     val homeAppsList: List<String>

@@ -531,6 +531,7 @@ private fun routeInterfaceConfirm(vm: SettingsViewModel, state: SettingsUiState)
     val layoutState = InterfaceLayoutState.from(state)
     when (interfaceItemAtFocusIndex(state.focusedIndex, layoutState)) {
         InterfaceItem.UiScale -> vm.cycleUiScale()
+        InterfaceItem.CompactFooter -> vm.setCompactFooter(!state.display.compactFooter)
         InterfaceItem.HomeScreen -> vm.navigateToHomeScreen()
         InterfaceItem.LibraryView -> vm.navigateToLibraryView()
         InterfaceItem.BoxArt -> vm.navigateToBoxArt()

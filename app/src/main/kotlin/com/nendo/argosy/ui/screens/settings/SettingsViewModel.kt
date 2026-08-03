@@ -862,6 +862,7 @@ class SettingsViewModel @Inject constructor(
         displayDelegate.setHomeLayout(viewModelScope, settings)
     fun cycleHomeBackgroundMode(direction: Int = 1) = displayDelegate.cycleHomeBackgroundMode(viewModelScope, direction)
     fun setUseAccentColorFooter(use: Boolean) = displayDelegate.setUseAccentColorFooter(viewModelScope, use)
+    fun setCompactFooter(enabled: Boolean) = displayDelegate.setCompactFooter(viewModelScope, enabled)
     fun setCustomBackgroundPath(path: String?) = displayDelegate.setCustomBackgroundPath(viewModelScope, path)
     fun openBackgroundPicker() = displayDelegate.openBackgroundPicker(viewModelScope)
 

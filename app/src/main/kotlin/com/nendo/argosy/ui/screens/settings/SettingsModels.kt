@@ -211,6 +211,7 @@ data class DisplayState(
     val homeLayout: com.nendo.argosy.domain.model.HomeLayoutSettings =
         com.nendo.argosy.domain.model.HomeLayoutSettings(),
     val useAccentColorFooter: Boolean = false,
+    val compactFooter: Boolean = false,
     val boxArtShape: BoxArtShape = BoxArtShape.STANDARD,
     val boxArtCornerRadius: BoxArtCornerRadius = BoxArtCornerRadius.MEDIUM,
     val boxArtBorderThickness: BoxArtBorderThickness = BoxArtBorderThickness.MEDIUM,

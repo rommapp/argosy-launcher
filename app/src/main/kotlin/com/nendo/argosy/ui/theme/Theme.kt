@@ -381,7 +381,8 @@ fun ProvideArgosyThemeLocals(
 
     val uiScaleConfig = UiScaleConfig(
         scale = themeState.uiScale / 100f,
-        aspectRatioClass = aspectRatioClass
+        aspectRatioClass = aspectRatioClass,
+        compactFooter = themeState.compactFooter
     )
 
     val context = LocalContext.current

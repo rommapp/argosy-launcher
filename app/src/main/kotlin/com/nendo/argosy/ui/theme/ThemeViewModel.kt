@@ -64,6 +64,7 @@ data class ThemeState(
     val platformIndicatorStyle: PlatformIndicatorStyle = PlatformIndicatorStyle.TAB,
     val platformIndicatorContent: PlatformIndicatorContent = PlatformIndicatorContent.NAME,
     val useAccentColorFooter: Boolean = false,
+    val compactFooter: Boolean = false,
     val uiScale: Int = 100,
     val displayFontScale: Int = 100,
     val bodyFontScale: Int = 100
@@ -192,6 +193,7 @@ fun UserPreferences.toThemeState(): ThemeState = ThemeState(
     platformIndicatorStyle = platformIndicatorStyle,
     platformIndicatorContent = platformIndicatorContent,
     useAccentColorFooter = useAccentColorFooter,
+    compactFooter = compactFooter,
     uiScale = uiScale,
     displayFontScale = displayFontScale,
     bodyFontScale = bodyFontScale

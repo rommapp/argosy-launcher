@@ -476,6 +476,13 @@ class DisplaySettingsDelegate @Inject constructor(
         }
     }
 
+    fun setCompactFooter(scope: CoroutineScope, enabled: Boolean) {
+        scope.launch {
+            preferencesRepository.setCompactFooter(enabled)
+            _state.update { it.copy(compactFooter = enabled) }
+        }
+    }
+
     fun setCustomBackgroundPath(scope: CoroutineScope, path: String?) {
         scope.launch {
             preferencesRepository.setCustomBackgroundPath(path)

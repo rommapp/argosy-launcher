@@ -53,14 +53,20 @@ internal sealed class InterfaceItem(
     ) : InterfaceItem(key, section, visibleWhen)
 
     data object UiScale : InterfaceItem("uiScale", "layout")
+    data object CompactFooter : InterfaceItem("compactFooter", "layout")
     data object HomeScreen : InterfaceItem("homeScreen", "layout")
     data object LibraryView : InterfaceItem("libraryView", "layout")
     data object BoxArt : InterfaceItem("boxArt", "layout")
 
     companion object {
-        val ALL: List<InterfaceItem> = listOf(
-            UiScale, HomeScreen, LibraryView, BoxArt
-        )
+        /**
+         * A getter, not a stored list. As a `val` this is a static of the sealed class
+         * itself, so it is built during that class's initialization, which is the same
+         * initialization the `data object` entries above are waiting on: whichever
+         * entries have not been constructed yet land in the list as nulls.
+         */
+        val ALL: List<InterfaceItem>
+            get() = listOf(UiScale, CompactFooter, HomeScreen, LibraryView, BoxArt)
     }
 }
 
@@ -132,6 +138,14 @@ fun InterfaceSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                     step = 5,
                     suffix = "%",
                     onAdjust = { viewModel.adjustUiScale(it) }
+                )
+
+                InterfaceItem.CompactFooter -> SwitchPreference(
+                    title = "Compact Footer",
+                    subtitle = "Use a thinner control guide bar",
+                    isEnabled = display.compactFooter,
+                    isFocused = isFocused(item),
+                    onToggle = { viewModel.setCompactFooter(it) }
                 )
 
                 InterfaceItem.HomeScreen -> NavigationPreference(

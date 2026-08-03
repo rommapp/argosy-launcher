@@ -300,6 +300,7 @@ internal fun argosyColorScheme(palette: ArgosyPalette) = if (palette.isDarkTheme
 @Composable
 fun ALauncherTheme(
     viewModel: ThemeViewModel = hiltViewModel(),
+    isSecondaryDisplay: Boolean = false,
     content: @Composable () -> Unit
 ) {
     val themeState by viewModel.themeState.collectAsState()
@@ -309,7 +310,11 @@ fun ALauncherTheme(
         argosyTypography(customFonts, themeState.displayFontScale, themeState.bodyFontScale)
     }
 
-    ProvideArgosyThemeLocals(themeState = themeState, palette = palette) {
+    ProvideArgosyThemeLocals(
+        themeState = themeState,
+        palette = palette,
+        isSecondaryDisplay = isSecondaryDisplay
+    ) {
         MaterialTheme(
             colorScheme = argosyColorScheme(palette),
             typography = typography,

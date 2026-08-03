@@ -1137,7 +1137,9 @@ class LibretroActivity : ComponentActivity() {
 
     @androidx.compose.runtime.Composable
     private fun InGameOverlay() {
-        ALauncherTheme {
+        @Suppress("DEPRECATION")
+        val onSecondaryDisplay = windowManager.defaultDisplay.displayId != android.view.Display.DEFAULT_DISPLAY
+        ALauncherTheme(isSecondaryDisplay = onSecondaryDisplay) {
             CompositionLocalProvider(
                 LocalGamepadInputHandler provides gamepadInputBridge,
                 LocalABIconsSwapped provides swapAB,

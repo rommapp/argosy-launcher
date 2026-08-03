@@ -49,6 +49,7 @@ import com.nendo.argosy.ui.input.InputResult
 import com.nendo.argosy.ui.util.clickableNoFocus
 import com.nendo.argosy.util.formatSaveSize
 import com.nendo.argosy.util.formatSaveTimestamp
+import com.nendo.argosy.ui.theme.generated.DimensionTokens
 import com.nendo.argosy.ui.theme.pocketTacoBottomInset
 
 @Composable
@@ -94,11 +95,13 @@ fun QuickLoadTimeline(
     val overlayColor = if (isDarkTheme) Color.Black.copy(alpha = 0.7f) else Color.White.copy(alpha = 0.5f)
     val focused = entries.getOrNull(focusedIndex)
 
+    val bottomReserved = pocketTacoBottomInset()
+
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(overlayColor)
-            .padding(bottom = pocketTacoBottomInset())
+            .padding(bottom = bottomReserved)
             .focusProperties { canFocus = false },
         contentAlignment = Alignment.Center
     ) {
@@ -131,7 +134,9 @@ fun QuickLoadTimeline(
                 }
             }
         } else {
-            val maxHeightDp = (LocalConfiguration.current.screenHeightDp * 0.9f).dp
+            val availableHeightDp = LocalConfiguration.current.screenHeightDp - bottomReserved.value
+            val maxHeightDp =
+                (availableHeightDp * DimensionTokens.Layout.inGameMenuMaxHeightPct / 100f).dp
             Surface(
                 modifier = Modifier
                     .widthIn(max = 560.dp)

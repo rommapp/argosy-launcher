@@ -162,6 +162,8 @@ object ComponentDefaults {
     }
 
     object Carousel {
+        const val badgeHeadroomDp = 24
+        const val newBadgeOverflowDp = 20
         const val companionCardWidth = 140
         const val companionCardWidthFocused = 200
         const val companionCardGap = 16

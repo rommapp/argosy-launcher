@@ -9,6 +9,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.runtime.Composable
@@ -32,6 +34,9 @@ import com.nendo.argosy.ui.theme.Motion
 import com.nendo.argosy.domain.model.CarouselConfig
 import com.nendo.argosy.domain.model.HomeFocusPosition
 import com.nendo.argosy.domain.model.HomeRowAlignment
+import androidx.compose.foundation.layout.calculateEndPadding
+import androidx.compose.foundation.layout.calculateStartPadding
+import androidx.compose.ui.platform.LocalLayoutDirection
 import com.nendo.argosy.ui.theme.generated.ComponentDefaults
 import com.nendo.argosy.ui.util.clickableNoFocus
 import com.nendo.argosy.ui.util.touchOnly
@@ -302,10 +307,17 @@ fun CarouselRail(
      */
     val neighbourPushPx = with(LocalDensity.current) { metrics.neighbourPush.toPx() }
 
-    val contentPadding = carouselContentPadding(
+    val horizontalPadding = carouselContentPadding(
         metrics = metrics,
         availableWidth = screenWidth,
         startGutter = Dimens.spacingMd
+    )
+    val layoutDirection = LocalLayoutDirection.current
+    val headroom = ComponentDefaults.Carousel.badgeHeadroomDp.dp
+    val contentPadding = PaddingValues(
+        start = horizontalPadding.calculateStartPadding(layoutDirection),
+        end = horizontalPadding.calculateEndPadding(layoutDirection),
+        top = headroom
     )
 
     LazyRow(
@@ -316,9 +328,7 @@ fun CarouselRail(
         verticalAlignment = metrics.verticalAlignment,
         modifier = modifier
             .fillMaxWidth()
-            .then(
-                if (metrics.allowFocusOverflow) Modifier.graphicsLayer { clip = false } else Modifier
-            )
+            .graphicsLayer { clip = false }
     ) {
         itemsIndexed(items, key = { _, item -> item.key }) { index, item ->
             val isFocused = index == focusedIndex
@@ -429,6 +439,11 @@ private fun CarouselGameCard(
     val alphaOverride = if (isFocused) overrides.focusedAlpha else overrides.unfocusedAlpha
 
     if (showNewBadge) {
+        val shift = when (metrics.verticalAlignment) {
+            Alignment.Top -> -NEW_BADGE_TOP_OVERFLOW
+            Alignment.CenterVertically -> -NEW_BADGE_TOP_OVERFLOW / 2
+            else -> 0.dp
+        }
         GameCardWithNewBadge(
             game = item.game,
             isFocused = isFocused && showFocusVisuals,
@@ -443,7 +458,7 @@ private fun CarouselGameCard(
             onCoverLoaded = onCoverLoaded,
             scaleOverride = scaleOverride,
             alphaOverride = alphaOverride,
-            modifier = modifier
+            modifier = modifier.offset(y = shift)
         )
     } else {
         Box(modifier = Modifier.size(cardSize).then(modifier)) {

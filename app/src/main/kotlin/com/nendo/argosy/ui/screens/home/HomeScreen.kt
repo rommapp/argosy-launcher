@@ -124,7 +124,11 @@ import com.nendo.argosy.ui.components.HomeAutoGrid
 import com.nendo.argosy.ui.components.HomeCustomGridPage
 import com.nendo.argosy.ui.components.HomeTilePickerModal
 import com.nendo.argosy.ui.components.TileEditMode
+import androidx.compose.foundation.layout.ColumnScope
+import com.nendo.argosy.ui.theme.generated.ComponentDefaults
+import com.nendo.argosy.domain.model.HomeFocusPosition
 import com.nendo.argosy.domain.model.HomeLayoutKind
+import com.nendo.argosy.domain.model.HomeRowAlignment
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import com.nendo.argosy.ui.components.HERO_MIN_CARD_SCALE
 import com.nendo.argosy.ui.components.carouselCardSize
@@ -643,11 +647,17 @@ fun HomeScreen(
                     Dimens.footerHeight - Dimens.spacingLg - Dimens.spacingXl,
                 config = uiState.carouselConfig
             )
-            val railHeight = if (isAutoGrid || isCustomGrid) {
-                (maxHeight - headerBlockHeight - Dimens.footerHeight - Dimens.spacingLg)
-                    .coerceAtLeast(Dimens.spacingXl)
-            } else {
-                cardSize.height * uiState.carouselConfig.focusScale + Dimens.spacingMd
+            val infoAtBottom = uiState.carouselConfig.rowAlignment == HomeRowAlignment.TOP
+            val railHeight = when {
+                isAutoGrid || isCustomGrid ->
+                    (maxHeight - headerBlockHeight - Dimens.footerHeight - Dimens.spacingLg)
+                        .coerceAtLeast(Dimens.spacingXl)
+                infoAtBottom ->
+                    (
+                        maxHeight - headerBlockHeight - gameInfoHeight -
+                            Dimens.footerHeight - Dimens.spacingLg
+                        ).coerceAtLeast(Dimens.spacingXl)
+                else -> cardSize.height * uiState.carouselConfig.focusScale + Dimens.spacingMd
             }
             val isStackedHeader = maxWidth <= maxHeight
             Box(
@@ -679,6 +689,7 @@ fun HomeScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .padding(bottom = if (infoAtBottom) gameInfoHeight else 0.dp)
                         .height(railHeight)
                 ) {
                     when {
@@ -909,10 +920,33 @@ fun HomeScreen(
                 earnedAchievementCount = uiState.focusedGame?.earnedAchievementCount ?: 0,
                 showMetadata = !uiState.isVideoPreviewActive,
                 textColorOverride = if (videoTextColor != Color.Unspecified) videoTextColor else null,
+                placement = when {
+                    uiState.carouselConfig.focusPosition == HomeFocusPosition.CENTER ->
+                        GameInfoPlacement.SPLIT
+                    uiState.carouselConfig.inverted -> GameInfoPlacement.END
+                    else -> GameInfoPlacement.START
+                },
                 modifier = Modifier
                     .fillMaxWidth(gameInfoWidth)
-                    .align(Alignment.TopCenter)
-                    .padding(top = gameInfoTopPadding)
+                    .align(
+                        if (uiState.carouselConfig.rowAlignment == HomeRowAlignment.TOP) {
+                            Alignment.BottomCenter
+                        } else {
+                            Alignment.TopCenter
+                        }
+                    )
+                    .padding(
+                        top = if (uiState.carouselConfig.rowAlignment == HomeRowAlignment.TOP) {
+                            0.dp
+                        } else {
+                            gameInfoTopPadding
+                        },
+                        bottom = if (uiState.carouselConfig.rowAlignment == HomeRowAlignment.TOP) {
+                            Dimens.footerHeight + Dimens.spacingLg
+                        } else {
+                            0.dp
+                        }
+                    )
                     .onSizeChanged { size ->
                         val measured = with(localDensity) { size.height.toDp() }
                         if (measured != gameInfoHeight) gameInfoHeight = measured
@@ -1213,6 +1247,14 @@ private fun PlatformBreadcrumb(
     )
 }
 
+/**
+ * Where the focused game's details sit relative to the rail.
+ *
+ * A centred focus leaves no room above the card for a centred block, so the two halves split to
+ * either side of it; an edge-anchored focus keeps them together on the side the rail leaves free.
+ */
+enum class GameInfoPlacement { START, END, SPLIT }
+
 @Composable
 private fun GameInfo(
     title: String,
@@ -1224,6 +1266,7 @@ private fun GameInfo(
     earnedAchievementCount: Int,
     showMetadata: Boolean = true,
     textColorOverride: Color? = null,
+    placement: GameInfoPlacement = GameInfoPlacement.SPLIT,
     modifier: Modifier = Modifier
 ) {
     val metadataAlpha by animateFloatAsState(
@@ -1235,32 +1278,44 @@ private fun GameInfo(
     val titleColor = textColorOverride ?: MaterialTheme.colorScheme.onSurface
     val subtitleColor = textColorOverride?.copy(alpha = 0.8f) ?: MaterialTheme.colorScheme.onSurfaceVariant
 
-    Column(
-        modifier = modifier
-            .padding(horizontal = Dimens.spacingXxl),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        GameTitle(
-            title = title,
-            titleStyle = MaterialTheme.typography.headlineMedium,
-            titleColor = titleColor,
-            textAlign = TextAlign.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
-        )
+    val isSplit = placement == GameInfoPlacement.SPLIT
+    val sideAlignment = when (placement) {
+        GameInfoPlacement.END -> Alignment.End
+        else -> Alignment.Start
+    }
+    val sideTextAlign = when (placement) {
+        GameInfoPlacement.END -> TextAlign.End
+        else -> TextAlign.Start
+    }
 
-        if (developer != null) {
-            Spacer(modifier = Modifier.height(Dimens.spacingXs))
-            Text(
-                text = developer,
-                style = MaterialTheme.typography.bodyMedium,
-                color = subtitleColor,
-                modifier = Modifier.graphicsLayer { alpha = metadataAlpha }
-            )
+    GameInfoLayout(
+        isSplit = isSplit,
+        modifier = modifier.padding(horizontal = Dimens.spacingXxl),
+        details = {
+            Column(horizontalAlignment = sideAlignment) {
+                GameTitle(
+                    title = title,
+                    titleStyle = MaterialTheme.typography.headlineMedium,
+                    titleColor = titleColor,
+                    textAlign = sideTextAlign,
+                    horizontalAlignment = sideAlignment
+                )
+
+                if (developer != null) {
+                    Spacer(modifier = Modifier.height(Dimens.spacingXs))
+                    Text(
+                        text = developer,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = subtitleColor,
+                        modifier = Modifier.graphicsLayer { alpha = metadataAlpha }
+                    )
+                }
+            }
         }
-
+    ) {
         val hasBadges = rating != null || userRating > 0 || userDifficulty > 0 || achievementCount > 0
         if (hasBadges) {
-            Spacer(modifier = Modifier.height(Dimens.spacingXs))
+            if (!isSplit) Spacer(modifier = Modifier.height(Dimens.spacingXs))
             Row(
                 modifier = Modifier.graphicsLayer { alpha = metadataAlpha },
                 verticalAlignment = Alignment.CenterVertically,
@@ -1340,6 +1395,34 @@ private fun GameInfo(
                 }
             }
         }
+    }
+}
+
+/**
+ * Puts the title block and the badges either above one another or on opposite sides, so the same
+ * content serves a rail that hugs an edge and one that sits in the middle.
+ */
+@Composable
+private fun GameInfoLayout(
+    isSplit: Boolean,
+    modifier: Modifier = Modifier,
+    details: @Composable () -> Unit,
+    badges: @Composable ColumnScope.() -> Unit
+) {
+    if (isSplit) {
+        Row(
+            modifier = modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            details()
+            Column(horizontalAlignment = Alignment.End, content = badges)
+        }
+        return
+    }
+    Column(modifier = modifier) {
+        details()
+        badges()
     }
 }
 

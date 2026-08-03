@@ -877,6 +877,13 @@ fun GameCardWithBadge(
     }
 }
 
+/**
+ * How far the new-game badge rises above the card it belongs to. The badge is laid out inside the
+ * card's own bounds so nothing clips it, which makes a badged card this much taller than a plain
+ * one; a caller that lines cards up has to take the difference back out.
+ */
+val NEW_BADGE_TOP_OVERFLOW = ComponentDefaults.Carousel.newBadgeOverflowDp.dp
+
 @Composable
 fun GameCardWithNewBadge(
     game: HomeGameUi,
@@ -898,7 +905,7 @@ fun GameCardWithNewBadge(
     val badgeWidthDp = 44.dp
     val badgeHeightDp = 30.dp
     val badgeOffsetXDp = 8.dp
-    val badgeTopOverflow = 20.dp
+
 
     val scale by animateFloatAsState(
         targetValue = scaleOverride ?: if (isFocused) focusScale else ComponentDefaults.Focus.scaleDefault,
@@ -953,7 +960,7 @@ fun GameCardWithNewBadge(
         } else null
 
         val badgeOffsetX = badgeOffsetXDp.roundToPx()
-        val topOverflow = if (showNewBadge) badgeTopOverflow.roundToPx() else 0
+        val topOverflow = if (showNewBadge) NEW_BADGE_TOP_OVERFLOW.roundToPx() else 0
         val rightOverflow = if (showNewBadge) badgeOffsetX else 0
 
         val layoutWidth = cardPlaceable.width + rightOverflow

@@ -891,6 +891,14 @@ object EmulatorRegistry {
         ),
 
         EmulatorDef(
+            id = "hakux",
+            packageName = "com.rfandango.haku_x",
+            displayName = "hakuX",
+            supportedPlatforms = setOf("xbox"),
+            downloadUrl = "https://github.com/rfandango/hakuX/releases"
+        ),
+
+        EmulatorDef(
             id = "xendroid",
             packageName = "xendroid.compose",
             displayName = "XenDroid",
@@ -1058,6 +1066,7 @@ object EmulatorRegistry {
         "wsc" to listOf("builtin", "retroarch", "retroarch_64", "retroarch_32"),
         "pokemini" to listOf("builtin", "retroarch", "retroarch_64", "retroarch_32"),
         "gameandwatch" to listOf("builtin", "retroarch", "retroarch_64", "retroarch_32"),
+        "xbox" to listOf("hakux"),
         "xbox360" to listOf("xendroid", "ax360e", "ax360e_free"),
         "steam" to listOf("gamehub", "gamehub_lite", "gamenative"),
         "windows" to listOf("gamenative"),

@@ -26,6 +26,7 @@ import kotlinx.coroutines.withContext
 import com.nendo.argosy.ui.screens.settings.PlatformMigrationInfo
 import com.nendo.argosy.ui.screens.settings.PlatformStorageConfig
 import com.nendo.argosy.ui.screens.settings.StorageState
+import com.nendo.argosy.util.Logger
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -375,9 +376,22 @@ class StorageSettingsDelegate @Inject constructor(
                 updatePlatformConfigInState(platformId) {
                     it.copy(customRomPath = newPath, effectivePath = newPath)
                 }
+                rediscoverPlatform(platformId)
             }
         }
         pendingPlatformId = null
+    }
+
+    /**
+     * A platform's folder is only worth pointing at because roms are already in it, so a path
+     * change has to look. Without this the library keeps offering Download for content sitting
+     * in the directory the user just chose, until some unrelated trigger happens to fire.
+     *
+     * Fill-null-only, so it can add links but never move or drop one.
+     */
+    private suspend fun rediscoverPlatform(platformId: Long) {
+        runCatching { gameRepository.discoverLocalFilesForPlatform(platformId) }
+            .onFailure { Logger.warn(TAG, "rediscoverPlatform failed | platformId=$platformId", it) }
     }
 
     fun resetPlatformToGlobal(scope: CoroutineScope, platformId: Long) {
@@ -405,6 +419,7 @@ class StorageSettingsDelegate @Inject constructor(
                 updatePlatformConfigInState(platformId) {
                     it.copy(customRomPath = null, effectivePath = newPath)
                 }
+                rediscoverPlatform(platformId)
             }
         }
     }
@@ -420,6 +435,7 @@ class StorageSettingsDelegate @Inject constructor(
                 newPath = info.newPath,
                 isResetToGlobal = info.isResetToGlobal
             )
+            rediscoverPlatform(info.platformId)
             loadPlatformConfigs(scope)
             refreshCollectionStats(scope)
         }
@@ -445,6 +461,7 @@ class StorageSettingsDelegate @Inject constructor(
                     it.copy(customRomPath = info.newPath, effectivePath = info.newPath)
                 }
             }
+            rediscoverPlatform(info.platformId)
         }
     }
 

@@ -6,12 +6,17 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
+const val GRIP_RESERVE_MIN_PERCENT = 5
+const val GRIP_RESERVE_MAX_PERCENT = 40
+
 /**
  * Resolves the fraction of screen height the grip reserve takes at the bottom
  * of the primary display.
  *
  * Returns 0 unless all three hold: the reserve is enabled, the display is
- * portrait, and this is not the companion display.
+ * portrait, and this is not the companion display. Every caller resolves it
+ * from live values rather than caching one, because any of the three can change
+ * without the caller being rebuilt.
  */
 fun resolveGripReserveFraction(
     enabled: Boolean,
@@ -22,7 +27,7 @@ fun resolveGripReserveFraction(
 ): Float {
     if (!enabled || isSecondaryDisplay) return 0f
     if (screenWidthDp >= screenHeightDp) return 0f
-    return percent.coerceIn(0, 100) / 100f
+    return percent.coerceIn(GRIP_RESERVE_MIN_PERCENT, GRIP_RESERVE_MAX_PERCENT) / 100f
 }
 
 /**

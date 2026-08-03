@@ -120,6 +120,7 @@ import com.nendo.argosy.libretro.shader.ShaderDownloader
 import com.nendo.argosy.libretro.shader.ShaderPreviewRenderer
 import com.nendo.argosy.libretro.shader.ShaderRegistry
 import com.nendo.argosy.ui.theme.ALauncherTheme
+import com.nendo.argosy.ui.theme.GRIP_RESERVE_MAX_PERCENT
 import com.nendo.argosy.ui.theme.resolveGripReserveFraction
 import com.nendo.argosy.data.preferences.BuiltinEmulatorSettings
 import com.nendo.argosy.util.AppPaths
@@ -275,7 +276,8 @@ class LibretroActivity : ComponentActivity() {
     private var currentRotationState by mutableStateOf(0)
     private var touchSettingsState by mutableStateOf(com.nendo.argosy.data.preferences.BuiltinEmulatorSettings())
     private var portraitPositionState by mutableStateOf("Auto")
-    private var gripReserveFractionState by mutableStateOf(0f)
+    private var gripReserveEnabledState by mutableStateOf(false)
+    private var gripReservePercentState by mutableStateOf(GRIP_RESERVE_MAX_PERCENT)
     private var coreOptionOverrides by mutableStateOf<Map<String, String>>(emptyMap())
     private var gameCoreOptionOverrides by mutableStateOf<Map<String, String>>(emptyMap())
     private var perGameSettingsEnabled by mutableStateOf(false)
@@ -681,17 +683,12 @@ class LibretroActivity : ComponentActivity() {
         }
         lifecycleScope.launch {
             preferencesRepository.preferences.collect { prefs ->
-                val fraction = resolveGripReserveFraction(
-                    enabled = prefs.gripReserveEnabled,
-                    percent = prefs.gripReservePercent,
-                    screenWidthDp = resources.configuration.screenWidthDp,
-                    screenHeightDp = resources.configuration.screenHeightDp,
-                    isSecondaryDisplay = onSecondaryDisplay()
-                )
-                if (fraction != gripReserveFractionState) {
-                    gripReserveFractionState = fraction
-                    splitColumn?.let { applyPortraitSplit(it) }
-                }
+                if (prefs.gripReserveEnabled == gripReserveEnabledState &&
+                    prefs.gripReservePercent == gripReservePercentState
+                ) return@collect
+                gripReserveEnabledState = prefs.gripReserveEnabled
+                gripReservePercentState = prefs.gripReservePercent
+                splitColumn?.let { applyPortraitSplit(it) }
             }
         }
     }
@@ -1103,7 +1100,13 @@ class LibretroActivity : ComponentActivity() {
             portraitPositionState == "Bottom" -> "Bottom"
             else -> if (overlayWouldShow) "Top" else "Center"
         }
-        val reserved = if (portrait) gripReserveFractionState else 0f
+        val reserved = resolveGripReserveFraction(
+            enabled = gripReserveEnabledState,
+            percent = gripReservePercentState,
+            screenWidthDp = resources.configuration.screenWidthDp,
+            screenHeightDp = resources.configuration.screenHeightDp,
+            isSecondaryDisplay = onSecondaryDisplay()
+        )
         val (topWeight, gameWeight, bottomWeight) = portraitSplitWeights(position, reserved)
         val spacerTop = column.getChildAt(0)
         val spacerBottom = column.getChildAt(2)

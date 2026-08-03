@@ -65,8 +65,8 @@ class GripReserveFractionTest {
     }
 
     @Test
-    fun `percent is clamped into a usable fraction`() {
-        assertEquals(0f, resolveGripReserveFraction(true, -10, PORTRAIT_W, PORTRAIT_H), 0.0001f)
-        assertEquals(1f, resolveGripReserveFraction(true, 250, PORTRAIT_W, PORTRAIT_H), 0.0001f)
+    fun `a percent outside the settings range is pulled back into it`() {
+        assertEquals(0.05f, resolveGripReserveFraction(true, -10, PORTRAIT_W, PORTRAIT_H), 0.0001f)
+        assertEquals(0.40f, resolveGripReserveFraction(true, 250, PORTRAIT_W, PORTRAIT_H), 0.0001f)
     }
 }

@@ -75,21 +75,13 @@ internal sealed class InterfaceItem(
     }
 }
 
-/**
- * Built on first use, not at class load. `ALL` lives in the companion and names the
- * `data object` entries of its own sealed class, so touching it from this file's
- * initializer re-enters a class initialization already in progress and the list comes
- * back holding nulls.
- */
-private val interfaceLayout by lazy {
-    SettingsLayout<InterfaceItem, InterfaceLayoutState>(
-        allItems = InterfaceItem.ALL,
-        isFocusable = { it.isFocusable },
-        visibleWhen = { item, state -> item.visibleWhen(state) },
-        sectionOf = { it.section },
-        sectionTitle = { null }
-    )
-}
+private val interfaceLayout = SettingsLayout<InterfaceItem, InterfaceLayoutState>(
+    allItems = InterfaceItem.ALL,
+    isFocusable = { it.isFocusable },
+    visibleWhen = { item, state -> item.visibleWhen(state) },
+    sectionOf = { it.section },
+    sectionTitle = { null }
+)
 
 internal fun interfaceMaxFocusIndex(state: InterfaceLayoutState): Int = interfaceLayout.maxFocusIndex(state)
 

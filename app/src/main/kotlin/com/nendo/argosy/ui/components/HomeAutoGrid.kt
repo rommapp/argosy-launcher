@@ -26,7 +26,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import com.nendo.argosy.ui.util.verticalEdgeFade
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.nendo.argosy.domain.model.AutoGridConfig
@@ -126,17 +128,26 @@ fun HomeAutoGrid(
                 )
             )
         }
+        if (config.showTitles) {
+            val focusedTitle = (items.getOrNull(focusedIndex) as? CarouselItem.Game)
+                ?.game?.title.orEmpty()
+            Text(
+                text = focusedTitle,
+                style = MaterialTheme.typography.titleLarge,
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                textAlign = TextAlign.Center,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = Dimens.spacingMd, vertical = Dimens.spacingSm)
+            )
+        }
         val lanes = config.laneCount.coerceAtLeast(1)
         val cells = GridCells.Fixed(lanes)
-        val spacing = Arrangement.spacedBy(Dimens.spacingSm)
+        val spacing = Arrangement.spacedBy(Dimens.spacingMd)
         var measured by remember { mutableStateOf(IntSize.Zero) }
         val density = LocalDensity.current
-        val titleStyle = MaterialTheme.typography.labelSmall
-        val titleAllowance = if (config.showTitles) {
-            with(density) { titleStyle.lineHeight.toDp() } + Dimens.spacingXs
-        } else {
-            0.dp
-        }
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -148,14 +159,13 @@ fun HomeAutoGrid(
                 lanes = lanes,
                 scrollAxis = config.scrollAxis,
                 coverAspectRatio = LocalBoxArtStyle.current.aspectRatio,
-                titleAllowance = titleAllowance
             )
             val padding = metrics.padding
             val cell: @Composable (Int, CarouselItem) -> Unit = { index, item ->
                 AutoGridCell(
                     item = item,
                     isFocused = index == focusedIndex,
-                    showTitle = config.showTitles,
+                    showTitle = false,
                     showPlatformBadge = showPlatformBadge,
                     downloadIndicator = downloadIndicatorFor(item),
                     cellWidth = metrics.cellWidth,
@@ -172,7 +182,9 @@ fun HomeAutoGrid(
                     contentPadding = padding,
                     horizontalArrangement = spacing,
                     verticalArrangement = spacing,
-                    modifier = Modifier.fillMaxSize()
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .verticalEdgeFade(gridState, fadeHeight = Dimens.spacingXl)
                 ) {
                     itemsIndexed(items, key = { _, item -> item.key }) { index, item -> cell(index, item) }
                 }
@@ -182,7 +194,9 @@ fun HomeAutoGrid(
                     contentPadding = padding,
                     horizontalArrangement = spacing,
                     verticalArrangement = spacing,
-                    modifier = Modifier.fillMaxSize()
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .verticalEdgeFade(gridState, fadeHeight = Dimens.spacingXl)
                 ) {
                     itemsIndexed(items, key = { _, item -> item.key }) { index, item -> cell(index, item) }
                 }
@@ -214,16 +228,15 @@ private fun rememberAutoGridMetrics(
     available: Dp,
     lanes: Int,
     scrollAxis: HomeScrollAxis,
-    coverAspectRatio: Float,
-    titleAllowance: Dp
+    coverAspectRatio: Float
 ): AutoGridMetrics {
     val edge = Dimens.spacingMd
-    val gap = Dimens.spacingSm
+    val gap = Dimens.spacingMd
     val overhang = (ComponentDefaults.Focus.scaleFocused - 1f) / 2f
     val gaps = gap * (lanes - 1)
     val roughLane = ((available - edge * 2 - gaps) / lanes).coerceAtLeast(0.dp)
     val vertical = scrollAxis == HomeScrollAxis.VERTICAL
-    val roughCross = if (vertical) roughLane else (roughLane - titleAllowance).coerceAtLeast(0.dp)
+    val roughCross = roughLane
     val crossPad = edge + roughCross * overhang
     val lane = ((available - crossPad * 2 - gaps) / lanes).coerceAtLeast(0.dp)
     return if (vertical) {
@@ -236,7 +249,7 @@ private fun rememberAutoGridMetrics(
             cellWidth = null
         )
     } else {
-        val coverHeight = (lane - titleAllowance).coerceAtLeast(0.dp)
+        val coverHeight = lane
         val coverWidth = coverHeight * coverAspectRatio
         AutoGridMetrics(
             padding = PaddingValues(

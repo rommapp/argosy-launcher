@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.runtime.Composable
@@ -313,12 +314,21 @@ fun CarouselRail(
         startGutter = Dimens.spacingMd
     )
     val layoutDirection = LocalLayoutDirection.current
-    val headroom = ComponentDefaults.Carousel.badgeHeadroomDp.dp
     val contentPadding = PaddingValues(
         start = horizontalPadding.calculateStartPadding(layoutDirection),
-        end = horizontalPadding.calculateEndPadding(layoutDirection),
-        top = headroom
+        end = horizontalPadding.calculateEndPadding(layoutDirection)
     )
+
+    /**
+     * Every card carries badge room above its artwork, so aligning the row to a top or centre edge
+     * would align the reserved space rather than the art. Taking that back out here puts the
+     * artwork where the alignment says it should be, and leaves the badge sitting in the gap.
+     */
+    val originShift = when (metrics.verticalAlignment) {
+        Alignment.Top -> -NEW_BADGE_TOP_OVERFLOW
+        Alignment.CenterVertically -> -NEW_BADGE_TOP_OVERFLOW / 2
+        else -> 0.dp
+    }
 
     LazyRow(
         state = listState,
@@ -328,7 +338,7 @@ fun CarouselRail(
         verticalAlignment = metrics.verticalAlignment,
         modifier = modifier
             .fillMaxWidth()
-            .graphicsLayer { clip = false }
+            .offset(y = originShift)
     ) {
         itemsIndexed(items, key = { _, item -> item.key }) { index, item ->
             val isFocused = index == focusedIndex
@@ -401,6 +411,7 @@ fun CarouselRail(
                                 this.translationX = translationX
                                 alpha = viewAllAlpha
                             }
+                            .padding(top = NEW_BADGE_TOP_OVERFLOW)
                             .size(metrics.cardWidth, metrics.cardHeight)
                     )
                 }
@@ -438,44 +449,20 @@ private fun CarouselGameCard(
     val scaleOverride = if (isFocused) overrides.focusedScale else null
     val alphaOverride = if (isFocused) overrides.focusedAlpha else overrides.unfocusedAlpha
 
-    if (showNewBadge) {
-        val shift = when (metrics.verticalAlignment) {
-            Alignment.Top -> -NEW_BADGE_TOP_OVERFLOW
-            Alignment.CenterVertically -> -NEW_BADGE_TOP_OVERFLOW / 2
-            else -> 0.dp
-        }
-        GameCardWithNewBadge(
-            game = item.game,
-            isFocused = isFocused && showFocusVisuals,
-            cardWidth = cardSize.width,
-            cardHeight = cardSize.height,
-            focusScale = metrics.focusScale,
-            scalePivotY = metrics.scalePivotY,
-            downloadIndicator = item.downloadIndicator,
-            showPlatformBadge = showPlatformBadge,
-            coverPathOverride = item.coverPathOverride,
-            onCoverLoadFailed = onCoverLoadFailed,
-            onCoverLoaded = onCoverLoaded,
-            scaleOverride = scaleOverride,
-            alphaOverride = alphaOverride,
-            modifier = modifier.offset(y = shift)
-        )
-    } else {
-        Box(modifier = Modifier.size(cardSize).then(modifier)) {
-            GameCard(
-                game = item.game,
-                isFocused = isFocused && showFocusVisuals,
-                modifier = Modifier.fillMaxSize(),
-                focusScale = metrics.focusScale,
-                scalePivotY = metrics.scalePivotY,
-                downloadIndicator = item.downloadIndicator,
-                showPlatformBadge = showPlatformBadge,
-                coverPathOverride = item.coverPathOverride,
-                onCoverLoadFailed = onCoverLoadFailed,
-                onCoverLoaded = onCoverLoaded,
-                scaleOverride = scaleOverride,
-                alphaOverride = alphaOverride
-            )
-        }
-    }
+    GameCardWithNewBadge(
+        game = item.game,
+        isFocused = isFocused && showFocusVisuals,
+        cardWidth = cardSize.width,
+        cardHeight = cardSize.height,
+        focusScale = metrics.focusScale,
+        scalePivotY = metrics.scalePivotY,
+        downloadIndicator = item.downloadIndicator,
+        showPlatformBadge = showPlatformBadge,
+        coverPathOverride = item.coverPathOverride,
+        onCoverLoadFailed = onCoverLoadFailed,
+        onCoverLoaded = onCoverLoaded,
+        scaleOverride = scaleOverride,
+        alphaOverride = alphaOverride,
+        modifier = modifier
+    )
 }

@@ -904,7 +904,6 @@ fun GameCardWithNewBadge(
     val showNewBadge = game.isNew && !downloadIndicator.isActive
     val badgeWidthDp = 44.dp
     val badgeHeightDp = 30.dp
-    val badgeOffsetXDp = 8.dp
 
 
     val scale by animateFloatAsState(
@@ -946,7 +945,16 @@ fun GameCardWithNewBadge(
         modifier = modifier.graphicsLayer {
             scaleX = scale
             scaleY = scale
-            transformOrigin = TransformOrigin(0.5f, scalePivotY)
+            val overflowPx = NEW_BADGE_TOP_OVERFLOW.toPx()
+            val artHeight = (size.height - overflowPx).coerceAtLeast(1f)
+            transformOrigin = TransformOrigin(
+                pivotFractionX = 0.5f,
+                pivotFractionY = if (size.height <= 0f) {
+                    scalePivotY
+                } else {
+                    (overflowPx + scalePivotY * artHeight) / size.height
+                }
+            )
             this.alpha = alpha
         }
     ) { measurables, constraints ->
@@ -959,17 +967,13 @@ fun GameCardWithNewBadge(
             measurables[1].measure(Constraints())
         } else null
 
-        val badgeOffsetX = badgeOffsetXDp.roundToPx()
-        val topOverflow = if (showNewBadge) NEW_BADGE_TOP_OVERFLOW.roundToPx() else 0
-        val rightOverflow = if (showNewBadge) badgeOffsetX else 0
-
-        val layoutWidth = cardPlaceable.width + rightOverflow
+        val topOverflow = NEW_BADGE_TOP_OVERFLOW.roundToPx()
         val layoutHeight = cardPlaceable.height + topOverflow
 
-        layout(layoutWidth, layoutHeight) {
+        layout(cardPlaceable.width, layoutHeight) {
             cardPlaceable.placeRelative(0, topOverflow)
             badgePlaceable?.placeRelative(
-                x = cardPlaceable.width - badgePlaceable.width + badgeOffsetX,
+                x = cardPlaceable.width - badgePlaceable.width,
                 y = topOverflow - (badgePlaceable.height / 2)
             )
         }

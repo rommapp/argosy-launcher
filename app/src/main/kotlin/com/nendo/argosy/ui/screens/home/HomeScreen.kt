@@ -148,6 +148,7 @@ import com.nendo.argosy.ui.input.LocalModifiedInputHandler
 import com.nendo.argosy.domain.model.SyncProgress
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.first
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalBoxArtStyle
 import com.nendo.argosy.ui.theme.LocalUiScale
@@ -193,6 +194,7 @@ fun HomeScreen(
                             index = focusedIndex.coerceIn(0, itemsSize - 1),
                             scrollOffset = CarouselAnchor.START.snapOffsetPx
                         )
+                        snapshotFlow { listState.isScrollInProgress }.first { !it }
                         isProgrammaticScroll = false
                     }
                 }
@@ -211,12 +213,19 @@ fun HomeScreen(
                 val viewportStart = layoutInfo.viewportStartOffset
                 val visibleItems = layoutInfo.visibleItemsInfo
                 if (visibleItems.isNotEmpty()) {
-                    val firstFullyVisible = visibleItems
-                        .filter { it.offset >= viewportStart }
-                        .minByOrNull { it.offset }
-                    if (firstFullyVisible != null && firstFullyVisible.index != uiState.focusedGameIndex) {
+                    val landedOn = if (
+                        uiState.carouselConfig.focusPosition == HomeFocusPosition.CENTER
+                    ) {
+                        val centre = (viewportStart + layoutInfo.viewportEndOffset) / 2
+                        visibleItems.minByOrNull {
+                            kotlin.math.abs(it.offset + it.size / 2 - centre)
+                        }
+                    } else {
+                        visibleItems.filter { it.offset >= viewportStart }.minByOrNull { it.offset }
+                    }
+                    if (landedOn != null && landedOn.index != uiState.focusedGameIndex) {
                         skipNextProgrammaticScroll = true
-                        viewModel.setFocusIndex(firstFullyVisible.index)
+                        viewModel.setFocusIndex(landedOn.index)
                     }
                 }
             }
@@ -689,7 +698,13 @@ fun HomeScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(bottom = if (infoAtBottom) gameInfoHeight else 0.dp)
+                        .padding(
+                            bottom = if (infoAtBottom && !isAutoGrid && !isCustomGrid) {
+                                gameInfoHeight
+                            } else {
+                                0.dp
+                            }
+                        )
                         .height(railHeight)
                 ) {
                     when {
@@ -863,7 +878,29 @@ fun HomeScreen(
                     }
                     FooterSpacer()
                 } else {
-                    Spacer(modifier = Modifier.height(Dimens.spacingXl))
+                    val viewAll = uiState.focusedItem as? HomeRowItem.ViewAll
+                    FooterHints(
+                        hints = listOf(
+                            if (isAutoGrid) {
+                                InputButton.DPAD to "Game"
+                            } else {
+                                InputButton.DPAD_HORIZONTAL to "Game"
+                            },
+                            if (isAutoGrid) {
+                                InputButton.LB_RB to "Section"
+                            } else {
+                                InputButton.DPAD_VERTICAL to "Platform"
+                            },
+                            InputButton.A to "Library"
+                        ),
+                        variant = FooterVariant.SUBTLE,
+                        onHintClick = { button ->
+                            if (button == InputButton.A) {
+                                onNavigateToLibrary(viewAll?.platformId, viewAll?.sourceFilter)
+                            }
+                        }
+                    )
+                    FooterSpacer()
                 }
             }
 
@@ -920,20 +957,28 @@ fun HomeScreen(
                 earnedAchievementCount = uiState.focusedGame?.earnedAchievementCount ?: 0,
                 showMetadata = !uiState.isVideoPreviewActive,
                 textColorOverride = if (videoTextColor != Color.Unspecified) videoTextColor else null,
-                placement = when {
-                    uiState.carouselConfig.focusPosition == HomeFocusPosition.CENTER ->
-                        GameInfoPlacement.SPLIT
-                    uiState.carouselConfig.inverted -> GameInfoPlacement.END
-                    else -> GameInfoPlacement.START
+                placement = if (
+                    uiState.carouselConfig.focusPosition == HomeFocusPosition.CENTER
+                ) {
+                    GameInfoPlacement.SPLIT
+                } else {
+                    GameInfoPlacement.CENTERED
                 },
                 modifier = Modifier
-                    .fillMaxWidth(gameInfoWidth)
-                    .align(
-                        if (uiState.carouselConfig.rowAlignment == HomeRowAlignment.TOP) {
-                            Alignment.BottomCenter
+                    .fillMaxWidth(
+                        if (uiState.carouselConfig.focusPosition == HomeFocusPosition.CENTER) {
+                            gameInfoWidth
                         } else {
-                            Alignment.TopCenter
+                            GAME_INFO_SIDE_WIDTH_FRACTION
                         }
+                    )
+                    .align(
+                        gameInfoAlignment(
+                            atBottom = uiState.carouselConfig.rowAlignment == HomeRowAlignment.TOP,
+                            centred = uiState.carouselConfig.focusPosition ==
+                                HomeFocusPosition.CENTER,
+                            inverted = uiState.carouselConfig.inverted
+                        )
                     )
                     .padding(
                         top = if (uiState.carouselConfig.rowAlignment == HomeRowAlignment.TOP) {
@@ -1253,7 +1298,35 @@ private fun PlatformBreadcrumb(
  * A centred focus leaves no room above the card for a centred block, so the two halves split to
  * either side of it; an edge-anchored focus keeps them together on the side the rail leaves free.
  */
-enum class GameInfoPlacement { START, END, SPLIT }
+enum class GameInfoPlacement { CENTERED, SPLIT }
+
+/**
+ * How much of the row's width the details block occupies when it sits to one side.
+ */
+private const val GAME_INFO_SIDE_WIDTH_FRACTION = 0.6f
+
+/**
+ * Width each half takes when the details split around a centred focus, leaving the remainder as a
+ * gutter down the middle so neither half crowds the focused card.
+ */
+private const val GAME_INFO_SPLIT_WIDTH_FRACTION = 0.45f
+
+/**
+ * Which corner the details block occupies. It sits opposite the focused card, on the half of the
+ * row the rail leaves free, and moves below the cards when they are hung from the top.
+ */
+private fun gameInfoAlignment(
+    atBottom: Boolean,
+    centred: Boolean,
+    inverted: Boolean
+): Alignment = when {
+    centred && atBottom -> Alignment.BottomCenter
+    centred -> Alignment.TopCenter
+    atBottom && inverted -> Alignment.BottomStart
+    atBottom -> Alignment.BottomEnd
+    inverted -> Alignment.TopStart
+    else -> Alignment.TopEnd
+}
 
 @Composable
 private fun GameInfo(
@@ -1279,26 +1352,18 @@ private fun GameInfo(
     val subtitleColor = textColorOverride?.copy(alpha = 0.8f) ?: MaterialTheme.colorScheme.onSurfaceVariant
 
     val isSplit = placement == GameInfoPlacement.SPLIT
-    val sideAlignment = when (placement) {
-        GameInfoPlacement.END -> Alignment.End
-        else -> Alignment.Start
-    }
-    val sideTextAlign = when (placement) {
-        GameInfoPlacement.END -> TextAlign.End
-        else -> TextAlign.Start
-    }
 
     GameInfoLayout(
         isSplit = isSplit,
         modifier = modifier.padding(horizontal = Dimens.spacingXxl),
         details = {
-            Column(horizontalAlignment = sideAlignment) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 GameTitle(
                     title = title,
                     titleStyle = MaterialTheme.typography.headlineMedium,
                     titleColor = titleColor,
-                    textAlign = sideTextAlign,
-                    horizontalAlignment = sideAlignment
+                    textAlign = TextAlign.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally
                 )
 
                 if (developer != null) {
@@ -1411,16 +1476,31 @@ private fun GameInfoLayout(
 ) {
     if (isSplit) {
         Row(
-            modifier = modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
+            modifier = modifier
+                .fillMaxWidth()
+                .padding(vertical = Dimens.spacingLg),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            details()
-            Column(horizontalAlignment = Alignment.End, content = badges)
+            Box(
+                modifier = Modifier.weight(GAME_INFO_SPLIT_WIDTH_FRACTION),
+                contentAlignment = Alignment.Center
+            ) {
+                details()
+            }
+            Spacer(modifier = Modifier.weight(1f - GAME_INFO_SPLIT_WIDTH_FRACTION * 2f))
+            Box(
+                modifier = Modifier.weight(GAME_INFO_SPLIT_WIDTH_FRACTION),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally, content = badges)
+            }
         }
         return
     }
-    Column(modifier = modifier) {
+    Column(
+        modifier = modifier,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
         details()
         badges()
     }

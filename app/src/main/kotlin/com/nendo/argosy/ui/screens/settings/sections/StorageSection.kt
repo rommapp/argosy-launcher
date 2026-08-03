@@ -473,7 +473,7 @@ fun StorageSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                 minValue = 1,
                 maxValue = 5,
                 isFocused = isFocused(item),
-                onClick = { viewModel.cycleMaxConcurrentDownloads() }
+                onAdjust = { viewModel.adjustMaxConcurrentDownloads(it) }
             )
 
             StorageItem.Threshold -> {

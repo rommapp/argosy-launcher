@@ -30,7 +30,6 @@ import com.nendo.argosy.core.notification.NotificationDuration
 import com.nendo.argosy.core.notification.NotificationType
 import com.nendo.argosy.data.emulator.EmulatorUpdateManager
 import com.nendo.argosy.data.emulator.PlaySessionTracker
-import com.nendo.argosy.data.preferences.DefaultView
 import com.nendo.argosy.data.preferences.MenuWrapMode
 import com.nendo.argosy.data.repository.SaveSyncRepository
 import com.nendo.argosy.data.sync.ConflictInfo
@@ -91,7 +90,6 @@ data class ArgosyUiState(
     val abIconsSwapped: Boolean = false,
     val xyIconsSwapped: Boolean = false,
     val swapStartSelect: Boolean = false,
-    val defaultView: DefaultView = DefaultView.HOME,
     val menuWrapMode: MenuWrapMode = MenuWrapMode.HARD_STOP
 )
 
@@ -459,7 +457,6 @@ class ArgosyViewModel @Inject constructor(
             abIconsSwapped = isNintendoLayout xor prefs.swapAB,
             xyIconsSwapped = isNintendoLayout xor prefs.swapXY,
             swapStartSelect = prefs.swapStartSelect,
-            defaultView = prefs.defaultView,
             menuWrapMode = prefs.menuWrapMode
         )
     }.stateIn(

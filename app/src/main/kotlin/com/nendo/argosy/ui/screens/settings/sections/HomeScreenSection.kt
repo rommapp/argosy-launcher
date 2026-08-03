@@ -1,7 +1,10 @@
 package com.nendo.argosy.ui.screens.settings.sections
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import com.nendo.argosy.ui.screens.settings.components.SectionPaneLayout
 import androidx.compose.material.icons.Icons
@@ -10,70 +13,129 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import com.nendo.argosy.data.preferences.HomeBackgroundMode
+import com.nendo.argosy.domain.model.HomeLayoutKind
 import com.nendo.argosy.ui.components.ActionPreference
 import com.nendo.argosy.ui.components.CyclePreference
+import com.nendo.argosy.ui.components.HomeLayoutPreview
+import com.nendo.argosy.ui.components.HomeLayoutSelectorRow
+import com.nendo.argosy.ui.components.HomeLayoutSettingField
+import com.nendo.argosy.ui.components.HomeLayoutSettingRow
+import com.nendo.argosy.ui.components.adjustHomeLayoutField
+import com.nendo.argosy.ui.components.homeLayoutFieldsFor
+import com.nendo.argosy.ui.components.toggleHomeLayoutField
 import com.nendo.argosy.ui.components.SliderPreference
 import com.nendo.argosy.ui.components.SwitchPreference
 import com.nendo.argosy.ui.screens.settings.DisplayState
+import com.nendo.argosy.ui.screens.settings.SettingsInputHandler
 import com.nendo.argosy.ui.screens.settings.SettingsUiState
 import com.nendo.argosy.ui.screens.settings.SettingsViewModel
 import com.nendo.argosy.ui.screens.settings.delegates.DisplaySettingsDelegate
 import com.nendo.argosy.ui.screens.settings.menu.SettingsLayout
 import com.nendo.argosy.ui.theme.Dimens
+import com.nendo.argosy.ui.theme.generated.ComponentDefaults
 
 internal sealed class HomeScreenItem(
     val key: String,
     val section: String,
     val visibleWhen: (DisplayState) -> Boolean = { true }
 ) {
-    val isFocusable: Boolean get() = this !is Header
+    val isFocusable: Boolean get() = this !is Header && this !is LayoutPreview
 
     class Header(key: String, section: String, val title: String) : HomeScreenItem(key, section)
 
-    data object Background : HomeScreenItem("homeBackgroundMode", "background")
-    data object GameArtwork : HomeScreenItem("gameArtwork", "background")
+    data object Background : HomeScreenItem(
+        key = "homeBackgroundMode",
+        section = "background",
+        visibleWhen = { it.surfaceBackdrop.enabled && drawsBackgroundArt(it) }
+    )
+    data object GameArtwork : HomeScreenItem(
+        key = "gameArtwork",
+        section = "background",
+        visibleWhen = { showsArtLayer(it) }
+    )
     data object CustomImage : HomeScreenItem(
         key = "customImage",
         section = "background",
-        visibleWhen = { !it.useGameBackground }
+        visibleWhen = { showsArtLayer(it) && !it.useGameBackground }
     )
-    data object Blur : HomeScreenItem("blur", "background")
-    data object Saturation : HomeScreenItem("saturation", "background")
-    data object Opacity : HomeScreenItem("opacity", "background")
+    data object Blur : HomeScreenItem("blur", "background", { showsArtLayer(it) })
+    data object Saturation : HomeScreenItem("saturation", "background", { showsArtLayer(it) })
+    data object Opacity : HomeScreenItem("opacity", "background", { showsArtLayer(it) })
 
-    data object VideoWallpaper : HomeScreenItem("videoWallpaper", "video")
+    data object VideoWallpaper : HomeScreenItem(
+        key = "videoWallpaper",
+        section = "video",
+        visibleWhen = { drawsBackgroundArt(it) }
+    )
     data object VideoDelay : HomeScreenItem(
         key = "videoDelay",
         section = "video",
-        visibleWhen = { it.videoWallpaperEnabled }
+        visibleWhen = { it.videoWallpaperEnabled && drawsBackgroundArt(it) }
     )
     data object VideoMuted : HomeScreenItem(
         key = "videoMuted",
         section = "video",
-        visibleWhen = { it.videoWallpaperEnabled }
+        visibleWhen = { it.videoWallpaperEnabled && drawsBackgroundArt(it) }
     )
 
-    data object AccentFooter : HomeScreenItem("accentFooter", "footer")
+    data object LayoutPreview : HomeScreenItem("layoutPreview", "layout")
 
-    data object InstalledOnly : HomeScreenItem("installedOnly", "content")
+    data object LayoutSelector : HomeScreenItem("layoutSelector", "layout")
+
+    data class LayoutField(val field: HomeLayoutSettingField) : HomeScreenItem(
+        key = "layoutField_${field.name}",
+        section = "layout",
+        visibleWhen = { field in homeLayoutFieldsFor(it.homeLayout.selected) }
+    )
+
+    data object InstalledOnly : HomeScreenItem(
+        key = "installedOnly",
+        section = "content",
+        visibleWhen = { it.homeLayout.selected != HomeLayoutKind.CUSTOM_GRID }
+    )
 
     companion object {
+        /**
+         * Mirrors the home screen's own `showArtLayer`: with the theme backdrop off the art layer
+         * always draws, and with it on the background mode decides. Every row that only tunes that
+         * layer is hidden when it is not drawn.
+         */
+        private fun showsArtLayer(state: DisplayState): Boolean =
+            drawsBackgroundArt(state) &&
+                (!state.surfaceBackdrop.enabled ||
+                    state.homeBackgroundMode == HomeBackgroundMode.GAME_ART)
+
+        /**
+         * A grid fills the screen with covers, so nothing is drawn behind it and every row that
+         * tunes a backdrop would be a setting with no effect. Only the carousel has room for art.
+         */
+        private fun drawsBackgroundArt(state: DisplayState): Boolean =
+            state.homeLayout.selected == HomeLayoutKind.CAROUSEL
+
         private val BackgroundHeader = Header("backgroundHeader", "background", "Background")
         private val VideoHeader = Header("videoHeader", "video", "Video Wallpaper")
-        private val FooterHeader = Header("footerHeader", "footer", "Footer")
+        private val LayoutHeader = Header("layoutHeader", "layout", "Layout")
         private val ContentHeader = Header("contentHeader", "content", "Content")
 
         val ALL: List<HomeScreenItem> = listOf(
+            LayoutHeader,
+            LayoutPreview,
+            LayoutSelector,
+            *HomeLayoutKind.entries
+                .flatMap { homeLayoutFieldsFor(it) }
+                .distinct()
+                .map { LayoutField(it) }
+                .toTypedArray(),
             ContentHeader,
             InstalledOnly,
             BackgroundHeader,
             Background, GameArtwork, CustomImage, Blur, Saturation, Opacity,
             VideoHeader,
-            VideoWallpaper, VideoDelay, VideoMuted,
-            FooterHeader,
-            AccentFooter
+            VideoWallpaper, VideoDelay, VideoMuted
         )
     }
 }
@@ -85,9 +147,9 @@ private val homeScreenLayout = SettingsLayout<HomeScreenItem, DisplayState>(
     sectionOf = { it.section },
     sectionTitle = {
         when (it) {
+            "layout" -> "Layout"
             "background" -> "Background"
             "video" -> "Video Wallpaper"
-            "footer" -> "Footer"
             "content" -> "Content"
             else -> null
         }
@@ -101,14 +163,29 @@ internal fun homeScreenSections(display: DisplayState) = homeScreenLayout.buildS
 internal fun homeScreenItemAtFocusIndex(index: Int, display: DisplayState): HomeScreenItem? =
     homeScreenLayout.itemAtFocusIndex(index, display)
 
+internal fun homeScreenFocusIndexOf(item: HomeScreenItem, display: DisplayState): Int =
+    homeScreenLayout.focusIndexOf(item, display)
+
 @Composable
 fun HomeScreenSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
     val display = uiState.display
 
-    val visibleItems = remember(display.useGameBackground, display.videoWallpaperEnabled) {
+    val visibleItems = remember(
+        display.useGameBackground,
+        display.videoWallpaperEnabled,
+        display.surfaceBackdrop.enabled,
+        display.homeBackgroundMode,
+        display.homeLayout.selected
+    ) {
         homeScreenLayout.visibleItems(display)
     }
-    val sections = remember(display.useGameBackground, display.videoWallpaperEnabled) {
+    val sections = remember(
+        display.useGameBackground,
+        display.videoWallpaperEnabled,
+        display.surfaceBackdrop.enabled,
+        display.homeBackgroundMode,
+        display.homeLayout.selected
+    ) {
         homeScreenLayout.buildSections(display)
     }
 
@@ -174,7 +251,7 @@ fun HomeScreenSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                     minValue = 0,
                     maxValue = 10,
                     isFocused = isFocused(item),
-                    onClick = { viewModel.cycleBackgroundBlur() }
+                    onAdjust = { viewModel.adjustBackgroundBlur(it * SettingsInputHandler.SLIDER_STEP) }
                 )
 
                 HomeScreenItem.Saturation -> SliderPreference(
@@ -183,7 +260,7 @@ fun HomeScreenSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                     minValue = 0,
                     maxValue = 10,
                     isFocused = isFocused(item),
-                    onClick = { viewModel.cycleBackgroundSaturation() }
+                    onAdjust = { viewModel.adjustBackgroundSaturation(it * SettingsInputHandler.SLIDER_STEP) }
                 )
 
                 HomeScreenItem.Opacity -> SliderPreference(
@@ -192,7 +269,7 @@ fun HomeScreenSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                     minValue = 0,
                     maxValue = 10,
                     isFocused = isFocused(item),
-                    onClick = { viewModel.cycleBackgroundOpacity() }
+                    onAdjust = { viewModel.adjustBackgroundOpacity(it * SettingsInputHandler.SLIDER_STEP) }
                 )
 
                 HomeScreenItem.VideoWallpaper -> SwitchPreference(
@@ -231,12 +308,42 @@ fun HomeScreenSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                     )
                 }
 
-                HomeScreenItem.AccentFooter -> SwitchPreference(
-                    title = "Accent Color Footer",
-                    subtitle = "Use accent color for footer background",
-                    isEnabled = display.useAccentColorFooter,
+                HomeScreenItem.LayoutPreview -> Box(
+                    modifier = Modifier.fillMaxWidth(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    HomeLayoutPreview(
+                        settings = display.homeLayout,
+                        gridDensity = display.gridDensity,
+                        modifier = Modifier.heightIn(
+                            max = ComponentDefaults.HomeLayoutPreview.maxHeightDp.dp
+                        )
+                    )
+                }
+
+                HomeScreenItem.LayoutSelector -> HomeLayoutSelectorRow(
+                    selected = display.homeLayout.selected,
                     isFocused = isFocused(item),
-                    onToggle = { viewModel.setUseAccentColorFooter(it) }
+                    onSelect = { kind ->
+                        viewModel.setFocusIndex(homeScreenFocusIndexOf(item, display))
+                        viewModel.setHomeLayout(display.homeLayout.copy(selected = kind))
+                    }
+                )
+
+                is HomeScreenItem.LayoutField -> HomeLayoutSettingRow(
+                    settings = display.homeLayout,
+                    field = item.field,
+                    isFocused = isFocused(item),
+                    onAdjust = { direction ->
+                        viewModel.setFocusIndex(homeScreenFocusIndexOf(item, display))
+                        viewModel.setHomeLayout(
+                            adjustHomeLayoutField(display.homeLayout, item.field, direction)
+                        )
+                    },
+                    onToggle = {
+                        viewModel.setFocusIndex(homeScreenFocusIndexOf(item, display))
+                        viewModel.setHomeLayout(toggleHomeLayoutField(display.homeLayout, item.field))
+                    }
                 )
 
                 HomeScreenItem.InstalledOnly -> SwitchPreference(
@@ -265,3 +372,4 @@ private fun HomeScreenSectionHeader(title: String) {
         modifier = Modifier.padding(vertical = Dimens.spacingXs)
     )
 }
+

@@ -1,0 +1,62 @@
+package com.nendo.argosy.data.local.dao
+
+import androidx.room.Dao
+import androidx.room.Insert
+import androidx.room.OnConflictStrategy
+import androidx.room.Query
+import androidx.room.Update
+import com.nendo.argosy.data.local.entity.HomeTileEntity
+import kotlinx.coroutines.flow.Flow
+
+/**
+ * Every read is scoped to an account. A pre-account tile carries a null owner and belongs to
+ * whoever is signed in, so the scope is matched with IS NULL rather than being left out.
+ */
+@Dao
+interface HomeTileDao {
+
+    @Query(
+        "SELECT * FROM home_tiles WHERE (ownerUserId = :ownerUserId OR ownerUserId IS NULL) " +
+            "ORDER BY pageIndex ASC, rowIndex ASC, columnIndex ASC"
+    )
+    fun observeTiles(ownerUserId: Long?): Flow<List<HomeTileEntity>>
+
+    @Query(
+        "SELECT * FROM home_tiles WHERE (ownerUserId = :ownerUserId OR ownerUserId IS NULL) " +
+            "AND pageIndex = :pageIndex ORDER BY rowIndex ASC, columnIndex ASC"
+    )
+    suspend fun getPage(ownerUserId: Long?, pageIndex: Int): List<HomeTileEntity>
+
+    @Query(
+        "SELECT MAX(pageIndex) FROM home_tiles WHERE (ownerUserId = :ownerUserId OR ownerUserId IS NULL)"
+    )
+    suspend fun getMaxPageIndex(ownerUserId: Long?): Int?
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insert(tile: HomeTileEntity): Long
+
+    @Update
+    suspend fun update(tile: HomeTileEntity)
+
+    @Query("DELETE FROM home_tiles WHERE id = :id")
+    suspend fun deleteById(id: Long)
+
+    @Query(
+        "DELETE FROM home_tiles WHERE (ownerUserId = :ownerUserId OR ownerUserId IS NULL) " +
+            "AND pageIndex = :pageIndex"
+    )
+    suspend fun deletePage(ownerUserId: Long?, pageIndex: Int)
+
+    /**
+     * Closes the gap a removed page leaves. Without it the pages after it keep their old numbers
+     * and the grid shows an empty page where the removed one used to be.
+     */
+    @Query(
+        "UPDATE home_tiles SET pageIndex = pageIndex - 1 " +
+            "WHERE (ownerUserId = :ownerUserId OR ownerUserId IS NULL) AND pageIndex > :removedPage"
+    )
+    suspend fun shiftPagesDown(ownerUserId: Long?, removedPage: Int)
+
+    @Query("DELETE FROM home_tiles WHERE targetType = 'GAME' AND gameId NOT IN (SELECT id FROM games)")
+    suspend fun deleteTilesForMissingGames()
+}

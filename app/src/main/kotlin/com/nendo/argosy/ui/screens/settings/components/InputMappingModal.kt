@@ -58,6 +58,17 @@ import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalArgosyTheme
 import kotlinx.coroutines.launch
 
+private const val INHERITED_EMPHASIS = 0.45f
+
+/**
+ * [inherited] is what this scope would resolve to with no bindings of its own, so the editor can
+ * render an inherited binding differently from one set at the scope being edited.
+ */
+data class ScopedMapping(
+    val mapping: Map<InputSource, Int> = emptyMap(),
+    val inherited: Map<InputSource, Int> = emptyMap()
+)
+
 private sealed class InputMappingState {
     data object ControllerList : InputMappingState()
     data class PlatformMapping(
@@ -79,7 +90,7 @@ private sealed class InputMappingState {
 fun InputMappingModal(
     controllers: List<ControllerInfo>,
     lockedPlatformIndex: Int? = null,
-    onGetMapping: suspend (ControllerInfo, String?) -> Pair<Map<InputSource, Int>, String?>,
+    onGetMapping: suspend (ControllerInfo, String?) -> ScopedMapping,
     onSaveMapping: suspend (ControllerInfo, Map<InputSource, Int>, String?, Boolean, String?) -> Unit,
     onApplyPreset: suspend (ControllerInfo, String) -> Unit,
     onDismiss: () -> Unit
@@ -102,6 +113,7 @@ fun InputMappingModal(
         }
         mutableStateOf(initial)
     }
+    var inheritedMapping by remember { mutableStateOf<Map<InputSource, Int>>(emptyMap()) }
     var controllerFocusIndex by remember { mutableIntStateOf(0) }
     var cancelHoldActive by remember { mutableStateOf(false) }
     var suppressBackUntilRelease by remember { mutableStateOf(false) }
@@ -112,9 +124,10 @@ fun InputMappingModal(
         LaunchedEffect(Unit) {
             val platformIndex = lockedPlatformIndex ?: 0
             val platformId = MappingPlatforms.dbPlatformId(platformIndex)
-            val (mapping, _) = onGetMapping(autoSelectedController, platformId)
+            val scoped = onGetMapping(autoSelectedController, platformId)
+            inheritedMapping = scoped.inherited
             val current = state as? InputMappingState.PlatformMapping ?: return@LaunchedEffect
-            state = current.copy(currentMapping = mapping)
+            state = current.copy(currentMapping = scoped.mapping)
         }
     }
 
@@ -137,11 +150,12 @@ fun InputMappingModal(
                                     val platformIndex = lockedPlatformIndex ?: 0
                                     val platformId = MappingPlatforms.dbPlatformId(platformIndex)
                                     scope.launch {
-                                        val (mapping, _) = onGetMapping(selected, platformId)
+                                        val scoped = onGetMapping(selected, platformId)
+                                        inheritedMapping = scoped.inherited
                                         state = InputMappingState.PlatformMapping(
                                             controller = selected,
                                             platformIndex = platformIndex,
-                                            currentMapping = mapping
+                                            currentMapping = scoped.mapping
                                         )
                                     }
                                 }
@@ -204,11 +218,12 @@ fun InputMappingModal(
                                     val prevIndex = MappingPlatforms.getPrevIndex(currentState.platformIndex)
                                     val prevPlatformId = MappingPlatforms.dbPlatformId(prevIndex)
                                     scope.launch {
-                                        val (mapping, _) = onGetMapping(currentState.controller, prevPlatformId)
+                                        val scoped = onGetMapping(currentState.controller, prevPlatformId)
+                                        inheritedMapping = scoped.inherited
                                         state = currentState.copy(
                                             platformIndex = prevIndex,
                                             focusedButtonIndex = 0,
-                                            currentMapping = mapping
+                                            currentMapping = scoped.mapping
                                         )
                                     }
                                 }
@@ -218,11 +233,12 @@ fun InputMappingModal(
                                     val nextIndex = MappingPlatforms.getNextIndex(currentState.platformIndex)
                                     val nextPlatformId = MappingPlatforms.dbPlatformId(nextIndex)
                                     scope.launch {
-                                        val (mapping, _) = onGetMapping(currentState.controller, nextPlatformId)
+                                        val scoped = onGetMapping(currentState.controller, nextPlatformId)
+                                        inheritedMapping = scoped.inherited
                                         state = currentState.copy(
                                             platformIndex = nextIndex,
                                             focusedButtonIndex = 0,
-                                            currentMapping = mapping
+                                            currentMapping = scoped.mapping
                                         )
                                     }
                                 }
@@ -366,11 +382,12 @@ fun InputMappingModal(
                     val platformIndex = lockedPlatformIndex ?: 0
                     val platformId = MappingPlatforms.dbPlatformId(platformIndex)
                     scope.launch {
-                        val (mapping, _) = onGetMapping(selected, platformId)
+                        val scoped = onGetMapping(selected, platformId)
+                        inheritedMapping = scoped.inherited
                         state = InputMappingState.PlatformMapping(
                             controller = selected,
                             platformIndex = platformIndex,
-                            currentMapping = mapping
+                            currentMapping = scoped.mapping
                         )
                     }
                 }
@@ -381,6 +398,7 @@ fun InputMappingModal(
             controller = currentState.controller,
             platformIndex = currentState.platformIndex,
             mapping = currentState.currentMapping,
+            inheritedMapping = inheritedMapping,
             focusedIndex = currentState.focusedButtonIndex,
             platformLocked = lockedPlatformIndex != null,
             onSelectButton = { retroButton ->
@@ -520,6 +538,7 @@ private fun PlatformMappingContent(
     controller: ControllerInfo,
     platformIndex: Int,
     mapping: Map<InputSource, Int>,
+    inheritedMapping: Map<InputSource, Int>,
     focusedIndex: Int,
     platformLocked: Boolean = false,
     onSelectButton: (Int) -> Unit,
@@ -587,9 +606,13 @@ private fun PlatformMappingContent(
                 val boundSources = mapping.entries
                     .filter { it.value == retroButton }
                     .map { it.key }
+                val inheritedSources = inheritedMapping.entries
+                    .filter { it.value == retroButton }
+                    .map { it.key }
                 ButtonMappingRow(
                     retroButtonName = InputPresets.getRetroButtonName(retroButton, platform),
                     boundSources = boundSources,
+                    isOverridden = boundSources.toSet() != inheritedSources.toSet(),
                     isFocused = index == focusedIndex,
                     onClick = { onSelectButton(retroButton) }
                 )
@@ -603,10 +626,12 @@ private fun PlatformMappingContent(
 private fun ButtonMappingRow(
     retroButtonName: String,
     boundSources: List<InputSource>,
+    isOverridden: Boolean,
     isFocused: Boolean,
     onClick: () -> Unit
 ) {
     val theme = LocalArgosyTheme.current
+    val emphasis = if (isOverridden) 1f else INHERITED_EMPHASIS
     val backgroundColor = if (isFocused) {
         theme.focusAccent.copy(alpha = 0.15f)
     } else {
@@ -637,14 +662,14 @@ private fun ButtonMappingRow(
         Text(
             text = retroButtonName,
             style = MaterialTheme.typography.bodyMedium,
-            color = contentColor,
+            color = contentColor.copy(alpha = emphasis),
             modifier = Modifier.weight(0.35f)
         )
         if (boundSources.isEmpty()) {
             Text(
                 text = "Not bound",
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.error.copy(alpha = 0.7f),
+                color = MaterialTheme.colorScheme.error.copy(alpha = 0.7f * emphasis),
                 modifier = Modifier.weight(0.65f),
                 textAlign = TextAlign.End
             )
@@ -657,7 +682,8 @@ private fun ButtonMappingRow(
                 boundSources.forEach { source ->
                     InputSourceChip(
                         source = source,
-                        contentColor = contentColor
+                        contentColor = contentColor,
+                        emphasis = emphasis
                     )
                 }
             }
@@ -668,19 +694,20 @@ private fun ButtonMappingRow(
 @Composable
 private fun InputSourceChip(
     source: InputSource,
-    contentColor: Color
+    contentColor: Color,
+    emphasis: Float
 ) {
     val displayName = InputSource.getInputSourceDisplayName(source)
     Box(
         modifier = Modifier
             .clip(RoundedCornerShape(Dimens.radiusSm))
-            .background(contentColor.copy(alpha = 0.1f))
+            .background(contentColor.copy(alpha = 0.1f * emphasis))
             .padding(horizontal = Dimens.spacingSm, vertical = 2.dp)
     ) {
         Text(
             text = displayName,
             style = MaterialTheme.typography.labelSmall,
-            color = contentColor.copy(alpha = 0.8f)
+            color = contentColor.copy(alpha = 0.8f * emphasis)
         )
     }
 }
@@ -739,28 +766,7 @@ private fun isGamepadDevice(device: InputDevice): Boolean {
         (sources and InputDevice.SOURCE_JOYSTICK == InputDevice.SOURCE_JOYSTICK)
 }
 
-private fun isMappableButton(keyCode: Int): Boolean {
-    return keyCode in listOf(
-        KeyEvent.KEYCODE_BUTTON_A,
-        KeyEvent.KEYCODE_BUTTON_B,
-        KeyEvent.KEYCODE_BUTTON_C,
-        KeyEvent.KEYCODE_BUTTON_X,
-        KeyEvent.KEYCODE_BUTTON_Y,
-        KeyEvent.KEYCODE_BUTTON_Z,
-        KeyEvent.KEYCODE_BUTTON_L1,
-        KeyEvent.KEYCODE_BUTTON_R1,
-        KeyEvent.KEYCODE_BUTTON_L2,
-        KeyEvent.KEYCODE_BUTTON_R2,
-        KeyEvent.KEYCODE_BUTTON_START,
-        KeyEvent.KEYCODE_BUTTON_SELECT,
-        KeyEvent.KEYCODE_BUTTON_THUMBL,
-        KeyEvent.KEYCODE_BUTTON_THUMBR,
-        KeyEvent.KEYCODE_DPAD_UP,
-        KeyEvent.KEYCODE_DPAD_DOWN,
-        KeyEvent.KEYCODE_DPAD_LEFT,
-        KeyEvent.KEYCODE_DPAD_RIGHT
-    )
-}
+private fun isMappableButton(keyCode: Int): Boolean = keyCode in InputPresets.BINDABLE_KEYCODES
 
 private val MAPPABLE_AXES = listOf(
     MotionEvent.AXIS_X,

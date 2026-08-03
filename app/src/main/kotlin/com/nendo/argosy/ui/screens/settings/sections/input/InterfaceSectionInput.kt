@@ -59,7 +59,6 @@ internal class InterfaceSectionInput(
             InterfaceItem.UiScale -> { viewModel.adjustUiScale(direction * 5); return InputResult.HANDLED }
             InterfaceItem.PocketTaco -> { viewModel.setPocketTacoEnabled(direction > 0); return InputResult.HANDLED }
             InterfaceItem.PocketTacoPercent -> { viewModel.adjustPocketTacoPercent(direction * 5); return InputResult.HANDLED }
-            InterfaceItem.StartupView -> { viewModel.cycleDefaultView(); return InputResult.HANDLED }
             else -> {}
         }
         return InputResult.UNHANDLED

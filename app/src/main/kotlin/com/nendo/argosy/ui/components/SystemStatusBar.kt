@@ -26,6 +26,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import com.nendo.argosy.ui.theme.ALauncherColors
+import com.nendo.argosy.ui.theme.generated.ColorTokens
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
@@ -36,6 +37,8 @@ data class BatteryState(
     val level: Int = 100,
     val isCharging: Boolean = false
 )
+
+internal const val BATTERY_LOW_PERCENT = 20
 
 @Composable
 fun rememberBatteryState(): State<BatteryState> {
@@ -149,15 +152,15 @@ private fun BatteryIndicator(
 }
 
 @Composable
-private fun BatteryIcon(
+internal fun BatteryIcon(
     level: Int,
     isCharging: Boolean,
     color: Color,
     modifier: Modifier = Modifier
 ) {
     val fillColor = when {
-        isCharging -> Color(0xFF4CAF50)
-        level <= 20 -> ALauncherColors.DifficultyRed
+        isCharging -> ColorTokens.Domain.Battery.charging
+        level <= BATTERY_LOW_PERCENT -> ColorTokens.Domain.Battery.low
         else -> color
     }
 

@@ -78,6 +78,7 @@ class DualScreenManager(
     internal val gameFileDao: GameFileDao,
     private val downloadManager: DownloadManager,
     private val gameActionsDelegate: GameActionsDelegate,
+    private val syncPlatformUseCase: com.nendo.argosy.domain.usecase.sync.SyncPlatformUseCase,
     private val gameLaunchDelegate: GameLaunchDelegate,
     private val saveCacheManager: SaveCacheManager,
     private val getUnifiedSavesUseCase: GetUnifiedSavesUseCase,
@@ -88,6 +89,9 @@ class DualScreenManager(
     internal val sessionStateStore: SessionStateStore,
     internal val preferencesRepository: UserPreferencesRepository,
     internal val syncPreferencesRepository: com.nendo.argosy.data.preferences.SyncPreferencesRepository,
+    internal val homeTileRepository: com.nendo.argosy.data.repository.HomeTileRepository,
+    internal val homeTilePromptQueue: com.nendo.argosy.data.repository.HomeTilePromptQueue,
+    internal val appsRepository: com.nendo.argosy.data.repository.AppsRepository,
     private val notificationManager: com.nendo.argosy.core.notification.NotificationManager,
     internal val emulatorConfigDao: com.nendo.argosy.data.local.dao.EmulatorConfigDao,
     internal val configureEmulatorUseCase: com.nendo.argosy.domain.usecase.game.ConfigureEmulatorUseCase,
@@ -96,12 +100,15 @@ class DualScreenManager(
     internal val steamDownloadQueueDao: com.nendo.argosy.data.local.dao.SteamDownloadQueueDao,
     internal val steamRepository: com.nendo.argosy.data.repository.SteamRepository,
     internal val playSessionTracker: com.nendo.argosy.data.emulator.PlaySessionTracker,
+    internal val permissionHelper: com.nendo.argosy.util.PermissionHelper,
     internal val steamContentManager: com.nendo.argosy.data.steam.SteamContentManager,
     internal val repairImageCacheUseCase: com.nendo.argosy.domain.usecase.cache.RepairImageCacheUseCase? = null,
     internal val downloadFileStatusRepository: com.nendo.argosy.data.repository.DownloadFileStatusRepository,
     internal val gradientExtractionDelegate: com.nendo.argosy.ui.screens.common.GradientExtractionDelegate,
     private val filePickerFlow: com.nendo.argosy.domain.usecase.download.FilePickerFlowUseCase,
     private val gameThemeAudioCoordinator: com.nendo.argosy.ui.audio.GameThemeAudioCoordinator,
+    internal val getPinnedCollectionsUseCase: com.nendo.argosy.domain.usecase.collection.GetPinnedCollectionsUseCase? = null,
+    internal val getGamesForPinnedCollectionUseCase: com.nendo.argosy.domain.usecase.collection.GetGamesForPinnedCollectionUseCase? = null,
     initialRolesSwapped: Boolean = false
 ) {
 
@@ -216,7 +223,19 @@ class DualScreenManager(
         fun onRoleSwapped(isSwapped: Boolean)
         fun onOverlayClosed()
         fun onBackgroundForward()
-        fun onForwardKey(keyCode: Int, swapAB: Boolean, swapXY: Boolean, swapStartSelect: Boolean)
+        /**
+         * A key from the primary display. [action] and [repeatCount] come straight from the source
+         * event because the companion cannot tell a tap from a hold without them, and a forwarded
+         * down-only stream makes every press look instantaneous.
+         */
+        fun onForwardKey(
+            keyCode: Int,
+            action: Int,
+            repeatCount: Int,
+            swapAB: Boolean,
+            swapXY: Boolean,
+            swapStartSelect: Boolean
+        )
         fun refocusSelf()
         fun onGameDetailOpened(gameId: Long)
         fun onGameDetailClosed()
@@ -580,6 +599,7 @@ class DualScreenManager(
         sessionStateStore.setRolesSwapped(false)
 
         _swappedGameDetailViewModel = null
+        swappedDualHomeViewModel = null
         _swappedCurrentScreen.value = com.nendo.argosy.hardware.CompanionScreen.HOME
         _swappedIsGameActive.value = false
         _swappedCompanionState.value = com.nendo.argosy.hardware.CompanionInGameState()
@@ -595,6 +615,19 @@ class DualScreenManager(
         }
 
         Log.d(TAG, "HDMI disconnected: cleaned up swapped state")
+    }
+
+    /**
+     * Whether the running session's emulator is still on a screen. Both the launcher and the
+     * companion tear a session down when they come back to the front, and neither of them can tell
+     * from that alone whether the game ended or merely stopped being the focused thing, so both ask
+     * here. Answering false without evidence would end a live session and archive its save mid-play,
+     * so an emulator that cannot be observed is treated as still running.
+     */
+    fun isEmulatorStillOnScreen(context: Context): Boolean {
+        val emulatorPackage = sessionStateStore.getEmulatorPackage() ?: return false
+        permissionHelper.isPackageOnScreen(context, emulatorPackage)?.let { return it }
+        return permissionHelper.isPackageInForeground(context, emulatorPackage, 15_000)
     }
 
     val homeAppsList: List<String>
@@ -616,8 +649,33 @@ class DualScreenManager(
             preferencesRepository = preferencesRepository,
             repairImageCacheUseCase = repairImageCacheUseCase,
             downloadFileStatusRepository = downloadFileStatusRepository,
-            gradientExtractionDelegate = gradientExtractionDelegate
+            gradientExtractionDelegate = gradientExtractionDelegate,
+            getPinnedCollectionsUseCase = getPinnedCollectionsUseCase,
+            getGamesForPinnedCollectionUseCase = getGamesForPinnedCollectionUseCase,
+            sessionStateStore = sessionStateStore,
+            homeTileRepository = homeTileRepository,
+            homeTilePromptQueue = homeTilePromptQueue,
+            appsRepository = appsRepository,
+            syncPreferencesRepository = syncPreferencesRepository
         )
+        swappedDualHomeViewModel?.observeHomeTiles()
+        swappedDualHomeViewModel?.observeTilePrompts()
+        restoreSwappedNavContext()
+    }
+
+    /**
+     * The swapped role persists where the carousel is, so it has to read that back on the way in.
+     * Writing without restoring would let a single move in swapped mode overwrite the saved
+     * position with a section-zero context the user never chose.
+     */
+    private fun restoreSwappedNavContext() {
+        val navContext = sessionStateStore.getCarouselNavContext()
+        val hasSomethingToRestore = navContext.hasContext ||
+            navContext.legacySectionIndex > 0 ||
+            navContext.legacySelectedIndex > 0
+        if (hasSomethingToRestore) {
+            swappedDualHomeViewModel?.restoreNavContext(navContext)
+        }
     }
 
     // --- Public methods for companion -> DSM direction ---
@@ -656,11 +714,20 @@ class DualScreenManager(
         _dualDrawerOpen.value = drawerOpen
     }
 
+    /**
+     * A collection is what the other screen has under its cursor. The flag travels with the state so
+     * the showcase can be raised outside the collections browser too: a curated grid stays in the
+     * carousel view mode while pointing at a collection, and the upper screen has no other way to
+     * know the difference.
+     */
     fun onCollectionFocused(state: DualCollectionShowcaseState) {
-        _dualCollectionShowcase.value = state
+        _dualCollectionShowcase.value = state.copy(focused = true)
     }
 
     fun onGameSelected(showcase: DualHomeShowcaseState) {
+        if (_dualCollectionShowcase.value.focused) {
+            _dualCollectionShowcase.value = _dualCollectionShowcase.value.copy(focused = false)
+        }
         val withWallpaper = showcase.copy(
             useGameBackground = _dualScreenShowcase.value.useGameBackground,
             customWallpaperPath = _dualScreenShowcase.value.customWallpaperPath
@@ -959,6 +1026,7 @@ class DualScreenManager(
             "PLAY" -> handleDualPlay(gameId, channelName)
             "DOWNLOAD" -> handleDualDownload(gameId)
             "REFRESH_METADATA" -> handleDualRefresh(gameId)
+            "RESYNC_PLATFORM" -> handleDualResyncPlatform(gameId)
             "DELETE" -> handleDualDelete(gameId)
             "HIDE" -> handleDualHide(gameId)
             "UNHIDE" -> handleDualUnhide(gameId)
@@ -2010,6 +2078,18 @@ class DualScreenManager(
         val localPath = game.localPath ?: return false
         return downloadFileStatusRepository.pathExists(localPath) &&
             downloadFileStatusRepository.isDownloadComplete(localPath)
+    }
+
+    /**
+     * Resyncs the platform a game belongs to. Named by game rather than by platform because that is
+     * what the companion has in hand; the platform is looked up here where the row already lives.
+     */
+    private fun handleDualResyncPlatform(gameId: Long) {
+        scope.launch(Dispatchers.IO) {
+            val game = gameDao.getById(gameId) ?: return@launch
+            val platform = platformRepository.getById(game.platformId) ?: return@launch
+            syncPlatformUseCase(platform.id, platform.name)
+        }
     }
 
     private fun handleDualRefresh(gameId: Long) {

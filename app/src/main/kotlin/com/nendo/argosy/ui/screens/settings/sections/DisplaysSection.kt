@@ -189,7 +189,7 @@ fun DisplaysSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                 maxValue = 70,
                 isFocused = isFocused(item),
                 step = 10,
-                onClick = { viewModel.cycleScreenDimmerLevel() }
+                onAdjust = { viewModel.adjustScreenDimmerLevel(if (it < 0) -1 else 1) }
             )
 
             DisplaysItem.DualScreenEnabled -> SwitchPreference(

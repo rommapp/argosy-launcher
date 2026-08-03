@@ -157,7 +157,6 @@ fun ThemeFontsSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                 step = 5,
                 suffix = "%",
                 isFocused = isFocused(item),
-                onClick = { viewModel.cycleFontScale(FontSlot.DISPLAY) },
                 onAdjust = { viewModel.adjustFontScale(FontSlot.DISPLAY, it) }
             )
 
@@ -186,7 +185,6 @@ fun ThemeFontsSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                 step = 5,
                 suffix = "%",
                 isFocused = isFocused(item),
-                onClick = { viewModel.cycleFontScale(FontSlot.BODY) },
                 onAdjust = { viewModel.adjustFontScale(FontSlot.BODY, it) }
             )
 

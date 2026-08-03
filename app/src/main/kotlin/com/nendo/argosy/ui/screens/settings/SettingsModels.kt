@@ -23,7 +23,6 @@ import com.nendo.argosy.data.preferences.BoxArtInnerEffectThickness
 import com.nendo.argosy.data.preferences.BoxArtOuterEffect
 import com.nendo.argosy.data.preferences.BoxArtOuterEffectThickness
 import com.nendo.argosy.data.preferences.GlowColorMode
-import com.nendo.argosy.data.preferences.DefaultView
 import com.nendo.argosy.data.preferences.GridDensity
 import com.nendo.argosy.data.preferences.HomeBackgroundMode
 import com.nendo.argosy.data.preferences.SyncFilterPreferences
@@ -209,6 +208,8 @@ data class DisplayState(
     val useGameBackground: Boolean = true,
     val customBackgroundPath: String? = null,
     val homeBackgroundMode: HomeBackgroundMode = HomeBackgroundMode.GAME_ART,
+    val homeLayout: com.nendo.argosy.domain.model.HomeLayoutSettings =
+        com.nendo.argosy.domain.model.HomeLayoutSettings(),
     val useAccentColorFooter: Boolean = false,
     val boxArtShape: BoxArtShape = BoxArtShape.STANDARD,
     val boxArtCornerRadius: BoxArtCornerRadius = BoxArtCornerRadius.MEDIUM,
@@ -227,7 +228,6 @@ data class DisplayState(
     val systemIconPadding: SystemIconPadding = SystemIconPadding.MEDIUM,
     val platformIndicatorStyle: PlatformIndicatorStyle = PlatformIndicatorStyle.TAB,
     val platformIndicatorContent: PlatformIndicatorContent = PlatformIndicatorContent.NAME,
-    val defaultView: DefaultView = DefaultView.HOME,
     val libraryDefaultSort: String = "TITLE",
     val libraryDefaultSortDescending: Boolean? = null,
     val libraryDefaultSource: String = "ALL",
@@ -364,6 +364,13 @@ data class EmulatorState(
     val builtinLibretroEnabled: Boolean = true,
     val architectureDisplay: String = "",
     val ingameMenuTwoColumn: Boolean = false,
+    val hudEnabled: Boolean = false,
+    val hudCorner: String = "Top Left",
+    val hudShowBattery: Boolean = true,
+    val hudShowClock: Boolean = true,
+    val hudShowPlaytime: Boolean = false,
+    val hudShowFps: Boolean = false,
+    val hudShowLastSave: Boolean = false,
     val emulatorUpdateVersions: Map<String, String> = emptyMap(),
     val showVariantPicker: Boolean = false,
     val variantPickerInfo: VariantPickerInfo? = null,

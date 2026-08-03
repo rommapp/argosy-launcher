@@ -89,8 +89,8 @@ class MappingPlatformsTest {
         assertTrue(RetroButton.R2 in n64.buttons)
         assertFalse(RetroButton.L3 in n64.buttons)
         assertFalse(RetroButton.R3 in n64.buttons)
-        assertEquals("A", n64.buttonLabels[RetroButton.B])
-        assertEquals("B", n64.buttonLabels[RetroButton.Y])
+        assertEquals("A / C-Down (C mode)", n64.buttonLabels[RetroButton.B])
+        assertEquals("B / C-Left (C mode)", n64.buttonLabels[RetroButton.Y])
     }
 
     @Test
@@ -159,5 +159,64 @@ class MappingPlatformsTest {
             assertFalse("$slug should not expose L", RetroButton.L in buttons)
             assertFalse("$slug should not expose R", RetroButton.R in buttons)
         }
+    }
+
+    @Test
+    fun `each computer keeps the fire button its own core reads`() {
+        assertEquals("Fire", MappingPlatforms.profileForSlug("c64").buttonLabels[RetroButton.B])
+        assertEquals("Fire / Red", MappingPlatforms.profileForSlug("amiga").buttonLabels[RetroButton.B])
+        assertEquals("1", MappingPlatforms.profileForSlug("msx").buttonLabels[RetroButton.A])
+        assertEquals("2", MappingPlatforms.profileForSlug("msx").buttonLabels[RetroButton.B])
+        assertEquals("5", MappingPlatforms.profileForSlug("msx").buttonLabels[RetroButton.START])
+        assertEquals("6", MappingPlatforms.profileForSlug("msx").buttonLabels[RetroButton.SELECT])
+        assertFalse(RetroButton.L in MappingPlatforms.profileForSlug("msx").buttons)
+        assertEquals("Fire", MappingPlatforms.profileForSlug("zx").buttonLabels[RetroButton.A])
+        assertEquals("Up", MappingPlatforms.profileForSlug("zx").buttonLabels[RetroButton.B])
+    }
+
+    @Test
+    fun `consoles that borrowed the nes profile now carry their own buttons`() {
+        assertEquals("Button 1", MappingPlatforms.profileForSlug("coleco").buttonLabels[RetroButton.A])
+        assertEquals("Action", MappingPlatforms.profileForSlug("odyssey2").buttonLabels[RetroButton.B])
+        assertEquals("Pull", MappingPlatforms.profileForSlug("channelf").buttonLabels[RetroButton.X])
+        assertEquals("C", MappingPlatforms.profileForSlug("pokemini").buttonLabels[RetroButton.R])
+        assertEquals("O", MappingPlatforms.profileForSlug("pico8").buttonLabels[RetroButton.A])
+        assertEquals("Disk Side Change", MappingPlatforms.profileForSlug("fds").buttonLabels[RetroButton.L])
+    }
+
+    @Test
+    fun `wii profiles match the dolphin device each one names`() {
+        val wii = MappingPlatforms.profileForSlug("wii")
+        assertEquals("1", wii.buttonLabels[RetroButton.X])
+        assertEquals("+", wii.buttonLabels[RetroButton.START])
+        assertEquals("C", MappingPlatforms.WII_NUNCHUK.buttonLabels[RetroButton.X])
+        assertEquals("ZL", MappingPlatforms.WII_CLASSIC.buttonLabels[RetroButton.L])
+        assertEquals("L", MappingPlatforms.WII_CLASSIC.buttonLabels[RetroButton.L2])
+    }
+
+    @Test
+    fun `fbneo and mame number their classic pad differently from button five`() {
+        val fbneo = MappingPlatforms.profileForSlug("fbneo")
+        val mame = MappingPlatforms.profileForSlug("mame")
+        listOf(fbneo, mame).forEach {
+            assertEquals("Button 1", it.buttonLabels[RetroButton.B])
+            assertEquals("Button 4", it.buttonLabels[RetroButton.X])
+        }
+        assertEquals("Button 5", fbneo.buttonLabels[RetroButton.R])
+        assertEquals("Button 7", fbneo.buttonLabels[RetroButton.R2])
+        assertEquals("Button 5", mame.buttonLabels[RetroButton.L])
+        assertEquals("Button 7", mame.buttonLabels[RetroButton.L2])
+    }
+
+    @Test
+    fun `presentation controls do not shadow a single-button hotkey`() {
+        listOf("lynx", "wonderswan").forEach { slug ->
+            val profile = MappingPlatforms.profileForSlug(slug)
+            assertFalse(
+                "$slug rotate-screen should not block hotkeys",
+                RetroButton.SELECT in profile.hotkeyBlockingButtons
+            )
+        }
+        assertFalse(RetroButton.R3 in MappingPlatforms.profileForSlug("wii").hotkeyBlockingButtons)
     }
 }

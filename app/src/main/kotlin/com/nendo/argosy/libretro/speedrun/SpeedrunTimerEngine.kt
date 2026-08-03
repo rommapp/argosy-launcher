@@ -24,6 +24,7 @@ data class SpeedrunRunState(
     val currentIndex: Int = 0,
     val splitTimesMs: List<Long?> = emptyList(),
     val pbSplitTimesMs: List<Long?> = emptyList(),
+    val comparisonSplitTimesMs: List<Long?> = emptyList(),
     val bestSegmentDurationsMs: List<Long?> = emptyList(),
     val pbTimeMs: Long? = null,
     val sessionBestMs: Long? = null,
@@ -67,6 +68,7 @@ class SpeedrunTimerEngine(
         categoryName: String,
         segments: List<String>,
         pbSplitTimesMs: List<Long?> = emptyList(),
+        comparisonSplitTimesMs: List<Long?> = emptyList(),
         bestSegmentDurationsMs: List<Long?> = emptyList(),
         pbTimeMs: Long? = null,
         attemptCount: Int = 0
@@ -80,6 +82,7 @@ class SpeedrunTimerEngine(
             segments = segments,
             splitTimesMs = List(segments.size) { null },
             pbSplitTimesMs = pbSplitTimesMs,
+            comparisonSplitTimesMs = comparisonSplitTimesMs,
             bestSegmentDurationsMs = bestSegmentDurationsMs,
             pbTimeMs = pbTimeMs,
             attemptCount = attemptCount
@@ -89,6 +92,29 @@ class SpeedrunTimerEngine(
     fun disarm() {
         endAttemptIfStarted()
         _state.value = SpeedrunRunState()
+    }
+
+    /**
+     * Replaces the comparison after an attempt has been written. The figures are loaded once when a
+     * run is armed, so without this a personal best set during the session is never compared
+     * against, and a category with no completed run keeps empty offsets however many runs finish.
+     */
+    fun updateComparison(
+        pbSplitTimesMs: List<Long?>,
+        comparisonSplitTimesMs: List<Long?>,
+        bestSegmentDurationsMs: List<Long?>,
+        pbTimeMs: Long?,
+        attemptCount: Int
+    ) {
+        val s = _state.value
+        if (!s.armed) return
+        _state.value = s.copy(
+            pbSplitTimesMs = pbSplitTimesMs,
+            comparisonSplitTimesMs = comparisonSplitTimesMs,
+            bestSegmentDurationsMs = bestSegmentDurationsMs,
+            pbTimeMs = pbTimeMs,
+            attemptCount = maxOf(s.attemptCount, attemptCount)
+        )
     }
 
     fun split() {

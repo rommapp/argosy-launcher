@@ -9,8 +9,15 @@ import org.json.JSONArray
 import javax.inject.Inject
 import javax.inject.Singleton
 
+/**
+ * [comparisonSplitTimesMs] is what a running split is measured against. It is the personal best
+ * when a run has been completed, and otherwise the cumulative sum of best segments, so a runner who
+ * has never finished the category still sees whether they are up or down. [pbSplitTimesMs] stays the
+ * literal personal best and is empty until one exists.
+ */
 data class SpeedrunComparison(
     val pbSplitTimesMs: List<Long?> = emptyList(),
+    val comparisonSplitTimesMs: List<Long?> = emptyList(),
     val bestSegmentDurationsMs: List<Long?> = emptyList(),
     val pbTimeMs: Long? = null,
     val attemptCount: Int = 0
@@ -96,10 +103,29 @@ class SpeedrunRepository @Inject constructor(
         }
         return SpeedrunComparison(
             pbSplitTimesMs = pbSplits,
+            comparisonSplitTimesMs = if (pb != null) pbSplits else cumulativeBest(best),
             bestSegmentDurationsMs = best,
             pbTimeMs = pb?.finalTimeMs,
             attemptCount = attempts.size
         )
+    }
+
+    /**
+     * Best segments accumulated into split times. Stops at the first segment with no recorded best,
+     * because a sum that skipped a gap would compare against a time nobody ran.
+     */
+    private fun cumulativeBest(bestSegmentDurationsMs: List<Long?>): List<Long?> {
+        var running = 0L
+        var broken = false
+        return bestSegmentDurationsMs.map { duration ->
+            if (broken || duration == null) {
+                broken = true
+                null
+            } else {
+                running += duration
+                running
+            }
+        }
     }
 
     private fun encodeSplitTimes(splits: List<Long?>): String {

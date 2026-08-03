@@ -70,6 +70,13 @@ class BuiltinEmulatorPreferencesRepository @Inject constructor(
         val BUILTIN_SPEEDRUN_PANEL_SIDE = stringPreferencesKey("builtin_speedrun_panel_side")
         val BUILTIN_SPEEDRUN_PANEL_WIDTH = intPreferencesKey("builtin_speedrun_panel_width")
         val INGAME_MENU_TWO_COLUMN = booleanPreferencesKey("builtin_ingame_menu_two_column")
+        val HUD_ENABLED = booleanPreferencesKey("builtin_hud_enabled")
+        val HUD_CORNER = stringPreferencesKey("builtin_hud_corner")
+        val HUD_SHOW_BATTERY = booleanPreferencesKey("builtin_hud_show_battery")
+        val HUD_SHOW_CLOCK = booleanPreferencesKey("builtin_hud_show_clock")
+        val HUD_SHOW_PLAYTIME = booleanPreferencesKey("builtin_hud_show_playtime")
+        val HUD_SHOW_FPS = booleanPreferencesKey("builtin_hud_show_fps")
+        val HUD_SHOW_LAST_SAVE = booleanPreferencesKey("builtin_hud_show_last_save")
     }
 
     fun isBuiltinLibretroEnabled(): Flow<Boolean> = dataStore.data.map { prefs ->
@@ -131,7 +138,14 @@ class BuiltinEmulatorPreferencesRepository @Inject constructor(
             speedrunStartOnReset = prefs[Keys.BUILTIN_SPEEDRUN_START_ON_RESET] ?: true,
             speedrunPanelSide = prefs[Keys.BUILTIN_SPEEDRUN_PANEL_SIDE] ?: "Right",
             speedrunPanelWidthPercent = prefs[Keys.BUILTIN_SPEEDRUN_PANEL_WIDTH] ?: 30,
-            ingameMenuTwoColumn = prefs[Keys.INGAME_MENU_TWO_COLUMN] ?: false
+            ingameMenuTwoColumn = prefs[Keys.INGAME_MENU_TWO_COLUMN] ?: false,
+            hudEnabled = prefs[Keys.HUD_ENABLED] ?: false,
+            hudCorner = prefs[Keys.HUD_CORNER] ?: "Top Left",
+            hudShowBattery = prefs[Keys.HUD_SHOW_BATTERY] ?: true,
+            hudShowClock = prefs[Keys.HUD_SHOW_CLOCK] ?: true,
+            hudShowPlaytime = prefs[Keys.HUD_SHOW_PLAYTIME] ?: false,
+            hudShowFps = prefs[Keys.HUD_SHOW_FPS] ?: false,
+            hudShowLastSave = prefs[Keys.HUD_SHOW_LAST_SAVE] ?: false
         )
     }
 
@@ -387,6 +401,34 @@ class BuiltinEmulatorPreferencesRepository @Inject constructor(
 
     suspend fun setIngameMenuTwoColumn(enabled: Boolean) {
         dataStore.edit { it[Keys.INGAME_MENU_TWO_COLUMN] = enabled }
+    }
+
+    suspend fun setHudEnabled(enabled: Boolean) {
+        dataStore.edit { it[Keys.HUD_ENABLED] = enabled }
+    }
+
+    suspend fun setHudCorner(corner: String) {
+        dataStore.edit { it[Keys.HUD_CORNER] = corner }
+    }
+
+    suspend fun setHudShowBattery(enabled: Boolean) {
+        dataStore.edit { it[Keys.HUD_SHOW_BATTERY] = enabled }
+    }
+
+    suspend fun setHudShowClock(enabled: Boolean) {
+        dataStore.edit { it[Keys.HUD_SHOW_CLOCK] = enabled }
+    }
+
+    suspend fun setHudShowPlaytime(enabled: Boolean) {
+        dataStore.edit { it[Keys.HUD_SHOW_PLAYTIME] = enabled }
+    }
+
+    suspend fun setHudShowFps(enabled: Boolean) {
+        dataStore.edit { it[Keys.HUD_SHOW_FPS] = enabled }
+    }
+
+    suspend fun setHudShowLastSave(enabled: Boolean) {
+        dataStore.edit { it[Keys.HUD_SHOW_LAST_SAVE] = enabled }
     }
 
     fun getArchitectureOverride(): Flow<String?> = dataStore.data.map { prefs ->

@@ -190,7 +190,7 @@ fun NavigationSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                 minValue = 1,
                 maxValue = 11,
                 isFocused = isFocused(item),
-                onClick = { viewModel.cycleVibrationStrength() }
+                onAdjust = { viewModel.adjustVibrationStrength(if (it < 0) -0.1f else 0.1f) }
             )
 
             NavigationItem.MenuWrap -> CyclePreference(

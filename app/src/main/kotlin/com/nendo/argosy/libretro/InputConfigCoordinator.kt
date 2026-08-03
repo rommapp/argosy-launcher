@@ -8,8 +8,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.nendo.argosy.data.local.entity.ControllerOrderEntity
 import com.nendo.argosy.data.local.entity.HotkeyEntity
+import com.nendo.argosy.data.repository.CoreDeviceProfiles
 import com.nendo.argosy.data.repository.InputConfigRepository
 import com.nendo.argosy.data.repository.InputSource
+import com.nendo.argosy.data.repository.MappingPlatform
 import com.nendo.argosy.data.repository.MappingPlatforms
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -22,6 +24,7 @@ class InputConfigCoordinator(
     private val coreId: String?,
     private var gameId: Long?,
     private val limitHotkeysToPlayer1: Boolean,
+    private val controllerTypeForPort: (Int) -> Int?,
     private val scope: CoroutineScope
 ) {
     lateinit var hotkeyManager: HotkeyManager
@@ -45,12 +48,12 @@ class InputConfigCoordinator(
             controllerOrderCount = controllerOrder.size
             portResolver.setControllerOrder(controllerOrder)
 
-            val mappingPlatformId = MappingPlatforms.dbPlatformIdForSlug(platformSlug)
             val mappings = mutableMapOf<String, Map<InputSource, Int>>()
             for (controller in inputConfigRepository.getConnectedControllers()) {
+                val device = InputDevice.getDevice(controller.deviceId) ?: continue
                 val mapping = inputConfigRepository.getOrCreateExtendedMappingForDevice(
-                    InputDevice.getDevice(controller.deviceId)!!,
-                    mappingPlatformId,
+                    device,
+                    profileIdForDevice(device),
                     gameId
                 )
                 mappings[controller.controllerId] = mapping
@@ -90,16 +93,38 @@ class InputConfigCoordinator(
     }
 
     suspend fun refreshInputMappings() {
-        val mappingPlatformId = MappingPlatforms.dbPlatformIdForSlug(platformSlug)
         val mappings = mutableMapOf<String, Map<InputSource, Int>>()
         for (controller in inputConfigRepository.getConnectedControllers()) {
             val device = InputDevice.getDevice(controller.deviceId) ?: continue
-            val mapping = inputConfigRepository.getOrCreateExtendedMappingForDevice(device, mappingPlatformId, gameId)
+            val mapping = inputConfigRepository.getOrCreateExtendedMappingForDevice(
+                device,
+                profileIdForDevice(device),
+                gameId
+            )
             mappings[controller.controllerId] = mapping
         }
         inputMapper.setExtendedMappings(mappings)
         hotkeyManager.setPlatformMappedButtons(platformMappedButtons(mappings))
     }
+
+    /**
+     * The profile a physical pad is mapped against. Where the core exposes several port devices the
+     * running device decides which console controller the port speaks, so the mapping has to follow
+     * that rather than the platform alone; a port with no recorded pairing keeps the platform's.
+     */
+    fun profileIdForDevice(device: InputDevice): String? {
+        val deviceProfile = CoreDeviceProfiles.profileIdFor(
+            coreId = coreId,
+            platformSlug = platformSlug,
+            deviceId = controllerTypeForPort(portResolver.getPort(device))
+        )
+        return deviceProfile ?: MappingPlatforms.dbPlatformIdForSlug(platformSlug)
+    }
+
+    fun profileForDevice(device: InputDevice): MappingPlatform =
+        profileIdForDevice(device)
+            ?.let { id -> MappingPlatforms.ALL.firstOrNull { it.id == id } }
+            ?: MappingPlatforms.profileForSlug(platformSlug)
 
     suspend fun refreshHotkeys() {
         hotkeyList = inputConfigRepository.getHotkeys()
@@ -118,8 +143,14 @@ class InputConfigCoordinator(
     private fun platformMappedButtons(
         mappings: Map<String, Map<InputSource, Int>>
     ): Map<String, Set<Int>> {
-        val blockingButtons = MappingPlatforms.profileForSlug(platformSlug).hotkeyBlockingButtons
-        return mappings.mapValues { (_, mapping) ->
+        val profilesByController = inputConfigRepository.getConnectedControllers()
+            .mapNotNull { controller ->
+                InputDevice.getDevice(controller.deviceId)?.let { controller.controllerId to profileForDevice(it) }
+            }
+            .toMap()
+        val fallback = MappingPlatforms.profileForSlug(platformSlug)
+        return mappings.mapValues { (controllerId, mapping) ->
+            val blockingButtons = (profilesByController[controllerId] ?: fallback).hotkeyBlockingButtons
             mapping
                 .filter { (_, retroButton) -> retroButton in blockingButtons }
                 .keys

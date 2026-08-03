@@ -102,6 +102,7 @@ class UserPreferencesRepository @Inject constructor(
             useGameBackground = display.useGameBackground,
             customBackgroundPath = display.customBackgroundPath,
             homeBackgroundMode = display.homeBackgroundMode,
+            homeLayout = display.homeLayout,
             useAccentColorFooter = display.useAccentColorFooter,
             hiddenApps = app.hiddenApps,
             secondaryHomeApps = app.secondaryHomeApps,
@@ -250,6 +251,8 @@ class UserPreferencesRepository @Inject constructor(
     suspend fun setUseGameBackground(use: Boolean) = displayPrefs.setUseGameBackground(use)
     suspend fun setCustomBackgroundPath(path: String?) = displayPrefs.setCustomBackgroundPath(path)
     suspend fun setHomeBackgroundMode(mode: HomeBackgroundMode) = displayPrefs.setHomeBackgroundMode(mode)
+    suspend fun setHomeLayout(settings: com.nendo.argosy.domain.model.HomeLayoutSettings) =
+        displayPrefs.setHomeLayout(settings)
     suspend fun setUseAccentColorFooter(use: Boolean) = displayPrefs.setUseAccentColorFooter(use)
     suspend fun setBoxArtShape(shape: BoxArtShape) = displayPrefs.setBoxArtShape(shape)
     suspend fun setBoxArtCornerRadius(radius: BoxArtCornerRadius) = displayPrefs.setBoxArtCornerRadius(radius)
@@ -461,6 +464,20 @@ class UserPreferencesRepository @Inject constructor(
     suspend fun setTouchControlsAllowLongPressEdit(enabled: Boolean) = builtinPrefs.setTouchControlsAllowLongPressEdit(enabled)
     suspend fun setTouchControlsColouredFaceButtons(enabled: Boolean) = builtinPrefs.setTouchControlsColouredFaceButtons(enabled)
     suspend fun setTouchControlsGenesis6Button(enabled: Boolean) = builtinPrefs.setTouchControlsGenesis6Button(enabled)
+
+    suspend fun setHudEnabled(enabled: Boolean) = builtinPrefs.setHudEnabled(enabled)
+
+    suspend fun setHudCorner(corner: String) = builtinPrefs.setHudCorner(corner)
+
+    suspend fun setHudShowBattery(enabled: Boolean) = builtinPrefs.setHudShowBattery(enabled)
+
+    suspend fun setHudShowClock(enabled: Boolean) = builtinPrefs.setHudShowClock(enabled)
+
+    suspend fun setHudShowPlaytime(enabled: Boolean) = builtinPrefs.setHudShowPlaytime(enabled)
+
+    suspend fun setHudShowFps(enabled: Boolean) = builtinPrefs.setHudShowFps(enabled)
+
+    suspend fun setHudShowLastSave(enabled: Boolean) = builtinPrefs.setHudShowLastSave(enabled)
     fun getArchitectureOverride(): Flow<String?> = builtinPrefs.getArchitectureOverride()
     fun getBuiltinEmulatorSettings(): Flow<BuiltinEmulatorSettings> = builtinPrefs.getBuiltinEmulatorSettings()
     fun getBuiltinCoreSelections(): Flow<Map<String, String>> = builtinPrefs.getBuiltinCoreSelections()
@@ -535,7 +552,14 @@ data class BuiltinEmulatorSettings(
     val speedrunStartOnReset: Boolean = true,
     val speedrunPanelSide: String = "Right",
     val speedrunPanelWidthPercent: Int = 30,
-    val ingameMenuTwoColumn: Boolean = false
+    val ingameMenuTwoColumn: Boolean = false,
+    val hudEnabled: Boolean = false,
+    val hudCorner: String = "Top Left",
+    val hudShowBattery: Boolean = true,
+    val hudShowClock: Boolean = true,
+    val hudShowPlaytime: Boolean = false,
+    val hudShowFps: Boolean = false,
+    val hudShowLastSave: Boolean = false
 ) {
     val shaderConfig: com.swordfish.libretrodroid.ShaderConfig
         get() = when (shader) {
@@ -670,6 +694,8 @@ data class UserPreferences(
     val useGameBackground: Boolean = true,
     val customBackgroundPath: String? = null,
     val homeBackgroundMode: HomeBackgroundMode = HomeBackgroundMode.GAME_ART,
+    val homeLayout: com.nendo.argosy.domain.model.HomeLayoutSettings =
+        com.nendo.argosy.domain.model.HomeLayoutSettings(),
     val useAccentColorFooter: Boolean = false,
     val fileLoggingEnabled: Boolean = false,
     val fileLoggingPath: String? = null,

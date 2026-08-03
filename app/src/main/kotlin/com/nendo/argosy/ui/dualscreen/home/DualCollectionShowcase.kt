@@ -30,8 +30,19 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.gestures.animateScrollBy
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.runtime.LaunchedEffect
+import com.nendo.argosy.ui.common.rememberFileImageModel
+import com.nendo.argosy.ui.theme.generated.ComponentDefaults
+import kotlinx.coroutines.delay
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalArgosyTheme
+import com.nendo.argosy.ui.theme.backdrop.BackdropRole
+import com.nendo.argosy.ui.theme.backdrop.surfaceBackdrop
 import com.nendo.argosy.ui.theme.LocalBoxArtStyle
 import java.io.File
 
@@ -41,7 +52,11 @@ data class DualCollectionShowcaseState(
     val coverPaths: List<String> = emptyList(),
     val gameCount: Int = 0,
     val platformSummary: String = "",
-    val totalPlaytimeMinutes: Int = 0
+    val totalPlaytimeMinutes: Int = 0,
+    val installedCount: Int = 0,
+    val achievementsEarned: Int = 0,
+    val achievementsTotal: Int = 0,
+    val focused: Boolean = false
 )
 
 @Composable
@@ -54,7 +69,7 @@ fun DualCollectionShowcase(
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(theme.surfaceBase)
+            .surfaceBackdrop(BackdropRole.CONTENT)
     ) {
         Column(
             modifier = Modifier.fillMaxSize()
@@ -93,21 +108,20 @@ fun DualCollectionShowcase(
             Spacer(modifier = Modifier.weight(1f))
 
             if (state.coverPaths.isNotEmpty()) {
-                val showcaseWidth = 200.dp
-                val showcaseHeight = showcaseWidth / LocalBoxArtStyle.current.aspectRatio
-                Box(
+                CollectionCoverGrid(
+                    coverPaths = state.coverPaths,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = Dimens.spacingXxl),
-                    contentAlignment = Alignment.Center
-                ) {
-                    ShowcaseCoverCollage(
-                        coverPaths = state.coverPaths,
-                        modifier = Modifier
-                            .size(width = showcaseWidth, height = showcaseHeight)
-                    )
-                }
+                        .padding(horizontal = Dimens.spacingXxl)
+                )
             }
+
+            CollectionStatStrip(
+                state = state,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = Dimens.spacingXxl, vertical = Dimens.spacingSm)
+            )
 
             Spacer(modifier = Modifier.weight(1f))
 
@@ -233,3 +247,111 @@ private fun formatCollectionPlayTime(minutes: Int): String {
         else -> "${minutes / 60}h total"
     }
 }
+
+/**
+ * The collection as a wall of what is in it. A single stacked collage says "a collection"; a grid
+ * says which games, which is the thing worth looking at from across a desk.
+ */
+@Composable
+private fun CollectionCoverGrid(
+    coverPaths: List<String>,
+    modifier: Modifier = Modifier
+) {
+    val aspect = LocalBoxArtStyle.current.aspectRatio
+    val across = ComponentDefaults.CollectionShowcase.coversAcross
+    val listState = rememberLazyListState()
+
+    LaunchedEffect(coverPaths) {
+        if (coverPaths.size <= across) return@LaunchedEffect
+        val hidden = coverPaths.size - across
+        val duration = ComponentDefaults.CollectionShowcase.coverScrollMsPerCover * hidden
+        val dwell = ComponentDefaults.CollectionShowcase.coverScrollDwellMs.toLong()
+        while (true) {
+            delay(dwell)
+            val viewport = listState.layoutInfo.viewportEndOffset.toFloat()
+            if (viewport <= 0f) continue
+            val distance = viewport / across * hidden
+            listState.animateScrollBy(distance, tween(duration, easing = LinearEasing))
+            delay(dwell)
+            listState.animateScrollBy(-distance, tween(duration, easing = LinearEasing))
+        }
+    }
+
+    LazyRow(
+        state = listState,
+        modifier = modifier,
+        userScrollEnabled = false,
+        horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
+    ) {
+        items(coverPaths.size) { index ->
+            AsyncImage(
+                model = rememberFileImageModel(coverPaths[index]),
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .fillParentMaxWidth(1f / across)
+                    .aspectRatio(aspect)
+                    .clip(RoundedCornerShape(Dimens.radiusSm))
+            )
+        }
+    }
+}
+
+/**
+ * What a collection amounts to: how much of it is on the device, how far through it you are, and
+ * how long it has taken. Each figure is omitted when it has nothing to report rather than shown as
+ * a zero.
+ */
+@Composable
+private fun CollectionStatStrip(
+    state: DualCollectionShowcaseState,
+    modifier: Modifier = Modifier
+) {
+    val theme = LocalArgosyTheme.current
+    Row(
+        modifier = modifier,
+        horizontalArrangement = Arrangement.spacedBy(Dimens.spacingXl, Alignment.CenterHorizontally)
+    ) {
+        CollectionStat(
+            label = "Installed",
+            value = "${state.installedCount}/${state.gameCount}"
+        )
+        if (state.achievementsTotal > 0) {
+            CollectionStat(
+                label = "Achievements",
+                value = "${state.achievementsEarned}/${state.achievementsTotal}"
+            )
+        }
+        if (state.totalPlaytimeMinutes > 0) {
+            CollectionStat(
+                label = "Playtime",
+                value = formatCollectionPlayTime(state.totalPlaytimeMinutes)
+            )
+        }
+    }
+    if (state.gameCount == 0) {
+        Text(
+            text = "Nothing in this collection yet",
+            style = MaterialTheme.typography.bodySmall,
+            color = theme.textDim
+        )
+    }
+}
+
+@Composable
+private fun CollectionStat(label: String, value: String) {
+    val theme = LocalArgosyTheme.current
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(
+            text = value,
+            style = MaterialTheme.typography.titleMedium,
+            color = theme.textPrimary
+        )
+        Text(
+            text = label.uppercase(),
+            style = MaterialTheme.typography.labelSmall,
+            color = theme.textDim
+        )
+    }
+}
+

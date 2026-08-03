@@ -274,7 +274,7 @@ class SyncPreferencesRepository @Inject constructor(
                     ?: SyncFilterPreferences.DEFAULT_REGIONS,
                 regionMode = prefs[Keys.SYNC_FILTER_REGION_MODE]
                     ?.let { RegionFilterMode.valueOf(it) }
-                    ?: RegionFilterMode.INCLUDE,
+                    ?: legacyRegionMode(prefs[Keys.SYNC_FILTER_REGIONS]),
                 excludeBeta = prefs[Keys.SYNC_FILTER_EXCLUDE_BETA] ?: true,
                 excludePrototype = prefs[Keys.SYNC_FILTER_EXCLUDE_PROTO] ?: true,
                 excludeDemo = prefs[Keys.SYNC_FILTER_EXCLUDE_DEMO] ?: true,
@@ -446,6 +446,20 @@ class SyncPreferencesRepository @Inject constructor(
     suspend fun setLastFavoritesCheckTime(time: Instant) {
         dataStore.edit { it[Keys.LAST_FAVORITES_CHECK] = time.toString() }
     }
+
+    /**
+     * The mode key is written only when the user toggles the mode, so a curated region list can
+     * exist without one. Those lists were built against the old include-by-default behaviour, and
+     * reading them under the new blacklist default would invert the user's choice and drop exactly
+     * the regions they kept. A stored list therefore still means include; only an absent list takes
+     * the new default.
+     */
+    private fun legacyRegionMode(storedRegions: String?): RegionFilterMode =
+        if (storedRegions == null) {
+            SyncFilterPreferences.DEFAULT_REGION_MODE
+        } else {
+            RegionFilterMode.INCLUDE
+        }
 
     suspend fun setSyncFilterRegions(regions: List<String>) {
         dataStore.edit { it[Keys.SYNC_FILTER_REGIONS] = regions.joinToString(",") }

@@ -83,6 +83,9 @@ class MainActivity : ComponentActivity() {
     @Inject lateinit var romMRepository: RomMRepository
     @Inject lateinit var preferencesRepository: UserPreferencesRepository
     @Inject lateinit var syncPreferencesRepository: com.nendo.argosy.data.preferences.SyncPreferencesRepository
+    @Inject lateinit var homeTileRepository: com.nendo.argosy.data.repository.HomeTileRepository
+    @Inject lateinit var homeTilePromptQueue: com.nendo.argosy.data.repository.HomeTilePromptQueue
+    @Inject lateinit var appsRepository: com.nendo.argosy.data.repository.AppsRepository
     @Inject lateinit var ambientAudioManager: AmbientAudioManager
     @Inject lateinit var bgmPlaylistCoordinator: com.nendo.argosy.ui.audio.BgmPlaylistCoordinator
     @Inject lateinit var ambientLedManager: AmbientLedManager
@@ -90,7 +93,10 @@ class MainActivity : ComponentActivity() {
     @Inject lateinit var displayAffinityHelper: DisplayAffinityHelper
     @Inject lateinit var permissionHelper: com.nendo.argosy.util.PermissionHelper
     @Inject lateinit var gameActionsDelegate: GameActionsDelegate
+    @Inject lateinit var syncPlatformUseCase: com.nendo.argosy.domain.usecase.sync.SyncPlatformUseCase
     @Inject lateinit var gameThemeAudioCoordinator: com.nendo.argosy.ui.audio.GameThemeAudioCoordinator
+    @Inject lateinit var getPinnedCollectionsUseCase: com.nendo.argosy.domain.usecase.collection.GetPinnedCollectionsUseCase
+    @Inject lateinit var getGamesForPinnedCollectionUseCase: com.nendo.argosy.domain.usecase.collection.GetGamesForPinnedCollectionUseCase
     @Inject lateinit var gameLaunchDelegate: GameLaunchDelegate
     @Inject lateinit var saveCacheManager: SaveCacheManager
     @Inject lateinit var getUnifiedSavesUseCase: GetUnifiedSavesUseCase
@@ -243,7 +249,11 @@ class MainActivity : ComponentActivity() {
             val options = android.app.ActivityOptions.makeBasic()
                 .setLaunchDisplayId(display!!.displayId)
                 .toBundle()
-            startActivity(companionIntent, options)
+            try {
+                startActivity(companionIntent, options)
+            } catch (e: android.content.ActivityNotFoundException) {
+                Log.w(TAG, "Companion activity unavailable on this install, yielding display", e)
+            }
             finish()
             return
         }
@@ -282,6 +292,7 @@ class MainActivity : ComponentActivity() {
                 gameFileDao = gameFileDao,
                 downloadManager = downloadManagerInstance,
                 gameActionsDelegate = gameActionsDelegate,
+                syncPlatformUseCase = syncPlatformUseCase,
                 gameLaunchDelegate = gameLaunchDelegate,
                 saveCacheManager = saveCacheManager,
                 getUnifiedSavesUseCase = getUnifiedSavesUseCase,
@@ -292,6 +303,9 @@ class MainActivity : ComponentActivity() {
                 sessionStateStore = sessionStateStore,
                 preferencesRepository = preferencesRepository,
                 syncPreferencesRepository = syncPreferencesRepository,
+                homeTileRepository = homeTileRepository,
+                homeTilePromptQueue = homeTilePromptQueue,
+                appsRepository = appsRepository,
                 notificationManager = notificationManager,
                 emulatorConfigDao = emulatorConfigDao,
                 configureEmulatorUseCase = configureEmulatorUseCase,
@@ -300,12 +314,15 @@ class MainActivity : ComponentActivity() {
                 steamDownloadQueueDao = steamDownloadQueueDao,
                 steamRepository = steamRepository,
                 playSessionTracker = playSessionTracker,
+                permissionHelper = permissionHelper,
                 steamContentManager = steamContentManager,
                 repairImageCacheUseCase = repairImageCacheUseCase,
                 downloadFileStatusRepository = downloadFileStatusRepository,
                 gradientExtractionDelegate = gradientExtractionDelegate,
                 filePickerFlow = filePickerFlowUseCase,
                 gameThemeAudioCoordinator = gameThemeAudioCoordinator,
+                getPinnedCollectionsUseCase = getPinnedCollectionsUseCase,
+                getGamesForPinnedCollectionUseCase = getGamesForPinnedCollectionUseCase,
                 initialRolesSwapped = initialSwapped
             )
             DualScreenManagerHolder.instance = dualScreenManager
@@ -445,11 +462,15 @@ class MainActivity : ComponentActivity() {
             dualScreenManager.isCompanionActive.value &&
             !isOverlayFocused
         ) {
-            if (event.action == KeyEvent.ACTION_DOWN && event.repeatCount == 0) {
-                Logger.verbose(TAG) { "dispatchKeyEvent: FORWARDING key=${event.keyCode} to companion" }
-                onDimmerActivity?.invoke()
+            if (event.action == KeyEvent.ACTION_DOWN || event.action == KeyEvent.ACTION_UP) {
+                if (event.action == KeyEvent.ACTION_DOWN && event.repeatCount == 0) {
+                    Logger.verbose(TAG) { "dispatchKeyEvent: FORWARDING key=${event.keyCode} to companion" }
+                    onDimmerActivity?.invoke()
+                }
                 dualScreenManager.companionHost?.onForwardKey(
                     event.keyCode,
+                    event.action,
+                    event.repeatCount,
                     sessionStateStore.getSwapAB(),
                     sessionStateStore.getSwapXY(),
                     sessionStateStore.getSwapStartSelect()
@@ -521,6 +542,8 @@ class MainActivity : ComponentActivity() {
                 if (keyCode != null) {
                     dualScreenManager.companionHost?.onForwardKey(
                         keyCode,
+                        KeyEvent.ACTION_DOWN,
+                        0,
                         sessionStateStore.getSwapAB(),
                         sessionStateStore.getSwapXY(),
                         sessionStateStore.getSwapStartSelect()
@@ -636,12 +659,12 @@ class MainActivity : ComponentActivity() {
     }
 
     /**
-     * On dual-screen devices the launcher UI returning to the foreground means the
-     * session on this display is over: end it and restore the companion immediately.
-     * Only a session on a different display (swapped roles / per-game display target)
-     * survives, since the game and the launcher UI legitimately coexist there.
-     * Single-screen devices keep the resume-friendly grace: a session whose emulator
-     * was foregrounded within the last 15s stays alive so relaunching resumes it.
+     * The launcher UI returning to the foreground ends the session only once the emulator is
+     * actually gone. An emulator that hands off between its own activities drops the launcher
+     * in front for an instant, and a two-display device leaves the game running unfocused on the
+     * other panel, so neither the launcher resuming nor the display it resumed on says anything
+     * about whether the game is still there. Only a session on a different display survives
+     * outright, since the game and the launcher UI legitimately coexist.
      */
     private fun cleanupStaleSession() {
         activityScope.launch {
@@ -650,12 +673,7 @@ class MainActivity : ComponentActivity() {
             val emulatorDisplay = dualScreenManager.emulatorDisplayId
             val ownDisplay = window.decorView.display?.displayId
             if (emulatorDisplay != null && ownDisplay != null && emulatorDisplay != ownDisplay) return@launch
-            if (!displayAffinityHelper.hasSecondaryDisplay && emulatorDisplay != null) {
-                val emulatorPkg = sessionStateStore.getEmulatorPackage()
-                if (emulatorPkg != null &&
-                    permissionHelper.isPackageInForeground(this@MainActivity, emulatorPkg, 15_000)
-                ) return@launch
-            }
+            if (dualScreenManager.isEmulatorStillOnScreen(this@MainActivity)) return@launch
             if (playSessionTracker.activeSession.value == null &&
                 preferencesRepository.getPersistedSession() == null
             ) return@launch

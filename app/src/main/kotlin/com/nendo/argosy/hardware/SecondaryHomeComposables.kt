@@ -22,11 +22,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
+import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.nendo.argosy.R
 import com.nendo.argosy.ui.dualscreen.ControlRoleContent
+import com.nendo.argosy.ui.util.clickableNoFocus
 import com.nendo.argosy.ui.dualscreen.ShowcaseViewModel
 import com.nendo.argosy.ui.dualscreen.gamedetail.ActiveModal
 import com.nendo.argosy.ui.dualscreen.gamedetail.DualGameDetailLowerScreen
@@ -78,6 +80,7 @@ fun SecondaryHomeContent(
     onOptionAction: (DualGameDetailViewModel, GameDetailOption) -> Unit,
     onScreenshotViewed: (Int) -> Unit,
     onDimTapped: () -> Unit = {},
+    onCustomGridActivate: () -> Unit = {},
     onTabChanged: (CompanionPanel) -> Unit = {},
     onQuickSave: () -> Unit = {},
     onQuickLoad: () -> Unit = {},
@@ -89,9 +92,23 @@ fun SecondaryHomeContent(
     val showCompanion = isInitialized && !showLibrary && !isWizardActive
     val showSplash = !isInitialized || isWizardActive
 
+    val dualHomeState by dualHomeViewModel.uiState.collectAsState()
+
+    /**
+     * The whole companion display refuses Compose focus, not just the home content inside it.
+     *
+     * A tap on anything clickable moves focus to that node, and a focused node eats the d-pad
+     * before the dispatcher ever sees it - which is why closing the app drawer used to leave the
+     * carousel taking several presses to wake up, one per focusable the traversal walked through.
+     * Guarding a single screen only moved the leak to whatever renders beside it.
+     */
     Box(
         modifier = Modifier
             .fillMaxSize()
+            .then(
+                if (dualHomeState.isTextEntryActive) Modifier
+                else Modifier.focusProperties { canFocus = false }
+            )
             .surfaceBackdrop(BackdropRole.WALLPAPER)
     ) {
         AnimatedVisibility(
@@ -127,7 +144,8 @@ fun SecondaryHomeContent(
                 onDetailBack = onDetailBack,
                 onOptionAction = onOptionAction,
                 onScreenshotViewed = onScreenshotViewed,
-                onDimTapped = onDimTapped
+                onDimTapped = onDimTapped,
+                onCustomGridActivate = onCustomGridActivate
             )
         }
 
@@ -161,11 +179,7 @@ fun SecondaryHomeContent(
                     .background(
                         androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.5f)
                     )
-                    .clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null,
-                        onClick = { viewModel.closeDrawer() }
-                    )
+                    .clickableNoFocus { viewModel.closeDrawer() }
             )
         }
 
@@ -228,6 +242,7 @@ fun ShowcaseRoleContent(
     Box(
         modifier = Modifier
             .fillMaxSize()
+            .focusProperties { canFocus = false }
             .surfaceBackdrop(BackdropRole.WALLPAPER)
     ) {
         AnimatedVisibility(
@@ -274,7 +289,7 @@ fun ShowcaseRoleContent(
                             )
                         }
                     )
-                } else if (viewMode == "COLLECTIONS") {
+                } else if (viewMode == "COLLECTIONS" || collectionState.focused) {
                     DualCollectionShowcase(
                         state = collectionState,
                         footerHints = {
@@ -303,8 +318,8 @@ fun ShowcaseRoleContent(
                                     "LIBRARY_GRID" -> listOf(
                                         InputButton.LB_RB to "Platform",
                                         InputButton.LT_RT to "Letter",
-                                        InputButton.A to actionLabel,
-                                        InputButton.X to "Details",
+                                        InputButton.A to "Details",
+                                        InputButton.X to "Options",
                                         InputButton.Y to "Filters",
                                         InputButton.B to "Back"
                                     )
@@ -359,11 +374,7 @@ fun ShowcaseRoleContent(
                 modifier = Modifier
                     .fillMaxSize()
                     .background(Color.Black.copy(alpha = 0.5f))
-                    .clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null,
-                        onClick = { viewModel.closeDrawer() }
-                    )
+                    .clickableNoFocus { viewModel.closeDrawer() }
             )
         }
 

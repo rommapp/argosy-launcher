@@ -39,6 +39,7 @@ import com.nendo.argosy.ui.input.InputResult
 import com.nendo.argosy.ui.input.SoundFeedbackManager
 import com.nendo.argosy.core.input.SoundType
 import com.nendo.argosy.core.notification.NotificationManager
+import com.nendo.argosy.ui.screens.settings.components.ScopedMapping
 import com.nendo.argosy.ui.screens.settings.delegates.AccountsSettingsDelegate
 import com.nendo.argosy.ui.screens.settings.delegates.AmbientAudioSettingsDelegate
 import com.nendo.argosy.ui.screens.settings.delegates.BiosSettingsDelegate
@@ -452,6 +453,14 @@ class SettingsViewModel @Inject constructor(
     fun setBuiltinFramesEnabled(enabled: Boolean) = routeSetBuiltinFramesEnabled(this, enabled)
     fun setBuiltinLibretroEnabled(enabled: Boolean) = routeSetBuiltinLibretroEnabled(this, enabled)
     fun setIngameMenuTwoColumn(enabled: Boolean) = routeSetIngameMenuTwoColumn(this, enabled)
+    fun setHudEnabled(enabled: Boolean) = routeSetHudEnabled(this, enabled)
+    fun cycleHudCorner(forward: Boolean) = routeCycleHudCorner(this, forward)
+    fun setHudCorner(corner: String) = routeSetHudCorner(this, corner)
+    fun setHudShowBattery(enabled: Boolean) = routeSetHudShowBattery(this, enabled)
+    fun setHudShowClock(enabled: Boolean) = routeSetHudShowClock(this, enabled)
+    fun setHudShowPlaytime(enabled: Boolean) = routeSetHudShowPlaytime(this, enabled)
+    fun setHudShowFps(enabled: Boolean) = routeSetHudShowFps(this, enabled)
+    fun setHudShowLastSave(enabled: Boolean) = routeSetHudShowLastSave(this, enabled)
     fun setBuiltinFilter(value: String) = routeSetBuiltinFilter(this, value)
     fun setBuiltinAspectRatio(value: String) = routeSetBuiltinAspectRatio(this, value)
     fun setBuiltinPortraitPosition(value: String) = routeSetBuiltinPortraitPosition(this, value)
@@ -533,15 +542,13 @@ class SettingsViewModel @Inject constructor(
     suspend fun getControllerMapping(
         controller: com.nendo.argosy.data.repository.ControllerInfo,
         platformId: String? = null
-    ): Pair<Map<com.nendo.argosy.data.repository.InputSource, Int>, String?> {
+    ): ScopedMapping {
         val device = android.view.InputDevice.getDevice(controller.deviceId)
-            ?: return Pair(emptyMap(), null)
-        val mapping = inputConfigRepository.getOrCreateExtendedMappingForDevice(device, platformId)
-        val entity = inputConfigRepository.observeControllerMappings().first()
-            .find { it.controllerId == controller.controllerId && it.platformId == platformId }
-            ?: inputConfigRepository.observeControllerMappings().first()
-                .find { it.controllerId == controller.controllerId && it.platformId == null }
-        return Pair(mapping, entity?.presetName)
+            ?: return ScopedMapping()
+        return ScopedMapping(
+            mapping = inputConfigRepository.getOrCreateExtendedMappingForDevice(device, platformId),
+            inherited = inputConfigRepository.getInheritedExtendedMappingForDevice(device, platformId)
+        )
     }
 
     suspend fun saveControllerMapping(
@@ -854,6 +861,8 @@ class SettingsViewModel @Inject constructor(
 
     fun setUseGameBackground(use: Boolean) = displayDelegate.setUseGameBackground(viewModelScope, use)
     fun setHomeBackgroundMode(mode: HomeBackgroundMode) = displayDelegate.setHomeBackgroundMode(viewModelScope, mode)
+    fun setHomeLayout(settings: com.nendo.argosy.domain.model.HomeLayoutSettings) =
+        displayDelegate.setHomeLayout(viewModelScope, settings)
     fun cycleHomeBackgroundMode(direction: Int = 1) = displayDelegate.cycleHomeBackgroundMode(viewModelScope, direction)
     fun setUseAccentColorFooter(use: Boolean) = displayDelegate.setUseAccentColorFooter(viewModelScope, use)
     fun setCustomBackgroundPath(path: String?) = displayDelegate.setCustomBackgroundPath(viewModelScope, path)
@@ -1019,7 +1028,6 @@ class SettingsViewModel @Inject constructor(
     fun cyclePlatformIndicatorContent(direction: Int = 1) = displayDelegate.cyclePlatformIndicatorContent(viewModelScope, direction)
     fun cycleBoxArtInnerEffect(direction: Int = 1) = displayDelegate.cycleBoxArtInnerEffect(viewModelScope, direction)
     fun cycleBoxArtInnerEffectThickness(direction: Int = 1) = displayDelegate.cycleBoxArtInnerEffectThickness(viewModelScope, direction)
-    fun cycleDefaultView() = displayDelegate.cycleDefaultView(viewModelScope)
     fun setLibraryDefaultSortIndex(index: Int) = displayDelegate.setLibraryDefaultSortIndex(viewModelScope, index)
     fun cycleLibraryDefaultSort(direction: Int) = displayDelegate.cycleLibraryDefaultSort(viewModelScope, direction)
     fun setLibraryDefaultSource(source: String) = displayDelegate.setLibraryDefaultSource(viewModelScope, source)

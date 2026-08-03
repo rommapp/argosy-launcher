@@ -17,6 +17,7 @@ import com.nendo.argosy.core.notification.NotificationType
 import com.nendo.argosy.core.notification.showError
 import com.nendo.argosy.core.emulator.LibretroSettingDef
 import com.nendo.argosy.ui.screens.settings.sections.BuiltinEmulatorItem
+import com.nendo.argosy.ui.screens.settings.sections.HUD_CORNERS
 import com.nendo.argosy.util.AppPaths
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.update
@@ -100,6 +101,50 @@ internal fun routeSetIngameMenuTwoColumn(vm: SettingsViewModel, enabled: Boolean
     vm.viewModelScope.launch {
         vm.libretroSettingsRepo.setIngameMenuTwoColumn(enabled)
     }
+}
+
+internal fun routeSetHudEnabled(vm: SettingsViewModel, enabled: Boolean) {
+    vm._uiState.update { it.copy(emulators = it.emulators.copy(hudEnabled = enabled)) }
+    vm.viewModelScope.launch { vm.libretroSettingsRepo.setHudEnabled(enabled) }
+}
+
+internal fun routeCycleHudCorner(vm: SettingsViewModel, forward: Boolean) {
+    val corners = HUD_CORNERS
+    val current = vm._uiState.value.emulators.hudCorner
+    val index = corners.indexOf(current).coerceAtLeast(0)
+    val next = corners[(if (forward) index + 1 else index - 1).mod(corners.size)]
+    vm._uiState.update { it.copy(emulators = it.emulators.copy(hudCorner = next)) }
+    vm.viewModelScope.launch { vm.libretroSettingsRepo.setHudCorner(next) }
+}
+
+internal fun routeSetHudCorner(vm: SettingsViewModel, corner: String) {
+    vm._uiState.update { it.copy(emulators = it.emulators.copy(hudCorner = corner)) }
+    vm.viewModelScope.launch { vm.libretroSettingsRepo.setHudCorner(corner) }
+}
+
+internal fun routeSetHudShowBattery(vm: SettingsViewModel, enabled: Boolean) {
+    vm._uiState.update { it.copy(emulators = it.emulators.copy(hudShowBattery = enabled)) }
+    vm.viewModelScope.launch { vm.libretroSettingsRepo.setHudShowBattery(enabled) }
+}
+
+internal fun routeSetHudShowClock(vm: SettingsViewModel, enabled: Boolean) {
+    vm._uiState.update { it.copy(emulators = it.emulators.copy(hudShowClock = enabled)) }
+    vm.viewModelScope.launch { vm.libretroSettingsRepo.setHudShowClock(enabled) }
+}
+
+internal fun routeSetHudShowPlaytime(vm: SettingsViewModel, enabled: Boolean) {
+    vm._uiState.update { it.copy(emulators = it.emulators.copy(hudShowPlaytime = enabled)) }
+    vm.viewModelScope.launch { vm.libretroSettingsRepo.setHudShowPlaytime(enabled) }
+}
+
+internal fun routeSetHudShowFps(vm: SettingsViewModel, enabled: Boolean) {
+    vm._uiState.update { it.copy(emulators = it.emulators.copy(hudShowFps = enabled)) }
+    vm.viewModelScope.launch { vm.libretroSettingsRepo.setHudShowFps(enabled) }
+}
+
+internal fun routeSetHudShowLastSave(vm: SettingsViewModel, enabled: Boolean) {
+    vm._uiState.update { it.copy(emulators = it.emulators.copy(hudShowLastSave = enabled)) }
+    vm.viewModelScope.launch { vm.libretroSettingsRepo.setHudShowLastSave(enabled) }
 }
 
 internal fun routeSetBuiltinFilter(vm: SettingsViewModel, value: String) {

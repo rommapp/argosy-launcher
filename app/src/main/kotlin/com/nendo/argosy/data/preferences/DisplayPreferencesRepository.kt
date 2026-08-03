@@ -55,6 +55,8 @@ data class DisplayPreferences(
     val useGameBackground: Boolean = true,
     val customBackgroundPath: String? = null,
     val homeBackgroundMode: HomeBackgroundMode = HomeBackgroundMode.GAME_ART,
+    val homeLayout: com.nendo.argosy.domain.model.HomeLayoutSettings =
+        com.nendo.argosy.domain.model.HomeLayoutSettings(),
     val useAccentColorFooter: Boolean = false,
     val boxArtShape: BoxArtShape = BoxArtShape.STANDARD,
     val boxArtCornerRadius: BoxArtCornerRadius = BoxArtCornerRadius.MEDIUM,
@@ -139,6 +141,7 @@ class DisplayPreferencesRepository @Inject constructor(
         val USE_GAME_BACKGROUND = booleanPreferencesKey("use_game_background")
         val CUSTOM_BACKGROUND_PATH = stringPreferencesKey("custom_background_path")
         val HOME_BACKGROUND_MODE = stringPreferencesKey("home_background_mode")
+        val HOME_LAYOUT_CONFIG = stringPreferencesKey("home_layout_config")
         val USE_ACCENT_COLOR_FOOTER = booleanPreferencesKey("use_accent_color_footer")
         val BOX_ART_SHAPE = stringPreferencesKey("box_art_shape")
         val BOX_ART_CORNER_RADIUS = stringPreferencesKey("box_art_corner_radius")
@@ -220,6 +223,9 @@ class DisplayPreferencesRepository @Inject constructor(
             useGameBackground = prefs[Keys.USE_GAME_BACKGROUND] ?: true,
             customBackgroundPath = prefs[Keys.CUSTOM_BACKGROUND_PATH],
             homeBackgroundMode = HomeBackgroundMode.fromString(prefs[Keys.HOME_BACKGROUND_MODE]),
+            homeLayout = com.nendo.argosy.domain.model.HomeLayoutSettings.fromJson(
+                prefs[Keys.HOME_LAYOUT_CONFIG]
+            ),
             useAccentColorFooter = prefs[Keys.USE_ACCENT_COLOR_FOOTER] ?: false,
             boxArtShape = BoxArtShape.fromString(prefs[Keys.BOX_ART_SHAPE]),
             boxArtCornerRadius = BoxArtCornerRadius.fromString(prefs[Keys.BOX_ART_CORNER_RADIUS]),
@@ -424,6 +430,10 @@ class DisplayPreferencesRepository @Inject constructor(
 
     suspend fun setHomeBackgroundMode(mode: HomeBackgroundMode) {
         dataStore.edit { it[Keys.HOME_BACKGROUND_MODE] = mode.name }
+    }
+
+    suspend fun setHomeLayout(settings: com.nendo.argosy.domain.model.HomeLayoutSettings) {
+        dataStore.edit { it[Keys.HOME_LAYOUT_CONFIG] = settings.toJson() }
     }
 
     suspend fun setUseAccentColorFooter(use: Boolean) {

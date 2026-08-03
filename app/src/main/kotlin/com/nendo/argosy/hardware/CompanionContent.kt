@@ -44,6 +44,7 @@ import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import com.nendo.argosy.ui.common.LongPressAnimationConfig
+import com.nendo.argosy.ui.util.clickableNoFocus
 import com.nendo.argosy.ui.common.longPressGesture
 import com.nendo.argosy.ui.common.longPressGraphicsLayer
 import com.nendo.argosy.ui.common.rememberLongPressAnimationState
@@ -129,11 +130,7 @@ fun CompanionContent(
                 modifier = Modifier
                     .fillMaxSize()
                     .background(Color.Black.copy(alpha = 0.5f))
-                    .clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null,
-                        onClick = onCloseDrawer
-                    )
+                    .clickableNoFocus(onClick = onCloseDrawer)
             )
         }
 
@@ -711,11 +708,7 @@ private fun CompanionDrawer(
                 theme.surfaceElevated,
                 RoundedCornerShape(topStart = Dimens.radiusXl, topEnd = Dimens.radiusXl)
             )
-            .clickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = null,
-                onClick = {}
-            )
+            .clickableNoFocus {}
     ) {
         Box(
             modifier = Modifier

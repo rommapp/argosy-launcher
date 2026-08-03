@@ -461,6 +461,7 @@ internal fun routeLoadSettings(vm: SettingsViewModel) {
             useGameBackground = prefs.useGameBackground,
             customBackgroundPath = prefs.customBackgroundPath,
             homeBackgroundMode = prefs.homeBackgroundMode,
+            homeLayout = prefs.homeLayout,
             useAccentColorFooter = prefs.useAccentColorFooter,
             boxArtShape = prefs.boxArtShape,
             boxArtCornerRadius = prefs.boxArtCornerRadius,
@@ -479,7 +480,6 @@ internal fun routeLoadSettings(vm: SettingsViewModel) {
             systemIconPadding = prefs.systemIconPadding,
             platformIndicatorStyle = prefs.platformIndicatorStyle,
             platformIndicatorContent = prefs.platformIndicatorContent,
-            defaultView = prefs.defaultView,
             libraryDefaultSort = prefs.libraryDefaultSort,
             libraryDefaultSortDescending = prefs.libraryDefaultSortDescending,
             libraryDefaultSource = prefs.libraryDefaultSource,
@@ -562,14 +562,21 @@ internal fun routeLoadSettings(vm: SettingsViewModel) {
         val anchoredPlatformId = vm._uiState.value.emulators.platforms
             .getOrNull(vm._uiState.value.platformDetail.platformIndex)?.platform?.id
         val archOverride = vm.libretroSettingsRepo.getArchitectureOverride().first()
-        val ingameMenuTwoColumn = vm.libretroSettingsRepo.getBuiltinEmulatorSettings().first().ingameMenuTwoColumn
+        val builtinSettings = vm.libretroSettingsRepo.getBuiltinEmulatorSettings().first()
         vm.emulatorDelegate.updateState(EmulatorState(
             platforms = filteredPlatformConfigs,
             installedEmulators = installedEmulators,
             platformSubFocusIndex = currentEmulatorState.platformSubFocusIndex,
             builtinLibretroEnabled = prefs.builtinLibretroEnabled,
             architectureDisplay = architectureAbiToDisplay(archOverride),
-            ingameMenuTwoColumn = ingameMenuTwoColumn,
+            ingameMenuTwoColumn = builtinSettings.ingameMenuTwoColumn,
+            hudEnabled = builtinSettings.hudEnabled,
+            hudCorner = builtinSettings.hudCorner,
+            hudShowBattery = builtinSettings.hudShowBattery,
+            hudShowClock = builtinSettings.hudShowClock,
+            hudShowPlaytime = builtinSettings.hudShowPlaytime,
+            hudShowFps = builtinSettings.hudShowFps,
+            hudShowLastSave = builtinSettings.hudShowLastSave,
             emulatorUpdateVersions = currentEmulatorState.emulatorUpdateVersions
         ))
         vm.emulatorDelegate.updateCoreCounts()
@@ -689,7 +696,7 @@ internal fun routeLoadSettings(vm: SettingsViewModel) {
             defaultImageCachePath = vm.imageCacheManager.getDefaultCachePath()
         ))
 
-        val builtinSettings = vm.libretroSettingsRepo.getBuiltinEmulatorSettings().first()
+        val refreshSettings = vm.libretroSettingsRepo.getBuiltinEmulatorSettings().first()
         val displayManager = vm.context.getSystemService(Context.DISPLAY_SERVICE) as android.hardware.display.DisplayManager
         val display = displayManager.getDisplay(android.view.Display.DEFAULT_DISPLAY)
         val refreshRate = display?.supportedModes?.maxOfOrNull { it.refreshRate } ?: 60f
@@ -702,55 +709,55 @@ internal fun routeLoadSettings(vm: SettingsViewModel) {
                 saveDebugLoggingEnabled = prefs.saveDebugLoggingEnabled,
                 appAffinityEnabled = prefs.appAffinityEnabled,
                 builtinVideo = it.builtinVideo.copy(
-                    shader = builtinSettings.shader,
-                    shaderChainJson = builtinSettings.shaderChainJson,
-                    filter = builtinSettings.filter,
-                    aspectRatio = builtinSettings.aspectRatio,
-                    portraitPosition = builtinSettings.portraitPosition,
-                    skipDuplicateFrames = builtinSettings.skipDuplicateFrames,
-                    blackFrameInsertion = builtinSettings.blackFrameInsertion,
+                    shader = refreshSettings.shader,
+                    shaderChainJson = refreshSettings.shaderChainJson,
+                    filter = refreshSettings.filter,
+                    aspectRatio = refreshSettings.aspectRatio,
+                    portraitPosition = refreshSettings.portraitPosition,
+                    skipDuplicateFrames = refreshSettings.skipDuplicateFrames,
+                    blackFrameInsertion = refreshSettings.blackFrameInsertion,
                     displayRefreshRate = refreshRate,
-                    fastForwardEnabled = builtinSettings.fastForwardEnabled,
-                    fastForwardSpeed = builtinSettings.fastForwardSpeedDisplay,
-                    rotation = builtinSettings.rotationDisplay,
-                    overscanCrop = builtinSettings.overscanCropDisplay,
-                    lowLatencyAudio = builtinSettings.lowLatencyAudio,
-                    audioVolume = builtinSettings.audioVolumeDisplay,
-                    vsync = !builtinSettings.forceSoftwareTiming,
-                    rewindEnabled = builtinSettings.rewindEnabled,
-                    rewindSpeed = builtinSettings.rewindSpeedDisplay,
-                    rewindBufferDuration = builtinSettings.rewindBufferDurationDisplay,
-                    autoSaveState = builtinSettings.autoSaveState,
-                    autoRestoreState = builtinSettings.autoRestoreState,
-                    hwCoreSaveStatesEnabled = builtinSettings.hwCoreSaveStatesEnabled,
-                    savePath = builtinSettings.customSavePath
+                    fastForwardEnabled = refreshSettings.fastForwardEnabled,
+                    fastForwardSpeed = refreshSettings.fastForwardSpeedDisplay,
+                    rotation = refreshSettings.rotationDisplay,
+                    overscanCrop = refreshSettings.overscanCropDisplay,
+                    lowLatencyAudio = refreshSettings.lowLatencyAudio,
+                    audioVolume = refreshSettings.audioVolumeDisplay,
+                    vsync = !refreshSettings.forceSoftwareTiming,
+                    rewindEnabled = refreshSettings.rewindEnabled,
+                    rewindSpeed = refreshSettings.rewindSpeedDisplay,
+                    rewindBufferDuration = refreshSettings.rewindBufferDurationDisplay,
+                    autoSaveState = refreshSettings.autoSaveState,
+                    autoRestoreState = refreshSettings.autoRestoreState,
+                    hwCoreSaveStatesEnabled = refreshSettings.hwCoreSaveStatesEnabled,
+                    savePath = refreshSettings.customSavePath
                         ?: AppPaths.libretroSavesDir(vm.context.filesDir).absolutePath,
-                    statePath = builtinSettings.customStatePath
+                    statePath = refreshSettings.customStatePath
                         ?: AppPaths.libretroStatesDir(vm.context.filesDir).absolutePath,
-                    isCustomSavePath = builtinSettings.customSavePath != null,
-                    isCustomStatePath = builtinSettings.customStatePath != null
+                    isCustomSavePath = refreshSettings.customSavePath != null,
+                    isCustomStatePath = refreshSettings.customStatePath != null
                 ),
                 builtinControls = BuiltinControlsState(
-                    rumbleEnabled = builtinSettings.rumbleEnabled,
-                    limitHotkeysToPlayer1 = builtinSettings.limitHotkeysToPlayer1,
-                    speedrunStartOnReset = builtinSettings.speedrunStartOnReset,
-                    speedrunPanelSide = builtinSettings.speedrunPanelSide,
-                    speedrunPanelWidthPercent = builtinSettings.speedrunPanelWidthPercent,
-                    fastForwardMode = builtinSettings.fastForwardMode,
-                    fastForwardPreservePitch = builtinSettings.fastForwardPreservePitch,
-                    analogAsDpad = builtinSettings.analogAsDpad,
-                    dpadAsAnalog = builtinSettings.dpadAsAnalog,
-                    touchEnabled = builtinSettings.showTouchControlsWhenNoGamepad,
-                    touchOpacityLandscape = builtinSettings.touchControlsOpacityLandscape,
-                    touchOpacityPortrait = builtinSettings.touchControlsOpacityPortrait,
-                    touchSizeScale = builtinSettings.touchControlsSizeScale,
-                    touchHaptic = builtinSettings.touchControlsHaptic,
-                    touchFadeOnIdle = builtinSettings.touchControlsFadeOnIdle,
-                    touchSwapHanded = builtinSettings.touchControlsSwapHanded,
-                    touchLockOrientation = builtinSettings.touchControlsLockOrientation,
-                    touchMirror180 = builtinSettings.touchControlsMirror180,
-                    touchColouredFaceButtons = builtinSettings.touchControlsColouredFaceButtons,
-                    touchGenesis6Button = builtinSettings.touchControlsGenesis6Button
+                    rumbleEnabled = refreshSettings.rumbleEnabled,
+                    limitHotkeysToPlayer1 = refreshSettings.limitHotkeysToPlayer1,
+                    speedrunStartOnReset = refreshSettings.speedrunStartOnReset,
+                    speedrunPanelSide = refreshSettings.speedrunPanelSide,
+                    speedrunPanelWidthPercent = refreshSettings.speedrunPanelWidthPercent,
+                    fastForwardMode = refreshSettings.fastForwardMode,
+                    fastForwardPreservePitch = refreshSettings.fastForwardPreservePitch,
+                    analogAsDpad = refreshSettings.analogAsDpad,
+                    dpadAsAnalog = refreshSettings.dpadAsAnalog,
+                    touchEnabled = refreshSettings.showTouchControlsWhenNoGamepad,
+                    touchOpacityLandscape = refreshSettings.touchControlsOpacityLandscape,
+                    touchOpacityPortrait = refreshSettings.touchControlsOpacityPortrait,
+                    touchSizeScale = refreshSettings.touchControlsSizeScale,
+                    touchHaptic = refreshSettings.touchControlsHaptic,
+                    touchFadeOnIdle = refreshSettings.touchControlsFadeOnIdle,
+                    touchSwapHanded = refreshSettings.touchControlsSwapHanded,
+                    touchLockOrientation = refreshSettings.touchControlsLockOrientation,
+                    touchMirror180 = refreshSettings.touchControlsMirror180,
+                    touchColouredFaceButtons = refreshSettings.touchControlsColouredFaceButtons,
+                    touchGenesis6Button = refreshSettings.touchControlsGenesis6Button
                 )
             )
         }

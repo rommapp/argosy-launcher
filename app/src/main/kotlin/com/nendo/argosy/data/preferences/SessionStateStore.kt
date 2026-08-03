@@ -229,6 +229,7 @@ class SessionStateStore(context: Context) {
         val hasContext: Boolean,
         val sectionKind: String,
         val platformId: Long,
+        val pinId: Long,
         val gameId: Long,
         val legacySectionIndex: Int,
         val legacySelectedIndex: Int,
@@ -247,6 +248,7 @@ class SessionStateStore(context: Context) {
             .putBoolean(KEY_CAROUSEL_HAS_CONTEXT, ctx.hasContext)
             .putString(KEY_CAROUSEL_SECTION_KIND, ctx.sectionKind)
             .putLong(KEY_CAROUSEL_PLATFORM_ID, ctx.platformId)
+            .putLong(KEY_CAROUSEL_PIN_ID, ctx.pinId)
             .putLong(KEY_CAROUSEL_GAME_ID, ctx.gameId)
             .putInt(KEY_CAROUSEL_SECTION_INDEX, ctx.legacySectionIndex)
             .putInt(KEY_CAROUSEL_SELECTED_INDEX, ctx.legacySelectedIndex)
@@ -266,6 +268,7 @@ class SessionStateStore(context: Context) {
             hasContext = prefs.getBoolean(KEY_CAROUSEL_HAS_CONTEXT, false),
             sectionKind = prefs.getString(KEY_CAROUSEL_SECTION_KIND, "") ?: "",
             platformId = prefs.getLong(KEY_CAROUSEL_PLATFORM_ID, -1),
+            pinId = prefs.getLong(KEY_CAROUSEL_PIN_ID, -1),
             gameId = prefs.getLong(KEY_CAROUSEL_GAME_ID, -1),
             legacySectionIndex = prefs.getInt(KEY_CAROUSEL_SECTION_INDEX, 0),
             legacySelectedIndex = prefs.getInt(KEY_CAROUSEL_SELECTED_INDEX, 0),
@@ -360,6 +363,7 @@ class SessionStateStore(context: Context) {
         private const val KEY_CAROUSEL_HAS_CONTEXT = "carousel_has_context"
         private const val KEY_CAROUSEL_SECTION_KIND = "carousel_section_kind"
         private const val KEY_CAROUSEL_PLATFORM_ID = "carousel_platform_id"
+        private const val KEY_CAROUSEL_PIN_ID = "carousel_pin_id"
         private const val KEY_CAROUSEL_GAME_ID = "carousel_game_id"
         private const val KEY_CAROUSEL_FILTER_SOURCE = "carousel_filter_source"
         private const val KEY_CAROUSEL_FILTER_PLATFORM_ID = "carousel_filter_platform_id"

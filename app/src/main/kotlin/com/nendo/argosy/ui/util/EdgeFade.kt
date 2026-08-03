@@ -41,6 +41,25 @@ fun Modifier.verticalEdgeFade(
 
 /** ScrollState variant for plain scrollable columns. */
 fun Modifier.verticalEdgeFade(
+    gridState: androidx.compose.foundation.lazy.grid.LazyGridState,
+    fadeHeight: Dp,
+    top: Boolean = true,
+    bottom: Boolean = true,
+): Modifier = composed {
+    val topAlpha by animateFloatAsState(
+        targetValue = if (top && gridState.canScrollBackward) 1f else 0f,
+        animationSpec = tween(MotionTokens.Tween.microMs),
+        label = "grid-fade-top",
+    )
+    val bottomAlpha by animateFloatAsState(
+        targetValue = if (bottom && gridState.canScrollForward) 1f else 0f,
+        animationSpec = tween(MotionTokens.Tween.microMs),
+        label = "grid-fade-bottom",
+    )
+    edgeFadeDraw(fadeHeight, { topAlpha }, { bottomAlpha })
+}
+
+fun Modifier.verticalEdgeFade(
     scrollState: ScrollState,
     fadeHeight: Dp,
     top: Boolean = true,

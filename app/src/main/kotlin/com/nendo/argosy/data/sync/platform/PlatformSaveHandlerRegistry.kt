@@ -6,6 +6,7 @@ import com.nendo.argosy.data.emulator.SavePathConfig
 import com.nendo.argosy.data.emulator.SavePathRegistry
 import com.nendo.argosy.data.platform.PlatformDefinitions
 import com.nendo.argosy.data.storage.FileAccessLayer
+import com.nendo.argosy.data.storage.FileInfo
 import com.nendo.argosy.data.sync.SaveArchiver
 import com.nendo.argosy.util.Logger
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -632,11 +633,34 @@ private class Ps2FolderHandler(
         return fal.exists("${path.trimEnd('/')}/$SUPERBLOCK_FILE")
     }
 
-    private fun listCardDirsIn(parent: String) =
-        fal.listFilesUnion(parent).filter {
-            it.isDirectory &&
-                (it.name.endsWith(CARD_SUFFIX, ignoreCase = true) || fal.exists("${it.path}/$SUPERBLOCK_FILE"))
+    /**
+     * The cards directly under [parent], or when it holds none, the cards exactly one level
+     * below it. ARMSX2 nests them as `<base>/memcards/<CardName>`, so a base pointed at the
+     * parent of the cards directory resolves to the same cards every other lookup here uses.
+     * The descent stops at one level and only when the direct listing is empty, so a base that
+     * already holds cards behaves exactly as before and no deeper tree is ever searched.
+     */
+    private fun listCardDirsIn(parent: String): List<FileInfo> {
+        val children = fal.listFilesUnion(parent).filter { it.isDirectory }
+        val direct = children.filter { isCardDir(it) }
+        if (direct.isNotEmpty()) return direct
+
+        val nested = children.flatMap { child ->
+            fal.listFilesUnion(child.path).filter { it.isDirectory && isCardDir(it) }
         }
+        if (nested.isNotEmpty()) {
+            Logger.debug(
+                TAG,
+                "listCardDirsIn: no cards directly under the base, using ${nested.size} card(s) " +
+                    "one level below | base=$parent, cards=${nested.map { it.path }}"
+            )
+        }
+        return nested
+    }
+
+    private fun isCardDir(entry: FileInfo): Boolean =
+        entry.name.endsWith(CARD_SUFFIX, ignoreCase = true) ||
+            fal.exists("${entry.path}/$SUPERBLOCK_FILE")
 
     private fun findInCard(cardPath: String, saveId: String): List<String> =
         fal.listFilesUnion(cardPath)

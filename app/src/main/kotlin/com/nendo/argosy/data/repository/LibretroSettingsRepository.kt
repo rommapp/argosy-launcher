@@ -158,6 +158,20 @@ class LibretroSettingsRepository @Inject constructor(
     suspend fun setIngameMenuTwoColumn(enabled: Boolean) =
         builtinPrefs.setIngameMenuTwoColumn(enabled)
 
+    suspend fun setHudEnabled(enabled: Boolean) = builtinPrefs.setHudEnabled(enabled)
+
+    suspend fun setHudCorner(corner: String) = builtinPrefs.setHudCorner(corner)
+
+    suspend fun setHudShowBattery(enabled: Boolean) = builtinPrefs.setHudShowBattery(enabled)
+
+    suspend fun setHudShowClock(enabled: Boolean) = builtinPrefs.setHudShowClock(enabled)
+
+    suspend fun setHudShowPlaytime(enabled: Boolean) = builtinPrefs.setHudShowPlaytime(enabled)
+
+    suspend fun setHudShowFps(enabled: Boolean) = builtinPrefs.setHudShowFps(enabled)
+
+    suspend fun setHudShowLastSave(enabled: Boolean) = builtinPrefs.setHudShowLastSave(enabled)
+
     suspend fun setBuiltinAnalogAsDpad(enabled: Boolean) =
         builtinPrefs.setBuiltinAnalogAsDpad(enabled)
 

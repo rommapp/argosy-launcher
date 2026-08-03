@@ -1020,7 +1020,8 @@ JNIEXPORT jstring JNICALL Java_com_swordfish_libretrodroid_LibretroDroid_compute
     }
 
     JniString pathStr(env, romPath);
-    const char* path = pathStr.stdString().c_str();
+    const std::string pathString = pathStr.stdString();
+    const char* path = pathString.c_str();
 
     char hash[33] = {0};
     int result = rc_hash_generate_from_file(hash, static_cast<uint32_t>(consoleId), path);

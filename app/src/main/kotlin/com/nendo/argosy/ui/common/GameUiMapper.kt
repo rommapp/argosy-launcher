@@ -140,6 +140,7 @@ suspend fun GameListItem.toHomeGameUi(
         packageName = packageName,
         needsInstall = needsAndroidInstall,
         isNew = addedAt.isAfter(newThreshold) && lastPlayed == null,
+        isHidden = isHidden,
         sortTitle = sortTitle,
         gameModes = gameModes,
         addedAt = addedAt.toEpochMilli(),

@@ -52,8 +52,8 @@ class InterfacePocketTacoLayoutTest {
     @Test
     fun `rows after the percent row shift up when it is hidden`() {
         assertEquals(
-            interfaceFocusIndexOf(InterfaceItem.StartupView, layout(enabled = true)) - 1,
-            interfaceFocusIndexOf(InterfaceItem.StartupView, layout(enabled = false))
+            interfaceFocusIndexOf(InterfaceItem.HomeScreen, layout(enabled = true)) - 1,
+            interfaceFocusIndexOf(InterfaceItem.HomeScreen, layout(enabled = false))
         )
     }
 }

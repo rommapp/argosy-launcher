@@ -3,6 +3,7 @@ package com.nendo.argosy.ui.components
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.scale
 import com.nendo.argosy.ui.util.clickableNoFocus
@@ -41,6 +42,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -69,13 +71,23 @@ import com.nendo.argosy.ui.theme.generated.ColorTokens
 private fun preferenceAccent(isDangerous: Boolean = false): Color =
     if (isDangerous) LocalArgosyTheme.current.destructive else LocalArgosyTheme.current.focusAccent
 
+/**
+ * Row chrome shared by every preference item.
+ *
+ * [onDirectionalTap] splits the row: the tap gets -1 for the left half and +1 for the
+ * right, so a stepper reads by touch the way it reads on the d-pad. A row that also
+ * carries a whole-row [onClick] keeps it, because an explicit confirm action is a
+ * stronger claim on the tap than an adjustment the -/+ glyphs already offer.
+ */
 @Composable
 internal fun preferenceModifier(
     isFocused: Boolean,
     isDangerous: Boolean = false,
-    onClick: (() -> Unit)? = null
+    onClick: (() -> Unit)? = null,
+    onDirectionalTap: ((Int) -> Unit)? = null
 ): Modifier {
     val preferenceShape = RoundedCornerShape(Dimens.radiusControl)
+    val currentDirectionalTap by rememberUpdatedState(onDirectionalTap)
     val accent = preferenceAccent(isDangerous)
     val surface = MaterialTheme.colorScheme.surface
     val background by animateColorAsState(
@@ -95,7 +107,17 @@ internal fun preferenceModifier(
         .clip(preferenceShape)
         .background(background)
         .border(Dimens.borderThin, accent.copy(alpha = borderAlpha), preferenceShape)
-        .then(if (onClick != null) Modifier.clickableNoFocus(onClick = onClick) else Modifier)
+        .then(
+            when {
+                onClick != null -> Modifier.clickableNoFocus(onClick = onClick)
+                onDirectionalTap != null -> Modifier.pointerInput(Unit) {
+                    detectTapGestures { offset ->
+                        currentDirectionalTap?.invoke(if (offset.x < size.width / 2f) -1 else 1)
+                    }
+                }
+                else -> Modifier
+            }
+        )
         .padding(horizontal = Dimens.spacingMd, vertical = Dimens.spacingSm)
 }
 
@@ -283,7 +305,11 @@ fun SliderPreference(
     onAdjust: ((Int) -> Unit)? = null
 ) {
     Row(
-        modifier = preferenceModifier(isFocused, onClick = onClick),
+        modifier = preferenceModifier(
+            isFocused,
+            onClick = onClick,
+            onDirectionalTap = onAdjust?.let { adjust -> { direction: Int -> adjust(direction * step) } }
+        ),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {

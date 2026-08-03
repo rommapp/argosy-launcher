@@ -58,6 +58,7 @@ class RomMLibrarySyncService @Inject constructor(
     private val userPreferencesRepository: UserPreferencesRepository,
     private val database: ALauncherDatabase,
     private val gameDao: GameDao,
+    private val homeTileDao: com.nendo.argosy.data.local.dao.HomeTileDao,
     private val gameDiscDao: GameDiscDao,
     private val gameFileDao: GameFileDao,
     private val saveSyncDao: com.nendo.argosy.data.local.dao.SaveSyncDao,
@@ -429,6 +430,10 @@ class RomMLibrarySyncService @Inject constructor(
             }
             gameDao.delete(game.id)
             deleted++
+        }
+
+        if (deleted > 0) {
+            homeTileDao.deleteTilesForMissingGames()
         }
 
         if (masked > 0) {

@@ -6,6 +6,7 @@ import com.nendo.argosy.data.local.entity.PlatformEntity
 import com.nendo.argosy.data.local.entity.getDisplayName
 import com.nendo.argosy.data.platform.PlatformDefinitions
 import com.nendo.argosy.data.preferences.HomeBackgroundMode
+import com.nendo.argosy.domain.model.HomeSectionKind
 import com.nendo.argosy.domain.model.PinnedCollection
 import com.nendo.argosy.domain.usecase.collection.CategoryType
 import com.nendo.argosy.ui.screens.common.DiscPickerState
@@ -55,6 +56,7 @@ data class HomeGameUi(
     val needsInstall: Boolean = false,
     val youtubeVideoId: String? = null,
     val isNew: Boolean = false,
+    val isHidden: Boolean = false,
     val sortTitle: String = "",
     val gameModes: String? = null,
     val franchises: String? = null,
@@ -99,15 +101,17 @@ fun PlatformEntity.toHomePlatformUi(emulatorDetector: EmulatorDetector) = HomePl
     hasEmulator = emulatorDetector.hasAnyEmulator(slug)
 )
 
-sealed class HomeRow {
-    data object Favorites : HomeRow()
-    data class Platform(val index: Int) : HomeRow()
-    data object Continue : HomeRow()
-    data object Recommendations : HomeRow()
-    data object Android : HomeRow()
-    data object Steam : HomeRow()
-    data class PinnedRegular(val pinId: Long, val collectionId: Long, val name: String) : HomeRow()
-    data class PinnedVirtual(val pinId: Long, val type: CategoryType, val name: String) : HomeRow()
+sealed class HomeRow(val kind: HomeSectionKind) {
+    data object Favorites : HomeRow(HomeSectionKind.FAVORITES)
+    data class Platform(val index: Int) : HomeRow(HomeSectionKind.PLATFORM)
+    data object Continue : HomeRow(HomeSectionKind.CONTINUE)
+    data object Recommendations : HomeRow(HomeSectionKind.RECOMMENDATIONS)
+    data object Android : HomeRow(HomeSectionKind.ANDROID)
+    data object Steam : HomeRow(HomeSectionKind.STEAM)
+    data class PinnedRegular(val pinId: Long, val collectionId: Long, val name: String) :
+        HomeRow(HomeSectionKind.PINNED_REGULAR)
+    data class PinnedVirtual(val pinId: Long, val type: CategoryType, val name: String) :
+        HomeRow(HomeSectionKind.PINNED_VIRTUAL)
 }
 
 data class HomeUiState(
@@ -123,6 +127,19 @@ data class HomeUiState(
     val pinnedGames: Map<Long, List<HomeGameUi>> = emptyMap(),
     val pinnedGamesLoading: Set<Long> = emptySet(),
     val currentRow: HomeRow = HomeRow.Continue,
+    val carouselConfig: com.nendo.argosy.domain.model.CarouselConfig =
+        com.nendo.argosy.domain.model.CarouselConfig(),
+    val autoGridConfig: com.nendo.argosy.domain.model.AutoGridConfig =
+        com.nendo.argosy.domain.model.AutoGridConfig(),
+    val layoutKind: com.nendo.argosy.domain.model.HomeLayoutKind =
+        com.nendo.argosy.domain.model.HomeLayoutKind.CAROUSEL,
+    val customGridConfig: com.nendo.argosy.domain.model.CustomGridConfig =
+        com.nendo.argosy.domain.model.CustomGridConfig(),
+    val customGrid: com.nendo.argosy.ui.components.CustomGridState =
+        com.nendo.argosy.ui.components.CustomGridState(),
+    val tileGames: Map<Long, HomeGameUi> = emptyMap(),
+    val tileCollections: Map<Long, com.nendo.argosy.ui.components.TileCollectionUi> = emptyMap(),
+    val tileApps: Map<String, String> = emptyMap(),
     val isLoading: Boolean = true,
     val isRommConfigured: Boolean = false,
     val showGameMenu: Boolean = false,
@@ -155,11 +172,17 @@ data class HomeUiState(
 ) {
     val availableRows: List<HomeRow>
         get() = buildList {
-            if (recentGames.isNotEmpty()) add(HomeRow.Continue)
-            if (recommendedGames.isNotEmpty()) add(HomeRow.Recommendations)
-            if (favoriteGames.isNotEmpty()) add(HomeRow.Favorites)
-            if (androidGames.isNotEmpty()) add(HomeRow.Android)
-            if (steamGames.isNotEmpty()) add(HomeRow.Steam)
+            HomeSectionKind.LEADING.forEach { kind ->
+                val row = when (kind) {
+                    HomeSectionKind.CONTINUE -> HomeRow.Continue.takeIf { recentGames.isNotEmpty() }
+                    HomeSectionKind.RECOMMENDATIONS -> HomeRow.Recommendations.takeIf { recommendedGames.isNotEmpty() }
+                    HomeSectionKind.FAVORITES -> HomeRow.Favorites.takeIf { favoriteGames.isNotEmpty() }
+                    HomeSectionKind.ANDROID -> HomeRow.Android.takeIf { androidGames.isNotEmpty() }
+                    HomeSectionKind.STEAM -> HomeRow.Steam.takeIf { steamGames.isNotEmpty() }
+                    else -> null
+                }
+                row?.let { add(it) }
+            }
             platforms.forEachIndexed { index, _ -> add(HomeRow.Platform(index)) }
             pinnedCollections.sortedByDescending { it.displayOrder }.forEach { pinned ->
                 when (pinned) {
@@ -224,8 +247,25 @@ data class HomeUiState(
     val focusedItem: HomeRowItem?
         get() = currentItems.getOrNull(focusedGameIndex)
 
+    /**
+     * The game under the cursor, whichever layout is showing. Everything downstream reads this one
+     * accessor - background art, the info panel, favourites, details, the ambient LED - so a curated
+     * grid has to answer it from its own cursor rather than leave them all reading a section list
+     * that this layout never puts on screen.
+     */
     val focusedGame: HomeGameUi?
-        get() = (focusedItem as? HomeRowItem.Game)?.game
+        get() = if (layoutKind == com.nendo.argosy.domain.model.HomeLayoutKind.CUSTOM_GRID) {
+            focusedTileGame
+        } else {
+            (focusedItem as? HomeRowItem.Game)?.game
+        }
+
+    val focusedTile: com.nendo.argosy.domain.model.HomeTile?
+        get() = customGrid.focusedTile
+
+    val focusedTileGame: HomeGameUi?
+        get() = (focusedTile?.target as? com.nendo.argosy.domain.model.HomeTileTargetRef.Game)
+            ?.let { tileGames[it.gameId] }
 
     val rowTitle: String
         get() = when (currentRow) {
@@ -273,12 +313,92 @@ data class HomeUiState(
 
     fun downloadIndicatorFor(gameId: Long): GameDownloadIndicator =
         downloadIndicators[gameId] ?: GameDownloadIndicator.NONE
+
+    val homeTiles: List<com.nendo.argosy.domain.model.HomeTile> get() = customGrid.tiles
+
+    val customGridPage: Int get() = customGrid.page
+
+    val customGridPageCount: Int get() = customGrid.pageCount
+
+    val customGridCell: com.nendo.argosy.domain.model.GridCell get() = customGrid.cell
+
+    val showTilePicker: Boolean get() = customGrid.showPicker
+
+    val tilePickerQuery: String get() = customGrid.pickerQuery
+
+    val tilePickerFocusIndex: Int get() = customGrid.pickerFocusIndex
+
+    val tilePickerEntries: List<com.nendo.argosy.ui.components.TilePickerEntry>
+        get() = customGrid.pickerEntries
+
+    fun tilesOnPage(pageIndex: Int): List<com.nendo.argosy.domain.model.HomeTile> =
+        customGrid.tilesOnPage(pageIndex)
+
+    /**
+     * What a tile draws. A game whose row survived but whose library entry did not resolves to a
+     * missing marker rather than to nothing, so a page keeps its shape and says what is wrong.
+     */
+    fun tileContentFor(
+        tile: com.nendo.argosy.domain.model.HomeTile
+    ): com.nendo.argosy.ui.components.CustomGridTileContent? =
+        when (val target = tile.target) {
+            is com.nendo.argosy.domain.model.HomeTileTargetRef.Game -> {
+                val game = tileGames[target.gameId]
+                com.nendo.argosy.ui.components.CustomGridTileContent(
+                    game = game,
+                    label = game?.title ?: "Missing game",
+                    isMissing = game == null,
+                    subtitle = game?.platformDisplayName,
+                    stats = game?.let { com.nendo.argosy.ui.components.tileStatsFor(it) }.orEmpty()
+                )
+            }
+            is com.nendo.argosy.domain.model.HomeTileTargetRef.Collection -> {
+                val collection = tileCollections[target.collectionId]
+                com.nendo.argosy.ui.components.CustomGridTileContent(
+                    game = null,
+                    label = collection?.name ?: "Missing collection",
+                    isMissing = collection == null,
+                    coverPath = collection?.coverPath,
+                    subtitle = "Collection",
+                    stats = collection?.let {
+                        listOf(
+                            com.nendo.argosy.ui.components.TileStat(
+                                "Games",
+                                it.gameCount.toString()
+                            )
+                        )
+                    }.orEmpty()
+                )
+            }
+            is com.nendo.argosy.domain.model.HomeTileTargetRef.VirtualCollection ->
+                com.nendo.argosy.ui.components.CustomGridTileContent(
+                    game = null,
+                    label = target.name
+                )
+            is com.nendo.argosy.domain.model.HomeTileTargetRef.App -> {
+                val name = tileApps[target.packageName]
+                com.nendo.argosy.ui.components.CustomGridTileContent(
+                    game = null,
+                    label = name ?: "Missing app",
+                    isMissing = name == null,
+                    packageName = target.packageName,
+                    subtitle = "App"
+                )
+            }
+            com.nendo.argosy.domain.model.HomeTileTargetRef.Unresolvable ->
+                com.nendo.argosy.ui.components.CustomGridTileContent(
+                    game = null,
+                    label = "Unavailable",
+                    isMissing = true
+                )
+        }
 }
 
 data class BreadcrumbItem(val label: String, val isCurrent: Boolean)
 
 sealed class HomeEvent {
     data class LaunchIntent(val intent: Intent, val options: android.os.Bundle? = null) : HomeEvent()
+    data class NavigateToCollections(val collectionId: Long) : HomeEvent()
     data class NavigateToLibrary(
         val platformId: Long? = null,
         val sourceFilter: String? = null

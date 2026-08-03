@@ -15,8 +15,26 @@ class SettingsLayout<Item, State>(
     private val sectionOf: (Item) -> String? = { null },
     private val sectionTitle: (String) -> String? = { null }
 ) {
-    fun visibleItems(state: State): List<Item> =
-        allItems.filter { visibleWhen(it, state) || disabledBehavior(it) == DisabledBehavior.LOCKED }
+    /**
+     * What the pane shows, with headings for sections that lost all their settings left out.
+     *
+     * A section empties whenever the choices above it hide the rows below - picking a grid layout
+     * takes the background rows away, for instance - and a heading with nothing under it reads as a
+     * section that failed to load. Only decoration is dropped: anything focusable survives, so this
+     * can never hide a setting.
+     */
+    fun visibleItems(state: State): List<Item> {
+        val shown = allItems.filter {
+            visibleWhen(it, state) || disabledBehavior(it) == DisabledBehavior.LOCKED
+        }
+        val sectionsWithSettings = shown.filter { isFocusable(it) }
+            .mapNotNull { sectionOf(it) }
+            .toSet()
+        return shown.filter { item ->
+            val section = sectionOf(item)
+            isFocusable(item) || section == null || section in sectionsWithSettings
+        }
+    }
 
     fun focusableItems(state: State): List<Item> =
         visibleItems(state).filter { isFocusable(it) }

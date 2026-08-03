@@ -175,6 +175,11 @@ object BiosPathRegistry {
             BiosRequirement("switch", "prod.keys", null, "Switch Production Keys", isRequired = true),
             BiosRequirement("switch", "firmware.zip", null, "Switch Firmware", isRequired = true)
         ),
+        "xbox" to listOf(
+            BiosRequirement("xbox", "mcpx.bin", null, "Xbox MCPX Boot ROM", isRequired = true),
+            BiosRequirement("xbox", "flash.bin", null, "Xbox Flash ROM / BIOS", isRequired = true),
+            BiosRequirement("xbox", "hdd.img", null, "Xbox Hard Disk Image", isRequired = true)
+        ),
         "amiga" to listOf(
             BiosRequirement("amiga", "kick34005.A500", "82a21c1890cae844b3df741f2762d48d", "Kickstart v1.3 rev 34.005 (A500)", isRequired = false),
             BiosRequirement("amiga", "kick37175.A500", "dc10d7bdd1b6f450773dfb558477c230", "Kickstart v2.04 rev 37.175 (A500+)", isRequired = false),

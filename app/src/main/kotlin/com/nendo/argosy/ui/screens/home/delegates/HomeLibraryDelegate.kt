@@ -47,6 +47,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 private const val PLATFORM_GAMES_LIMIT = 20
+private const val TILE_PICKER_LIMIT = 60
 private const val MAX_DISPLAYED_RECOMMENDATIONS = 8
 private const val RECOMMENDATION_PENALTY = 0.9f
 private val EXCLUDED_RECOMMENDATION_STATUSES = setOf(
@@ -91,7 +92,9 @@ class HomeLibraryDelegate @Inject constructor(
     private val notificationManager: NotificationManager,
     private val repairImageCacheUseCase: com.nendo.argosy.domain.usecase.cache.RepairImageCacheUseCase,
     private val downloadFileStatusRepository: DownloadFileStatusRepository,
-    private val steamPathResolver: com.nendo.argosy.data.steam.SteamPathResolver
+    private val steamPathResolver: com.nendo.argosy.data.steam.SteamPathResolver,
+    private val collectionRepository: com.nendo.argosy.data.repository.CollectionRepository,
+    private val appsRepository: com.nendo.argosy.data.repository.AppsRepository
 ) {
     private val _state = MutableStateFlow(LibraryState())
     val state: StateFlow<LibraryState> = _state.asStateFlow()
@@ -656,6 +659,126 @@ class HomeLibraryDelegate @Inject constructor(
                 game.lastPlayed?.toEpochMilli() ?: game.addedAt.toEpochMilli()
             }
         )
+    }
+
+    /**
+     * Installed games matching [query], for the custom grid's picker. Filtering to what is on the
+     * device is the point: a tile is a shortcut to play something, so offering a game that would
+     * first have to download makes the grid a second download queue.
+     */
+    suspend fun searchInstalledForTiles(query: String): List<com.nendo.argosy.ui.components.TilePickerEntry> {
+        val matches = gameRepository
+            .searchForQuickMenu(query.trim(), TILE_PICKER_LIMIT)
+            .first()
+        return filterPlayable(matches).map { game ->
+            com.nendo.argosy.ui.components.TilePickerEntry(
+                target = com.nendo.argosy.domain.model.HomeTileTargetRef.Game(game.id),
+                title = game.title,
+                subtitle = cachedPlatformDisplayNames[game.platformId].orEmpty(),
+                coverPath = game.coverPath
+            )
+        }
+    }
+
+    /**
+     * Collections and apps a tile can point at. Both are small enough to list whole, so they are
+     * filtered in memory rather than through a query the way the library has to be.
+     */
+    suspend fun collectionsForTiles(query: String): List<com.nendo.argosy.ui.components.TilePickerEntry> =
+        collectionRepository.getAllCollections()
+            .filter { it.name.isNotBlank() }
+            .filter { query.isBlank() || it.name.lowercase().contains(query) }
+            .take(TILE_PICKER_LIMIT)
+            .map { collection ->
+                val count = collectionRepository.getGameCountInCollection(collection.id)
+                com.nendo.argosy.ui.components.TilePickerEntry(
+                    target = com.nendo.argosy.domain.model.HomeTileTargetRef.Collection(collection.id),
+                    title = collection.name,
+                    subtitle = if (count == 1) "1 game" else "$count games",
+                    coverPath = collectionRepository.getCollectionCoverPaths(collection.id)
+                        .firstOrNull()
+                )
+            }
+
+    /**
+     * Names and art for the collections and apps a page points at. Resolved by id the same way the
+     * games are, so a target that has since been deleted comes back absent and the tile can say so
+     * rather than rendering blank.
+     */
+    suspend fun resolveTileCollections(
+        ids: List<Long>
+    ): Map<Long, com.nendo.argosy.ui.components.TileCollectionUi> {
+        if (ids.isEmpty()) return emptyMap()
+        return collectionRepository.getAllCollections()
+            .filter { it.id in ids }
+            .associate { collection ->
+                collection.id to com.nendo.argosy.ui.components.TileCollectionUi(
+                    name = collection.name,
+                    coverPath = collectionRepository.getCollectionCoverPaths(collection.id)
+                        .firstOrNull(),
+                    gameCount = collectionRepository.getGameCountInCollection(collection.id)
+                )
+            }
+    }
+
+    suspend fun resolveTileApps(packageNames: List<String>): Map<String, String> {
+        if (packageNames.isEmpty()) return emptyMap()
+        return appsRepository.getInstalledApps(includeSystemApps = true)
+            .filter { it.packageName in packageNames }
+            .associate { it.packageName to it.label }
+    }
+
+    private val emulatorPackages: Set<String> by lazy {
+        com.nendo.argosy.data.emulator.EmulatorRegistry.getAll()
+            .map { it.packageName }
+            .toSet()
+    }
+
+    /**
+     * Emulators first, then everything else alphabetically. A tile on a game launcher's home screen
+     * is far more likely to be an emulator than a browser, so the packages Argosy already knows are
+     * emulators are worth surfacing above an alphabetical wall of apps.
+     */
+    private val tilePickerAppOrder =
+        compareByDescending<com.nendo.argosy.data.repository.InstalledApp> {
+            it.packageName in emulatorPackages
+        }.thenBy { it.label.lowercase() }
+
+    suspend fun appsForTiles(query: String): List<com.nendo.argosy.ui.components.TilePickerEntry> =
+        appsRepository.getInstalledApps(includeSystemApps = false)
+            .filter { query.isBlank() || it.label.lowercase().contains(query) }
+            .sortedWith(tilePickerAppOrder)
+            .take(TILE_PICKER_LIMIT)
+            .map { app ->
+                com.nendo.argosy.ui.components.TilePickerEntry(
+                    target = com.nendo.argosy.domain.model.HomeTileTargetRef.App(app.packageName),
+                    title = app.label,
+                    subtitle = if (app.packageName in emulatorPackages) "Emulator" else "App",
+                    packageName = app.packageName
+                )
+            }
+
+    /**
+     * One picker entry for a known game, used when something other than a search names the game -
+     * a finished download offering itself a place on the grid.
+     */
+    suspend fun tilePickerEntryFor(gameId: Long): com.nendo.argosy.ui.components.TilePickerEntry? {
+        val game = gameRepository.getByIds(listOf(gameId)).firstOrNull() ?: return null
+        return com.nendo.argosy.ui.components.TilePickerEntry(
+            target = com.nendo.argosy.domain.model.HomeTileTargetRef.Game(game.id),
+            title = game.title,
+            subtitle = cachedPlatformDisplayNames[game.platformId].orEmpty(),
+            coverPath = game.coverPath
+        )
+    }
+
+    /**
+     * Resolves the games a curated page points at. Looked up by id across the library rather than
+     * taken from a section, because the tiles on a page share nothing but having been placed there.
+     */
+    suspend fun resolveTileGames(gameIds: List<Long>): Map<Long, HomeGameUi> {
+        if (gameIds.isEmpty()) return emptyMap()
+        return gameRepository.getByIds(gameIds).associate { it.id to it.toUi() }
     }
 
     private suspend fun GameEntity.toUi(): HomeGameUi = toHomeGameUi(

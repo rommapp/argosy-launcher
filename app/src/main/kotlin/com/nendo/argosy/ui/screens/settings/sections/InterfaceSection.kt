@@ -137,7 +137,7 @@ fun InterfaceSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                 InterfaceItem.HomeScreen -> NavigationPreference(
                     icon = Icons.Outlined.Home,
                     title = "Home Screen",
-                    subtitle = "Background and footer settings",
+                    subtitle = "Layout, content and background",
                     isFocused = isFocused(item),
                     onClick = { viewModel.navigateToHomeScreen() }
                 )

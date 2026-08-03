@@ -47,7 +47,7 @@ class DeleteGameUseCase @Inject constructor(
         }
 
         val path = game.localPath ?: return false
-        val platformFolder = gameRepository.getDownloadDirForPlatform(game.platformSlug)
+        val platformFolder = gameRepository.getDownloadDirForPlatformId(game.platformId)
 
         gameRepository.clearLocalPath(gameId)
         downloadQueueDao.deleteByGameId(gameId)

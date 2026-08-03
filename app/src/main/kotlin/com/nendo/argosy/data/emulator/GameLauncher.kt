@@ -1803,8 +1803,13 @@ class GameLauncher @Inject constructor(
         return runCatching { root.canonicalFile }.getOrDefault(root.absoluteFile) == target
     }
 
+    /**
+     * Mirrors the download-side resolver: a custom folder is only trusted when the slug
+     * identifies exactly one platform, so this and the writer cannot disagree about where a
+     * platform's roms live.
+     */
     private suspend fun platformDownloadDir(platformSlug: String): File {
-        platformDao.getBySlug(platformSlug)?.customRomPath?.let { return File(it) }
+        platformDao.getAllBySlug(platformSlug).singleOrNull()?.customRomPath?.let { return File(it) }
         val custom = userPreferencesRepository.userPreferences.first().romStoragePath
         return if (custom != null) File(custom, platformSlug)
         else File(File(context.getExternalFilesDir(null), "downloads"), platformSlug)

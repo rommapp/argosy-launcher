@@ -66,19 +66,29 @@ class GameRepository @Inject constructor(
         File(context.getExternalFilesDir(null), "downloads")
     }
 
-    private suspend fun getDownloadDir(platformSlug: String): File {
-        val platform = platformDao.getBySlug(platformSlug)
-        if (platform?.customRomPath != null) {
-            return File(platform.customRomPath).also { it.mkdirs() }
-        }
+    /**
+     * Where this platform's roms are written.
+     *
+     * Prefer [downloadDirFor] when the caller holds a platform id. Slugs are not unique -
+     * duplicate-slug rows are a state the schema allows and `getBySlug` takes the first of them -
+     * so resolving by slug can hand one platform another's custom folder, and downloads then land
+     * in the wrong library.
+     */
+    private suspend fun getDownloadDir(platformSlug: String): File =
+        downloadDirFor(platformDao.getBySlug(platformSlug), platformSlug)
 
-        val prefs = preferencesRepository.userPreferences.first()
-        val customPath = prefs.romStoragePath
-        return if (customPath != null) {
-            File(customPath, platformSlug).also { it.mkdirs() }
-        } else {
-            File(defaultDownloadDir, platformSlug).also { it.mkdirs() }
-        }
+    private suspend fun downloadDirFor(platform: PlatformEntity?, platformSlug: String): File {
+        platform?.customRomPath?.let { return File(it).also { dir -> dir.mkdirs() } }
+
+        val base = preferencesRepository.userPreferences.first().romStoragePath
+            ?.let { File(it) }
+            ?: defaultDownloadDir
+        return File(base, platformSlug).also { it.mkdirs() }
+    }
+
+    suspend fun getDownloadDirForPlatformId(platformId: Long): File = withContext(Dispatchers.IO) {
+        val platform = platformDao.getById(platformId)
+        downloadDirFor(platform, platform?.slug ?: return@withContext defaultDownloadDir)
     }
 
     /**
@@ -429,8 +439,9 @@ class GameRepository @Inject constructor(
         Log.d(TAG, "repairVariantFilePointers: checking ${missing.size} entries without localPath")
 
         var repaired = 0
-        for ((platformSlug, entries) in missing.groupBy { it.platformSlug }) {
-            val platformDir = getDownloadDir(platformSlug)
+        for ((platformId, entries) in missing.groupBy { it.platformId }) {
+            val platformSlug = entries.first().platformSlug
+            val platformDir = getDownloadDirForPlatformId(platformId)
             if (!platformDir.isDirectory) continue
             val fileIndex by lazy { buildPlatformFileIndex(platformDir) }
             val folderExists = HashMap<String, Boolean>()
@@ -592,9 +603,6 @@ class GameRepository @Inject constructor(
         gameDao.getByIdsChunked(ids)
     }
 
-    suspend fun getDownloadDirForPlatform(platformSlug: String): File = withContext(Dispatchers.IO) {
-        getDownloadDir(platformSlug)
-    }
 
     suspend fun getVariantsForGame(gameId: Long): List<GameFileEntity> = withContext(Dispatchers.IO) {
         gameFileDao.getVariantsForGame(gameId)

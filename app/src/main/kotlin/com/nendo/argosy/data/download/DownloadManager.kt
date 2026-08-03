@@ -230,8 +230,18 @@ class DownloadManager @Inject constructor(
         private const val CONNECTION_WAIT_TIMEOUT_MS = 30_000L
     }
 
+    /**
+     * A custom folder is only trustworthy when the slug identifies one platform. Duplicate-slug
+     * rows are a state the schema allows, and taking the first of them would write a download
+     * into a different platform's library. The shared location is unambiguous, so an ambiguous
+     * slug falls back to it rather than guessing.
+     */
     private suspend fun getDownloadDir(platformSlug: String): File {
-        val platform = platformDao.getBySlug(platformSlug)
+        val matches = platformDao.getAllBySlug(platformSlug)
+        val platform = matches.singleOrNull()
+        if (matches.size > 1) {
+            Log.w(TAG, "getDownloadDir: slug '$platformSlug' matches ${matches.size} platforms, using the shared path")
+        }
         if (platform?.customRomPath != null) {
             return File(platform.customRomPath).also { it.mkdirs() }
         }

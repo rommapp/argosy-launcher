@@ -25,7 +25,8 @@ data class MissingGameFile(
     val category: String,
     val gameTitle: String,
     val rommFileName: String?,
-    val platformSlug: String
+    val platformSlug: String,
+    val platformId: Long
 )
 
 data class PlatformLocalPath(
@@ -96,7 +97,8 @@ interface GameFileDao {
             gf.category AS category,
             g.title AS gameTitle,
             g.rommFileName AS rommFileName,
-            g.platformSlug AS platformSlug
+            g.platformSlug AS platformSlug,
+            g.platformId AS platformId
         FROM game_files gf
         INNER JOIN games g ON gf.gameId = g.id
         WHERE gf.localPath IS NULL

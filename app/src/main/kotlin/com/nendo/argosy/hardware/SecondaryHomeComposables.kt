@@ -22,6 +22,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
+import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
@@ -91,9 +92,23 @@ fun SecondaryHomeContent(
     val showCompanion = isInitialized && !showLibrary && !isWizardActive
     val showSplash = !isInitialized || isWizardActive
 
+    val dualHomeState by dualHomeViewModel.uiState.collectAsState()
+
+    /**
+     * The whole companion display refuses Compose focus, not just the home content inside it.
+     *
+     * A tap on anything clickable moves focus to that node, and a focused node eats the d-pad
+     * before the dispatcher ever sees it - which is why closing the app drawer used to leave the
+     * carousel taking several presses to wake up, one per focusable the traversal walked through.
+     * Guarding a single screen only moved the leak to whatever renders beside it.
+     */
     Box(
         modifier = Modifier
             .fillMaxSize()
+            .then(
+                if (dualHomeState.isTextEntryActive) Modifier
+                else Modifier.focusProperties { canFocus = false }
+            )
             .surfaceBackdrop(BackdropRole.WALLPAPER)
     ) {
         AnimatedVisibility(
@@ -227,6 +242,7 @@ fun ShowcaseRoleContent(
     Box(
         modifier = Modifier
             .fillMaxSize()
+            .focusProperties { canFocus = false }
             .surfaceBackdrop(BackdropRole.WALLPAPER)
     ) {
         AnimatedVisibility(

@@ -349,7 +349,31 @@ class SecondaryHomeActivity :
         return result
     }
 
-    override fun onKeyDown(keyCode: Int, event: android.view.KeyEvent): Boolean {
+    /**
+     * Gamepad keys are taken before the view hierarchy sees them, exactly as the primary activity
+     * does it.
+     *
+     * onKeyDown is the fallback Android calls only once every view has declined the key, so a single
+     * focused composable anywhere on this display silently owns the d-pad - after closing the app
+     * drawer its grid held focus, and eight presses went into walking out of it before the carousel
+     * saw one. The launcher decides selection itself, so the window has no business consulting focus
+     * first; typing is the sole exception, and it says so.
+     */
+    override fun dispatchKeyEvent(event: android.view.KeyEvent): Boolean {
+        if (isCompanionTextEntryActive()) return super.dispatchKeyEvent(event)
+        when (event.action) {
+            android.view.KeyEvent.ACTION_DOWN ->
+                if (handleGamepadKeyDown(event.keyCode, event)) return true
+            android.view.KeyEvent.ACTION_UP ->
+                if (handleGamepadKeyUp(event.keyCode, event)) return true
+        }
+        return super.dispatchKeyEvent(event)
+    }
+
+    private fun isCompanionTextEntryActive(): Boolean =
+        ::dualHomeViewModel.isInitialized && dualHomeViewModel.uiState.value.isTextEntryActive
+
+    private fun handleGamepadKeyDown(keyCode: Int, event: android.view.KeyEvent): Boolean {
         if (::dsm.isInitialized && !dsm.claimInput(event)) return true
         if (event.repeatCount == 0) {
             val conflictEvent = mapKeycodeToGamepadEvent(keyCode, swapAB, swapXY, swapStartSelect)
@@ -372,7 +396,7 @@ class SecondaryHomeActivity :
                     ) return true
                 }
             }
-            return super.onKeyDown(keyCode, event)
+            return false
         }
         val gamepadEvent = mapKeycodeToGamepadEvent(keyCode, swapAB, swapXY, swapStartSelect)
         if (gamepadEvent == com.nendo.argosy.ui.input.GamepadEvent.Confirm && deferConfirm()) {
@@ -385,16 +409,16 @@ class SecondaryHomeActivity :
             )
             if (result.handled) return true
         }
-        return super.onKeyDown(keyCode, event)
+        return false
     }
 
-    override fun onKeyUp(keyCode: Int, event: android.view.KeyEvent): Boolean {
+    private fun handleGamepadKeyUp(keyCode: Int, event: android.view.KeyEvent): Boolean {
         val gamepadEvent = mapKeycodeToGamepadEvent(keyCode, swapAB, swapXY, swapStartSelect)
         if (gamepadEvent == com.nendo.argosy.ui.input.GamepadEvent.Confirm && confirmHoldJob != null) {
             endConfirmHold()
             return true
         }
-        return super.onKeyUp(keyCode, event)
+        return false
     }
 
     /**
@@ -438,8 +462,17 @@ class SecondaryHomeActivity :
         }
     }
 
+    /**
+     * Completes a press that [beginConfirmHold] started, and does nothing otherwise.
+     *
+     * Whether a press is deferred is decided again when the button comes up, and by then the press
+     * itself may have changed the answer - opening the drawer makes the release deferrable when the
+     * push was not. Without the guard the release invents a second Confirm the user never gave, and
+     * it lands on whatever the first one just opened.
+     */
     private fun endConfirmHold() {
-        confirmHoldJob?.cancel()
+        val job = confirmHoldJob ?: return
+        job.cancel()
         confirmHoldJob = null
         if (confirmHoldFired) return
         inputHandler.routeInput(

@@ -249,7 +249,11 @@ class MainActivity : ComponentActivity() {
             val options = android.app.ActivityOptions.makeBasic()
                 .setLaunchDisplayId(display!!.displayId)
                 .toBundle()
-            startActivity(companionIntent, options)
+            try {
+                startActivity(companionIntent, options)
+            } catch (e: android.content.ActivityNotFoundException) {
+                Log.w(TAG, "Companion activity unavailable on this install, yielding display", e)
+            }
             finish()
             return
         }

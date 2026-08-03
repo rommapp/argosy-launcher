@@ -45,6 +45,21 @@ Each instance needs its own first-run admin user and its own library scan. Scans
 are the slow part, which is why the sample library matters more than its
 realism.
 
+Creating the admin over the API needs the CSRF cookie echoed back as a header,
+and the cookie is `romm_csrftoken` (no underscore before `token`):
+
+```
+CSRF=$(curl -s -c jar http://localhost:8093/api/heartbeat -o /dev/null -D - \
+  | sed -n 's/^[Ss]et-[Cc]ookie: romm_csrftoken=\([^;]*\);.*/\1/p')
+curl -s -b jar -X POST http://localhost:8093/api/users \
+  -H 'Content-Type: application/json' -H "x-csrftoken: $CSRF" \
+  -d '{"username":"testbed","password":"testbed123","email":"testbed@local.invalid","role":"admin"}'
+```
+
+`email` is required even though the UI implies otherwise. Without the header the
+request fails 403 with "CSRF token verification failed", which reads like an auth
+problem and is not one.
+
 Tear down with `docker compose -f docker-compose.base.yml -f romm-<v>.yml down`;
 add `-v` to discard that version's database, resources and assets.
 

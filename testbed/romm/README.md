@@ -63,12 +63,23 @@ problem and is not one.
 State-changing calls after login also need `Origin` and `Referer` set to the
 instance, on top of the CSRF header and the `romm_session` cookie.
 
-**The library scan has to be started from each instance's web UI.** There is no
-API route for it on 5.1: `scan_library` reports `manual_run: false` and
-`POST /api/tasks/run/scan_library` answers 400 "cannot be run". The only
-manual-runnable tasks are `cleanup_orphaned_resources`, `cleanup_missing_roms`
-and `recompute_save_content_hashes`. The real scan is driven over socket.io from
-the frontend, so it is three browser visits and one button each.
+**Scans are driven over socket.io, not REST.** `POST /api/tasks/run/scan_library`
+answers 400 "cannot be run" because that task is `manual_run: false`; it is the
+nightly scheduled job, not the scan the UI performs. Connect a socket.io client
+to path `/ws/socket.io/` carrying the `romm_session` cookie and emit:
+
+```
+socket.emit("scan", {
+  platforms: [], platform_fs_slugs: [], type: "quick",
+  apis: [], launchbox_remote_enabled: false, playmatch_enabled: false
+})
+```
+
+Empty platform lists scan everything. Progress arrives as `scan:scanning_platform`
+and completion as `scan:done`; a refusal (usually "a scan is already in progress")
+arrives as `scan:done_ko`. Scan types are `new_platforms`, `quick`, `update`,
+`unmatched`, `complete`, `hashes`. A `quick` scan of the mock library takes under
+90 seconds per instance and all three can run at once.
 
 Tear down with `docker compose -f docker-compose.base.yml -f romm-<v>.yml down`;
 add `-v` to discard that version's database, resources and assets.
@@ -95,15 +106,43 @@ compose file goes with it.
 Recorded against the versions where they were observed, so the next person has a
 baseline instead of a ritual.
 
-| Field | 4.9 | 5.0 | 5.1 |
-|---|---|---|---|
-| `files[].category` for root game files | ? | ? | `"game"` |
-| `files[].is_top_level` | ? | ? | present |
-| `files[].crc_hash`/`md5_hash`/`sha1_hash` | ? | ? | present |
-| `files` populated on `GET /api/roms?with_files=true` | ? | ? | yes |
-| rom `multi` | ? | ? | absent |
-| folder rom `fs_name` | ? | ? | bare directory name, no extension |
-| folder rom `fs_size_bytes` | ? | ? | sum of `category: "game"` files only |
+Measured on this testbed against the same library, 2026-08-04.
 
-The 5.1 column is from a live 5.1.0-alpha.4 instance. Fill the rest in from this
-testbed rather than assuming continuity backwards.
+| Field | 4.9.2 | 5.0.0 | 5.1.0 |
+|---|---|---|---|
+| `files[].category` for root game files | **`null`** | **`"game"`** | **`"game"`** |
+| `files[].category` for categorized files | `"update"` etc. | same | same |
+| `files[].is_top_level` | **absent** | present | present |
+| `files[].crc_hash`/`md5_hash`/`sha1_hash` | present | present | present |
+| `files` populated on `GET /api/roms?with_files=true` | yes | yes | yes |
+| rom `multi` | absent | absent | absent |
+| folder rom `fs_name` | bare directory name | same | same |
+| rom `fs_path` | parent dir of the game folder | same | same |
+| `files[].file_path` | full dir incl. game folder | same | same |
+
+### What this settles
+
+**`category` for root game files flipped at 5.0.** Argosy's three call sites that
+test `category == null` (`RomMGameFileSync.kt:39`, `RomMGameMetadata.kt:86`,
+`DownloadDelegate.kt:442`) were written correctly for 4.9 and silently broke at
+5.0: on 4.9 the `!= null` filter drops every root file, and on 5.0+ the `== null`
+selectors match nothing. Both readings of the bug were right, for different
+servers. Accept `null || "game"`; do not flip the comparison, and do not gate it
+on version, because both shapes are inside the supported window.
+
+**`is_top_level` is 5.0+.** It is the cleanest shape signal available but cannot
+be relied on at the floor. Treat it as preferred-when-present.
+
+**Per-file hashes are available on all three**, so disambiguating two candidate
+files by content works everywhere in the supported window.
+
+**`multi` is absent on every supported version.** `RomMModels` maps it, so it has
+always deserialized to its default. Dead field.
+
+**The layout below the platform directory is fully derivable on all three**: rom
+`fs_path` is the parent, `files[].file_path` is the full directory including the
+game folder, and `file_name` is a basename. Subtracting the former from the
+latter gives the exact relative layout.
+
+To re-measure after a version bump, scan each instance and compare
+`GET /api/roms?limit=2000&with_files=true`.

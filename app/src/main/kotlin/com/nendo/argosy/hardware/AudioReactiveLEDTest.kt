@@ -187,7 +187,8 @@ class AudioReactiveLEDTest(
                 Log.i(TAG, "Stopped")
                 false
             } else {
-                instance = AudioReactiveLEDTest(context, OdinLEDController()).apply { start() }
+                instance = AudioReactiveLEDTest(context.applicationContext, OdinLEDController())
+                    .apply { start() }
                 Log.i(TAG, "Started")
                 true
             }

@@ -1,0 +1,1936 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<issues format="6" by="lint 8.7.3" type="baseline" client="gradle" dependencies="false" name="AGP (8.7.3)" variant="all" version="8.7.3">
+
+    <issue
+        id="ApplySharedPref"
+        message="Consider using `apply()` instead; `commit` writes its data to persistent storage immediately, whereas `apply` will handle it in the background"
+        errorLine1="        prefs.edit().putBoolean(KEY_FOREIGN_APP_ON_SECONDARY, active).commit()"
+        errorLine2="                                                                      ~~~~~~~~">
+        <location
+            file="src/main/kotlin/com/nendo/argosy/data/preferences/SessionStateStore.kt"
+            line="84"
+            column="71"/>
+    </issue>
+
+    <issue
+        id="ApplySharedPref"
+        message="Consider using `apply()` instead; `commit` writes its data to persistent storage immediately, whereas `apply` will handle it in the background"
+        errorLine1="        prefs.edit().putBoolean(KEY_DUAL_SCREEN_ENABLED, enabled).commit()"
+        errorLine2="                                                                  ~~~~~~~~">
+        <location
+            file="src/main/kotlin/com/nendo/argosy/data/preferences/SessionStateStore.kt"
+            line="119"
+            column="67"/>
+    </issue>
+
+    <issue
+        id="ApplySharedPref"
+        message="Consider using `apply()` instead; `commit` writes its data to persistent storage immediately, whereas `apply` will handle it in the background"
+        errorLine1="        prefs.edit().putBoolean(KEY_SECONDARY_DISPLAY_USABLE, usable).commit()"
+        errorLine2="                                                                      ~~~~~~~~">
+        <location
+            file="src/main/kotlin/com/nendo/argosy/data/preferences/SessionStateStore.kt"
+            line="125"
+            column="71"/>
+    </issue>
+
+    <issue
+        id="ApplySharedPref"
+        message="Consider using `apply()` instead; `commit` writes its data to persistent storage immediately, whereas `apply` will handle it in the background"
+        errorLine1="        prefs.edit().putString(KEY_DISPLAY_ROLE_OVERRIDE, override).commit()"
+        errorLine2="                                                                    ~~~~~~~~">
+        <location
+            file="src/main/kotlin/com/nendo/argosy/data/preferences/SessionStateStore.kt"
+            line="138"
+            column="69"/>
+    </issue>
+
+    <issue
+        id="ApplySharedPref"
+        message="Consider using `apply()` instead; `commit` writes its data to persistent storage immediately, whereas `apply` will handle it in the background"
+        errorLine1="        prefs.edit().putBoolean(KEY_ROLES_SWAPPED, swapped).commit()"
+        errorLine2="                                                            ~~~~~~~~">
+        <location
+            file="src/main/kotlin/com/nendo/argosy/data/preferences/SessionStateStore.kt"
+            line="152"
+            column="61"/>
+    </issue>
+
+    <issue
+        id="ApplySharedPref"
+        message="Consider using `apply()` instead; `commit` writes its data to persistent storage immediately, whereas `apply` will handle it in the background"
+        errorLine1="            .commit()"
+        errorLine2="             ~~~~~~~~">
+        <location
+            file="src/main/kotlin/com/nendo/argosy/data/preferences/SessionStateStore.kt"
+            line="309"
+            column="14"/>
+    </issue>
+
+    <issue
+        id="ApplySharedPref"
+        message="Consider using `apply()` instead; `commit` writes its data to persistent storage immediately, whereas `apply` will handle it in the background"
+        errorLine1="            .commit()"
+        errorLine2="             ~~~~~~~~">
+        <location
+            file="src/main/kotlin/com/nendo/argosy/data/preferences/SessionStateStore.kt"
+            line="332"
+            column="14"/>
+    </issue>
+
+    <issue
+        id="InlinedApi"
+        message="Field requires API level 30 (current min is 26): `android.provider.Settings#ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION`"
+        errorLine1="        val intent = android.content.Intent(android.provider.Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION).apply {"
+        errorLine2="                                            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/com/nendo/argosy/ui/screens/gamedetail/GameDetailViewModel.kt"
+            line="1867"
+            column="45"/>
+    </issue>
+
+    <issue
+        id="PrivateApi"
+        message="Accessing internal APIs via reflection is not supported and may not work on all devices or in the future"
+        errorLine1="            val clazz = Class.forName(&quot;android.os.SystemProperties&quot;)"
+        errorLine2="                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/com/nendo/argosy/core/input/ControllerDetector.kt"
+            line="70"
+            column="25"/>
+    </issue>
+
+    <issue
+        id="PrivateApi"
+        message="Accessing internal APIs via reflection is not supported and may not work on all devices or in the future"
+        errorLine1="            val serviceManager = Class.forName(&quot;android.os.ServiceManager&quot;)"
+        errorLine2="                                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/com/nendo/argosy/util/PServerExecutor.kt"
+            line="11"
+            column="34"/>
+    </issue>
+
+    <issue
+        id="SdCardPath"
+        message="Do not hardcode &quot;`/data/`&quot;; use `Context.getFilesDir().getPath()` instead"
+        errorLine1="        val dataDir = &quot;/data/data/$retroArchPackage&quot;"
+        errorLine2="                       ~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/com/nendo/argosy/data/emulator/GameLauncher.kt"
+            line="1072"
+            column="24"/>
+    </issue>
+
+    <issue
+        id="SdCardPath"
+        message="Do not hardcode &quot;`/data/`&quot;; use `Context.getFilesDir().getPath()` instead"
+        errorLine1="                &quot;/data/data/com.retroarch/saves/{core}&quot;"
+        errorLine2="                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/com/nendo/argosy/data/emulator/SavePathRegistry.kt"
+            line="31"
+            column="18"/>
+    </issue>
+
+    <issue
+        id="SdCardPath"
+        message="Do not hardcode &quot;`/data/`&quot;; use `Context.getFilesDir().getPath()` instead"
+        errorLine1="                &quot;/data/data/com.retroarch.aarch64/saves/{core}&quot;"
+        errorLine2="                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/com/nendo/argosy/data/emulator/SavePathRegistry.kt"
+            line="41"
+            column="18"/>
+    </issue>
+
+    <issue
+        id="SdCardPath"
+        message="Do not hardcode &quot;`/data/`&quot;; use `Context.getFilesDir().getPath()` instead"
+        errorLine1="                &quot;/data/data/com.retroarch.ra32/saves/{core}&quot;"
+        errorLine2="                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/com/nendo/argosy/data/emulator/SavePathRegistry.kt"
+            line="51"
+            column="18"/>
+    </issue>
+
+    <issue
+        id="SdCardPath"
+        message="Do not hardcode &quot;`/data/`&quot;; use `Context.getFilesDir().getPath()` instead"
+        errorLine1="                &quot;/data/data/com.retroarch/states/{core}&quot;,"
+        errorLine2="                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/com/nendo/argosy/data/emulator/StatePathRegistry.kt"
+            line="119"
+            column="18"/>
+    </issue>
+
+    <issue
+        id="SdCardPath"
+        message="Do not hardcode &quot;`/data/`&quot;; use `Context.getFilesDir().getPath()` instead"
+        errorLine1="                &quot;/data/data/com.retroarch/states&quot;"
+        errorLine2="                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/com/nendo/argosy/data/emulator/StatePathRegistry.kt"
+            line="122"
+            column="18"/>
+    </issue>
+
+    <issue
+        id="SdCardPath"
+        message="Do not hardcode &quot;`/data/`&quot;; use `Context.getFilesDir().getPath()` instead"
+        errorLine1="                &quot;/data/data/com.retroarch.aarch64/states/{core}&quot;"
+        errorLine2="                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/com/nendo/argosy/data/emulator/StatePathRegistry.kt"
+            line="136"
+            column="18"/>
+    </issue>
+
+    <issue
+        id="SdCardPath"
+        message="Do not hardcode &quot;`/data/`&quot;; use `Context.getFilesDir().getPath()` instead"
+        errorLine1="                &quot;/data/data/com.retroarch.ra32/states/{core}&quot;"
+        errorLine2="                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/com/nendo/argosy/data/emulator/StatePathRegistry.kt"
+            line="150"
+            column="18"/>
+    </issue>
+
+    <issue
+        id="UnusedAttribute"
+        message="Attribute `usesPermissionFlags` is only used in API level 31 and higher (current min is 26)"
+        errorLine1="        android:usesPermissionFlags=&quot;neverForLocation&quot; />"
+        errorLine2="        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/AndroidManifest.xml"
+            line="40"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="LeanbackUsesWifi"
+        message="Requiring Wifi permissions limits app availability on TVs that support only Ethernet"
+        errorLine1="    &lt;uses-permission android:name=&quot;android.permission.ACCESS_WIFI_STATE&quot; />"
+        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/AndroidManifest.xml"
+            line="7"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="SelectedPhotoAccess"
+        message="Your app is currently not handling Selected Photos Access introduced in Android 14+"
+        errorLine1="    &lt;uses-permission android:name=&quot;android.permission.READ_MEDIA_IMAGES&quot; />"
+        errorLine2="                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/AndroidManifest.xml"
+            line="10"
+            column="36"/>
+    </issue>
+
+    <issue
+        id="GradleDependency"
+        message="A newer version of com.squareup.okhttp3:okhttp than 4.12.0 is available: 5.1.0"
+        errorLine1="okhttp = &quot;4.12.0&quot;"
+        errorLine2="         ~~~~~~~~">
+        <location
+            file="$HOME/projects/argosy-launcher/gradle/libs.versions.toml"
+            line="17"
+            column="10"/>
+    </issue>
+
+    <issue
+        id="GradleDependency"
+        message="A newer version of com.squareup.okhttp3:okhttp than 4.12.0 is available: 5.1.0"
+        errorLine1="okhttp = &quot;4.12.0&quot;"
+        errorLine2="         ~~~~~~~~">
+        <location
+            file="$HOME/projects/argosy-launcher/gradle/libs.versions.toml"
+            line="17"
+            column="10"/>
+    </issue>
+
+    <issue
+        id="GradleDependency"
+        message="A newer version of com.squareup.okhttp3:okhttp than 4.12.0 is available: 5.1.0"
+        errorLine1="okhttp = &quot;4.12.0&quot;"
+        errorLine2="         ~~~~~~~~">
+        <location
+            file="$HOME/projects/argosy-launcher/gradle/libs.versions.toml"
+            line="17"
+            column="10"/>
+    </issue>
+
+    <issue
+        id="GradleDependency"
+        message="A newer version of org.jetbrains.kotlinx:kotlinx-coroutines-android than 1.9.0 is available: 1.10.2"
+        errorLine1="coroutines = &quot;1.9.0&quot;"
+        errorLine2="             ~~~~~~~">
+        <location
+            file="$HOME/projects/argosy-launcher/gradle/libs.versions.toml"
+            line="20"
+            column="14"/>
+    </issue>
+
+    <issue
+        id="GradleDependency"
+        message="A newer version of org.jetbrains.kotlinx:kotlinx-coroutines-android than 1.9.0 is available: 1.10.2"
+        errorLine1="coroutines = &quot;1.9.0&quot;"
+        errorLine2="             ~~~~~~~">
+        <location
+            file="$HOME/projects/argosy-launcher/gradle/libs.versions.toml"
+            line="20"
+            column="14"/>
+    </issue>
+
+    <issue
+        id="GradleDependency"
+        message="A newer version of org.jetbrains.kotlinx:kotlinx-coroutines-android than 1.9.0 is available: 1.10.2"
+        errorLine1="coroutines = &quot;1.9.0&quot;"
+        errorLine2="             ~~~~~~~">
+        <location
+            file="$HOME/projects/argosy-launcher/gradle/libs.versions.toml"
+            line="20"
+            column="14"/>
+    </issue>
+
+    <issue
+        id="GradleDependency"
+        message="A newer version of com.github.luben:zstd-jni than 1.5.6-8 is available: 1.5.7-4"
+        errorLine1="zstdJni = &quot;1.5.6-8&quot;"
+        errorLine2="          ~~~~~~~~~">
+        <location
+            file="$HOME/projects/argosy-launcher/gradle/libs.versions.toml"
+            line="28"
+            column="11"/>
+    </issue>
+
+    <issue
+        id="GradleDependency"
+        message="A newer version of com.github.luben:zstd-jni than 1.5.6-8 is available: 1.5.7-4"
+        errorLine1="zstdJni = &quot;1.5.6-8&quot;"
+        errorLine2="          ~~~~~~~~~">
+        <location
+            file="$HOME/projects/argosy-launcher/gradle/libs.versions.toml"
+            line="28"
+            column="11"/>
+    </issue>
+
+    <issue
+        id="GradleDependency"
+        message="A newer version of com.github.luben:zstd-jni than 1.5.6-8 is available: 1.5.7-4"
+        errorLine1="zstdJni = &quot;1.5.6-8&quot;"
+        errorLine2="          ~~~~~~~~~">
+        <location
+            file="$HOME/projects/argosy-launcher/gradle/libs.versions.toml"
+            line="28"
+            column="11"/>
+    </issue>
+
+    <issue
+        id="GradleDependency"
+        message="A newer version of com.google.protobuf:protobuf-java than 4.30.2 is available: 4.31.1"
+        errorLine1="protobuf = &quot;4.30.2&quot;"
+        errorLine2="           ~~~~~~~~">
+        <location
+            file="$HOME/projects/argosy-launcher/gradle/libs.versions.toml"
+            line="32"
+            column="12"/>
+    </issue>
+
+    <issue
+        id="GradleDependency"
+        message="A newer version of com.google.protobuf:protobuf-java than 4.30.2 is available: 4.31.1"
+        errorLine1="protobuf = &quot;4.30.2&quot;"
+        errorLine2="           ~~~~~~~~">
+        <location
+            file="$HOME/projects/argosy-launcher/gradle/libs.versions.toml"
+            line="32"
+            column="12"/>
+    </issue>
+
+    <issue
+        id="GradleDependency"
+        message="A newer version of com.google.protobuf:protobuf-java than 4.30.2 is available: 4.31.1"
+        errorLine1="protobuf = &quot;4.30.2&quot;"
+        errorLine2="           ~~~~~~~~">
+        <location
+            file="$HOME/projects/argosy-launcher/gradle/libs.versions.toml"
+            line="32"
+            column="12"/>
+    </issue>
+
+    <issue
+        id="ComposableNaming"
+        message="Composable functions with a return type should start with a lowercase letter"
+        errorLine1="fun AutoRestorePrompt("
+        errorLine2="    ~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/com/nendo/argosy/libretro/ui/AutoRestorePrompt.kt"
+            line="36"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="ComposableNaming"
+        message="Composable functions with a return type should start with a lowercase letter"
+        errorLine1="fun SearchDialog("
+        errorLine2="    ~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/com/nendo/argosy/libretro/ui/cheats/CheatDialogs.kt"
+            line="50"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="ComposableNaming"
+        message="Composable functions with a return type should start with a lowercase letter"
+        errorLine1="fun CheatCreateDialog("
+        errorLine2="    ~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/com/nendo/argosy/libretro/ui/cheats/CheatDialogs.kt"
+            line="181"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="ComposableNaming"
+        message="Composable functions with a return type should start with a lowercase letter"
+        errorLine1="fun CheatEditDialog("
+        errorLine2="    ~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/com/nendo/argosy/libretro/ui/cheats/CheatDialogs.kt"
+            line="208"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="ComposableNaming"
+        message="Composable functions with a return type should start with a lowercase letter"
+        errorLine1="private fun CheatFormDialog("
+        errorLine2="            ~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/com/nendo/argosy/libretro/ui/cheats/CheatDialogs.kt"
+            line="244"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="ComposableNaming"
+        message="Composable functions with a return type should start with a lowercase letter"
+        errorLine1="fun CheatsScreen("
+        errorLine2="    ~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/com/nendo/argosy/libretro/ui/cheats/CheatsScreen.kt"
+            line="82"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="ComposableNaming"
+        message="Composable functions with a return type should start with a lowercase letter"
+        errorLine1="fun InGameFrameScreen("
+        errorLine2="    ~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/com/nendo/argosy/libretro/ui/InGameFrameScreen.kt"
+            line="43"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="ComposableNaming"
+        message="Composable functions with a return type should start with a lowercase letter"
+        errorLine1="fun InGameMenu("
+        errorLine2="    ~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/com/nendo/argosy/libretro/ui/InGameMenu.kt"
+            line="91"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="ComposableNaming"
+        message="Composable functions with a return type should start with a lowercase letter"
+        errorLine1="fun DiscMenu("
+        errorLine2="    ~~~~~~~~">
+        <location
+            file="src/main/kotlin/com/nendo/argosy/libretro/ui/InGameMenu.kt"
+            line="397"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="ComposableNaming"
+        message="Composable functions with a return type should start with a lowercase letter"
+        errorLine1="fun InGameSettingsScreen("
+        errorLine2="    ~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/com/nendo/argosy/libretro/ui/InGameSettingsScreen.kt"
+            line="265"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="ComposableNaming"
+        message="Composable functions with a return type should start with a lowercase letter"
+        errorLine1="fun InGameShaderChainScreen("
+        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/com/nendo/argosy/libretro/ui/InGameShaderChainScreen.kt"
+            line="29"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="ComposableNaming"
+        message="Composable functions with a return type should start with a lowercase letter"
+        errorLine1="fun InGameStateManager("
+        errorLine2="    ~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/com/nendo/argosy/libretro/ui/InGameStateManager.kt"
+            line="61"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="ComposableNaming"
+        message="Composable functions with a return type should start with a lowercase letter"
+        errorLine1="fun NetplayConnectionProgressOverlay("
+        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/com/nendo/argosy/libretro/ui/NetplayOverlays.kt"
+            line="54"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="ComposableNaming"
+        message="Composable functions with a return type should start with a lowercase letter"
+        errorLine1="fun NetplayHostDisconnectPrompt("
+        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/com/nendo/argosy/libretro/ui/NetplayOverlays.kt"
+            line="164"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="ComposableNaming"
+        message="Composable functions with a return type should start with a lowercase letter"
+        errorLine1="fun NetplayQualityWarningPrompt("
+        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/com/nendo/argosy/libretro/ui/NetplayOverlays.kt"
+            line="249"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="ComposableNaming"
+        message="Composable functions with a return type should start with a lowercase letter"
+        errorLine1="fun NetplayFriendPickerDialog("
+        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/com/nendo/argosy/libretro/ui/NetplayOverlays.kt"
+            line="343"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="ComposableNaming"
+        message="Composable functions with a return type should start with a lowercase letter"
+        errorLine1="fun NetplayModePickerDialog("
+        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/com/nendo/argosy/libretro/ui/NetplayOverlays.kt"
+            line="550"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="ComposableNaming"
+        message="Composable functions with a return type should start with a lowercase letter"
+        errorLine1="fun NetplayJoinRequestDialog("
+        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/com/nendo/argosy/libretro/ui/NetplayOverlays.kt"
+            line="672"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="ComposableNaming"
+        message="Composable functions with a return type should start with a lowercase letter"
+        errorLine1="fun QuickLoadTimeline("
+        errorLine2="    ~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/com/nendo/argosy/libretro/ui/QuickLoadTimeline.kt"
+            line="56"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="ModifierFactoryExtensionFunction"
+        message="Modifier factory functions should be extensions on Modifier"
+        errorLine1="internal fun preferenceModifier("
+        errorLine2="             ~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/com/nendo/argosy/ui/components/PreferenceItem.kt"
+            line="83"
+            column="14"/>
+    </issue>
+
+    <issue
+        id="ModifierParameter"
+        message="Modifier parameter should be the first optional parameter"
+        errorLine1="    modifier: Modifier = Modifier"
+        errorLine2="    ~~~~~~~~">
+        <location
+            file="src/main/kotlin/com/nendo/argosy/ui/screens/gamedetail/components/AchievementListOverlay.kt"
+            line="54"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="ModifierParameter"
+        message="Modifier parameter should be the first optional parameter"
+        errorLine1="    modifier: Modifier = Modifier,"
+        errorLine2="    ~~~~~~~~">
+        <location
+            file="src/main/kotlin/com/nendo/argosy/ui/screens/apps/AppsScreen.kt"
+            line="436"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="ModifierParameter"
+        message="Modifier parameter should be the first optional parameter"
+        errorLine1="    modifier: Modifier = Modifier"
+        errorLine2="    ~~~~~~~~">
+        <location
+            file="src/main/kotlin/com/nendo/argosy/ui/components/Box3dCover.kt"
+            line="60"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="ModifierParameter"
+        message="Modifier parameter should be the first optional parameter"
+        errorLine1="    modifier: Modifier = Modifier"
+        errorLine2="    ~~~~~~~~">
+        <location
+            file="src/main/kotlin/com/nendo/argosy/ui/dualscreen/ControlRoleContent.kt"
+            line="39"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="ModifierParameter"
+        message="Modifier parameter should be the first optional parameter"
+        errorLine1="    modifier: Modifier = Modifier"
+        errorLine2="    ~~~~~~~~">
+        <location
+            file="src/main/kotlin/com/nendo/argosy/libretro/ui/cheats/DiscoverTab.kt"
+            line="40"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="ModifierParameter"
+        message="Modifier parameter should be the first optional parameter"
+        errorLine1="    modifier: Modifier = Modifier"
+        errorLine2="    ~~~~~~~~">
+        <location
+            file="src/main/kotlin/com/nendo/argosy/ui/screens/doodle/DoodleCanvas.kt"
+            line="32"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="ModifierParameter"
+        message="Modifier parameter should be the first optional parameter"
+        errorLine1="    modifier: Modifier = Modifier"
+        errorLine2="    ~~~~~~~~">
+        <location
+            file="src/main/kotlin/com/nendo/argosy/ui/screens/doodle/DoodleCanvas.kt"
+            line="167"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="ModifierParameter"
+        message="Modifier parameter should be the first optional parameter"
+        errorLine1="    modifier: Modifier = Modifier"
+        errorLine2="    ~~~~~~~~">
+        <location
+            file="src/main/kotlin/com/nendo/argosy/ui/dualscreen/gamedetail/DualGameDetailLowerScreen.kt"
+            line="120"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="ModifierParameter"
+        message="Modifier parameter should be the first optional parameter"
+        errorLine1="    modifier: Modifier = Modifier"
+        errorLine2="    ~~~~~~~~">
+        <location
+            file="src/main/kotlin/com/nendo/argosy/ui/dualscreen/gamedetail/DualGameDetailUpperScreen.kt"
+            line="107"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="ModifierParameter"
+        message="Modifier parameter should be the first optional parameter"
+        errorLine1="    modifier: Modifier = Modifier"
+        errorLine2="    ~~~~~~~~">
+        <location
+            file="src/main/kotlin/com/nendo/argosy/ui/dualscreen/home/DualHomeLowerContent.kt"
+            line="37"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="ModifierParameter"
+        message="Modifier parameter should be the first optional parameter"
+        errorLine1="    modifier: Modifier = Modifier"
+        errorLine2="    ~~~~~~~~">
+        <location
+            file="src/main/kotlin/com/nendo/argosy/ui/dualscreen/home/DualHomeLowerScreen.kt"
+            line="150"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="ModifierParameter"
+        message="Modifier parameter should be the first optional parameter"
+        errorLine1="    modifier: Modifier = Modifier"
+        errorLine2="    ~~~~~~~~">
+        <location
+            file="src/main/kotlin/com/nendo/argosy/ui/dualscreen/home/DualHomeLowerScreen.kt"
+            line="618"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="ModifierParameter"
+        message="Modifier parameter should be the first optional parameter"
+        errorLine1="    modifier: Modifier = Modifier"
+        errorLine2="    ~~~~~~~~">
+        <location
+            file="src/main/kotlin/com/nendo/argosy/ui/dualscreen/home/DualHomeLowerScreen.kt"
+            line="852"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="ModifierParameter"
+        message="Modifier parameter should be the first optional parameter"
+        errorLine1="    modifier: Modifier = Modifier,"
+        errorLine2="    ~~~~~~~~">
+        <location
+            file="src/main/kotlin/com/nendo/argosy/ui/screens/gamedetail/components/GameDetailMenu.kt"
+            line="121"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="ModifierParameter"
+        message="Modifier parameter should be named modifier"
+        errorLine1="    placement: Modifier,"
+        errorLine2="    ~~~~~~~~~">
+        <location
+            file="src/main/kotlin/com/nendo/argosy/ui/components/HomeCustomGrid.kt"
+            line="573"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="ModifierParameter"
+        message="Modifier parameter should be the first optional parameter"
+        errorLine1="    modifier: Modifier = Modifier"
+        errorLine2="    ~~~~~~~~">
+        <location
+            file="src/main/kotlin/com/nendo/argosy/ui/screens/settings/libretro/LibretroSettingItem.kt"
+            line="20"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="ModifierParameter"
+        message="Modifier parameter should be the first optional parameter"
+        errorLine1="    modifier: Modifier = Modifier,"
+        errorLine2="    ~~~~~~~~">
+        <location
+            file="src/main/kotlin/com/nendo/argosy/ui/screens/settings/libretro/LibretroSettingsSection.kt"
+            line="48"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="ModifierParameter"
+        message="Modifier parameter should be the first optional parameter"
+        errorLine1="    modifier: Modifier = Modifier"
+        errorLine2="    ~~~~~~~~">
+        <location
+            file="src/main/kotlin/com/nendo/argosy/ui/components/MainDrawer.kt"
+            line="91"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="ModifierParameter"
+        message="Modifier parameter should be the first optional parameter"
+        errorLine1="    modifier: Modifier = Modifier"
+        errorLine2="    ~~~~~~~~">
+        <location
+            file="src/main/kotlin/com/nendo/argosy/libretro/ui/NetplayOverlays.kt"
+            line="780"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="ModifierParameter"
+        message="Modifier parameter should be the first optional parameter"
+        errorLine1="    modifier: Modifier = Modifier"
+        errorLine2="    ~~~~~~~~">
+        <location
+            file="src/main/kotlin/com/nendo/argosy/libretro/touch/OnScreenControls.kt"
+            line="65"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="ModifierParameter"
+        message="Modifier parameter should be the first optional parameter"
+        errorLine1="    modifier: Modifier = Modifier"
+        errorLine2="    ~~~~~~~~">
+        <location
+            file="src/main/kotlin/com/nendo/argosy/libretro/touch/OnScreenControlsHost.kt"
+            line="37"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="ModifierParameter"
+        message="Modifier parameter should be the first optional parameter"
+        errorLine1="    modifier: Modifier = Modifier"
+        errorLine2="    ~~~~~~~~">
+        <location
+            file="src/main/kotlin/com/nendo/argosy/ui/screens/gamedetail/modals/PermissionRequiredModal.kt"
+            line="37"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="ModifierParameter"
+        message="Modifier parameter should be the first optional parameter"
+        errorLine1="    modifier: Modifier = Modifier"
+        errorLine2="    ~~~~~~~~">
+        <location
+            file="src/main/kotlin/com/nendo/argosy/ui/components/QuickSettingsPanel.kt"
+            line="203"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="ModifierParameter"
+        message="Modifier parameter should be the first optional parameter"
+        errorLine1="    modifier: Modifier = Modifier"
+        errorLine2="    ~~~~~~~~">
+        <location
+            file="src/main/kotlin/com/nendo/argosy/libretro/touch/TouchLayoutEditor.kt"
+            line="78"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="ModifierParameter"
+        message="Modifier parameter should be the first optional parameter"
+        errorLine1="    modifier: Modifier = Modifier"
+        errorLine2="    ~~~~~~~~">
+        <location
+            file="src/main/kotlin/com/nendo/argosy/libretro/touch/TouchLayoutEditor.kt"
+            line="285"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="ModifierParameter"
+        message="Modifier parameter should be named modifier"
+        errorLine1="    tapModifier: Modifier,"
+        errorLine2="    ~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/com/nendo/argosy/ui/components/ViewAllCard.kt"
+            line="97"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="ModifierParameter"
+        message="Modifier parameter should be named modifier"
+        errorLine1="    tapModifier: Modifier,"
+        errorLine2="    ~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/com/nendo/argosy/ui/components/ViewAllCard.kt"
+            line="170"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="PermissionImpliesUnsupportedHardware"
+        message="Permission exists without corresponding hardware `&lt;uses-feature android:name=&quot;android.hardware.microphone&quot; required=&quot;false&quot;>` tag"
+        errorLine1="    &lt;uses-permission android:name=&quot;android.permission.RECORD_AUDIO&quot; />"
+        errorLine2="     ~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/AndroidManifest.xml"
+            line="29"
+            column="6"/>
+    </issue>
+
+    <issue
+        id="DiscouragedApi"
+        message="Should not restrict activity to fixed orientation. This may not be suitable for different form factors, causing the app to be letterboxed."
+        errorLine1="            android:screenOrientation=&quot;fullSensor&quot;"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/AndroidManifest.xml"
+            line="226"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="GetInstance"
+        message="ECB encryption mode should not be used (was &quot;AES/ECB/NoPadding&quot;)"
+        errorLine1="        val dataCipher = Cipher.getInstance(&quot;AES/ECB/NoPadding&quot;).apply {"
+        errorLine2="                                            ~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/com/nendo/argosy/util/AesXts.kt"
+            line="25"
+            column="45"/>
+    </issue>
+
+    <issue
+        id="GetInstance"
+        message="ECB encryption mode should not be used (was &quot;AES/ECB/NoPadding&quot;)"
+        errorLine1="        val tweakCipher = Cipher.getInstance(&quot;AES/ECB/NoPadding&quot;).apply {"
+        errorLine2="                                             ~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/com/nendo/argosy/util/AesXts.kt"
+            line="28"
+            column="46"/>
+    </issue>
+
+    <issue
+        id="HardwareIds"
+        message="Using `getString` to get device identifiers is not recommended"
+        errorLine1="        Settings.Secure.getString(application.contentResolver, Settings.Secure.ANDROID_ID) ?: &quot;&quot;"
+        errorLine2="        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/com/nendo/argosy/data/social/ArgosSocialService.kt"
+            line="37"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="HardwareIds"
+        message="Using `getString` to get device identifiers is not recommended"
+        errorLine1="            Settings.Secure.getString(context.contentResolver, Settings.Secure.ANDROID_ID) ?: &quot;&quot;"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/com/nendo/argosy/data/cheats/CheatsRepository.kt"
+            line="196"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="HardwareIds"
+        message="Using `getString` to get device identifiers is not recommended"
+        errorLine1="            Settings.Secure.getString("
+        errorLine2="            ^">
+        <location
+            file="src/main/kotlin/com/nendo/argosy/data/cheats/CheatsRequestSigner.kt"
+            line="60"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="HardwareIds"
+        message="Using `getString` to get device identifiers is not recommended"
+        errorLine1="            val deviceId = Settings.Secure.getString(application.contentResolver, Settings.Secure.ANDROID_ID) ?: &quot;&quot;"
+        errorLine2="                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/com/nendo/argosy/data/emulator/PlaySessionTracker.kt"
+            line="188"
+            column="28"/>
+    </issue>
+
+    <issue
+        id="HardwareIds"
+        message="Using `getString` to get device identifiers is not recommended"
+        errorLine1="                val deviceId = Settings.Secure.getString(application.contentResolver, Settings.Secure.ANDROID_ID) ?: &quot;&quot;"
+        errorLine2="                               ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/com/nendo/argosy/data/emulator/PlaySessionTracker.kt"
+            line="603"
+            column="32"/>
+    </issue>
+
+    <issue
+        id="HardwareIds"
+        message="Using `getString` to get device identifiers is not recommended"
+        errorLine1="            Settings.Secure.getString("
+        errorLine2="            ^">
+        <location
+            file="src/main/kotlin/com/nendo/argosy/data/titledb/RequestSigner.kt"
+            line="60"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="HardwareIds"
+        message="Using `getString` to get device identifiers is not recommended"
+        errorLine1="        Settings.Secure.getString(application.contentResolver, Settings.Secure.ANDROID_ID) ?: &quot;&quot;"
+        errorLine2="        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/com/nendo/argosy/data/social/SocialAuthManager.kt"
+            line="40"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="HardwareIds"
+        message="Using `SERIAL` to get device identifiers is not recommended"
+        errorLine1="        val raw = &quot;${android.os.Build.MANUFACTURER}_${android.os.Build.MODEL}_${android.os.Build.SERIAL}_argosy&quot;"
+        errorLine2="                                                                                                 ~~~~~~">
+        <location
+            file="src/main/kotlin/com/nendo/argosy/data/steam/SteamAuthManager.kt"
+            line="59"
+            column="98"/>
+    </issue>
+
+    <issue
+        id="HardwareIds"
+        message="Using `getString` to get device identifiers is not recommended"
+        errorLine1="            Settings.Secure.getString(context.contentResolver, Settings.Secure.ANDROID_ID) ?: &quot;&quot;"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/com/nendo/argosy/data/titledb/TitleDbRepository.kt"
+            line="182"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="AcceptsUserCertificates"
+        message="The Network Security Configuration allows the use of user certificates in the release version of your app"
+        errorLine1="            &lt;certificates src=&quot;user&quot; />"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/xml/network_security_config.xml"
+            line="6"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="ExportedReceiver"
+        message="Exported receiver does not require permission"
+        errorLine1="        &lt;receiver"
+        errorLine2="         ~~~~~~~~">
+        <location
+            file="src/debug/AndroidManifest.xml"
+            line="4"
+            column="10"/>
+    </issue>
+
+    <issue
+        id="ExportedReceiver"
+        message="Exported receiver does not require permission"
+        errorLine1="        &lt;receiver"
+        errorLine2="         ~~~~~~~~">
+        <location
+            file="src/debug/AndroidManifest.xml"
+            line="11"
+            column="10"/>
+    </issue>
+
+    <issue
+        id="ExportedReceiver"
+        message="Exported receiver does not require permission"
+        errorLine1="        &lt;receiver"
+        errorLine2="         ~~~~~~~~">
+        <location
+            file="src/main/AndroidManifest.xml"
+            line="205"
+            column="10"/>
+    </issue>
+
+    <issue
+        id="InsecureBaseConfiguration"
+        message="Insecure Base Configuration"
+        errorLine1="    &lt;base-config cleartextTrafficPermitted=&quot;true&quot;>"
+        errorLine2="                                            ~~~~">
+        <location
+            file="src/main/res/xml/network_security_config.xml"
+            line="3"
+            column="45"/>
+    </issue>
+
+    <issue
+        id="Recycle"
+        message="This animation should be started with `#start()`"
+        errorLine1="        val helmRotation = ObjectAnimator.ofFloat(helm, &quot;rotation&quot;, 0f, 900f).apply {"
+        errorLine2="                                          ~~~~~~~">
+        <location
+            file="src/main/kotlin/com/nendo/argosy/data/emulator/GameSessionService.kt"
+            line="516"
+            column="43"/>
+    </issue>
+
+    <issue
+        id="Recycle"
+        message="This animation should be started with `#start()`"
+        errorLine1="        val helmFadeOut = ObjectAnimator.ofFloat(helm, &quot;alpha&quot;, 1f, 0f).apply {"
+        errorLine2="                                         ~~~~~~~">
+        <location
+            file="src/main/kotlin/com/nendo/argosy/data/emulator/GameSessionService.kt"
+            line="521"
+            column="42"/>
+    </issue>
+
+    <issue
+        id="Recycle"
+        message="This animation should be started with `#start()`"
+        errorLine1="        val checkBounce = ObjectAnimator.ofPropertyValuesHolder("
+        errorLine2="                                         ~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/com/nendo/argosy/data/emulator/GameSessionService.kt"
+            line="531"
+            column="42"/>
+    </issue>
+
+    <issue
+        id="Recycle"
+        message="This animation should be started with `#start()`"
+        errorLine1="        introAnimator = AnimatorSet().apply {"
+        errorLine2="                        ~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/com/nendo/argosy/data/emulator/GameSessionService.kt"
+            line="541"
+            column="25"/>
+    </issue>
+
+    <issue
+        id="Recycle"
+        message="This animation should be started with `#start()`"
+        errorLine1="        val fadeOut = ObjectAnimator.ofFloat(overlay, &quot;alpha&quot;, 1f, 0f).apply {"
+        errorLine2="                                     ~~~~~~~">
+        <location
+            file="src/main/kotlin/com/nendo/argosy/data/emulator/GameSessionService.kt"
+            line="555"
+            column="38"/>
+    </issue>
+
+    <issue
+        id="Recycle"
+        message="This animation should be started with `#start()`"
+        errorLine1="        exitAnimator = AnimatorSet().apply {"
+        errorLine2="                       ~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/com/nendo/argosy/data/emulator/GameSessionService.kt"
+            line="559"
+            column="24"/>
+    </issue>
+
+    <issue
+        id="Recycle"
+        message="This `Cursor` should be freed up after use with `#close()`"
+        errorLine1="            contentResolver.query(queryUri, DOCUMENT_COLUMNS, null, null, null)?.use { cursor ->"
+        errorLine2="                            ~~~~~">
+        <location
+            file="src/main/kotlin/com/nendo/argosy/data/storage/ManagedStorageAccessor.kt"
+            line="149"
+            column="29"/>
+    </issue>
+
+    <issue
+        id="Recycle"
+        message="This `Cursor` should be freed up after use with `#close()`"
+        errorLine1="            context.contentResolver.query("
+        errorLine2="                                    ~~~~~">
+        <location
+            file="src/main/kotlin/com/nendo/argosy/data/emulator/ScreenshotCaptureMonitor.kt"
+            line="168"
+            column="37"/>
+    </issue>
+
+    <issue
+        id="Recycle"
+        message="This `Cursor` should be freed up after use with `#close()`"
+        errorLine1="    context.contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)?.use { cursor ->"
+        errorLine2="                            ~~~~~">
+        <location
+            file="src/main/kotlin/com/nendo/argosy/ui/screens/settings/SettingsFontRouter.kt"
+            line="107"
+            column="29"/>
+    </issue>
+
+    <issue
+        id="ObsoleteSdkInt"
+        message="Unnecessary; SDK_INT is always >= 26"
+        errorLine1="        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/com/nendo/argosy/data/repository/GameRepository.kt"
+            line="108"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="ObsoleteSdkInt"
+        message="Unnecessary; SDK_INT is always >= 26"
+        errorLine1="    private val hasAmplitudeControl = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {"
+        errorLine2="                                          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/com/nendo/argosy/ui/input/HapticFeedback.kt"
+            line="41"
+            column="43"/>
+    </issue>
+
+    <issue
+        id="ObsoleteSdkInt"
+        message="Unnecessary; SDK_INT is always >= 26"
+        errorLine1="        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/com/nendo/argosy/ui/input/HapticFeedback.kt"
+            line="77"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="ObsoleteSdkInt"
+        message="Unnecessary; SDK_INT is always >= 26"
+        errorLine1="    } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {"
+        errorLine2="               ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/com/nendo/argosy/libretro/touch/OnScreenControls.kt"
+            line="799"
+            column="16"/>
+    </issue>
+
+    <issue
+        id="ObsoleteSdkInt"
+        message="Unnecessary; SDK_INT is always >= 26"
+        errorLine1="        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/com/nendo/argosy/data/storage/StorageVolumeDetector.kt"
+            line="42"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="ObsoleteSdkInt"
+        message="This folder configuration (`v26`) is unnecessary; `minSdkVersion` is 26. Merge all the resources in this folder into `mipmap-anydpi`.">
+        <location
+            file="src/main/res/mipmap-anydpi-v26"/>
+    </issue>
+
+    <issue
+        id="StaticFieldLeak"
+        message="Do not place Android context classes in static fields (static reference to `AudioReactiveLEDTest` which has field `context` pointing to `Context`); this is a memory leak"
+        errorLine1="        @Volatile"
+        errorLine2="        ^">
+        <location
+            file="src/main/kotlin/com/nendo/argosy/hardware/AudioReactiveLEDTest.kt"
+            line="176"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="StaticFieldLeak"
+        message="This field leaks a context object"
+        errorLine1="    private val context: Context"
+        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/com/nendo/argosy/ui/dualscreen/gamedetail/DualGameDetailViewModel.kt"
+            line="74"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="StaticFieldLeak"
+        message="This field leaks a context object"
+        errorLine1="    private val context: Context,"
+        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/com/nendo/argosy/ui/dualscreen/home/DualHomeViewModel.kt"
+            line="346"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="VectorPath"
+        message="Very long vector path (2017 characters), which is bad for performance. Considering reducing precision, removing minor details or rasterizing vector."
+        errorLine1="        android:pathData=&quot;M441.333,210.668H413.32c-3.87-35.745-17.991-68.41-39.364-95.005l19.816-19.816c7.81-7.811,7.81-20.474,0-28.284c-7.811-7.811-20.475-7.811-28.285,0l-19.816,19.816c-26.595-21.373-59.26-35.493-95.005-39.363V20.001c0-11.046-8.954-20-20-20c-11.046,0-20,8.954-20,20v28.013c-35.745,3.87-68.411,17.991-95.006,39.364L95.845,67.561c-7.811-7.811-20.474-7.811-28.284,0c-7.81,7.811-7.811,20.474,0,28.284l19.816,19.816c-21.373,26.595-35.494,59.26-39.364,95.006H20c-11.046,0-20,8.954-20,20s8.954,20,20,20h28.013c3.87,35.745,17.991,68.411,39.364,95.006l-19.816,19.816c-7.811,7.811-7.811,20.474,0,28.284c3.905,3.905,9.023,5.858,14.142,5.858s10.237-1.953,14.142-5.858l19.816-19.816c26.595,21.373,59.26,35.494,95.006,39.364v28.013c0,11.046,8.954,20,20,20s20-8.954,20-20v-28.014c35.745-3.87,68.411-17.991,95.006-39.363l19.816,19.816c3.905,3.905,9.024,5.858,14.143,5.858s10.237-1.953,14.143-5.858c7.81-7.811,7.81-20.474,0-28.284l-19.816-19.816c21.373-26.595,35.493-59.26,39.363-95.005h28.013c11.046,0,20-8.954,20-20C461.335,219.623,452.379,210.668,441.333,210.668zM115.861,144.146l39.524,39.524c-5.129,8.199-8.961,17.292-11.196,26.997H88.307C91.661,186.431,101.095,163.655,115.861,144.146zM88.307,250.668h55.882c2.235,9.705,6.067,18.798,11.196,26.997l-39.524,39.525C101.095,297.679,91.661,274.904,88.307,250.668zM210.667,373.027c-24.237-3.354-47.013-12.788-66.522-27.554l39.525-39.524c8.199,5.129,17.292,8.961,26.997,11.196V373.027zM210.667,144.189c-9.705,2.235-18.798,6.067-26.997,11.196l-39.524-39.524c19.509-14.766,42.284-24.2,66.521-27.554V144.189zM250.667,88.308c24.236,3.354,47.011,12.788,66.52,27.554l-39.524,39.524c-8.198-5.129-17.292-8.961-26.996-11.196V88.308zM250.667,373.027v-55.882c9.705-2.235,18.798-6.067,26.997-11.196l39.524,39.524C297.678,360.238,274.903,369.673,250.667,373.027zM345.472,317.189l-39.525-39.524c5.129-8.199,8.961-17.292,11.196-26.997h55.882C369.672,274.904,360.238,297.679,345.472,317.189zM317.144,210.668c-2.235-9.705-6.067-18.798-11.196-26.996l39.524-39.524c14.766,19.508,24.2,42.283,27.554,66.52H317.144z&quot;/>"
+        errorLine2="                          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/drawable/ic_helm.xml"
+            line="8"
+            column="27"/>
+    </issue>
+
+    <issue
+        id="VectorPath"
+        message="Very long vector path (2017 characters), which is bad for performance. Considering reducing precision, removing minor details or rasterizing vector."
+        errorLine1="            android:pathData=&quot;M441.333,210.668H413.32c-3.87-35.745-17.991-68.41-39.364-95.005l19.816-19.816c7.81-7.811,7.81-20.474,0-28.284c-7.811-7.811-20.475-7.811-28.285,0l-19.816,19.816c-26.595-21.373-59.26-35.493-95.005-39.363V20.001c0-11.046-8.954-20-20-20c-11.046,0-20,8.954-20,20v28.013c-35.745,3.87-68.411,17.991-95.006,39.364L95.845,67.561c-7.811-7.811-20.474-7.811-28.284,0c-7.81,7.811-7.811,20.474,0,28.284l19.816,19.816c-21.373,26.595-35.494,59.26-39.364,95.006H20c-11.046,0-20,8.954-20,20s8.954,20,20,20h28.013c3.87,35.745,17.991,68.411,39.364,95.006l-19.816,19.816c-7.811,7.811-7.811,20.474,0,28.284c3.905,3.905,9.023,5.858,14.142,5.858s10.237-1.953,14.142-5.858l19.816-19.816c26.595,21.373,59.26,35.494,95.006,39.364v28.013c0,11.046,8.954,20,20,20s20-8.954,20-20v-28.014c35.745-3.87,68.411-17.991,95.006-39.363l19.816,19.816c3.905,3.905,9.024,5.858,14.143,5.858s10.237-1.953,14.143-5.858c7.81-7.811,7.81-20.474,0-28.284l-19.816-19.816c21.373-26.595,35.493-59.26,39.363-95.005h28.013c11.046,0,20-8.954,20-20C461.335,219.623,452.379,210.668,441.333,210.668zM115.861,144.146l39.524,39.524c-5.129,8.199-8.961,17.292-11.196,26.997H88.307C91.661,186.431,101.095,163.655,115.861,144.146zM88.307,250.668h55.882c2.235,9.705,6.067,18.798,11.196,26.997l-39.524,39.525C101.095,297.679,91.661,274.904,88.307,250.668zM210.667,373.027c-24.237-3.354-47.013-12.788-66.522-27.554l39.525-39.524c8.199,5.129,17.292,8.961,26.997,11.196V373.027zM210.667,144.189c-9.705,2.235-18.798,6.067-26.997,11.196l-39.524-39.524c19.509-14.766,42.284-24.2,66.521-27.554V144.189zM250.667,88.308c24.236,3.354,47.011,12.788,66.52,27.554l-39.524,39.524c-8.198-5.129-17.292-8.961-26.996-11.196V88.308zM250.667,373.027v-55.882c9.705-2.235,18.798-6.067,26.997-11.196l39.524,39.524C297.678,360.238,274.903,369.673,250.667,373.027zM345.472,317.189l-39.525-39.524c5.129-8.199,8.961-17.292,11.196-26.997h55.882C369.672,274.904,360.238,297.679,345.472,317.189zM317.144,210.668c-2.235-9.705-6.067-18.798-11.196-26.996l39.524-39.524c14.766,19.508,24.2,42.283,27.554,66.52H317.144z&quot;/>"
+        errorLine2="                              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/drawable/ic_launcher_foreground.xml"
+            line="15"
+            column="31"/>
+    </issue>
+
+    <issue
+        id="VectorPath"
+        message="Very long vector path (5416 characters), which is bad for performance. Considering reducing precision, removing minor details or rasterizing vector."
+        errorLine1="        android:pathData=&quot;M1587.1,207.92l-79.1,79.11c-3.04,-5.52 -5.98,-10.79 -8.72,-15.56 -2.72,-4.77 -5.24,-9.04 -7.39,-12.57 -3.13,-5.12 -9.74,-13.08 -15.95,-18.95 -14.17,-13.39 -58.39,-37.02 -101.14,-57.15 -3.49,-1.64 -6.96,-3.26 -10.4,-4.85 -1.15,-0.53 -2.3,-1.06 -3.44,-1.58 -0.05,-0.02 -0.11,-0.05 -0.17,-0.07 -0.12,-0.06 -0.25,-0.12 -0.4,-0.18 -0.38,-0.17 -0.86,-0.39 -1.45,-0.63 -0.48,-0.22 -1.03,-0.45 -1.64,-0.71 -0.04,-0.01 -0.08,-0.03 -0.13,-0.05 -0.4,-0.17 -0.83,-0.35 -1.28,-0.54 0,0 0,-0.01 0,-0.01 -0.46,-0.19 -0.94,-0.39 -1.44,-0.6 -0.01,0 -0.01,-0.01 -0.01,-0.01 -0.51,-0.21 -1.04,-0.44 -1.6,-0.67 -0.57,-0.23 -1.15,-0.48 -1.77,-0.73 -0.08,-0.03 -0.16,-0.06 -0.25,-0.1 -0.76,-0.32 -1.57,-0.65 -2.41,-1 -0.55,-0.22 -1.11,-0.45 -1.68,-0.69 -1.15,-0.47 -2.36,-0.96 -3.63,-1.48 -0.64,-0.26 -1.28,-0.52 -1.95,-0.79 -0.11,-0.03 -0.21,-0.07 -0.31,-0.12 -1.04,-0.42 -2.12,-0.86 -3.23,-1.3 -1.12,-0.45 -2.27,-0.91 -3.45,-1.38 -0.78,-0.32 -1.59,-0.64 -2.4,-0.96 -0.41,-0.16 -0.83,-0.32 -1.24,-0.49 -0.78,-0.31 -1.58,-0.62 -2.38,-0.94 -3.22,-1.28 -6.64,-2.62 -10.25,-4.01 -0.91,-0.35 -1.82,-0.7 -2.74,-1.06 -1.85,-0.72 -3.75,-1.45 -5.69,-2.19 -1.04,-0.39 -2.09,-0.79 -3.14,-1.2 -0.53,-0.2 -1.07,-0.4 -1.6,-0.61 -1.07,-0.4 -2.16,-0.82 -3.25,-1.23 -1.65,-0.62 -3.31,-1.25 -5.01,-1.89 -3.39,-1.27 -6.88,-2.57 -10.46,-3.9 -0.6,-0.22 -1.2,-0.44 -1.8,-0.66 -1.22,-0.45 -2.45,-0.9 -3.69,-1.36 -0.93,-0.34 -1.87,-0.68 -2.81,-1.03 -1.88,-0.69 -3.79,-1.38 -5.72,-2.08 -0.97,-0.34 -1.94,-0.7 -2.92,-1.05 -1.04,-0.37 -2.09,-0.75 -3.14,-1.13 -0.92,-0.33 -1.84,-0.67 -2.77,-0.99 -0.93,-0.33 -1.86,-0.67 -2.8,-1 -1.34,-0.48 -2.69,-0.96 -4.06,-1.44 -2.18,-0.76 -4.37,-1.53 -6.59,-2.31 -4.43,-1.55 -8.95,-3.11 -13.53,-4.68 -2.3,-0.78 -4.61,-1.57 -6.94,-2.35 -1.16,-0.39 -2.33,-0.79 -3.5,-1.18 -1.18,-0.39 -2.35,-0.79 -3.54,-1.18 -1.18,-0.39 -2.36,-0.79 -3.55,-1.18 -1.62,-0.53 -3.25,-1.07 -4.88,-1.61 -8.16,-2.68 -16.49,-5.35 -24.94,-7.98 -1.27,-0.4 -2.53,-0.79 -3.8,-1.18 -1.27,-0.4 -2.55,-0.79 -3.83,-1.18 -2.55,-0.79 -5.12,-1.57 -7.69,-2.34 -1.28,-0.39 -2.57,-0.78 -3.86,-1.16 -1.29,-0.38 -2.58,-0.76 -3.88,-1.15 -2.58,-0.77 -5.18,-1.53 -7.78,-2.28 -3.46,-1.01 -6.94,-2 -10.42,-2.98 -5.23,-1.48 -10.47,-2.92 -15.72,-4.33 -4.88,-1.31 -9.56,-2.55 -14.05,-3.71 -1.5,-0.39 -2.97,-0.77 -4.43,-1.15 -0.77,-0.2 -1.53,-0.39 -2.28,-0.59 -2.31,-0.59 -4.56,-1.16 -6.77,-1.72 -0.74,-0.18 -1.47,-0.37 -2.2,-0.55 -0.6,-0.15 -1.2,-0.3 -1.8,-0.45 -0.87,-0.21 -1.73,-0.43 -2.58,-0.64 -1.71,-0.42 -3.39,-0.83 -5.04,-1.23 -1.65,-0.4 -3.28,-0.79 -4.88,-1.17 -1.2,-0.29 -2.39,-0.57 -3.56,-0.84 -1.17,-0.27 -2.33,-0.55 -3.48,-0.81 -1.14,-0.27 -2.28,-0.53 -3.4,-0.78 -1.12,-0.26 -2.23,-0.5 -3.33,-0.75 -1.11,-0.25 -2.2,-0.49 -3.27,-0.72 -1.08,-0.24 -2.15,-0.48 -3.2,-0.7 -1.06,-0.23 -2.1,-0.45 -3.14,-0.68 -1.03,-0.22 -2.06,-0.43 -3.08,-0.65 -7.48,-1.55 -14.5,-2.91 -21.32,-4.15 -0.93,-0.17 -1.86,-0.34 -2.78,-0.5 -0.92,-0.17 -1.84,-0.33 -2.76,-0.49 -3.06,-0.53 -6.1,-1.05 -9.13,-1.55 -1.22,-0.2 -2.43,-0.4 -3.65,-0.6 -1.22,-0.19 -2.43,-0.39 -3.65,-0.59 -1.84,-0.29 -3.68,-0.58 -5.52,-0.87 -1.55,-0.24 -3.1,-0.48 -4.66,-0.72 -2.19,-0.34 -4.4,-0.68 -6.64,-1.02 -2.56,-0.39 -5.17,-0.79 -7.83,-1.19 -4.33,-0.65 -8.76,-1.34 -13.09,-2.02 -4.32,-0.68 -8.53,-1.36 -12.41,-2 -8.31,-1.37 -15.12,-2.55 -18.31,-3.21 -28.58,-5.86 -65.11,-0.34 -93.45,12.51 -28.95,13.13 -101.76,94.36 -172.24,172.42 -1.01,1.12 -2.02,2.24 -3.03,3.35 -3.03,3.36 -6.05,6.7 -9.06,10.03 -2.01,2.22 -4.01,4.43 -6.01,6.64 -1.5,1.66 -3,3.3 -4.49,4.95 -1.49,1.65 -2.99,3.29 -4.47,4.92 -4.96,5.45 -9.87,10.84 -14.72,16.13 -0.96,1.06 -1.93,2.11 -2.9,3.16 -3.16,3.45 -6.31,6.87 -9.42,10.23 -1.6,1.73 -3.19,3.45 -4.77,5.15 -0.97,1.04 -1.93,2.07 -2.89,3.1 -1.38,1.49 -2.76,2.96 -4.14,4.43 -1.36,1.47 -2.73,2.93 -4.09,4.37 -0.92,0.98 -1.84,1.96 -2.76,2.93 -2.7,2.86 -5.38,5.68 -8.01,8.43 -0.87,0.92 -1.75,1.83 -2.62,2.73 -1.68,1.75 -3.35,3.48 -4.99,5.18 -0.05,0.05 -0.1,0.11 -0.16,0.16 -0.85,0.88 -1.69,1.75 -2.54,2.61 -1.26,1.29 -2.51,2.57 -3.75,3.83 -0.41,0.42 -0.82,0.84 -1.23,1.25 -0.4,0.42 -0.81,0.83 -1.23,1.24 -1.22,1.24 -2.43,2.46 -3.63,3.66 -1.4,1.4 -2.78,2.77 -4.15,4.12 -0.97,0.96 -1.94,1.91 -2.9,2.85 -0.77,0.75 -1.53,1.49 -2.28,2.21 -0.76,0.73 -1.51,1.46 -2.25,2.17 -0.74,0.72 -1.48,1.42 -2.21,2.11 -0.37,0.35 -0.73,0.7 -1.09,1.03 -0.72,0.69 -1.44,1.36 -2.15,2.02 -0.71,0.67 -1.42,1.32 -2.12,1.97 -0.35,0.33 -0.7,0.65 -1.04,0.96 -0.34,0.32 -0.69,0.63 -1.03,0.94 -0.69,0.63 -1.37,1.24 -2.04,1.85 -0.39,0.36 -0.78,0.71 -1.17,1.05 -0.61,0.55 -1.21,1.08 -1.81,1.6 -0.33,0.29 -0.65,0.57 -0.97,0.85 -0.64,0.56 -1.28,1.11 -1.91,1.65 -0.63,0.54 -1.25,1.07 -1.87,1.59 -0.53,0.44 -1.05,0.87 -1.56,1.3 -0.02,0.02 -0.04,0.03 -0.06,0.05 -0.15,0.12 -0.3,0.24 -0.44,0.36 -0.52,0.44 -1.04,0.85 -1.54,1.26 -0.07,0.06 -0.15,0.12 -0.22,0.18 -0.51,0.41 -1.02,0.81 -1.52,1.2 -0.57,0.44 -1.13,0.88 -1.69,1.31 -0.55,0.42 -1.1,0.83 -1.64,1.23 -0.53,0.4 -1.04,0.78 -1.55,1.14 -1.87,1.34 -3.63,2.53 -5.28,3.53 -0.05,0.03 -0.1,0.06 -0.15,0.1 -0.39,0.24 -0.77,0.47 -1.15,0.68 -0.67,0.39 -1.32,0.75 -1.95,1.07 -0.21,0.11 -0.42,0.22 -0.63,0.32 -0.1,0.05 -0.2,0.1 -0.3,0.15 -0.31,0.15 -0.61,0.29 -0.9,0.42 -15.52,6.95 -24.09,9.97 -66.56,11.15 -8.2,0.23 -17.66,0.39 -28.67,0.49 -16.13,0.16 -35.59,0.2 -59.31,0.17 -2.31,0 -4.65,0 -7.04,-0.01 -2.68,0 -5.42,0 -8.21,-0.01 -4.65,-0.01 -9.45,-0.03 -14.4,-0.04l-112.21,-0.29 -30.54,-0.08C386.63,172.39 675.07,19.57 999.74,19.57c219.3,0 422.07,69.72 586.74,187.9 0.21,0.15 0.41,0.3 0.62,0.45Z&quot; />"
+        errorLine2="                          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/drawable/ic_romm_connected.xml"
+            line="11"
+            column="27"/>
+    </issue>
+
+    <issue
+        id="VectorPath"
+        message="Very long vector path (1620 characters), which is bad for performance. Considering reducing precision, removing minor details or rasterizing vector."
+        errorLine1="        android:pathData=&quot;M1290.29,1943.98c-0.28,0.08 -0.55,0.17 -0.83,0.25 -91.69,27.37 -188.95,42.09 -289.71,42.09 -323.08,0 -610.29,-151.33 -792.64,-385.98l263.8,-0.23c243.84,-0.22 342.85,1.36 376.05,6.19 20.33,2.95 55.66,12.92 73.34,20.69 16.69,7.34 21.39,9.63 26.04,12.32 2.71,1.56 29.66,17.25 44.85,29.14 7.59,5.94 22.69,17.76 33.57,26.26 2.49,1.95 4.99,3.92 7.48,5.9 2.25,1.78 4.5,3.58 6.75,5.39 1.58,1.27 3.16,2.55 4.74,3.83 3.84,3.11 7.67,6.26 11.49,9.43 1.92,1.58 3.83,3.18 5.74,4.78 4.82,4.03 9.64,8.11 14.44,12.23 1.4,1.2 2.8,2.4 4.2,3.61 3.3,2.84 6.59,5.71 9.87,8.58 1.64,1.43 3.28,2.87 4.92,4.32 1.22,1.07 2.44,2.15 3.66,3.24 0.7,0.61 1.39,1.23 2.09,1.85 2.98,2.64 5.95,5.3 8.91,7.96 3.24,2.92 6.47,5.84 9.69,8.77 1.37,1.25 2.74,2.49 4.1,3.74 3.44,3.15 6.87,6.31 10.28,9.47 1.59,1.47 3.17,2.94 4.75,4.41 5.24,4.87 10.43,9.75 15.57,14.62 2.52,2.39 5.02,4.77 7.51,7.15 0.1,0.1 0.2,0.19 0.3,0.28 2.43,2.33 4.85,4.64 7.25,6.95 10.01,9.62 19.79,19.17 29.31,28.56 1.99,1.97 3.97,3.93 5.94,5.89 2.08,2.06 4.14,4.11 6.2,6.17 1.41,1.4 2.81,2.8 4.21,4.2 2.41,2.41 4.8,4.8 7.17,7.19 0.38,0.37 0.75,0.75 1.11,1.12 1.38,1.38 2.74,2.75 4.08,4.11 1.69,1.7 3.37,3.4 5.03,5.09 1.67,1.69 3.32,3.36 4.96,5.03 3.29,3.34 6.52,6.63 9.7,9.88 1.28,1.31 2.54,2.6 3.8,3.89 2.79,2.85 5.52,5.66 8.21,8.42 0.85,0.87 1.69,1.74 2.53,2.61 1.32,1.35 2.62,2.7 3.9,4.03 1.2,1.22 2.37,2.44 3.53,3.64 0.08,0.07 0.14,0.14 0.21,0.21 0.83,0.86 1.66,1.71 2.47,2.56 1.64,1.69 3.26,3.37 4.86,5.02 0.8,0.83 1.59,1.65 2.38,2.47 0.11,0.12 0.22,0.23 0.32,0.34 1.59,1.64 3.14,3.25 4.67,4.84 0.34,0.35 0.67,0.71 1.01,1.06 1.05,1.09 2.1,2.17 3.13,3.25 1.04,1.07 2.06,2.13 3.07,3.18Z&quot; />"
+        errorLine2="                          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/drawable/ic_romm_connected.xml"
+            line="21"
+            column="27"/>
+    </issue>
+
+    <issue
+        id="VectorPath"
+        message="Very long vector path (5434 characters), which is bad for performance. Considering reducing precision, removing minor details or rasterizing vector."
+        errorLine1="        android:pathData=&quot;M1499.28,271.47c-2.72,-4.77 -5.24,-9.04 -7.39,-12.57 -3.13,-5.12 -9.74,-13.08 -15.95,-18.95 -14.17,-13.39 -58.39,-37.02 -101.14,-57.15 -3.49,-1.64 -6.96,-3.26 -10.4,-4.85 -1.15,-0.53 -2.3,-1.05 -3.44,-1.57 -0.05,-0.02 -0.11,-0.05 -0.17,-0.08 -0.12,-0.05 -0.25,-0.11 -0.4,-0.18 -0.39,-0.16 -0.87,-0.37 -1.45,-0.63 -0.48,-0.21 -1.02,-0.44 -1.64,-0.71 -0.04,-0.01 -0.08,-0.03 -0.13,-0.05 -0.4,-0.17 -0.83,-0.35 -1.28,-0.54 0,0 0,-0.01 0,-0.01 -0.46,-0.19 -0.94,-0.39 -1.44,-0.6 -0.01,0 -0.01,-0.01 -0.01,-0.01 -0.51,-0.21 -1.04,-0.43 -1.6,-0.67 -0.57,-0.23 -1.15,-0.48 -1.77,-0.73 -0.08,-0.03 -0.16,-0.06 -0.25,-0.1 -0.76,-0.31 -1.57,-0.64 -2.41,-1 -0.55,-0.22 -1.11,-0.45 -1.68,-0.69 -1.15,-0.47 -2.36,-0.96 -3.63,-1.48 -0.64,-0.26 -1.28,-0.52 -1.95,-0.79 -0.11,-0.03 -0.21,-0.07 -0.31,-0.12 -1.04,-0.42 -2.12,-0.86 -3.23,-1.3 -1.12,-0.45 -2.27,-0.91 -3.45,-1.38 -0.78,-0.31 -1.59,-0.63 -2.4,-0.96 -0.41,-0.16 -0.83,-0.32 -1.24,-0.49 -0.78,-0.31 -1.58,-0.62 -2.38,-0.94 -1.62,-0.64 -3.28,-1.29 -4.99,-1.96 -1.71,-0.66 -3.46,-1.35 -5.26,-2.05 -0.91,-0.35 -1.82,-0.7 -2.74,-1.06 -1.85,-0.71 -3.75,-1.45 -5.69,-2.19 -1.04,-0.39 -2.09,-0.79 -3.14,-1.2 -0.53,-0.2 -1.07,-0.4 -1.6,-0.61 -1.07,-0.4 -2.16,-0.82 -3.25,-1.23 -1.65,-0.62 -3.31,-1.25 -5.01,-1.89 -3.39,-1.27 -6.88,-2.57 -10.46,-3.9 -0.6,-0.22 -1.2,-0.44 -1.8,-0.66 -1.22,-0.45 -2.45,-0.9 -3.69,-1.36 -0.93,-0.34 -1.87,-0.68 -2.81,-1.03 -1.89,-0.68 -3.79,-1.37 -5.72,-2.08 -0.97,-0.34 -1.94,-0.7 -2.92,-1.05 -1.04,-0.37 -2.09,-0.75 -3.14,-1.13 -0.92,-0.33 -1.84,-0.66 -2.77,-0.99 -0.93,-0.33 -1.86,-0.67 -2.8,-1 -1.34,-0.47 -2.7,-0.95 -4.06,-1.44 -2.18,-0.76 -4.37,-1.53 -6.59,-2.31 -4.43,-1.55 -8.95,-3.11 -13.53,-4.68 -2.3,-0.78 -4.61,-1.56 -6.94,-2.35 -1.16,-0.39 -2.33,-0.79 -3.5,-1.18 -1.18,-0.39 -2.35,-0.79 -3.54,-1.18 -1.18,-0.39 -2.36,-0.79 -3.55,-1.18 -1.62,-0.53 -3.25,-1.07 -4.88,-1.61 -8.16,-2.67 -16.49,-5.34 -24.94,-7.98 -1.27,-0.4 -2.53,-0.79 -3.8,-1.18 -1.27,-0.4 -2.55,-0.79 -3.83,-1.18 -2.56,-0.78 -5.12,-1.56 -7.69,-2.34 -1.28,-0.39 -2.57,-0.78 -3.86,-1.16 -1.29,-0.38 -2.58,-0.76 -3.88,-1.15 -2.58,-0.77 -5.18,-1.53 -7.78,-2.28 -3.46,-1 -6.94,-1.99 -10.42,-2.98 -5.23,-1.47 -10.48,-2.91 -15.73,-4.32 -4.87,-1.31 -9.55,-2.54 -14.04,-3.72 -1.5,-0.39 -2.97,-0.77 -4.43,-1.15 -0.77,-0.2 -1.53,-0.39 -2.28,-0.59 -2.31,-0.59 -4.56,-1.16 -6.77,-1.72 -0.74,-0.18 -1.47,-0.37 -2.2,-0.55 -0.6,-0.15 -1.2,-0.3 -1.8,-0.45 -0.87,-0.21 -1.73,-0.43 -2.58,-0.64 -1.71,-0.42 -3.39,-0.83 -5.04,-1.23 -1.65,-0.4 -3.28,-0.79 -4.88,-1.17 -1.2,-0.29 -2.39,-0.57 -3.56,-0.84 -1.17,-0.27 -2.33,-0.55 -3.48,-0.81 -1.15,-0.26 -2.28,-0.52 -3.4,-0.78 -1.12,-0.26 -2.23,-0.5 -3.33,-0.75 -1.1,-0.25 -2.19,-0.49 -3.27,-0.72 -1.08,-0.24 -2.14,-0.47 -3.2,-0.7 -1.06,-0.23 -2.1,-0.45 -3.14,-0.68 -1.03,-0.22 -2.06,-0.43 -3.08,-0.65 -7.48,-1.55 -14.5,-2.91 -21.32,-4.15 -0.93,-0.17 -1.86,-0.34 -2.78,-0.5 -0.92,-0.17 -1.84,-0.33 -2.76,-0.49 -3.06,-0.53 -6.1,-1.05 -9.13,-1.55 -1.22,-0.2 -2.43,-0.4 -3.65,-0.6 -1.22,-0.19 -2.43,-0.39 -3.65,-0.59 -1.84,-0.29 -3.68,-0.58 -5.52,-0.87 -1.55,-0.24 -3.1,-0.48 -4.66,-0.72 -2.19,-0.33 -4.4,-0.67 -6.64,-1.02 -2.57,-0.38 -5.18,-0.78 -7.84,-1.18 -4.33,-0.65 -8.76,-1.34 -13.08,-2.03 -4.32,-0.68 -8.53,-1.36 -12.41,-2 -8.31,-1.37 -15.12,-2.55 -18.31,-3.21 -28.58,-5.86 -65.11,-0.34 -93.45,12.51 -28.95,13.13 -101.76,94.36 -172.24,172.42 -1.01,1.12 -2.02,2.24 -3.03,3.35 -3.03,3.36 -6.05,6.7 -9.06,10.03 -2.01,2.22 -4.01,4.43 -6.01,6.64 -1.5,1.66 -3,3.3 -4.49,4.95 -1.49,1.65 -2.99,3.29 -4.47,4.92 -4.96,5.45 -9.87,10.84 -14.72,16.13 -0.96,1.06 -1.93,2.11 -2.9,3.16 -3.16,3.45 -6.31,6.87 -9.42,10.23 -1.6,1.73 -3.19,3.45 -4.77,5.15 -0.97,1.04 -1.93,2.07 -2.89,3.1 -1.38,1.49 -2.76,2.96 -4.14,4.43 -1.36,1.47 -2.73,2.93 -4.09,4.37 -0.92,0.98 -1.84,1.96 -2.76,2.93 -2.7,2.86 -5.38,5.68 -8.01,8.43 -0.87,0.92 -1.75,1.83 -2.62,2.73 -1.67,1.75 -3.34,3.48 -4.99,5.18 -0.05,0.05 -0.1,0.11 -0.16,0.16 -0.85,0.88 -1.69,1.75 -2.54,2.61 -1.25,1.3 -2.5,2.57 -3.75,3.83 -0.41,0.42 -0.82,0.84 -1.23,1.25 -0.4,0.42 -0.81,0.83 -1.23,1.24 -1.22,1.24 -2.43,2.46 -3.63,3.66 -1.4,1.4 -2.78,2.77 -4.15,4.12 -0.97,0.97 -1.94,1.92 -2.9,2.85 -0.77,0.75 -1.53,1.49 -2.28,2.21 -0.76,0.74 -1.51,1.46 -2.25,2.17 -0.74,0.72 -1.48,1.42 -2.21,2.11 -0.37,0.35 -0.73,0.7 -1.09,1.03 -0.72,0.7 -1.44,1.37 -2.15,2.02 -0.71,0.68 -1.42,1.33 -2.12,1.97 -0.35,0.33 -0.7,0.65 -1.04,0.96 -0.34,0.32 -0.69,0.63 -1.03,0.94 -0.69,0.63 -1.37,1.25 -2.04,1.85 -0.39,0.36 -0.78,0.71 -1.17,1.05 -0.61,0.55 -1.21,1.08 -1.81,1.6 -0.33,0.29 -0.65,0.57 -0.97,0.85 -0.64,0.57 -1.28,1.12 -1.91,1.65 -0.63,0.55 -1.26,1.08 -1.87,1.59 -0.53,0.45 -1.05,0.89 -1.56,1.3 -0.02,0.02 -0.04,0.03 -0.06,0.05 -0.15,0.12 -0.3,0.24 -0.44,0.36 -0.52,0.44 -1.04,0.85 -1.54,1.26 -0.07,0.06 -0.15,0.12 -0.22,0.18 -0.51,0.41 -1.02,0.81 -1.52,1.2 -0.57,0.45 -1.13,0.89 -1.69,1.31 -0.55,0.43 -1.1,0.83 -1.64,1.23 -0.53,0.4 -1.04,0.78 -1.55,1.14 -1.87,1.34 -3.63,2.53 -5.28,3.53 -0.05,0.03 -0.1,0.06 -0.15,0.1 -0.39,0.24 -0.77,0.47 -1.15,0.68 -0.67,0.39 -1.32,0.75 -1.95,1.07 -0.21,0.11 -0.42,0.22 -0.63,0.32 -0.1,0.05 -0.2,0.1 -0.3,0.15 -0.31,0.15 -0.61,0.29 -0.9,0.42 -15.52,6.95 -24.09,9.97 -66.56,11.15 -8.2,0.23 -17.66,0.39 -28.67,0.49 -16.13,0.16 -35.59,0.2 -59.31,0.17 -2.31,0 -4.65,0 -7.04,-0.01 -2.68,0 -5.42,0 -8.21,-0.01 -4.65,0 -9.45,-0.02 -14.4,-0.03l-112.21,-0.3 -30.54,-0.08C77.35,574.04 1.95,779.82 1.95,1002.95s74.15,425.46 199.29,589.77c0.15,0.2 0.31,0.41 0.46,0.61L1508,287.03c-3.04,-5.52 -5.98,-10.79 -8.72,-15.56Z&quot; />"
+        errorLine2="                          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/drawable/ic_romm_connected.xml"
+            line="26"
+            column="27"/>
+    </issue>
+
+    <issue
+        id="VectorPath"
+        message="Very long vector path (1970 characters), which is bad for performance. Considering reducing precision, removing minor details or rasterizing vector."
+        errorLine1="        android:pathData=&quot;M1884.52,1404.06c-12.96,-73 -34.53,-143.68 -55.58,-214.46 -13.99,-53.78 -28.38,-104.29 -40.06,-143.1 -18.7,-62.46 -37.51,-124.73 -59.4,-186.14 -1.69,-3.28 -30.04,-82.76 -43.16,-120.99 -15.39,-44.44 -32.41,-88.02 -47.96,-132.62 -32.73,-87.2 -64.69,-174.62 -100.54,-260.6 -1.94,-6.69 -16.46,-34.87 -29.82,-59.12L201.7,1593.33l-3.85,3.85c0.79,1.06 1.58,2.12 2.38,3.17h6.87l263.8,-0.24c243.84,-0.22 342.85,1.36 376.05,6.19 20.33,2.95 55.66,12.92 73.34,20.69 16.69,7.34 21.39,9.63 26.04,12.32 2.71,1.56 29.66,17.25 44.85,29.14 7.59,5.94 22.69,17.76 33.57,26.26 2.49,1.95 4.99,3.92 7.48,5.9 2.25,1.78 4.5,3.58 6.75,5.39 1.58,1.27 3.16,2.55 4.74,3.83 3.84,3.11 7.67,6.26 11.49,9.43 1.92,1.58 3.83,3.18 5.74,4.78 4.82,4.03 9.64,8.11 14.44,12.23 1.4,1.2 2.8,2.4 4.2,3.61 3.3,2.84 6.59,5.71 9.87,8.58 1.64,1.43 3.28,2.87 4.92,4.32 1.22,1.07 2.44,2.15 3.66,3.24 0.7,0.61 1.39,1.23 2.09,1.85 2.98,2.64 5.95,5.3 8.91,7.96 3.24,2.92 6.47,5.84 9.69,8.77 1.37,1.25 2.74,2.49 4.1,3.74 3.44,3.15 6.87,6.31 10.28,9.47 1.59,1.47 3.17,2.94 4.75,4.41 5.24,4.87 10.43,9.75 15.57,14.62 2.52,2.39 5.02,4.77 7.51,7.15 0.1,0.1 0.2,0.19 0.3,0.28 2.43,2.33 4.85,4.64 7.25,6.95 10.01,9.62 19.79,19.17 29.31,28.56 1.99,1.97 3.97,3.93 5.94,5.89 2.08,2.06 4.14,4.11 6.2,6.17 1.41,1.4 2.81,2.8 4.21,4.2 2.41,2.41 4.8,4.8 7.17,7.19 0.38,0.37 0.75,0.75 1.11,1.12 1.38,1.38 2.74,2.75 4.08,4.11 1.69,1.7 3.37,3.4 5.03,5.09 1.67,1.69 3.32,3.36 4.96,5.03 3.29,3.34 6.52,6.63 9.7,9.88 1.29,1.31 2.55,2.6 3.8,3.89 2.79,2.85 5.52,5.66 8.21,8.42 0.85,0.87 1.69,1.74 2.53,2.61 1.32,1.35 2.62,2.7 3.9,4.03 1.2,1.22 2.37,2.44 3.53,3.64 0.08,0.07 0.14,0.14 0.21,0.21 0.83,0.86 1.66,1.71 2.47,2.56 1.65,1.69 3.27,3.37 4.86,5.02 0.8,0.83 1.59,1.65 2.38,2.47 0.11,0.12 0.22,0.23 0.32,0.34 1.59,1.64 3.14,3.25 4.67,4.84 0.34,0.35 0.67,0.71 1.01,1.06 1.05,1.09 2.1,2.17 3.13,3.25 1.04,1.07 2.06,2.13 3.07,3.18 262.08,-78.49 478.46,-260.4 600.24,-497.52 0.27,-0.53 0.55,-1.06 0.81,-1.6 -2.72,-16.71 -5.53,-33.68 -6.82,-40.8Z&quot; />"
+        errorLine2="                          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/drawable/ic_romm_connected.xml"
+            line="31"
+            column="27"/>
+    </issue>
+
+    <issue
+        id="VectorPath"
+        message="Very long vector path (1151 characters), which is bad for performance. Considering reducing precision, removing minor details or rasterizing vector."
+        errorLine1="        android:pathData=&quot;M1491.97,305.24c-5.88,-10.7 -11.42,-20.42 -15.61,-27.25 -3.03,-4.96 -9.44,-12.67 -15.45,-18.37 -13.72,-12.97 -56.57,-35.85 -97.98,-55.36 -4.5,-2.12 -8.98,-4.19 -13.41,-6.22 -7.65,-3.5 -113.49,-47.74 -222.02,-76.87 -65.17,-17.5 -92.88,-21.67 -134.12,-27.92 -8.39,-1.27 -17.19,-2.66 -24.7,-3.9 -8.05,-1.33 -14.65,-2.47 -17.74,-3.11 -27.69,-5.68 -63.08,-0.33 -90.53,12.13 -28.05,12.71 -98.58,91.4 -166.86,167.02 -0.98,1.08 -1.96,2.17 -2.94,3.25 -1.96,2.17 -3.9,4.33 -5.86,6.48 -3.89,4.31 -7.78,8.6 -11.64,12.86 -1.93,2.13 -3.86,4.25 -5.77,6.36 -0.96,1.06 -1.92,2.11 -2.88,3.16 -1.91,2.1 -3.82,4.19 -5.72,6.27 -4.74,5.2 -9.44,10.32 -14.06,15.34 -0.8,0.88 -1.62,1.75 -2.42,2.63 -1.61,1.74 -3.22,3.48 -4.81,5.19 -1.59,1.71 -3.18,3.42 -4.75,5.11 -2.35,2.53 -4.7,5.02 -7,7.48 -35.22,37.45 -64.66,66.09 -79.87,72.9 -1.88,0.84 -3.65,1.62 -5.4,2.34 -1.97,0.82 -3.89,1.57 -5.9,2.25 -1.01,0.34 -2.02,0.67 -3.08,0.98 -1.05,0.31 -2.13,0.6 -3.26,0.88 -9.56,2.35 -22.41,3.66 -46.84,4.34 -7.94,0.22 -17.11,0.38 -27.77,0.48 -21.7,0.2 -49.62,0.2 -86.18,0.11l-108.7,-0.28 -19.81,-0.06C412.37,194.89 686.97,47.3 996.03,47.3c212.31,0 408.36,69.65 566.53,187.35l-70.59,70.59Z&quot; />"
+        errorLine2="                          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/drawable/ic_romm_disconnected.xml"
+            line="15"
+            column="27"/>
+    </issue>
+
+    <issue
+        id="VectorPath"
+        message="Very long vector path (1145 characters), which is bad for performance. Considering reducing precision, removing minor details or rasterizing vector."
+        errorLine1="        android:pathData=&quot;M1476.36,277.99c-3.03,-4.96 -9.44,-12.67 -15.45,-18.37 -13.72,-12.97 -56.57,-35.85 -97.98,-55.36 -4.5,-2.12 -8.98,-4.19 -13.41,-6.22 -7.65,-3.5 -113.49,-47.74 -222.02,-76.87 -65.17,-17.5 -92.88,-21.67 -134.12,-27.92 -8.39,-1.27 -17.19,-2.66 -24.7,-3.9 -8.05,-1.33 -14.65,-2.47 -17.74,-3.11 -27.69,-5.68 -63.08,-0.33 -90.53,12.13 -28.05,12.71 -98.58,91.4 -166.86,167.02 -0.98,1.08 -1.96,2.17 -2.94,3.25 -1.96,2.17 -3.9,4.33 -5.86,6.48 -3.89,4.31 -7.78,8.6 -11.64,12.86 -1.93,2.13 -3.86,4.25 -5.77,6.36 -0.96,1.06 -1.92,2.11 -2.88,3.16 -1.91,2.1 -3.82,4.19 -5.72,6.27 -4.74,5.2 -9.44,10.32 -14.06,15.34 -0.8,0.88 -1.62,1.75 -2.42,2.63 -1.61,1.74 -3.21,3.48 -4.81,5.19 -1.59,1.71 -3.17,3.42 -4.75,5.11 -2.35,2.53 -4.7,5.02 -7,7.48 -35.22,37.45 -64.66,66.09 -79.87,72.9 -1.88,0.84 -3.65,1.62 -5.4,2.34 -1.97,0.82 -3.89,1.57 -5.9,2.25 -1.01,0.34 -2.02,0.67 -3.08,0.98 -1.05,0.31 -2.13,0.6 -3.26,0.88 -9.56,2.35 -22.41,3.66 -46.84,4.34 -7.94,0.22 -17.11,0.38 -27.77,0.48 -21.7,0.2 -49.62,0.2 -86.18,0.11l-108.7,-0.28 -19.81,-0.06C117.9,582.86 46.09,781.67 46.09,997.25s69.65,408.36 187.35,566.53L1491.97,305.24c-5.88,-10.7 -11.42,-20.42 -15.61,-27.25Z&quot; />"
+        errorLine2="                          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/drawable/ic_romm_disconnected.xml"
+            line="57"
+            column="27"/>
+    </issue>
+
+    <issue
+        id="VectorPath"
+        message="Very long vector path (2017 characters), which is bad for performance. Considering reducing precision, removing minor details or rasterizing vector."
+        errorLine1="        android:pathData=&quot;M441.333,210.668H413.32c-3.87-35.745-17.991-68.41-39.364-95.005l19.816-19.816c7.81-7.811,7.81-20.474,0-28.284c-7.811-7.811-20.475-7.811-28.285,0l-19.816,19.816c-26.595-21.373-59.26-35.493-95.005-39.363V20.001c0-11.046-8.954-20-20-20c-11.046,0-20,8.954-20,20v28.013c-35.745,3.87-68.411,17.991-95.006,39.364L95.845,67.561c-7.811-7.811-20.474-7.811-28.284,0c-7.81,7.811-7.811,20.474,0,28.284l19.816,19.816c-21.373,26.595-35.494,59.26-39.364,95.006H20c-11.046,0-20,8.954-20,20s8.954,20,20,20h28.013c3.87,35.745,17.991,68.411,39.364,95.006l-19.816,19.816c-7.811,7.811-7.811,20.474,0,28.284c3.905,3.905,9.023,5.858,14.142,5.858s10.237-1.953,14.142-5.858l19.816-19.816c26.595,21.373,59.26,35.494,95.006,39.364v28.013c0,11.046,8.954,20,20,20s20-8.954,20-20v-28.014c35.745-3.87,68.411-17.991,95.006-39.363l19.816,19.816c3.905,3.905,9.024,5.858,14.143,5.858s10.237-1.953,14.143-5.858c7.81-7.811,7.81-20.474,0-28.284l-19.816-19.816c21.373-26.595,35.493-59.26,39.363-95.005h28.013c11.046,0,20-8.954,20-20C461.335,219.623,452.379,210.668,441.333,210.668zM115.861,144.146l39.524,39.524c-5.129,8.199-8.961,17.292-11.196,26.997H88.307C91.661,186.431,101.095,163.655,115.861,144.146zM88.307,250.668h55.882c2.235,9.705,6.067,18.798,11.196,26.997l-39.524,39.525C101.095,297.679,91.661,274.904,88.307,250.668zM210.667,373.027c-24.237-3.354-47.013-12.788-66.522-27.554l39.525-39.524c8.199,5.129,17.292,8.961,26.997,11.196V373.027zM210.667,144.189c-9.705,2.235-18.798,6.067-26.997,11.196l-39.524-39.524c19.509-14.766,42.284-24.2,66.521-27.554V144.189zM250.667,88.308c24.236,3.354,47.011,12.788,66.52,27.554l-39.524,39.524c-8.198-5.129-17.292-8.961-26.996-11.196V88.308zM250.667,373.027v-55.882c9.705-2.235,18.798-6.067,26.997-11.196l39.524,39.524C297.678,360.238,274.903,369.673,250.667,373.027zM345.472,317.189l-39.525-39.524c5.129-8.199,8.961-17.292,11.196-26.997h55.882C369.672,274.904,360.238,297.679,345.472,317.189zM317.144,210.668c-2.235-9.705-6.067-18.798-11.196-26.996l39.524-39.524c14.766,19.508,24.2,42.283,27.554,66.52H317.144z&quot; />"
+        errorLine2="                          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/drawable/tv_banner_foreground.xml"
+            line="9"
+            column="27"/>
+    </issue>
+
+    <issue
+        id="AutoboxingStateCreation"
+        message="Prefer `mutableIntStateOf` instead of `mutableStateOf`"
+        errorLine1="    var resumeCount by remember { mutableStateOf(0) }"
+        errorLine2="                                  ~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/com/nendo/argosy/ui/ArgosyApp.kt"
+            line="282"
+            column="35"/>
+    </issue>
+
+    <issue
+        id="AutoboxingStateCreation"
+        message="Prefer `mutableFloatStateOf` instead of `mutableStateOf`"
+        errorLine1="                var drawerWidthPx by remember { mutableStateOf(0f) }"
+        errorLine2="                                                ~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/com/nendo/argosy/ui/ArgosyApp.kt"
+            line="1080"
+            column="49"/>
+    </issue>
+
+    <issue
+        id="AutoboxingStateCreation"
+        message="Prefer `mutableIntStateOf` instead of `mutableStateOf`"
+        errorLine1="                        ?.dualSyncOverlayFocusIndex?.collectAsState() ?: remember { mutableStateOf(0) }"
+        errorLine2="                                                                                    ~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/com/nendo/argosy/ui/ArgosyApp.kt"
+            line="1349"
+            column="85"/>
+    </issue>
+
+    <issue
+        id="AutoboxingStateCreation"
+        message="Prefer `mutableFloatStateOf` instead of `mutableStateOf`"
+        errorLine1="    var ratio by remember(path) { mutableStateOf(cached ?: fallback) }"
+        errorLine2="                                  ~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/com/nendo/argosy/ui/common/CoverAspectRatio.kt"
+            line="37"
+            column="35"/>
+    </issue>
+
+    <issue
+        id="AutoboxingStateCreation"
+        message="Prefer `mutableIntStateOf` instead of `mutableStateOf`"
+        errorLine1="    var installRefresh by mutableStateOf(0)"
+        errorLine2="                          ~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/com/nendo/argosy/libretro/frame/FrameManager.kt"
+            line="43"
+            column="27"/>
+    </issue>
+
+    <issue
+        id="AutoboxingStateCreation"
+        message="Prefer `mutableFloatStateOf` instead of `mutableStateOf`"
+        errorLine1="    ) ?: remember { mutableStateOf(0f) }"
+        errorLine2="                    ~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/com/nendo/argosy/ui/components/GameCard.kt"
+            line="200"
+            column="21"/>
+    </issue>
+
+    <issue
+        id="AutoboxingStateCreation"
+        message="Prefer `mutableFloatStateOf` instead of `mutableStateOf`"
+        errorLine1="        ) ?: remember { mutableStateOf(0f) }"
+        errorLine2="                        ~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/com/nendo/argosy/ui/components/GameCard.kt"
+            line="390"
+            column="25"/>
+    </issue>
+
+    <issue
+        id="AutoboxingStateCreation"
+        message="Prefer `mutableIntStateOf` instead of `mutableStateOf`"
+        errorLine1="    var hardcoreConflictFocusIndex by remember { mutableStateOf(0) }"
+        errorLine2="                                                 ~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/com/nendo/argosy/ui/screens/home/HomeScreen.kt"
+            line="323"
+            column="50"/>
+    </issue>
+
+    <issue
+        id="AutoboxingStateCreation"
+        message="Prefer `mutableIntStateOf` instead of `mutableStateOf`"
+        errorLine1="    var localModifiedFocusIndex by remember { mutableStateOf(0) }"
+        errorLine2="                                              ~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/com/nendo/argosy/ui/screens/home/HomeScreen.kt"
+            line="334"
+            column="47"/>
+    </issue>
+
+    <issue
+        id="AutoboxingStateCreation"
+        message="Prefer `mutableIntStateOf` instead of `mutableStateOf`"
+        errorLine1="        var hardcoreConflictFocusIndex by remember { mutableStateOf(0) }"
+        errorLine2="                                                     ~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/com/nendo/argosy/ui/screens/library/LibraryScreen.kt"
+            line="669"
+            column="54"/>
+    </issue>
+
+    <issue
+        id="AutoboxingStateCreation"
+        message="Prefer `mutableIntStateOf` instead of `mutableStateOf`"
+        errorLine1="        var localModifiedFocusIndex by remember { mutableStateOf(0) }"
+        errorLine2="                                                  ~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/com/nendo/argosy/ui/screens/library/LibraryScreen.kt"
+            line="680"
+            column="51"/>
+    </issue>
+
+    <issue
+        id="AutoboxingStateCreation"
+        message="Prefer `mutableIntStateOf` instead of `mutableStateOf`"
+        errorLine1="    private var menuFocusIndex by mutableStateOf(0)"
+        errorLine2="                                  ~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/com/nendo/argosy/libretro/LibretroActivity.kt"
+            line="224"
+            column="35"/>
+    </issue>
+
+    <issue
+        id="AutoboxingStateCreation"
+        message="Prefer `mutableIntStateOf` instead of `mutableStateOf`"
+        errorLine1="    private var autoRestorePromptFocusIndex by mutableStateOf(0)"
+        errorLine2="                                               ~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/com/nendo/argosy/libretro/LibretroActivity.kt"
+            line="245"
+            column="48"/>
+    </issue>
+
+    <issue
+        id="AutoboxingStateCreation"
+        message="Prefer `mutableIntStateOf` instead of `mutableStateOf`"
+        errorLine1="    private var stateManagerFocusIndex by mutableStateOf(0)"
+        errorLine2="                                          ~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/com/nendo/argosy/libretro/LibretroActivity.kt"
+            line="248"
+            column="43"/>
+    </issue>
+
+    <issue
+        id="AutoboxingStateCreation"
+        message="Prefer `mutableIntStateOf` instead of `mutableStateOf`"
+        errorLine1="    private var stateManagerDeleteTarget by mutableStateOf(-1)"
+        errorLine2="                                            ~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/com/nendo/argosy/libretro/LibretroActivity.kt"
+            line="251"
+            column="45"/>
+    </issue>
+
+    <issue
+        id="AutoboxingStateCreation"
+        message="Prefer `mutableIntStateOf` instead of `mutableStateOf`"
+        errorLine1="    private var stateManagerLoadTarget by mutableStateOf(Int.MIN_VALUE)"
+        errorLine2="                                          ~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/com/nendo/argosy/libretro/LibretroActivity.kt"
+            line="254"
+            column="43"/>
+    </issue>
+
+    <issue
+        id="AutoboxingStateCreation"
+        message="Prefer `mutableIntStateOf` instead of `mutableStateOf`"
+        errorLine1="    private var quickTimelineFocusIndex by mutableStateOf(0)"
+        errorLine2="                                           ~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/com/nendo/argosy/libretro/LibretroActivity.kt"
+            line="258"
+            column="44"/>
+    </issue>
+
+    <issue
+        id="AutoboxingStateCreation"
+        message="Prefer `mutableIntStateOf` instead of `mutableStateOf`"
+        errorLine1="    private var discMenuFocusIndex by mutableStateOf(0)"
+        errorLine2="                                      ~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/com/nendo/argosy/libretro/LibretroActivity.kt"
+            line="263"
+            column="39"/>
+    </issue>
+
+    <issue
+        id="AutoboxingStateCreation"
+        message="Prefer `mutableIntStateOf` instead of `mutableStateOf`"
+        errorLine1="    private var discMenuCurrentIndex by mutableStateOf(0)"
+        errorLine2="                                        ~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/com/nendo/argosy/libretro/LibretroActivity.kt"
+            line="264"
+            column="41"/>
+    </issue>
+
+    <issue
+        id="AutoboxingStateCreation"
+        message="Prefer `mutableIntStateOf` instead of `mutableStateOf`"
+        errorLine1="    private var currentOrientationState by mutableStateOf(android.content.res.Configuration.ORIENTATION_LANDSCAPE)"
+        errorLine2="                                           ~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/com/nendo/argosy/libretro/LibretroActivity.kt"
+            line="275"
+            column="44"/>
+    </issue>
+
+    <issue
+        id="AutoboxingStateCreation"
+        message="Prefer `mutableIntStateOf` instead of `mutableStateOf`"
+        errorLine1="    private var currentRotationState by mutableStateOf(0)"
+        errorLine2="                                        ~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/com/nendo/argosy/libretro/LibretroActivity.kt"
+            line="276"
+            column="41"/>
+    </issue>
+
+    <issue
+        id="AutoboxingStateCreation"
+        message="Prefer `mutableIntStateOf` instead of `mutableStateOf`"
+        errorLine1="    private var gripReservePercentState by mutableStateOf(GRIP_RESERVE_MAX_PERCENT)"
+        errorLine2="                                           ~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/com/nendo/argosy/libretro/LibretroActivity.kt"
+            line="280"
+            column="44"/>
+    </issue>
+
+    <issue
+        id="AutoboxingStateCreation"
+        message="Prefer `mutableFloatStateOf` instead of `mutableStateOf`"
+        errorLine1="    private var speedrunPanelFractionState by mutableStateOf(SPEEDRUN_PANEL_FRACTION_DEFAULT)"
+        errorLine2="                                              ~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/com/nendo/argosy/libretro/LibretroActivity.kt"
+            line="293"
+            column="47"/>
+    </issue>
+
+    <issue
+        id="AutoboxingStateCreation"
+        message="Prefer `mutableIntStateOf` instead of `mutableStateOf`"
+        errorLine1="    private var speedrunPickerFocusIndex by mutableStateOf(0)"
+        errorLine2="                                            ~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/com/nendo/argosy/libretro/LibretroActivity.kt"
+            line="299"
+            column="45"/>
+    </issue>
+
+    <issue
+        id="AutoboxingStateCreation"
+        message="Prefer `mutableIntStateOf` instead of `mutableStateOf`"
+        errorLine1="    var disconnectPromptFocus by mutableStateOf(0)"
+        errorLine2="                                 ~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/com/nendo/argosy/libretro/LibretroNetplayCoordinator.kt"
+            line="95"
+            column="34"/>
+    </issue>
+
+    <issue
+        id="AutoboxingStateCreation"
+        message="Prefer `mutableIntStateOf` instead of `mutableStateOf`"
+        errorLine1="    var modePickerFocus by mutableStateOf(0)"
+        errorLine2="                           ~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/com/nendo/argosy/libretro/LibretroNetplayCoordinator.kt"
+            line="97"
+            column="28"/>
+    </issue>
+
+    <issue
+        id="AutoboxingStateCreation"
+        message="Prefer `mutableIntStateOf` instead of `mutableStateOf`"
+        errorLine1="    var friendPickerFocus by mutableStateOf(0)"
+        errorLine2="                             ~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/com/nendo/argosy/libretro/LibretroNetplayCoordinator.kt"
+            line="99"
+            column="30"/>
+    </issue>
+
+    <issue
+        id="AutoboxingStateCreation"
+        message="Prefer `mutableIntStateOf` instead of `mutableStateOf`"
+        errorLine1="    var joinRequestFocus by mutableStateOf(0)"
+        errorLine2="                            ~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/com/nendo/argosy/libretro/LibretroNetplayCoordinator.kt"
+            line="104"
+            column="29"/>
+    </issue>
+
+    <issue
+        id="AutoboxingStateCreation"
+        message="Prefer `mutableIntStateOf` instead of `mutableStateOf`"
+        errorLine1="    var qualityWarningRttMs by mutableStateOf(0)"
+        errorLine2="                               ~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/com/nendo/argosy/libretro/LibretroNetplayCoordinator.kt"
+            line="113"
+            column="32"/>
+    </issue>
+
+    <issue
+        id="AutoboxingStateCreation"
+        message="Prefer `mutableIntStateOf` instead of `mutableStateOf`"
+        errorLine1="    var qualityWarningJitterMs by mutableStateOf(0)"
+        errorLine2="                                  ~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/com/nendo/argosy/libretro/LibretroNetplayCoordinator.kt"
+            line="115"
+            column="35"/>
+    </issue>
+
+    <issue
+        id="AutoboxingStateCreation"
+        message="Prefer `mutableIntStateOf` instead of `mutableStateOf`"
+        errorLine1="    var qualityWarningFocus by mutableStateOf(0)"
+        errorLine2="                               ~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/com/nendo/argosy/libretro/LibretroNetplayCoordinator.kt"
+            line="119"
+            column="32"/>
+    </issue>
+
+    <issue
+        id="AutoboxingStateCreation"
+        message="Prefer `mutableIntStateOf` instead of `mutableStateOf`"
+        errorLine1="    var dxState by remember { mutableStateOf(0) }"
+        errorLine2="                              ~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/com/nendo/argosy/libretro/touch/OnScreenControls.kt"
+            line="175"
+            column="31"/>
+    </issue>
+
+    <issue
+        id="AutoboxingStateCreation"
+        message="Prefer `mutableIntStateOf` instead of `mutableStateOf`"
+        errorLine1="    var dyState by remember { mutableStateOf(0) }"
+        errorLine2="                              ~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/com/nendo/argosy/libretro/touch/OnScreenControls.kt"
+            line="176"
+            column="31"/>
+    </issue>
+
+    <issue
+        id="AutoboxingStateCreation"
+        message="Prefer `mutableIntStateOf` instead of `mutableStateOf`"
+        errorLine1="    var reloadKey by remember { mutableStateOf(0) }"
+        errorLine2="                                ~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/com/nendo/argosy/libretro/touch/OnScreenControlsHost.kt"
+            line="52"
+            column="33"/>
+    </issue>
+
+    <issue
+        id="AutoboxingStateCreation"
+        message="Prefer `mutableIntStateOf` instead of `mutableStateOf`"
+        errorLine1="            var virtualPosition by remember { mutableStateOf(virtualCenterFor(currentIdx)) }"
+        errorLine2="                                              ~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/com/nendo/argosy/ui/components/SectionBreadcrumb.kt"
+            line="82"
+            column="47"/>
+    </issue>
+
+    <issue
+        id="AutoboxingStateCreation"
+        message="Prefer `mutableIntStateOf` instead of `mutableStateOf`"
+        errorLine1="            var lastLabelCount by remember { mutableStateOf(labels.size) }"
+        errorLine2="                                             ~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/com/nendo/argosy/ui/components/SectionBreadcrumb.kt"
+            line="84"
+            column="46"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.drawable.ic_download` appears to be unused"
+        errorLine1="&lt;vector xmlns:android=&quot;http://schemas.android.com/apk/res/android&quot;"
+        errorLine2="^">
+        <location
+            file="src/main/res/drawable/ic_download.xml"
+            line="1"
+            column="1"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.color.ic_launcher_background` appears to be unused"
+        errorLine1="    &lt;color name=&quot;ic_launcher_background&quot;>#5C6BC0&lt;/color>"
+        errorLine2="           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/ic_launcher_background.xml"
+            line="3"
+            column="12"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.drawable.ic_quaypass_encounter` appears to be unused"
+        errorLine1="&lt;vector xmlns:android=&quot;http://schemas.android.com/apk/res/android&quot;"
+        errorLine2="^">
+        <location
+            file="src/main/res/drawable/ic_quaypass_encounter.xml"
+            line="1"
+            column="1"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.drawable.ic_quaypass_off` appears to be unused"
+        errorLine1="&lt;vector xmlns:android=&quot;http://schemas.android.com/apk/res/android&quot;"
+        errorLine2="^">
+        <location
+            file="src/main/res/drawable/ic_quaypass_off.xml"
+            line="1"
+            column="1"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.drawable.ic_quaypass_on` appears to be unused"
+        errorLine1="&lt;vector xmlns:android=&quot;http://schemas.android.com/apk/res/android&quot;"
+        errorLine2="^">
+        <location
+            file="src/main/res/drawable/ic_quaypass_on.xml"
+            line="1"
+            column="1"/>
+    </issue>
+
+    <issue
+        id="UnusedResources"
+        message="The resource `R.drawable.ic_save` appears to be unused"
+        errorLine1="&lt;vector xmlns:android=&quot;http://schemas.android.com/apk/res/android&quot;"
+        errorLine2="^">
+        <location
+            file="src/main/res/drawable/ic_save.xml"
+            line="1"
+            column="1"/>
+    </issue>
+
+    <issue
+        id="UseOfNonLambdaOffsetOverload"
+        message="State backed values should use the lambda overload of Modifier.offset"
+        errorLine1="                .offset(x = knobX - squash / 2, y = inset)"
+        errorLine2="                 ~~~~~~">
+        <location
+            file="src/main/kotlin/com/nendo/argosy/ui/primitives/Controls.kt"
+            line="108"
+            column="18"/>
+    </issue>
+
+    <issue
+        id="UseOfNonLambdaOffsetOverload"
+        message="State backed values should use the lambda overload of Modifier.offset"
+        errorLine1="                    .offset(x = videoModeRailOffsetX, y = videoModeFooterOffset)"
+        errorLine2="                     ~~~~~~">
+        <location
+            file="src/main/kotlin/com/nendo/argosy/ui/screens/home/HomeScreen.kt"
+            line="696"
+            column="22"/>
+    </issue>
+
+    <issue
+        id="UseOfNonLambdaOffsetOverload"
+        message="State backed values should use the lambda overload of Modifier.offset"
+        errorLine1="                    .offset(y = videoTitleBackgroundOffset)"
+        errorLine2="                     ~~~~~~">
+        <location
+            file="src/main/kotlin/com/nendo/argosy/ui/screens/home/HomeScreen.kt"
+            line="938"
+            column="22"/>
+    </issue>
+
+    <issue
+        id="UseTomlInstead"
+        message="Use version catalog instead"
+        errorLine1="    implementation(&quot;com.google.zxing:core:3.5.3&quot;)"
+        errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="build.gradle.kts"
+            line="252"
+            column="20"/>
+    </issue>
+
+    <issue
+        id="UseTomlInstead"
+        message="Use version catalog instead"
+        errorLine1="    implementation(&quot;com.goterl:lazysodium-android:5.2.0@aar&quot;)"
+        errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="build.gradle.kts"
+            line="284"
+            column="20"/>
+    </issue>
+
+    <issue
+        id="UseTomlInstead"
+        message="Use version catalog instead"
+        errorLine1="    implementation(&quot;net.java.dev.jna:jna:5.14.0@aar&quot;)"
+        errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="build.gradle.kts"
+            line="285"
+            column="20"/>
+    </issue>
+
+    <issue
+        id="UseTomlInstead"
+        message="Use version catalog instead"
+        errorLine1="    implementation(&quot;org.bitlet:weupnp:0.1.4&quot;)"
+        errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="build.gradle.kts"
+            line="286"
+            column="20"/>
+    </issue>
+
+    <issue
+        id="UseTomlInstead"
+        message="Use version catalog instead"
+        errorLine1="    testImplementation(&quot;net.java.dev.jna:jna:5.14.0&quot;)"
+        errorLine2="                       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="build.gradle.kts"
+            line="292"
+            column="24"/>
+    </issue>
+
+    <issue
+        id="UseTomlInstead"
+        message="Use version catalog instead"
+        errorLine1="    testImplementation(&quot;org.json:json:20240303&quot;)"
+        errorLine2="                       ~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="build.gradle.kts"
+            line="293"
+            column="24"/>
+    </issue>
+
+</issues>

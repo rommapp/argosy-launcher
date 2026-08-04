@@ -30,9 +30,6 @@ import androidx.compose.ui.draw.blur
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.ime
-import androidx.compose.ui.platform.LocalDensity
 import android.content.Intent
 import com.nendo.argosy.ui.util.doubleTapNoFocus
 import androidx.compose.ui.layout.onSizeChanged
@@ -109,10 +106,13 @@ import com.nendo.argosy.ui.theme.gripReserveBottomInset
 import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+
+private const val KEY_SINK_RECLAIM_GRACE_MS = 250L
 
 @Composable
 fun ArgosyApp(
@@ -1046,7 +1046,9 @@ fun ArgosyApp(
             dimmerState = screenDimmerState
         ) {
             var keySinkFocused by remember { mutableStateOf(false) }
-            val imeVisible = WindowInsets.ime.getBottom(LocalDensity.current) > 0
+            val imeManager = remember(context) {
+                context.getSystemService(android.view.inputmethod.InputMethodManager::class.java)
+            }
 
             Box(
                 modifier = Modifier
@@ -1070,9 +1072,16 @@ fun ArgosyApp(
                  * the real cause rather than the few state changes we thought to enumerate. Typing
                  * is the one time something else is meant to hold focus, and a raised keyboard is
                  * what says so.
+                 *
+                 * A text field takes focus before the keyboard it asks for is up, so the reclaim
+                 * waits out that gap and then asks the input manager directly whether a field is
+                 * connected. The window inset is not trusted for this: it reads zero here even
+                 * with the keyboard on screen, which is what made every text field unusable.
                  */
-                LaunchedEffect(keySinkFocused, imeVisible, drawerState.isOpen, uiState.isFirstRun) {
-                    if (!keySinkFocused && !imeVisible && !drawerState.isOpen) {
+                LaunchedEffect(keySinkFocused, drawerState.isOpen, uiState.isFirstRun) {
+                    if (!keySinkFocused && !drawerState.isOpen) {
+                        delay(KEY_SINK_RECLAIM_GRACE_MS)
+                        if (imeManager?.isAcceptingText == true) return@LaunchedEffect
                         rootFocusRequester.requestFocus()
                     }
                 }

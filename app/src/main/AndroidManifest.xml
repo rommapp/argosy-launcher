@@ -85,6 +85,7 @@
             android:resumeWhilePausing="true"
             android:taskAffinity=""
             android:configChanges="orientation|screenSize|screenLayout|keyboardHidden"
+            android:windowSoftInputMode="adjustResize"
             android:theme="@style/Theme.Argosy">
 
             <intent-filter>

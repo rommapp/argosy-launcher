@@ -781,8 +781,15 @@ class MainActivity : ComponentActivity() {
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
     }
 
+    /**
+     * Re-hides the system bars whenever something brings them back.
+     *
+     * The listener must return the decor view's own inset handling rather than the insets it was
+     * given: it replaces that handling, and skipping it stops insets reaching the content view,
+     * which leaves Compose reading zero for the IME and every text field unusable.
+     */
     private fun installSystemBarsWatchdog() {
-        androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(window.decorView) { _, insets ->
+        androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(window.decorView) { view, insets ->
             if (insets.isVisible(WindowInsetsCompat.Type.systemBars())) {
                 // Hide inline rather than via View.post - posting delays the request to the
                 // next UI tick, which is enough for the bars to stay drawn between insets
@@ -790,7 +797,7 @@ class MainActivity : ComponentActivity() {
                 WindowInsetsControllerCompat(window, window.decorView)
                     .hide(WindowInsetsCompat.Type.systemBars())
             }
-            insets
+            androidx.core.view.ViewCompat.onApplyWindowInsets(view, insets)
         }
         // Force a synchronous insets pass so the listener fires immediately after install.
         androidx.core.view.ViewCompat.requestApplyInsets(window.decorView)

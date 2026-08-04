@@ -1,6 +1,6 @@
 ---
 name: ra-compliance
-description: Verify RetroAchievements hardcore compliance before release. Checks save state blocking, cheat blocking, rewind blocking, and save isolation.
+description: Verify RetroAchievements hardcore compliance and RA Connect wire shapes. Use before any release touching RA, AND whenever editing RAApi, RAModels, RetroAchievementsRepository or any dorequest endpoint. Checks save state blocking, cheat blocking, rewind blocking, save isolation, and that request/response shapes match vendored rcheevos rather than being inferred.
 ---
 
 # RetroAchievements Compliance Review
@@ -367,7 +367,16 @@ against upstream sources, never inferred**:
   richpresence, runtime, runtime_progress, trigger, value) plus
   `rcheevos_stubs.c`. `rc_client.c` and `src/rapi/` are NOT in the build.
   So rcheevos is the authority for condition evaluation, memory peek
-  semantics and runtime progress - NOT for anything on the wire.
+  semantics and runtime progress.
+- The uncompiled `src/rapi/` IS still the reference for Connect wire shapes.
+  Before writing or changing any `RAApi` endpoint or `RAModels` response class,
+  read the matching `rc_api_*.c` request builder and response parser, and its
+  fixtures in `test/rapi/`, and match field names, casing and nullability to
+  what they show. Uncompiled means it does not run in our build, not that it is
+  not authoritative. Inferring a shape instead of reading it is how the `gameid`
+  hash lookup shipped parsing JSON as a bare number and silently resolved every
+  game to "no match" for five months (36a95c82, fixed in #330); the RomM `raId`
+  fallback hid it the entire time.
 - ALL RA server traffic is Kotlin: `RAApi` (Retrofit) driven by
   `RetroAchievementsRepository`. Hardcore flags, validation hashes, session
   start and awards are ours to get right; there is no native client to defer

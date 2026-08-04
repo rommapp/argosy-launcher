@@ -18,6 +18,11 @@ import com.nendo.argosy.data.platform.LocalPlatformIds
 private const val TAG = "AndroidGameScanner"
 private const val ANDROID_SLUG = "android"
 
+data class AndroidScanResult(
+    val added: Int = 0,
+    val enriched: Int = 0
+)
+
 
 @Singleton
 class AndroidGameScanner @Inject constructor(
@@ -45,7 +50,7 @@ class AndroidGameScanner @Inject constructor(
      * back from insertion. Inserting alongside one of those is how this feature historically
      * produced duplicate rows for a single game.
      */
-    suspend fun scanInstalledGames(): Int = withContext(Dispatchers.IO) {
+    suspend fun scanInstalledGames(): AndroidScanResult = withContext(Dispatchers.IO) {
         ensureAndroidPlatformExists()
         relinkInstalledRommAndroidApps()
 
@@ -62,9 +67,17 @@ class AndroidGameScanner @Inject constructor(
         val installed = appsRepository.getInstalledApps(includeSystemApps = false)
             .filter { !isEmulatorPackage(it.packageName) }
         var added = 0
+        var enriched = 0
 
         for (app in installed) {
-            if (gameDao.getByPackageName(app.packageName) != null) continue
+            val existing = gameDao.getByPackageName(app.packageName)
+            if (existing != null) {
+                if (needsMetadata(existing)) {
+                    metadataFetcher.fetch(existing.id, app.packageName)
+                    enriched++
+                }
+                continue
+            }
             if (app.packageName in spokenFor || matchKey(app.label) in spokenFor) {
                 Log.d(TAG, "scanInstalledGames: ${app.packageName} matches an unlinked RomM row, skipping")
                 continue
@@ -90,9 +103,23 @@ class AndroidGameScanner @Inject constructor(
         }
 
         if (added > 0) updatePlatformGameCount()
-        Log.d(TAG, "scanInstalledGames: added $added of ${installed.size} installed apps")
-        added
+        Log.d(TAG, "scanInstalledGames: added $added, enriched $enriched of ${installed.size} installed apps")
+        AndroidScanResult(added = added, enriched = enriched)
     }
+
+    /**
+     * Whether a row is still missing what the store could tell us about it.
+     *
+     * Only apps we added ourselves qualify. A RomM-sourced game already carries the server's
+     * artwork, and re-running a store fetch over it would replace that cover with a Play Store
+     * one - the regression #223 was filed for.
+     *
+     * A cover alone is not evidence of a successful lookup, because a failed one still caches the
+     * launcher icon as the cover. The description is the honest signal that the store answered.
+     */
+    private fun needsMetadata(game: GameEntity): Boolean =
+        game.source == GameSource.ANDROID_APP &&
+            (game.description.isNullOrBlank() || game.coverPath == null)
 
     /**
      * The Android platform exists whether or not anything is on it, because its own settings

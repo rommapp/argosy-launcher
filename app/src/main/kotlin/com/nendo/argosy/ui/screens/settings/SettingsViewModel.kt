@@ -420,14 +420,19 @@ class SettingsViewModel @Inject constructor(
         val platformIndex = _uiState.value.platformDetail.platformIndex
         _uiState.update { it.copy(platformDetail = it.platformDetail.copy(isScanning = true)) }
         viewModelScope.launch {
-            val added = runCatching { androidGameScanner.scanInstalledGames() }.getOrDefault(0)
+            val result = runCatching { androidGameScanner.scanInstalledGames() }
+                .getOrDefault(com.nendo.argosy.data.scanner.AndroidScanResult())
             _uiState.update { it.copy(platformDetail = it.platformDetail.copy(isScanning = false)) }
             loadPlatformDetailStats(platformIndex)
 
+            val parts = buildList {
+                if (result.added > 0) add("${result.added} added")
+                if (result.enriched > 0) add("${result.enriched} updated")
+            }
             notificationManager.show(
                 title = "Scan Complete",
-                subtitle = if (added > 0) {
-                    "Android: $added added"
+                subtitle = if (parts.isNotEmpty()) {
+                    "Android: ${parts.joinToString(", ")}"
                 } else {
                     "Android: nothing new. Add others from Apps."
                 },

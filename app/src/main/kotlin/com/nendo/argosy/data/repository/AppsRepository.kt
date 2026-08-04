@@ -6,7 +6,7 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
-import android.os.Build
+import androidx.core.content.ContextCompat
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.awaitClose
@@ -32,9 +32,7 @@ data class InstalledApp(
  * plenty of games set no category at all.
  */
 private fun ApplicationInfo.declaresGameCategory(): Boolean {
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && category == ApplicationInfo.CATEGORY_GAME) {
-        return true
-    }
+    if (category == ApplicationInfo.CATEGORY_GAME) return true
     @Suppress("DEPRECATION")
     return (flags and ApplicationInfo.FLAG_IS_GAME) != 0
 }
@@ -59,7 +57,12 @@ class AppsRepository @Inject constructor(
             addDataScheme("package")
         }
 
-        context.registerReceiver(receiver, filter)
+        ContextCompat.registerReceiver(
+            context,
+            receiver,
+            filter,
+            ContextCompat.RECEIVER_NOT_EXPORTED
+        )
 
         awaitClose {
             context.unregisterReceiver(receiver)

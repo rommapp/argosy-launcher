@@ -168,10 +168,14 @@ class RetroAchievementsRepository @Inject constructor(
         if (!response.isSuccessful) {
             throw Exception("resolveGameId failed: HTTP ${response.code()}")
         }
-        val body = response.body()?.string()
+        val body = response.body()
             ?: throw Exception("resolveGameId: empty response body")
-        val gameId = body.trim().toLongOrNull() ?: 0
-        return if (gameId > 0) gameId else null
+        if (body.success) {
+            body.gameId?.let { return it.takeIf { id -> id > 0 } }
+        } else {
+            Logger.warn(TAG, "resolveGameId failed: ${body.error ?: "unknown error"}")
+        }
+        return null
     }
 
     suspend fun login(username: String, password: String): RALoginResult {

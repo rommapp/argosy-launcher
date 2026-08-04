@@ -32,6 +32,13 @@ data class RABaseResponse(
 )
 
 @JsonClass(generateAdapter = true)
+data class RAGameIdResponse(
+    @Json(name = "Success") val success: Boolean,
+    @Json(name = "GameID") val gameId: Long? = null,
+    @Json(name = "Error") val error: String? = null
+)
+
+@JsonClass(generateAdapter = true)
 data class RAGameInfoResponse(
     @Json(name = "Success") val success: Boolean,
     @Json(name = "PatchData") val patchData: RAPatchData? = null,

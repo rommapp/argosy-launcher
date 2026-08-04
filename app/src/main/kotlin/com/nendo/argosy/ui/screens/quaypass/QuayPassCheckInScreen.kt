@@ -141,23 +141,7 @@ fun QuayPassCheckInScreen(
                             fontWeight = FontWeight.SemiBold
                         )
                     }
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
-                    ) {
-                        Text(
-                            text = "Replay",
-                            style = MaterialTheme.typography.labelLarge,
-                            fontWeight = FontWeight.SemiBold,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(Dimens.radiusMd))
-                                .background(MaterialTheme.colorScheme.surfaceVariant)
-                                .clickableNoFocus { viewModel.replayArrival() }
-                                .padding(horizontal = Dimens.spacingSm, vertical = Dimens.spacingXs)
-                        )
-                        TicketBalanceChip(ticketBalance)
-                    }
+                    TicketBalanceChip(ticketBalance)
                 }
                 Text(
                     text = when (serviceState) {

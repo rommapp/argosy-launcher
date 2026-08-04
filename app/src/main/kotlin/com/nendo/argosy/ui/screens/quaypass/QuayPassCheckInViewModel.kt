@@ -299,16 +299,6 @@ class QuayPassCheckInViewModel @Inject constructor(
         }
     }
 
-    fun replayArrival() {
-        val card = cards.value.getOrNull(_uiState.value.focusedIndex)
-        val popup = if (card != null) {
-            ArrivalPopup(card.displayName ?: "@${card.username}", card.greeting, card.avatarPngBase64)
-        } else {
-            ArrivalPopup("Traveler", "Safe travels", null)
-        }
-        _arrivals.tryEmit(popup)
-        ledController.playNewPassAnimation()
-    }
 
     private fun QuayPassEncounterEntity.toArrivalPopup() = ArrivalPopup(
         name = displayName ?: "@$username",

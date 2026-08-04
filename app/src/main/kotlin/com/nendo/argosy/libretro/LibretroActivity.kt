@@ -1882,7 +1882,14 @@ class LibretroActivity : ComponentActivity() {
                 touchSizeScale = touchSettingsState.touchControlsSizeScale,
                 touchHaptic = touchSettingsState.touchControlsHaptic,
                 touchLockOrientation = touchSettingsState.touchControlsLockOrientation,
-                touchGenesis6Button = touchSettingsState.touchControlsGenesis6Button
+                touchGenesis6Button = touchSettingsState.touchControlsGenesis6Button,
+                hudEnabled = touchSettingsState.hudEnabled,
+                hudCorner = touchSettingsState.hudCorner,
+                hudShowBattery = touchSettingsState.hudShowBattery,
+                hudShowClock = touchSettingsState.hudShowClock,
+                hudShowPlaytime = touchSettingsState.hudShowPlaytime,
+                hudShowFps = touchSettingsState.hudShowFps,
+                hudShowLastSave = touchSettingsState.hudShowLastSave
             ),
             onControlsAction = ::handleControlsAction,
             coreOptions = buildCoreOptionItems(),

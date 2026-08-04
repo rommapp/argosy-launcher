@@ -61,7 +61,7 @@ interface RAApi {
     suspend fun resolveGameId(
         @Query("r") request: String = "gameid",
         @Query("m") hash: String
-    ): Response<okhttp3.ResponseBody>
+    ): Response<RAGameIdResponse>
 
     // Read-only unlock fetch for browsing UI. Does NOT register a play session
     // (unlike startsession which side-effects "Currently Playing" attribution).

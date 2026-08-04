@@ -651,6 +651,19 @@ class RetroAchievementsRepository @Inject constructor(
                     return@withLock unlocksCache[gameRaId]?.second
                 }
 
+                if (!hardcoreResponse.isSuccessful) {
+                    Logger.warn(
+                        TAG,
+                        "fetchUnlocksFresh: hardcore HTTP ${hardcoreResponse.code()} for game $gameRaId"
+                    )
+                    handleAuthFailure(
+                        hardcoreResponse.code(),
+                        hardcoreResponse.body()?.error,
+                        "fetchUnlocksFresh"
+                    )
+                    return@withLock unlocksCache[gameRaId]?.second
+                }
+
                 val casual = (casualResponse.body()?.userUnlocks ?: emptyList())
                     .filter { it != WARNING_UNLOCK_ID }
                     .toSet()

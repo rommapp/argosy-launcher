@@ -29,12 +29,17 @@ interface RAApi {
 
     @FormUrlEncoded
     @POST("dorequest.php")
+    /**
+     * `m` carries the ROM hash and `l` the client version, per rcheevos
+     * `src/rapi/rc_api_user.c` (rc_api_init_start_session_request). They were transposed here,
+     * so wiring a hash through would have sent an MD5 where the server expects a version string.
+     */
     suspend fun startSession(
         @Field("r") request: String = "startsession",
         @Field("u") username: String,
         @Field("t") token: String,
         @Field("g") gameId: Long,
-        @Field("l") gameHash: String? = null,
+        @Field("m") gameHash: String? = null,
         @Field("h") hardcore: Int = 0
     ): Response<RAStartSessionResponse>
 

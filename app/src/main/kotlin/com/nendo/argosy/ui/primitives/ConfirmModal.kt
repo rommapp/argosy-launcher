@@ -197,6 +197,7 @@ internal fun ModalActionButton(
     restLabelColor: Color,
     focused: Boolean,
     onClick: () -> Unit,
+    modifier: Modifier = Modifier,
     enabled: Boolean = true,
 ) {
     val theme = LocalArgosyTheme.current
@@ -216,7 +217,7 @@ internal fun ModalActionButton(
         label = "confirm-label",
     )
     Box(
-        modifier = Modifier
+        modifier = modifier
             .heightIn(min = Dimens.buttonHeight)
             .clip(shape)
             .background(background)

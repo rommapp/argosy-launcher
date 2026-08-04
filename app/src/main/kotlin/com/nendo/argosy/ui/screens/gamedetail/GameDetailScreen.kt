@@ -1189,6 +1189,8 @@ private fun GameDetailModals(
         state = uiState.saveChannel,
         savePath = uiState.saveChannel.savePath,
         onRenameTextChange = viewModel::updateRenameText,
+        onRenameConfirm = viewModel::confirmRename,
+        onRenameCancel = viewModel::dismissRenameDialog,
         onSlotClick = viewModel::setSlotIndex,
         onHistoryClick = viewModel::setHistoryIndex,
         onTabSwitch = viewModel::switchSaveTab,

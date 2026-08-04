@@ -34,10 +34,14 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import com.nendo.argosy.ui.theme.LocalLauncherTheme
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -50,6 +54,8 @@ import com.nendo.argosy.ui.components.FooterHintItem
 import com.nendo.argosy.ui.components.InputButton
 import com.nendo.argosy.ui.components.NestedModal
 import com.nendo.argosy.ui.primitives.ArgosyProgressBar
+import com.nendo.argosy.ui.primitives.ModalActionButton
+import com.nendo.argosy.ui.theme.LocalArgosyTheme
 import com.nendo.argosy.ui.primitives.ProgressBarStyle
 import com.nendo.argosy.ui.common.StateScreenshotViewer
 import com.nendo.argosy.util.formatSaveSize
@@ -60,6 +66,8 @@ fun SaveChannelModal(
     state: SaveChannelState,
     savePath: String? = null,
     onRenameTextChange: (String) -> Unit,
+    onRenameConfirm: () -> Unit = {},
+    onRenameCancel: () -> Unit = {},
     onSlotClick: (Int) -> Unit = {},
     onHistoryClick: (Int) -> Unit = {},
     onTabSwitch: (SaveTab) -> Unit = {},
@@ -182,7 +190,9 @@ fun SaveChannelModal(
             RenameChannelOverlay(
                 mode = state.renameMode,
                 text = state.renameText,
-                onTextChange = onRenameTextChange
+                onTextChange = onRenameTextChange,
+                onConfirm = onRenameConfirm,
+                onCancel = onRenameCancel
             )
         }
 
@@ -793,18 +803,32 @@ private fun RestoreConfirmationOverlay() {
 private fun RenameChannelOverlay(
     mode: RenameMode,
     text: String,
-    onTextChange: (String) -> Unit
+    onTextChange: (String) -> Unit,
+    onConfirm: () -> Unit,
+    onCancel: () -> Unit
 ) {
     val title = when (mode) {
         RenameMode.SAVE_AS -> "SAVE AS"
         RenameMode.NEW_SLOT -> "NEW SAVE SLOT"
         RenameMode.RENAME -> "RENAME SAVE SLOT"
     }
+    val confirmLabel = when (mode) {
+        RenameMode.SAVE_AS -> "Save"
+        RenameMode.NEW_SLOT -> "Create"
+        RenameMode.RENAME -> "Rename"
+    }
     val prompt = when (mode) {
         RenameMode.SAVE_AS -> "Enter a name for this save slot"
         RenameMode.NEW_SLOT -> "Enter a name for this save slot"
         RenameMode.RENAME -> "Enter a new name"
     }
+    val theme = LocalArgosyTheme.current
+    val focusRequester = remember { FocusRequester() }
+
+    LaunchedEffect(Unit) {
+        focusRequester.requestFocus()
+    }
+
     NestedModal(
         title = title,
         footerHints = listOf(
@@ -822,7 +846,9 @@ private fun RenameChannelOverlay(
         OutlinedTextField(
             value = text,
             onValueChange = onTextChange,
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .focusRequester(focusRequester),
             placeholder = {
                 Text("Slot name")
             },
@@ -832,6 +858,31 @@ private fun RenameChannelOverlay(
                 unfocusedBorderColor = MaterialTheme.colorScheme.outline
             )
         )
+
+        Spacer(modifier = Modifier.height(Dimens.spacingMd))
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
+        ) {
+            ModalActionButton(
+                label = "Cancel",
+                tint = theme.textDim,
+                restLabelColor = theme.textPrimary,
+                focused = false,
+                onClick = onCancel,
+                modifier = Modifier.weight(1f)
+            )
+            ModalActionButton(
+                label = confirmLabel,
+                tint = theme.focusAccent,
+                restLabelColor = theme.textPrimary,
+                focused = false,
+                onClick = onConfirm,
+                enabled = text.isNotBlank(),
+                modifier = Modifier.weight(1f)
+            )
+        }
     }
 }
 

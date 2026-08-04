@@ -106,6 +106,7 @@ class AppsViewModel @Inject constructor(
     private val platformRepository: PlatformRepository,
     private val playStoreService: PlayStoreService,
     private val imageCacheManager: ImageCacheManager,
+    private val metadataFetcher: com.nendo.argosy.data.scanner.AndroidAppMetadataFetcher,
     private val displayAffinityHelper: com.nendo.argosy.util.DisplayAffinityHelper,
     @ApplicationContext private val context: Context
 ) : ViewModel() {
@@ -378,47 +379,8 @@ class AppsViewModel @Inject constructor(
         }
     }
 
-    private suspend fun fetchMetadataForApp(gameId: Long, packageName: String) {
-        val details = try {
-            playStoreService.getAppDetails(packageName).getOrNull()
-        } catch (_: Exception) {
-            null
-        }
-
-        if (details != null) {
-            try {
-                val game = gameRepository.getById(gameId)
-                if (game != null) {
-                    val updated = game.copy(
-                        description = details.description ?: game.description,
-                        developer = details.developer ?: game.developer,
-                        genre = details.genre ?: game.genre,
-                        rating = details.ratingPercent ?: game.rating,
-                        screenshotPaths = details.screenshotUrls.takeIf { it.isNotEmpty() }
-                            ?.joinToString(",") ?: game.screenshotPaths,
-                        backgroundPath = details.screenshotUrls.firstOrNull() ?: game.backgroundPath
-                    )
-                    gameRepository.update(updated)
-
-                    details.screenshotUrls.firstOrNull()?.let { url ->
-                        imageCacheManager.queueBackgroundCacheByGameId(url, gameId, game.title)
-                    }
-                    if (details.screenshotUrls.isNotEmpty()) {
-                        imageCacheManager.queueScreenshotCacheByGameId(gameId, details.screenshotUrls)
-                    }
-                }
-            } catch (_: Exception) {
-                // Silently fail - metadata update is best-effort
-            }
-        }
-
-        // Prefer Play Store cover; fall back to launcher app icon so non-game apps still get cover art.
-        if (details?.coverUrl != null) {
-            imageCacheManager.queueCoverCacheByGameId(details.coverUrl, gameId)
-        } else {
-            imageCacheManager.queueAppIconCache(gameId, packageName)
-        }
-    }
+    private suspend fun fetchMetadataForApp(gameId: Long, packageName: String) =
+        metadataFetcher.fetch(gameId, packageName)
 
     private suspend fun ensureAndroidPlatformExists() {
         val existing = platformRepository.getById(LocalPlatformIds.ANDROID)

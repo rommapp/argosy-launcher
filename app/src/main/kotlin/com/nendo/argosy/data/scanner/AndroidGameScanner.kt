@@ -25,7 +25,8 @@ class AndroidGameScanner @Inject constructor(
     private val appCategoryDao: AppCategoryDao,
     private val gameDao: GameDao,
     private val platformDao: PlatformDao,
-    private val syncPreferencesRepository: com.nendo.argosy.data.preferences.SyncPreferencesRepository
+    private val syncPreferencesRepository: com.nendo.argosy.data.preferences.SyncPreferencesRepository,
+    private val metadataFetcher: AndroidAppMetadataFetcher
 ) {
 
     /**
@@ -70,7 +71,7 @@ class AndroidGameScanner @Inject constructor(
             }
             if (!looksLikeGame(app)) continue
 
-            gameDao.insert(
+            val gameId = gameDao.insert(
                 GameEntity(
                     platformId = LocalPlatformIds.ANDROID,
                     platformSlug = ANDROID_SLUG,
@@ -85,6 +86,7 @@ class AndroidGameScanner @Inject constructor(
                 )
             )
             added++
+            metadataFetcher.fetch(gameId, app.packageName)
         }
 
         if (added > 0) updatePlatformGameCount()

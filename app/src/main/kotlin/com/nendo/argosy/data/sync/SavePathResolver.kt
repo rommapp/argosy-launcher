@@ -26,6 +26,14 @@ import javax.inject.Singleton
 
 private const val TAG = "SavePathResolver"
 
+/**
+ * PSX memory cards are named `{rom}_1.mcd` only by standalone DuckStation. libretro and
+ * RetroArch keep the card as the game's `.srm`, so a PC-authored `.mcd` pulled from the server
+ * lands there instead.
+ */
+private const val DUCKSTATION_EMULATOR_ID = "duckstation"
+private const val DUCKSTATION_CARD_SUFFIX = "_1.mcd"
+
 sealed interface SaveLookup {
     data class Found(val path: String) : SaveLookup
     data object Absent : SaveLookup
@@ -266,7 +274,7 @@ class SavePathResolver @Inject constructor(
             }
         }
 
-        if (platformSlug == "psx" && romPath != null) {
+        if (platformSlug == "psx" && romPath != null && emulatorId == DUCKSTATION_EMULATOR_ID) {
             val psxSave = discoverPSXSavePath(config, romPath, emulatorPackage)
             if (psxSave != null) {
                 Logger.debug(TAG, "discoverSavePath: PSX save found at $psxSave")
@@ -689,7 +697,7 @@ class SavePathResolver @Inject constructor(
             }
         }
 
-        if (platformSlug == "psx" && romPath != null) {
+        if (platformSlug == "psx" && romPath != null && emulatorId == DUCKSTATION_EMULATOR_ID) {
             val romNameNoExt = File(romPath).nameWithoutExtension
             return "$baseDir/${romNameNoExt}_1.mcd"
         }

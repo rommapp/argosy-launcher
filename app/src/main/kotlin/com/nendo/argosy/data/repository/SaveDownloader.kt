@@ -154,6 +154,7 @@ class SaveDownloader @Inject constructor(
         val isSwitchEmulator = resolvedEmulatorId in SaveSyncApiClient.SWITCH_EMULATOR_IDS
         Logger.debug(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | Save info | fileName=${serverSave.fileName}, isFolderBased=$isFolderBased, isGciFormat=$isGciFormat, isSwitchEmulator=$isSwitchEmulator")
 
+        var strandedCardToMigrate: String? = null
         val preDownloadTargetPath = if (isGciFormat) {
             null.also {
                 Logger.debug(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | GCI format, will download to temp and detect bundle vs single")
@@ -192,8 +193,19 @@ class SaveDownloader @Inject constructor(
                 }
             }
         } else {
-            val cachedFilePath = syncEntity.localSavePath?.takeIf { fal.exists(it) }
-            if (syncEntity.localSavePath != null && cachedFilePath == null) {
+            val strandedCard = syncEntity.localSavePath?.takeIf {
+                game.platformSlug == "psx" &&
+                    resolvedEmulatorId != DUCKSTATION_EMULATOR_ID &&
+                    it.endsWith(DUCKSTATION_CARD_SUFFIX) &&
+                    fal.exists(it)
+            }
+            strandedCardToMigrate = strandedCard
+            val cachedFilePath = syncEntity.localSavePath
+                ?.takeIf { strandedCard == null }
+                ?.takeIf { fal.exists(it) }
+            if (strandedCard != null) {
+                Logger.info(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | DuckStation-named card cached for a libretro save, re-resolving | stalePath=$strandedCard")
+            } else if (syncEntity.localSavePath != null && cachedFilePath == null) {
                 Logger.debug(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | Cached file path no longer exists on disk, re-discovering | stalePath=${syncEntity.localSavePath}")
             }
             val discovered = cachedFilePath
@@ -226,6 +238,13 @@ class SaveDownloader @Inject constructor(
             (retried ?: savePathResolver.constructSavePath(resolvedEmulatorId, game.title, game.platformSlug, game.localPath, preferredCore, game.saveId ?: game.titleId, gameId)).also {
                 Logger.debug(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | File save path | cached=${syncEntity.localSavePath != null}, discovered=${retried != null}, path=$it")
             }
+        }
+
+        if (strandedCardToMigrate != null && preDownloadTargetPath != null && !fal.exists(preDownloadTargetPath)) {
+            val carried = runCatching {
+                fal.copyFile(strandedCardToMigrate, preDownloadTargetPath)
+            }.getOrDefault(false)
+            Logger.info(TAG, "[SaveSync] DOWNLOAD gameId=$gameId | Carried stranded card to the libretro name | from=$strandedCardToMigrate, to=$preDownloadTargetPath, ok=$carried")
         }
 
         if (!isSwitchEmulator && !isFolderBased && !isGciFormat && preDownloadTargetPath == null) {
@@ -1039,5 +1058,7 @@ class SaveDownloader @Inject constructor(
 
     companion object {
         private const val TAG = "SaveDownloader"
+        private const val DUCKSTATION_EMULATOR_ID = "duckstation"
+        private const val DUCKSTATION_CARD_SUFFIX = "_1.mcd"
     }
 }

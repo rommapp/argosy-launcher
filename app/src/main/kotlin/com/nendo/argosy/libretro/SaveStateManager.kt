@@ -84,6 +84,9 @@ class SaveStateManager(
      * once, leaving a real save under a path nothing reads. The upgrade is invisible to the user:
      * the card simply comes up blank.
      *
+     * PSX cards written before the switch to `.srm` are the same shape of problem: the bytes are
+     * identical, only the name the core looks for moved.
+     *
      * Only ever copies, and only when nothing exists at the destination, so an existing save is
      * never overwritten and the original stays where it was.
      */
@@ -119,6 +122,8 @@ class SaveStateManager(
         return buildList {
             names.forEach { name -> add(File(savesDir, "$name.srm")) }
             variantDirs.forEach { dir -> names.forEach { name -> add(File(dir, "$name.srm")) } }
+            names.forEach { name -> add(File(savesDir, "$name$LEGACY_CARD_SUFFIX")) }
+            variantDirs.forEach { dir -> names.forEach { name -> add(File(dir, "$name$LEGACY_CARD_SUFFIX")) } }
         }.filter { it.absolutePath != getSramFile().absolutePath }
     }
 
@@ -513,6 +518,7 @@ class SaveStateManager(
 
     companion object {
         private const val TAG = "SaveStateManager"
+        private const val LEGACY_CARD_SUFFIX = "_1.mcd"
         const val AUTO_SLOT = LibretroStateSlots.AUTO_SLOT
         const val RESUME_SLOT = LibretroStateSlots.RESUME_SLOT
         const val MAX_SLOT = LibretroStateSlots.MAX_SLOT

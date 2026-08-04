@@ -82,13 +82,12 @@ class AppsRepository @Inject constructor(
                 InstalledApp(
                     packageName = appInfo.packageName,
                     label = resolveInfo.loadLabel(packageManager).toString(),
-                    isSystemApp = isSystem,
+                    isSystemApp = isSystem || isArgosy(appInfo.packageName),
                     declaresGameCategory = appInfo.declaresGameCategory()
                 )
             }
             .distinctBy { it.packageName }
             .filter { includeSystemApps || !it.isSystemApp }
-            .filterNot { isArgosy(it.packageName) }
             .sortedBy { it.label.lowercase() }
             .toList()
     }
@@ -98,9 +97,14 @@ class AppsRepository @Inject constructor(
     }
 
     /**
-     * Every Argosy on the device, not just this one. A second build installed alongside - a debug
+     * Every Argosy on the device, not just this one. These are reported as system apps rather
+     * than dropped, so they stay reachable from anywhere that asks for system apps while staying
+     * out of the ordinary list.
+     *
+     * They are worth keeping out of the way because a second build installed alongside - a debug
      * flavour next to a release - is a launcher too, and starting it hands it the display this one
-     * is running on, which ends the session that opened the drawer.
+     * is running on, which ends the session that opened the drawer. That is a reason to demote
+     * them, not to make them unreachable.
      */
     private fun isArgosy(packageName: String): Boolean =
         packageName == context.packageName ||

@@ -59,6 +59,7 @@ import com.nendo.argosy.ui.common.rememberCoverAspectRatio
 import com.nendo.argosy.ui.common.rememberFileImageModel
 import com.nendo.argosy.ui.components.Box3dCover
 import com.nendo.argosy.ui.components.GameTitle
+import com.nendo.argosy.ui.components.SystemStatusBar
 import com.nendo.argosy.ui.dualscreen.ShowcaseAmbience
 import com.nendo.argosy.ui.dualscreen.ShowcaseEyebrow
 import com.nendo.argosy.ui.dualscreen.ShowcaseRatingsCluster
@@ -134,6 +135,14 @@ fun DualGameDetailUpperScreen(
             GameInfoDisplay(
                 state = state,
                 footerHints = footerHints
+            )
+        }
+
+        if (viewerPath == null && stateScreenshotPath == null) {
+            SystemStatusBar(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(horizontal = Dimens.spacingXxl, vertical = Dimens.spacingLg)
             )
         }
 

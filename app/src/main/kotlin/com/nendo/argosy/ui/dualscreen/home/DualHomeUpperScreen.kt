@@ -47,6 +47,7 @@ import coil.compose.AsyncImage
 import com.nendo.argosy.ui.common.rememberFileImageModel
 import com.nendo.argosy.ui.components.Box3dCover
 import com.nendo.argosy.ui.components.GameTitle
+import com.nendo.argosy.ui.components.SystemStatusBar
 import com.nendo.argosy.ui.dualscreen.ShowcaseAmbience
 import com.nendo.argosy.ui.dualscreen.ShowcaseEyebrow
 import com.nendo.argosy.ui.dualscreen.ShowcaseRatingsCluster
@@ -105,6 +106,12 @@ fun DualHomeUpperScreen(
             .background(theme.surfaceBase)
     ) {
         ShowcaseAmbience(artPath = effectiveBackgroundPath)
+
+        SystemStatusBar(
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .padding(horizontal = Dimens.spacingXxl, vertical = Dimens.spacingLg)
+        )
 
         Column(modifier = Modifier.fillMaxSize()) {
             if (state.gameId > 0) {

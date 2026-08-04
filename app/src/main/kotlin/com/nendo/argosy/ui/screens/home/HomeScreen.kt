@@ -684,7 +684,8 @@ fun HomeScreen(
                     onSelectRow = viewModel::selectRow,
                     isStacked = isPortrait,
                     headerOffset = videoModeHeaderOffset,
-                    showSections = !isCustomGrid
+                    showSections = !isCustomGrid,
+                    compact = isAutoGrid && !uiState.autoGridConfig.showTitles
                 )
             }
 
@@ -1214,13 +1215,16 @@ private fun HomeHeader(
     onSelectRow: (HomeRow) -> Unit,
     isStacked: Boolean,
     headerOffset: androidx.compose.ui.unit.Dp = 0.dp,
-    showSections: Boolean = true
+    showSections: Boolean = true,
+    compact: Boolean = false
 ) {
+    val edge = if (compact) Dimens.spacingMd else Dimens.spacingLg
+    val verticalEdge = if (compact) Dimens.spacingXs else Dimens.spacingLg
     if (!showSections) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(Dimens.spacingLg)
+                .padding(horizontal = edge, vertical = verticalEdge)
                 .offset(y = headerOffset),
             horizontalArrangement = Arrangement.End,
             verticalAlignment = Alignment.CenterVertically
@@ -1234,7 +1238,7 @@ private fun HomeHeader(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(Dimens.spacingLg)
+                .padding(horizontal = edge, vertical = verticalEdge)
                 .offset(y = headerOffset),
             verticalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
         ) {
@@ -1259,7 +1263,7 @@ private fun HomeHeader(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(Dimens.spacingLg)
+            .padding(horizontal = edge, vertical = verticalEdge)
             .offset(y = headerOffset),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically

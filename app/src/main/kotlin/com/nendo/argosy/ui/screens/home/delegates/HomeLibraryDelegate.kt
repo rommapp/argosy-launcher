@@ -48,7 +48,7 @@ import javax.inject.Singleton
 
 private const val PLATFORM_GAMES_LIMIT = 20
 private const val TILE_PICKER_LIMIT = 60
-private const val MAX_DISPLAYED_RECOMMENDATIONS = 8
+private const val MAX_DISPLAYED_RECOMMENDATIONS = 16
 private const val RECOMMENDATION_PENALTY = 0.9f
 private val EXCLUDED_RECOMMENDATION_STATUSES = setOf(
     CompletionStatus.FINISHED.apiValue,

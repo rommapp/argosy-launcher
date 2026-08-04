@@ -12,8 +12,8 @@ import java.time.LocalDate
 import java.time.temporal.TemporalAdjusters
 import javax.inject.Inject
 
-private const val TOTAL_RECOMMENDATIONS = 16
-private const val UNDOWNLOADED_TARGET = 12
+private const val TOTAL_RECOMMENDATIONS = 24
+private const val UNDOWNLOADED_TARGET = 18
 private const val DECAY_AMOUNT = 0.1f
 private const val FAVORITE_PENALTY = 0.5f
 

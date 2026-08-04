@@ -26,6 +26,7 @@ import kotlinx.coroutines.withContext
 import com.nendo.argosy.ui.screens.settings.PlatformMigrationInfo
 import com.nendo.argosy.ui.screens.settings.PlatformStorageConfig
 import com.nendo.argosy.ui.screens.settings.StorageState
+import com.nendo.argosy.util.Logger
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -144,14 +145,14 @@ class StorageSettingsDelegate @Inject constructor(
         _launchFolderPicker.value = false
     }
 
-    fun setStoragePath(uriString: String) {
+    fun setStoragePath(scope: CoroutineScope, uriString: String) {
         if (rejectIfPrivateAppPath(uriString)) return
         val currentState = _state.value
         if (currentState.downloadedGamesCount > 0 && currentState.romStoragePath.isNotBlank()) {
             _showMigrationDialog.value = true
             _pendingStoragePath.value = uriString
         } else {
-            applyStoragePath(uriString)
+            applyStoragePath(uriString, scope)
         }
     }
 
@@ -191,15 +192,14 @@ class StorageSettingsDelegate @Inject constructor(
         _pendingStoragePath.value = null
     }
 
-    fun skipMigration() {
+    fun skipMigration(scope: CoroutineScope) {
         val pendingPath = _pendingStoragePath.value ?: return
         _showMigrationDialog.value = false
-        applyStoragePath(pendingPath)
+        applyStoragePath(pendingPath, scope)
     }
 
-    private fun applyStoragePath(uriString: String, scope: CoroutineScope? = null) {
-        val applyScope = scope ?: kotlinx.coroutines.GlobalScope
-        applyScope.launch {
+    private fun applyStoragePath(uriString: String, scope: CoroutineScope) {
+        scope.launch {
             preferencesRepository.setRomStoragePath(uriString)
             val availableSpace = gameRepository.getAvailableStorageBytes()
             _state.update {
@@ -209,7 +209,20 @@ class StorageSettingsDelegate @Inject constructor(
                 )
             }
             _pendingStoragePath.value = null
+            rediscoverAllPlatforms()
         }
+    }
+
+    /**
+     * The global folder is the other half of the per-platform one: pointing Argosy at a library
+     * that is already on disk has to look at it, or every game keeps offering Download until an
+     * unrelated trigger happens to fire.
+     *
+     * Fill-null-only, so it can add links but never move or drop one.
+     */
+    private suspend fun rediscoverAllPlatforms() {
+        runCatching { gameRepository.discoverLocalFiles() }
+            .onFailure { Logger.warn(TAG, "rediscoverAllPlatforms failed", it) }
     }
 
     private fun migrateDownloads(scope: CoroutineScope, newPath: String) {
@@ -222,6 +235,7 @@ class StorageSettingsDelegate @Inject constructor(
 
             _state.update { it.copy(romStoragePath = newPath) }
             _isMigrating.value = false
+            rediscoverAllPlatforms()
             refreshCollectionStats(scope)
         }
     }
@@ -375,9 +389,22 @@ class StorageSettingsDelegate @Inject constructor(
                 updatePlatformConfigInState(platformId) {
                     it.copy(customRomPath = newPath, effectivePath = newPath)
                 }
+                rediscoverPlatform(platformId)
             }
         }
         pendingPlatformId = null
+    }
+
+    /**
+     * A platform's folder is only worth pointing at because roms are already in it, so a path
+     * change has to look. Without this the library keeps offering Download for content sitting
+     * in the directory the user just chose, until some unrelated trigger happens to fire.
+     *
+     * Fill-null-only, so it can add links but never move or drop one.
+     */
+    private suspend fun rediscoverPlatform(platformId: Long) {
+        runCatching { gameRepository.discoverLocalFilesForPlatform(platformId) }
+            .onFailure { Logger.warn(TAG, "rediscoverPlatform failed | platformId=$platformId", it) }
     }
 
     fun resetPlatformToGlobal(scope: CoroutineScope, platformId: Long) {
@@ -405,6 +432,7 @@ class StorageSettingsDelegate @Inject constructor(
                 updatePlatformConfigInState(platformId) {
                     it.copy(customRomPath = null, effectivePath = newPath)
                 }
+                rediscoverPlatform(platformId)
             }
         }
     }
@@ -420,6 +448,7 @@ class StorageSettingsDelegate @Inject constructor(
                 newPath = info.newPath,
                 isResetToGlobal = info.isResetToGlobal
             )
+            rediscoverPlatform(info.platformId)
             loadPlatformConfigs(scope)
             refreshCollectionStats(scope)
         }
@@ -445,6 +474,7 @@ class StorageSettingsDelegate @Inject constructor(
                     it.copy(customRomPath = info.newPath, effectivePath = info.newPath)
                 }
             }
+            rediscoverPlatform(info.platformId)
         }
     }
 

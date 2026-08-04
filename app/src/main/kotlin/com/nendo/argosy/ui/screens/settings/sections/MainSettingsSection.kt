@@ -91,18 +91,19 @@ internal sealed class MainSettingsItem(
     data object About : MainSettingsItem("about", Icons.Default.Info, "About", "system")
 
     companion object {
-        val ALL: List<MainSettingsItem> = listOf(
-            Header("launcherHeader", "launcher", "LAUNCHER"),
-            Theme, Interface, Navigation, Audio, Displays,
-            Header("gameplayHeader", "gameplay", "GAMEPLAY"),
-            BuiltinEmulator, Saves, RetroAchievements, Bios, Drivers,
-            Header("libraryHeader", "library", "LIBRARY"),
-            Platforms, Storage,
-            Header("connectionsHeader", "connections", "CONNECTIONS"),
-            RomM, Steam, Social,
-            Header("systemHeader", "system", "SYSTEM"),
-            Permissions, DeviceSettings, About
-        )
+        val ALL: List<MainSettingsItem>
+            get() = listOf(
+                Header("launcherHeader", "launcher", "LAUNCHER"),
+                Theme, Interface, Navigation, Audio, Displays,
+                Header("gameplayHeader", "gameplay", "GAMEPLAY"),
+                BuiltinEmulator, Saves, RetroAchievements, Bios, Drivers,
+                Header("libraryHeader", "library", "LIBRARY"),
+                Platforms, Storage,
+                Header("connectionsHeader", "connections", "CONNECTIONS"),
+                RomM, Steam, Social,
+                Header("systemHeader", "system", "SYSTEM"),
+                Permissions, DeviceSettings, About
+            )
     }
 }
 

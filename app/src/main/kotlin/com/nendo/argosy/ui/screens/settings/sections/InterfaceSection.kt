@@ -53,6 +53,7 @@ internal sealed class InterfaceItem(
     ) : InterfaceItem(key, section, visibleWhen)
 
     data object UiScale : InterfaceItem("uiScale", "layout")
+    data object CompactFooter : InterfaceItem("compactFooter", "layout")
     data object GripReserve : InterfaceItem("gripReserve", "layout")
     data object GripReservePercent : InterfaceItem(
         "gripReservePercent",
@@ -66,12 +67,15 @@ internal sealed class InterfaceItem(
     companion object {
         /**
          * A getter, not a stored list. As a `val` this is a static of the sealed class
-         * itself, so it is computed during that class's initialization, which is the same
-         * initialization the `data object` entries below are waiting on: the list would be
-         * built out of entries that are still null.
+         * itself, so it is built during that class's initialization, which is the same
+         * initialization the `data object` entries above are waiting on: whichever
+         * entries have not been constructed yet land in the list as nulls.
          */
         val ALL: List<InterfaceItem>
-            get() = listOf(UiScale, GripReserve, GripReservePercent, HomeScreen, LibraryView, BoxArt)
+            get() = listOf(
+                UiScale, CompactFooter, GripReserve, GripReservePercent,
+                HomeScreen, LibraryView, BoxArt
+            )
     }
 }
 
@@ -143,6 +147,14 @@ fun InterfaceSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                     step = 5,
                     suffix = "%",
                     onAdjust = { viewModel.adjustUiScale(it) }
+                )
+
+                InterfaceItem.CompactFooter -> SwitchPreference(
+                    title = "Compact Footer",
+                    subtitle = "Use a thinner control guide bar",
+                    isEnabled = display.compactFooter,
+                    isFocused = isFocused(item),
+                    onToggle = { viewModel.setCompactFooter(it) }
                 )
 
                 InterfaceItem.GripReserve -> SwitchPreference(

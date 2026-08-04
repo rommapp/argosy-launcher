@@ -6,6 +6,7 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
+import android.os.Build
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.awaitClose
@@ -18,8 +19,25 @@ import javax.inject.Singleton
 data class InstalledApp(
     val packageName: String,
     val label: String,
-    val isSystemApp: Boolean
+    val isSystemApp: Boolean,
+    val declaresGameCategory: Boolean = false
 )
+
+/**
+ * Whether the package itself claims to be a game.
+ *
+ * `category` is what the Play Store listing sets and is the reliable signal on anything
+ * installed from a store; the deprecated flag is the only thing older sideloaded builds set, so
+ * both are consulted. A package that declares neither is not evidence of anything either way -
+ * plenty of games set no category at all.
+ */
+private fun ApplicationInfo.declaresGameCategory(): Boolean {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && category == ApplicationInfo.CATEGORY_GAME) {
+        return true
+    }
+    @Suppress("DEPRECATION")
+    return (flags and ApplicationInfo.FLAG_IS_GAME) != 0
+}
 
 @Singleton
 class AppsRepository @Inject constructor(
@@ -64,12 +82,12 @@ class AppsRepository @Inject constructor(
                 InstalledApp(
                     packageName = appInfo.packageName,
                     label = resolveInfo.loadLabel(packageManager).toString(),
-                    isSystemApp = isSystem
+                    isSystemApp = isSystem || isArgosy(appInfo.packageName),
+                    declaresGameCategory = appInfo.declaresGameCategory()
                 )
             }
             .distinctBy { it.packageName }
             .filter { includeSystemApps || !it.isSystemApp }
-            .filterNot { isArgosy(it.packageName) }
             .sortedBy { it.label.lowercase() }
             .toList()
     }
@@ -79,9 +97,14 @@ class AppsRepository @Inject constructor(
     }
 
     /**
-     * Every Argosy on the device, not just this one. A second build installed alongside - a debug
+     * Every Argosy on the device, not just this one. These are reported as system apps rather
+     * than dropped, so they stay reachable from anywhere that asks for system apps while staying
+     * out of the ordinary list.
+     *
+     * They are worth keeping out of the way because a second build installed alongside - a debug
      * flavour next to a release - is a launcher too, and starting it hands it the display this one
-     * is running on, which ends the session that opened the drawer.
+     * is running on, which ends the session that opened the drawer. That is a reason to demote
+     * them, not to make them unreachable.
      */
     private fun isArgosy(packageName: String): Boolean =
         packageName == context.packageName ||

@@ -181,20 +181,21 @@ internal sealed class BoxArtItem(
             visibleWhen = { it.boxArtBorderStyle == BoxArtBorderStyle.GRADIENT && it.gradientAdvancedMode }
         )
 
-        val ALL: List<BoxArtItem> = listOf(
-            StylingHeader,
-            Shape, CornerRadius, BorderThickness, BorderStyle, GlassTint,
-            GradientPresetItem, GradientAdvanced,
-            GradientHeader,
-            SampleGrid, SampleRadius, MinSaturation, MinBrightness,
-            HueDistance, SaturationBoost, BrightnessClamp,
-            IconHeader,
-            IndicatorStyle, IndicatorContent, IconPos, IconPad,
-            OuterHeader,
-            OuterEffect, OuterThickness, GlowIntensity, GlowColor,
-            InnerHeader,
-            InnerEffect, InnerThickness
-        )
+        val ALL: List<BoxArtItem>
+            get() = listOf(
+                StylingHeader,
+                Shape, CornerRadius, BorderThickness, BorderStyle, GlassTint,
+                GradientPresetItem, GradientAdvanced,
+                GradientHeader,
+                SampleGrid, SampleRadius, MinSaturation, MinBrightness,
+                HueDistance, SaturationBoost, BrightnessClamp,
+                IconHeader,
+                IndicatorStyle, IndicatorContent, IconPos, IconPad,
+                OuterHeader,
+                OuterEffect, OuterThickness, GlowIntensity, GlowColor,
+                InnerHeader,
+                InnerEffect, InnerThickness
+            )
     }
 }
 

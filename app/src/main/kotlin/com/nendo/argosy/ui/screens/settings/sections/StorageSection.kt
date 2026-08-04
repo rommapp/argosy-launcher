@@ -114,13 +114,14 @@ internal sealed class StorageItem(
         private val DangerSpacer = SectionSpacer("dangerSpacer", "danger")
         private val DangerHeader = Header("dangerHeader", "danger", "DANGER ZONE")
 
-        val ALL: List<StorageItem> = listOf(
-            VolumeHero, RecomputeRow, GamesTile, MusicTile, CachesTile, SteamTile,
-            LocationsSpacer, LocationsHeader,
-            GlobalRomPath, ImageCache, MusicLocation, BiosFolder, BuiltinSavePath, BuiltinStatePath,
-            DownloadsSpacer, DownloadsHeader, MaxDownloads, Threshold,
-            DangerSpacer, DangerHeader, ResetLibrary, HardReset
-        )
+        val ALL: List<StorageItem>
+            get() = listOf(
+                VolumeHero, RecomputeRow, GamesTile, MusicTile, CachesTile, SteamTile,
+                LocationsSpacer, LocationsHeader,
+                GlobalRomPath, ImageCache, MusicLocation, BiosFolder, BuiltinSavePath, BuiltinStatePath,
+                DownloadsSpacer, DownloadsHeader, MaxDownloads, Threshold,
+                DangerSpacer, DangerHeader, ResetLibrary, HardReset
+            )
     }
 }
 

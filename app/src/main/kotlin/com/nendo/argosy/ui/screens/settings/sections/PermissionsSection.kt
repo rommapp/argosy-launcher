@@ -65,9 +65,10 @@ private sealed class PermissionsItem(
     data object StatusFooter : PermissionsItem("statusFooter")
 
     companion object {
-        val ALL: List<PermissionsItem> = listOf(
-            InfoText, StorageAccess, UsageStats, Notifications, WriteSettings, ScreenCapture, DisplayOverlay, StatusFooter
-        )
+        val ALL: List<PermissionsItem>
+            get() = listOf(
+                InfoText, StorageAccess, UsageStats, Notifications, WriteSettings, ScreenCapture, DisplayOverlay, StatusFooter
+            )
     }
 }
 

@@ -394,7 +394,8 @@ fun ProvideArgosyThemeLocals(
             screenWidthDp = configuration.screenWidthDp,
             screenHeightDp = configuration.screenHeightDp,
             isSecondaryDisplay = isSecondaryDisplay
-        )
+        ),
+        compactFooter = themeState.compactFooter
     )
 
     val context = LocalContext.current

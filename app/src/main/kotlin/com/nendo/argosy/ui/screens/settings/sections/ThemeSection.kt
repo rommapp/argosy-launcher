@@ -52,12 +52,13 @@ internal sealed class ThemeItem(val key: String, val section: String) {
         private val IdentitySpacer = SectionSpacer("identitySpacer", "identity")
         private val IdentityHeader = Header("identityHeader", "identity", "Identity")
 
-        val ALL: List<ThemeItem> = listOf(
-            AppearanceHeader,
-            Mode, AccentColor, AccentFooter, SecondaryColor, TintBleed,
-            IdentitySpacer, IdentityHeader,
-            Backdrop, Fonts
-        )
+        val ALL: List<ThemeItem>
+            get() = listOf(
+                AppearanceHeader,
+                Mode, AccentColor, AccentFooter, SecondaryColor, TintBleed,
+                IdentitySpacer, IdentityHeader,
+                Backdrop, Fonts
+            )
     }
 }
 

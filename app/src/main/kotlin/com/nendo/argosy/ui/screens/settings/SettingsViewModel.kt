@@ -91,6 +91,7 @@ class SettingsViewModel @Inject constructor(
     internal val romMRepository: RomMRepository,
     internal val notificationManager: NotificationManager,
     internal val gameRepository: GameRepository,
+    private val androidGameScanner: com.nendo.argosy.data.scanner.AndroidGameScanner,
     internal val imageCacheManager: ImageCacheManager,
     internal val syncLibraryUseCase: SyncLibraryUseCase,
     internal val platformSyncQueue: com.nendo.argosy.data.sync.PlatformSyncQueue,
@@ -409,6 +410,32 @@ class SettingsViewModel @Inject constructor(
             notificationManager.show(
                 title = "Scan Complete",
                 subtitle = "$platformName: ${parts.joinToString(", ")}",
+                type = com.nendo.argosy.core.notification.NotificationType.SUCCESS,
+                duration = com.nendo.argosy.core.notification.NotificationDuration.MEDIUM
+            )
+        }
+    }
+
+    fun scanInstalledAndroidGames() {
+        val platformIndex = _uiState.value.platformDetail.platformIndex
+        _uiState.update { it.copy(platformDetail = it.platformDetail.copy(isScanning = true)) }
+        viewModelScope.launch {
+            val result = runCatching { androidGameScanner.scanInstalledGames() }
+                .getOrDefault(com.nendo.argosy.data.scanner.AndroidScanResult())
+            _uiState.update { it.copy(platformDetail = it.platformDetail.copy(isScanning = false)) }
+            loadPlatformDetailStats(platformIndex)
+
+            val parts = buildList {
+                if (result.added > 0) add("${result.added} added")
+                if (result.enriched > 0) add("${result.enriched} updated")
+            }
+            notificationManager.show(
+                title = "Scan Complete",
+                subtitle = if (parts.isNotEmpty()) {
+                    "Android: ${parts.joinToString(", ")}"
+                } else {
+                    "Android: nothing new. Add others from Apps."
+                },
                 type = com.nendo.argosy.core.notification.NotificationType.SUCCESS,
                 duration = com.nendo.argosy.core.notification.NotificationDuration.MEDIUM
             )
@@ -865,6 +892,7 @@ class SettingsViewModel @Inject constructor(
         displayDelegate.setHomeLayout(viewModelScope, settings)
     fun cycleHomeBackgroundMode(direction: Int = 1) = displayDelegate.cycleHomeBackgroundMode(viewModelScope, direction)
     fun setUseAccentColorFooter(use: Boolean) = displayDelegate.setUseAccentColorFooter(viewModelScope, use)
+    fun setCompactFooter(enabled: Boolean) = displayDelegate.setCompactFooter(viewModelScope, enabled)
     fun setCustomBackgroundPath(path: String?) = displayDelegate.setCustomBackgroundPath(viewModelScope, path)
     fun openBackgroundPicker() = displayDelegate.openBackgroundPicker(viewModelScope)
 
@@ -1313,10 +1341,10 @@ class SettingsViewModel @Inject constructor(
 
     fun openFolderPicker() = storageDelegate.openFolderPicker()
     fun clearFolderPickerFlag() = storageDelegate.clearFolderPickerFlag()
-    fun setStoragePath(uriString: String) = storageDelegate.setStoragePath(uriString)
+    fun setStoragePath(uriString: String) = storageDelegate.setStoragePath(viewModelScope, uriString)
     fun confirmMigration() = storageDelegate.confirmMigration(viewModelScope)
     fun cancelMigration() = storageDelegate.cancelMigration()
-    fun skipMigration() = storageDelegate.skipMigration()
+    fun skipMigration() = storageDelegate.skipMigration(viewModelScope)
     fun confirmBuiltinPathMigration() = routeConfirmBuiltinPathMigration(this)
     fun cancelBuiltinPathMigration() = routeCancelBuiltinPathMigration(this)
     fun skipBuiltinPathMigration() = routeSkipBuiltinPathMigration(this)

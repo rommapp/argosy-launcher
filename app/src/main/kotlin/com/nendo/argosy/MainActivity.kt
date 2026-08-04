@@ -722,6 +722,8 @@ class MainActivity : ComponentActivity() {
 
             imageCacheManager.recoverMissingCovers()
 
+            androidGameScanner.ensureAndroidPlatformExists()
+
             val relinked = androidGameScanner.relinkInstalledRommAndroidApps()
             if (relinked > 0) {
                 Log.i(TAG, "Relinked $relinked installed RomM Android games to their packages")

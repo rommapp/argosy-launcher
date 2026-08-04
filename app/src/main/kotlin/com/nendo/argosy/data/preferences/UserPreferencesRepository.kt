@@ -104,6 +104,7 @@ class UserPreferencesRepository @Inject constructor(
             homeBackgroundMode = display.homeBackgroundMode,
             homeLayout = display.homeLayout,
             useAccentColorFooter = display.useAccentColorFooter,
+            compactFooter = display.compactFooter,
             hiddenApps = app.hiddenApps,
             secondaryHomeApps = app.secondaryHomeApps,
             visibleSystemApps = app.visibleSystemApps,
@@ -254,6 +255,7 @@ class UserPreferencesRepository @Inject constructor(
     suspend fun setHomeLayout(settings: com.nendo.argosy.domain.model.HomeLayoutSettings) =
         displayPrefs.setHomeLayout(settings)
     suspend fun setUseAccentColorFooter(use: Boolean) = displayPrefs.setUseAccentColorFooter(use)
+    suspend fun setCompactFooter(enabled: Boolean) = displayPrefs.setCompactFooter(enabled)
     suspend fun setBoxArtShape(shape: BoxArtShape) = displayPrefs.setBoxArtShape(shape)
     suspend fun setBoxArtCornerRadius(radius: BoxArtCornerRadius) = displayPrefs.setBoxArtCornerRadius(radius)
     suspend fun setBoxArtBorderThickness(thickness: BoxArtBorderThickness) = displayPrefs.setBoxArtBorderThickness(thickness)
@@ -697,6 +699,7 @@ data class UserPreferences(
     val homeLayout: com.nendo.argosy.domain.model.HomeLayoutSettings =
         com.nendo.argosy.domain.model.HomeLayoutSettings(),
     val useAccentColorFooter: Boolean = false,
+    val compactFooter: Boolean = false,
     val fileLoggingEnabled: Boolean = false,
     val fileLoggingPath: String? = null,
     val fileLogLevel: LogLevel = LogLevel.INFO,

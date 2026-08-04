@@ -9,6 +9,13 @@ object Dimens {
     private val scale: Float
         @Composable get() = LocalUiScale.current.scale
 
+    private val footerHeightBase: Int
+        @Composable get() = if (LocalUiScale.current.compactFooter) {
+            DimensionTokens.Layout.footerHeightCompact
+        } else {
+            DimensionTokens.Layout.footerHeight
+        }
+
     val spacingXs: Dp @Composable get() = maxOf(DimensionTokens.Spacing.Xs.base.dp * scale, DimensionTokens.Spacing.Xs.floor.dp)
     val spacingSm: Dp @Composable get() = maxOf(DimensionTokens.Spacing.Sm.base.dp * scale, DimensionTokens.Spacing.Sm.floor.dp)
     val spacingMd: Dp @Composable get() = maxOf(DimensionTokens.Spacing.Md.base.dp * scale, DimensionTokens.Spacing.Md.floor.dp)
@@ -53,7 +60,7 @@ object Dimens {
     val headerHeight: Dp @Composable get() = DimensionTokens.Layout.headerHeight.dp * scale
     val headerHeightLg: Dp @Composable get() = DimensionTokens.Layout.headerHeightLg.dp * scale
     val breadcrumbMaxWidth: Dp @Composable get() = DimensionTokens.Layout.breadcrumbMaxWidth.dp * scale
-    val footerHeight: Dp @Composable get() = DimensionTokens.Layout.footerHeight.dp * scale
+    val footerHeight: Dp @Composable get() = footerHeightBase.dp * scale
     val modalWidth: Dp @Composable get() = DimensionTokens.Layout.modalWidth.dp * scale
     val modalWidthLg: Dp @Composable get() = DimensionTokens.Layout.modalWidthLg.dp * scale
     val modalWidthXl: Dp @Composable get() = DimensionTokens.Layout.modalWidthXl.dp * scale

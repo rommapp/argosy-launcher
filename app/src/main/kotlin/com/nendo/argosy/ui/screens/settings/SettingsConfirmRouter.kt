@@ -530,6 +530,7 @@ private fun routeStorageCachesConfirm(vm: SettingsViewModel, state: SettingsUiSt
 private fun routeInterfaceConfirm(vm: SettingsViewModel, state: SettingsUiState): InputResult {
     val layoutState = InterfaceLayoutState.from(state)
     when (interfaceItemAtFocusIndex(state.focusedIndex, layoutState)) {
+        InterfaceItem.CompactFooter -> vm.setCompactFooter(!state.display.compactFooter)
         InterfaceItem.GripReserve -> vm.setGripReserveEnabled(!state.display.gripReserveEnabled)
         InterfaceItem.HomeScreen -> vm.navigateToHomeScreen()
         InterfaceItem.LibraryView -> vm.navigateToLibraryView()
@@ -1296,6 +1297,7 @@ private fun routePlatformDetailConfirm(vm: SettingsViewModel, state: SettingsUiS
         PlatformDetailItem.BuiltinControls -> vm.navigateToBuiltinControlsForPlatform(state.platformDetail.platformIndex)
         PlatformDetailItem.BuiltinCoreOptions -> vm.navigateToCoreOptionsForPlatform()
         PlatformDetailItem.ScanFiles -> vm.scanFilesForPlatform(config.platform.id)
+        PlatformDetailItem.ScanApps -> vm.scanInstalledAndroidGames()
         PlatformDetailItem.RomPath -> vm.openPlatformFolderPicker(config.platform.id)
         // RetroArch owns its own save/state paths via retroarch.cfg; rows are read-only for RA.
         PlatformDetailItem.SavePath -> if (!config.effectiveEmulatorIsRetroArch) vm.launchSavePathPicker(config.platform.id)

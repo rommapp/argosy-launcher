@@ -95,10 +95,11 @@ internal sealed class ThemeBackdropItem(
         private val LayersSpacer = SectionSpacer("layersSpacer", "layers", { it.enabled })
         private val LayersHeader = Header("layersHeader", "layers", "Layers", { it.enabled })
 
-        val ALL: List<ThemeBackdropItem> = listOf(
-            PatternHeader, Enabled, Preset, Density, Scatter, ScaleJitter, Strength, Reshuffle,
-            LayersSpacer, LayersHeader, EdgeLines, CornerIcons, Motion, Speed, Direction
-        )
+        val ALL: List<ThemeBackdropItem>
+            get() = listOf(
+                PatternHeader, Enabled, Preset, Density, Scatter, ScaleJitter, Strength, Reshuffle,
+                LayersSpacer, LayersHeader, EdgeLines, CornerIcons, Motion, Speed, Direction
+            )
     }
 }
 

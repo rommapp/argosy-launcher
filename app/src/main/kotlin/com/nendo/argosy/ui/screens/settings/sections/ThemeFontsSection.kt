@@ -76,11 +76,12 @@ internal sealed class ThemeFontsItem(
         private val PreviewSpacer = SectionSpacer("previewSpacer", "preview")
         private val PreviewHeader = Header("previewHeader", "preview", "Preview")
 
-        val ALL: List<ThemeFontsItem> = listOf(
-            DisplayHeader, DisplaySlot, DisplayScale, DisplayRevert,
-            BodySpacer, BodyHeader, BodySlot, BodyScale, BodyRevert,
-            PreviewSpacer, PreviewHeader, Guidelines, Preview
-        )
+        val ALL: List<ThemeFontsItem>
+            get() = listOf(
+                DisplayHeader, DisplaySlot, DisplayScale, DisplayRevert,
+                BodySpacer, BodyHeader, BodySlot, BodyScale, BodyRevert,
+                PreviewSpacer, PreviewHeader, Guidelines, Preview
+            )
     }
 }
 

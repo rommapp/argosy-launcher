@@ -438,10 +438,7 @@ class DownloadDelegate @Inject constructor(
             when (val result = romMRepository.getRom(rommId)) {
                 is RomMResult.Success -> {
                     val rom = result.data
-                    val mainFile = rom.files
-                        ?.filter { it.category == null && !it.fileName.startsWith(".") }
-                        ?.maxByOrNull { it.fileSizeBytes }
-                    val sizeBytes = mainFile?.fileSizeBytes ?: rom.fileSize
+                    val sizeBytes = rom.fileSize
                     if (sizeBytes > 0) {
                         gameRepository.updateFileSize(gameId, sizeBytes)
                         _state.update { state ->

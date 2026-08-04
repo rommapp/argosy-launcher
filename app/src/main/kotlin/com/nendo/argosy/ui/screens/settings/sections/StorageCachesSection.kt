@@ -110,29 +110,30 @@ internal sealed class StorageCachesItem(
         const val KEY_STEAM_TOTAL_INFO = "steamTotalInfo"
         const val KEY_STEAM_STAGING_INFO = "steamStagingInfo"
 
-        val ALL: List<StorageCachesItem> = listOf(
-            Header("syncHeader", "sync", "SYNC CACHES"),
-            PendingUploads, SaveCacheClear, StateCacheClear, PathCacheClear,
-            StateCacheToggle, SaveCacheLimit,
-            SectionSpacer("mediaSpacer", "media"),
-            Header("mediaHeader", "media", "MEDIA CACHES"),
-            ImageCacheClear, ValidateImageCache, ScreenshotsToggle, BoxArtToggle,
-            RomExtractionClear, SfxCacheClear, EmulatorApksClear, MiscDownloadsClear,
-            SectionSpacer("systemSpacer", "system"),
-            Header("systemHeader", "system", "SYSTEM"),
-            InfoRow(KEY_BIOS_INFO, "system"),
-            InfoRow(KEY_CORES_INFO, "system"),
-            ShadersCatalogClear,
-            InfoRow(KEY_SHADERS_CUSTOM_INFO, "system"),
-            FramesClear,
-            InfoRow(KEY_FONTS_INFO, "system"),
-            InfoRow(KEY_DATABASE_INFO, "system"),
-            SectionSpacer("steamSpacer", "steam", { it.steamVisible }),
-            Header("steamHeader", "steam", "STEAM", { it.steamVisible }),
-            InfoRow(KEY_STEAM_TOTAL_INFO, "steam", { it.steamVisible }),
-            InfoRow(KEY_STEAM_STAGING_INFO, "steam", { it.steamVisible }),
-            SteamClear
-        )
+        val ALL: List<StorageCachesItem>
+            get() = listOf(
+                Header("syncHeader", "sync", "SYNC CACHES"),
+                PendingUploads, SaveCacheClear, StateCacheClear, PathCacheClear,
+                StateCacheToggle, SaveCacheLimit,
+                SectionSpacer("mediaSpacer", "media"),
+                Header("mediaHeader", "media", "MEDIA CACHES"),
+                ImageCacheClear, ValidateImageCache, ScreenshotsToggle, BoxArtToggle,
+                RomExtractionClear, SfxCacheClear, EmulatorApksClear, MiscDownloadsClear,
+                SectionSpacer("systemSpacer", "system"),
+                Header("systemHeader", "system", "SYSTEM"),
+                InfoRow(KEY_BIOS_INFO, "system"),
+                InfoRow(KEY_CORES_INFO, "system"),
+                ShadersCatalogClear,
+                InfoRow(KEY_SHADERS_CUSTOM_INFO, "system"),
+                FramesClear,
+                InfoRow(KEY_FONTS_INFO, "system"),
+                InfoRow(KEY_DATABASE_INFO, "system"),
+                SectionSpacer("steamSpacer", "steam", { it.steamVisible }),
+                Header("steamHeader", "steam", "STEAM", { it.steamVisible }),
+                InfoRow(KEY_STEAM_TOTAL_INFO, "steam", { it.steamVisible }),
+                InfoRow(KEY_STEAM_STAGING_INFO, "steam", { it.steamVisible }),
+                SteamClear
+            )
     }
 }
 

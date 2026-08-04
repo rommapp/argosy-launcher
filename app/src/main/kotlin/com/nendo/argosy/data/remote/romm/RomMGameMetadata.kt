@@ -82,9 +82,5 @@ internal fun GameEntity.withRomMetadata(rom: RomMRom): GameEntity = copy(
     isIdentified = rom.isIdentified,
     youtubeVideoId = rom.youtubeVideoId,
     achievementCount = rom.raMetadata?.achievements?.size ?: achievementCount,
-    fileSizeBytes = rom.files
-        ?.filter { it.category == null && !it.fileName.startsWith(".") }
-        ?.maxByOrNull { it.fileSizeBytes }
-        ?.fileSizeBytes
-        ?: rom.fileSize.takeIf { it > 0 }
+    fileSizeBytes = rom.fileSize.takeIf { it > 0 }
 )

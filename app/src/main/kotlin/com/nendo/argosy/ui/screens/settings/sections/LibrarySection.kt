@@ -42,12 +42,13 @@ internal sealed class LibraryItem(val key: String, val section: String) {
     data object DefaultSource : LibraryItem("libraryDefaultSource", "defaults")
 
     companion object {
-        val ALL: List<LibraryItem> = listOf(
-            Header("libraryLayoutHeader", "layout", "Layout"),
-            GridDensityItem,
-            Header("libraryDefaultsHeader", "defaults", "Defaults"),
-            DefaultSort, DefaultPlatform, DefaultSource
-        )
+        val ALL: List<LibraryItem>
+            get() = listOf(
+                Header("libraryLayoutHeader", "layout", "Layout"),
+                GridDensityItem,
+                Header("libraryDefaultsHeader", "defaults", "Defaults"),
+                DefaultSort, DefaultPlatform, DefaultSource
+            )
     }
 }
 

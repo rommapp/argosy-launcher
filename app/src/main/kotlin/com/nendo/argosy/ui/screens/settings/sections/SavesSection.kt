@@ -62,12 +62,13 @@ internal sealed class SavesItem(
     data object SaveCaches : SavesItem("saveCaches", "manage")
 
     companion object {
-        val ALL: List<SavesItem> = listOf(
-            Header("policyHeader", "policy", "SYNC"),
-            SaveSync, SecureSaves, SaveCacheLimit,
-            Header("manageHeader", "manage", "MANAGE"),
-            ManageSaveSync, SaveCaches
-        )
+        val ALL: List<SavesItem>
+            get() = listOf(
+                Header("policyHeader", "policy", "SYNC"),
+                SaveSync, SecureSaves, SaveCacheLimit,
+                Header("manageHeader", "manage", "MANAGE"),
+                ManageSaveSync, SaveCaches
+            )
     }
 }
 

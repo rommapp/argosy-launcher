@@ -7,7 +7,8 @@ import androidx.compose.ui.unit.Dp
 data class UiScaleConfig(
     val scale: Float = 1.0f,
     val aspectRatioClass: AspectRatioClass = AspectRatioClass.STANDARD,
-    val bottomReservedFraction: Float = 0f
+    val bottomReservedFraction: Float = 0f,
+    val compactFooter: Boolean = false
 )
 
 enum class AspectRatioClass {

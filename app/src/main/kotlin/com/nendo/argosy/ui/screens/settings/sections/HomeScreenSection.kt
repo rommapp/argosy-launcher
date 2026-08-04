@@ -121,22 +121,23 @@ internal sealed class HomeScreenItem(
         private val LayoutHeader = Header("layoutHeader", "layout", "Layout")
         private val ContentHeader = Header("contentHeader", "content", "Content")
 
-        val ALL: List<HomeScreenItem> = listOf(
-            LayoutHeader,
-            LayoutPreview,
-            LayoutSelector,
-            *HomeLayoutKind.entries
-                .flatMap { homeLayoutFieldsFor(it) }
-                .distinct()
-                .map { LayoutField(it) }
-                .toTypedArray(),
-            ContentHeader,
-            InstalledOnly,
-            BackgroundHeader,
-            Background, GameArtwork, CustomImage, Blur, Saturation, Opacity,
-            VideoHeader,
-            VideoWallpaper, VideoDelay, VideoMuted
-        )
+        val ALL: List<HomeScreenItem>
+            get() = listOf(
+                LayoutHeader,
+                LayoutPreview,
+                LayoutSelector,
+                *HomeLayoutKind.entries
+                    .flatMap { homeLayoutFieldsFor(it) }
+                    .distinct()
+                    .map { LayoutField(it) }
+                    .toTypedArray(),
+                ContentHeader,
+                InstalledOnly,
+                BackgroundHeader,
+                Background, GameArtwork, CustomImage, Blur, Saturation, Opacity,
+                VideoHeader,
+                VideoWallpaper, VideoDelay, VideoMuted
+            )
     }
 }
 

@@ -2,6 +2,7 @@ package com.nendo.argosy.data.remote.romm
 
 data class RomMCapabilities(
     val serverVersion: String,
+    val isSupportedVersion: Boolean,
     val supportsSyncNegotiate: Boolean,
     val supportsPlaySessionIngest: Boolean,
     val supportsDeviceSyncMode: Boolean,
@@ -13,8 +14,15 @@ data class RomMCapabilities(
     val supportsCoverSearch: Boolean = false,
 ) {
     companion object {
+        /**
+         * Argosy supports the latest three RomM minor releases. Below this the server
+         * is not refused, but no version-specific behaviour is kept for it and response
+         * shapes are not verified against it - see testbed/romm.
+         */
+        const val MIN_SUPPORTED_VERSION = "4.9.0"
+
         const val SYNC_ENGINE_MIN_VERSION = "4.9.0"
-        const val DEVICE_SYNC_MIN_VERSION = "4.8.0"
+        const val DEVICE_SYNC_MIN_VERSION = "4.9.0"
         const val HASH_TRUST_MIN_VERSION = "4.9.0"
         const val DEVICE_AUTH_MIN_VERSION = "5.0.0"
         const val SCREENSHOT_UPLOAD_MIN_VERSION = "5.0.0"
@@ -22,6 +30,7 @@ data class RomMCapabilities(
 
         val NONE = RomMCapabilities(
             serverVersion = "",
+            isSupportedVersion = false,
             supportsSyncNegotiate = false,
             supportsPlaySessionIngest = false,
             supportsDeviceSyncMode = false,
@@ -42,6 +51,7 @@ data class RomMCapabilities(
             val deviceSync = compareVersions(version, DEVICE_SYNC_MIN_VERSION) >= 0
             return RomMCapabilities(
                 serverVersion = version,
+                isSupportedVersion = compareVersions(version, MIN_SUPPORTED_VERSION) >= 0,
                 supportsSyncNegotiate = syncEngine,
                 supportsPlaySessionIngest = syncEngine,
                 supportsDeviceSyncMode = deviceSync,

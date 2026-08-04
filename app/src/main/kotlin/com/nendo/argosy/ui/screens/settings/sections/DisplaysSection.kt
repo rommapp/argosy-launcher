@@ -81,12 +81,13 @@ internal sealed class DisplaysItem(
         private val DisplaysSpacer = SectionSpacer("displaysSpacer", "displays")
         private val DisplaysHeader = Header("displaysHeader", "displays", "Displays")
 
-        val ALL: List<DisplaysItem> = listOf(
-            ScreenSafetyHeader,
-            ScreenDimmer, DimAfter, DimLevel,
-            DisplaysSpacer, DisplaysHeader,
-            DualScreenEnabled, DisplayRoles, AmbientLedSettings
-        )
+        val ALL: List<DisplaysItem>
+            get() = listOf(
+                ScreenSafetyHeader,
+                ScreenDimmer, DimAfter, DimLevel,
+                DisplaysSpacer, DisplaysHeader,
+                DualScreenEnabled, DisplayRoles, AmbientLedSettings
+            )
     }
 }
 

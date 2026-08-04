@@ -21,7 +21,8 @@ internal sealed class AudioItem(val key: String, val section: String) {
     data object Music : AudioItem("music", "audio")
 
     companion object {
-        val ALL: List<AudioItem> = listOf(Sounds, Music)
+        val ALL: List<AudioItem>
+            get() = listOf(Sounds, Music)
     }
 }
 

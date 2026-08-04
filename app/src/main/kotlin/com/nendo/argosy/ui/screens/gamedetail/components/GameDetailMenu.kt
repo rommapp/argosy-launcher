@@ -89,7 +89,8 @@ sealed class MenuItem(
     data object RelatedGames : MenuItem("related", visibleWhen = { it.hasRelated })
 
     companion object {
-        val ALL = listOf(Play, Saves, Favorite, Privacy, PerGameSettings, Options, Details, Description, Screenshots, Achievements, RelatedGames)
+        val ALL: List<MenuItem>
+            get() = listOf(Play, Saves, Favorite, Privacy, PerGameSettings, Options, Details, Description, Screenshots, Achievements, RelatedGames)
     }
 }
 

@@ -72,16 +72,17 @@ internal sealed class AmbientLedItem(
         private val ReactiveScreenHeader = Header("reactiveScreenHeader", "reactiveScreen", "Reactive Screen",
             visibleWhen = { it.ambientLedEnabled })
 
-        val ALL: List<AmbientLedItem> = listOf(
-            GeneralHeader,
-            Enable, Brightness, CustomColor, CustomColorHue, AchievementFlash,
-            CoverArtHeader,
-            CoverArtColors, TransitionSpeed,
-            ReactiveAudioHeader,
-            AudioBrightness, AudioColors,
-            ReactiveScreenHeader,
-            ScreenColors, ScreenColorMode
-        )
+        val ALL: List<AmbientLedItem>
+            get() = listOf(
+                GeneralHeader,
+                Enable, Brightness, CustomColor, CustomColorHue, AchievementFlash,
+                CoverArtHeader,
+                CoverArtColors, TransitionSpeed,
+                ReactiveAudioHeader,
+                AudioBrightness, AudioColors,
+                ReactiveScreenHeader,
+                ScreenColors, ScreenColorMode
+            )
     }
 }
 

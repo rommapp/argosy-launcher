@@ -70,6 +70,7 @@ object DimensionTokens {
         const val headerHeightLg = 140
         const val breadcrumbMaxWidth = 360
         const val footerHeight = 44
+        const val footerHeightCompact = 30
         const val modalWidth = 400
         const val modalWidthLg = 520
         const val modalWidthXl = 575

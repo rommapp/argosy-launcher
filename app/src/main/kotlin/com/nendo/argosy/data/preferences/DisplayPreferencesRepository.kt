@@ -58,6 +58,7 @@ data class DisplayPreferences(
     val homeLayout: com.nendo.argosy.domain.model.HomeLayoutSettings =
         com.nendo.argosy.domain.model.HomeLayoutSettings(),
     val useAccentColorFooter: Boolean = false,
+    val compactFooter: Boolean = false,
     val boxArtShape: BoxArtShape = BoxArtShape.STANDARD,
     val boxArtCornerRadius: BoxArtCornerRadius = BoxArtCornerRadius.MEDIUM,
     val boxArtBorderThickness: BoxArtBorderThickness = BoxArtBorderThickness.MEDIUM,
@@ -143,6 +144,7 @@ class DisplayPreferencesRepository @Inject constructor(
         val HOME_BACKGROUND_MODE = stringPreferencesKey("home_background_mode")
         val HOME_LAYOUT_CONFIG = stringPreferencesKey("home_layout_config")
         val USE_ACCENT_COLOR_FOOTER = booleanPreferencesKey("use_accent_color_footer")
+        val COMPACT_FOOTER = booleanPreferencesKey("compact_footer")
         val BOX_ART_SHAPE = stringPreferencesKey("box_art_shape")
         val BOX_ART_CORNER_RADIUS = stringPreferencesKey("box_art_corner_radius")
         val BOX_ART_BORDER_THICKNESS = stringPreferencesKey("box_art_border_thickness")
@@ -227,6 +229,7 @@ class DisplayPreferencesRepository @Inject constructor(
                 prefs[Keys.HOME_LAYOUT_CONFIG]
             ),
             useAccentColorFooter = prefs[Keys.USE_ACCENT_COLOR_FOOTER] ?: false,
+            compactFooter = prefs[Keys.COMPACT_FOOTER] ?: false,
             boxArtShape = BoxArtShape.fromString(prefs[Keys.BOX_ART_SHAPE]),
             boxArtCornerRadius = BoxArtCornerRadius.fromString(prefs[Keys.BOX_ART_CORNER_RADIUS]),
             boxArtBorderThickness = BoxArtBorderThickness.fromString(prefs[Keys.BOX_ART_BORDER_THICKNESS]),
@@ -438,6 +441,10 @@ class DisplayPreferencesRepository @Inject constructor(
 
     suspend fun setUseAccentColorFooter(use: Boolean) {
         dataStore.edit { it[Keys.USE_ACCENT_COLOR_FOOTER] = use }
+    }
+
+    suspend fun setCompactFooter(enabled: Boolean) {
+        dataStore.edit { it[Keys.COMPACT_FOOTER] = enabled }
     }
 
     suspend fun setBoxArtShape(shape: BoxArtShape) {

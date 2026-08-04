@@ -57,7 +57,12 @@ internal class InterfaceSectionInput(
         val layoutState = layoutState()
         when (interfaceItemAtFocusIndex(state.focusedIndex, layoutState)) {
             InterfaceItem.UiScale -> { viewModel.adjustUiScale(direction * 5); return InputResult.HANDLED }
-            InterfaceItem.GripReserve -> { viewModel.setGripReserveEnabled(direction > 0); return InputResult.HANDLED }
+            InterfaceItem.CompactFooter -> return toggleLeftRight(direction, state.display.compactFooter) {
+                viewModel.setCompactFooter(it)
+            }
+            InterfaceItem.GripReserve -> return toggleLeftRight(direction, state.display.gripReserveEnabled) {
+                viewModel.setGripReserveEnabled(it)
+            }
             InterfaceItem.GripReservePercent -> { viewModel.adjustGripReservePercent(direction * 5); return InputResult.HANDLED }
             else -> {}
         }

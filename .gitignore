@@ -63,3 +63,6 @@ tools/
 
 # Wiki (separate repo)
 wiki/
+
+# RomM version testbed local env
+testbed/romm/.env

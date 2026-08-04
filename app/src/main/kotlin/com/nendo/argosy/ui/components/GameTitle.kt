@@ -116,7 +116,8 @@ fun GameTitle(
     )
 
     val titleIdStyle = MaterialTheme.typography.labelSmall.copy(
-        fontWeight = FontWeight.Light
+        fontWeight = FontWeight.Light,
+        lineHeight = MaterialTheme.typography.labelSmall.fontSize * TITLE_ID_LINE_HEIGHT_RATIO
     )
 
     if (parsed.seriesName != null) {
@@ -152,10 +153,11 @@ fun GameTitle(
                 titleIdColor = titleIdColor
             )
         } else if (titleId != null) {
-            Row(
-                modifier = modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+            TitleIdBelow(
+                titleId = titleId,
+                titleIdStyle = titleIdStyle,
+                titleIdColor = titleIdColor,
+                modifier = modifier
             ) {
                 Text(
                     text = parsed.gameName,
@@ -163,13 +165,7 @@ fun GameTitle(
                     color = titleColor,
                     maxLines = maxLines,
                     overflow = overflow,
-                    textAlign = textAlign,
-                    modifier = Modifier.weight(1f)
-                )
-                Text(
-                    text = titleId,
-                    style = titleIdStyle,
-                    color = titleIdColor
+                    textAlign = textAlign
                 )
             }
         } else {
@@ -185,6 +181,36 @@ fun GameTitle(
         }
     }
 }
+
+/**
+ * Puts the title id on its own line under the title, hard right.
+ *
+ * Beside the title it competed for the same row, and since the id is never abbreviated the title
+ * was the side that lost - a package name could truncate a game's name to a few characters. Its
+ * line is tightened so dropping below costs a fraction of a line rather than a whole one.
+ */
+@Composable
+private fun TitleIdBelow(
+    titleId: String,
+    titleIdStyle: TextStyle,
+    titleIdColor: Color,
+    modifier: Modifier = Modifier,
+    title: @Composable () -> Unit
+) {
+    Column(modifier = modifier.fillMaxWidth()) {
+        title()
+        Text(
+            text = titleId,
+            style = titleIdStyle,
+            color = titleIdColor,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.align(Alignment.End)
+        )
+    }
+}
+
+private const val TITLE_ID_LINE_HEIGHT_RATIO = 1.1f
 
 @Composable
 private fun AdaptiveSizeTitle(
@@ -261,15 +287,12 @@ private fun AdaptiveSizeTitle(
             }
             TitleSizeMode.WRAPPED -> {
                 if (titleId != null) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.Top
+                    TitleIdBelow(
+                        titleId = titleId,
+                        titleIdStyle = titleIdStyle,
+                        titleIdColor = titleIdColor
                     ) {
-                        Column(
-                            modifier = Modifier.weight(1f),
-                            horizontalAlignment = horizontalAlignment
-                        ) {
+                        Column(horizontalAlignment = horizontalAlignment) {
                             wrappedLines.forEach { line ->
                                 Text(
                                     text = line,
@@ -281,11 +304,6 @@ private fun AdaptiveSizeTitle(
                                 )
                             }
                         }
-                        Text(
-                            text = titleId,
-                            style = titleIdStyle,
-                            color = titleIdColor
-                        )
                     }
                 } else {
                     Column(horizontalAlignment = horizontalAlignment) {
@@ -317,10 +335,10 @@ private fun TitleWithOptionalId(
     titleIdColor: Color
 ) {
     if (titleId != null) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+        TitleIdBelow(
+            titleId = titleId,
+            titleIdStyle = titleIdStyle,
+            titleIdColor = titleIdColor
         ) {
             Text(
                 text = text,
@@ -328,13 +346,7 @@ private fun TitleWithOptionalId(
                 color = color,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
-                textAlign = textAlign,
-                modifier = Modifier.weight(1f)
-            )
-            Text(
-                text = titleId,
-                style = titleIdStyle,
-                color = titleIdColor
+                textAlign = textAlign
             )
         }
     } else {

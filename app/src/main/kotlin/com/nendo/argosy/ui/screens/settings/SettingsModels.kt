@@ -986,7 +986,14 @@ data class NotInstalledSteamLauncher(
 data class SteamSettingsState(
     val gnInstalled: Boolean = false,
     val gnStoragePath: String? = null,
-    val gameNativeSyncDir: String? = null,
+
+    val gameNativeSyncDirs: Map<com.nendo.argosy.data.launcher.GameNativeSyncFolder, String> = emptyMap(),
+    val gameNativeMissingDirs: Set<com.nendo.argosy.data.launcher.GameNativeSyncFolder> = emptySet(),
+    val gameNativeActionIndex: Int = 0,
+    val isGameNativeScanning: Boolean = false,
+    val showGameNativeFoldersModal: Boolean = false,
+    val gameNativeFoldersFocusIndex: Int = 0,
+    val gameNativeFoldersActionIndex: Int = 0,
 
     // Install volume
     val steamInstallVolume: String? = null,

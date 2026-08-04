@@ -20,7 +20,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -32,7 +31,6 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.GetApp
-import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.LinkOff
 import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material.icons.filled.Warning
@@ -68,6 +66,7 @@ import com.nendo.argosy.core.input.SoundType
 import com.nendo.argosy.data.steam.LibrarySyncState
 import com.nendo.argosy.data.steam.SteamConnectionState
 import com.nendo.argosy.ui.components.ActionPreference
+import com.nendo.argosy.ui.components.DualActionPreference
 import com.nendo.argosy.ui.components.InfoPreference
 import com.nendo.argosy.ui.components.Modal
 import com.nendo.argosy.ui.input.InputHandler
@@ -79,6 +78,7 @@ import com.nendo.argosy.ui.screens.settings.NotInstalledSteamLauncher
 import com.nendo.argosy.ui.screens.settings.SettingsUiState
 import com.nendo.argosy.ui.screens.settings.SettingsViewModel
 import com.nendo.argosy.ui.screens.settings.SteamSettingsState
+import com.nendo.argosy.ui.screens.settings.components.GameNativeFoldersModal
 import com.nendo.argosy.ui.screens.settings.components.SectionPaneLayout
 import com.nendo.argosy.ui.screens.settings.components.SteamLauncherPreference
 import com.nendo.argosy.ui.screens.settings.menu.SettingsLayout
@@ -89,7 +89,7 @@ private const val GN_PACKAGE = "app.gamenative"
 
 internal sealed class SteamItem(val key: String, val section: String) {
     val isFocusable: Boolean get() = when (this) {
-        is Header, is SectionSpacer, is InstallPathNote, is StorageNote -> false
+        is Header, is SectionSpacer, is StorageNote -> false
         else -> true
     }
 
@@ -102,12 +102,11 @@ internal sealed class SteamItem(val key: String, val section: String) {
     data object GnInstall : SteamItem("gnInstall", "setup")
     data object GnStorageWarning : SteamItem("gnStorageWarning", "setup")
     data object InstallPath : SteamItem("installPath", "setup")
-    data object InstallPathNote : SteamItem("installPathNote", "setup")
     data object InstallTriage : SteamItem("installTriage", "setup")
     data object AccountInfo : SteamItem("accountInfo", "account")
     data object SyncLibrary : SteamItem("syncLibrary", "library")
     data object AddManual : SteamItem("addManual", "library")
-    data object StoreSync : SteamItem("storeSync", "library")
+    data object GameNativeLibrary : SteamItem("gameNativeLibrary", "setup")
     data class InstalledLauncher(val data: InstalledSteamLauncher) :
         SteamItem("steamLauncher_${data.packageName}", "library")
     data object RefreshMetadata : SteamItem("refreshMetadata", "library")
@@ -133,34 +132,37 @@ internal fun buildSteamItems(steam: SteamSettingsState): List<SteamItem> = build
     val loggedIn = isLoggedIn(steam)
     val gnConfigured = steam.gnStoragePath != null
 
+    if (!loggedIn) add(SteamItem.PreLogin)
+
+    add(SteamItem.Header("setupHeader", "setup", "GAMENATIVE"))
     if (loggedIn) {
-        add(SteamItem.Header("setupHeader", "setup", "GAMENATIVE"))
         add(SteamItem.GnStatus)
         if (!steam.gnInstalled) add(SteamItem.GnInstall)
         if (steam.gnInstalled && !gnConfigured) add(SteamItem.GnStorageWarning)
         if (gnConfigured) {
             add(SteamItem.InstallPath)
-            add(SteamItem.InstallPathNote)
             if (steam.installedGamesByVolume.isNotEmpty()) add(SteamItem.InstallTriage)
         }
+    }
+    add(SteamItem.GameNativeLibrary)
 
+    if (loggedIn) {
         add(SteamItem.SectionSpacer("accountSpacer", "account"))
         add(SteamItem.Header("accountHeader", "account", "ACCOUNT"))
         add(SteamItem.AccountInfo)
-    } else {
-        add(SteamItem.PreLogin)
     }
 
     val launchers = steamVisibleLaunchers(steam)
-    val hasLauncherRows = launchers.isNotEmpty() || steam.notInstalledLaunchers.isNotEmpty()
+    val showStorageNote = !steam.hasStoragePermission && steam.installedLaunchers.isNotEmpty()
+    val hasLauncherRows = loggedIn || launchers.isNotEmpty() ||
+        steam.notInstalledLaunchers.isNotEmpty() || showStorageNote
 
-    if (loggedIn || hasLauncherRows) {
+    if (hasLauncherRows) {
         add(SteamItem.SectionSpacer("librarySpacer", "library"))
         add(SteamItem.Header("libraryHeader", "library", "LIBRARY"))
         if (loggedIn) {
             add(SteamItem.SyncLibrary)
             add(SteamItem.AddManual)
-            add(SteamItem.StoreSync)
         }
         for (launcher in launchers) {
             add(SteamItem.InstalledLauncher(launcher))
@@ -171,7 +173,7 @@ internal fun buildSteamItems(steam: SteamSettingsState): List<SteamItem> = build
         for (launcher in steam.notInstalledLaunchers) {
             add(SteamItem.NotInstalledLauncher(launcher))
         }
-        if (!steam.hasStoragePermission && steam.installedLaunchers.isNotEmpty()) {
+        if (showStorageNote) {
             add(SteamItem.StorageNote)
         }
     }
@@ -212,6 +214,18 @@ internal fun steamSections(steam: SteamSettingsState) =
 internal fun isLoggedIn(steam: SteamSettingsState): Boolean =
     steam.connectionState == SteamConnectionState.LOGGED_IN
 
+private fun gameNativeSubtitle(steam: SteamSettingsState): String = when {
+    steam.isGameNativeScanning -> "Scanning..."
+    steam.gameNativeSyncDirs.isEmpty() ->
+        "Set GameNative's Frontend Sync folders to import GOG, Epic and Amazon installs and mark Steam games installed"
+    steam.gameNativeMissingDirs.isNotEmpty() -> "Folder missing: " + steam.gameNativeMissingDirs
+        .sortedBy { it.ordinal }
+        .joinToString(", ") { it.displayName }
+    else -> steam.gameNativeSyncDirs.keys
+        .sortedBy { it.ordinal }
+        .joinToString(", ") { it.displayName } + " configured"
+}
+
 @Composable
 fun SteamSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
     val context = LocalContext.current
@@ -235,6 +249,13 @@ fun SteamSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
     val layout = remember(allItems) { createSteamLayout(allItems) }
     val sections = remember(allItems) { layout.buildSections(Unit) }
     val isDownloading = steam.downloadingLauncherId != null
+    val gameNativeRowSubtitle = remember(
+        steam.isGameNativeScanning,
+        steam.gameNativeSyncDirs,
+        steam.gameNativeMissingDirs
+    ) {
+        gameNativeSubtitle(steam)
+    }
 
     fun isFocused(item: SteamItem): Boolean =
         uiState.focusedIndex == layout.focusIndexOf(item, Unit)
@@ -318,37 +339,6 @@ fun SteamSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                     onReset = { viewModel.resetSteamInstallPath() }
                 )
 
-                SteamItem.InstallPathNote -> {
-                    val noteShape = RoundedCornerShape(Dimens.radiusMd)
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(noteShape)
-                            .background(
-                                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
-                                noteShape
-                            )
-                            .padding(horizontal = Dimens.spacingSm, vertical = Dimens.spacingXs),
-                        verticalAlignment = Alignment.Top
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Info,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-                            modifier = Modifier
-                                .size(Dimens.iconSm)
-                                .padding(top = 2.dp)
-                        )
-                        Spacer(modifier = Modifier.width(Dimens.spacingSm))
-                        Text(
-                            text = "GameNative no longer scans parent folders, so each download must be added manually in GameNative after it finishes. The old auto-discovery relied on a wine-prefix bug that's since been fixed. No ETA on alternative solutions, currently.",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.75f),
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
-                }
-
                 SteamItem.InstallTriage -> {
                     val summary = steam.installedGamesByVolume.entries.joinToString(", ") { (label, count) ->
                         "$label ($count)"
@@ -397,19 +387,19 @@ fun SteamSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                     onClick = { viewModel.showAddSteamGameDialog() }
                 )
 
-                SteamItem.StoreSync -> ActionPreference(
-                    icon = Icons.Default.Folder,
-                    title = "Store Game Imports",
-                    subtitle = steam.gameNativeSyncDir?.let { formatPath(it) }
-                        ?: "Import GOG, Epic, and Amazon installs from GameNative's Export to Frontend folder",
-                    trailingButtonLabel = if (steam.gameNativeSyncDir != null) "Rescan" else "Set Folder",
+                SteamItem.GameNativeLibrary -> DualActionPreference(
+                    title = "GameNative Library",
+                    subtitle = gameNativeRowSubtitle,
+                    primaryLabel = "Folders",
+                    secondaryLabel = "Scan",
+                    showSecondary = steam.gameNativeSyncDirs.isNotEmpty(),
                     isFocused = isFocused(item),
-                    onClick = {
-                        if (steam.gameNativeSyncDir != null) viewModel.rescanGameNativeStores()
-                        else viewModel.openGameNativeSyncDirPicker()
-                    },
-                    showResetButton = steam.gameNativeSyncDir != null,
-                    onReset = { viewModel.clearGameNativeSyncDir() }
+                    actionIndex = steam.gameNativeActionIndex,
+                    icon = Icons.Default.Folder,
+                    isBusy = steam.isGameNativeScanning,
+                    busyDisablesPrimary = false,
+                    onPrimary = { viewModel.openGameNativeFoldersModal() },
+                    onSecondary = { viewModel.rescanGameNativeStores() }
                 )
 
                 is SteamItem.InstalledLauncher -> {
@@ -497,6 +487,17 @@ fun SteamSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
 
     if (uiState.steam.showAddGameDialog) {
         AddSteamGameDialog(uiState, viewModel)
+    }
+
+    if (uiState.steam.showGameNativeFoldersModal) {
+        GameNativeFoldersModal(
+            paths = uiState.steam.gameNativeSyncDirs,
+            focusIndex = uiState.steam.gameNativeFoldersFocusIndex,
+            actionIndex = uiState.steam.gameNativeFoldersActionIndex,
+            onPick = { folder -> viewModel.openGameNativeSyncDirPicker(folder) },
+            onClear = { folder -> viewModel.clearGameNativeSyncDir(folder) },
+            onDismiss = { viewModel.dismissGameNativeFoldersModal() }
+        )
     }
 
     if (uiState.steam.variantPickerInfo != null) {

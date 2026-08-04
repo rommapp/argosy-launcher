@@ -851,6 +851,124 @@ fun HueSliderPreference(
     }
 }
 
+/**
+ * A preference row carrying two inline buttons that the section's own focus index selects between.
+ * The second button is not rendered when [showSecondary] is false, so the owning delegate must
+ * clamp its action index to 0 in the same condition - a button that is drawn but inert is a bug.
+ * [busyDisablesPrimary] is false for rows whose primary action stays safe while the secondary one
+ * runs; touch and gamepad must agree on that, so the same condition gates both.
+ */
+@Composable
+fun DualActionPreference(
+    title: String,
+    subtitle: String,
+    primaryLabel: String,
+    secondaryLabel: String,
+    showSecondary: Boolean,
+    isFocused: Boolean,
+    actionIndex: Int,
+    icon: ImageVector? = null,
+    isBusy: Boolean = false,
+    busyDisablesPrimary: Boolean = true,
+    onPrimary: () -> Unit,
+    onSecondary: () -> Unit
+) {
+    val contentColor = preferenceContentColor(isFocused)
+    val secondaryColor = preferenceSecondaryColor(isFocused)
+    val primaryBusy = isBusy && busyDisablesPrimary
+
+    Row(
+        modifier = preferenceModifier(isFocused),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        if (icon != null) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = if (isFocused) {
+                    MaterialTheme.colorScheme.onPrimaryContainer
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                },
+                modifier = Modifier.size(Dimens.iconMd)
+            )
+            Spacer(modifier = Modifier.width(Dimens.spacingMd))
+        }
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleMedium,
+                color = contentColor
+            )
+            Text(
+                text = subtitle,
+                style = MaterialTheme.typography.bodySmall,
+                color = secondaryColor
+            )
+        }
+
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            InlinePreferenceButton(
+                label = primaryLabel,
+                selected = isFocused && actionIndex == 0 && !primaryBusy,
+                isFocused = isFocused,
+                isBusy = primaryBusy,
+                contentColor = contentColor,
+                onClick = onPrimary
+            )
+            if (showSecondary) {
+                InlinePreferenceButton(
+                    label = secondaryLabel,
+                    selected = isFocused && actionIndex == 1 && !isBusy,
+                    isFocused = isFocused,
+                    isBusy = isBusy,
+                    contentColor = contentColor,
+                    onClick = onSecondary
+                )
+            }
+        }
+    }
+}
+
+@Composable
+internal fun InlinePreferenceButton(
+    label: String,
+    selected: Boolean,
+    isFocused: Boolean,
+    isBusy: Boolean,
+    contentColor: Color,
+    onClick: () -> Unit
+) {
+    val disabledAlpha = 0.5f
+    val backgroundColor = when {
+        isBusy -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = disabledAlpha)
+        selected -> MaterialTheme.colorScheme.primary
+        isFocused -> MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.12f)
+        else -> MaterialTheme.colorScheme.surfaceVariant
+    }
+    val labelColor = when {
+        isBusy -> contentColor.copy(alpha = disabledAlpha)
+        selected -> MaterialTheme.colorScheme.onPrimary
+        else -> contentColor
+    }
+    Box(
+        modifier = Modifier
+            .clip(RoundedCornerShape(Dimens.radiusSm))
+            .background(backgroundColor)
+            .clickableNoFocus(enabled = !isBusy) { onClick() }
+            .padding(horizontal = Dimens.spacingMd, vertical = Dimens.spacingXs)
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelMedium,
+            color = labelColor
+        )
+    }
+}
+
 @Composable
 fun ImageCachePreference(
     title: String,
@@ -862,84 +980,16 @@ fun ImageCachePreference(
     onChange: () -> Unit,
     onReset: () -> Unit
 ) {
-    val contentColor = preferenceContentColor(isFocused)
-    val secondaryColor = preferenceSecondaryColor(isFocused)
-    val disabledAlpha = 0.5f
-
-    Row(
-        modifier = preferenceModifier(isFocused),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.titleMedium,
-                color = contentColor
-            )
-            Text(
-                text = if (isMigrating) "Moving images..." else displayPath,
-                style = MaterialTheme.typography.bodySmall,
-                color = secondaryColor
-            )
-        }
-
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            val changeSelected = isFocused && actionIndex == 0 && !isMigrating
-            val changeBgColor = when {
-                isMigrating -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = disabledAlpha)
-                changeSelected -> MaterialTheme.colorScheme.primary
-                isFocused -> MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.12f)
-                else -> MaterialTheme.colorScheme.surfaceVariant
-            }
-            val changeTextColor = when {
-                isMigrating -> contentColor.copy(alpha = disabledAlpha)
-                changeSelected -> MaterialTheme.colorScheme.onPrimary
-                else -> contentColor
-            }
-            Box(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(Dimens.radiusSm))
-                    .background(changeBgColor)
-                    .clickableNoFocus(enabled = !isMigrating) { onChange() }
-                    .padding(horizontal = Dimens.spacingMd, vertical = Dimens.spacingXs)
-            ) {
-                Text(
-                    text = "Change",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = changeTextColor
-                )
-            }
-
-            if (hasCustomPath) {
-                val resetSelected = isFocused && actionIndex == 1 && !isMigrating
-                val resetBgColor = when {
-                    isMigrating -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = disabledAlpha)
-                    resetSelected -> MaterialTheme.colorScheme.primary
-                    isFocused -> MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.12f)
-                    else -> MaterialTheme.colorScheme.surfaceVariant
-                }
-                val resetTextColor = when {
-                    isMigrating -> contentColor.copy(alpha = disabledAlpha)
-                    resetSelected -> MaterialTheme.colorScheme.onPrimary
-                    else -> contentColor
-                }
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(Dimens.radiusSm))
-                        .background(resetBgColor)
-                        .clickableNoFocus(enabled = !isMigrating) { onReset() }
-                        .padding(horizontal = Dimens.spacingMd, vertical = Dimens.spacingXs)
-                ) {
-                    Text(
-                        text = "Reset",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = resetTextColor
-                    )
-                }
-            }
-        }
-    }
+    DualActionPreference(
+        title = title,
+        subtitle = if (isMigrating) "Moving images..." else displayPath,
+        primaryLabel = "Change",
+        secondaryLabel = "Reset",
+        showSecondary = hasCustomPath,
+        isFocused = isFocused,
+        actionIndex = actionIndex,
+        isBusy = isMigrating,
+        onPrimary = onChange,
+        onSecondary = onReset
+    )
 }

@@ -730,8 +730,8 @@ class MainActivity : ComponentActivity() {
             }
 
             val storeSync = gameNativeStoreSync.scan()
-            if (storeSync.added > 0 || storeSync.removed > 0) {
-                Log.i(TAG, "GameNative store sync: ${storeSync.added} added, ${storeSync.removed} removed")
+            if (storeSync.configured) {
+                Log.i(TAG, "GameNative store sync: ${storeSync.results}")
             }
 
             if (shouldInitializeScreenCapture(prefs)) {

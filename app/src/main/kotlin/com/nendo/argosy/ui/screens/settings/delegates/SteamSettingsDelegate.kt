@@ -10,7 +10,10 @@ import android.os.Build
 import android.os.Environment
 import com.nendo.argosy.data.emulator.EmulatorDownloadManager
 import com.nendo.argosy.data.emulator.EmulatorRegistry
+import com.nendo.argosy.data.launcher.GameNativeStoreSync
+import com.nendo.argosy.data.launcher.GameNativeSyncFolder
 import com.nendo.argosy.data.launcher.SteamLaunchers
+import com.nendo.argosy.data.launcher.StoreScanResult
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.repository.GameRepository
 import com.nendo.argosy.data.repository.PlatformRepository
@@ -46,6 +49,7 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.io.File
 import javax.inject.Inject
 
 private const val GN_PACKAGE = "app.gamenative"
@@ -65,7 +69,7 @@ class SteamSettingsDelegate @Inject constructor(
     private val gameRepository: GameRepository,
     private val platformRepository: PlatformRepository,
     private val storagePrefs: com.nendo.argosy.data.preferences.StoragePreferencesRepository,
-    private val gameNativeStoreSync: com.nendo.argosy.data.launcher.GameNativeStoreSync
+    private val gameNativeStoreSync: GameNativeStoreSync
 ) {
     private val _state = MutableStateFlow(SteamSettingsState())
     val state: StateFlow<SteamSettingsState> = _state.asStateFlow()
@@ -90,41 +94,148 @@ class SteamSettingsDelegate @Inject constructor(
     private val _openUrlEvent = MutableSharedFlow<String>()
     val openUrlEvent: SharedFlow<String> = _openUrlEvent.asSharedFlow()
 
-    private val _openStoreSyncDirPicker = MutableSharedFlow<Unit>()
-    val openStoreSyncDirPicker: SharedFlow<Unit> = _openStoreSyncDirPicker.asSharedFlow()
+    private val _openStoreSyncDirPicker = MutableSharedFlow<GameNativeSyncFolder>()
+    val openStoreSyncDirPicker: SharedFlow<GameNativeSyncFolder> = _openStoreSyncDirPicker.asSharedFlow()
 
-    fun openStoreSyncDirPicker(scope: CoroutineScope) {
-        scope.launch { _openStoreSyncDirPicker.emit(Unit) }
+    /**
+     * True only when the index actually moved, so a caller can hand an unmoved press back to the
+     * global fallback instead of swallowing it.
+     */
+    fun moveGameNativeActionFocus(delta: Int): Boolean {
+        if (_state.value.gameNativeSyncDirs.isEmpty()) return false
+        val next = (_state.value.gameNativeActionIndex + delta).coerceIn(0, 1)
+        if (next == _state.value.gameNativeActionIndex) return false
+        _state.update { it.copy(gameNativeActionIndex = next) }
+        return true
     }
 
-    fun setStoreSyncDir(scope: CoroutineScope, path: String) {
-        scope.launch {
-            storagePrefs.setGameNativeSyncDir(path)
-            _state.update { it.copy(gameNativeSyncDir = path) }
-            val summary = withContext(Dispatchers.IO) { gameNativeStoreSync.scan() }
-            notificationManager.show(
-                "GameNative store sync: ${summary.markers} game(s) found, ${summary.added} added"
+    fun openGameNativeFoldersModal() {
+        _state.update {
+            it.copy(
+                showGameNativeFoldersModal = true,
+                gameNativeFoldersFocusIndex = 0,
+                gameNativeFoldersActionIndex = 0
             )
         }
     }
 
-    fun clearStoreSyncDir(scope: CoroutineScope) {
-        scope.launch {
-            storagePrefs.setGameNativeSyncDir(null)
-            _state.update { it.copy(gameNativeSyncDir = null) }
+    fun dismissGameNativeFoldersModal() {
+        _state.update { it.copy(showGameNativeFoldersModal = false) }
+    }
+
+    fun moveGameNativeFoldersFocus(delta: Int) {
+        val folders = GameNativeSyncFolder.entries
+        val next = (_state.value.gameNativeFoldersFocusIndex + delta).mod(folders.size)
+        _state.update {
+            it.copy(
+                gameNativeFoldersFocusIndex = next,
+                gameNativeFoldersActionIndex = 0
+            )
         }
     }
 
-    fun rescanStoreSync(scope: CoroutineScope) {
+    fun moveGameNativeFoldersActionFocus(delta: Int): Boolean {
+        val folder = focusedSyncFolder() ?: return false
+        if (_state.value.gameNativeSyncDirs[folder] == null) return false
+        val next = (_state.value.gameNativeFoldersActionIndex + delta).coerceIn(0, 1)
+        if (next == _state.value.gameNativeFoldersActionIndex) return false
+        _state.update { it.copy(gameNativeFoldersActionIndex = next) }
+        return true
+    }
+
+    fun confirmGameNativeFoldersRow(scope: CoroutineScope) {
+        val folder = focusedSyncFolder() ?: return
+        if (_state.value.gameNativeFoldersActionIndex == 1) {
+            clearStoreSyncDir(scope, folder)
+        } else {
+            openStoreSyncDirPicker(scope, folder)
+        }
+    }
+
+    fun openStoreSyncDirPicker(scope: CoroutineScope, folder: GameNativeSyncFolder) {
+        focusSyncFolderRow(folder)
+        scope.launch { _openStoreSyncDirPicker.emit(folder) }
+    }
+
+    /**
+     * Records the folder without scanning; running the whole pass is the Scan button's job.
+     */
+    fun setStoreSyncDir(scope: CoroutineScope, folder: GameNativeSyncFolder, path: String) {
         scope.launch {
-            val summary = withContext(Dispatchers.IO) { gameNativeStoreSync.scan() }
-            if (summary.configured) {
-                notificationManager.show(
-                    "GameNative store sync: ${summary.markers} game(s) found, ${summary.added} added, ${summary.removed} removed"
+            storagePrefs.setGameNativeSyncDir(folder, path)
+            _state.update {
+                it.copy(
+                    gameNativeSyncDirs = it.gameNativeSyncDirs + (folder to path),
+                    gameNativeMissingDirs = it.gameNativeMissingDirs - folder
                 )
             }
         }
     }
+
+    fun clearStoreSyncDir(scope: CoroutineScope, folder: GameNativeSyncFolder) {
+        focusSyncFolderRow(folder)
+        scope.launch {
+            storagePrefs.setGameNativeSyncDir(folder, null)
+            _state.update {
+                val remaining = it.gameNativeSyncDirs - folder
+                it.copy(
+                    gameNativeSyncDirs = remaining,
+                    gameNativeMissingDirs = it.gameNativeMissingDirs - folder,
+                    gameNativeFoldersActionIndex = 0,
+                    gameNativeActionIndex = if (remaining.isEmpty()) 0 else it.gameNativeActionIndex
+                )
+            }
+        }
+    }
+
+    private fun focusSyncFolderRow(folder: GameNativeSyncFolder) {
+        _state.update {
+            it.copy(
+                gameNativeFoldersFocusIndex = folder.ordinal,
+                gameNativeFoldersActionIndex = 0
+            )
+        }
+    }
+
+    fun rescanStoreSync(scope: CoroutineScope) {
+        if (_state.value.isGameNativeScanning) return
+        scope.launch {
+            _state.update { it.copy(isGameNativeScanning = true) }
+            try {
+                val summary = withContext(Dispatchers.IO) { gameNativeStoreSync.scan() }
+                if (!summary.configured) {
+                    notificationManager.showError("No GameNative folders configured")
+                    return@launch
+                }
+                _state.update { it.copy(gameNativeMissingDirs = missingFolders(summary)) }
+                notificationManager.show(
+                    title = "GameNative Library",
+                    subtitle = formatScanSummary(summary)
+                )
+            } finally {
+                _state.update { it.copy(isGameNativeScanning = false) }
+            }
+        }
+    }
+
+    private fun focusedSyncFolder(): GameNativeSyncFolder? =
+        GameNativeSyncFolder.entries.getOrNull(_state.value.gameNativeFoldersFocusIndex)
+
+    private fun missingFolders(summary: GameNativeStoreSync.ScanSummary): Set<GameNativeSyncFolder> =
+        summary.results.filterValues { it is StoreScanResult.FolderMissing }.keys
+
+    private fun formatScanSummary(summary: GameNativeStoreSync.ScanSummary): String =
+        summary.results.entries.joinToString(", ") { (folder, result) ->
+            when (result) {
+                is StoreScanResult.FolderMissing -> "${folder.displayName}: folder missing"
+                is StoreScanResult.Library ->
+                    "${folder.displayName}: ${result.markers} markers, " +
+                        "${result.added} added, ${result.removed} removed"
+                is StoreScanResult.InstallState ->
+                    "${folder.displayName}: ${result.markers} markers, ${result.matched} matched, " +
+                        "${result.notInLibrary} not in library"
+            }
+        }
     val downloadProgress = flowOf<com.nendo.argosy.data.emulator.EmulatorDownloadProgress?>(null)
 
     private var serviceRef: SteamService? = null
@@ -188,8 +299,12 @@ class SteamSettingsDelegate @Inject constructor(
                 }
 
             val prefs = preferencesRepository.userPreferences.first()
-            val storeSyncDir = withContext(Dispatchers.IO) {
-                storagePrefs.preferences.first().gameNativeSyncDir
+            val storeSyncDirs = withContext(Dispatchers.IO) {
+                storagePrefs.migrateLegacyGameNativeSyncDir()
+                storagePrefs.preferences.first().gameNativeSyncDirs
+            }
+            val missingSyncDirs = withContext(Dispatchers.IO) {
+                storeSyncDirs.filterValues { !File(it).isDirectory }.keys
             }
             val volumes = withContext(Dispatchers.IO) { steamPathResolver.getAvailableVolumes() }
             val installedByVolume = withContext(Dispatchers.IO) { loadInstalledSteamSummary(volumes) }
@@ -211,7 +326,9 @@ class SteamSettingsDelegate @Inject constructor(
                     installedGamesByVolume = installedByVolume,
                     steamInstallPath = resolvedSteamPath,
                     steamInstallPathIsCustom = !customRomPath.isNullOrBlank(),
-                    gameNativeSyncDir = storeSyncDir
+                    gameNativeSyncDirs = storeSyncDirs,
+                    gameNativeMissingDirs = missingSyncDirs,
+                    gameNativeActionIndex = if (storeSyncDirs.isEmpty()) 0 else it.gameNativeActionIndex
                 )
             }
 

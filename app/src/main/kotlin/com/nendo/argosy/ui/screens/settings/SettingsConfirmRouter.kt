@@ -378,9 +378,12 @@ private fun routeSteamConfirm(vm: SettingsViewModel, state: SettingsUiState): In
         SteamItem.InstallPath -> vm.openSteamInstallPathPicker()
         SteamItem.SyncLibrary -> vm.syncSteamLibrary()
         SteamItem.AddManual -> vm.showAddSteamGameDialog()
-        SteamItem.StoreSync -> {
-            if (state.steam.gameNativeSyncDir != null) vm.rescanGameNativeStores()
-            else vm.openGameNativeSyncDirPicker()
+        SteamItem.GameNativeLibrary -> {
+            if (state.steam.gameNativeActionIndex == 0) {
+                vm.openGameNativeFoldersModal()
+                return InputResult.handled(SoundType.OPEN_MODAL)
+            }
+            if (!state.steam.isGameNativeScanning) vm.rescanGameNativeStores()
         }
         SteamItem.Disconnect -> vm.disconnectSteam()
         SteamItem.ResetLibrary -> vm.resetSteamLibrary()

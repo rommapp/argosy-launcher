@@ -405,9 +405,9 @@ fun SettingsScreen(
     }
 
     LaunchedEffect(Unit) {
-        viewModel.openGameNativeSyncDirPickerEvent.collect {
-            fileBrowserTitle = "GameNative Sync Folder"
-            fileBrowserCallback = { path -> viewModel.setGameNativeSyncDir(path) }
+        viewModel.openGameNativeSyncDirPickerEvent.collect { folder ->
+            fileBrowserTitle = "${folder.displayName} Sync Folder"
+            fileBrowserCallback = { path -> viewModel.setGameNativeSyncDir(folder, path) }
             showFileBrowser = true
         }
     }
@@ -1421,6 +1421,11 @@ private fun SettingsFooter(
             )
             if (steamItem == com.nendo.argosy.ui.screens.settings.sections.SteamItem.SyncLibrary) {
                 add(InputButton.X to "Force Sync")
+            }
+            if (steamItem == com.nendo.argosy.ui.screens.settings.sections.SteamItem.GameNativeLibrary &&
+                uiState.steam.gameNativeSyncDirs.isNotEmpty()
+            ) {
+                add(InputButton.DPAD_HORIZONTAL to "Folders / Scan")
             }
         }
         if (uiState.currentSection == SettingsSection.ACCOUNTS && !uiState.accounts.pairing.active) {

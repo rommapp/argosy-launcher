@@ -798,10 +798,32 @@ class SettingsViewModel @Inject constructor(
     fun disconnectSteam() = steamDelegate.disconnectSteam(context, viewModelScope)
     fun resetSteamLibrary() = steamDelegate.resetLibrary(viewModelScope)
     fun showAddSteamGameDialog() = steamDelegate.showAddSteamGameDialog()
-    fun openGameNativeSyncDirPicker() = steamDelegate.openStoreSyncDirPicker(viewModelScope)
-    fun setGameNativeSyncDir(path: String) = steamDelegate.setStoreSyncDir(viewModelScope, path)
-    fun clearGameNativeSyncDir() = steamDelegate.clearStoreSyncDir(viewModelScope)
+    fun openGameNativeSyncDirPicker(folder: com.nendo.argosy.data.launcher.GameNativeSyncFolder) =
+        steamDelegate.openStoreSyncDirPicker(viewModelScope, folder)
+    fun setGameNativeSyncDir(folder: com.nendo.argosy.data.launcher.GameNativeSyncFolder, path: String) =
+        steamDelegate.setStoreSyncDir(viewModelScope, folder, path)
+    fun clearGameNativeSyncDir(folder: com.nendo.argosy.data.launcher.GameNativeSyncFolder) =
+        steamDelegate.clearStoreSyncDir(viewModelScope, folder)
     fun rescanGameNativeStores() = steamDelegate.rescanStoreSync(viewModelScope)
+    fun moveGameNativeActionFocus(delta: Int): Boolean {
+        val moved = steamDelegate.moveGameNativeActionFocus(delta)
+        if (!moved && _uiState.value.steam.gameNativeSyncDirs.isNotEmpty()) {
+            hapticManager.vibrate(HapticPattern.BOUNDARY_HIT)
+        }
+        return moved
+    }
+    fun openGameNativeFoldersModal() = steamDelegate.openGameNativeFoldersModal()
+    fun dismissGameNativeFoldersModal() = steamDelegate.dismissGameNativeFoldersModal()
+    fun moveGameNativeFoldersFocus(delta: Int) = steamDelegate.moveGameNativeFoldersFocus(delta)
+    fun moveGameNativeFoldersActionFocus(delta: Int) {
+        val folder = com.nendo.argosy.data.launcher.GameNativeSyncFolder.entries
+            .getOrNull(_uiState.value.steam.gameNativeFoldersFocusIndex)
+        val hasSecondAction = folder != null && _uiState.value.steam.gameNativeSyncDirs[folder] != null
+        if (!steamDelegate.moveGameNativeFoldersActionFocus(delta) && hasSecondAction) {
+            hapticManager.vibrate(HapticPattern.BOUNDARY_HIT)
+        }
+    }
+    fun confirmGameNativeFoldersRow() = steamDelegate.confirmGameNativeFoldersRow(viewModelScope)
     val openGameNativeSyncDirPickerEvent get() = steamDelegate.openStoreSyncDirPicker
     @Suppress("UNUSED_PARAMETER")
     fun showAddSteamGameDialog(launcherPackage: String?) = steamDelegate.showAddSteamGameDialog()

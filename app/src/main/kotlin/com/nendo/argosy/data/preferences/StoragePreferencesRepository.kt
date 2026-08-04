@@ -7,6 +7,7 @@ import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
+import com.nendo.argosy.data.launcher.GameNativeSyncFolder
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
@@ -21,7 +22,7 @@ data class StoragePreferences(
     val weeklyIntegrityCheckEnabled: Boolean = true,
     val lastIntegrityCheckTime: Long? = null,
     val steamInstallVolume: String? = null,
-    val gameNativeSyncDir: String? = null
+    val gameNativeSyncDirs: Map<GameNativeSyncFolder, String> = emptyMap()
 )
 
 @Singleton
@@ -38,6 +39,9 @@ class StoragePreferencesRepository @Inject constructor(
         val LAST_INTEGRITY_CHECK = longPreferencesKey("last_integrity_check_time")
         val STEAM_INSTALL_VOLUME = stringPreferencesKey("steam_install_volume")
         val GAMENATIVE_SYNC_DIR = stringPreferencesKey("gamenative_sync_dir")
+        val GAMENATIVE_SYNC_DIR_BY_FOLDER = GameNativeSyncFolder.entries.associateWith {
+            stringPreferencesKey("gamenative_sync_dir_${it.slug}")
+        }
     }
 
     val preferences: Flow<StoragePreferences> = dataStore.data.map { prefs ->
@@ -50,7 +54,9 @@ class StoragePreferencesRepository @Inject constructor(
             weeklyIntegrityCheckEnabled = prefs[Keys.WEEKLY_INTEGRITY_CHECK] ?: true,
             lastIntegrityCheckTime = prefs[Keys.LAST_INTEGRITY_CHECK],
             steamInstallVolume = prefs[Keys.STEAM_INSTALL_VOLUME],
-            gameNativeSyncDir = prefs[Keys.GAMENATIVE_SYNC_DIR]
+            gameNativeSyncDirs = Keys.GAMENATIVE_SYNC_DIR_BY_FOLDER.mapNotNull { (folder, key) ->
+                prefs[key]?.takeIf { it.isNotBlank() }?.let { folder to it }
+            }.toMap()
         )
     }
 
@@ -95,10 +101,36 @@ class StoragePreferencesRepository @Inject constructor(
         }
     }
 
-    suspend fun setGameNativeSyncDir(path: String?) {
+    suspend fun setGameNativeSyncDir(folder: GameNativeSyncFolder, path: String?) {
+        val key = Keys.GAMENATIVE_SYNC_DIR_BY_FOLDER.getValue(folder)
         dataStore.edit { prefs ->
-            if (path != null) prefs[Keys.GAMENATIVE_SYNC_DIR] = path
-            else prefs.remove(Keys.GAMENATIVE_SYNC_DIR)
+            if (path != null) prefs[key] = path
+            else prefs.remove(key)
         }
+    }
+
+    /**
+     * Seeds gog, epic and amazon from the single pre-per-store folder, never steam, then drops the
+     * legacy key. Idempotent: a per-store folder cleared afterwards stays cleared.
+     */
+    suspend fun migrateLegacyGameNativeSyncDir() {
+        dataStore.edit { prefs ->
+            val legacy = prefs[Keys.GAMENATIVE_SYNC_DIR] ?: return@edit
+            if (legacy.isNotBlank()) {
+                for (folder in LEGACY_CARRY_FORWARD_FOLDERS) {
+                    val key = Keys.GAMENATIVE_SYNC_DIR_BY_FOLDER.getValue(folder)
+                    if (prefs[key] == null) prefs[key] = legacy
+                }
+            }
+            prefs.remove(Keys.GAMENATIVE_SYNC_DIR)
+        }
+    }
+
+    private companion object {
+        val LEGACY_CARRY_FORWARD_FOLDERS = listOf(
+            GameNativeSyncFolder.GOG,
+            GameNativeSyncFolder.EPIC,
+            GameNativeSyncFolder.AMAZON
+        )
     }
 }

@@ -33,6 +33,7 @@ internal class ModalInputRouter(private val viewModel: SettingsViewModel) {
         interceptUpdateModal(state, method)?.let { return it }
         interceptVariantPicker(state, method)?.let { return it }
         interceptSteamVariantPicker(state, method)?.let { return it }
+        interceptGameNativeFoldersModal(state, method)?.let { return it }
         interceptEmulatorPicker(state, method)?.let { return it }
         interceptDownloadDefaultsModal(state, method)?.let { return it }
         interceptShaderPicker(method)?.let { return it }
@@ -328,6 +329,23 @@ internal class ModalInputRouter(private val viewModel: SettingsViewModel) {
             InputMethod.DOWN -> { viewModel.moveSteamVariantFocus(1); InputResult.HANDLED }
             InputMethod.CONFIRM -> { viewModel.confirmSteamVariantSelection(); InputResult.HANDLED }
             InputMethod.BACK -> { viewModel.dismissSteamVariantPicker(); InputResult.HANDLED }
+            else -> InputResult.HANDLED
+        }
+    }
+
+    private fun interceptGameNativeFoldersModal(state: SettingsUiState, method: InputMethod): InputResult? {
+        if (!state.steam.showGameNativeFoldersModal) return null
+        return when (method) {
+            InputMethod.UP -> { viewModel.moveGameNativeFoldersFocus(-1); InputResult.HANDLED }
+            InputMethod.DOWN -> { viewModel.moveGameNativeFoldersFocus(1); InputResult.HANDLED }
+            InputMethod.LEFT -> { viewModel.moveGameNativeFoldersActionFocus(-1); InputResult.HANDLED }
+            InputMethod.RIGHT -> { viewModel.moveGameNativeFoldersActionFocus(1); InputResult.HANDLED }
+            InputMethod.CONFIRM -> {
+                val opensPicker = state.steam.gameNativeFoldersActionIndex == 0
+                viewModel.confirmGameNativeFoldersRow()
+                if (opensPicker) InputResult.handled(SoundType.OPEN_MODAL) else InputResult.HANDLED
+            }
+            InputMethod.BACK -> { viewModel.dismissGameNativeFoldersModal(); InputResult.HANDLED }
             else -> InputResult.HANDLED
         }
     }

@@ -185,9 +185,18 @@ private fun buildFlatItemSections(
 fun libretroSettingsMaxFocusIndex(platformSlug: String?, canEnableBFI: Boolean, showSavingSection: Boolean = true): Int =
     libretroSettingsLayout.maxFocusIndex(LibretroVisibilityState(platformSlug, canEnableBFI, showSavingSection))
 
+/**
+ * Resolves a focus index to a libretro setting. [showSavingSection] must match the value the
+ * matching [LibretroSettingsSection] renders with, or indices past the visible rows resolve to
+ * hidden saving rows instead of null.
+ */
 fun libretroSettingsItemAtFocusIndex(
     index: Int,
     platformSlug: String?,
-    canEnableBFI: Boolean
+    canEnableBFI: Boolean,
+    showSavingSection: Boolean = true
 ): LibretroSettingDef? =
-    libretroSettingsLayout.itemAtFocusIndex(index, LibretroVisibilityState(platformSlug, canEnableBFI))
+    libretroSettingsLayout.itemAtFocusIndex(
+        index,
+        LibretroVisibilityState(platformSlug, canEnableBFI, showSavingSection)
+    )

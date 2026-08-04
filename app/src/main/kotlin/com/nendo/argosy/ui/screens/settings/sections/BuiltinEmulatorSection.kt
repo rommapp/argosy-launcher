@@ -1,7 +1,9 @@
 package com.nendo.argosy.ui.screens.settings.sections
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -13,6 +15,7 @@ import com.nendo.argosy.ui.components.CyclePreference
 import com.nendo.argosy.ui.components.FocusedScroll
 import com.nendo.argosy.ui.components.SwitchPreference
 import com.nendo.argosy.ui.screens.settings.ARCHITECTURE_OPTIONS
+import com.nendo.argosy.ui.screens.settings.components.SectionHeader
 import com.nendo.argosy.ui.screens.settings.BUILTIN_ARCHITECTURE_PICKER_KEY
 import com.nendo.argosy.ui.screens.settings.SettingsUiState
 import com.nendo.argosy.ui.screens.settings.SettingsViewModel
@@ -46,7 +49,10 @@ fun BuiltinEmulatorSection(
     val builtinEnabled = emulators.builtinLibretroEnabled
     val listState = rememberLazyListState()
 
-    FocusedScroll(listState = listState, focusedIndex = uiState.focusedIndex)
+    val statusBarHeaderOffset =
+        if (builtinEnabled && uiState.focusedIndex >= BuiltinEmulatorItem.HUD_ENABLED.focusIndex) 1 else 0
+
+    FocusedScroll(listState = listState, focusedIndex = uiState.focusedIndex + statusBarHeaderOffset)
 
     LazyColumn(
         state = listState,
@@ -125,6 +131,10 @@ fun BuiltinEmulatorSection(
                     isFocused = uiState.focusedIndex == BuiltinEmulatorItem.TWO_COLUMN.focusIndex,
                     onToggle = { viewModel.setIngameMenuTwoColumn(it) }
                 )
+            }
+            item(key = "builtin_hud_header") {
+                Spacer(modifier = Modifier.height(Dimens.spacingMd))
+                SectionHeader("Status Bar")
             }
             item(key = "builtin_hud_enabled") {
                 SwitchPreference(

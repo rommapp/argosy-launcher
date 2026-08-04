@@ -194,13 +194,6 @@ internal sealed class InGameControlsItem(
     data object TouchHaptic : InGameControlsItem("touchHaptic", "touchControls")
     data object TouchLockOrientation : InGameControlsItem("touchLockOrientation", "touchControls")
     data object TouchGenesis6Button : InGameControlsItem("touchGenesis6Button", "touchControls")
-    data object HudEnabled : InGameControlsItem("hudEnabled", "statusBar")
-    data object HudCorner : InGameControlsItem("hudCorner", "statusBar")
-    data object HudBattery : InGameControlsItem("hudBattery", "statusBar")
-    data object HudClock : InGameControlsItem("hudClock", "statusBar")
-    data object HudPlaytime : InGameControlsItem("hudPlaytime", "statusBar")
-    data object HudFps : InGameControlsItem("hudFps", "statusBar")
-    data object HudLastSave : InGameControlsItem("hudLastSave", "statusBar")
 
     companion object {
         val ALL: List<InGameControlsItem>
@@ -226,17 +219,43 @@ internal sealed class InGameControlsItem(
                 TouchEnabled,
                 TouchHaptic,
                 TouchLockOrientation,
-                TouchGenesis6Button,
-                Header("statusBarHeader", "statusBar", "Status Bar"),
-                HudEnabled,
-                HudCorner,
-                HudBattery,
-                HudClock,
-                HudPlaytime,
-                HudFps,
-                HudLastSave
+                TouchGenesis6Button
             )
     }
+}
+
+/**
+ * The Argosy status-bar overlay rows appended after the libretro settings on the Video tab.
+ * Declaration order is the on-screen order and the focus order.
+ */
+internal enum class InGameHudItem(val key: String) {
+    ENABLED("hudEnabled"),
+    CORNER("hudCorner"),
+    BATTERY("hudBattery"),
+    CLOCK("hudClock"),
+    PLAYTIME("hudPlaytime"),
+    FPS("hudFps"),
+    LAST_SAVE("hudLastSave")
+}
+
+private fun hudSwitchValue(item: InGameHudItem, state: InGameControlsState): Boolean? = when (item) {
+    InGameHudItem.ENABLED -> state.hudEnabled
+    InGameHudItem.CORNER -> null
+    InGameHudItem.BATTERY -> state.hudShowBattery
+    InGameHudItem.CLOCK -> state.hudShowClock
+    InGameHudItem.PLAYTIME -> state.hudShowPlaytime
+    InGameHudItem.FPS -> state.hudShowFps
+    InGameHudItem.LAST_SAVE -> state.hudShowLastSave
+}
+
+private fun hudSwitchAction(item: InGameHudItem, enabled: Boolean): InGameControlsAction? = when (item) {
+    InGameHudItem.ENABLED -> InGameControlsAction.SetHudEnabled(enabled)
+    InGameHudItem.CORNER -> null
+    InGameHudItem.BATTERY -> InGameControlsAction.SetHudShowBattery(enabled)
+    InGameHudItem.CLOCK -> InGameControlsAction.SetHudShowClock(enabled)
+    InGameHudItem.PLAYTIME -> InGameControlsAction.SetHudShowPlaytime(enabled)
+    InGameHudItem.FPS -> InGameControlsAction.SetHudShowFps(enabled)
+    InGameHudItem.LAST_SAVE -> InGameControlsAction.SetHudShowLastSave(enabled)
 }
 
 internal data class InGameControlsVisibility(
@@ -317,9 +336,10 @@ fun InGameSettingsScreen(
             selectablePorts = selectablePorts
         )
     }
-    val maxVideoFocusIndex = remember(platformSlug, canEnableBFI) {
-        libretroSettingsMaxFocusIndex(platformSlug, canEnableBFI, showSavingSection = false)
+    val videoLibretroCount = remember(platformSlug, canEnableBFI) {
+        libretroSettingsMaxFocusIndex(platformSlug, canEnableBFI, showSavingSection = false) + 1
     }
+    val maxVideoFocusIndex = videoLibretroCount + InGameHudItem.entries.size - 1
     val controlsMaxFocusIndex = remember(controlsVisibility) {
         controlsLayout.maxFocusIndex(controlsVisibility)
     }
@@ -334,9 +354,42 @@ fun InGameSettingsScreen(
     }
 
     fun getSettingAtIndex(index: Int): LibretroSettingDef? = when (currentTab) {
-        InGameSettingsTab.VIDEO -> libretroSettingsItemAtFocusIndex(index, platformSlug, canEnableBFI)
+        InGameSettingsTab.VIDEO -> libretroSettingsItemAtFocusIndex(
+            index = index,
+            platformSlug = platformSlug,
+            canEnableBFI = canEnableBFI,
+            showSavingSection = false
+        )
         InGameSettingsTab.CONTROLS -> null
         InGameSettingsTab.CORE_OPTIONS -> null
+    }
+
+    fun getHudItemAtIndex(index: Int): InGameHudItem? =
+        if (currentTab == InGameSettingsTab.VIDEO) {
+            InGameHudItem.entries.getOrNull(index - videoLibretroCount)
+        } else {
+            null
+        }
+
+    fun handleHudConfirm(item: InGameHudItem) {
+        val action = currentOnControlsAction.value
+        val enabled = hudSwitchValue(item, currentControlsState.value)
+        if (enabled == null) {
+            action(InGameControlsAction.CycleHudCorner(true))
+        } else {
+            hudSwitchAction(item, !enabled)?.let { action(it) }
+        }
+    }
+
+    fun handleHudAdjust(item: InGameHudItem, direction: Int) {
+        val action = currentOnControlsAction.value
+        val enabled = hudSwitchValue(item, currentControlsState.value)
+        if (enabled == null) {
+            action(InGameControlsAction.CycleHudCorner(direction > 0))
+            return
+        }
+        val next = direction > 0
+        if (next != enabled) hudSwitchAction(item, next)?.let { action(it) }
     }
 
     fun isTabEnabled(tab: InGameSettingsTab): Boolean =
@@ -388,19 +441,6 @@ fun InGameSettingsScreen(
                 action(InGameControlsAction.SetTouchLockOrientation(!state.touchLockOrientation))
             InGameControlsItem.TouchGenesis6Button ->
                 action(InGameControlsAction.SetTouchGenesis6Button(!state.touchGenesis6Button))
-            InGameControlsItem.HudEnabled ->
-                action(InGameControlsAction.SetHudEnabled(!state.hudEnabled))
-            InGameControlsItem.HudCorner -> action(InGameControlsAction.CycleHudCorner(true))
-            InGameControlsItem.HudBattery ->
-                action(InGameControlsAction.SetHudShowBattery(!state.hudShowBattery))
-            InGameControlsItem.HudClock ->
-                action(InGameControlsAction.SetHudShowClock(!state.hudShowClock))
-            InGameControlsItem.HudPlaytime ->
-                action(InGameControlsAction.SetHudShowPlaytime(!state.hudShowPlaytime))
-            InGameControlsItem.HudFps ->
-                action(InGameControlsAction.SetHudShowFps(!state.hudShowFps))
-            InGameControlsItem.HudLastSave ->
-                action(InGameControlsAction.SetHudShowLastSave(!state.hudShowLastSave))
             else -> {}
         }
     }
@@ -449,6 +489,11 @@ fun InGameSettingsScreen(
                     cycleControlsItem(-1)
                     return InputResult.HANDLED
                 }
+                val hudItem = getHudItemAtIndex(focusedIndex)
+                if (hudItem != null) {
+                    handleHudAdjust(hudItem, -1)
+                    return InputResult.HANDLED
+                }
                 val setting = getSettingAtIndex(focusedIndex) ?: return InputResult.HANDLED
                 if (accessor.isActionItem(setting)) return InputResult.HANDLED
                 if (setting.type is LibretroSettingDef.SettingType.Cycle) {
@@ -470,6 +515,11 @@ fun InGameSettingsScreen(
                     cycleControlsItem(1)
                     return InputResult.HANDLED
                 }
+                val hudItem = getHudItemAtIndex(focusedIndex)
+                if (hudItem != null) {
+                    handleHudAdjust(hudItem, 1)
+                    return InputResult.HANDLED
+                }
                 val setting = getSettingAtIndex(focusedIndex) ?: return InputResult.HANDLED
                 if (accessor.isActionItem(setting)) return InputResult.HANDLED
                 if (setting.type is LibretroSettingDef.SettingType.Cycle) {
@@ -481,6 +531,11 @@ fun InGameSettingsScreen(
             override fun onConfirm(): InputResult {
                 when (currentTab) {
                     InGameSettingsTab.VIDEO -> {
+                        val hudItem = getHudItemAtIndex(focusedIndex)
+                        if (hudItem != null) {
+                            handleHudConfirm(hudItem)
+                            return InputResult.HANDLED
+                        }
                         val setting = getSettingAtIndex(focusedIndex) ?: return InputResult.HANDLED
                         if (accessor.isActionItem(setting)) {
                             accessor.onAction(setting)
@@ -585,7 +640,18 @@ fun InGameSettingsScreen(
                                 canEnableBFI = canEnableBFI,
                                 showSavingSection = false,
                                 listState = videoListState,
-                                enablePicker = false
+                                enablePicker = false,
+                                trailingContent = { InGameHudHeader() },
+                                trailingItems = {
+                                    items(InGameHudItem.entries, key = { it.key }) { item ->
+                                        InGameHudRow(
+                                            item = item,
+                                            state = controlsState,
+                                            isFocused = focusedIndex == videoLibretroCount + item.ordinal,
+                                            onAction = onControlsAction
+                                        )
+                                    }
+                                }
                             )
                         }
 
@@ -895,67 +961,91 @@ private fun InGameControlsSection(
                     isFocused = isFocused(item),
                     onToggle = { onAction(InGameControlsAction.SetTouchGenesis6Button(it)) }
                 )
-
-                InGameControlsItem.HudEnabled -> SwitchPreference(
-                    title = "Show status bar",
-                    subtitle = "A small readout pinned to a corner while playing",
-                    isEnabled = state.hudEnabled,
-                    isFocused = isFocused(item),
-                    onToggle = { onAction(InGameControlsAction.SetHudEnabled(it)) }
-                )
-
-                InGameControlsItem.HudCorner -> CyclePreference(
-                    title = "Corner",
-                    value = state.hudCorner,
-                    isFocused = isFocused(item),
-                    onClick = { onAction(InGameControlsAction.CycleHudCorner(true)) },
-                    onPrev = { onAction(InGameControlsAction.CycleHudCorner(false)) },
-                    options = HUD_CORNERS,
-                    onSelect = { index ->
-                        val steps = index - HUD_CORNERS.indexOf(state.hudCorner).coerceAtLeast(0)
-                        repeat(kotlin.math.abs(steps)) {
-                            onAction(InGameControlsAction.CycleHudCorner(steps > 0))
-                        }
-                    }
-                )
-
-                InGameControlsItem.HudBattery -> SwitchPreference(
-                    title = "Battery",
-                    isEnabled = state.hudShowBattery,
-                    isFocused = isFocused(item),
-                    onToggle = { onAction(InGameControlsAction.SetHudShowBattery(it)) }
-                )
-
-                InGameControlsItem.HudClock -> SwitchPreference(
-                    title = "Clock",
-                    isEnabled = state.hudShowClock,
-                    isFocused = isFocused(item),
-                    onToggle = { onAction(InGameControlsAction.SetHudShowClock(it)) }
-                )
-
-                InGameControlsItem.HudPlaytime -> SwitchPreference(
-                    title = "Session time",
-                    isEnabled = state.hudShowPlaytime,
-                    isFocused = isFocused(item),
-                    onToggle = { onAction(InGameControlsAction.SetHudShowPlaytime(it)) }
-                )
-
-                InGameControlsItem.HudFps -> SwitchPreference(
-                    title = "FPS",
-                    subtitle = "Hidden while fast-forwarding",
-                    isEnabled = state.hudShowFps,
-                    isFocused = isFocused(item),
-                    onToggle = { onAction(InGameControlsAction.SetHudShowFps(it)) }
-                )
-
-                InGameControlsItem.HudLastSave -> SwitchPreference(
-                    title = "Last save state",
-                    isEnabled = state.hudShowLastSave,
-                    isFocused = isFocused(item),
-                    onToggle = { onAction(InGameControlsAction.SetHudShowLastSave(it)) }
-                )
             }
         }
+    }
+}
+
+@Composable
+private fun InGameHudHeader() {
+    Text(
+        text = "Status Bar",
+        style = MaterialTheme.typography.titleSmall,
+        color = MaterialTheme.colorScheme.primary,
+        modifier = Modifier.padding(
+            start = Dimens.spacingSm,
+            top = Dimens.spacingXs,
+            bottom = Dimens.spacingXs
+        )
+    )
+}
+
+@Composable
+private fun InGameHudRow(
+    item: InGameHudItem,
+    state: InGameControlsState,
+    isFocused: Boolean,
+    onAction: (InGameControlsAction) -> Unit
+) {
+    when (item) {
+        InGameHudItem.ENABLED -> SwitchPreference(
+            title = "Show status bar",
+            subtitle = "A small readout pinned to a corner while playing",
+            isEnabled = state.hudEnabled,
+            isFocused = isFocused,
+            onToggle = { onAction(InGameControlsAction.SetHudEnabled(it)) }
+        )
+
+        InGameHudItem.CORNER -> CyclePreference(
+            title = "Corner",
+            value = state.hudCorner,
+            isFocused = isFocused,
+            onClick = { onAction(InGameControlsAction.CycleHudCorner(true)) },
+            onPrev = { onAction(InGameControlsAction.CycleHudCorner(false)) },
+            options = HUD_CORNERS,
+            onSelect = { index ->
+                val steps = index - HUD_CORNERS.indexOf(state.hudCorner).coerceAtLeast(0)
+                repeat(kotlin.math.abs(steps)) {
+                    onAction(InGameControlsAction.CycleHudCorner(steps > 0))
+                }
+            }
+        )
+
+        InGameHudItem.BATTERY -> SwitchPreference(
+            title = "Battery",
+            isEnabled = state.hudShowBattery,
+            isFocused = isFocused,
+            onToggle = { onAction(InGameControlsAction.SetHudShowBattery(it)) }
+        )
+
+        InGameHudItem.CLOCK -> SwitchPreference(
+            title = "Clock",
+            isEnabled = state.hudShowClock,
+            isFocused = isFocused,
+            onToggle = { onAction(InGameControlsAction.SetHudShowClock(it)) }
+        )
+
+        InGameHudItem.PLAYTIME -> SwitchPreference(
+            title = "Session time",
+            isEnabled = state.hudShowPlaytime,
+            isFocused = isFocused,
+            onToggle = { onAction(InGameControlsAction.SetHudShowPlaytime(it)) }
+        )
+
+        InGameHudItem.FPS -> SwitchPreference(
+            title = "FPS",
+            subtitle = "Hidden while fast-forwarding",
+            isEnabled = state.hudShowFps,
+            isFocused = isFocused,
+            onToggle = { onAction(InGameControlsAction.SetHudShowFps(it)) }
+        )
+
+        InGameHudItem.LAST_SAVE -> SwitchPreference(
+            title = "Last save state",
+            isEnabled = state.hudShowLastSave,
+            isFocused = isFocused,
+            onToggle = { onAction(InGameControlsAction.SetHudShowLastSave(it)) }
+        )
     }
 }
 

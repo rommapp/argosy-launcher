@@ -27,7 +27,6 @@ import com.nendo.argosy.data.preferences.GridDensity
 import com.nendo.argosy.domain.model.AutoGridConfig
 import com.nendo.argosy.domain.model.CustomGridConfig
 import com.nendo.argosy.domain.model.HomeScrollAxis
-import com.nendo.argosy.domain.model.HomeSectionStyle
 import com.nendo.argosy.ui.theme.Motion
 import com.nendo.argosy.ui.theme.generated.ComponentDefaults
 import com.nendo.argosy.ui.util.GridUtils
@@ -59,14 +58,12 @@ internal fun AutoGridSchematic(
     } else {
         0f
     }
-    val showHeadings = config.sectionStyle == HomeSectionStyle.HEADINGS
     Canvas(modifier = modifier.clipToBounds().fillMaxSize()) {
         val geometry = AutoGridGeometry(
             lanes = config.laneCount,
             gapPx = gap.toPx(),
             coverAspectRatio = preview.coverAspectRatio,
             cornerPx = preview.coverCornerRadius.toPx(),
-            headingPx = if (showHeadings) preview.barHeight.toPx() else 0f,
             titlePx = if (config.showTitles) preview.barHeight.toPx() else 0f,
             blockColor = preview.block,
             textColor = preview.text
@@ -152,7 +149,6 @@ private class AutoGridGeometry(
     val gapPx: Float,
     val coverAspectRatio: Float,
     val cornerPx: Float,
-    val headingPx: Float,
     val titlePx: Float,
     val blockColor: Color,
     val textColor: Color
@@ -162,26 +158,15 @@ private fun DrawScope.drawVerticalAutoGrid(geometry: AutoGridGeometry, progress:
     val cellWidth = cellWidthOf(geometry)
     if (cellWidth <= 0f) return
     val cellHeight = cellWidth / geometry.coverAspectRatio
-    val titleBlock = titleBlockOf(geometry)
-    val headingBlock = headingBlockOf(geometry)
-    val rowHeight = cellHeight + titleBlock + geometry.gapPx
-    val sectionHeight = headingBlock + AUTO_GRID_ROWS_PER_SECTION * rowHeight
+    val titleBlock = drawFocusedTitle(geometry)
+    val rowHeight = cellHeight + geometry.gapPx
+    val sectionHeight = AUTO_GRID_ROWS_PER_SECTION * rowHeight
     val contentHeight = AUTO_GRID_SECTIONS * sectionHeight
     if (contentHeight <= 0f) return
-    val base = -progress * contentHeight
+    val base = titleBlock - progress * contentHeight
     repeat(2) { tile ->
         var y = base + tile * contentHeight
         repeat(AUTO_GRID_SECTIONS) {
-            if (geometry.headingPx > 0f) {
-                drawBar(
-                    x = 0f,
-                    y = y,
-                    width = size.width * ComponentDefaults.HomeLayoutPreview.sectionHeadingWidthRatio,
-                    height = geometry.headingPx,
-                    color = geometry.textColor
-                )
-                y += headingBlock
-            }
             repeat(AUTO_GRID_ROWS_PER_SECTION) {
                 drawCoverRow(geometry, y, cellWidth, cellHeight, 0f, geometry.lanes)
                 y += rowHeight
@@ -191,32 +176,21 @@ private fun DrawScope.drawVerticalAutoGrid(geometry: AutoGridGeometry, progress:
 }
 
 private fun DrawScope.drawHorizontalAutoGrid(geometry: AutoGridGeometry, progress: Float) {
-    val titleBlock = titleBlockOf(geometry)
-    val headingBlock = headingBlockOf(geometry)
-    val rowHeight = size.height / geometry.lanes
-    val cellHeight = rowHeight - headingBlock - titleBlock - geometry.gapPx
+    val titleBlock = drawFocusedTitle(geometry)
+    val rowHeight = (size.height - titleBlock) / geometry.lanes
+    val cellHeight = rowHeight - geometry.gapPx
     if (cellHeight <= 0f) return
     val cellWidth = cellHeight * geometry.coverAspectRatio
     val itemsPerRow = ceil(size.width / (cellWidth + geometry.gapPx)).toInt()
         .coerceAtLeast(1) + AUTO_GRID_HORIZONTAL_OVERSCAN
     val contentWidth = itemsPerRow * (cellWidth + geometry.gapPx)
-    var y = 0f
+    var y = titleBlock
     repeat(geometry.lanes) {
-        if (geometry.headingPx > 0f) {
-            drawBar(
-                x = 0f,
-                y = y,
-                width = size.width * ComponentDefaults.HomeLayoutPreview.sectionHeadingWidthRatio,
-                height = geometry.headingPx,
-                color = geometry.textColor
-            )
-            y += headingBlock
-        }
         repeat(2) { tile ->
             val originX = -progress * contentWidth + tile * contentWidth
             drawCoverRow(geometry, y, cellWidth, cellHeight, originX, itemsPerRow)
         }
-        y += cellHeight + titleBlock + geometry.gapPx
+        y += cellHeight + geometry.gapPx
     }
 }
 
@@ -231,26 +205,31 @@ private fun DrawScope.drawCoverRow(
     repeat(count) { column ->
         val x = originX + column * (cellWidth + geometry.gapPx)
         drawBlock(x, y, cellWidth, cellHeight, geometry.cornerPx, geometry.blockColor)
-        if (geometry.titlePx > 0f) {
-            drawBar(
-                x = x,
-                y = y + cellHeight + geometry.gapPx / 2f,
-                width = cellWidth * ComponentDefaults.HomeLayoutPreview.coverTitleBarWidthRatio,
-                height = geometry.titlePx,
-                color = geometry.textColor
-            )
-        }
     }
+}
+
+/**
+ * The one title the auto grid shows: the focused game's name, centred above the grid and fixed
+ * while the grid scrolls under it. Covers carry no label of their own, so the schematic must not
+ * draw one per cover.
+ */
+private fun DrawScope.drawFocusedTitle(geometry: AutoGridGeometry): Float {
+    if (geometry.titlePx <= 0f) return 0f
+    val width = size.width * ComponentDefaults.HomeLayoutPreview.focusedTitleBarWidthRatio
+    drawBar(
+        x = (size.width - width) / 2f,
+        y = 0f,
+        width = width,
+        height = geometry.titlePx,
+        color = geometry.textColor
+    )
+    return geometry.titlePx + geometry.gapPx
 }
 
 private fun DrawScope.cellWidthOf(geometry: AutoGridGeometry): Float =
     (size.width - geometry.gapPx * (geometry.lanes - 1)) / geometry.lanes
 
-private fun titleBlockOf(geometry: AutoGridGeometry): Float =
-    if (geometry.titlePx > 0f) geometry.titlePx + geometry.gapPx / 2f else 0f
 
-private fun headingBlockOf(geometry: AutoGridGeometry): Float =
-    if (geometry.headingPx > 0f) geometry.headingPx + geometry.gapPx else 0f
 
 private fun DrawScope.drawCustomGrid(
     columns: Int,

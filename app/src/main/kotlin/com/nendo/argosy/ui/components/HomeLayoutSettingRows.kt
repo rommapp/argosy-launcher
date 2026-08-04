@@ -25,7 +25,6 @@ import com.nendo.argosy.domain.model.HomeLayoutSettings
 import com.nendo.argosy.domain.model.HomeRowAlignment
 import com.nendo.argosy.domain.model.HomeScrollAxis
 import com.nendo.argosy.domain.model.HomeTileAutoAdd
-import com.nendo.argosy.domain.model.HomeSectionStyle
 import com.nendo.argosy.ui.primitives.FocusIndicators
 import com.nendo.argosy.ui.primitives.argosyFocusIndicators
 import com.nendo.argosy.ui.theme.Dimens
@@ -47,7 +46,6 @@ enum class HomeLayoutSettingField {
     PLATFORM_BADGE,
     SCROLL_AXIS,
     AUTO_GRID_LANES,
-    SECTION_STYLE,
     SHOW_TITLES,
     CUSTOM_GRID_LANES,
     CUSTOM_GRID_AUTO_ADD,
@@ -77,7 +75,6 @@ fun homeLayoutFieldsFor(kind: HomeLayoutKind): List<HomeLayoutSettingField> = wh
     HomeLayoutKind.AUTO_GRID -> listOf(
         HomeLayoutSettingField.SCROLL_AXIS,
         HomeLayoutSettingField.AUTO_GRID_LANES,
-        HomeLayoutSettingField.SECTION_STYLE,
         HomeLayoutSettingField.SHOW_TITLES
     )
     HomeLayoutKind.CUSTOM_GRID -> listOf(
@@ -121,8 +118,6 @@ fun adjustHomeLayoutField(
             settings.copy(carousel = settings.carousel.copy(showPlatformBadge = direction > 0))
         HomeLayoutSettingField.SCROLL_AXIS ->
             settings.copy(autoGrid = settings.autoGrid.copy(scrollAxis = cycle(settings.autoGrid.scrollAxis, direction)))
-        HomeLayoutSettingField.SECTION_STYLE ->
-            settings.copy(autoGrid = settings.autoGrid.copy(sectionStyle = cycle(settings.autoGrid.sectionStyle, direction)))
         HomeLayoutSettingField.SHOW_TITLES ->
             settings.copy(autoGrid = settings.autoGrid.copy(showTitles = direction > 0))
         HomeLayoutSettingField.AUTO_GRID_LANES ->
@@ -293,13 +288,6 @@ fun HomeLayoutSettingRow(
             onClick = { onAdjust(1) },
             onPrev = { onAdjust(-1) }
         )
-        HomeLayoutSettingField.SECTION_STYLE -> CyclePreference(
-            title = "Section Style",
-            value = sectionStyleLabel(settings.autoGrid.sectionStyle),
-            isFocused = isFocused,
-            onClick = { onAdjust(1) },
-            onPrev = { onAdjust(-1) }
-        )
         HomeLayoutSettingField.SHOW_TITLES -> SwitchPreference(
             title = "Show Titles",
             isEnabled = settings.autoGrid.showTitles,
@@ -381,10 +369,6 @@ private fun scrollAxisLabel(axis: HomeScrollAxis): String = when (axis) {
     HomeScrollAxis.HORIZONTAL -> "Horizontal"
 }
 
-private fun sectionStyleLabel(style: HomeSectionStyle): String = when (style) {
-    HomeSectionStyle.HEADINGS -> "Headings"
-    HomeSectionStyle.FLAT -> "Flat"
-}
 
 /**
  * Lanes run across the axis that is not scrolling, so the same stored number is presented as

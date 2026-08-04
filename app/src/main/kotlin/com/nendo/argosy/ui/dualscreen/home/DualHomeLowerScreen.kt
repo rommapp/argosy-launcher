@@ -311,8 +311,6 @@ fun DualHomeLowerScreen(
                 focusedIndex = selectedIndex,
                 config = autoGridConfig,
                 gridState = gridState,
-                sectionTitle = platformName,
-                showSectionTitle = false,
                 showPlatformBadge = false,
                 onItemTap = { index ->
                     val game = games.getOrNull(index)

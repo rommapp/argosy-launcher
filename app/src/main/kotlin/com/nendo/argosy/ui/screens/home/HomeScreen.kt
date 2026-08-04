@@ -772,7 +772,6 @@ fun HomeScreen(
                                 focusedIndex = uiState.focusedGameIndex,
                                 config = uiState.autoGridConfig,
                                 gridState = gridState,
-                                sectionTitle = uiState.rowTitle,
                                 showPlatformBadge = uiState.currentRow !is HomeRow.Platform &&
                                     uiState.currentRow != HomeRow.Steam && uiState.currentRow != HomeRow.Android,
                                 downloadIndicatorFor = { item ->

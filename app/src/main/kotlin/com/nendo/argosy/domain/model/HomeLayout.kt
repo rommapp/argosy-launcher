@@ -10,7 +10,6 @@ enum class HomeFocusPosition { LEADING, CENTER }
 
 enum class HomeScrollAxis { VERTICAL, HORIZONTAL }
 
-enum class HomeSectionStyle { HEADINGS, FLAT }
 
 /**
  * Per-layout presentation settings. Each layout owns its own type, so a name two layouts happen to
@@ -51,7 +50,6 @@ const val MIN_RESTING_SCALE = 0.5f
 data class AutoGridConfig(
     val scrollAxis: HomeScrollAxis = HomeScrollAxis.VERTICAL,
     val laneCount: Int = DEFAULT_LANE_COUNT,
-    val sectionStyle: HomeSectionStyle = HomeSectionStyle.HEADINGS,
     val showTitles: Boolean = true
 ) : HomeLayoutConfig {
     override val kind: HomeLayoutKind get() = HomeLayoutKind.AUTO_GRID
@@ -126,7 +124,6 @@ data class HomeLayoutSettings(
             JSONObject().apply {
                 put(KEY_SCROLL_AXIS, autoGrid.scrollAxis.name)
                 put(KEY_LANE_COUNT, autoGrid.laneCount)
-                put(KEY_SECTION_STYLE, autoGrid.sectionStyle.name)
                 put(KEY_SHOW_TITLES, autoGrid.showTitles)
             }
         )
@@ -156,7 +153,6 @@ data class HomeLayoutSettings(
         private const val KEY_PLATFORM_BADGE = "showPlatformBadge"
         private const val KEY_SCROLL_AXIS = "scrollAxis"
         private const val KEY_LANE_COUNT = "laneCount"
-        private const val KEY_SECTION_STYLE = "sectionStyle"
         private const val KEY_SHOW_TITLES = "showTitles"
         private const val KEY_AUTO_ADD = "autoAdd"
         private const val KEY_EMPTY_SLOTS = "showEmptySlots"
@@ -204,10 +200,6 @@ data class HomeLayoutSettings(
                     ),
                     laneCount = autoGrid?.optInt(KEY_LANE_COUNT, defaults.autoGrid.laneCount)
                         ?.coerceIn(MIN_LANE_COUNT, MAX_LANE_COUNT) ?: defaults.autoGrid.laneCount,
-                    sectionStyle = enumOrDefault(
-                        autoGrid?.optString(KEY_SECTION_STYLE),
-                        defaults.autoGrid.sectionStyle
-                    ),
                     showTitles = autoGrid?.optBoolean(KEY_SHOW_TITLES, defaults.autoGrid.showTitles)
                         ?: defaults.autoGrid.showTitles
                 ),

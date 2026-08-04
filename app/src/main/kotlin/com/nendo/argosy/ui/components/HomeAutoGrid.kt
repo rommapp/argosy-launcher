@@ -33,7 +33,6 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.nendo.argosy.domain.model.AutoGridConfig
 import com.nendo.argosy.domain.model.HomeScrollAxis
-import com.nendo.argosy.domain.model.HomeSectionStyle
 import com.nendo.argosy.ui.common.GridDirection
 import com.nendo.argosy.ui.screens.home.GameDownloadIndicator
 import com.nendo.argosy.ui.theme.Dimens
@@ -105,11 +104,9 @@ fun HomeAutoGrid(
     focusedIndex: Int,
     config: AutoGridConfig,
     gridState: LazyGridState,
-    sectionTitle: String,
     onItemTap: (Int) -> Unit,
     onItemLongPress: (Int) -> Unit,
     modifier: Modifier = Modifier,
-    showSectionTitle: Boolean = true,
     showPlatformBadge: Boolean = true,
     downloadIndicatorFor: (CarouselItem) -> GameDownloadIndicator = { GameDownloadIndicator.NONE },
     onCoverLoadFailed: ((Long, String) -> Unit)? = null,
@@ -117,17 +114,6 @@ fun HomeAutoGrid(
 ) {
     AutoGridFocusSync(gridState, focusedIndex, items.size, config)
     Column(modifier = modifier.fillMaxSize()) {
-        if (showSectionTitle && config.sectionStyle == HomeSectionStyle.HEADINGS) {
-            Text(
-                text = sectionTitle,
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.padding(
-                    start = Dimens.spacingMd,
-                    bottom = Dimens.spacingSm
-                )
-            )
-        }
         if (config.showTitles) {
             val focusedTitle = (items.getOrNull(focusedIndex) as? CarouselItem.Game)
                 ?.game?.title.orEmpty()

@@ -209,6 +209,7 @@ object ComponentDefaults {
         const val footerBarWidthRatio = 0.55f
         const val sectionHeadingWidthRatio = 0.22f
         const val coverTitleBarWidthRatio = 0.7f
+        const val focusedTitleBarWidthRatio = 0.34f
         const val badgeWidthRatio = 0.45f
         const val restingBlockAlpha = 0.45f
         const val maxHeightDp = 260

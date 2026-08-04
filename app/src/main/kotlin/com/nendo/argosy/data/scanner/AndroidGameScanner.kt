@@ -68,13 +68,7 @@ class AndroidGameScanner @Inject constructor(
                 Log.d(TAG, "scanInstalledGames: ${app.packageName} matches an unlinked RomM row, skipping")
                 continue
             }
-            val flagged = appCategoryDao.getByPackageName(app.packageName)
-            val isGame = when {
-                flagged?.isManualOverride == true -> flagged.isGame
-                app.declaresGameCategory -> true
-                else -> false
-            }
-            if (!isGame) continue
+            if (!looksLikeGame(app)) continue
 
             gameDao.insert(
                 GameEntity(
@@ -115,6 +109,21 @@ class AndroidGameScanner @Inject constructor(
         .removePrefix("an ")
         .trim()
 
+    /**
+     * Whether an installed app is a game, from signals that exist without asking the network: a
+     * flag the user set by hand in the Apps screen, else the package's own declared category.
+     *
+     * This gates the title-based relink as well as insertion. It used to be answered by a stored
+     * Play Store classification, which nothing populates any more, so that check passed for every
+     * app whose row was simply absent and stopped separating games from anything else sharing a
+     * name. Package identity does not go through here - an exact package match needs no guess.
+     */
+    private suspend fun looksLikeGame(app: com.nendo.argosy.data.repository.InstalledApp): Boolean {
+        val flagged = appCategoryDao.getByPackageName(app.packageName)
+        if (flagged?.isManualOverride == true) return flagged.isGame
+        return app.declaresGameCategory
+    }
+
     suspend fun relinkInstalledRommAndroidApps(): Int = withContext(Dispatchers.IO) {
         val candidates = gameDao
             .getByPlatform(LocalPlatformIds.ANDROID, syncPreferencesRepository.getRommUserId())
@@ -125,7 +134,9 @@ class AndroidGameScanner @Inject constructor(
             .filter { !isEmulatorPackage(it.packageName) }
             .filter { appCategoryDao.getByPackageName(it.packageName)?.isGame != false }
         val installedByPackage = installedApps.associateBy { it.packageName }
-        val installedByName = installedApps.groupBy { matchKey(it.label) }
+        val installedByName = installedApps
+            .filter { looksLikeGame(it) }
+            .groupBy { matchKey(it.label) }
 
         var relinked = 0
         for (game in candidates) {

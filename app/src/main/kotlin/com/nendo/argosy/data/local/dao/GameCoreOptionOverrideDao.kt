@@ -27,4 +27,7 @@ interface GameCoreOptionOverrideDao {
 
     @Query("DELETE FROM game_core_option_overrides WHERE gameId = :gameId AND coreId = :coreId")
     suspend fun deleteAllForGame(gameId: Long, coreId: String)
+
+    @Query("DELETE FROM game_core_option_overrides WHERE coreId = :coreId AND optionKey NOT IN (:keptKeys)")
+    suspend fun deleteRetired(coreId: String, keptKeys: List<String>)
 }

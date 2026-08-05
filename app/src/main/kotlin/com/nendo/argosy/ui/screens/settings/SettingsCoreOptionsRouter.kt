@@ -195,7 +195,7 @@ private suspend fun loadOptionsForCore(
             displayName = def.displayName,
             description = def.description,
             values = def.values,
-            currentValue = overrideValue ?: def.defaultValue,
+            currentValue = overrideValue?.let { def.resolveStored(it) } ?: def.defaultValue,
             isOverridden = overrideValue != null,
             valueLabels = def.valueLabels
         )

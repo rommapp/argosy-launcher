@@ -7,23 +7,6 @@ object FlycastManifest : CoreOptionManifest {
     override val coreId = "flycast"
     override val options = listOf(
         CoreOptionDef(
-            key = "reicast_boot_to_bios",
-            displayName = "Boot to BIOS",
-            values = listOf("disabled", "enabled"),
-            defaultValue = "disabled",
-            description = "Boots to the Dreamcast BIOS menu instead of the game"
-        ),
-        CoreOptionDef(
-            key = "reicast_system",
-            displayName = "System Type",
-            values = listOf("auto", "dreamcast", "naomi", "atomiswave"),
-            defaultValue = "auto",
-            valueLabels = mapOf(
-                "auto" to "Auto", "dreamcast" to "Dreamcast",
-                "naomi" to "NAOMI", "atomiswave" to "Atomiswave"
-            )
-        ),
-        CoreOptionDef(
             key = "reicast_hle_bios",
             displayName = "HLE BIOS",
             values = listOf("disabled", "enabled"),
@@ -111,15 +94,19 @@ object FlycastManifest : CoreOptionManifest {
         CoreOptionDef(
             key = "reicast_cable_type",
             displayName = "Cable Type",
-            values = listOf("TV (RGB)", "TV (Composite)", "VGA (RGB)"),
+            values = listOf("TV (RGB)", "TV (Composite)", "VGA"),
             defaultValue = "TV (Composite)",
-            description = "Selects the video output cable type, affects available display modes"
+            coreDefault = "TV (Composite)",
+            description = "Selects the video output cable type, affects available display modes",
+            valueLabels = mapOf("VGA" to "VGA (RGB)")
         ),
         CoreOptionDef(
             key = "reicast_broadcast",
             displayName = "Broadcast Standard",
             values = listOf("Default", "PAL_M", "PAL_N", "NTSC", "PAL"),
             defaultValue = "Default",
+            coreDefault = "NTSC",
+            description = "Default follows the region the game was released for",
             valueLabels = mapOf(
                 "PAL_M" to "PAL-M (Brazil)",
                 "PAL_N" to "PAL-N (Argentina, Paraguay, Uruguay)",
@@ -127,32 +114,18 @@ object FlycastManifest : CoreOptionManifest {
             )
         ),
         CoreOptionDef(
-            key = "reicast_framerate",
-            displayName = "Framerate",
-            values = listOf("fullspeed", "normal"),
-            defaultValue = "fullspeed",
-            description = "Full Speed returns control per rendered frame, Normal per V-blank",
-            valueLabels = mapOf("fullspeed" to "Full Speed", "normal" to "Normal")
-        ),
-        CoreOptionDef(
             key = "reicast_region",
             displayName = "Region",
             values = listOf("Default", "Japan", "USA", "Europe"),
-            defaultValue = "Default"
+            defaultValue = "Default",
+            coreDefault = "USA"
         ),
         CoreOptionDef(
             key = "reicast_language",
             displayName = "Language",
             values = listOf("Default", "Japanese", "English", "German", "French", "Spanish", "Italian"),
-            defaultValue = "Default"
-        ),
-        CoreOptionDef(
-            key = "reicast_div_matching",
-            displayName = "DIV Matching",
-            values = listOf("disabled", "auto"),
-            defaultValue = "auto",
-            description = "Optimize integer division",
-            valueLabels = mapOf("auto" to "Auto")
+            defaultValue = "Default",
+            coreDefault = "English"
         ),
         CoreOptionDef(
             key = "reicast_force_wince",
@@ -185,15 +158,19 @@ object FlycastManifest : CoreOptionManifest {
             displayName = "Enable DSP",
             values = listOf("disabled", "enabled"),
             defaultValue = "enabled",
+            coreDefault = "disabled",
             description = "Enables the Dreamcast's audio DSP for more accurate sound processing"
         ),
         CoreOptionDef(
             key = "reicast_anisotropic_filtering",
             displayName = "Anisotropic Filtering",
-            values = listOf("disabled", "2", "4", "8", "16"),
+            values = listOf("off", "2", "4", "8", "16"),
             defaultValue = "4",
+            coreDefault = "off",
             description = "Improves texture clarity at steep viewing angles",
-            valueLabels = mapOf("2" to "2x", "4" to "4x", "8" to "8x", "16" to "16x")
+            valueLabels = mapOf(
+                "off" to "Off", "2" to "2x", "4" to "4x", "8" to "8x", "16" to "16x"
+            )
         ),
         CoreOptionDef(
             key = "reicast_pvr2_filtering",
@@ -203,24 +180,11 @@ object FlycastManifest : CoreOptionManifest {
             description = "Applies the Dreamcast's native bilinear post-processing filter"
         ),
         CoreOptionDef(
-            key = "reicast_render_to_texture_upscaling",
-            displayName = "Render To Texture Upscaling",
-            values = listOf("1x", "2x", "3x", "4x", "8x"),
-            defaultValue = "1x"
-        ),
-        CoreOptionDef(
             key = "reicast_threaded_rendering",
             displayName = "Threaded Rendering",
             values = listOf("disabled", "enabled"),
             defaultValue = "enabled",
             description = "Runs the GPU and CPU on separate threads for better performance"
-        ),
-        CoreOptionDef(
-            key = "reicast_synchronous_rendering",
-            displayName = "Synchronous Rendering",
-            values = listOf("disabled", "enabled"),
-            defaultValue = "enabled",
-            description = "Waits for the GPU to finish the previous frame instead of dropping it"
         ),
         CoreOptionDef(
             key = "reicast_delay_frame_swapping",
@@ -241,25 +205,11 @@ object FlycastManifest : CoreOptionManifest {
             )
         ),
         CoreOptionDef(
-            key = "reicast_enable_purupuru",
-            displayName = "Vibration (Purupuru)",
-            values = listOf("disabled", "enabled"),
-            defaultValue = "enabled",
-            description = "Enables controller vibration feedback using the Purupuru pack"
-        ),
-        CoreOptionDef(
             key = "reicast_allow_service_buttons",
             displayName = "Allow NAOMI Service Buttons",
             values = listOf("disabled", "enabled"),
             defaultValue = "disabled",
             description = "Enables the SERVICE button for NAOMI to enter cabinet settings"
-        ),
-        CoreOptionDef(
-            key = "reicast_enable_naomi_15khz_dipswitch",
-            displayName = "Enable NAOMI 15KHz DIP Switch",
-            values = listOf("disabled", "enabled"),
-            defaultValue = "disabled",
-            description = "Can force 240p or 480i display depending on the game"
         ),
         CoreOptionDef(
             key = "reicast_custom_textures",

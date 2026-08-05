@@ -98,7 +98,8 @@ object FlycastManifest : CoreOptionManifest {
             defaultValue = "TV (Composite)",
             coreDefault = "TV (Composite)",
             description = "Selects the video output cable type, affects available display modes",
-            valueLabels = mapOf("VGA" to "VGA (RGB)")
+            valueLabels = mapOf("VGA" to "VGA (RGB)"),
+            legacyValues = mapOf("VGA (RGB)" to "VGA")
         ),
         CoreOptionDef(
             key = "reicast_broadcast",
@@ -170,7 +171,8 @@ object FlycastManifest : CoreOptionManifest {
             description = "Improves texture clarity at steep viewing angles",
             valueLabels = mapOf(
                 "off" to "Off", "2" to "2x", "4" to "4x", "8" to "8x", "16" to "16x"
-            )
+            ),
+            legacyValues = mapOf("disabled" to "off")
         ),
         CoreOptionDef(
             key = "reicast_pvr2_filtering",
@@ -178,6 +180,24 @@ object FlycastManifest : CoreOptionManifest {
             values = listOf("disabled", "enabled"),
             defaultValue = "disabled",
             description = "Applies the Dreamcast's native bilinear post-processing filter"
+        ),
+        CoreOptionDef(
+            key = "reicast_auto_skip_frame",
+            displayName = "Auto Skip Frame",
+            values = listOf("disabled", "some", "more"),
+            defaultValue = "disabled",
+            description = "Skips frames to hold full speed when the core falls behind. " +
+                "Needs Threaded Rendering, and turns off Detect Frame Rate Changes",
+            valueLabels = mapOf("disabled" to "Off", "some" to "Normal", "more" to "Maximum")
+        ),
+        CoreOptionDef(
+            key = "reicast_detect_vsync_swap_interval",
+            displayName = "Detect Frame Rate Changes",
+            values = listOf("disabled", "enabled"),
+            defaultValue = "enabled",
+            coreDefault = "disabled",
+            description = "Keeps the game running at the right speed when it renders below " +
+                "60 fps. Turning this off makes those parts run fast"
         ),
         CoreOptionDef(
             key = "reicast_threaded_rendering",

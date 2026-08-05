@@ -7,6 +7,7 @@ import android.os.UserManager
 import android.util.Log
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withTimeoutOrNull
+import com.nendo.argosy.data.download.ZipExtractor
 import com.nendo.argosy.data.emulator.M3uManager
 import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.dao.GameDiscDao
@@ -428,8 +429,8 @@ class GameRepository @Inject constructor(
                     entry.rommFileName?.takeIf { it.isNotBlank() }?.let { add(it) }
                     add(entry.gameTitle)
                 }.distinct()
-                val categoryCandidates = listOf(entry.category, entry.category.lowercase(), "extcontent")
-                    .distinct()
+                val categoryCandidates =
+                    (listOf(entry.category) + ZipExtractor.addonFolderNames(entry.category)).distinct()
 
                 val found = folderCandidates.firstNotNullOfOrNull { folderName ->
                     val gameFolder = File(platformDir, folderName)

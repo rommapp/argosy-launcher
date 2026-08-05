@@ -3014,6 +3014,20 @@ object Migration_165_166 : Migration(165, 166) {
     }
 }
 
+object Migration_168_169 : Migration(168, 169) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE platforms ADD COLUMN combineContent INTEGER NOT NULL DEFAULT 0")
+    }
+}
+
+object Migration_167_168 : Migration(167, 168) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE platform_libretro_settings ADD COLUMN autoSaveState INTEGER")
+        db.execSQL("ALTER TABLE platform_libretro_settings ADD COLUMN autoRestoreState INTEGER")
+        db.execSQL("ALTER TABLE platform_libretro_settings ADD COLUMN hwCoreSaveStates INTEGER")
+    }
+}
+
 object Migration_166_167 : Migration(166, 167) {
     override fun migrate(db: SupportSQLiteDatabase) {
         db.execSQL(

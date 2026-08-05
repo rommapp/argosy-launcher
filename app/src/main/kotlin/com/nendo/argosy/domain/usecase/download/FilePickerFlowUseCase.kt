@@ -1,7 +1,10 @@
 package com.nendo.argosy.domain.usecase.download
 
+import com.nendo.argosy.data.download.ZipExtractor
 import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.dao.GameFileDao
+import com.nendo.argosy.data.local.entity.GameEntity
+import com.nendo.argosy.data.local.entity.GameFileEntity
 import com.nendo.argosy.data.model.VariantCategory
 import com.nendo.argosy.data.music.BgmPlaylistRepository
 import com.nendo.argosy.data.music.MusicDirectoryManager
@@ -15,6 +18,7 @@ import com.nendo.argosy.data.storage.StorageAttributionRepository
 import com.nendo.argosy.data.storage.StorageCategory
 import kotlinx.coroutines.flow.first
 import java.io.File
+import java.time.Instant
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -41,14 +45,46 @@ class FilePickerFlowUseCase @Inject constructor(
     private val bgmPlaylistRepository: BgmPlaylistRepository,
     private val musicDirectoryManager: MusicDirectoryManager,
     private val controlsPreferencesRepository: ControlsPreferencesRepository,
-    private val attributionRepository: StorageAttributionRepository
+    private val attributionRepository: StorageAttributionRepository,
+    private val gameRepository: com.nendo.argosy.data.repository.GameRepository
 ) {
+
+    /**
+     * Where an add-on actually sits, whatever layout put it there: the recorded path first, then
+     * `extcontent/` and the category folders beside the base rom. A file found by probing has its
+     * row repaired, so a layout the download did not record still reads as downloaded rather than
+     * queueing a duplicate.
+     */
+    private suspend fun resolveOnDisk(file: GameFileEntity, gameFolder: File?): File? {
+        file.localPath?.let { path ->
+            val recorded = File(path)
+            if (recorded.exists()) return recorded
+        }
+        if (gameFolder == null) return null
+        val found = ZipExtractor.findAddonFile(gameFolder, file.fileName, file.category) ?: return null
+        gameFileDao.updateLocalPath(file.id, found.absolutePath, Instant.now())
+        return found
+    }
+
+    /**
+     * The folder a game exclusively owns, or null when its rom sits directly in the platform folder.
+     * A shared folder holds every game's files, so a bare filename found there proves nothing about
+     * ownership and must never be adopted into this game's rows.
+     */
+    private suspend fun gameFolderOf(game: GameEntity): File? {
+        val folder = game.localPath?.let { File(it).parentFile }?.takeIf { it.isDirectory } ?: return null
+        val platformDir = gameRepository.getDownloadDirForPlatformId(game.platformId)
+        val folderCanonical = runCatching { folder.canonicalPath }.getOrNull() ?: return null
+        val platformCanonical = runCatching { platformDir.canonicalPath }.getOrNull() ?: return null
+        return folder.takeIf { folderCanonical != platformCanonical }
+    }
 
     /** Null when there is nothing to choose: callers fall back to a plain download. */
     suspend fun buildRows(gameId: Long): FilePickerSetup? {
         val game = gameDao.getById(gameId) ?: return null
         val rommId = game.rommId ?: return null
         val dbRows = gameFileDao.getFilesForGame(gameId)
+        val gameFolder = gameFolderOf(game)
         val defaults = preferencesRepository.getEffectiveDownloadDefaults(game.platformSlug)
 
         val rows = mutableListOf<FilePickerRow>()
@@ -113,7 +149,8 @@ class FilePickerFlowUseCase @Inject constructor(
                         else -> defaults[key] ?: false
                     }
                     files.sortedBy { it.fileName }.forEach { f ->
-                        val downloaded = pathOnDisk(dbRows.firstOrNull { it.rommFileId == f.id }?.localPath)
+                        val downloaded = dbRows.firstOrNull { it.rommFileId == f.id }
+                            ?.let { resolveOnDisk(it, gameFolder) } != null
                         rows += FilePickerRow(
                             isHeader = false,
                             groupKey = key,
@@ -142,6 +179,7 @@ class FilePickerFlowUseCase @Inject constructor(
         val dbRows = gameFileDao.getFilesForGame(gameId)
         if (dbRows.isEmpty()) return null
 
+        val gameFolder = gameFolderOf(game)
         val rows = mutableListOf<FilePickerRow>()
         val preselected = mutableSetOf<Long>()
         val rootDepth = dbRows.minOf { it.filePath.count { c -> c == '/' } }
@@ -180,8 +218,9 @@ class FilePickerFlowUseCase @Inject constructor(
                 }
                 files.sortedBy { it.fileName }.forEach { f ->
                     val rommFileId = f.rommFileId ?: return@forEach
-                    val onDisk = f.localPath != null && File(f.localPath).exists()
-                    val isBase = onDisk && f.localPath == game.localPath
+                    val resolved = resolveOnDisk(f, gameFolder)
+                    val onDisk = resolved != null
+                    val isBase = resolved?.absolutePath == game.localPath
                     rows += FilePickerRow(
                         isHeader = false,
                         groupKey = key,
@@ -206,6 +245,7 @@ class FilePickerFlowUseCase @Inject constructor(
     ): Pair<Int, Int> {
         val dbRows = gameFileDao.getFilesForGame(gameId)
         val byRommId = dbRows.associateBy { it.rommFileId }
+        val gameFolder = gameDao.getById(gameId)?.let { gameFolderOf(it) }
         var added = 0
         var removed = 0
         for (row in rows) {
@@ -213,9 +253,9 @@ class FilePickerFlowUseCase @Inject constructor(
             if (row.isHeader || row.isLocked) continue
             val db = byRommId[rommFileId] ?: continue
             val wantIt = rommFileId in selected
-            val haveIt = db.localPath != null
+            val onDisk = resolveOnDisk(db, gameFolder)
             when {
-                wantIt && !haveIt -> {
+                wantIt && onDisk == null -> {
                     val game = gameDao.getById(gameId) ?: continue
                     downloadManager.enqueueGameFileDownload(
                         gameId = gameId,
@@ -231,11 +271,10 @@ class FilePickerFlowUseCase @Inject constructor(
                     )
                     added++
                 }
-                !wantIt && haveIt -> {
-                    val path = db.localPath
-                    if (path != null && File(path).delete()) {
+                !wantIt && onDisk != null -> {
+                    if (onDisk.delete()) {
                         gameFileDao.clearLocalPath(db.id)
-                        pruneMusicReferences(path)
+                        pruneMusicReferences(onDisk.absolutePath)
                         removed++
                     }
                 }

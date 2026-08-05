@@ -134,7 +134,8 @@ class GameLauncherTest {
             libretroSavePathResolver = libretroSavePathResolver,
             notificationManager = mockk(relaxed = true),
             attributionRepository = mockk(relaxed = true),
-            accountSwitchMarkerStore = mockk(relaxed = true)
+            accountSwitchMarkerStore = mockk(relaxed = true),
+            extContentOrganizer = mockk(relaxed = true)
         )
     }
 

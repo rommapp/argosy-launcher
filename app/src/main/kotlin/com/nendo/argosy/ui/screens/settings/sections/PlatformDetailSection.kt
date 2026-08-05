@@ -84,6 +84,7 @@ internal sealed class PlatformDetailItem(
     data object StatePath : PlatformDetailItem("state_path", "sync", { it.showStatePath && !it.isAndroid })
 
     data object SyncToggle : PlatformDetailItem("sync_toggle", "sync")
+    data object CombineContent : PlatformDetailItem("combine_content", "sync", { it.showCombineContent })
     data object SyncNow : PlatformDetailItem("sync_now", "sync", { it.syncEnabled })
     data object DownloadDefaults : PlatformDetailItem("download_defaults", "sync", { !it.isAndroid })
     data object PackagePath : PlatformDetailItem("package_path", "sync", { it.showSavePath && !it.isAndroid })
@@ -105,7 +106,8 @@ internal sealed class PlatformDetailItem(
                 Header("header_bios", "bios", "BIOS", { it.hasBios && !it.isAndroid }),
                 InfoItem("info_bios_status", "bios", { it.hasBios && !it.isAndroid }), BiosDownload, BiosInstall, BiosCopy,
                 Header("header_sync", "sync", "Storage & Sync"),
-                SyncToggle, SyncNow, DownloadDefaults, InfoItem("info_package_path", "sync", { it.showSavePath && !it.isBuiltin && !it.isRetroArch }),
+                SyncToggle, SyncNow, DownloadDefaults, CombineContent,
+                InfoItem("info_package_path", "sync", { it.showSavePath && !it.isBuiltin && !it.isRetroArch }),
                 RomPath, SavePath, MemoryCard, StatePath,
                 RemoveFiles
             )
@@ -130,6 +132,7 @@ internal data class PlatformDetailVisibility(
     val biosDownloaded: Boolean = false,
     val canDistribute: Boolean = false,
     val showMemoryCard: Boolean = false,
+    val showCombineContent: Boolean = false,
     /**
      * Installed apps, not rom files. Nothing on this platform is downloaded, emulated or stored
      * by us, so the emulator, BIOS and storage rows have nothing to act on and an emulator
@@ -164,7 +167,11 @@ internal data class PlatformDetailVisibility(
                 config.platform.slug,
                 memcardCount
             ),
-            isAndroid = config.platform.id == com.nendo.argosy.data.platform.LocalPlatformIds.ANDROID
+            isAndroid = config.platform.id == com.nendo.argosy.data.platform.LocalPlatformIds.ANDROID,
+            showCombineContent = com.nendo.argosy.data.download.ZipExtractor
+                .isNswPlatform(config.platform.slug) &&
+                com.nendo.argosy.data.emulator.EmulatorRegistry
+                    .familyBaseIdFor(config.effectiveEmulatorId ?: "") == "eden"
         )
     }
 }
@@ -556,6 +563,13 @@ fun PlatformDetailSection(
                     isEnabled = storageConfig?.syncEnabled ?: true,
                     isFocused = isFocused(item),
                     onToggle = { viewModel.togglePlatformSync(config.platform.id, it) }
+                )
+                PlatformDetailItem.CombineContent -> SwitchPreference(
+                    title = "Combine Content",
+                    subtitle = "All games in one folder, all updates and DLC in extcontent",
+                    isEnabled = storageConfig?.combineContent ?: false,
+                    isFocused = isFocused(item),
+                    onToggle = { viewModel.togglePlatformCombineContent(config.platform.id, it) }
                 )
                 PlatformDetailItem.SyncNow -> {
                     val isBusy = config.platform.id in uiState.storage.busyPlatformIds ||

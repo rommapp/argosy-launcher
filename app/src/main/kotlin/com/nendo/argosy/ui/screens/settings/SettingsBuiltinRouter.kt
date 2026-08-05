@@ -765,9 +765,9 @@ internal fun routeUpdatePlatformLibretroSetting(vm: SettingsViewModel, setting: 
             LibretroSettingDef.VSync -> current.copy(vsync = value?.toBooleanStrictOrNull())
             LibretroSettingDef.RewindSpeed -> current.copy(rewindSpeed = value?.removeSuffix("x")?.toIntOrNull())
             LibretroSettingDef.RewindBufferDuration -> current.copy(rewindBufferDuration = value?.removeSuffix("s")?.toIntOrNull())
-            LibretroSettingDef.AutoSaveState,
-            LibretroSettingDef.AutoRestoreState,
-            LibretroSettingDef.HwCoreSaveStates -> current
+            LibretroSettingDef.AutoSaveState -> current.copy(autoSaveState = value?.toBooleanStrictOrNull())
+            LibretroSettingDef.AutoRestoreState -> current.copy(autoRestoreState = value?.toBooleanStrictOrNull())
+            LibretroSettingDef.HwCoreSaveStates -> current.copy(hwCoreSaveStates = value?.toBooleanStrictOrNull())
         }
 
         if (updated.hasAnyOverrides()) {
@@ -786,7 +786,8 @@ internal fun routeResetAllPlatformLibretroSettings(vm: SettingsViewModel) {
             shader = null, shaderChain = null, filter = null, aspectRatio = null, portraitPosition = null, rotation = null,
             overscanCrop = null, frame = null, blackFrameInsertion = null, fastForwardEnabled = null, fastForwardSpeed = null,
             rewindEnabled = null, rewindSpeed = null, rewindBufferDuration = null,
-            skipDuplicateFrames = null, lowLatencyAudio = null, audioVolume = null, vsync = null
+            skipDuplicateFrames = null, lowLatencyAudio = null, audioVolume = null, vsync = null,
+            autoSaveState = null, autoRestoreState = null, hwCoreSaveStates = null
         )
         if (updated.hasAnyOverrides()) {
             vm.libretroSettingsRepo.upsert(updated)

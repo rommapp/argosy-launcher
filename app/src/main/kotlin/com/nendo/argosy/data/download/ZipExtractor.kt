@@ -139,6 +139,27 @@ private val PLATFORM_CONFIGS = listOf(
 
 object ZipExtractor {
 
+    const val EXTCONTENT_FOLDER = "extcontent"
+
+    val ADDON_SOURCE_FOLDERS = setOf("update", "updates", "dlc", "dlcs")
+
+    val ADDON_FOLDERS = ADDON_SOURCE_FOLDERS + EXTCONTENT_FOLDER
+
+    fun addonFolderNames(category: String?): List<String> = buildList {
+        add(EXTCONTENT_FOLDER)
+        category?.lowercase()?.takeIf { it.isNotBlank() }?.let {
+            add(it)
+            add("${it}s")
+        }
+    }.distinct()
+
+    fun findAddonFile(gameFolder: File, fileName: String, category: String?): File? =
+        addonFolderNames(category)
+            .asSequence()
+            .map { File(File(gameFolder, it), fileName) }
+            .firstOrNull { it.isFile }
+            ?: File(gameFolder, fileName).takeIf { it.isFile }
+
     fun isNswPlatform(platformSlug: String): Boolean {
         val lower = platformSlug.lowercase()
         if (lower in NSW_PLATFORM_SLUGS) return true
@@ -503,7 +524,7 @@ object ZipExtractor {
     }
 
     private fun listExtcontentFiles(gameFolder: File, extensions: Set<String>?): List<File>? {
-        val extcontent = File(gameFolder, "extcontent")
+        val extcontent = File(gameFolder, EXTCONTENT_FOLDER)
         if (!extcontent.isDirectory) return null
         return extcontent.listFiles()?.filter { file ->
             file.isFile && !file.name.startsWith("._") &&

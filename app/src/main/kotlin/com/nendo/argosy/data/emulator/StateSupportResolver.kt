@@ -1,9 +1,8 @@
 package com.nendo.argosy.data.emulator
 
 import com.nendo.argosy.data.platform.PlatformDefinitions
-import com.nendo.argosy.data.preferences.UserPreferencesRepository
+import com.nendo.argosy.data.preferences.EffectiveLibretroSettingsResolver
 import com.nendo.argosy.libretro.LibretroCoreRegistry
-import kotlinx.coroutines.flow.first
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -19,7 +18,7 @@ import javax.inject.Singleton
 @Singleton
 class StateSupportResolver @Inject constructor(
     private val builtinCoreResolver: BuiltinCoreResolver,
-    private val userPreferencesRepository: UserPreferencesRepository
+    private val effectiveLibretroSettingsResolver: EffectiveLibretroSettingsResolver
 ) {
     suspend fun supportsStates(
         emulatorId: String?,
@@ -40,8 +39,8 @@ class StateSupportResolver @Inject constructor(
         if (platformId == null || platformSlug == null) return true
 
         val coreId = builtinCoreResolver.resolve(gameId, platformId, platformSlug).coreId
-        val hwCoreSaveStatesEnabled = userPreferencesRepository
-            .getBuiltinEmulatorSettings().first().hwCoreSaveStatesEnabled
+        val hwCoreSaveStatesEnabled = effectiveLibretroSettingsResolver
+            .getEffectiveSettings(platformId, platformSlug).hwCoreSaveStatesEnabled
         return LibretroCoreRegistry.coreStatesAllowed(coreId, hwCoreSaveStatesEnabled)
     }
 }

@@ -284,6 +284,7 @@ class StorageSettingsDelegate @Inject constructor(
                     gameCount = platform.gameCount,
                     downloadedCount = downloadedCount,
                     syncEnabled = platform.syncEnabled,
+                    combineContent = platform.combineContent,
                     customRomPath = platform.customRomPath,
                     effectivePath = effectivePath,
                     supportsStatePath = info?.supportsStatePath ?: false,
@@ -341,6 +342,13 @@ class StorageSettingsDelegate @Inject constructor(
         scope.launch {
             platformRepository.updateSyncEnabled(platformId, enabled)
             updatePlatformConfigInState(platformId) { it.copy(syncEnabled = enabled) }
+        }
+    }
+
+    fun togglePlatformCombineContent(scope: CoroutineScope, platformId: Long, enabled: Boolean) {
+        scope.launch {
+            platformRepository.updateCombineContent(platformId, enabled)
+            updatePlatformConfigInState(platformId) { it.copy(combineContent = enabled) }
         }
     }
 

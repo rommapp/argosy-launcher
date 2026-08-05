@@ -1,5 +1,6 @@
 package com.nendo.argosy.ui.screens.settings.sections.input
 
+import com.nendo.argosy.core.input.SoundType
 import com.nendo.argosy.ui.input.InputHandler
 import com.nendo.argosy.ui.input.InputResult
 import com.nendo.argosy.ui.screens.settings.SettingsViewModel
@@ -132,6 +133,10 @@ internal class PlatformDetailSectionInput(
             PlatformDetailItem.DisplayTarget -> {
                 viewModel.cycleDisplayTarget(config, direction)
                 InputResult.HANDLED
+            }
+            PlatformDetailItem.CombineContent -> {
+                viewModel.togglePlatformCombineContent(config.platform.id, direction > 0)
+                InputResult.handled(SoundType.TOGGLE)
             }
             else -> InputResult.UNHANDLED
         }

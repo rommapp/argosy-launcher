@@ -52,7 +52,11 @@ class EffectiveLibretroSettingsResolver @Inject constructor(
             limitHotkeysToPlayer1 = global.limitHotkeysToPlayer1,
             analogAsDpad = perPlatform?.analogAsDpad
                 ?: !PlatformWeightRegistry.hasAnalogStick(platformSlug),
-            dpadAsAnalog = perPlatform?.dpadAsAnalog ?: false
+            dpadAsAnalog = perPlatform?.dpadAsAnalog ?: false,
+            autoSaveState = perPlatform?.autoSaveState ?: global.autoSaveState,
+            autoRestoreState = perPlatform?.autoRestoreState ?: global.autoRestoreState,
+            autoRestoreStateMode = global.autoRestoreStateMode,
+            hwCoreSaveStatesEnabled = perPlatform?.hwCoreSaveStates ?: global.hwCoreSaveStatesEnabled
         )
     }
 

@@ -497,7 +497,8 @@ class RomMLibrarySyncService @Inject constructor(
             sortOrder = platformDef?.sortOrder ?: existing?.sortOrder ?: 999,
             lastScanned = existing?.lastScanned,
             syncEnabled = existing?.syncEnabled ?: true,
-            customRomPath = existing?.customRomPath
+            customRomPath = existing?.customRomPath,
+            combineContent = existing?.combineContent ?: false
         )
 
         if (existing == null) {

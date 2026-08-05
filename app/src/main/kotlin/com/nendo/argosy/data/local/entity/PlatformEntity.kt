@@ -19,7 +19,8 @@ data class PlatformEntity(
     val lastScanned: Instant? = null,
     val gameCount: Int = 0,
     val syncEnabled: Boolean = true,
-    val customRomPath: String? = null
+    val customRomPath: String? = null,
+    val combineContent: Boolean = false
 )
 
 fun PlatformEntity.getDisplayName(maxLength: Int? = null): String {

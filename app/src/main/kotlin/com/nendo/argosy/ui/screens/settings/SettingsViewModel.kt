@@ -1387,6 +1387,23 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
+    fun togglePlatformCombineContent(platformId: Long, enabled: Boolean) {
+        storageDelegate.togglePlatformCombineContent(viewModelScope, platformId, enabled)
+        _uiState.update { state ->
+            state.copy(
+                emulators = state.emulators.copy(
+                    platforms = state.emulators.platforms.map { cfg ->
+                        if (cfg.platform.id == platformId) {
+                            cfg.copy(platform = cfg.platform.copy(combineContent = enabled))
+                        } else {
+                            cfg
+                        }
+                    }
+                )
+            )
+        }
+    }
+
     fun focusIndexForPlatform(platformId: Long?): Int {
         val focusable = com.nendo.argosy.ui.screens.settings.sections.EmulatorsItem
             .buildItems(_uiState.value.emulators.platforms)

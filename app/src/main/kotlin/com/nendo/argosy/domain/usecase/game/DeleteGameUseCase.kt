@@ -1,5 +1,6 @@
 package com.nendo.argosy.domain.usecase.game
 
+import com.nendo.argosy.data.download.ZipExtractor
 import com.nendo.argosy.data.local.dao.DownloadQueueDao
 import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.dao.GameFileDao
@@ -52,6 +53,10 @@ class DeleteGameUseCase @Inject constructor(
         gameRepository.clearLocalPath(gameId)
         downloadQueueDao.deleteByGameId(gameId)
         val musicDirPrefix = musicDirectoryManager.resolveMusicDir().absolutePath + File.separator
+        val sharedAddonPaths = gameFileDao.getFilesForGame(gameId)
+            .mapNotNull { it.localPath }
+            .filterNot { it.startsWith(musicDirPrefix) }
+            .filter { File(it).parentFile?.name?.lowercase() == ZipExtractor.EXTCONTENT_FOLDER }
         gameFileDao.clearLocalPathsByGameIdExcludingPrefix(gameId, musicDirPrefix)
 
         saveCacheManager.deleteAllCachesForGame(gameId)
@@ -60,6 +65,7 @@ class DeleteGameUseCase @Inject constructor(
         pendingSyncQueueDao.deleteByGameId(gameId)
 
         withContext(Dispatchers.IO) {
+            deleteSharedAddons(sharedAddonPaths, platformFolder)
             try {
                 val file = File(path)
                 if (!file.exists()) return@withContext
@@ -95,6 +101,24 @@ class DeleteGameUseCase @Inject constructor(
         attributionRepository.markDirty(StorageCategory.SAVE_STATE_CACHE)
         Logger.debug(TAG, "Deleted local file and all save data for game $gameId")
         return true
+    }
+
+    /**
+     * Under Combine Content a game's updates and DLC sit in the platform-wide `extcontent/`, which
+     * the base rom's parent folder no longer covers. Only paths this game's own rows named are
+     * removed, so a neighbour's add-ons in the same folder are never touched.
+     */
+    private fun deleteSharedAddons(paths: List<String>, platformFolder: File) {
+        if (paths.isEmpty()) return
+        val platformCanonical = runCatching { platformFolder.canonicalPath }.getOrNull() ?: return
+        for (path in paths) {
+            val file = File(path)
+            val parentCanonical = runCatching { file.parentFile?.canonicalPath }.getOrNull() ?: continue
+            if (!parentCanonical.startsWith(platformCanonical)) continue
+            if (file.isFile && !file.delete()) {
+                Logger.warn(TAG, "Failed to delete shared add-on ${file.name}")
+            }
+        }
     }
 
     private suspend fun deleteQueuedScreenshotFiles(gameId: Long) {

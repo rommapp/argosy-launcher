@@ -51,4 +51,10 @@ class PlatformRepository @Inject constructor(
 
     suspend fun updateCustomRomPath(platformId: Long, path: String?) =
         platformDao.updateCustomRomPath(platformId, path)
+
+    suspend fun updateCombineContent(platformId: Long, enabled: Boolean) =
+        platformDao.updateCombineContent(platformId, enabled)
+
+    suspend fun isCombineContentEnabled(platformId: Long): Boolean =
+        platformDao.getCombineContent(platformId) == true
 }

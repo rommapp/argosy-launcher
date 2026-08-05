@@ -43,9 +43,16 @@ data class PlatformLibretroSettingsEntity(
     val rewindBufferDuration: Int? = null,
     val vsync: Boolean? = null,
     val savePath: String? = null,
-    val statePath: String? = null
+    val statePath: String? = null,
+    val autoSaveState: Boolean? = null,
+    val autoRestoreState: Boolean? = null,
+    val hwCoreSaveStates: Boolean? = null
 ) {
-    fun hasAnyOverrides(): Boolean = hasAnyVideoOverrides() || hasAnyControlOverrides() || hasAnyPathOverrides()
+    fun hasAnyOverrides(): Boolean =
+        hasAnyVideoOverrides() || hasAnyControlOverrides() || hasAnyPathOverrides() || hasAnySavingOverrides()
+
+    fun hasAnySavingOverrides(): Boolean =
+        autoSaveState != null || autoRestoreState != null || hwCoreSaveStates != null
 
     fun hasAnyVideoOverrides(): Boolean =
         shader != null ||

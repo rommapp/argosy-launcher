@@ -206,9 +206,9 @@ class PlatformLibretroSettingsAccessor(
             LibretroSettingDef.VSync -> ps.vsync?.toString()
             LibretroSettingDef.RewindSpeed -> ps.rewindSpeed?.let { "${it}x" }
             LibretroSettingDef.RewindBufferDuration -> ps.rewindBufferDuration?.let { "${it}s" }
-            LibretroSettingDef.AutoSaveState -> null
-            LibretroSettingDef.AutoRestoreState -> null
-            LibretroSettingDef.HwCoreSaveStates -> null
+            LibretroSettingDef.AutoSaveState -> ps.autoSaveState?.toString()
+            LibretroSettingDef.AutoRestoreState -> ps.autoRestoreState?.toString()
+            LibretroSettingDef.HwCoreSaveStates -> ps.hwCoreSaveStates?.toString()
         }
     }
 

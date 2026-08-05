@@ -72,6 +72,12 @@ interface PlatformDao {
     @Query("UPDATE platforms SET customRomPath = :path WHERE id = :platformId")
     suspend fun updateCustomRomPath(platformId: Long, path: String?)
 
+    @Query("UPDATE platforms SET combineContent = :enabled WHERE id = :platformId")
+    suspend fun updateCombineContent(platformId: Long, enabled: Boolean)
+
+    @Query("SELECT combineContent FROM platforms WHERE id = :platformId")
+    suspend fun getCombineContent(platformId: Long): Boolean?
+
     @Query("SELECT * FROM platforms WHERE syncEnabled = 1 ORDER BY sortOrder ASC, name ASC")
     suspend fun getSyncEnabledPlatforms(): List<PlatformEntity>
 

@@ -20,7 +20,6 @@ import com.nendo.argosy.ui.input.SoundFeedbackManager
 import com.nendo.argosy.core.input.SoundType
 import com.nendo.argosy.data.remote.romm.RomMResult
 import com.nendo.argosy.data.download.nsz.NszDecompressor
-import com.nendo.argosy.data.emulator.EmulatorResolver
 import com.nendo.argosy.data.emulator.M3uManager
 import com.nendo.argosy.data.storage.StorageAttributionRepository
 import com.nendo.argosy.data.storage.StorageCategory
@@ -147,13 +146,13 @@ class DownloadManager @Inject constructor(
     private val soundManager: SoundFeedbackManager,
     private val m3uManager: M3uManager,
     private val thermalManager: dagger.Lazy<DownloadThermalManager>,
-    private val emulatorResolver: EmulatorResolver,
     private val steamContentManager: dagger.Lazy<com.nendo.argosy.data.steam.SteamContentManager>,
     private val musicDirectoryManager: MusicDirectoryManager,
     private val attributionRepository: StorageAttributionRepository,
     private val syncPreferencesRepository: SyncPreferencesRepository,
     private val homeTileRepository: com.nendo.argosy.data.repository.HomeTileRepository,
-    private val homeTilePromptQueue: com.nendo.argosy.data.repository.HomeTilePromptQueue
+    private val homeTilePromptQueue: com.nendo.argosy.data.repository.HomeTilePromptQueue,
+    private val extContentOrganizer: ExtContentOrganizer
 ) {
     private val _state = MutableStateFlow(DownloadQueueState())
     val state: StateFlow<DownloadQueueState> = _state.asStateFlow()
@@ -550,19 +549,12 @@ class DownloadManager @Inject constructor(
         if (currentState.queue.any { it.gameFileId == gameFileId }) return
 
         val gameFolder = resolveAddonFolder(gameId, platformSlug, gameFolderName, gameTitle)
-        val useExtcontent = ZipExtractor.isNswPlatform(platformSlug) &&
-            isEdenEmulator(gameId, platformSlug)
-        val serverRelativeDir = if (!useExtcontent) resolveServerRelativeDir(gameId, gameFileId) else null
-        val categoryFolder = when {
-            useExtcontent -> File(gameFolder, "extcontent")
-            serverRelativeDir != null -> File(gameFolder, serverRelativeDir)
-            else -> File(gameFolder, category)
-        }.apply { mkdirs() }
+        val categoryFolder = resolveGameFileDir(gameId, gameFileId, platformSlug, category, gameFolder)
         val tempFilePath = File(categoryFolder, "${fileName}.tmp").absolutePath
         Logger.info(
             TAG,
             "Enqueue $category | game=$gameTitle gameId=$gameId rommFileId=$rommFileId " +
-                "file=$fileName folder=${gameFolder.name} extcontent=$useExtcontent"
+                "file=$fileName folder=${gameFolder.name} dest=${categoryFolder.name}"
         )
 
         val entity = DownloadQueueEntity(
@@ -623,6 +615,54 @@ class DownloadManager @Inject constructor(
     }
 
     /** Server dir of this file relative to the rom root, or null for root files. */
+    /**
+     * Destination for one file of a multi-file rom: `extcontent/` when the game's emulator
+     * auto-discovers add-ons there, the game folder itself for the base rom, otherwise the
+     * server's own layout. Shared by enqueue and download so a queued temp file and its final
+     * target can never disagree.
+     */
+    private suspend fun resolveGameFileDir(
+        gameId: Long,
+        gameFileId: Long?,
+        platformSlug: String,
+        category: String,
+        gameFolder: File
+    ): File {
+        val destination = when {
+            extContentOrganizer.placesInExtcontent(gameId, platformSlug, category) ->
+                File(gameFolder, ZipExtractor.EXTCONTENT_FOLDER)
+            VariantCategory.fromKey(category) == VariantCategory.GAME -> gameFolder
+            else -> {
+                val serverRelativeDir = gameFileId?.let { resolveServerRelativeDir(gameId, it) }
+                if (serverRelativeDir != null) File(gameFolder, serverRelativeDir) else File(gameFolder, category)
+            }
+        }
+        return destination.apply { mkdirs() }
+    }
+
+    /**
+     * A base rom fetched on its own - the picker's "game" row, downloaded after the add-ons were
+     * already on disk - is still the file the game launches from. Without this the game keeps
+     * whatever [GameEntity.localPath] it had, which for a part-downloaded game is a playlist or a
+     * stale path, and only the per-file row learns where the rom actually landed.
+     */
+    private suspend fun claimLaunchTargetIfBase(progress: DownloadProgress, finalPath: String) {
+        if (VariantCategory.fromKey(progress.fileCategory) != VariantCategory.GAME) return
+        val game = gameDao.getById(progress.gameId) ?: return
+        val current = game.localPath
+        if (current == finalPath) return
+        if (current != null && File(current).isFile && !isUnbootableHere(current, game.platformSlug)) return
+        gameDao.updateLocalPath(progress.gameId, finalPath, game.source)
+        Logger.info(
+            TAG,
+            "Base rom claimed launch target | game=${progress.gameTitle} path=$finalPath"
+        )
+    }
+
+    private fun isUnbootableHere(path: String, platformSlug: String): Boolean =
+        path.substringAfterLast('.', "").equals("m3u", ignoreCase = true) &&
+            !M3uManager.supportsM3u(platformSlug)
+
     private suspend fun resolveServerRelativeDir(gameId: Long, gameFileId: Long): String? {
         val row = gameFileDao.getById(gameFileId) ?: return null
         val rootLen = gameFileDao.getFilesForGame(gameId)
@@ -638,6 +678,7 @@ class DownloadManager @Inject constructor(
         gameTitle: String
     ): File {
         val platformDir = getDownloadDir(platformSlug)
+        if (extContentOrganizer.usesCombinedLayout(gameId)) return platformDir
         val game = gameDao.getById(gameId)
         val basePath = game?.localPath
         val baseParent = basePath?.let { File(it).parentFile }
@@ -802,15 +843,14 @@ class DownloadManager @Inject constructor(
             try {
                 val platformDir = getDownloadDir(progress.platformSlug)
 
-                // Game file downloads (DLC/updates) go to category subfolders
                 val downloadDir = if (progress.isGameFileDownload && progress.fileCategory != null) {
                     val gameFolder = resolveAddonFolder(
                         progress.gameId, progress.platformSlug, progress.gameFolderName, progress.gameTitle
                     )
-                    val useExtcontent = ZipExtractor.isNswPlatform(progress.platformSlug) &&
-                        isEdenEmulator(progress.gameId, progress.platformSlug)
-                    File(gameFolder, if (useExtcontent) "extcontent" else progress.fileCategory)
-                        .apply { mkdirs() }
+                    resolveGameFileDir(
+                        progress.gameId, progress.gameFileId, progress.platformSlug,
+                        progress.fileCategory, gameFolder
+                    )
                 } else {
                     platformDir
                 }
@@ -1003,7 +1043,7 @@ class DownloadManager @Inject constructor(
         platformDir: File,
         progress: DownloadProgress
     ): DownloadResult {
-        val finalPath = if (progress.isGameFileDownload) {
+        var finalPath = if (progress.isGameFileDownload) {
             targetFile.absolutePath
         } else {
             processDownloadedFile(
@@ -1042,10 +1082,24 @@ class DownloadManager @Inject constructor(
             "Download complete | game=${progress.gameTitle} file=${progress.fileName} path=$finalPath"
         )
 
+        if (!progress.isGameFileDownload &&
+            extContentOrganizer.usesExtcontent(progress.gameId, progress.platformSlug)
+        ) {
+            val combined = if (extContentOrganizer.usesCombinedLayout(progress.gameId)) {
+                gameDao.getById(progress.gameId)?.copy(localPath = finalPath)?.let { game ->
+                    extContentOrganizer.enforceCombinedLayout(game, getDownloadDir(progress.platformSlug))
+                }
+            } else {
+                null
+            }
+            if (combined != null) finalPath = combined.absolutePath else extContentOrganizer.consolidate(finalPath)
+        }
+
         when {
             progress.isGameFileDownload && progress.gameFileId != null -> {
                 gameFileDao.updateLocalPath(progress.gameFileId, finalPath, Instant.now())
                 maybeComputeRomHashPrefix(progress.gameFileId, progress.gameId, finalPath)
+                claimLaunchTargetIfBase(progress, finalPath)
             }
             progress.isDiscDownload && progress.discId != null -> {
                 gameDiscDao.updateLocalPath(progress.discId, finalPath)
@@ -1525,16 +1579,6 @@ class DownloadManager @Inject constructor(
             if (tempFile.exists()) tempFile.delete()
 
             downloadQueueDao.deleteByGameId(gameId)
-        }
-    }
-
-    private suspend fun isEdenEmulator(gameId: Long, platformSlug: String): Boolean {
-        if (!ZipExtractor.isNswPlatform(platformSlug)) return false
-        return try {
-            val game = gameDao.getById(gameId) ?: return false
-            emulatorResolver.getEmulatorIdForGame(gameId, game.platformId, platformSlug) == "eden"
-        } catch (e: Exception) {
-            false
         }
     }
 

@@ -438,8 +438,8 @@ class LibretroActivity : ComponentActivity() {
             effectiveLibretroSettingsResolver.getEffectiveSettings(platformId, platformSlug)
         }
 
-        autoSaveEnabled = globalSettings.autoSaveState && !isGuestJoinedSession
-        hwCoreSaveStatesEnabled = globalSettings.hwCoreSaveStatesEnabled
+        autoSaveEnabled = settings.autoSaveState && !isGuestJoinedSession
+        hwCoreSaveStatesEnabled = settings.hwCoreSaveStatesEnabled
         initializeInputHandlers()
         initializeVideoSettings(globalSettings, settings)
         detectBFICapability()
@@ -2362,7 +2362,7 @@ class LibretroActivity : ComponentActivity() {
         if (!autoFile.exists()) return
 
         val settings = kotlinx.coroutines.runBlocking {
-            preferencesRepository.getBuiltinEmulatorSettings().first()
+            effectiveLibretroSettingsResolver.getEffectiveSettings(platformId, platformSlug)
         }
 
         if (!settings.autoRestoreState || hardcoreMode) return

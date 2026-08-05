@@ -97,7 +97,8 @@ class GameLauncher @Inject constructor(
     private val libretroSavePathResolver: LibretroSavePathResolver,
     private val notificationManager: com.nendo.argosy.core.notification.NotificationManager,
     private val attributionRepository: StorageAttributionRepository,
-    private val accountSwitchMarkerStore: com.nendo.argosy.data.preferences.AccountSwitchMarkerStore
+    private val accountSwitchMarkerStore: com.nendo.argosy.data.preferences.AccountSwitchMarkerStore,
+    private val extContentOrganizer: com.nendo.argosy.data.download.ExtContentOrganizer
 ) {
     private val shellAmAvailable: Boolean by lazy {
         try {
@@ -233,9 +234,7 @@ class GameLauncher @Inject constructor(
 
         biosGate(game, emulator)?.let { return it }
 
-        if (emulator.id == "eden" && ZipExtractor.isNswPlatform(game.platformSlug)) {
-            migrateToExtcontent(game)
-        }
+        consolidateExtContent(game, emulator)?.let { romFile = it }
 
         if (emulator.launchConfig.isInProcess) {
             romFile = extractArchiveIfNeeded(romFile, game, cacheKey)
@@ -269,7 +268,24 @@ class GameLauncher @Inject constructor(
                     Logger.info(TAG, "Using selected disc: ${it.name}")
                 }
             } else {
-                discFiles.firstOrNull() ?: romFile
+                val onlyEntry = discFiles.singleOrNull()
+                if (onlyEntry != null && isPrimary) {
+                    Logger.info(
+                        TAG,
+                        "resolveLaunchFile: ${romFile.name} names one existing file; " +
+                            "pointing ${game.title} at ${onlyEntry.name}"
+                    )
+                    gameDao.updateLocalPath(game.id, onlyEntry.absolutePath, game.source)
+                }
+                onlyEntry
+                    ?: discFiles.firstOrNull()
+                    ?: return LaunchResult.NoRomFile(romFile.absolutePath).also {
+                        Logger.warn(
+                            TAG,
+                            "launch() failed: ${romFile.name} lists no file that exists, and " +
+                                "${game.platformSlug} cannot boot a playlist"
+                        )
+                    }
             }
         } else if (isPrimary) {
             romFile = validateAndResolveLaunchFile(game, romFile)
@@ -377,9 +393,7 @@ class GameLauncher @Inject constructor(
 
         Logger.debug(TAG, "Emulator resolved: ${emulator.displayName}")
 
-        if (emulator.id == "eden" && ZipExtractor.isNswPlatform(game.platformSlug)) {
-            migrateToExtcontent(game)
-        }
+        consolidateExtContent(game, emulator)
 
         val launchFile = if (M3uManager.supportsM3u(game.platformSlug)) {
             when (val m3uResult = m3uManager.ensureM3u(game)) {
@@ -1771,7 +1785,7 @@ class GameLauncher @Inject constructor(
         }
         val excluded = game.platformSlug in VariantCategory.TITLE_ID_PLATFORMS
         val parent = romFile.parentFile ?: return romFile
-        val inContentSubfolder = parent.name.lowercase() in EXTCONTENT_SOURCE_NAMES
+        val inContentSubfolder = parent.name.lowercase() in ZipExtractor.ADDON_FOLDERS
         if (!excluded && !inContentSubfolder && !isUpdateOrDlc(romFile.name)) return romFile
         val gameFolder = if (inContentSubfolder) {
             parent.parentFile ?: return romFile
@@ -2030,46 +2044,22 @@ class GameLauncher @Inject constructor(
     private companion object {
         const val PRIMARY_CACHE_KEY = "base"
         fun variantCacheKey(fileId: Long) = "v$fileId"
-        val EXTCONTENT_SOURCE_NAMES = setOf(
-            "update", "updates", "dlc", "dlcs"
-        )
         val UPDATE_DLC_SUFFIX = Regex("(?i)[ _-]+(update|dlc)([ _-]?\\d+)?$")
         val UPDATE_DLC_TAG = Regex("(?i)\\[(upd|update|dlc)]")
     }
 
-    private suspend fun migrateToExtcontent(game: GameEntity) {
-        val romPath = game.localPath ?: return
-        val gameFolder = File(romPath).parentFile ?: return
-        if (!gameFolder.isDirectory) return
-
-        val sourceFolders = gameFolder.listFiles { file ->
-            file.isDirectory && file.name.lowercase() in EXTCONTENT_SOURCE_NAMES
-        } ?: return
-
-        if (sourceFolders.isEmpty()) return
-
-        val extcontent = File(gameFolder, "extcontent").apply { mkdirs() }
-        var movedCount = 0
-
-        for (folder in sourceFolders) {
-            val files = folder.listFiles() ?: continue
-            for (file in files) {
-                if (!file.isFile) continue
-                val target = File(extcontent, file.name)
-                if (file.renameTo(target)) {
-                    gameFileDao.updateLocalPathByOldPath(file.absolutePath, target.absolutePath)
-                    movedCount++
-                } else {
-                    Logger.warn(TAG, "migrateToExtcontent: failed to move ${file.name}")
-                }
-            }
-            if (folder.listFiles().isNullOrEmpty()) {
-                folder.delete()
-            }
+    /**
+     * Returns the base rom's new location when the layout pass moved it, so the caller launches
+     * from the file that now exists rather than the path it resolved before the move.
+     */
+    private suspend fun consolidateExtContent(game: GameEntity, emulator: EmulatorDef): File? {
+        if (!extContentOrganizer.isExtcontentEmulator(emulator.id, game.platformSlug)) return null
+        if (extContentOrganizer.usesCombinedLayout(game.platformId, game.platformSlug)) {
+            val platformDir = platformDownloadDir(game.platformSlug)
+            extContentOrganizer.enforceCombinedLayout(game, platformDir)?.let { return it }
         }
-
-        if (movedCount > 0) {
-            Logger.info(TAG, "migrateToExtcontent: moved $movedCount files to extcontent/ for ${game.title}")
-        }
+        val romPath = game.localPath ?: return null
+        extContentOrganizer.consolidate(romPath)
+        return null
     }
 }

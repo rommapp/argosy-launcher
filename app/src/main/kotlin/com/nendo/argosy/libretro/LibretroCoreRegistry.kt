@@ -515,12 +515,40 @@ object LibretroCoreRegistry {
     /** Human-readable name for a core id, falling back to the raw id when the core is unknown. */
     fun displayNameFor(coreId: String): String = getCoreById(coreId)?.displayName ?: coreId
 
-    private val hardwareRenderedCores = setOf(
-        "dolphin", "flycast", "mupen64plus_next_gles3", "mupen64plus_next_gles2",
-        "parallel_n64", "ppsspp", "mednafen_psx_hw"
-    )
+    /**
+     * Cores that cannot rebuild their GPU state after Android takes the EGL context away, so the
+     * session is torn down and reloaded on resume rather than resumed. Membership is evidence of
+     * an observed resume crash, not of using a hardware renderer: mupen64plus_next, parallel_n64
+     * and ppsspp render through GL and come back fine, and mednafen_psx_hw is a software renderer
+     * on Android despite the name.
+     */
+    private val hardwareRenderedCores = setOf("dolphin", "flycast")
 
     fun isHardwareRendered(coreId: String?): Boolean = coreId in hardwareRenderedCores
+
+    /**
+     * Cores that can take the process down when asked to serialize instead of returning an error.
+     * Kept separate from [hardwareRenderedCores] even while the two hold the same ids: they answer
+     * different questions, and folding them together is what disabled save states on every
+     * hardware-rendered core. Cores that abort only for particular content are caught by the
+     * runtime probe instead, not listed here.
+     */
+    private val unsafeSerializeCores = setOf("dolphin", "flycast")
+
+    val PLATFORMS_WITHOUT_STATE_SUPPORT = setOf("psp")
+
+    fun serializeMayCrash(coreId: String?): Boolean = coreId in unsafeSerializeCores
+
+    /**
+     * Whether this core may be asked for a state at all, before any per-content probe. The
+     * experimental preference lifts the crash-prone core block; it does not lift a platform
+     * block, which is absolute.
+     */
+    fun coreStatesAllowed(coreId: String?, hwCoreSaveStatesEnabled: Boolean): Boolean {
+        val core = coreId?.let { getCoreById(it) }
+        if (core != null && core.platforms.all { it in PLATFORMS_WITHOUT_STATE_SUPPORT }) return false
+        return hwCoreSaveStatesEnabled || !serializeMayCrash(coreId)
+    }
 
     fun getCoreByFileName(fileName: String): CoreInfo? = cores.find { it.fileName == fileName }
 

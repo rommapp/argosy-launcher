@@ -238,6 +238,7 @@ class LibretroActivity : ComponentActivity() {
     private lateinit var launchPreferences: UserPreferences
     private var launchMode = LaunchMode.RESUME
     private var statesSupported = true
+    private val stateSupportChecked = kotlinx.coroutines.CompletableDeferred<Unit>()
     private var autoSaveEnabled = true
     private var hwCoreSaveStatesEnabled = false
     private var menuWrapMode = com.nendo.argosy.data.preferences.MenuWrapMode.HARD_STOP
@@ -420,6 +421,10 @@ class LibretroActivity : ComponentActivity() {
                 if (it.showTouchControlsWhenNoGamepad != lastShow) {
                     lastShow = it.showTouchControlsWhenNoGamepad
                     splitColumn?.let { col -> applyPortraitSplit(col) }
+                }
+                if (it.hwCoreSaveStatesEnabled != hwCoreSaveStatesEnabled) {
+                    hwCoreSaveStatesEnabled = it.hwCoreSaveStatesEnabled
+                    if (firstFrameRendered) checkStateSupport()
                 }
                 speedrunStartOnReset = it.speedrunStartOnReset
                 speedrunPanelSidePref = it.speedrunPanelSide
@@ -776,6 +781,7 @@ class LibretroActivity : ComponentActivity() {
                             Log.i(TAG, "[Startup] First frame rendered - emulation running successfully")
                             Log.d(TAG, "[Startup] gameId=$gameId, core=$coreName, hardcore=$hardcoreMode")
                             checkStateSupport()
+                            cheatManager.applyAllEnabledCheats(hardcoreMode)
                             if (retroView.sramLoadFailed) {
                                 Log.w(TAG, "[Startup] SRAM failed to load (size mismatch); booting with a fresh save")
                                 inGameMessage = "Failed to load save, using new save instead"
@@ -2041,30 +2047,33 @@ class LibretroActivity : ComponentActivity() {
         return RewindBudget.budgetBytes(memoryInfo.availMem, LibretroBuildbot.processIs64Bit)
     }
 
+    /**
+     * Rewind serializes once per frame, so it must not arm before the capability check has run.
+     * Waiting on [stateSupportChecked] rather than on SurfaceCreated is what orders the two: the
+     * check runs at the first rendered frame, which is strictly after the surface exists, and a
+     * rewind toggled on mid-session gets an already-completed signal instead of waiting for a
+     * surface event that will not come again.
+     */
     private fun setupRewind(settings: BuiltinEmulatorSettings) {
         rewindSetupJob?.cancel()
         rewindSetupJob = lifecycleScope.launch {
-            retroView.getGLRetroEvents().collect { event ->
-                if (event is GLRetroView.GLRetroEvents.SurfaceCreated) {
-                    val fps = LibretroDroid.getContentFps()
-                    val duration = RewindBudget.durationSeconds(
-                        settings.rewindBufferDuration,
-                        LibretroBuildbot.processIs64Bit
-                    )
-                    val maxSlots = (duration * fps).toInt()
-                    val budget = rewindBudgetBytes()
-                    if (canSerialize) {
-                        retroView.initRewindBuffer(maxSlots, budget)
-                        retroView.rewindEnabled = true
-                        retroView.rewindSpeed = settings.rewindSpeed
-                        Log.d(TAG, "Rewind requested: $maxSlots slots (${duration}s), budget=${budget / (1024 * 1024)}MiB, speed=${settings.rewindSpeed}x")
-                    } else {
-                        retroView.rewindEnabled = false
-                        Log.d(TAG, "Rewind skipped: core=$resolvedCoreId cannot serialize this content")
-                    }
-                    cheatManager.applyAllEnabledCheats(hardcoreMode)
-                }
+            stateSupportChecked.await()
+            if (!canSerialize) {
+                retroView.rewindEnabled = false
+                Log.d(TAG, "Rewind skipped: core=$resolvedCoreId cannot serialize this content")
+                return@launch
             }
+            val fps = LibretroDroid.getContentFps()
+            val duration = RewindBudget.durationSeconds(
+                settings.rewindBufferDuration,
+                LibretroBuildbot.processIs64Bit
+            )
+            val maxSlots = (duration * fps).toInt()
+            val budget = rewindBudgetBytes()
+            retroView.initRewindBuffer(maxSlots, budget)
+            retroView.rewindEnabled = true
+            retroView.rewindSpeed = settings.rewindSpeed
+            Log.d(TAG, "Rewind requested: $maxSlots slots (${duration}s), budget=${budget / (1024 * 1024)}MiB, speed=${settings.rewindSpeed}x")
         }
     }
 
@@ -2079,15 +2088,15 @@ class LibretroActivity : ComponentActivity() {
             }
             InGameMenuAction.Resume -> hideMenu()
             InGameMenuAction.QuickSave -> {
-                val stateData = if (canSerialize) {
-                    try { retroView.serializeState() } catch (_: Exception) { null }
+                inGameMessage = if (!canSerialize) {
+                    "Save states unavailable for this core"
                 } else {
-                    null
-                }
-                inGameMessage = if (stateData != null && saveStateManager.performQuickSave(stateData, pendingSaveScreenshot)) {
-                    "State saved"
-                } else {
-                    "Failed to save state"
+                    val stateData = try { retroView.serializeState() } catch (_: Exception) { null }
+                    if (stateData != null && saveStateManager.performQuickSave(stateData, pendingSaveScreenshot)) {
+                        "State saved"
+                    } else {
+                        "Failed to save state"
+                    }
                 }
                 hideMenu()
             }
@@ -2223,16 +2232,19 @@ class LibretroActivity : ComponentActivity() {
     }
 
     private fun checkStateSupport() {
+        stateSupportChecked.complete(Unit)
         if (hardcoreMode) {
             statesSupported = false
             return
         }
-        if (isHwCore && !hwCoreSaveStatesEnabled) {
+        if (!LibretroCoreRegistry.coreStatesAllowed(resolvedCoreId, hwCoreSaveStatesEnabled)) {
             statesSupported = false
-            Log.d(TAG, "State support disabled for hardware-rendered core=$resolvedCoreId")
+            Log.d(TAG, "State support disabled for core=$resolvedCoreId")
             return
         }
-        if (com.nendo.argosy.data.platform.PlatformDefinitions.getCanonicalSlug(platformSlug) in PLATFORMS_WITHOUT_STATE_SUPPORT) {
+        if (com.nendo.argosy.data.platform.PlatformDefinitions.getCanonicalSlug(platformSlug) in
+            LibretroCoreRegistry.PLATFORMS_WITHOUT_STATE_SUPPORT
+        ) {
             statesSupported = false
             Log.d(TAG, "State support disabled for platform=$platformSlug")
             return
@@ -2240,12 +2252,19 @@ class LibretroActivity : ComponentActivity() {
         val marker = serializeProbeMarker()
         if (marker.exists()) {
             statesSupported = false
-            marker.delete()
-            Log.w(TAG, "State support disabled: probing core=$resolvedCoreId took the process down last launch")
+            Log.w(TAG, "State support disabled: probing core=$resolvedCoreId took the process down on an earlier launch")
+            return
+        }
+        val markerWritten = runCatching {
+            marker.parentFile?.mkdirs()
+            marker.createNewFile()
+        }.getOrDefault(false)
+        if (!markerWritten) {
+            statesSupported = false
+            Log.w(TAG, "State support disabled: could not write the serialize probe marker")
             return
         }
         statesSupported = try {
-            runCatching { marker.parentFile?.mkdirs(); marker.createNewFile() }
             retroView.getSerializeSize() > 0
         } catch (_: Exception) {
             false
@@ -2259,7 +2278,9 @@ class LibretroActivity : ComponentActivity() {
      * Determining state support means asking the core, and a core that cannot serialize this
      * content may abort instead of answering - which no catch here can survive. The marker is
      * written before the call and cleared after it returns, so finding one on entry means the
-     * previous launch died inside the probe and this core and game must not be asked again.
+     * previous launch died inside the probe and this core and game must not be asked again. It
+     * is deliberately left in place once found: clearing it re-probes on the next launch, which
+     * turns a permanent crash into a crash on every other launch.
      */
     private fun serializeProbeMarker(): File =
         File(File(filesDir, "serialize-probe"), "${resolvedCoreId ?: "unknown"}-$gameId")
@@ -3019,8 +3040,6 @@ class LibretroActivity : ComponentActivity() {
         const val EXTRA_NETPLAY_JOIN_HOST_USER_ID = "netplay_join_host_user_id"
         const val ACTION_SHOW_MENU = "com.nendo.argosy.action.SHOW_MENU"
         const val ACTION_QUIT = "com.nendo.argosy.action.QUIT"
-
-        private val PLATFORMS_WITHOUT_STATE_SUPPORT = setOf("psp")
 
         private const val DIGITAL_RIGHT_STICK_DEADZONE = 0.5f
         private val PLATFORMS_WITH_DIGITAL_RIGHT_STICK = setOf("n64", "n64dd")

@@ -159,8 +159,8 @@ sealed class LibretroSettingDef(
     data object HwCoreSaveStates : LibretroSettingDef(
         key = "hwCoreSaveStates",
         section = "saving",
-        title = "Hardware-Core Save States",
-        subtitle = "Experimental; cores like Dolphin may black-screen or fail to resume. Applies to casual games only",
+        title = "Dolphin and Flycast Save States",
+        subtitle = "Experimental; these cores may black-screen or fail to resume. Applies to casual games only",
         type = SettingType.Switch
     )
 

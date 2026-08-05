@@ -8,14 +8,14 @@ object Mupen64PlusNextGles3Manifest : CoreOptionManifest {
     override val options = listOf(
         // CPU
         CoreOptionDef(
-            key = "mupen64plus-next-cpucore",
+            key = "mupen64plus-cpucore",
             displayName = "CPU Core",
             values = listOf("pure_interpreter", "cached_interpreter", "dynamic_recompiler"),
             defaultValue = "dynamic_recompiler",
             description = "Selects the CPU emulation method balancing speed and compatibility"
         ),
         CoreOptionDef(
-            key = "mupen64plus-next-CountPerOp",
+            key = "mupen64plus-CountPerOp",
             displayName = "Count Per Op",
             values = listOf("0", "1", "2", "3", "4", "5"),
             defaultValue = "0",
@@ -23,7 +23,7 @@ object Mupen64PlusNextGles3Manifest : CoreOptionManifest {
             valueLabels = mapOf("0" to "Auto", "1" to "1", "2" to "2", "3" to "3", "4" to "4", "5" to "5")
         ),
         CoreOptionDef(
-            key = "mupen64plus-next-CountPerOpDenomPot",
+            key = "mupen64plus-CountPerOpDenomPot",
             displayName = "Count Per Op Divider (Overclock)",
             values = listOf("0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11"),
             defaultValue = "0",
@@ -31,14 +31,14 @@ object Mupen64PlusNextGles3Manifest : CoreOptionManifest {
             valueLabels = mapOf("0" to "Disabled")
         ),
         CoreOptionDef(
-            key = "mupen64plus-next-ForceDisableExtraMem",
+            key = "mupen64plus-ForceDisableExtraMem",
             displayName = "Disable Expansion Pak",
             values = listOf("False", "True"),
             defaultValue = "False",
             description = "Disables the 4MB Expansion Pak for games that have issues with it"
         ),
         CoreOptionDef(
-            key = "mupen64plus-next-IgnoreTLBExceptions",
+            key = "mupen64plus-IgnoreTLBExceptions",
             displayName = "Ignore emulated TLB Exceptions",
             values = listOf("False", "OnlyNotEnabled", "AlwaysIgnoreTLB"),
             defaultValue = "False",
@@ -46,7 +46,7 @@ object Mupen64PlusNextGles3Manifest : CoreOptionManifest {
         ),
         // RSP
         CoreOptionDef(
-            key = "mupen64plus-next-rsp-plugin",
+            key = "mupen64plus-rsp-plugin",
             displayName = "RSP Plugin",
             values = listOf("cxd4", "parallel", "hle"),
             defaultValue = "hle",
@@ -54,7 +54,7 @@ object Mupen64PlusNextGles3Manifest : CoreOptionManifest {
         ),
         // RDP
         CoreOptionDef(
-            key = "mupen64plus-next-rdp-plugin",
+            key = "mupen64plus-rdp-plugin",
             displayName = "RDP Plugin",
             values = listOf("angrylion", "parallel", "gliden64"),
             defaultValue = "gliden64",
@@ -62,7 +62,7 @@ object Mupen64PlusNextGles3Manifest : CoreOptionManifest {
         ),
         // Video - GLideN64
         CoreOptionDef(
-            key = "mupen64plus-next-43screensize",
+            key = "mupen64plus-43screensize",
             displayName = "4:3 Resolution",
             values = listOf(
                 "320x240", "640x480", "960x720", "1280x960", "1440x1080",
@@ -73,7 +73,7 @@ object Mupen64PlusNextGles3Manifest : CoreOptionManifest {
             description = "Selects the render viewport dimensions for 4:3 aspect ratio"
         ),
         CoreOptionDef(
-            key = "mupen64plus-next-169screensize",
+            key = "mupen64plus-169screensize",
             displayName = "Wide Resolution",
             values = listOf(
                 "640x360", "960x540", "1280x720", "1706x720", "1366x768",
@@ -86,14 +86,14 @@ object Mupen64PlusNextGles3Manifest : CoreOptionManifest {
             description = "Selects the render viewport dimensions for wider resolutions"
         ),
         CoreOptionDef(
-            key = "mupen64plus-next-aspect",
+            key = "mupen64plus-aspect",
             displayName = "Aspect Ratio",
             values = listOf("4:3", "16:9", "16:9 adjusted"),
             defaultValue = "4:3",
             description = "Selects the aspect ratio; 'adjusted' applies widescreen hacks"
         ),
         CoreOptionDef(
-            key = "mupen64plus-next-EnableNativeResFactor",
+            key = "mupen64plus-EnableNativeResFactor",
             displayName = "Native Resolution Factor",
             values = listOf("0", "1", "2", "3", "4", "5", "6", "7", "8"),
             defaultValue = "0",
@@ -104,49 +104,49 @@ object Mupen64PlusNextGles3Manifest : CoreOptionManifest {
             )
         ),
         CoreOptionDef(
-            key = "mupen64plus-next-ThreadedRenderer",
+            key = "mupen64plus-ThreadedRenderer",
             displayName = "Threaded Renderer",
             values = listOf("True", "False"),
             defaultValue = "False",
             description = "Offloads rendering to a separate thread for better performance"
         ),
         CoreOptionDef(
-            key = "mupen64plus-next-BilinearMode",
+            key = "mupen64plus-BilinearMode",
             displayName = "Bilinear filtering mode",
             values = listOf("3point", "standard"),
             defaultValue = "standard",
             description = "Selects between N64-accurate 3-point or standard bilinear filtering"
         ),
         CoreOptionDef(
-            key = "mupen64plus-next-HybridFilter",
+            key = "mupen64plus-HybridFilter",
             displayName = "Hybrid Filter",
             values = listOf("True", "False"),
             defaultValue = "True",
             description = "Applies a hybrid texture filter to reduce aliasing"
         ),
         CoreOptionDef(
-            key = "mupen64plus-next-DitheringPattern",
+            key = "mupen64plus-DitheringPattern",
             displayName = "Dithering",
             values = listOf("True", "False"),
             defaultValue = "False",
             description = "Enables the N64 dithering pattern for color banding reduction"
         ),
         CoreOptionDef(
-            key = "mupen64plus-next-DitheringQuantization",
+            key = "mupen64plus-DitheringQuantization",
             displayName = "Dithering Quantization",
             values = listOf("True", "False"),
             defaultValue = "False",
             description = "Enables quantization dithering for smoother gradients"
         ),
         CoreOptionDef(
-            key = "mupen64plus-next-RDRAMImageDitheringMode",
+            key = "mupen64plus-RDRAMImageDitheringMode",
             displayName = "Image Dithering Mode",
             values = listOf("False", "Bayer", "MagicSquare", "BlueNoise"),
             defaultValue = "False",
             description = "Selects the dithering algorithm for RDRAM image processing"
         ),
         CoreOptionDef(
-            key = "mupen64plus-next-MultiSampling",
+            key = "mupen64plus-MultiSampling",
             displayName = "MSAA level",
             values = listOf("0", "2", "4", "8", "16"),
             defaultValue = "0",
@@ -154,7 +154,7 @@ object Mupen64PlusNextGles3Manifest : CoreOptionManifest {
             valueLabels = mapOf("0" to "Off", "2" to "2x", "4" to "4x", "8" to "8x", "16" to "16x")
         ),
         CoreOptionDef(
-            key = "mupen64plus-next-FXAA",
+            key = "mupen64plus-FXAA",
             displayName = "FXAA",
             values = listOf("0", "1"),
             defaultValue = "0",
@@ -162,140 +162,140 @@ object Mupen64PlusNextGles3Manifest : CoreOptionManifest {
             valueLabels = mapOf("0" to "Off", "1" to "On")
         ),
         CoreOptionDef(
-            key = "mupen64plus-next-EnableLODEmulation",
+            key = "mupen64plus-EnableLODEmulation",
             displayName = "LOD Emulation",
             values = listOf("False", "True"),
             defaultValue = "True",
             description = "Emulates texture level-of-detail selection for accurate mipmapping"
         ),
         CoreOptionDef(
-            key = "mupen64plus-next-EnableFBEmulation",
+            key = "mupen64plus-EnableFBEmulation",
             displayName = "Framebuffer Emulation",
             values = listOf("False", "True"),
             defaultValue = "True",
             description = "Emulates N64 framebuffer operations needed by many games"
         ),
         CoreOptionDef(
-            key = "mupen64plus-next-EnableCopyAuxToRDRAM",
+            key = "mupen64plus-EnableCopyAuxToRDRAM",
             displayName = "Copy auxiliary buffers to RDRAM",
             values = listOf("False", "True"),
             defaultValue = "False",
             description = "Copies auxiliary frame buffers to RAM for games that read them"
         ),
         CoreOptionDef(
-            key = "mupen64plus-next-EnableCopyColorToRDRAM",
+            key = "mupen64plus-EnableCopyColorToRDRAM",
             displayName = "Color buffer to RDRAM",
             values = listOf("Off", "Sync", "Async", "TripleBuffer"),
             defaultValue = "Async",
             description = "Controls how the color buffer is copied back to RDRAM"
         ),
         CoreOptionDef(
-            key = "mupen64plus-next-EnableCopyColorFromRDRAM",
+            key = "mupen64plus-EnableCopyColorFromRDRAM",
             displayName = "Enable color buffer copy from RDRAM",
             values = listOf("False", "True"),
             defaultValue = "False",
             description = "Allows the GPU to read color data written to RDRAM by the CPU"
         ),
         CoreOptionDef(
-            key = "mupen64plus-next-EnableCopyDepthToRDRAM",
+            key = "mupen64plus-EnableCopyDepthToRDRAM",
             displayName = "Depth buffer to RDRAM",
             values = listOf("Off", "Software", "FromMem"),
             defaultValue = "Software",
             description = "Controls how the depth buffer is copied back to RDRAM"
         ),
         CoreOptionDef(
-            key = "mupen64plus-next-BackgroundMode",
+            key = "mupen64plus-BackgroundMode",
             displayName = "Background Mode",
             values = listOf("Stripped", "OnePiece"),
             defaultValue = "OnePiece",
             description = "Selects how background images are rendered"
         ),
         CoreOptionDef(
-            key = "mupen64plus-next-EnableHWLighting",
+            key = "mupen64plus-EnableHWLighting",
             displayName = "Hardware per-pixel lighting",
             values = listOf("False", "True"),
             defaultValue = "False",
             description = "Enables per-pixel lighting in hardware for better visual quality"
         ),
         CoreOptionDef(
-            key = "mupen64plus-next-CorrectTexrectCoords",
+            key = "mupen64plus-CorrectTexrectCoords",
             displayName = "Continuous texrect coords",
             values = listOf("Off", "Auto", "Force"),
             defaultValue = "Off",
             description = "Fixes texture rectangle coordinate issues in some games"
         ),
         CoreOptionDef(
-            key = "mupen64plus-next-EnableInaccurateTextureCoordinates",
+            key = "mupen64plus-EnableInaccurateTextureCoordinates",
             displayName = "Enable inaccurate texture coordinates",
             values = listOf("False", "True"),
             defaultValue = "False",
             description = "Uses faster but less precise texture coordinate calculations"
         ),
         CoreOptionDef(
-            key = "mupen64plus-next-EnableTexCoordBounds",
+            key = "mupen64plus-EnableTexCoordBounds",
             displayName = "Enable native-res boundaries for texture coordinates",
             values = listOf("False", "True"),
             defaultValue = "False",
             description = "Clamps texture coordinates to native resolution boundaries"
         ),
         CoreOptionDef(
-            key = "mupen64plus-next-EnableNativeResTexrects",
+            key = "mupen64plus-EnableNativeResTexrects",
             displayName = "Native res. 2D texrects",
             values = listOf("Disabled", "Unoptimized", "Optimized"),
             defaultValue = "Disabled",
             description = "Renders 2D textured rectangles at native resolution when upscaling"
         ),
         CoreOptionDef(
-            key = "mupen64plus-next-EnableLegacyBlending",
+            key = "mupen64plus-EnableLegacyBlending",
             displayName = "Less accurate blending mode",
             values = listOf("False", "True"),
             defaultValue = "True",
             description = "Uses a faster but less accurate alpha blending method"
         ),
         CoreOptionDef(
-            key = "mupen64plus-next-EnableFragmentDepthWrite",
+            key = "mupen64plus-EnableFragmentDepthWrite",
             displayName = "GPU shader depth write",
             values = listOf("False", "True"),
             defaultValue = "False",
             description = "Enables fragment depth writes in GPU shaders for correct rendering"
         ),
         CoreOptionDef(
-            key = "mupen64plus-next-EnableTextureCache",
+            key = "mupen64plus-EnableTextureCache",
             displayName = "Cache Textures",
             values = listOf("False", "True"),
             defaultValue = "True",
             description = "Caches decoded textures in memory to avoid redundant processing"
         ),
         CoreOptionDef(
-            key = "mupen64plus-next-EnableOverscan",
+            key = "mupen64plus-EnableOverscan",
             displayName = "Overscan",
             values = listOf("Disabled", "Enabled"),
             defaultValue = "Enabled",
             description = "Enables overscan border cropping"
         ),
         CoreOptionDef(
-            key = "mupen64plus-next-OverscanTop",
+            key = "mupen64plus-OverscanTop",
             displayName = "Overscan Offset (Top)",
             values = (0..50).map { it.toString() },
             defaultValue = "0",
             description = "Sets the number of pixels to crop from the top edge"
         ),
         CoreOptionDef(
-            key = "mupen64plus-next-OverscanLeft",
+            key = "mupen64plus-OverscanLeft",
             displayName = "Overscan Offset (Left)",
             values = (0..50).map { it.toString() },
             defaultValue = "0",
             description = "Sets the number of pixels to crop from the left edge"
         ),
         CoreOptionDef(
-            key = "mupen64plus-next-OverscanRight",
+            key = "mupen64plus-OverscanRight",
             displayName = "Overscan Offset (Right)",
             values = (0..50).map { it.toString() },
             defaultValue = "0",
             description = "Sets the number of pixels to crop from the right edge"
         ),
         CoreOptionDef(
-            key = "mupen64plus-next-OverscanBottom",
+            key = "mupen64plus-OverscanBottom",
             displayName = "Overscan Offset (Bottom)",
             values = (0..50).map { it.toString() },
             defaultValue = "0",
@@ -303,7 +303,7 @@ object Mupen64PlusNextGles3Manifest : CoreOptionManifest {
         ),
         // Textures
         CoreOptionDef(
-            key = "mupen64plus-next-MaxHiResTxVramLimit",
+            key = "mupen64plus-MaxHiResTxVramLimit",
             displayName = "Max High-Res VRAM Limit",
             values = listOf("0", "500", "1000", "1500", "2000", "2500", "3000", "3500", "4000"),
             defaultValue = "0",
@@ -315,14 +315,14 @@ object Mupen64PlusNextGles3Manifest : CoreOptionManifest {
             )
         ),
         CoreOptionDef(
-            key = "mupen64plus-next-MaxTxCacheSize",
+            key = "mupen64plus-MaxTxCacheSize",
             displayName = "Max texture cache size",
             values = listOf("1500", "4000", "8000"),
             defaultValue = "8000",
             description = "Sets the maximum texture cache size in elements"
         ),
         CoreOptionDef(
-            key = "mupen64plus-next-txFilterMode",
+            key = "mupen64plus-txFilterMode",
             displayName = "Texture filter",
             values = listOf(
                 "None", "Smooth filtering 1", "Smooth filtering 2",
@@ -333,7 +333,7 @@ object Mupen64PlusNextGles3Manifest : CoreOptionManifest {
             description = "Applies a post-processing filter to textures"
         ),
         CoreOptionDef(
-            key = "mupen64plus-next-txEnhancementMode",
+            key = "mupen64plus-txEnhancementMode",
             displayName = "Texture Enhancement",
             values = listOf(
                 "None", "As Is", "X2", "X2SAI", "HQ2X", "HQ2XS",
@@ -344,56 +344,56 @@ object Mupen64PlusNextGles3Manifest : CoreOptionManifest {
             description = "Applies an upscaling enhancement filter to textures"
         ),
         CoreOptionDef(
-            key = "mupen64plus-next-txFilterIgnoreBG",
+            key = "mupen64plus-txFilterIgnoreBG",
             displayName = "Don't filter background textures",
             values = listOf("False", "True"),
             defaultValue = "True",
             description = "Skips texture filtering on background images to avoid artifacts"
         ),
         CoreOptionDef(
-            key = "mupen64plus-next-txHiresEnable",
+            key = "mupen64plus-txHiresEnable",
             displayName = "Use High-Res textures",
             values = listOf("False", "True"),
             defaultValue = "False",
             description = "Loads user-provided high-resolution replacement textures"
         ),
         CoreOptionDef(
-            key = "mupen64plus-next-txCacheCompression",
+            key = "mupen64plus-txCacheCompression",
             displayName = "Use High-Res Texture Cache Compression",
             values = listOf("False", "True"),
             defaultValue = "True",
             description = "Compresses the high-res texture cache to save disk space"
         ),
         CoreOptionDef(
-            key = "mupen64plus-next-txHiresFullAlphaChannel",
+            key = "mupen64plus-txHiresFullAlphaChannel",
             displayName = "Use High-Res Full Alpha Channel",
             values = listOf("False", "True"),
             defaultValue = "False",
             description = "Enables full alpha channel support in high-res texture packs"
         ),
         CoreOptionDef(
-            key = "mupen64plus-next-EnableEnhancedTextureStorage",
+            key = "mupen64plus-EnableEnhancedTextureStorage",
             displayName = "Use enhanced Texture Storage",
             values = listOf("False", "True"),
             defaultValue = "False",
             description = "Uses an optimized storage format for enhanced textures"
         ),
         CoreOptionDef(
-            key = "mupen64plus-next-EnableHiResAltCRC",
+            key = "mupen64plus-EnableHiResAltCRC",
             displayName = "Use alternative method for High-Res Checksums",
             values = listOf("False", "True"),
             defaultValue = "False",
             description = "Uses an alternate checksum algorithm for matching hi-res textures"
         ),
         CoreOptionDef(
-            key = "mupen64plus-next-EnableEnhancedHighResStorage",
+            key = "mupen64plus-EnableEnhancedHighResStorage",
             displayName = "Use enhanced Hi-Res Storage",
             values = listOf("False", "True"),
             defaultValue = "False",
             description = "Uses an optimized storage format for high-res textures"
         ),
         CoreOptionDef(
-            key = "mupen64plus-next-GLideN64IniBehaviour",
+            key = "mupen64plus-GLideN64IniBehaviour",
             displayName = "INI Behaviour",
             values = listOf("late", "early", "disabled"),
             defaultValue = "late",
@@ -401,98 +401,98 @@ object Mupen64PlusNextGles3Manifest : CoreOptionManifest {
         ),
         // ParaLLEl-RDP
         CoreOptionDef(
-            key = "mupen64plus-next-parallel-rdp-synchronous",
+            key = "mupen64plus-parallel-rdp-synchronous",
             displayName = "(ParaLLEl-RDP) Synchronous RDP",
             values = listOf("True", "False"),
             defaultValue = "True",
             description = "Runs the RDP in sync with the CPU for accurate rendering"
         ),
         CoreOptionDef(
-            key = "mupen64plus-next-parallel-rdp-overscan",
+            key = "mupen64plus-parallel-rdp-overscan",
             displayName = "(ParaLLEl-RDP) Crop overscan",
             values = (0..64 step 2).map { it.toString() },
             defaultValue = "0",
             description = "Removes border pixels from the edges of the display"
         ),
         CoreOptionDef(
-            key = "mupen64plus-next-parallel-rdp-divot-filter",
+            key = "mupen64plus-parallel-rdp-divot-filter",
             displayName = "(ParaLLEl-RDP) VI Divot filter",
             values = listOf("True", "False"),
             defaultValue = "True",
             description = "Removes single-pixel holes between polygons in the video output"
         ),
         CoreOptionDef(
-            key = "mupen64plus-next-parallel-rdp-gamma-dither",
+            key = "mupen64plus-parallel-rdp-gamma-dither",
             displayName = "(ParaLLEl-RDP) VI Gamma dither",
             values = listOf("True", "False"),
             defaultValue = "True",
             description = "Applies dithering during the gamma correction step"
         ),
         CoreOptionDef(
-            key = "mupen64plus-next-parallel-rdp-vi-aa",
+            key = "mupen64plus-parallel-rdp-vi-aa",
             displayName = "(ParaLLEl-RDP) VI anti-aliasing",
             values = listOf("True", "False"),
             defaultValue = "True",
             description = "Applies the N64 video interface anti-aliasing filter"
         ),
         CoreOptionDef(
-            key = "mupen64plus-next-parallel-rdp-vi-bilinear",
+            key = "mupen64plus-parallel-rdp-vi-bilinear",
             displayName = "(ParaLLEl-RDP) VI bilinear",
             values = listOf("True", "False"),
             defaultValue = "True",
             description = "Applies bilinear filtering during video output"
         ),
         CoreOptionDef(
-            key = "mupen64plus-next-parallel-rdp-dither-filter",
+            key = "mupen64plus-parallel-rdp-dither-filter",
             displayName = "(ParaLLEl-RDP) VI dither filter",
             values = listOf("True", "False"),
             defaultValue = "True",
             description = "Smooths out dithering patterns in the final video output"
         ),
         CoreOptionDef(
-            key = "mupen64plus-next-parallel-rdp-upscaling",
+            key = "mupen64plus-parallel-rdp-upscaling",
             displayName = "(ParaLLEl-RDP) Upscaling factor (restart)",
             values = listOf("1x", "2x", "4x", "8x"),
             defaultValue = "1x",
             description = "Increases the internal 3D rendering resolution"
         ),
         CoreOptionDef(
-            key = "mupen64plus-next-parallel-rdp-super-sampled-read-back",
+            key = "mupen64plus-parallel-rdp-super-sampled-read-back",
             displayName = "(ParaLLEl-RDP) SSAA framebuffer effects (restart)",
             values = listOf("False", "True"),
             defaultValue = "False",
             description = "Applies super-sampling to framebuffer effects when upscaling"
         ),
         CoreOptionDef(
-            key = "mupen64plus-next-parallel-rdp-super-sampled-read-back-dither",
+            key = "mupen64plus-parallel-rdp-super-sampled-read-back-dither",
             displayName = "(ParaLLEl-RDP) Dither SSAA framebuffer effects (restart)",
             values = listOf("True", "False"),
             defaultValue = "True",
             description = "Adds dithering to super-sampled framebuffer effects"
         ),
         CoreOptionDef(
-            key = "mupen64plus-next-parallel-rdp-downscaling",
+            key = "mupen64plus-parallel-rdp-downscaling",
             displayName = "(ParaLLEl-RDP) Downsampling factor",
             values = listOf("disable", "1/2", "1/4", "1/8"),
             defaultValue = "disable",
             description = "Reduces the output resolution for improved performance"
         ),
         CoreOptionDef(
-            key = "mupen64plus-next-parallel-rdp-native-texture-lod",
+            key = "mupen64plus-parallel-rdp-native-texture-lod",
             displayName = "(ParaLLEl-RDP) Native texture LOD",
             values = listOf("False", "True"),
             defaultValue = "False",
             description = "Uses native resolution for texture LOD calculations when upscaling"
         ),
         CoreOptionDef(
-            key = "mupen64plus-next-parallel-rdp-native-tex-rect",
+            key = "mupen64plus-parallel-rdp-native-tex-rect",
             displayName = "(ParaLLEl-RDP) Native resolution TEX_RECT",
             values = listOf("True", "False"),
             defaultValue = "True",
             description = "Renders 2D textured rectangles at native resolution when upscaling"
         ),
         CoreOptionDef(
-            key = "mupen64plus-next-parallel-rdp-deinterlace-method",
+            key = "mupen64plus-parallel-rdp-deinterlace-method",
             displayName = "(ParaLLEl-RDP) Deinterlacing method",
             values = listOf("Bob", "Weave"),
             defaultValue = "Bob",
@@ -500,28 +500,28 @@ object Mupen64PlusNextGles3Manifest : CoreOptionManifest {
         ),
         // Angrylion
         CoreOptionDef(
-            key = "mupen64plus-next-angrylion-vioverlay",
+            key = "mupen64plus-angrylion-vioverlay",
             displayName = "VI Overlay",
             values = listOf("Filtered", "AA+Blur", "AA+Dedither", "AA only", "Unfiltered", "Depth", "Coverage"),
             defaultValue = "Filtered",
             description = "Selects the video output filter mode for Angrylion renderer"
         ),
         CoreOptionDef(
-            key = "mupen64plus-next-angrylion-sync",
+            key = "mupen64plus-angrylion-sync",
             displayName = "Thread sync level",
             values = listOf("Low", "Medium", "High"),
             defaultValue = "Low",
             description = "Controls thread synchronization accuracy for Angrylion rendering"
         ),
         CoreOptionDef(
-            key = "mupen64plus-next-angrylion-multithread",
+            key = "mupen64plus-angrylion-multithread",
             displayName = "Multi-threading",
             values = listOf("all threads") + (1..63).map { it.toString() } + listOf("75"),
             defaultValue = "all threads",
             description = "Sets the number of CPU threads used for Angrylion rendering"
         ),
         CoreOptionDef(
-            key = "mupen64plus-next-angrylion-overscan",
+            key = "mupen64plus-angrylion-overscan",
             displayName = "Hide overscan",
             values = listOf("disabled", "enabled"),
             defaultValue = "disabled",
@@ -529,21 +529,21 @@ object Mupen64PlusNextGles3Manifest : CoreOptionManifest {
         ),
         // General
         CoreOptionDef(
-            key = "mupen64plus-next-FrameDuping",
+            key = "mupen64plus-FrameDuping",
             displayName = "Frame Duplication",
             values = listOf("False", "True"),
             defaultValue = "True",
             description = "Reuses the previous frame when no new frame is ready to save processing"
         ),
         CoreOptionDef(
-            key = "mupen64plus-next-Framerate",
+            key = "mupen64plus-Framerate",
             displayName = "Framerate",
             values = listOf("Original", "Fullspeed"),
             defaultValue = "Original",
             description = "Selects between original framerate or unlocked full speed"
         ),
         CoreOptionDef(
-            key = "mupen64plus-next-virefresh",
+            key = "mupen64plus-virefresh",
             displayName = "VI Refresh (Overclock)",
             values = listOf("Auto", "1500", "2200"),
             defaultValue = "Auto",
@@ -552,77 +552,77 @@ object Mupen64PlusNextGles3Manifest : CoreOptionManifest {
         ),
         // Input
         CoreOptionDef(
-            key = "mupen64plus-next-astick-deadzone",
+            key = "mupen64plus-astick-deadzone",
             displayName = "Analog Deadzone (percent)",
             values = listOf("0", "5", "10", "15", "20", "25", "30"),
             defaultValue = "15",
             description = "Sets the size of the non-responsive area around the analog stick center"
         ),
         CoreOptionDef(
-            key = "mupen64plus-next-astick-sensitivity",
+            key = "mupen64plus-astick-sensitivity",
             displayName = "Analog Sensitivity (percent)",
             values = (50..150 step 5).map { it.toString() },
             defaultValue = "100",
             description = "Adjusts how far the stick must move to reach its maximum value"
         ),
         CoreOptionDef(
-            key = "mupen64plus-next-r-cbutton",
+            key = "mupen64plus-r-cbutton",
             displayName = "Right C Button",
             values = listOf("C1", "C2", "C3", "C4"),
             defaultValue = "C1",
             description = "Maps the right C button to the selected C-button slot"
         ),
         CoreOptionDef(
-            key = "mupen64plus-next-l-cbutton",
+            key = "mupen64plus-l-cbutton",
             displayName = "Left C Button",
             values = listOf("C1", "C2", "C3", "C4"),
             defaultValue = "C2",
             description = "Maps the left C button to the selected C-button slot"
         ),
         CoreOptionDef(
-            key = "mupen64plus-next-d-cbutton",
+            key = "mupen64plus-d-cbutton",
             displayName = "Down C Button",
             values = listOf("C1", "C2", "C3", "C4"),
             defaultValue = "C3",
             description = "Maps the down C button to the selected C-button slot"
         ),
         CoreOptionDef(
-            key = "mupen64plus-next-u-cbutton",
+            key = "mupen64plus-u-cbutton",
             displayName = "Up C Button",
             values = listOf("C1", "C2", "C3", "C4"),
             defaultValue = "C4",
             description = "Maps the up C button to the selected C-button slot"
         ),
         CoreOptionDef(
-            key = "mupen64plus-next-alt-map",
+            key = "mupen64plus-alt-map",
             displayName = "Independent C-button Controls",
             values = listOf("False", "True"),
             defaultValue = "False",
             description = "Maps C-buttons to the right analog stick for independent control"
         ),
         CoreOptionDef(
-            key = "mupen64plus-next-pak1",
+            key = "mupen64plus-pak1",
             displayName = "Player 1 Pak",
             values = listOf("none", "memory", "rumble", "transfer"),
             defaultValue = "memory",
             description = "Selects the controller pak type inserted in Player 1's controller"
         ),
         CoreOptionDef(
-            key = "mupen64plus-next-pak2",
+            key = "mupen64plus-pak2",
             displayName = "Player 2 Pak",
             values = listOf("none", "memory", "rumble", "transfer"),
             defaultValue = "none",
             description = "Selects the controller pak type inserted in Player 2's controller"
         ),
         CoreOptionDef(
-            key = "mupen64plus-next-pak3",
+            key = "mupen64plus-pak3",
             displayName = "Player 3 Pak",
             values = listOf("none", "memory", "rumble", "transfer"),
             defaultValue = "none",
             description = "Selects the controller pak type inserted in Player 3's controller"
         ),
         CoreOptionDef(
-            key = "mupen64plus-next-pak4",
+            key = "mupen64plus-pak4",
             displayName = "Player 4 Pak",
             values = listOf("none", "memory", "rumble", "transfer"),
             defaultValue = "none",

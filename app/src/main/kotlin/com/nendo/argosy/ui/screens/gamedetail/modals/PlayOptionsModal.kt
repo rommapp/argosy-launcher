@@ -75,7 +75,8 @@ fun buildPlayOptions(
     hasRASupport: Boolean,
     hardcoreAvailable: Boolean,
     isOnline: Boolean,
-    canSkipSync: Boolean
+    canSkipSync: Boolean,
+    statesAvailable: Boolean = true
 ): List<PlayOptionItem> = buildList {
     val showHardcoreOptions = hardcoreAvailable
     val hasContinueSection = hasSaves || hasHardcoreSave
@@ -120,7 +121,11 @@ fun buildPlayOptions(
             section = PlayOptionSection.NewGame,
             icon = Icons.Default.SportsEsports,
             label = "Casual",
-            subtext = if (hasRASupport) "Save states and cheats available" else null
+            subtext = when {
+                !hasRASupport -> null
+                statesAvailable -> "Save states and cheats available"
+                else -> "Cheats available"
+            }
         )
     )
     if (showHardcoreOptions) {
@@ -147,6 +152,7 @@ fun PlayOptionsModal(
     hardcoreAvailable: Boolean,
     isOnline: Boolean,
     canSkipSync: Boolean = false,
+    statesAvailable: Boolean = true,
     onAction: (PlayOptionAction) -> Unit,
     onDismiss: () -> Unit
 ) {
@@ -156,7 +162,8 @@ fun PlayOptionsModal(
         hasRASupport = hasRASupport,
         hardcoreAvailable = hardcoreAvailable,
         isOnline = isOnline,
-        canSkipSync = canSkipSync
+        canSkipSync = canSkipSync,
+        statesAvailable = statesAvailable
     )
 
     Modal(title = "START GAME", onDismiss = onDismiss) {

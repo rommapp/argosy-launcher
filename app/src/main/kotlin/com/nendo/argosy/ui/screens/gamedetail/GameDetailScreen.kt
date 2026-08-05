@@ -962,6 +962,7 @@ private fun GameDetailModals(
             hardcoreAvailable = uiState.hardcoreAvailable,
             isOnline = uiState.isOnline,
             canSkipSync = uiState.isOnline,
+            statesAvailable = uiState.statesAvailable,
             onAction = viewModel::handlePlayOption,
             onDismiss = viewModel::dismissPlayOptions
         )

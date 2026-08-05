@@ -517,10 +517,11 @@ object LibretroCoreRegistry {
 
     /**
      * Cores that cannot rebuild their GPU state after Android takes the EGL context away, so the
-     * session is torn down and reloaded on resume rather than resumed. Membership is evidence of
-     * an observed resume crash, not of using a hardware renderer: mupen64plus_next, parallel_n64
-     * and ppsspp render through GL and come back fine, and mednafen_psx_hw is a software renderer
-     * on Android despite the name.
+     * session is torn down and reloaded on resume rather than resumed. Membership means an
+     * observed resume crash, not merely a hardware renderer; the teardown costs the session, so
+     * a core belongs here only once it is known to need it. mednafen_psx_hw renders in software
+     * on Android despite the name. The other four were removed on the maintainer's call and their
+     * resume paths have not been re-verified on device since.
      */
     private val hardwareRenderedCores = setOf("dolphin", "flycast")
 

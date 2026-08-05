@@ -422,10 +422,6 @@ class LibretroActivity : ComponentActivity() {
                     lastShow = it.showTouchControlsWhenNoGamepad
                     splitColumn?.let { col -> applyPortraitSplit(col) }
                 }
-                if (it.hwCoreSaveStatesEnabled != hwCoreSaveStatesEnabled) {
-                    hwCoreSaveStatesEnabled = it.hwCoreSaveStatesEnabled
-                    if (firstFrameRendered) checkStateSupport()
-                }
                 speedrunStartOnReset = it.speedrunStartOnReset
                 speedrunPanelSidePref = it.speedrunPanelSide
                 val newFraction = it.speedrunPanelWidthPercent / 100f
@@ -1751,7 +1747,8 @@ class LibretroActivity : ComponentActivity() {
                 displayName = def.displayName,
                 description = def.description,
                 values = def.values,
-                currentValue = gameOverride ?: globalOverride ?: def.defaultValue,
+                currentValue = (gameOverride ?: globalOverride)
+                    ?.let { def.resolveStored(it) } ?: def.defaultValue,
                 isOverridden = if (perGame) gameOverride != null else globalOverride != null,
                 valueLabels = def.valueLabels
             )
@@ -1768,8 +1765,9 @@ class LibretroActivity : ComponentActivity() {
         val rotation = explicitValues.filter { it in def.values }.takeIf { it.isNotEmpty() } ?: def.values
         if (rotation.isEmpty()) return
         val perGame = perGameSettingsEnabled && gameId != -1L
-        val current = (if (perGame) gameCoreOptionOverrides[optionKey] else null)
-            ?: coreOptionOverrides[optionKey] ?: def.defaultValue
+        val stored = (if (perGame) gameCoreOptionOverrides[optionKey] else null)
+            ?: coreOptionOverrides[optionKey]
+        val current = stored?.let { def.resolveStored(it) } ?: def.defaultValue
         val currentIndex = rotation.indexOf(current).coerceAtLeast(0)
         val newValue = rotation[(currentIndex + direction).mod(rotation.size)]
         if (perGame) {
@@ -1828,7 +1826,8 @@ class LibretroActivity : ComponentActivity() {
         if (manifest != null && ::retroView.isInitialized) {
             manifest.options.forEach { def ->
                 val gameOverride = if (enabled) gameCoreOptionOverrides[def.key] else null
-                val effective = gameOverride ?: coreOptionOverrides[def.key] ?: def.defaultValue
+                val stored = gameOverride ?: coreOptionOverrides[def.key]
+                val effective = stored?.let { def.resolveStored(it) } ?: def.defaultValue
                 retroView.updateVariables(Variable(def.key, effective))
             }
         }
@@ -2231,8 +2230,21 @@ class LibretroActivity : ComponentActivity() {
         }
     }
 
+    /**
+     * The signal fires only once the verdict is written. Waiters resume undispatched on
+     * Main.immediate, so completing this before the checks below would resume them inline while
+     * [statesSupported] still holds its initializer, arming rewind on a core the check is about
+     * to reject and serializing it before the probe marker exists.
+     */
     private fun checkStateSupport() {
-        stateSupportChecked.complete(Unit)
+        try {
+            evaluateStateSupport()
+        } finally {
+            stateSupportChecked.complete(Unit)
+        }
+    }
+
+    private fun evaluateStateSupport() {
         if (hardcoreMode) {
             statesSupported = false
             return
@@ -2332,13 +2344,15 @@ class LibretroActivity : ComponentActivity() {
         if (isGuestJoinedSession) return
         val resumeFile = saveStateManager.getSlotFile(SaveStateManager.RESUME_SLOT)
         if (resumeFile.exists()) {
-            if (canSerialize) {
-                if (saveStateManager.performSlotLoad(retroView, SaveStateManager.RESUME_SLOT)) {
-                    inGameMessage = "Resumed"
-                } else {
-                    inGameMessage = "Failed to restore state"
-                    Log.w(TAG, "Failed to restore one-shot resume state")
-                }
+            if (!canSerialize) {
+                Log.w(TAG, "One-shot resume state kept: core=$resolvedCoreId cannot load it in this session")
+                return
+            }
+            if (saveStateManager.performSlotLoad(retroView, SaveStateManager.RESUME_SLOT)) {
+                inGameMessage = "Resumed"
+            } else {
+                inGameMessage = "Failed to restore state"
+                Log.w(TAG, "Failed to restore one-shot resume state")
             }
             resumeFile.delete()
             return

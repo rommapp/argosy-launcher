@@ -33,7 +33,8 @@ data class PlayOptionsState(
     val hasRASupport: Boolean = false,
     val isRALoggedIn: Boolean = false,
     val isOnline: Boolean = false,
-    val secureSaves: Boolean = true
+    val secureSaves: Boolean = true,
+    val statesAvailable: Boolean = false
 ) {
     /** Hardcore requires a RetroAchievements login and Secure Saves. */
     val hardcoreAvailable: Boolean get() = hasRASupport && isRALoggedIn && secureSaves
@@ -53,7 +54,9 @@ class PlayOptionsDelegate @Inject constructor(
     private val raRepository: RetroAchievementsRepository,
     private val launchGameUseCase: LaunchGameUseCase,
     private val soundManager: SoundFeedbackManager,
-    private val userPreferencesRepository: UserPreferencesRepository
+    private val userPreferencesRepository: UserPreferencesRepository,
+    private val emulatorResolver: com.nendo.argosy.data.emulator.EmulatorResolver,
+    private val stateSupportResolver: com.nendo.argosy.data.emulator.StateSupportResolver
 ) {
     private val _state = MutableStateFlow(PlayOptionsState())
     val state: StateFlow<PlayOptionsState> = _state.asStateFlow()
@@ -79,6 +82,15 @@ class PlayOptionsDelegate @Inject constructor(
             val isRALoggedIn = raRepository.isLoggedIn()
             val secureSaves = userPreferencesRepository.preferences.first().secureSaves
             val defaultToHardcore = isDefaultToHardcore()
+            val game = gameRepository.getById(gameId)
+            val statesAvailable = game != null && stateSupportResolver.supportsStates(
+                emulatorId = emulatorResolver.getEmulatorIdForGame(
+                    gameId, game.platformId, game.platformSlug
+                ),
+                gameId = gameId,
+                platformId = game.platformId,
+                platformSlug = game.platformSlug
+            )
 
             val newState = PlayOptionsState(
                 showPlayOptions = true,
@@ -87,7 +99,8 @@ class PlayOptionsDelegate @Inject constructor(
                 hasRASupport = hasAchievements,
                 isRALoggedIn = isRALoggedIn,
                 isOnline = isOnline,
-                secureSaves = secureSaves
+                secureSaves = secureSaves,
+                statesAvailable = statesAvailable
             )
             openModal(newState, PlayOptionAction.ResumeHardcore.takeIf { defaultToHardcore && newState.hardcoreAvailable })
         }
@@ -106,7 +119,8 @@ class PlayOptionsDelegate @Inject constructor(
             hasRASupport = state.hasRASupport,
             hardcoreAvailable = state.hardcoreAvailable,
             isOnline = state.isOnline,
-            canSkipSync = state.isOnline
+            canSkipSync = state.isOnline,
+            statesAvailable = state.statesAvailable
         ).map { it.action }
 
     /** Show the play-options modal, pre-focusing [preferred] if present (else the first row). */

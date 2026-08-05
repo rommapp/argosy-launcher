@@ -160,7 +160,7 @@ sealed class LibretroSettingDef(
         key = "hwCoreSaveStates",
         section = "saving",
         title = "Dolphin and Flycast Save States",
-        subtitle = "Experimental; these cores may black-screen or fail to resume. Applies to casual games only",
+        subtitle = "Experimental; these cores may black-screen or fail to resume. Takes effect on next launch, casual games only",
         type = SettingType.Switch
     )
 

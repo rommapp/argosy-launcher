@@ -1,7 +1,7 @@
 package com.nendo.argosy.ui.common.savechannel
 
 import com.nendo.argosy.data.emulator.EmulatorResolver
-import com.nendo.argosy.data.emulator.StatePathRegistry
+import com.nendo.argosy.data.emulator.StateSupportResolver
 import com.nendo.argosy.data.repository.GameRepository
 import com.nendo.argosy.data.repository.StateCacheManager
 import com.nendo.argosy.domain.model.UnifiedStateEntry
@@ -23,13 +23,20 @@ class SaveChannelStatesDelegate @Inject constructor(
     private val stateCacheManager: StateCacheManager,
     private val gameRepository: GameRepository,
     private val emulatorResolver: EmulatorResolver,
+    private val stateSupportResolver: StateSupportResolver,
     private val notificationManager: NotificationManager,
 ) {
     private val _state get() = holder.state
     private val currentGameId get() = holder.currentGameId
 
-    fun supportsStatesFor(emulatorId: String?): Boolean {
-        return emulatorId != null && StatePathRegistry.getConfig(emulatorId) != null
+    suspend fun supportsStatesFor(emulatorId: String?): Boolean {
+        val game = gameRepository.getById(currentGameId)
+        return stateSupportResolver.supportsStates(
+            emulatorId = emulatorId,
+            gameId = currentGameId,
+            platformId = game?.platformId,
+            platformSlug = game?.platformSlug
+        )
     }
 
     suspend fun loadInitialStates(

@@ -285,9 +285,18 @@ void VideoLayout::setTextureCrop(float left, float top, float right, float botto
     updateTextureCoordinates();
 }
 
-void VideoLayout::setHWFrameCrop(float top, float bottom) {
-    if (this->hwCropTop != top || this->hwCropBottom != bottom) {
-        LOGD("setHWFrameCrop: top=%.4f bottom=%.4f", top, bottom);
+/**
+ * The hardware render target is allocated at the core's maximum framebuffer size, which can be
+ * larger than the frame the core actually renders into it. These fractions keep the unused
+ * margin out of the sampled region, on both axes: a core that changes its internal resolution
+ * mid-session changes the used area, not the allocation.
+ */
+void VideoLayout::setHWFrameCrop(float left, float right, float top, float bottom) {
+    if (this->hwCropLeft != left || this->hwCropRight != right ||
+        this->hwCropTop != top || this->hwCropBottom != bottom) {
+        LOGD("setHWFrameCrop: left=%.4f right=%.4f top=%.4f bottom=%.4f", left, right, top, bottom);
+        this->hwCropLeft = left;
+        this->hwCropRight = right;
         this->hwCropTop = top;
         this->hwCropBottom = bottom;
         updateTextureCoordinates();
@@ -295,8 +304,8 @@ void VideoLayout::setHWFrameCrop(float top, float bottom) {
 }
 
 void VideoLayout::updateTextureCoordinates() {
-    float u0 = cropLeft;
-    float u1 = 1.0F - cropRight;
+    float u0 = cropLeft + hwCropLeft;
+    float u1 = 1.0F - cropRight - hwCropRight;
     float v0 = cropTop + hwCropTop;
     float v1 = 1.0F - cropBottom - hwCropBottom;
 

@@ -102,6 +102,10 @@ public:
     unsigned int getGameGeometryWidth() const;
     unsigned int getGameGeometryHeight() const;
     float getGameGeometryAspectRatio() const;
+    bool isGameMaxGeometryUpdated() const;
+    void clearGameMaxGeometryUpdated();
+    unsigned int getGameMaxGeometryWidth() const;
+    unsigned int getGameMaxGeometryHeight() const;
     bool isGameGeometryUpdated() const;
     void clearGameGeometryUpdated();
 
@@ -148,6 +152,9 @@ private:
     float manualRotation = -1;
     bool screenRotationUpdated = false;
 
+    bool gameMaxGeometryUpdated = false;
+    unsigned gameMaxGeometryWidth = 0;
+    unsigned gameMaxGeometryHeight = 0;
     bool gameGeometryUpdated = false;
     unsigned gameGeometryWidth = 0;
     unsigned gameGeometryHeight = 0;

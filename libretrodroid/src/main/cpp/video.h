@@ -115,6 +115,12 @@ public:
     void bindHWContext();
     void bindMainContext();
 
+    /**
+     * Reallocates the hardware render target when the core raises its maximum framebuffer size,
+     * which is how an internal-resolution change reaches the GPU without restarting the session.
+     */
+    void resizeHWRenderTarget(unsigned int width, unsigned int height);
+
 private:
     void updateProgram();
     bool tryBuildShaderChain(const ShaderManager::Chain& shaders, std::vector<ShaderChainEntry>& outChain);
@@ -169,6 +175,8 @@ private:
     GLuint hwRenderDepthStencil = 0;
     unsigned hwFBOWidth = 0;
     unsigned hwFBOHeight = 0;
+    bool hwUseDepth = false;
+    bool hwUseStencil = false;
 };
 
 }

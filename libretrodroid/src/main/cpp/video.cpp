@@ -18,6 +18,7 @@
 #include <GLES2/gl2.h>
 #include <GLES3/gl3.h>
 #include <EGL/egl.h>
+#include <algorithm>
 #include <cstdlib>
 #include <string>
 #include <cmath>
@@ -430,11 +431,12 @@ void Video::onNewFrame(const void *data, unsigned width, unsigned height, size_t
     } else if (data == RETRO_HW_FRAME_BUFFER_VALID) {
         renderer->lastFrameSize = { (int)width, (int)height };
         videoLayout.updateContentSize(width, height);
-        if (hwFBOHeight > 0 && height < hwFBOHeight) {
-            float usedFraction = (float)height / (float)hwFBOHeight;
-            videoLayout.setHWFrameCrop(0.0f, 1.0f - usedFraction);
+        if (hwFBOWidth > 0 && hwFBOHeight > 0) {
+            float usedWidth = std::min(1.0f, (float)width / (float)hwFBOWidth);
+            float usedHeight = std::min(1.0f, (float)height / (float)hwFBOHeight);
+            videoLayout.setHWFrameCrop(0.0f, 1.0f - usedWidth, 0.0f, 1.0f - usedHeight);
         } else {
-            videoLayout.setHWFrameCrop(0.0f, 0.0f);
+            videoLayout.setHWFrameCrop(0.0f, 0.0f, 0.0f, 0.0f);
         }
         isDirty = true;
     }
@@ -637,11 +639,53 @@ void Video::initializeHWRenderContext(unsigned int width, unsigned int height,
 
     hwFBOWidth = width;
     hwFBOHeight = height;
+    hwUseDepth = useDepth;
+    hwUseStencil = useStencil;
     LOGI("HW render FBO created: fbo=%u tex=%u %ux%u depth=%d stencil=%d",
          hwRenderFBO, hwRenderTexture, width, height, useDepth, useStencil);
 
     // Switch back to main context
     eglMakeCurrent(eglDisplay, eglSurface, eglSurface, mainCtx);
+}
+
+void Video::resizeHWRenderTarget(unsigned int width, unsigned int height) {
+    if (!hwAccelerated || hwCtx == EGL_NO_CONTEXT) return;
+    if (width == 0 || height == 0) return;
+    if (width == hwFBOWidth && height == hwFBOHeight) return;
+
+    eglMakeCurrent(eglDisplay, eglSurface, eglSurface, hwCtx);
+
+    glBindFramebuffer(GL_FRAMEBUFFER, hwRenderFBO);
+    glBindTexture(GL_TEXTURE_2D, hwRenderTexture);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, hwRenderTexture, 0);
+
+    if (hwUseDepth && hwRenderDepthStencil != 0) {
+        glBindRenderbuffer(GL_RENDERBUFFER, hwRenderDepthStencil);
+        glRenderbufferStorage(GL_RENDERBUFFER,
+            hwUseStencil ? GL_DEPTH24_STENCIL8 : GL_DEPTH_COMPONENT16, width, height);
+    }
+
+    GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+    if (status != GL_FRAMEBUFFER_COMPLETE) {
+        LOGE("HW render FBO incomplete after resize: 0x%x", status);
+    }
+
+    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glBindTexture(GL_TEXTURE_2D, 0);
+
+    hwFBOWidth = width;
+    hwFBOHeight = height;
+    LOGI("HW render FBO resized to %ux%u", width, height);
+
+    eglMakeCurrent(eglDisplay, eglSurface, eglSurface, mainCtx);
+
+    if (renderer != nullptr) {
+        renderer->updateRenderedResolution(width, height);
+    }
 }
 
 void Video::initializeRenderer(RenderingOptions renderingOptions) {

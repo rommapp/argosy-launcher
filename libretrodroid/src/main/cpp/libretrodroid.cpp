@@ -21,6 +21,7 @@
 #include <signal.h>
 #include <cerrno>
 
+#include <algorithm>
 #include <string>
 #include <utility>
 #include <vector>
@@ -323,10 +324,21 @@ void LibretroDroid::onSurfaceCreated() {
 
     video = nullptr;
 
+    // A hardware core renders into a target it sizes itself, up to the maximum it declares, and
+    // base_* is only the display size: Flycast pins base at 640x480 while rendering the internal
+    // resolution into max_*. Sizing the render target from base crops everything above 1x.
+    bool hwAccelerated = Environment::getInstance().isUseHwAcceleration();
+    unsigned renderWidth = system_av_info.geometry.base_width;
+    unsigned renderHeight = system_av_info.geometry.base_height;
+    if (hwAccelerated) {
+        renderWidth = std::max(renderWidth, system_av_info.geometry.max_width);
+        renderHeight = std::max(renderHeight, system_av_info.geometry.max_height);
+    }
+
     Video::RenderingOptions renderingOptions {
-        Environment::getInstance().isUseHwAcceleration(),
-        system_av_info.geometry.base_width,
-        system_av_info.geometry.base_height,
+        hwAccelerated,
+        renderWidth,
+        renderHeight,
         Environment::getInstance().isUseDepth(),
         Environment::getInstance().isUseStencil(),
         openglESVersion,
@@ -742,6 +754,15 @@ void LibretroDroid::step() {
     }
 
     // Some games override the core geometry at runtime. These fields get updated in retro_run().
+    if (video && Environment::getInstance().isGameMaxGeometryUpdated()) {
+        Environment::getInstance().clearGameMaxGeometryUpdated();
+
+        video->resizeHWRenderTarget(
+            Environment::getInstance().getGameMaxGeometryWidth(),
+            Environment::getInstance().getGameMaxGeometryHeight()
+        );
+    }
+
     if (video && Environment::getInstance().isGameGeometryUpdated()) {
         Environment::getInstance().clearGameGeometryUpdated();
 
@@ -805,6 +826,15 @@ void LibretroDroid::stepForNetplay() {
 
     if (rumble && rumbleEnabled) {
         rumble->fetchFromEnvironment();
+    }
+
+    if (video && Environment::getInstance().isGameMaxGeometryUpdated()) {
+        Environment::getInstance().clearGameMaxGeometryUpdated();
+
+        video->resizeHWRenderTarget(
+            Environment::getInstance().getGameMaxGeometryWidth(),
+            Environment::getInstance().getGameMaxGeometryHeight()
+        );
     }
 
     if (video && Environment::getInstance().isGameGeometryUpdated()) {

@@ -320,6 +320,15 @@ bool Environment::handle_callback_environment(unsigned cmd, void *data) {
             gameGeometryAspectRatio = avInfo->geometry.aspect_ratio;
             gameGeometryUpdated = true;
 
+            if (avInfo->geometry.max_width > 0 && avInfo->geometry.max_height > 0 &&
+                (avInfo->geometry.max_width != gameMaxGeometryWidth ||
+                 avInfo->geometry.max_height != gameMaxGeometryHeight)) {
+                gameMaxGeometryWidth = avInfo->geometry.max_width;
+                gameMaxGeometryHeight = avInfo->geometry.max_height;
+                gameMaxGeometryUpdated = true;
+                LOGI("Max geometry updated: %ux%u", gameMaxGeometryWidth, gameMaxGeometryHeight);
+            }
+
             if (avInfo->timing.fps > 0 && avInfo->timing.sample_rate > 0) {
                 if (avInfo->timing.fps != gameTimingFps
                     || avInfo->timing.sample_rate != gameTimingSampleRate) {
@@ -482,6 +491,22 @@ unsigned int Environment::getGameGeometryHeight() const {
 
 float Environment::getGameGeometryAspectRatio() const {
     return gameGeometryAspectRatio;
+}
+
+bool Environment::isGameMaxGeometryUpdated() const {
+    return gameMaxGeometryUpdated;
+}
+
+void Environment::clearGameMaxGeometryUpdated() {
+    gameMaxGeometryUpdated = false;
+}
+
+unsigned int Environment::getGameMaxGeometryWidth() const {
+    return gameMaxGeometryWidth;
+}
+
+unsigned int Environment::getGameMaxGeometryHeight() const {
+    return gameMaxGeometryHeight;
 }
 
 double Environment::getGameTimingFps() const {

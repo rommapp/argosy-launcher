@@ -85,11 +85,16 @@ class ExtContentOrganizer @Inject constructor(
         if (!isOwnGameFolder(gameFolder, platformDir)) return null
 
         val sharedExtcontent = File(platformDir, ZipExtractor.EXTCONTENT_FOLDER)
+        val baseFile = electBase(game, romFile, gameFolder) ?: return null
         val moves = gameFolder.walkTopDown()
             .filter { it.isFile && !it.name.startsWith("._") }
-            .map { file ->
-                val inAddonFolder = file.parentFile?.name?.lowercase() in ZipExtractor.ADDON_FOLDERS
-                file to File(if (inAddonFolder) sharedExtcontent else platformDir, file.name)
+            .mapNotNull { file ->
+                when {
+                    file.parentFile?.name?.lowercase() in ZipExtractor.ADDON_FOLDERS ->
+                        file to File(sharedExtcontent, file.name)
+                    file.absolutePath == baseFile.absolutePath -> file to File(platformDir, file.name)
+                    else -> null
+                }
             }
             .toList()
 
@@ -125,15 +130,24 @@ class ExtContentOrganizer @Inject constructor(
             gameFileDao.updateLocalPathByOldPath(source.absolutePath, target.absolutePath)
         }
 
-        val movedBasePath = electBase(game, romPath, completed, sharedExtcontent)
-        movedBasePath?.let { gameDao.updateLocalPath(game.id, it, game.source) }
-        gameFolder.deleteRecursively()
+        val movedBase = File(platformDir, baseFile.name)
+        gameDao.updateLocalPath(game.id, movedBase.absolutePath, game.source)
+
+        val kept = gameFolder.walkTopDown().filter { it.isFile && !it.name.startsWith("._") }.count()
+        if (kept == 0) {
+            gameFolder.deleteRecursively()
+        } else {
+            Logger.info(
+                TAG,
+                "enforceCombinedLayout: keeping ${gameFolder.name} for $kept non-game file(s)"
+            )
+        }
         Logger.info(
             TAG,
             "enforceCombinedLayout: flattened ${game.title} into ${platformDir.name} " +
                 "(${moves.size} files)"
         )
-        return movedBasePath?.let { File(it) }
+        return movedBase
     }
 
     /**
@@ -143,34 +157,24 @@ class ExtContentOrganizer @Inject constructor(
      * `game` row wins; otherwise the file it already launched from, unless that is a playlist this
      * platform cannot boot, in which case the largest non-add-on file we just moved.
      */
-    private suspend fun electBase(
-        game: GameEntity,
-        romPath: String,
-        moved: List<Pair<File, File>>,
-        sharedExtcontent: File
-    ): String? {
-        val movedBySource = moved.associate { (source, target) -> source.absolutePath to target }
-        val baseRow = gameFileDao.getFilesForGame(game.id)
+    private suspend fun electBase(game: GameEntity, currentBase: File, gameFolder: File): File? {
+        val inFolder = { file: File -> file.isFile && file.parentFile == gameFolder }
+
+        gameFileDao.getFilesForGame(game.id)
             .firstOrNull { VariantCategory.fromKey(it.category) == VariantCategory.GAME }
             ?.localPath
-        baseRow?.let { path ->
-            movedBySource[path]?.let { return it.absolutePath }
-            if (File(path).isFile) return path
-        }
+            ?.let(::File)
+            ?.takeIf(inFolder)
+            ?.let { return it }
 
-        val previous = movedBySource[romPath]
-        val previousIsPlaylist = previous != null &&
-            previous.extension.equals("m3u", ignoreCase = true) &&
+        val currentIsPlaylist = currentBase.extension.equals("m3u", ignoreCase = true) &&
             !M3uManager.supportsM3u(game.platformSlug)
-        if (previous != null && !previousIsPlaylist) return previous.absolutePath
+        if (!currentIsPlaylist && inFolder(currentBase)) return currentBase
 
-        return moved
-            .map { (_, target) -> target }
-            .filterNot { it.parentFile == sharedExtcontent }
-            .filterNot { it.extension.equals("m3u", ignoreCase = true) }
-            .maxByOrNull { it.length() }
-            ?.absolutePath
-            ?: previous?.absolutePath
+        return gameFolder.listFiles()
+            ?.filter { it.isFile && !it.name.startsWith("._") }
+            ?.filterNot { it.extension.equals("m3u", ignoreCase = true) }
+            ?.maxByOrNull { it.length() }
     }
 
     /**

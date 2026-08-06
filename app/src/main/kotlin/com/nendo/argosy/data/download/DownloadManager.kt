@@ -548,7 +548,7 @@ class DownloadManager @Inject constructor(
         if (currentState.activeDownloads.any { it.gameFileId == gameFileId }) return
         if (currentState.queue.any { it.gameFileId == gameFileId }) return
 
-        val gameFolder = resolveAddonFolder(gameId, platformSlug, gameFolderName, gameTitle)
+        val gameFolder = resolveAddonFolder(gameId, platformSlug, gameFolderName, gameTitle, category)
         val categoryFolder = resolveGameFileDir(gameId, gameFileId, platformSlug, category, gameFolder)
         val tempFilePath = File(categoryFolder, "${fileName}.tmp").absolutePath
         Logger.info(
@@ -664,6 +664,15 @@ class DownloadManager @Inject constructor(
             !M3uManager.supportsM3u(platformSlug)
 
     /**
+     * Combine Content flattens the base rom and its updates and DLC, and nothing else. Manuals,
+     * cheats and the rest keep their own game folder so the platform folder stays a list of games,
+     * and so deleting one game cannot strand another's documents beside it.
+     */
+    private fun isFlatUnderCombine(category: String?): Boolean =
+        VariantCategory.fromKey(category) == VariantCategory.GAME ||
+            extContentOrganizer.isAddonCategory(category)
+
+    /**
      * True when this game's updates or DLC already sit in the platform-wide `extcontent/`. Promoting
      * its base into a fresh folder would move the rom away from content it leaves behind, so a game
      * the combined layout is holding keeps using the platform folder even once the toggle is off.
@@ -689,10 +698,17 @@ class DownloadManager @Inject constructor(
         gameId: Long,
         platformSlug: String,
         gameFolderName: String?,
-        gameTitle: String
+        gameTitle: String,
+        category: String? = null
     ): File {
         val platformDir = getDownloadDir(platformSlug)
-        if (extContentOrganizer.usesCombinedLayout(gameId)) return platformDir
+        if (extContentOrganizer.usesCombinedLayout(gameId)) {
+            return if (isFlatUnderCombine(category)) {
+                platformDir
+            } else {
+                getGameFolder(platformSlug, gameFolderName ?: gameTitle)
+            }
+        }
         val game = gameDao.getById(gameId)
         val basePath = game?.localPath
         val baseParent = basePath?.let { File(it).parentFile }
@@ -860,7 +876,8 @@ class DownloadManager @Inject constructor(
 
                 val downloadDir = if (progress.isGameFileDownload && progress.fileCategory != null) {
                     val gameFolder = resolveAddonFolder(
-                        progress.gameId, progress.platformSlug, progress.gameFolderName, progress.gameTitle
+                        progress.gameId, progress.platformSlug, progress.gameFolderName,
+                        progress.gameTitle, progress.fileCategory
                     )
                     resolveGameFileDir(
                         progress.gameId, progress.gameFileId, progress.platformSlug,

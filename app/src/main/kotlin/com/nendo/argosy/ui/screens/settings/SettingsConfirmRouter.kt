@@ -1135,6 +1135,9 @@ internal fun routeNavigateBack(vm: SettingsViewModel): Boolean {
         state.currentSection == SettingsSection.PLATFORM_DETAIL && state.platformDetail.showRemoveConfirm -> {
             vm._uiState.update { it.copy(platformDetail = it.platformDetail.copy(showRemoveConfirm = false)) }; true
         }
+        state.currentSection == SettingsSection.PLATFORM_DETAIL && state.platformDetail.combineRestoreCount > 0 -> {
+            vm.dismissCombineRestore(); true
+        }
         state.currentSection == SettingsSection.PLATFORM_DETAIL && state.platformDetail.enteredExternally -> false
         state.currentSection == SettingsSection.PLATFORM_DETAIL -> {
             val toggledId = state.emulators.platforms

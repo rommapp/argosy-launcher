@@ -174,6 +174,81 @@ class ExtContentOrganizer @Inject constructor(
     }
 
     /**
+     * Games the Combine Content layout is actually holding flat: the base rom sits in
+     * [platformDir] itself and at least one of the game's own updates or DLC is pooled in the
+     * shared `extcontent/`. A single-file game, or one whose only extra content is a soundtrack or
+     * other non-game media, has nothing to gain from its own folder and is left where it is.
+     */
+    suspend fun gamesHoldingCombinedLayout(platformId: Long, platformDir: File): List<GameEntity> {
+        val shared = File(platformDir, ZipExtractor.EXTCONTENT_FOLDER)
+        if (!shared.isDirectory) return emptyList()
+        return gameDao.getDownloadedByPlatform(platformId).filter { game ->
+            val base = game.localPath?.let { File(it) } ?: return@filter false
+            if (!base.isFile || base.parentFile?.absolutePath != platformDir.absolutePath) return@filter false
+            pooledAddonsOf(game, shared).isNotEmpty()
+        }
+    }
+
+    private suspend fun pooledAddonsOf(game: GameEntity, shared: File): List<File> =
+        gameFileDao.getFilesForGame(game.id)
+            .filter { isAddonCategory(it.category) }
+            .mapNotNull { it.localPath?.let(::File) }
+            .filter { it.isFile && it.parentFile?.absolutePath == shared.absolutePath }
+
+    /**
+     * Undoes the flatten for one game: the base rom moves back into its own folder and the add-ons
+     * this game owns follow it into that folder's `extcontent/`. Only paths the game's own rows
+     * name are moved, so add-ons pooled by other games stay put. Returns files moved.
+     */
+    suspend fun restoreFromCombinedLayout(game: GameEntity, platformDir: File): Int {
+        val basePath = game.localPath ?: return 0
+        val baseFile = File(basePath)
+        if (!baseFile.isFile || baseFile.parentFile?.absolutePath != platformDir.absolutePath) return 0
+
+        val shared = File(platformDir, ZipExtractor.EXTCONTENT_FOLDER)
+        val addons = pooledAddonsOf(game, shared)
+        if (addons.isEmpty()) return 0
+
+        val folderName = (game.rommFileName?.takeIf { it.isNotBlank() } ?: game.title)
+            .replace(Regex("[\\\\/:*?\"<>|]"), "_")
+            .replace(Regex("\\s+"), " ")
+            .trim()
+            .take(200)
+        val gameFolder = File(platformDir, folderName)
+        if (gameFolder.exists()) {
+            Logger.warn(TAG, "restoreFromCombinedLayout: ${gameFolder.name} already exists; skipping ${game.title}")
+            return 0
+        }
+        val gameExtcontent = File(gameFolder, ZipExtractor.EXTCONTENT_FOLDER)
+        if (!gameExtcontent.mkdirs()) {
+            Logger.warn(TAG, "restoreFromCombinedLayout: could not create ${gameFolder.name}")
+            return 0
+        }
+
+        val moves = listOf(baseFile to File(gameFolder, baseFile.name)) +
+            addons.map { it to File(gameExtcontent, it.name) }
+
+        val completed = mutableListOf<Pair<File, File>>()
+        for (move in moves) {
+            if (move.first.renameTo(move.second)) {
+                completed += move
+                continue
+            }
+            Logger.warn(TAG, "restoreFromCombinedLayout: could not move ${move.first.name}; rolling back ${game.title}")
+            for ((source, target) in completed) target.renameTo(source)
+            gameFolder.deleteRecursively()
+            return 0
+        }
+
+        for ((source, target) in completed) {
+            gameFileDao.updateLocalPathByOldPath(source.absolutePath, target.absolutePath)
+        }
+        gameDao.updateLocalPath(game.id, File(gameFolder, baseFile.name).absolutePath, game.source)
+        Logger.info(TAG, "restoreFromCombinedLayout: ${game.title} back in ${gameFolder.name} (${moves.size} files)")
+        return moves.size
+    }
+
+    /**
      * True only for a folder sitting directly inside [platformDir]. Anything else - the platform
      * root itself, a game found under an alternate rom root, a locally scanned folder elsewhere on
      * disk - is not ours to empty and delete, however much it looks like a game folder.
@@ -188,10 +263,11 @@ class ExtContentOrganizer @Inject constructor(
      * Moves the per-category add-on folders beside [romPath] into `extcontent/` and repoints every
      * file row that named the old location. Returns the number of files moved.
      */
-    suspend fun consolidate(romPath: String): Int {
+    suspend fun consolidate(romPath: String, platformDir: File? = null): Int {
         val rom = File(romPath)
         val gameFolder = (if (rom.isDirectory) rom else rom.parentFile) ?: return 0
         if (!gameFolder.isDirectory) return 0
+        if (platformDir != null && !isOwnGameFolder(gameFolder, platformDir)) return 0
 
         val sourceFolders = gameFolder.listFiles { file ->
             file.isDirectory && file.name.lowercase() in ZipExtractor.ADDON_SOURCE_FOLDERS

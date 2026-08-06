@@ -646,6 +646,17 @@ fun PlatformDetailSection(
             destructive = true
         )
 
+        com.nendo.argosy.ui.primitives.ArgosyConfirmModalHost(
+            visible = detail.combineRestoreCount > 0,
+            title = "Restore Game Folders",
+            message = "Combine Content is off. Move ${detail.combineRestoreCount} game" +
+                "${if (detail.combineRestoreCount > 1) "s" else ""} with updates or DLC back into " +
+                "their own folders? Everything else stays where it is.",
+            confirmLabel = "Move",
+            onConfirm = { viewModel.confirmCombineRestore(config.platform.id) },
+            onDismiss = { viewModel.dismissCombineRestore() }
+        )
+
         if (detail.showDownloadDefaults) {
             DownloadDefaultsModal(detail = detail, viewModel = viewModel)
         }

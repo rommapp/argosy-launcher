@@ -91,6 +91,7 @@ class SettingsViewModel @Inject constructor(
     internal val romMRepository: RomMRepository,
     internal val notificationManager: NotificationManager,
     internal val gameRepository: GameRepository,
+    private val extContentOrganizer: com.nendo.argosy.data.download.ExtContentOrganizer,
     private val androidGameScanner: com.nendo.argosy.data.scanner.AndroidGameScanner,
     internal val imageCacheManager: ImageCacheManager,
     internal val syncLibraryUseCase: SyncLibraryUseCase,
@@ -1389,6 +1390,7 @@ class SettingsViewModel @Inject constructor(
 
     fun togglePlatformCombineContent(platformId: Long, enabled: Boolean) {
         storageDelegate.togglePlatformCombineContent(viewModelScope, platformId, enabled)
+        if (!enabled) offerCombineRestore(platformId)
         _uiState.update { state ->
             state.copy(
                 emulators = state.emulators.copy(
@@ -1400,6 +1402,49 @@ class SettingsViewModel @Inject constructor(
                         }
                     }
                 )
+            )
+        }
+    }
+
+    /**
+     * Turning Combine Content off stops enforcing the flat layout but never moves anything on its
+     * own, so the games it is still holding flat are offered back to their own folders here. Games
+     * with no updates or DLC of their own have nothing to gain from a folder and are not counted.
+     */
+    private fun offerCombineRestore(platformId: Long) {
+        viewModelScope.launch {
+            val platformDir = gameRepository.getDownloadDirForPlatformId(platformId)
+            val holding = extContentOrganizer.gamesHoldingCombinedLayout(platformId, platformDir)
+            if (holding.isEmpty()) return@launch
+            _uiState.update {
+                it.copy(platformDetail = it.platformDetail.copy(combineRestoreCount = holding.size))
+            }
+        }
+    }
+
+    fun dismissCombineRestore() {
+        _uiState.update { it.copy(platformDetail = it.platformDetail.copy(combineRestoreCount = 0)) }
+    }
+
+    fun confirmCombineRestore(platformId: Long) {
+        _uiState.update { it.copy(platformDetail = it.platformDetail.copy(combineRestoreCount = 0)) }
+        viewModelScope.launch {
+            val platformDir = gameRepository.getDownloadDirForPlatformId(platformId)
+            val holding = extContentOrganizer.gamesHoldingCombinedLayout(platformId, platformDir)
+            val restored = holding.count { extContentOrganizer.restoreFromCombinedLayout(it, platformDir) > 0 }
+            notificationManager.show(
+                title = if (restored > 0) "Folders Restored" else "Nothing Moved",
+                subtitle = if (restored > 0) {
+                    "$restored game${if (restored > 1) "s" else ""} moved back into their own folders"
+                } else {
+                    "No games could be moved back"
+                },
+                type = if (restored > 0) {
+                    com.nendo.argosy.core.notification.NotificationType.SUCCESS
+                } else {
+                    com.nendo.argosy.core.notification.NotificationType.WARNING
+                },
+                duration = com.nendo.argosy.core.notification.NotificationDuration.MEDIUM
             )
         }
     }

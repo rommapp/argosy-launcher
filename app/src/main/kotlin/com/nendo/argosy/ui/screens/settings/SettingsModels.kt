@@ -446,6 +446,7 @@ data class PlatformDetailState(
     val builtinEnteredFromPlatform: Boolean = false,
     val enteredExternally: Boolean = false,
     val showRemoveConfirm: Boolean = false,
+    val combineRestoreCount: Int = 0,
     val totalGames: Int = 0,
     val downloadedGames: Int = 0,
     val favorites: Int = 0,

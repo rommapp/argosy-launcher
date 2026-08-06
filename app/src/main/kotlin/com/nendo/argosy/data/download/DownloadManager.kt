@@ -663,6 +663,20 @@ class DownloadManager @Inject constructor(
         path.substringAfterLast('.', "").equals("m3u", ignoreCase = true) &&
             !M3uManager.supportsM3u(platformSlug)
 
+    /**
+     * True when this game's updates or DLC already sit in the platform-wide `extcontent/`. Promoting
+     * its base into a fresh folder would move the rom away from content it leaves behind, so a game
+     * the combined layout is holding keeps using the platform folder even once the toggle is off.
+     */
+    private suspend fun hasPooledAddons(gameId: Long, platformDir: File): Boolean {
+        val shared = File(platformDir, ZipExtractor.EXTCONTENT_FOLDER)
+        if (!shared.isDirectory) return false
+        return gameFileDao.getFilesForGame(gameId).any { row ->
+            extContentOrganizer.isAddonCategory(row.category) &&
+                row.localPath?.let { File(it).parentFile?.absolutePath } == shared.absolutePath
+        }
+    }
+
     private suspend fun resolveServerRelativeDir(gameId: Long, gameFileId: Long): String? {
         val row = gameFileDao.getById(gameFileId) ?: return null
         val rootLen = gameFileDao.getFilesForGame(gameId)
@@ -687,6 +701,7 @@ class DownloadManager @Inject constructor(
         ) {
             return baseParent
         }
+        if (hasPooledAddons(gameId, platformDir)) return platformDir
         val gameFolder = getGameFolder(platformSlug, gameFolderName ?: gameTitle)
         val baseFile = basePath?.let { File(it) }
         if (baseFile != null && baseFile.isFile &&
@@ -1092,7 +1107,11 @@ class DownloadManager @Inject constructor(
             } else {
                 null
             }
-            if (combined != null) finalPath = combined.absolutePath else extContentOrganizer.consolidate(finalPath)
+            if (combined != null) {
+                finalPath = combined.absolutePath
+            } else {
+                extContentOrganizer.consolidate(finalPath, getDownloadDir(progress.platformSlug))
+            }
         }
 
         when {

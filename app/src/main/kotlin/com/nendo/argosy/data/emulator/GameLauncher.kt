@@ -2054,12 +2054,12 @@ class GameLauncher @Inject constructor(
      */
     private suspend fun consolidateExtContent(game: GameEntity, emulator: EmulatorDef): File? {
         if (!extContentOrganizer.isExtcontentEmulator(emulator.id, game.platformSlug)) return null
+        val platformDir = platformDownloadDir(game.platformSlug)
         if (extContentOrganizer.usesCombinedLayout(game.platformId, game.platformSlug)) {
-            val platformDir = platformDownloadDir(game.platformSlug)
             extContentOrganizer.enforceCombinedLayout(game, platformDir)?.let { return it }
         }
         val romPath = game.localPath ?: return null
-        extContentOrganizer.consolidate(romPath)
+        extContentOrganizer.consolidate(romPath, platformDir)
         return null
     }
 }

@@ -113,6 +113,8 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
 private const val KEY_SINK_RECLAIM_GRACE_MS = 250L
+private const val NAV_READY_TIMEOUT_MS = 45_000L
+private const val NAV_READY_POLL_MS = 50L
 
 @Composable
 fun ArgosyApp(
@@ -256,6 +258,49 @@ fun ArgosyApp(
                     "apps" -> {
                         navController.navigate(Screen.Apps.route) {
                             launchSingleTop = true
+                        }
+                    }
+                    "launch" -> {
+                        val request = com.nendo.argosy.ui.deeplink.DeepLinkParser.parse(uri)
+                        if (request == null) {
+                            android.util.Log.w("ArgosyApp", "Deep link carried no target: $uri")
+                        } else {
+                            when (val outcome = viewModel.resolveDeepLinkLaunch(request)) {
+                                is com.nendo.argosy.ui.deeplink.DeepLinkLaunch.Ready -> {
+                                    val graphReady = kotlinx.coroutines.withTimeoutOrNull(NAV_READY_TIMEOUT_MS) {
+                                        while (runCatching { navController.graph }.isFailure) {
+                                            kotlinx.coroutines.delay(NAV_READY_POLL_MS)
+                                        }
+                                        true
+                                    } ?: false
+                                    if (!graphReady) {
+                                        android.util.Log.w(
+                                            "ArgosyApp",
+                                            "Nav graph not ready, dropping deep link for game ${outcome.gameId}"
+                                        )
+                                        android.widget.Toast.makeText(
+                                            context,
+                                            "Argosy was still starting up, try again",
+                                            android.widget.Toast.LENGTH_LONG
+                                        ).show()
+                                    } else {
+                                        navController.navigate(
+                                            Screen.GameDetail.createRoute(outcome.gameId)
+                                        ) {
+                                            launchSingleTop = true
+                                        }
+                                        viewModel.awaitDeepLinkSyncReady()
+                                        viewModel.initiateGameLaunch(outcome.gameId, outcome.channelName)
+                                    }
+                                }
+                                is com.nendo.argosy.ui.deeplink.DeepLinkLaunch.Failed -> {
+                                    android.widget.Toast.makeText(
+                                        context,
+                                        outcome.message,
+                                        android.widget.Toast.LENGTH_LONG
+                                    ).show()
+                                }
+                            }
                         }
                     }
                 }
@@ -1896,6 +1941,7 @@ fun ArgosyApp(
                         navController = navController,
                         startDestination = startDestination,
                         onDrawerToggle = { if (isDrawerOpen) closeDrawer() else openDrawer() },
+                        argosyViewModel = viewModel,
                         modifier = Modifier.blur(contentBlur)
                     )
                 }

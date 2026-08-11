@@ -37,6 +37,7 @@ fun NavGraph(
     navController: NavHostController,
     startDestination: String,
     onDrawerToggle: () -> Unit,
+    argosyViewModel: com.nendo.argosy.ui.ArgosyViewModel,
     modifier: Modifier = Modifier
 ) {
     val navigateToDefault = remember {
@@ -239,6 +240,7 @@ fun NavGraph(
             val gameId = backStackEntry.arguments?.getLong("gameId") ?: return@composable
             GameDetailScreen(
                 gameId = gameId,
+                argosyViewModel = argosyViewModel,
                 onBack = { navController.popBackStack() },
                 onNavigateToPlatformSettings = { platformId ->
                     navController.navigate(

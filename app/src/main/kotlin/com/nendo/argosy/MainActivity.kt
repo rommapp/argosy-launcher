@@ -61,6 +61,7 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 private const val TAG = "MainActivity"
+private val LAUNCH_EXTRA_KEYS = listOf("path", "romm_id", "game_id", "channel")
 internal fun shouldInitializeScreenCapture(prefs: UserPreferences): Boolean =
     prefs.ambientLedEnabled && prefs.ambientLedScreenEnabled
 
@@ -379,6 +380,8 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+
+        handleDeepLink(intent)
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -752,11 +755,22 @@ class MainActivity : ComponentActivity() {
     private fun handleDeepLink(intent: Intent): Boolean {
         val uri = intent.data ?: return false
         if (uri.scheme == "argosy") {
-            Log.d(TAG, "Received deep link: $uri")
-            _pendingDeepLink.value = uri
+            val resolved = mergeLaunchExtras(uri, intent)
+            Log.d(TAG, "Received deep link: $resolved")
+            _pendingDeepLink.value = resolved
             return true
         }
         return false
+    }
+
+    private fun mergeLaunchExtras(uri: android.net.Uri, intent: Intent): android.net.Uri {
+        var builder: android.net.Uri.Builder? = null
+        for (key in LAUNCH_EXTRA_KEYS) {
+            if (uri.getQueryParameter(key) != null) continue
+            val value = intent.getStringExtra(key)?.takeIf { it.isNotBlank() } ?: continue
+            builder = (builder ?: uri.buildUpon()).appendQueryParameter(key, value)
+        }
+        return builder?.build() ?: uri
     }
 
     fun clearPendingDeepLink() {

@@ -194,8 +194,15 @@ class ArgosyViewModel @Inject constructor(
     private val netplayJoinService: com.nendo.argosy.data.netplay.NetplayJoinService,
     private val launchGameUseCase: LaunchGameUseCase,
     private val homeLibraryDelegate: com.nendo.argosy.ui.screens.home.delegates.HomeLibraryDelegate,
-    private val pendingConflictDao: com.nendo.argosy.data.local.dao.PendingConflictDao
+    private val pendingConflictDao: com.nendo.argosy.data.local.dao.PendingConflictDao,
+    private val deepLinkLaunchCoordinator: com.nendo.argosy.ui.deeplink.DeepLinkLaunchCoordinator
 ) : ViewModel() {
+
+    suspend fun resolveDeepLinkLaunch(
+        request: com.nendo.argosy.domain.model.DeepLinkRequest
+    ): com.nendo.argosy.ui.deeplink.DeepLinkLaunch = deepLinkLaunchCoordinator.resolve(request)
+
+    suspend fun awaitDeepLinkSyncReady() = deepLinkLaunchCoordinator.awaitConnectionIfSyncing()
 
     val netplayJoinState: StateFlow<com.nendo.argosy.data.netplay.NetplayJoinState> get() = netplayJoinService.state
 

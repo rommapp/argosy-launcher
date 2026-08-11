@@ -710,7 +710,7 @@ object EmulatorRegistry {
             displayName = "ARMSX2 (Play Store)",
             supportedPlatforms = setOf("ps2"),
             launchConfig = LaunchConfig.Custom(
-                activityClass = "kr.co.iefriends.pcsx2.activities.MainActivity"
+                activityClass = "com.armsx2.MainActivity"
             ),
             defaultLaunchMethod = LaunchMethod.SHELL,
             downloadUrl = "https://github.com/ARMSX2/ARMSX2/releases"
@@ -1728,7 +1728,7 @@ object EmulatorRegistry {
             packagePatterns = listOf("come.nanodata.armsx2", "come.nanodata.armsx2.*"),
             supportedPlatforms = setOf("ps2"),
             launchConfig = LaunchConfig.Custom(
-                activityClass = "kr.co.iefriends.pcsx2.activities.MainActivity"
+                activityClass = "com.armsx2.MainActivity"
             ),
             downloadUrl = "https://github.com/ARMSX2/ARMSX2/releases"
         ),

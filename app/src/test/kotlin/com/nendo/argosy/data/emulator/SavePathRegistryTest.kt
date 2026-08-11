@@ -177,4 +177,20 @@ class SavePathRegistryTest {
     fun `canSyncWithSettings returns false for unsupported emulator even when sync enabled`() {
         assertFalse(SavePathRegistry.canSyncWithSettings("redream", saveSyncEnabled = true))
     }
+
+    @Test
+    fun `armsx2 uses file-based ps2 memcards`() {
+        val config = SavePathRegistry.getConfig("armsx2")
+        assertNotNull(config)
+        assertFalse(config!!.usesFolderBasedSaves)
+        assertEquals(listOf("ps2"), config.saveExtensions)
+    }
+
+    @Test
+    fun `armsx2_refresh uses file-based ps2 memcards`() {
+        val config = SavePathRegistry.getConfig("armsx2_refresh")
+        assertNotNull(config)
+        assertFalse(config!!.usesFolderBasedSaves)
+        assertEquals(listOf("ps2"), config.saveExtensions)
+    }
 }

@@ -407,13 +407,15 @@ object SavePathRegistry {
             usesFolderBasedSaves = true,
             supported = true
         ),
+        // File memcards (one .ps2 per game). Matches raw .ps2 uploads from PCSX2/LRPS2/RomM.
+        // Folder Shared.ps2 + server file .ps2 caused EISDIR on download.
         "armsx2_refresh" to SavePathConfig(
             emulatorId = "armsx2_refresh",
             defaultPaths = listOf(
                 "{extStorage}/Android/data/com.armsx2/files/memcards"
             ),
-            saveExtensions = listOf("*"),
-            usesFolderBasedSaves = true,
+            saveExtensions = listOf("ps2"),
+            usesFolderBasedSaves = false,
             supported = true
         ),
         "armsx2" to SavePathConfig(
@@ -421,8 +423,8 @@ object SavePathRegistry {
             defaultPaths = listOf(
                 "{extStorage}/Android/data/come.nanodata.armsx2/files/memcards"
             ),
-            saveExtensions = listOf("*"),
-            usesFolderBasedSaves = true,
+            saveExtensions = listOf("ps2"),
+            usesFolderBasedSaves = false,
             supported = true
         ),
 

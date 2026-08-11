@@ -87,4 +87,30 @@ class PlatformSaveHandlerRegistryRoutingTest {
 
         assertSame(switchHandler, handler)
     }
+
+    @Test
+    fun `armsx2 file config routes to default file handler not PS2 folder handler`() {
+        val config = SavePathRegistry.getConfig("armsx2")
+        assertNotNull(config)
+        assertTrue("armsx2 must be file-based for raw .ps2 saves", config != null && !config.usesFolderBasedSaves)
+
+        val handler = registry.getHandler(config, "ps2", "armsx2")
+
+        assertSame(
+            "Must use DefaultSaveHandler for per-game .ps2 files",
+            defaultHandler,
+            handler,
+        )
+    }
+
+    @Test
+    fun `armsx2_refresh file config routes to default file handler`() {
+        val config = SavePathRegistry.getConfig("armsx2_refresh")
+        assertNotNull(config)
+        assertTrue(config != null && !config.usesFolderBasedSaves)
+
+        val handler = registry.getHandler(config, "ps2", "armsx2_refresh")
+
+        assertSame(defaultHandler, handler)
+    }
 }

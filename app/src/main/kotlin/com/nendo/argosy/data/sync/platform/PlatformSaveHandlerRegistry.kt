@@ -74,6 +74,9 @@ class PlatformSaveHandlerRegistry @Inject constructor(
         }
         if (emulatorId in RETROARCH_EMULATOR_IDS) return retroArchSaveHandler
         if (canonical == "switch") return switchSaveHandler
+        // Explicit file-based emulator configs (e.g. ARMSX2 one-.ps2-per-game) must not fall
+        // through to the platform folder handler, or downloads target Shared.ps2 and EISDIR.
+        if (config != null && !config.usesFolderBasedSaves) return defaultSaveHandler
         return folderHandlers[canonical] ?: defaultSaveHandler
     }
 

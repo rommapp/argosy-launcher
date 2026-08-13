@@ -81,6 +81,7 @@ class MainActivity : ComponentActivity() {
     @Inject lateinit var androidGameScanner: com.nendo.argosy.data.scanner.AndroidGameScanner
     @Inject lateinit var gameNativeStoreSync: com.nendo.argosy.data.launcher.GameNativeStoreSync
     @Inject lateinit var romMRepository: RomMRepository
+    @Inject lateinit var jellyfinConnectionManager: com.nendo.argosy.data.remote.jellyfin.JellyfinConnectionManager
     @Inject lateinit var preferencesRepository: UserPreferencesRepository
     @Inject lateinit var syncPreferencesRepository: com.nendo.argosy.data.preferences.SyncPreferencesRepository
     @Inject lateinit var homeTileRepository: com.nendo.argosy.data.repository.HomeTileRepository
@@ -343,6 +344,7 @@ class MainActivity : ComponentActivity() {
         dualScreenManager.ensureCompanionLaunched()
         dualScreenManager.startStartupGuard()
         initCacheAndPreferences()
+        activityScope.launch { jellyfinConnectionManager.initialize() }
 
 
         com.nendo.argosy.data.sync.AchievementSubmissionWorker.schedule(this)
@@ -403,6 +405,7 @@ class MainActivity : ComponentActivity() {
         if (hasResumedBefore) {
             romMRepository.onAppResumed()
             activityScope.launch { romMRepository.initialize() }
+            activityScope.launch { jellyfinConnectionManager.initialize() }
             ambientAudioManager.fadeIn()
         } else {
             if (displayAffinityHelper.hasSecondaryDisplay && !dualScreenManager.isRolesSwapped.value) {

@@ -21,6 +21,8 @@ import com.nendo.argosy.data.preferences.GridDensity
 import com.nendo.argosy.data.preferences.HomeBackgroundMode
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.remote.github.UpdateRepository
+import com.nendo.argosy.data.remote.jellyfin.JellyfinConnectionManager
+import com.nendo.argosy.data.remote.jellyfin.JellyfinSignInCallbacks
 import com.nendo.argosy.data.remote.romm.RomMRepository
 import com.nendo.argosy.data.repository.GameRepository
 import com.nendo.argosy.data.social.SocialAuthManager
@@ -46,6 +48,7 @@ import com.nendo.argosy.ui.screens.settings.delegates.BiosSettingsDelegate
 import com.nendo.argosy.ui.screens.settings.delegates.ControlsSettingsDelegate
 import com.nendo.argosy.ui.screens.settings.delegates.DisplaySettingsDelegate
 import com.nendo.argosy.ui.screens.settings.delegates.EmulatorSettingsDelegate
+import com.nendo.argosy.ui.screens.settings.delegates.JellyfinPasswordSignInRequest
 import com.nendo.argosy.ui.screens.settings.delegates.PermissionsSettingsDelegate
 import com.nendo.argosy.ui.screens.settings.delegates.RASettingsDelegate
 import com.nendo.argosy.ui.screens.settings.delegates.ServerSettingsDelegate
@@ -59,6 +62,7 @@ import com.nendo.argosy.util.LogLevel
 import com.nendo.argosy.util.PlatformFilterLogic
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -132,8 +136,11 @@ class SettingsViewModel @Inject constructor(
     internal val coreOptionsRepo: CoreOptionsRepository,
     private val playStatsRepo: com.nendo.argosy.data.repository.PlayStatsRepository,
     private val biosRepository: com.nendo.argosy.data.repository.BiosRepository,
-    private val savePathValidator: com.nendo.argosy.data.emulator.SavePathValidator
+    private val savePathValidator: com.nendo.argosy.data.emulator.SavePathValidator,
+    internal val jellyfinConnectionManager: JellyfinConnectionManager
 ) : ViewModel() {
+
+    private var jellyfinSignInJob: Job? = null
 
     internal val _uiState = MutableStateFlow(SettingsUiState())
     val uiState: StateFlow<SettingsUiState> = _uiState.asStateFlow()
@@ -174,6 +181,8 @@ class SettingsViewModel @Inject constructor(
     val openMusicLocationPickerEvent: SharedFlow<Unit> = ambientAudioDelegate.openMusicLocationPickerEvent
     val openMediaLocationPickerEvent: SharedFlow<Unit> = jellyfinDelegate.openMediaLocationPickerEvent
     val jellyfinQuickConnectRequestEvent: SharedFlow<String> = jellyfinDelegate.quickConnectRequestEvent
+    val jellyfinPasswordSignInRequestEvent: SharedFlow<JellyfinPasswordSignInRequest> =
+        jellyfinDelegate.passwordSignInRequestEvent
     val openMusicBrowserSfxEvent: SharedFlow<SoundType> = soundsDelegate.openMusicBrowserSfxEvent
     val launchPlatformFolderPicker: SharedFlow<Long> = storageDelegate.launchPlatformFolderPicker
     val launchSavePathPicker: SharedFlow<Unit> = emulatorDelegate.launchSavePathPicker
@@ -931,6 +940,7 @@ class SettingsViewModel @Inject constructor(
     fun navigateToThemeFonts() = routeNavigateToThemeFonts(this)
     fun navigateToThemeBackdrop() = routeNavigateToThemeBackdrop(this)
     fun navigateToStorageGames() = routeNavigateToStorageGames(this)
+    fun navigateToStorageMedia() = routeNavigateToStorageMedia(this)
     fun navigateToStorageCaches() = routeNavigateToStorageCaches(this, CACHES_ENTRY_TOP)
     fun navigateToStorageCachesForSteam() = routeNavigateToStorageCaches(this, CACHES_ENTRY_STEAM)
     fun navigateToStorageCachesForSaves() = routeNavigateToStorageCaches(this, CACHES_ENTRY_SAVES)
@@ -1944,17 +1954,78 @@ class SettingsViewModel @Inject constructor(
     fun setJellyfinConfigUrl(url: String) = jellyfinDelegate.setConfigUrl(url)
     fun setJellyfinConfigFocusField(field: Int?) = jellyfinDelegate.setConfigFocusField(field)
     fun clearJellyfinConfigFocusField() = jellyfinDelegate.clearConfigFocusField()
-    fun commitJellyfinConfig() = jellyfinDelegate.commitServerConfig(viewModelScope, ::resetFocusIndex)
+    fun commitJellyfinConfig() = jellyfinDelegate.commitServerConfig(
+        viewModelScope,
+        ::resetFocusIndex,
+        ::refreshJellyfinConnection
+    )
     fun cancelJellyfinConfig() = jellyfinDelegate.cancelServerConfig(::resetFocusIndex)
 
     private fun resetFocusIndex() {
         _uiState.update { it.copy(focusedIndex = 0) }
     }
 
-    fun requestJellyfinQuickConnect() = jellyfinDelegate.requestQuickConnect(viewModelScope)
+    /**
+     * Reconnects to the stored server so the section knows what it is dealing with before the user
+     * asks to sign in - which sign-in paths the server offers is a live answer, not an assumption.
+     */
+    internal fun refreshJellyfinConnection() {
+        viewModelScope.launch { jellyfinConnectionManager.initialize() }
+    }
+
+    fun requestJellyfinSignIn() = jellyfinDelegate.requestSignIn(viewModelScope, ::resetFocusIndex)
     fun requestJellyfinSignOut() = jellyfinDelegate.requestSignOut()
     fun cancelJellyfinSignOut() = jellyfinDelegate.cancelSignOut()
-    fun confirmJellyfinSignOut() = jellyfinDelegate.confirmSignOut(viewModelScope)
+    fun confirmJellyfinSignOut() {
+        cancelJellyfinSignIn()
+        jellyfinDelegate.confirmSignOut(viewModelScope) { jellyfinConnectionManager.signOut() }
+    }
+
+    fun showJellyfinLoginForm() = jellyfinDelegate.showLoginForm(::resetFocusIndex)
+    fun hideJellyfinLoginForm() = jellyfinDelegate.hideLoginForm(::resetFocusIndex)
+    fun setJellyfinLoginUsername(username: String) = jellyfinDelegate.setLoginUsername(username)
+    fun setJellyfinLoginPassword(password: String) = jellyfinDelegate.setLoginPassword(password)
+    fun setJellyfinLoginFocusField(field: Int?) = jellyfinDelegate.setLoginFocusField(field)
+    fun clearJellyfinLoginFocusField() = jellyfinDelegate.clearLoginFocusField()
+    fun submitJellyfinPasswordSignIn() = jellyfinDelegate.submitPasswordSignIn(viewModelScope)
+
+    /**
+     * Runs the Quick Connect exchange the section asked for and reports each step back to the
+     * delegate. The connection layer persists the credentials it wins through
+     * [com.nendo.argosy.data.preferences.UserPreferencesRepository.setJellyfinCredentials], so this
+     * carries presentation only.
+     */
+    internal fun startJellyfinQuickConnect(serverUrl: String) {
+        jellyfinSignInJob?.cancel()
+        jellyfinSignInJob = viewModelScope.launch {
+            jellyfinConnectionManager.signInWithQuickConnect(serverUrl, jellyfinSignInCallbacks())
+        }
+    }
+
+    internal fun startJellyfinPasswordSignIn(request: JellyfinPasswordSignInRequest) {
+        jellyfinSignInJob?.cancel()
+        jellyfinSignInJob = viewModelScope.launch {
+            jellyfinConnectionManager.signInWithPassword(
+                request.serverUrl,
+                request.username,
+                request.password,
+                jellyfinSignInCallbacks()
+            )
+        }
+    }
+
+    fun cancelJellyfinSignIn() {
+        jellyfinSignInJob?.cancel()
+        jellyfinSignInJob = null
+        jellyfinConnectionManager.clearQuickConnectState()
+        jellyfinDelegate.cancelSignIn()
+    }
+
+    private fun jellyfinSignInCallbacks() = JellyfinSignInCallbacks(
+        onCodeIssued = { code -> jellyfinDelegate.onQuickConnectStarted(code) },
+        onSignedIn = { userName -> jellyfinDelegate.onSignedIn(userName) },
+        onFailed = { reason -> jellyfinDelegate.onSignInFailed(reason, ::resetFocusIndex) }
+    )
 
     fun cycleJellyfinDownloadQuality(direction: Int) =
         jellyfinDelegate.cycleDownloadQuality(viewModelScope, direction)
@@ -1964,6 +2035,10 @@ class SettingsViewModel @Inject constructor(
         jellyfinDelegate.cycleMaxStreamingBitrate(viewModelScope, direction)
     fun setJellyfinStreamingBitrate(bitrate: com.nendo.argosy.data.preferences.MediaStreamingBitrate) =
         jellyfinDelegate.setMaxStreamingBitrate(viewModelScope, bitrate)
+    fun cycleJellyfinAudioLanguage(direction: Int) =
+        jellyfinDelegate.cycleAudioLanguage(viewModelScope, direction)
+    fun setJellyfinAudioLanguage(language: com.nendo.argosy.data.preferences.MediaAudioLanguage) =
+        jellyfinDelegate.setAudioLanguage(viewModelScope, language)
     fun cycleJellyfinSubtitleMode(direction: Int) =
         jellyfinDelegate.cycleSubtitleMode(viewModelScope, direction)
     fun setJellyfinSubtitleMode(mode: com.nendo.argosy.data.preferences.MediaSubtitleMode) =

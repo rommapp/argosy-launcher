@@ -26,6 +26,7 @@ import com.nendo.argosy.ui.components.HomeLayoutSettingField
 import com.nendo.argosy.ui.components.HomeLayoutSettingRow
 import com.nendo.argosy.ui.components.adjustHomeLayoutField
 import com.nendo.argosy.ui.components.homeLayoutFieldsFor
+import com.nendo.argosy.ui.components.homeRailFields
 import com.nendo.argosy.ui.components.toggleHomeLayoutField
 import com.nendo.argosy.ui.components.SliderPreference
 import com.nendo.argosy.ui.components.SwitchPreference
@@ -86,10 +87,22 @@ internal sealed class HomeScreenItem(
 
     data object LayoutSelector : HomeScreenItem("layoutSelector", "layout")
 
+    /**
+     * One home setting field, wherever it belongs on this pane. Rail toggles are content rather
+     * than layout, so the section and the visibility rule come from the field rather than being
+     * fixed: everything else follows the selected layout, and a rail follows whether the selected
+     * layout draws rows at all.
+     */
     data class LayoutField(val field: HomeLayoutSettingField) : HomeScreenItem(
         key = "layoutField_${field.name}",
-        section = "layout",
-        visibleWhen = { field in homeLayoutFieldsFor(it.homeLayout.selected) }
+        section = if (field in homeRailFields()) "content" else "layout",
+        visibleWhen = {
+            if (field in homeRailFields()) {
+                it.homeLayout.selected != HomeLayoutKind.CUSTOM_GRID
+            } else {
+                field in homeLayoutFieldsFor(it.homeLayout.selected)
+            }
+        }
     )
 
     data object InstalledOnly : HomeScreenItem(
@@ -133,6 +146,7 @@ internal sealed class HomeScreenItem(
                     .toTypedArray(),
                 ContentHeader,
                 InstalledOnly,
+                *homeRailFields().map { LayoutField(it) }.toTypedArray(),
                 BackgroundHeader,
                 Background, GameArtwork, CustomImage, Blur, Saturation, Opacity,
                 VideoHeader,

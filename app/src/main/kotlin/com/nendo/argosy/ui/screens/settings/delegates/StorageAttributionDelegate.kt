@@ -63,4 +63,11 @@ class StorageAttributionDelegate @Inject constructor(
     fun latchSteamTileVisible(visible: Boolean) {
         _state.update { it.copy(steamTileLatched = visible) }
     }
+
+    /**
+     * Latched at STORAGE entry for the same reason the Steam tile is: no mid-visit index shift.
+     */
+    fun latchMediaTileVisible(visible: Boolean) {
+        _state.update { it.copy(mediaTileLatched = visible) }
+    }
 }

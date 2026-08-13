@@ -38,6 +38,7 @@ class DownloadThermalManager @Inject constructor(
     @ApplicationContext private val context: Context,
     private val downloadManager: DownloadManager,
     private val steamContentManager: com.nendo.argosy.data.steam.SteamContentManager,
+    private val mediaDownloadManager: MediaDownloadManager,
     private val fanController: FanController
 ) {
     private val _thermalStatus = MutableStateFlow(ThermalStatus())
@@ -96,8 +97,11 @@ class DownloadThermalManager @Inject constructor(
                     state is com.nendo.argosy.data.steam.SteamDownloadState.Preparing ||
                     state is com.nendo.argosy.data.steam.SteamDownloadState.FetchingManifest ||
                     state is com.nendo.argosy.data.steam.SteamDownloadState.Validating
+                },
+                mediaDownloadManager.downloadState.map { state ->
+                    state is MediaDownloadState.Downloading || state is MediaDownloadState.Preparing
                 }
-            ) { rommActive, steamActive -> rommActive || steamActive }
+            ) { rommActive, steamActive, mediaActive -> rommActive || steamActive || mediaActive }
                 .collect { hasWork ->
                     if (hasWork && monitorJob?.isActive != true) {
                         startThermalMonitoring()
@@ -264,6 +268,7 @@ class DownloadThermalManager @Inject constructor(
 
     private fun hasActiveDownloads(): Boolean {
         if (downloadManager.state.value.activeDownloads.isNotEmpty()) return true
+        if (mediaDownloadManager.hasActiveMediaDownload()) return true
         val steamState = steamContentManager.downloadState.value
         return steamState is com.nendo.argosy.data.steam.SteamDownloadState.Downloading ||
             steamState is com.nendo.argosy.data.steam.SteamDownloadState.Preparing ||

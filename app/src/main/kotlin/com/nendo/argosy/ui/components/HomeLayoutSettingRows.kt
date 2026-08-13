@@ -34,8 +34,11 @@ import com.nendo.argosy.ui.util.clickableNoFocus
 import kotlin.math.roundToInt
 
 /**
- * Every adjustable field across the three layouts, so a caller routes one exhaustive `when`
- * instead of one per layout.
+ * Every adjustable home field, so a caller routes one exhaustive `when` instead of one per layout.
+ *
+ * Most entries belong to a single layout and are listed by [homeLayoutFieldsFor]. The rail entries
+ * are the exception: they say which rows home offers rather than how one layout draws, so they are
+ * listed by [homeRailFields] and a host places them among its own content rows.
  */
 enum class HomeLayoutSettingField {
     ROW_ALIGNMENT,
@@ -51,8 +54,19 @@ enum class HomeLayoutSettingField {
     CUSTOM_GRID_AUTO_ADD,
     CUSTOM_GRID_EMPTY_SLOTS,
     CUSTOM_GRID_PERSIST_PAGES,
-    CUSTOM_GRID_AUTO_FIT
+    CUSTOM_GRID_AUTO_FIT,
+    RAIL_CONTINUE_WATCHING,
+    RAIL_NEXT_UP
 }
+
+/**
+ * The rail toggles, in render order. Kept apart from the per-layout lists because a rail is not a
+ * layout setting; a host that draws rows at all draws these regardless of which layout is selected.
+ */
+fun homeRailFields(): List<HomeLayoutSettingField> = listOf(
+    HomeLayoutSettingField.RAIL_CONTINUE_WATCHING,
+    HomeLayoutSettingField.RAIL_NEXT_UP
+)
 
 private const val SCALE_PERCENT_STEP = 10
 private const val RESTING_SCALE_MIN_PERCENT = 50
@@ -132,6 +146,10 @@ fun adjustHomeLayoutField(
             settings.copy(customGrid = settings.customGrid.copy(persistBlankPages = direction > 0))
         HomeLayoutSettingField.CUSTOM_GRID_AUTO_FIT ->
             settings.copy(customGrid = settings.customGrid.copy(autoFit = direction > 0))
+        HomeLayoutSettingField.RAIL_CONTINUE_WATCHING ->
+            settings.copy(rails = settings.rails.copy(showContinueWatching = direction > 0))
+        HomeLayoutSettingField.RAIL_NEXT_UP ->
+            settings.copy(rails = settings.rails.copy(showNextUp = direction > 0))
 }
 
 /**
@@ -162,6 +180,14 @@ fun toggleHomeLayoutField(settings: HomeLayoutSettings, field: HomeLayoutSetting
             )
         HomeLayoutSettingField.CUSTOM_GRID_AUTO_FIT ->
             settings.copy(customGrid = settings.customGrid.copy(autoFit = !settings.customGrid.autoFit))
+        HomeLayoutSettingField.RAIL_CONTINUE_WATCHING ->
+            settings.copy(
+                rails = settings.rails.copy(
+                    showContinueWatching = !settings.rails.showContinueWatching
+                )
+            )
+        HomeLayoutSettingField.RAIL_NEXT_UP ->
+            settings.copy(rails = settings.rails.copy(showNextUp = !settings.rails.showNextUp))
         else -> settings
     }
 }
@@ -335,6 +361,20 @@ fun HomeLayoutSettingRow(
             title = "Auto-fit Cells",
             subtitle = "Move or shrink tiles a placement lands on, instead of refusing it",
             isEnabled = settings.customGrid.autoFit,
+            isFocused = isFocused,
+            onToggle = { onToggle() }
+        )
+        HomeLayoutSettingField.RAIL_CONTINUE_WATCHING -> SwitchPreference(
+            title = "Continue Watching",
+            subtitle = "A row of movies and episodes you are part way through",
+            isEnabled = settings.rails.showContinueWatching,
+            isFocused = isFocused,
+            onToggle = { onToggle() }
+        )
+        HomeLayoutSettingField.RAIL_NEXT_UP -> SwitchPreference(
+            title = "Next Up",
+            subtitle = "A row of the next episode of each show you are watching",
+            isEnabled = settings.rails.showNextUp,
             isFocused = isFocused,
             onToggle = { onToggle() }
         )

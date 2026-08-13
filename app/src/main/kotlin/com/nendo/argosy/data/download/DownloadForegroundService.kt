@@ -29,6 +29,9 @@ class DownloadForegroundService : Service() {
     @Inject
     lateinit var steamContentManager: com.nendo.argosy.data.steam.SteamContentManager
 
+    @Inject
+    lateinit var mediaDownloadManager: MediaDownloadManager
+
     private val serviceScope = SafeCoroutineScope(Dispatchers.Main, "DownloadForegroundService")
     private var wakeLock: PowerManager.WakeLock? = null
 
@@ -86,21 +89,34 @@ class DownloadForegroundService : Service() {
             combine(
                 downloadManager.state,
                 steamContentManager.downloadState,
-                steamContentManager.activeDownload
-            ) { rommState, steamState, steamDl -> Triple(rommState, steamState, steamDl) }
-                .collect { (rommState, steamState, steamDl) ->
+                steamContentManager.activeDownload,
+                mediaDownloadManager.downloadState,
+                mediaDownloadManager.activeDownload
+            ) { rommState, steamState, steamDl, mediaState, mediaDl ->
+                DownloadServiceSnapshot(rommState, steamState, steamDl, mediaState, mediaDl)
+            }
+                .collect { snapshot ->
+                    val rommState = snapshot.rommState
+                    val steamState = snapshot.steamState
+                    val steamDl = snapshot.steamDownload
                     val rommActive = rommState.activeDownloads
                     val rommQueued = rommState.queue.filter { it.state == DownloadState.QUEUED }
                     val steamBusy = steamState !is com.nendo.argosy.data.steam.SteamDownloadState.Idle &&
                         steamState !is com.nendo.argosy.data.steam.SteamDownloadState.Completed &&
                         steamState !is com.nendo.argosy.data.steam.SteamDownloadState.Failed
+                    val mediaBusy = snapshot.mediaState is MediaDownloadState.Preparing ||
+                        snapshot.mediaState is MediaDownloadState.Downloading
 
-                    if (rommActive.isEmpty() && rommQueued.isEmpty() && !steamBusy) {
+                    if (rommActive.isEmpty() && rommQueued.isEmpty() && !steamBusy && !mediaBusy) {
                         stopSelf()
                         return@collect
                     }
 
-                    // Steam notification takes priority when Steam is active
+                    if (mediaBusy && rommActive.isEmpty() && !steamBusy) {
+                        updateMediaNotification(snapshot.mediaState, snapshot.mediaDownload)
+                        return@collect
+                    }
+
                     if (steamBusy && steamDl != null) {
                         val text = steamState.toNotificationText(steamDl.gameName)
                         if (text != null) {
@@ -133,6 +149,31 @@ class DownloadForegroundService : Service() {
                 }
         }
     }
+
+    private fun updateMediaNotification(state: MediaDownloadState, progress: MediaDownloadProgress?) {
+        when (state) {
+            is MediaDownloadState.Preparing -> updateNotification(
+                "${state.detail}: ${progress?.displayTitle ?: state.itemName}", 0, 0
+            )
+            is MediaDownloadState.Downloading -> {
+                val title = progress?.displayTitle ?: state.itemName
+                if (progress != null && progress.totalBytes > 0 && !progress.sizeIsEstimated) {
+                    updateNotification("Downloading: $title", (state.progress * 100).toInt(), 100)
+                } else {
+                    updateNotification("Downloading: $title", 0, 0)
+                }
+            }
+            else -> Unit
+        }
+    }
+
+    private data class DownloadServiceSnapshot(
+        val rommState: DownloadQueueState,
+        val steamState: com.nendo.argosy.data.steam.SteamDownloadState,
+        val steamDownload: com.nendo.argosy.data.steam.SteamDownloadProgress?,
+        val mediaState: MediaDownloadState,
+        val mediaDownload: MediaDownloadProgress?
+    )
 
     private fun startForegroundWithNotification(
         contentText: String,

@@ -8,6 +8,7 @@ import com.nendo.argosy.data.emulator.EmulatorRegistry
 import com.nendo.argosy.data.platform.PlatformDefinitions
 import com.nendo.argosy.data.preferences.EmulatorDisplayTarget
 import com.nendo.argosy.data.emulator.SavePathRegistry
+import com.nendo.argosy.data.remote.jellyfin.JellyfinConnectionState
 import com.nendo.argosy.data.remote.romm.ConnectionState
 import com.nendo.argosy.libretro.LibretroCoreRegistry
 import com.nendo.argosy.core.input.ControllerDetector
@@ -198,6 +199,14 @@ internal fun routeObserveDelegateEvents(vm: SettingsViewModel) {
         vm._openUrlEvent.emit(url)
     }.launchIn(vm.viewModelScope)
 
+    vm.jellyfinQuickConnectRequestEvent.onEach { serverUrl ->
+        vm.startJellyfinQuickConnect(serverUrl)
+    }.launchIn(vm.viewModelScope)
+
+    vm.jellyfinPasswordSignInRequestEvent.onEach { request ->
+        vm.startJellyfinPasswordSignIn(request)
+    }.launchIn(vm.viewModelScope)
+
     vm.steamDelegate.openUrlEvent.onEach { url ->
         vm._openUrlEvent.emit(url)
     }.launchIn(vm.viewModelScope)
@@ -253,6 +262,14 @@ internal fun routeObserveConnectionState(vm: SettingsViewModel) {
             musicApiSupported = musicApi
         ))
         vm.soundsDelegate.setMusicApiSupported(musicApi)
+    }.launchIn(vm.viewModelScope)
+
+    vm.jellyfinConnectionManager.connectionState.onEach { jellyfinState ->
+        val capabilities = (jellyfinState as? JellyfinConnectionState.Connected)?.capabilities
+        vm.jellyfinDelegate.onServerCapabilities(
+            connected = capabilities != null,
+            supportsQuickConnect = capabilities?.supportsQuickConnect == true
+        )
     }.launchIn(vm.viewModelScope)
 }
 
@@ -609,18 +626,28 @@ internal fun routeLoadSettings(vm: SettingsViewModel) {
                 ?.capabilities?.supportsMusicApi == true
         ))
 
+        val jellyfinInFlight = vm.jellyfinDelegate.state.value
         vm.jellyfinDelegate.updateState(JellyfinState(
             serverUrl = prefs.jellyfinServerUrl ?: "",
             configUrl = prefs.jellyfinServerUrl ?: "",
             isSignedIn = prefs.isJellyfinSignedIn,
             userName = prefs.jellyfinUserName ?: "",
+            quickConnectRequested = jellyfinInFlight.quickConnectRequested,
+            quickConnectCode = jellyfinInFlight.quickConnectCode,
+            quickConnectAvailable = jellyfinInFlight.quickConnectAvailable,
+            showLoginForm = jellyfinInFlight.showLoginForm,
+            loginUsername = jellyfinInFlight.loginUsername,
+            loginPassword = jellyfinInFlight.loginPassword,
+            isSigningIn = jellyfinInFlight.isSigningIn,
+            signInError = jellyfinInFlight.signInError,
             downloadQuality = prefs.mediaDownloadQuality,
             maxStreamingBitrate = prefs.mediaMaxStreamingBitrate,
+            audioLanguage = prefs.mediaAudioLanguage,
             subtitleMode = prefs.mediaSubtitleMode,
             subtitleLanguage = prefs.mediaSubtitleLanguage,
             burnInImageSubtitles = prefs.mediaBurnInImageSubtitles,
             sharePresence = prefs.shareMediaPresence,
-            mediaDirPath = vm.jellyfinDelegate.state.value.mediaDirPath
+            mediaDirPath = jellyfinInFlight.mediaDirPath
         ))
         vm.jellyfinDelegate.refreshMediaDirPath(vm.viewModelScope)
 

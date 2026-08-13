@@ -22,6 +22,7 @@ import com.nendo.argosy.ui.screens.settings.sections.createStorageLayoutInfo
 import com.nendo.argosy.ui.screens.settings.sections.steamItemAtFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.storageCachesFocusIndexOfSteam
 import com.nendo.argosy.ui.screens.settings.sections.storageFocusIndexOf
+import com.nendo.argosy.ui.screens.settings.sections.storageMediaVisibleLive
 import com.nendo.argosy.ui.screens.settings.sections.storageSteamVisibleLive
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -51,6 +52,7 @@ internal fun routeNavigateToSection(vm: SettingsViewModel, section: SettingsSect
         SettingsSection.SYNC_SETTINGS -> vm.syncDelegate.loadLibrarySettings(vm.viewModelScope)
         SettingsSection.STORAGE -> {
             vm.attributionDelegate.latchSteamTileVisible(storageSteamVisibleLive(vm._uiState.value))
+            vm.attributionDelegate.latchMediaTileVisible(storageMediaVisibleLive(vm._uiState.value))
             vm.attributionDelegate.refreshOnOpen()
             vm._uiState.update { state ->
                 state.copy(
@@ -59,7 +61,10 @@ internal fun routeNavigateToSection(vm: SettingsViewModel, section: SettingsSect
             }
         }
         SettingsSection.STEAM_SETTINGS -> vm.steamDelegate.loadSteamSettings(vm.context, vm.viewModelScope)
-        SettingsSection.JELLYFIN -> vm.jellyfinDelegate.refreshMediaDirPath(vm.viewModelScope)
+        SettingsSection.JELLYFIN -> {
+            vm.jellyfinDelegate.refreshMediaDirPath(vm.viewModelScope)
+            vm.refreshJellyfinConnection()
+        }
         SettingsSection.PERMISSIONS -> vm.permissionsDelegate.refreshPermissions()
         SettingsSection.SHADER_STACK -> vm.shaderChainManager.loadChain(
             routeResolveShaderChainSettingsScope(vm._uiState.value).chainJson
@@ -102,6 +107,10 @@ internal fun routeNavigateToThemeMusicFromStorage(vm: SettingsViewModel) {
 
 internal fun routeNavigateToStorageGames(vm: SettingsViewModel) {
     vm._uiState.update { it.copy(currentSection = SettingsSection.STORAGE_GAMES, focusedIndex = 0) }
+}
+
+internal fun routeNavigateToStorageMedia(vm: SettingsViewModel) {
+    vm._uiState.update { it.copy(currentSection = SettingsSection.STORAGE_MEDIA, focusedIndex = 0) }
 }
 
 internal fun routeNavigateToStorageCaches(vm: SettingsViewModel, entryFocus: Int) {

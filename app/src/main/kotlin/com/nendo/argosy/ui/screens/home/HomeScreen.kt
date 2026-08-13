@@ -145,6 +145,7 @@ import com.nendo.argosy.ui.input.ChangelogInputHandler
 import com.nendo.argosy.ui.input.DiscPickerInputHandler
 import com.nendo.argosy.ui.input.HardcoreConflictInputHandler
 import com.nendo.argosy.ui.input.LocalModifiedInputHandler
+import com.nendo.argosy.ui.screens.media.modals.MediaResumeModalHost
 import com.nendo.argosy.domain.model.SyncProgress
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
@@ -166,6 +167,8 @@ fun HomeScreen(
     onNavigateToDefault: () -> Unit,
     onDrawerToggle: () -> Unit,
     onChangelogAction: (RequiredAction) -> Unit = {},
+    onPlayMedia: (itemId: String, startOver: Boolean) -> Unit = { _, _ -> },
+    onMediaSelect: (String) -> Unit = {},
     viewModel: HomeViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -250,6 +253,8 @@ fun HomeScreen(
                     onNavigateToLibrary(event.platformId, event.sourceFilter)
                 }
                 is HomeEvent.NavigateToCollections -> onNavigateToCollections()
+                is HomeEvent.PlayMedia -> onPlayMedia(event.itemId, event.startOver)
+                is HomeEvent.NavigateToMediaDetail -> onMediaSelect(event.itemId)
             }
         }
     }
@@ -658,6 +663,9 @@ fun HomeScreen(
             )
             val infoAtBottom = uiState.carouselConfig.rowAlignment == HomeRowAlignment.TOP
             val railHeight = when {
+                uiState.isMediaRow ->
+                    (maxHeight - headerBlockHeight - Dimens.footerHeight - Dimens.spacingLg)
+                        .coerceAtLeast(Dimens.spacingXl)
                 isAutoGrid || isCustomGrid ->
                     (maxHeight - headerBlockHeight - Dimens.footerHeight - Dimens.spacingLg)
                         .coerceAtLeast(Dimens.spacingXl)
@@ -700,7 +708,9 @@ fun HomeScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(
-                            bottom = if (infoAtBottom && !isAutoGrid && !isCustomGrid) {
+                            bottom = if (
+                                infoAtBottom && !isAutoGrid && !isCustomGrid && !uiState.isMediaRow
+                            ) {
                                 gameInfoHeight
                             } else {
                                 0.dp
@@ -746,6 +756,22 @@ fun HomeScreen(
                                 onCoverLoadFailed = viewModel::repairCoverImage,
                                 onCoverLoaded = viewModel::extractGradientForGame,
                                 modifier = Modifier.fillMaxSize()
+                            )
+                        }
+                        uiState.isMediaRow -> {
+                            HomeMediaRail(
+                                items = if (uiState.currentRow == HomeRow.NextUp) {
+                                    uiState.nextUpMedia
+                                } else {
+                                    uiState.continueWatchingMedia
+                                },
+                                focusedIndex = uiState.focusedGameIndex,
+                                isSignedIn = uiState.isMediaSignedIn,
+                                isLoading = uiState.isMediaLoading,
+                                isNextUp = uiState.currentRow == HomeRow.NextUp,
+                                onItemTap = { index -> viewModel.handleItemTap(index, onGameSelect) },
+                                onItemLongPress = viewModel::handleItemLongPress,
+                                modifier = Modifier.align(Alignment.BottomStart)
                             )
                         }
                         uiState.currentItems.isEmpty() -> {
@@ -845,6 +871,36 @@ fun HomeScreen(
                         variant = FooterVariant.SUBTLE
                     )
                     FooterSpacer()
+                } else if (uiState.isMediaRow) {
+                    val focusedMedia = uiState.focusedMedia
+                    FooterHints(
+                        hints = buildList {
+                            add(InputButton.DPAD_HORIZONTAL to "Item")
+                            add(InputButton.DPAD_VERTICAL to "Row")
+                            if (focusedMedia == null) {
+                                add(InputButton.A to "Refresh")
+                            } else {
+                                add(
+                                    InputButton.A to
+                                        if (focusedMedia.hasResumePosition) "Resume" else "Play"
+                                )
+                                if (focusedMedia.hasResumePosition) {
+                                    add(InputButton.Y to "Start Over")
+                                }
+                                add(InputButton.X to "Details")
+                            }
+                        },
+                        variant = FooterVariant.SUBTLE,
+                        onHintClick = { button ->
+                            when (button) {
+                                InputButton.A -> inputHandler.onConfirm()
+                                InputButton.Y -> inputHandler.onSecondaryAction()
+                                InputButton.X -> inputHandler.onContextMenu()
+                                else -> Unit
+                            }
+                        }
+                    )
+                    FooterSpacer()
                 } else if (focusedGame != null && !uiState.showGameMenu) {
                     if (!uiState.isVideoPreviewActive) {
                         FooterHints(
@@ -905,7 +961,7 @@ fun HomeScreen(
                 }
             }
 
-            if (!isAutoGrid && !isCustomGrid) {
+            if (!isAutoGrid && !isCustomGrid && !uiState.isMediaRow) {
             val gameInfoWidth by animateFloatAsState(
                 targetValue = 1f,
                 animationSpec = tween(500),
@@ -1163,6 +1219,13 @@ fun HomeScreen(
                 onDismiss = viewModel::dismissMemcardPicker
             )
         }
+
+        MediaResumeModalHost(
+            prompt = uiState.mediaResumePrompt,
+            onStartOver = viewModel::startMediaOver,
+            onResume = viewModel::resumeMedia,
+            onDismiss = viewModel::dismissMediaResumePrompt
+        )
 
         uiState.changelogEntry?.let { entry ->
             ChangelogModal(
@@ -1548,7 +1611,7 @@ private fun rememberHomeCarouselItems(
     downloadIndicators: Map<Long, GameDownloadIndicator>,
     repairedCoverPaths: Map<Long, String>
 ): List<CarouselItem> = remember(items, rowKey, downloadIndicators, repairedCoverPaths) {
-    items.map { item ->
+    items.mapNotNull { item ->
         when (item) {
             is HomeRowItem.Game -> CarouselItem.Game(
                 key = "$rowKey-${item.game.id}",
@@ -1559,6 +1622,7 @@ private fun rememberHomeCarouselItems(
             is HomeRowItem.ViewAll -> CarouselItem.ViewAll(
                 key = "$rowKey-viewall-${item.platformId ?: item.sourceFilter ?: "all"}"
             )
+            is HomeRowItem.Media -> null
         }
     }
 }

@@ -241,10 +241,11 @@ internal class LightSectionsInput(
 
     private fun handleJellyfinLeftRight(direction: Int): InputResult {
         val state = viewModel.uiState.value
-        if (state.jellyfin.configuring) return InputResult.UNHANDLED
+        if (state.jellyfin.configuring || state.jellyfin.showLoginForm) return InputResult.UNHANDLED
         val layoutState = JellyfinLayoutState.from(state)
         when (jellyfinItemAtFocusIndex(state.focusedIndex, layoutState)) {
             JellyfinItem.StreamingBitrate -> viewModel.cycleJellyfinStreamingBitrate(direction)
+            JellyfinItem.AudioLanguage -> viewModel.cycleJellyfinAudioLanguage(direction)
             JellyfinItem.Subtitles -> viewModel.cycleJellyfinSubtitleMode(direction)
             JellyfinItem.SubtitleLanguage -> viewModel.cycleJellyfinSubtitleLanguage(direction)
             JellyfinItem.DownloadQuality -> viewModel.cycleJellyfinDownloadQuality(direction)
@@ -326,7 +327,7 @@ internal class LightSectionsInput(
             SettingsSection.ROMM -> rommSections(buildRomMItemsFromState(state))
             SettingsSection.SAVES -> savesSections(SavesLayoutState.from(state))
             SettingsSection.STEAM_SETTINGS -> steamSections(state.steam)
-            SettingsSection.JELLYFIN -> if (state.jellyfin.configuring) {
+            SettingsSection.JELLYFIN -> if (state.jellyfin.configuring || state.jellyfin.showLoginForm) {
                 return InputResult.HANDLED
             } else {
                 jellyfinSections(JellyfinLayoutState.from(state))

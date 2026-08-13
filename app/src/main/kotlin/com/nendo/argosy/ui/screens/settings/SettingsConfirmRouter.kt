@@ -98,12 +98,18 @@ import com.nendo.argosy.ui.screens.settings.sections.StoragePlatformGamesItem
 import com.nendo.argosy.ui.screens.settings.sections.createStoragePlatformGamesLayoutInfo
 import com.nendo.argosy.ui.screens.settings.sections.storagePlatformGamesItemAtFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.storagePlatformGamesMaxFocusIndex
+import com.nendo.argosy.ui.screens.settings.sections.StorageMediaItem
+import com.nendo.argosy.ui.screens.settings.sections.createStorageMediaLayoutInfo
+import com.nendo.argosy.ui.screens.settings.sections.storageMediaItemAtFocusIndex
+import com.nendo.argosy.ui.screens.settings.sections.storageMediaMaxFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.StorageCachesItem
 import com.nendo.argosy.ui.screens.settings.sections.createStorageCachesLayoutInfo
 import com.nendo.argosy.ui.screens.settings.sections.storageCachesItemAtFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.storageCachesMaxFocusIndex
 import com.nendo.argosy.ui.screens.settings.components.JELLYFIN_CONFIG_CANCEL_INDEX
 import com.nendo.argosy.ui.screens.settings.components.JELLYFIN_CONFIG_SAVE_INDEX
+import com.nendo.argosy.ui.screens.settings.components.JELLYFIN_LOGIN_CANCEL_INDEX
+import com.nendo.argosy.ui.screens.settings.components.JELLYFIN_LOGIN_SUBMIT_INDEX
 import com.nendo.argosy.ui.screens.settings.sections.JellyfinItem
 import com.nendo.argosy.ui.screens.settings.sections.JellyfinLayoutState
 import com.nendo.argosy.ui.screens.settings.sections.jellyfinItemAtFocusIndex
@@ -253,6 +259,7 @@ internal fun routeConfirm(vm: SettingsViewModel): InputResult {
         }
         SettingsSection.STORAGE -> routeStorageConfirm(vm, state)
         SettingsSection.STORAGE_GAMES -> routeStorageGamesConfirm(vm, state)
+        SettingsSection.STORAGE_MEDIA -> routeStorageMediaConfirm(vm, state)
         SettingsSection.STORAGE_PLATFORM_GAMES -> routeStoragePlatformGamesConfirm(vm, state)
         SettingsSection.STORAGE_CACHES -> routeStorageCachesConfirm(vm, state)
         SettingsSection.THEME -> routeThemeConfirm(vm, state)
@@ -368,19 +375,30 @@ private fun routeJellyfinConfirm(vm: SettingsViewModel, state: SettingsUiState):
         return InputResult.HANDLED
     }
 
+    if (state.jellyfin.showLoginForm) {
+        when (state.focusedIndex) {
+            JELLYFIN_LOGIN_SUBMIT_INDEX -> vm.submitJellyfinPasswordSignIn()
+            JELLYFIN_LOGIN_CANCEL_INDEX -> vm.hideJellyfinLoginForm()
+            else -> vm.setJellyfinLoginFocusField(state.focusedIndex)
+        }
+        return InputResult.HANDLED
+    }
+
     val layoutState = JellyfinLayoutState.from(state)
     val item = jellyfinItemAtFocusIndex(state.focusedIndex, layoutState) ?: return InputResult.HANDLED
     when (item) {
         JellyfinItem.MediaServer -> vm.startJellyfinConfig()
-        JellyfinItem.Account -> {
-            if (state.jellyfin.isSignedIn) {
+        JellyfinItem.Account -> when {
+            state.jellyfin.isSignedIn -> {
                 vm.requestJellyfinSignOut()
                 return InputResult.handled(SoundType.OPEN_MODAL)
             }
-            vm.requestJellyfinQuickConnect()
+            state.jellyfin.quickConnectRequested -> vm.cancelJellyfinSignIn()
+            else -> vm.requestJellyfinSignIn()
         }
-        JellyfinItem.StreamingBitrate, JellyfinItem.Subtitles, JellyfinItem.SubtitleLanguage,
-        JellyfinItem.DownloadQuality -> {
+        JellyfinItem.PasswordSignIn -> vm.showJellyfinLoginForm()
+        JellyfinItem.StreamingBitrate, JellyfinItem.AudioLanguage, JellyfinItem.Subtitles,
+        JellyfinItem.SubtitleLanguage, JellyfinItem.DownloadQuality -> {
             vm.requestEnumPicker(item.key)
             return InputResult.handled(SoundType.OPEN_MODAL)
         }
@@ -473,6 +491,7 @@ private fun routeStorageConfirm(vm: SettingsViewModel, state: SettingsUiState): 
     when (storageItemAtFocusIndex(state.focusedIndex, info)) {
         StorageItem.RecomputeRow -> if (!state.attribution.isRefreshing) vm.refreshStorageAttribution()
         StorageItem.GamesTile -> vm.navigateToStorageGames()
+        StorageItem.MediaTile -> vm.navigateToStorageMedia()
         StorageItem.MusicTile -> vm.navigateToThemeMusicFromStorage()
         StorageItem.CachesTile -> vm.navigateToStorageCaches()
         StorageItem.SteamTile -> vm.navigateToStorageCachesForSteam()
@@ -504,6 +523,15 @@ private fun routeStorageGamesConfirm(vm: SettingsViewModel, state: SettingsUiSta
             return InputResult.handled(SoundType.TOGGLE)
         }
         is StorageGamesItem.PlatformRow -> vm.openStoragePlatformGames(item.usage.platformId)
+        else -> {}
+    }
+    return InputResult.HANDLED
+}
+
+private fun routeStorageMediaConfirm(vm: SettingsViewModel, state: SettingsUiState): InputResult {
+    val info = createStorageMediaLayoutInfo(state)
+    when (storageMediaItemAtFocusIndex(state.focusedIndex, info)) {
+        StorageMediaItem.RecomputeRow -> if (!state.attribution.isRefreshing) vm.refreshStorageAttribution()
         else -> {}
     }
     return InputResult.HANDLED
@@ -1053,6 +1081,7 @@ internal fun routeNavigateBack(vm: SettingsViewModel): Boolean {
         state.accounts.switchInProgress -> true
         state.server.rommConfiguring -> { vm.cancelRommConfig(); true }
         state.jellyfin.configuring -> { vm.cancelJellyfinConfig(); true }
+        state.jellyfin.showLoginForm -> { vm.hideJellyfinLoginForm(); true }
         state.currentSection == SettingsSection.SYNC_SETTINGS -> {
             val items = buildRomMItemsFromState(state)
             val idx = rommFocusIndexOf(RomMItem.SyncSettings, items).coerceAtLeast(0)
@@ -1096,6 +1125,11 @@ internal fun routeNavigateBack(vm: SettingsViewModel): Boolean {
         state.currentSection == SettingsSection.STORAGE_GAMES -> {
             val info = createStorageLayoutInfo(state)
             val focusIdx = storageFocusIndexOf(StorageItem.GamesTile, info).coerceAtLeast(0)
+            vm._uiState.update { it.copy(currentSection = SettingsSection.STORAGE, focusedIndex = focusIdx) }; true
+        }
+        state.currentSection == SettingsSection.STORAGE_MEDIA -> {
+            val info = createStorageLayoutInfo(state)
+            val focusIdx = storageFocusIndexOf(StorageItem.MediaTile, info).coerceAtLeast(0)
             vm._uiState.update { it.copy(currentSection = SettingsSection.STORAGE, focusedIndex = focusIdx) }; true
         }
         state.currentSection == SettingsSection.STORAGE_PLATFORM_GAMES -> {
@@ -1266,10 +1300,10 @@ private fun computeMaxFocusIndex(
     SettingsSection.SAVES -> savesMaxFocusIndex(SavesLayoutState.from(state))
     SettingsSection.SYNC_SETTINGS -> syncSettingsMaxFocusIndex()
     SettingsSection.STEAM_SETTINGS -> steamMaxFocusIndex(state.steam)
-    SettingsSection.JELLYFIN -> if (state.jellyfin.configuring) {
-        JELLYFIN_CONFIG_CANCEL_INDEX
-    } else {
-        jellyfinMaxFocusIndex(JellyfinLayoutState.from(state))
+    SettingsSection.JELLYFIN -> when {
+        state.jellyfin.configuring -> JELLYFIN_CONFIG_CANCEL_INDEX
+        state.jellyfin.showLoginForm -> JELLYFIN_LOGIN_CANCEL_INDEX
+        else -> jellyfinMaxFocusIndex(JellyfinLayoutState.from(state))
     }
     SettingsSection.RETRO_ACHIEVEMENTS -> when {
         state.retroAchievements.showLoginForm -> 3
@@ -1282,6 +1316,7 @@ private fun computeMaxFocusIndex(
     }
     SettingsSection.STORAGE -> createStorageLayoutInfo(state).let { it.layout.maxFocusIndex(it.state) }
     SettingsSection.STORAGE_GAMES -> storageGamesMaxFocusIndex(createStorageGamesLayoutInfo(state))
+    SettingsSection.STORAGE_MEDIA -> storageMediaMaxFocusIndex(createStorageMediaLayoutInfo(state))
     SettingsSection.STORAGE_PLATFORM_GAMES -> storagePlatformGamesMaxFocusIndex(createStoragePlatformGamesLayoutInfo(state))
     SettingsSection.STORAGE_CACHES -> storageCachesMaxFocusIndex(createStorageCachesLayoutInfo(state))
     SettingsSection.THEME -> themeMaxFocusIndex()

@@ -506,6 +506,7 @@ class HomeLibraryDelegate @Inject constructor(
                 loadGamesForPinnedCollection(currentRow.pinId)
                 RefreshResult((_state.value.pinnedGames[currentRow.pinId] ?: emptyList()).map { it.id })
             }
+            HomeRow.ContinueWatching, HomeRow.NextUp -> RefreshResult(emptyList())
         }
     }
 
@@ -532,7 +533,7 @@ class HomeLibraryDelegate @Inject constructor(
                         is HomeRowItem.Game -> if (item.game.id == gameId) {
                             HomeRowItem.Game(item.game.copy(achievementCount = total, earnedAchievementCount = earned))
                         } else item
-                        is HomeRowItem.ViewAll -> item
+                        is HomeRowItem.Media, is HomeRowItem.ViewAll -> item
                     }
                 }
             )

@@ -105,6 +105,7 @@ import com.nendo.argosy.ui.screens.settings.sections.SocialSection
 import com.nendo.argosy.ui.screens.settings.sections.SteamSection
 import com.nendo.argosy.ui.screens.settings.sections.StorageCachesSection
 import com.nendo.argosy.ui.screens.settings.sections.StorageGamesSection
+import com.nendo.argosy.ui.screens.settings.sections.StorageMediaSection
 import com.nendo.argosy.ui.screens.settings.sections.StoragePlatformGamesSection
 import com.nendo.argosy.ui.screens.settings.sections.StoragePlatformGamesItem
 import com.nendo.argosy.ui.screens.settings.sections.createStoragePlatformGamesLayoutInfo
@@ -554,6 +555,7 @@ fun SettingsScreen(
                         SettingsSection.RETRO_ACHIEVEMENTS -> "RETROACHIEVEMENTS"
                         SettingsSection.STORAGE -> "STORAGE"
                         SettingsSection.STORAGE_GAMES -> "GAMES STORAGE"
+                        SettingsSection.STORAGE_MEDIA -> "MEDIA STORAGE"
                         SettingsSection.STORAGE_PLATFORM_GAMES ->
                             uiState.storagePlatformGames.platformName.uppercase().ifBlank { "PLATFORM GAMES" }
                         SettingsSection.STORAGE_CACHES -> "CACHES & SYSTEM"
@@ -629,6 +631,7 @@ fun SettingsScreen(
                     SettingsSection.RETRO_ACHIEVEMENTS -> RASettingsSection(uiState, viewModel)
                     SettingsSection.STORAGE -> StorageSection(uiState, viewModel)
                     SettingsSection.STORAGE_GAMES -> StorageGamesSection(uiState, viewModel)
+                    SettingsSection.STORAGE_MEDIA -> StorageMediaSection(uiState, viewModel)
                     SettingsSection.STORAGE_PLATFORM_GAMES -> StoragePlatformGamesSection(uiState, viewModel)
                     SettingsSection.STORAGE_CACHES -> StorageCachesSection(uiState, viewModel)
                     SettingsSection.THEME -> ThemeSection(uiState, viewModel)

@@ -64,6 +64,10 @@ interface HomeInputActions {
     fun scrollToFirst(): Boolean
     fun navigateToContinuePlaying(): Boolean
     fun syncFromRomm()
+    fun playFocusedMedia(startOver: Boolean = false)
+    fun openMediaResumePrompt(): Boolean
+    fun openFocusedMediaDetail()
+    fun refreshMediaRails()
 }
 
 class HomeInputHandler(
@@ -248,11 +252,14 @@ class HomeInputHandler(
                             else -> actions.queueDownload(game.id)
                         }
                     }
+                    is HomeRowItem.Media -> actions.playFocusedMedia()
                     is HomeRowItem.ViewAll -> actions.navigateToLibrary(item.platformId, item.sourceFilter)
-                    null -> {
-                        val isPinnedRow = state.currentRow is HomeRow.PinnedRegular ||
-                            state.currentRow is HomeRow.PinnedVirtual
-                        if (state.isRommConfigured && !isPinnedRow) actions.syncFromRomm()
+                    null -> when {
+                        state.isMediaRow -> actions.refreshMediaRails()
+                        state.currentRow is HomeRow.PinnedRegular ||
+                            state.currentRow is HomeRow.PinnedVirtual -> Unit
+                        state.isRommConfigured -> actions.syncFromRomm()
+                        else -> Unit
                     }
                 }
             }
@@ -320,6 +327,7 @@ class HomeInputHandler(
     override fun onSelect(): InputResult {
         val state = actions.uiState.value
         if (state.showAddToCollectionModal) return InputResult.HANDLED
+        if (state.isMediaRow) return InputResult.HANDLED
         if (isCustomGrid(state)) {
             if (state.customGrid.isEditing) return InputResult.HANDLED
             actions.openTileMenu()
@@ -334,9 +342,19 @@ class HomeInputHandler(
     /**
      * Holding confirm picks a tile up and puts it down again, so arranging never has to go through
      * the select menu. Committing on the second hold matches the press that started it.
+     *
+     * On a media rail the same hold asks whether to start over instead, since a plain press already
+     * resumes. A tile with nothing stored has no second answer to give, so the hold plays it rather
+     * than opening a prompt that offers the same thing twice.
      */
     override fun onLongConfirm(): InputResult {
         val state = actions.uiState.value
+        if (state.isMediaRow) {
+            if (state.focusedMedia == null) return InputResult.UNHANDLED
+            if (actions.openMediaResumePrompt()) return InputResult.handled(SoundType.OPEN_MODAL)
+            actions.playFocusedMedia()
+            return InputResult.HANDLED
+        }
         if (!isCustomGrid(state) || state.showTilePicker || state.customGrid.showMenu) {
             return InputResult.UNHANDLED
         }
@@ -348,12 +366,23 @@ class HomeInputHandler(
         return InputResult.handled(SoundType.TOGGLE)
     }
 
+    /**
+     * On a media rail this is the second way to the Start Over prompt, alongside holding confirm. It
+     * earns a footer hint where a hold cannot, which is what makes the choice reachable on a
+     * television where nothing tells you a button can be held.
+     */
     override fun onSecondaryAction(): InputResult {
-        if (actions.uiState.value.showTilePicker) {
+        val state = actions.uiState.value
+        if (state.showTilePicker) {
             actions.toggleTilePickerSearch()
             return InputResult.HANDLED
         }
-        val game = actions.uiState.value.focusedGame ?: return InputResult.UNHANDLED
+        if (state.isMediaRow) {
+            if (state.focusedMedia == null) return InputResult.UNHANDLED
+            if (actions.openMediaResumePrompt()) return InputResult.handled(SoundType.OPEN_MODAL)
+            return InputResult.handled(SoundType.BOUNDARY)
+        }
+        val game = state.focusedGame ?: return InputResult.UNHANDLED
         actions.toggleFavorite(game.id)
         return InputResult.HANDLED
     }
@@ -393,6 +422,11 @@ class HomeInputHandler(
         if (isCustomGrid(state) && state.customGrid.isEditing) {
             actions.toggleTileEditMode()
             return InputResult.handled(SoundType.TOGGLE)
+        }
+        if (state.isMediaRow) {
+            if (state.focusedMedia == null) return InputResult.UNHANDLED
+            actions.openFocusedMediaDetail()
+            return InputResult.HANDLED
         }
         val game = state.focusedGame ?: return InputResult.UNHANDLED
         actions.setNavigationContext(

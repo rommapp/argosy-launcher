@@ -23,6 +23,8 @@ import com.nendo.argosy.ui.screens.gamedetail.GameDetailScreen
 import com.nendo.argosy.ui.screens.home.HomeScreen
 import com.nendo.argosy.ui.screens.quaypass.QuayPassCheckInScreen
 import com.nendo.argosy.ui.screens.library.LibraryScreen
+import com.nendo.argosy.ui.screens.media.MediaDetailScreen
+import com.nendo.argosy.ui.screens.media.MediaLibraryScreen
 import com.nendo.argosy.ui.screens.doodle.DoodleScreen
 import com.nendo.argosy.ui.screens.search.SearchScreen
 import com.nendo.argosy.ui.screens.settings.ManagePinsScreen
@@ -37,7 +39,8 @@ fun NavGraph(
     navController: NavHostController,
     startDestination: String,
     onDrawerToggle: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onPlayMedia: (itemId: String, startOver: Boolean) -> Unit = { _, _ -> }
 ) {
     val navigateToDefault = remember {
         {
@@ -80,6 +83,10 @@ fun NavGraph(
                 onChangelogAction = { action ->
                     val section = action.section.name
                     navController.navigate(Screen.Settings.createRoute(section, action.actionKey))
+                },
+                onPlayMedia = onPlayMedia,
+                onMediaSelect = { itemId ->
+                    navController.navigate(Screen.MediaDetail.createRoute(itemId))
                 }
             )
         }
@@ -248,6 +255,28 @@ fun NavGraph(
                 onNavigateToGame = { relatedGameId ->
                     navController.navigate(Screen.GameDetail.createRoute(relatedGameId))
                 }
+            )
+        }
+
+        composable(Screen.MediaLibrary.route) {
+            MediaLibraryScreen(
+                onBack = navigateToDefault,
+                onItemSelect = { itemId ->
+                    navController.navigate(Screen.MediaDetail.createRoute(itemId))
+                },
+                onPlay = onPlayMedia
+            )
+        }
+
+        composable(
+            route = Screen.MediaDetail.route,
+            arguments = listOf(navArgument("itemId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val itemId = backStackEntry.arguments?.getString("itemId") ?: return@composable
+            MediaDetailScreen(
+                itemId = itemId,
+                onBack = { navController.popBackStack() },
+                onPlay = onPlayMedia
             )
         }
 

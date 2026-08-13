@@ -17,6 +17,8 @@ class HomeSectionKindTest {
         assertEquals(
             listOf(
                 HomeSectionKind.CONTINUE,
+                HomeSectionKind.CONTINUE_WATCHING,
+                HomeSectionKind.NEXT_UP,
                 HomeSectionKind.RECOMMENDATIONS,
                 HomeSectionKind.FAVORITES,
                 HomeSectionKind.ANDROID,
@@ -30,6 +32,8 @@ class HomeSectionKindTest {
     fun `every leading kind is claimed by a row on the single screen`() {
         val rows = listOf(
             HomeRow.Continue,
+            HomeRow.ContinueWatching,
+            HomeRow.NextUp,
             HomeRow.Recommendations,
             HomeRow.Favorites,
             HomeRow.Android,
@@ -38,8 +42,13 @@ class HomeSectionKindTest {
         assertEquals(HomeSectionKind.LEADING, rows.map { it.kind })
     }
 
+    /**
+     * The companion carries the game rows only. Media rails are single-screen for now, so the
+     * companion is expected to skip exactly those two kinds and nothing else; a game kind going
+     * missing here is still the drift this test was written to catch.
+     */
     @Test
-    fun `every leading kind is claimed by a section on the companion`() {
+    fun `every leading game kind is claimed by a section on the companion`() {
         val sections = listOf(
             DualHomeSection.Recent,
             DualHomeSection.Recommendations,
@@ -47,7 +56,7 @@ class HomeSectionKindTest {
             DualHomeSection.Android,
             DualHomeSection.Steam
         )
-        assertEquals(HomeSectionKind.LEADING, sections.map { it.kind })
+        assertEquals(HomeSectionKind.LEADING - MEDIA_KINDS, sections.map { it.kind })
     }
 
     @Test
@@ -61,5 +70,9 @@ class HomeSectionKindTest {
             ),
             trailing
         )
+    }
+
+    private companion object {
+        val MEDIA_KINDS = setOf(HomeSectionKind.CONTINUE_WATCHING, HomeSectionKind.NEXT_UP)
     }
 }

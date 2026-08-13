@@ -70,8 +70,41 @@ data class HomeGameUi(
     val titleId: String? = null
 )
 
+/**
+ * One tile on a media rail.
+ *
+ * The tile and the thing it plays are deliberately not the same item: for an episode the tile wears
+ * the show's poster and the show's name, because that is how someone recognises what they are
+ * watching, while [itemId] is the episode the server said to play. [subtitle] carries the episode
+ * that confirm will actually start, so the tile never hides which one that is.
+ *
+ * [resumeTicks] is zero for anything not yet started, which is the normal case on the Next Up rail:
+ * the episode after a finished one has never been played, so there is nothing to resume and confirm
+ * simply starts it.
+ */
+data class HomeMediaUi(
+    val itemId: String,
+    val title: String,
+    val subtitle: String?,
+    val posterUrl: String,
+    val seriesId: String? = null,
+    val isEpisode: Boolean = false,
+    val isDownloaded: Boolean = false,
+    val resumeTicks: Long = 0,
+    val progressFraction: Float = 0f
+) {
+    val hasResumePosition: Boolean get() = resumeTicks > 0
+
+    /**
+     * What opening the details of this tile should show. An episode's details are its show's, since
+     * that is where the seasons and the rest of the episodes are.
+     */
+    val detailItemId: String get() = seriesId ?: itemId
+}
+
 sealed class HomeRowItem {
     data class Game(val game: HomeGameUi) : HomeRowItem()
+    data class Media(val media: HomeMediaUi) : HomeRowItem()
     data class ViewAll(
         val platformId: Long? = null,
         val platformName: String? = null,
@@ -108,6 +141,8 @@ sealed class HomeRow(val kind: HomeSectionKind) {
     data object Recommendations : HomeRow(HomeSectionKind.RECOMMENDATIONS)
     data object Android : HomeRow(HomeSectionKind.ANDROID)
     data object Steam : HomeRow(HomeSectionKind.STEAM)
+    data object ContinueWatching : HomeRow(HomeSectionKind.CONTINUE_WATCHING)
+    data object NextUp : HomeRow(HomeSectionKind.NEXT_UP)
     data class PinnedRegular(val pinId: Long, val collectionId: Long, val name: String) :
         HomeRow(HomeSectionKind.PINNED_REGULAR)
     data class PinnedVirtual(val pinId: Long, val type: CategoryType, val name: String) :
@@ -126,6 +161,13 @@ data class HomeUiState(
     val pinnedCollections: List<PinnedCollection> = emptyList(),
     val pinnedGames: Map<Long, List<HomeGameUi>> = emptyMap(),
     val pinnedGamesLoading: Set<Long> = emptySet(),
+    val nextUpMedia: List<HomeMediaUi> = emptyList(),
+    val continueWatchingMedia: List<HomeMediaUi> = emptyList(),
+    val isMediaSignedIn: Boolean = false,
+    val isMediaLoading: Boolean = false,
+    val showNextUpRow: Boolean = true,
+    val showContinueWatchingRow: Boolean = true,
+    val mediaResumePrompt: com.nendo.argosy.ui.screens.media.MediaResumePrompt? = null,
     val currentRow: HomeRow = HomeRow.Continue,
     val carouselConfig: com.nendo.argosy.domain.model.CarouselConfig =
         com.nendo.argosy.domain.model.CarouselConfig(),
@@ -179,6 +221,9 @@ data class HomeUiState(
                     HomeSectionKind.FAVORITES -> HomeRow.Favorites.takeIf { favoriteGames.isNotEmpty() }
                     HomeSectionKind.ANDROID -> HomeRow.Android.takeIf { androidGames.isNotEmpty() }
                     HomeSectionKind.STEAM -> HomeRow.Steam.takeIf { steamGames.isNotEmpty() }
+                    HomeSectionKind.CONTINUE_WATCHING ->
+                        HomeRow.ContinueWatching.takeIf { showsMediaRow(showContinueWatchingRow) }
+                    HomeSectionKind.NEXT_UP -> HomeRow.NextUp.takeIf { showsMediaRow(showNextUpRow) }
                     else -> null
                 }
                 row?.let { add(it) }
@@ -195,6 +240,16 @@ data class HomeUiState(
                 }
             }
         }
+
+    /**
+     * A media rail stands whether or not it has anything in it, so long as it is switched on and an
+     * account is signed in: an empty rail is worth saying out loud, because "nothing up next" is an
+     * answer, whereas a rail that quietly disappears reads as media being broken.
+     *
+     * Being signed out removes it instead, since offering a media rail to someone with no media
+     * server is advertising a feature they have not asked for.
+     */
+    private fun showsMediaRow(enabled: Boolean): Boolean = enabled && isMediaSignedIn
 
     val currentPlatform: HomePlatformUi?
         get() = (currentRow as? HomeRow.Platform)?.let { platforms.getOrNull(it.index) }
@@ -236,6 +291,8 @@ data class HomeUiState(
                     logoPath = null
                 )
             }
+            HomeRow.ContinueWatching -> continueWatchingMedia.map { HomeRowItem.Media(it) }
+            HomeRow.NextUp -> nextUpMedia.map { HomeRowItem.Media(it) }
             is HomeRow.PinnedRegular -> {
                 pinnedGames[currentRow.pinId]?.map { HomeRowItem.Game(it) } ?: emptyList()
             }
@@ -243,6 +300,12 @@ data class HomeUiState(
                 pinnedGames[currentRow.pinId]?.map { HomeRowItem.Game(it) } ?: emptyList()
             }
         }
+
+    val isMediaRow: Boolean
+        get() = currentRow == HomeRow.NextUp || currentRow == HomeRow.ContinueWatching
+
+    val focusedMedia: HomeMediaUi?
+        get() = (focusedItem as? HomeRowItem.Media)?.media
 
     val focusedItem: HomeRowItem?
         get() = currentItems.getOrNull(focusedGameIndex)
@@ -275,6 +338,8 @@ data class HomeUiState(
             HomeRow.Recommendations -> "Recommended For You"
             HomeRow.Android -> "Android"
             HomeRow.Steam -> "Steam"
+            HomeRow.ContinueWatching -> "Continue Watching"
+            HomeRow.NextUp -> "Next Up"
             is HomeRow.PinnedRegular -> currentRow.name
             is HomeRow.PinnedVirtual -> currentRow.name
         }
@@ -285,6 +350,8 @@ data class HomeUiState(
         HomeRow.Favorites -> "Favs"
         HomeRow.Android -> "Android"
         HomeRow.Steam -> "Steam"
+        HomeRow.ContinueWatching -> "Watch"
+        HomeRow.NextUp -> "Next Up"
         is HomeRow.Platform -> platforms.getOrNull(row.index)?.let { p ->
             // Strip manufacturer prefix when result lands in 4..9 chars; else raw name if short; else acronym.
             val normalized = PlatformDefinitions.normalizeDisplayName(p.name)
@@ -403,4 +470,11 @@ sealed class HomeEvent {
         val platformId: Long? = null,
         val sourceFilter: String? = null
     ) : HomeEvent()
+
+    /**
+     * Starts playback of one media item. [startOver] discards the stored position rather than
+     * resuming from it, which is the only thing the Start Over prompt does differently.
+     */
+    data class PlayMedia(val itemId: String, val startOver: Boolean) : HomeEvent()
+    data class NavigateToMediaDetail(val itemId: String) : HomeEvent()
 }

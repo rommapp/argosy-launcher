@@ -26,6 +26,7 @@ import com.nendo.argosy.data.preferences.GlowColorMode
 import com.nendo.argosy.data.preferences.GridDensity
 import com.nendo.argosy.data.preferences.MediaDownloadQuality
 import com.nendo.argosy.data.preferences.MediaStreamingBitrate
+import com.nendo.argosy.data.preferences.MediaAudioLanguage
 import com.nendo.argosy.data.preferences.MediaSubtitleLanguage
 import com.nendo.argosy.data.preferences.MediaSubtitleMode
 import com.nendo.argosy.data.preferences.HomeBackgroundMode
@@ -79,6 +80,7 @@ enum class SettingsSection {
     RETRO_ACHIEVEMENTS,
     STORAGE,
     STORAGE_GAMES,
+    STORAGE_MEDIA,
     STORAGE_PLATFORM_GAMES,
     STORAGE_CACHES,
     BIOS,
@@ -760,7 +762,8 @@ data class StorageAttributionState(
     val gamesSortMode: StorageGamesSortMode = StorageGamesSortMode.PLATFORM,
     val musicEnteredFromStorage: Boolean = false,
     val cachesEntryFocus: Int = CACHES_ENTRY_TOP,
-    val steamTileLatched: Boolean = false
+    val steamTileLatched: Boolean = false,
+    val mediaTileLatched: Boolean = false
 )
 
 data class GameStorageDeleteConfirm(
@@ -1054,6 +1057,17 @@ data class SteamSettingsState(
  * Everything the Jellyfin section renders. [quickConnectRequested] is set once the connection
  * layer has a Quick Connect exchange in flight, so the account row can say so; the exchange
  * itself runs there and writes the resulting credentials back through the preferences.
+ *
+ * [quickConnectCode] is what the user types into a client that is already signed in, so it is
+ * the one thing the waiting state has to put on screen. [quickConnectAvailable] stays true while
+ * the answer is unknown: Quick Connect is the primary path on a controller, and a server that
+ * turns out not to offer it says so by refusing the exchange, which drops the user onto the
+ * password form rather than stranding them.
+ *
+ * [passwordFallbackOffered] is what keeps that escape open afterwards. Quick Connect needs a
+ * second device that is already signed in, so a code that simply expires is the normal shape of
+ * "this user has no other client" - once any attempt has failed, the password route stays on the
+ * screen until the account is signed in.
  */
 data class JellyfinState(
     val serverUrl: String = "",
@@ -1064,17 +1078,28 @@ data class JellyfinState(
     val isSignedIn: Boolean = false,
     val userName: String = "",
     val quickConnectRequested: Boolean = false,
+    val quickConnectCode: String = "",
+    val quickConnectAvailable: Boolean = true,
+    val passwordFallbackOffered: Boolean = false,
+    val showLoginForm: Boolean = false,
+    val loginUsername: String = "",
+    val loginPassword: String = "",
+    val loginFocusField: Int? = null,
+    val isSigningIn: Boolean = false,
+    val signInError: String? = null,
     val showSignOutConfirm: Boolean = false,
     val downloadQuality: MediaDownloadQuality = MediaDownloadQuality.ORIGINAL,
     val maxStreamingBitrate: MediaStreamingBitrate = MediaStreamingBitrate.AUTO,
+    val audioLanguage: MediaAudioLanguage = MediaAudioLanguage.ENGLISH,
     val subtitleMode: MediaSubtitleMode = MediaSubtitleMode.PREFERRED,
     val subtitleLanguage: MediaSubtitleLanguage = MediaSubtitleLanguage.ENGLISH,
-    val burnInImageSubtitles: Boolean = true,
+    val burnInImageSubtitles: Boolean = false,
     val sharePresence: Boolean = true,
     val mediaDirPath: String? = null,
     val pendingMediaRelocation: MediaRelocationPrompt? = null
 ) {
     val hasServer: Boolean get() = serverUrl.isNotBlank()
+    val hasQuickConnectCode: Boolean get() = quickConnectRequested && quickConnectCode.isNotBlank()
 }
 
 data class UpdateCheckState(

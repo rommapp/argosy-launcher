@@ -63,6 +63,34 @@ enum class MediaSubtitleMode(val displayName: String) {
  * on whoever muxed the file, so each entry lists every code it can arrive as and [matches] accepts
  * any of them.
  */
+/**
+ * Audio language the player reaches for when a title carries more than one track. A media stream
+ * carries an ISO 639 code whose form depends on whoever muxed the file, so each entry lists every
+ * code it can arrive as and [matches] accepts any of them.
+ */
+enum class MediaAudioLanguage(val displayName: String, val codes: List<String>) {
+    ENGLISH("English", listOf("eng", "en")),
+    JAPANESE("Japanese", listOf("jpn", "ja")),
+    SPANISH("Spanish", listOf("spa", "es")),
+    FRENCH("French", listOf("fra", "fre", "fr")),
+    GERMAN("German", listOf("deu", "ger", "de")),
+    ITALIAN("Italian", listOf("ita", "it")),
+    PORTUGUESE("Portuguese", listOf("por", "pt")),
+    RUSSIAN("Russian", listOf("rus", "ru")),
+    KOREAN("Korean", listOf("kor", "ko")),
+    CHINESE("Chinese", listOf("zho", "chi", "zh"));
+
+    fun matches(language: String?): Boolean {
+        val normalized = language?.trim()?.lowercase() ?: return false
+        return codes.any { it == normalized }
+    }
+
+    companion object {
+        fun fromString(value: String?): MediaAudioLanguage =
+            entries.find { it.name == value } ?: ENGLISH
+    }
+}
+
 enum class MediaSubtitleLanguage(val displayName: String, val codes: List<String>) {
     ENGLISH("English", listOf("eng", "en")),
     JAPANESE("Japanese", listOf("jpn", "ja")),
@@ -94,9 +122,10 @@ data class JellyfinPreferences(
     val userName: String? = null,
     val downloadQuality: MediaDownloadQuality = MediaDownloadQuality.ORIGINAL,
     val maxStreamingBitrate: MediaStreamingBitrate = MediaStreamingBitrate.AUTO,
+    val audioLanguage: MediaAudioLanguage = MediaAudioLanguage.ENGLISH,
     val subtitleMode: MediaSubtitleMode = MediaSubtitleMode.PREFERRED,
     val subtitleLanguage: MediaSubtitleLanguage = MediaSubtitleLanguage.ENGLISH,
-    val burnInImageSubtitles: Boolean = true,
+    val burnInImageSubtitles: Boolean = false,
     val shareMediaPresence: Boolean = true
 ) {
     val isSignedIn: Boolean get() = !accessToken.isNullOrBlank()
@@ -114,6 +143,7 @@ class JellyfinPreferencesRepository @Inject constructor(
         val USER_NAME = stringPreferencesKey("jellyfin_user_name")
         val DOWNLOAD_QUALITY = stringPreferencesKey("jellyfin_download_quality")
         val MAX_STREAMING_BITRATE = stringPreferencesKey("jellyfin_max_streaming_bitrate")
+        val AUDIO_LANGUAGE = stringPreferencesKey("jellyfin_audio_language")
         val SUBTITLE_MODE = stringPreferencesKey("jellyfin_subtitle_mode")
         val SUBTITLE_LANGUAGE = stringPreferencesKey("jellyfin_subtitle_language")
         val BURN_IN_IMAGE_SUBTITLES = booleanPreferencesKey("jellyfin_burn_in_image_subtitles")
@@ -129,9 +159,10 @@ class JellyfinPreferencesRepository @Inject constructor(
             userName = prefs[Keys.USER_NAME],
             downloadQuality = MediaDownloadQuality.fromString(prefs[Keys.DOWNLOAD_QUALITY]),
             maxStreamingBitrate = MediaStreamingBitrate.fromString(prefs[Keys.MAX_STREAMING_BITRATE]),
+            audioLanguage = MediaAudioLanguage.fromString(prefs[Keys.AUDIO_LANGUAGE]),
             subtitleMode = MediaSubtitleMode.fromString(prefs[Keys.SUBTITLE_MODE]),
             subtitleLanguage = MediaSubtitleLanguage.fromString(prefs[Keys.SUBTITLE_LANGUAGE]),
-            burnInImageSubtitles = prefs[Keys.BURN_IN_IMAGE_SUBTITLES] ?: true,
+            burnInImageSubtitles = prefs[Keys.BURN_IN_IMAGE_SUBTITLES] ?: false,
             shareMediaPresence = prefs[Keys.SHARE_MEDIA_PRESENCE] ?: true
         )
     }
@@ -171,6 +202,10 @@ class JellyfinPreferencesRepository @Inject constructor(
 
     suspend fun setMaxStreamingBitrate(bitrate: MediaStreamingBitrate) {
         dataStore.edit { it[Keys.MAX_STREAMING_BITRATE] = bitrate.name }
+    }
+
+    suspend fun setAudioLanguage(language: MediaAudioLanguage) {
+        dataStore.edit { it[Keys.AUDIO_LANGUAGE] = language.name }
     }
 
     suspend fun setSubtitleMode(mode: MediaSubtitleMode) {

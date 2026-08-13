@@ -434,6 +434,7 @@ class ArgosyViewModel @Inject constructor(
                 soundManager.setEnabled(prefs.soundEnabled)
                 soundManager.setVolume(prefs.soundVolume)
                 soundManager.setSoundConfigs(prefs.soundConfigs)
+                _isMediaSignedIn = prefs.isJellyfinSignedIn
             }
         }
     }
@@ -548,6 +549,7 @@ class ArgosyViewModel @Inject constructor(
         DrawerItem(Screen.QuayPass.route, "Check-In"),
         DrawerItem(Screen.Collections.route, "Collections"),
         DrawerItem(Screen.Library.route, "Library"),
+        DrawerItem(Screen.MediaLibrary.route, "Media"),
         DrawerItem(Screen.Downloads.route, "Downloads"),
         DrawerItem(Screen.SaveSync.route, "Save Sync"),
         DrawerItem(Screen.Apps.route, "Apps"),
@@ -561,6 +563,8 @@ class ArgosyViewModel @Inject constructor(
 
     private var _isDualScreenMode = false
 
+    private var _isMediaSignedIn = false
+
     val drawerItems: List<DrawerItem>
         get() {
             var items = allDrawerItems
@@ -569,6 +573,9 @@ class ArgosyViewModel @Inject constructor(
             }
             if (socialRepository.connectionState.value !is SocialConnectionState.Connected) {
                 items = items.filter { it.route != Screen.Social.route }
+            }
+            if (!_isMediaSignedIn) {
+                items = items.filter { it.route != Screen.MediaLibrary.route }
             }
             return items
         }

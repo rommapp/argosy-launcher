@@ -229,6 +229,15 @@
             android:taskAffinity=""
             android:exported="false" />
 
+        <activity
+            android:name=".ui.screens.player.PlayerActivity"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden"
+            android:launchMode="singleTop"
+            android:theme="@style/Theme.Argosy"
+            android:taskAffinity=""
+            android:excludeFromRecents="true"
+            android:exported="false" />
+
         <activity android:name=".hardware.FocusDirectorActivity"
             android:exported="false" android:excludeFromRecents="true"
             android:taskAffinity="" android:theme="@style/Theme.Argosy.FocusDirector" />

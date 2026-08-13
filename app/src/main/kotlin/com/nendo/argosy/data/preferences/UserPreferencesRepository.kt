@@ -219,6 +219,7 @@ class UserPreferencesRepository @Inject constructor(
             jellyfinUserName = jellyfin.userName,
             mediaDownloadQuality = jellyfin.downloadQuality,
             mediaMaxStreamingBitrate = jellyfin.maxStreamingBitrate,
+            mediaAudioLanguage = jellyfin.audioLanguage,
             mediaSubtitleMode = jellyfin.subtitleMode,
             mediaSubtitleLanguage = jellyfin.subtitleLanguage,
             mediaBurnInImageSubtitles = jellyfin.burnInImageSubtitles,
@@ -426,6 +427,8 @@ class UserPreferencesRepository @Inject constructor(
         jellyfinPrefs.setDownloadQuality(quality)
     suspend fun setMediaMaxStreamingBitrate(bitrate: MediaStreamingBitrate) =
         jellyfinPrefs.setMaxStreamingBitrate(bitrate)
+    suspend fun setMediaAudioLanguage(language: MediaAudioLanguage) =
+        jellyfinPrefs.setAudioLanguage(language)
     suspend fun setMediaSubtitleMode(mode: MediaSubtitleMode) = jellyfinPrefs.setSubtitleMode(mode)
     suspend fun setMediaSubtitleLanguage(language: MediaSubtitleLanguage) =
         jellyfinPrefs.setSubtitleLanguage(language)
@@ -826,9 +829,10 @@ data class UserPreferences(
     val jellyfinUserName: String? = null,
     val mediaDownloadQuality: MediaDownloadQuality = MediaDownloadQuality.ORIGINAL,
     val mediaMaxStreamingBitrate: MediaStreamingBitrate = MediaStreamingBitrate.AUTO,
+    val mediaAudioLanguage: MediaAudioLanguage = MediaAudioLanguage.ENGLISH,
     val mediaSubtitleMode: MediaSubtitleMode = MediaSubtitleMode.PREFERRED,
     val mediaSubtitleLanguage: MediaSubtitleLanguage = MediaSubtitleLanguage.ENGLISH,
-    val mediaBurnInImageSubtitles: Boolean = true,
+    val mediaBurnInImageSubtitles: Boolean = false,
     val shareMediaPresence: Boolean = true
 ) {
     val isSocialLinked: Boolean get() = socialSessionToken != null

@@ -70,6 +70,8 @@ import com.nendo.argosy.ui.input.LocalSwapStartSelect
 import com.nendo.argosy.core.input.SoundType
 import com.nendo.argosy.ui.navigation.NavGraph
 import com.nendo.argosy.ui.navigation.Screen
+import com.nendo.argosy.ui.screens.player.PlayerActivity
+import com.nendo.argosy.ui.screens.player.PlayerArgs
 import com.nendo.argosy.core.notification.NotificationHost
 import com.nendo.argosy.ui.quickmenu.QuickMenuInputHandler
 import com.nendo.argosy.ui.quickmenu.QuickMenuOverlay
@@ -1896,6 +1898,17 @@ fun ArgosyApp(
                         navController = navController,
                         startDestination = startDestination,
                         onDrawerToggle = { if (isDrawerOpen) closeDrawer() else openDrawer() },
+                        onPlayMedia = { itemId, startOver ->
+                            PlayerActivity.start(
+                                context = context,
+                                args = PlayerArgs(
+                                    itemId = itemId,
+                                    startPositionMs = if (startOver) 0L else -1L
+                                ),
+                                options = activity?.displayAffinityHelper
+                                    ?.getActivityOptions(forEmulator = false)
+                            )
+                        },
                         modifier = Modifier.blur(contentBlur)
                     )
                 }

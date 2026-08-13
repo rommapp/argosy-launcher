@@ -90,6 +90,19 @@ const val MIN_LANE_COUNT = 2
 const val MAX_LANE_COUNT = 8
 
 /**
+ * Which of the optional rails home offers. These are not a property of any one layout -- a rail is
+ * either on the home surface or it is not -- so they sit beside the layout choice rather than
+ * inside one of the per-layout configs.
+ *
+ * Both default on: a rail with nothing behind it does not appear, so the cost of the default is
+ * nothing for someone with no media server and the rail is already there for someone who has one.
+ */
+data class HomeRailSettings(
+    val showContinueWatching: Boolean = true,
+    val showNextUp: Boolean = true
+)
+
+/**
  * The selected layout plus every layout's settings, so switching back and forth does not discard
  * what was configured for the layout being left.
  */
@@ -97,7 +110,8 @@ data class HomeLayoutSettings(
     val selected: HomeLayoutKind = HomeLayoutKind.CAROUSEL,
     val carousel: CarouselConfig = CarouselConfig(),
     val autoGrid: AutoGridConfig = AutoGridConfig(),
-    val customGrid: CustomGridConfig = CustomGridConfig()
+    val customGrid: CustomGridConfig = CustomGridConfig(),
+    val rails: HomeRailSettings = HomeRailSettings()
 ) {
     val active: HomeLayoutConfig
         get() = when (selected) {
@@ -138,6 +152,13 @@ data class HomeLayoutSettings(
                 put(KEY_PAGE_COUNT, customGrid.pageCount)
             }
         )
+        put(
+            KEY_RAILS,
+            JSONObject().apply {
+                put(KEY_CONTINUE_WATCHING, rails.showContinueWatching)
+                put(KEY_NEXT_UP, rails.showNextUp)
+            }
+        )
     }.toString()
 
     companion object {
@@ -159,6 +180,9 @@ data class HomeLayoutSettings(
         private const val KEY_PERSIST_PAGES = "persistBlankPages"
         private const val KEY_AUTO_FIT = "autoFit"
         private const val KEY_PAGE_COUNT = "pageCount"
+        private const val KEY_RAILS = "rails"
+        private const val KEY_CONTINUE_WATCHING = "showContinueWatching"
+        private const val KEY_NEXT_UP = "showNextUp"
 
         /**
          * Reads what it can and defaults the rest. A layout the user curated is not thrown away
@@ -172,6 +196,7 @@ data class HomeLayoutSettings(
             val carousel = root.optJSONObject(KEY_CAROUSEL)
             val autoGrid = root.optJSONObject(KEY_AUTO_GRID)
             val customGrid = root.optJSONObject(KEY_CUSTOM_GRID)
+            val rails = root.optJSONObject(KEY_RAILS)
             return HomeLayoutSettings(
                 selected = enumOrDefault(root.optString(KEY_SELECTED), defaults.selected),
                 carousel = CarouselConfig(
@@ -222,6 +247,14 @@ data class HomeLayoutSettings(
                         ?: defaults.customGrid.autoFit,
                     pageCount = customGrid?.optInt(KEY_PAGE_COUNT, defaults.customGrid.pageCount)
                         ?.coerceAtLeast(0) ?: defaults.customGrid.pageCount
+                ),
+                rails = HomeRailSettings(
+                    showContinueWatching = rails?.optBoolean(
+                        KEY_CONTINUE_WATCHING,
+                        defaults.rails.showContinueWatching
+                    ) ?: defaults.rails.showContinueWatching,
+                    showNextUp = rails?.optBoolean(KEY_NEXT_UP, defaults.rails.showNextUp)
+                        ?: defaults.rails.showNextUp
                 )
             )
         }

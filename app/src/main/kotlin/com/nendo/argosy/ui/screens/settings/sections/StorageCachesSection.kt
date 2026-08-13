@@ -102,6 +102,7 @@ internal sealed class StorageCachesItem(
     data object SteamClear : StorageCachesItem("steamClear", "steam", { it.steamVisible })
 
     companion object {
+        const val KEY_ARTWORK_CACHE_INFO = "artworkCacheInfo"
         const val KEY_BIOS_INFO = "biosInfo"
         const val KEY_CORES_INFO = "coresInfo"
         const val KEY_SHADERS_CUSTOM_INFO = "shadersCustomInfo"
@@ -117,7 +118,9 @@ internal sealed class StorageCachesItem(
                 StateCacheToggle, SaveCacheLimit,
                 SectionSpacer("mediaSpacer", "media"),
                 Header("mediaHeader", "media", "MEDIA CACHES"),
-                ImageCacheClear, ValidateImageCache, ScreenshotsToggle, BoxArtToggle,
+                ImageCacheClear, ValidateImageCache,
+                InfoRow(KEY_ARTWORK_CACHE_INFO, "media"),
+                ScreenshotsToggle, BoxArtToggle,
                 RomExtractionClear, SfxCacheClear, EmulatorApksClear, MiscDownloadsClear,
                 SectionSpacer("systemSpacer", "system"),
                 Header("systemHeader", "system", "SYSTEM"),
@@ -418,6 +421,11 @@ fun StorageCachesSection(uiState: SettingsUiState, viewModel: SettingsViewModel)
 private fun CachesInfoRow(item: StorageCachesItem.InfoRow, uiState: SettingsUiState) {
     val snapshot = uiState.attribution.snapshot
     val (title, subtitle, value) = when (item.key) {
+        StorageCachesItem.KEY_ARTWORK_CACHE_INFO -> Triple(
+            "Artwork Cache",
+            "Posters, backdrops and other online artwork - re-downloaded on demand",
+            formatBytes(categoryBytes(snapshot, StorageCategory.REMOTE_IMAGE_CACHE))
+        )
         StorageCachesItem.KEY_BIOS_INFO -> Triple(
             "BIOS Files",
             "Required by emulators - not a cache",

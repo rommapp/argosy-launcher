@@ -17,6 +17,7 @@ import com.nendo.argosy.ui.screens.settings.sections.input.LightSectionsInput
 import com.nendo.argosy.ui.screens.settings.sections.input.ShaderStackSectionInput
 import com.nendo.argosy.ui.screens.settings.sections.input.StorageCachesSectionInput
 import com.nendo.argosy.ui.screens.settings.sections.input.StorageGamesSectionInput
+import com.nendo.argosy.ui.screens.settings.sections.input.StorageMediaSectionInput
 import com.nendo.argosy.ui.screens.settings.sections.input.StoragePlatformGamesSectionInput
 import com.nendo.argosy.ui.screens.settings.sections.input.StorageSectionInput
 import com.nendo.argosy.ui.screens.settings.sections.input.ThemeBackdropSectionInput
@@ -57,6 +58,7 @@ class SettingsInputHandler(
         put(SettingsSection.CORE_OPTIONS, CoreOptionsSectionInput(viewModel))
         put(SettingsSection.STORAGE, StorageSectionInput(viewModel))
         put(SettingsSection.STORAGE_GAMES, StorageGamesSectionInput(viewModel))
+        put(SettingsSection.STORAGE_MEDIA, StorageMediaSectionInput(viewModel))
         put(SettingsSection.STORAGE_PLATFORM_GAMES, StoragePlatformGamesSectionInput(viewModel))
         put(SettingsSection.STORAGE_CACHES, StorageCachesSectionInput(viewModel))
         put(SettingsSection.DRIVERS, DriversSectionInput(viewModel))

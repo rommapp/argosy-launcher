@@ -14,8 +14,11 @@ import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.dao.GameDiscDao
 import com.nendo.argosy.data.local.dao.GameFileDao
 import com.nendo.argosy.data.local.dao.PlatformDao
+import com.nendo.argosy.data.local.entity.MediaItemEntity
+import com.nendo.argosy.data.media.MediaDirectoryManager
 import com.nendo.argosy.data.music.MusicDirectoryManager
 import com.nendo.argosy.data.preferences.StoragePreferencesRepository
+import com.nendo.argosy.data.repository.MediaRepository
 import com.nendo.argosy.util.AppPaths
 import com.nendo.argosy.util.PermissionHelper
 import com.nendo.argosy.util.SafeCoroutineScope
@@ -54,6 +57,11 @@ private const val TMP_SUFFIX = ".tmp"
 private const val WALK_PROGRESS_INTERVAL = 512
 private const val WALK_PROGRESS_FILES = 512
 private const val GAMES_PROGRESS_INTERVAL = 128
+private const val MEDIA_PROGRESS_INTERVAL = 32
+private const val COIL_CACHE_DIR = "image_cache"
+private const val UNFILED_LIBRARY_ID = ""
+private const val UNFILED_LIBRARY_NAME = "Other media"
+private const val UNFILED_LIBRARY_ORDER = Int.MAX_VALUE
 private const val CONCURRENT_WALKS = 3
 private const val APPS_PROGRESS_INTERVAL = 32
 private const val INTERNAL_DRIFT_EPSILON = 256L * 1024 * 1024
@@ -70,7 +78,8 @@ private val PC_STORE_PACKAGES = setOf("app.gamenative")
 
 private val NIO_CATEGORIES = setOf(
     StorageCategory.MUSIC,
-    StorageCategory.IMAGE_CACHE
+    StorageCategory.IMAGE_CACHE,
+    StorageCategory.REMOTE_IMAGE_CACHE
 )
 
 /** Computes per-category, per-volume disk usage attribution; walks run on an app-lifetime IO scope. */
@@ -81,6 +90,9 @@ class StorageAttributionRepository @Inject constructor(
     private val snapshotStore: StorageSnapshotStore,
     private val storagePreferences: StoragePreferencesRepository,
     private val musicDirectoryManager: MusicDirectoryManager,
+    private val mediaDirectoryManager: MediaDirectoryManager,
+    private val mediaRepository: MediaRepository,
+    private val fileAccessLayer: FileAccessLayer,
     private val imageCacheManager: ImageCacheManager,
     private val gameDao: GameDao,
     private val gameFileDao: GameFileDao,
@@ -196,6 +208,7 @@ class StorageAttributionRepository @Inject constructor(
         if (driftedKeys.isNotEmpty()) {
             result += StorageCategory.GAMES
             result += StorageCategory.STEAM
+            result += StorageCategory.MEDIA
             val internalKey = volumes.firstOrNull { it.type == StorageVolumeType.INTERNAL }?.key
                 ?: volumes.firstOrNull()?.key
             val musicDir = musicDirectoryManager.resolveMusicDir()
@@ -238,6 +251,22 @@ class StorageAttributionRepository @Inject constructor(
                     setWalkState(StorageCategory.GAMES, WalkState.Failed)
                     if (_snapshot.value?.categories?.containsKey(StorageCategory.GAMES) != true) {
                         publishCategory(StorageCategory.GAMES, CategoryUsage())
+                    }
+                }
+            }
+
+            if (StorageCategory.MEDIA in categories) {
+                setWalkState(StorageCategory.MEDIA, WalkState.Walking(0L, 0))
+                try {
+                    val media = collectMedia(ctx, volumes, internalKey)
+                    publishMedia(media)
+                    setWalkState(StorageCategory.MEDIA, WalkState.Complete)
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (_: Exception) {
+                    setWalkState(StorageCategory.MEDIA, WalkState.Failed)
+                    if (_snapshot.value?.categories?.containsKey(StorageCategory.MEDIA) != true) {
+                        publishCategory(StorageCategory.MEDIA, CategoryUsage())
                     }
                 }
             }
@@ -320,6 +349,18 @@ class StorageAttributionRepository @Inject constructor(
                 computedAt = System.currentTimeMillis(),
                 categories = base.categories + (category to usage),
                 gamesPerPlatform = perPlatform ?: base.gamesPerPlatform
+            )
+        }
+    }
+
+    private fun publishMedia(media: MediaResult) {
+        _snapshot.update { current ->
+            val base = current ?: StorageSnapshot(0L, emptyMap(), emptyList())
+            base.copy(
+                computedAt = System.currentTimeMillis(),
+                categories = base.categories + (StorageCategory.MEDIA to media.usage),
+                mediaPerLibrary = media.perLibrary,
+                mediaLocations = media.locations
             )
         }
     }
@@ -475,6 +516,244 @@ class StorageAttributionRepository @Inject constructor(
     private fun isUnderAny(canonicalPath: String, roots: List<String>): Boolean =
         roots.any { canonicalPath == it || canonicalPath.startsWith("$it/") }
 
+    private data class MediaResult(
+        val usage: CategoryUsage,
+        val perLibrary: List<MediaLibraryUsage>,
+        val locations: List<MediaLocationUsage>
+    )
+
+    private class MediaAccumulator {
+        var bytes = 0L
+        var count = 0
+        var offlineBytes = 0L
+        var offlineCount = 0
+        var missingCount = 0
+        val perVolume = HashMap<String, Long>()
+
+        fun present(entryBytes: Long, volumeKey: String?) {
+            bytes += entryBytes
+            count += 1
+            if (volumeKey != null && entryBytes > 0) perVolume.merge(volumeKey, entryBytes, Long::plus)
+        }
+
+        fun offline(lastKnownBytes: Long) {
+            offlineBytes += lastKnownBytes
+            offlineCount += 1
+        }
+
+        fun missing() {
+            missingCount += 1
+        }
+    }
+
+    /**
+     * Downloaded video, attributed to the library each title came from and to the place it sits in.
+     *
+     * Content is found from the item rows rather than from the media folder alone, because the folder
+     * can be moved while earlier downloads stay where they were - the folder in settings is where the
+     * next download lands, not the whole answer. A title whose storage is not currently mounted keeps
+     * the size recorded when it was fetched and is reported as offline; only a file that is gone from
+     * storage that IS mounted counts as missing, and neither case is ever reported as zero bytes.
+     */
+    private suspend fun collectMedia(
+        ctx: CoroutineContext,
+        volumes: List<StorageVolumeInfo>,
+        internalKey: String?
+    ): MediaResult {
+        val mediaRoot = StoragePathUtils.canonicalize(mediaDirectoryManager.resolveMediaDir().absolutePath)
+        val libraries = mediaRepository.observeLibraries().first()
+        val scan = scanMediaRows(ctx, volumes, internalKey, mediaRoot, libraries.map { it.libraryId })
+        val perLibrary = scan.perLibrary
+        val strayFiles = scan.strayFiles
+        val offlineFiles = scan.offlineFiles
+
+        val rootAvailable = isPathReachable(mediaRoot, volumes)
+        val rootMeasured = if (rootAvailable && fileAccessLayer.isDirectory(mediaRoot)) {
+            falWalk(mediaRoot, ctx) { bytes, files ->
+                setWalkState(StorageCategory.MEDIA, WalkState.Walking(bytes, files))
+            }
+        } else {
+            0L to 0
+        }
+
+        val rootVolumeKey = volumeKeyFor(mediaRoot, volumes, internalKey)
+        val total = UsageAccumulator()
+        total.add(rootMeasured.first, rootMeasured.second, rootVolumeKey)
+        strayFiles.forEach { (path, bytes) ->
+            total.add(bytes, 1, volumeKeyFor(path, volumes, internalKey))
+        }
+
+        val rootOffline = offlineFiles.filter { isUnderAny(it.first, listOf(mediaRoot)) }
+        val locations = buildList {
+            add(
+                MediaLocationUsage(
+                    path = mediaRoot,
+                    volumeKey = rootVolumeKey,
+                    bytes = if (rootAvailable) rootMeasured.first else rootOffline.sumOf { it.second },
+                    fileCount = if (rootAvailable) rootMeasured.second else rootOffline.size,
+                    isCurrentTarget = true,
+                    isAvailable = rootAvailable
+                )
+            )
+            addAll(strayLocations(strayFiles, volumes, internalKey, isAvailable = true))
+            addAll(
+                strayLocations(
+                    offlineFiles.filterNot { isUnderAny(it.first, listOf(mediaRoot)) },
+                    volumes,
+                    internalKey,
+                    isAvailable = false
+                )
+            )
+        }
+
+        val libraryMeta = libraries.associateBy { it.libraryId }
+        val perLibraryUsages = perLibrary.map { (libraryId, acc) ->
+            val meta = libraryMeta[libraryId]
+            MediaLibraryUsage(
+                libraryId = libraryId,
+                name = meta?.name ?: UNFILED_LIBRARY_NAME,
+                displayOrder = meta?.displayOrder ?: UNFILED_LIBRARY_ORDER,
+                downloadedCount = acc.count + acc.offlineCount,
+                bytes = acc.bytes,
+                perVolume = acc.perVolume,
+                offlineCount = acc.offlineCount,
+                offlineBytes = acc.offlineBytes,
+                missingCount = acc.missingCount
+            )
+        }.sortedWith(compareBy({ it.displayOrder }, { it.name }))
+
+        return MediaResult(
+            usage = CategoryUsage(total.bytes, total.files, total.perVolume),
+            perLibrary = perLibraryUsages,
+            locations = locations
+        )
+    }
+
+    private class MediaScan {
+        val perLibrary = LinkedHashMap<String, MediaAccumulator>()
+        val strayFiles = ArrayList<Pair<String, Long>>()
+        val offlineFiles = ArrayList<Pair<String, Long>>()
+    }
+
+    private suspend fun scanMediaRows(
+        ctx: CoroutineContext,
+        volumes: List<StorageVolumeInfo>,
+        internalKey: String?,
+        mediaRoot: String,
+        libraryIds: List<String>
+    ): MediaScan {
+        val scan = MediaScan()
+        libraryIds.forEach { scan.perLibrary[it] = MediaAccumulator() }
+        val seriesLibraries = HashMap<String, String?>()
+        val seenPaths = HashSet<String>()
+        var processed = 0
+
+        for (item in mediaRepository.observeDownloaded().first()) {
+            ctx.ensureActive()
+            val rawPath = item.localPath ?: continue
+            val canonical = StoragePathUtils.canonicalize(rawPath)
+            if (!seenPaths.add(canonical)) continue
+            val accumulator = scan.perLibrary.getOrPut(libraryIdFor(item, seriesLibraries)) { MediaAccumulator() }
+            when {
+                fileAccessLayer.isFile(canonical) -> {
+                    val bytes = fileAccessLayer.length(canonical)
+                    accumulator.present(bytes, volumeKeyFor(canonical, volumes, internalKey))
+                    if (!isUnderAny(canonical, listOf(mediaRoot))) scan.strayFiles.add(canonical to bytes)
+                }
+                !isPathReachable(canonical, volumes) -> {
+                    val lastKnown = item.downloadedBytes ?: 0L
+                    accumulator.offline(lastKnown)
+                    scan.offlineFiles.add(canonical to lastKnown)
+                }
+                else -> accumulator.missing()
+            }
+            processed += 1
+            if (processed % MEDIA_PROGRESS_INTERVAL == 0) {
+                val measured = scan.perLibrary.values.sumOf { it.bytes }
+                setWalkState(StorageCategory.MEDIA, WalkState.Walking(measured, processed))
+            }
+        }
+        return scan
+    }
+
+    private suspend fun libraryIdFor(item: MediaItemEntity, seriesLibraries: HashMap<String, String?>): String {
+        item.libraryId?.takeIf { it.isNotBlank() }?.let { return it }
+        val seriesId = item.seriesId?.takeIf { it.isNotBlank() } ?: return UNFILED_LIBRARY_ID
+        if (!seriesLibraries.containsKey(seriesId)) {
+            seriesLibraries[seriesId] = mediaRepository.getItem(seriesId)?.libraryId
+        }
+        return seriesLibraries[seriesId]?.takeIf { it.isNotBlank() } ?: UNFILED_LIBRARY_ID
+    }
+
+    /**
+     * Whether a path can be read right now. A path that no longer resolves and sits on no mounted
+     * volume is unreachable rather than empty, which is what separates an unplugged card from a file
+     * the user deleted.
+     */
+    private fun isPathReachable(canonicalPath: String, volumes: List<StorageVolumeInfo>): Boolean {
+        if (fileAccessLayer.exists(canonicalPath)) return true
+        val appRoot = StoragePathUtils.canonicalize(context.filesDir.absolutePath)
+        if (isUnderAny(canonicalPath, listOf(appRoot))) return true
+        return volumes.any { canonicalPath == it.key || canonicalPath.startsWith("${it.key}/") }
+    }
+
+    private fun strayLocations(
+        files: List<Pair<String, Long>>,
+        volumes: List<StorageVolumeInfo>,
+        internalKey: String?,
+        isAvailable: Boolean
+    ): List<MediaLocationUsage> = files
+        .groupBy { (path, _) ->
+            volumes.filter { path == it.key || path.startsWith("${it.key}/") }
+                .maxByOrNull { it.key.length }?.key ?: volumeRootOf(path)
+        }
+        .map { (_, group) ->
+            MediaLocationUsage(
+                path = commonAncestorDir(group.map { it.first }),
+                volumeKey = if (isAvailable) volumeKeyFor(group.first().first, volumes, internalKey) else null,
+                bytes = group.sumOf { it.second },
+                fileCount = group.size,
+                isCurrentTarget = false,
+                isAvailable = isAvailable
+            )
+        }
+
+    /**
+     * The volume a path claims to be on when that volume is not mounted, e.g. /storage/1A2B-3C4D.
+     */
+    private fun volumeRootOf(canonicalPath: String): String {
+        val segments = canonicalPath.trim('/').split('/')
+        return if (segments.size >= 2) "/${segments[0]}/${segments[1]}" else "/${segments.firstOrNull().orEmpty()}"
+    }
+
+    private fun commonAncestorDir(paths: List<String>): String {
+        var prefix = paths.firstOrNull()?.substringBeforeLast('/').orEmpty()
+        for (path in paths) {
+            val parent = path.substringBeforeLast('/')
+            while (prefix.isNotEmpty() && parent != prefix && !parent.startsWith("$prefix/")) {
+                prefix = prefix.substringBeforeLast('/', "")
+            }
+        }
+        return prefix.ifEmpty { "/" }
+    }
+
+    private fun falWalk(
+        root: String,
+        ctx: CoroutineContext,
+        onProgress: (Long, Int) -> Unit
+    ): Pair<Long, Int> {
+        var bytes = 0L
+        var files = 0
+        for (entry in fileAccessLayer.walk(root)) {
+            ctx.ensureActive()
+            if (!entry.isFile) continue
+            bytes += entry.size
+            files += 1
+            if (files % WALK_PROGRESS_FILES == 0) onProgress(bytes, files)
+        }
+        return bytes to files
+    }
+
     private fun collectSteamPc(
         volumes: List<StorageVolumeInfo>,
         internalKey: String?,
@@ -621,7 +900,8 @@ class StorageAttributionRepository @Inject constructor(
             StorageCategory.IMAGE_CACHE to listOf(
                 File(imageCacheManager.getCurrentCachePath()),
                 File(filesDir, "steam")
-            )
+            ),
+            StorageCategory.REMOTE_IMAGE_CACHE to listOf(File(cacheDir, COIL_CACHE_DIR))
         )
     }
 

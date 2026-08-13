@@ -32,6 +32,8 @@ private const val ROW_TYPE_STEAM = "steam"
 private const val ROW_TYPE_ANDROID = "android"
 private const val ROW_TYPE_PINNED_REGULAR = "pinned_regular"
 private const val ROW_TYPE_PINNED_VIRTUAL = "pinned_virtual"
+private const val ROW_TYPE_CONTINUE_WATCHING = "continue_watching"
+private const val ROW_TYPE_NEXT_UP = "next_up"
 
 class HomeNavigationDelegate @Inject constructor(
     private val soundManager: SoundFeedbackManager,
@@ -54,6 +56,8 @@ class HomeNavigationDelegate @Inject constructor(
             ROW_TYPE_RECOMMENDATIONS -> HomeRow.Recommendations
             ROW_TYPE_ANDROID -> HomeRow.Android
             ROW_TYPE_STEAM -> HomeRow.Steam
+            ROW_TYPE_CONTINUE_WATCHING -> HomeRow.ContinueWatching
+            ROW_TYPE_NEXT_UP -> HomeRow.NextUp
             ROW_TYPE_PINNED_REGULAR, ROW_TYPE_PINNED_VIRTUAL -> HomeRow.Continue
             else -> HomeRow.Continue
         }
@@ -69,6 +73,8 @@ class HomeNavigationDelegate @Inject constructor(
             HomeRow.Recommendations -> ROW_TYPE_RECOMMENDATIONS to 0
             HomeRow.Android -> ROW_TYPE_ANDROID to 0
             HomeRow.Steam -> ROW_TYPE_STEAM to 0
+            HomeRow.ContinueWatching -> ROW_TYPE_CONTINUE_WATCHING to 0
+            HomeRow.NextUp -> ROW_TYPE_NEXT_UP to 0
             is HomeRow.PinnedRegular -> {
                 savedStateHandle[KEY_PINNED_COLLECTION_ID] = row.collectionId
                 ROW_TYPE_PINNED_REGULAR to 0

@@ -1,0 +1,231 @@
+package com.nendo.argosy.ui.screens.media
+
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.nendo.argosy.core.input.SoundType
+import com.nendo.argosy.data.remote.jellyfin.JellyfinResult
+import com.nendo.argosy.data.repository.MediaRepository
+import com.nendo.argosy.ui.input.InputHandler
+import com.nendo.argosy.ui.input.InputResult
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
+import javax.inject.Inject
+
+@OptIn(ExperimentalCoroutinesApi::class)
+@HiltViewModel
+class MediaLibraryViewModel @Inject constructor(
+    private val mediaRepository: MediaRepository
+) : ViewModel() {
+
+    private val _uiState = MutableStateFlow(MediaLibraryUiState())
+    val uiState: StateFlow<MediaLibraryUiState> = _uiState.asStateFlow()
+
+    private val selectedLibraryId = MutableStateFlow<String?>(null)
+
+    init {
+        observeSignInState()
+        observeLibraries()
+        observeItems()
+    }
+
+    private fun observeSignInState() {
+        viewModelScope.launch {
+            mediaRepository.isSignedIn.collect { signedIn ->
+                _uiState.update { it.copy(isSignedIn = signedIn, isLoading = signedIn && it.libraries.isEmpty()) }
+            }
+        }
+    }
+
+    private fun observeLibraries() {
+        viewModelScope.launch {
+            mediaRepository.observeLibraries().collect { entities ->
+                val libraries = entities.map { it.toMediaLibraryUi() }
+                _uiState.update { state ->
+                    val index = state.selectedLibraryIndex.coerceIn(0, (libraries.size - 1).coerceAtLeast(0))
+                    state.copy(
+                        libraries = libraries,
+                        selectedLibraryIndex = index,
+                        isLoading = state.isLoading && libraries.isEmpty()
+                    )
+                }
+                selectedLibraryId.value = libraries.getOrNull(_uiState.value.selectedLibraryIndex)?.libraryId
+                if (libraries.isEmpty() && _uiState.value.isSignedIn) refresh()
+            }
+        }
+    }
+
+    private fun observeItems() {
+        viewModelScope.launch {
+            selectedLibraryId
+                .filterNotNull()
+                .distinctUntilChanged()
+                .flatMapLatest { libraryId -> mediaRepository.observeLibraryItems(libraryId) }
+                .map { entities ->
+                    val userData = mediaRepository.getUserDataFor(entities.map { it.itemId })
+                    entities.map { it.toMediaItemUi(mediaRepository, userData[it.itemId]) }
+                }
+                .collect { items ->
+                    _uiState.update { state ->
+                        state.copy(
+                            items = items,
+                            focusedIndex = state.focusedIndex.coerceIn(0, (items.size - 1).coerceAtLeast(0)),
+                            isLoading = false
+                        )
+                    }
+                }
+        }
+    }
+
+    fun setColumnsCount(columns: Int) {
+        if (columns <= 0) return
+        _uiState.update { if (it.columnsCount == columns) it else it.copy(columnsCount = columns) }
+    }
+
+    fun selectLibrary(index: Int) {
+        val state = _uiState.value
+        if (state.libraries.isEmpty()) return
+        val target = index.mod(state.libraries.size)
+        if (target == state.selectedLibraryIndex) return
+        _uiState.update { it.copy(selectedLibraryIndex = target, focusedIndex = 0, items = emptyList(), isLoading = true) }
+        selectedLibraryId.value = state.libraries[target].libraryId
+    }
+
+    fun cycleLibrary(direction: Int) {
+        val state = _uiState.value
+        if (state.libraries.size < 2) return
+        selectLibrary(state.selectedLibraryIndex + direction)
+    }
+
+    fun setFocusedIndex(index: Int) {
+        val size = _uiState.value.items.size
+        if (size == 0) return
+        _uiState.update { it.copy(focusedIndex = index.coerceIn(0, size - 1)) }
+    }
+
+    /**
+     * Horizontal movement wraps across the whole grid; vertical movement clamps at the ends, so the
+     * last row cannot fall off into an empty cell.
+     */
+    fun moveFocusHorizontal(direction: Int): Boolean {
+        val size = _uiState.value.items.size
+        if (size == 0) return false
+        _uiState.update { it.copy(focusedIndex = (it.focusedIndex + direction).mod(size)) }
+        return true
+    }
+
+    fun moveFocusVertical(direction: Int): Boolean {
+        val state = _uiState.value
+        if (state.items.isEmpty()) return false
+        val target = state.focusedIndex + direction * state.columnsCount
+        if (target < 0 || target > state.items.lastIndex) return false
+        _uiState.update { it.copy(focusedIndex = target) }
+        return true
+    }
+
+    fun refresh() {
+        if (_uiState.value.isRefreshing) return
+        viewModelScope.launch {
+            _uiState.update { it.copy(isRefreshing = true, refreshLabel = "Refreshing", errorMessage = null) }
+            when (val result = mediaRepository.refreshLibraries()) {
+                is JellyfinResult.Success -> _uiState.update {
+                    it.copy(isRefreshing = false, refreshLabel = null, isLoading = false)
+                }
+                is JellyfinResult.Error -> _uiState.update {
+                    it.copy(isRefreshing = false, refreshLabel = null, isLoading = false, errorMessage = result.message)
+                }
+            }
+        }
+    }
+
+    fun dismissError() {
+        _uiState.update { it.copy(errorMessage = null) }
+    }
+
+    /**
+     * Raises the resume prompt for one tile. A series is not itself playable and an item with
+     * nothing to resume has no choice to offer, so neither raises the prompt and the caller falls
+     * back to its own action.
+     */
+    fun openResumePrompt(index: Int): Boolean {
+        val item = _uiState.value.items.getOrNull(index) ?: return false
+        if (!item.isPlayable || !item.hasResumePosition) return false
+        _uiState.update {
+            it.copy(
+                focusedIndex = index,
+                resumePrompt = MediaResumePrompt(
+                    itemId = item.itemId,
+                    title = item.title,
+                    subtitle = item.episodeLabel ?: item.year?.toString(),
+                    resumeTicks = item.resumeTicks
+                )
+            )
+        }
+        return true
+    }
+
+    fun dismissResumePrompt() {
+        _uiState.update { it.copy(resumePrompt = null) }
+    }
+
+    fun createInputHandler(
+        onBack: () -> Unit,
+        onItemSelect: (String) -> Unit,
+        onPlay: (String) -> Unit = {}
+    ): InputHandler = object : InputHandler {
+        override fun onUp(): InputResult =
+            if (moveFocusVertical(-1)) InputResult.HANDLED else InputResult.handled(SoundType.BOUNDARY)
+
+        override fun onDown(): InputResult =
+            if (moveFocusVertical(1)) InputResult.HANDLED else InputResult.handled(SoundType.BOUNDARY)
+
+        override fun onLeft(): InputResult =
+            if (moveFocusHorizontal(-1)) InputResult.HANDLED else InputResult.handled(SoundType.BOUNDARY)
+
+        override fun onRight(): InputResult =
+            if (moveFocusHorizontal(1)) InputResult.HANDLED else InputResult.handled(SoundType.BOUNDARY)
+
+        override fun onConfirm(): InputResult {
+            val item = _uiState.value.focusedItem ?: return InputResult.handled(SoundType.BOUNDARY)
+            onItemSelect(item.itemId)
+            return InputResult.HANDLED
+        }
+
+        override fun onBack(): InputResult {
+            onBack()
+            return InputResult.HANDLED
+        }
+
+        override fun onPrevSection(): InputResult {
+            cycleLibrary(-1)
+            return InputResult.HANDLED
+        }
+
+        override fun onNextSection(): InputResult {
+            cycleLibrary(1)
+            return InputResult.HANDLED
+        }
+
+        override fun onSecondaryAction(): InputResult {
+            val state = _uiState.value
+            val item = state.focusedItem ?: return InputResult.handled(SoundType.BOUNDARY)
+            if (!item.isPlayable) return InputResult.handled(SoundType.BOUNDARY)
+            if (openResumePrompt(state.focusedIndex)) return InputResult.HANDLED
+            onPlay(item.itemId)
+            return InputResult.HANDLED
+        }
+
+        override fun onContextMenu(): InputResult {
+            refresh()
+            return InputResult.HANDLED
+        }
+    }
+}

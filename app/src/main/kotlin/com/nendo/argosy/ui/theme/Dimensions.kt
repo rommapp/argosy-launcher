@@ -44,6 +44,13 @@ object Dimens {
     val buttonPaddingH: Dp @Composable get() = DimensionTokens.Layout.buttonPaddingH.dp * scale
     val buttonPaddingV: Dp @Composable get() = DimensionTokens.Layout.buttonPaddingV.dp * scale
 
+    val mediaPosterWidth: Dp @Composable get() = DimensionTokens.Layout.mediaPosterWidth.dp * scale
+    val mediaPosterHeight: Dp @Composable get() = DimensionTokens.Layout.mediaPosterHeight.dp * scale
+    val mediaBackdropWidth: Dp @Composable get() = DimensionTokens.Layout.mediaBackdropWidth.dp * scale
+    val mediaBackdropHeight: Dp @Composable get() = DimensionTokens.Layout.mediaBackdropHeight.dp * scale
+    val mediaEpisodeRowHeight: Dp @Composable get() = DimensionTokens.Layout.mediaEpisodeRowHeight.dp * scale
+    val mediaSeasonTabHeight: Dp @Composable get() = DimensionTokens.Layout.mediaSeasonTabHeight.dp * scale
+
     val dotSm: Dp @Composable get() = DimensionTokens.Dot.sm.dp * scale
     val dotLg: Dp @Composable get() = DimensionTokens.Dot.lg.dp * scale
     val avatarXs: Dp @Composable get() = DimensionTokens.Avatar.xs.dp * scale
@@ -64,6 +71,14 @@ object Dimens {
     val modalWidth: Dp @Composable get() = DimensionTokens.Layout.modalWidth.dp * scale
     val modalWidthLg: Dp @Composable get() = DimensionTokens.Layout.modalWidthLg.dp * scale
     val modalWidthXl: Dp @Composable get() = DimensionTokens.Layout.modalWidthXl.dp * scale
+
+    val playerTransportHeight: Dp @Composable get() = DimensionTokens.Layout.playerTransportHeight.dp * scale
+    val playerChromePadding: Dp @Composable get() = DimensionTokens.Layout.playerChromePadding.dp * scale
+    val playerScrubTrackHeight: Dp @Composable get() = DimensionTokens.Layout.playerScrubTrackHeight.dp * scale
+    val playerScrubThumbSize: Dp @Composable get() = DimensionTokens.Layout.playerScrubThumbSize.dp * scale
+    val playerTrickplayWidth: Dp @Composable get() = DimensionTokens.Layout.playerTrickplayWidth.dp * scale
+    val playerTrickplayHeight: Dp @Composable get() = DimensionTokens.Layout.playerTrickplayHeight.dp * scale
+    val playerSkipButtonWidth: Dp @Composable get() = DimensionTokens.Layout.playerSkipButtonWidth.dp * scale
 
     val borderThin = DimensionTokens.Border.thin.dp
     val borderMedium = DimensionTokens.Border.medium.dp

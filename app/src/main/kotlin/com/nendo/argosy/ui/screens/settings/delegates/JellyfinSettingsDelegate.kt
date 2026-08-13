@@ -1,6 +1,7 @@
 package com.nendo.argosy.ui.screens.settings.delegates
 
 import com.nendo.argosy.data.media.MediaDirectoryManager
+import com.nendo.argosy.data.preferences.MediaAudioLanguage
 import com.nendo.argosy.data.preferences.MediaDownloadQuality
 import com.nendo.argosy.data.preferences.MediaStreamingBitrate
 import com.nendo.argosy.data.preferences.MediaSubtitleLanguage
@@ -21,11 +22,25 @@ import java.io.File
 import javax.inject.Inject
 
 /**
+ * What a password sign-in needs to reach the connection layer. The delegate never holds the
+ * credentials past the request: they travel with the event and the form is cleared behind them.
+ */
+data class JellyfinPasswordSignInRequest(
+    val serverUrl: String,
+    val username: String,
+    val password: String
+) {
+    override fun toString(): String =
+        "JellyfinPasswordSignInRequest(serverUrl=$serverUrl, username=$username)"
+}
+
+/**
  * Owns the Jellyfin settings state and every preference write behind it.
  *
- * Sign-in is a two-part contract: this delegate publishes [quickConnectRequestEvent] when the user
- * asks to sign in, and the Jellyfin connection layer runs the Quick Connect exchange, reporting
- * back through [onQuickConnectStarted] and then [onSignedIn] or [onSignInFailed].
+ * Sign-in is a two-part contract: this delegate publishes [quickConnectRequestEvent] or
+ * [passwordSignInRequestEvent] when the user asks to sign in, and the Jellyfin connection layer
+ * runs the exchange, reporting back through [onQuickConnectStarted] and then [onSignedIn] or
+ * [onSignInFailed].
  */
 class JellyfinSettingsDelegate @Inject constructor(
     private val preferencesRepository: UserPreferencesRepository,
@@ -36,6 +51,10 @@ class JellyfinSettingsDelegate @Inject constructor(
 
     private val _quickConnectRequestEvent = MutableSharedFlow<String>()
     val quickConnectRequestEvent: SharedFlow<String> = _quickConnectRequestEvent.asSharedFlow()
+
+    private val _passwordSignInRequestEvent = MutableSharedFlow<JellyfinPasswordSignInRequest>()
+    val passwordSignInRequestEvent: SharedFlow<JellyfinPasswordSignInRequest> =
+        _passwordSignInRequestEvent.asSharedFlow()
 
     private val _openMediaLocationPickerEvent = MutableSharedFlow<Unit>()
     val openMediaLocationPickerEvent: SharedFlow<Unit> = _openMediaLocationPickerEvent.asSharedFlow()
@@ -73,7 +92,7 @@ class JellyfinSettingsDelegate @Inject constructor(
         onFocusReset()
     }
 
-    fun commitServerConfig(scope: CoroutineScope, onFocusReset: () -> Unit) {
+    fun commitServerConfig(scope: CoroutineScope, onFocusReset: () -> Unit, onSaved: () -> Unit) {
         val url = _state.value.configUrl.trim().trimEnd('/')
         if (url.isBlank()) {
             _state.update { it.copy(configError = "Enter a server address") }
@@ -91,21 +110,125 @@ class JellyfinSettingsDelegate @Inject constructor(
                     configuring = false,
                     configUrl = url,
                     configError = null,
-                    configFocusField = null
+                    configFocusField = null,
+                    signInError = null,
+                    passwordFallbackOffered = false
                 )
             }
             onFocusReset()
+            onSaved()
         }
+    }
+
+    /**
+     * Sends the user down whichever sign-in path the server actually offers. Quick Connect is the
+     * default because a controller has no keyboard; the password form is reached only when the
+     * server has reported Quick Connect switched off.
+     */
+    fun requestSignIn(scope: CoroutineScope, onFocusReset: () -> Unit) {
+        if (_state.value.serverUrl.isBlank()) return
+        if (_state.value.quickConnectAvailable) requestQuickConnect(scope) else showLoginForm(onFocusReset)
     }
 
     fun requestQuickConnect(scope: CoroutineScope) {
         val server = _state.value.serverUrl
         if (server.isBlank()) return
+        _state.update {
+            it.copy(quickConnectRequested = true, quickConnectCode = "", signInError = null)
+        }
         scope.launch { _quickConnectRequestEvent.emit(server) }
     }
 
-    fun onQuickConnectStarted() {
-        _state.update { it.copy(quickConnectRequested = true) }
+    fun onQuickConnectStarted(code: String) {
+        _state.update { it.copy(quickConnectRequested = true, quickConnectCode = code) }
+    }
+
+    fun cancelSignIn() {
+        _state.update {
+            it.copy(
+                quickConnectRequested = false,
+                quickConnectCode = "",
+                isSigningIn = false,
+                signInError = null
+            )
+        }
+    }
+
+    /**
+     * Records what the server reported about itself. Availability is only ever narrowed by a live
+     * answer: while nothing has been asked, Quick Connect stays on offer so the keyboard-free path
+     * is not withheld on the strength of a question that was never put.
+     */
+    fun onServerCapabilities(connected: Boolean, supportsQuickConnect: Boolean) {
+        val available = !connected || supportsQuickConnect
+        _state.update {
+            it.copy(
+                quickConnectAvailable = available,
+                passwordFallbackOffered = it.passwordFallbackOffered || !available
+            )
+        }
+    }
+
+    fun showLoginForm(onFocusReset: () -> Unit) {
+        _state.update {
+            it.copy(
+                showLoginForm = true,
+                loginUsername = "",
+                loginPassword = "",
+                loginFocusField = null,
+                quickConnectRequested = false,
+                quickConnectCode = "",
+                isSigningIn = false
+            )
+        }
+        onFocusReset()
+    }
+
+    fun hideLoginForm(onFocusReset: () -> Unit) {
+        _state.update {
+            it.copy(
+                showLoginForm = false,
+                loginUsername = "",
+                loginPassword = "",
+                loginFocusField = null,
+                isSigningIn = false,
+                signInError = null,
+                passwordFallbackOffered = true
+            )
+        }
+        onFocusReset()
+    }
+
+    fun setLoginUsername(username: String) {
+        _state.update { it.copy(loginUsername = username, signInError = null) }
+    }
+
+    fun setLoginPassword(password: String) {
+        _state.update { it.copy(loginPassword = password, signInError = null) }
+    }
+
+    fun setLoginFocusField(field: Int?) {
+        _state.update { it.copy(loginFocusField = field) }
+    }
+
+    fun clearLoginFocusField() {
+        _state.update { it.copy(loginFocusField = null) }
+    }
+
+    fun submitPasswordSignIn(scope: CoroutineScope) {
+        val state = _state.value
+        if (state.serverUrl.isBlank()) return
+        if (state.loginUsername.isBlank() || state.loginPassword.isBlank()) {
+            _state.update { it.copy(signInError = "Enter your username and password") }
+            return
+        }
+        if (state.isSigningIn) return
+        _state.update { it.copy(isSigningIn = true, signInError = null) }
+        scope.launch {
+            _passwordSignInRequestEvent.emit(
+                JellyfinPasswordSignInRequest(state.serverUrl, state.loginUsername, state.loginPassword)
+            )
+        }
     }
 
     fun onSignedIn(userName: String?) {
@@ -113,13 +236,41 @@ class JellyfinSettingsDelegate @Inject constructor(
             it.copy(
                 isSignedIn = true,
                 userName = userName.orEmpty(),
-                quickConnectRequested = false
+                quickConnectRequested = false,
+                quickConnectCode = "",
+                showLoginForm = false,
+                loginUsername = "",
+                loginPassword = "",
+                loginFocusField = null,
+                isSigningIn = false,
+                signInError = null,
+                passwordFallbackOffered = false
             )
         }
     }
 
-    fun onSignInFailed() {
-        _state.update { it.copy(quickConnectRequested = false) }
+    /**
+     * A failure before any code was issued means the Quick Connect exchange never started, which is
+     * what a server with it switched off looks like from here - so the password form opens carrying
+     * the reason. A failure after a code was issued is an expiry or a refusal of that one attempt,
+     * and the user stays where they are with the reason on screen to try again.
+     */
+    fun onSignInFailed(reason: String, onFocusReset: () -> Unit) {
+        val state = _state.value
+        val fallBackToPassword = !state.showLoginForm && state.quickConnectCode.isBlank()
+        _state.update {
+            it.copy(
+                quickConnectRequested = false,
+                quickConnectCode = "",
+                isSigningIn = false,
+                signInError = reason,
+                passwordFallbackOffered = true,
+                showLoginForm = it.showLoginForm || fallBackToPassword,
+                loginUsername = if (fallBackToPassword) "" else it.loginUsername,
+                loginPassword = if (fallBackToPassword) "" else it.loginPassword
+            )
+        }
+        if (fallBackToPassword) onFocusReset()
     }
 
     fun requestSignOut() {
@@ -130,12 +281,24 @@ class JellyfinSettingsDelegate @Inject constructor(
         _state.update { it.copy(showSignOutConfirm = false) }
     }
 
-    fun confirmSignOut(scope: CoroutineScope) {
+    /**
+     * [onSignOut] is the connection layer dropping the session, which clears the stored credentials
+     * as part of forgetting the server. Doing it there rather than here keeps one authority over
+     * what "signed out" means to the rest of the app.
+     */
+    fun confirmSignOut(scope: CoroutineScope, onSignOut: suspend () -> Unit) {
         _state.update { it.copy(showSignOutConfirm = false) }
         scope.launch {
-            preferencesRepository.clearJellyfinCredentials()
+            onSignOut()
             _state.update {
-                it.copy(isSignedIn = false, userName = "", quickConnectRequested = false)
+                it.copy(
+                    isSignedIn = false,
+                    userName = "",
+                    quickConnectRequested = false,
+                    quickConnectCode = "",
+                    signInError = null,
+                    passwordFallbackOffered = false
+                )
             }
         }
     }
@@ -163,6 +326,19 @@ class JellyfinSettingsDelegate @Inject constructor(
         scope.launch {
             preferencesRepository.setMediaMaxStreamingBitrate(bitrate)
             _state.update { it.copy(maxStreamingBitrate = bitrate) }
+        }
+    }
+
+    fun cycleAudioLanguage(scope: CoroutineScope, direction: Int) {
+        val entries = MediaAudioLanguage.entries
+        val next = entries[(entries.indexOf(_state.value.audioLanguage) + direction).mod(entries.size)]
+        setAudioLanguage(scope, next)
+    }
+
+    fun setAudioLanguage(scope: CoroutineScope, language: MediaAudioLanguage) {
+        scope.launch {
+            preferencesRepository.setMediaAudioLanguage(language)
+            _state.update { it.copy(audioLanguage = language) }
         }
     }
 

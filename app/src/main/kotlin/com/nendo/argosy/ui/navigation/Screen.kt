@@ -36,6 +36,10 @@ sealed class Screen(val route: String) {
     data object GameDetail : Screen("game/{gameId}") {
         fun createRoute(gameId: Long) = "game/$gameId"
     }
+    data object MediaLibrary : Screen("media_library")
+    data object MediaDetail : Screen("media_item/{itemId}") {
+        fun createRoute(itemId: String) = "media_item/$itemId"
+    }
     data object Search : Screen("search")
     data object ManagePins : Screen("manage_pins")
     data object Social : Screen("social")
@@ -61,6 +65,8 @@ sealed class Screen(val route: String) {
         const val ROUTE_DOWNLOADS = "downloads"
         const val ROUTE_SAVE_SYNC = "save_sync"
         const val ROUTE_APPS = "apps"
+        const val ROUTE_MEDIA_LIBRARY = "media_library"
+        const val ROUTE_MEDIA_DETAIL = "media_item"
         const val ROUTE_SEARCH = "search"
         const val ROUTE_MANAGE_PINS = "manage_pins"
         const val ROUTE_SOCIAL = "social"

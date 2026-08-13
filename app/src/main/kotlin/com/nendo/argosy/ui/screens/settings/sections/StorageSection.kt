@@ -22,6 +22,7 @@ import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.SportsEsports
 import androidx.compose.material.icons.outlined.LibraryMusic
+import androidx.compose.material.icons.outlined.Movie
 import androidx.compose.material.icons.outlined.MusicNote
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -58,10 +59,11 @@ import com.nendo.argosy.ui.util.clickableNoFocus
 import com.nendo.argosy.ui.util.pressScale
 import com.nendo.argosy.util.formatBytes
 
-internal data class StorageLayoutState(val steamVisible: Boolean) {
+internal data class StorageLayoutState(val steamVisible: Boolean, val mediaVisible: Boolean) {
     companion object {
         fun from(state: SettingsUiState) = StorageLayoutState(
-            steamVisible = storageSteamVisible(state)
+            steamVisible = storageSteamVisible(state),
+            mediaVisible = storageMediaVisible(state)
         )
     }
 }
@@ -72,6 +74,14 @@ internal fun storageSteamVisible(state: SettingsUiState): Boolean =
 internal fun storageSteamVisibleLive(state: SettingsUiState): Boolean =
     state.steam.connectionState == SteamConnectionState.LOGGED_IN ||
         (state.attribution.snapshot?.categories?.get(StorageCategory.STEAM)?.bytes ?: 0L) > 0L
+
+internal fun storageMediaVisible(state: SettingsUiState): Boolean =
+    state.attribution.mediaTileLatched
+
+internal fun storageMediaVisibleLive(state: SettingsUiState): Boolean =
+    state.jellyfin.isSignedIn ||
+        (state.attribution.snapshot?.categories?.get(StorageCategory.MEDIA)?.bytes ?: 0L) > 0L ||
+        state.attribution.snapshot?.mediaPerLibrary?.isNotEmpty() == true
 
 internal sealed class StorageItem(
     val key: String,
@@ -90,6 +100,7 @@ internal sealed class StorageItem(
     data object RecomputeRow : StorageItem("recomputeRow", "overview")
     data object GamesTile : StorageItem("gamesTile", "overview")
     data object MusicTile : StorageItem("musicTile", "overview")
+    data object MediaTile : StorageItem("mediaTile", "overview", { it.mediaVisible })
     data object CachesTile : StorageItem("cachesTile", "overview")
     data object SteamTile : StorageItem("steamTile", "overview", { it.steamVisible })
 
@@ -116,7 +127,7 @@ internal sealed class StorageItem(
 
         val ALL: List<StorageItem>
             get() = listOf(
-                VolumeHero, RecomputeRow, GamesTile, MusicTile, CachesTile, SteamTile,
+                VolumeHero, RecomputeRow, GamesTile, MediaTile, MusicTile, CachesTile, SteamTile,
                 LocationsSpacer, LocationsHeader,
                 GlobalRomPath, ImageCache, MusicLocation, BiosFolder, BuiltinSavePath, BuiltinStatePath,
                 DownloadsSpacer, DownloadsHeader, MaxDownloads, Threshold,
@@ -159,7 +170,13 @@ internal fun storageSections(info: StorageLayoutInfo): List<ListSection> =
     info.layout.buildSections(info.state)
 
 private val CACHES_CATEGORIES: Set<StorageCategory> = StorageCategory.entries.toSet() -
-    setOf(StorageCategory.GAMES, StorageCategory.MUSIC, StorageCategory.STEAM, StorageCategory.ANDROID_APPS)
+    setOf(
+        StorageCategory.GAMES,
+        StorageCategory.MUSIC,
+        StorageCategory.MEDIA,
+        StorageCategory.STEAM,
+        StorageCategory.ANDROID_APPS
+    )
 
 private fun groupBytes(snapshot: StorageSnapshot?, group: Set<StorageCategory>): Long =
     group.sumOf { snapshot?.categories?.get(it)?.bytes ?: 0L }
@@ -178,7 +195,7 @@ private fun groupPerVolume(snapshot: StorageSnapshot?, group: Set<StorageCategor
 }
 
 @Composable
-private fun RecomputeRow(
+internal fun RecomputeRow(
     label: String,
     isRefreshing: Boolean,
     isFocused: Boolean,
@@ -256,7 +273,8 @@ fun StorageSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
     val walkProgress = attribution.walkProgress
 
     val steamVisible = storageSteamVisible(uiState)
-    val layoutState = remember(steamVisible) { StorageLayoutState(steamVisible) }
+    val mediaVisible = storageMediaVisible(uiState)
+    val layoutState = remember(steamVisible, mediaVisible) { StorageLayoutState(steamVisible, mediaVisible) }
     val visibleItems = remember(layoutState) { storageLayout.visibleItems(layoutState) }
     val sections = remember(layoutState) { storageLayout.buildSections(layoutState) }
 
@@ -265,6 +283,12 @@ fun StorageSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
     }
     val musicBytes = remember(snapshot, walkProgress) {
         displayBytes(snapshot, walkProgress[StorageCategory.MUSIC], setOf(StorageCategory.MUSIC))
+    }
+    val mediaBytes = remember(snapshot, walkProgress) {
+        displayBytes(snapshot, walkProgress[StorageCategory.MEDIA], setOf(StorageCategory.MEDIA))
+    }
+    val mediaCount = remember(snapshot) {
+        snapshot?.mediaPerLibrary?.sumOf { it.downloadedCount } ?: 0
     }
     val steamBytes = remember(snapshot, walkProgress) {
         displayBytes(snapshot, walkProgress[StorageCategory.STEAM], setOf(StorageCategory.STEAM))
@@ -281,10 +305,10 @@ fun StorageSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
     val primary = MaterialTheme.colorScheme.primary
     val secondary = MaterialTheme.colorScheme.secondary
     val categoryColors = remember(primary, secondary) {
-        volumeMeterCategoryColors(primary, secondary, 5)
+        volumeMeterCategoryColors(primary, secondary, 6)
     }
     val appsVisible = appsBytes > 0L
-    val heroCategories = remember(snapshot, walkProgress, steamVisible, appsVisible, categoryColors) {
+    val heroCategories = remember(snapshot, walkProgress, steamVisible, mediaVisible, appsVisible, categoryColors) {
         buildList {
             add(VolumeMeterCategory(
                 label = "Games",
@@ -292,6 +316,14 @@ fun StorageSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                 bytes = gamesBytes,
                 perVolume = groupPerVolume(snapshot, setOf(StorageCategory.GAMES))
             ))
+            if (mediaVisible) {
+                add(VolumeMeterCategory(
+                    label = "Media",
+                    color = categoryColors[5],
+                    bytes = mediaBytes,
+                    perVolume = groupPerVolume(snapshot, setOf(StorageCategory.MEDIA))
+                ))
+            }
             if (steamVisible) {
                 add(VolumeMeterCategory(
                     label = "Steam & PC",
@@ -365,6 +397,16 @@ fun StorageSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                 isFocused = isFocused(item),
                 isWorking = walkProgress[StorageCategory.GAMES].isActiveWalk(),
                 onClick = { viewModel.navigateToStorageGames() }
+            )
+
+            StorageItem.MediaTile -> CategoryTile(
+                title = "Media",
+                icon = Icons.Outlined.Movie,
+                primaryStat = formatBytes(mediaBytes),
+                secondaryStat = if (mediaCount == 1) "1 title downloaded" else "$mediaCount titles downloaded",
+                isFocused = isFocused(item),
+                isWorking = walkProgress[StorageCategory.MEDIA].isActiveWalk(),
+                onClick = { viewModel.navigateToStorageMedia() }
             )
 
             StorageItem.MusicTile -> CategoryTile(

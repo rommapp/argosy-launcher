@@ -33,6 +33,7 @@ import com.nendo.argosy.ui.screens.home.delegates.HomeGameMenuDelegate
 import com.nendo.argosy.ui.screens.home.delegates.HomeInputActions
 import com.nendo.argosy.ui.screens.home.delegates.HomeInputHandler
 import com.nendo.argosy.ui.screens.home.delegates.HomeLibraryDelegate
+import com.nendo.argosy.ui.screens.home.delegates.HomeMediaDelegate
 import com.nendo.argosy.ui.screens.home.delegates.HomeNavigationDelegate
 import com.nendo.argosy.ui.screens.home.delegates.HomeSyncDelegate
 import com.nendo.argosy.ui.screens.home.delegates.HomeVideoPreviewDelegate
@@ -77,6 +78,7 @@ class HomeViewModel @Inject constructor(
     val syncDelegate: HomeSyncDelegate,
     val videoPreviewDelegate: HomeVideoPreviewDelegate,
     val gameMenuDelegate: HomeGameMenuDelegate,
+    val mediaDelegate: HomeMediaDelegate,
     private val steamContentManager: com.nendo.argosy.data.steam.SteamContentManager,
     private val steamDownloadPromptController: com.nendo.argosy.data.steam.SteamDownloadPromptController,
     private val appsRepository: com.nendo.argosy.data.repository.AppsRepository,
@@ -142,6 +144,7 @@ class HomeViewModel @Inject constructor(
         observeDelegateStates()
         observeHomeTiles()
         observeTilePrompts()
+        mediaDelegate.observe(viewModelScope)
         gradientExtractionDelegate.startBackgroundProcessing(viewModelScope)
     }
 
@@ -204,6 +207,32 @@ class HomeViewModel @Inject constructor(
                         showGameMenu = menu.showGameMenu,
                         gameMenuFocusIndex = menu.gameMenuFocusIndex
                     )
+                }
+            }
+        }
+        viewModelScope.launch {
+            mediaDelegate.state.collect { media ->
+                _uiState.update { state ->
+                    val updated = state.copy(
+                        nextUpMedia = media.nextUp,
+                        continueWatchingMedia = media.continueWatching,
+                        isMediaSignedIn = media.isSignedIn,
+                        isMediaLoading = media.isLoading,
+                        showNextUpRow = media.showNextUp,
+                        showContinueWatchingRow = media.showContinueWatching,
+                        mediaResumePrompt = media.resumePrompt
+                    )
+                    if (updated.currentRow in updated.availableRows) {
+                        updated.copy(
+                            focusedGameIndex = updated.focusedGameIndex
+                                .coerceIn(0, (updated.currentItems.size - 1).coerceAtLeast(0))
+                        )
+                    } else {
+                        updated.copy(
+                            currentRow = updated.availableRows.firstOrNull() ?: HomeRow.Continue,
+                            focusedGameIndex = 0
+                        )
+                    }
                 }
             }
         }
@@ -433,8 +462,18 @@ class HomeViewModel @Inject constructor(
         }
     }
 
+    /**
+     * A media rail is owned by its own delegate and holds no games, so refreshing the game library
+     * has nothing to say about it. Running the game path over one would reset its cursor to the
+     * first tile on every return to the foreground and, on an empty rail, throw the user off the row
+     * instead of leaving the empty state up.
+     */
     private suspend fun refreshCurrentRowInternal() {
         val state = _uiState.value
+        if (state.isMediaRow) {
+            flushLibraryState()
+            return
+        }
         val focusedGameId = state.focusedGame?.id
         val result = libraryDelegate.refreshCurrentRow(state.currentRow, focusedGameId)
 
@@ -494,6 +533,8 @@ class HomeViewModel @Inject constructor(
             HomeRow.Recommendations -> libraryDelegate.loadRecommendations()
             HomeRow.Android -> { }
             HomeRow.Steam -> { }
+            HomeRow.ContinueWatching -> mediaDelegate.refresh(viewModelScope)
+            HomeRow.NextUp -> mediaDelegate.refresh(viewModelScope)
             is HomeRow.PinnedRegular -> libraryDelegate.loadGamesForPinnedCollection(row.pinId)
             is HomeRow.PinnedVirtual -> libraryDelegate.loadGamesForPinnedCollection(row.pinId)
         }
@@ -786,14 +827,29 @@ class HomeViewModel @Inject constructor(
                     else -> downloadDelegate.queueDownload(viewModelScope, game.id)
                 }
             }
+            is HomeRowItem.Media -> playMedia(item.media.itemId, startOver = false)
             is HomeRowItem.ViewAll -> navigateToLibrary(item.platformId, item.sourceFilter)
         }
     }
 
+    /**
+     * Touch's equivalent of holding confirm. On a game it opens quick actions; on a media tile it
+     * asks whether to start over, which is the only way a touch user reaches that choice.
+     */
     fun handleItemLongPress(index: Int) {
         val state = _uiState.value
         if (index < 0 || index >= state.currentItems.size) return
         val item = state.currentItems[index]
+        if (item is HomeRowItem.Media) {
+            if (index != state.focusedGameIndex) {
+                _uiState.update { it.copy(focusedGameIndex = index) }
+                saveCurrentState()
+            }
+            if (!mediaDelegate.openResumePrompt(item.media)) {
+                playMedia(item.media.itemId, startOver = false)
+            }
+            return
+        }
         if (item !is HomeRowItem.Game) return
 
         if (index != state.focusedGameIndex) {
@@ -926,6 +982,46 @@ class HomeViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Starts one media item. The tile a user confirms wears a series, but what plays is the episode
+     * the rail named: the one the server says comes next, or the one that was left part watched. The
+     * id handed on here is always that episode's and never the series'.
+     */
+    private fun playMedia(itemId: String, startOver: Boolean) {
+        videoPreviewDelegate.deactivateVideoPreview()
+        saveCurrentState()
+        viewModelScope.launch { _events.emit(HomeEvent.PlayMedia(itemId, startOver)) }
+    }
+
+    override fun playFocusedMedia(startOver: Boolean) {
+        val media = _uiState.value.focusedMedia ?: return
+        playMedia(media.itemId, startOver)
+    }
+
+    override fun openMediaResumePrompt(): Boolean {
+        val media = _uiState.value.focusedMedia ?: return false
+        return mediaDelegate.openResumePrompt(media)
+    }
+
+    override fun openFocusedMediaDetail() {
+        val media = _uiState.value.focusedMedia ?: return
+        viewModelScope.launch { _events.emit(HomeEvent.NavigateToMediaDetail(media.detailItemId)) }
+    }
+
+    override fun refreshMediaRails() = mediaDelegate.refresh(viewModelScope)
+
+    fun dismissMediaResumePrompt() = mediaDelegate.dismissResumePrompt()
+
+    fun resumeMedia(itemId: String) {
+        mediaDelegate.dismissResumePrompt()
+        playMedia(itemId, startOver = false)
+    }
+
+    fun startMediaOver(itemId: String) {
+        mediaDelegate.dismissResumePrompt()
+        playMedia(itemId, startOver = true)
+    }
+
     // --- Public API: Collection Modal ---
 
     fun showAddToCollectionModal(gameId: Long) = collectionModalDelegate.show(viewModelScope, gameId)
@@ -979,6 +1075,7 @@ class HomeViewModel @Inject constructor(
     fun onResume() {
         gameLaunchDelegate.handleSessionEnd(viewModelScope)
         libraryDelegate.invalidateRecentGamesCache()
+        mediaDelegate.refresh(viewModelScope)
         viewModelScope.launch { refreshCurrentRowInternal() }
         syncDelegate.refreshFavoritesIfConnected(viewModelScope) {
             libraryDelegate.loadFavorites()

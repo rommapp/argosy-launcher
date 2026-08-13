@@ -27,6 +27,7 @@ import androidx.compose.material.icons.filled.CloudSync
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.FeaturedPlayList
 import androidx.compose.material.icons.filled.Groups
+import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.SportsEsports
@@ -766,6 +767,7 @@ private fun getIconForRoute(route: String): ImageVector = when (route) {
     Screen.Home.route -> Icons.Filled.FeaturedPlayList
     Screen.Social.route -> Icons.Default.Groups
     Screen.Library.route -> Icons.Default.VideoLibrary
+    Screen.MediaLibrary.route -> Icons.Default.Movie
     Screen.Downloads.route -> Icons.Default.Download
     Screen.SaveSync.route -> Icons.Default.CloudSync
     Screen.Apps.route -> Icons.Default.Apps

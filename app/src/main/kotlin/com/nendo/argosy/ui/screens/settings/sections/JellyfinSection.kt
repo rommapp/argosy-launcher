@@ -1,18 +1,26 @@
 package com.nendo.argosy.ui.screens.settings.sections
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.Dns
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Login
+import androidx.compose.material.icons.filled.Password
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import com.nendo.argosy.data.preferences.MediaAudioLanguage
 import com.nendo.argosy.data.preferences.MediaDownloadQuality
 import com.nendo.argosy.data.preferences.MediaStreamingBitrate
 import com.nendo.argosy.data.preferences.MediaSubtitleLanguage
@@ -25,15 +33,20 @@ import com.nendo.argosy.ui.screens.settings.JellyfinState
 import com.nendo.argosy.ui.screens.settings.SettingsUiState
 import com.nendo.argosy.ui.screens.settings.SettingsViewModel
 import com.nendo.argosy.ui.screens.settings.components.JellyfinConfigForm
+import com.nendo.argosy.ui.screens.settings.components.JellyfinSignInForm
 import com.nendo.argosy.ui.screens.settings.components.SectionHeader
 import com.nendo.argosy.ui.screens.settings.components.SectionPaneLayout
 import com.nendo.argosy.ui.screens.settings.menu.SettingsLayout
 import com.nendo.argosy.ui.theme.Dimens
+import com.nendo.argosy.ui.theme.LocalArgosyTheme
 
 internal data class JellyfinLayoutState(
     val hasServer: Boolean,
     val isSignedIn: Boolean,
-    val subtitlesEnabled: Boolean
+    val subtitlesEnabled: Boolean,
+    val hasQuickConnectCode: Boolean,
+    val hasSignInError: Boolean,
+    val showPasswordFallback: Boolean
 ) {
     companion object {
         fun from(state: SettingsUiState): JellyfinLayoutState = from(state.jellyfin)
@@ -41,7 +54,11 @@ internal data class JellyfinLayoutState(
         fun from(jellyfin: JellyfinState): JellyfinLayoutState = JellyfinLayoutState(
             hasServer = jellyfin.hasServer,
             isSignedIn = jellyfin.isSignedIn,
-            subtitlesEnabled = jellyfin.subtitleMode != MediaSubtitleMode.OFF
+            subtitlesEnabled = jellyfin.subtitleMode != MediaSubtitleMode.OFF,
+            hasQuickConnectCode = jellyfin.hasQuickConnectCode,
+            hasSignInError = jellyfin.signInError != null && !jellyfin.isSignedIn,
+            showPasswordFallback = jellyfin.hasServer && !jellyfin.isSignedIn &&
+                !jellyfin.quickConnectRequested && jellyfin.passwordFallbackOffered
         )
     }
 }
@@ -51,7 +68,8 @@ internal sealed class JellyfinItem(
     val section: String,
     val visibleWhen: (JellyfinLayoutState) -> Boolean = { true }
 ) {
-    val isFocusable: Boolean get() = this !is Header
+    val isFocusable: Boolean get() = this !is Header && this !is QuickConnectCode &&
+        this !is SignInError
 
     class Header(
         key: String,
@@ -62,8 +80,21 @@ internal sealed class JellyfinItem(
 
     data object MediaServer : JellyfinItem("jellyfinServer", "server")
     data object Account : JellyfinItem("jellyfinAccount", "server", { it.hasServer })
+    data object QuickConnectCode : JellyfinItem(
+        "jellyfinQuickConnectCode", "server",
+        { it.hasQuickConnectCode }
+    )
+    data object SignInError : JellyfinItem(
+        "jellyfinSignInError", "server",
+        { it.hasSignInError }
+    )
+    data object PasswordSignIn : JellyfinItem(
+        "jellyfinPasswordSignIn", "server",
+        { it.showPasswordFallback }
+    )
 
     data object StreamingBitrate : JellyfinItem("jellyfinBitrate", "playback", { it.hasServer })
+    data object AudioLanguage : JellyfinItem("jellyfinAudioLanguage", "playback", { it.hasServer })
     data object Subtitles : JellyfinItem("jellyfinSubtitles", "playback", { it.hasServer })
     data object SubtitleLanguage : JellyfinItem(
         "jellyfinSubtitleLanguage", "playback",
@@ -83,9 +114,9 @@ internal sealed class JellyfinItem(
         val ALL: List<JellyfinItem>
             get() = listOf(
                 Header("jellyfinServerHeader", "server", "SERVER"),
-                MediaServer, Account,
+                MediaServer, Account, QuickConnectCode, SignInError, PasswordSignIn,
                 Header("jellyfinPlaybackHeader", "playback", "PLAYBACK", { it.hasServer }),
-                StreamingBitrate, Subtitles, SubtitleLanguage, BurnInSubtitles,
+                StreamingBitrate, AudioLanguage, Subtitles, SubtitleLanguage, BurnInSubtitles,
                 Header("jellyfinDownloadsHeader", "downloads", "DOWNLOADS", { it.hasServer }),
                 DownloadQuality, MediaLocation,
                 Header("jellyfinPrivacyHeader", "privacy", "PRIVACY", { it.hasServer }),
@@ -121,11 +152,19 @@ internal fun jellyfinSections(state: JellyfinLayoutState) = jellyfinLayout.build
 internal fun jellyfinFocusIndexOf(item: JellyfinItem, state: JellyfinLayoutState): Int =
     jellyfinLayout.focusIndexOf(item, state)
 
+private fun accountTitle(jellyfin: JellyfinState): String = when {
+    jellyfin.isSignedIn -> "Sign Out"
+    jellyfin.quickConnectRequested -> "Cancel Sign In"
+    else -> "Sign In"
+}
+
 private fun accountSubtitle(jellyfin: JellyfinState): String = when {
     jellyfin.isSignedIn -> jellyfin.userName.takeIf { it.isNotBlank() }
         ?.let { "Signed in as $it" } ?: "Signed in"
-    jellyfin.quickConnectRequested -> "Waiting for approval in your Jellyfin app"
-    else -> "Approve a Quick Connect code from your Jellyfin app"
+    jellyfin.hasQuickConnectCode -> "Waiting for approval in your Jellyfin app"
+    jellyfin.quickConnectRequested -> "Asking the server for a code"
+    jellyfin.quickConnectAvailable -> "Approve a Quick Connect code from your Jellyfin app"
+    else -> "Sign in with your Jellyfin username and password"
 }
 
 private fun subtitleModeSubtitle(mode: MediaSubtitleMode): String = when (mode) {
@@ -136,19 +175,62 @@ private fun subtitleModeSubtitle(mode: MediaSubtitleMode): String = when (mode) 
 
 @Composable
 fun JellyfinSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
-    if (uiState.jellyfin.configuring) {
-        JellyfinConfigForm(uiState, viewModel)
-    } else {
-        JellyfinContent(uiState, viewModel)
+    when {
+        uiState.jellyfin.configuring -> JellyfinConfigForm(uiState, viewModel)
+        uiState.jellyfin.showLoginForm -> JellyfinSignInForm(uiState, viewModel)
+        else -> JellyfinContent(uiState, viewModel)
     }
+}
+
+/**
+ * The Quick Connect code is what the user types into a client that is already signed in, so it is
+ * given the weight of the screen rather than a value slot on a settings row.
+ */
+@Composable
+private fun QuickConnectCodePanel(code: String) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(
+                LocalArgosyTheme.current.focusAccent.copy(alpha = 0.15f),
+                RoundedCornerShape(Dimens.radiusMd)
+            )
+            .padding(Dimens.spacingMd),
+        verticalArrangement = Arrangement.spacedBy(Dimens.spacingXs)
+    ) {
+        Text(
+            text = "Quick Connect Code",
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Text(
+            text = code,
+            style = MaterialTheme.typography.headlineMedium,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+        Text(
+            text = "Open Jellyfin on a device you are already signed in on, go to Quick Connect " +
+                "and enter this code. It expires after a few minutes.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+}
+
+@Composable
+private fun SignInErrorPanel(message: String) {
+    Text(
+        text = message,
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.error,
+        modifier = Modifier.padding(horizontal = Dimens.spacingMd)
+    )
 }
 
 @Composable
 private fun JellyfinContent(uiState: SettingsUiState, viewModel: SettingsViewModel) {
     val jellyfin = uiState.jellyfin
-    val layoutState = remember(jellyfin.serverUrl, jellyfin.isSignedIn, jellyfin.subtitleMode) {
-        JellyfinLayoutState.from(jellyfin)
-    }
+    val layoutState = remember(jellyfin) { JellyfinLayoutState.from(jellyfin) }
     val visibleItems = remember(layoutState) { jellyfinLayout.visibleItems(layoutState) }
     val sections = remember(layoutState) { jellyfinLayout.buildSections(layoutState) }
 
@@ -185,14 +267,29 @@ private fun JellyfinContent(uiState: SettingsUiState, viewModel: SettingsViewMod
 
             JellyfinItem.Account -> ActionPreference(
                 icon = if (jellyfin.isSignedIn) Icons.AutoMirrored.Filled.Logout else Icons.Default.Login,
-                title = if (jellyfin.isSignedIn) "Sign Out" else "Sign In",
+                title = accountTitle(jellyfin),
                 subtitle = accountSubtitle(jellyfin),
                 isFocused = isFocused(item),
                 isDangerous = jellyfin.isSignedIn,
                 onClick = {
-                    if (jellyfin.isSignedIn) viewModel.requestJellyfinSignOut()
-                    else viewModel.requestJellyfinQuickConnect()
+                    when {
+                        jellyfin.isSignedIn -> viewModel.requestJellyfinSignOut()
+                        jellyfin.quickConnectRequested -> viewModel.cancelJellyfinSignIn()
+                        else -> viewModel.requestJellyfinSignIn()
+                    }
                 }
+            )
+
+            JellyfinItem.QuickConnectCode -> QuickConnectCodePanel(jellyfin.quickConnectCode)
+
+            JellyfinItem.SignInError -> SignInErrorPanel(jellyfin.signInError.orEmpty())
+
+            JellyfinItem.PasswordSignIn -> ActionPreference(
+                icon = Icons.Default.Password,
+                title = "Sign In With Password",
+                subtitle = "Use your Jellyfin username and password instead of a code",
+                isFocused = isFocused(item),
+                onClick = { viewModel.showJellyfinLoginForm() }
             )
 
             JellyfinItem.StreamingBitrate -> CyclePreference(
@@ -204,6 +301,18 @@ private fun JellyfinContent(uiState: SettingsUiState, viewModel: SettingsViewMod
                 onPrev = { viewModel.cycleJellyfinStreamingBitrate(-1) },
                 options = remember { MediaStreamingBitrate.entries.map { it.displayName } },
                 onSelect = { viewModel.setJellyfinStreamingBitrate(MediaStreamingBitrate.entries[it]) },
+                pickerRequestToken = if (uiState.enumPickerKey == item.key) uiState.enumPickerToken else 0
+            )
+
+            JellyfinItem.AudioLanguage -> CyclePreference(
+                title = "Audio Language",
+                value = jellyfin.audioLanguage.displayName,
+                subtitle = "Chosen first when a title carries more than one audio track",
+                isFocused = isFocused(item),
+                onClick = { viewModel.cycleJellyfinAudioLanguage(1) },
+                onPrev = { viewModel.cycleJellyfinAudioLanguage(-1) },
+                options = remember { MediaAudioLanguage.entries.map { it.displayName } },
+                onSelect = { viewModel.setJellyfinAudioLanguage(MediaAudioLanguage.entries[it]) },
                 pickerRequestToken = if (uiState.enumPickerKey == item.key) uiState.enumPickerToken else 0
             )
 
@@ -233,9 +342,11 @@ private fun JellyfinContent(uiState: SettingsUiState, viewModel: SettingsViewMod
             JellyfinItem.BurnInSubtitles -> SwitchPreference(
                 title = "Burn In Image Subtitles",
                 subtitle = if (jellyfin.burnInImageSubtitles) {
-                    "Image tracks are rendered by the server, which forces a transcode"
+                    "New playbacks start with image tracks rendered by the server, which forces " +
+                        "a transcode. Change it for a single title in the subtitle picker"
                 } else {
-                    "Image tracks are skipped"
+                    "New playbacks start with image tracks off. Turn one on for a single title " +
+                        "in the subtitle picker"
                 },
                 isEnabled = jellyfin.burnInImageSubtitles,
                 isFocused = isFocused(item),

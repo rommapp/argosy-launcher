@@ -28,6 +28,29 @@ internal data class PersistedPlatformUsage(
 )
 
 @JsonClass(generateAdapter = true)
+internal data class PersistedMediaLibraryUsage(
+    val libraryId: String,
+    val name: String,
+    val displayOrder: Int,
+    val downloadedCount: Int,
+    val bytes: Long,
+    val perVolume: Map<String, Long>,
+    val offlineCount: Int,
+    val offlineBytes: Long,
+    val missingCount: Int
+)
+
+@JsonClass(generateAdapter = true)
+internal data class PersistedMediaLocationUsage(
+    val path: String,
+    val volumeKey: String?,
+    val bytes: Long,
+    val fileCount: Int,
+    val isCurrentTarget: Boolean,
+    val isAvailable: Boolean
+)
+
+@JsonClass(generateAdapter = true)
 internal data class PersistedVolumeFingerprint(
     val totalBytes: Long,
     val usedBytes: Long
@@ -38,7 +61,9 @@ internal data class PersistedStorageSnapshot(
     val computedAt: Long,
     val categories: Map<String, PersistedCategoryUsage>,
     val gamesPerPlatform: List<PersistedPlatformUsage>,
-    val volumeFingerprints: Map<String, PersistedVolumeFingerprint> = emptyMap()
+    val volumeFingerprints: Map<String, PersistedVolumeFingerprint> = emptyMap(),
+    val mediaPerLibrary: List<PersistedMediaLibraryUsage> = emptyList(),
+    val mediaLocations: List<PersistedMediaLocationUsage> = emptyList()
 )
 
 /** Persists the last completed [StorageSnapshot] as Moshi JSON under a single DataStore key. */
@@ -75,6 +100,29 @@ class StorageSnapshotStore @Inject constructor(
         },
         volumeFingerprints = volumeFingerprints.mapValues { (_, fp) ->
             VolumeFingerprint(fp.totalBytes, fp.usedBytes)
+        },
+        mediaPerLibrary = mediaPerLibrary.map {
+            MediaLibraryUsage(
+                libraryId = it.libraryId,
+                name = it.name,
+                displayOrder = it.displayOrder,
+                downloadedCount = it.downloadedCount,
+                bytes = it.bytes,
+                perVolume = it.perVolume,
+                offlineCount = it.offlineCount,
+                offlineBytes = it.offlineBytes,
+                missingCount = it.missingCount
+            )
+        },
+        mediaLocations = mediaLocations.map {
+            MediaLocationUsage(
+                path = it.path,
+                volumeKey = it.volumeKey,
+                bytes = it.bytes,
+                fileCount = it.fileCount,
+                isCurrentTarget = it.isCurrentTarget,
+                isAvailable = it.isAvailable
+            )
         }
     )
 
@@ -88,6 +136,29 @@ class StorageSnapshotStore @Inject constructor(
         },
         volumeFingerprints = volumeFingerprints.mapValues { (_, fp) ->
             PersistedVolumeFingerprint(fp.totalBytes, fp.usedBytes)
+        },
+        mediaPerLibrary = mediaPerLibrary.map {
+            PersistedMediaLibraryUsage(
+                libraryId = it.libraryId,
+                name = it.name,
+                displayOrder = it.displayOrder,
+                downloadedCount = it.downloadedCount,
+                bytes = it.bytes,
+                perVolume = it.perVolume,
+                offlineCount = it.offlineCount,
+                offlineBytes = it.offlineBytes,
+                missingCount = it.missingCount
+            )
+        },
+        mediaLocations = mediaLocations.map {
+            PersistedMediaLocationUsage(
+                path = it.path,
+                volumeKey = it.volumeKey,
+                bytes = it.bytes,
+                fileCount = it.fileCount,
+                isCurrentTarget = it.isCurrentTarget,
+                isAvailable = it.isAvailable
+            )
         }
     )
 

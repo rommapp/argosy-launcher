@@ -11,9 +11,16 @@ package com.nendo.argosy.domain.model
  * [PLATFORM] repeats once per platform that has games, excluding the Steam and Android platforms
  * because they are their own rows. [PINNED_REGULAR] and [PINNED_VIRTUAL] repeat once per pinned
  * collection, ordered by descending display order.
+ *
+ * [CONTINUE_WATCHING] and [NEXT_UP] are the media rails, and they are two rows rather than one on
+ * purpose: continuing offers what was left part-watched, while next up offers the episode after the
+ * one that was finished. Folding them together would surface a finished episode as the thing to
+ * play next, which is the opposite of what next up means.
  */
 enum class HomeSectionKind {
     CONTINUE,
+    CONTINUE_WATCHING,
+    NEXT_UP,
     RECOMMENDATIONS,
     FAVORITES,
     ANDROID,
@@ -26,6 +33,14 @@ enum class HomeSectionKind {
         /**
          * The fixed rows that precede the per-platform and per-collection rows, in order.
          */
-        val LEADING: List<HomeSectionKind> = listOf(CONTINUE, RECOMMENDATIONS, FAVORITES, ANDROID, STEAM)
+        val LEADING: List<HomeSectionKind> = listOf(
+            CONTINUE,
+            CONTINUE_WATCHING,
+            NEXT_UP,
+            RECOMMENDATIONS,
+            FAVORITES,
+            ANDROID,
+            STEAM
+        )
     }
 }

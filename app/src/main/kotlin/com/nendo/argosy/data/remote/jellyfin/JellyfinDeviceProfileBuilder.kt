@@ -83,7 +83,7 @@ class JellyfinDeviceProfileBuilder @Inject constructor() {
 
     fun build(
         maxStreamingBitrateKbps: Int? = null,
-        burnInImageSubtitles: Boolean = true,
+        burnInImageSubtitles: Boolean = false,
         maxAudioChannels: Int = DEFAULT_MAX_AUDIO_CHANNELS
     ): JellyfinDeviceProfile {
         val decoders = readDecoders()

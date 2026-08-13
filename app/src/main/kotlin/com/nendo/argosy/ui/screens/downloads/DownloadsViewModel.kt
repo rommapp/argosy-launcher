@@ -6,6 +6,10 @@ import com.nendo.argosy.data.download.DownloadManager
 import com.nendo.argosy.data.download.DownloadProgress
 import com.nendo.argosy.data.download.DownloadQueueState
 import com.nendo.argosy.data.download.DownloadState
+import com.nendo.argosy.data.download.MediaDownloadManager
+import com.nendo.argosy.data.download.MediaDownloadProgress
+import com.nendo.argosy.data.download.MediaDownloadState
+import com.nendo.argosy.data.download.QueuedMediaDownload
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.repository.GameRepository
 import com.nendo.argosy.data.steam.SteamContentManager
@@ -160,6 +164,7 @@ class DownloadsViewModel @Inject constructor(
     private val downloadManager: DownloadManager,
     private val preferencesRepository: UserPreferencesRepository,
     private val steamContentManager: SteamContentManager,
+    private val mediaDownloadManager: MediaDownloadManager,
     private val gameRepository: GameRepository
 ) : ViewModel() {
 
@@ -169,24 +174,28 @@ class DownloadsViewModel @Inject constructor(
     val state: StateFlow<DownloadQueueState> = downloadManager.state
 
     private val _steamDownloads = MutableStateFlow<List<DownloadProgress>>(emptyList())
+    private val _mediaDownloads = MutableStateFlow<List<DownloadProgress>>(emptyList())
+
+    private var mediaItemIdsByRowId: Map<Long, String> = emptyMap()
 
     init {
         viewModelScope.launch {
             combine(
                 downloadManager.state,
                 preferencesRepository.preferences.map { it.maxConcurrentDownloads },
-                _steamDownloads
-            ) { downloadState, maxActive, steamItems ->
-                Triple(downloadState, maxActive, steamItems)
-            }.collect { (downloadState, maxActive, steamItems) ->
+                _steamDownloads,
+                _mediaDownloads
+            ) { downloadState, maxActive, steamItems, mediaItems ->
+                MergedSources(downloadState, maxActive, steamItems + mediaItems)
+            }.collect { (downloadState, maxActive, externalItems) ->
                 val merged = downloadState.copy(
-                    activeDownloads = downloadState.activeDownloads + steamItems.filter {
+                    activeDownloads = downloadState.activeDownloads + externalItems.filter {
                         it.state == DownloadState.DOWNLOADING || it.state == DownloadState.EXTRACTING
                     },
-                    queue = downloadState.queue + steamItems.filter {
+                    queue = downloadState.queue + externalItems.filter {
                         it.state == DownloadState.QUEUED || it.state == DownloadState.PAUSED
                     },
-                    completed = downloadState.completed + steamItems.filter {
+                    completed = downloadState.completed + externalItems.filter {
                         it.state == DownloadState.COMPLETED
                     }
                 )
@@ -330,7 +339,57 @@ class DownloadsViewModel @Inject constructor(
                 _steamDownloads.value = items
             }
         }
+
+        viewModelScope.launch {
+            combine(
+                mediaDownloadManager.activeDownload,
+                mediaDownloadManager.downloadState,
+                mediaDownloadManager.downloadQueue,
+                mediaDownloadManager.completedDownloads
+            ) { active, mediaState, queue, completed ->
+                MediaSources(active, mediaState, queue, completed)
+            }.collect { sources ->
+                val items = mutableListOf<DownloadProgress>()
+                val ids = mutableMapOf<Long, String>()
+
+                val active = sources.active
+                val isStaleActive = active != null &&
+                    (sources.state is MediaDownloadState.Completed || sources.state is MediaDownloadState.Idle)
+                if (active != null && !isStaleActive) {
+                    items.add(active.toDownloadProgress())
+                    ids[mediaRowId(active.itemId)] = active.itemId
+                }
+
+                for (queued in sources.queue) {
+                    if (queued.itemId == active?.itemId) continue
+                    items.add(queued.toDownloadProgress())
+                    ids[mediaRowId(queued.itemId)] = queued.itemId
+                }
+
+                for (done in sources.completed) {
+                    if (done.itemId == active?.itemId && !isStaleActive) continue
+                    items.add(done.toDownloadProgress())
+                    ids[mediaRowId(done.itemId)] = done.itemId
+                }
+
+                mediaItemIdsByRowId = ids
+                _mediaDownloads.value = items
+            }
+        }
     }
+
+    private data class MergedSources(
+        val downloadState: DownloadQueueState,
+        val maxActive: Int,
+        val externalItems: List<DownloadProgress>
+    )
+
+    private data class MediaSources(
+        val active: MediaDownloadProgress?,
+        val state: MediaDownloadState,
+        val queue: List<QueuedMediaDownload>,
+        val completed: List<MediaDownloadProgress>
+    )
 
     private fun moveFocus(delta: Int): Boolean {
         val currentState = _uiState.value
@@ -347,11 +406,22 @@ class DownloadsViewModel @Inject constructor(
         return false
     }
 
-    private fun isSteamItem(item: DownloadProgress) = item.id < 0
+    private fun isMediaItem(item: DownloadProgress) = item.platformSlug == MEDIA_SLUG
+
+    private fun isSteamItem(item: DownloadProgress) = !isMediaItem(item) && item.id < 0
 
     fun toggleFocusedItem() {
         val group = _uiState.value.focusedGroup ?: return
         for (item in group.items) {
+            if (isMediaItem(item)) {
+                val itemId = mediaItemIdsByRowId[item.id] ?: continue
+                when (item.state) {
+                    DownloadState.DOWNLOADING -> mediaDownloadManager.pauseActiveDownload()
+                    DownloadState.PAUSED, DownloadState.FAILED -> mediaDownloadManager.resumeDownload(itemId)
+                    else -> Unit
+                }
+                continue
+            }
             if (isSteamItem(item)) {
                 when (item.state) {
                     DownloadState.DOWNLOADING -> steamContentManager.pauseDownload()
@@ -384,10 +454,11 @@ class DownloadsViewModel @Inject constructor(
     fun cancelFocusedItem() {
         val group = _uiState.value.focusedGroup ?: return
         for (item in group.items) {
-            if (isSteamItem(item)) {
-                steamContentManager.cancelDownload()
-            } else {
-                downloadManager.cancelDownload(item.rommId)
+            when {
+                isMediaItem(item) ->
+                    mediaItemIdsByRowId[item.id]?.let { mediaDownloadManager.cancelDownload(it) }
+                isSteamItem(item) -> steamContentManager.cancelDownload()
+                else -> downloadManager.cancelDownload(item.rommId)
             }
         }
     }
@@ -407,14 +478,21 @@ class DownloadsViewModel @Inject constructor(
     fun clearCompleted() {
         downloadManager.clearCompleted()
         steamContentManager.clearCompletedDownloads()
+        mediaDownloadManager.clearCompletedDownloads()
     }
 
     fun clearFinished() {
         downloadManager.clearFinished()
         steamContentManager.clearCompletedDownloads()
+        mediaDownloadManager.clearCompletedDownloads()
     }
 
     fun removeFromCompleted(downloadId: Long) {
+        val mediaItemId = mediaItemIdsByRowId[downloadId]
+        if (mediaItemId != null) {
+            mediaDownloadManager.removeFromCompleted(mediaItemId)
+            return
+        }
         downloadManager.removeFromCompleted(downloadId)
     }
 
@@ -448,7 +526,7 @@ class DownloadsViewModel @Inject constructor(
                     InputResult.HANDLED
                 }
                 state.isFocusedItemCompleted -> {
-                    onNavigateToGame(item.gameId)
+                    if (!isMediaItem(item)) onNavigateToGame(item.gameId)
                     InputResult.HANDLED
                 }
                 state.canToggle -> {
@@ -486,3 +564,54 @@ class DownloadsViewModel @Inject constructor(
         }
     }
 }
+
+private const val MEDIA_SLUG = "media"
+
+/**
+ * Media rows share one list with rom and Steam rows, which is keyed on a Long. Steam already claims
+ * the small negatives with its own app ids, so media is placed far below them: an item id is a
+ * server GUID with no numeric form of its own, and the two spaces must not meet.
+ */
+private const val MEDIA_ROW_ID_BASE = -1_000_000_000_000L
+
+private fun mediaRowId(itemId: String): Long =
+    MEDIA_ROW_ID_BASE - (itemId.hashCode().toLong() and Int.MAX_VALUE.toLong())
+
+private fun MediaDownloadProgress.toDownloadProgress(): DownloadProgress {
+    val (mappedState, status) = when (val current = state) {
+        is MediaDownloadState.Preparing -> DownloadState.QUEUED to current.detail
+        is MediaDownloadState.Downloading -> DownloadState.DOWNLOADING to quality.displayName
+        is MediaDownloadState.Paused -> DownloadState.PAUSED to current.reason
+        is MediaDownloadState.Completed -> DownloadState.COMPLETED to quality.displayName
+        is MediaDownloadState.Failed -> DownloadState.FAILED to current.error
+        MediaDownloadState.Idle -> DownloadState.QUEUED to null
+    }
+    return DownloadProgress(
+        id = mediaRowId(itemId),
+        gameId = 0L,
+        rommId = 0L,
+        platformSlug = MEDIA_SLUG,
+        gameTitle = displayTitle,
+        fileName = "",
+        totalBytes = totalBytes,
+        bytesDownloaded = bytesDownloaded,
+        state = mappedState,
+        coverPath = posterUrl,
+        bytesPerSecond = bytesPerSecond,
+        statusMessage = status
+    )
+}
+
+private fun QueuedMediaDownload.toDownloadProgress(): DownloadProgress = DownloadProgress(
+    id = mediaRowId(itemId),
+    gameId = 0L,
+    rommId = 0L,
+    platformSlug = MEDIA_SLUG,
+    gameTitle = if (seriesName.isNullOrBlank()) itemName else "$seriesName - $itemName",
+    fileName = "",
+    totalBytes = 0L,
+    bytesDownloaded = 0L,
+    state = DownloadState.QUEUED,
+    coverPath = posterUrl,
+    statusMessage = quality.displayName
+)

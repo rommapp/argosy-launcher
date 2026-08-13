@@ -2,18 +2,25 @@ package com.nendo.argosy.data.remote.jellyfin
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.net.ConnectivityManager
+import android.net.Network
 import android.os.Build
 import android.provider.Settings
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.util.Logger
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import java.util.UUID
@@ -26,7 +33,10 @@ private const val QUICK_CONNECT_POLL_INTERVAL_MS = 2_000L
 private const val QUICK_CONNECT_TIMEOUT_MS = 300_000L
 private const val QUICK_CONNECT_MAX_CONSECUTIVE_FAILURES = 5
 private const val HTTP_UNAUTHORIZED = 401
+private const val HTTP_FORBIDDEN = 403
 private const val HTTP_NOT_FOUND = 404
+private const val SIGN_IN_EXPIRED_MESSAGE = "Sign in to Jellyfin again"
+private const val UNREACHABLE_MESSAGE = "Could not reach the server"
 
 sealed class JellyfinConnectionState {
     data object Disconnected : JellyfinConnectionState()
@@ -91,6 +101,8 @@ class JellyfinConnectionManager @Inject constructor(
     private var deviceId: String? = null
 
     private val connectMutex = Mutex()
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private var networkCallbackRegistered = false
 
     private val _connectionState = MutableStateFlow<JellyfinConnectionState>(
         JellyfinConnectionState.Disconnected
@@ -128,7 +140,45 @@ class JellyfinConnectionManager @Inject constructor(
         deviceId = prefs.jellyfinDeviceId ?: ensureDeviceId()
         val server = prefs.jellyfinServerUrl
         if (server.isNullOrBlank()) return
+        adoptStoredIdentity(server, prefs.jellyfinUserId)
+        registerNetworkCallback()
         connect(server, prefs.jellyfinAccessToken, prefs.jellyfinUserId)
+    }
+
+    /**
+     * Makes the configured server and account current before anything is asked of the network.
+     *
+     * Image addresses are built from the base address, so a cold start with no reachable server
+     * would otherwise produce relative addresses: no artwork offline, and a cache keyed on those
+     * addresses missing bytes it already holds for the same images.
+     */
+    private fun adoptStoredIdentity(serverUrl: String, storedUserId: String?) {
+        baseUrl = normalizeServerUrl(serverUrl)
+        if (userId == null) userId = storedUserId
+    }
+
+    /**
+     * Retries the stored session when a network arrives. An app launched with no connectivity would
+     * otherwise stay disconnected for the whole foreground session, no matter what the device does
+     * afterwards.
+     */
+    private fun registerNetworkCallback() {
+        if (networkCallbackRegistered) return
+        val connectivity = context.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager
+            ?: return
+        networkCallbackRegistered = true
+        connectivity.registerDefaultNetworkCallback(object : ConnectivityManager.NetworkCallback() {
+            override fun onAvailable(network: Network) {
+                if (isConnected()) return
+                scope.launch {
+                    val prefs = userPreferencesRepository.preferences.first()
+                    val server = prefs.jellyfinServerUrl
+                    if (server.isNullOrBlank() || prefs.jellyfinAccessToken.isNullOrBlank()) return@launch
+                    Logger.info(TAG, "network available, retrying the stored session")
+                    connect(server, prefs.jellyfinAccessToken, prefs.jellyfinUserId)
+                }
+            }
+        })
     }
 
     suspend fun discoverServers(): List<JellyfinDiscoveredServer> = serverDiscovery.discover()
@@ -152,8 +202,10 @@ class JellyfinConnectionManager @Inject constructor(
                     JellyfinResult.Error("Server did not report a version")
                 else -> JellyfinResult.Success(body)
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
-            JellyfinResult.Error(e.message ?: "Could not reach the server")
+            JellyfinResult.Error(e.message ?: UNREACHABLE_MESSAGE)
         }
     }
 
@@ -178,6 +230,8 @@ class JellyfinConnectionManager @Inject constructor(
             val response = client.initiateQuickConnect()
             response.body().takeIf { response.isSuccessful }
                 ?: return failQuickConnect(callbacks, "Quick Connect is not available on this server")
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             return failQuickConnect(callbacks, e.message ?: "Could not start Quick Connect")
         }
@@ -217,8 +271,10 @@ class JellyfinConnectionManager @Inject constructor(
             } else {
                 completeSignIn(normalized, body, callbacks)
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
-            val reason = e.message ?: "Could not reach the server"
+            val reason = e.message ?: UNREACHABLE_MESSAGE
             callbacks.onFailed(reason)
             JellyfinSignInResult.Failed(reason)
         }
@@ -260,6 +316,8 @@ class JellyfinConnectionManager @Inject constructor(
                 }
                 outcome
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             failQuickConnect(callbacks, e.message ?: "The sign-in could not be completed")
         }
@@ -304,7 +362,8 @@ class JellyfinConnectionManager @Inject constructor(
     ): QuickConnectPoll {
         val started = TimeSource.Monotonic.markNow()
         var consecutiveFailures = 0
-        while (currentCoroutineContext().isActive) {
+        while (true) {
+            currentCoroutineContext().ensureActive()
             delay(QUICK_CONNECT_POLL_INTERVAL_MS)
             if (started.elapsedNow().inWholeMilliseconds >= QUICK_CONNECT_TIMEOUT_MS) {
                 return QuickConnectPoll.Expired
@@ -321,7 +380,6 @@ class JellyfinConnectionManager @Inject constructor(
                 }
             }
         }
-        return QuickConnectPoll.Expired
     }
 
     private suspend fun attemptQuickConnectPoll(
@@ -335,31 +393,56 @@ class JellyfinConnectionManager @Inject constructor(
             response.body()?.authenticated == true -> QuickConnectAttempt.APPROVED
             else -> QuickConnectAttempt.PENDING
         }
+    } catch (e: CancellationException) {
+        throw e
     } catch (e: Exception) {
         Logger.debug(TAG, "quick connect poll failed: ${e.message}")
         QuickConnectAttempt.UNREACHABLE
     }
 
+    /**
+     * Establishes the connection and proves the token still works.
+     *
+     * `/System/Info/Public` answers the same to a client with no credentials at all, so on its own it
+     * says only that a Jellyfin server is there. The identity call is what separates a live session
+     * from a revoked one - without it a token the server has forgotten reads as connected while every
+     * request behind it is refused.
+     */
     private suspend fun connect(serverUrl: String, token: String?, signedInUserId: String?) {
         connectMutex.withLock {
             _connectionState.value = JellyfinConnectionState.Connecting
             val normalized = normalizeServerUrl(serverUrl)
+            baseUrl = normalized
             val device = ensureDeviceId()
             val client = apiFactory.create(normalized, device, getDeviceName(), token)
             val info = try {
                 client.getPublicSystemInfo().takeIf { it.isSuccessful }?.body()
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Logger.info(TAG, "connect failed: ${e.message}")
                 null
             }
             val version = info?.version
             if (info == null || version.isNullOrBlank()) {
-                _connectionState.value = JellyfinConnectionState.Failed("Could not reach the server")
+                api = null
+                _connectionState.value = JellyfinConnectionState.Failed(UNREACHABLE_MESSAGE)
+                return
+            }
+            val identity = if (token.isNullOrBlank()) TokenCheck.Skipped else verifyToken(client)
+            if (identity is TokenCheck.Rejected) {
+                api = null
+                _connectionState.value = JellyfinConnectionState.Failed(SIGN_IN_EXPIRED_MESSAGE)
+                Logger.info(TAG, "stored token was refused by ${info.serverName}")
+                return
+            }
+            if (identity is TokenCheck.Unreachable) {
+                api = null
+                _connectionState.value = JellyfinConnectionState.Failed(UNREACHABLE_MESSAGE)
                 return
             }
             api = client
-            baseUrl = normalized
-            userId = signedInUserId
+            userId = (identity as? TokenCheck.Valid)?.userId ?: signedInUserId ?: userId
             _connectionState.value = JellyfinConnectionState.Connected(
                 JellyfinCapabilities.from(
                     version = version,
@@ -371,9 +454,32 @@ class JellyfinConnectionManager @Inject constructor(
         }
     }
 
+    private sealed class TokenCheck {
+        data object Skipped : TokenCheck()
+        data class Valid(val userId: String?) : TokenCheck()
+        data object Rejected : TokenCheck()
+        data object Unreachable : TokenCheck()
+    }
+
+    private suspend fun verifyToken(client: JellyfinApi): TokenCheck = try {
+        val response = client.getCurrentUser()
+        when {
+            response.code() == HTTP_UNAUTHORIZED || response.code() == HTTP_FORBIDDEN -> TokenCheck.Rejected
+            response.isSuccessful -> TokenCheck.Valid(response.body()?.id)
+            else -> TokenCheck.Unreachable
+        }
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: Exception) {
+        Logger.info(TAG, "identity check failed: ${e.message}")
+        TokenCheck.Unreachable
+    }
+
     private suspend fun readQuickConnectEnabled(client: JellyfinApi): Boolean? = try {
         val response = client.isQuickConnectEnabled()
         if (response.isSuccessful) response.body() else null
+    } catch (e: CancellationException) {
+        throw e
     } catch (_: Exception) {
         null
     }

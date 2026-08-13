@@ -15,14 +15,16 @@ enum class PlayerRow { SCRUBBER, CONTROLS }
  */
 enum class PlayerControl { SKIP, PLAY_PAUSE, AUDIO, SUBTITLES, CHAPTERS }
 
-enum class PlayerOverlay { NONE, AUDIO_TRACKS, SUBTITLE_TRACKS, CHAPTERS, RESUME }
+enum class PlayerOverlay { NONE, AUDIO_TRACKS, SUBTITLE_TRACKS, CHAPTERS }
 
 /**
  * One selectable audio or subtitle stream.
  *
  * [streamIndex] is the server's own absolute index across every stream in the container and is what
  * a renegotiation is keyed on. [ordinal] is the position within streams of this kind only, which is
- * what maps onto a track group when the player selects locally instead of renegotiating.
+ * what maps onto a track group when the player selects locally instead of renegotiating; the two
+ * agree only while the streams of a kind are held in the container's own order, which is why they
+ * are sorted by index before an ordinal is handed out.
  */
 data class PlayerTrack(
     val streamIndex: Int,
@@ -66,6 +68,10 @@ data class SideloadedSubtitle(
 /**
  * The answer to one PlaybackInfo negotiation. It expires with the transcode session behind it and is
  * never reused for a second playback.
+ *
+ * [isLocalFile] marks the one answer that was never negotiated: a downloaded copy plays from disk,
+ * so there is no play session, no encoder to free and no server to tell. Everything that reports to
+ * the server is gated on it.
  */
 data class NegotiatedPlayback(
     val itemId: String,
@@ -80,7 +86,22 @@ data class NegotiatedPlayback(
     val subtitleTracks: List<PlayerTrack>,
     val audioStreamIndex: Int?,
     val subtitleStreamIndex: Int?,
-    val sideloadedSubtitles: List<SideloadedSubtitle>
+    val sideloadedSubtitles: List<SideloadedSubtitle>,
+    val isLocalFile: Boolean = false
+)
+
+/**
+ * The tracks a container turned out to hold, read from the player rather than from the server.
+ *
+ * This is the only track list a local file can have: nothing negotiated it, so what the extractor
+ * found is the whole truth. The selected ordinals are the player's own opening choice, kept so the
+ * track lists open on what is actually playing rather than on nothing.
+ */
+data class ContainerTracks(
+    val audio: List<PlayerTrack> = emptyList(),
+    val subtitles: List<PlayerTrack> = emptyList(),
+    val selectedAudioOrdinal: Int? = null,
+    val selectedSubtitleOrdinal: Int? = null
 )
 
 sealed class PlaybackNegotiation {
@@ -117,12 +138,12 @@ data class PlayerUiState(
     val selectedAudioStreamIndex: Int? = null,
     val selectedSubtitleStreamIndex: Int? = null,
     val burnInImageSubtitles: Boolean = false,
+    val isLocalPlayback: Boolean = false,
     val subtitleNotice: String? = null,
     val chapters: List<PlayerChapter> = emptyList(),
     val activeSkip: PlayerSkipSegment? = null,
     val trickplayEnabled: Boolean = false,
-    val trickplayAuthHeader: String? = null,
-    val resumePositionMs: Long = 0
+    val trickplayAuthHeader: String? = null
 ) {
     /**
      * The transport row is derived from what this item actually offers rather than drawn with dead
@@ -155,27 +176,31 @@ data class PlayerUiState(
      * How many rows the open overlay has, which is what wraps its selection. The subtitle list
      * carries an extra leading row for "Off", because turning subtitles off has to be reachable
      * from the same list that turns them on, and a trailing row for burn-in, which is a decision
-     * about this playback and therefore belongs beside the tracks it applies to.
+     * about this playback and therefore belongs beside the tracks it applies to. Burn-in is drawn by
+     * the server, so a file playing off the disk has no such row and no index for one.
      */
     val overlayItemCount: Int
         get() = when (overlay) {
             PlayerOverlay.AUDIO_TRACKS -> audioTracks.size
-            PlayerOverlay.SUBTITLE_TRACKS -> subtitleTracks.size + SUBTITLE_EXTRA_ROWS
+            PlayerOverlay.SUBTITLE_TRACKS -> subtitleTracks.size + subtitleExtraRows
             PlayerOverlay.CHAPTERS -> chapters.size
-            PlayerOverlay.RESUME -> RESUME_CHOICE_COUNT
             PlayerOverlay.NONE -> 0
         }
 
     val burnInRowIndex: Int
-        get() = subtitleTracks.size + 1
-}
+        get() = if (isLocalPlayback) NO_ROW else subtitleTracks.size + 1
 
-const val RESUME_CHOICE_COUNT = 2
+    private val subtitleExtraRows: Int
+        get() = if (isLocalPlayback) SUBTITLE_OFF_ROW_ONLY else SUBTITLE_EXTRA_ROWS
+}
 
 /**
  * The "Off" row above the tracks and the burn-in row below them.
  */
-const val SUBTITLE_EXTRA_ROWS = 2
+private const val SUBTITLE_EXTRA_ROWS = 2
+
+private const val SUBTITLE_OFF_ROW_ONLY = 1
+private const val NO_ROW = -1
 
 /**
  * Renders a position the way a transport bar reads it: hours only once there are hours, so a

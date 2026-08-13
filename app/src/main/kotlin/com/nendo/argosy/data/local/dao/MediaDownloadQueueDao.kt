@@ -103,4 +103,7 @@ interface MediaDownloadQueueDao {
 
     @Query("DELETE FROM media_download_queue WHERE ownerUserId = :ownerUserId")
     suspend fun deleteByOwner(ownerUserId: String)
+
+    @Query("DELETE FROM media_download_queue WHERE ownerUserId != :ownerUserId")
+    suspend fun deleteOtherOwners(ownerUserId: String)
 }

@@ -37,7 +37,6 @@ private const val TAG = "PlayerViewModel"
 private const val POSITION_TICK_MS = 250L
 private const val SCRUB_COMMIT_DELAY_MS = 600L
 private const val SCRUB_STEP_MS = 10_000L
-private const val RESUME_THRESHOLD_MS = 10_000L
 private const val NEAR_END_MS = 15_000L
 private const val CHAPTER_BACK_GRACE_MS = 3_000L
 
@@ -49,8 +48,7 @@ data class PlayerArgs(
     val itemId: String,
     val title: String = "",
     val subtitle: String = "",
-    val startPositionMs: Long = -1,
-    val promptResume: Boolean = false
+    val startPositionMs: Long = -1
 )
 
 sealed interface PlayerEvent {
@@ -145,13 +143,27 @@ class PlayerViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Opens an item, including into a player that is already showing a different one.
+     *
+     * A second title arriving is a second playback in the same window, so the first one is closed
+     * down its normal path - which is what tells the server its stream ended - and everything the
+     * first title left behind is cleared before the second is described. Re-arriving with the same
+     * item id is a no-op, so a relaunch of what is already playing does not restart it.
+     */
     fun initialize(args: PlayerArgs) {
-        if (initialized) return
-        initialized = true
-        _uiState.update {
-            it.copy(itemId = args.itemId, title = args.title, subtitle = args.subtitle)
+        if (initialized) {
+            if (args.itemId == _uiState.value.itemId) return
+            closeCurrentItem()
+        } else {
+            observeGameSessions()
         }
-        observeGameSessions()
+        initialized = true
+        _uiState.value = PlayerUiState(
+            itemId = args.itemId,
+            title = args.title,
+            subtitle = args.subtitle
+        )
         startJob = viewModelScope.launch {
             authorizationHeader = engine.authorizationHeader()
             val burnIn = negotiator.readPreferences().burnInImageSubtitles
@@ -166,15 +178,25 @@ class PlayerViewModel @Inject constructor(
                     chapters = detail.chapters,
                     trickplayEnabled = detail.trickplayEnabled,
                     trickplayAuthHeader = authorizationHeader,
-                    burnInImageSubtitles = burnIn,
-                    resumePositionMs = resumeMs
+                    burnInImageSubtitles = burnIn
                 )
             }
-            when {
-                args.startPositionMs >= 0 -> startPlayback(args.startPositionMs)
-                args.promptResume && resumeMs > RESUME_THRESHOLD_MS -> chrome.openResumePrompt()
-                else -> startPlayback(resumeMs)
-            }
+            if (args.startPositionMs >= 0) startPlayback(args.startPositionMs) else startPlayback(resumeMs)
+        }
+    }
+
+    private fun closeCurrentItem() {
+        startJob?.cancel()
+        endMediaSession(currentItemPositionMs())
+        chrome.cancelTimer()
+        skipSegments = emptyList()
+        currentPlayback = null
+        transcodeOffsetMs = 0
+        interruptedAtMs = null
+        wasPlayingBeforeInterrupt = true
+        _player.value?.let {
+            it.playWhenReady = false
+            it.clearMediaItems()
         }
     }
 
@@ -196,12 +218,6 @@ class PlayerViewModel @Inject constructor(
         val resume = maxOf(serverResumeMs, localTicks / TICKS_PER_MILLISECOND).coerceAtLeast(0)
         if (runtimeMs > 0 && resume >= runtimeMs - NEAR_END_MS) return 0
         return resume
-    }
-
-    fun onResumeChoice(startOver: Boolean) {
-        val resume = if (startOver) 0L else _uiState.value.resumePositionMs
-        _uiState.update { it.copy(overlay = PlayerOverlay.NONE, isLoading = true) }
-        reload(startPositionMs = resume)
     }
 
     /**
@@ -257,15 +273,22 @@ class PlayerViewModel @Inject constructor(
      * A transcoded stream begins at the position it was negotiated for, so its own timeline starts
      * at zero and the item position is that offset plus whatever the player reports. Seeking inside
      * it would land at twice the intended point.
+     *
+     * A file off the disk is opened without a credential and reported to nobody. There is no play
+     * session behind it to keep alive, no encoder to free, and a viewer with no server in reach is
+     * the case downloading exists for - a report attempted here would fail and a report deferred
+     * would describe a session the server never opened.
      */
     private fun open(playback: NegotiatedPlayback, startPositionMs: Long) {
         val header = authorizationHeader
-        if (header == null) {
+        if (header == null && !playback.isLocalFile) {
             _uiState.update { it.copy(isLoading = false, errorMessage = "Not signed in to Jellyfin") }
+            endMediaSession(startPositionMs)
             return
         }
         currentPlayback = playback
         transcodeOffsetMs = if (playback.isTranscode) startPositionMs else 0
+        tracks.resetForPlayback()
 
         val activePlayer = _player.value ?: engine.createPlayer(header, playerListener).also {
             _player.value = it
@@ -287,19 +310,24 @@ class PlayerViewModel @Inject constructor(
                 durationMs = if (it.durationMs > 0) it.durationMs else playback.runtimeMs,
                 positionMs = startPositionMs,
                 scrubTargetMs = null,
+                isLocalPlayback = playback.isLocalFile,
                 errorMessage = null
             )
         }
 
-        reporter.start(
-            itemId = playback.itemId,
-            mediaSourceId = playback.mediaSourceId,
-            playSessionId = playback.playSessionId,
-            playMethod = playback.playMethod,
-            positionMs = startPositionMs,
-            audioStreamIndex = playback.audioStreamIndex,
-            subtitleStreamIndex = playback.subtitleStreamIndex
-        )
+        if (playback.isLocalFile) {
+            reporter.stop(startPositionMs)
+        } else {
+            reporter.start(
+                itemId = playback.itemId,
+                mediaSourceId = playback.mediaSourceId,
+                playSessionId = playback.playSessionId,
+                playMethod = playback.playMethod,
+                positionMs = startPositionMs,
+                audioStreamIndex = playback.audioStreamIndex,
+                subtitleStreamIndex = playback.subtitleStreamIndex
+            )
+        }
         playbackTracker.onPlaybackStarted(playback.itemId, _uiState.value.title)
         mediaSessionOpen = true
         startPositionTicker()
@@ -344,6 +372,7 @@ class PlayerViewModel @Inject constructor(
      * stale "watching" presence behind.
      */
     private fun endMediaSession(finalPositionMs: Long) {
+        ambientAudioManager.releaseVideoSilence()
         if (!mediaSessionOpen) return
         mediaSessionOpen = false
         positionJob?.cancel()
@@ -351,7 +380,6 @@ class PlayerViewModel @Inject constructor(
         reporter.stop(finalPositionMs)
         recordLocalPosition(finalPositionMs)
         playbackTracker.onPlaybackEnded(_uiState.value.itemId)
-        ambientAudioManager.releaseVideoSilence()
     }
 
     /**
@@ -381,9 +409,9 @@ class PlayerViewModel @Inject constructor(
     }
 
     /**
-     * Decision 9: a game claiming the screen ends the viewing, it does not merely hide it. The video
-     * pauses, the position is kept, the server is told to free its encoder, and the item becomes a
-     * Continue Watching entry rather than a session that is still notionally open.
+     * A game claiming the screen ends the viewing, it does not merely hide it. The video pauses, the
+     * position is kept, the server is told to free its encoder, and the item becomes a Continue
+     * Watching entry rather than a session that is still notionally open.
      */
     private fun observeGameSessions() {
         viewModelScope.launch {
@@ -513,7 +541,6 @@ class PlayerViewModel @Inject constructor(
                 tracks.selectSubtitleTrack(state.overlayIndex - 1)
             }
             PlayerOverlay.CHAPTERS -> playChapter(state.overlayIndex)
-            PlayerOverlay.RESUME -> onResumeChoice(startOver = state.overlayIndex == 0)
             PlayerOverlay.NONE -> Unit
         }
     }

@@ -44,7 +44,7 @@ data class MediaDownloadSummary(
  */
 enum class MediaDownloadScope { THIS_ITEM, SEASON, NEXT_FIVE, NEXT_TEN, REMOVE }
 
-enum class MediaDownloadStep { SCOPE, QUALITY }
+enum class MediaDownloadStep { SCOPE, QUALITY, CONFIRM }
 
 data class MediaDownloadOption(
     val scope: MediaDownloadScope? = null,

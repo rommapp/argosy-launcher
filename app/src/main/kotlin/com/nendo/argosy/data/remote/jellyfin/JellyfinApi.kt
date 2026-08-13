@@ -13,12 +13,14 @@ import retrofit2.http.QueryMap
 import retrofit2.http.Streaming
 
 /**
- * Jellyfin 10.11 wire surface.
+ * Jellyfin wire surface, in the spellings that carry the user as a query parameter.
  *
- * Paths are the 10.11 ones: item listing moved from `/Users/{userId}/Items` to `/Items?userId=`,
- * resume moved to `/UserItems/Resume`, and played/favourite writes moved to `/UserPlayedItems` and
- * `/UserFavoriteItems`. The pre-10.11 spellings still exist on some servers but are not what this
- * client speaks.
+ * 10.9.0 introduced them - `/UserItems/Resume`, `/UserPlayedItems/{itemId}`,
+ * `/UserFavoriteItems/{itemId}` and `/Items/{itemId}` - and marked the `/Users/{userId}/...`
+ * originals obsolete; 10.11 dropped the originals entirely. Item listing is older than either move:
+ * `/Items?userId=` is answered by 10.8 as well. Checked against the jellyfin sources at v10.8.13 and
+ * v10.9.0 and against the 10.11.11 reference server's own OpenAPI document, which no longer
+ * publishes any of the obsolete paths.
  */
 @Suppress("TooManyFunctions")
 interface JellyfinApi {

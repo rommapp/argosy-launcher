@@ -192,16 +192,17 @@ class JellyfinApiClient @Inject constructor(
         "$baseUrl/Videos/$itemId/Trickplay/$width/$index.jpg"
 
     /**
-     * The address of one external subtitle track. The start offset is part of the path rather than
-     * a query parameter, so a track fetched mid-playback is already aligned and does not need
-     * shifting client-side.
+     * The address of one external subtitle track. The start offset is part of the path rather than a
+     * query parameter, so a track fetched mid-playback is already aligned and does not need shifting
+     * client-side. It has no default: the offset a caller wants is the offset the picture starts at,
+     * and a silent zero puts the whole track ahead of the film by the resume position.
      */
     fun buildSubtitleUrl(
         itemId: String,
         mediaSourceId: String,
         streamIndex: Int,
         format: String,
-        startPositionTicks: Long = 0
+        startPositionTicks: Long
     ): String = "$baseUrl/Videos/$itemId/$mediaSourceId/Subtitles/$streamIndex/" +
         "$startPositionTicks/Stream.$format"
 

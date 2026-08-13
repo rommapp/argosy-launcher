@@ -43,9 +43,9 @@ class HomeSectionKindTest {
     }
 
     /**
-     * The companion carries the game rows only. Media rails are single-screen for now, so the
-     * companion is expected to skip exactly those two kinds and nothing else; a game kind going
-     * missing here is still the drift this test was written to catch.
+     * The companion carries the game rows only. Media rails are single-screen, so the companion is
+     * expected to skip exactly those two kinds and nothing else; a game kind going missing here is
+     * still the drift this test was written to catch.
      */
     @Test
     fun `every leading game kind is claimed by a section on the companion`() {

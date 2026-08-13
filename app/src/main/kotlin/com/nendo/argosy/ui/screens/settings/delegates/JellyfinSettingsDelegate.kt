@@ -1,6 +1,7 @@
 package com.nendo.argosy.ui.screens.settings.delegates
 
 import com.nendo.argosy.data.media.MediaDirectoryManager
+import com.nendo.argosy.data.repository.MediaRepository
 import com.nendo.argosy.data.preferences.MediaAudioLanguage
 import com.nendo.argosy.data.preferences.MediaDownloadQuality
 import com.nendo.argosy.data.preferences.MediaStreamingBitrate
@@ -44,7 +45,8 @@ data class JellyfinPasswordSignInRequest(
  */
 class JellyfinSettingsDelegate @Inject constructor(
     private val preferencesRepository: UserPreferencesRepository,
-    private val mediaDirectoryManager: MediaDirectoryManager
+    private val mediaDirectoryManager: MediaDirectoryManager,
+    private val mediaRepository: MediaRepository
 ) {
     private val _state = MutableStateFlow(JellyfinState())
     val state: StateFlow<JellyfinState> = _state.asStateFlow()
@@ -433,6 +435,7 @@ class JellyfinSettingsDelegate @Inject constructor(
         scope.launch {
             if (moveFiles) {
                 mediaDirectoryManager.relocate(File(oldPath), File(newPath))
+                mediaRepository.repointDownloads(oldPath, newPath)
             }
             preferencesRepository.setMediaStoragePath(newPath)
             _state.update { it.copy(mediaDirPath = newPath) }

@@ -17,6 +17,9 @@ import kotlinx.coroutines.flow.update
  * makes locally and the stream is untouched. A transcode carries only the tracks the server was
  * asked to produce, so a change there means asking again - and an image subtitle always does,
  * because it can only be shown by having the server draw it into the picture.
+ *
+ * A file played from disk has no server side at all: its track list is read out of the container the
+ * first time the player reports what it found, and every change after that is a local selection.
  */
 @OptIn(UnstableApi::class)
 class PlayerTrackDelegate(
@@ -27,6 +30,16 @@ class PlayerTrackDelegate(
     private val reload: (audioStreamIndex: Int?, subtitleStreamIndex: Int?) -> Unit,
     private val closeOverlay: () -> Unit
 ) {
+
+    private var containerTracksRead = false
+
+    /**
+     * Called when a new playback opens, because the track list belongs to the stream that is open
+     * and a list left over from the previous one would be selected against the wrong container.
+     */
+    fun resetForPlayback() {
+        containerTracksRead = false
+    }
 
     fun selectAudioTrack(index: Int) {
         val track = state.value.audioTracks.getOrNull(index) ?: return
@@ -100,13 +113,36 @@ class PlayerTrackDelegate(
     fun applySelections() {
         val player = playerOf() ?: return
         val playback = playbackOf() ?: return
+        if (playback.isLocalFile) readContainerTracks(player)
         val current = state.value
-        val audioOrdinal = playback.audioTracks
+        val audioOrdinal = current.audioTracks
             .firstOrNull { it.streamIndex == current.selectedAudioStreamIndex }
             ?.ordinal
-        val subtitleStreamIndex = current.selectedSubtitleStreamIndex?.takeIf { index ->
+        val subtitleKey = current.selectedSubtitleStreamIndex?.takeIf { index ->
             current.subtitleTracks.any { it.streamIndex == index && it.isTextSubtitle }
         }
-        engine.applySelections(player, audioOrdinal, subtitleStreamIndex)
+        engine.applySelections(player, audioOrdinal, subtitleKey, playback.isLocalFile)
+    }
+
+    /**
+     * Takes the track list off the open container once, and adopts the player's own opening choice
+     * as the selection.
+     *
+     * Once, because applying that selection makes the player report its tracks again: reading them
+     * back every time would let the list rebuild itself underneath a viewer who is looking at it.
+     */
+    private fun readContainerTracks(player: ExoPlayer) {
+        if (containerTracksRead) return
+        val discovered = engine.containerTracks(player)
+        if (discovered.audio.isEmpty() && discovered.subtitles.isEmpty()) return
+        containerTracksRead = true
+        state.update {
+            it.copy(
+                audioTracks = discovered.audio,
+                subtitleTracks = discovered.subtitles,
+                selectedAudioStreamIndex = discovered.selectedAudioOrdinal,
+                selectedSubtitleStreamIndex = discovered.selectedSubtitleOrdinal
+            )
+        }
     }
 }

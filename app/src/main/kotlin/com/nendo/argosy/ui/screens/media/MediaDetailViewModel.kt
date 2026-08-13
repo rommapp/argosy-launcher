@@ -14,9 +14,14 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 import javax.inject.Inject
+
+private const val PLAY_TARGET_WAIT_MS = 10_000L
 
 @HiltViewModel
 class MediaDetailViewModel @Inject constructor(
@@ -36,6 +41,7 @@ class MediaDetailViewModel @Inject constructor(
     private var seasonsJob: Job? = null
     private var episodesJob: Job? = null
     private var downloadJob: Job? = null
+    private var playJob: Job? = null
 
     fun load(itemId: String) {
         if (loadedItemId == itemId) return
@@ -45,10 +51,12 @@ class MediaDetailViewModel @Inject constructor(
         seasonsJob?.cancel()
         episodesJob?.cancel()
         downloadJob?.cancel()
+        playJob?.cancel()
         itemJob = null
         seasonsJob = null
         episodesJob = null
         downloadJob = null
+        playJob = null
         _uiState.value = MediaDetailUiState(isLoading = true)
 
         itemJob = viewModelScope.launch {
@@ -260,6 +268,28 @@ class MediaDetailViewModel @Inject constructor(
         _uiState.update { it.copy(resumePrompt = null) }
     }
 
+    /**
+     * Plays what the play action points at, waiting for it if it is not known yet.
+     *
+     * A series has no play target until its episodes arrive, and they arrive from the server after
+     * the screen has already drawn. Answering an early press with nothing is what makes the button
+     * look broken, so the press is held against the first target the season produces.
+     */
+    fun playPrimary(onPlay: (itemId: String, startOver: Boolean) -> Unit) {
+        val state = _uiState.value
+        state.playTarget?.let {
+            onPlay(it.itemId, false)
+            return
+        }
+        if (state.mode != MediaDetailMode.SERIES || playJob?.isActive == true) return
+        playJob = viewModelScope.launch {
+            val target = withTimeoutOrNull(PLAY_TARGET_WAIT_MS) {
+                uiState.mapNotNull { it.playTarget }.first()
+            } ?: return@launch
+            onPlay(target.itemId, false)
+        }
+    }
+
     @Suppress("CyclomaticComplexMethod")
     fun createInputHandler(
         onBack: () -> Unit,
@@ -389,10 +419,7 @@ class MediaDetailViewModel @Inject constructor(
 
         private fun confirmAction(state: MediaDetailUiState) {
             when (state.focusedAction) {
-                MediaDetailAction.PLAY -> {
-                    val target = state.playTarget ?: return
-                    onPlay(target.itemId, false)
-                }
+                MediaDetailAction.PLAY -> playPrimary(onPlay)
                 MediaDetailAction.DOWNLOAD -> openDownloadPrompt()
                 MediaDetailAction.FAVORITE -> toggleFavorite()
                 MediaDetailAction.WATCHED -> toggleWatched()

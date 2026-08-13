@@ -2,6 +2,7 @@ package com.nendo.argosy.data.repository
 
 import com.nendo.argosy.data.local.dao.MediaItemDao
 import com.nendo.argosy.data.local.dao.MediaLibraryDao
+import com.nendo.argosy.data.local.dao.MediaDownloadQueueDao
 import com.nendo.argosy.data.local.dao.MediaStreamDao
 import com.nendo.argosy.data.local.dao.MediaUserDataDao
 import com.nendo.argosy.data.local.entity.MediaCollectionType
@@ -16,6 +17,9 @@ import com.nendo.argosy.data.remote.jellyfin.JellyfinLibrarySyncService
 import com.nendo.argosy.data.remote.jellyfin.JellyfinResult
 import com.nendo.argosy.data.remote.jellyfin.JellyfinSyncProgress
 import com.nendo.argosy.data.remote.jellyfin.JellyfinSyncResult
+import com.nendo.argosy.data.storage.StorageAttributionRepository
+import com.nendo.argosy.data.storage.StorageCategory
+import dagger.Lazy
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -29,6 +33,7 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onStart
+import java.io.File
 import java.time.Instant
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -55,15 +60,17 @@ class MediaRepository @Inject constructor(
     private val mediaItemDao: MediaItemDao,
     private val mediaUserDataDao: MediaUserDataDao,
     private val mediaStreamDao: MediaStreamDao,
+    private val mediaDownloadQueueDao: MediaDownloadQueueDao,
     private val librarySyncService: JellyfinLibrarySyncService,
-    private val apiClient: JellyfinApiClient
+    private val apiClient: JellyfinApiClient,
+    private val attributionRepository: Lazy<StorageAttributionRepository>
 ) {
     private val ownerFlow: Flow<String?> = jellyfinPreferencesRepository.preferences
         .map { it.userId?.takeIf { id -> id.isNotBlank() } }
         .distinctUntilChanged()
 
-    private val _nextUp = MutableStateFlow<List<MediaItemEntity>>(emptyList())
-    private val _continueWatching = MutableStateFlow<List<MediaItemEntity>>(emptyList())
+    private val _nextUp = MutableStateFlow(OwnedRail())
+    private val _continueWatching = MutableStateFlow(OwnedRail())
 
     val isSignedIn: Flow<Boolean> = jellyfinPreferencesRepository.preferences
         .map { it.isSignedIn }
@@ -104,10 +111,14 @@ class MediaRepository @Inject constructor(
      * answer; call [refreshNextUp] to take a newer one.
      */
     fun observeNextUp(): Flow<List<MediaItemEntity>> =
-        _nextUp.asStateFlow().onStart { refreshNextUp() }
+        scoped(emptyList()) { owner ->
+            _nextUp.map { it.itemsFor(owner) }.onStart { refreshNextUp() }
+        }
 
     fun observeContinueWatching(): Flow<List<MediaItemEntity>> =
-        _continueWatching.asStateFlow().onStart { refreshContinueWatching() }
+        scoped(emptyList()) { owner ->
+            _continueWatching.map { it.itemsFor(owner) }.onStart { refreshContinueWatching() }
+        }
 
     fun observeUserData(itemId: String): Flow<MediaUserDataEntity?> =
         scoped(null) { owner -> mediaUserDataDao.observeByItem(owner, itemId) }
@@ -145,7 +156,10 @@ class MediaRepository @Inject constructor(
     suspend fun getUserDataFor(itemIds: List<String>): Map<String, MediaUserDataEntity> {
         val owner = currentOwner() ?: return emptyMap()
         if (itemIds.isEmpty()) return emptyMap()
-        return mediaUserDataDao.getByItems(owner, itemIds).associateBy { it.itemId }
+        return itemIds
+            .chunked(SQL_VARIABLE_LIMIT)
+            .flatMap { mediaUserDataDao.getByItems(owner, it) }
+            .associateBy { it.itemId }
     }
 
     suspend fun getSeasons(seriesId: String): List<MediaItemEntity> {
@@ -187,6 +201,7 @@ class MediaRepository @Inject constructor(
     suspend fun markDownloaded(itemId: String, localPath: String, quality: String, bytes: Long) {
         val owner = currentOwner() ?: return
         mediaItemDao.markDownloaded(owner, itemId, localPath, quality, bytes, Instant.now())
+        attributionRepository.get().markDirty(StorageCategory.MEDIA)
     }
 
     /**
@@ -196,6 +211,7 @@ class MediaRepository @Inject constructor(
     suspend fun clearDownloaded(itemId: String) {
         val owner = currentOwner() ?: return
         mediaItemDao.clearDownloaded(owner, itemId)
+        attributionRepository.get().markDirty(StorageCategory.MEDIA)
     }
 
     suspend fun search(query: String, limit: Int = SEARCH_LIMIT): List<MediaItemEntity> {
@@ -208,22 +224,50 @@ class MediaRepository @Inject constructor(
      * Refreshes every library the account can see. The sync pass is whole-account by design -- it
      * reconciles which libraries still exist alongside their contents -- so there is no cheaper
      * per-library entry to call.
+     *
+     * Unreported local watch state goes up first. The pull refuses to overwrite a row that is still
+     * carrying one, so draining afterwards would spend the whole pass declining the very state it
+     * just fetched.
      */
-    suspend fun refreshLibraries(): JellyfinResult<JellyfinSyncResult> =
-        librarySyncService.syncLibraries()
+    suspend fun refreshLibraries(): JellyfinResult<JellyfinSyncResult> {
+        currentOwner()?.let { purgeOtherOwners(it) }
+        pushPendingWatchState()
+        return librarySyncService.syncLibraries()
+    }
+
+    /**
+     * Signing in as a different Jellyfin user strands the previous one's rows and files, which are
+     * keyed by that user's id and are unreachable once it is no longer current. Their downloads are
+     * removed with them; leaving the bytes behind would be space the user cannot see or reclaim.
+     */
+    private suspend fun purgeOtherOwners(owner: String) {
+        val strandedPaths = mediaItemDao.otherOwnerLocalPaths(owner)
+        if (strandedPaths.isEmpty() && mediaLibraryDao.countOtherOwners(owner) == 0) return
+        for (path in strandedPaths) {
+            runCatching { File(path).takeIf { it.exists() }?.delete() }
+        }
+        mediaDownloadQueueDao.deleteOtherOwners(owner)
+        mediaStreamDao.deleteOtherOwners(owner)
+        mediaUserDataDao.deleteOtherOwners(owner)
+        mediaItemDao.deleteOtherOwners(owner)
+        mediaLibraryDao.deleteOtherOwners(owner)
+        attributionRepository.get().markDirty(StorageCategory.MEDIA)
+    }
 
     suspend fun refreshEpisodes(seriesId: String, seasonId: String): JellyfinResult<Int> =
         librarySyncService.syncSeasonEpisodes(seriesId, seasonId)
 
     suspend fun refreshNextUp(): JellyfinResult<List<MediaItemEntity>> {
         val result = librarySyncService.syncNextUp()
-        if (result is JellyfinResult.Success) _nextUp.value = result.data
+        if (result is JellyfinResult.Success) _nextUp.value = OwnedRail(currentOwner(), result.data)
         return result
     }
 
     suspend fun refreshContinueWatching(): JellyfinResult<List<MediaItemEntity>> {
         val result = librarySyncService.syncContinueWatching()
-        if (result is JellyfinResult.Success) _continueWatching.value = result.data
+        if (result is JellyfinResult.Success) {
+            _continueWatching.value = OwnedRail(currentOwner(), result.data)
+        }
         return result
     }
 
@@ -232,6 +276,10 @@ class MediaRepository @Inject constructor(
     /**
      * Records where playback was left. The write lands locally first and is marked for the server,
      * so a position taken offline is never the one that is lost.
+     *
+     * The push follows immediately because an item with an unreported write refuses the server's own
+     * state, so a position left queued would also freeze that item's watch state until the queue
+     * next moved.
      */
     suspend fun recordPosition(
         itemId: String,
@@ -241,17 +289,46 @@ class MediaRepository @Inject constructor(
     ) {
         val owner = currentOwner() ?: return
         mediaUserDataDao.recordPosition(owner, itemId, positionTicks, playedPercentage, played, Instant.now())
+        pushPendingWatchState()
     }
 
+    /**
+     * Marking something watched, or favouriting it, lands locally and then goes straight up. The
+     * local write is what the screen reads, so the push is allowed to fail: it stays queued and the
+     * next connection drains it.
+     */
     suspend fun setPlayed(itemId: String, played: Boolean) {
         val owner = currentOwner() ?: return
         val position = if (played) 0L else resumePositionFor(itemId)
         mediaUserDataDao.recordPosition(owner, itemId, position, null, played, Instant.now())
+        pushPendingWatchState()
     }
 
     suspend fun setFavorite(itemId: String, isFavorite: Boolean) {
         val owner = currentOwner() ?: return
         mediaUserDataDao.setFavorite(owner, itemId, isFavorite, Instant.now())
+        pushPendingWatchState()
+    }
+
+    /**
+     * Repoints downloaded content after the media directory moves. Stored paths are absolute, so a
+     * relocation that does not rewrite them leaves every downloaded item pointing into a tree that
+     * no longer exists. Returns the number of rows repointed.
+     */
+    suspend fun repointDownloads(oldRoot: String, newRoot: String): Int {
+        val owner = currentOwner() ?: return 0
+        if (oldRoot == newRoot) return 0
+        val oldPrefix = oldRoot.trimEnd('/')
+        val newPrefix = newRoot.trimEnd('/')
+        var repointed = 0
+        for (item in mediaItemDao.getDownloaded(owner)) {
+            val path = item.localPath ?: continue
+            if (path != oldPrefix && !path.startsWith("$oldPrefix/")) continue
+            mediaItemDao.updateLocalPath(owner, item.itemId, newPrefix + path.removePrefix(oldPrefix))
+            repointed++
+        }
+        if (repointed > 0) attributionRepository.get().markDirty(StorageCategory.MEDIA)
+        return repointed
     }
 
     fun posterUrl(itemId: String, tag: String?, maxWidth: Int? = null): String =
@@ -275,9 +352,28 @@ class MediaRepository @Inject constructor(
             null -> null
         }
 
+    /**
+     * The server orders these rails, so they are held rather than queried. The owner is held with
+     * them because a cached list outliving a sign-out would otherwise serve the previous account's
+     * viewing to the next one.
+     */
+    private data class OwnedRail(
+        val owner: String? = null,
+        val items: List<MediaItemEntity> = emptyList()
+    ) {
+        fun itemsFor(currentOwner: String): List<MediaItemEntity> =
+            if (owner == currentOwner) items else emptyList()
+    }
+
     companion object {
         const val TICKS_PER_SECOND = 10_000_000L
         private const val SEARCH_LIMIT = 50
+
+        /**
+         * SQLite binds each element of an `IN` list as its own variable and refuses past 999 of
+         * them, so a read spanning a whole library has to arrive in pieces.
+         */
+        private const val SQL_VARIABLE_LIMIT = 900
         private const val IMAGE_PRIMARY = "Primary"
         private const val IMAGE_BACKDROP = "Backdrop"
         private const val IMAGE_THUMB = "Thumb"

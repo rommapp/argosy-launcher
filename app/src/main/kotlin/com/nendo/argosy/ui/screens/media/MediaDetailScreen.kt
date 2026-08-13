@@ -179,7 +179,7 @@ private fun MediaDetailContent(
                     onAction = { index ->
                         viewModel.setActionIndex(index)
                         when (uiState.actions.getOrNull(index)) {
-                            MediaDetailAction.PLAY -> uiState.playTarget?.let { onPlay(it.itemId, false) }
+                            MediaDetailAction.PLAY -> viewModel.playPrimary(onPlay)
                             MediaDetailAction.DOWNLOAD -> viewModel.openDownloadPrompt()
                             MediaDetailAction.FAVORITE -> viewModel.toggleFavorite()
                             MediaDetailAction.WATCHED -> viewModel.toggleWatched()

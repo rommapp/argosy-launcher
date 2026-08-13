@@ -26,6 +26,7 @@ import com.nendo.argosy.data.remote.jellyfin.PROFILE_PROTOCOL_HTTP
 import com.nendo.argosy.data.remote.jellyfin.PROFILE_TYPE_VIDEO
 import com.nendo.argosy.data.repository.MediaRepository
 import com.nendo.argosy.data.storage.FileAccessLayer
+import com.nendo.argosy.data.storage.StorageAttributionRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -41,6 +42,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
+import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.coroutines.coroutineContext
@@ -60,13 +62,7 @@ private const val TRANSCODE_CONTAINER = "mp4"
 private const val DEFAULT_LIBRARY_DIR = "Library"
 private const val HLS_SUB_PROTOCOL = "hls"
 private const val PARTIAL_SUFFIX = ".part"
-
-/**
- * Directories that exist whether or not the volume beneath them is mounted. Finding one of these as
- * the nearest surviving ancestor of a downloaded file means the volume is gone, not that the file
- * was deleted.
- */
-private val MOUNT_ROOTS = setOf("/", "/storage", "/mnt", "/storage/emulated", "/storage/self")
+private const val DISPLACED_SUFFIX = ".replaced"
 
 sealed class MediaDownloadState {
     data object Idle : MediaDownloadState()
@@ -81,6 +77,15 @@ sealed class MediaDownloadState {
     data class Completed(val itemId: String, val itemName: String, val path: String) : MediaDownloadState()
     data class Failed(val itemId: String, val itemName: String, val error: String) : MediaDownloadState()
 }
+
+/**
+ * Whether this state is work the queue still owes the user. A finished or failed download is neither
+ * queued nor in progress, and counting it as either is what leaves a failure reading as pending.
+ */
+val MediaDownloadState.isInFlight: Boolean
+    get() = this is MediaDownloadState.Preparing ||
+        this is MediaDownloadState.Downloading ||
+        this is MediaDownloadState.Paused
 
 data class MediaDownloadProgress(
     val itemId: String,
@@ -111,6 +116,16 @@ data class QueuedMediaDownload(
 )
 
 /**
+ * What a removal batch did. [unreachable] is the count kept because their storage is not mounted -
+ * those are still downloaded, and the caller is expected to say so rather than report a clean sweep.
+ */
+data class MediaRemovalResult(
+    val removed: Int,
+    val unreachable: Int,
+    val absent: Int
+)
+
+/**
  * Fetches movies and episodes for offline playback.
  *
  * A separate resolver rather than a branch inside [DownloadManager]: that queue is keyed on a game id
@@ -135,6 +150,7 @@ class MediaDownloadManager @Inject constructor(
     private val deviceProfileBuilder: JellyfinDeviceProfileBuilder,
     private val directoryManager: MediaDirectoryManager,
     private val fileAccessLayer: FileAccessLayer,
+    private val storageAttribution: StorageAttributionRepository,
     private val preferencesRepository: UserPreferencesRepository,
     private val notificationManager: NotificationManager,
     private val downloadManager: dagger.Lazy<DownloadManager>,
@@ -156,6 +172,7 @@ class MediaDownloadManager @Inject constructor(
 
     private var currentDownloadJob: Job? = null
     private var isCancelled = false
+    private val dispatching = AtomicBoolean(false)
 
     init {
         scope.launch { restoreQueueFromDatabase() }
@@ -169,6 +186,10 @@ class MediaDownloadManager @Inject constructor(
     fun hasBlockingDownloadState(): Boolean =
         hasActiveMediaDownload() || _downloadState.value is MediaDownloadState.Paused
 
+    /**
+     * Clears what finished successfully. A failed row is left alone: it still carries the reason and
+     * the partial file the user can resume from, and dropping it would strand both.
+     */
     fun clearCompletedDownloads() {
         _completedDownloads.value = emptyList()
         if (_activeDownload.value?.state is MediaDownloadState.Completed) {
@@ -176,7 +197,12 @@ class MediaDownloadManager @Inject constructor(
         }
         scope.launch {
             val owner = mediaRepository.currentUserId() ?: return@launch
-            mediaDownloadQueueDao.clearFinished(owner)
+            mediaDownloadQueueDao.observeQueue(owner).first()
+                .filter { it.state == MediaDownloadDbState.COMPLETED.name }
+                .forEach { row ->
+                    row.tempFilePath?.let { deleteIfPresent(it) }
+                    mediaDownloadQueueDao.deleteByItemId(owner, row.itemId)
+                }
         }
     }
 
@@ -224,15 +250,39 @@ class MediaDownloadManager @Inject constructor(
                 notify("Sign in to download", "Connect a media server from Settings")
                 return@launch
             }
-            var accepted = 0
-            for (itemId in itemIds) {
-                if (enqueueOne(owner, itemId, quality)) accepted++
+            val outcomes = itemIds.map { enqueueOne(owner, it, quality) }
+            if (outcomes.none { it == EnqueueOutcome.ACCEPTED }) {
+                val (title, subtitle) = refusalNotice(outcomes, quality)
+                notify(title, subtitle)
+                return@launch
             }
-            if (accepted == 0) return@launch
             DownloadForegroundService.start(context)
-            if (currentDownloadJob?.isActive != true) processNextInQueue()
+            processNextInQueue()
         }
     }
+
+    /**
+     * Why a whole batch was refused, said once. Every branch of [enqueueOne] that declines work is
+     * represented here, so no ask can end in silence.
+     */
+    private fun refusalNotice(
+        outcomes: List<EnqueueOutcome>,
+        quality: MediaDownloadQuality
+    ): Pair<String, String> {
+        val downloaded = outcomes.count { it == EnqueueOutcome.ALREADY_DOWNLOADED }
+        val queued = outcomes.count { it == EnqueueOutcome.ALREADY_QUEUED }
+        return when {
+            downloaded > 0 && queued == 0 ->
+                "Already downloaded" to "${titleCount(downloaded)} on this device at ${quality.displayName}"
+            queued > 0 && downloaded == 0 ->
+                "Already in the queue" to "${titleCount(queued)} waiting to download"
+            downloaded > 0 ->
+                "Nothing new to download" to "${titleCount(downloaded)} downloaded, ${titleCount(queued)} queued"
+            else -> "Nothing to download" to "This title has no file the server will hand over"
+        }
+    }
+
+    private fun titleCount(count: Int): String = if (count == 1) "1 title" else "$count titles"
 
     fun pauseActiveDownload() {
         val active = _activeDownload.value ?: return
@@ -246,6 +296,7 @@ class MediaDownloadManager @Inject constructor(
             val owner = mediaRepository.currentUserId() ?: return@launch
             mediaDownloadQueueDao.updateState(owner, active.itemId, MediaDownloadDbState.PAUSED.name)
             stopTranscodeFor(owner, active.itemId)
+            downloadManager.get().onExternalSlotFreed()
         }
     }
 
@@ -277,39 +328,66 @@ class MediaDownloadManager @Inject constructor(
             stopTranscodeFor(owner, itemId)
             mediaDownloadQueueDao.getByItemId(owner, itemId)?.tempFilePath?.let { deleteIfPresent(it) }
             mediaDownloadQueueDao.deleteByItemId(owner, itemId)
-            if (active?.itemId == itemId) processNextInQueue()
+            if (active?.itemId == itemId) {
+                processNextInQueue()
+                downloadManager.get().onExternalSlotFreed()
+            }
         }
     }
+
+    suspend fun removeDownload(itemId: String): Boolean = removeDownloads(listOf(itemId)).removed > 0
 
     /**
-     * Forgets a downloaded copy and deletes its file.
+     * Forgets downloaded copies and deletes their files.
      *
-     * Answers false and changes nothing when the file sits on a volume that is not currently
-     * mounted: an unplugged card is not a deleted download, and clearing the row there would lose
-     * the only record of where the file lives. A file the user deleted themselves leaves its
-     * directory behind, which is how the two cases are told apart.
+     * A title whose storage is not reachable right now is kept, not forgotten: an unplugged card is
+     * not a deleted download, and clearing the row there would lose the only record of where the
+     * file lives. Whatever could not be removed is reported once rather than left silent.
      */
-    suspend fun removeDownload(itemId: String): Boolean {
-        val item = mediaRepository.getItem(itemId) ?: return false
-        val path = item.localPath ?: return false
-        if (!volumeAvailable(path)) {
-            notify("Storage unavailable", "${item.name} stays downloaded until its storage is back")
-            return false
+    suspend fun removeDownloads(itemIds: List<String>): MediaRemovalResult = withContext(Dispatchers.IO) {
+        var removed = 0
+        var unreachable = 0
+        var absent = 0
+        for (itemId in itemIds) {
+            when (removeOne(itemId)) {
+                RemovalOutcome.REMOVED -> removed++
+                RemovalOutcome.UNREACHABLE -> unreachable++
+                RemovalOutcome.ABSENT -> absent++
+            }
         }
-        deleteIfPresent(path)
-        mediaRepository.clearDownloaded(itemId)
-        return true
+        if (unreachable > 0) {
+            notify(
+                "Storage unavailable",
+                "${titleCount(unreachable)} stay downloaded until their storage is back"
+            )
+        }
+        MediaRemovalResult(removed = removed, unreachable = unreachable, absent = absent)
     }
 
-    private suspend fun enqueueOne(owner: String, itemId: String, quality: MediaDownloadQuality): Boolean {
-        val item = mediaRepository.getItem(itemId) ?: return false
-        if (!item.isDownloadable) return false
-        if (_activeDownload.value?.itemId == itemId) return false
-        if (_downloadQueue.value.any { it.itemId == itemId }) return false
+    private suspend fun removeOne(itemId: String): RemovalOutcome {
+        val item = mediaRepository.getItem(itemId) ?: return RemovalOutcome.ABSENT
+        val path = item.localPath ?: return RemovalOutcome.ABSENT
+        if (!storageAttribution.isPathAvailable(path)) return RemovalOutcome.UNREACHABLE
+        deleteIfPresent(path)
+        mediaRepository.clearDownloaded(itemId)
+        return RemovalOutcome.REMOVED
+    }
+
+    private suspend fun enqueueOne(
+        owner: String,
+        itemId: String,
+        quality: MediaDownloadQuality
+    ): EnqueueOutcome {
+        val item = mediaRepository.getItem(itemId) ?: return EnqueueOutcome.UNAVAILABLE
+        if (!item.isDownloadable) return EnqueueOutcome.UNAVAILABLE
+        if (isInFlight(itemId)) return EnqueueOutcome.ALREADY_QUEUED
+        if (_downloadQueue.value.any { it.itemId == itemId }) return EnqueueOutcome.ALREADY_QUEUED
         if (item.localPath != null && item.downloadQuality == quality.name) {
-            notify("Already downloaded", "${item.name} is on this device at ${quality.displayName}")
-            return false
+            return EnqueueOutcome.ALREADY_DOWNLOADED
         }
+
+        releaseStaleRow(owner, itemId, quality)
+        if (_activeDownload.value?.itemId == itemId) _activeDownload.value = null
 
         mediaDownloadQueueDao.insert(
             MediaDownloadQueueEntity(
@@ -334,13 +412,31 @@ class MediaDownloadManager @Inject constructor(
             quality = quality,
             posterUrl = mediaRepository.posterUrl(itemId, item.primaryImageTag)
         )
-        return true
+        return EnqueueOutcome.ACCEPTED
+    }
+
+    /**
+     * A re-queue replaces the row for the same title, and with it the transcode session recorded on
+     * that row. The encoder is stopped first, or it runs on the server until its own timeout with
+     * nothing left that can address it. A partial file from a different quality is dropped rather
+     * than carried into a download that would append to it.
+     */
+    private suspend fun releaseStaleRow(owner: String, itemId: String, quality: MediaDownloadQuality) {
+        val existing = mediaDownloadQueueDao.getByItemId(owner, itemId) ?: return
+        existing.playSessionId?.let { apiClient.stopActiveEncoding(it) }
+        if (existing.quality != quality.name) existing.tempFilePath?.let { deleteIfPresent(it) }
+    }
+
+    private fun isInFlight(itemId: String): Boolean {
+        val active = _activeDownload.value ?: return false
+        return active.itemId == itemId && active.state.isInFlight
     }
 
     private suspend fun restoreQueueFromDatabase() {
         val owner = mediaRepository.currentUserId() ?: return
         mediaDownloadQueueDao.clearFinished(owner)
         val pending = mediaDownloadQueueDao.getPendingDownloads(owner)
+        sweepOrphanPartials(pending)
         if (pending.isEmpty()) return
 
         for (row in pending) {
@@ -378,20 +474,28 @@ class MediaDownloadManager @Inject constructor(
         Log.d(TAG, "Restored ${paused.size} paused + ${queued.size} queued media downloads")
     }
 
+    /**
+     * Claims the next queued title. The claim is taken before the coroutine suspends on preferences:
+     * two entrants that each saw no active job would otherwise both start the same download.
+     */
     private fun processNextInQueue() {
         if (currentDownloadJob?.isActive == true) return
-        val queue = _downloadQueue.value
-        if (queue.isEmpty()) return
-        val next = queue.first()
+        if (_downloadQueue.value.isEmpty()) return
+        if (!dispatching.compareAndSet(false, true)) return
 
         scope.launch {
-            val maxConcurrent = preferencesRepository.userPreferences.first().maxConcurrentDownloads
-            if (downloadManager.get().activeDownloadCount + 1 > maxConcurrent) {
-                Log.d(TAG, "No download slot for ${next.itemName}, staying queued")
-                return@launch
+            try {
+                val next = _downloadQueue.value.firstOrNull() ?: return@launch
+                val maxConcurrent = preferencesRepository.userPreferences.first().maxConcurrentDownloads
+                if (downloadManager.get().activeDownloadCount + 1 > maxConcurrent) {
+                    Log.d(TAG, "No download slot for ${next.itemName}, staying queued")
+                    return@launch
+                }
+                _downloadQueue.value = _downloadQueue.value.filterNot { it.itemId == next.itemId }
+                startDownload(next)
+            } finally {
+                dispatching.set(false)
             }
-            _downloadQueue.value = _downloadQueue.value.filterNot { it.itemId == next.itemId }
-            startDownload(next)
         }
     }
 
@@ -416,19 +520,13 @@ class MediaDownloadManager @Inject constructor(
                 )
 
                 val destination = resolveDestination(item, negotiated.container)
-                val temp = File(destination.parentFile, destination.name + PARTIAL_SUFFIX)
+                val temp = partialFileFor(destination, negotiated.quality)
                 fileAccessLayer.mkdirs(destination.parent.orEmpty())
                 mediaDownloadQueueDao.updatePaths(
                     owner, queued.itemId, destination.absolutePath, temp.absolutePath
                 )
 
-                val tempPath = temp.absolutePath
-                val resumeFrom = if (negotiated.supportsResume && fileAccessLayer.exists(tempPath)) {
-                    fileAccessLayer.length(tempPath)
-                } else {
-                    0L
-                }
-                if (!negotiated.supportsResume) deleteIfPresent(tempPath)
+                val resumeFrom = resumableBytes(negotiated, temp)
 
                 val required = (negotiated.expectedBytes - resumeFrom).coerceAtLeast(0L)
                 val available = availableBytes()
@@ -440,11 +538,14 @@ class MediaDownloadManager @Inject constructor(
                 if (negotiated.isTranscode) {
                     setPreparing(queued, "Waiting for the server to start the transcode")
                 }
-                fetch(owner, queued, negotiated, temp, resumeFrom)
+                val outcome = fetch(owner, queued, negotiated, temp, resumeFrom)
 
                 if (isCancelled) return@launch
+                if (outcome.declaredTotal != null && outcome.bytesWritten < outcome.declaredTotal) {
+                    throw IllegalStateException("The connection dropped before the file was complete")
+                }
 
-                val written = fileAccessLayer.length(temp.absolutePath)
+                val written = outcome.bytesWritten
                 finalizeDownload(item, destination, temp, negotiated, written)
                 mediaDownloadQueueDao.updateState(owner, queued.itemId, MediaDownloadDbState.COMPLETED.name)
 
@@ -465,7 +566,6 @@ class MediaDownloadManager @Inject constructor(
                 )
                 _activeDownload.value = null
                 stopTranscodeFor(owner, queued.itemId)
-                downloadManager.get().onExternalSlotFreed()
                 advanceQueue()
             } catch (_: kotlinx.coroutines.CancellationException) {
                 plan?.playSessionId?.let { session ->
@@ -493,6 +593,7 @@ class MediaDownloadManager @Inject constructor(
     private fun advanceQueue() {
         currentDownloadJob = null
         processNextInQueue()
+        downloadManager.get().onExternalSlotFreed()
     }
 
     private suspend fun holdForStorage(
@@ -518,10 +619,14 @@ class MediaDownloadManager @Inject constructor(
         plan: MediaFetchPlan,
         temp: File,
         resumeFrom: Long
-    ) {
+    ): FetchOutcome {
         val api = apiClient.api ?: throw IllegalStateException("Not connected to the media server")
         val range = if (resumeFrom > 0) "bytes=$resumeFrom-" else null
         val response = api.downloadVideo(queued.itemId, plan.params, range)
+        if (response.code() == HTTP_RANGE_NOT_SATISFIABLE) {
+            deleteIfPresent(temp.absolutePath)
+            throw IllegalStateException("The partial file no longer matched the server and was discarded")
+        }
         if (!response.isSuccessful) {
             throw IllegalStateException("Server refused the download (${response.code()})")
         }
@@ -580,8 +685,16 @@ class MediaDownloadManager @Inject constructor(
             }
         }
         mediaDownloadQueueDao.updateProgress(owner, queued.itemId, bytesWritten, bytesWritten)
+        return FetchOutcome(bytesWritten = bytesWritten, declaredTotal = declared)
     }
 
+    /**
+     * Puts the fetched file where the library expects it.
+     *
+     * A copy that is already there is moved aside rather than deleted, and only dropped once the
+     * replacement is in place: on a full card the move can fail, and the copy the user already had
+     * is the one thing that must survive that.
+     */
     private suspend fun finalizeDownload(
         item: MediaItemEntity,
         destination: File,
@@ -589,25 +702,55 @@ class MediaDownloadManager @Inject constructor(
         plan: MediaFetchPlan,
         bytesWritten: Long
     ) {
-        val previousPath = item.localPath
-        deleteIfPresent(destination.absolutePath)
+        val destinationPath = destination.absolutePath
+        val displaced = displaceExisting(destinationPath)
         val target = fileAccessLayer.getTransformedFile(temp.absolutePath)
-        val finalFile = fileAccessLayer.getTransformedFile(destination.absolutePath)
-        if (!target.renameTo(finalFile)) {
-            if (!fileAccessLayer.copyFile(temp.absolutePath, destination.absolutePath)) {
-                throw IllegalStateException("Could not move the download into place")
-            }
-            deleteIfPresent(temp.absolutePath)
+        val finalFile = fileAccessLayer.getTransformedFile(destinationPath)
+
+        val moved = runCatching { target.renameTo(finalFile) }.getOrDefault(false) ||
+            fileAccessLayer.copyFile(temp.absolutePath, destinationPath)
+        if (!moved) {
+            restoreDisplaced(displaced, destinationPath)
+            throw IllegalStateException("Could not move the download into place")
         }
-        if (previousPath != null && previousPath != destination.absolutePath && volumeAvailable(previousPath)) {
+        deleteIfPresent(temp.absolutePath)
+        displaced?.let { deleteIfPresent(it) }
+
+        val previousPath = item.localPath
+        if (previousPath != null &&
+            previousPath != destinationPath &&
+            storageAttribution.isPathAvailable(previousPath)
+        ) {
             deleteIfPresent(previousPath)
         }
         mediaRepository.markDownloaded(
             itemId = item.itemId,
-            localPath = destination.absolutePath,
+            localPath = destinationPath,
             quality = plan.quality.name,
             bytes = bytesWritten
         )
+    }
+
+    private fun displaceExisting(destinationPath: String): String? {
+        if (!fileAccessLayer.exists(destinationPath)) return null
+        val asidePath = destinationPath + DISPLACED_SUFFIX
+        deleteIfPresent(asidePath)
+        val existing = fileAccessLayer.getTransformedFile(destinationPath)
+        val aside = fileAccessLayer.getTransformedFile(asidePath)
+        if (!runCatching { existing.renameTo(aside) }.getOrDefault(false)) {
+            throw IllegalStateException("Could not set the existing copy aside")
+        }
+        return asidePath
+    }
+
+    private fun restoreDisplaced(displacedPath: String?, destinationPath: String) {
+        val aside = displacedPath ?: return
+        if (fileAccessLayer.exists(destinationPath)) return
+        val source = fileAccessLayer.getTransformedFile(aside)
+        val restored = fileAccessLayer.getTransformedFile(destinationPath)
+        if (!runCatching { source.renameTo(restored) }.getOrDefault(false)) {
+            Log.w(TAG, "Left the previous copy at $aside")
+        }
     }
 
     /**
@@ -817,16 +960,62 @@ class MediaDownloadManager @Inject constructor(
         if (fileAccessLayer.exists(path)) fileAccessLayer.delete(path)
     }
 
-    private fun volumeAvailable(path: String): Boolean {
-        var candidate: File? = File(path).parentFile
-        while (candidate != null) {
-            val absolute = candidate.absolutePath
-            if (fileAccessLayer.exists(absolute)) {
-                return absolute !in MOUNT_ROOTS
-            }
-            candidate = candidate.parentFile
+    /**
+     * Where a partial download lives. The quality is part of the name because two qualities of one
+     * title resolve to the same container and so to the same destination: one shared partial would
+     * let a re-download append its bytes to a different quality's and record the result as complete.
+     */
+    private fun partialFileFor(destination: File, quality: MediaDownloadQuality): File =
+        File(destination.parentFile, "${destination.name}.${quality.name.lowercase()}$PARTIAL_SUFFIX")
+
+    /**
+     * How much of an existing partial this fetch may keep. A transcode has no stable length to
+     * resume against, and a partial already at or past the expected size is what makes the server
+     * answer 416 for as long as the file is there, so both start again from zero.
+     */
+    private fun resumableBytes(plan: MediaFetchPlan, temp: File): Long {
+        val path = temp.absolutePath
+        if (!plan.supportsResume) {
+            deleteIfPresent(path)
+            return 0L
         }
-        return false
+        if (!fileAccessLayer.exists(path)) return 0L
+        val onDisk = fileAccessLayer.length(path)
+        if (plan.expectedBytes > 0 && onDisk >= plan.expectedBytes) {
+            deleteIfPresent(path)
+            return 0L
+        }
+        return onDisk
+    }
+
+    /**
+     * Clears partial files no queue row still refers to, and puts back any copy displaced by a
+     * finalize that did not finish. Nothing else reads either file, so bytes left by a dropped row
+     * would sit on the card for good.
+     */
+    private suspend fun sweepOrphanPartials(live: List<MediaDownloadQueueEntity>) {
+        val referenced = live.mapNotNull { it.tempFilePath }.toSet()
+        val root = directoryManager.resolveMediaDir()
+        if (!root.exists()) return
+        runCatching {
+            root.walkTopDown().filter { it.isFile }.forEach { file ->
+                when {
+                    file.name.endsWith(PARTIAL_SUFFIX) && file.absolutePath !in referenced ->
+                        deleteIfPresent(file.absolutePath)
+                    file.name.endsWith(DISPLACED_SUFFIX) -> recoverDisplaced(file)
+                    else -> Unit
+                }
+            }
+        }.onFailure { Log.w(TAG, "Partial sweep failed: ${it.message}") }
+    }
+
+    private fun recoverDisplaced(file: File) {
+        val restored = File(file.parentFile, file.name.removeSuffix(DISPLACED_SUFFIX))
+        if (restored.exists()) {
+            deleteIfPresent(file.absolutePath)
+        } else if (!file.renameTo(restored)) {
+            Log.w(TAG, "Could not restore ${file.name}")
+        }
     }
 
     private fun notify(title: String, subtitle: String) {
@@ -852,6 +1041,16 @@ class MediaDownloadManager @Inject constructor(
             it == MediaItemType.MOVIE || it == MediaItemType.EPISODE
         }
 
+    private enum class EnqueueOutcome { ACCEPTED, ALREADY_QUEUED, ALREADY_DOWNLOADED, UNAVAILABLE }
+
+    private enum class RemovalOutcome { REMOVED, UNREACHABLE, ABSENT }
+
+    /**
+     * [declaredTotal] is what the server said the whole file would be, or null when it never said -
+     * a transcode has no length until it ends. Only a declared total can prove a fetch was complete.
+     */
+    private data class FetchOutcome(val bytesWritten: Long, val declaredTotal: Long?)
+
     private data class MediaFetchPlan(
         val quality: MediaDownloadQuality,
         val mediaSourceId: String?,
@@ -865,6 +1064,7 @@ class MediaDownloadManager @Inject constructor(
 
     private companion object {
         const val HTTP_PARTIAL_CONTENT = 206
+        const val HTTP_RANGE_NOT_SATISFIABLE = 416
         const val BYTES_PER_GIGABYTE = 1024.0 * 1024.0 * 1024.0
 
         fun formatGigabytes(bytes: Long): String = "%.1f GB".format(bytes / BYTES_PER_GIGABYTE)

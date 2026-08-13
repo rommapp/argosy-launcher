@@ -66,10 +66,7 @@ class PlayerInputHandler(
     }
 
     override fun onBack(): InputResult {
-        when (state.overlay) {
-            PlayerOverlay.NONE, PlayerOverlay.RESUME -> viewModel.requestExit()
-            else -> chrome.closeOverlay()
-        }
+        if (state.overlay == PlayerOverlay.NONE) viewModel.requestExit() else chrome.closeOverlay()
         return InputResult.HANDLED
     }
 

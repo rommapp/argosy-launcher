@@ -10,22 +10,20 @@ data class JellyfinCapabilities(
 ) {
     companion object {
         /**
-         * The oldest release whose response shapes have been checked against this client. Below it
-         * the server is not refused, but nothing here is verified for it: 10.9 moved item listing to
-         * `/Items?userId=`, resume to `/UserItems/Resume` and the played/favourite writes to
-         * `/UserPlayedItems` and `/UserFavoriteItems`, and a server predating that move answers 404
-         * on every one of them.
+         * The oldest release that answers every route this client speaks. 10.9.0 is where resume
+         * became `/UserItems/Resume` and the played and favourite writes became `/UserPlayedItems`
+         * and `/UserFavoriteItems`; a server older than that answers 404 on all three. `/Users/Me`
+         * and `/UserViews?userId=` are present at 10.9.0 too, so nothing else moves the floor.
          */
-        const val MIN_SUPPORTED_VERSION = "10.11.0"
+        const val MIN_SUPPORTED_VERSION = "10.9.0"
 
         /**
-         * Media segments and trickplay are gated at the verified floor rather than at the release
-         * that first shipped them. Which release that was has not been confirmed against upstream,
-         * and a capability claimed a version too early produces a 404 in the middle of playback,
-         * whereas one claimed a version too late costs only a feature that stays dark.
+         * Media segments arrived in 10.10.0 and trickplay in 10.9.0, both read from the release
+         * sources rather than assumed from the floor. Each is gated on its own release because a
+         * capability claimed a version too early produces a 404 in the middle of playback.
          */
-        const val MEDIA_SEGMENTS_MIN_VERSION = MIN_SUPPORTED_VERSION
-        const val TRICKPLAY_MIN_VERSION = MIN_SUPPORTED_VERSION
+        const val MEDIA_SEGMENTS_MIN_VERSION = "10.10.0"
+        const val TRICKPLAY_MIN_VERSION = "10.9.0"
 
         val NONE = JellyfinCapabilities(
             serverVersion = "",

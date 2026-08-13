@@ -11,10 +11,16 @@ import com.nendo.argosy.data.local.entity.MediaItemType
 import com.nendo.argosy.data.local.entity.MediaLibraryEntity
 import com.nendo.argosy.data.local.entity.MediaUserDataEntity
 import com.nendo.argosy.util.Logger
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
@@ -25,6 +31,13 @@ import javax.inject.Singleton
 
 private const val TAG = "JellyfinLibrarySyncService"
 private const val SYNC_RESUME_TTL_MINUTES = 30L
+
+/**
+ * SQLite binds each element of an `IN` list as its own variable and refuses past 999 of them, so a
+ * library that shrank by more than that would throw rather than prune.
+ */
+private const val SQL_VARIABLE_LIMIT = 900
+private const val HTTP_NOT_FOUND = 404
 
 /**
  * Pulls the media library onto disk.
@@ -47,9 +60,27 @@ class JellyfinLibrarySyncService @Inject constructor(
     private val mediaUserDataDao: MediaUserDataDao
 ) {
     private val syncMutex = Mutex()
+    private val pushMutex = Mutex()
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     private val _syncProgress = MutableStateFlow(JellyfinSyncProgress())
     val syncProgress: StateFlow<JellyfinSyncProgress> = _syncProgress.asStateFlow()
+
+    /**
+     * Watch state recorded while the server could not be told is drained the moment one can be
+     * reached again. Without this the queue only moves when the user happens to open the media
+     * library, and until it moves the server's own state for those items is refused as the local
+     * write is still unreported.
+     */
+    init {
+        scope.launch {
+            connectionManager.connectionState
+                .map { it is JellyfinConnectionState.Connected }
+                .distinctUntilChanged()
+                .filter { it }
+                .collect { pushPendingUserData() }
+        }
+    }
 
     private data class LibraryCheckpoint(val startIndex: Int, val recordedAt: Instant)
 
@@ -127,16 +158,20 @@ class JellyfinLibrarySyncService @Inject constructor(
             null -> return JellyfinResult.Error("Library type ${library.collectionType} is not supported")
         }
 
-        val seen = mutableSetOf<String>()
-        var startIndex = resumeOffsetFor(library.libraryId)
+        val seenTopLevel = mutableSetOf<String>()
+        val seenSeasons = mutableSetOf<String>()
+        val firstIndex = resumeOffsetFor(library.libraryId)
+        var startIndex = firstIndex
         var added = 0
+        var everySeasonAnswered = true
 
         while (true) {
             val params = apiClient.buildItemQueryParams(
                 userId = owner,
                 parentId = library.libraryId,
                 includeItemTypes = itemType.wireValue,
-                startIndex = startIndex
+                startIndex = startIndex,
+                limit = JellyfinApiClient.DEFAULT_PAGE_SIZE
             )
             val page = when (val result = apiClient.getItems(params)) {
                 is JellyfinResult.Success -> result.data
@@ -150,30 +185,43 @@ class JellyfinLibrarySyncService @Inject constructor(
             val entities = page.items.mapNotNull { it.toItemEntity(owner, library.libraryId) }
             persistItems(owner, entities)
             persistUserData(owner, page.items)
-            entities.forEach { seen += it.itemId }
+            entities.forEach { seenTopLevel += it.itemId }
             added += entities.size
 
             if (itemType == MediaItemType.SERIES) {
                 for (series in entities) {
                     when (val outcome = syncSeasons(owner, library.libraryId, series.itemId)) {
-                        is JellyfinResult.Success -> seen += outcome.data
-                        is JellyfinResult.Error ->
+                        is JellyfinResult.Success -> seenSeasons += outcome.data
+                        is JellyfinResult.Error -> {
+                            everySeasonAnswered = false
                             Logger.info(TAG, "seasons for ${series.itemId}: ${outcome.message}")
+                        }
                     }
                 }
             }
 
             startIndex += page.items.size
             _syncProgress.value = _syncProgress.value.copy(
-                itemsTotal = page.totalRecordCount,
+                itemsTotal = page.totalRecordCount ?: startIndex,
                 itemsDone = startIndex
             )
-            if (startIndex >= page.totalRecordCount) break
+            if (reachedLastPage(page, startIndex)) break
         }
 
-        val removed = pruneMissing(owner, library.libraryId, itemType, seen)
         clearCheckpoint(library.libraryId)
-        mediaLibraryDao.markSynced(owner, library.libraryId, seen.size, Instant.now())
+        val removed = if (firstIndex == 0) {
+            pruneMissing(owner, library.libraryId, itemType, seenTopLevel) +
+                pruneSeasons(owner, library, itemType, seenSeasons, everySeasonAnswered)
+        } else {
+            Logger.info(TAG, "resumed pass on ${library.libraryId} never saw the head; nothing pruned")
+            0
+        }
+        mediaLibraryDao.markSynced(
+            owner,
+            library.libraryId,
+            mediaItemDao.countByLibrary(owner, library.libraryId, itemType.wireValue),
+            Instant.now()
+        )
 
         return JellyfinResult.Success(
             JellyfinSyncResult(
@@ -183,6 +231,38 @@ class JellyfinLibrarySyncService @Inject constructor(
                 errors = emptyList()
             )
         )
+    }
+
+    /**
+     * Whether the page just consumed was the last one.
+     *
+     * The record count answers it when the server sent one. When it did not, nothing here can prove
+     * the library ends where the page does, so the walk keeps asking until a page comes back empty:
+     * one wasted request buys proof, and the alternative is a guess that decides what gets deleted.
+     */
+    private fun reachedLastPage(page: JellyfinItemsResponse, consumed: Int): Boolean {
+        val total = page.totalRecordCount ?: return false
+        return consumed >= total
+    }
+
+    /**
+     * Seasons are enumerated per series, so one series the server would not answer for leaves a hole
+     * that is indistinguishable from a season that was deleted. A pass with any such hole prunes no
+     * seasons at all rather than guessing which absences were real.
+     */
+    private suspend fun pruneSeasons(
+        owner: String,
+        library: MediaLibraryEntity,
+        itemType: MediaItemType,
+        seenSeasons: Set<String>,
+        everySeasonAnswered: Boolean
+    ): Int {
+        if (itemType != MediaItemType.SERIES) return 0
+        if (!everySeasonAnswered) {
+            Logger.info(TAG, "a series would not answer for its seasons on ${library.libraryId}; none pruned")
+            return 0
+        }
+        return pruneMissing(owner, library.libraryId, MediaItemType.SEASON, seenSeasons)
     }
 
     private suspend fun syncSeasons(
@@ -219,7 +299,8 @@ class JellyfinLibrarySyncService @Inject constructor(
             val params = apiClient.buildEpisodeQueryParams(
                 userId = owner,
                 seasonId = seasonId,
-                startIndex = startIndex
+                startIndex = startIndex,
+                limit = JellyfinApiClient.DEFAULT_PAGE_SIZE
             )
             val page = when (val result = apiClient.getEpisodes(seriesId, params)) {
                 is JellyfinResult.Success -> result.data
@@ -233,7 +314,7 @@ class JellyfinLibrarySyncService @Inject constructor(
             stored += entities.size
 
             startIndex += page.items.size
-            if (startIndex >= page.totalRecordCount) break
+            if (reachedLastPage(page, startIndex)) break
         }
         JellyfinResult.Success(stored)
     }
@@ -252,7 +333,7 @@ class JellyfinLibrarySyncService @Inject constructor(
             when (val result = apiClient.getNextUp(params)) {
                 is JellyfinResult.Success -> {
                     val entities = result.data.items.mapNotNull { it.toItemEntity(owner, null) }
-                    persistItems(owner, entities)
+                    persistItems(owner, entities, narrowFields = true)
                     persistUserData(owner, result.data.items)
                     JellyfinResult.Success(entities)
                 }
@@ -269,7 +350,7 @@ class JellyfinLibrarySyncService @Inject constructor(
         when (val result = apiClient.getResumeItems(params)) {
             is JellyfinResult.Success -> {
                 val entities = result.data.items.mapNotNull { it.toItemEntity(owner, null) }
-                persistItems(owner, entities)
+                persistItems(owner, entities, narrowFields = true)
                 persistUserData(owner, result.data.items)
                 JellyfinResult.Success(entities)
             }
@@ -285,30 +366,51 @@ class JellyfinLibrarySyncService @Inject constructor(
      * it again while the report was in flight.
      */
     suspend fun pushPendingUserData(): JellyfinResult<Int> = withContext(Dispatchers.IO) {
-        val owner = connectionManager.getUserId()
-            ?: return@withContext JellyfinResult.Error("Not signed in")
-        val pending = mediaUserDataDao.getNeedingSync(owner)
-        var reported = 0
-        for (row in pending) {
-            if (reportOne(owner, row)) {
-                mediaUserDataDao.clearNeedsSync(owner, row.itemId, row.updatedAt)
-                reported++
+        pushMutex.withLock {
+            val owner = connectionManager.getUserId()
+                ?: return@withLock JellyfinResult.Error("Not signed in")
+            val pending = mediaUserDataDao.getNeedingSync(owner)
+            var reported = 0
+            for (row in pending) {
+                when (reportOne(owner, row)) {
+                    ReportOutcome.REPORTED -> {
+                        mediaUserDataDao.clearNeedsSync(owner, row.itemId, row.updatedAt)
+                        reported++
+                    }
+                    ReportOutcome.GONE -> {
+                        Logger.info(TAG, "server no longer knows ${row.itemId}; dropping its pending write")
+                        mediaUserDataDao.clearNeedsSync(owner, row.itemId, row.updatedAt)
+                    }
+                    ReportOutcome.UNREACHABLE -> Unit
+                }
             }
+            JellyfinResult.Success(reported)
         }
-        JellyfinResult.Success(reported)
     }
 
-    private suspend fun reportOne(owner: String, row: MediaUserDataEntity): Boolean {
-        val positionReported = apiClient.reportPlaybackStopped(
-            JellyfinPlaybackStopInfo(
-                itemId = row.itemId,
-                positionTicks = row.playbackPositionTicks
-            )
-        ) is JellyfinResult.Success
-        val playedReported = apiClient.setPlayed(row.itemId, owner, row.played) is JellyfinResult.Success
-        val favoriteReported =
-            apiClient.setFavorite(row.itemId, owner, row.isFavorite) is JellyfinResult.Success
-        return positionReported && playedReported && favoriteReported
+    /**
+     * [GONE] is separated from [UNREACHABLE] because a row the server will never accept has to stop
+     * being pending. While it is pending the server's own state for that item is refused, so an
+     * entry that can never drain would silently freeze that item's watch state forever.
+     */
+    private enum class ReportOutcome { REPORTED, UNREACHABLE, GONE }
+
+    private suspend fun reportOne(owner: String, row: MediaUserDataEntity): ReportOutcome {
+        val results = listOf(
+            apiClient.reportPlaybackStopped(
+                JellyfinPlaybackStopInfo(
+                    itemId = row.itemId,
+                    positionTicks = row.playbackPositionTicks
+                )
+            ),
+            apiClient.setPlayed(row.itemId, owner, row.played),
+            apiClient.setFavorite(row.itemId, owner, row.isFavorite)
+        )
+        return when {
+            results.all { it is JellyfinResult.Success } -> ReportOutcome.REPORTED
+            results.any { it is JellyfinResult.Error && it.code == HTTP_NOT_FOUND } -> ReportOutcome.GONE
+            else -> ReportOutcome.UNREACHABLE
+        }
     }
 
     private suspend fun persistLibraries(owner: String, libraries: List<MediaLibraryEntity>) {
@@ -336,8 +438,17 @@ class JellyfinLibrarySyncService @Inject constructor(
      * The unique index makes an insert a replace, and a replace drops the row the download fields
      * live on. Those record a file already on disk, which no sync ever put there and no sync may
      * take away, so they are carried across explicitly rather than left to survive by accident.
+     *
+     * [narrowFields] marks an answer to a request that asked for less than the full field set - the
+     * home rails do, because a tile needs the hierarchy and nothing else. A field the request never
+     * asked for comes back absent, and absent is not empty, so the stored value stands instead of
+     * being overwritten with a null the server never asserted.
      */
-    private suspend fun persistItems(owner: String, items: List<MediaItemEntity>) {
+    private suspend fun persistItems(
+        owner: String,
+        items: List<MediaItemEntity>,
+        narrowFields: Boolean = false
+    ) {
         if (items.isEmpty()) return
         database.withTransaction {
             val existing = mediaItemDao
@@ -345,11 +456,21 @@ class JellyfinLibrarySyncService @Inject constructor(
                 .associateBy { it.itemId }
             mediaItemDao.insertAll(
                 items.map { fresh ->
-                    val prior = existing[fresh.itemId]
-                    if (prior == null) fresh
-                    else fresh.copy(
+                    val prior = existing[fresh.itemId] ?: return@map fresh
+                    val merged = if (narrowFields) {
+                        fresh.copy(
+                            overview = fresh.overview ?: prior.overview,
+                            genres = fresh.genres ?: prior.genres,
+                            studios = fresh.studios ?: prior.studios,
+                            dateCreated = fresh.dateCreated ?: prior.dateCreated,
+                            childCount = fresh.childCount ?: prior.childCount
+                        )
+                    } else {
+                        fresh
+                    }
+                    merged.copy(
                         id = prior.id,
-                        libraryId = fresh.libraryId ?: prior.libraryId,
+                        libraryId = merged.libraryId ?: prior.libraryId,
                         localPath = prior.localPath,
                         downloadQuality = prior.downloadQuality,
                         downloadedBytes = prior.downloadedBytes,
@@ -396,7 +517,9 @@ class JellyfinLibrarySyncService @Inject constructor(
         val stored = mediaItemDao.getByLibrary(owner, libraryId, itemType.wireValue)
         val orphaned = stored.filter { it.itemId !in seen && it.localPath == null }
         if (orphaned.isEmpty()) return 0
-        mediaItemDao.deleteByItemIds(owner, orphaned.map { it.itemId })
+        orphaned.map { it.itemId }.chunked(SQL_VARIABLE_LIMIT).forEach {
+            mediaItemDao.deleteByItemIds(owner, it)
+        }
         Logger.info(TAG, "pruned ${orphaned.size} ${itemType.wireValue} rows from $libraryId")
         return orphaned.size
     }

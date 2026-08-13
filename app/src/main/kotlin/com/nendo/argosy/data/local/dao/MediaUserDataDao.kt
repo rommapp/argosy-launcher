@@ -134,4 +134,7 @@ interface MediaUserDataDao {
 
     @Query("DELETE FROM media_user_data WHERE ownerUserId = :ownerUserId")
     suspend fun deleteByOwner(ownerUserId: String)
+
+    @Query("DELETE FROM media_user_data WHERE ownerUserId != :ownerUserId")
+    suspend fun deleteOtherOwners(ownerUserId: String)
 }

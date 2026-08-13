@@ -43,7 +43,8 @@ fun sideloadedSubtitleId(streamIndex: Int): String = "argosy-sub-$streamIndex"
  *
  * Authorization rides in a request header rather than in the address. The server accepts a token in
  * either place, but an address carrying a credential ends up in logs, in crash reports and in any
- * cache keyed on the URL, and the trickplay and subtitle addresses are built to be cacheable.
+ * cache keyed on the URL, and the trickplay and subtitle addresses are built to be cacheable. A
+ * downloaded file needs none of it, which is why the header is optional here.
  */
 @OptIn(UnstableApi::class)
 class PlayerEngine @Inject constructor(
@@ -61,7 +62,7 @@ class PlayerEngine @Inject constructor(
         )
     }
 
-    fun createPlayer(authorizationHeader: String, listener: Player.Listener): ExoPlayer {
+    fun createPlayer(authorizationHeader: String?, listener: Player.Listener): ExoPlayer {
         val mediaSourceFactory = DefaultMediaSourceFactory(context)
             .setDataSourceFactory(dataSourceFactory(authorizationHeader))
         return ExoPlayer.Builder(context)
@@ -106,10 +107,20 @@ class PlayerEngine @Inject constructor(
      *
      * The audio track is addressed by its position among the audio tracks rather than by the
      * server's stream index, because the server numbers every stream in the container while the
-     * player only ever sees the audio ones. The subtitle is addressed by the id it was attached
-     * with, which survives whatever order the tracks come back in.
+     * player only ever sees the audio ones.
+     *
+     * Subtitles are addressed two ways because they arrive two ways. A negotiated stream carries its
+     * text tracks as separate files, each attached under an id of ours, and that id survives whatever
+     * order they come back in. A file played from disk has them inside the container instead, where
+     * there is no id to match on and the position among the text tracks is the only handle - which is
+     * exactly the handle [containerTracks] hands out.
      */
-    fun applySelections(player: ExoPlayer, audioOrdinal: Int?, subtitleStreamIndex: Int?) {
+    fun applySelections(
+        player: ExoPlayer,
+        audioOrdinal: Int?,
+        subtitleKey: Int?,
+        subtitlesAreEmbedded: Boolean
+    ) {
         val tracks = player.currentTracks
         val builder = player.trackSelectionParameters.buildUpon()
             .clearOverridesOfType(C.TRACK_TYPE_AUDIO)
@@ -119,7 +130,7 @@ class PlayerEngine @Inject constructor(
             builder.setOverrideForType(TrackSelectionOverride(it.mediaTrackGroup, 0))
         }
 
-        val subtitleGroup = subtitleStreamIndex?.let { subtitleGroup(tracks, it) }
+        val subtitleGroup = subtitleKey?.let { subtitleGroup(tracks, it, subtitlesAreEmbedded) }
         if (subtitleGroup != null) {
             builder.setTrackTypeDisabled(C.TRACK_TYPE_TEXT, false)
             builder.setOverrideForType(TrackSelectionOverride(subtitleGroup.mediaTrackGroup, 0))
@@ -130,27 +141,67 @@ class PlayerEngine @Inject constructor(
         player.trackSelectionParameters = builder.build()
     }
 
+    /**
+     * What the open container turned out to hold, with the player's own opening choice alongside it.
+     *
+     * This is how a downloaded file gets a track list at all: no negotiation described it, so the
+     * extractor's findings are the description. Tracks are keyed by their position within their kind,
+     * which is the same key [applySelections] selects an embedded track by.
+     */
+    fun containerTracks(player: ExoPlayer): ContainerTracks {
+        val groups = player.currentTracks.groups
+        val audio = groups.filter { it.type == C.TRACK_TYPE_AUDIO }
+        val text = groups.filter { it.type == C.TRACK_TYPE_TEXT }
+        return ContainerTracks(
+            audio = audio.mapIndexed { ordinal, group -> group.toPlayerTrack(ordinal, isSubtitle = false) },
+            subtitles = text.mapIndexed { ordinal, group -> group.toPlayerTrack(ordinal, isSubtitle = true) },
+            selectedAudioOrdinal = audio.indexOfFirst { it.isSelected }.takeIf { it >= 0 },
+            selectedSubtitleOrdinal = text.indexOfFirst { it.isSelected }.takeIf { it >= 0 }
+        )
+    }
+
+    private fun Tracks.Group.toPlayerTrack(ordinal: Int, isSubtitle: Boolean): PlayerTrack {
+        val format = mediaTrackGroup.getFormat(0)
+        val fallback = listOfNotNull(format.language, format.sampleMimeType)
+            .joinToString(" ")
+            .ifBlank { "Track ${ordinal + 1}" }
+        return PlayerTrack(
+            streamIndex = ordinal,
+            ordinal = ordinal,
+            label = format.label?.takeIf { it.isNotBlank() } ?: fallback,
+            language = format.language,
+            isTextSubtitle = isSubtitle,
+            isDefault = (format.selectionFlags and C.SELECTION_FLAG_DEFAULT) != 0
+        )
+    }
+
     private fun audioGroup(tracks: Tracks, ordinal: Int?): Tracks.Group? {
         if (ordinal == null) return null
         return tracks.groups.filter { it.type == C.TRACK_TYPE_AUDIO }.getOrNull(ordinal)
     }
 
-    private fun subtitleGroup(tracks: Tracks, streamIndex: Int): Tracks.Group? {
-        val id = sideloadedSubtitleId(streamIndex)
+    private fun subtitleGroup(tracks: Tracks, key: Int, embedded: Boolean): Tracks.Group? {
+        if (embedded) {
+            return tracks.groups.filter { it.type == C.TRACK_TYPE_TEXT }.getOrNull(key)
+        }
+        val id = sideloadedSubtitleId(key)
         return tracks.groups.firstOrNull { group ->
             group.type == C.TRACK_TYPE_TEXT &&
                 (0 until group.length).any { group.getTrackFormat(it).id == id }
         }
     }
 
-    private fun dataSourceFactory(authorizationHeader: String): DataSource.Factory {
+    private fun dataSourceFactory(authorizationHeader: String?): DataSource.Factory {
         val client = OkHttpClient.Builder()
             .connectTimeout(STREAM_CONNECT_TIMEOUT_SECONDS, TimeUnit.SECONDS)
             .readTimeout(STREAM_READ_TIMEOUT_SECONDS, TimeUnit.SECONDS)
             .withUserCertTrust(true)
             .build()
-        val upstream = OkHttpDataSource.Factory(client)
-            .setDefaultRequestProperties(mapOf("Authorization" to authorizationHeader))
+        val upstream = OkHttpDataSource.Factory(client).apply {
+            if (authorizationHeader != null) {
+                setDefaultRequestProperties(mapOf("Authorization" to authorizationHeader))
+            }
+        }
         return DefaultDataSource.Factory(context, upstream)
     }
 }

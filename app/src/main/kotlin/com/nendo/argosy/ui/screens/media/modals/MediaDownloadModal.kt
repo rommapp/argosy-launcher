@@ -17,6 +17,7 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.HighQuality
 import androidx.compose.material.icons.filled.Warning
@@ -42,6 +43,7 @@ import com.nendo.argosy.ui.input.ModalInputEffect
 import com.nendo.argosy.ui.primitives.ModalScaffold
 import com.nendo.argosy.ui.screens.media.MediaDownloadOption
 import com.nendo.argosy.ui.screens.media.MediaDownloadPrompt
+import com.nendo.argosy.ui.screens.media.MediaDownloadScope
 import com.nendo.argosy.ui.screens.media.MediaDownloadStep
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalArgosyTheme
@@ -158,7 +160,7 @@ fun MediaDownloadModalHost(
                 ) { index, option ->
                     MediaDownloadOptionRow(
                         option = option,
-                        isQualityStep = content.step == MediaDownloadStep.QUALITY,
+                        step = content.step,
                         focused = index == content.focusedIndex,
                         onClick = {
                             onFocus(index)
@@ -174,7 +176,7 @@ fun MediaDownloadModalHost(
 @Composable
 private fun MediaDownloadOptionRow(
     option: MediaDownloadOption,
-    isQualityStep: Boolean,
+    step: MediaDownloadStep,
     focused: Boolean,
     onClick: () -> Unit
 ) {
@@ -214,8 +216,13 @@ private fun MediaDownloadOptionRow(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(Dimens.spacingMd)
     ) {
+        val icon = when {
+            option.scope == MediaDownloadScope.REMOVE -> Icons.Default.Delete
+            step == MediaDownloadStep.QUALITY -> Icons.Default.HighQuality
+            else -> Icons.Default.Download
+        }
         Icon(
-            imageVector = if (isQualityStep) Icons.Default.HighQuality else Icons.Default.Download,
+            imageVector = icon,
             contentDescription = null,
             tint = labelColor,
             modifier = Modifier.size(Dimens.iconSm)

@@ -10,6 +10,9 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
@@ -49,9 +52,9 @@ class PlayerActivity : ComponentActivity() {
     private val viewModel: PlayerViewModel by viewModels()
     private val inputHandler by lazy { PlayerInputHandler(viewModel) }
 
-    private var swapAB = false
-    private var swapXY = false
-    private var swapStartSelect = false
+    private var swapAB by mutableStateOf(false)
+    private var swapXY by mutableStateOf(false)
+    private var swapStartSelect by mutableStateOf(false)
     private var wasStopped = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -82,16 +85,16 @@ class PlayerActivity : ComponentActivity() {
     }
 
     /**
-     * A different item arriving at a live player is a different playback, so the window is rebuilt
-     * rather than re-pointed. Recreating tears the old view model down through its normal path,
-     * which is what reports the previous stream stopped.
+     * A different item arriving at a live player is a different playback in the same window. The
+     * view model is handed the new item rather than the activity being recreated: recreation keeps
+     * the same view model store, so the second title would arrive at a view model that already
+     * considers itself initialized and would be dropped.
      */
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         val args = intent.toPlayerArgs() ?: return
-        if (args.itemId == viewModel.uiState.value.itemId) return
         setIntent(intent)
-        recreate()
+        viewModel.initialize(args)
     }
 
     override fun onStart() {
@@ -183,8 +186,7 @@ class PlayerActivity : ComponentActivity() {
             itemId = itemId,
             title = getStringExtra(EXTRA_TITLE).orEmpty(),
             subtitle = getStringExtra(EXTRA_SUBTITLE).orEmpty(),
-            startPositionMs = getLongExtra(EXTRA_START_POSITION_MS, RESOLVE_RESUME),
-            promptResume = getBooleanExtra(EXTRA_PROMPT_RESUME, false)
+            startPositionMs = getLongExtra(EXTRA_START_POSITION_MS, RESOLVE_RESUME)
         )
     }
 
@@ -193,7 +195,6 @@ class PlayerActivity : ComponentActivity() {
         private const val EXTRA_TITLE = "com.nendo.argosy.player.TITLE"
         private const val EXTRA_SUBTITLE = "com.nendo.argosy.player.SUBTITLE"
         private const val EXTRA_START_POSITION_MS = "com.nendo.argosy.player.START_POSITION_MS"
-        private const val EXTRA_PROMPT_RESUME = "com.nendo.argosy.player.PROMPT_RESUME"
 
         /**
          * Sent as the start position when the caller has no opinion. The player then resolves resume
@@ -208,7 +209,6 @@ class PlayerActivity : ComponentActivity() {
                 putExtra(EXTRA_TITLE, args.title)
                 putExtra(EXTRA_SUBTITLE, args.subtitle)
                 putExtra(EXTRA_START_POSITION_MS, args.startPositionMs)
-                putExtra(EXTRA_PROMPT_RESUME, args.promptResume)
             }
 
         /**

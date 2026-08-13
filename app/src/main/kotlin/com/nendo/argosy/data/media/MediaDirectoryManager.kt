@@ -50,27 +50,29 @@ class MediaDirectoryManager @Inject constructor(
     }
 
     /**
-     * Moves the media tree into [destination] preserving structure; conflicts are overwritten.
+     * Moves the media tree into [destination], preserving structure.
+     *
+     * The destination can be a folder the user already keeps files in, and can sit inside the source.
+     * Neither costs them anything: a name already taken is freed by renaming the incumbent rather
+     * than deleting it, and the destination itself is stepped over as the walk reaches it, so the
+     * move never descends into its own output.
      */
     suspend fun relocate(source: File, destination: File): Unit = withContext(Dispatchers.IO) {
         if (!source.exists() || source.absolutePath == destination.absolutePath) return@withContext
-        moveTree(source, destination)
+        moveTree(source, destination, destination.absolutePath)
     }
 
-    private fun moveTree(source: File, destination: File) {
+    private fun moveTree(source: File, destination: File, destinationRoot: String) {
         destination.mkdirs()
         val files = source.listFiles() ?: return
         for (file in files) {
+            if (file.absolutePath == destinationRoot) continue
             val target = File(destination, file.name)
             try {
                 if (file.isDirectory) {
-                    moveTree(file, target)
+                    moveTree(file, target, destinationRoot)
                 } else {
-                    if (target.exists()) target.delete()
-                    if (!file.renameTo(target)) {
-                        file.copyTo(target, overwrite = true)
-                        file.delete()
-                    }
+                    moveFile(file, target)
                 }
             } catch (e: Exception) {
                 Log.w(TAG, "Failed to move ${file.name}: ${e.message}")
@@ -79,10 +81,37 @@ class MediaDirectoryManager @Inject constructor(
         if (source.listFiles()?.isEmpty() == true) source.delete()
     }
 
+    private fun moveFile(file: File, target: File) {
+        if (target.exists() && !displace(target)) {
+            Log.w(TAG, "Left ${file.name} in place; ${target.name} is occupied")
+            return
+        }
+        if (!file.renameTo(target)) {
+            file.copyTo(target, overwrite = false)
+            file.delete()
+        }
+    }
+
+    /**
+     * Frees a name by renaming whatever holds it to the next unused variant, so a collision costs
+     * the user a rename rather than a file.
+     */
+    private fun displace(target: File): Boolean {
+        val extension = target.name.substringAfterLast('.', "")
+        val base = target.name.substringBeforeLast('.', target.name)
+        for (index in 1..MAX_DISPLACEMENT_ATTEMPTS) {
+            val name = if (extension.isEmpty()) "$base ($index)" else "$base ($index).$extension"
+            val candidate = File(target.parentFile, name)
+            if (!candidate.exists() && target.renameTo(candidate)) return true
+        }
+        return false
+    }
+
     private fun sanitize(name: String): String =
         name.replace(INVALID_CHARS, "_").trim().ifEmpty { "item" }
 
     companion object {
+        private const val MAX_DISPLACEMENT_ATTEMPTS = 99
         private val INVALID_CHARS = Regex("[\\\\/:*?\"<>|;=]")
     }
 }

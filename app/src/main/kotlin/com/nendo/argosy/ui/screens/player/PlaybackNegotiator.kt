@@ -1,5 +1,6 @@
 package com.nendo.argosy.ui.screens.player
 
+import android.net.Uri
 import androidx.media3.common.MimeTypes
 import com.nendo.argosy.data.preferences.JellyfinPreferences
 import com.nendo.argosy.data.preferences.JellyfinPreferencesRepository
@@ -13,10 +14,12 @@ import com.nendo.argosy.data.remote.jellyfin.JellyfinResult
 import com.nendo.argosy.data.remote.jellyfin.PLAY_METHOD_DIRECT_PLAY
 import com.nendo.argosy.data.remote.jellyfin.PLAY_METHOD_TRANSCODE
 import com.nendo.argosy.data.remote.jellyfin.TICKS_PER_MILLISECOND
+import com.nendo.argosy.data.repository.MediaRepository
 import com.nendo.argosy.util.Logger
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
+import java.io.File
 import javax.inject.Inject
 
 private const val TAG = "PlaybackNegotiator"
@@ -28,17 +31,21 @@ private const val SUBTITLE_FORMAT_VTT = "vtt"
 /**
  * Turns one item id into one playable address.
  *
- * Every playback goes through here, and the answer is thrown away when that playback ends. The
- * server decides direct play against a device profile built from this device's own decoders, and
- * that decision depends on the current network, the user's bitrate ceiling and the transcode
- * sessions already running - none of which hold still between one playback and the next. The
- * addresses it returns also expire with the transcode session behind them, so a cached one plays
- * for a while and then stops mid-film.
+ * A downloaded copy answers first and answers alone: the file on disk is played as it is, with no
+ * PlaybackInfo call, no credential and no server reachable, which is the whole point of having
+ * downloaded it. Everything below that is the streaming path and is unchanged.
+ *
+ * For a stream, the answer is thrown away when that playback ends. The server decides direct play
+ * against a device profile built from this device's own decoders, and that decision depends on the
+ * current network, the user's bitrate ceiling and the transcode sessions already running - none of
+ * which hold still between one playback and the next. The addresses it returns also expire with the
+ * transcode session behind them, so a cached one plays for a while and then stops mid-film.
  */
 class PlaybackNegotiator @Inject constructor(
     private val apiClient: JellyfinApiClient,
     private val profileBuilder: JellyfinDeviceProfileBuilder,
-    private val jellyfinPreferencesRepository: JellyfinPreferencesRepository
+    private val jellyfinPreferencesRepository: JellyfinPreferencesRepository,
+    private val mediaRepository: MediaRepository
 ) {
 
     suspend fun readPreferences(): JellyfinPreferences =
@@ -59,6 +66,8 @@ class PlaybackNegotiator @Inject constructor(
         subtitleStreamIndex: Int? = null,
         mediaSourceId: String? = null
     ): PlaybackNegotiation = withContext(Dispatchers.IO) {
+        downloadedPlayback(itemId)?.let { return@withContext PlaybackNegotiation.Ready(it) }
+
         val prefs = jellyfinPreferencesRepository.preferences.first()
         val userId = apiClient.currentUserId()
             ?: return@withContext PlaybackNegotiation.Failed("Not signed in to Jellyfin")
@@ -88,6 +97,7 @@ class PlaybackNegotiator @Inject constructor(
                     itemId = itemId,
                     source = source,
                     playSessionId = result.data.playSessionId,
+                    startPositionMs = startPositionMs,
                     requestedAudio = audioStreamIndex,
                     requestedSubtitle = subtitleStreamIndex,
                     prefs = prefs
@@ -97,8 +107,41 @@ class PlaybackNegotiator @Inject constructor(
     }
 
     /**
-     * Alternate versions of one item arrive as several media sources. V1 plays the one the caller
-     * already chose, or the first, rather than prompting.
+     * The downloaded copy, when there is one that can actually be opened.
+     *
+     * A path that no longer resolves is not treated as a missing download - an unplugged volume
+     * keeps its row - it simply means this playback streams instead, and the row is left untouched
+     * for the volume to come back to.
+     *
+     * The tracks are left empty on purpose: nothing negotiated this file, so what it contains is
+     * whatever the player finds inside it, and that is read from the player once it is open.
+     */
+    private suspend fun downloadedPlayback(itemId: String): NegotiatedPlayback? {
+        val item = runCatching { mediaRepository.getItem(itemId) }.getOrNull() ?: return null
+        val file = item.localPath?.let(::File) ?: return null
+        if (!file.isFile || file.length() <= 0L) return null
+        Logger.info(TAG, "playing $itemId from disk")
+        return NegotiatedPlayback(
+            itemId = itemId,
+            mediaSourceId = itemId,
+            playSessionId = null,
+            streamUrl = Uri.fromFile(file).toString(),
+            playMethod = PLAY_METHOD_DIRECT_PLAY,
+            isTranscode = false,
+            isHls = false,
+            runtimeMs = (item.runTimeTicks ?: 0L) / TICKS_PER_MILLISECOND,
+            audioTracks = emptyList(),
+            subtitleTracks = emptyList(),
+            audioStreamIndex = null,
+            subtitleStreamIndex = null,
+            sideloadedSubtitles = emptyList(),
+            isLocalFile = true
+        )
+    }
+
+    /**
+     * Alternate versions of one item arrive as several media sources. The one the caller already
+     * chose wins, otherwise the first.
      */
     private fun pickSource(
         sources: List<JellyfinMediaSource>,
@@ -117,6 +160,7 @@ class PlaybackNegotiator @Inject constructor(
         itemId: String,
         source: JellyfinMediaSource,
         playSessionId: String?,
+        startPositionMs: Long,
         requestedAudio: Int?,
         requestedSubtitle: Int?,
         prefs: JellyfinPreferences
@@ -128,8 +172,12 @@ class PlaybackNegotiator @Inject constructor(
             return PlaybackNegotiation.Failed("This title cannot be played on this device")
         }
 
-        val audioStreams = source.mediaStreams.filter { it.type == STREAM_TYPE_AUDIO }
-        val subtitleStreams = source.mediaStreams.filter { it.type == STREAM_TYPE_SUBTITLE }
+        val audioStreams = source.mediaStreams
+            .filter { it.type == STREAM_TYPE_AUDIO }
+            .sortedBy { it.index }
+        val subtitleStreams = source.mediaStreams
+            .filter { it.type == STREAM_TYPE_SUBTITLE }
+            .sortedBy { it.index }
 
         val audioTracks = audioStreams.mapIndexed { ordinal, stream ->
             stream.toTrack(ordinal, isSubtitle = false)
@@ -155,7 +203,8 @@ class PlaybackNegotiator @Inject constructor(
                     itemId = itemId,
                     mediaSourceId = source.id,
                     streamIndex = stream.index,
-                    format = delivery.format
+                    format = delivery.format,
+                    startPositionTicks = subtitleOffsetTicks(isTranscode, startPositionMs)
                 ),
                 mimeType = delivery.mimeType,
                 language = stream.language
@@ -182,6 +231,16 @@ class PlaybackNegotiator @Inject constructor(
             )
         )
     }
+
+    /**
+     * Where a sidecar subtitle has to be cut so it lines up with the picture.
+     *
+     * A transcode starts its own timeline at the offset it was negotiated for, so a subtitle fetched
+     * from zero is ahead of the picture by exactly the resume position. A direct-played file keeps
+     * the original timeline, where zero is already correct.
+     */
+    private fun subtitleOffsetTicks(isTranscode: Boolean, startPositionMs: Long): Long =
+        if (isTranscode) startPositionMs.coerceAtLeast(0) * TICKS_PER_MILLISECOND else 0L
 
     /**
      * The address of the source file itself. `static=true` is what tells the server to hand the

@@ -86,6 +86,12 @@ interface MediaItemDao {
     fun observeDownloaded(ownerUserId: String): Flow<List<MediaItemEntity>>
 
     @Query(
+        "SELECT * FROM media_items WHERE ownerUserId = :ownerUserId AND localPath IS NOT NULL " +
+            "ORDER BY downloadedAt DESC"
+    )
+    suspend fun getDownloaded(ownerUserId: String): List<MediaItemEntity>
+
+    @Query(
         "SELECT COUNT(*) FROM media_items WHERE ownerUserId = :ownerUserId AND libraryId = :libraryId " +
             "AND itemType = :itemType"
     )
@@ -146,4 +152,10 @@ interface MediaItemDao {
 
     @Query("DELETE FROM media_items WHERE ownerUserId = :ownerUserId")
     suspend fun deleteByOwner(ownerUserId: String)
+
+    @Query("SELECT localPath FROM media_items WHERE ownerUserId != :ownerUserId AND localPath IS NOT NULL")
+    suspend fun otherOwnerLocalPaths(ownerUserId: String): List<String>
+
+    @Query("DELETE FROM media_items WHERE ownerUserId != :ownerUserId")
+    suspend fun deleteOtherOwners(ownerUserId: String)
 }

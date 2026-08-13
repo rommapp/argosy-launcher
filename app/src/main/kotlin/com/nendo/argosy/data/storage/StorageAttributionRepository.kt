@@ -686,6 +686,17 @@ class StorageAttributionRepository @Inject constructor(
     }
 
     /**
+     * Whether a path can be read right now, for callers outside this repository. The single answer
+     * to that question: anything gating a delete on "is the storage still there" asks here rather
+     * than re-deriving it from mount-point names. Touches the filesystem, so call it off the main
+     * thread.
+     */
+    fun isPathAvailable(path: String): Boolean {
+        val known = _volumes.value.ifEmpty { detectVolumes() }
+        return isPathReachable(StoragePathUtils.canonicalize(path), known)
+    }
+
+    /**
      * Whether a path can be read right now. A path that no longer resolves and sits on no mounted
      * volume is unreachable rather than empty, which is what separates an unplugged card from a file
      * the user deleted.

@@ -54,4 +54,10 @@ interface MediaLibraryDao {
 
     @Query("DELETE FROM media_libraries WHERE ownerUserId = :ownerUserId")
     suspend fun deleteByOwner(ownerUserId: String)
+
+    @Query("DELETE FROM media_libraries WHERE ownerUserId != :ownerUserId")
+    suspend fun deleteOtherOwners(ownerUserId: String)
+
+    @Query("SELECT COUNT(*) FROM media_libraries WHERE ownerUserId != :ownerUserId")
+    suspend fun countOtherOwners(ownerUserId: String): Int
 }

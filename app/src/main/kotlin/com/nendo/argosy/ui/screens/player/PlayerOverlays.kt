@@ -13,8 +13,6 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Replay
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -23,7 +21,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import com.nendo.argosy.ui.components.InputButton
 import com.nendo.argosy.ui.components.Modal
@@ -52,7 +49,6 @@ fun PlayerOverlayHost(
         PlayerOverlay.AUDIO_TRACKS -> AudioTrackOverlay(state, onSelect, onDismiss)
         PlayerOverlay.SUBTITLE_TRACKS -> SubtitleTrackOverlay(state, onSelect, onDismiss)
         PlayerOverlay.CHAPTERS -> ChapterOverlay(state, onSelect, onDismiss)
-        PlayerOverlay.RESUME -> ResumeOverlay(state, onSelect, onDismiss)
     }
 }
 
@@ -169,45 +165,6 @@ private fun ChapterOverlay(
     }
 }
 
-/**
- * Start Over sits first and holds the highlight when the prompt opens, matching the media screens:
- * a plain confirm already resumes, so the only reason to be reading this prompt is to do the other
- * thing.
- */
-@Composable
-private fun ResumeOverlay(
-    state: PlayerUiState,
-    onSelect: (Int) -> Unit,
-    onDismiss: () -> Unit
-) {
-    Modal(
-        title = state.title,
-        subtitle = state.subtitle.takeIf { it.isNotBlank() },
-        baseWidth = Dimens.modalWidthLg,
-        onDismiss = onDismiss,
-        footerHints = listOf(InputButton.A to "Select", InputButton.B to "Close")
-    ) {
-        Column(verticalArrangement = Arrangement.spacedBy(Dimens.spacingSm)) {
-            OverlayRow(
-                label = "Start Over",
-                supporting = "Play from the beginning",
-                selected = false,
-                focused = state.overlayIndex == 0,
-                icon = { tint -> Icon(Icons.Default.Replay, null, tint = tint, modifier = Modifier.size(Dimens.iconSm)) },
-                onClick = { onSelect(0) }
-            )
-            OverlayRow(
-                label = "Resume",
-                supporting = "Continue from ${formatPlaybackTime(state.resumePositionMs)}",
-                selected = false,
-                focused = state.overlayIndex == 1,
-                icon = { tint -> Icon(Icons.Default.PlayArrow, null, tint = tint, modifier = Modifier.size(Dimens.iconSm)) },
-                onClick = { onSelect(1) }
-            )
-        }
-    }
-}
-
 @Composable
 private fun OverlayList(
     selectedIndex: Int,
@@ -235,8 +192,7 @@ private fun OverlayRow(
     supporting: String?,
     selected: Boolean,
     focused: Boolean,
-    onClick: () -> Unit,
-    icon: (@Composable (Color) -> Unit)? = null
+    onClick: () -> Unit
 ) {
     val theme = LocalArgosyTheme.current
     val shape = RoundedCornerShape(Dimens.radiusControl)
@@ -258,7 +214,6 @@ private fun OverlayRow(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(Dimens.spacingMd)
     ) {
-        icon?.invoke(tint)
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = label,

@@ -1,6 +1,7 @@
 package com.nendo.argosy.ui.screens.media.delegates
 
 import com.nendo.argosy.data.download.MediaDownloadManager
+import com.nendo.argosy.data.download.isInFlight
 import com.nendo.argosy.data.preferences.MediaDownloadQuality
 import com.nendo.argosy.data.repository.MediaRepository
 import com.nendo.argosy.ui.screens.media.MediaDownloadOption
@@ -47,9 +48,9 @@ class MediaDownloadDelegate @Inject constructor(
         mediaDownloadManager.activeDownload
     ) { queue, active ->
         val queued = queue.count { if (isSeries) it.seriesId == itemId else it.itemId == itemId }
-        val inFlight = active?.let {
-            if (isSeries) it.seriesId == itemId else it.itemId == itemId
-        } == true
+        val inFlight = active != null &&
+            active.state.isInFlight &&
+            (if (isSeries) active.seriesId == itemId else active.itemId == itemId)
         queued + if (inFlight) 1 else 0
     }.distinctUntilChanged()
 
@@ -91,7 +92,8 @@ class MediaDownloadDelegate @Inject constructor(
 
     /**
      * Moves the prompt to its next state. A scope choice resolves the titles it covers and asks for
-     * a quality; a quality choice enqueues and closes; removal runs immediately and closes.
+     * a quality; a quality choice enqueues and closes; removal asks once more before it deletes
+     * anything, because the files it takes are not fetched back in a moment.
      */
     suspend fun advance(
         prompt: MediaDownloadPrompt,
@@ -100,6 +102,11 @@ class MediaDownloadDelegate @Inject constructor(
     ): MediaDownloadPrompt? {
         val option = prompt.focusedOption ?: return null
         if (!option.enabled) return prompt
+
+        if (prompt.step == MediaDownloadStep.CONFIRM) {
+            if (option.scope == MediaDownloadScope.REMOVE) removeAll(prompt.targets)
+            return null
+        }
 
         option.quality?.let { quality ->
             mediaDownloadManager.enqueueAll(prompt.targets, quality)
@@ -112,8 +119,8 @@ class MediaDownloadDelegate @Inject constructor(
             } else {
                 downloadedEpisodeIds(item.itemId)
             }
-            removeAll(targets)
-            return null
+            if (targets.isEmpty()) return null
+            return removalPrompt(item.title, targets)
         }
 
         val targets = targetsFor(option.scope, item, seasonEpisodes)
@@ -144,10 +151,36 @@ class MediaDownloadDelegate @Inject constructor(
     }
 
     private suspend fun removeAll(itemIds: List<String>) {
-        for (itemId in itemIds) {
-            mediaDownloadManager.removeDownload(itemId)
-        }
+        if (itemIds.isEmpty()) return
+        mediaDownloadManager.removeDownloads(itemIds)
     }
+
+    /**
+     * The last step before a deletion. Keeping is the focused answer, so a confirm pressed twice out
+     * of habit does not take the files.
+     */
+    private fun removalPrompt(title: String, targets: List<String>): MediaDownloadPrompt =
+        MediaDownloadPrompt(
+            step = MediaDownloadStep.CONFIRM,
+            title = title,
+            subtitle = "${downloadCount(targets.size)} on this device",
+            options = listOf(
+                MediaDownloadOption(
+                    label = "Keep",
+                    supporting = "Nothing is deleted"
+                ),
+                MediaDownloadOption(
+                    scope = MediaDownloadScope.REMOVE,
+                    label = "Remove",
+                    supporting = "Deletes ${downloadCount(targets.size)} from this device"
+                )
+            ),
+            targets = targets,
+            warning = "The files come back only by downloading them again"
+        )
+
+    private fun downloadCount(count: Int): String =
+        if (count == 1) "1 download" else "$count downloads"
 
     private suspend fun scopePrompt(
         item: MediaItemUi,

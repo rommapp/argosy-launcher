@@ -85,10 +85,17 @@ data class JellyfinQuickConnectResult(
     @Json(name = "DateAdded") val dateAdded: String? = null
 )
 
+/**
+ * A page of items.
+ *
+ * [totalRecordCount] is null when the server did not send one, which is not the same as zero: a
+ * server with the total record count disabled answers every page without it, and reading that as
+ * "the library holds nothing beyond this page" truncates the enumeration at one page.
+ */
 @JsonClass(generateAdapter = true)
 data class JellyfinItemsResponse(
     @Json(name = "Items") val items: List<JellyfinItem> = emptyList(),
-    @Json(name = "TotalRecordCount") val totalRecordCount: Int = 0,
+    @Json(name = "TotalRecordCount") val totalRecordCount: Int? = null,
     @Json(name = "StartIndex") val startIndex: Int = 0
 )
 

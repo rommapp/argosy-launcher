@@ -1,9 +1,12 @@
 package com.nendo.argosy.ui.screens.player
 
+import com.nendo.argosy.data.local.entity.MediaItemEntity
+import com.nendo.argosy.data.local.entity.MediaItemType
 import com.nendo.argosy.data.remote.jellyfin.JellyfinApiClient
 import com.nendo.argosy.data.remote.jellyfin.JellyfinItem
 import com.nendo.argosy.data.remote.jellyfin.JellyfinResult
 import com.nendo.argosy.data.remote.jellyfin.TICKS_PER_MILLISECOND
+import com.nendo.argosy.data.repository.MediaRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
@@ -32,21 +35,28 @@ data class PlayerItemDetail(
  * Kept apart from the negotiation because the two have different failure meanings: a negotiation
  * that fails means there is nothing to play, while a missing chapter list or segment list only
  * means an affordance stays hidden. Nothing here is allowed to stop a playback.
+ *
+ * The stored row is read first and the server only ever improves on it, so a downloaded title played
+ * with no server in reach still knows its name and its length - and a length is not cosmetic, it is
+ * what the scrubber and the resume rule are measured against.
  */
 class PlayerItemLoader @Inject constructor(
-    private val apiClient: JellyfinApiClient
+    private val apiClient: JellyfinApiClient,
+    private val mediaRepository: MediaRepository
 ) {
 
     suspend fun load(itemId: String): PlayerItemDetail = withContext(Dispatchers.IO) {
-        val userId = apiClient.currentUserId() ?: return@withContext PlayerItemDetail()
+        val stored = storedDetail(itemId)
+        val userId = apiClient.currentUserId() ?: return@withContext stored
         val item = when (val result = apiClient.getItem(itemId, userId)) {
             is JellyfinResult.Success -> result.data
-            is JellyfinResult.Error -> return@withContext PlayerItemDetail()
+            is JellyfinResult.Error -> return@withContext stored
         }
         PlayerItemDetail(
-            title = item.displayTitle(),
-            subtitle = item.displaySubtitle(),
-            runtimeMs = (item.runTimeTicks ?: 0L) / TICKS_PER_MILLISECOND,
+            title = item.displayTitle().ifBlank { stored.title },
+            subtitle = item.displaySubtitle().ifBlank { stored.subtitle },
+            runtimeMs = ((item.runTimeTicks ?: 0L) / TICKS_PER_MILLISECOND)
+                .takeIf { it > 0 } ?: stored.runtimeMs,
             serverResumeMs = (item.userData?.playbackPositionTicks ?: 0L) / TICKS_PER_MILLISECOND,
             chapters = item.chapters.orEmpty().mapIndexed { index, chapter ->
                 PlayerChapter(
@@ -57,6 +67,33 @@ class PlayerItemLoader @Inject constructor(
             skipSegments = loadSkipSegments(itemId),
             trickplayEnabled = apiClient.getCapabilities().supportsTrickplay
         )
+    }
+
+    private suspend fun storedDetail(itemId: String): PlayerItemDetail {
+        val entity = runCatching { mediaRepository.getItem(itemId) }.getOrNull()
+            ?: return PlayerItemDetail()
+        return PlayerItemDetail(
+            title = entity.storedTitle(),
+            subtitle = entity.storedSubtitle(),
+            runtimeMs = (entity.runTimeTicks ?: 0L) / TICKS_PER_MILLISECOND
+        )
+    }
+
+    private fun MediaItemEntity.storedTitle(): String = when (itemType) {
+        MediaItemType.EPISODE.wireValue -> seriesName ?: name
+        else -> name
+    }
+
+    private fun MediaItemEntity.storedSubtitle(): String = when (itemType) {
+        MediaItemType.EPISODE.wireValue -> {
+            val number = when {
+                parentIndexNumber != null && indexNumber != null -> "S$parentIndexNumber E$indexNumber"
+                indexNumber != null -> "Episode $indexNumber"
+                else -> null
+            }
+            listOfNotNull(number, name.takeIf { it.isNotBlank() }).joinToString("  ")
+        }
+        else -> productionYear?.toString().orEmpty()
     }
 
     private suspend fun loadSkipSegments(itemId: String): List<PlayerSkipSegment> {

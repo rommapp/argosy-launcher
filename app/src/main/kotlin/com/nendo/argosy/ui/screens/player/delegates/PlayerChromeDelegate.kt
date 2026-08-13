@@ -93,22 +93,10 @@ class PlayerChromeDelegate(
             PlayerOverlay.CHAPTERS -> current.chapters
                 .indexOfLast { it.startMs <= current.positionMs }
                 .coerceAtLeast(0)
-            else -> 0
+            PlayerOverlay.NONE -> 0
         }
         cancelTimer()
         state.update { it.copy(overlay = overlay, overlayIndex = index, isChromeVisible = true) }
-    }
-
-    fun openResumePrompt() {
-        cancelTimer()
-        state.update {
-            it.copy(
-                isLoading = false,
-                overlay = PlayerOverlay.RESUME,
-                overlayIndex = 0,
-                isChromeVisible = true
-            )
-        }
     }
 
     fun closeOverlay() {

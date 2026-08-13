@@ -65,7 +65,8 @@ class SettingsInputHandler(
             SettingsSection.BIOS, SettingsSection.ROMM, SettingsSection.SAVES,
             SettingsSection.HOME_SCREEN, SettingsSection.LIBRARY_VIEW,
             SettingsSection.NAVIGATION, SettingsSection.AUDIO, SettingsSection.SYNC_SETTINGS,
-            SettingsSection.ABOUT, SettingsSection.STEAM_SETTINGS, SettingsSection.CORE_MANAGEMENT,
+            SettingsSection.ABOUT, SettingsSection.STEAM_SETTINGS, SettingsSection.JELLYFIN,
+            SettingsSection.CORE_MANAGEMENT,
             SettingsSection.SOCIAL, SettingsSection.BUILTIN_EMULATOR
         )) {
             put(s, lightHandler)

@@ -389,7 +389,9 @@ private fun FriendsContent(
         }
     } else {
         val onlineFriends = friends.filter {
-            it.presence == PresenceStatus.ONLINE || it.presence == PresenceStatus.IN_GAME
+            it.presence == PresenceStatus.ONLINE ||
+                it.presence == PresenceStatus.IN_GAME ||
+                it.presence == PresenceStatus.WATCHING
         }
         val offlineFriends = friends.filter {
             it.presence == null || it.presence == PresenceStatus.OFFLINE || it.presence == PresenceStatus.AWAY
@@ -458,7 +460,9 @@ private fun FriendItem(
         MaterialTheme.colorScheme.primary
     }
 
-    val isOnline = friend.presence == PresenceStatus.ONLINE || friend.presence == PresenceStatus.IN_GAME
+    val isOnline = friend.presence == PresenceStatus.ONLINE ||
+        friend.presence == PresenceStatus.IN_GAME ||
+        friend.presence == PresenceStatus.WATCHING
     val isInGame = friend.presence == PresenceStatus.IN_GAME
     val isJoinable = friend.currentGame?.netplaySession?.joinable == true
 

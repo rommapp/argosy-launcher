@@ -21,6 +21,10 @@ import com.nendo.argosy.ui.screens.settings.sections.aboutSections
 import com.nendo.argosy.ui.screens.settings.sections.biosItemAtFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.biosSections
 import com.nendo.argosy.ui.screens.settings.sections.buildRomMItemsFromState
+import com.nendo.argosy.ui.screens.settings.sections.JellyfinItem
+import com.nendo.argosy.ui.screens.settings.sections.JellyfinLayoutState
+import com.nendo.argosy.ui.screens.settings.sections.jellyfinItemAtFocusIndex
+import com.nendo.argosy.ui.screens.settings.sections.jellyfinSections
 import com.nendo.argosy.ui.screens.settings.sections.audioSections
 import com.nendo.argosy.ui.screens.settings.sections.navigationItemAtFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.navigationSections
@@ -80,6 +84,7 @@ internal class LightSectionsInput(
             SettingsSection.NAVIGATION -> handleNavigationLeftRight(direction)
             SettingsSection.SYNC_SETTINGS -> handleSyncSettingsLeftRight(direction)
             SettingsSection.STEAM_SETTINGS -> handleSteamLeftRight(direction)
+            SettingsSection.JELLYFIN -> handleJellyfinLeftRight(direction)
             SettingsSection.ABOUT -> handleAboutLeftRight(direction)
             SettingsSection.BUILTIN_EMULATOR -> handleBuiltinEmulatorLeftRight(direction)
             SettingsSection.CORE_MANAGEMENT -> handleCoreManagementLeftRight(direction)
@@ -234,6 +239,28 @@ internal class LightSectionsInput(
         return InputResult.UNHANDLED
     }
 
+    private fun handleJellyfinLeftRight(direction: Int): InputResult {
+        val state = viewModel.uiState.value
+        if (state.jellyfin.configuring) return InputResult.UNHANDLED
+        val layoutState = JellyfinLayoutState.from(state)
+        when (jellyfinItemAtFocusIndex(state.focusedIndex, layoutState)) {
+            JellyfinItem.StreamingBitrate -> viewModel.cycleJellyfinStreamingBitrate(direction)
+            JellyfinItem.Subtitles -> viewModel.cycleJellyfinSubtitleMode(direction)
+            JellyfinItem.SubtitleLanguage -> viewModel.cycleJellyfinSubtitleLanguage(direction)
+            JellyfinItem.DownloadQuality -> viewModel.cycleJellyfinDownloadQuality(direction)
+            JellyfinItem.BurnInSubtitles -> return toggleLeftRight(
+                direction,
+                state.jellyfin.burnInImageSubtitles
+            ) { viewModel.setJellyfinBurnInImageSubtitles(it) }
+            JellyfinItem.SharePresence -> return toggleLeftRight(
+                direction,
+                state.jellyfin.sharePresence
+            ) { viewModel.setJellyfinSharePresence(it) }
+            else -> return InputResult.UNHANDLED
+        }
+        return InputResult.HANDLED
+    }
+
     private fun handleAboutLeftRight(direction: Int): InputResult {
         val state = viewModel.uiState.value
         val hasLogPath = state.fileLoggingPath != null
@@ -299,6 +326,11 @@ internal class LightSectionsInput(
             SettingsSection.ROMM -> rommSections(buildRomMItemsFromState(state))
             SettingsSection.SAVES -> savesSections(SavesLayoutState.from(state))
             SettingsSection.STEAM_SETTINGS -> steamSections(state.steam)
+            SettingsSection.JELLYFIN -> if (state.jellyfin.configuring) {
+                return InputResult.HANDLED
+            } else {
+                jellyfinSections(JellyfinLayoutState.from(state))
+            }
             SettingsSection.SOCIAL -> socialSections(hasAvatarDoodle = state.social.avatarDoodle != null)
             SettingsSection.NAVIGATION -> navigationSections(state.controls)
             SettingsSection.AUDIO -> audioSections()

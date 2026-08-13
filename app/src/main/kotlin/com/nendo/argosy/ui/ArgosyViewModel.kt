@@ -514,6 +514,7 @@ class ArgosyViewModel @Inject constructor(
             .sortedWith(
                 compareByDescending<Friend> { it.isFavorite }
                     .thenByDescending { it.presence == PresenceStatus.IN_GAME }
+                    .thenByDescending { it.presence == PresenceStatus.WATCHING }
                     .thenByDescending { it.presence == PresenceStatus.ONLINE }
                     .thenBy { it.displayName.lowercase() }
             )

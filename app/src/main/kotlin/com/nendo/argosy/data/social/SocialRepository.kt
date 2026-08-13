@@ -295,7 +295,9 @@ class SocialRepository @Inject constructor(
                                 // the game/netplay_session payload. Replacing blindly flips the UI to
                                 // "Online" mid-session; preserve old game info when the new payload is
                                 // silent about it but status still implies play.
-                                val mergedGame = if (newPresence == PresenceStatus.IN_GAME && update.game == null) {
+                                val statusImpliesTitle = newPresence == PresenceStatus.IN_GAME ||
+                                    newPresence == PresenceStatus.WATCHING
+                                val mergedGame = if (statusImpliesTitle && update.game == null) {
                                     oldGame
                                 } else {
                                     update.game
@@ -1359,7 +1361,8 @@ class SocialRepository @Inject constructor(
                 oldPresence == PresenceStatus.OFFLINE ||
                 oldPresence == PresenceStatus.AWAY
             val isNowOnline = newPresence == PresenceStatus.ONLINE ||
-                newPresence == PresenceStatus.IN_GAME
+                newPresence == PresenceStatus.IN_GAME ||
+                newPresence == PresenceStatus.WATCHING
 
             val startedPlayingNewGame = newPresence == PresenceStatus.IN_GAME &&
                 newGame != null &&

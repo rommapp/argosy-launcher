@@ -497,6 +497,34 @@ class AmbientAudioManager @Inject constructor(
         if (silenceHolds == 0) fadeIn()
     }
 
+    private var videoSilenceHeld = false
+
+    /**
+     * Yields the audio output to the video player until [releaseVideoSilence]. This holds silence
+     * rather than stopping: [stopAndRelease] destroys the MediaPlayer along with any active
+     * override and its stashed playlist player, so music could only come back from the top of the
+     * current track and a game override would be lost, whereas a silence hold fades out a prepared
+     * player that keeps its position and fades back in where it left off.
+     *
+     * Idempotent in both directions, so the player can call it from every path that starts or ends
+     * playback without unbalancing the underlying hold count.
+     */
+    fun holdVideoSilence() {
+        scope.launch(Dispatchers.Main.immediate) {
+            if (videoSilenceHeld) return@launch
+            videoSilenceHeld = true
+            holdSilence()
+        }
+    }
+
+    fun releaseVideoSilence() {
+        scope.launch(Dispatchers.Main.immediate) {
+            if (!videoSilenceHeld) return@launch
+            videoSilenceHeld = false
+            releaseSilence()
+        }
+    }
+
     fun fadeIn(durationMs: Long = 500) {
         if (suspended) {
             Logger.verbose(TAG) { "fadeIn skipped: suspended (awaiting user input)" }

@@ -156,6 +156,10 @@ internal fun routeObserveDelegateStates(vm: SettingsViewModel) {
         vm._uiState.update { it.copy(steam = steam) }
     }.launchIn(vm.viewModelScope)
 
+    vm.jellyfinDelegate.state.onEach { jellyfin ->
+        vm._uiState.update { it.copy(jellyfin = jellyfin) }
+    }.launchIn(vm.viewModelScope)
+
     vm.raDelegate.state.onEach { ra ->
         vm._uiState.update { it.copy(retroAchievements = ra) }
     }.launchIn(vm.viewModelScope)
@@ -604,6 +608,21 @@ internal fun routeLoadSettings(vm: SettingsViewModel) {
             musicApiSupported = (connectionState as? ConnectionState.Connected)
                 ?.capabilities?.supportsMusicApi == true
         ))
+
+        vm.jellyfinDelegate.updateState(JellyfinState(
+            serverUrl = prefs.jellyfinServerUrl ?: "",
+            configUrl = prefs.jellyfinServerUrl ?: "",
+            isSignedIn = prefs.isJellyfinSignedIn,
+            userName = prefs.jellyfinUserName ?: "",
+            downloadQuality = prefs.mediaDownloadQuality,
+            maxStreamingBitrate = prefs.mediaMaxStreamingBitrate,
+            subtitleMode = prefs.mediaSubtitleMode,
+            subtitleLanguage = prefs.mediaSubtitleLanguage,
+            burnInImageSubtitles = prefs.mediaBurnInImageSubtitles,
+            sharePresence = prefs.shareMediaPresence,
+            mediaDirPath = vm.jellyfinDelegate.state.value.mediaDirPath
+        ))
+        vm.jellyfinDelegate.refreshMediaDirPath(vm.viewModelScope)
 
         vm.storageDelegate.updateState(StorageState(
             romStoragePath = prefs.romStoragePath ?: "",

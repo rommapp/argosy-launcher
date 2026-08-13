@@ -242,6 +242,12 @@ dependencies {
     // CBOR (QuayPass BLE wire format)
     implementation(libs.upokecenter.cbor)
 
+    // Media playback (Jellyfin)
+    implementation(libs.media3.exoplayer)
+    implementation(libs.media3.exoplayer.hls)
+    implementation(libs.media3.ui)
+    implementation(libs.media3.datasource.okhttp)
+
     // Image loading
     implementation(libs.coil.compose)
     implementation(libs.coil.svg)

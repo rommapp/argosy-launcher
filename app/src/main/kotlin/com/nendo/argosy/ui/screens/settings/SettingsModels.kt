@@ -24,6 +24,10 @@ import com.nendo.argosy.data.preferences.BoxArtOuterEffect
 import com.nendo.argosy.data.preferences.BoxArtOuterEffectThickness
 import com.nendo.argosy.data.preferences.GlowColorMode
 import com.nendo.argosy.data.preferences.GridDensity
+import com.nendo.argosy.data.preferences.MediaDownloadQuality
+import com.nendo.argosy.data.preferences.MediaStreamingBitrate
+import com.nendo.argosy.data.preferences.MediaSubtitleLanguage
+import com.nendo.argosy.data.preferences.MediaSubtitleMode
 import com.nendo.argosy.data.preferences.HomeBackgroundMode
 import com.nendo.argosy.data.preferences.SyncFilterPreferences
 import com.nendo.argosy.data.preferences.PlatformIndicatorContent
@@ -58,6 +62,12 @@ data class MusicRelocationPrompt(
     val fileCount: Int
 )
 
+data class MediaRelocationPrompt(
+    val oldPath: String,
+    val newPath: String,
+    val fileCount: Int
+)
+
 enum class SettingsSection {
     MAIN,
     ACCOUNTS,
@@ -65,6 +75,7 @@ enum class SettingsSection {
     SAVES,
     SYNC_SETTINGS,
     STEAM_SETTINGS,
+    JELLYFIN,
     RETRO_ACHIEVEMENTS,
     STORAGE,
     STORAGE_GAMES,
@@ -1039,6 +1050,33 @@ data class SteamSettingsState(
     val variantPickerFocusIndex: Int = 0
 )
 
+/**
+ * Everything the Jellyfin section renders. [quickConnectRequested] is set once the connection
+ * layer has a Quick Connect exchange in flight, so the account row can say so; the exchange
+ * itself runs there and writes the resulting credentials back through the preferences.
+ */
+data class JellyfinState(
+    val serverUrl: String = "",
+    val configuring: Boolean = false,
+    val configUrl: String = "",
+    val configFocusField: Int? = null,
+    val configError: String? = null,
+    val isSignedIn: Boolean = false,
+    val userName: String = "",
+    val quickConnectRequested: Boolean = false,
+    val showSignOutConfirm: Boolean = false,
+    val downloadQuality: MediaDownloadQuality = MediaDownloadQuality.ORIGINAL,
+    val maxStreamingBitrate: MediaStreamingBitrate = MediaStreamingBitrate.AUTO,
+    val subtitleMode: MediaSubtitleMode = MediaSubtitleMode.PREFERRED,
+    val subtitleLanguage: MediaSubtitleLanguage = MediaSubtitleLanguage.ENGLISH,
+    val burnInImageSubtitles: Boolean = true,
+    val sharePresence: Boolean = true,
+    val mediaDirPath: String? = null,
+    val pendingMediaRelocation: MediaRelocationPrompt? = null
+) {
+    val hasServer: Boolean get() = serverUrl.isNotBlank()
+}
+
 data class UpdateCheckState(
     val isChecking: Boolean = false,
     val hasChecked: Boolean = false,
@@ -1297,6 +1335,7 @@ data class SettingsUiState(
     val platformLibretro: PlatformLibretroState = PlatformLibretroState(),
     val syncSettings: SyncSettingsState = SyncSettingsState(),
     val steam: SteamSettingsState = SteamSettingsState(),
+    val jellyfin: JellyfinState = JellyfinState(),
     val retroAchievements: RASettingsState = RASettingsState(),
     val accounts: AccountsState = AccountsState(),
     val bios: BiosState = BiosState(),

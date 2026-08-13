@@ -12,6 +12,8 @@ object AppPaths {
 
     const val ROM_CACHE_DIR = "rom_cache"
 
+    const val MEDIA_DIR = "media"
+
     const val LIBRETRO_SAVES_SUBDIR = "libretro/saves"
 
     const val LIBRETRO_STATES_SUBDIR = "libretro/states"
@@ -62,6 +64,8 @@ object AppPaths {
     private const val OWNER_DIR_PREFIX = "u"
 
     fun romCacheDir(filesDir: File): File = File(filesDir, ROM_CACHE_DIR)
+
+    fun mediaDir(filesDir: File): File = File(filesDir, MEDIA_DIR)
 
     fun libretroSavesDir(filesDir: File): File = File(filesDir, LIBRETRO_SAVES_SUBDIR)
 

@@ -3040,3 +3040,170 @@ object Migration_166_167 : Migration(166, 167) {
         )
     }
 }
+
+/**
+ * The media library: server libraries, the items in them, their tracks, watch state and downloads.
+ *
+ * Every table is keyed on the media server's own ids plus the owning media user, because that is
+ * the identity the server hands out and the only one a row can be written under before a local id
+ * exists. `ownerUserId` is the media user, not a RomM account, and is never null: none of this
+ * exists before a media login, so there are no unowned rows to adopt.
+ *
+ * No foreign keys. The hierarchy in `media_items` is carried by `parentId` pointing at another
+ * row's `itemId`, and an episode can arrive from an endpoint that answers with the episode alone,
+ * with its season never synced; a constraint would refuse the row instead of storing it unresolved.
+ * `media_user_data` stays unconstrained for the same reason from the other direction: a position
+ * recorded offline must outlive a sync that rewrites or drops the item it belongs to.
+ */
+object Migration_169_170 : Migration(169, 170) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            "CREATE TABLE IF NOT EXISTS `media_libraries` (" +
+                "`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                "`ownerUserId` TEXT NOT NULL, " +
+                "`libraryId` TEXT NOT NULL, " +
+                "`name` TEXT NOT NULL, " +
+                "`collectionType` TEXT, " +
+                "`primaryImageTag` TEXT, " +
+                "`itemCount` INTEGER NOT NULL DEFAULT 0, " +
+                "`displayOrder` INTEGER NOT NULL DEFAULT 0, " +
+                "`lastSyncedAt` INTEGER)"
+        )
+        db.execSQL(
+            "CREATE UNIQUE INDEX IF NOT EXISTS `index_media_libraries_ownerUserId_libraryId` " +
+                "ON `media_libraries` (`ownerUserId`, `libraryId`)"
+        )
+
+        db.execSQL(
+            "CREATE TABLE IF NOT EXISTS `media_items` (" +
+                "`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                "`ownerUserId` TEXT NOT NULL, " +
+                "`itemId` TEXT NOT NULL, " +
+                "`libraryId` TEXT, " +
+                "`parentId` TEXT, " +
+                "`seriesId` TEXT, " +
+                "`itemType` TEXT NOT NULL, " +
+                "`name` TEXT NOT NULL, " +
+                "`sortName` TEXT NOT NULL, " +
+                "`overview` TEXT, " +
+                "`productionYear` INTEGER, " +
+                "`premiereDate` INTEGER, " +
+                "`dateCreated` INTEGER, " +
+                "`communityRating` REAL, " +
+                "`officialRating` TEXT, " +
+                "`genres` TEXT, " +
+                "`studios` TEXT, " +
+                "`runTimeTicks` INTEGER, " +
+                "`indexNumber` INTEGER, " +
+                "`parentIndexNumber` INTEGER, " +
+                "`seriesName` TEXT, " +
+                "`childCount` INTEGER, " +
+                "`primaryImageTag` TEXT, " +
+                "`backdropImageTag` TEXT, " +
+                "`thumbImageTag` TEXT, " +
+                "`container` TEXT, " +
+                "`localPath` TEXT, " +
+                "`downloadQuality` TEXT, " +
+                "`downloadedBytes` INTEGER, " +
+                "`downloadedAt` INTEGER, " +
+                "`lastSyncedAt` INTEGER)"
+        )
+        db.execSQL(
+            "CREATE UNIQUE INDEX IF NOT EXISTS `index_media_items_ownerUserId_itemId` " +
+                "ON `media_items` (`ownerUserId`, `itemId`)"
+        )
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS `index_media_items_ownerUserId_libraryId` " +
+                "ON `media_items` (`ownerUserId`, `libraryId`)"
+        )
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS `index_media_items_ownerUserId_parentId` " +
+                "ON `media_items` (`ownerUserId`, `parentId`)"
+        )
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS `index_media_items_ownerUserId_seriesId` " +
+                "ON `media_items` (`ownerUserId`, `seriesId`)"
+        )
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS `index_media_items_ownerUserId_sortName` " +
+                "ON `media_items` (`ownerUserId`, `sortName`)"
+        )
+
+        db.execSQL(
+            "CREATE TABLE IF NOT EXISTS `media_streams` (" +
+                "`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                "`ownerUserId` TEXT NOT NULL, " +
+                "`itemId` TEXT NOT NULL, " +
+                "`mediaSourceId` TEXT NOT NULL, " +
+                "`streamIndex` INTEGER NOT NULL, " +
+                "`streamType` TEXT NOT NULL, " +
+                "`codec` TEXT, " +
+                "`language` TEXT, " +
+                "`displayTitle` TEXT, " +
+                "`channels` INTEGER, " +
+                "`bitRate` INTEGER, " +
+                "`width` INTEGER, " +
+                "`height` INTEGER, " +
+                "`isDefault` INTEGER NOT NULL DEFAULT 0, " +
+                "`isForced` INTEGER NOT NULL DEFAULT 0, " +
+                "`isExternal` INTEGER NOT NULL DEFAULT 0)"
+        )
+        db.execSQL(
+            "CREATE UNIQUE INDEX IF NOT EXISTS " +
+                "`index_media_streams_ownerUserId_itemId_mediaSourceId_streamIndex` " +
+                "ON `media_streams` (`ownerUserId`, `itemId`, `mediaSourceId`, `streamIndex`)"
+        )
+
+        db.execSQL(
+            "CREATE TABLE IF NOT EXISTS `media_user_data` (" +
+                "`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                "`ownerUserId` TEXT NOT NULL, " +
+                "`itemId` TEXT NOT NULL, " +
+                "`playbackPositionTicks` INTEGER NOT NULL DEFAULT 0, " +
+                "`playedPercentage` REAL, " +
+                "`played` INTEGER NOT NULL DEFAULT 0, " +
+                "`playCount` INTEGER NOT NULL DEFAULT 0, " +
+                "`isFavorite` INTEGER NOT NULL DEFAULT 0, " +
+                "`lastPlayedAt` INTEGER, " +
+                "`needsSync` INTEGER NOT NULL DEFAULT 0, " +
+                "`updatedAt` INTEGER NOT NULL)"
+        )
+        db.execSQL(
+            "CREATE UNIQUE INDEX IF NOT EXISTS `index_media_user_data_ownerUserId_itemId` " +
+                "ON `media_user_data` (`ownerUserId`, `itemId`)"
+        )
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS `index_media_user_data_ownerUserId_needsSync` " +
+                "ON `media_user_data` (`ownerUserId`, `needsSync`)"
+        )
+
+        db.execSQL(
+            "CREATE TABLE IF NOT EXISTS `media_download_queue` (" +
+                "`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                "`ownerUserId` TEXT NOT NULL, " +
+                "`itemId` TEXT NOT NULL, " +
+                "`seriesId` TEXT, " +
+                "`itemName` TEXT NOT NULL, " +
+                "`seriesName` TEXT, " +
+                "`itemType` TEXT NOT NULL, " +
+                "`quality` TEXT NOT NULL, " +
+                "`mediaSourceId` TEXT, " +
+                "`playSessionId` TEXT, " +
+                "`destinationPath` TEXT, " +
+                "`tempFilePath` TEXT, " +
+                "`bytesDownloaded` INTEGER NOT NULL, " +
+                "`totalBytes` INTEGER NOT NULL, " +
+                "`state` TEXT NOT NULL, " +
+                "`errorReason` TEXT, " +
+                "`createdAt` INTEGER NOT NULL)"
+        )
+        db.execSQL(
+            "CREATE UNIQUE INDEX IF NOT EXISTS `index_media_download_queue_ownerUserId_itemId` " +
+                "ON `media_download_queue` (`ownerUserId`, `itemId`)"
+        )
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS `index_media_download_queue_state` " +
+                "ON `media_download_queue` (`state`)"
+        )
+    }
+}

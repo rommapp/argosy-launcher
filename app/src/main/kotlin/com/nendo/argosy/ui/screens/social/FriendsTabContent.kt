@@ -382,6 +382,8 @@ private fun FriendCard(
                             } else {
                                 "Playing ${friend.currentGame.title}"
                             }
+                        } else if (friend.presence == PresenceStatus.WATCHING && friend.currentGame != null) {
+                            "Watching ${friend.currentGame.title}"
                         } else {
                             presenceLabel(friend.presence)
                         },
@@ -548,7 +550,7 @@ private fun DisabledLabel(text: String) {
 private fun presenceColor(status: PresenceStatus?): Color = when (status) {
     PresenceStatus.ONLINE -> Color(0xFF22C55E)
     PresenceStatus.AWAY -> Color(0xFFFBBF24)
-    PresenceStatus.IN_GAME -> Color(0xFF6366F1)
+    PresenceStatus.IN_GAME, PresenceStatus.WATCHING -> Color(0xFF6366F1)
     PresenceStatus.OFFLINE, null -> Color(0xFF6B7280)
 }
 
@@ -556,5 +558,6 @@ private fun presenceLabel(status: PresenceStatus?): String = when (status) {
     PresenceStatus.ONLINE -> "Online"
     PresenceStatus.AWAY -> "Away"
     PresenceStatus.IN_GAME -> "In Game"
+    PresenceStatus.WATCHING -> "Watching"
     PresenceStatus.OFFLINE, null -> "Offline"
 }

@@ -12,6 +12,9 @@ import androidx.lifecycle.ProcessLifecycleOwner
 import com.nendo.argosy.data.emulator.ActiveSession
 import com.nendo.argosy.data.emulator.PlaySessionTracker
 import com.nendo.argosy.data.local.dao.GameDao
+import com.nendo.argosy.data.media.ActiveMediaPlayback
+import com.nendo.argosy.data.media.MediaPlaybackTracker
+import com.nendo.argosy.data.preferences.JellyfinPreferencesRepository
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -19,7 +22,6 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -29,13 +31,16 @@ class PresenceManager @Inject constructor(
     private val application: Application,
     private val socialRepository: SocialRepository,
     private val playSessionTracker: PlaySessionTracker,
+    private val mediaPlaybackTracker: MediaPlaybackTracker,
     private val preferencesRepository: UserPreferencesRepository,
+    private val jellyfinPreferencesRepository: JellyfinPreferencesRepository,
     private val gameDao: GameDao
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     private var lastSentStatus: PresenceStatus? = null
     private var lastSentGameId: Int? = null
+    private var lastSentTitle: String? = null
     private var lastSentSocialUserId: String? = null
     private var lastReconnectAttempt = 0L
 
@@ -82,25 +87,34 @@ class PresenceManager @Inject constructor(
 
     private fun observePresenceChanges() {
         scope.launch {
+            val flags = combine(
+                preferencesRepository.userPreferences,
+                jellyfinPreferencesRepository.preferences
+            ) { prefs, jellyfinPrefs ->
+                PresenceFlags(
+                    onlineStatusEnabled = prefs.socialOnlineStatusEnabled,
+                    showNowPlaying = prefs.socialShowNowPlaying,
+                    shareMediaPresence = jellyfinPrefs.shareMediaPresence,
+                    isSocialLinked = prefs.isSocialLinked,
+                    socialUserId = prefs.socialUserId
+                )
+            }.distinctUntilChanged()
+
             combine(
                 playSessionTracker.activeSession,
-                preferencesRepository.userPreferences.map { prefs ->
-                    PresenceFlags(
-                        onlineStatusEnabled = prefs.socialOnlineStatusEnabled,
-                        showNowPlaying = prefs.socialShowNowPlaying,
-                        isSocialLinked = prefs.isSocialLinked,
-                        socialUserId = prefs.socialUserId
-                    )
-                }.distinctUntilChanged(),
+                mediaPlaybackTracker.activePlayback,
+                flags,
                 socialRepository.serviceConnectionState,
                 _screenOn
-            ) { playSession, flags, serviceState, screenOn ->
+            ) { playSession, mediaPlayback, presenceFlags, serviceState, screenOn ->
                 PresenceContext(
                     playSession = playSession,
-                    onlineStatusEnabled = flags.onlineStatusEnabled,
-                    showNowPlaying = flags.showNowPlaying,
-                    isSocialLinked = flags.isSocialLinked,
-                    socialUserId = flags.socialUserId,
+                    mediaPlayback = mediaPlayback,
+                    onlineStatusEnabled = presenceFlags.onlineStatusEnabled,
+                    showNowPlaying = presenceFlags.showNowPlaying,
+                    shareMediaPresence = presenceFlags.shareMediaPresence,
+                    isSocialLinked = presenceFlags.isSocialLinked,
+                    socialUserId = presenceFlags.socialUserId,
                     isConnected = serviceState is ArgosSocialService.ConnectionState.Connected,
                     isScreenOn = screenOn
                 )
@@ -112,12 +126,13 @@ class PresenceManager @Inject constructor(
     }
 
     private suspend fun updatePresence(context: PresenceContext) {
-        Log.d(TAG, "updatePresence: linked=${context.isSocialLinked} connected=${context.isConnected} screenOn=${context.isScreenOn} session=${context.playSession?.gameId} onlineEnabled=${context.onlineStatusEnabled} nowPlaying=${context.showNowPlaying}")
+        Log.d(TAG, "updatePresence: linked=${context.isSocialLinked} connected=${context.isConnected} screenOn=${context.isScreenOn} session=${context.playSession?.gameId} media=${context.mediaPlayback?.itemId} onlineEnabled=${context.onlineStatusEnabled} nowPlaying=${context.showNowPlaying} mediaPresence=${context.shareMediaPresence}")
         if (!context.isSocialLinked) return
 
         if (!context.isConnected) {
             lastSentStatus = null
             lastSentGameId = null
+            lastSentTitle = null
             lastSentSocialUserId = null
             if (context.isScreenOn && context.onlineStatusEnabled) {
                 val now = System.currentTimeMillis()
@@ -135,27 +150,38 @@ class PresenceManager @Inject constructor(
         val identityChanged = context.socialUserId != lastSentSocialUserId
         if (identityChanged ||
             presenceInfo.status != lastSentStatus ||
-            presenceInfo.gameIgdbId != lastSentGameId
+            presenceInfo.gameIgdbId != lastSentGameId ||
+            presenceInfo.gameTitle != lastSentTitle
         ) {
-            Log.d(TAG, "Sending presence: ${presenceInfo.status}, game=${presenceInfo.gameTitle}, igdbId=${presenceInfo.gameIgdbId}")
+            Log.d(TAG, "Sending presence: ${presenceInfo.status}, title=${presenceInfo.gameTitle}, igdbId=${presenceInfo.gameIgdbId}")
             val sent = socialRepository.sendPresence(presenceInfo.status, presenceInfo.gameIgdbId, presenceInfo.gameTitle)
             if (sent) {
                 lastSentStatus = presenceInfo.status
                 lastSentGameId = presenceInfo.gameIgdbId
+                lastSentTitle = presenceInfo.gameTitle
                 lastSentSocialUserId = context.socialUserId
             } else {
                 Log.w(TAG, "Presence send failed, will retry on next state change")
                 lastSentStatus = null
                 lastSentGameId = null
+                lastSentTitle = null
                 lastSentSocialUserId = null
             }
         } else {
-            Log.d(TAG, "Presence unchanged, skipping: ${presenceInfo.status}, game=${presenceInfo.gameTitle}")
+            Log.d(TAG, "Presence unchanged, skipping: ${presenceInfo.status}, title=${presenceInfo.gameTitle}")
         }
     }
 
     private data class PresenceInfo(val status: PresenceStatus, val gameIgdbId: Int?, val gameTitle: String?)
 
+    /**
+     * A game always outranks media. A play session that exists, or begins while a video is open,
+     * makes the status IN_GAME and it stays there until the session ends, whatever the player is
+     * doing behind it. Media only reaches the wire once no play session is active.
+     *
+     * A media item stays WATCHING across a pause: the item is still open, and flipping presence on
+     * every transport press would put a wire message behind the pause button.
+     */
     private suspend fun calculatePresence(context: PresenceContext): PresenceInfo {
         if (!context.onlineStatusEnabled || !context.isScreenOn) {
             return PresenceInfo(PresenceStatus.OFFLINE, null, null)
@@ -171,6 +197,11 @@ class PresenceManager @Inject constructor(
             }
         }
 
+        val mediaPlayback = context.mediaPlayback
+        if (mediaPlayback != null && context.showNowPlaying && context.shareMediaPresence) {
+            return PresenceInfo(PresenceStatus.WATCHING, null, mediaPlayback.title)
+        }
+
         return PresenceInfo(PresenceStatus.ONLINE, null, null)
     }
 
@@ -182,6 +213,7 @@ class PresenceManager @Inject constructor(
     private data class PresenceFlags(
         val onlineStatusEnabled: Boolean,
         val showNowPlaying: Boolean,
+        val shareMediaPresence: Boolean,
         val isSocialLinked: Boolean,
         val socialUserId: String?
     )
@@ -193,8 +225,10 @@ class PresenceManager @Inject constructor(
      */
     private data class PresenceContext(
         val playSession: ActiveSession?,
+        val mediaPlayback: ActiveMediaPlayback?,
         val onlineStatusEnabled: Boolean,
         val showNowPlaying: Boolean,
+        val shareMediaPresence: Boolean,
         val isSocialLinked: Boolean,
         val socialUserId: String?,
         val isConnected: Boolean,

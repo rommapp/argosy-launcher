@@ -21,6 +21,7 @@ import androidx.compose.material.icons.filled.GraphicEq
 import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Memory
+import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.PhoneAndroid
 import androidx.compose.material.icons.filled.Save
@@ -82,6 +83,7 @@ internal sealed class MainSettingsItem(
 
     data object RomM : MainSettingsItem("romm", Icons.Default.Dns, "RomM", "connections")
     data object Steam : MainSettingsItem("steam", Icons.Default.CloudQueue, "Steam", "connections")
+    data object Jellyfin : MainSettingsItem("jellyfin", Icons.Default.Movie, "Jellyfin", "connections")
     data object Social : MainSettingsItem("social", Icons.Default.Group, "Social", "connections")
 
     data object Permissions :
@@ -100,7 +102,7 @@ internal sealed class MainSettingsItem(
                 Header("libraryHeader", "library", "LIBRARY"),
                 Platforms, Storage,
                 Header("connectionsHeader", "connections", "CONNECTIONS"),
-                RomM, Steam, Social,
+                RomM, Steam, Jellyfin, Social,
                 Header("systemHeader", "system", "SYSTEM"),
                 Permissions, DeviceSettings, About
             )
@@ -175,6 +177,12 @@ fun MainSettingsSection(uiState: SettingsUiState, viewModel: SettingsViewModel) 
         } else {
             "Not signed in"
         }
+        MainSettingsItem.Jellyfin -> when {
+            !uiState.jellyfin.hasServer -> "Server not configured"
+            uiState.jellyfin.isSignedIn -> uiState.jellyfin.userName.takeIf { it.isNotBlank() }
+                ?.let { "Signed in as $it" } ?: "Signed in"
+            else -> "Not signed in"
+        }
         MainSettingsItem.Social -> when (uiState.social.authStatus) {
             SocialAuthStatus.CONNECTED -> "Linked as ${uiState.social.displayName ?: uiState.social.username}"
             SocialAuthStatus.CONNECTING -> "Connecting..."
@@ -206,6 +214,7 @@ fun MainSettingsSection(uiState: SettingsUiState, viewModel: SettingsViewModel) 
             MainSettingsItem.Bios -> viewModel.navigateToSection(SettingsSection.BIOS)
             MainSettingsItem.Drivers -> viewModel.navigateToSection(SettingsSection.DRIVERS)
             MainSettingsItem.Steam -> viewModel.navigateToSection(SettingsSection.STEAM_SETTINGS)
+            MainSettingsItem.Jellyfin -> viewModel.navigateToSection(SettingsSection.JELLYFIN)
             MainSettingsItem.Social -> viewModel.navigateToSection(SettingsSection.SOCIAL)
             MainSettingsItem.Permissions -> viewModel.navigateToSection(SettingsSection.PERMISSIONS)
             MainSettingsItem.About -> viewModel.navigateToSection(SettingsSection.ABOUT)

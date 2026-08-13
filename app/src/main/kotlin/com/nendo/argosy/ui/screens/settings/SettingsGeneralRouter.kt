@@ -59,6 +59,7 @@ internal fun routeNavigateToSection(vm: SettingsViewModel, section: SettingsSect
             }
         }
         SettingsSection.STEAM_SETTINGS -> vm.steamDelegate.loadSteamSettings(vm.context, vm.viewModelScope)
+        SettingsSection.JELLYFIN -> vm.jellyfinDelegate.refreshMediaDirPath(vm.viewModelScope)
         SettingsSection.PERMISSIONS -> vm.permissionsDelegate.refreshPermissions()
         SettingsSection.SHADER_STACK -> vm.shaderChainManager.loadChain(
             routeResolveShaderChainSettingsScope(vm._uiState.value).chainJson

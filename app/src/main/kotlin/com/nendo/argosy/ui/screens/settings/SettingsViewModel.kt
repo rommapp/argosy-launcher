@@ -116,6 +116,7 @@ class SettingsViewModel @Inject constructor(
     val storageCachesDelegate: com.nendo.argosy.ui.screens.settings.delegates.StorageCachesDelegate,
     val syncDelegate: SyncSettingsDelegate,
     val steamDelegate: SteamSettingsDelegate,
+    val jellyfinDelegate: com.nendo.argosy.ui.screens.settings.delegates.JellyfinSettingsDelegate,
     val raDelegate: RASettingsDelegate,
     val permissionsDelegate: PermissionsSettingsDelegate,
     val biosDelegate: BiosSettingsDelegate,
@@ -171,6 +172,8 @@ class SettingsViewModel @Inject constructor(
     val openBgmAddMusicBrowserEvent: SharedFlow<Unit> = ambientAudioDelegate.openAddMusicBrowserEvent
     val openMusicBrowserBgmEvent: SharedFlow<Unit> = ambientAudioDelegate.openMusicBrowserEvent
     val openMusicLocationPickerEvent: SharedFlow<Unit> = ambientAudioDelegate.openMusicLocationPickerEvent
+    val openMediaLocationPickerEvent: SharedFlow<Unit> = jellyfinDelegate.openMediaLocationPickerEvent
+    val jellyfinQuickConnectRequestEvent: SharedFlow<String> = jellyfinDelegate.quickConnectRequestEvent
     val openMusicBrowserSfxEvent: SharedFlow<SoundType> = soundsDelegate.openMusicBrowserSfxEvent
     val launchPlatformFolderPicker: SharedFlow<Long> = storageDelegate.launchPlatformFolderPicker
     val launchSavePathPicker: SharedFlow<Unit> = emulatorDelegate.launchSavePathPicker
@@ -1936,6 +1939,50 @@ class SettingsViewModel @Inject constructor(
             )) }
         }
     }
+
+    fun startJellyfinConfig() = jellyfinDelegate.startServerConfig(::resetFocusIndex)
+    fun setJellyfinConfigUrl(url: String) = jellyfinDelegate.setConfigUrl(url)
+    fun setJellyfinConfigFocusField(field: Int?) = jellyfinDelegate.setConfigFocusField(field)
+    fun clearJellyfinConfigFocusField() = jellyfinDelegate.clearConfigFocusField()
+    fun commitJellyfinConfig() = jellyfinDelegate.commitServerConfig(viewModelScope, ::resetFocusIndex)
+    fun cancelJellyfinConfig() = jellyfinDelegate.cancelServerConfig(::resetFocusIndex)
+
+    private fun resetFocusIndex() {
+        _uiState.update { it.copy(focusedIndex = 0) }
+    }
+
+    fun requestJellyfinQuickConnect() = jellyfinDelegate.requestQuickConnect(viewModelScope)
+    fun requestJellyfinSignOut() = jellyfinDelegate.requestSignOut()
+    fun cancelJellyfinSignOut() = jellyfinDelegate.cancelSignOut()
+    fun confirmJellyfinSignOut() = jellyfinDelegate.confirmSignOut(viewModelScope)
+
+    fun cycleJellyfinDownloadQuality(direction: Int) =
+        jellyfinDelegate.cycleDownloadQuality(viewModelScope, direction)
+    fun setJellyfinDownloadQuality(quality: com.nendo.argosy.data.preferences.MediaDownloadQuality) =
+        jellyfinDelegate.setDownloadQuality(viewModelScope, quality)
+    fun cycleJellyfinStreamingBitrate(direction: Int) =
+        jellyfinDelegate.cycleMaxStreamingBitrate(viewModelScope, direction)
+    fun setJellyfinStreamingBitrate(bitrate: com.nendo.argosy.data.preferences.MediaStreamingBitrate) =
+        jellyfinDelegate.setMaxStreamingBitrate(viewModelScope, bitrate)
+    fun cycleJellyfinSubtitleMode(direction: Int) =
+        jellyfinDelegate.cycleSubtitleMode(viewModelScope, direction)
+    fun setJellyfinSubtitleMode(mode: com.nendo.argosy.data.preferences.MediaSubtitleMode) =
+        jellyfinDelegate.setSubtitleMode(viewModelScope, mode)
+    fun cycleJellyfinSubtitleLanguage(direction: Int) =
+        jellyfinDelegate.cycleSubtitleLanguage(viewModelScope, direction)
+    fun setJellyfinSubtitleLanguage(language: com.nendo.argosy.data.preferences.MediaSubtitleLanguage) =
+        jellyfinDelegate.setSubtitleLanguage(viewModelScope, language)
+    fun setJellyfinBurnInImageSubtitles(enabled: Boolean) =
+        jellyfinDelegate.setBurnInImageSubtitles(viewModelScope, enabled)
+    fun setJellyfinSharePresence(enabled: Boolean) =
+        jellyfinDelegate.setSharePresence(viewModelScope, enabled)
+
+    fun openMediaLocationPicker() = jellyfinDelegate.openMediaLocationPicker(viewModelScope)
+    fun onMediaLocationSelected(path: String) =
+        jellyfinDelegate.onMediaLocationSelected(viewModelScope, path)
+    fun confirmMediaRelocation() = jellyfinDelegate.confirmMediaRelocation(viewModelScope)
+    fun skipMediaRelocation() = jellyfinDelegate.skipMediaRelocation(viewModelScope)
+    fun cancelMediaRelocation() = jellyfinDelegate.cancelMediaRelocation()
 
     fun setSocialShowNowPlaying(enabled: Boolean) {
         viewModelScope.launch {

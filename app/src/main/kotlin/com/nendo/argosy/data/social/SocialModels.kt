@@ -87,6 +87,7 @@ enum class PresenceStatus(val value: String) {
     ONLINE("online"),
     AWAY("away"),
     IN_GAME("in_game"),
+    WATCHING("watching"),
     OFFLINE("offline");
 
     companion object {

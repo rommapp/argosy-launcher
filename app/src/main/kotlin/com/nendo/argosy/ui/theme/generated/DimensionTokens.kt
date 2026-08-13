@@ -78,6 +78,19 @@ object DimensionTokens {
         const val inGameMenuWidth = 300
         const val inGameMenuWidthWide = 560
         const val inGameMenuMaxHeightPct = 90
+        const val mediaPosterWidth = 160
+        const val mediaPosterHeight = 240
+        const val mediaBackdropWidth = 240
+        const val mediaBackdropHeight = 135
+        const val mediaEpisodeRowHeight = 88
+        const val mediaSeasonTabHeight = 40
+        const val playerTransportHeight = 96
+        const val playerChromePadding = 32
+        const val playerScrubTrackHeight = 4
+        const val playerScrubThumbSize = 14
+        const val playerTrickplayWidth = 160
+        const val playerTrickplayHeight = 90
+        const val playerSkipButtonWidth = 180
     }
 
     object Elevation {

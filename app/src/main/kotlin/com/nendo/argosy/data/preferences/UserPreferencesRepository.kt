@@ -28,7 +28,8 @@ class UserPreferencesRepository @Inject constructor(
     private val storagePrefs: StoragePreferencesRepository,
     private val appPrefs: AppPreferencesRepository,
     private val builtinPrefs: BuiltinEmulatorPreferencesRepository,
-    private val sessionPrefs: SessionPreferencesRepository
+    private val sessionPrefs: SessionPreferencesRepository,
+    private val jellyfinPrefs: JellyfinPreferencesRepository
 ) {
     val userPreferences: Flow<UserPreferences> = combine(
         combine(
@@ -40,8 +41,9 @@ class UserPreferencesRepository @Inject constructor(
         ) { display, sync, controls, storage, app ->
             PreferencesSources(display, sync, controls, storage, app)
         },
-        builtinPrefs.isBuiltinLibretroEnabled()
-    ) { sources, builtinEnabled ->
+        builtinPrefs.isBuiltinLibretroEnabled(),
+        jellyfinPrefs.preferences
+    ) { sources, builtinEnabled, jellyfin ->
         val (display, sync, controls, storage, app) = sources
         UserPreferences(
             firstRunComplete = app.firstRunComplete,
@@ -208,7 +210,19 @@ class UserPreferencesRepository @Inject constructor(
             quayPassAvatarSyncPending = sync.quayPassAvatarSyncPending,
             quayPassMessageSyncPending = sync.quayPassMessageSyncPending,
             quayPassGreeting = sync.quayPassGreeting,
-            quayPassTicketBalance = sync.quayPassTicketBalance
+            quayPassTicketBalance = sync.quayPassTicketBalance,
+            mediaStoragePath = storage.mediaStoragePath,
+            jellyfinServerUrl = jellyfin.serverUrl,
+            jellyfinDeviceId = jellyfin.deviceId,
+            jellyfinAccessToken = jellyfin.accessToken,
+            jellyfinUserId = jellyfin.userId,
+            jellyfinUserName = jellyfin.userName,
+            mediaDownloadQuality = jellyfin.downloadQuality,
+            mediaMaxStreamingBitrate = jellyfin.maxStreamingBitrate,
+            mediaSubtitleMode = jellyfin.subtitleMode,
+            mediaSubtitleLanguage = jellyfin.subtitleLanguage,
+            mediaBurnInImageSubtitles = jellyfin.burnInImageSubtitles,
+            shareMediaPresence = jellyfin.shareMediaPresence
         )
     }
 
@@ -401,6 +415,23 @@ class UserPreferencesRepository @Inject constructor(
     suspend fun setWeeklyIntegrityCheckEnabled(enabled: Boolean) = storagePrefs.setWeeklyIntegrityCheckEnabled(enabled)
     suspend fun setLastIntegrityCheckTime(timeMs: Long) = storagePrefs.setLastIntegrityCheckTime(timeMs)
     suspend fun setSteamInstallVolume(volume: String?) = storagePrefs.setSteamInstallVolume(volume)
+    suspend fun setMediaStoragePath(path: String?) = storagePrefs.setMediaStoragePath(path)
+
+    suspend fun setJellyfinServerUrl(url: String?) = jellyfinPrefs.setServerUrl(url)
+    suspend fun setJellyfinDeviceId(deviceId: String) = jellyfinPrefs.setDeviceId(deviceId)
+    suspend fun setJellyfinCredentials(accessToken: String, userId: String, userName: String?) =
+        jellyfinPrefs.setCredentials(accessToken, userId, userName)
+    suspend fun clearJellyfinCredentials() = jellyfinPrefs.clearCredentials()
+    suspend fun setMediaDownloadQuality(quality: MediaDownloadQuality) =
+        jellyfinPrefs.setDownloadQuality(quality)
+    suspend fun setMediaMaxStreamingBitrate(bitrate: MediaStreamingBitrate) =
+        jellyfinPrefs.setMaxStreamingBitrate(bitrate)
+    suspend fun setMediaSubtitleMode(mode: MediaSubtitleMode) = jellyfinPrefs.setSubtitleMode(mode)
+    suspend fun setMediaSubtitleLanguage(language: MediaSubtitleLanguage) =
+        jellyfinPrefs.setSubtitleLanguage(language)
+    suspend fun setMediaBurnInImageSubtitles(enabled: Boolean) =
+        jellyfinPrefs.setBurnInImageSubtitles(enabled)
+    suspend fun setShareMediaPresence(enabled: Boolean) = jellyfinPrefs.setShareMediaPresence(enabled)
 
     // --- App delegates ---
 
@@ -786,9 +817,23 @@ data class UserPreferences(
     val quayPassAvatarSyncPending: Boolean = false,
     val quayPassMessageSyncPending: Boolean = false,
     val quayPassGreeting: String? = null,
-    val quayPassTicketBalance: Int = 0
+    val quayPassTicketBalance: Int = 0,
+    val mediaStoragePath: String? = null,
+    val jellyfinServerUrl: String? = null,
+    val jellyfinDeviceId: String? = null,
+    val jellyfinAccessToken: String? = null,
+    val jellyfinUserId: String? = null,
+    val jellyfinUserName: String? = null,
+    val mediaDownloadQuality: MediaDownloadQuality = MediaDownloadQuality.ORIGINAL,
+    val mediaMaxStreamingBitrate: MediaStreamingBitrate = MediaStreamingBitrate.AUTO,
+    val mediaSubtitleMode: MediaSubtitleMode = MediaSubtitleMode.PREFERRED,
+    val mediaSubtitleLanguage: MediaSubtitleLanguage = MediaSubtitleLanguage.ENGLISH,
+    val mediaBurnInImageSubtitles: Boolean = true,
+    val shareMediaPresence: Boolean = true
 ) {
     val isSocialLinked: Boolean get() = socialSessionToken != null
+
+    val isJellyfinSignedIn: Boolean get() = !jellyfinAccessToken.isNullOrBlank()
 }
 
 enum class ThemeMode(val displayName: String) {

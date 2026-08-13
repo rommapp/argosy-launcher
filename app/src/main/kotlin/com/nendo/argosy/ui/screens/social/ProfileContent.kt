@@ -141,12 +141,13 @@ fun AccountInfoCard(
                     if (presence != null && profile.relationship != "self") {
                         val presenceText = when (presence.presenceStatus) {
                             PresenceStatus.IN_GAME -> presence.gameTitle?.let { "playing $it" } ?: "in game"
+                            PresenceStatus.WATCHING -> presence.gameTitle?.let { "watching $it" } ?: "watching"
                             PresenceStatus.ONLINE -> "online"
                             PresenceStatus.AWAY -> "away"
                             PresenceStatus.OFFLINE -> null
                         }
                         val presenceColor = when (presence.presenceStatus) {
-                            PresenceStatus.ONLINE, PresenceStatus.IN_GAME -> Color(0xFF4CAF50)
+                            PresenceStatus.ONLINE, PresenceStatus.IN_GAME, PresenceStatus.WATCHING -> Color(0xFF4CAF50)
                             PresenceStatus.AWAY -> Color(0xFFFFC107)
                             PresenceStatus.OFFLINE -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
                         }

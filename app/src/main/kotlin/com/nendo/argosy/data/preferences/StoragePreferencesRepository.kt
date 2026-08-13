@@ -16,6 +16,7 @@ import javax.inject.Singleton
 data class StoragePreferences(
     val romStoragePath: String? = null,
     val musicStoragePath: String? = null,
+    val mediaStoragePath: String? = null,
     val maxConcurrentDownloads: Int = 1,
     val instantDownloadThresholdMb: Int = 50,
     val customBiosPath: String? = null,
@@ -32,6 +33,7 @@ class StoragePreferencesRepository @Inject constructor(
     private object Keys {
         val ROM_STORAGE_PATH = stringPreferencesKey("rom_storage_path")
         val MUSIC_STORAGE_PATH = stringPreferencesKey("music_storage_path")
+        val MEDIA_STORAGE_PATH = stringPreferencesKey("media_storage_path")
         val MAX_CONCURRENT_DOWNLOADS = intPreferencesKey("max_concurrent_downloads")
         val INSTANT_DOWNLOAD_THRESHOLD_MB = intPreferencesKey("instant_download_threshold_mb")
         val CUSTOM_BIOS_PATH = stringPreferencesKey("custom_bios_path")
@@ -48,6 +50,7 @@ class StoragePreferencesRepository @Inject constructor(
         StoragePreferences(
             romStoragePath = prefs[Keys.ROM_STORAGE_PATH],
             musicStoragePath = prefs[Keys.MUSIC_STORAGE_PATH],
+            mediaStoragePath = prefs[Keys.MEDIA_STORAGE_PATH],
             maxConcurrentDownloads = prefs[Keys.MAX_CONCURRENT_DOWNLOADS] ?: 1,
             instantDownloadThresholdMb = prefs[Keys.INSTANT_DOWNLOAD_THRESHOLD_MB] ?: 50,
             customBiosPath = prefs[Keys.CUSTOM_BIOS_PATH],
@@ -68,6 +71,13 @@ class StoragePreferencesRepository @Inject constructor(
         dataStore.edit { prefs ->
             if (path != null) prefs[Keys.MUSIC_STORAGE_PATH] = path
             else prefs.remove(Keys.MUSIC_STORAGE_PATH)
+        }
+    }
+
+    suspend fun setMediaStoragePath(path: String?) {
+        dataStore.edit { prefs ->
+            if (path != null) prefs[Keys.MEDIA_STORAGE_PATH] = path
+            else prefs.remove(Keys.MEDIA_STORAGE_PATH)
         }
     }
 

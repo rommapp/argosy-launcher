@@ -26,6 +26,11 @@ import com.nendo.argosy.data.local.dao.FirmwareDao
 import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.dao.GameDiscDao
 import com.nendo.argosy.data.local.dao.GameFileDao
+import com.nendo.argosy.data.local.dao.MediaDownloadQueueDao
+import com.nendo.argosy.data.local.dao.MediaItemDao
+import com.nendo.argosy.data.local.dao.MediaLibraryDao
+import com.nendo.argosy.data.local.dao.MediaStreamDao
+import com.nendo.argosy.data.local.dao.MediaUserDataDao
 import com.nendo.argosy.data.local.dao.OrphanedFileDao
 import com.nendo.argosy.data.local.dao.PendingConflictDao
 import com.nendo.argosy.data.local.dao.PendingSocialSyncDao
@@ -290,4 +295,24 @@ object DatabaseModule {
     @Provides
     fun provideQuayPassPendingReportDao(database: ALauncherDatabase): QuayPassPendingReportDao =
         database.quayPassPendingReportDao()
+
+    @Provides
+    fun provideMediaLibraryDao(database: ALauncherDatabase): MediaLibraryDao =
+        database.mediaLibraryDao()
+
+    @Provides
+    fun provideMediaItemDao(database: ALauncherDatabase): MediaItemDao =
+        database.mediaItemDao()
+
+    @Provides
+    fun provideMediaStreamDao(database: ALauncherDatabase): MediaStreamDao =
+        database.mediaStreamDao()
+
+    @Provides
+    fun provideMediaUserDataDao(database: ALauncherDatabase): MediaUserDataDao =
+        database.mediaUserDataDao()
+
+    @Provides
+    fun provideMediaDownloadQueueDao(database: ALauncherDatabase): MediaDownloadQueueDao =
+        database.mediaDownloadQueueDao()
 }

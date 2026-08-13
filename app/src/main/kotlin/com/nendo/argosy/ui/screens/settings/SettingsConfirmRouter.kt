@@ -102,6 +102,12 @@ import com.nendo.argosy.ui.screens.settings.sections.StorageCachesItem
 import com.nendo.argosy.ui.screens.settings.sections.createStorageCachesLayoutInfo
 import com.nendo.argosy.ui.screens.settings.sections.storageCachesItemAtFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.storageCachesMaxFocusIndex
+import com.nendo.argosy.ui.screens.settings.components.JELLYFIN_CONFIG_CANCEL_INDEX
+import com.nendo.argosy.ui.screens.settings.components.JELLYFIN_CONFIG_SAVE_INDEX
+import com.nendo.argosy.ui.screens.settings.sections.JellyfinItem
+import com.nendo.argosy.ui.screens.settings.sections.JellyfinLayoutState
+import com.nendo.argosy.ui.screens.settings.sections.jellyfinItemAtFocusIndex
+import com.nendo.argosy.ui.screens.settings.sections.jellyfinMaxFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.RomMItem
 import com.nendo.argosy.ui.screens.settings.sections.SavesItem
 import com.nendo.argosy.ui.screens.settings.sections.SavesLayoutState
@@ -172,6 +178,7 @@ internal fun routeConfirm(vm: SettingsViewModel): InputResult {
                 MainSettingsItem.About -> vm.navigateToSection(SettingsSection.ABOUT)
                 MainSettingsItem.Social -> vm.navigateToSection(SettingsSection.SOCIAL)
                 MainSettingsItem.Steam -> vm.navigateToSection(SettingsSection.STEAM_SETTINGS)
+                MainSettingsItem.Jellyfin -> vm.navigateToSection(SettingsSection.JELLYFIN)
                 null -> {}
             }
             InputResult.HANDLED
@@ -180,6 +187,7 @@ internal fun routeConfirm(vm: SettingsViewModel): InputResult {
         SettingsSection.ROMM -> routeRomMConfirm(vm, state)
         SettingsSection.SAVES -> routeSavesConfirm(vm, state)
         SettingsSection.STEAM_SETTINGS -> routeSteamConfirm(vm, state)
+        SettingsSection.JELLYFIN -> routeJellyfinConfirm(vm, state)
         SettingsSection.RETRO_ACHIEVEMENTS -> {
             val ra = state.retroAchievements
             if (ra.showLoginForm) {
@@ -345,6 +353,46 @@ private fun routeRomMConfirm(vm: SettingsViewModel, state: SettingsUiState): Inp
         RomMItem.Accounts -> vm.navigateToSection(SettingsSection.ACCOUNTS)
         RomMItem.SyncSettings -> vm.navigateToSection(SettingsSection.SYNC_SETTINGS)
         RomMItem.SyncLibrary -> if (isOnline) vm.syncRomm()
+        else -> {}
+    }
+    return InputResult.HANDLED
+}
+
+private fun routeJellyfinConfirm(vm: SettingsViewModel, state: SettingsUiState): InputResult {
+    if (state.jellyfin.configuring) {
+        when (state.focusedIndex) {
+            JELLYFIN_CONFIG_SAVE_INDEX -> vm.commitJellyfinConfig()
+            JELLYFIN_CONFIG_CANCEL_INDEX -> vm.cancelJellyfinConfig()
+            else -> vm.setJellyfinConfigFocusField(state.focusedIndex)
+        }
+        return InputResult.HANDLED
+    }
+
+    val layoutState = JellyfinLayoutState.from(state)
+    val item = jellyfinItemAtFocusIndex(state.focusedIndex, layoutState) ?: return InputResult.HANDLED
+    when (item) {
+        JellyfinItem.MediaServer -> vm.startJellyfinConfig()
+        JellyfinItem.Account -> {
+            if (state.jellyfin.isSignedIn) {
+                vm.requestJellyfinSignOut()
+                return InputResult.handled(SoundType.OPEN_MODAL)
+            }
+            vm.requestJellyfinQuickConnect()
+        }
+        JellyfinItem.StreamingBitrate, JellyfinItem.Subtitles, JellyfinItem.SubtitleLanguage,
+        JellyfinItem.DownloadQuality -> {
+            vm.requestEnumPicker(item.key)
+            return InputResult.handled(SoundType.OPEN_MODAL)
+        }
+        JellyfinItem.BurnInSubtitles -> {
+            vm.setJellyfinBurnInImageSubtitles(!state.jellyfin.burnInImageSubtitles)
+            return InputResult.handled(SoundType.TOGGLE)
+        }
+        JellyfinItem.SharePresence -> {
+            vm.setJellyfinSharePresence(!state.jellyfin.sharePresence)
+            return InputResult.handled(SoundType.TOGGLE)
+        }
+        JellyfinItem.MediaLocation -> vm.openMediaLocationPicker()
         else -> {}
     }
     return InputResult.HANDLED
@@ -1004,6 +1052,7 @@ internal fun routeNavigateBack(vm: SettingsViewModel): Boolean {
         state.accounts.pairing.active -> { vm.cancelAddAccount(); true }
         state.accounts.switchInProgress -> true
         state.server.rommConfiguring -> { vm.cancelRommConfig(); true }
+        state.jellyfin.configuring -> { vm.cancelJellyfinConfig(); true }
         state.currentSection == SettingsSection.SYNC_SETTINGS -> {
             val items = buildRomMItemsFromState(state)
             val idx = rommFocusIndexOf(RomMItem.SyncSettings, items).coerceAtLeast(0)
@@ -1217,6 +1266,11 @@ private fun computeMaxFocusIndex(
     SettingsSection.SAVES -> savesMaxFocusIndex(SavesLayoutState.from(state))
     SettingsSection.SYNC_SETTINGS -> syncSettingsMaxFocusIndex()
     SettingsSection.STEAM_SETTINGS -> steamMaxFocusIndex(state.steam)
+    SettingsSection.JELLYFIN -> if (state.jellyfin.configuring) {
+        JELLYFIN_CONFIG_CANCEL_INDEX
+    } else {
+        jellyfinMaxFocusIndex(JellyfinLayoutState.from(state))
+    }
     SettingsSection.RETRO_ACHIEVEMENTS -> when {
         state.retroAchievements.showLoginForm -> 3
         state.retroAchievements.isLoggedIn -> {

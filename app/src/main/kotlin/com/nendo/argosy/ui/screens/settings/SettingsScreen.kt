@@ -96,6 +96,7 @@ import com.nendo.argosy.ui.screens.settings.sections.RomMSection
 import com.nendo.argosy.ui.screens.settings.sections.SavesSection
 import com.nendo.argosy.ui.screens.settings.sections.HomeScreenSection
 import com.nendo.argosy.ui.screens.settings.sections.InterfaceSection
+import com.nendo.argosy.ui.screens.settings.sections.JellyfinSection
 import com.nendo.argosy.ui.screens.settings.sections.MainSettingsSection
 import com.nendo.argosy.ui.screens.settings.sections.PermissionsSection
 import com.nendo.argosy.ui.screens.settings.sections.RASettingsSection
@@ -365,6 +366,7 @@ fun SettingsScreen(
 
     var showMusicBrowserBgm by remember { mutableStateOf(false) }
     var showMusicLocationBrowser by remember { mutableStateOf(false) }
+    var showMediaLocationBrowser by remember { mutableStateOf(false) }
     var musicBrowserSfxTarget by remember { mutableStateOf<SoundType?>(null) }
 
     LaunchedEffect(Unit) {
@@ -376,6 +378,12 @@ fun SettingsScreen(
     LaunchedEffect(Unit) {
         viewModel.openMusicLocationPickerEvent.collect {
             showMusicLocationBrowser = true
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        viewModel.openMediaLocationPickerEvent.collect {
+            showMediaLocationBrowser = true
         }
     }
 
@@ -542,6 +550,7 @@ fun SettingsScreen(
                         SettingsSection.SAVES -> "SAVES"
                         SettingsSection.SYNC_SETTINGS -> "SYNC SETTINGS"
                         SettingsSection.STEAM_SETTINGS -> "STEAM (EXPERIMENTAL)"
+                        SettingsSection.JELLYFIN -> "JELLYFIN"
                         SettingsSection.RETRO_ACHIEVEMENTS -> "RETROACHIEVEMENTS"
                         SettingsSection.STORAGE -> "STORAGE"
                         SettingsSection.STORAGE_GAMES -> "GAMES STORAGE"
@@ -616,6 +625,7 @@ fun SettingsScreen(
                     SettingsSection.SAVES -> SavesSection(uiState, viewModel)
                     SettingsSection.SYNC_SETTINGS -> SyncSettingsSection(uiState, viewModel, imageCacheProgress)
                     SettingsSection.STEAM_SETTINGS -> SteamSection(uiState, viewModel)
+                    SettingsSection.JELLYFIN -> JellyfinSection(uiState, viewModel)
                     SettingsSection.RETRO_ACHIEVEMENTS -> RASettingsSection(uiState, viewModel)
                     SettingsSection.STORAGE -> StorageSection(uiState, viewModel)
                     SettingsSection.STORAGE_GAMES -> StorageGamesSection(uiState, viewModel)
@@ -777,6 +787,28 @@ fun SettingsScreen(
         onDismiss = { viewModel.cancelMusicRelocation() },
         neutralLabel = "Skip",
         onNeutral = { viewModel.skipMusicRelocation() }
+    )
+
+    val mediaRelocation = uiState.jellyfin.pendingMediaRelocation
+    ArgosyConfirmModalHost(
+        visible = mediaRelocation != null,
+        title = "Move downloaded media?",
+        message = "The current media folder contains ${mediaRelocation?.fileCount ?: 0} files. Move them to the new location? This will overwrite any conflicts.",
+        confirmLabel = "Move",
+        onConfirm = { viewModel.confirmMediaRelocation() },
+        onDismiss = { viewModel.cancelMediaRelocation() },
+        neutralLabel = "Leave",
+        onNeutral = { viewModel.skipMediaRelocation() }
+    )
+
+    ArgosyConfirmModalHost(
+        visible = uiState.jellyfin.showSignOutConfirm,
+        title = "Sign Out of Jellyfin?",
+        message = "This device forgets your Jellyfin login. Downloaded media stays on disk and your watch history stays on the server.",
+        confirmLabel = "Sign Out",
+        destructive = true,
+        onConfirm = { viewModel.confirmJellyfinSignOut() },
+        onDismiss = { viewModel.cancelJellyfinSignOut() }
     )
 
     ArgosyConfirmModalHost(
@@ -1044,6 +1076,20 @@ fun SettingsScreen(
             },
             onDismiss = {
                 showMusicLocationBrowser = false
+            }
+        )
+    }
+
+    if (showMediaLocationBrowser) {
+        FileBrowserScreen(
+            mode = FileBrowserMode.FOLDER_SELECTION,
+            title = "Media Location",
+            onPathSelected = { path ->
+                showMediaLocationBrowser = false
+                viewModel.onMediaLocationSelected(path)
+            },
+            onDismiss = {
+                showMediaLocationBrowser = false
             }
         )
     }

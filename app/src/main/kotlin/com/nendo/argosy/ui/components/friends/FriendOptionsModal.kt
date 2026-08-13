@@ -141,7 +141,9 @@ fun FriendOptionsModal(
 
 @Composable
 private fun FriendMenuHeader(friend: Friend) {
-    val isOnline = friend.presence == PresenceStatus.ONLINE || friend.presence == PresenceStatus.IN_GAME
+    val isOnline = friend.presence == PresenceStatus.ONLINE ||
+        friend.presence == PresenceStatus.IN_GAME ||
+        friend.presence == PresenceStatus.WATCHING
     val isInGame = friend.presence == PresenceStatus.IN_GAME
 
     Row(
@@ -191,6 +193,8 @@ private fun FriendMenuHeader(friend: Friend) {
                     text = when (friend.presence) {
                         PresenceStatus.ONLINE -> "Online"
                         PresenceStatus.AWAY -> "Away"
+                        PresenceStatus.WATCHING -> friend.currentGame?.title
+                            ?.let { "Watching $it" } ?: "Watching"
                         else -> "Offline"
                     },
                     style = MaterialTheme.typography.labelSmall,

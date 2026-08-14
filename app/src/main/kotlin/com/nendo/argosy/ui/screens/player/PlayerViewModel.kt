@@ -37,9 +37,9 @@ import javax.inject.Inject
 private const val TAG = "PlayerViewModel"
 private const val POSITION_TICK_MS = 250L
 private const val SCRUB_COMMIT_DELAY_MS = 600L
-private const val SCRUB_STEP_MS = 10_000L
 private const val NEAR_END_MS = 15_000L
 private const val CHAPTER_BACK_GRACE_MS = 3_000L
+private const val FULLY_PLAYED_PERCENT = 100.0
 
 /**
  * How the player was asked to open. [startPositionMs] below zero means the caller made no decision
@@ -120,6 +120,13 @@ class PlayerViewModel @Inject constructor(
     private var wasPlayingBeforeInterrupt = true
     private var authorizationHeader: String? = null
 
+    /**
+     * A watch state the viewer set by hand, which outranks the one the closing position implies.
+     * Without it, marking a film watched half way through would be undone by the write that records
+     * where it was left.
+     */
+    private var watchedOverride: Boolean? = null
+
     private var startJob: Job? = null
     private var positionJob: Job? = null
     private var scrubCommitJob: Job? = null
@@ -190,7 +197,9 @@ class PlayerViewModel @Inject constructor(
                     chapters = detail.chapters,
                     trickplay = detail.trickplay,
                     trickplayAuthHeader = authorizationHeader,
-                    burnInImageSubtitles = burnIn
+                    burnInImageSubtitles = burnIn,
+                    isWatched = detail.isWatched,
+                    nextEpisode = detail.nextEpisode
                 )
             }
             if (args.startPositionMs >= 0) startPlayback(args.startPositionMs) else startPlayback(resumeMs)
@@ -206,6 +215,7 @@ class PlayerViewModel @Inject constructor(
         transcodeOffsetMs = 0
         interruptedAtMs = null
         wasPlayingBeforeInterrupt = true
+        watchedOverride = null
         _player.value?.let {
             it.playWhenReady = false
             it.clearMediaItems()
@@ -296,9 +306,12 @@ class PlayerViewModel @Inject constructor(
     }
 
     /**
-     * A transcoded stream begins at the position it was negotiated for, so its own timeline starts
-     * at zero and the item position is that offset plus whatever the player reports. Seeking inside
-     * it would land at twice the intended point.
+     * A progressive transcode begins at the position it was negotiated for, so its own timeline
+     * starts at zero and the item position is that offset plus whatever the player reports. Opening
+     * it at the resume position instead would land at twice the intended point.
+     *
+     * Every other shape - an HLS transcode, a direct play, a file off the disk - is addressed in item
+     * time, so it carries no offset and is opened at the position itself.
      *
      * A file off the disk is opened without a credential and reported to nobody. There is no play
      * session behind it to keep alive, no encoder to free, and a viewer with no server in reach is
@@ -313,7 +326,7 @@ class PlayerViewModel @Inject constructor(
             return
         }
         currentPlayback = playback
-        transcodeOffsetMs = if (playback.isTranscode) startPositionMs else 0
+        transcodeOffsetMs = if (playback.startsAtNegotiatedOffset) startPositionMs else 0
         tracks.resetForPlayback()
 
         val activePlayer = _player.value ?: engine.createPlayer(header, playerListener).also {
@@ -322,7 +335,7 @@ class PlayerViewModel @Inject constructor(
 
         activePlayer.setMediaItem(
             engine.buildMediaItem(playback),
-            if (playback.isTranscode) 0L else startPositionMs
+            if (playback.startsAtNegotiatedOffset) 0L else startPositionMs
         )
         activePlayer.prepare()
         activePlayer.playWhenReady = true
@@ -417,11 +430,11 @@ class PlayerViewModel @Inject constructor(
         val state = _uiState.value
         val itemId = state.itemId.ifEmpty { return }
         val durationMs = state.durationMs
-        val played = durationMs > 0 && finalPositionMs >= durationMs - NEAR_END_MS
-        val percentage = if (durationMs > 0) {
-            finalPositionMs.toDouble() / durationMs.toDouble() * 100.0
-        } else {
-            null
+        val played = watchedOverride ?: (durationMs > 0 && finalPositionMs >= durationMs - NEAR_END_MS)
+        val percentage = when {
+            played -> FULLY_PLAYED_PERCENT
+            durationMs > 0 -> finalPositionMs.toDouble() / durationMs.toDouble() * 100.0
+            else -> null
         }
         detachedScope.launch {
             runCatching {
@@ -518,6 +531,8 @@ class PlayerViewModel @Inject constructor(
      * the client can hide.
      */
     fun seekTo(targetMs: Long) {
+        scrubCommitJob?.cancel()
+        scrubCommitJob = null
         val duration = _uiState.value.durationMs
         val clamped = targetMs.coerceIn(0, if (duration > 0) duration else Long.MAX_VALUE)
         _uiState.update { it.copy(scrubTargetMs = null, positionMs = clamped) }
@@ -532,15 +547,25 @@ class PlayerViewModel @Inject constructor(
     fun nudgeScrub(direction: Int) {
         val state = _uiState.value
         val duration = state.durationMs
-        val target = ((state.scrubTargetMs ?: state.positionMs) + direction * SCRUB_STEP_MS)
+        val target = ((state.scrubTargetMs ?: state.positionMs) + direction * PLAYER_SEEK_STEP_MS)
             .coerceIn(0, if (duration > 0) duration else Long.MAX_VALUE)
         _uiState.update { it.copy(scrubTargetMs = target) }
         chrome.show()
         scrubCommitJob?.cancel()
         scrubCommitJob = viewModelScope.launch {
             delay(SCRUB_COMMIT_DELAY_MS)
+            scrubCommitJob = null
             seekTo(target)
         }
+    }
+
+    /**
+     * Moves by a fixed step and commits at once, which is what separates the two seek mechanisms: the
+     * scrubber walks a preview and waits to see whether the viewer is still moving, while a press on
+     * the transport is already the decision.
+     */
+    fun skipBy(direction: Int) {
+        seekTo(currentItemPositionMs() + direction * PLAYER_SEEK_STEP_MS)
     }
 
     fun scrubToFraction(fraction: Float) {
@@ -586,6 +611,57 @@ class PlayerViewModel @Inject constructor(
             }
             PlayerOverlay.CHAPTERS -> playChapter(state.overlayIndex)
             PlayerOverlay.NONE -> Unit
+        }
+    }
+
+    /**
+     * Marks the item watched, or takes that back. The write lands locally and is queued for the
+     * server, so it holds with nothing in reach; the chrome reads the state it just set rather than
+     * waiting on the round trip.
+     *
+     * It runs off the view model's own scope because the press is very often the last thing that
+     * happens before the viewer leaves, and teardown would cancel it.
+     */
+    fun toggleWatched() {
+        val itemId = _uiState.value.itemId.ifEmpty { return }
+        val watched = !_uiState.value.isWatched
+        watchedOverride = watched
+        _uiState.update { it.copy(isWatched = watched) }
+        chrome.show()
+        detachedScope.launch {
+            runCatching { mediaRepository.setPlayed(itemId, watched) }
+                .onFailure { Logger.warn(TAG, "Watch state write failed for $itemId", it) }
+        }
+    }
+
+    /**
+     * Moves the window on to the following episode. It is the same path a second title arriving from
+     * anywhere else takes, so the current one is closed down properly and the server is told its
+     * stream ended before the next is negotiated.
+     */
+    fun playNextEpisode() {
+        val state = _uiState.value
+        val next = state.nextEpisode ?: return
+        initialize(PlayerArgs(itemId = next.itemId, title = state.title, subtitle = next.label))
+    }
+
+    /**
+     * What one transport button does. Both ways of pressing it land here so a touch and a gamepad
+     * confirm cannot come to mean different things on the same button.
+     */
+    fun activateControl(control: PlayerControl?) {
+        when (control) {
+            PlayerControl.SKIP_BACK -> skipBy(-1)
+            PlayerControl.PLAY_PAUSE -> togglePlayPause()
+            PlayerControl.SKIP_FORWARD -> skipBy(1)
+            PlayerControl.AUDIO -> chrome.openOverlay(PlayerOverlay.AUDIO_TRACKS)
+            PlayerControl.SUBTITLES -> chrome.openOverlay(PlayerOverlay.SUBTITLE_TRACKS)
+            PlayerControl.CHAPTERS -> chrome.openOverlay(PlayerOverlay.CHAPTERS)
+            PlayerControl.NEXT_EPISODE -> playNextEpisode()
+            PlayerControl.MARK_WATCHED -> toggleWatched()
+            PlayerControl.CLOSE -> requestExit()
+            PlayerControl.SKIP -> skipActiveSegment()
+            null -> Unit
         }
     }
 

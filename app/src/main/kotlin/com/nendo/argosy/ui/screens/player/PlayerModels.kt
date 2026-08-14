@@ -11,10 +11,28 @@ import java.util.Locale
 enum class PlayerRow { SCRUBBER, CONTROLS }
 
 /**
+ * The bands the transport row is read in: moving through the film, choosing what is heard and seen,
+ * acting on the item itself, and the one button that only exists while an intro or the credits are
+ * on screen. A change of band draws a divider, so a row walked with one thumb still has structure.
+ */
+enum class PlayerControlGroup { TRANSPORT, CONTENT, ITEM, PROMPT }
+
+/**
  * One button in the transport row. The list is built per frame from what the item actually offers,
  * so a movie without chapters never grows a chapter button the user can land on.
  */
-enum class PlayerControl { SKIP, PLAY_PAUSE, AUDIO, SUBTITLES, CHAPTERS }
+enum class PlayerControl(val group: PlayerControlGroup) {
+    SKIP_BACK(PlayerControlGroup.TRANSPORT),
+    PLAY_PAUSE(PlayerControlGroup.TRANSPORT),
+    SKIP_FORWARD(PlayerControlGroup.TRANSPORT),
+    AUDIO(PlayerControlGroup.CONTENT),
+    SUBTITLES(PlayerControlGroup.CONTENT),
+    CHAPTERS(PlayerControlGroup.CONTENT),
+    NEXT_EPISODE(PlayerControlGroup.ITEM),
+    MARK_WATCHED(PlayerControlGroup.ITEM),
+    CLOSE(PlayerControlGroup.ITEM),
+    SKIP(PlayerControlGroup.PROMPT)
+}
 
 enum class PlayerOverlay { NONE, AUDIO_TRACKS, SUBTITLE_TRACKS, CHAPTERS }
 
@@ -39,6 +57,18 @@ data class PlayerTrack(
 data class PlayerChapter(
     val startMs: Long,
     val name: String
+)
+
+/**
+ * The episode that follows the one playing, when the library already holds it.
+ *
+ * Resolved from what has been stored rather than asked of the server, so an episode whose season was
+ * never synced is simply not offered - which is the honest answer, since it could not be played
+ * either.
+ */
+data class PlayerNextEpisode(
+    val itemId: String,
+    val label: String
 )
 
 enum class PlayerSkipKind(val label: String) {
@@ -94,7 +124,18 @@ data class NegotiatedPlayback(
     val sideloadedSubtitles: List<SideloadedSubtitle>,
     val isLocalFile: Boolean = false,
     val localCopy: MediaAvailability = MediaAvailability.NOT_DOWNLOADED
-)
+) {
+    /**
+     * Whether zero on this stream's own clock is the position it was negotiated for.
+     *
+     * A progressive transcode is handed over already cut, so it is. An HLS transcode is not: the
+     * playlist spans the whole item however far in the encoder was started, so it is addressed in
+     * item time exactly like a direct play, and treating it as cut puts the picture back at the
+     * beginning while the position it is credited with counts up from the resume point.
+     */
+    val startsAtNegotiatedOffset: Boolean
+        get() = isTranscode && !isHls
+}
 
 /**
  * The tracks a container turned out to hold, read from the player rather than from the server.
@@ -150,7 +191,9 @@ data class PlayerUiState(
     val chapters: List<PlayerChapter> = emptyList(),
     val activeSkip: PlayerSkipSegment? = null,
     val trickplay: PlayerTrickplay? = null,
-    val trickplayAuthHeader: String? = null
+    val trickplayAuthHeader: String? = null,
+    val isWatched: Boolean = false,
+    val nextEpisode: PlayerNextEpisode? = null
 ) {
     /**
      * The transport row is derived from what this item actually offers rather than drawn with dead
@@ -160,15 +203,35 @@ data class PlayerUiState(
      */
     val controls: List<PlayerControl>
         get() = buildList {
+            add(PlayerControl.SKIP_BACK)
             add(PlayerControl.PLAY_PAUSE)
+            add(PlayerControl.SKIP_FORWARD)
             if (audioTracks.size > 1) add(PlayerControl.AUDIO)
             if (subtitleTracks.isNotEmpty()) add(PlayerControl.SUBTITLES)
             if (chapters.isNotEmpty()) add(PlayerControl.CHAPTERS)
+            if (nextEpisode != null) add(PlayerControl.NEXT_EPISODE)
+            add(PlayerControl.MARK_WATCHED)
+            add(PlayerControl.CLOSE)
             if (activeSkip != null) add(PlayerControl.SKIP)
         }
 
+    /**
+     * Where the highlight actually sits, which is not always where it was put. The row loses a button
+     * whenever an intro ends or a track list turns out to be empty, and a stored index left pointing
+     * past the end would draw no highlight anywhere and answer a press with nothing.
+     */
+    val focusedControlIndex: Int
+        get() = if (controls.isEmpty()) 0 else controlIndex.coerceIn(0, controls.lastIndex)
+
     val focusedControl: PlayerControl?
-        get() = controls.getOrNull(controlIndex)
+        get() = controls.getOrNull(focusedControlIndex)
+
+    /**
+     * The one button the row always has, and therefore the only fixed point a viewer can navigate
+     * from.
+     */
+    val playPauseIndex: Int
+        get() = controls.indexOf(PlayerControl.PLAY_PAUSE).coerceAtLeast(0)
 
     val previewPositionMs: Long
         get() = scrubTargetMs ?: positionMs
@@ -229,3 +292,11 @@ fun formatPlaybackTime(millis: Long): String {
 private const val MILLIS_PER_SECOND = 1000L
 private const val SECONDS_PER_MINUTE = 60L
 private const val SECONDS_PER_HOUR = 3600L
+
+/**
+ * How far one press moves the position, on the scrubber and on the two skip buttons alike. The
+ * seconds are the stated figure and the milliseconds are derived from them, so the number a button
+ * announces and the number it actually moves by cannot come apart.
+ */
+const val PLAYER_SEEK_STEP_SECONDS = 10L
+const val PLAYER_SEEK_STEP_MS = PLAYER_SEEK_STEP_SECONDS * MILLIS_PER_SECOND

@@ -219,6 +219,8 @@ class PlaybackNegotiator @Inject constructor(
         if (!isTranscode && !source.supportsDirectPlay && !source.supportsDirectStream) {
             return PlaybackNegotiation.Failed("This title cannot be played on this device")
         }
+        val isHls = isHlsDelivery(source, streamUrl)
+        val startsAtNegotiatedOffset = isTranscode && !isHls
 
         val audioStreams = source.mediaStreams
             .filter { it.type == STREAM_TYPE_AUDIO }
@@ -252,7 +254,7 @@ class PlaybackNegotiator @Inject constructor(
                     mediaSourceId = source.id,
                     streamIndex = stream.index,
                     format = delivery.format,
-                    startPositionTicks = subtitleOffsetTicks(isTranscode, startPositionMs)
+                    startPositionTicks = subtitleOffsetTicks(startsAtNegotiatedOffset, startPositionMs)
                 ),
                 mimeType = delivery.mimeType,
                 language = stream.language
@@ -269,7 +271,7 @@ class PlaybackNegotiator @Inject constructor(
                 streamUrl = streamUrl,
                 playMethod = if (isTranscode) PLAY_METHOD_TRANSCODE else PLAY_METHOD_DIRECT_PLAY,
                 isTranscode = isTranscode,
-                isHls = isHlsDelivery(source, streamUrl),
+                isHls = isHls,
                 runtimeMs = (source.runTimeTicks ?: 0L) / TICKS_PER_MILLISECOND,
                 audioTracks = audioTracks,
                 subtitleTracks = subtitleTracks,
@@ -283,12 +285,18 @@ class PlaybackNegotiator @Inject constructor(
     /**
      * Where a sidecar subtitle has to be cut so it lines up with the picture.
      *
-     * A transcode starts its own timeline at the offset it was negotiated for, so a subtitle fetched
-     * from zero is ahead of the picture by exactly the resume position. A direct-played file keeps
-     * the original timeline, where zero is already correct.
+     * A progressive transcode starts its own timeline at the offset it was negotiated for, so a
+     * subtitle fetched from zero is ahead of the picture by exactly the resume position. Everything
+     * addressed in item time - a direct play, and an HLS transcode, whose playlist spans the whole
+     * item however far in the encoder was started - keeps the original timeline, where zero is
+     * already correct.
      */
-    private fun subtitleOffsetTicks(isTranscode: Boolean, startPositionMs: Long): Long =
-        if (isTranscode) startPositionMs.coerceAtLeast(0) * TICKS_PER_MILLISECOND else 0L
+    private fun subtitleOffsetTicks(startsAtNegotiatedOffset: Boolean, startPositionMs: Long): Long =
+        if (startsAtNegotiatedOffset) {
+            startPositionMs.coerceAtLeast(0) * TICKS_PER_MILLISECOND
+        } else {
+            0L
+        }
 
     /**
      * The address of the source file itself. `static=true` is what tells the server to hand the

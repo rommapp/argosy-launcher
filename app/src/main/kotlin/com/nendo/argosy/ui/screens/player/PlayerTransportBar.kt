@@ -16,19 +16,30 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Audiotrack
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.CheckCircleOutline
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.FastForward
 import androidx.compose.material.icons.filled.FormatListBulleted
+import androidx.compose.material.icons.filled.Forward10
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Replay10
+import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.Subtitles
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -46,6 +57,7 @@ import com.nendo.argosy.ui.util.clickableNoFocus
 private const val SCRUB_TRACK_UNPLAYED_ALPHA = 0.35f
 private const val CHAPTER_MARK_ALPHA = 0.7f
 private const val CHROME_SCRIM_ALPHA = 0.75f
+private const val GROUP_DIVIDER_ALPHA = 0.5f
 
 /**
  * The bar that carries position and transport.
@@ -53,6 +65,10 @@ private const val CHROME_SCRIM_ALPHA = 0.75f
  * Two bands rather than one row of controls: left and right mean "move through the film" on the
  * scrubber and "move between buttons" underneath it, and a single focus index cannot hold both
  * meanings without one of them being wrong.
+ *
+ * Between them runs one line that names whatever the highlight is on. That line is what lets the
+ * buttons be icons and lets the player carry no legend of its own: a viewer reads what the thing
+ * under their thumb does, rather than a table of which button opens what.
  */
 @Composable
 fun PlayerTransportBar(
@@ -76,23 +92,94 @@ fun PlayerTransportBar(
             onSeekToFraction = onSeekToFraction,
             onFocusScrubber = onFocusScrubber
         )
-        Spacer(Modifier.height(Dimens.spacingMd))
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
-        ) {
-            state.controls.forEachIndexed { index, control ->
+        Spacer(Modifier.height(Dimens.spacingSm))
+        FocusCaption(state = state)
+        Spacer(Modifier.height(Dimens.spacingXs))
+        ControlRow(state = state, onControlClick = onControlClick)
+    }
+}
+
+/**
+ * The one line that describes the current highlight: on the transport it names the focused button,
+ * and on the scrubber it says which chapter the thumb is standing in - or, on an item with no
+ * chapters, how much of it is left.
+ */
+@Composable
+private fun FocusCaption(state: PlayerUiState) {
+    val theme = LocalArgosyTheme.current
+    Text(
+        text = state.focusCaption(),
+        style = MaterialTheme.typography.labelMedium,
+        color = theme.textDim,
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis
+    )
+}
+
+/**
+ * The transport, as one flat walk from left to right. It scrolls rather than wrapping onto a second
+ * line, because a second line would mean up and down had to choose between rows of buttons and the
+ * scrubber, and it follows the highlight so a button reached on a narrow screen is a button that can
+ * be seen.
+ */
+@Composable
+private fun ControlRow(state: PlayerUiState, onControlClick: (Int) -> Unit) {
+    val controls = remember(
+        state.audioTracks,
+        state.subtitleTracks,
+        state.chapters,
+        state.nextEpisode,
+        state.activeSkip
+    ) { state.controls }
+    val listState = rememberLazyListState()
+    val focusedIndex = state.focusedControlIndex
+    val onControls = state.focusRow == PlayerRow.CONTROLS
+
+    LaunchedEffect(focusedIndex, onControls, controls.size) {
+        if (onControls && controls.isNotEmpty()) {
+            listState.animateScrollToItem(focusedIndex.coerceIn(0, controls.lastIndex))
+        }
+    }
+
+    LazyRow(
+        state = listState,
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
+    ) {
+        itemsIndexed(controls, key = { _, control -> control.name }) { index, control ->
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
+            ) {
+                if (index > 0 && controls[index - 1].group != control.group) GroupDivider()
                 TransportButton(
                     control = control,
                     isPlaying = state.isPlaying,
+                    isWatched = state.isWatched,
                     skipLabel = state.activeSkip?.kind?.label,
-                    focused = state.focusRow == PlayerRow.CONTROLS && state.controlIndex == index,
+                    focused = onControls && focusedIndex == index,
                     onClick = { onControlClick(index) }
                 )
             }
         }
     }
+}
+
+/**
+ * Marks where the row stops being about time and starts being about the item. It takes no focus
+ * slot; it is there so a row walked in one dimension still reads as three groups.
+ */
+@Composable
+private fun GroupDivider() {
+    val theme = LocalArgosyTheme.current
+    Box(
+        modifier = Modifier
+            .padding(horizontal = Dimens.spacingXs)
+            .width(Dimens.borderThin)
+            .height(Dimens.iconSm)
+            .background(theme.textMute.copy(alpha = GROUP_DIVIDER_ALPHA))
+    )
 }
 
 @Composable
@@ -240,10 +327,16 @@ private fun clampPreviewOffset(center: Dp, previewWidth: Dp, trackWidth: Dp): Dp
     return (center - half).coerceIn(Dp.Hairline, maxOffset)
 }
 
+/**
+ * A button in the transport row. Only the skip prompt carries its name inline: it is the one control
+ * that appears part-way through a film and has to be recognised without being walked to, while every
+ * other button is named by the caption line as soon as the highlight reaches it.
+ */
 @Composable
 private fun TransportButton(
     control: PlayerControl,
     isPlaying: Boolean,
+    isWatched: Boolean,
     skipLabel: String?,
     focused: Boolean,
     onClick: () -> Unit
@@ -269,7 +362,7 @@ private fun TransportButton(
         horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm, Alignment.CenterHorizontally)
     ) {
         Icon(
-            imageVector = control.icon(isPlaying),
+            imageVector = control.icon(isPlaying, isWatched),
             contentDescription = null,
             tint = tint,
             modifier = Modifier.size(Dimens.iconSm)
@@ -286,10 +379,48 @@ private fun TransportButton(
     }
 }
 
-private fun PlayerControl.icon(isPlaying: Boolean): ImageVector = when (this) {
+private fun PlayerControl.icon(isPlaying: Boolean, isWatched: Boolean): ImageVector = when (this) {
+    PlayerControl.SKIP_BACK -> Icons.Default.Replay10
     PlayerControl.PLAY_PAUSE -> if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow
+    PlayerControl.SKIP_FORWARD -> Icons.Default.Forward10
     PlayerControl.AUDIO -> Icons.Default.Audiotrack
     PlayerControl.SUBTITLES -> Icons.Default.Subtitles
     PlayerControl.CHAPTERS -> Icons.Default.FormatListBulleted
+    PlayerControl.NEXT_EPISODE -> Icons.Default.SkipNext
+    PlayerControl.MARK_WATCHED ->
+        if (isWatched) Icons.Default.CheckCircle else Icons.Default.CheckCircleOutline
+    PlayerControl.CLOSE -> Icons.Default.Close
     PlayerControl.SKIP -> Icons.Default.FastForward
+}
+
+/**
+ * What the caption says. Copy lives here rather than in the state so a rename never has to travel
+ * through the model the input handler reads.
+ */
+private fun PlayerUiState.focusCaption(): String = when (focusRow) {
+    PlayerRow.CONTROLS -> focusedControl?.let { controlLabel(it) }.orEmpty()
+    PlayerRow.SCRUBBER -> scrubberCaption()
+}
+
+private fun PlayerUiState.scrubberCaption(): String {
+    val chapter = chapters.lastOrNull { it.startMs <= previewPositionMs }
+    if (chapter != null) return chapter.name
+    if (durationMs <= 0) return ""
+    return "${formatPlaybackTime(durationMs - previewPositionMs)} Left"
+}
+
+private fun PlayerUiState.controlLabel(control: PlayerControl): String = when (control) {
+    PlayerControl.SKIP_BACK -> "Back ${PLAYER_SEEK_STEP_SECONDS}s"
+    PlayerControl.PLAY_PAUSE -> if (isPlaying) "Pause" else "Play"
+    PlayerControl.SKIP_FORWARD -> "Forward ${PLAYER_SEEK_STEP_SECONDS}s"
+    PlayerControl.AUDIO -> "Audio Track"
+    PlayerControl.SUBTITLES -> "Subtitles"
+    PlayerControl.CHAPTERS -> "Chapters"
+    PlayerControl.NEXT_EPISODE -> nextEpisode?.label
+        ?.takeIf { it.isNotBlank() }
+        ?.let { "Next Episode  $it" }
+        ?: "Next Episode"
+    PlayerControl.MARK_WATCHED -> if (isWatched) "Watched" else "Mark Watched"
+    PlayerControl.CLOSE -> "Close"
+    PlayerControl.SKIP -> activeSkip?.kind?.label.orEmpty()
 }

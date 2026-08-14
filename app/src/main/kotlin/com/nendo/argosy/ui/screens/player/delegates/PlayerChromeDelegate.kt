@@ -65,7 +65,7 @@ class PlayerChromeDelegate(
     fun moveControlFocus(delta: Int) {
         val controls = state.value.controls
         if (controls.isEmpty()) return
-        state.update { it.copy(controlIndex = (it.controlIndex + delta).mod(controls.size)) }
+        state.update { it.copy(controlIndex = (it.focusedControlIndex + delta).mod(controls.size)) }
         show()
     }
 
@@ -74,8 +74,22 @@ class PlayerChromeDelegate(
         show()
     }
 
+    /**
+     * Arriving at the transport row always lands on play and pause.
+     *
+     * A remembered position would be the friendlier answer if the row held still, but it does not:
+     * an intro ends, a next episode resolves, a track list turns out to be empty, and the button the
+     * index used to name is then a different button. Landing on the one control that is always there
+     * makes the walk to everything else countable from a fixed point.
+     */
     fun setFocusRow(row: PlayerRow) {
-        state.update { it.copy(focusRow = row) }
+        state.update {
+            when {
+                it.focusRow == row -> it
+                row != PlayerRow.CONTROLS -> it.copy(focusRow = row)
+                else -> it.copy(focusRow = row, controlIndex = it.playPauseIndex)
+            }
+        }
         show()
     }
 

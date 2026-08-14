@@ -26,7 +26,9 @@ data class PlayerItemDetail(
     val serverResumeMs: Long = 0,
     val chapters: List<PlayerChapter> = emptyList(),
     val skipSegments: List<PlayerSkipSegment> = emptyList(),
-    val trickplay: PlayerTrickplay? = null
+    val trickplay: PlayerTrickplay? = null,
+    val isWatched: Boolean = false,
+    val nextEpisode: PlayerNextEpisode? = null
 )
 
 /**
@@ -46,7 +48,8 @@ class PlayerItemLoader @Inject constructor(
 ) {
 
     suspend fun load(itemId: String): PlayerItemDetail = withContext(Dispatchers.IO) {
-        val stored = storedDetail(itemId)
+        val entity = runCatching { mediaRepository.getItem(itemId) }.getOrNull()
+        val stored = storedDetail(entity, itemId)
         val userId = apiClient.currentUserId() ?: return@withContext stored
         val item = when (val result = apiClient.getItem(itemId, userId)) {
             is JellyfinResult.Success -> result.data
@@ -65,7 +68,9 @@ class PlayerItemLoader @Inject constructor(
                 )
             },
             skipSegments = loadSkipSegments(itemId),
-            trickplay = trickplayOf(item)
+            trickplay = trickplayOf(item),
+            isWatched = item.userData?.played ?: stored.isWatched,
+            nextEpisode = stored.nextEpisode
         )
     }
 
@@ -100,14 +105,39 @@ class PlayerItemLoader @Inject constructor(
         }
     }
 
-    private suspend fun storedDetail(itemId: String): PlayerItemDetail {
-        val entity = runCatching { mediaRepository.getItem(itemId) }.getOrNull()
-            ?: return PlayerItemDetail()
+    private suspend fun storedDetail(
+        entity: MediaItemEntity?,
+        itemId: String
+    ): PlayerItemDetail {
+        val watched = runCatching { mediaRepository.getUserData(itemId)?.played }.getOrNull() == true
+        if (entity == null) return PlayerItemDetail(isWatched = watched)
         return PlayerItemDetail(
             title = entity.storedTitle(),
             subtitle = entity.storedSubtitle(),
-            runtimeMs = (entity.runTimeTicks ?: 0L) / TICKS_PER_MILLISECOND
+            runtimeMs = (entity.runTimeTicks ?: 0L) / TICKS_PER_MILLISECOND,
+            isWatched = watched,
+            nextEpisode = nextEpisodeOf(entity)
         )
+    }
+
+    /**
+     * The episode after this one, taken from what the library already holds.
+     *
+     * The stored order is season then episode, so the entry following this one is the next episode
+     * whether or not that crosses into another season. A film, an episode whose series was never
+     * stored, and the last episode there is all answer with nothing, and the button for it never
+     * appears rather than appearing and failing.
+     */
+    private suspend fun nextEpisodeOf(entity: MediaItemEntity): PlayerNextEpisode? {
+        if (entity.itemType != MediaItemType.EPISODE.wireValue) return null
+        val seriesId = entity.seriesId ?: return null
+        val episodes = runCatching { mediaRepository.getSeriesEpisodes(seriesId) }
+            .getOrNull()
+            ?: return null
+        val position = episodes.indexOfFirst { it.itemId == entity.itemId }
+        if (position < 0) return null
+        val next = episodes.getOrNull(position + 1) ?: return null
+        return PlayerNextEpisode(itemId = next.itemId, label = next.episodeLabel())
     }
 
     private fun MediaItemEntity.storedTitle(): String = when (itemType) {
@@ -116,15 +146,17 @@ class PlayerItemLoader @Inject constructor(
     }
 
     private fun MediaItemEntity.storedSubtitle(): String = when (itemType) {
-        MediaItemType.EPISODE.wireValue -> {
-            val number = when {
-                parentIndexNumber != null && indexNumber != null -> "S$parentIndexNumber E$indexNumber"
-                indexNumber != null -> "Episode $indexNumber"
-                else -> null
-            }
-            listOfNotNull(number, name.takeIf { it.isNotBlank() }).joinToString("  ")
-        }
+        MediaItemType.EPISODE.wireValue -> episodeLabel()
         else -> productionYear?.toString().orEmpty()
+    }
+
+    private fun MediaItemEntity.episodeLabel(): String {
+        val number = when {
+            parentIndexNumber != null && indexNumber != null -> "S$parentIndexNumber E$indexNumber"
+            indexNumber != null -> "Episode $indexNumber"
+            else -> null
+        }
+        return listOfNotNull(number, name.takeIf { it.isNotBlank() }).joinToString("  ")
     }
 
     private suspend fun loadSkipSegments(itemId: String): List<PlayerSkipSegment> {

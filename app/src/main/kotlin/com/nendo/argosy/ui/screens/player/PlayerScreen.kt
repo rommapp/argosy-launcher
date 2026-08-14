@@ -30,8 +30,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.ui.PlayerView
-import com.nendo.argosy.ui.components.FooterBar
-import com.nendo.argosy.ui.components.InputButton
 import com.nendo.argosy.ui.primitives.FocusIndicators
 import com.nendo.argosy.ui.primitives.argosyFocusIndicators
 import com.nendo.argosy.ui.theme.Dimens
@@ -159,32 +157,10 @@ private fun PlayerChrome(state: PlayerUiState, viewModel: PlayerViewModel) {
             onFocusScrubber = { viewModel.chrome.setFocusRow(PlayerRow.SCRUBBER) },
             onControlClick = { index ->
                 viewModel.chrome.setControlIndex(index)
-                when (state.controls.getOrNull(index)) {
-                    PlayerControl.PLAY_PAUSE -> viewModel.togglePlayPause()
-                    PlayerControl.AUDIO -> viewModel.chrome.openOverlay(PlayerOverlay.AUDIO_TRACKS)
-                    PlayerControl.SUBTITLES -> viewModel.chrome.openOverlay(PlayerOverlay.SUBTITLE_TRACKS)
-                    PlayerControl.CHAPTERS -> viewModel.chrome.openOverlay(PlayerOverlay.CHAPTERS)
-                    PlayerControl.SKIP -> viewModel.skipActiveSegment()
-                    null -> Unit
-                }
+                viewModel.activateControl(state.controls.getOrNull(index))
             }
         )
-
-        FooterBar(hints = state.footerHints())
     }
-}
-
-/**
- * Only what the focused control cannot say for itself. Play, pause and seeking are drawn on screen
- * and need no caption; the shoulder buttons and the two face buttons that open lists are bound to
- * nothing visible, so they are the ones that earn the bar.
- */
-private fun PlayerUiState.footerHints(): List<Pair<InputButton, String>> = buildList {
-    if (chapters.isNotEmpty()) {
-        add(InputButton.LB_RB to "Chapter")
-        add(InputButton.X to "Chapters")
-    }
-    if (subtitleTracks.isNotEmpty()) add(InputButton.Y to "Subtitles")
 }
 
 @Composable

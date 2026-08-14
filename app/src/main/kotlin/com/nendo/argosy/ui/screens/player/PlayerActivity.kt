@@ -18,6 +18,8 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.lifecycle.lifecycleScope
 import com.nendo.argosy.DualScreenManagerHolder
+import com.nendo.argosy.core.input.ControllerDetector
+import com.nendo.argosy.core.input.DetectedLayout
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.ui.input.GamepadEvent
 import com.nendo.argosy.ui.input.InputResult
@@ -60,6 +62,7 @@ class PlayerActivity : ComponentActivity() {
     private var swapAB by mutableStateOf(false)
     private var swapXY by mutableStateOf(false)
     private var swapStartSelect by mutableStateOf(false)
+    private var isNintendoLayout by mutableStateOf(false)
     private var wasStopped = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -79,8 +82,8 @@ class PlayerActivity : ComponentActivity() {
         setContent {
             ALauncherTheme {
                 CompositionLocalProvider(
-                    LocalABIconsSwapped provides swapAB,
-                    LocalXYIconsSwapped provides swapXY,
+                    LocalABIconsSwapped provides (isNintendoLayout xor swapAB),
+                    LocalXYIconsSwapped provides (isNintendoLayout xor swapXY),
                     LocalSwapStartSelect provides swapStartSelect
                 ) {
                     PlayerScreen(viewModel)
@@ -178,12 +181,24 @@ class PlayerActivity : ComponentActivity() {
         GamepadEvent.Home -> InputResult.UNHANDLED
     }
 
+    /**
+     * The swap preferences say which intent each physical button carries, and that is what the key
+     * dispatch is given. What the hints draw is a second question with a second answer: on a Nintendo
+     * pad the physical positions are already the other way round, so the glyph for an intent is
+     * swapped relative to the preference rather than by it.
+     */
     private fun observeButtonSwaps() {
         lifecycleScope.launch {
             userPreferencesRepository.preferences.collectLatest { prefs ->
                 swapAB = prefs.swapAB
                 swapXY = prefs.swapXY
                 swapStartSelect = prefs.swapStartSelect
+                isNintendoLayout = when (prefs.controllerLayout) {
+                    "nintendo" -> true
+                    "xbox" -> false
+                    else -> ControllerDetector.detectFromActiveGamepad().layout ==
+                        DetectedLayout.NINTENDO
+                }
             }
         }
     }

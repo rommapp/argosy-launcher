@@ -60,7 +60,7 @@ class PlayerInputHandler(
         }
         when (state.focusRow) {
             PlayerRow.SCRUBBER -> viewModel.togglePlayPause()
-            PlayerRow.CONTROLS -> activate(state.focusedControl)
+            PlayerRow.CONTROLS -> viewModel.activateControl(state.focusedControl)
         }
         InputResult.HANDLED
     }
@@ -105,17 +105,6 @@ class PlayerInputHandler(
         when (state.focusRow) {
             PlayerRow.SCRUBBER -> viewModel.nudgeScrub(direction)
             PlayerRow.CONTROLS -> chrome.moveControlFocus(direction)
-        }
-    }
-
-    private fun activate(control: PlayerControl?) {
-        when (control) {
-            PlayerControl.PLAY_PAUSE -> viewModel.togglePlayPause()
-            PlayerControl.AUDIO -> chrome.openOverlay(PlayerOverlay.AUDIO_TRACKS)
-            PlayerControl.SUBTITLES -> chrome.openOverlay(PlayerOverlay.SUBTITLE_TRACKS)
-            PlayerControl.CHAPTERS -> chrome.openOverlay(PlayerOverlay.CHAPTERS)
-            PlayerControl.SKIP -> viewModel.skipActiveSegment()
-            null -> Unit
         }
     }
 

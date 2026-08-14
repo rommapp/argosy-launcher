@@ -224,7 +224,7 @@
         <activity
             android:name=".libretro.LibretroActivity"
             android:configChanges="orientation|screenSize|screenLayout|keyboardHidden"
-            android:screenOrientation="fullSensor"
+            android:screenOrientation="fullUser"
             android:theme="@style/Theme.Argosy"
             android:taskAffinity=""
             android:exported="false" />

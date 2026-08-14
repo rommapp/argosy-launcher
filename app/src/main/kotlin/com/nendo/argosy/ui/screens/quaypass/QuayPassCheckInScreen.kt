@@ -1,5 +1,6 @@
 package com.nendo.argosy.ui.screens.quaypass
 
+import android.content.Context
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.snap
 import androidx.compose.foundation.Image
@@ -43,6 +44,7 @@ import androidx.compose.ui.graphics.FilterQuality
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.font.FontWeight
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -62,9 +64,8 @@ import com.nendo.argosy.ui.primitives.argosyFocusIndicators
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.generated.MotionTokens
 import com.nendo.argosy.ui.util.clickableNoFocus
+import com.nendo.argosy.util.formatClockDateTime
 import java.time.Instant
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
 
 @Composable
 fun QuayPassCheckInScreen(
@@ -378,11 +379,12 @@ private fun CheckInCardView(
                     }
                 }
                 Spacer(Modifier.height(Dimens.spacingXs))
+                val encountered = formatTimestamp(LocalContext.current, card.encounteredAt)
                 Text(
                     text = if (card.meetCount > 1) {
-                        "Met ${card.meetCount} times · ${formatTimestamp(card.encounteredAt)}"
+                        "Met ${card.meetCount} times · $encountered"
                     } else {
-                        formatTimestamp(card.encounteredAt)
+                        encountered
                     },
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -429,6 +431,5 @@ private fun decodePngAvatar(base64: String?): ImageBitmap? = base64?.let {
     }.getOrNull()
 }
 
-private val TIME_FORMAT = DateTimeFormatter.ofPattern("MMM d, HH:mm")
-private fun formatTimestamp(instant: Instant): String =
-    TIME_FORMAT.format(instant.atZone(ZoneId.systemDefault()))
+private fun formatTimestamp(context: Context, instant: Instant): String =
+    formatClockDateTime(context, instant.toEpochMilli())

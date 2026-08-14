@@ -325,7 +325,7 @@ fun InGameStateManager(
                     }
                     if (focusedSlot?.timestamp != null) {
                         Text(
-                            text = formatSaveTimestamp(focusedSlot.timestamp),
+                            text = formatSaveTimestamp(LocalContext.current, focusedSlot.timestamp),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -402,7 +402,7 @@ private fun SplitLayout(
                     )
                     if (focusedSlot.timestamp != null) {
                         Text(
-                            text = formatSaveTimestamp(focusedSlot.timestamp),
+                            text = formatSaveTimestamp(LocalContext.current, focusedSlot.timestamp),
                             style = MaterialTheme.typography.bodySmall,
                             color = Color.White.copy(alpha = 0.7f)
                         )
@@ -538,7 +538,7 @@ private fun CarouselLayout(
                 if (focusedSlot.timestamp != null) {
                     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         Text(
-                            text = formatSaveTimestamp(focusedSlot.timestamp),
+                            text = formatSaveTimestamp(LocalContext.current, focusedSlot.timestamp),
                             style = MaterialTheme.typography.bodySmall,
                             color = Color.White.copy(alpha = 0.7f)
                         )
@@ -636,7 +636,7 @@ private fun SlotCard(
 
         if (!isEmpty && slot.timestamp != null) {
             Text(
-                text = formatSaveTimestamp(slot.timestamp),
+                text = formatSaveTimestamp(LocalContext.current, slot.timestamp),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                 maxLines = 1,

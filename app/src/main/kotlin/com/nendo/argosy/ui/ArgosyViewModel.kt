@@ -838,9 +838,7 @@ class ArgosyViewModel @Inject constructor(
     private val audioManager = application.getSystemService(Context.AUDIO_SERVICE) as AudioManager
     private val _systemVolume = MutableStateFlow(volumeController.getVolume().primary)
     private val _screenBrightness = MutableStateFlow(
-        brightnessController.getBrightness().primary
-            ?: brightnessController.getSystemBrightnessSync()
-            ?: 0.5f
+        brightnessController.getBrightness().primary ?: 0.5f
     )
 
     val quickSettingsState: StateFlow<QuickSettingsUiState> = combine(
@@ -1262,8 +1260,11 @@ class ArgosyViewModel @Inject constructor(
 
     fun setScreenBrightness(brightness: Float) {
         val coercedBrightness = brightness.coerceIn(0f, 1f)
-        _screenBrightness.value = coercedBrightness
-        brightnessController.setPrimaryBrightness(coercedBrightness)
+        if (brightnessController.setPrimaryBrightness(coercedBrightness)) {
+            _screenBrightness.value = coercedBrightness
+        } else {
+            brightnessController.getBrightness().primary?.let { _screenBrightness.value = it }
+        }
     }
 
     fun cycleFanMode() {

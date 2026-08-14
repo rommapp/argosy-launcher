@@ -17,15 +17,17 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import com.nendo.argosy.ui.theme.LocalLauncherTheme
+import android.content.Context
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import com.nendo.argosy.ui.theme.Dimens
-import com.nendo.argosy.util.formatAbsoluteTimestamp
+import com.nendo.argosy.util.formatClockDateTime
 import com.nendo.argosy.util.formatRelativeTimeVerbose
 import java.time.Instant
 
@@ -44,12 +46,11 @@ data class SaveStatusInfo(
     val activeSaveTimestamp: Long?,
     val lastSyncTime: Instant?
 ) {
-    val displayLabel: String
-        get() = when {
-            channelName != null -> channelName
-            activeSaveTimestamp != null -> formatAbsoluteTimestamp(activeSaveTimestamp)
-            else -> "Latest"
-        }
+    fun displayLabel(context: Context): String = when {
+        channelName != null -> channelName
+        activeSaveTimestamp != null -> formatClockDateTime(context, activeSaveTimestamp)
+        else -> "Latest"
+    }
 
     val effectiveStatus: SaveSyncStatus
         get() = status
@@ -88,7 +89,7 @@ fun SaveStatusRow(
 
         androidx.compose.foundation.layout.Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = status.displayLabel,
+                text = status.displayLabel(LocalContext.current),
                 style = MaterialTheme.typography.bodySmall,
                 color = LocalLauncherTheme.current.semanticColors.warning,
                 maxLines = 1,

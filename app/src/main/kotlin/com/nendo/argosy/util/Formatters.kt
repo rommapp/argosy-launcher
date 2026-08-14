@@ -1,5 +1,6 @@
 package com.nendo.argosy.util
 
+import android.content.Context
 import java.text.SimpleDateFormat
 import java.time.Duration
 import java.time.Instant
@@ -68,27 +69,19 @@ fun formatRelativeTimeShort(instant: Instant): String {
     }
 }
 
-fun formatAbsoluteTimestamp(epochMillis: Long): String {
-    val instant = Instant.ofEpochMilli(epochMillis)
-    return DateTimeFormatter.ofPattern("MMM d, h:mm a")
-        .withZone(ZoneId.systemDefault())
-        .format(instant)
-}
-
 fun formatAbsoluteTimestamp(instant: Instant): String =
     DateTimeFormatter.ofPattern("MMM d, yyyy HH:mm")
         .withZone(ZoneId.systemDefault())
         .format(instant)
 
-fun formatSaveTimestamp(timestamp: Long): String {
-    val date = Date(timestamp)
+fun formatSaveTimestamp(context: Context, timestamp: Long): String {
     val diffMs = System.currentTimeMillis() - timestamp
     val diffDays = diffMs / (1000 * 60 * 60 * 24)
     return when {
-        diffDays == 0L -> "Today ${SimpleDateFormat("h:mm a", Locale.getDefault()).format(date)}"
+        diffDays == 0L -> "Today ${formatClockTime(context, timestamp)}"
         diffDays == 1L -> "Yesterday"
         diffDays < 7 -> "$diffDays days ago"
-        else -> SimpleDateFormat("MMM d", Locale.getDefault()).format(date)
+        else -> SimpleDateFormat("MMM d", Locale.getDefault()).format(Date(timestamp))
     }
 }
 

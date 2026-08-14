@@ -31,6 +31,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.nendo.argosy.ui.theme.Dimens
+import com.nendo.argosy.util.formatClockTime
 import kotlinx.coroutines.delay
 
 data class BatteryState(
@@ -111,8 +112,7 @@ fun SystemStatusBar(
         horizontalArrangement = Arrangement.spacedBy(Dimens.radiusLg)
     ) {
         Text(
-            text = java.text.SimpleDateFormat("h:mm a", java.util.Locale.getDefault())
-                .format(java.util.Date(currentTime.longValue)),
+            text = formatClockTime(LocalContext.current, currentTime.longValue),
             style = MaterialTheme.typography.titleMedium,
             color = effectiveColor
         )

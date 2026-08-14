@@ -239,7 +239,7 @@ private fun TimelinePreview(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
-                    text = formatSaveTimestamp(slot.timestamp),
+                    text = formatSaveTimestamp(LocalContext.current, slot.timestamp),
                     style = MaterialTheme.typography.bodySmall,
                     color = Color.White
                 )
@@ -350,7 +350,7 @@ private fun TimelineRow(
             )
             if (slot.timestamp != null) {
                 Text(
-                    text = formatSaveTimestamp(slot.timestamp),
+                    text = formatSaveTimestamp(LocalContext.current, slot.timestamp),
                     style = MaterialTheme.typography.labelSmall,
                     color = textColor.copy(alpha = 0.7f),
                     maxLines = 1,

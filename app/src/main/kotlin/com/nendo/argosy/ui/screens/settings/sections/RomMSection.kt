@@ -14,6 +14,7 @@ import androidx.compose.material.icons.filled.Tune
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import com.nendo.argosy.ui.components.ActionPreference
 import com.nendo.argosy.ui.components.NavigationPreference
 import com.nendo.argosy.ui.screens.settings.ConnectionStatus
@@ -25,8 +26,7 @@ import com.nendo.argosy.ui.screens.settings.components.SectionHeader
 import com.nendo.argosy.ui.screens.settings.components.SectionPaneLayout
 import com.nendo.argosy.ui.screens.settings.menu.SettingsLayout
 import com.nendo.argosy.ui.theme.Dimens
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
+import com.nendo.argosy.util.formatClockDateTime
 
 internal sealed class RomMItem(val key: String, val section: String) {
     val isFocusable: Boolean get() = this !is Header
@@ -194,12 +194,10 @@ private fun RomMContent(uiState: SettingsUiState, viewModel: SettingsViewModel) 
                 val enabledCount = uiState.syncSettings.enabledPlatformCount
                 val totalCount = uiState.syncSettings.totalPlatforms
                 val platformText = if (totalCount > 0) "$enabledCount/$totalCount platforms" else ""
+                val context = LocalContext.current
                 val lastSyncText = uiState.server.lastRommSync?.let { instant ->
-                    val formatter = DateTimeFormatter
-                        .ofPattern("MMM d, h:mm a")
-                        .withZone(ZoneId.systemDefault())
-                    if (platformText.isNotEmpty()) "$platformText - ${formatter.format(instant)}"
-                    else "Last: ${formatter.format(instant)}"
+                    val synced = formatClockDateTime(context, instant.toEpochMilli())
+                    if (platformText.isNotEmpty()) "$platformText - $synced" else "Last: $synced"
                 } ?: if (platformText.isNotEmpty()) platformText else "Never synced"
                 ActionPreference(
                     icon = Icons.AutoMirrored.Filled.LibraryBooks,

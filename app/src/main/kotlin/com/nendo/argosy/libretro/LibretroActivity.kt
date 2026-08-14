@@ -984,7 +984,7 @@ class LibretroActivity : ComponentActivity() {
     }
 
     private fun formatClock(epochMs: Long): String =
-        android.text.format.DateFormat.getTimeFormat(this).format(java.util.Date(epochMs))
+        com.nendo.argosy.util.formatClockTime(this, epochMs)
 
     /**
      * Padded to a stable width so the bar does not resize as the digits change. The readouts are
@@ -2801,11 +2801,11 @@ class LibretroActivity : ComponentActivity() {
 
     private fun applyOrientationLock(locked: Boolean) {
         requestedOrientation = if (!locked) {
-            android.content.pm.ActivityInfo.SCREEN_ORIENTATION_FULL_SENSOR
+            android.content.pm.ActivityInfo.SCREEN_ORIENTATION_FULL_USER
         } else if (currentOrientationState == android.content.res.Configuration.ORIENTATION_PORTRAIT) {
-            android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT
+            android.content.pm.ActivityInfo.SCREEN_ORIENTATION_USER_PORTRAIT
         } else {
-            android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+            android.content.pm.ActivityInfo.SCREEN_ORIENTATION_USER_LANDSCAPE
         }
     }
 

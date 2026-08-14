@@ -71,6 +71,7 @@ import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalArgosyTheme
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -557,7 +558,7 @@ private fun HistoryRow(
                 horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 Text(
-                    text = formatSaveTimestamp(item.timestamp),
+                    text = formatSaveTimestamp(LocalContext.current, item.timestamp),
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Medium,
                     color = theme.textPrimary
@@ -765,6 +766,7 @@ private fun OptionsTabContent(
     val completionStatus = CompletionStatus.fromApiValue(status)
 
     val dlState = downloadState
+    val context = LocalContext.current
 
     fun entryFor(option: GameDetailOption): OptionEntry = when (option) {
         GameDetailOption.PLAY -> {
@@ -793,7 +795,11 @@ private fun OptionsTabContent(
 
             val showSaveInfo = isPlayable && dlState == null && activeSaveTimestamp != null
             val slotLabel = if (showSaveInfo) activeChannel ?: "Auto-save" else null
-            val dateLabel = if (showSaveInfo) formatSaveTimestamp(activeSaveTimestamp!!) else null
+            val dateLabel = if (showSaveInfo) {
+                formatSaveTimestamp(context, activeSaveTimestamp!!)
+            } else {
+                null
+            }
             val statusVisual: (@Composable () -> Unit)? = if (showSaveInfo && saveSyncStatusName != null) {
                 val status = runCatching { SaveSyncStatus.valueOf(saveSyncStatusName) }.getOrNull()
                 if (status != null) {

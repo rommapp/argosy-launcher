@@ -15,6 +15,9 @@ import com.nendo.argosy.data.local.entity.MediaStreamEntity
 import com.nendo.argosy.data.local.entity.MediaStreamType
 import com.nendo.argosy.data.local.entity.MediaUserDataEntity
 import com.nendo.argosy.data.preferences.JellyfinPreferencesRepository
+import com.nendo.argosy.data.remote.jellyfin.IMAGE_TYPE_BACKDROP
+import com.nendo.argosy.data.remote.jellyfin.IMAGE_TYPE_PRIMARY
+import com.nendo.argosy.data.remote.jellyfin.IMAGE_TYPE_THUMB
 import com.nendo.argosy.data.remote.jellyfin.JellyfinApiClient
 import com.nendo.argosy.data.remote.jellyfin.JellyfinLibrarySyncService
 import com.nendo.argosy.data.remote.jellyfin.JellyfinMediaSource
@@ -384,13 +387,25 @@ class MediaRepository @Inject constructor(
     }
 
     fun posterUrl(itemId: String, tag: String?, maxWidth: Int? = null): String =
-        apiClient.buildImageUrl(itemId, IMAGE_PRIMARY, tag, maxWidth)
-
-    fun backdropUrl(itemId: String, tag: String?, maxWidth: Int? = null): String =
-        apiClient.buildImageUrl(itemId, IMAGE_BACKDROP, tag, maxWidth)
+        imageUrl(itemId, MediaImageType.PRIMARY, tag, maxWidth)
 
     fun thumbUrl(itemId: String, tag: String?, maxWidth: Int? = null): String =
-        apiClient.buildImageUrl(itemId, IMAGE_THUMB, tag, maxWidth)
+        imageUrl(itemId, MediaImageType.THUMB, tag, maxWidth)
+
+    /**
+     * One image of one item, with the kind of image named rather than assumed.
+     *
+     * A tag identifies a single image of a single item, so the kind and the item id are part of the
+     * same choice as the tag: a request for a kind the item does not carry answers 404 however valid
+     * the tag is. Callers that resolve a tag by falling back between kinds must pick the matching
+     * kind here rather than varying the tag alone.
+     */
+    fun imageUrl(
+        itemId: String,
+        type: MediaImageType,
+        tag: String?,
+        maxWidth: Int? = null
+    ): String = apiClient.buildImageUrl(itemId, type.wireValue, tag, maxWidth)
 
     private suspend fun currentOwner(): String? = ownerFlow.first()
 
@@ -426,8 +441,15 @@ class MediaRepository @Inject constructor(
          * them, so a read spanning a whole library has to arrive in pieces.
          */
         private const val SQL_VARIABLE_LIMIT = 900
-        private const val IMAGE_PRIMARY = "Primary"
-        private const val IMAGE_BACKDROP = "Backdrop"
-        private const val IMAGE_THUMB = "Thumb"
     }
+}
+
+/**
+ * The image kinds this client asks for, carrying the server's own image-type tokens so a request
+ * spells the kind the same way the item's tag map does.
+ */
+enum class MediaImageType(val wireValue: String) {
+    PRIMARY(IMAGE_TYPE_PRIMARY),
+    BACKDROP(IMAGE_TYPE_BACKDROP),
+    THUMB(IMAGE_TYPE_THUMB)
 }

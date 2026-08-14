@@ -278,12 +278,46 @@ class JellyfinLibrarySyncService @Inject constructor(
         val entities = response.items.mapNotNull { it.toItemEntity(owner, libraryId) }
         persistItems(owner, entities)
         persistUserData(owner, response.items)
+        refileStoredEpisodes(owner, seriesId, JellyfinSeasonPlacement.of(entities))
         return JellyfinResult.Success(entities.map { it.itemId }.toSet())
     }
 
     /**
+     * Puts episodes already on disk under the season their own number names.
+     *
+     * The number is stored on the row, so this is a local read and a local write: a library that was
+     * synced while the reported season id was trusted is put right without fetching any of it again,
+     * and a series opened with the server unreachable is corrected all the same. A row already where
+     * it belongs is not rewritten, which is what stops this from re-triggering the queries observing
+     * it.
+     */
+    private suspend fun refileStoredEpisodes(
+        owner: String,
+        seriesId: String,
+        placement: JellyfinSeasonPlacement
+    ) {
+        val stored = mediaItemDao.getBySeries(owner, seriesId, MediaItemType.EPISODE.wireValue)
+        val refiled = stored.mapNotNull { episode ->
+            val parent = placement.parentFor(episode.parentIndexNumber, episode.parentId)
+            episode.takeIf { parent != it.parentId }?.copy(parentId = parent)
+        }
+        if (refiled.isEmpty()) return
+        mediaItemDao.insertAll(refiled)
+        Logger.info(TAG, "refiled ${refiled.size} episodes of $seriesId under the season they number")
+    }
+
+    private suspend fun placementFor(owner: String, seriesId: String): JellyfinSeasonPlacement =
+        JellyfinSeasonPlacement.of(mediaItemDao.getByParent(owner, seriesId))
+
+    /**
      * Fetches one season's episodes, which is the lazy half of the strategy: a season is pulled the
      * first time it is opened and refreshed on each later visit.
+     *
+     * The whole series is refiled before anything is fetched, and deliberately not just the season
+     * being opened. The endpoint answers for the directory as readily as for the season, so a request
+     * for one season can come back carrying the entire run; every episode in the answer is filed by
+     * its own number, which is also why a season that answers with more than its own no longer empties
+     * the seasons beside it.
      */
     suspend fun syncSeasonEpisodes(
         seriesId: String,
@@ -292,6 +326,8 @@ class JellyfinLibrarySyncService @Inject constructor(
         val owner = connectionManager.getUserId()
             ?: return@withContext JellyfinResult.Error("Not signed in")
         val libraryId = mediaItemDao.getByItemId(owner, seriesId)?.libraryId
+        val placement = placementFor(owner, seriesId)
+        refileStoredEpisodes(owner, seriesId, placement)
         var startIndex = 0
         var stored = 0
 
@@ -308,7 +344,7 @@ class JellyfinLibrarySyncService @Inject constructor(
             }
             if (page.items.isEmpty()) break
 
-            val entities = page.items.mapNotNull { it.toItemEntity(owner, libraryId) }
+            val entities = page.items.mapNotNull { it.toItemEntity(owner, libraryId, placement) }
             persistItems(owner, entities)
             persistUserData(owner, page.items)
             stored += entities.size
@@ -332,7 +368,7 @@ class JellyfinLibrarySyncService @Inject constructor(
             val params = apiClient.buildNextUpQueryParams(owner, limit)
             when (val result = apiClient.getNextUp(params)) {
                 is JellyfinResult.Success -> {
-                    val entities = result.data.items.mapNotNull { it.toItemEntity(owner, null) }
+                    val entities = toRailEntities(owner, result.data.items)
                     persistItems(owner, entities, narrowFields = true)
                     persistUserData(owner, result.data.items)
                     JellyfinResult.Success(entities)
@@ -349,12 +385,31 @@ class JellyfinLibrarySyncService @Inject constructor(
         val params = apiClient.buildResumeQueryParams(owner, limit)
         when (val result = apiClient.getResumeItems(params)) {
             is JellyfinResult.Success -> {
-                val entities = result.data.items.mapNotNull { it.toItemEntity(owner, null) }
+                val entities = toRailEntities(owner, result.data.items)
                 persistItems(owner, entities, narrowFields = true)
                 persistUserData(owner, result.data.items)
                 JellyfinResult.Success(entities)
             }
             is JellyfinResult.Error -> JellyfinResult.Error(result.message, result.code)
+        }
+    }
+
+    /**
+     * A rail answers with episodes and no season context, so each one is filed against the seasons of
+     * its own series, read once per series in the answer. An episode whose series has not been synced
+     * has no seasons to file it against and keeps the parent the server reported, which the next pass
+     * over that series corrects.
+     */
+    private suspend fun toRailEntities(
+        owner: String,
+        items: List<JellyfinItem>
+    ): List<MediaItemEntity> {
+        val placements = mutableMapOf<String, JellyfinSeasonPlacement>()
+        return items.mapNotNull { item ->
+            val placement = item.seriesId
+                ?.let { series -> placements.getOrPut(series) { placementFor(owner, series) } }
+                ?: JellyfinSeasonPlacement.EMPTY
+            item.toItemEntity(owner, null, placement)
         }
     }
 
@@ -561,14 +616,31 @@ class JellyfinLibrarySyncService @Inject constructor(
      * The hierarchy is carried as ids rather than as a walked chain: a season points at its series,
      * an episode at its season, and both denormalise the series so a series can gather its episodes
      * in one query.
+     *
+     * An episode's season comes from [placement] rather than from the id the episode reports, which
+     * names the directory its file sits in; see [JellyfinSeasonPlacement].
      */
-    private fun JellyfinItem.toItemEntity(owner: String, libraryId: String?): MediaItemEntity? {
+    private fun JellyfinItem.toItemEntity(
+        owner: String,
+        libraryId: String?,
+        placement: JellyfinSeasonPlacement = JellyfinSeasonPlacement.EMPTY
+    ): MediaItemEntity? {
         val itemName = name ?: return null
         val resolvedType = MediaItemType.fromWire(type) ?: return null
+        val resolvedName = if (resolvedType == MediaItemType.SEASON) {
+            JellyfinUtils.seasonName(itemName, seriesName, indexNumber)
+        } else {
+            itemName
+        }
         val resolvedParent = when (resolvedType) {
             MediaItemType.SEASON -> seriesId ?: parentId
-            MediaItemType.EPISODE -> seasonId ?: parentId
+            MediaItemType.EPISODE -> placement.parentFor(parentIndexNumber, seasonId ?: parentId)
             MediaItemType.MOVIE, MediaItemType.SERIES -> null
+        }
+        val resolvedSortName = if (resolvedName == itemName) {
+            sortName ?: JellyfinUtils.createSortName(itemName)
+        } else {
+            JellyfinUtils.createSortName(resolvedName)
         }
         return MediaItemEntity(
             ownerUserId = owner,
@@ -577,8 +649,8 @@ class JellyfinLibrarySyncService @Inject constructor(
             parentId = resolvedParent,
             seriesId = seriesId,
             itemType = resolvedType.wireValue,
-            name = itemName,
-            sortName = sortName ?: JellyfinUtils.createSortName(itemName),
+            name = resolvedName,
+            sortName = resolvedSortName,
             overview = overview,
             productionYear = productionYear,
             premiereDate = parseJellyfinInstant(premiereDate),
@@ -593,8 +665,8 @@ class JellyfinLibrarySyncService @Inject constructor(
             seriesName = seriesName,
             childCount = childCount,
             primaryImageTag = primaryImageTag,
-            backdropImageTag = firstBackdropImageTag,
-            thumbImageTag = thumbImageTag ?: parentThumbImageTag,
+            backdropImageTag = ownBackdropImageTag,
+            thumbImageTag = thumbImageTag,
             container = container,
             lastSyncedAt = Instant.now()
         )

@@ -163,8 +163,16 @@ data class JellyfinItem(
     val primaryImageTag: String? get() = imageTags?.get(IMAGE_TYPE_PRIMARY)
     val thumbImageTag: String? get() = imageTags?.get(IMAGE_TYPE_THUMB)
     val logoImageTag: String? get() = imageTags?.get(IMAGE_TYPE_LOGO)
-    val firstBackdropImageTag: String?
-        get() = backdropImageTags?.firstOrNull() ?: parentBackdropImageTags?.firstOrNull()
+
+    /**
+     * This item's own first backdrop, and never a parent's.
+     *
+     * [parentBackdropImageTags] names images belonging to the parent item, so a tag taken from it
+     * only ever addresses a parent's id. Storing one against the child conflates the two and every
+     * request built from it answers 404. A caller that wants the parent's artwork asks for the
+     * parent by id.
+     */
+    val ownBackdropImageTag: String? get() = backdropImageTags?.firstOrNull()
 }
 
 const val IMAGE_TYPE_PRIMARY = "Primary"
@@ -386,6 +394,12 @@ object JellyfinUtils {
     private val LEADING_ARTICLES = listOf("the ", "a ", "an ")
 
     /**
+     * What the server calls a season when it could not read a number for one. Reused rather than
+     * reworded so a container this side had to rename reads the same as one the server named itself.
+     */
+    private const val UNNUMBERED_SEASON_NAME = "Season Unknown"
+
+    /**
      * The sort key used when the server did not send one. Matches the server's own convention of
      * dropping a leading article, so a locally derived key orders alongside server-sent keys instead
      * of forming a second alphabet.
@@ -394,5 +408,23 @@ object JellyfinUtils {
         val lower = name.lowercase()
         val article = LEADING_ARTICLES.firstOrNull { lower.startsWith(it) }
         return if (article != null) lower.drop(article.length) else lower
+    }
+
+    /**
+     * What one season is called.
+     *
+     * A season named after its own series is a release directory the scanner adopted rather than a
+     * name for the season - "Freakazoid! (1995) - 1080P AI Upscale - LeWcID" is one - and it describes
+     * the whole show, so it says nothing about which season it is. Its number still identifies it, so
+     * it is named from that; one that has no number is named the way the server names the same thing.
+     *
+     * A name that does not repeat the series title is left exactly as it came, because a season may
+     * legitimately be called something other than its number.
+     */
+    fun seasonName(rawName: String, seriesName: String?, seasonNumber: Int?): String {
+        val isDirectoryName = !seriesName.isNullOrBlank() &&
+            rawName.startsWith(seriesName, ignoreCase = true)
+        if (!isDirectoryName) return rawName
+        return seasonNumber?.let { "Season $it" } ?: UNNUMBERED_SEASON_NAME
     }
 }

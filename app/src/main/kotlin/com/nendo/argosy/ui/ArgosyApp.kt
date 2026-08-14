@@ -77,6 +77,7 @@ import com.nendo.argosy.ui.quickmenu.QuickMenuInputHandler
 import com.nendo.argosy.ui.quickmenu.QuickMenuOverlay
 import com.nendo.argosy.ui.quickmenu.QuickMenuViewModel
 import com.nendo.argosy.hardware.CompanionContent
+import com.nendo.argosy.hardware.CompanionMediaToggle
 import com.nendo.argosy.hardware.CompanionScreen
 import com.nendo.argosy.data.repository.AppsRepository
 import com.nendo.argosy.ui.screens.secondaryhome.DrawerAppUi
@@ -1604,6 +1605,18 @@ fun ArgosyApp(
                         val swappedGameActive by dualScreenManager.swappedIsGameActive.collectAsState()
                         val swappedCompanionState by dualScreenManager.swappedCompanionState.collectAsState()
 
+                        val mediaPlayback by dualScreenManager.mediaPlayback.collectAsState()
+                        val mediaSignedIn by dualScreenManager.mediaSignedIn.collectAsState()
+                        val companionMediaVisible by dualScreenManager.companionMediaVisible.collectAsState()
+                        val mediaToggle = if (mediaPlayback == null && !mediaSignedIn) {
+                            null
+                        } else {
+                            CompanionMediaToggle(
+                                showingMedia = companionMediaVisible,
+                                isPlaying = mediaPlayback?.isPlaying == true
+                            )
+                        }
+
                         if (swappedGameActive) {
                             var isCompanionDrawerOpen by remember { mutableStateOf(false) }
                             var companionDrawerApps by remember {
@@ -1661,7 +1674,9 @@ fun ArgosyApp(
                                         context.startActivity(launchIntent)
                                     }
                                 },
-                                onTabChanged = { }
+                                onTabChanged = { },
+                                mediaToggle = mediaToggle,
+                                onMediaToggle = { dualScreenManager.toggleCompanionMediaView() }
                             )
                         } else {
                         ControlRoleContent(
@@ -1889,6 +1904,8 @@ fun ArgosyApp(
                                 }
                             },
                             onCustomGridActivate = { swappedInputHandler.onConfirm() },
+                            mediaToggle = mediaToggle,
+                            onMediaToggle = { dualScreenManager.toggleCompanionMediaView() },
                             modifier = Modifier.blur(contentBlur)
                         )
                         }

@@ -2,6 +2,7 @@ package com.nendo.argosy.data.sync
 
 import android.content.Context
 import com.nendo.argosy.data.download.DownloadManager
+import com.nendo.argosy.data.download.MediaDownloadManager
 import com.nendo.argosy.data.emulator.EmulatorDownloadManager
 import com.nendo.argosy.data.emulator.EmulatorRegistry
 import com.nendo.argosy.data.netplay.NetplayJoinService
@@ -40,6 +41,7 @@ class AccountSwitchBlockerService @Inject constructor(
     private val downloadManager: Lazy<DownloadManager>,
     private val emulatorDownloadManager: Lazy<EmulatorDownloadManager>,
     private val steamContentManager: Lazy<SteamContentManager>,
+    private val mediaDownloadManager: Lazy<MediaDownloadManager>,
     private val platformSyncQueue: Lazy<PlatformSyncQueue>,
     private val netplayJoinService: Lazy<NetplayJoinService>,
     private val permissionHelper: PermissionHelper
@@ -62,6 +64,9 @@ class AccountSwitchBlockerService @Inject constructor(
         }
         if (steamContentManager.get().hasBlockingDownloadState()) {
             return@withContext AccountSwitchBlocker.SteamDownload
+        }
+        if (mediaDownloadManager.get().hasBlockingDownloadState()) {
+            return@withContext AccountSwitchBlocker.MediaDownload
         }
         if (platformSyncQueue.get().activeJob.value != null ||
             platformSyncQueue.get().libraryQueued.value ||

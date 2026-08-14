@@ -36,6 +36,8 @@ fun ControlRoleContent(
     onScreenshotViewed: (Int) -> Unit,
     onDimTapped: () -> Unit = {},
     onCustomGridActivate: () -> Unit = {},
+    mediaToggle: com.nendo.argosy.hardware.CompanionMediaToggle? = null,
+    onMediaToggle: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     when (currentScreen) {
@@ -57,6 +59,8 @@ fun ControlRoleContent(
                 onOpenDrawer = onOpenDrawer,
                 onDimTapped = onDimTapped,
                 onCustomGridActivate = onCustomGridActivate,
+                mediaToggle = mediaToggle,
+                onMediaToggle = onMediaToggle,
                 modifier = modifier
             )
         }

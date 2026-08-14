@@ -46,7 +46,9 @@ import javax.inject.Singleton
 
 /**
  * The one door the rest of the app uses to reach media: libraries, the item hierarchy, watch state
- * and the refreshes that fill them. UI never touches the media DAOs or the Jellyfin client directly.
+ * and the refreshes that fill them. The media DAOs are reached only through here. The player is the
+ * exception on the network side: it holds the Jellyfin client directly for playback negotiation and
+ * session reporting, which are per-playback exchanges with nothing to cache.
  *
  * Every read is scoped to the signed-in media account, which is taken from the stored credentials
  * rather than from the live connection so a browse still answers while the server is unreachable.

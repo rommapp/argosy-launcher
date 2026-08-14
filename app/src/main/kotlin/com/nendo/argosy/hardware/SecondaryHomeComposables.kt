@@ -13,6 +13,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
@@ -44,6 +45,8 @@ import com.nendo.argosy.ui.dualscreen.home.DualFilterCategory
 import com.nendo.argosy.ui.dualscreen.home.DualHomeShowcaseState
 import com.nendo.argosy.ui.dualscreen.home.DualHomeUpperScreen
 import com.nendo.argosy.ui.dualscreen.home.DualHomeViewModel
+import com.nendo.argosy.ui.dualscreen.media.DualMediaLowerScreen
+import com.nendo.argosy.ui.dualscreen.media.DualMediaViewModel
 import com.nendo.argosy.ui.screens.secondaryhome.SecondaryHomeViewModel
 import com.nendo.argosy.ui.theme.Motion
 import com.nendo.argosy.ui.theme.backdrop.BackdropRole
@@ -84,12 +87,21 @@ fun SecondaryHomeContent(
     onTabChanged: (CompanionPanel) -> Unit = {},
     onQuickSave: () -> Unit = {},
     onQuickLoad: () -> Unit = {},
-    onScreenshot: () -> Unit = {}
+    onScreenshot: () -> Unit = {},
+    dualMediaViewModel: DualMediaViewModel? = null,
+    isMediaPanelVisible: Boolean = false,
+    mediaToggle: CompanionMediaToggle? = null,
+    onMediaToggle: () -> Unit = {},
+    onMediaRowTapped: (Int) -> Unit = {},
+    onMediaRowConfirmed: (Int) -> Unit = {}
 ) {
     BackHandler(enabled = true) { }
 
-    val showLibrary = isInitialized && isArgosyForeground && !isGameActive && !isWizardActive
-    val showCompanion = isInitialized && !showLibrary && !isWizardActive
+    val showMedia = isInitialized && isMediaPanelVisible && !isGameActive && !isWizardActive &&
+        dualMediaViewModel != null
+    val showLibrary = isInitialized && isArgosyForeground && !isGameActive && !isWizardActive &&
+        !showMedia
+    val showCompanion = isInitialized && !showLibrary && !showMedia && !isWizardActive
     val showSplash = !isInitialized || isWizardActive
 
     val dualHomeState by dualHomeViewModel.uiState.collectAsState()
@@ -145,8 +157,41 @@ fun SecondaryHomeContent(
                 onOptionAction = onOptionAction,
                 onScreenshotViewed = onScreenshotViewed,
                 onDimTapped = onDimTapped,
-                onCustomGridActivate = onCustomGridActivate
+                onCustomGridActivate = onCustomGridActivate,
+                mediaToggle = mediaToggle,
+                onMediaToggle = onMediaToggle
             )
+        }
+
+        AnimatedVisibility(
+            visible = showMedia,
+            enter = fadeIn(),
+            exit = fadeOut()
+        ) {
+            if (dualMediaViewModel != null) {
+                val mediaState by dualMediaViewModel.uiState.collectAsState()
+                Column(modifier = Modifier.fillMaxSize()) {
+                    DualMediaLowerScreen(
+                        state = mediaState,
+                        isInteractive = true,
+                        onRowTapped = onMediaRowTapped,
+                        onRowConfirmed = onMediaRowConfirmed,
+                        modifier = Modifier.weight(1f)
+                    )
+                    val showAppBar = com.nendo.argosy.DualScreenManagerHolder.instance
+                        ?.isExternalDisplay != true
+                    if (showAppBar) {
+                        CompanionAppBar(
+                            apps = homeApps,
+                            onAppClick = onAppClick,
+                            focusedIndex = -2,
+                            onOpenDrawer = { viewModel.openDrawer() },
+                            mediaToggle = mediaToggle,
+                            onMediaToggle = onMediaToggle
+                        )
+                    }
+                }
+            }
         }
 
         AnimatedVisibility(
@@ -163,7 +208,9 @@ fun SecondaryHomeContent(
                 onOpenDrawer = { viewModel.openDrawer() },
                 onQuickSave = onQuickSave,
                 onQuickLoad = onQuickLoad,
-                onScreenshot = onScreenshot
+                onScreenshot = onScreenshot,
+                mediaToggle = mediaToggle,
+                onMediaToggle = onMediaToggle
             )
         }
 
@@ -220,11 +267,15 @@ fun ShowcaseRoleContent(
     gameDetailState: StateFlow<DualGameDetailUpperState?>,
     syncConflictState: StateFlow<com.nendo.argosy.ui.screens.common.SyncOverlayState?>,
     syncConflictFocusIndex: StateFlow<Int>,
-    onAppClick: (String) -> Unit
+    onAppClick: (String) -> Unit,
+    dualMediaViewModel: DualMediaViewModel? = null,
+    isMediaPanelVisible: Boolean = false
 ) {
     BackHandler(enabled = true) { }
 
-    val showShowcase = isInitialized && !isGameActive && !isWizardActive
+    val showMedia = isInitialized && isMediaPanelVisible && !isGameActive && !isWizardActive &&
+        dualMediaViewModel != null
+    val showShowcase = isInitialized && !isGameActive && !isWizardActive && !showMedia
     val showSplash = !isInitialized || isWizardActive
 
     val showcase by showcaseState.collectAsState()
@@ -251,6 +302,23 @@ fun ShowcaseRoleContent(
             exit = fadeOut()
         ) {
             SplashContent()
+        }
+
+        AnimatedVisibility(
+            visible = showMedia,
+            enter = fadeIn(),
+            exit = fadeOut()
+        ) {
+            if (dualMediaViewModel != null) {
+                val mediaState by dualMediaViewModel.uiState.collectAsState()
+                DualMediaLowerScreen(
+                    state = mediaState,
+                    isInteractive = false,
+                    onRowTapped = {},
+                    onRowConfirmed = {},
+                    modifier = Modifier.blur(contentBlur)
+                )
+            }
         }
 
         AnimatedVisibility(
@@ -358,7 +426,7 @@ fun ShowcaseRoleContent(
         }
 
         AnimatedVisibility(
-            visible = isInitialized && !showShowcase,
+            visible = isInitialized && !showShowcase && !showMedia,
             enter = fadeIn(),
             exit = fadeOut()
         ) {

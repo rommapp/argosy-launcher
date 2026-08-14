@@ -5,6 +5,7 @@ import android.util.Log
 import androidx.room.withTransaction
 import com.nendo.argosy.data.cache.ImageCacheManager
 import com.nendo.argosy.data.download.DownloadManager
+import com.nendo.argosy.data.download.MediaDownloadManager
 import com.nendo.argosy.data.emulator.EmulatorDownloadManager
 import com.nendo.argosy.data.local.ALauncherDatabase
 import com.nendo.argosy.data.model.GameSource
@@ -38,6 +39,7 @@ sealed interface HardResetBlocker {
     data object ActiveDownloads : HardResetBlocker
     data object EmulatorDownload : HardResetBlocker
     data object SteamDownload : HardResetBlocker
+    data object MediaDownload : HardResetBlocker
 }
 
 data class PendingUploadAccount(
@@ -55,6 +57,7 @@ class DatabaseAdminRepository @Inject constructor(
     private val downloadManager: Lazy<DownloadManager>,
     private val emulatorDownloadManager: Lazy<EmulatorDownloadManager>,
     private val steamContentManager: Lazy<SteamContentManager>,
+    private val mediaDownloadManager: Lazy<MediaDownloadManager>,
     private val socialRepository: Lazy<SocialRepository>,
     private val soundFeedbackManager: Lazy<SoundFeedbackManager>
 ) {
@@ -112,6 +115,7 @@ class DatabaseAdminRepository @Inject constructor(
         }
         if (emulatorDownloadManager.get().hasActiveDownload()) return HardResetBlocker.EmulatorDownload
         if (steamContentManager.get().hasBlockingDownloadState()) return HardResetBlocker.SteamDownload
+        if (mediaDownloadManager.get().hasBlockingDownloadState()) return HardResetBlocker.MediaDownload
         return null
     }
 

@@ -125,6 +125,8 @@ fun DualHomeLowerScreen(
     onLibraryToggle: () -> Unit,
     onViewAllClick: () -> Unit,
     onOpenDrawer: () -> Unit = {},
+    mediaToggle: com.nendo.argosy.hardware.CompanionMediaToggle? = null,
+    onMediaToggle: () -> Unit = {},
     carouselConfig: com.nendo.argosy.domain.model.CarouselConfig =
         com.nendo.argosy.domain.model.CarouselConfig(),
     autoGridConfig: com.nendo.argosy.domain.model.AutoGridConfig =
@@ -388,7 +390,9 @@ fun DualHomeLowerScreen(
                 apps = homeApps,
                 onAppClick = onAppClick,
                 focusedIndex = if (appBarFocused) appBarIndex else -2,
-                onOpenDrawer = onOpenDrawer
+                onOpenDrawer = onOpenDrawer,
+                mediaToggle = mediaToggle,
+                onMediaToggle = onMediaToggle
             )
         }
     }

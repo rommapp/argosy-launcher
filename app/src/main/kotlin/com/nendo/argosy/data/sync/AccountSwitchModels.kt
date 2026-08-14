@@ -17,6 +17,7 @@ sealed interface AccountSwitchBlocker {
     data object ActiveDownloads : AccountSwitchBlocker
     data object EmulatorDownload : AccountSwitchBlocker
     data object SteamDownload : AccountSwitchBlocker
+    data object MediaDownload : AccountSwitchBlocker
     data object LibrarySyncRunning : AccountSwitchBlocker
     data object NetplaySession : AccountSwitchBlocker
 

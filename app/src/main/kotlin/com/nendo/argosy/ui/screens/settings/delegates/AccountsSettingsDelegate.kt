@@ -464,6 +464,8 @@ class AccountsSettingsDelegate @Inject constructor(
             "An emulator download is still running. Let it finish or cancel it."
         AccountSwitchBlocker.SteamDownload ->
             "A Steam download is still running. Let it finish or cancel it."
+        AccountSwitchBlocker.MediaDownload ->
+            "A movie or episode is still downloading. Let it finish or cancel it."
         AccountSwitchBlocker.LibrarySyncRunning ->
             "A library sync is running. Let it finish, then try again."
         AccountSwitchBlocker.NetplaySession ->

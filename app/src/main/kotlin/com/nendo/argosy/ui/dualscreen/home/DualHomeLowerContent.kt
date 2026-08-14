@@ -34,6 +34,8 @@ fun DualHomeLowerContent(
     onOpenDrawer: () -> Unit = {},
     onDimTapped: () -> Unit = {},
     onCustomGridActivate: () -> Unit = {},
+    mediaToggle: com.nendo.argosy.hardware.CompanionMediaToggle? = null,
+    onMediaToggle: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -71,6 +73,8 @@ fun DualHomeLowerContent(
                     onLibraryToggle = onLibraryToggle,
                     onViewAllClick = onViewAllClick,
                     onOpenDrawer = onOpenDrawer,
+                    mediaToggle = mediaToggle,
+                    onMediaToggle = onMediaToggle,
                     carouselConfig = uiState.carouselConfig,
                     autoGridConfig = uiState.autoGridConfig,
                     layoutKind = uiState.layoutKind,

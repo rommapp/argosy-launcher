@@ -74,6 +74,17 @@ class DisplayAffinityHelper @Inject constructor(
         else Display.DEFAULT_DISPLAY
     }
 
+    /**
+     * Where the video player belongs once a game has claimed [emulatorDisplayId]: the other physical
+     * display. Null when there is no second display, which is the single-screen answer - nothing
+     * moves and the player stays where it is.
+     */
+    fun getMediaPlayerDisplayId(emulatorDisplayId: Int?): Int? {
+        if (!hasSecondaryDisplay) return null
+        val secondary = secondaryDisplayId ?: return null
+        return if (emulatorDisplayId == secondary) Display.DEFAULT_DISPLAY else secondary
+    }
+
     fun getActivityOptions(
         forEmulator: Boolean,
         rolesSwapped: Boolean = false,

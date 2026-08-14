@@ -18,6 +18,7 @@ import com.nendo.argosy.ui.dualscreen.home.DualHomeViewModel
 import com.nendo.argosy.ui.dualscreen.home.DualHomeViewMode
 import com.nendo.argosy.ui.dualscreen.home.DualLibraryMenuAction
 import com.nendo.argosy.ui.dualscreen.home.ForwardingMode
+import com.nendo.argosy.ui.dualscreen.media.DualMediaViewModel
 import com.nendo.argosy.hardware.CompanionScreen
 import com.nendo.argosy.ui.home.grid.DualCustomGridInputRouter
 import com.nendo.argosy.ui.input.GamepadEvent
@@ -40,7 +41,9 @@ class SecondaryHomeInputHandler(
     private val onLaunchAppOnOtherDisplay: (String) -> Unit,
     private val onRefocusSelf: () -> Unit,
     private val context: android.content.Context,
-    private val lifecycleLaunch: (suspend () -> Unit) -> Unit
+    private val lifecycleLaunch: (suspend () -> Unit) -> Unit,
+    private val dualMediaViewModel: () -> DualMediaViewModel? = { null },
+    private val onConfirmMediaRow: () -> Unit = {}
 ) {
 
     fun routeInput(
@@ -55,6 +58,8 @@ class SecondaryHomeInputHandler(
         val saveConflictResult = handleSaveConflictInput(event)
         if (saveConflictResult.handled) return saveConflictResult
 
+        if (isMediaPanelVisible() && !isGameActive) return handleMediaPanelInput(event)
+
         return if (isArgosyForeground && !isGameActive) {
             when (currentScreen) {
                 CompanionScreen.HOME -> handleDualHomeInput(event)
@@ -63,6 +68,44 @@ class SecondaryHomeInputHandler(
         } else {
             handleCompanionInput(event)
         }
+    }
+
+    private fun isMediaPanelVisible(): Boolean =
+        com.nendo.argosy.DualScreenManagerHolder.instance?.companionMediaVisible?.value == true
+
+    /**
+     * Whether the app bar carries its media button right now. It is the last slot when it is there
+     * at all, so the count the movement helpers take is the app count plus this.
+     */
+    private fun hasMediaSlot(): Boolean {
+        val dsm = com.nendo.argosy.DualScreenManagerHolder.instance ?: return false
+        return dsm.mediaPlayback.value != null || dsm.mediaSignedIn.value
+    }
+
+    private fun mediaSlotCount(): Int = if (hasMediaSlot()) 1 else 0
+
+    /**
+     * The media panel's whole control surface: a cursor down the list, confirm to watch, and back to
+     * the launcher. Everything else is swallowed rather than falling through, because the screen
+     * underneath is not the one being looked at and a stray press landing on it moves a carousel
+     * nobody can see.
+     */
+    private fun handleMediaPanelInput(event: GamepadEvent): InputResult {
+        if (viewModel.uiState.value.isDrawerOpen) return handleDrawerInput(event)
+        if (dualHomeViewModel.forwardingMode.value != ForwardingMode.NONE) {
+            return InputResult.HANDLED
+        }
+        val vm = dualMediaViewModel() ?: return InputResult.UNHANDLED
+        when (event) {
+            GamepadEvent.Up, GamepadEvent.Left -> vm.moveFocus(-1)
+            GamepadEvent.Down, GamepadEvent.Right -> vm.moveFocus(1)
+            GamepadEvent.Confirm -> onConfirmMediaRow()
+            GamepadEvent.Back -> com.nendo.argosy.DualScreenManagerHolder.instance
+                ?.setCompanionMediaVisible(false)
+            GamepadEvent.Select -> viewModel.openDrawer()
+            else -> {}
+        }
+        return InputResult.HANDLED
     }
 
     fun handleSyncConflictInput(event: GamepadEvent): InputResult {
@@ -243,6 +286,7 @@ class SecondaryHomeInputHandler(
 
         val state = viewModel.uiState.value
         val appBarIndex = state.companionAppBarIndex
+        val apps = homeApps()
 
         return when (event) {
             GamepadEvent.Left -> {
@@ -250,15 +294,18 @@ class SecondaryHomeInputHandler(
                 InputResult.HANDLED
             }
             GamepadEvent.Right -> {
-                viewModel.companionSelectNextApp(homeApps().size)
+                viewModel.companionSelectNextApp(apps.size + mediaSlotCount())
                 InputResult.HANDLED
             }
             GamepadEvent.Confirm -> {
-                if (appBarIndex == -1) {
+                if (hasMediaSlot() && appBarIndex == apps.size) {
+                    com.nendo.argosy.DualScreenManagerHolder.instance?.toggleCompanionMediaView()
+                    InputResult.HANDLED
+                } else if (appBarIndex == -1) {
                     viewModel.openDrawer()
                     InputResult.HANDLED
                 } else {
-                    val packageName = homeApps().getOrNull(appBarIndex)
+                    val packageName = apps.getOrNull(appBarIndex)
                     if (packageName != null) {
                         onLaunchApp(packageName)
                         InputResult.HANDLED
@@ -405,6 +452,8 @@ class SecondaryHomeInputHandler(
         val inAppBar = state.focusZone == DualHomeFocusZone.APP_BAR
         if (!inAppBar) customGrid.route(event)?.let { return it }
         val apps = homeApps()
+        val appBarSlots = apps.size + mediaSlotCount()
+        val onMediaSlot = inAppBar && hasMediaSlot() && state.appBarIndex == apps.size
         val inGrid = !inAppBar && state.layoutKind == HomeLayoutKind.AUTO_GRID
         val reversed = state.carouselConfig.inverted
 
@@ -433,7 +482,7 @@ class SecondaryHomeInputHandler(
                 InputResult.HANDLED
             }
             GamepadEvent.Right -> {
-                if (inAppBar) dualHomeViewModel.selectNextApp(apps.size)
+                if (inAppBar) dualHomeViewModel.selectNextApp(appBarSlots)
                 else if (!moveGrid(GridDirection.RIGHT)) {
                     if (reversed) dualHomeViewModel.selectPrevious() else dualHomeViewModel.selectNext()
                     broadcasts.broadcastCurrentGameSelection()
@@ -445,8 +494,8 @@ class SecondaryHomeInputHandler(
                     ?.isExternalDisplay == true
                 if (moveGrid(GridDirection.DOWN)) {
                     InputResult.HANDLED
-                } else if (!inAppBar && apps.isNotEmpty() && !isExternal) {
-                    dualHomeViewModel.focusAppBar(apps.size)
+                } else if (!inAppBar && appBarSlots > 0 && !isExternal) {
+                    dualHomeViewModel.focusAppBar(appBarSlots)
                     broadcasts.broadcastViewModeChange()
                     InputResult.HANDLED
                 } else InputResult.UNHANDLED
@@ -498,7 +547,10 @@ class SecondaryHomeInputHandler(
                 InputResult.HANDLED
             }
             GamepadEvent.Confirm -> {
-                if (inAppBar && state.appBarIndex == -1) {
+                if (onMediaSlot) {
+                    com.nendo.argosy.DualScreenManagerHolder.instance?.toggleCompanionMediaView()
+                    InputResult.HANDLED
+                } else if (inAppBar && state.appBarIndex == -1) {
                     viewModel.openDrawer()
                     broadcasts.broadcastViewModeChange(drawerOpen = true)
                     InputResult.HANDLED

@@ -109,6 +109,8 @@ class DualScreenManager(
     private val gameThemeAudioCoordinator: com.nendo.argosy.ui.audio.GameThemeAudioCoordinator,
     internal val getPinnedCollectionsUseCase: com.nendo.argosy.domain.usecase.collection.GetPinnedCollectionsUseCase? = null,
     internal val getGamesForPinnedCollectionUseCase: com.nendo.argosy.domain.usecase.collection.GetGamesForPinnedCollectionUseCase? = null,
+    internal val mediaRepository: com.nendo.argosy.data.repository.MediaRepository,
+    private val mediaPlaybackTracker: com.nendo.argosy.data.media.MediaPlaybackTracker,
     initialRolesSwapped: Boolean = false
 ) {
 
@@ -209,6 +211,7 @@ class DualScreenManager(
         companionWatchdogJob?.cancel()
         companionLaunchJob?.cancel()
         observeActiveAccount()
+        observeMedia()
     }
     interface CompanionHost {
         fun onForegroundChanged(isForeground: Boolean)
@@ -322,7 +325,85 @@ class DualScreenManager(
     val dualCollectionShowcase: StateFlow<DualCollectionShowcaseState> =
         _dualCollectionShowcase
 
+    /**
+     * What the player has open, mirrored here so the companion reads playback the same way it reads
+     * every other cross-display fact. The player is still the only writer; this is the door the
+     * companion comes through.
+     */
+    val mediaPlayback: StateFlow<com.nendo.argosy.data.media.ActiveMediaPlayback?> =
+        mediaPlaybackTracker.activePlayback
+
+    private val _mediaSignedIn = MutableStateFlow(false)
+
+    /**
+     * Whether a media account exists at all. The companion's media button is offered on this rather
+     * than on a live playback, so the panel is reachable to pick something up from where it was left
+     * as well as to look at what is already running.
+     */
+    val mediaSignedIn: StateFlow<Boolean> = _mediaSignedIn
+
+    private val _companionMediaVisible = MutableStateFlow(false)
+
+    /**
+     * Whether the companion is showing the media panel rather than its home.
+     *
+     * Context decides it: a playback opening turns it on and a playback ending turns it off, so a
+     * film starting on the main screen puts its episode list on the companion without anyone asking.
+     * [toggleCompanionMediaView] is the manual override on top of that, which is why the flag is
+     * held rather than derived - a derived flag could not be overridden.
+     */
+    val companionMediaVisible: StateFlow<Boolean> = _companionMediaVisible
+
+    /**
+     * The display the player window currently occupies, reported by the player itself. Held here
+     * rather than in the activity because the companion has to be able to send an episode to a
+     * window living on another display.
+     */
+    @Volatile var mediaPlayerDisplayId: Int? = null
+
+    fun toggleCompanionMediaView() {
+        _companionMediaVisible.value = !_companionMediaVisible.value &&
+            (_mediaSignedIn.value || mediaPlaybackTracker.activePlayback.value != null)
+    }
+
+    fun setCompanionMediaVisible(visible: Boolean) {
+        _companionMediaVisible.value = visible
+    }
+
+    /**
+     * Where the player should move now that a game has taken a screen, or null when there is nowhere
+     * to move it to. Null is the single-screen answer and also the answer when the game and the
+     * player are already on different displays.
+     */
+    fun mediaPlayerRelocationDisplayId(): Int? =
+        displayAffinityHelper.getMediaPlayerDisplayId(emulatorDisplayId)
+
+    /**
+     * Opens one media item in the player window wherever that window currently is.
+     *
+     * The companion is the caller: it lists the episodes of what is playing, and confirming one has
+     * to reach a window on the other display. Placement is stated rather than resolved, because
+     * resolution for a non-emulator activity answers "the secondary display" unconditionally and
+     * would drag the film off the screen it is being watched on.
+     */
+    fun playMediaItem(itemId: String, startOver: Boolean = false) {
+        if (itemId.isBlank()) return
+        val options = mediaPlayerDisplayId?.let {
+            displayAffinityHelper.getActivityOptions(forEmulator = false, overrideDisplayId = it)
+        }
+        com.nendo.argosy.ui.screens.player.PlayerActivity.startOnDisplay(
+            context = appContext,
+            args = com.nendo.argosy.ui.screens.player.PlayerArgs(
+                itemId = itemId,
+                startPositionMs = if (startOver) 0L else
+                    com.nendo.argosy.ui.screens.player.PlayerActivity.RESOLVE_RESUME
+            ),
+            options = options
+        )
+    }
+
     private var accountObserverJob: Job? = null
+    private var mediaObserverJob: Job? = null
 
     init {
         scope.launch {
@@ -337,6 +418,32 @@ class DualScreenManager(
             }
         }
         observeActiveAccount()
+        observeMedia()
+    }
+
+    /**
+     * Turns the companion's media panel on and off with the playback itself.
+     *
+     * This is the whole of "automatic by context": nobody asks for the panel, it is there while
+     * something is being watched and gone afterwards. A manual return to home during a playback
+     * survives, because only the transitions write here - a viewer who went back to their library
+     * mid-film is not sent to the film again on the next transport change.
+     */
+    private fun observeMedia() {
+        mediaObserverJob?.cancel()
+        mediaObserverJob = scope.launch {
+            launch {
+                mediaRepository.isSignedIn.collect { _mediaSignedIn.value = it }
+            }
+            var wasOpen = false
+            mediaPlaybackTracker.activePlayback.collect { playback ->
+                val isOpen = playback != null
+                if (isOpen == wasOpen) return@collect
+                wasOpen = isOpen
+                _companionMediaVisible.value = isOpen
+                if (!isOpen) mediaPlayerDisplayId = null
+            }
+        }
     }
 
     /**

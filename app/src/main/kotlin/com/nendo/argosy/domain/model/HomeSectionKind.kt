@@ -3,10 +3,17 @@ package com.nendo.argosy.domain.model
 /**
  * The rows a home surface offers, in the order they appear.
  *
- * The single-screen home screen is the authority on this listing; the dual-screen companion shows
- * the same set. Declaring the order here rather than in either screen keeps the two from drifting,
- * which they already had: the companion carried only Continue, Favorites and Platform, and listed
- * Steam and Android as ordinary platforms where home splits them into rows of their own.
+ * The single-screen home screen is the authority on this listing; the dual-screen companion carries
+ * the same game rows. Declaring the order here rather than in either screen keeps the two from
+ * drifting, which they already had: the companion carried only Continue, Favorites and Platform,
+ * and listed Steam and Android as ordinary platforms where home splits them into rows of their own.
+ *
+ * [CONTINUE_WATCHING] and [NEXT_UP] are the exception to that sameness, and deliberately: on the
+ * companion they live in its media panel rather than in its carousel. The companion's carousel is a
+ * game carousel down to its restore key, which identifies a position by game id, and the panel is
+ * where the companion is already showing what is being watched. Media reaching the second screen
+ * through the surface that exists for media is the parity, not a media row wedged into a rail of
+ * games that cannot hold one.
  *
  * [PLATFORM] repeats once per platform that has games, excluding the Steam and Android platforms
  * because they are their own rows. [PINNED_REGULAR] and [PINNED_VIRTUAL] repeat once per pinned

@@ -54,6 +54,17 @@ data class PlayerArgs(
 
 sealed interface PlayerEvent {
     data object Finish : PlayerEvent
+
+    /**
+     * A game has taken the screen this window is on and the viewing should carry on elsewhere.
+     *
+     * [positionMs] rides along rather than being left for the next window to look up: the position
+     * is written to the database on a scope that outlives this view model precisely so it survives
+     * teardown, and a window opening in the same instant would race that write and resume from the
+     * previous value. Whether there is anywhere to move to is not decided here - a window knows
+     * which display it is on, a view model does not.
+     */
+    data class Relocate(val itemId: String, val positionMs: Long) : PlayerEvent
 }
 
 /**
@@ -428,11 +439,19 @@ class PlayerViewModel @Inject constructor(
      * A game claiming the screen ends the viewing, it does not merely hide it. The video pauses, the
      * position is kept, the server is told to free its encoder, and the item becomes a Continue
      * Watching entry rather than a session that is still notionally open.
+     *
+     * On a device with a second screen the viewing then carries on there, which is why the position
+     * is announced alongside the suspension rather than only written away: the window decides
+     * whether a move is possible and needs the position to open with.
      */
     private fun observeGameSessions() {
         viewModelScope.launch {
             playSessionTracker.hasActiveSession.collect { active ->
-                if (active && mediaSessionOpen) suspendForInterruption()
+                if (!active || !mediaSessionOpen) return@collect
+                val itemId = _uiState.value.itemId
+                val position = currentItemPositionMs()
+                suspendForInterruption()
+                eventChannel.trySend(PlayerEvent.Relocate(itemId, position))
             }
         }
     }

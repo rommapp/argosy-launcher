@@ -1,5 +1,8 @@
 package com.nendo.argosy.ui.screens.settings.delegates
 
+import com.nendo.argosy.core.notification.NotificationManager
+import com.nendo.argosy.core.notification.showError
+import com.nendo.argosy.data.download.MediaDownloadManager
 import com.nendo.argosy.data.media.MediaDirectoryManager
 import com.nendo.argosy.data.repository.MediaRepository
 import com.nendo.argosy.data.preferences.MediaAudioLanguage
@@ -46,7 +49,9 @@ data class JellyfinPasswordSignInRequest(
 class JellyfinSettingsDelegate @Inject constructor(
     private val preferencesRepository: UserPreferencesRepository,
     private val mediaDirectoryManager: MediaDirectoryManager,
-    private val mediaRepository: MediaRepository
+    private val mediaRepository: MediaRepository,
+    private val mediaDownloadManager: MediaDownloadManager,
+    private val notificationManager: NotificationManager
 ) {
     private val _state = MutableStateFlow(JellyfinState())
     val state: StateFlow<JellyfinState> = _state.asStateFlow()
@@ -396,6 +401,12 @@ class JellyfinSettingsDelegate @Inject constructor(
     }
 
     fun onMediaLocationSelected(scope: CoroutineScope, newPath: String) {
+        if (mediaDownloadManager.hasBlockingDownloadState()) {
+            notificationManager.showError(
+                "Cancel the movie or episode download before moving your media folder"
+            )
+            return
+        }
         scope.launch {
             val oldPath = mediaDirectoryManager.resolveMediaDir().absolutePath
             if (oldPath == newPath) return@launch

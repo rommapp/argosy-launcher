@@ -38,6 +38,8 @@ import com.nendo.argosy.ui.dualscreen.home.DualCollectionShowcaseState
 import com.nendo.argosy.ui.dualscreen.home.DualHomeShowcaseState
 import com.nendo.argosy.ui.dualscreen.home.DualHomeViewModel
 import com.nendo.argosy.ui.dualscreen.home.DualHomeViewMode
+import com.nendo.argosy.ui.dualscreen.media.DualMediaRow
+import com.nendo.argosy.ui.dualscreen.media.DualMediaViewModel
 import com.nendo.argosy.ui.input.LocalABIconsSwapped
 import com.nendo.argosy.ui.input.LocalXYIconsSwapped
 import com.nendo.argosy.ui.input.LocalSwapStartSelect
@@ -82,6 +84,9 @@ class SecondaryHomeActivity :
 
     private lateinit var viewModel: SecondaryHomeViewModel
     private lateinit var dualHomeViewModel: DualHomeViewModel
+    private var dualMediaViewModel by mutableStateOf<DualMediaViewModel?>(null)
+    private var isMediaPanelVisible by mutableStateOf(false)
+    private var mediaToggle by mutableStateOf<CompanionMediaToggle?>(null)
     private lateinit var stateManager: SecondaryHomeStateManager
     var isShowcaseRole by mutableStateOf(false)
         private set
@@ -207,7 +212,9 @@ class SecondaryHomeActivity :
                             gameDetailState = _showcaseGameDetailState,
                             syncConflictState = dsm.dualSyncOverlay,
                             syncConflictFocusIndex = dsm.dualSyncOverlayFocusIndex,
-                            onAppClick = ::launchApp
+                            onAppClick = ::launchApp,
+                            dualMediaViewModel = dualMediaViewModel,
+                            isMediaPanelVisible = isMediaPanelVisible
                         )
                     } else {
                         SecondaryHomeContent(
@@ -270,7 +277,13 @@ class SecondaryHomeActivity :
                             },
                             onQuickSave = { dsm.sessionQuickActions?.quickSave() },
                             onQuickLoad = { dsm.sessionQuickActions?.quickLoad() },
-                            onScreenshot = { dsm.sessionQuickActions?.screenshot() }
+                            onScreenshot = { dsm.sessionQuickActions?.screenshot() },
+                            dualMediaViewModel = dualMediaViewModel,
+                            isMediaPanelVisible = isMediaPanelVisible,
+                            mediaToggle = mediaToggle,
+                            onMediaToggle = { dsm.toggleCompanionMediaView() },
+                            onMediaRowTapped = { index -> dualMediaViewModel?.focusRow(index) },
+                            onMediaRowConfirmed = ::playFocusedMediaRow
                         )
                     }
                 }
@@ -437,6 +450,7 @@ class SecondaryHomeActivity :
      */
     private fun deferConfirm(): Boolean {
         if (isShowcaseRole || currentScreen != CompanionScreen.HOME) return false
+        if (isMediaPanelVisible) return false
         if (!::dualHomeViewModel.isInitialized) return false
         if (viewModel.uiState.value.isDrawerOpen) return true
         val state = dualHomeViewModel.uiState.value
@@ -820,10 +834,48 @@ class SecondaryHomeActivity :
         lifecycleScope.launch { dsm.dualCollectionShowcase.collect { _showcaseCollectionState.value = it } }
         lifecycleScope.launch { dsm.dualGameDetailState.collect { _showcaseGameDetailState.value = it } }
         lifecycleScope.launch {
+            dsm.companionMediaVisible.collect { visible ->
+                isMediaPanelVisible = visible
+                dualMediaViewModel?.setActive(visible)
+                refreshMediaToggle()
+            }
+        }
+        lifecycleScope.launch { dsm.mediaPlayback.collect { refreshMediaToggle() } }
+        lifecycleScope.launch { dsm.mediaSignedIn.collect { refreshMediaToggle() } }
+        lifecycleScope.launch {
             dsm.preferencesRepository.userPreferences.collect { prefs ->
                 applyInputSwapState(stateManager.inputSwapStateFrom(prefs))
             }
         }
+    }
+
+    /**
+     * The app-bar button exists only where it leads somewhere: a signed-in media account, or a
+     * playback already running. Without either, the panel behind it would be empty and the button
+     * would be promising something the device cannot give.
+     */
+    private fun refreshMediaToggle() {
+        val playback = dsm.mediaPlayback.value
+        mediaToggle = if (playback == null && !dsm.mediaSignedIn.value) {
+            null
+        } else {
+            CompanionMediaToggle(
+                showingMedia = isMediaPanelVisible,
+                isPlaying = playback?.isPlaying == true
+            )
+        }
+    }
+
+    fun confirmFocusedMediaRow() {
+        val index = dualMediaViewModel?.uiState?.value?.focusedRowIndex ?: return
+        playFocusedMediaRow(index)
+    }
+
+    private fun playFocusedMediaRow(index: Int) {
+        val vm = dualMediaViewModel ?: return
+        vm.focusRow(index)
+        val row = vm.uiState.value.rows.getOrNull(index) as? DualMediaRow.Item ?: return
+        dsm.playMediaItem(row.item.itemId)
     }
 
     private fun applyInputSwapState(state: SecondaryHomeStateManager.InputSwapState) {
@@ -870,6 +922,10 @@ class SecondaryHomeActivity :
         )
         dualHomeViewModel.observeHomeTiles()
         dualHomeViewModel.observeTilePrompts()
+        dualMediaViewModel = DualMediaViewModel(
+            mediaRepository = dsm.mediaRepository,
+            playback = dsm.mediaPlayback
+        )
         observeCustomGridSelection()
         broadcasts = SecondaryHomeBroadcastHelper(
             dsm = dsm, dualHomeViewModel = dualHomeViewModel,
@@ -912,7 +968,9 @@ class SecondaryHomeActivity :
             onLaunchAppOnOtherDisplay = ::launchAppOnOtherDisplay,
             onRefocusSelf = ::refocusSelf,
             context = applicationContext,
-            lifecycleLaunch = { block -> lifecycleScope.launch { block() } }
+            lifecycleLaunch = { block -> lifecycleScope.launch { block() } },
+            dualMediaViewModel = { dualMediaViewModel },
+            onConfirmMediaRow = ::confirmFocusedMediaRow
         )
         inputHandler.setDrawerAppLauncher { intent, options ->
             if (intent != null) {

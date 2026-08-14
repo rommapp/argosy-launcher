@@ -798,6 +798,7 @@ class StorageSettingsDelegate @Inject constructor(
         HardResetBlocker.ActiveDownloads -> "Cancel game downloads before resetting"
         HardResetBlocker.EmulatorDownload -> "Wait for the emulator download to finish first"
         HardResetBlocker.SteamDownload -> "Cancel Steam downloads before resetting"
+        HardResetBlocker.MediaDownload -> "Cancel the movie or episode download before resetting"
     }
 
     private fun pendingUploadsMessage(blocker: HardResetBlocker.PendingUploads): String {

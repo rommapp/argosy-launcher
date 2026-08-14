@@ -120,6 +120,8 @@ class MainActivity : ComponentActivity() {
     @Inject lateinit var discordPresenceManager: com.nendo.argosy.data.social.discord.DiscordPresenceManager
     @Inject lateinit var gradientExtractionDelegate: com.nendo.argosy.ui.screens.common.GradientExtractionDelegate
     @Inject lateinit var filePickerFlowUseCase: com.nendo.argosy.domain.usecase.download.FilePickerFlowUseCase
+    @Inject lateinit var mediaRepository: com.nendo.argosy.data.repository.MediaRepository
+    @Inject lateinit var mediaPlaybackTracker: com.nendo.argosy.data.media.MediaPlaybackTracker
 
     private val sessionStateStore by lazy {
         com.nendo.argosy.data.preferences.SessionStateStore(this)
@@ -324,6 +326,8 @@ class MainActivity : ComponentActivity() {
                 gameThemeAudioCoordinator = gameThemeAudioCoordinator,
                 getPinnedCollectionsUseCase = getPinnedCollectionsUseCase,
                 getGamesForPinnedCollectionUseCase = getGamesForPinnedCollectionUseCase,
+                mediaRepository = mediaRepository,
+                mediaPlaybackTracker = mediaPlaybackTracker,
                 initialRolesSwapped = initialSwapped
             )
             DualScreenManagerHolder.instance = dualScreenManager

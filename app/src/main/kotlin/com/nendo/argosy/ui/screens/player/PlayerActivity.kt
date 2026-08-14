@@ -17,6 +17,7 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.lifecycle.lifecycleScope
+import com.nendo.argosy.DualScreenManagerHolder
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.ui.input.GamepadEvent
 import com.nendo.argosy.ui.input.InputResult
@@ -25,6 +26,7 @@ import com.nendo.argosy.ui.input.LocalSwapStartSelect
 import com.nendo.argosy.ui.input.LocalXYIconsSwapped
 import com.nendo.argosy.ui.input.mapKeycodeToGamepadEvent
 import com.nendo.argosy.ui.theme.ALauncherTheme
+import com.nendo.argosy.util.DisplayAffinityHelper
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -48,6 +50,9 @@ class PlayerActivity : ComponentActivity() {
 
     @Inject
     lateinit var userPreferencesRepository: UserPreferencesRepository
+
+    @Inject
+    lateinit var displayAffinityHelper: DisplayAffinityHelper
 
     private val viewModel: PlayerViewModel by viewModels()
     private val inputHandler by lazy { PlayerInputHandler(viewModel) }
@@ -99,10 +104,21 @@ class PlayerActivity : ComponentActivity() {
 
     override fun onStart() {
         super.onStart()
+        reportDisplay()
         if (wasStopped) {
             wasStopped = false
             viewModel.onEnteredForeground()
         }
+    }
+
+    /**
+     * Tells the launcher which screen this window landed on. The companion sends episodes to the
+     * player and has to address the window where it actually is, which is not always where a
+     * resolver would have put it.
+     */
+    private fun reportDisplay() {
+        val displayId = window.decorView.display?.displayId ?: return
+        DualScreenManagerHolder.instance?.mediaPlayerDisplayId = displayId
     }
 
     /**
@@ -118,11 +134,21 @@ class PlayerActivity : ComponentActivity() {
 
     override fun onWindowFocusChanged(hasFocus: Boolean) {
         super.onWindowFocusChanged(hasFocus)
-        if (hasFocus) enterImmersiveMode()
+        if (hasFocus) {
+            enterImmersiveMode()
+            reportDisplay()
+        }
     }
 
+    /**
+     * Claims first, like every other window that takes gamepad input. On a dual-screen device the
+     * same physical press is delivered to this window and to the companion, and without the claim
+     * both act on it - the transport moves and the panel behind it moves with it.
+     */
     @SuppressLint("RestrictedApi")
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
+        val dsm = DualScreenManagerHolder.instance
+        if (dsm != null && !dsm.claimInput(event)) return true
         val gamepadEvent = mapKeycodeToGamepadEvent(event.keyCode, swapAB, swapXY, swapStartSelect)
             ?: return super.dispatchKeyEvent(event)
         if (event.action == KeyEvent.ACTION_DOWN) {
@@ -167,9 +193,37 @@ class PlayerActivity : ComponentActivity() {
             viewModel.events.collectLatest { event ->
                 when (event) {
                     PlayerEvent.Finish -> finish()
+                    is PlayerEvent.Relocate -> relocate(event)
                 }
             }
         }
+    }
+
+    /**
+     * Hands the viewing to a window on the other screen, and closes this one.
+     *
+     * A window cannot change display, so a move is a new window plus a departure - which is exactly
+     * what the player is built to survive, since it opens at a stated position and holds nothing the
+     * old window would have to pass over. On a single-screen device there is nowhere to go and the
+     * paused film simply stays behind the game, which is what was asked for there.
+     *
+     * The move is one-way. When the game ends the film stays where it was put rather than being
+     * relaunched a second time: a move costs a re-negotiation and a visible stall, and spending that
+     * on a window the viewer is already watching would be worse than leaving it alone.
+     */
+    private fun relocate(event: PlayerEvent.Relocate) {
+        val target = DualScreenManagerHolder.instance?.mediaPlayerRelocationDisplayId() ?: return
+        if (window.decorView.display?.displayId == target) return
+        val options = displayAffinityHelper.getActivityOptions(
+            forEmulator = false,
+            overrideDisplayId = target
+        ) ?: return
+        relocateTo(
+            context = this,
+            args = PlayerArgs(itemId = event.itemId, startPositionMs = event.positionMs),
+            options = options
+        )
+        finish()
     }
 
     private fun enterImmersiveMode() {
@@ -221,6 +275,38 @@ class PlayerActivity : ComponentActivity() {
                 if (options != null) addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             }
             context.startActivity(launchIntent, options)
+        }
+
+        /**
+         * Opens an item in the player from something that is not the player's own screen - the
+         * companion, whose context belongs to another display. A live window takes the item through
+         * onNewIntent and keeps its place; there is no second window.
+         */
+        fun startOnDisplay(context: Context, args: PlayerArgs, options: Bundle?) {
+            context.startActivity(
+                intent(context, args).apply {
+                    addFlags(
+                        Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP
+                    )
+                },
+                options
+            )
+        }
+
+        /**
+         * Opens the window that replaces one on another display. It has to be a genuinely new
+         * instance - a single-top match would hand the intent back to the window being left behind
+         * and nothing would move - so this is the one launch that asks for a task of its own.
+         */
+        fun relocateTo(context: Context, args: PlayerArgs, options: Bundle) {
+            context.startActivity(
+                intent(context, args).apply {
+                    addFlags(
+                        Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_MULTIPLE_TASK
+                    )
+                },
+                options
+            )
         }
     }
 }

@@ -32,6 +32,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.filled.PushPin
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
@@ -71,6 +73,8 @@ import com.nendo.argosy.ui.theme.LocalArgosyTheme
 import com.nendo.argosy.ui.util.touchOnly
 import kotlinx.coroutines.delay
 
+private val COMPANION_APP_BAR_SLOT_WIDTH = 64.dp
+
 @Composable
 fun CompanionContent(
     state: CompanionInGameState,
@@ -86,7 +90,9 @@ fun CompanionContent(
     onDrawerAppClick: (String) -> Unit = {},
     onQuickSave: () -> Unit = {},
     onQuickLoad: () -> Unit = {},
-    onScreenshot: () -> Unit = {}
+    onScreenshot: () -> Unit = {},
+    mediaToggle: CompanionMediaToggle? = null,
+    onMediaToggle: () -> Unit = {}
 ) {
     Box(
         modifier = Modifier
@@ -116,7 +122,9 @@ fun CompanionContent(
                 CompanionAppBar(
                     apps = homeApps,
                     onAppClick = onAppClick,
-                    onOpenDrawer = onOpenDrawer
+                    onOpenDrawer = onOpenDrawer,
+                    mediaToggle = mediaToggle,
+                    onMediaToggle = onMediaToggle
                 )
             }
         }
@@ -587,12 +595,27 @@ private fun SaveStateDot(isDirty: Boolean) {
     }
 }
 
+/**
+ * The app bar's media button, or null when there is nothing to watch.
+ *
+ * [showingMedia] is which way the button points: the media panel is on screen and the press goes
+ * back to the launcher, or the launcher is on screen and the press goes to what is playing.
+ * [isPlaying] is drawn rather than acted on, so the bar says at a glance whether the film on the
+ * other screen is running or sitting paused.
+ */
+data class CompanionMediaToggle(
+    val showingMedia: Boolean,
+    val isPlaying: Boolean
+)
+
 @Composable
 internal fun CompanionAppBar(
     apps: List<String>,
     onAppClick: (String) -> Unit,
     focusedIndex: Int = -1,
-    onOpenDrawer: () -> Unit = {}
+    onOpenDrawer: () -> Unit = {},
+    mediaToggle: CompanionMediaToggle? = null,
+    onMediaToggle: () -> Unit = {}
 ) {
     val listState = androidx.compose.foundation.lazy.rememberLazyListState()
 
@@ -618,7 +641,7 @@ internal fun CompanionAppBar(
     ) {
         Column(
             modifier = Modifier
-                .width(64.dp)
+                .width(COMPANION_APP_BAR_SLOT_WIDTH)
                 .touchOnly(onOpenDrawer)
                 .padding(Dimens.spacingXs),
             horizontalAlignment = Alignment.CenterHorizontally
@@ -659,6 +682,51 @@ internal fun CompanionAppBar(
                 )
             }
         }
+
+        if (mediaToggle != null) {
+            CompanionMediaButton(
+                toggle = mediaToggle,
+                isFocused = focusedIndex == apps.size,
+                onClick = onMediaToggle
+            )
+        }
+    }
+}
+
+@Composable
+private fun CompanionMediaButton(
+    toggle: CompanionMediaToggle,
+    isFocused: Boolean,
+    onClick: () -> Unit
+) {
+    val theme = LocalArgosyTheme.current
+    Column(
+        modifier = Modifier
+            .width(COMPANION_APP_BAR_SLOT_WIDTH)
+            .touchOnly(onClick)
+            .padding(Dimens.spacingXs),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Box(
+            modifier = Modifier
+                .size(Dimens.iconXl)
+                .argosyFocusIndicators(
+                    focused = isFocused,
+                    indicators = FocusIndicators.Tile,
+                    shape = RoundedCornerShape(Dimens.radiusLg)
+                )
+                .clip(RoundedCornerShape(Dimens.radiusLg))
+                .background(Color.White.copy(alpha = 0.15f)),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = if (toggle.showingMedia) Icons.Default.Home else Icons.Default.Movie,
+                contentDescription = if (toggle.showingMedia) "Back to library" else "Now watching",
+                tint = if (toggle.isPlaying) theme.focusAccent else Color.White.copy(alpha = 0.7f),
+                modifier = Modifier.size(Dimens.iconMd)
+            )
+        }
+        Spacer(modifier = Modifier.height(Dimens.spacingXs))
     }
 }
 
@@ -670,7 +738,7 @@ internal fun CompanionAppItem(
 ) {
     Column(
         modifier = Modifier
-            .width(64.dp)
+            .width(COMPANION_APP_BAR_SLOT_WIDTH)
             .touchOnly(onClick)
             .padding(Dimens.spacingXs),
         horizontalAlignment = Alignment.CenterHorizontally

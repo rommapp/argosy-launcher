@@ -826,6 +826,13 @@ class GameRepository @Inject constructor(
     suspend fun countByPlatform(platformId: Long): Int =
         gameDao.countByPlatform(platformId, hiddenOwnerId())
 
+    /**
+     * Game counts for every platform at once, keyed by platform id. A platform with nothing in it is
+     * absent from the map rather than present as zero.
+     */
+    suspend fun countsByPlatform(): Map<Long, Int> =
+        gameDao.countsByPlatform(hiddenOwnerId()).associate { it.platformId to it.gameCount }
+
     suspend fun getByPlatformSorted(
         platformId: Long,
         limit: Int = 20

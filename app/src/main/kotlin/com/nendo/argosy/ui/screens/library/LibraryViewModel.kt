@@ -21,6 +21,7 @@ import com.nendo.argosy.data.update.ApkInstallManager
 import com.nendo.argosy.data.local.entity.CollectionType
 import com.nendo.argosy.data.local.entity.GameEntity
 import com.nendo.argosy.data.local.entity.GameListItem
+import com.nendo.argosy.data.local.entity.PlatformEntity
 import com.nendo.argosy.data.local.entity.getDisplayName
 import com.nendo.argosy.data.model.ActiveSort
 import com.nendo.argosy.data.model.GameSection
@@ -153,6 +154,15 @@ enum class FocusMove {
     UP, DOWN, LEFT, RIGHT
 }
 
+/**
+ * What the library is showing. [PLATFORM_GRID] is the landing when nothing was asked for; arriving
+ * with a platform, a source or a configured library default goes straight to [GAMES], because those
+ * callers have already chosen and a chooser would be in their way.
+ */
+enum class LibraryView {
+    PLATFORM_GRID, GAMES
+}
+
 sealed interface LibraryGridItem {
     data class Header(val label: String) : LibraryGridItem
     data class Game(val game: LibraryGameUi, val gameIndex: Int) : LibraryGridItem
@@ -197,6 +207,10 @@ data class LibraryGameUi(
 }
 
 data class LibraryUiState(
+    val view: LibraryView = LibraryView.PLATFORM_GRID,
+    val platformCells: List<LibraryPlatformCellUi> = emptyList(),
+    val platformGridFocusedIndex: Int = 0,
+    val canReturnToPlatformGrid: Boolean = false,
     val platforms: List<HomePlatformUi> = emptyList(),
     val currentPlatformIndex: Int = -1,
     val games: List<LibraryGameUi> = emptyList(),
@@ -241,6 +255,26 @@ data class LibraryUiState(
 ) {
     val showSectionSidebar: Boolean
         get() = sectionLabels.size >= 3
+
+    val isPlatformGrid: Boolean
+        get() = view == LibraryView.PLATFORM_GRID
+
+    /**
+     * A platform cell is a badge - a mark and two short lines - so it wants the game grid's narrower
+     * columns rather than the app grid's wide ones. The landing only earns its place while the whole
+     * shelf is in front of you, and app-width columns spent that on air.
+     */
+    val platformGridColumns: Int
+        get() = GridUtils.getGameGridColumns(gridDensity, screenWidthDp)
+
+    /**
+     * Nothing to land on: no platform carries games and neither does the library as a whole. A user
+     * with games but no platform rows still gets the grid, since All Games alone is a real
+     * destination and hiding it would strand them.
+     */
+    val platformGridIsEmpty: Boolean
+        get() = platformCells.none { !it.isAllGames } &&
+            platformCells.sumOf { it.gameCount } == 0
 
     val columnsCount: Int
         get() = GridUtils.getGameGridColumns(gridDensity, screenWidthDp)
@@ -374,7 +408,9 @@ class LibraryViewModel @Inject constructor(
     private var pendingInitialPlatformId: Long? = null
     private var pendingInitialSourceFilter: SourceFilter? = null
     private var explicitSourceRequested = false
+    private var explicitDestinationRequested = false
     private var cachedPlatformDisplayNames: Map<Long, String> = emptyMap()
+    private var cachedPlatformEntities: List<PlatformEntity> = emptyList()
 
     private val pendingCoverRepairs = mutableSetOf<Long>()
 
@@ -417,6 +453,9 @@ class LibraryViewModel @Inject constructor(
      * yanks the filters out from under someone mid-browse. A caller that opened the library at a
      * specific source (favorites, playable) has asked for something the default must not overwrite,
      * and the two arrive on independent coroutines, so that request is tracked rather than raced.
+     *
+     * A configured default source or platform is itself a destination, so it skips the platform
+     * landing for the same reason an explicit caller does: the choice has already been made.
      */
     private fun applyLibraryDefaults() {
         viewModelScope.launch {
@@ -429,8 +468,12 @@ class LibraryViewModel @Inject constructor(
                 .takeIf { it.isNotBlank() }
                 ?.let { setOf(it) }
                 ?: emptySet()
+            val landsOnGames = explicitDestinationRequested ||
+                source != SourceFilter.ALL ||
+                platforms.isNotEmpty()
             _uiState.update {
                 it.copy(
+                    view = if (landsOnGames) LibraryView.GAMES else it.view,
                     activeFilters = it.activeFilters.copy(
                         sort = ActiveSort(
                             option = option,
@@ -449,7 +492,28 @@ class LibraryViewModel @Inject constructor(
         viewModelScope.launch {
             gameRepository.observeHiddenList().collect { games ->
                 _uiState.update { it.copy(hiddenGameCount = games.size) }
+                refreshPlatformCells()
             }
+        }
+    }
+
+    /**
+     * Rebuilds the landing cells from one aggregate count query rather than by sizing any game list.
+     *
+     * Hiding a game changes what a platform contains without touching the platforms table, so this
+     * runs on the hidden-list flow as well as on the platform flow; otherwise a count would sit
+     * stale against the list it labels.
+     */
+    private suspend fun refreshPlatformCells() {
+        val counts = gameRepository.countsByPlatform()
+        val cells = listOf(allGamesCell(counts.values.sum())) +
+            cachedPlatformEntities.map { it.toLibraryPlatformCellUi(counts[it.id] ?: 0) }
+        _uiState.update { state ->
+            state.copy(
+                platformCells = cells,
+                platformGridFocusedIndex = state.platformGridFocusedIndex
+                    .coerceAtMost((cells.size - 1).coerceAtLeast(0))
+            )
         }
     }
 
@@ -587,6 +651,7 @@ class LibraryViewModel @Inject constructor(
             platformRepository.observeVisiblePlatforms().collect { platforms ->
                 Log.d(TAG, "loadPlatforms: received ${platforms.size} platforms")
                 cachedPlatformDisplayNames = platforms.associate { it.id to it.getDisplayName() }
+                cachedPlatformEntities = platforms
                 val platformUis = platforms.map { it.toHomePlatformUi(emulatorDetector) }
 
                 val pendingPlatformIndex = pendingInitialPlatformId?.let { platformId ->
@@ -633,6 +698,7 @@ class LibraryViewModel @Inject constructor(
                     pendingInitialSourceFilter = null
                 }
 
+                refreshPlatformCells()
                 loadGames()
             }
         }
@@ -937,6 +1003,8 @@ class LibraryViewModel @Inject constructor(
     }
 
     fun setInitialPlatform(platformId: Long) {
+        explicitDestinationRequested = true
+        _uiState.update { it.copy(view = LibraryView.GAMES, canReturnToPlatformGrid = false) }
         val state = _uiState.value
         if (state.platforms.isEmpty()) {
             Log.d(TAG, "setInitialPlatform: platforms not loaded yet, storing pending platformId=$platformId")
@@ -953,6 +1021,8 @@ class LibraryViewModel @Inject constructor(
 
     fun setInitialSourceFilter(source: SourceFilter) {
         explicitSourceRequested = true
+        explicitDestinationRequested = true
+        _uiState.update { it.copy(view = LibraryView.GAMES, canReturnToPlatformGrid = false) }
         val state = _uiState.value
         if (state.platforms.isEmpty()) {
             Log.d(TAG, "setInitialSourceFilter: platforms not loaded yet, storing pending source=$source")
@@ -964,6 +1034,69 @@ class LibraryViewModel @Inject constructor(
             _uiState.update { it.copy(activeFilters = it.activeFilters.copy(source = source)) }
             loadGames()
         }
+    }
+
+    /**
+     * Moves the cursor on the platform landing, wrapping top to bottom.
+     *
+     * LEFT from the first column deliberately reports no move: the app treats an unhandled LEFT as
+     * "open the drawer", which is how every other grid in the launcher stays reachable from a
+     * controller, so wrapping horizontally here would strand the drawer.
+     */
+    fun movePlatformGridFocus(direction: FocusMove): Boolean {
+        val state = _uiState.value
+        val total = state.platformCells.size
+        if (total == 0) return false
+
+        val cols = state.platformGridColumns.coerceAtLeast(1)
+        val current = state.platformGridFocusedIndex
+        val column = current % cols
+
+        val target = when (direction) {
+            FocusMove.LEFT -> if (column > 0) current - 1 else return false
+            FocusMove.RIGHT -> if (column < cols - 1 && current + 1 < total) current + 1 else current
+            FocusMove.UP, FocusMove.DOWN -> {
+                val rows = (total + cols - 1) / cols
+                val delta = if (direction == FocusMove.DOWN) 1 else -1
+                val nextRow = (current / cols + delta).mod(rows)
+                (nextRow * cols + column).coerceAtMost(total - 1)
+            }
+        }
+
+        if (target == current) return true
+        _uiState.update { it.copy(platformGridFocusedIndex = target) }
+        return true
+    }
+
+    fun openPlatformCell(index: Int) {
+        val state = _uiState.value
+        val cell = state.platformCells.getOrNull(index) ?: return
+
+        val platformIndex = cell.platformId
+            ?.let { id -> state.platforms.indexOfFirst { it.id == id } }
+            ?.takeIf { it >= 0 }
+            ?: -1
+
+        resetStickyColumn()
+        _uiState.update {
+            it.copy(
+                view = LibraryView.GAMES,
+                canReturnToPlatformGrid = true,
+                platformGridFocusedIndex = index,
+                currentPlatformIndex = platformIndex,
+                focusedIndex = 0
+            )
+        }
+        loadGames()
+    }
+
+    /**
+     * Returns to the landing. Counts are rebuilt on the way back because a game can have been hidden,
+     * downloaded or deleted while the list was open.
+     */
+    fun returnToPlatformGrid() {
+        _uiState.update { it.copy(view = LibraryView.PLATFORM_GRID) }
+        viewModelScope.launch { refreshPlatformCells() }
     }
 
     private val gridNav = GridFocusNavigator()
@@ -1553,6 +1686,8 @@ class LibraryViewModel @Inject constructor(
         override fun onUp(): InputResult {
             val state = _uiState.value
             return when {
+                state.isPlatformGrid ->
+                    if (movePlatformGridFocus(FocusMove.UP)) InputResult.HANDLED else InputResult.UNHANDLED
                 state.showAddToCollectionModal -> { moveCollectionFocusUp(); InputResult.HANDLED }
                 state.showFilterMenu -> { moveFilterOptionFocus(-1); InputResult.HANDLED }
                 state.showQuickMenu -> { moveQuickMenuFocus(-1); InputResult.HANDLED }
@@ -1563,6 +1698,8 @@ class LibraryViewModel @Inject constructor(
         override fun onDown(): InputResult {
             val state = _uiState.value
             return when {
+                state.isPlatformGrid ->
+                    if (movePlatformGridFocus(FocusMove.DOWN)) InputResult.HANDLED else InputResult.UNHANDLED
                 state.showAddToCollectionModal -> { moveCollectionFocusDown(); InputResult.HANDLED }
                 state.showFilterMenu -> { moveFilterOptionFocus(1); InputResult.HANDLED }
                 state.showQuickMenu -> { moveQuickMenuFocus(1); InputResult.HANDLED }
@@ -1573,6 +1710,8 @@ class LibraryViewModel @Inject constructor(
         override fun onLeft(): InputResult {
             val state = _uiState.value
             return when {
+                state.isPlatformGrid ->
+                    if (movePlatformGridFocus(FocusMove.LEFT)) InputResult.HANDLED else InputResult.UNHANDLED
                 state.showAddToCollectionModal -> InputResult.HANDLED
                 state.showFilterMenu -> { moveFilterCategoryFocus(-1); InputResult.HANDLED }
                 state.showQuickMenu -> InputResult.HANDLED
@@ -1583,6 +1722,8 @@ class LibraryViewModel @Inject constructor(
         override fun onRight(): InputResult {
             val state = _uiState.value
             return when {
+                state.isPlatformGrid ->
+                    if (movePlatformGridFocus(FocusMove.RIGHT)) InputResult.HANDLED else InputResult.UNHANDLED
                 state.showAddToCollectionModal -> InputResult.HANDLED
                 state.showFilterMenu -> { moveFilterCategoryFocus(1); InputResult.HANDLED }
                 state.showQuickMenu -> InputResult.HANDLED
@@ -1593,6 +1734,10 @@ class LibraryViewModel @Inject constructor(
         override fun onConfirm(): InputResult {
             val state = _uiState.value
             return when {
+                state.isPlatformGrid -> {
+                    openPlatformCell(state.platformGridFocusedIndex)
+                    InputResult.HANDLED
+                }
                 state.showAddToCollectionModal -> {
                     confirmCollectionSelection()
                     InputResult.HANDLED
@@ -1628,6 +1773,10 @@ class LibraryViewModel @Inject constructor(
                     toggleQuickMenu()
                     InputResult.HANDLED
                 }
+                state.canReturnToPlatformGrid && !state.isPlatformGrid -> {
+                    returnToPlatformGrid()
+                    InputResult.HANDLED
+                }
                 isDefaultView -> InputResult.UNHANDLED
                 else -> {
                     onNavigateToDefault()
@@ -1651,6 +1800,7 @@ class LibraryViewModel @Inject constructor(
         }
 
         override fun onSecondaryAction(): InputResult {
+            if (_uiState.value.isPlatformGrid) return InputResult.HANDLED
             val game = _uiState.value.focusedGame ?: return InputResult.UNHANDLED
             if (_uiState.value.showAddToCollectionModal || _uiState.value.showQuickMenu || _uiState.value.showFilterMenu) return InputResult.HANDLED
             if (_uiState.value.activeFilters.source == SourceFilter.HIDDEN) {
@@ -1662,6 +1812,7 @@ class LibraryViewModel @Inject constructor(
         }
 
         override fun onContextMenu(): InputResult {
+            if (_uiState.value.isPlatformGrid) return InputResult.HANDLED
             if (_uiState.value.showAddToCollectionModal) return InputResult.HANDLED
             if (_uiState.value.showQuickMenu) return InputResult.HANDLED
             if (_uiState.value.showFilterMenu) {
@@ -1673,6 +1824,7 @@ class LibraryViewModel @Inject constructor(
         }
 
         override fun onSelect(): InputResult {
+            if (_uiState.value.isPlatformGrid) return InputResult.HANDLED
             if (_uiState.value.showAddToCollectionModal) return InputResult.HANDLED
             if (_uiState.value.focusedGame != null) {
                 toggleQuickMenu()
@@ -1683,6 +1835,7 @@ class LibraryViewModel @Inject constructor(
         override fun onPrevSection(): InputResult {
             val state = _uiState.value
             when {
+                state.isPlatformGrid -> return InputResult.HANDLED
                 state.showAddToCollectionModal -> return InputResult.HANDLED
                 state.showFilterMenu -> moveFilterOptionFocus(-5)
                 state.showQuickMenu -> return InputResult.HANDLED
@@ -1694,6 +1847,7 @@ class LibraryViewModel @Inject constructor(
         override fun onNextSection(): InputResult {
             val state = _uiState.value
             when {
+                state.isPlatformGrid -> return InputResult.HANDLED
                 state.showAddToCollectionModal -> return InputResult.HANDLED
                 state.showFilterMenu -> moveFilterOptionFocus(5)
                 state.showQuickMenu -> return InputResult.HANDLED
@@ -1704,6 +1858,7 @@ class LibraryViewModel @Inject constructor(
 
         override fun onPrevTrigger(): InputResult {
             val state = _uiState.value
+            if (state.isPlatformGrid) return InputResult.HANDLED
             if (state.showAddToCollectionModal || state.showFilterMenu || state.showQuickMenu) {
                 return InputResult.HANDLED
             }
@@ -1714,6 +1869,7 @@ class LibraryViewModel @Inject constructor(
 
         override fun onNextTrigger(): InputResult {
             val state = _uiState.value
+            if (state.isPlatformGrid) return InputResult.HANDLED
             if (state.showAddToCollectionModal || state.showFilterMenu || state.showQuickMenu) {
                 return InputResult.HANDLED
             }

@@ -13,6 +13,11 @@ import com.nendo.argosy.data.model.GameSource
 import kotlinx.coroutines.flow.Flow
 import java.time.Instant
 
+data class PlatformGameCount(
+    val platformId: Long,
+    val gameCount: Int
+)
+
 /**
  * Hiding is per account and lives in `user_roms_hidden`, so every list, count and filter here
  * carries the owner it is being run for and tests row existence rather than a column.
@@ -461,6 +466,18 @@ interface GameDao {
         AND NOT EXISTS (SELECT 1 FROM user_roms_hidden h WHERE h.gameId = games.id AND (h.ownerUserId IS NULL OR h.ownerUserId IS :ownerUserId))
     """)
     suspend fun countByPlatform(platformId: Long, ownerUserId: Long?): Int
+
+    /**
+     * Every platform's game count in one pass, carrying the same owner-scoped hidden predicate as
+     * [countByPlatform] and [observeByPlatformList] so a count and the list it labels can never
+     * disagree. Platforms with no games are absent rather than zero.
+     */
+    @Query("""
+        SELECT platformId, COUNT(*) AS gameCount FROM games
+        WHERE NOT EXISTS (SELECT 1 FROM user_roms_hidden h WHERE h.gameId = games.id AND (h.ownerUserId IS NULL OR h.ownerUserId IS :ownerUserId))
+        GROUP BY platformId
+    """)
+    suspend fun countsByPlatform(ownerUserId: Long?): List<PlatformGameCount>
 
     @Query("SELECT COUNT(*) FROM games WHERE platformId = :platformId AND localPath IS NOT NULL")
     suspend fun countDownloadedByPlatform(platformId: Long): Int

@@ -1,6 +1,9 @@
 package com.nendo.argosy.ui.components
 
+import androidx.compose.foundation.gestures.animateScrollBy
+import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.grid.LazyGridItemInfo
 import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridState
 import androidx.compose.runtime.Composable
@@ -10,6 +13,12 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.first
 import kotlin.math.abs
 
 private const val FAR_JUMP_VIEWPORTS = 2
@@ -109,6 +118,73 @@ fun FocusedScroll(
             listState.scrollToItem(focusedIndex, -centerOffset)
         } else {
             listState.animateScrollToItem(focusedIndex, -centerOffset)
+        }
+    }
+}
+
+private fun LazyGridState.focusedItem(index: Int): LazyGridItemInfo? =
+    layoutInfo.visibleItemsInfo.firstOrNull { it.index == index }
+
+/**
+ * Keeps the focused cell of a grid inside the band the user can actually see.
+ *
+ * [topInset] and [bottomInset] describe the chrome drawn OVER the grid - a header, a footer - which
+ * a lazy grid knows nothing about: its own content padding only holds the ends of the list clear,
+ * and scrolling to an item parks that item against the container edge, underneath whatever overlaps
+ * it. The correction is measured from the laid-out item rather than requested as a scroll offset, so
+ * it lands the same way whether the grid is at the top of the list, the bottom, or anywhere between,
+ * and it moves the grid no further than it takes to clear the chrome.
+ *
+ * The caller is expected to reserve the same insets as content padding; the ends of the list scroll
+ * under the chrome otherwise.
+ */
+@Composable
+fun GridFocusedScroll(
+    gridState: LazyGridState,
+    focusedIndex: Int,
+    topInset: Dp = 0.dp,
+    bottomInset: Dp = 0.dp
+) {
+    val density = LocalDensity.current
+    val topInsetPx = with(density) { topInset.roundToPx() }
+    val bottomInsetPx = with(density) { bottomInset.roundToPx() }
+    var isInitialPass by remember(gridState) { mutableStateOf(true) }
+
+    LaunchedEffect(focusedIndex, topInsetPx, bottomInsetPx) {
+        if (focusedIndex < 0) return@LaunchedEffect
+
+        val instant = isInitialPass
+        isInitialPass = false
+
+        if (gridState.layoutInfo.totalItemsCount == 0) {
+            snapshotFlow { gridState.layoutInfo.totalItemsCount }.first { it > 0 }
+        }
+        if (focusedIndex >= gridState.layoutInfo.totalItemsCount) return@LaunchedEffect
+
+        if (gridState.layoutInfo.visibleItemsInfo.none { it.index == focusedIndex }) {
+            gridState.scrollToItem(focusedIndex)
+        }
+
+        val item = gridState.focusedItem(focusedIndex)
+            ?: snapshotFlow { gridState.focusedItem(focusedIndex) }.filterNotNull().first()
+        val layoutInfo = gridState.layoutInfo
+
+        val safeTop = layoutInfo.viewportStartOffset + topInsetPx
+        val safeBottom = layoutInfo.viewportEndOffset - bottomInsetPx
+        val itemTop = item.offset.y
+        val itemBottom = itemTop + item.size.height
+
+        val delta = when {
+            itemTop < safeTop -> itemTop - safeTop
+            itemBottom > safeBottom -> minOf(itemBottom - safeBottom, itemTop - safeTop)
+            else -> 0
+        }
+        if (delta == 0) return@LaunchedEffect
+
+        if (instant) {
+            gridState.scrollBy(delta.toFloat())
+        } else {
+            gridState.animateScrollBy(delta.toFloat())
         }
     }
 }

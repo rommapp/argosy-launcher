@@ -34,6 +34,9 @@ import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan
 import androidx.compose.foundation.lazy.staggeredgrid.rememberLazyStaggeredGridState
 import androidx.compose.foundation.layout.aspectRatio
 import com.nendo.argosy.ui.common.rememberCoverAspectRatio
+import com.nendo.argosy.ui.screens.library.components.LibraryPlatformGrid
+import com.nendo.argosy.ui.screens.library.components.LibraryPlatformGridEmpty
+import com.nendo.argosy.ui.screens.library.components.LibraryPlatformGridHeaderHeight
 import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -150,6 +153,7 @@ fun LibraryScreen(
     val uiState by viewModel.uiState.collectAsState()
     val initialGridIndex = remember { viewModel.gameIndexToGridIndex(uiState.focusedIndex) }
     val gridState = rememberLazyGridState(initialFirstVisibleItemIndex = initialGridIndex)
+    val platformGridState = rememberLazyGridState()
     var isProgrammaticScroll by remember { mutableStateOf(false) }
 
     LaunchedEffect(initialPlatformId) {
@@ -286,6 +290,7 @@ fun LibraryScreen(
     val swipeThreshold = with(LocalDensity.current) { 50.dp.toPx() }
     val edgeThreshold = with(LocalDensity.current) { 80.dp.toPx() }
     val currentOnDrawerToggle by rememberUpdatedState(onDrawerToggle)
+    val currentIsPlatformGrid by rememberUpdatedState(uiState.isPlatformGrid)
 
     val swipeGestureModifier = Modifier.pointerInput(Unit) {
         var totalDragX = 0f
@@ -300,6 +305,7 @@ fun LibraryScreen(
             onDragEnd = {
                 when {
                     startX < edgeThreshold && totalDragX > swipeThreshold -> currentOnDrawerToggle()
+                    currentIsPlatformGrid -> {}
                     totalDragX > swipeThreshold && abs(totalDragX) > abs(totalDragY) -> viewModel.previousPlatform()
                     totalDragX < -swipeThreshold && abs(totalDragX) > abs(totalDragY) -> viewModel.nextPlatform()
                 }
@@ -326,6 +332,24 @@ fun LibraryScreen(
                             contentAlignment = Alignment.Center
                         ) {
                             CircularProgressIndicator(modifier = Modifier.size(Dimens.spacingXxl))
+                        }
+                    }
+                    uiState.isPlatformGrid -> {
+                        val configuration = LocalConfiguration.current
+                        LaunchedEffect(configuration.screenWidthDp) {
+                            viewModel.updateScreenWidth(configuration.screenWidthDp)
+                        }
+
+                        if (uiState.platformGridIsEmpty) {
+                            LibraryPlatformGridEmpty()
+                        } else {
+                            LibraryPlatformGrid(
+                                cells = uiState.platformCells,
+                                focusedIndex = uiState.platformGridFocusedIndex,
+                                columns = uiState.platformGridColumns,
+                                gridState = platformGridState,
+                                onCellClick = { viewModel.openPlatformCell(it) }
+                            )
                         }
                     }
                     uiState.games.isEmpty() -> {
@@ -434,34 +458,42 @@ fun LibraryScreen(
             }
 
             Box(modifier = Modifier.align(Alignment.TopCenter)) {
-                LibraryHeader(
-                    platformName = uiState.currentPlatform?.displayName ?: "All Platforms",
-                    gameCount = uiState.games.size,
-                    focusedGameTitle = uiState.focusedGame?.title,
-                    onPreviousPlatform = { viewModel.previousPlatform() },
-                    onNextPlatform = { viewModel.nextPlatform() }
-                )
+                if (uiState.isPlatformGrid) {
+                    LibraryPlatformGridHeader(
+                        platformCount = (uiState.platformCells.size - 1).coerceAtLeast(0)
+                    )
+                } else {
+                    LibraryHeader(
+                        platformName = uiState.currentPlatform?.displayName ?: "All Platforms",
+                        gameCount = uiState.games.size,
+                        focusedGameTitle = uiState.focusedGame?.title,
+                        onPreviousPlatform = { viewModel.previousPlatform() },
+                        onNextPlatform = { viewModel.nextPlatform() }
+                    )
+                }
             }
 
             Box(modifier = Modifier.align(Alignment.BottomCenter)) {
-                val isViewingHidden = uiState.activeFilters.source == SourceFilter.HIDDEN
-                LibraryFooter(
-                    focusedGame = uiState.focusedGame,
-                    isViewingHidden = isViewingHidden,
-                    showSectionJump = uiState.sectionLabels.size > 1,
-                    onHintClick = { button ->
-                        when (button) {
-                            InputButton.A -> uiState.focusedGame?.let { onGameSelect(it.id) }
-                            InputButton.Y -> uiState.focusedGame?.let {
-                                if (isViewingHidden) viewModel.unhideGame(it.id)
-                                else viewModel.toggleFavorite(it.id)
+                if (!uiState.isPlatformGrid) {
+                    val isViewingHidden = uiState.activeFilters.source == SourceFilter.HIDDEN
+                    LibraryFooter(
+                        focusedGame = uiState.focusedGame,
+                        isViewingHidden = isViewingHidden,
+                        showSectionJump = uiState.sectionLabels.size > 1,
+                        onHintClick = { button ->
+                            when (button) {
+                                InputButton.A -> uiState.focusedGame?.let { onGameSelect(it.id) }
+                                InputButton.Y -> uiState.focusedGame?.let {
+                                    if (isViewingHidden) viewModel.unhideGame(it.id)
+                                    else viewModel.toggleFavorite(it.id)
+                                }
+                                InputButton.X -> viewModel.toggleFilterMenu()
+                                InputButton.SELECT -> viewModel.toggleQuickMenu()
+                                else -> {}
                             }
-                            InputButton.X -> viewModel.toggleFilterMenu()
-                            InputButton.SELECT -> viewModel.toggleQuickMenu()
-                            else -> {}
                         }
-                    }
-                )
+                    )
+                }
             }
         }
 
@@ -874,6 +906,47 @@ private fun LibraryHeader(
                     )
                 }
             }
+        }
+    }
+}
+
+/**
+ * Header for the platform landing. It carries no platform stepper: the grid itself is the chooser,
+ * so the bumper arrows the game list needs would point at nothing here. Nor does it echo the focused
+ * cell's name, which the cell under the cursor is already saying.
+ */
+@Composable
+private fun LibraryPlatformGridHeader(platformCount: Int) {
+    val surfaceColor = MaterialTheme.colorScheme.surface
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(LibraryPlatformGridHeaderHeight)
+            .background(
+                Brush.verticalGradient(
+                    0.0f to surfaceColor,
+                    0.6f to surfaceColor.copy(alpha = 0.8f),
+                    1.0f to Color.Transparent
+                )
+            )
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = Dimens.spacingLg, vertical = Dimens.spacingMd),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "LIBRARY",
+                style = MaterialTheme.typography.titleLarge,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Text(
+                text = if (platformCount == 1) "1 platform" else "$platformCount platforms",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
     }
 }

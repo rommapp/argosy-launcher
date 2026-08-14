@@ -244,7 +244,7 @@ internal class LightSectionsInput(
         if (state.jellyfin.configuring || state.jellyfin.showLoginForm) return InputResult.UNHANDLED
         val layoutState = JellyfinLayoutState.from(state)
         when (jellyfinItemAtFocusIndex(state.focusedIndex, layoutState)) {
-            JellyfinItem.StreamingBitrate -> viewModel.cycleJellyfinStreamingBitrate(direction)
+            JellyfinItem.StreamingQuality -> viewModel.cycleJellyfinStreamingQuality(direction)
             JellyfinItem.AudioLanguage -> viewModel.cycleJellyfinAudioLanguage(direction)
             JellyfinItem.Subtitles -> viewModel.cycleJellyfinSubtitleMode(direction)
             JellyfinItem.SubtitleLanguage -> viewModel.cycleJellyfinSubtitleLanguage(direction)

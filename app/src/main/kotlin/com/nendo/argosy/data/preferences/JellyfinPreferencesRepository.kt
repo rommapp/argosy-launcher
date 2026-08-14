@@ -11,13 +11,35 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
+ * A quality ceiling as a resolution and a bitrate together. Both null means uncapped, which is what
+ * lets a title reach the device untouched instead of through an encoder.
+ */
+interface MediaQualityTier {
+    val maxHeight: Int?
+    val maxBitrateKbps: Int?
+}
+
+/**
+ * Whether transcoding a source of this size to this tier could produce anything better than the
+ * source already is. A tier that caps nothing has nothing to answer, and a source whose size the
+ * server did not report is treated as too big to assume otherwise.
+ */
+fun MediaQualityTier.alreadySatisfiedBy(sourceHeight: Int?, sourceBitrateKbps: Int?): Boolean {
+    val heightCeiling = maxHeight ?: return false
+    val bitrateCeiling = maxBitrateKbps ?: return false
+    val height = sourceHeight?.takeIf { it > 0 } ?: return false
+    val bitrate = sourceBitrateKbps?.takeIf { it > 0 } ?: return false
+    return height <= heightCeiling && bitrate <= bitrateCeiling
+}
+
+/**
  * Download payload for a media item: the source file, or a server transcode sized for the device.
  */
 enum class MediaDownloadQuality(
     val displayName: String,
-    val maxHeight: Int?,
-    val maxBitrateKbps: Int?
-) {
+    override val maxHeight: Int?,
+    override val maxBitrateKbps: Int?
+) : MediaQualityTier {
     ORIGINAL("Original File", null, null),
     HIGH("High - 1080p", 1080, 8000),
     MEDIUM("Medium - 720p", 720, 4000),
@@ -30,20 +52,35 @@ enum class MediaDownloadQuality(
 }
 
 /**
- * Ceiling the client asks the server to stay under when it negotiates playback.
+ * Playback ceiling, in the same tiers a download is asked for.
+ *
+ * A stored raw megabit ceiling resolves to the tier carrying the same bitrate. The two ceilings that
+ * sat above every tier on offer resolve to [AUTO], because a limit no real title ever reached was
+ * already an uncapped stream in practice, and moving those viewers down to a capped tier would put
+ * an encoder in front of a picture that used to arrive untouched.
  */
-enum class MediaStreamingBitrate(val displayName: String, val kbps: Int?) {
-    AUTO("Auto", null),
-    MBPS_2("2 Mbps", 2000),
-    MBPS_4("4 Mbps", 4000),
-    MBPS_8("8 Mbps", 8000),
-    MBPS_10("10 Mbps", 10000),
-    MBPS_20("20 Mbps", 20000),
-    MBPS_40("40 Mbps", 40000);
+enum class MediaStreamingQuality(
+    val displayName: String,
+    override val maxHeight: Int?,
+    override val maxBitrateKbps: Int?
+) : MediaQualityTier {
+    AUTO("Original - Auto", null, null),
+    HIGH("High - 1080p", 1080, 8000),
+    MEDIUM("Medium - 720p", 720, 4000),
+    LOW("Low - 480p", 480, 2000);
 
     companion object {
-        fun fromString(value: String?): MediaStreamingBitrate =
-            entries.find { it.name == value } ?: AUTO
+        private val LEGACY_TIERS = mapOf(
+            "MBPS_2" to LOW,
+            "MBPS_4" to MEDIUM,
+            "MBPS_8" to HIGH,
+            "MBPS_10" to HIGH,
+            "MBPS_20" to AUTO,
+            "MBPS_40" to AUTO
+        )
+
+        fun fromString(value: String?): MediaStreamingQuality =
+            entries.find { it.name == value } ?: LEGACY_TIERS[value] ?: AUTO
     }
 }
 
@@ -121,7 +158,7 @@ data class JellyfinPreferences(
     val userId: String? = null,
     val userName: String? = null,
     val downloadQuality: MediaDownloadQuality = MediaDownloadQuality.ORIGINAL,
-    val maxStreamingBitrate: MediaStreamingBitrate = MediaStreamingBitrate.AUTO,
+    val streamingQuality: MediaStreamingQuality = MediaStreamingQuality.AUTO,
     val audioLanguage: MediaAudioLanguage = MediaAudioLanguage.ENGLISH,
     val subtitleMode: MediaSubtitleMode = MediaSubtitleMode.PREFERRED,
     val subtitleLanguage: MediaSubtitleLanguage = MediaSubtitleLanguage.ENGLISH,
@@ -142,7 +179,10 @@ class JellyfinPreferencesRepository @Inject constructor(
         val USER_ID = stringPreferencesKey("jellyfin_user_id")
         val USER_NAME = stringPreferencesKey("jellyfin_user_name")
         val DOWNLOAD_QUALITY = stringPreferencesKey("jellyfin_download_quality")
-        val MAX_STREAMING_BITRATE = stringPreferencesKey("jellyfin_max_streaming_bitrate")
+        /**
+         * The key string is what stored values are filed under, so it outlives what it is called.
+         */
+        val STREAMING_QUALITY = stringPreferencesKey("jellyfin_max_streaming_bitrate")
         val AUDIO_LANGUAGE = stringPreferencesKey("jellyfin_audio_language")
         val SUBTITLE_MODE = stringPreferencesKey("jellyfin_subtitle_mode")
         val SUBTITLE_LANGUAGE = stringPreferencesKey("jellyfin_subtitle_language")
@@ -158,7 +198,7 @@ class JellyfinPreferencesRepository @Inject constructor(
             userId = prefs[Keys.USER_ID],
             userName = prefs[Keys.USER_NAME],
             downloadQuality = MediaDownloadQuality.fromString(prefs[Keys.DOWNLOAD_QUALITY]),
-            maxStreamingBitrate = MediaStreamingBitrate.fromString(prefs[Keys.MAX_STREAMING_BITRATE]),
+            streamingQuality = MediaStreamingQuality.fromString(prefs[Keys.STREAMING_QUALITY]),
             audioLanguage = MediaAudioLanguage.fromString(prefs[Keys.AUDIO_LANGUAGE]),
             subtitleMode = MediaSubtitleMode.fromString(prefs[Keys.SUBTITLE_MODE]),
             subtitleLanguage = MediaSubtitleLanguage.fromString(prefs[Keys.SUBTITLE_LANGUAGE]),
@@ -200,8 +240,8 @@ class JellyfinPreferencesRepository @Inject constructor(
         dataStore.edit { it[Keys.DOWNLOAD_QUALITY] = quality.name }
     }
 
-    suspend fun setMaxStreamingBitrate(bitrate: MediaStreamingBitrate) {
-        dataStore.edit { it[Keys.MAX_STREAMING_BITRATE] = bitrate.name }
+    suspend fun setStreamingQuality(quality: MediaStreamingQuality) {
+        dataStore.edit { it[Keys.STREAMING_QUALITY] = quality.name }
     }
 
     suspend fun setAudioLanguage(language: MediaAudioLanguage) {

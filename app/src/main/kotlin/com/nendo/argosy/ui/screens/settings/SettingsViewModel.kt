@@ -2031,10 +2031,10 @@ class SettingsViewModel @Inject constructor(
         jellyfinDelegate.cycleDownloadQuality(viewModelScope, direction)
     fun setJellyfinDownloadQuality(quality: com.nendo.argosy.data.preferences.MediaDownloadQuality) =
         jellyfinDelegate.setDownloadQuality(viewModelScope, quality)
-    fun cycleJellyfinStreamingBitrate(direction: Int) =
-        jellyfinDelegate.cycleMaxStreamingBitrate(viewModelScope, direction)
-    fun setJellyfinStreamingBitrate(bitrate: com.nendo.argosy.data.preferences.MediaStreamingBitrate) =
-        jellyfinDelegate.setMaxStreamingBitrate(viewModelScope, bitrate)
+    fun cycleJellyfinStreamingQuality(direction: Int) =
+        jellyfinDelegate.cycleStreamingQuality(viewModelScope, direction)
+    fun setJellyfinStreamingQuality(quality: com.nendo.argosy.data.preferences.MediaStreamingQuality) =
+        jellyfinDelegate.setStreamingQuality(viewModelScope, quality)
     fun cycleJellyfinAudioLanguage(direction: Int) =
         jellyfinDelegate.cycleAudioLanguage(viewModelScope, direction)
     fun setJellyfinAudioLanguage(language: com.nendo.argosy.data.preferences.MediaAudioLanguage) =

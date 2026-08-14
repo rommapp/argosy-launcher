@@ -25,7 +25,7 @@ import com.nendo.argosy.data.preferences.BoxArtOuterEffectThickness
 import com.nendo.argosy.data.preferences.GlowColorMode
 import com.nendo.argosy.data.preferences.GridDensity
 import com.nendo.argosy.data.preferences.MediaDownloadQuality
-import com.nendo.argosy.data.preferences.MediaStreamingBitrate
+import com.nendo.argosy.data.preferences.MediaStreamingQuality
 import com.nendo.argosy.data.preferences.MediaAudioLanguage
 import com.nendo.argosy.data.preferences.MediaSubtitleLanguage
 import com.nendo.argosy.data.preferences.MediaSubtitleMode
@@ -1089,7 +1089,7 @@ data class JellyfinState(
     val signInError: String? = null,
     val showSignOutConfirm: Boolean = false,
     val downloadQuality: MediaDownloadQuality = MediaDownloadQuality.ORIGINAL,
-    val maxStreamingBitrate: MediaStreamingBitrate = MediaStreamingBitrate.AUTO,
+    val streamingQuality: MediaStreamingQuality = MediaStreamingQuality.AUTO,
     val audioLanguage: MediaAudioLanguage = MediaAudioLanguage.ENGLISH,
     val subtitleMode: MediaSubtitleMode = MediaSubtitleMode.PREFERRED,
     val subtitleLanguage: MediaSubtitleLanguage = MediaSubtitleLanguage.ENGLISH,

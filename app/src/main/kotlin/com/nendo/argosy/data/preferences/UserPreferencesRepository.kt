@@ -218,7 +218,7 @@ class UserPreferencesRepository @Inject constructor(
             jellyfinUserId = jellyfin.userId,
             jellyfinUserName = jellyfin.userName,
             mediaDownloadQuality = jellyfin.downloadQuality,
-            mediaMaxStreamingBitrate = jellyfin.maxStreamingBitrate,
+            mediaStreamingQuality = jellyfin.streamingQuality,
             mediaAudioLanguage = jellyfin.audioLanguage,
             mediaSubtitleMode = jellyfin.subtitleMode,
             mediaSubtitleLanguage = jellyfin.subtitleLanguage,
@@ -425,8 +425,8 @@ class UserPreferencesRepository @Inject constructor(
     suspend fun clearJellyfinCredentials() = jellyfinPrefs.clearCredentials()
     suspend fun setMediaDownloadQuality(quality: MediaDownloadQuality) =
         jellyfinPrefs.setDownloadQuality(quality)
-    suspend fun setMediaMaxStreamingBitrate(bitrate: MediaStreamingBitrate) =
-        jellyfinPrefs.setMaxStreamingBitrate(bitrate)
+    suspend fun setMediaStreamingQuality(quality: MediaStreamingQuality) =
+        jellyfinPrefs.setStreamingQuality(quality)
     suspend fun setMediaAudioLanguage(language: MediaAudioLanguage) =
         jellyfinPrefs.setAudioLanguage(language)
     suspend fun setMediaSubtitleMode(mode: MediaSubtitleMode) = jellyfinPrefs.setSubtitleMode(mode)
@@ -828,7 +828,7 @@ data class UserPreferences(
     val jellyfinUserId: String? = null,
     val jellyfinUserName: String? = null,
     val mediaDownloadQuality: MediaDownloadQuality = MediaDownloadQuality.ORIGINAL,
-    val mediaMaxStreamingBitrate: MediaStreamingBitrate = MediaStreamingBitrate.AUTO,
+    val mediaStreamingQuality: MediaStreamingQuality = MediaStreamingQuality.AUTO,
     val mediaAudioLanguage: MediaAudioLanguage = MediaAudioLanguage.ENGLISH,
     val mediaSubtitleMode: MediaSubtitleMode = MediaSubtitleMode.PREFERRED,
     val mediaSubtitleLanguage: MediaSubtitleLanguage = MediaSubtitleLanguage.ENGLISH,

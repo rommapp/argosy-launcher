@@ -37,9 +37,15 @@ private const val SUBTITLE_FORMAT_VTT = "vtt"
  *
  * For a stream, the answer is thrown away when that playback ends. The server decides direct play
  * against a device profile built from this device's own decoders, and that decision depends on the
- * current network, the user's bitrate ceiling and the transcode sessions already running - none of
+ * current network, the user's quality tier and the transcode sessions already running - none of
  * which hold still between one playback and the next. The addresses it returns also expire with the
  * transcode session behind them, so a cached one plays for a while and then stops mid-film.
+ *
+ * The tier reaches the server as a height ceiling and a bitrate ceiling on the profile rather than
+ * as an instruction to transcode. A title already inside both ceilings therefore satisfies the
+ * profile as it stands and is direct-played: there is no quality to gain from re-encoding a picture
+ * that is already smaller than the limit, and asking for one would cost the server an encoder and
+ * the picture a generation.
  */
 class PlaybackNegotiator @Inject constructor(
     private val apiClient: JellyfinApiClient,
@@ -72,9 +78,11 @@ class PlaybackNegotiator @Inject constructor(
         val userId = apiClient.currentUserId()
             ?: return@withContext PlaybackNegotiation.Failed("Not signed in to Jellyfin")
 
-        val bitrateKbps = prefs.maxStreamingBitrate.kbps
+        val tier = prefs.streamingQuality
+        val bitrateKbps = tier.maxBitrateKbps
         val profile = profileBuilder.build(
             maxStreamingBitrateKbps = bitrateKbps,
+            maxHeight = tier.maxHeight,
             burnInImageSubtitles = burnInImageSubtitles
         )
 

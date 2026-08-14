@@ -10,6 +10,14 @@ private const val TAG = "JellyfinDeviceProfileBuilder"
 private const val KBPS_TO_BPS = 1000
 private const val DEFAULT_MAX_STATIC_BITRATE_BPS = 100_000_000
 private const val TRANSCODE_MIN_SEGMENTS = 1
+private const val TRANSCODE_TARGET_VIDEO_CODEC = "h264"
+private const val TRANSCODE_TARGET_AUDIO_CODEC = "aac"
+
+/**
+ * Codecs whose decoder ceiling is worth declaring. These two carry the libraries that reach a level
+ * the hardware refuses; the rest are bounded by the containers they arrive in.
+ */
+private val DECODER_CEILING_CODECS = listOf("h264", "hevc")
 
 /**
  * Containers this device can demux, which is a separate question from what it can decode.
@@ -81,8 +89,10 @@ private val IMAGE_SUBTITLE_FORMATS = listOf("pgssub", "dvdsub", "dvbsub")
 @Singleton
 class JellyfinDeviceProfileBuilder @Inject constructor() {
 
+    @Suppress("LongParameterList")
     fun build(
         maxStreamingBitrateKbps: Int? = null,
+        maxHeight: Int? = null,
         burnInImageSubtitles: Boolean = false,
         maxAudioChannels: Int = DEFAULT_MAX_AUDIO_CHANNELS
     ): JellyfinDeviceProfile {
@@ -97,7 +107,7 @@ class JellyfinDeviceProfileBuilder @Inject constructor() {
             maxStaticBitrate = DEFAULT_MAX_STATIC_BITRATE_BPS,
             directPlayProfiles = buildDirectPlayProfiles(videoCodecs, audioCodecs),
             transcodingProfiles = buildTranscodingProfiles(maxAudioChannels),
-            codecProfiles = buildCodecProfiles(decoders),
+            codecProfiles = buildCodecProfiles(decoders, maxHeight),
             subtitleProfiles = buildSubtitleProfiles(burnInImageSubtitles)
         )
     }
@@ -135,8 +145,8 @@ class JellyfinDeviceProfileBuilder @Inject constructor() {
             JellyfinTranscodingProfile(
                 container = "ts",
                 type = PROFILE_TYPE_VIDEO,
-                videoCodec = "h264",
-                audioCodec = "aac",
+                videoCodec = TRANSCODE_TARGET_VIDEO_CODEC,
+                audioCodec = TRANSCODE_TARGET_AUDIO_CODEC,
                 protocol = PROFILE_PROTOCOL_HLS,
                 context = PROFILE_CONTEXT_STREAMING,
                 maxAudioChannels = maxAudioChannels.toString(),
@@ -146,8 +156,8 @@ class JellyfinDeviceProfileBuilder @Inject constructor() {
             JellyfinTranscodingProfile(
                 container = "mp4",
                 type = PROFILE_TYPE_VIDEO,
-                videoCodec = "h264",
-                audioCodec = "aac",
+                videoCodec = TRANSCODE_TARGET_VIDEO_CODEC,
+                audioCodec = TRANSCODE_TARGET_AUDIO_CODEC,
                 protocol = PROFILE_PROTOCOL_HTTP,
                 context = PROFILE_CONTEXT_STATIC,
                 maxAudioChannels = maxAudioChannels.toString()
@@ -165,47 +175,54 @@ class JellyfinDeviceProfileBuilder @Inject constructor() {
      * Ceilings within a codec the device does claim. A decoder that lists h264 still refuses a
      * stream above the level it was built for, and the server can only avoid handing one over if it
      * is told the number.
+     *
+     * [maxHeight] is the user's own ceiling and rides on the same conditions, which is the only
+     * place a resolution limit reaches the server: it is what turns a picture too tall into a
+     * transcode and then sizes that transcode's output. It applies to every codec the device
+     * offers, not just the transcode target - a limit written against h264 alone leaves an hevc
+     * copy of the same film direct-playing at its full height.
      */
-    private fun buildCodecProfiles(decoders: DecoderSupport): List<JellyfinCodecProfile> {
-        val profiles = mutableListOf<JellyfinCodecProfile>()
-        decoders.maxVideoSize["h264"]?.let { size ->
-            profiles += JellyfinCodecProfile(
-                type = PROFILE_TYPE_VIDEO,
-                codec = "h264",
-                conditions = listOf(
-                    JellyfinProfileCondition(
-                        condition = CONDITION_LESS_THAN_EQUAL,
-                        property = "Width",
-                        value = size.width.toString()
-                    ),
-                    JellyfinProfileCondition(
-                        condition = CONDITION_LESS_THAN_EQUAL,
-                        property = "Height",
-                        value = size.height.toString()
-                    )
-                )
-            )
+    private fun buildCodecProfiles(
+        decoders: DecoderSupport,
+        maxHeight: Int?
+    ): List<JellyfinCodecProfile> {
+        val codecs = if (maxHeight == null) {
+            DECODER_CEILING_CODECS.toSet()
+        } else {
+            decoders.videoCodecs + TRANSCODE_TARGET_VIDEO_CODEC
         }
-        decoders.maxVideoSize["hevc"]?.let { size ->
-            profiles += JellyfinCodecProfile(
-                type = PROFILE_TYPE_VIDEO,
-                codec = "hevc",
-                conditions = listOf(
-                    JellyfinProfileCondition(
-                        condition = CONDITION_LESS_THAN_EQUAL,
-                        property = "Width",
-                        value = size.width.toString()
-                    ),
-                    JellyfinProfileCondition(
-                        condition = CONDITION_LESS_THAN_EQUAL,
-                        property = "Height",
-                        value = size.height.toString()
-                    )
+        return codecs.mapNotNull { codec ->
+            val decoderMax = decoders.maxVideoSize[codec]?.takeIf { codec in DECODER_CEILING_CODECS }
+            val conditions = videoSizeConditions(decoderMax, maxHeight)
+            if (conditions.isEmpty()) {
+                null
+            } else {
+                JellyfinCodecProfile(
+                    type = PROFILE_TYPE_VIDEO,
+                    codec = codec,
+                    conditions = conditions
                 )
-            )
+            }
         }
-        return profiles
     }
+
+    private fun videoSizeConditions(
+        decoderMax: VideoSize?,
+        maxHeight: Int?
+    ): List<JellyfinProfileCondition> {
+        val height = listOfNotNull(decoderMax?.height, maxHeight).minOrNull()
+        return buildList {
+            decoderMax?.let { add(sizeCondition("Width", it.width)) }
+            height?.let { add(sizeCondition("Height", it)) }
+        }
+    }
+
+    private fun sizeCondition(property: String, value: Int): JellyfinProfileCondition =
+        JellyfinProfileCondition(
+            condition = CONDITION_LESS_THAN_EQUAL,
+            property = property,
+            value = value.toString()
+        )
 
     /**
      * Text subtitles are delivered as-is and drawn by the player. Image subtitles have no such path:

@@ -4,7 +4,7 @@ import com.nendo.argosy.data.media.MediaDirectoryManager
 import com.nendo.argosy.data.repository.MediaRepository
 import com.nendo.argosy.data.preferences.MediaAudioLanguage
 import com.nendo.argosy.data.preferences.MediaDownloadQuality
-import com.nendo.argosy.data.preferences.MediaStreamingBitrate
+import com.nendo.argosy.data.preferences.MediaStreamingQuality
 import com.nendo.argosy.data.preferences.MediaSubtitleLanguage
 import com.nendo.argosy.data.preferences.MediaSubtitleMode
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
@@ -318,16 +318,16 @@ class JellyfinSettingsDelegate @Inject constructor(
         }
     }
 
-    fun cycleMaxStreamingBitrate(scope: CoroutineScope, direction: Int) {
-        val entries = MediaStreamingBitrate.entries
-        val next = entries[(entries.indexOf(_state.value.maxStreamingBitrate) + direction).mod(entries.size)]
-        setMaxStreamingBitrate(scope, next)
+    fun cycleStreamingQuality(scope: CoroutineScope, direction: Int) {
+        val entries = MediaStreamingQuality.entries
+        val next = entries[(entries.indexOf(_state.value.streamingQuality) + direction).mod(entries.size)]
+        setStreamingQuality(scope, next)
     }
 
-    fun setMaxStreamingBitrate(scope: CoroutineScope, bitrate: MediaStreamingBitrate) {
+    fun setStreamingQuality(scope: CoroutineScope, quality: MediaStreamingQuality) {
         scope.launch {
-            preferencesRepository.setMediaMaxStreamingBitrate(bitrate)
-            _state.update { it.copy(maxStreamingBitrate = bitrate) }
+            preferencesRepository.setMediaStreamingQuality(quality)
+            _state.update { it.copy(streamingQuality = quality) }
         }
     }
 

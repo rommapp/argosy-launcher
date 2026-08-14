@@ -22,7 +22,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import com.nendo.argosy.data.preferences.MediaAudioLanguage
 import com.nendo.argosy.data.preferences.MediaDownloadQuality
-import com.nendo.argosy.data.preferences.MediaStreamingBitrate
+import com.nendo.argosy.data.preferences.MediaStreamingQuality
 import com.nendo.argosy.data.preferences.MediaSubtitleLanguage
 import com.nendo.argosy.data.preferences.MediaSubtitleMode
 import com.nendo.argosy.ui.components.ActionPreference
@@ -93,7 +93,7 @@ internal sealed class JellyfinItem(
         { it.showPasswordFallback }
     )
 
-    data object StreamingBitrate : JellyfinItem("jellyfinBitrate", "playback", { it.hasServer })
+    data object StreamingQuality : JellyfinItem("jellyfinStreamingQuality", "playback", { it.hasServer })
     data object AudioLanguage : JellyfinItem("jellyfinAudioLanguage", "playback", { it.hasServer })
     data object Subtitles : JellyfinItem("jellyfinSubtitles", "playback", { it.hasServer })
     data object SubtitleLanguage : JellyfinItem(
@@ -116,7 +116,7 @@ internal sealed class JellyfinItem(
                 Header("jellyfinServerHeader", "server", "SERVER"),
                 MediaServer, Account, QuickConnectCode, SignInError, PasswordSignIn,
                 Header("jellyfinPlaybackHeader", "playback", "PLAYBACK", { it.hasServer }),
-                StreamingBitrate, AudioLanguage, Subtitles, SubtitleLanguage, BurnInSubtitles,
+                StreamingQuality, AudioLanguage, Subtitles, SubtitleLanguage, BurnInSubtitles,
                 Header("jellyfinDownloadsHeader", "downloads", "DOWNLOADS", { it.hasServer }),
                 DownloadQuality, MediaLocation,
                 Header("jellyfinPrivacyHeader", "privacy", "PRIVACY", { it.hasServer }),
@@ -172,6 +172,22 @@ private fun subtitleModeSubtitle(mode: MediaSubtitleMode): String = when (mode) 
     MediaSubtitleMode.FORCED_ONLY -> "Only tracks marked forced"
     MediaSubtitleMode.PREFERRED -> "Pick a track in your preferred language"
 }
+
+private fun streamingQualitySubtitle(quality: MediaStreamingQuality): String =
+    if (quality == MediaStreamingQuality.AUTO) {
+        "Plays every title as it is, which costs the server nothing"
+    } else {
+        "Titles larger than this are transcoded by the server as they play. " +
+            "Anything already smaller plays as it is"
+    }
+
+private fun downloadQualitySubtitle(quality: MediaDownloadQuality): String =
+    if (quality == MediaDownloadQuality.ORIGINAL) {
+        "Downloads the file as it sits on the server"
+    } else {
+        "Titles larger than this are transcoded before the download starts. " +
+            "Anything already smaller downloads as it is"
+    }
 
 @Composable
 fun JellyfinSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
@@ -292,15 +308,15 @@ private fun JellyfinContent(uiState: SettingsUiState, viewModel: SettingsViewMod
                 onClick = { viewModel.showJellyfinLoginForm() }
             )
 
-            JellyfinItem.StreamingBitrate -> CyclePreference(
-                title = "Max Streaming Quality",
-                value = jellyfin.maxStreamingBitrate.displayName,
-                subtitle = "Ceiling the server transcodes down to",
+            JellyfinItem.StreamingQuality -> CyclePreference(
+                title = "Streaming Quality",
+                value = jellyfin.streamingQuality.displayName,
+                subtitle = streamingQualitySubtitle(jellyfin.streamingQuality),
                 isFocused = isFocused(item),
-                onClick = { viewModel.cycleJellyfinStreamingBitrate(1) },
-                onPrev = { viewModel.cycleJellyfinStreamingBitrate(-1) },
-                options = remember { MediaStreamingBitrate.entries.map { it.displayName } },
-                onSelect = { viewModel.setJellyfinStreamingBitrate(MediaStreamingBitrate.entries[it]) },
+                onClick = { viewModel.cycleJellyfinStreamingQuality(1) },
+                onPrev = { viewModel.cycleJellyfinStreamingQuality(-1) },
+                options = remember { MediaStreamingQuality.entries.map { it.displayName } },
+                onSelect = { viewModel.setJellyfinStreamingQuality(MediaStreamingQuality.entries[it]) },
                 pickerRequestToken = if (uiState.enumPickerKey == item.key) uiState.enumPickerToken else 0
             )
 
@@ -356,11 +372,7 @@ private fun JellyfinContent(uiState: SettingsUiState, viewModel: SettingsViewMod
             JellyfinItem.DownloadQuality -> CyclePreference(
                 title = "Download Quality",
                 value = jellyfin.downloadQuality.displayName,
-                subtitle = if (jellyfin.downloadQuality == MediaDownloadQuality.ORIGINAL) {
-                    "Downloads the file as it sits on the server"
-                } else {
-                    "The server prepares a smaller copy before the download starts"
-                },
+                subtitle = downloadQualitySubtitle(jellyfin.downloadQuality),
                 isFocused = isFocused(item),
                 onClick = { viewModel.cycleJellyfinDownloadQuality(1) },
                 onPrev = { viewModel.cycleJellyfinDownloadQuality(-1) },

@@ -648,7 +648,7 @@ internal fun routeLoadSettings(vm: SettingsViewModel) {
             showSignOutConfirm = jellyfinInFlight.showSignOutConfirm,
             pendingMediaRelocation = jellyfinInFlight.pendingMediaRelocation,
             downloadQuality = prefs.mediaDownloadQuality,
-            maxStreamingBitrate = prefs.mediaMaxStreamingBitrate,
+            streamingQuality = prefs.mediaStreamingQuality,
             audioLanguage = prefs.mediaAudioLanguage,
             subtitleMode = prefs.mediaSubtitleMode,
             subtitleLanguage = prefs.mediaSubtitleLanguage,

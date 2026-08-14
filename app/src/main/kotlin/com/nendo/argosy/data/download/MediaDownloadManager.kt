@@ -14,6 +14,7 @@ import com.nendo.argosy.data.local.entity.MediaItemType
 import com.nendo.argosy.data.media.MediaDirectoryManager
 import com.nendo.argosy.data.preferences.MediaDownloadQuality
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
+import com.nendo.argosy.data.preferences.alreadySatisfiedBy
 import com.nendo.argosy.data.remote.jellyfin.JellyfinApiClient
 import com.nendo.argosy.data.remote.jellyfin.JellyfinDeviceProfile
 import com.nendo.argosy.data.remote.jellyfin.JellyfinDeviceProfileBuilder
@@ -61,6 +62,7 @@ private const val DEFAULT_CONTAINER = "mp4"
 private const val TRANSCODE_CONTAINER = "mp4"
 private const val DEFAULT_LIBRARY_DIR = "Library"
 private const val HLS_SUB_PROTOCOL = "hls"
+private const val STREAM_TYPE_VIDEO = "Video"
 private const val PARTIAL_SUFFIX = ".part"
 private const val DISPLACED_SUFFIX = ".replaced"
 
@@ -761,6 +763,11 @@ class MediaDownloadManager @Inject constructor(
      * server's own - reconstructing one by hand invents parameter names the server matches literally.
      * A server that answers a transcode request with the source file anyway is taken at its word and
      * the download is recorded as the original, rather than refused.
+     *
+     * A source already inside the requested tier is fetched as the original instead. Transcoding it
+     * cannot raise the resolution the file never had, so the encode would spend server time and a
+     * generation of picture quality to arrive back where it started. What lands on disk is recorded
+     * as the original, because that is what it is.
      */
     private suspend fun negotiate(item: MediaItemEntity, quality: MediaDownloadQuality): MediaFetchPlan? {
         val userId = apiClient.currentUserId() ?: mediaRepository.currentUserId() ?: return null
@@ -787,6 +794,9 @@ class MediaDownloadManager @Inject constructor(
             is JellyfinResult.Error -> throw IllegalStateException(result.message)
         }
         val source = response.mediaSources.firstOrNull() ?: return null
+        if (wantsTranscode && quality.alreadySatisfiedBy(source.videoHeight, source.bitrateKbps)) {
+            return originalPlan(source, item)
+        }
         val transcodingUrl = source.transcodingUrl
             ?.takeIf { wantsTranscode && !source.transcodingSubProtocol.equals(HLS_SUB_PROTOCOL, true) }
 
@@ -801,6 +811,22 @@ class MediaDownloadManager @Inject constructor(
         }
         return transcodePlan(source, transcodingUrl, quality, item, response.playSessionId)
     }
+
+    /**
+     * How tall the source picture is, from the video track the server probed. A source carrying no
+     * video track, or one the server never measured, reports nothing rather than a zero, so the tier
+     * comparison treats it as unknown instead of as tiny.
+     */
+    private val JellyfinMediaSource.videoHeight: Int?
+        get() = mediaStreams.firstOrNull { it.type == STREAM_TYPE_VIDEO }?.height
+
+    /**
+     * The whole-file bitrate, which is what a tier ceiling is measured against. The video track's own
+     * rate stands in when the server reported no total.
+     */
+    private val JellyfinMediaSource.bitrateKbps: Int?
+        get() = (bitrate ?: mediaStreams.firstOrNull { it.type == STREAM_TYPE_VIDEO }?.bitRate)
+            ?.let { (it / KBPS_TO_BPS).toInt() }
 
     private fun originalPlan(source: JellyfinMediaSource, item: MediaItemEntity): MediaFetchPlan =
         MediaFetchPlan(

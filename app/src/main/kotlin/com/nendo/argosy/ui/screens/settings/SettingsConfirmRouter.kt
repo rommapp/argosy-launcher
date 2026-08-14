@@ -397,7 +397,7 @@ private fun routeJellyfinConfirm(vm: SettingsViewModel, state: SettingsUiState):
             else -> vm.requestJellyfinSignIn()
         }
         JellyfinItem.PasswordSignIn -> vm.showJellyfinLoginForm()
-        JellyfinItem.StreamingBitrate, JellyfinItem.AudioLanguage, JellyfinItem.Subtitles,
+        JellyfinItem.StreamingQuality, JellyfinItem.AudioLanguage, JellyfinItem.Subtitles,
         JellyfinItem.SubtitleLanguage, JellyfinItem.DownloadQuality -> {
             vm.requestEnumPicker(item.key)
             return InputResult.handled(SoundType.OPEN_MODAL)

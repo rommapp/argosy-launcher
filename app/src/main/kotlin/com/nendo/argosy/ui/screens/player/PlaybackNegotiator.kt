@@ -101,6 +101,7 @@ class PlaybackNegotiator @Inject constructor(
             is JellyfinResult.Success -> {
                 val source = pickSource(result.data.mediaSources, mediaSourceId)
                     ?: return@withContext PlaybackNegotiation.Failed("The server offered no playable version")
+                mediaRepository.recordSourceFacts(itemId, source)
                 resolve(
                     itemId = itemId,
                     source = source,

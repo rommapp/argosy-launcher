@@ -22,6 +22,7 @@ import com.nendo.argosy.data.local.dao.DownloadQueueDao
 import com.nendo.argosy.data.local.dao.MediaDownloadQueueDao
 import com.nendo.argosy.data.local.dao.MediaItemDao
 import com.nendo.argosy.data.local.dao.MediaLibraryDao
+import com.nendo.argosy.data.local.dao.MediaSourceDao
 import com.nendo.argosy.data.local.dao.MediaStreamDao
 import com.nendo.argosy.data.local.dao.MediaUserDataDao
 import com.nendo.argosy.data.local.dao.EmulatorConfigDao
@@ -88,6 +89,7 @@ import com.nendo.argosy.data.local.entity.GameFileEntity
 import com.nendo.argosy.data.local.entity.MediaDownloadQueueEntity
 import com.nendo.argosy.data.local.entity.MediaItemEntity
 import com.nendo.argosy.data.local.entity.MediaLibraryEntity
+import com.nendo.argosy.data.local.entity.MediaSourceEntity
 import com.nendo.argosy.data.local.entity.MediaStreamEntity
 import com.nendo.argosy.data.local.entity.MediaUserDataEntity
 import com.nendo.argosy.data.local.entity.GameUserOverlayEntity
@@ -179,10 +181,11 @@ import com.nendo.argosy.data.local.entity.SteamLicenseEntity
         MediaLibraryEntity::class,
         MediaItemEntity::class,
         MediaStreamEntity::class,
+        MediaSourceEntity::class,
         MediaUserDataEntity::class,
         MediaDownloadQueueEntity::class
     ],
-    version = 170,
+    version = 171,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -244,6 +247,7 @@ abstract class ALauncherDatabase : RoomDatabase() {
     abstract fun mediaLibraryDao(): MediaLibraryDao
     abstract fun mediaItemDao(): MediaItemDao
     abstract fun mediaStreamDao(): MediaStreamDao
+    abstract fun mediaSourceDao(): MediaSourceDao
     abstract fun mediaUserDataDao(): MediaUserDataDao
     abstract fun mediaDownloadQueueDao(): MediaDownloadQueueDao
 

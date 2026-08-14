@@ -1,6 +1,7 @@
 package com.nendo.argosy.ui.screens.media.delegates
 
 import com.nendo.argosy.data.download.MediaDownloadManager
+import com.nendo.argosy.data.download.MediaSizeEstimate
 import com.nendo.argosy.data.download.isInFlight
 import com.nendo.argosy.data.preferences.MediaDownloadQuality
 import com.nendo.argosy.data.repository.MediaRepository
@@ -242,18 +243,14 @@ class MediaDownloadDelegate @Inject constructor(
     ): MediaDownloadPrompt {
         val available = mediaDownloadManager.availableBytes()
         val default = mediaDownloadManager.defaultQuality()
+        val estimates = mediaDownloadManager.estimateBatch(targets)
         val options = buildList {
             MediaDownloadQuality.entries.forEach { quality ->
-                val estimate = mediaDownloadManager.estimateBytes(totalRuntimeTicks, quality)
                 add(
                     MediaDownloadOption(
                         quality = quality,
                         label = quality.displayName,
-                        supporting = when {
-                            quality == MediaDownloadQuality.ORIGINAL -> "Source file, size varies"
-                            estimate == null -> "Server transcode"
-                            else -> "About ${formatGigabytes(estimate)}"
-                        }
+                        supporting = supportingFor(quality, estimates[quality])
                     )
                 )
             }
@@ -267,9 +264,7 @@ class MediaDownloadDelegate @Inject constructor(
                 )
             }
         }
-        val largest = options.mapNotNull { option ->
-            option.quality?.let { mediaDownloadManager.estimateBytes(totalRuntimeTicks, it) }
-        }.maxOrNull() ?: 0L
+        val largest = estimates.values.maxOfOrNull { it.bytes } ?: 0L
         val warning = if (largest > 0 && largest + STORAGE_HEADROOM_BYTES > available) {
             "Video files are large and this may not fit"
         } else {
@@ -285,6 +280,21 @@ class MediaDownloadDelegate @Inject constructor(
             totalRuntimeTicks = totalRuntimeTicks,
             warning = warning
         )
+    }
+
+    /**
+     * What each quality says about its size. A tier the source already fits inside is named as the
+     * source file rather than as a transcode, because that is what the server will hand over and its
+     * size is the one the server reported instead of one computed from the tier's bitrate.
+     */
+    private fun supportingFor(
+        quality: MediaDownloadQuality,
+        estimate: MediaSizeEstimate?
+    ): String = when {
+        estimate == null && quality == MediaDownloadQuality.ORIGINAL -> "Source file, size varies"
+        estimate == null -> "Server transcode"
+        estimate.isSourceSize -> "Source file - ${formatGigabytes(estimate.bytes)}"
+        else -> "About ${formatGigabytes(estimate.bytes)}"
     }
 
     private fun subtitleFor(targetCount: Int, availableBytes: Long): String {

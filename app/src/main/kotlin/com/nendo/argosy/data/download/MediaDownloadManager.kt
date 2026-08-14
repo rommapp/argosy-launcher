@@ -11,6 +11,7 @@ import com.nendo.argosy.data.local.entity.MediaDownloadDbState
 import com.nendo.argosy.data.local.entity.MediaDownloadQueueEntity
 import com.nendo.argosy.data.local.entity.MediaItemEntity
 import com.nendo.argosy.data.local.entity.MediaItemType
+import com.nendo.argosy.data.local.entity.MediaSourceEntity
 import com.nendo.argosy.data.media.MediaDirectoryManager
 import com.nendo.argosy.data.preferences.MediaDownloadQuality
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
@@ -25,6 +26,9 @@ import com.nendo.argosy.data.remote.jellyfin.JellyfinTranscodingProfile
 import com.nendo.argosy.data.remote.jellyfin.PROFILE_CONTEXT_STREAMING
 import com.nendo.argosy.data.remote.jellyfin.PROFILE_PROTOCOL_HTTP
 import com.nendo.argosy.data.remote.jellyfin.PROFILE_TYPE_VIDEO
+import com.nendo.argosy.data.remote.jellyfin.bitrateKbps
+import com.nendo.argosy.data.remote.jellyfin.resolvedContainer
+import com.nendo.argosy.data.remote.jellyfin.videoHeight
 import com.nendo.argosy.data.repository.MediaRepository
 import com.nendo.argosy.data.storage.FileAccessLayer
 import com.nendo.argosy.data.storage.StorageAttributionRepository
@@ -62,7 +66,6 @@ private const val DEFAULT_CONTAINER = "mp4"
 private const val TRANSCODE_CONTAINER = "mp4"
 private const val DEFAULT_LIBRARY_DIR = "Library"
 private const val HLS_SUB_PROTOCOL = "hls"
-private const val STREAM_TYPE_VIDEO = "Video"
 private const val PARTIAL_SUFFIX = ".part"
 private const val DISPLACED_SUFFIX = ".replaced"
 
@@ -106,6 +109,15 @@ data class MediaDownloadProgress(
 
     val displayTitle: String get() = if (seriesName.isNullOrBlank()) itemName else "$seriesName - $itemName"
 }
+
+/**
+ * A batch's size at one quality. [isSourceSize] marks a figure taken from what the server reported
+ * about the file rather than computed from a tier's bitrate, so a caller can say which it is showing.
+ */
+data class MediaSizeEstimate(
+    val bytes: Long,
+    val isSourceSize: Boolean
+)
 
 data class QueuedMediaDownload(
     val itemId: String,
@@ -226,11 +238,57 @@ class MediaDownloadManager @Inject constructor(
      * The size a transcode will occupy, from the bitrate the server is being asked to hit. The
      * original file has no such answer before negotiation, so it reports null rather than a guess.
      */
-    fun estimateBytes(runTimeTicks: Long?, quality: MediaDownloadQuality): Long? {
+    private fun estimateBytes(runTimeTicks: Long?, quality: MediaDownloadQuality): Long? {
         val kbps = quality.maxBitrateKbps ?: return null
         val seconds = (runTimeTicks ?: return null) / MediaRepository.TICKS_PER_SECOND
         if (seconds <= 0) return null
         return (seconds * kbps * KBPS_TO_BPS / BITS_PER_BYTE * TRANSCODE_HEADROOM).toLong()
+    }
+
+    /**
+     * How much disk this batch would take at each quality, leaving out any quality nothing can be
+     * said about. The batch is read once and every quality answered from that reading, because the
+     * quality picker asks about all of them at the same moment.
+     */
+    suspend fun estimateBatch(itemIds: List<String>): Map<MediaDownloadQuality, MediaSizeEstimate> {
+        if (itemIds.isEmpty()) return emptyMap()
+        val batch = itemIds.map { itemId ->
+            KnownItem(
+                runTimeTicks = mediaRepository.getItem(itemId)?.runTimeTicks,
+                facts = mediaRepository.knownSourceFacts(itemId)
+            )
+        }
+        return MediaDownloadQuality.entries.mapNotNull { quality ->
+            estimateFor(batch, quality)?.let { quality to it }
+        }.toMap()
+    }
+
+    /**
+     * A tier the source already fits inside is answered with the source's own recorded size, because
+     * that tier fetches the original file rather than an encode of it - estimating those bytes from
+     * the tier's bitrate is what produced a figure wrong in either direction. A title nothing has
+     * negotiated yet falls back to the bitrate estimate exactly as before, and the original file with
+     * no recorded size still has no figure to offer.
+     */
+    private fun estimateFor(
+        batch: List<KnownItem>,
+        quality: MediaDownloadQuality
+    ): MediaSizeEstimate? {
+        var total = 0L
+        var wholeBatchFromSource = true
+        for (item in batch) {
+            val facts = item.facts
+            val sourceSize = facts?.sizeBytes?.takeIf { it > 0 }
+            val fetchesSource = quality == MediaDownloadQuality.ORIGINAL ||
+                (facts != null && quality.alreadySatisfiedBy(facts.videoHeight, facts.bitrateKbps))
+            if (fetchesSource && sourceSize != null) {
+                total += sourceSize
+                continue
+            }
+            wholeBatchFromSource = false
+            total += estimateBytes(item.runTimeTicks, quality) ?: return null
+        }
+        return MediaSizeEstimate(bytes = total, isSourceSize = wholeBatchFromSource)
     }
 
     suspend fun availableBytes(): Long = withContext(Dispatchers.IO) {
@@ -384,7 +442,7 @@ class MediaDownloadManager @Inject constructor(
         if (!item.isDownloadable) return EnqueueOutcome.UNAVAILABLE
         if (isInFlight(itemId)) return EnqueueOutcome.ALREADY_QUEUED
         if (_downloadQueue.value.any { it.itemId == itemId }) return EnqueueOutcome.ALREADY_QUEUED
-        if (item.localPath != null && item.downloadQuality == quality.name) {
+        if (item.localPath != null && satisfiedByExistingCopy(item, quality)) {
             return EnqueueOutcome.ALREADY_DOWNLOADED
         }
 
@@ -415,6 +473,26 @@ class MediaDownloadManager @Inject constructor(
             posterUrl = mediaRepository.posterUrl(itemId, item.primaryImageTag)
         )
         return EnqueueOutcome.ACCEPTED
+    }
+
+    /**
+     * Whether the copy already on this device is the one this request would produce.
+     *
+     * A stored original also answers a request for a tier, but only when the source the server
+     * described genuinely sits inside that tier: negotiation would bypass the encoder and hand back
+     * the same file, so fetching it again would spend the bandwidth to arrive at identical bytes.
+     * A source above the tier is a real request for a smaller copy and still downloads, and a source
+     * nothing has negotiated yet is unknown rather than small, so it downloads too - which is exactly
+     * what happens today.
+     */
+    private suspend fun satisfiedByExistingCopy(
+        item: MediaItemEntity,
+        quality: MediaDownloadQuality
+    ): Boolean {
+        if (item.downloadQuality == quality.name) return true
+        if (item.downloadQuality != MediaDownloadQuality.ORIGINAL.name) return false
+        val facts = mediaRepository.knownSourceFacts(item.itemId) ?: return false
+        return quality.alreadySatisfiedBy(facts.videoHeight, facts.bitrateKbps)
     }
 
     /**
@@ -794,6 +872,7 @@ class MediaDownloadManager @Inject constructor(
             is JellyfinResult.Error -> throw IllegalStateException(result.message)
         }
         val source = response.mediaSources.firstOrNull() ?: return null
+        mediaRepository.recordSourceFacts(item.itemId, source)
         if (wantsTranscode && quality.alreadySatisfiedBy(source.videoHeight, source.bitrateKbps)) {
             return originalPlan(source, item)
         }
@@ -812,29 +891,13 @@ class MediaDownloadManager @Inject constructor(
         return transcodePlan(source, transcodingUrl, quality, item, response.playSessionId)
     }
 
-    /**
-     * How tall the source picture is, from the video track the server probed. A source carrying no
-     * video track, or one the server never measured, reports nothing rather than a zero, so the tier
-     * comparison treats it as unknown instead of as tiny.
-     */
-    private val JellyfinMediaSource.videoHeight: Int?
-        get() = mediaStreams.firstOrNull { it.type == STREAM_TYPE_VIDEO }?.height
-
-    /**
-     * The whole-file bitrate, which is what a tier ceiling is measured against. The video track's own
-     * rate stands in when the server reported no total.
-     */
-    private val JellyfinMediaSource.bitrateKbps: Int?
-        get() = (bitrate ?: mediaStreams.firstOrNull { it.type == STREAM_TYPE_VIDEO }?.bitRate)
-            ?.let { (it / KBPS_TO_BPS).toInt() }
-
     private fun originalPlan(source: JellyfinMediaSource, item: MediaItemEntity): MediaFetchPlan =
         MediaFetchPlan(
             quality = MediaDownloadQuality.ORIGINAL,
             mediaSourceId = source.id,
             playSessionId = null,
             params = apiClient.buildOriginalFileParams(source.id),
-            container = source.container?.takeIf { it.isNotBlank() }?.substringBefore(',')
+            container = source.resolvedContainer
                 ?: item.container?.substringBefore(',') ?: DEFAULT_CONTAINER,
             expectedBytes = source.size ?: 0L,
             supportsResume = true,
@@ -1068,6 +1131,12 @@ class MediaDownloadManager @Inject constructor(
         }
 
     private enum class EnqueueOutcome { ACCEPTED, ALREADY_QUEUED, ALREADY_DOWNLOADED, UNAVAILABLE }
+
+    /**
+     * One title of a batch, as much as is known before anything is negotiated. [facts] is null for a
+     * title the server has never described, which is unknown rather than small.
+     */
+    private data class KnownItem(val runTimeTicks: Long?, val facts: MediaSourceEntity?)
 
     private enum class RemovalOutcome { REMOVED, UNREACHABLE, ABSENT }
 

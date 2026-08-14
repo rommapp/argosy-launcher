@@ -3,20 +3,25 @@ package com.nendo.argosy.data.repository
 import com.nendo.argosy.data.local.dao.MediaItemDao
 import com.nendo.argosy.data.local.dao.MediaLibraryDao
 import com.nendo.argosy.data.local.dao.MediaDownloadQueueDao
+import com.nendo.argosy.data.local.dao.MediaSourceDao
 import com.nendo.argosy.data.local.dao.MediaStreamDao
 import com.nendo.argosy.data.local.dao.MediaUserDataDao
 import com.nendo.argosy.data.local.entity.MediaCollectionType
 import com.nendo.argosy.data.local.entity.MediaItemEntity
 import com.nendo.argosy.data.local.entity.MediaItemType
 import com.nendo.argosy.data.local.entity.MediaLibraryEntity
+import com.nendo.argosy.data.local.entity.MediaSourceEntity
 import com.nendo.argosy.data.local.entity.MediaStreamEntity
 import com.nendo.argosy.data.local.entity.MediaUserDataEntity
 import com.nendo.argosy.data.preferences.JellyfinPreferencesRepository
 import com.nendo.argosy.data.remote.jellyfin.JellyfinApiClient
 import com.nendo.argosy.data.remote.jellyfin.JellyfinLibrarySyncService
+import com.nendo.argosy.data.remote.jellyfin.JellyfinMediaSource
 import com.nendo.argosy.data.remote.jellyfin.JellyfinResult
 import com.nendo.argosy.data.remote.jellyfin.JellyfinSyncProgress
 import com.nendo.argosy.data.remote.jellyfin.JellyfinSyncResult
+import com.nendo.argosy.data.remote.jellyfin.toSourceEntity
+import com.nendo.argosy.data.remote.jellyfin.toStreamEntities
 import com.nendo.argosy.data.storage.StorageAttributionRepository
 import com.nendo.argosy.data.storage.StorageCategory
 import dagger.Lazy
@@ -60,6 +65,7 @@ class MediaRepository @Inject constructor(
     private val mediaItemDao: MediaItemDao,
     private val mediaUserDataDao: MediaUserDataDao,
     private val mediaStreamDao: MediaStreamDao,
+    private val mediaSourceDao: MediaSourceDao,
     private val mediaDownloadQueueDao: MediaDownloadQueueDao,
     private val librarySyncService: JellyfinLibrarySyncService,
     private val apiClient: JellyfinApiClient,
@@ -198,6 +204,40 @@ class MediaRepository @Inject constructor(
      */
     suspend fun currentUserId(): String? = currentOwner()
 
+    /**
+     * Keeps what one negotiation reported about a playable version and its tracks.
+     *
+     * Every download and every stream already asks the server this, so it is captured where the
+     * answer arrives rather than fetched again: the library sync never asks for `MediaSources`, and a
+     * call whose only purpose is to learn what a call in flight already reported is a call that
+     * should not exist.
+     *
+     * The tracks are replaced rather than merged. A version that came back with fewer tracks than
+     * last time has fewer tracks, and merging would leave the missing ones on offer.
+     */
+    suspend fun recordSourceFacts(itemId: String, source: JellyfinMediaSource) {
+        val owner = currentOwner() ?: return
+        mediaSourceDao.upsert(source.toSourceEntity(owner, itemId))
+        mediaStreamDao.deleteBySource(owner, itemId, source.id)
+        mediaStreamDao.insertAll(source.toStreamEntities(owner, itemId))
+    }
+
+    /**
+     * What is known about this item's largest version, or null when nothing has negotiated it yet.
+     *
+     * Null means unknown, never small - a caller deciding whether a source already fits inside a
+     * quality tier has to treat it as too big to assume otherwise. The largest version answers rather
+     * than an arbitrary one, so an item carrying a small alternate cut never stands in for the copy a
+     * download would actually take.
+     */
+    suspend fun knownSourceFacts(itemId: String): MediaSourceEntity? {
+        val owner = currentOwner() ?: return null
+        return mediaSourceDao.getByItem(owner, itemId)
+            .maxWithOrNull(
+                compareBy<MediaSourceEntity> { it.videoHeight ?: 0 }.thenBy { it.bitrateKbps ?: 0 }
+            )
+    }
+
     suspend fun markDownloaded(itemId: String, localPath: String, quality: String, bytes: Long) {
         val owner = currentOwner() ?: return
         mediaItemDao.markDownloaded(owner, itemId, localPath, quality, bytes, Instant.now())
@@ -247,6 +287,7 @@ class MediaRepository @Inject constructor(
             runCatching { File(path).takeIf { it.exists() }?.delete() }
         }
         mediaDownloadQueueDao.deleteOtherOwners(owner)
+        mediaSourceDao.deleteOtherOwners(owner)
         mediaStreamDao.deleteOtherOwners(owner)
         mediaUserDataDao.deleteOtherOwners(owner)
         mediaItemDao.deleteOtherOwners(owner)

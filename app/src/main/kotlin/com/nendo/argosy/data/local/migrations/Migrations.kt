@@ -3207,3 +3207,32 @@ object Migration_169_170 : Migration(169, 170) {
         )
     }
 }
+
+/**
+ * Adds `media_sources`, the cache of what one PlaybackInfo answer said about a playable version -
+ * its container, its size and its bitrate. Every download and every stream already learned this and
+ * discarded it, which left a re-download unable to tell identical bytes from a different quality.
+ *
+ * No foreign key to `media_items`, matching `media_streams`: a cached answer is keyed on the server
+ * item id and a sync pass that rewrites the item row is not a reason to refuse or drop it.
+ */
+object Migration_170_171 : Migration(170, 171) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            "CREATE TABLE IF NOT EXISTS `media_sources` (" +
+                "`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                "`ownerUserId` TEXT NOT NULL, " +
+                "`itemId` TEXT NOT NULL, " +
+                "`mediaSourceId` TEXT NOT NULL, " +
+                "`container` TEXT, " +
+                "`sizeBytes` INTEGER, " +
+                "`bitrateKbps` INTEGER, " +
+                "`videoHeight` INTEGER)"
+        )
+        db.execSQL(
+            "CREATE UNIQUE INDEX IF NOT EXISTS " +
+                "`index_media_sources_ownerUserId_itemId_mediaSourceId` " +
+                "ON `media_sources` (`ownerUserId`, `itemId`, `mediaSourceId`)"
+        )
+    }
+}

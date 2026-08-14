@@ -2,6 +2,7 @@ package com.nendo.argosy.ui.screens.media.delegates
 
 import com.nendo.argosy.data.download.MediaDownloadManager
 import com.nendo.argosy.data.download.MediaSizeEstimate
+import com.nendo.argosy.data.download.MediaSubtitleOutlook
 import com.nendo.argosy.data.download.isInFlight
 import com.nendo.argosy.data.media.MediaAvailability
 import com.nendo.argosy.data.media.MediaAvailabilityVerifier
@@ -290,8 +291,33 @@ class MediaDownloadDelegate @Inject constructor(
             focusedIndex = options.indexOfFirst { it.quality == default }.coerceAtLeast(0),
             targets = targets,
             totalRuntimeTicks = totalRuntimeTicks,
+            note = subtitleNote(mediaDownloadManager.subtitleOutlook(targets)),
             warning = warning
         )
+    }
+
+    /**
+     * What the download will do with subtitles, said before the choice rather than found out during
+     * playback.
+     *
+     * The two kinds behave differently. Text tracks are saved as files beside the video at any size.
+     * A picture track cannot be: it survives a smaller copy only by being drawn into the video
+     * itself, which is worth doing only for a title that has nothing readable to offer instead, and
+     * only where that has been asked for. A batch nothing has negotiated is told the rule that holds
+     * either way rather than promised subtitles it may not have.
+     */
+    private fun subtitleNote(outlook: MediaSubtitleOutlook): String {
+        val pictureOnly = outlook.hasImageSubtitles && !outlook.hasTextSubtitles
+        return when {
+            !outlook.anythingKnown ->
+                "Text subtitles download with the video, picture subtitles come only with Original"
+            !outlook.hasTextSubtitles && !outlook.hasImageSubtitles -> "No subtitles on this title"
+            !outlook.hasImageSubtitles -> "Subtitles download with the video"
+            pictureOnly && outlook.burnsInImageSubtitles ->
+                "Picture subtitles are drawn into a smaller copy and cannot be turned off"
+            pictureOnly -> "Picture subtitles come only with Original"
+            else -> "Text subtitles download with the video, picture subtitles come only with Original"
+        }
     }
 
     /**

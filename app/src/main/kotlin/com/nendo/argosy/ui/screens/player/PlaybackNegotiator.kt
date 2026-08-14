@@ -1,9 +1,10 @@
 package com.nendo.argosy.ui.screens.player
 
 import android.net.Uri
-import androidx.media3.common.MimeTypes
 import com.nendo.argosy.data.media.MediaAvailability
 import com.nendo.argosy.data.media.MediaAvailabilityVerifier
+import com.nendo.argosy.data.media.MediaSubtitleDelivery
+import com.nendo.argosy.data.media.subtitleDeliveryFor
 import com.nendo.argosy.data.preferences.JellyfinPreferences
 import com.nendo.argosy.data.preferences.JellyfinPreferencesRepository
 import com.nendo.argosy.data.preferences.MediaSubtitleMode
@@ -28,7 +29,6 @@ private const val TAG = "PlaybackNegotiator"
 private const val KBPS_TO_BPS = 1000
 private const val STREAM_TYPE_AUDIO = "Audio"
 private const val STREAM_TYPE_SUBTITLE = "Subtitle"
-private const val SUBTITLE_FORMAT_VTT = "vtt"
 
 /**
  * Turns one item id into one playable address.
@@ -145,14 +145,29 @@ class PlaybackNegotiator @Inject constructor(
      * the handle about to be opened: a file that verified as present and still will not open is
      * treated as unreadable rather than gone, and this playback streams while the row stays put.
      *
-     * The tracks are left empty on purpose: nothing negotiated this file, so what it contains is
-     * whatever the player finds inside it, and that is read from the player once it is open.
+     * The track lists are left empty on purpose: nothing negotiated this file, so what it contains
+     * is whatever the player finds inside it, and that is read from the player once it is open.
+     *
+     * Subtitles stored beside the file are the exception, because the player cannot find those by
+     * itself. A device-sized download carries no subtitle track inside it at all - the encode the
+     * server produced has one video and one audio stream - so its text subtitles were fetched as
+     * their own files and are attached here. Once attached they arrive as text tracks like any the
+     * container held, which is what makes them selectable from the same list.
      */
     private suspend fun downloadedPlayback(itemId: String): NegotiatedPlayback? {
         val item = runCatching { mediaRepository.getItem(itemId) }.getOrNull() ?: return null
-        val file = item.localPath?.let(::File) ?: return null
+        val localPath = item.localPath ?: return null
+        val file = File(localPath)
         if (!file.isFile || file.length() <= 0L) return null
-        Logger.info(TAG, "playing $itemId from disk")
+        val sidecars = availabilityVerifier.downloadedSubtitles(localPath).map { sidecar ->
+            SideloadedSubtitle(
+                streamIndex = sidecar.streamIndex,
+                url = Uri.fromFile(File(sidecar.path)).toString(),
+                mimeType = sidecar.delivery.mimeType,
+                language = sidecar.language
+            )
+        }
+        Logger.info(TAG, "playing $itemId from disk with ${sidecars.size} subtitle files")
         return NegotiatedPlayback(
             itemId = itemId,
             mediaSourceId = itemId,
@@ -166,7 +181,7 @@ class PlaybackNegotiator @Inject constructor(
             subtitleTracks = emptyList(),
             audioStreamIndex = null,
             subtitleStreamIndex = null,
-            sideloadedSubtitles = emptyList(),
+            sideloadedSubtitles = sidecars,
             isLocalFile = true,
             localCopy = MediaAvailability.PRESENT
         )
@@ -342,25 +357,8 @@ class PlaybackNegotiator @Inject constructor(
             ?: textStreams.firstOrNull { it.index == defaultIndex }?.index
     }
 
-    private data class SubtitleDelivery(val format: String, val mimeType: String)
-
-    /**
-     * How a subtitle track is asked for and what the player should parse it as. ASS keeps its own
-     * format rather than being converted, because conversion to WebVTT discards the positioning and
-     * styling that a quarter of this kind of library depends on.
-     */
-    private fun subtitleDelivery(stream: JellyfinMediaStream): SubtitleDelivery? =
-        when (stream.codec?.lowercase()) {
-            "ass", "ssa" -> SubtitleDelivery("ass", MimeTypes.TEXT_SSA)
-            "subrip", "srt" -> SubtitleDelivery("srt", MimeTypes.APPLICATION_SUBRIP)
-            "vtt", "webvtt" -> SubtitleDelivery(SUBTITLE_FORMAT_VTT, MimeTypes.TEXT_VTT)
-            "mov_text", "text", "subtitle" -> SubtitleDelivery(SUBTITLE_FORMAT_VTT, MimeTypes.TEXT_VTT)
-            else -> if (stream.isTextSubtitleStream) {
-                SubtitleDelivery(SUBTITLE_FORMAT_VTT, MimeTypes.TEXT_VTT)
-            } else {
-                null
-            }
-        }
+    private fun subtitleDelivery(stream: JellyfinMediaStream): MediaSubtitleDelivery? =
+        subtitleDeliveryFor(stream.codec, stream.isTextSubtitleStream)
 
     private fun JellyfinMediaStream.toTrack(ordinal: Int, isSubtitle: Boolean): PlayerTrack =
         PlayerTrack(

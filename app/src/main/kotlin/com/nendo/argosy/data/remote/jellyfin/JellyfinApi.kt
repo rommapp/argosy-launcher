@@ -152,6 +152,20 @@ interface JellyfinApi {
         @Path("itemId") itemId: String
     ): Response<JellyfinMediaSegmentsResponse>
 
+    /**
+     * One subtitle track as a file. The start offset is part of the path rather than a query
+     * parameter, and a download always asks from zero because the file it accompanies starts there.
+     */
+    @Streaming
+    @GET("Videos/{itemId}/{mediaSourceId}/Subtitles/{index}/{startPositionTicks}/Stream.{format}")
+    suspend fun downloadSubtitle(
+        @Path("itemId") itemId: String,
+        @Path("mediaSourceId") mediaSourceId: String,
+        @Path("index") index: Int,
+        @Path("startPositionTicks") startPositionTicks: Long,
+        @Path("format") format: String
+    ): Response<ResponseBody>
+
     @Streaming
     @GET("Videos/{itemId}/stream")
     suspend fun downloadVideo(

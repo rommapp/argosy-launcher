@@ -188,8 +188,53 @@ class JellyfinApiClient @Inject constructor(
         return "$baseUrl/Items/$itemId/Images/$imageType$suffix"
     }
 
-    fun buildTrickplayTileUrl(itemId: String, width: Int, index: Int): String =
-        "$baseUrl/Videos/$itemId/Trickplay/$width/$index.jpg"
+    /**
+     * One sheet of scrub thumbnails. [width] is the thumbnail width the server rendered the sheet
+     * at and is not a request to resize: only the widths the item's own trickplay manifest lists
+     * exist on disk, and any other answers 404.
+     */
+    fun buildTrickplayTileUrl(
+        itemId: String,
+        width: Int,
+        index: Int,
+        mediaSourceId: String? = null
+    ): String {
+        val suffix = mediaSourceId?.takeIf { it != itemId }?.let { "?mediaSourceId=$it" }.orEmpty()
+        return "$baseUrl/Videos/$itemId/Trickplay/$width/$index.jpg$suffix"
+    }
+
+    /**
+     * One subtitle track's own file, for the download path. It is fetched from the start of the
+     * title rather than from a position, because it is stored beside a file that begins there.
+     */
+    suspend fun fetchSubtitle(
+        itemId: String,
+        mediaSourceId: String,
+        streamIndex: Int,
+        format: String
+    ): JellyfinResult<ByteArray> {
+        val currentApi = api ?: return JellyfinResult.Error("Not connected")
+        return try {
+            val response = currentApi.downloadSubtitle(
+                itemId = itemId,
+                mediaSourceId = mediaSourceId,
+                index = streamIndex,
+                startPositionTicks = 0L,
+                format = format
+            )
+            if (!response.isSuccessful) {
+                return JellyfinResult.Error("Failed to fetch subtitle", response.code())
+            }
+            val bytes = response.body()?.use { it.bytes() }
+            if (bytes == null || bytes.isEmpty()) {
+                JellyfinResult.Error("The server sent an empty subtitle")
+            } else {
+                JellyfinResult.Success(bytes)
+            }
+        } catch (e: Exception) {
+            JellyfinResult.Error(e.message ?: "Failed to fetch subtitle")
+        }
+    }
 
     /**
      * The address of one external subtitle track. The start offset is part of the path rather than a

@@ -95,11 +95,25 @@ interface MediaDownloadQueueDao {
     @Query("DELETE FROM media_download_queue WHERE ownerUserId = :ownerUserId AND itemId = :itemId")
     suspend fun deleteByItemId(ownerUserId: String, itemId: String)
 
+    @Query("DELETE FROM media_download_queue WHERE ownerUserId = :ownerUserId AND state = 'COMPLETED'")
+    suspend fun clearCompleted(ownerUserId: String)
+
+    /**
+     * Drops failures old enough to have stopped being work the user meant to finish. A failed row is
+     * kept so the partial file behind it can be resumed, and that is only worth anything while the
+     * partial is worth anything: rows are otherwise held for the life of the install.
+     */
     @Query(
         "DELETE FROM media_download_queue WHERE ownerUserId = :ownerUserId " +
-            "AND state IN ('COMPLETED', 'FAILED')"
+            "AND state = 'FAILED' AND createdAt < :before"
     )
-    suspend fun clearFinished(ownerUserId: String)
+    suspend fun clearFailedBefore(ownerUserId: String, before: Long)
+
+    @Query(
+        "SELECT * FROM media_download_queue WHERE ownerUserId = :ownerUserId " +
+            "AND state = 'FAILED' ORDER BY createdAt ASC"
+    )
+    suspend fun getFailedDownloads(ownerUserId: String): List<MediaDownloadQueueEntity>
 
     @Query("DELETE FROM media_download_queue WHERE ownerUserId = :ownerUserId")
     suspend fun deleteByOwner(ownerUserId: String)

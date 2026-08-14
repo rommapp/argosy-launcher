@@ -15,6 +15,8 @@ import com.nendo.argosy.data.local.entity.MediaSourceEntity
 import com.nendo.argosy.data.media.MediaAvailability
 import com.nendo.argosy.data.media.MediaAvailabilityVerifier
 import com.nendo.argosy.data.media.MediaDirectoryManager
+import com.nendo.argosy.data.media.MediaSubtitleSidecars
+import com.nendo.argosy.data.media.subtitleDeliveryFor
 import com.nendo.argosy.data.preferences.MediaDownloadQuality
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.preferences.alreadySatisfiedBy
@@ -22,12 +24,14 @@ import com.nendo.argosy.data.remote.jellyfin.JellyfinApiClient
 import com.nendo.argosy.data.remote.jellyfin.JellyfinDeviceProfile
 import com.nendo.argosy.data.remote.jellyfin.JellyfinDeviceProfileBuilder
 import com.nendo.argosy.data.remote.jellyfin.JellyfinMediaSource
+import com.nendo.argosy.data.remote.jellyfin.JellyfinMediaStream
 import com.nendo.argosy.data.remote.jellyfin.JellyfinPlaybackInfoRequest
 import com.nendo.argosy.data.remote.jellyfin.JellyfinResult
 import com.nendo.argosy.data.remote.jellyfin.JellyfinTranscodingProfile
 import com.nendo.argosy.data.remote.jellyfin.PROFILE_CONTEXT_STREAMING
 import com.nendo.argosy.data.remote.jellyfin.PROFILE_PROTOCOL_HTTP
 import com.nendo.argosy.data.remote.jellyfin.PROFILE_TYPE_VIDEO
+import com.nendo.argosy.data.remote.jellyfin.SUBTITLE_METHOD_ENCODE
 import com.nendo.argosy.data.remote.jellyfin.bitrateKbps
 import com.nendo.argosy.data.remote.jellyfin.resolvedContainer
 import com.nendo.argosy.data.remote.jellyfin.videoHeight
@@ -49,6 +53,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
+import java.time.Instant
+import java.time.temporal.ChronoUnit
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -70,6 +76,8 @@ private const val DEFAULT_LIBRARY_DIR = "Library"
 private const val HLS_SUB_PROTOCOL = "hls"
 private const val PARTIAL_SUFFIX = ".part"
 private const val DISPLACED_SUFFIX = ".replaced"
+private const val STREAM_TYPE_SUBTITLE = "Subtitle"
+private const val FAILED_ROW_RETENTION_DAYS = 14L
 
 sealed class MediaDownloadState {
     data object Idle : MediaDownloadState()
@@ -119,6 +127,20 @@ data class MediaDownloadProgress(
 data class MediaSizeEstimate(
     val bytes: Long,
     val isSourceSize: Boolean
+)
+
+/**
+ * What subtitles a batch can be expected to keep, as far as anything already negotiated shows.
+ *
+ * [anythingKnown] separates a batch with no subtitles from one nothing has described yet, which are
+ * different answers: the first means there is nothing to say, the second means the rule has to be
+ * stated without promising the titles have any.
+ */
+data class MediaSubtitleOutlook(
+    val hasTextSubtitles: Boolean,
+    val hasImageSubtitles: Boolean,
+    val burnsInImageSubtitles: Boolean,
+    val anythingKnown: Boolean
 )
 
 data class QueuedMediaDownload(
@@ -204,11 +226,15 @@ class MediaDownloadManager @Inject constructor(
         hasActiveMediaDownload() || _downloadState.value is MediaDownloadState.Paused
 
     /**
-     * Clears what finished successfully. A failed row is left alone: it still carries the reason and
-     * the partial file the user can resume from, and dropping it would strand both.
+     * Clears what finished successfully. A failed row is left alone, on screen as well as in the
+     * database: it still carries the reason and the partial file the user can resume from, and
+     * dropping either would strand both. Dismissing one is [removeFromCompleted], which is a
+     * deliberate act on that title rather than a sweep of everything finished.
      */
     fun clearCompletedDownloads() {
-        _completedDownloads.value = emptyList()
+        _completedDownloads.value = _completedDownloads.value.filter {
+            it.state is MediaDownloadState.Failed
+        }
         if (_activeDownload.value?.state is MediaDownloadState.Completed) {
             _activeDownload.value = null
         }
@@ -227,6 +253,7 @@ class MediaDownloadManager @Inject constructor(
         _completedDownloads.value = _completedDownloads.value.filterNot { it.itemId == itemId }
         scope.launch {
             val owner = mediaRepository.currentUserId() ?: return@launch
+            mediaDownloadQueueDao.getByItemId(owner, itemId)?.tempFilePath?.let { deleteIfPresent(it) }
             mediaDownloadQueueDao.deleteByItemId(owner, itemId)
         }
     }
@@ -292,6 +319,23 @@ class MediaDownloadManager @Inject constructor(
             total += estimateBytes(item.runTimeTicks, quality) ?: return null
         }
         return MediaSizeEstimate(bytes = total, isSourceSize = wholeBatchFromSource)
+    }
+
+    /**
+     * What the picker can say about subtitles before anything is fetched. Read from the tracks
+     * previous negotiations recorded, so a title the app has only listed answers "unknown" rather
+     * than "none" - the difference between saying nothing and promising something.
+     */
+    suspend fun subtitleOutlook(itemIds: List<String>): MediaSubtitleOutlook {
+        val streams = itemIds.flatMap { mediaRepository.knownSubtitleStreams(it) }
+        val text = streams.count { subtitleDeliveryFor(it.codec, isTextSubtitleStream = false) != null }
+        return MediaSubtitleOutlook(
+            hasTextSubtitles = text > 0,
+            hasImageSubtitles = streams.size > text,
+            burnsInImageSubtitles = preferencesRepository.userPreferences.first()
+                .mediaBurnInImageSubtitles,
+            anythingKnown = itemIds.any { mediaRepository.knownSourceFacts(it) != null }
+        )
     }
 
     suspend fun availableBytes(): Long = withContext(Dispatchers.IO) {
@@ -367,6 +411,7 @@ class MediaDownloadManager @Inject constructor(
         scope.launch {
             val owner = mediaRepository.currentUserId() ?: return@launch
             val row = mediaDownloadQueueDao.getByItemId(owner, itemId) ?: return@launch
+            _completedDownloads.value = _completedDownloads.value.filterNot { it.itemId == itemId }
             mediaDownloadQueueDao.updateState(owner, itemId, MediaDownloadDbState.QUEUED.name)
             if (_downloadQueue.value.none { it.itemId == itemId }) {
                 _downloadQueue.value = _downloadQueue.value + row.toQueued()
@@ -406,8 +451,13 @@ class MediaDownloadManager @Inject constructor(
      * A title whose storage is not reachable right now is kept, not forgotten: an unplugged card is
      * not a deleted download, and clearing the row there would lose the only record of where the
      * file lives. Whatever could not be removed is reported once rather than left silent.
+     *
+     * The mount table is re-read before any of that is decided. A card unplugged since the last
+     * attribution pass is still listed until it is, and acting on the stale list is what turns an
+     * unreachable copy into a record cleared for a file nobody deleted.
      */
     suspend fun removeDownloads(itemIds: List<String>): MediaRemovalResult = withContext(Dispatchers.IO) {
+        storageAttribution.refreshVolumes()
         var removed = 0
         var unreachable = 0
         var absent = 0
@@ -427,10 +477,15 @@ class MediaDownloadManager @Inject constructor(
         MediaRemovalResult(removed = removed, unreachable = unreachable, absent = absent)
     }
 
+    /**
+     * The subtitle files stored beside the video go with it: they are named after it and nothing
+     * else refers to them, so a delete that took only the video would leave them behind for good.
+     */
     private suspend fun removeOne(itemId: String): RemovalOutcome {
         val item = mediaRepository.getItem(itemId) ?: return RemovalOutcome.ABSENT
         val path = item.localPath ?: return RemovalOutcome.ABSENT
         if (!storageAttribution.isPathAvailable(path)) return RemovalOutcome.UNREACHABLE
+        MediaSubtitleSidecars.deleteAllFor(path, fileAccessLayer)
         deleteIfPresent(path)
         mediaRepository.clearDownloaded(itemId)
         return RemovalOutcome.REMOVED
@@ -451,6 +506,7 @@ class MediaDownloadManager @Inject constructor(
 
         releaseStaleRow(owner, itemId, quality)
         if (_activeDownload.value?.itemId == itemId) _activeDownload.value = null
+        _completedDownloads.value = _completedDownloads.value.filterNot { it.itemId == itemId }
 
         mediaDownloadQueueDao.insert(
             MediaDownloadQueueEntity(
@@ -526,11 +582,26 @@ class MediaDownloadManager @Inject constructor(
         return active.itemId == itemId && active.state.isInFlight
     }
 
+    /**
+     * Brings the queue back as it was left.
+     *
+     * A failure survives the restart it happened before. Its row still names the partial file and
+     * the reason it stopped, which is the whole of what a resume needs, and a multi-gigabyte film
+     * that failed at ninety per cent is not something to make the user fetch again because the app
+     * was closed. Rows that age past [FAILED_ROW_RETENTION_DAYS] are dropped, so a failure nobody
+     * came back to stops holding a partial on the card for the life of the install.
+     */
     private suspend fun restoreQueueFromDatabase() {
         val owner = mediaRepository.currentUserId() ?: return
-        mediaDownloadQueueDao.clearFinished(owner)
+        mediaDownloadQueueDao.clearCompleted(owner)
+        mediaDownloadQueueDao.clearFailedBefore(
+            owner,
+            Instant.now().minus(FAILED_ROW_RETENTION_DAYS, ChronoUnit.DAYS).toEpochMilli()
+        )
+        val failed = mediaDownloadQueueDao.getFailedDownloads(owner)
         val pending = mediaDownloadQueueDao.getPendingDownloads(owner)
-        sweepOrphanPartials(pending)
+        sweepOrphanPartials(pending + failed)
+        restoreFailedDownloads(failed)
         if (pending.isEmpty()) return
 
         for (row in pending) {
@@ -569,6 +640,33 @@ class MediaDownloadManager @Inject constructor(
     }
 
     /**
+     * Puts failures back on the downloads screen, where the row's own action is what resumes them.
+     * A row kept in the database that nothing draws is a resume the user has no way to ask for.
+     */
+    private suspend fun restoreFailedDownloads(rows: List<MediaDownloadQueueEntity>) {
+        if (rows.isEmpty()) return
+        _completedDownloads.value = _completedDownloads.value + rows.map { row ->
+            val state = MediaDownloadState.Failed(
+                row.itemId,
+                row.itemName,
+                row.errorReason ?: "Download failed"
+            )
+            MediaDownloadProgress(
+                itemId = row.itemId,
+                itemName = row.itemName,
+                seriesId = row.seriesId,
+                seriesName = row.seriesName,
+                posterUrl = mediaRepository.getItem(row.itemId)
+                    ?.let { mediaRepository.posterUrl(it.itemId, it.primaryImageTag) },
+                quality = MediaDownloadQuality.fromString(row.quality),
+                totalBytes = row.totalBytes,
+                bytesDownloaded = row.bytesDownloaded,
+                state = state
+            )
+        }
+    }
+
+    /**
      * Claims the next queued title. The claim is taken before the coroutine suspends on preferences:
      * two entrants that each saw no active job would otherwise both start the same download.
      */
@@ -580,8 +678,7 @@ class MediaDownloadManager @Inject constructor(
         scope.launch {
             try {
                 val next = _downloadQueue.value.firstOrNull() ?: return@launch
-                val maxConcurrent = preferencesRepository.userPreferences.first().maxConcurrentDownloads
-                if (downloadManager.get().activeDownloadCount + 1 > maxConcurrent) {
+                if (!downloadManager.get().hasFreeDownloadSlot()) {
                     Log.d(TAG, "No download slot for ${next.itemName}, staying queued")
                     return@launch
                 }
@@ -640,8 +737,16 @@ class MediaDownloadManager @Inject constructor(
                 }
 
                 val written = outcome.bytesWritten
-                finalizeDownload(item, destination, temp, negotiated, written)
+                finalizeDownload(item, destination, temp)
+                val subtitles = storeSubtitleSidecars(item, negotiated, destination)
+                mediaRepository.markDownloaded(
+                    itemId = item.itemId,
+                    localPath = destination.absolutePath,
+                    quality = negotiated.quality.name,
+                    bytes = written + subtitles.bytes
+                )
                 mediaDownloadQueueDao.updateState(owner, queued.itemId, MediaDownloadDbState.COMPLETED.name)
+                reportSubtitleShortfall(item, negotiated, subtitles)
 
                 val completedState = MediaDownloadState.Completed(
                     queued.itemId, queued.itemName, destination.absolutePath
@@ -666,6 +771,7 @@ class MediaDownloadManager @Inject constructor(
                     scope.launch { apiClient.stopActiveEncoding(session) }
                 }
                 if (!isCancelled) {
+                    _downloadState.value = MediaDownloadState.Idle
                     _activeDownload.value = null
                     advanceQueue()
                 }
@@ -788,13 +894,15 @@ class MediaDownloadManager @Inject constructor(
      * A copy that is already there is moved aside rather than deleted, and only dropped once the
      * replacement is in place: on a full card the move can fail, and the copy the user already had
      * is the one thing that must survive that.
+     *
+     * A copy this download replaces at another path takes its subtitle files with it. Those are
+     * named after the video they belong to and nothing else refers to them, so leaving them behind
+     * would strand them on the card for good.
      */
     private suspend fun finalizeDownload(
         item: MediaItemEntity,
         destination: File,
-        temp: File,
-        plan: MediaFetchPlan,
-        bytesWritten: Long
+        temp: File
     ) {
         val destinationPath = destination.absolutePath
         val displaced = displaceExisting(destinationPath)
@@ -815,15 +923,87 @@ class MediaDownloadManager @Inject constructor(
             previousPath != destinationPath &&
             storageAttribution.isPathAvailable(previousPath)
         ) {
+            MediaSubtitleSidecars.deleteAllFor(previousPath, fileAccessLayer)
             deleteIfPresent(previousPath)
         }
-        mediaRepository.markDownloaded(
-            itemId = item.itemId,
-            localPath = destinationPath,
-            quality = plan.quality.name,
-            bytes = bytesWritten
-        )
     }
+
+    /**
+     * Fetches every text subtitle the plan named and stores it beside the video.
+     *
+     * This is what keeps subtitles on a device-sized download at all: the encode the server produces
+     * carries one video stream and one audio stream, so a track not saved here is a track the file
+     * does not have. Whatever is already beside the video is cleared first, because a re-download at
+     * another quality can have a different set of tracks and a leftover file would be offered as one
+     * of them.
+     *
+     * A track the server refuses is skipped rather than failing the download - the video is the
+     * thing that was asked for - and the shortfall is reported once at the end.
+     */
+    private suspend fun storeSubtitleSidecars(
+        item: MediaItemEntity,
+        plan: MediaFetchPlan,
+        destination: File
+    ): SidecarOutcome {
+        val destinationPath = destination.absolutePath
+        MediaSubtitleSidecars.deleteAllFor(destinationPath, fileAccessLayer)
+        val sourceId = plan.mediaSourceId ?: return SidecarOutcome(0L, plan.sidecarSubtitles.size)
+        var stored = 0
+        var bytes = 0L
+        var failed = 0
+        for (subtitle in plan.sidecarSubtitles) {
+            val result = apiClient.fetchSubtitle(
+                itemId = item.itemId,
+                mediaSourceId = sourceId,
+                streamIndex = subtitle.streamIndex,
+                format = subtitle.format
+            )
+            val content = (result as? JellyfinResult.Success)?.data
+            if (content == null) {
+                Log.w(TAG, "Subtitle ${subtitle.label} unavailable for ${item.name}")
+                failed++
+                continue
+            }
+            val path = MediaSubtitleSidecars.pathFor(
+                videoPath = destinationPath,
+                streamIndex = subtitle.streamIndex,
+                language = subtitle.language,
+                format = subtitle.format
+            )
+            if (fileAccessLayer.writeBytes(path, content)) {
+                stored++
+                bytes += content.size.toLong()
+            } else {
+                failed++
+            }
+        }
+        Log.d(TAG, "Stored $stored subtitle files for ${item.name}, $failed unavailable")
+        return SidecarOutcome(bytes = bytes, failed = failed)
+    }
+
+    /**
+     * Says what the copy on disk does not have. A viewer who picked a smaller size to save space did
+     * not ask to lose the subtitles with it, so a track that could not travel is named at the moment
+     * it is missed rather than discovered during playback.
+     */
+    private fun reportSubtitleShortfall(
+        item: MediaItemEntity,
+        plan: MediaFetchPlan,
+        outcome: SidecarOutcome
+    ) {
+        val missing = outcome.failed + plan.droppedSubtitles
+        if (missing <= 0) return
+        val detail = when {
+            plan.burnedInSubtitle != null ->
+                "${plan.burnedInSubtitle} is in the picture; the rest could not travel"
+            outcome.failed > 0 -> "The server would not hand over every subtitle track"
+            plan.isTranscode -> "Picture subtitles cannot travel with a smaller size"
+            else -> "Picture subtitles are kept apart from the file and cannot travel with it"
+        }
+        notify("${item.name} downloaded without $missing subtitle ${trackWord(missing)}", detail)
+    }
+
+    private fun trackWord(count: Int): String = if (count == 1) "track" else "tracks"
 
     private fun displaceExisting(destinationPath: String): String? {
         if (!fileAccessLayer.exists(destinationPath)) return null
@@ -860,28 +1040,22 @@ class MediaDownloadManager @Inject constructor(
      * cannot raise the resolution the file never had, so the encode would spend server time and a
      * generation of picture quality to arrive back where it started. What lands on disk is recorded
      * as the original, because that is what it is.
+     *
+     * Which subtitle a transcode carries is decided on the fetch rather than here. The server's own
+     * contract for the stream endpoint is that an omitted subtitle index means no subtitles at all,
+     * which is what makes a picture subtitle a question this path has to answer deliberately.
      */
     private suspend fun negotiate(item: MediaItemEntity, quality: MediaDownloadQuality): MediaFetchPlan? {
         val userId = apiClient.currentUserId() ?: mediaRepository.currentUserId() ?: return null
         val prefs = preferencesRepository.userPreferences.first()
         val wantsTranscode = quality != MediaDownloadQuality.ORIGINAL
 
-        val request = JellyfinPlaybackInfoRequest(
-            userId = userId,
-            maxStreamingBitrate = quality.maxBitrateKbps?.times(KBPS_TO_BPS.toInt()),
-            enableDirectPlay = !wantsTranscode,
-            enableDirectStream = !wantsTranscode,
-            enableTranscoding = wantsTranscode,
-            allowVideoStreamCopy = !wantsTranscode,
-            allowAudioStreamCopy = !wantsTranscode,
-            deviceProfile = if (wantsTranscode) {
-                transcodeProfile(quality)
-            } else {
-                deviceProfileBuilder.build(burnInImageSubtitles = prefs.mediaBurnInImageSubtitles)
-            }
-        )
-
-        val response = when (val result = apiClient.getPlaybackInfo(item.itemId, request)) {
+        val response = when (
+            val result = apiClient.getPlaybackInfo(
+                item.itemId,
+                playbackRequest(userId, quality, prefs.mediaBurnInImageSubtitles, wantsTranscode)
+            )
+        ) {
             is JellyfinResult.Success -> result.data
             is JellyfinResult.Error -> throw IllegalStateException(result.message)
         }
@@ -902,7 +1076,52 @@ class MediaDownloadManager @Inject constructor(
             }
             return originalPlan(source, item)
         }
-        return transcodePlan(source, transcodingUrl, quality, item, response.playSessionId)
+
+        return transcodePlan(
+            source = source,
+            transcodingUrl = transcodingUrl,
+            quality = quality,
+            item = item,
+            playSessionId = response.playSessionId,
+            burnIn = if (prefs.mediaBurnInImageSubtitles) burnInTarget(source) else null
+        )
+    }
+
+    private fun playbackRequest(
+        userId: String,
+        quality: MediaDownloadQuality,
+        burnInImageSubtitles: Boolean,
+        wantsTranscode: Boolean
+    ): JellyfinPlaybackInfoRequest = JellyfinPlaybackInfoRequest(
+        userId = userId,
+        maxStreamingBitrate = quality.maxBitrateKbps?.times(KBPS_TO_BPS.toInt()),
+        enableDirectPlay = !wantsTranscode,
+        enableDirectStream = !wantsTranscode,
+        enableTranscoding = wantsTranscode,
+        allowVideoStreamCopy = !wantsTranscode,
+        allowAudioStreamCopy = !wantsTranscode,
+        deviceProfile = if (wantsTranscode) {
+            transcodeProfile(quality, burnInImageSubtitles)
+        } else {
+            deviceProfileBuilder.build(burnInImageSubtitles = burnInImageSubtitles)
+        }
+    )
+
+    /**
+     * The picture subtitle worth putting into the encode, or nothing.
+     *
+     * Only a title with no text subtitle at all is a candidate. Where a text track exists it is
+     * saved beside the video and can be turned off again, while a burned-in one is in the picture
+     * for as long as the file is kept - paying that price for a viewer who already had a readable
+     * track is not a trade they asked for.
+     */
+    private fun burnInTarget(source: JellyfinMediaSource): JellyfinMediaStream? {
+        val subtitles = source.mediaStreams.filter { it.type == STREAM_TYPE_SUBTITLE }
+        if (subtitles.any { it.isDeliverableAsText }) return null
+        val images = subtitles.filterNot { it.isDeliverableAsText }
+        return images.firstOrNull { it.isForced }
+            ?: images.firstOrNull { it.isDefault }
+            ?: images.firstOrNull()
     }
 
     private fun originalPlan(source: JellyfinMediaSource, item: MediaItemEntity): MediaFetchPlan =
@@ -915,15 +1134,26 @@ class MediaDownloadManager @Inject constructor(
                 ?: item.container?.substringBefore(',') ?: DEFAULT_CONTAINER,
             expectedBytes = source.size ?: 0L,
             supportsResume = true,
-            isTranscode = false
+            isTranscode = false,
+            sidecarSubtitles = source.sidecarPlan(keepsEmbeddedTracks = true),
+            droppedSubtitles = source.undeliverableSubtitles(keepsEmbeddedTracks = true)
         )
 
+    /**
+     * The fetch the server described, plus what it left for the caller to decide.
+     *
+     * [burnIn] is asked for on this request rather than during negotiation. The server documents the
+     * stream endpoint as carrying no subtitles when no index is given, and the address it hands back
+     * carries none - so a picture subtitle reaches the file only by naming it here, and only where
+     * the viewer asked for that.
+     */
     private fun transcodePlan(
         source: JellyfinMediaSource,
         transcodingUrl: String,
         quality: MediaDownloadQuality,
         item: MediaItemEntity,
-        playSessionId: String?
+        playSessionId: String?,
+        burnIn: JellyfinMediaStream? = null
     ): MediaFetchPlan {
         val normalized = transcodingUrl.replace("&amp;", "&")
         val uri = Uri.parse(if (normalized.startsWith("http")) normalized else "http://localhost$normalized")
@@ -937,6 +1167,10 @@ class MediaDownloadManager @Inject constructor(
         params.putIfAbsent("container", container)
         quality.maxHeight?.let { params.putIfAbsent("maxHeight", it.toString()) }
         quality.maxBitrateKbps?.let { params.putIfAbsent("videoBitRate", (it * KBPS_TO_BPS).toString()) }
+        burnIn?.let {
+            params["subtitleStreamIndex"] = it.index.toString()
+            params["subtitleMethod"] = SUBTITLE_METHOD_ENCODE
+        }
 
         return MediaFetchPlan(
             quality = quality,
@@ -946,7 +1180,11 @@ class MediaDownloadManager @Inject constructor(
             container = container,
             expectedBytes = estimateBytes(item.runTimeTicks, quality) ?: 0L,
             supportsResume = false,
-            isTranscode = true
+            isTranscode = true,
+            sidecarSubtitles = source.sidecarPlan(keepsEmbeddedTracks = false),
+            droppedSubtitles = source.undeliverableSubtitles(keepsEmbeddedTracks = false) -
+                if (burnIn != null) 1 else 0,
+            burnedInSubtitle = burnIn?.displayLabel
         )
     }
 
@@ -954,8 +1192,16 @@ class MediaDownloadManager @Inject constructor(
      * A profile with nothing the device claims to play, so the server has no direct-play answer left
      * and negotiates the progressive file this path can actually save. The streaming profile cannot
      * be reused: it offers HLS first, and a playlist of segments is not a downloadable file.
+     *
+     * Burn-in is the only subtitle method declared, and only when it was asked for. A saved file
+     * cannot come back for a track later, so an image subtitle either goes into the picture during
+     * the encode or is not in the download at all; text tracks are not declared here because they
+     * are fetched as their own files instead.
      */
-    private fun transcodeProfile(quality: MediaDownloadQuality): JellyfinDeviceProfile =
+    private fun transcodeProfile(
+        quality: MediaDownloadQuality,
+        burnInImageSubtitles: Boolean
+    ): JellyfinDeviceProfile =
         JellyfinDeviceProfile(
             name = "Argosy Download",
             maxStreamingBitrate = quality.maxBitrateKbps?.times(KBPS_TO_BPS.toInt()),
@@ -970,8 +1216,46 @@ class MediaDownloadManager @Inject constructor(
                     context = PROFILE_CONTEXT_STREAMING,
                     maxAudioChannels = JellyfinDeviceProfileBuilder.DEFAULT_MAX_AUDIO_CHANNELS.toString()
                 )
-            )
+            ),
+            subtitleProfiles = if (burnInImageSubtitles) {
+                deviceProfileBuilder.burnInSubtitleProfiles()
+            } else {
+                emptyList()
+            }
         )
+
+    /**
+     * Which subtitle tracks have to be fetched as their own files for this fetch to keep them.
+     *
+     * A transcode keeps none: the encode the server produces carries one video stream and one audio
+     * stream, so every text track has to be saved beside it. The source file keeps whatever is
+     * inside it, so only tracks the server holds as separate files are fetched - fetching the
+     * embedded ones would store a second copy of subtitles the file already has.
+     */
+    private fun JellyfinMediaSource.sidecarPlan(keepsEmbeddedTracks: Boolean): List<PlannedSidecar> =
+        mediaStreams
+            .filter { it.type == STREAM_TYPE_SUBTITLE }
+            .filter { !keepsEmbeddedTracks || it.isExternal }
+            .mapNotNull { stream ->
+                val delivery = subtitleDeliveryFor(stream.codec, stream.isTextSubtitleStream)
+                    ?: return@mapNotNull null
+                PlannedSidecar(
+                    streamIndex = stream.index,
+                    language = stream.language,
+                    format = delivery.format,
+                    label = stream.displayLabel
+                )
+            }
+
+    /**
+     * How many subtitle tracks this fetch cannot carry in any form. These are picture subtitles, and
+     * a picture subtitle exists for a viewer only if the server draws it into the video.
+     */
+    private fun JellyfinMediaSource.undeliverableSubtitles(keepsEmbeddedTracks: Boolean): Int =
+        mediaStreams
+            .filter { it.type == STREAM_TYPE_SUBTITLE }
+            .filter { !keepsEmbeddedTracks || it.isExternal }
+            .count { !it.isDeliverableAsText }
 
     private suspend fun resolveDestination(item: MediaItemEntity, container: String): File {
         val libraryName = libraryNameFor(item) ?: DEFAULT_LIBRARY_DIR
@@ -1095,29 +1379,55 @@ class MediaDownloadManager @Inject constructor(
      * Clears partial files no queue row still refers to, and puts back any copy displaced by a
      * finalize that did not finish. Nothing else reads either file, so bytes left by a dropped row
      * would sit on the card for good.
+     *
+     * Every media location the app has written to is swept, not only the one in use. Moving the
+     * media folder without moving the files is an offered choice, and a card that then goes back to
+     * internal storage would otherwise keep whatever the earlier location was left holding. The
+     * locations named by live rows are included for the same reason: a row can name a path outside
+     * the current root, and its partial is the one file the sweep must be careful to keep.
      */
     private suspend fun sweepOrphanPartials(live: List<MediaDownloadQueueEntity>) {
         val referenced = live.mapNotNull { it.tempFilePath }.toSet()
-        val root = directoryManager.resolveMediaDir()
-        if (!root.exists()) return
-        runCatching {
-            root.walkTopDown().filter { it.isFile }.forEach { file ->
-                when {
-                    file.name.endsWith(PARTIAL_SUFFIX) && file.absolutePath !in referenced ->
-                        deleteIfPresent(file.absolutePath)
-                    file.name.endsWith(DISPLACED_SUFFIX) -> recoverDisplaced(file)
-                    else -> Unit
+        for (root in sweepRoots(live)) {
+            if (!fileAccessLayer.isDirectory(root)) continue
+            runCatching {
+                fileAccessLayer.walk(root).filter { it.isFile }.forEach { file ->
+                    when {
+                        file.name.endsWith(PARTIAL_SUFFIX) && file.path !in referenced ->
+                            deleteIfPresent(file.path)
+                        file.name.endsWith(DISPLACED_SUFFIX) -> recoverDisplaced(file.path)
+                        else -> Unit
+                    }
                 }
-            }
-        }.onFailure { Log.w(TAG, "Partial sweep failed: ${it.message}") }
+            }.onFailure { Log.w(TAG, "Partial sweep of $root failed: ${it.message}") }
+        }
     }
 
-    private fun recoverDisplaced(file: File) {
-        val restored = File(file.parentFile, file.name.removeSuffix(DISPLACED_SUFFIX))
-        if (restored.exists()) {
-            deleteIfPresent(file.absolutePath)
-        } else if (!file.renameTo(restored)) {
-            Log.w(TAG, "Could not restore ${file.name}")
+    /**
+     * The directories worth walking: where media goes now, where it went before any override was
+     * chosen, and the folders live rows point at.
+     */
+    private suspend fun sweepRoots(live: List<MediaDownloadQueueEntity>): Set<String> = buildSet {
+        add(directoryManager.resolveMediaDir().absolutePath)
+        add(directoryManager.defaultMediaDir().absolutePath)
+        live.forEach { row ->
+            listOfNotNull(row.tempFilePath, row.destinationPath).forEach { path ->
+                path.substringBeforeLast('/', "").takeIf { it.isNotEmpty() }?.let { add(it) }
+            }
+        }
+    }
+
+    private fun recoverDisplaced(path: String) {
+        val restored = path.removeSuffix(DISPLACED_SUFFIX)
+        if (fileAccessLayer.exists(restored)) {
+            deleteIfPresent(path)
+            return
+        }
+        val displaced = fileAccessLayer.getTransformedFile(path)
+        if (!runCatching { displaced.renameTo(fileAccessLayer.getTransformedFile(restored)) }
+                .getOrDefault(false)
+        ) {
+            Log.w(TAG, "Could not restore ${path.substringAfterLast('/')}")
         }
     }
 
@@ -1138,6 +1448,12 @@ class MediaDownloadManager @Inject constructor(
         itemType = itemType,
         quality = MediaDownloadQuality.fromString(quality)
     )
+
+    private val JellyfinMediaStream.isDeliverableAsText: Boolean
+        get() = subtitleDeliveryFor(codec, isTextSubtitleStream) != null
+
+    private val JellyfinMediaStream.displayLabel: String
+        get() = displayTitle ?: title ?: language ?: codec ?: "Subtitles"
 
     private val MediaItemEntity.isDownloadable: Boolean
         get() = MediaItemType.fromWire(itemType).let {
@@ -1160,6 +1476,12 @@ class MediaDownloadManager @Inject constructor(
      */
     private data class FetchOutcome(val bytesWritten: Long, val declaredTotal: Long?)
 
+    /**
+     * [sidecarSubtitles] are the tracks this fetch has to store as their own files, [droppedSubtitles]
+     * counts the ones it cannot carry at all, and [burnedInSubtitle] names the one the server was
+     * asked to draw into the picture. Together they are what the download can say about subtitles
+     * once it finishes.
+     */
     private data class MediaFetchPlan(
         val quality: MediaDownloadQuality,
         val mediaSourceId: String?,
@@ -1168,8 +1490,24 @@ class MediaDownloadManager @Inject constructor(
         val container: String,
         val expectedBytes: Long,
         val supportsResume: Boolean,
-        val isTranscode: Boolean
+        val isTranscode: Boolean,
+        val sidecarSubtitles: List<PlannedSidecar> = emptyList(),
+        val droppedSubtitles: Int = 0,
+        val burnedInSubtitle: String? = null
     )
+
+    private data class PlannedSidecar(
+        val streamIndex: Int,
+        val language: String?,
+        val format: String,
+        val label: String
+    )
+
+    /**
+     * What was stored beside the video, and what could not be. A track the server refused is
+     * reported rather than swallowed: the viewer chose this tier expecting subtitles with it.
+     */
+    private data class SidecarOutcome(val bytes: Long, val failed: Int)
 
     private companion object {
         const val HTTP_PARTIAL_CONTENT = 206

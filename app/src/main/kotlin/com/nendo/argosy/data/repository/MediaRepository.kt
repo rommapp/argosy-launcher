@@ -12,6 +12,7 @@ import com.nendo.argosy.data.local.entity.MediaItemType
 import com.nendo.argosy.data.local.entity.MediaLibraryEntity
 import com.nendo.argosy.data.local.entity.MediaSourceEntity
 import com.nendo.argosy.data.local.entity.MediaStreamEntity
+import com.nendo.argosy.data.local.entity.MediaStreamType
 import com.nendo.argosy.data.local.entity.MediaUserDataEntity
 import com.nendo.argosy.data.preferences.JellyfinPreferencesRepository
 import com.nendo.argosy.data.remote.jellyfin.JellyfinApiClient
@@ -231,6 +232,19 @@ class MediaRepository @Inject constructor(
             .maxWithOrNull(
                 compareBy<MediaSourceEntity> { it.videoHeight ?: 0 }.thenBy { it.bitrateKbps ?: 0 }
             )
+    }
+
+    /**
+     * The subtitle tracks last seen on this item, empty for one nothing has negotiated yet.
+     *
+     * Read from what an earlier negotiation recorded rather than asked of the server: the download
+     * picker asks about a whole batch at the moment it opens, and a round trip per title would make
+     * the question cost more than the answer is worth.
+     */
+    suspend fun knownSubtitleStreams(itemId: String): List<MediaStreamEntity> {
+        val owner = currentOwner() ?: return emptyList()
+        return mediaStreamDao.getByItem(owner, itemId)
+            .filter { it.streamType == MediaStreamType.SUBTITLE.wireValue }
     }
 
     suspend fun markDownloaded(itemId: String, localPath: String, quality: String, bytes: Long) {

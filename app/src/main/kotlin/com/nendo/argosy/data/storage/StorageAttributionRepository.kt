@@ -16,6 +16,7 @@ import com.nendo.argosy.data.local.dao.GameFileDao
 import com.nendo.argosy.data.local.dao.PlatformDao
 import com.nendo.argosy.data.local.entity.MediaItemEntity
 import com.nendo.argosy.data.media.MediaDirectoryManager
+import com.nendo.argosy.data.media.MediaSubtitleSidecars
 import com.nendo.argosy.data.music.MusicDirectoryManager
 import com.nendo.argosy.data.preferences.StoragePreferencesRepository
 import com.nendo.argosy.data.repository.MediaRepository
@@ -656,7 +657,8 @@ class StorageAttributionRepository @Inject constructor(
             val accumulator = scan.perLibrary.getOrPut(libraryIdFor(item, seriesLibraries)) { MediaAccumulator() }
             when {
                 fileAccessLayer.isFile(canonical) -> {
-                    val bytes = fileAccessLayer.length(canonical)
+                    val bytes = fileAccessLayer.length(canonical) +
+                        MediaSubtitleSidecars.bytesFor(canonical, fileAccessLayer)
                     accumulator.present(bytes, volumeKeyFor(canonical, volumes, internalKey))
                     if (!isUnderAny(canonical, listOf(mediaRoot))) scan.strayFiles.add(canonical to bytes)
                 }

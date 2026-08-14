@@ -233,15 +233,19 @@ class JellyfinDeviceProfileBuilder @Inject constructor() {
         val text = EXTERNAL_TEXT_SUBTITLE_FORMATS.map {
             JellyfinSubtitleProfile(format = it, method = SUBTITLE_METHOD_EXTERNAL)
         }
-        val image = if (burnInImageSubtitles) {
-            IMAGE_SUBTITLE_FORMATS.map {
-                JellyfinSubtitleProfile(format = it, method = SUBTITLE_METHOD_ENCODE)
-            }
-        } else {
-            emptyList()
-        }
+        val image = if (burnInImageSubtitles) burnInSubtitleProfiles() else emptyList()
         return text + image
     }
+
+    /**
+     * The only way an image subtitle reaches a viewer: the server draws it into the picture. Offered
+     * on its own for the download profile, which declares nothing else - a saved file has no second
+     * chance to fetch a track, so a picture subtitle either goes into the encode or does not exist.
+     */
+    fun burnInSubtitleProfiles(): List<JellyfinSubtitleProfile> =
+        IMAGE_SUBTITLE_FORMATS.map {
+            JellyfinSubtitleProfile(format = it, method = SUBTITLE_METHOD_ENCODE)
+        }
 
     private data class VideoSize(val width: Int, val height: Int)
 

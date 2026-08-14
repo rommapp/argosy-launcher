@@ -82,6 +82,7 @@ data class MediaDownloadPrompt(
     val focusedIndex: Int = 0,
     val targets: List<String> = emptyList(),
     val totalRuntimeTicks: Long = 0,
+    val note: String? = null,
     val warning: String? = null
 ) {
     val focusedOption: MediaDownloadOption? get() = options.getOrNull(focusedIndex)

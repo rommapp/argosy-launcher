@@ -108,6 +108,16 @@ class MediaAvailabilityVerifier @Inject constructor(
         state
     }
 
+    /**
+     * The subtitle files stored beside one downloaded copy.
+     *
+     * Asked here because this is where a downloaded copy's presence on disk is established, and its
+     * subtitles are part of what is on that disk: they are named after the video and have no record
+     * anywhere else, so the directory is what has to be read.
+     */
+    suspend fun downloadedSubtitles(videoPath: String): List<MediaSubtitleSidecar> =
+        withContext(Dispatchers.IO) { MediaSubtitleSidecars.listFor(videoPath, fileAccessLayer) }
+
     private suspend fun runPass(items: List<MediaItemEntity>, full: Boolean) {
         passMutex.withLock {
             val volumes = storageAttribution.refreshVolumes()
@@ -159,12 +169,16 @@ class MediaAvailabilityVerifier @Inject constructor(
      * Forgets the copies proven gone. Absence is established a second time here, inside the
      * relocation lock, so the proof belongs to the moment of the write rather than to a walk that
      * finished before a card was pulled or a media folder was moved out from under it.
+     *
+     * Subtitle files stored beside a video go when the video is proven gone. They are named after it
+     * and play only with it, so a set left behind is bytes on the card that nothing will ever read.
      */
     private suspend fun reconcile(itemIds: List<String>) {
         mediaDirectoryManager.underRelocationLock {
             for (itemId in itemIds) {
                 val path = mediaRepository.getItem(itemId)?.localPath ?: continue
                 if (classify(StoragePathUtils.canonicalize(path)) != MediaAvailability.ABSENT) continue
+                MediaSubtitleSidecars.deleteAllFor(path, fileAccessLayer)
                 mediaRepository.clearDownloaded(itemId)
                 _availability.update { it + (itemId to MediaAvailability.NOT_DOWNLOADED) }
             }

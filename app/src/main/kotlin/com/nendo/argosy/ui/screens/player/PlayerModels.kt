@@ -149,7 +149,7 @@ data class PlayerUiState(
     val subtitleNotice: String? = null,
     val chapters: List<PlayerChapter> = emptyList(),
     val activeSkip: PlayerSkipSegment? = null,
-    val trickplayEnabled: Boolean = false,
+    val trickplay: PlayerTrickplay? = null,
     val trickplayAuthHeader: String? = null
 ) {
     /**

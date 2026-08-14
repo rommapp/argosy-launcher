@@ -160,8 +160,40 @@ class DownloadManager @Inject constructor(
 
     val activeDownloadCount: Int get() = _state.value.activeDownloads.size
 
+    /**
+     * How many downloads are running right now, across every queue.
+     *
+     * Rom, Steam and media downloads share one concurrency budget and one connection, so this is the
+     * only number any of them may compare against it. Counting a queue's own kind alone is what let
+     * a Steam install and a film start against a budget of one and then compete for the same pipe.
+     */
+    fun totalActiveDownloads(): Int =
+        _state.value.activeDownloads.size +
+            (if (steamContentManager.get().hasActiveSteamDownload()) 1 else 0) +
+            (if (mediaDownloadManager.get().hasActiveMediaDownload()) 1 else 0)
+
+    /**
+     * Whether one more download may start. Asked by every queue before it dispatches, so the budget
+     * is enforced once against the whole of what is running rather than once per queue.
+     */
+    suspend fun hasFreeDownloadSlot(): Boolean =
+        totalActiveDownloads() < preferencesRepository.userPreferences.first().maxConcurrentDownloads
+
     fun onExternalSlotFreed() {
         scope.launch { processQueue() }
+    }
+
+    /**
+     * Tells every queue that a slot this one was holding is free. All three are told because none of
+     * them knows what the others are waiting on, and a release that only wakes its own queue leaves
+     * the others sitting on work the budget now allows.
+     */
+    private fun notifySlotFreed() {
+        scope.launch {
+            processQueue()
+            steamContentManager.get().onDownloadSlotFreed()
+            mediaDownloadManager.get().onDownloadSlotFreed()
+        }
     }
 
     private val _completionEvents = MutableSharedFlow<DownloadCompletionEvent>()
@@ -356,7 +388,7 @@ class DownloadManager @Inject constructor(
                     activeDownloads = _state.value.activeDownloads.filter { it.id != progress.id },
                     completed = _state.value.completed + finalProgress
                 )
-                processQueue()
+                notifySlotFreed()
                 if (result is DownloadResult.Success) {
                     broadcastDownloadCompleted(progress.gameId)
                 }
@@ -772,11 +804,9 @@ class DownloadManager @Inject constructor(
         }
 
         val maxConcurrent = preferencesRepository.userPreferences.first().maxConcurrentDownloads
-        val steamActive = if (steamContentManager.get().hasActiveSteamDownload()) 1 else 0
-        val mediaActive = if (mediaDownloadManager.get().hasActiveMediaDownload()) 1 else 0
-        val currentActive = _state.value.activeDownloads.size + steamActive + mediaActive
+        val currentActive = totalActiveDownloads()
 
-        Log.d(TAG, "processQueue: maxConcurrent=$maxConcurrent, rommActive=${_state.value.activeDownloads.size}, steamActive=$steamActive, mediaActive=$mediaActive, totalActive=$currentActive")
+        Log.d(TAG, "processQueue: maxConcurrent=$maxConcurrent, rommActive=${_state.value.activeDownloads.size}, totalActive=$currentActive")
         Log.d(TAG, "processQueue: queue size=${_state.value.queue.size}, states=${_state.value.queue.map { "${it.gameTitle}:${it.state}" }}")
 
         if (currentActive >= maxConcurrent) {
@@ -860,9 +890,7 @@ class DownloadManager @Inject constructor(
                         activeDownloads = _state.value.activeDownloads.filter { it.id != next.id },
                         completed = _state.value.completed + finalProgress
                     )
-                    processQueue()
-                    steamContentManager.get().onDownloadSlotFreed()
-                    mediaDownloadManager.get().onDownloadSlotFreed()
+                    notifySlotFreed()
                     if (result is DownloadResult.Success) {
                         broadcastDownloadCompleted(next.gameId)
                     }
@@ -1363,6 +1391,7 @@ class DownloadManager @Inject constructor(
                 activeDownloads = _state.value.activeDownloads.filter { it.id != active.id },
                 queue = listOf(active.copy(state = DownloadState.PAUSED)) + _state.value.queue
             )
+            notifySlotFreed()
         } else {
             _state.value = _state.value.copy(
                 queue = _state.value.queue.map {
@@ -1434,8 +1463,7 @@ class DownloadManager @Inject constructor(
             _state.value = _state.value.copy(
                 activeDownloads = _state.value.activeDownloads.filter { it.id != active.id }
             )
-            scope.launch { processQueue() }
-            mediaDownloadManager.get().onDownloadSlotFreed()
+            notifySlotFreed()
         } else {
             val queued = _state.value.queue.find { it.rommId == rommId }
             if (queued != null) {

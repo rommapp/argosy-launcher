@@ -177,7 +177,7 @@ class PlayerViewModel @Inject constructor(
                     subtitle = detail.subtitle.ifBlank { it.subtitle },
                     durationMs = detail.runtimeMs,
                     chapters = detail.chapters,
-                    trickplayEnabled = detail.trickplayEnabled,
+                    trickplay = detail.trickplay,
                     trickplayAuthHeader = authorizationHeader,
                     burnInImageSubtitles = burnIn
                 )
@@ -466,9 +466,18 @@ class PlayerViewModel @Inject constructor(
      */
     fun trickplayTile(positionMs: Long): TrickplayTile? {
         val state = _uiState.value
-        if (!state.trickplayEnabled || state.itemId.isBlank()) return null
+        val trickplay = state.trickplay ?: return null
+        if (state.itemId.isBlank()) return null
         return trickplayTileFor(
-            url = { sheet -> apiClient.buildTrickplayTileUrl(state.itemId, TRICKPLAY_TILE_WIDTH, sheet) },
+            trickplay = trickplay,
+            url = { sheet ->
+                apiClient.buildTrickplayTileUrl(
+                    itemId = state.itemId,
+                    width = trickplay.thumbnailWidth,
+                    index = sheet,
+                    mediaSourceId = trickplay.mediaSourceId
+                )
+            },
             positionMs = positionMs
         )
     }

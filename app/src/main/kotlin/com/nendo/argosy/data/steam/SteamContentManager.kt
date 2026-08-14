@@ -10,7 +10,6 @@ import com.nendo.argosy.data.local.entity.SteamDownloadQueueEntity
 import com.nendo.argosy.core.notification.NotificationManager
 import com.nendo.argosy.core.notification.NotificationType
 import com.nendo.argosy.data.model.GameSource
-import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.storage.StorageAttributionRepository
 import com.nendo.argosy.data.storage.StorageCategory
 import com.nendo.argosy.util.AppPaths
@@ -99,7 +98,6 @@ data class QueuedSteamDownload(
 class SteamContentManager @Inject constructor(
     @ApplicationContext private val context: Context,
     private val gameDao: GameDao,
-    private val preferencesRepository: UserPreferencesRepository,
     private val steamAuthManager: SteamAuthManager,
     private val steamLibraryManager: SteamLibraryManager,
     private val notificationManager: NotificationManager,
@@ -666,11 +664,8 @@ class SteamContentManager @Inject constructor(
         Log.d(TAG, "Starting next queued download: ${next.gameName}")
 
         scope.launch {
-            // Check shared slot budget before starting
-            val maxConcurrent = preferencesRepository.userPreferences.first().maxConcurrentDownloads
-            val rommActive = downloadManager.get().activeDownloadCount
-            if (rommActive + 1 > maxConcurrent) {
-                Log.d(TAG, "No download slots available (romm=$rommActive, max=$maxConcurrent), re-queuing ${next.gameName}")
+            if (!downloadManager.get().hasFreeDownloadSlot()) {
+                Log.d(TAG, "No download slots available, re-queuing ${next.gameName}")
                 _downloadQueue.value = listOf(next) + _downloadQueue.value
                 return@launch
             }

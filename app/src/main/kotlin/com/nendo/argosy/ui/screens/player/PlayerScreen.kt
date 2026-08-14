@@ -112,7 +112,7 @@ fun PlayerScreen(viewModel: PlayerViewModel) {
 @Composable
 private fun PlayerChrome(state: PlayerUiState, viewModel: PlayerViewModel) {
     val theme = LocalArgosyTheme.current
-    val trickplayTile = remember(state.previewPositionMs, state.trickplayEnabled, state.itemId) {
+    val trickplayTile = remember(state.previewPositionMs, state.trickplay, state.itemId) {
         if (state.isScrubbing) viewModel.trickplayTile(state.previewPositionMs) else null
     }
 

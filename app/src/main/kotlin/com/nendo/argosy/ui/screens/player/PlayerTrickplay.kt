@@ -13,42 +13,56 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 
 /**
- * The sheet width the server renders trickplay images at, and how the thumbnails are packed into
- * one sheet.
+ * The scrub thumbnails one item actually has, taken from that item's own trickplay manifest.
  *
- * These are the server's own defaults. The per-item geometry travels in the item's `Trickplay`
- * field, which this client does not request and its item model does not carry, so a library whose
- * administrator changed the trickplay interval or tile grid will preview at the wrong offsets until
- * that field is read. Getting it wrong costs a scrub preview that is off by a few seconds; it
- * cannot affect playback.
+ * There is no default worth keeping here. The geometry is per library and per item - an
+ * administrator sets the interval and the tile grid - and the manifest is also the only thing that
+ * says whether any thumbnails were generated at all, which the server version cannot answer.
  */
-const val TRICKPLAY_TILE_WIDTH = 320
-const val TRICKPLAY_COLUMNS = 10
-const val TRICKPLAY_ROWS = 10
-const val TRICKPLAY_INTERVAL_MS = 10_000L
+data class PlayerTrickplay(
+    val mediaSourceId: String,
+    val thumbnailWidth: Int,
+    val columns: Int,
+    val rows: Int,
+    val intervalMs: Long,
+    val thumbnailCount: Int
+)
 
 /**
- * One thumbnail: which sheet it is on and where in that sheet it sits.
+ * One thumbnail: which sheet it is on, where in that sheet it sits, and how that sheet is packed.
  */
 data class TrickplayTile(
     val url: String,
     val column: Int,
-    val row: Int
+    val row: Int,
+    val columns: Int,
+    val rows: Int
 )
 
 /**
  * Locates the thumbnail covering a position. Thumbnails are laid out in reading order within a
  * sheet, and sheets follow one another in time.
+ *
+ * A position past the last thumbnail the server generated has no tile rather than a tile that
+ * resolves to nothing: a sheet that does not exist answers 404, and a preview box waiting on one
+ * stays empty for as long as the user holds the scrubber there.
  */
-fun trickplayTileFor(url: (Int) -> String, positionMs: Long): TrickplayTile {
-    val perSheet = TRICKPLAY_COLUMNS * TRICKPLAY_ROWS
-    val thumbnailIndex = (positionMs / TRICKPLAY_INTERVAL_MS).toInt().coerceAtLeast(0)
-    val sheetIndex = thumbnailIndex / perSheet
+fun trickplayTileFor(
+    trickplay: PlayerTrickplay,
+    url: (Int) -> String,
+    positionMs: Long
+): TrickplayTile? {
+    val perSheet = trickplay.columns * trickplay.rows
+    if (perSheet <= 0 || trickplay.intervalMs <= 0) return null
+    val thumbnailIndex = (positionMs / trickplay.intervalMs).toInt().coerceAtLeast(0)
+    if (trickplay.thumbnailCount > 0 && thumbnailIndex >= trickplay.thumbnailCount) return null
     val withinSheet = thumbnailIndex % perSheet
     return TrickplayTile(
-        url = url(sheetIndex),
-        column = withinSheet % TRICKPLAY_COLUMNS,
-        row = withinSheet / TRICKPLAY_COLUMNS
+        url = url(thumbnailIndex / perSheet),
+        column = withinSheet % trickplay.columns,
+        row = withinSheet / trickplay.columns,
+        columns = trickplay.columns,
+        rows = trickplay.rows
     )
 }
 
@@ -82,7 +96,7 @@ fun TrickplayThumbnail(
             contentDescription = null,
             contentScale = ContentScale.FillBounds,
             modifier = Modifier
-                .size(width = width * TRICKPLAY_COLUMNS, height = height * TRICKPLAY_ROWS)
+                .size(width = width * tile.columns, height = height * tile.rows)
                 .offset(x = -width * tile.column, y = -height * tile.row)
         )
     }

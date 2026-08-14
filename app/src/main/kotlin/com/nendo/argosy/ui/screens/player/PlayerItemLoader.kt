@@ -26,7 +26,7 @@ data class PlayerItemDetail(
     val serverResumeMs: Long = 0,
     val chapters: List<PlayerChapter> = emptyList(),
     val skipSegments: List<PlayerSkipSegment> = emptyList(),
-    val trickplayEnabled: Boolean = false
+    val trickplay: PlayerTrickplay? = null
 )
 
 /**
@@ -65,8 +65,39 @@ class PlayerItemLoader @Inject constructor(
                 )
             },
             skipSegments = loadSkipSegments(itemId),
-            trickplayEnabled = apiClient.getCapabilities().supportsTrickplay
+            trickplay = trickplayOf(item)
         )
+    }
+
+    /**
+     * The scrub thumbnails this item has, or nothing.
+     *
+     * Both halves have to hold: a server old enough to serve the endpoint, and a manifest on this
+     * item saying thumbnails were generated for it. The version alone is what left every scrub
+     * showing an empty box on a library with trickplay generation switched off - the endpoint exists
+     * and answers 404 for every tile of every title.
+     *
+     * The widest set is taken because there is only ever one on an ordinary library, and where an
+     * administrator generated several the largest is the one worth showing on a preview this size.
+     */
+    private fun trickplayOf(item: JellyfinItem): PlayerTrickplay? {
+        if (!apiClient.getCapabilities().supportsTrickplay) return null
+        return item.trickplay.orEmpty().entries.firstNotNullOfOrNull { (sourceId, byWidth) ->
+            byWidth.entries
+                .map { (width, info) -> (width.toIntOrNull() ?: info.width) to info }
+                .filter { (width, info) -> width > 0 && info.tileWidth > 0 && info.tileHeight > 0 }
+                .maxByOrNull { (width, _) -> width }
+                ?.let { (width, info) ->
+                    PlayerTrickplay(
+                        mediaSourceId = sourceId,
+                        thumbnailWidth = width,
+                        columns = info.tileWidth,
+                        rows = info.tileHeight,
+                        intervalMs = info.interval.toLong(),
+                        thumbnailCount = info.thumbnailCount
+                    )
+                }
+        }
     }
 
     private suspend fun storedDetail(itemId: String): PlayerItemDetail {

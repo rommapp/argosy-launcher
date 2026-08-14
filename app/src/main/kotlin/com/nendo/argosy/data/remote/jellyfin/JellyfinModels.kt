@@ -157,7 +157,8 @@ data class JellyfinItem(
     @Json(name = "UserData") val userData: JellyfinUserData? = null,
     @Json(name = "MediaSources") val mediaSources: List<JellyfinMediaSource>? = null,
     @Json(name = "MediaStreams") val mediaStreams: List<JellyfinMediaStream>? = null,
-    @Json(name = "Chapters") val chapters: List<JellyfinChapter>? = null
+    @Json(name = "Chapters") val chapters: List<JellyfinChapter>? = null,
+    @Json(name = "Trickplay") val trickplay: Map<String, Map<String, JellyfinTrickplayInfo>>? = null
 ) {
     val primaryImageTag: String? get() = imageTags?.get(IMAGE_TYPE_PRIMARY)
     val thumbImageTag: String? get() = imageTags?.get(IMAGE_TYPE_THUMB)
@@ -193,6 +194,29 @@ data class JellyfinChapter(
     @Json(name = "StartPositionTicks") val startPositionTicks: Long = 0,
     @Json(name = "Name") val name: String? = null,
     @Json(name = "ImageTag") val imageTag: String? = null
+)
+
+/**
+ * The geometry of one set of scrub thumbnails, exactly as the server generated it.
+ *
+ * It arrives on the item as `Trickplay`, keyed by media source and then by thumbnail width, and an
+ * item the server has generated nothing for carries an empty map rather than a null one. That map is
+ * the only proof thumbnails exist: the server version says the endpoint is there, never that this
+ * title has anything behind it.
+ *
+ * [tileWidth] and [tileHeight] are counts, not pixels - thumbnails per row and per column of one
+ * sheet - and [interval] is milliseconds between thumbnails. A library whose administrator changed
+ * either would preview at the wrong offsets if these were assumed instead of read.
+ */
+@JsonClass(generateAdapter = true)
+data class JellyfinTrickplayInfo(
+    @Json(name = "Width") val width: Int = 0,
+    @Json(name = "Height") val height: Int = 0,
+    @Json(name = "TileWidth") val tileWidth: Int = 0,
+    @Json(name = "TileHeight") val tileHeight: Int = 0,
+    @Json(name = "ThumbnailCount") val thumbnailCount: Int = 0,
+    @Json(name = "Interval") val interval: Int = 0,
+    @Json(name = "Bandwidth") val bandwidth: Int = 0
 )
 
 @JsonClass(generateAdapter = true)

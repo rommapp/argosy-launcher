@@ -20,6 +20,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.HighQuality
+import androidx.compose.material.icons.filled.Subtitles
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -126,6 +127,27 @@ fun MediaDownloadModalHost(
             )
             content.subtitle?.let {
                 Text(text = it, style = MaterialTheme.typography.bodySmall, color = theme.textMute)
+            }
+            content.note?.let {
+                Spacer(Modifier.height(Dimens.spacingSm))
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Subtitles,
+                        contentDescription = null,
+                        tint = theme.textDim,
+                        modifier = Modifier.size(Dimens.iconXs)
+                    )
+                    Text(
+                        text = it,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = theme.textDim,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
             }
             content.warning?.let {
                 Spacer(Modifier.height(Dimens.spacingSm))

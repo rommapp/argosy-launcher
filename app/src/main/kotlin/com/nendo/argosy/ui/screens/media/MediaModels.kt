@@ -6,12 +6,64 @@ import com.nendo.argosy.data.preferences.MediaDownloadQuality
 enum class MediaDetailMode { MOVIE, SERIES }
 
 /**
- * Where detail-screen focus currently lives. Up and Down move between sections; Left and Right move
- * within one, so the action row reads horizontally while the episode list reads vertically.
+ * Where detail-screen focus currently lives.
+ *
+ * [MENU] is the persistent left rail; the other two are the pinned season and episode region beside
+ * it. Each of those two is named by a rail row, and that row is a doorway rather than a stop: the
+ * rail's own selection never rests on one, so walking down past the last action row arrives inside
+ * the section and leaves the row holding the marker for where focus went. Coming back out lands on
+ * that last action row, which is somewhere the user can act rather than a doorway that would open
+ * again underneath them.
  */
-enum class MediaDetailSection { ACTIONS, SEASONS, EPISODES }
+enum class MediaDetailSection { MENU, SEASONS, EPISODES }
 
-enum class MediaDetailAction { PLAY, DOWNLOAD, FAVORITE, WATCHED }
+/**
+ * One row of the left rail, in render order.
+ *
+ * The first group acts on the title; the last two name a region of the content column beside it and
+ * are the way into it. They share one list because they share one focus index - the rail is a single
+ * vertical run - and the divider under [OPTIONS] is what separates acting on the title from
+ * navigating its contents. It is also where the rail's own selection stops: a row with a [section]
+ * is entered rather than stood on.
+ */
+enum class MediaDetailRow {
+    PLAY, DOWNLOAD, FAVORITE, WATCHED, OPTIONS, SEASONS, EPISODES;
+
+    val section: MediaDetailSection?
+        get() = when (this) {
+            SEASONS -> MediaDetailSection.SEASONS
+            EPISODES -> MediaDetailSection.EPISODES
+            else -> null
+        }
+}
+
+/**
+ * The rail for what this title actually has.
+ *
+ * A series has no Watched row: a series is watched an episode at a time, and the rail acts on the
+ * title, so the flag it would toggle is not the one the user is looking at. A movie has no section
+ * rows at all, which is what leaves its rail ending at Options with no divider under it.
+ */
+fun buildMediaRail(
+    mode: MediaDetailMode,
+    hasSeasons: Boolean,
+    hasEpisodes: Boolean
+): List<MediaDetailRow> = buildList {
+    add(MediaDetailRow.PLAY)
+    add(MediaDetailRow.DOWNLOAD)
+    add(MediaDetailRow.FAVORITE)
+    if (mode == MediaDetailMode.MOVIE) add(MediaDetailRow.WATCHED)
+    add(MediaDetailRow.OPTIONS)
+    if (hasSeasons) add(MediaDetailRow.SEASONS)
+    if (hasEpisodes) add(MediaDetailRow.EPISODES)
+}
+
+/**
+ * The last row that acts on the title, and so the far end of the rail's own vertical run. Always a
+ * real row: Options is on every rail, and a movie's rail is nothing but this group.
+ */
+fun List<MediaDetailRow>.lastActionIndex(): Int =
+    indexOfLast { it.section == null }.coerceAtLeast(0)
 
 /**
  * How much of a series is on this device.
@@ -88,6 +140,77 @@ data class MediaDownloadPrompt(
     val focusedOption: MediaDownloadOption? get() = options.getOrNull(focusedIndex)
 }
 
+/**
+ * What the detail menu is allowed to offer, resolved from the screen before the menu is built.
+ */
+data class MediaMenuContext(
+    val canRefreshEpisodes: Boolean = false,
+    val hasDownloads: Boolean = false,
+    val hasLibrary: Boolean = false
+)
+
+/**
+ * The focusable menu rows, in render order. Single source of truth: the modal renders these and the
+ * view model indexes into them, so order and visibility cannot drift apart.
+ *
+ * Every row here is backed by something the media repository already does. Nothing is offered that
+ * would need a server capability this client has not established.
+ */
+fun buildMediaMenu(ctx: MediaMenuContext): List<MediaMenuAction> = buildList {
+    add(MediaMenuAction.ToggleWatched)
+    add(MediaMenuAction.ToggleFavorite)
+    add(MediaMenuAction.Download)
+    if (ctx.hasDownloads) add(MediaMenuAction.RemoveDownloads)
+    if (ctx.canRefreshEpisodes) add(MediaMenuAction.RefreshSeries)
+    if (ctx.hasLibrary) add(MediaMenuAction.GoToLibrary)
+}
+
+sealed class MediaMenuAction {
+    data object ToggleWatched : MediaMenuAction()
+    data object ToggleFavorite : MediaMenuAction()
+    data object Download : MediaMenuAction()
+    data object RemoveDownloads : MediaMenuAction()
+    data object RefreshSeries : MediaMenuAction()
+    data object GoToLibrary : MediaMenuAction()
+}
+
+/**
+ * The open menu, including what it acts on.
+ *
+ * The target is captured when the menu opens rather than read back from the screen while it is
+ * open: the menu is raised over whatever was focused, and an episode list that refreshes underneath
+ * it must not silently move which episode a confirm marks watched.
+ */
+data class MediaMenuState(
+    val targetItemId: String,
+    val title: String,
+    val subtitle: String? = null,
+    val actions: List<MediaMenuAction> = emptyList(),
+    val focusedIndex: Int = 0,
+    val targetPlayed: Boolean = false,
+    val targetIsFavorite: Boolean = false,
+    val isBusy: Boolean = false
+) {
+    val focusedAction: MediaMenuAction? get() = actions.getOrNull(focusedIndex)
+}
+
+/**
+ * How strongly the artwork behind a media screen is drawn, as the user set it.
+ *
+ * These are the Home Screen background controls read at a second consumption site rather than a
+ * second set of knobs: one slider moves every screen that draws artwork, which is the only way a
+ * setting the user tuned on Home can be right here too. Percentages are kept as the settings screen
+ * states them and converted where they are applied, so a value read back matches the slider.
+ *
+ * Held apart from [MediaDetailUiState] deliberately: opening a title replaces that state wholesale,
+ * and preferences that arrived before the title must not be thrown away by it.
+ */
+data class MediaBackdropSettings(
+    val blur: Int = DEFAULT_BACKDROP_BLUR,
+    val saturation: Int = FULL_PERCENT,
+    val opacity: Int = FULL_PERCENT
+)
+
 data class MediaLibraryUi(
     val libraryId: String,
     val name: String,
@@ -109,6 +232,7 @@ data class MediaSeasonUi(
  */
 data class MediaItemUi(
     val itemId: String,
+    val libraryId: String? = null,
     val title: String,
     val posterUrl: String,
     val backdropUrl: String,
@@ -178,10 +302,12 @@ data class MediaLibraryUiState(
 
 data class MediaDetailUiState(
     val item: MediaItemUi? = null,
+    val siblingItemIds: List<String> = emptyList(),
+    val currentItemIndex: Int = -1,
     val mode: MediaDetailMode = MediaDetailMode.MOVIE,
-    val actions: List<MediaDetailAction> = emptyList(),
-    val section: MediaDetailSection = MediaDetailSection.ACTIONS,
-    val actionIndex: Int = 0,
+    val rows: List<MediaDetailRow> = emptyList(),
+    val section: MediaDetailSection = MediaDetailSection.MENU,
+    val rowIndex: Int = 0,
     val seasons: List<MediaSeasonUi> = emptyList(),
     val seasonIndex: Int = 0,
     val episodes: List<MediaItemUi> = emptyList(),
@@ -192,12 +318,44 @@ data class MediaDetailUiState(
     val episodesErrorMessage: String? = null,
     val resumePrompt: MediaResumePrompt? = null,
     val downloadSummary: MediaDownloadSummary = MediaDownloadSummary(),
-    val downloadPrompt: MediaDownloadPrompt? = null
+    val downloadPrompt: MediaDownloadPrompt? = null,
+    val menu: MediaMenuState? = null
 ) {
-    val focusedAction: MediaDetailAction? get() = actions.getOrNull(actionIndex)
+    val focusedRow: MediaDetailRow? get() = rows.getOrNull(rowIndex)
     val selectedSeason: MediaSeasonUi? get() = seasons.getOrNull(seasonIndex)
     val focusedEpisode: MediaItemUi? get() = episodes.getOrNull(episodeIndex)
     val hasSeasons: Boolean get() = mode == MediaDetailMode.SERIES && seasons.isNotEmpty()
+
+    val lastActionIndex: Int get() = rows.lastActionIndex()
+
+    /**
+     * Whether there is another title beside this one in the run the shoulder buttons walk. The run
+     * has a first and a last title rather than being a ring, so both ends answer false and the press
+     * that reaches one is refused instead of landing back where it started.
+     */
+    val hasPreviousTitle: Boolean get() = currentItemIndex > 0
+    val hasNextTitle: Boolean get() = currentItemIndex >= 0 && currentItemIndex < siblingItemIds.size - 1
+    val hasSiblingTitles: Boolean get() = hasPreviousTitle || hasNextTitle
+
+    /**
+     * The region focus arrives in when it leaves the rail, or null when this title has none. A movie
+     * answers null, which is what makes every crossing out of its rail a refusal.
+     */
+    val contentEntrySection: MediaDetailSection?
+        get() = when {
+            hasSeasons -> MediaDetailSection.SEASONS
+            episodes.isNotEmpty() -> MediaDetailSection.EPISODES
+            else -> null
+        }
+
+    fun rowIndexOf(row: MediaDetailRow): Int? = rows.indexOf(row).takeIf { it >= 0 }
+
+    /**
+     * Whether the expanded header has stood aside. The season and episode region is pinned, so the
+     * header is what yields to it: it is full height while the rail holds focus and collapses to its
+     * sticky form for as long as focus is in the region below.
+     */
+    val isHeaderCollapsed: Boolean get() = section != MediaDetailSection.MENU
 
     /**
      * What a plain confirm on the play action starts. For a series that is the episode the user is
@@ -212,4 +370,41 @@ data class MediaDetailUiState(
         }
 }
 
+/**
+ * Rebuilds the rail for the content that has arrived and keeps focus on something that still exists.
+ *
+ * Seasons and episodes reach the screen after it has drawn, so the rail grows a row at a time; a
+ * season change empties the episodes and takes one away again. Applied to every write that can move
+ * either, so the selected row and the open region can never outlive what they point at.
+ *
+ * It is also where the rail's selection is re-tied to the open region: the row that names the region
+ * while one is open, and never past the last action row once none is.
+ */
+fun MediaDetailUiState.withRail(): MediaDetailUiState {
+    val rebuilt = buildMediaRail(mode, hasSeasons, episodes.isNotEmpty())
+    val openSection = when (section) {
+        MediaDetailSection.EPISODES ->
+            if (episodes.isNotEmpty()) section
+            else if (hasSeasons) MediaDetailSection.SEASONS
+            else MediaDetailSection.MENU
+        MediaDetailSection.SEASONS -> if (hasSeasons) section else MediaDetailSection.MENU
+        MediaDetailSection.MENU -> section
+    }
+    val anchoredIndex = when (openSection) {
+        MediaDetailSection.SEASONS -> rebuilt.indexOf(MediaDetailRow.SEASONS)
+        MediaDetailSection.EPISODES -> rebuilt.indexOf(MediaDetailRow.EPISODES)
+        MediaDetailSection.MENU -> rowIndex.coerceAtMost(rebuilt.lastActionIndex())
+    }.coerceIn(0, rebuilt.lastIndex.coerceAtLeast(0))
+    if (rebuilt == rows && openSection == section && anchoredIndex == rowIndex) return this
+    return copy(rows = rebuilt, rowIndex = anchoredIndex, section = openSection)
+}
+
 const val DEFAULT_GRID_COLUMNS = 5
+
+const val FULL_PERCENT = 100
+
+/**
+ * Matches the stored default for the background blur, so the first frame drawn before preferences
+ * arrive is the one they are about to confirm rather than a sharp image that then softens.
+ */
+const val DEFAULT_BACKDROP_BLUR = 40

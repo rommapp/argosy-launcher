@@ -12,10 +12,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import com.nendo.argosy.ui.components.FocusedScroll
 import com.nendo.argosy.ui.primitives.FocusIndicators
 import com.nendo.argosy.ui.primitives.argosyFocusIndicators
 import com.nendo.argosy.ui.screens.media.MediaSeasonUi
@@ -25,8 +25,9 @@ import com.nendo.argosy.ui.util.clickableNoFocus
 
 /**
  * The seasons of a series as a scrolling tab row. Ten seasons fit here where a picker modal would
- * have hidden them, and the shoulder buttons reach the same selection without focus leaving the
- * episode list.
+ * have hidden them, the shoulder buttons reach the same selection from anywhere on the screen, and
+ * Left off the episode list arrives here so a season change never costs a walk to the top of the
+ * episodes.
  */
 @Composable
 fun MediaSeasonTabs(
@@ -39,9 +40,7 @@ fun MediaSeasonTabs(
     val theme = LocalArgosyTheme.current
     val listState = rememberLazyListState()
 
-    LaunchedEffect(selectedIndex) {
-        if (selectedIndex in seasons.indices) listState.animateScrollToItem(selectedIndex)
-    }
+    FocusedScroll(listState = listState, focusedIndex = selectedIndex)
 
     LazyRow(
         state = listState,

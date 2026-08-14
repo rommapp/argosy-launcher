@@ -105,6 +105,21 @@ class MediaDownloadDelegate @Inject constructor(
     }
 
     /**
+     * The removal confirmation on its own, for a caller that already knows removal is what was asked
+     * for. Answers null when there is nothing on this device to take, so a stale menu row cannot
+     * raise a prompt over an empty set.
+     */
+    suspend fun openRemovalPrompt(item: MediaItemUi): MediaDownloadPrompt? {
+        val targets = if (item.isSeries) {
+            downloadedEpisodeIds(item.itemId)
+        } else {
+            listOf(item.itemId).takeIf { item.isDownloaded }.orEmpty()
+        }
+        if (targets.isEmpty()) return null
+        return removalPrompt(item.title, targets)
+    }
+
+    /**
      * Moves the prompt to its next state. A scope choice resolves the titles it covers and asks for
      * a quality; a quality choice enqueues and closes; removal asks once more before it deletes
      * anything, because the files it takes are not fetched back in a moment.

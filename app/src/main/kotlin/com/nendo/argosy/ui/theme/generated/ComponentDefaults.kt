@@ -192,6 +192,18 @@ object ComponentDefaults {
         const val stampCellRatio = 0.6f
     }
 
+    object MediaBackdrop {
+        const val blurScale = 0.5f
+        const val scrimTopAlphaDark = 0.5f
+        const val scrimBottomAlphaDark = 0.9f
+        const val scrimTopAlphaLight = 0.3f
+        const val scrimBottomAlphaLight = 0.7f
+        const val surfaceAlpha = 0.6f
+        const val requestWidth = 640
+        const val requestHeight = 360
+        const val crossfadeMs = 380
+    }
+
     object CustomGrid {
         const val swipePageThresholdDp = 48
     }

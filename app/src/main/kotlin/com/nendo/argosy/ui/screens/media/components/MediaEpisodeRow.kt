@@ -48,11 +48,10 @@ fun MediaEpisodeRow(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .height(Dimens.mediaEpisodeRowHeight)
             .clip(shape)
             .argosyFocusIndicators(focused = isFocused, indicators = FocusIndicators.ListRow, shape = shape)
             .clickableNoFocus(onClick = onClick, onLongClick = onLongClick)
-            .padding(horizontal = Dimens.spacingSm),
+            .padding(horizontal = Dimens.spacingSm, vertical = Dimens.spacingSm),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(Dimens.spacingMd)
     ) {

@@ -31,6 +31,7 @@ import com.nendo.argosy.ui.theme.AspectRatioClass
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalArgosyTheme
 import com.nendo.argosy.ui.theme.LocalUiScale
+import com.nendo.argosy.ui.theme.generated.ComponentDefaults
 
 /**
  * The detail header in its full form. It collapses into [MediaStickyCollapsedHeader] on scroll, so
@@ -108,7 +109,9 @@ fun MediaStickyCollapsedHeader(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(Dimens.headerHeight)
-                .background(theme.surfaceRaised)
+                .background(
+                    theme.surfaceRaised.copy(alpha = ComponentDefaults.MediaBackdrop.surfaceAlpha)
+                )
                 .padding(horizontal = Dimens.spacingLg),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(Dimens.spacingMd)

@@ -49,10 +49,15 @@ import com.nendo.argosy.ui.theme.LocalArgosyTheme
 fun MediaLibraryScreen(
     onBack: () -> Unit,
     onItemSelect: (String) -> Unit,
+    libraryId: String? = null,
     onPlay: (itemId: String, startOver: Boolean) -> Unit = { _, _ -> },
     viewModel: MediaLibraryViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+
+    LaunchedEffect(libraryId, uiState.libraries) {
+        if (libraryId != null) viewModel.selectLibraryById(libraryId)
+    }
     val inputDispatcher = LocalInputDispatcher.current
     val gridState = rememberLazyGridState()
     val theme = LocalArgosyTheme.current

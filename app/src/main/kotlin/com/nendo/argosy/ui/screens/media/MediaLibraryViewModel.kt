@@ -109,6 +109,16 @@ class MediaLibraryViewModel @Inject constructor(
         selectedLibraryId.value = state.libraries[target].libraryId
     }
 
+    /**
+     * Opens the named library. The libraries arrive asynchronously, so an id that is not among them
+     * yet is left alone rather than treated as absent: the caller re-offers it once the list lands.
+     */
+    fun selectLibraryById(libraryId: String) {
+        val index = _uiState.value.libraries.indexOfFirst { it.libraryId == libraryId }
+        if (index < 0) return
+        selectLibrary(index)
+    }
+
     fun cycleLibrary(direction: Int) {
         val state = _uiState.value
         if (state.libraries.size < 2) return

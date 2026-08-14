@@ -84,6 +84,8 @@ object DimensionTokens {
         const val mediaBackdropHeight = 135
         const val mediaEpisodeRowHeight = 88
         const val mediaSeasonTabHeight = 40
+        const val mediaMenuRailWidth = 56
+        const val mediaMenuWidthPct = 30
         const val playerTransportHeight = 96
         const val playerChromePadding = 32
         const val playerScrubTrackHeight = 4

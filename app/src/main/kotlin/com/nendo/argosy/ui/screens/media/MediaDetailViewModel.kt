@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.nendo.argosy.core.input.SoundType
 import com.nendo.argosy.data.media.MediaAvailabilityVerifier
+import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.repository.MediaRepository
 import com.nendo.argosy.ui.input.InputHandler
 import com.nendo.argosy.ui.input.InputResult
@@ -29,23 +30,60 @@ class MediaDetailViewModel @Inject constructor(
     private val mediaRepository: MediaRepository,
     private val seriesDelegate: MediaSeriesDelegate,
     private val downloadDelegate: MediaDownloadDelegate,
-    private val availabilityVerifier: MediaAvailabilityVerifier
+    private val availabilityVerifier: MediaAvailabilityVerifier,
+    preferencesRepository: UserPreferencesRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(MediaDetailUiState())
     val uiState: StateFlow<MediaDetailUiState> = _uiState.asStateFlow()
 
+    private val _backdropSettings = MutableStateFlow(MediaBackdropSettings())
+    val backdropSettings: StateFlow<MediaBackdropSettings> = _backdropSettings.asStateFlow()
+
     private val watchStateVersion = MutableStateFlow(0)
 
     private var loadedItemId: String? = null
     private var openedSeasonId: String? = null
+    private var siblingLibraryId: String? = null
     private var itemJob: Job? = null
     private var seasonsJob: Job? = null
     private var episodesJob: Job? = null
     private var downloadJob: Job? = null
     private var playJob: Job? = null
+    private var siblingsJob: Job? = null
 
+    init {
+        viewModelScope.launch {
+            preferencesRepository.preferences.collect { prefs ->
+                _backdropSettings.value = MediaBackdropSettings(
+                    blur = prefs.backgroundBlur,
+                    saturation = prefs.backgroundSaturation,
+                    opacity = prefs.backgroundOpacity
+                )
+            }
+        }
+    }
+
+    /**
+     * Opens the title the route names, and only ever the first one it names. The shoulder buttons
+     * walk this screen along its library without the route changing, so a second call - a rotation,
+     * a return from the player - would otherwise drag the screen back to the title the route still
+     * carries rather than the one the user walked to.
+     */
     fun load(itemId: String) {
+        if (loadedItemId != null) return
+        openItem(itemId)
+    }
+
+    /**
+     * Swaps the screen to a title wholesale: a new item, its own seasons and episodes, and focus back
+     * on the rail's first action, which is where opening a title from anywhere else starts.
+     *
+     * The sibling run is the one thing carried across. It belongs to the library rather than to the
+     * title, so a press held down walks it at the speed of the presses instead of waiting for each
+     * title to land before the next step is possible.
+     */
+    private fun openItem(itemId: String) {
         if (loadedItemId == itemId) return
         loadedItemId = itemId
         openedSeasonId = null
@@ -59,7 +97,12 @@ class MediaDetailViewModel @Inject constructor(
         episodesJob = null
         downloadJob = null
         playJob = null
-        _uiState.value = MediaDetailUiState(isLoading = true)
+        val siblings = _uiState.value.siblingItemIds
+        _uiState.value = MediaDetailUiState(
+            isLoading = true,
+            siblingItemIds = siblings,
+            currentItemIndex = siblings.indexOf(itemId)
+        )
 
         availabilityVerifier.verifyOnOpen()
         itemJob = viewModelScope.launch {
@@ -73,7 +116,14 @@ class MediaDetailViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Applies what one title's observers report, and drops anything a title that has since been
+     * walked away from is still saying. A cancelled collector can have one emission already in
+     * flight, and the screen holding the show before the one the user just stepped to is worse than
+     * the screen holding nothing yet.
+     */
     private fun applyItem(itemId: String, item: MediaItemUi?) {
+        if (itemId != loadedItemId) return
         if (item == null) {
             _uiState.update {
                 it.copy(
@@ -83,33 +133,64 @@ class MediaDetailViewModel @Inject constructor(
             }
             return
         }
+        observeSiblings(item.libraryId)
         val mode = if (item.isSeries) MediaDetailMode.SERIES else MediaDetailMode.MOVIE
         _uiState.update {
             it.copy(
                 item = item,
                 mode = mode,
-                actions = actionsFor(mode),
-                actionIndex = it.actionIndex.coerceIn(0, actionsFor(mode).lastIndex),
                 isLoading = false,
                 errorMessage = null
-            )
+            ).withRail()
         }
         if (mode == MediaDetailMode.SERIES && seasonsJob == null) observeSeasons(itemId)
         if (downloadJob == null) observeDownloadSummary(item)
     }
 
-    private fun actionsFor(mode: MediaDetailMode): List<MediaDetailAction> = when (mode) {
-        MediaDetailMode.MOVIE -> listOf(
-            MediaDetailAction.PLAY,
-            MediaDetailAction.DOWNLOAD,
-            MediaDetailAction.FAVORITE,
-            MediaDetailAction.WATCHED
-        )
-        MediaDetailMode.SERIES -> listOf(
-            MediaDetailAction.PLAY,
-            MediaDetailAction.DOWNLOAD,
-            MediaDetailAction.FAVORITE
-        )
+    /**
+     * Tracks the library this title sits in, which is the run the shoulder buttons walk.
+     *
+     * It is the library's own query rather than a remembered list of whatever surface the user came
+     * from, so the order here is the order the grid showed and the two cannot drift. A title with no
+     * library has no run: it keeps an empty one, and the shoulder buttons refuse rather than invent a
+     * neighbour.
+     */
+    private fun observeSiblings(libraryId: String?) {
+        if (libraryId == null) {
+            siblingsJob?.cancel()
+            siblingsJob = null
+            siblingLibraryId = null
+            _uiState.update { it.copy(siblingItemIds = emptyList(), currentItemIndex = -1) }
+            return
+        }
+        if (siblingLibraryId == libraryId && siblingsJob?.isActive == true) return
+        siblingsJob?.cancel()
+        siblingLibraryId = libraryId
+        siblingsJob = viewModelScope.launch {
+            mediaRepository.observeLibraryItems(libraryId).collect { entities ->
+                val ids = entities.map { it.itemId }
+                val current = loadedItemId
+                _uiState.update {
+                    it.copy(
+                        siblingItemIds = ids,
+                        currentItemIndex = ids.indexOfFirst { id -> id == current }
+                    )
+                }
+            }
+        }
+    }
+
+    /**
+     * Steps to the title beside this one, in the order its library is shown in. Answers false at
+     * either end of that run and for a title that has none, which is the caller's cue to sound a
+     * boundary: walking off the end of a grid is not a move to its other end.
+     */
+    private fun openSiblingTitle(direction: Int): Boolean {
+        val state = _uiState.value
+        if (state.currentItemIndex < 0) return false
+        val target = state.siblingItemIds.getOrNull(state.currentItemIndex + direction) ?: return false
+        openItem(target)
+        return true
     }
 
     /**
@@ -124,6 +205,7 @@ class MediaDetailViewModel @Inject constructor(
                 downloadDelegate.pendingCount(item.itemId, item.isSeries),
                 availabilityVerifier.availability
             ) { pending, _ -> pending }.collect { pending ->
+                if (item.itemId != loadedItemId) return@collect
                 val current = _uiState.value.item ?: item
                 val summary = downloadDelegate.summaryFor(current, pending)
                 _uiState.update { it.copy(downloadSummary = summary) }
@@ -174,12 +256,145 @@ class MediaDetailViewModel @Inject constructor(
         _uiState.update { it.copy(downloadPrompt = null) }
     }
 
+    /**
+     * Raises the options menu over whatever is focused.
+     *
+     * This is the half the permanent rail cannot do. The rail is always on screen and so always acts
+     * on the title; this is raised on demand and takes its target from the moment it opens, which is
+     * how an episode gets marked watched or a season re-fetched without the rail having to grow a row
+     * whose meaning changes depending on where focus happens to be. An episode list gives it the
+     * focused episode and the rest of the screen gives it the title, and it says which one it took
+     * rather than leaving the user to guess which watched flag a confirm will move.
+     */
+    fun openMenu() {
+        val state = _uiState.value
+        val item = state.item ?: return
+        val target = if (state.section == MediaDetailSection.EPISODES) state.focusedEpisode ?: item else item
+        _uiState.update {
+            it.copy(
+                menu = MediaMenuState(
+                    targetItemId = target.itemId,
+                    title = target.title,
+                    subtitle = menuSubtitleFor(target, item),
+                    actions = buildMediaMenu(
+                        MediaMenuContext(
+                            canRefreshEpisodes = item.isSeries && state.selectedSeason != null,
+                            hasDownloads = state.downloadSummary.downloaded > 0,
+                            hasLibrary = item.libraryId != null
+                        )
+                    ),
+                    targetPlayed = target.played,
+                    targetIsFavorite = target.isFavorite
+                )
+            )
+        }
+    }
+
+    private fun menuSubtitleFor(target: MediaItemUi, item: MediaItemUi): String? =
+        if (target.itemId == item.itemId) item.year?.toString() else target.episodeLabel ?: item.title
+
+    fun moveMenuFocus(delta: Int) {
+        _uiState.update { state ->
+            val menu = state.menu ?: return@update state
+            if (menu.actions.isEmpty()) return@update state
+            state.copy(menu = menu.copy(focusedIndex = (menu.focusedIndex + delta).mod(menu.actions.size)))
+        }
+    }
+
+    fun focusMenuOption(index: Int) {
+        _uiState.update { state ->
+            val menu = state.menu ?: return@update state
+            if (menu.actions.isEmpty()) return@update state
+            state.copy(menu = menu.copy(focusedIndex = index.coerceIn(0, menu.actions.lastIndex)))
+        }
+    }
+
+    fun dismissMenu() {
+        _uiState.update { it.copy(menu = null) }
+    }
+
+    fun confirmMenuOption(onNavigateToLibrary: (String) -> Unit) {
+        val state = _uiState.value
+        val menu = state.menu ?: return
+        if (menu.isBusy) return
+        when (menu.focusedAction) {
+            MediaMenuAction.ToggleWatched -> {
+                setPlayed(menu.targetItemId, !menu.targetPlayed)
+                dismissMenu()
+            }
+            MediaMenuAction.ToggleFavorite -> {
+                setFavorite(menu.targetItemId, !menu.targetIsFavorite)
+                dismissMenu()
+            }
+            MediaMenuAction.Download -> {
+                dismissMenu()
+                openDownloadPrompt()
+            }
+            MediaMenuAction.RemoveDownloads -> {
+                dismissMenu()
+                openRemovalPrompt()
+            }
+            MediaMenuAction.RefreshSeries -> refreshFromServer()
+            MediaMenuAction.GoToLibrary -> {
+                val libraryId = state.item?.libraryId ?: return
+                dismissMenu()
+                onNavigateToLibrary(libraryId)
+            }
+            null -> Unit
+        }
+    }
+
+    /**
+     * Re-fetches the open season. A series stores its episodes a season at a time, so this is the
+     * whole of what "refresh this series" can mean without pulling seasons the screen is not showing.
+     */
+    private fun refreshFromServer() {
+        val state = _uiState.value
+        val seriesId = state.item?.itemId ?: return
+        val seasonId = state.selectedSeason?.itemId ?: return
+        _uiState.update { it.copy(menu = it.menu?.copy(isBusy = true)) }
+        viewModelScope.launch {
+            val failure = seriesDelegate.refreshEpisodes(seriesId, seasonId)
+            _uiState.update { it.copy(menu = null, episodesErrorMessage = failure) }
+        }
+    }
+
+    /**
+     * Takes the removal branch of the download prompt straight to its confirmation, so removing what
+     * is already downloaded does not require walking back through the download choices to find it.
+     */
+    private fun openRemovalPrompt() {
+        val state = _uiState.value
+        val item = state.item ?: return
+        viewModelScope.launch {
+            val prompt = downloadDelegate.openRemovalPrompt(item)
+            _uiState.update { it.copy(downloadPrompt = prompt) }
+        }
+    }
+
+    private fun setPlayed(itemId: String, played: Boolean) {
+        viewModelScope.launch {
+            mediaRepository.setPlayed(itemId, played)
+            watchStateVersion.update { it + 1 }
+        }
+    }
+
+    private fun setFavorite(itemId: String, isFavorite: Boolean) {
+        viewModelScope.launch { mediaRepository.setFavorite(itemId, isFavorite) }
+    }
+
     private fun observeSeasons(seriesId: String) {
         seasonsJob = viewModelScope.launch {
             seriesDelegate.seasonsFlow(seriesId).collect { seasons ->
+                if (seriesId != loadedItemId) return@collect
                 val previousSeasonId = _uiState.value.selectedSeason?.itemId
                 val index = seasons.indexOfFirst { it.itemId == previousSeasonId }.takeIf { it >= 0 } ?: 0
-                _uiState.update { it.copy(seasons = seasons, seasonIndex = index.coerceAtMost((seasons.size - 1).coerceAtLeast(0))) }
+                _uiState.update {
+                    it.copy(
+                        seasons = seasons,
+                        seasonIndex = index.coerceAtMost((seasons.size - 1).coerceAtLeast(0))
+                    ).withRail()
+                }
                 seasons.getOrNull(index)?.let { openSeason(seriesId, it.itemId) }
             }
         }
@@ -193,15 +408,17 @@ class MediaDetailViewModel @Inject constructor(
         episodesJob = viewModelScope.launch {
             launch {
                 val failure = seriesDelegate.refreshEpisodes(seriesId, seasonId)
+                if (seasonId != openedSeasonId) return@launch
                 _uiState.update { it.copy(isLoadingEpisodes = false, episodesErrorMessage = failure) }
             }
             seriesDelegate.episodesFlow(seasonId, watchStateVersion).collect { episodes ->
+                if (seasonId != openedSeasonId) return@collect
                 _uiState.update { state ->
                     state.copy(
                         episodes = episodes,
                         episodeIndex = state.episodeIndex.coerceIn(0, (episodes.size - 1).coerceAtLeast(0)),
                         isLoadingEpisodes = false
-                    )
+                    ).withRail()
                 }
             }
         }
@@ -213,45 +430,139 @@ class MediaDetailViewModel @Inject constructor(
         val target = index.mod(state.seasons.size)
         if (target == state.seasonIndex && state.episodes.isNotEmpty()) return
         val seriesId = state.item?.itemId ?: return
-        _uiState.update { it.copy(seasonIndex = target, episodes = emptyList(), episodeIndex = 0) }
+        _uiState.update { it.copy(seasonIndex = target, episodes = emptyList(), episodeIndex = 0).withRail() }
         openSeason(seriesId, state.seasons[target].itemId)
     }
 
-    fun setSection(section: MediaDetailSection) {
-        _uiState.update { it.copy(section = section) }
+    /**
+     * Opens a season and puts focus on the tabs, which is what a tap on a tab means. The shoulder
+     * buttons take the other path and change the season without moving focus at all.
+     */
+    fun focusSeason(index: Int) {
+        setSection(MediaDetailSection.SEASONS)
+        selectSeason(index)
     }
 
-    fun setActionIndex(index: Int) {
-        val actions = _uiState.value.actions
-        if (actions.isEmpty()) return
-        _uiState.update { it.copy(section = MediaDetailSection.ACTIONS, actionIndex = index.mod(actions.size)) }
+    /**
+     * Moves focus between the rail and the regions beside it, keeping the rail's own selection on the
+     * row that names wherever focus went. That single rule is what leaves a dim marker on Seasons or
+     * Episodes while focus is out in them.
+     *
+     * Returning to the rail lands on the last action row instead of the row focus came from. A
+     * section row is entered by arriving on it, so standing on one after leaving its section would
+     * re-open what was just left; the row below the divider that is a destination rather than a
+     * doorway is Options, and that is where every path back to the rail terminates.
+     */
+    fun setSection(section: MediaDetailSection) {
+        _uiState.update { state ->
+            val index = when (section) {
+                MediaDetailSection.SEASONS -> state.rowIndexOf(MediaDetailRow.SEASONS) ?: state.rowIndex
+                MediaDetailSection.EPISODES -> state.rowIndexOf(MediaDetailRow.EPISODES) ?: state.rowIndex
+                MediaDetailSection.MENU -> state.lastActionIndex
+            }
+            state.copy(section = section, rowIndex = index)
+        }
+    }
+
+    /**
+     * What a tap on a rail row means. A tap is the move and the press at once, so it lands where the
+     * gamepad would have landed after both: a section row opens its region rather than parking the
+     * rail on a doorway, and every other row is selected and then run.
+     */
+    fun activateRow(index: Int, onPlay: (itemId: String, startOver: Boolean) -> Unit) {
+        val rows = _uiState.value.rows
+        val row = rows.getOrNull(index) ?: return
+        val section = row.section
+        if (section != null) {
+            openSection(section)
+            return
+        }
+        _uiState.update { it.copy(section = MediaDetailSection.MENU, rowIndex = index) }
+        confirmRow(onPlay)
+    }
+
+    /**
+     * Steps the rail selection, clamping at the top of the rail and at the last action row. Answers
+     * false when it is already against the end it was asked to move past, which is the caller's cue
+     * to cross into the content below or sound a boundary rather than wrap: the rows past the
+     * divider are doorways, so the rail's own run ends at Options.
+     */
+    private fun moveRowFocus(delta: Int): Boolean {
+        val state = _uiState.value
+        if (state.rows.isEmpty()) return false
+        val target = (state.rowIndex + delta).coerceIn(0, state.lastActionIndex)
+        if (target == state.rowIndex) return false
+        _uiState.update { it.copy(rowIndex = target) }
+        return true
+    }
+
+    /**
+     * Runs whatever the rail currently points at. Shared by the gamepad's confirm and a tap on the
+     * row, so the two cannot drift. A section row runs by opening its region, which is the whole of
+     * what it does - the rail names the region, the region holds the content.
+     */
+    private fun confirmRow(onPlay: (itemId: String, startOver: Boolean) -> Unit): Boolean =
+        when (_uiState.value.focusedRow) {
+            MediaDetailRow.PLAY -> { playPrimary(onPlay); true }
+            MediaDetailRow.DOWNLOAD -> { openDownloadPrompt(); true }
+            MediaDetailRow.FAVORITE -> { toggleFavorite(); true }
+            MediaDetailRow.WATCHED -> { toggleWatched(); true }
+            MediaDetailRow.OPTIONS -> { openMenu(); true }
+            MediaDetailRow.SEASONS -> openSection(MediaDetailSection.SEASONS)
+            MediaDetailRow.EPISODES -> openSection(MediaDetailSection.EPISODES)
+            null -> false
+        }
+
+    /**
+     * Moves focus off the rail and into the region beside it, entering the first region the title
+     * has. The rail's selection only ever rests on an action row, so there is no named region to
+     * prefer over that one. Answers false when there is no region to enter, which is every movie and
+     * any series whose seasons have not arrived.
+     */
+    private fun enterContent(): Boolean = openSection(_uiState.value.contentEntrySection)
+
+    private fun openSection(section: MediaDetailSection?): Boolean {
+        val state = _uiState.value
+        return when (section) {
+            MediaDetailSection.SEASONS -> {
+                if (!state.hasSeasons) return false
+                setSection(MediaDetailSection.SEASONS)
+                true
+            }
+            MediaDetailSection.EPISODES -> {
+                if (state.episodes.isEmpty()) return false
+                setEpisodeIndex(state.episodeIndex)
+                true
+            }
+            else -> false
+        }
     }
 
     fun setEpisodeIndex(index: Int) {
         val size = _uiState.value.episodes.size
         if (size == 0) return
-        _uiState.update { it.copy(section = MediaDetailSection.EPISODES, episodeIndex = index.coerceIn(0, size - 1)) }
+        _uiState.update { state ->
+            state.copy(
+                section = MediaDetailSection.EPISODES,
+                episodeIndex = index.coerceIn(0, size - 1),
+                rowIndex = state.rowIndexOf(MediaDetailRow.EPISODES) ?: state.rowIndex
+            )
+        }
     }
 
     fun toggleFavorite() {
         val item = _uiState.value.item ?: return
-        viewModelScope.launch { mediaRepository.setFavorite(item.itemId, !item.isFavorite) }
+        setFavorite(item.itemId, !item.isFavorite)
     }
 
     fun toggleWatched() {
         val item = _uiState.value.item ?: return
-        viewModelScope.launch {
-            mediaRepository.setPlayed(item.itemId, !item.played)
-            watchStateVersion.update { it + 1 }
-        }
+        setPlayed(item.itemId, !item.played)
     }
 
     fun toggleEpisodeWatched(index: Int) {
         val episode = _uiState.value.episodes.getOrNull(index) ?: return
-        viewModelScope.launch {
-            mediaRepository.setPlayed(episode.itemId, !episode.played)
-            watchStateVersion.update { it + 1 }
-        }
+        setPlayed(episode.itemId, !episode.played)
     }
 
     /**
@@ -305,35 +616,44 @@ class MediaDetailViewModel @Inject constructor(
         onPlay: (itemId: String, startOver: Boolean) -> Unit
     ): InputHandler = object : InputHandler {
 
+        /**
+         * Up is Down read backwards: out of the episodes only once the first one is reached, out of
+         * the seasons onto the rail, and up the rail's action rows to Play. Every step out of a
+         * section lands on something that acts rather than on the row that would let focus straight
+         * back in.
+         */
         override fun onUp(): InputResult {
             val state = _uiState.value
             return when (state.section) {
-                MediaDetailSection.ACTIONS -> InputResult.handled(SoundType.BOUNDARY)
+                MediaDetailSection.MENU ->
+                    if (moveRowFocus(-1)) InputResult.HANDLED
+                    else InputResult.handled(SoundType.BOUNDARY)
                 MediaDetailSection.SEASONS -> {
-                    setSection(MediaDetailSection.ACTIONS)
+                    setSection(MediaDetailSection.MENU)
                     InputResult.HANDLED
                 }
                 MediaDetailSection.EPISODES -> {
                     if (state.episodeIndex > 0) setEpisodeIndex(state.episodeIndex - 1)
-                    else setSection(if (state.hasSeasons) MediaDetailSection.SEASONS else MediaDetailSection.ACTIONS)
+                    else setSection(if (state.hasSeasons) MediaDetailSection.SEASONS else MediaDetailSection.MENU)
                     InputResult.HANDLED
                 }
             }
         }
 
+        /**
+         * Down walks the rail's action rows and then keeps going, into the content rather than onto
+         * the doorway rows that name it. From the seasons it drops into the episodes at the episode
+         * that was last left, so coming back down after bumping a season resumes where it was.
+         */
         override fun onDown(): InputResult {
             val state = _uiState.value
             return when (state.section) {
-                MediaDetailSection.ACTIONS -> {
-                    if (!state.hasSeasons) return InputResult.handled(SoundType.BOUNDARY)
-                    setSection(MediaDetailSection.SEASONS)
-                    InputResult.HANDLED
-                }
-                MediaDetailSection.SEASONS -> {
-                    if (state.episodes.isEmpty()) return InputResult.handled(SoundType.BOUNDARY)
-                    setEpisodeIndex(0)
-                    InputResult.HANDLED
-                }
+                MediaDetailSection.MENU ->
+                    if (moveRowFocus(1) || enterContent()) InputResult.HANDLED
+                    else InputResult.handled(SoundType.BOUNDARY)
+                MediaDetailSection.SEASONS ->
+                    if (openSection(MediaDetailSection.EPISODES)) InputResult.HANDLED
+                    else InputResult.handled(SoundType.BOUNDARY)
                 MediaDetailSection.EPISODES -> {
                     if (state.episodeIndex >= state.episodes.lastIndex) {
                         return InputResult.handled(SoundType.BOUNDARY)
@@ -344,37 +664,56 @@ class MediaDetailViewModel @Inject constructor(
             }
         }
 
-        override fun onLeft(): InputResult = adjust(-1)
-
-        override fun onRight(): InputResult = adjust(1)
-
-        private fun adjust(direction: Int): InputResult {
+        /**
+         * Left runs back along the content towards the rail, one region at a time. From the episodes
+         * it reaches the seasons, which is the quick way to bump the season without walking an
+         * episode list to its top first. The tabs then spend their own horizontal axis - Left is how
+         * a tab row steps backwards - and only once there is no earlier season does the press carry
+         * on to the rail. Up is the one-press exit from the seasons for anyone who does not want to
+         * walk them.
+         */
+        override fun onLeft(): InputResult {
             val state = _uiState.value
             return when (state.section) {
-                MediaDetailSection.ACTIONS -> {
-                    setActionIndex(state.actionIndex + direction)
-                    InputResult.HANDLED
-                }
+                MediaDetailSection.MENU -> InputResult.handled(SoundType.BOUNDARY)
                 MediaDetailSection.SEASONS -> {
-                    selectSeason(state.seasonIndex + direction)
+                    if (state.seasonIndex > 0) selectSeason(state.seasonIndex - 1)
+                    else setSection(MediaDetailSection.MENU)
                     InputResult.HANDLED
                 }
-                MediaDetailSection.EPISODES -> InputResult.handled(SoundType.SILENT)
+                MediaDetailSection.EPISODES -> {
+                    setSection(if (state.hasSeasons) MediaDetailSection.SEASONS else MediaDetailSection.MENU)
+                    InputResult.HANDLED
+                }
+            }
+        }
+
+        override fun onRight(): InputResult {
+            val state = _uiState.value
+            return when (state.section) {
+                MediaDetailSection.MENU ->
+                    if (enterContent()) InputResult.HANDLED
+                    else InputResult.handled(SoundType.BOUNDARY)
+                MediaDetailSection.SEASONS -> {
+                    if (state.seasonIndex >= state.seasons.lastIndex) {
+                        return InputResult.handled(SoundType.BOUNDARY)
+                    }
+                    selectSeason(state.seasonIndex + 1)
+                    InputResult.HANDLED
+                }
+                MediaDetailSection.EPISODES -> InputResult.handled(SoundType.BOUNDARY)
             }
         }
 
         override fun onConfirm(): InputResult {
             val state = _uiState.value
             return when (state.section) {
-                MediaDetailSection.ACTIONS -> {
-                    confirmAction(state)
-                    InputResult.HANDLED
-                }
-                MediaDetailSection.SEASONS -> {
-                    if (state.episodes.isEmpty()) return InputResult.handled(SoundType.BOUNDARY)
-                    setEpisodeIndex(0)
-                    InputResult.HANDLED
-                }
+                MediaDetailSection.MENU ->
+                    if (confirmRow(onPlay)) InputResult.HANDLED
+                    else InputResult.handled(SoundType.BOUNDARY)
+                MediaDetailSection.SEASONS ->
+                    if (openSection(MediaDetailSection.EPISODES)) InputResult.HANDLED
+                    else InputResult.handled(SoundType.BOUNDARY)
                 MediaDetailSection.EPISODES -> {
                     val episode = state.focusedEpisode ?: return InputResult.handled(SoundType.BOUNDARY)
                     onPlay(episode.itemId, false)
@@ -387,8 +726,8 @@ class MediaDetailViewModel @Inject constructor(
             val state = _uiState.value
             val target = when (state.section) {
                 MediaDetailSection.EPISODES -> state.focusedEpisode
-                MediaDetailSection.ACTIONS ->
-                    if (state.focusedAction == MediaDetailAction.PLAY) state.playTarget else null
+                MediaDetailSection.MENU ->
+                    if (state.focusedRow == MediaDetailRow.PLAY) state.playTarget else null
                 MediaDetailSection.SEASONS -> null
             } ?: return InputResult.handled(SoundType.SILENT)
             if (!openResumePrompt(target)) onPlay(target.itemId, false)
@@ -406,34 +745,24 @@ class MediaDetailViewModel @Inject constructor(
         }
 
         override fun onContextMenu(): InputResult {
-            openDownloadPrompt()
+            openMenu()
             return InputResult.HANDLED
         }
 
-        override fun onPrevSection(): InputResult = cycleSeason(-1)
+        /**
+         * The shoulders walk the library rather than the title's own contents: the show or film
+         * before this one, and the one after. A season is changed from the tabs beside the rail,
+         * which is where the seasons are.
+         */
+        override fun onPrevSection(): InputResult =
+            if (openSiblingTitle(-1)) InputResult.HANDLED else InputResult.handled(SoundType.BOUNDARY)
 
-        override fun onNextSection(): InputResult = cycleSeason(1)
-
-        private fun cycleSeason(direction: Int): InputResult {
-            val state = _uiState.value
-            if (state.seasons.size < 2) return InputResult.handled(SoundType.SILENT)
-            selectSeason(state.seasonIndex + direction)
-            return InputResult.HANDLED
-        }
+        override fun onNextSection(): InputResult =
+            if (openSiblingTitle(1)) InputResult.HANDLED else InputResult.handled(SoundType.BOUNDARY)
 
         override fun onBack(): InputResult {
             onBack()
             return InputResult.HANDLED
-        }
-
-        private fun confirmAction(state: MediaDetailUiState) {
-            when (state.focusedAction) {
-                MediaDetailAction.PLAY -> playPrimary(onPlay)
-                MediaDetailAction.DOWNLOAD -> openDownloadPrompt()
-                MediaDetailAction.FAVORITE -> toggleFavorite()
-                MediaDetailAction.WATCHED -> toggleWatched()
-                null -> Unit
-            }
         }
     }
 }

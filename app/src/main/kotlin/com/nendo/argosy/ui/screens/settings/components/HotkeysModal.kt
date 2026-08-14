@@ -383,7 +383,8 @@ private fun MenuListContent(
             InputButton.B to "Back",
             InputButton.X to "Hold delay",
             InputButton.Y to "Clear"
-        )
+        ),
+        onFooterHintClick = { button -> if (button == InputButton.B) onDismiss() }
     ) {
         LazyColumn(
             state = listState,
@@ -666,7 +667,8 @@ private fun RecordingContent(
         subtitle = title,
         baseWidth = 350.dp,
         onDismiss = onCancel,
-        footerHints = listOf(InputButton.B to "Cancel")
+        footerHints = listOf(InputButton.B to "Cancel"),
+        onFooterHintClick = { button -> if (button == InputButton.B) onCancel() }
     ) {
         Box(
             modifier = Modifier

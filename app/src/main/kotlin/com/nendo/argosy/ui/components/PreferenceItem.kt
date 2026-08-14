@@ -316,7 +316,10 @@ fun SliderPreference(
         Text(
             text = title,
             style = MaterialTheme.typography.titleMedium,
-            color = preferenceContentColor(isFocused)
+            color = preferenceContentColor(isFocused),
+            modifier = Modifier
+                .weight(1f)
+                .padding(end = Dimens.spacingSm)
         )
         StepperControl(
             display = "$value${suffix.orEmpty()}",

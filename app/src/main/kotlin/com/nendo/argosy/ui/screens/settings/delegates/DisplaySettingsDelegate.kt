@@ -2,10 +2,14 @@ package com.nendo.argosy.ui.screens.settings.delegates
 
 import androidx.core.graphics.ColorUtils
 import com.nendo.argosy.data.cache.GradientPreset
+import com.nendo.argosy.data.preferences.GripReserveMode
+import com.nendo.argosy.domain.model.GripAutoControllers
 import com.nendo.argosy.data.preferences.BackdropEdgeStyle
 import com.nendo.argosy.data.preferences.BackdropMotion
 import com.nendo.argosy.data.preferences.BackdropPreset
 import com.nendo.argosy.data.preferences.BackdropVertexIcon
+import com.nendo.argosy.ui.theme.GRIP_RESERVE_MAX_PERCENT
+import com.nendo.argosy.ui.theme.GRIP_RESERVE_MIN_PERCENT
 import com.nendo.argosy.ui.theme.backdrop.BackdropConfig
 import com.nendo.argosy.ui.theme.backdrop.defaultEdgeStyle
 import com.nendo.argosy.ui.theme.backdrop.defaultVertexIcons
@@ -408,15 +412,21 @@ class DisplaySettingsDelegate @Inject constructor(
         }
     }
 
-    fun setGripReserveEnabled(scope: CoroutineScope, enabled: Boolean) {
+    fun setGripReserveMode(scope: CoroutineScope, mode: GripReserveMode) {
         scope.launch {
-            preferencesRepository.setGripReserveEnabled(enabled)
-            _state.update { it.copy(gripReserveEnabled = enabled) }
+            preferencesRepository.setGripReserveMode(mode)
+            _state.update { it.copy(gripReserveMode = mode) }
         }
     }
 
+    fun cycleGripReserveMode(scope: CoroutineScope, direction: Int) {
+        val modes = GripReserveMode.entries
+        val current = modes.indexOf(_state.value.gripReserveMode).coerceAtLeast(0)
+        setGripReserveMode(scope, modes[(current + direction).mod(modes.size)])
+    }
+
     fun setGripReservePercent(scope: CoroutineScope, percent: Int) {
-        val newValue = percent.coerceIn(5, 40)
+        val newValue = percent.coerceIn(GRIP_RESERVE_MIN_PERCENT, GRIP_RESERVE_MAX_PERCENT)
         scope.launch {
             preferencesRepository.setGripReservePercent(newValue)
             _state.update { it.copy(gripReservePercent = newValue) }
@@ -425,7 +435,7 @@ class DisplaySettingsDelegate @Inject constructor(
 
     fun adjustGripReservePercent(scope: CoroutineScope, delta: Int) {
         val current = _state.value.gripReservePercent
-        val newValue = (current + delta).coerceIn(5, 40)
+        val newValue = (current + delta).coerceIn(GRIP_RESERVE_MIN_PERCENT, GRIP_RESERVE_MAX_PERCENT)
         if (newValue != current) {
             setGripReservePercent(scope, newValue)
         }
@@ -497,6 +507,33 @@ class DisplaySettingsDelegate @Inject constructor(
         scope.launch {
             preferencesRepository.setCompactFooter(enabled)
             _state.update { it.copy(compactFooter = enabled) }
+        }
+    }
+
+    fun showGripControllerModal() {
+        _state.update { it.copy(showGripControllerModal = true) }
+    }
+
+    fun hideGripControllerModal() {
+        _state.update { it.copy(showGripControllerModal = false) }
+    }
+
+    fun addGripAutoController(scope: CoroutineScope, controllerId: String, controllerName: String) {
+        updateGripAutoControllers(scope) { it.with(controllerId, controllerName) }
+    }
+
+    fun removeGripAutoController(scope: CoroutineScope, controllerId: String) {
+        updateGripAutoControllers(scope) { it.without(controllerId) }
+    }
+
+    private fun updateGripAutoControllers(
+        scope: CoroutineScope,
+        transform: (GripAutoControllers) -> GripAutoControllers
+    ) {
+        scope.launch {
+            val updated = transform(_state.value.gripAutoControllers)
+            preferencesRepository.setGripAutoControllers(updated)
+            _state.update { it.copy(gripAutoControllers = updated) }
         }
     }
 

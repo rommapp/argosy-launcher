@@ -60,10 +60,6 @@ internal class InterfaceSectionInput(
             InterfaceItem.CompactFooter -> return toggleLeftRight(direction, state.display.compactFooter) {
                 viewModel.setCompactFooter(it)
             }
-            InterfaceItem.GripReserve -> return toggleLeftRight(direction, state.display.gripReserveEnabled) {
-                viewModel.setGripReserveEnabled(it)
-            }
-            InterfaceItem.GripReservePercent -> { viewModel.adjustGripReservePercent(direction * 5); return InputResult.HANDLED }
             else -> {}
         }
         return InputResult.UNHANDLED

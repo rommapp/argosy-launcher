@@ -90,16 +90,25 @@ const val MIN_LANE_COUNT = 2
 const val MAX_LANE_COUNT = 8
 
 /**
- * Which of the optional rails home offers. These are not a property of any one layout -- a rail is
- * either on the home surface or it is not -- so they sit beside the layout choice rather than
+ * Which of the optional media rows home offers. These are not a property of any one layout -- a row
+ * is either on the home surface or it is not -- so they sit beside the layout choice rather than
  * inside one of the per-layout configs.
  *
- * Both default on: a rail with nothing behind it does not appear, so the cost of the default is
- * nothing for someone with no media server and the rail is already there for someone who has one.
+ * Nothing here shows anything without a signed-in media account, so the defaults cost someone with
+ * no media server nothing either way.
+ *
+ * [showLibraries] governs the whole run of per-library rows rather than one row each, matching the
+ * platform rows it sits beside: a platform is a row because it has games, not because it was
+ * switched on, and a library is a row because the server has it.
+ *
+ * [showContinueWatching] defaults off. The server's resume list accumulates every abandoned item for
+ * as long as the account exists, so the row is correct and still mostly noise; it stays available for
+ * anyone who wants it and stays out of the way of everyone who does not.
  */
 data class HomeRailSettings(
-    val showContinueWatching: Boolean = true,
-    val showNextUp: Boolean = true
+    val showContinueWatching: Boolean = false,
+    val showNextUp: Boolean = true,
+    val showLibraries: Boolean = true
 )
 
 /**
@@ -157,6 +166,7 @@ data class HomeLayoutSettings(
             JSONObject().apply {
                 put(KEY_CONTINUE_WATCHING, rails.showContinueWatching)
                 put(KEY_NEXT_UP, rails.showNextUp)
+                put(KEY_LIBRARIES, rails.showLibraries)
             }
         )
     }.toString()
@@ -183,6 +193,7 @@ data class HomeLayoutSettings(
         private const val KEY_RAILS = "rails"
         private const val KEY_CONTINUE_WATCHING = "showContinueWatching"
         private const val KEY_NEXT_UP = "showNextUp"
+        private const val KEY_LIBRARIES = "showLibraries"
 
         /**
          * Reads what it can and defaults the rest. A layout the user curated is not thrown away
@@ -254,7 +265,9 @@ data class HomeLayoutSettings(
                         defaults.rails.showContinueWatching
                     ) ?: defaults.rails.showContinueWatching,
                     showNextUp = rails?.optBoolean(KEY_NEXT_UP, defaults.rails.showNextUp)
-                        ?: defaults.rails.showNextUp
+                        ?: defaults.rails.showNextUp,
+                    showLibraries = rails?.optBoolean(KEY_LIBRARIES, defaults.rails.showLibraries)
+                        ?: defaults.rails.showLibraries
                 )
             )
         }

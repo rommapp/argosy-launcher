@@ -23,6 +23,7 @@ private const val KEY_GAME_INDEX = "home_game_index"
 private const val KEY_PINNED_COLLECTION_ID = "home_pinned_collection_id"
 private const val KEY_PINNED_TYPE = "home_pinned_type"
 private const val KEY_PINNED_NAME = "home_pinned_name"
+private const val KEY_MEDIA_LIBRARY_INDEX = "home_media_library_index"
 
 private const val ROW_TYPE_FAVORITES = "favorites"
 private const val ROW_TYPE_PLATFORM = "platform"
@@ -34,6 +35,7 @@ private const val ROW_TYPE_PINNED_REGULAR = "pinned_regular"
 private const val ROW_TYPE_PINNED_VIRTUAL = "pinned_virtual"
 private const val ROW_TYPE_CONTINUE_WATCHING = "continue_watching"
 private const val ROW_TYPE_NEXT_UP = "next_up"
+private const val ROW_TYPE_MEDIA_LIBRARY = "media_library"
 
 class HomeNavigationDelegate @Inject constructor(
     private val soundManager: SoundFeedbackManager,
@@ -48,6 +50,7 @@ class HomeNavigationDelegate @Inject constructor(
         val rowType = savedStateHandle.get<String>(KEY_ROW_TYPE)
         val platformIndex = savedStateHandle.get<Int>(KEY_PLATFORM_INDEX) ?: 0
         val gameIndex = savedStateHandle.get<Int>(KEY_GAME_INDEX) ?: 0
+        val mediaLibraryIndex = savedStateHandle.get<Int>(KEY_MEDIA_LIBRARY_INDEX) ?: 0
 
         val currentRow = when (rowType) {
             ROW_TYPE_FAVORITES -> HomeRow.Favorites
@@ -58,6 +61,7 @@ class HomeNavigationDelegate @Inject constructor(
             ROW_TYPE_STEAM -> HomeRow.Steam
             ROW_TYPE_CONTINUE_WATCHING -> HomeRow.ContinueWatching
             ROW_TYPE_NEXT_UP -> HomeRow.NextUp
+            ROW_TYPE_MEDIA_LIBRARY -> HomeRow.MediaLibrary(mediaLibraryIndex)
             ROW_TYPE_PINNED_REGULAR, ROW_TYPE_PINNED_VIRTUAL -> HomeRow.Continue
             else -> HomeRow.Continue
         }
@@ -75,6 +79,10 @@ class HomeNavigationDelegate @Inject constructor(
             HomeRow.Steam -> ROW_TYPE_STEAM to 0
             HomeRow.ContinueWatching -> ROW_TYPE_CONTINUE_WATCHING to 0
             HomeRow.NextUp -> ROW_TYPE_NEXT_UP to 0
+            is HomeRow.MediaLibrary -> {
+                savedStateHandle[KEY_MEDIA_LIBRARY_INDEX] = row.index
+                ROW_TYPE_MEDIA_LIBRARY to 0
+            }
             is HomeRow.PinnedRegular -> {
                 savedStateHandle[KEY_PINNED_COLLECTION_ID] = row.collectionId
                 ROW_TYPE_PINNED_REGULAR to 0

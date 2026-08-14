@@ -72,7 +72,7 @@ data class HomeGameUi(
 )
 
 /**
- * One tile on a media rail.
+ * One tile on a media row.
  *
  * The tile and the thing it plays are deliberately not the same item: for an episode the tile wears
  * the show's poster and the show's name, because that is how someone recognises what they are
@@ -82,6 +82,11 @@ data class HomeGameUi(
  * [resumeTicks] is zero for anything not yet started, which is the normal case on the Next Up rail:
  * the episode after a finished one has never been played, so there is nothing to resume and confirm
  * simply starts it.
+ *
+ * A series tile stands for a whole show rather than one position in it, so [itemId] is the series
+ * and the episode a press starts has to be worked out. [resumeItemId] carries that episode for the
+ * one case it is known without asking anything -- a show the Continue Watching rail is already
+ * holding a part-watched episode of -- which is what lets the footer promise Resume and mean it.
  */
 data class HomeMediaUi(
     val itemId: String,
@@ -90,13 +95,21 @@ data class HomeMediaUi(
     val posterUrl: String,
     val seriesId: String? = null,
     val isEpisode: Boolean = false,
+    val isSeries: Boolean = false,
     val availability: MediaAvailability = MediaAvailability.NOT_DOWNLOADED,
     val resumeTicks: Long = 0,
-    val progressFraction: Float = 0f
+    val progressFraction: Float = 0f,
+    val resumeItemId: String? = null
 ) {
     val hasResumePosition: Boolean get() = resumeTicks > 0
 
     val isDownloaded: Boolean get() = availability.hasLocalCopy
+
+    /**
+     * The item a resume prompt is about. A series tile is asking about the episode it would resume,
+     * never about the show, because starting a show over is not a thing the player can be told to do.
+     */
+    val resumeTargetId: String get() = resumeItemId ?: itemId
 
     /**
      * What opening the details of this tile should show. An episode's details are its show's, since
@@ -137,6 +150,13 @@ fun PlatformEntity.toHomePlatformUi(emulatorDetector: EmulatorDetector) = HomePl
     hasEmulator = emulatorDetector.hasAnyEmulator(slug)
 )
 
+/**
+ * One row on the home surface.
+ *
+ * A row that repeats carries the thing it repeats over, the way [Platform] carries a position in the
+ * platform list; [MediaLibrary] is the same shape because the libraries a media server offers are
+ * discovered at runtime and there is no fixed set of them to name here.
+ */
 sealed class HomeRow(val kind: HomeSectionKind) {
     data object Favorites : HomeRow(HomeSectionKind.FAVORITES)
     data class Platform(val index: Int) : HomeRow(HomeSectionKind.PLATFORM)
@@ -146,6 +166,7 @@ sealed class HomeRow(val kind: HomeSectionKind) {
     data object Steam : HomeRow(HomeSectionKind.STEAM)
     data object ContinueWatching : HomeRow(HomeSectionKind.CONTINUE_WATCHING)
     data object NextUp : HomeRow(HomeSectionKind.NEXT_UP)
+    data class MediaLibrary(val index: Int) : HomeRow(HomeSectionKind.MEDIA_LIBRARY)
     data class PinnedRegular(val pinId: Long, val collectionId: Long, val name: String) :
         HomeRow(HomeSectionKind.PINNED_REGULAR)
     data class PinnedVirtual(val pinId: Long, val type: CategoryType, val name: String) :
@@ -166,10 +187,15 @@ data class HomeUiState(
     val pinnedGamesLoading: Set<Long> = emptySet(),
     val nextUpMedia: List<HomeMediaUi> = emptyList(),
     val continueWatchingMedia: List<HomeMediaUi> = emptyList(),
+    val mediaLibraries: List<com.nendo.argosy.ui.screens.media.MediaLibraryUi> = emptyList(),
+    val mediaLibraryItems: List<HomeMediaUi> = emptyList(),
+    val mediaLibraryItemsFor: String? = null,
+    val mediaLibrariesLoaded: Boolean = false,
     val isMediaSignedIn: Boolean = false,
     val isMediaLoading: Boolean = false,
     val showNextUpRow: Boolean = true,
-    val showContinueWatchingRow: Boolean = true,
+    val showContinueWatchingRow: Boolean = false,
+    val showMediaLibraryRows: Boolean = true,
     val mediaResumePrompt: com.nendo.argosy.ui.screens.media.MediaResumePrompt? = null,
     val currentRow: HomeRow = HomeRow.Continue,
     val carouselConfig: com.nendo.argosy.domain.model.CarouselConfig =
@@ -215,47 +241,90 @@ data class HomeUiState(
     val videoWallpaperEnabled: Boolean = false,
     val videoWallpaperDelayMs: Long = 3000L
 ) {
+    /**
+     * The rows on offer, in the order [HomeSectionKind] declares them: the fixed opening run, then
+     * every repeating run, then the fixed closing run. Walking the three lists rather than hardcoding
+     * the sequence here is what keeps this screen and the companion agreeing on order.
+     */
     val availableRows: List<HomeRow>
         get() = buildList {
-            HomeSectionKind.LEADING.forEach { kind ->
-                val row = when (kind) {
-                    HomeSectionKind.CONTINUE -> HomeRow.Continue.takeIf { recentGames.isNotEmpty() }
-                    HomeSectionKind.RECOMMENDATIONS -> HomeRow.Recommendations.takeIf { recommendedGames.isNotEmpty() }
-                    HomeSectionKind.FAVORITES -> HomeRow.Favorites.takeIf { favoriteGames.isNotEmpty() }
-                    HomeSectionKind.ANDROID -> HomeRow.Android.takeIf { androidGames.isNotEmpty() }
-                    HomeSectionKind.STEAM -> HomeRow.Steam.takeIf { steamGames.isNotEmpty() }
-                    HomeSectionKind.CONTINUE_WATCHING ->
-                        HomeRow.ContinueWatching.takeIf { showsMediaRow(showContinueWatchingRow) }
-                    HomeSectionKind.NEXT_UP -> HomeRow.NextUp.takeIf { showsMediaRow(showNextUpRow) }
-                    else -> null
-                }
-                row?.let { add(it) }
+            HomeSectionKind.LEADING.forEach { kind -> fixedRow(kind)?.let { add(it) } }
+            HomeSectionKind.REPEATING.forEach { kind -> addAll(repeatingRows(kind)) }
+            HomeSectionKind.TRAILING.forEach { kind -> fixedRow(kind)?.let { add(it) } }
+        }
+
+    private fun fixedRow(kind: HomeSectionKind): HomeRow? = when (kind) {
+        HomeSectionKind.CONTINUE -> HomeRow.Continue.takeIf { recentGames.isNotEmpty() }
+        HomeSectionKind.RECOMMENDATIONS ->
+            HomeRow.Recommendations.takeIf { recommendedGames.isNotEmpty() }
+        HomeSectionKind.FAVORITES -> HomeRow.Favorites.takeIf { favoriteGames.isNotEmpty() }
+        HomeSectionKind.ANDROID -> HomeRow.Android.takeIf { androidGames.isNotEmpty() }
+        HomeSectionKind.STEAM -> HomeRow.Steam.takeIf { steamGames.isNotEmpty() }
+        HomeSectionKind.CONTINUE_WATCHING ->
+            HomeRow.ContinueWatching.takeIf { showsMediaRow(showContinueWatchingRow) }
+        HomeSectionKind.NEXT_UP -> HomeRow.NextUp.takeIf { showsMediaRow(showNextUpRow) }
+        else -> null
+    }
+
+    /**
+     * The rows one repeating kind contributes.
+     *
+     * The two pinned kinds share a single display order rather than running one after the other, so
+     * the whole pinned run is built at the first of them and the second contributes nothing; sorting
+     * each kind separately would split a hand-ordered set of pins into two blocks.
+     */
+    private fun repeatingRows(kind: HomeSectionKind): List<HomeRow> = when (kind) {
+        HomeSectionKind.PLATFORM -> platforms.indices.map { HomeRow.Platform(it) }
+        HomeSectionKind.PINNED_REGULAR -> pinnedRows
+        HomeSectionKind.PINNED_VIRTUAL -> emptyList()
+        HomeSectionKind.MEDIA_LIBRARY ->
+            if (showsMediaRow(showMediaLibraryRows)) {
+                mediaLibraries.indices.map { HomeRow.MediaLibrary(it) }
+            } else {
+                emptyList()
             }
-            platforms.forEachIndexed { index, _ -> add(HomeRow.Platform(index)) }
-            pinnedCollections.sortedByDescending { it.displayOrder }.forEach { pinned ->
-                when (pinned) {
-                    is PinnedCollection.Regular -> add(
-                        HomeRow.PinnedRegular(pinned.id, pinned.collectionId, pinned.displayName)
-                    )
-                    is PinnedCollection.Virtual -> add(
-                        HomeRow.PinnedVirtual(pinned.id, pinned.type, pinned.categoryName)
-                    )
-                }
+        else -> emptyList()
+    }
+
+    private val pinnedRows: List<HomeRow>
+        get() = pinnedCollections.sortedByDescending { it.displayOrder }.map { pinned ->
+            when (pinned) {
+                is PinnedCollection.Regular ->
+                    HomeRow.PinnedRegular(pinned.id, pinned.collectionId, pinned.displayName)
+                is PinnedCollection.Virtual ->
+                    HomeRow.PinnedVirtual(pinned.id, pinned.type, pinned.categoryName)
             }
         }
 
     /**
-     * A media rail stands whether or not it has anything in it, so long as it is switched on and an
-     * account is signed in: an empty rail is worth saying out loud, because "nothing up next" is an
-     * answer, whereas a rail that quietly disappears reads as media being broken.
+     * A media row stands whether or not it has anything in it, so long as it is switched on and an
+     * account is signed in: an empty row is worth saying out loud, because "nothing up next" is an
+     * answer, whereas a row that quietly disappears reads as media being broken.
      *
-     * Being signed out removes it instead, since offering a media rail to someone with no media
+     * Being signed out removes it instead, since offering a media row to someone with no media
      * server is advertising a feature they have not asked for.
      */
     private fun showsMediaRow(enabled: Boolean): Boolean = enabled && isMediaSignedIn
 
+    /**
+     * Whether the row under the cursor is still one of the rows on offer.
+     *
+     * A library row is held while the library listing has not arrived: until then there are no
+     * library rows to be found among the available ones, and a row restored from saved state would be
+     * discarded a moment before the row it names comes into existence.
+     */
+    val holdsCurrentRow: Boolean
+        get() = when {
+            currentRow in availableRows -> true
+            currentRow is HomeRow.MediaLibrary -> !mediaLibrariesLoaded
+            else -> false
+        }
+
     val currentPlatform: HomePlatformUi?
         get() = (currentRow as? HomeRow.Platform)?.let { platforms.getOrNull(it.index) }
+
+    val currentMediaLibrary: com.nendo.argosy.ui.screens.media.MediaLibraryUi?
+        get() = (currentRow as? HomeRow.MediaLibrary)?.let { mediaLibraries.getOrNull(it.index) }
 
     val currentItems: List<HomeRowItem>
         get() = when (currentRow) {
@@ -296,6 +365,13 @@ data class HomeUiState(
             }
             HomeRow.ContinueWatching -> continueWatchingMedia.map { HomeRowItem.Media(it) }
             HomeRow.NextUp -> nextUpMedia.map { HomeRowItem.Media(it) }
+            is HomeRow.MediaLibrary -> {
+                if (mediaLibraryItemsFor == currentMediaLibrary?.libraryId) {
+                    mediaLibraryItems.map { HomeRowItem.Media(it) }
+                } else {
+                    emptyList()
+                }
+            }
             is HomeRow.PinnedRegular -> {
                 pinnedGames[currentRow.pinId]?.map { HomeRowItem.Game(it) } ?: emptyList()
             }
@@ -304,8 +380,34 @@ data class HomeUiState(
             }
         }
 
+    /**
+     * Whether the row on screen is made of media rather than games. Every media row draws the same
+     * tiles and suppresses the game info panel, so presentation reads this one accessor.
+     */
     val isMediaRow: Boolean
-        get() = currentRow == HomeRow.NextUp || currentRow == HomeRow.ContinueWatching
+        get() = currentRow.kind in HomeSectionKind.MEDIA
+
+    /**
+     * A library row browses a library's own top-level items, so its tile is a movie or a series
+     * rather than the specific episode the two personal rails name. Confirm no longer routes on it --
+     * every media row plays -- but where a row's contents come from still does: a library is filled
+     * by the library sync and the rails by their own fetch, so an empty one asks for a different
+     * thing.
+     */
+    val isMediaLibraryRow: Boolean
+        get() = currentRow is HomeRow.MediaLibrary
+
+    /**
+     * Whether the media row on screen is still waiting on its contents. A library row that has not
+     * had its own items delivered yet is loading rather than empty, since saying "nothing here" about
+     * a library that simply has not been read would be wrong every time a row is entered.
+     */
+    val isMediaRowLoading: Boolean
+        get() = when {
+            !isMediaRow -> false
+            isMediaLibraryRow -> mediaLibraryItemsFor != currentMediaLibrary?.libraryId
+            else -> isMediaLoading
+        }
 
     val focusedMedia: HomeMediaUi?
         get() = (focusedItem as? HomeRowItem.Media)?.media
@@ -343,6 +445,7 @@ data class HomeUiState(
             HomeRow.Steam -> "Steam"
             HomeRow.ContinueWatching -> "Continue Watching"
             HomeRow.NextUp -> "Next Up"
+            is HomeRow.MediaLibrary -> currentMediaLibrary?.name ?: "Library"
             is HomeRow.PinnedRegular -> currentRow.name
             is HomeRow.PinnedVirtual -> currentRow.name
         }
@@ -364,6 +467,7 @@ data class HomeUiState(
                 else                       -> p.shortName
             }
         } ?: "?"
+        is HomeRow.MediaLibrary -> mediaLibraries.getOrNull(row.index)?.name?.take(6) ?: "?"
         is HomeRow.PinnedRegular -> row.name.take(6)
         is HomeRow.PinnedVirtual -> row.name.take(6)
     }

@@ -35,6 +35,7 @@ import com.nendo.argosy.ui.screens.home.delegates.HomeInputHandler
 import com.nendo.argosy.ui.screens.home.delegates.HomeLibraryDelegate
 import com.nendo.argosy.ui.screens.home.delegates.HomeMediaDelegate
 import com.nendo.argosy.ui.screens.home.delegates.HomeNavigationDelegate
+import com.nendo.argosy.ui.screens.home.delegates.MediaPlayTarget
 import com.nendo.argosy.ui.screens.home.delegates.HomeSyncDelegate
 import com.nendo.argosy.ui.screens.home.delegates.HomeVideoPreviewDelegate
 import com.nendo.argosy.ui.screens.home.delegates.PlatformChangeResult
@@ -216,13 +217,18 @@ class HomeViewModel @Inject constructor(
                     val updated = state.copy(
                         nextUpMedia = media.nextUp,
                         continueWatchingMedia = media.continueWatching,
+                        mediaLibraries = media.libraries,
+                        mediaLibraryItems = media.libraryItems,
+                        mediaLibraryItemsFor = media.libraryItemsFor,
+                        mediaLibrariesLoaded = media.librariesLoaded,
                         isMediaSignedIn = media.isSignedIn,
                         isMediaLoading = media.isLoading,
                         showNextUpRow = media.showNextUp,
                         showContinueWatchingRow = media.showContinueWatching,
+                        showMediaLibraryRows = media.showLibraries,
                         mediaResumePrompt = media.resumePrompt
                     )
-                    if (updated.currentRow in updated.availableRows) {
+                    if (updated.holdsCurrentRow) {
                         updated.copy(
                             focusedGameIndex = updated.focusedGameIndex
                                 .coerceIn(0, (updated.currentItems.size - 1).coerceAtLeast(0))
@@ -234,8 +240,18 @@ class HomeViewModel @Inject constructor(
                         )
                     }
                 }
+                syncSelectedMediaLibrary()
             }
         }
+    }
+
+    /**
+     * Names the library the row under the cursor browses, so the delegate reads that one and no
+     * other. Called wherever the row can change, including the moment the library listing first
+     * arrives, since a row restored from saved state names a library nothing has looked up yet.
+     */
+    private fun syncSelectedMediaLibrary() {
+        mediaDelegate.selectLibrary(_uiState.value.currentMediaLibrary?.libraryId)
     }
 
     private fun restoreInitialState(): HomeUiState {
@@ -497,6 +513,7 @@ class HomeViewModel @Inject constructor(
     override fun nextRow() {
         val result = navigationDelegate.nextRow(_uiState.value) ?: return
         _uiState.update { it.copy(currentRow = result.first, focusedGameIndex = result.second) }
+        syncSelectedMediaLibrary()
         navigationDelegate.loadRowWithDebounce(viewModelScope, result.first) { row ->
             loadRowContent(row)
         }
@@ -507,6 +524,7 @@ class HomeViewModel @Inject constructor(
         val state = _uiState.value
         if (row == state.currentRow || row !in state.availableRows) return
         _uiState.update { it.copy(currentRow = row, focusedGameIndex = 0) }
+        syncSelectedMediaLibrary()
         navigationDelegate.loadRowWithDebounce(viewModelScope, row) { loadRowContent(it) }
         saveCurrentState()
     }
@@ -514,10 +532,30 @@ class HomeViewModel @Inject constructor(
     override fun previousRow() {
         val result = navigationDelegate.previousRow(_uiState.value) ?: return
         _uiState.update { it.copy(currentRow = result.first, focusedGameIndex = result.second) }
+        syncSelectedMediaLibrary()
         navigationDelegate.loadRowWithDebounce(viewModelScope, result.first) { row ->
             loadRowContent(row)
         }
         saveCurrentState()
+    }
+
+    /**
+     * What confirm does to the tile under the cursor on a media row: it plays, whichever row the tile
+     * is on. A rail already named the episode; a library tile has to be asked what it stands for
+     * first, which is why this is the one media action that cannot answer on the spot.
+     */
+    private fun activateFocusedMedia(media: HomeMediaUi) {
+        startMedia(media, startOver = false)
+    }
+
+    private fun startMedia(media: HomeMediaUi, startOver: Boolean) {
+        viewModelScope.launch {
+            when (val target = mediaDelegate.resolvePlayTarget(media)) {
+                is MediaPlayTarget.Play -> playMedia(target.itemId, startOver)
+                is MediaPlayTarget.OpenDetail ->
+                    _events.emit(HomeEvent.NavigateToMediaDetail(target.itemId))
+            }
+        }
     }
 
     private suspend fun loadRowContent(row: HomeRow) {
@@ -535,6 +573,7 @@ class HomeViewModel @Inject constructor(
             HomeRow.Steam -> { }
             HomeRow.ContinueWatching -> mediaDelegate.refresh(viewModelScope)
             HomeRow.NextUp -> mediaDelegate.refresh(viewModelScope)
+            is HomeRow.MediaLibrary -> syncSelectedMediaLibrary()
             is HomeRow.PinnedRegular -> libraryDelegate.loadGamesForPinnedCollection(row.pinId)
             is HomeRow.PinnedVirtual -> libraryDelegate.loadGamesForPinnedCollection(row.pinId)
         }
@@ -827,14 +866,16 @@ class HomeViewModel @Inject constructor(
                     else -> downloadDelegate.queueDownload(viewModelScope, game.id)
                 }
             }
-            is HomeRowItem.Media -> playMedia(item.media.itemId, startOver = false)
+            is HomeRowItem.Media -> activateFocusedMedia(item.media)
             is HomeRowItem.ViewAll -> navigateToLibrary(item.platformId, item.sourceFilter)
         }
     }
 
     /**
      * Touch's equivalent of holding confirm. On a game it opens quick actions; on a media tile it
-     * asks whether to start over, which is the only way a touch user reaches that choice.
+     * asks whether to start over, which is the only way a touch user reaches that choice. A tile with
+     * nothing to resume has no second answer to give, so the hold plays it rather than opening a
+     * prompt that offers the same thing twice.
      */
     fun handleItemLongPress(index: Int) {
         val state = _uiState.value
@@ -846,7 +887,7 @@ class HomeViewModel @Inject constructor(
                 saveCurrentState()
             }
             if (!mediaDelegate.openResumePrompt(item.media)) {
-                playMedia(item.media.itemId, startOver = false)
+                startMedia(item.media, startOver = false)
             }
             return
         }
@@ -995,7 +1036,12 @@ class HomeViewModel @Inject constructor(
 
     override fun playFocusedMedia(startOver: Boolean) {
         val media = _uiState.value.focusedMedia ?: return
-        playMedia(media.itemId, startOver)
+        startMedia(media, startOver)
+    }
+
+    override fun confirmFocusedMedia() {
+        val media = _uiState.value.focusedMedia ?: return
+        activateFocusedMedia(media)
     }
 
     override fun openMediaResumePrompt(): Boolean {
@@ -1008,7 +1054,17 @@ class HomeViewModel @Inject constructor(
         viewModelScope.launch { _events.emit(HomeEvent.NavigateToMediaDetail(media.detailItemId)) }
     }
 
-    override fun refreshMediaRails() = mediaDelegate.refresh(viewModelScope)
+    /**
+     * What confirm does on a media row with nothing in it. A library row's contents come from the
+     * library sync rather than from a rail fetch, so an empty one asks for that instead.
+     */
+    override fun refreshMediaRails() {
+        if (_uiState.value.isMediaLibraryRow) {
+            mediaDelegate.refreshLibraries(viewModelScope)
+        } else {
+            mediaDelegate.refresh(viewModelScope)
+        }
+    }
 
     fun dismissMediaResumePrompt() = mediaDelegate.dismissResumePrompt()
 

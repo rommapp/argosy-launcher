@@ -65,6 +65,7 @@ interface HomeInputActions {
     fun navigateToContinuePlaying(): Boolean
     fun syncFromRomm()
     fun playFocusedMedia(startOver: Boolean = false)
+    fun confirmFocusedMedia()
     fun openMediaResumePrompt(): Boolean
     fun openFocusedMediaDetail()
     fun refreshMediaRails()
@@ -252,7 +253,7 @@ class HomeInputHandler(
                             else -> actions.queueDownload(game.id)
                         }
                     }
-                    is HomeRowItem.Media -> actions.playFocusedMedia()
+                    is HomeRowItem.Media -> actions.confirmFocusedMedia()
                     is HomeRowItem.ViewAll -> actions.navigateToLibrary(item.platformId, item.sourceFilter)
                     null -> when {
                         state.isMediaRow -> actions.refreshMediaRails()
@@ -343,7 +344,7 @@ class HomeInputHandler(
      * Holding confirm picks a tile up and puts it down again, so arranging never has to go through
      * the select menu. Committing on the second hold matches the press that started it.
      *
-     * On a media rail the same hold asks whether to start over instead, since a plain press already
+     * On any media row the same hold asks whether to start over instead, since a plain press already
      * resumes. A tile with nothing stored has no second answer to give, so the hold plays it rather
      * than opening a prompt that offers the same thing twice.
      */
@@ -367,9 +368,9 @@ class HomeInputHandler(
     }
 
     /**
-     * On a media rail this is the second way to the Start Over prompt, alongside holding confirm. It
-     * earns a footer hint where a hold cannot, which is what makes the choice reachable on a
-     * television where nothing tells you a button can be held.
+     * On a media row this is the second way to the Start Over prompt, alongside holding confirm. It
+     * carries no footer hint of its own: starting over is the rarer of the two answers a prompt
+     * already offers, and the bar is for what the focused control does not already say.
      */
     override fun onSecondaryAction(): InputResult {
         val state = actions.uiState.value

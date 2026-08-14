@@ -332,7 +332,7 @@ private fun NavigationContent(
                     item = item,
                     icon = getIconForRoute(item.route),
                     isFocused = index == focusedIndex,
-                    isSelected = currentRoute == item.route,
+                    isSelected = currentRoute?.substringBefore("?") == item.route,
                     badge = badge,
                     onClick = {
                         android.util.Log.d("MainDrawer", "Menu item clicked: ${item.route}")

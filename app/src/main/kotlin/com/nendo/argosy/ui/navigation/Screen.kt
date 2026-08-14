@@ -36,7 +36,16 @@ sealed class Screen(val route: String) {
     data object GameDetail : Screen("game/{gameId}") {
         fun createRoute(gameId: Long) = "game/$gameId"
     }
-    data object MediaLibrary : Screen("media_library")
+    /**
+     * The media grid. [route] stays the bare path so the drawer keeps navigating and identifying by
+     * it; [ROUTE_WITH_ARGS] is what the graph declares, and its library argument is optional so a
+     * plain "media_library" still resolves to the same destination.
+     */
+    data object MediaLibrary : Screen("media_library") {
+        const val ROUTE_WITH_ARGS = "media_library?libraryId={libraryId}"
+        const val ARG_LIBRARY_ID = "libraryId"
+        fun createRoute(libraryId: String) = "media_library?libraryId=$libraryId"
+    }
     data object MediaDetail : Screen("media_item/{itemId}") {
         fun createRoute(itemId: String) = "media_item/$itemId"
     }

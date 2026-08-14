@@ -506,7 +506,8 @@ class HomeLibraryDelegate @Inject constructor(
                 loadGamesForPinnedCollection(currentRow.pinId)
                 RefreshResult((_state.value.pinnedGames[currentRow.pinId] ?: emptyList()).map { it.id })
             }
-            HomeRow.ContinueWatching, HomeRow.NextUp -> RefreshResult(emptyList())
+            HomeRow.ContinueWatching, HomeRow.NextUp, is HomeRow.MediaLibrary ->
+                RefreshResult(emptyList())
         }
     }
 

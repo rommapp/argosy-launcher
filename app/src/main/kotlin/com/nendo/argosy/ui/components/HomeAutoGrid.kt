@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -22,6 +23,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
@@ -115,19 +117,7 @@ fun HomeAutoGrid(
     AutoGridFocusSync(gridState, focusedIndex, items.size, config)
     Column(modifier = modifier.fillMaxSize()) {
         if (config.showTitles) {
-            val focusedTitle = (items.getOrNull(focusedIndex) as? CarouselItem.Game)
-                ?.game?.title.orEmpty()
-            Text(
-                text = focusedTitle,
-                style = MaterialTheme.typography.titleLarge,
-                color = MaterialTheme.colorScheme.onSurface,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                textAlign = TextAlign.Center,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = Dimens.spacingMd, vertical = Dimens.spacingSm)
-            )
+            AutoGridTitle(item = items.getOrNull(focusedIndex))
         }
         val lanes = config.laneCount.coerceAtLeast(1)
         val cells = GridCells.Fixed(lanes)
@@ -286,6 +276,48 @@ private fun AutoGridFocusSync(
     }
 }
 
+/**
+ * The line above the grid, naming what the cursor is on. Media answers it in two parts because the
+ * tile is the show and the press starts one episode of it, and a grid that named only the show would
+ * leave which episode to be guessed at.
+ */
+@Composable
+private fun AutoGridTitle(item: CarouselItem?) {
+    val heading = when (item) {
+        is CarouselItem.Game -> item.game.title
+        is CarouselItem.Media -> item.media.title
+        else -> ""
+    }
+    val subheading = (item as? CarouselItem.Media)?.media?.subtitle
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Text(
+            text = heading,
+            style = MaterialTheme.typography.titleLarge,
+            color = MaterialTheme.colorScheme.onSurface,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            textAlign = TextAlign.Center,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = Dimens.spacingMd, vertical = Dimens.spacingSm)
+        )
+        if (subheading != null) {
+            Text(
+                text = subheading,
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                textAlign = TextAlign.Center,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = Dimens.spacingMd)
+                    .padding(bottom = Dimens.spacingSm)
+            )
+        }
+    }
+}
+
 @Composable
 private fun AutoGridCell(
     item: CarouselItem,
@@ -316,6 +348,23 @@ private fun AutoGridCell(
                     .aspectRatio(coverAspectRatio)
                     .clickableNoFocus(onClick = onTap, onLongClick = onLongPress)
             )
+            is CarouselItem.Media -> Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .aspectRatio(coverAspectRatio),
+                contentAlignment = Alignment.Center
+            ) {
+                val posterRatio = mediaPosterAspectRatio
+                val fitByHeight = posterRatio <= coverAspectRatio
+                MediaCard(
+                    media = item.media,
+                    isFocused = isFocused,
+                    modifier = Modifier
+                        .then(if (fitByHeight) Modifier.fillMaxHeight() else Modifier.fillMaxWidth())
+                        .aspectRatio(posterRatio, matchHeightConstraintsFirst = fitByHeight)
+                        .clickableNoFocus(onClick = onTap, onLongClick = onLongPress)
+                )
+            }
             is CarouselItem.ViewAll -> ViewAllCard(
                 isFocused = isFocused,
                 onClick = onTap,

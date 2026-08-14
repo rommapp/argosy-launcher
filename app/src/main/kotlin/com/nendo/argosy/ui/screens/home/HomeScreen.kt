@@ -145,6 +145,7 @@ import com.nendo.argosy.ui.input.ChangelogInputHandler
 import com.nendo.argosy.ui.input.DiscPickerInputHandler
 import com.nendo.argosy.ui.input.HardcoreConflictInputHandler
 import com.nendo.argosy.ui.input.LocalModifiedInputHandler
+import com.nendo.argosy.ui.screens.media.components.MediaSignedOutState
 import com.nendo.argosy.ui.screens.media.modals.MediaResumeModalHost
 import com.nendo.argosy.domain.model.SyncProgress
 import kotlinx.coroutines.delay
@@ -656,22 +657,25 @@ fun HomeScreen(
             .fillMaxSize()
             .then(swipeGestureModifier)
         ) {
+            /**
+             * A media row draws no info panel, so the space one would have taken is the row's to
+             * use. Reading the last measured height there would reserve room for a panel that is
+             * not on screen and shrink the rail for no reason.
+             */
+            val infoHeight = if (uiState.isMediaRow) 0.dp else gameInfoHeight
             val cardSize = rememberCarouselCardSize(
-                availableHeight = maxHeight - headerBlockHeight - gameInfoHeight -
+                availableHeight = maxHeight - headerBlockHeight - infoHeight -
                     Dimens.footerHeight - Dimens.spacingLg - Dimens.spacingXl,
                 config = uiState.carouselConfig
             )
             val infoAtBottom = uiState.carouselConfig.rowAlignment == HomeRowAlignment.TOP
             val railHeight = when {
-                uiState.isMediaRow ->
-                    (maxHeight - headerBlockHeight - Dimens.footerHeight - Dimens.spacingLg)
-                        .coerceAtLeast(Dimens.spacingXl)
                 isAutoGrid || isCustomGrid ->
                     (maxHeight - headerBlockHeight - Dimens.footerHeight - Dimens.spacingLg)
                         .coerceAtLeast(Dimens.spacingXl)
                 infoAtBottom ->
                     (
-                        maxHeight - headerBlockHeight - gameInfoHeight -
+                        maxHeight - headerBlockHeight - infoHeight -
                             Dimens.footerHeight - Dimens.spacingLg
                         ).coerceAtLeast(Dimens.spacingXl)
                 else -> cardSize.height * uiState.carouselConfig.focusScale + Dimens.spacingMd
@@ -708,10 +712,8 @@ fun HomeScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(
-                            bottom = if (
-                                infoAtBottom && !isAutoGrid && !isCustomGrid && !uiState.isMediaRow
-                            ) {
-                                gameInfoHeight
+                            bottom = if (infoAtBottom && !isAutoGrid && !isCustomGrid) {
+                                infoHeight
                             } else {
                                 0.dp
                             }
@@ -758,21 +760,15 @@ fun HomeScreen(
                                 modifier = Modifier.fillMaxSize()
                             )
                         }
-                        uiState.isMediaRow -> {
-                            HomeMediaRail(
-                                items = if (uiState.currentRow == HomeRow.NextUp) {
-                                    uiState.nextUpMedia
-                                } else {
-                                    uiState.continueWatchingMedia
-                                },
-                                focusedIndex = uiState.focusedGameIndex,
-                                isSignedIn = uiState.isMediaSignedIn,
-                                isLoading = uiState.isMediaLoading,
-                                isNextUp = uiState.currentRow == HomeRow.NextUp,
-                                onItemTap = { index -> viewModel.handleItemTap(index, onGameSelect) },
-                                onItemLongPress = viewModel::handleItemLongPress,
-                                modifier = Modifier.align(Alignment.BottomStart)
-                            )
+                        uiState.isMediaRow && !uiState.isMediaSignedIn -> {
+                            MediaSignedOutState()
+                        }
+                        uiState.isMediaRow && uiState.isMediaRowLoading &&
+                            uiState.currentItems.isEmpty() -> {
+                            MediaRowLoading()
+                        }
+                        uiState.isMediaRow && uiState.currentItems.isEmpty() -> {
+                            MediaRowEmptyState(row = uiState.currentRow)
                         }
                         uiState.currentItems.isEmpty() -> {
                             val pinId = when (val row = uiState.currentRow) {
@@ -875,8 +871,13 @@ fun HomeScreen(
                     val focusedMedia = uiState.focusedMedia
                     FooterHints(
                         hints = buildList {
-                            add(InputButton.DPAD_HORIZONTAL to "Item")
-                            add(InputButton.DPAD_VERTICAL to "Row")
+                            if (isAutoGrid) {
+                                add(InputButton.DPAD to "Item")
+                                add(InputButton.LB_RB to "Section")
+                            } else {
+                                add(InputButton.DPAD_HORIZONTAL to "Item")
+                                add(InputButton.DPAD_VERTICAL to "Row")
+                            }
                             if (focusedMedia == null) {
                                 add(InputButton.A to "Refresh")
                             } else {
@@ -884,9 +885,6 @@ fun HomeScreen(
                                     InputButton.A to
                                         if (focusedMedia.hasResumePosition) "Resume" else "Play"
                                 )
-                                if (focusedMedia.hasResumePosition) {
-                                    add(InputButton.Y to "Start Over")
-                                }
                                 add(InputButton.X to "Details")
                             }
                         },
@@ -1611,7 +1609,7 @@ private fun rememberHomeCarouselItems(
     downloadIndicators: Map<Long, GameDownloadIndicator>,
     repairedCoverPaths: Map<Long, String>
 ): List<CarouselItem> = remember(items, rowKey, downloadIndicators, repairedCoverPaths) {
-    items.mapNotNull { item ->
+    items.map { item ->
         when (item) {
             is HomeRowItem.Game -> CarouselItem.Game(
                 key = "$rowKey-${item.game.id}",
@@ -1622,7 +1620,10 @@ private fun rememberHomeCarouselItems(
             is HomeRowItem.ViewAll -> CarouselItem.ViewAll(
                 key = "$rowKey-viewall-${item.platformId ?: item.sourceFilter ?: "all"}"
             )
-            is HomeRowItem.Media -> null
+            is HomeRowItem.Media -> CarouselItem.Media(
+                key = "$rowKey-${item.media.itemId}",
+                media = item.media
+            )
         }
     }
 }

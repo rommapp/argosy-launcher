@@ -258,8 +258,18 @@ fun NavGraph(
             )
         }
 
-        composable(Screen.MediaLibrary.route) {
+        composable(
+            route = Screen.MediaLibrary.ROUTE_WITH_ARGS,
+            arguments = listOf(
+                navArgument(Screen.MediaLibrary.ARG_LIBRARY_ID) {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = null
+                }
+            )
+        ) { backStackEntry ->
             MediaLibraryScreen(
+                libraryId = backStackEntry.arguments?.getString(Screen.MediaLibrary.ARG_LIBRARY_ID),
                 onBack = navigateToDefault,
                 onItemSelect = { itemId ->
                     navController.navigate(Screen.MediaDetail.createRoute(itemId))
@@ -276,7 +286,10 @@ fun NavGraph(
             MediaDetailScreen(
                 itemId = itemId,
                 onBack = { navController.popBackStack() },
-                onPlay = onPlayMedia
+                onPlay = onPlayMedia,
+                onNavigateToLibrary = { libraryId ->
+                    navController.navigate(Screen.MediaLibrary.createRoute(libraryId))
+                }
             )
         }
 

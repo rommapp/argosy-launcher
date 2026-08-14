@@ -36,7 +36,7 @@ import kotlin.math.roundToInt
 /**
  * Every adjustable home field, so a caller routes one exhaustive `when` instead of one per layout.
  *
- * Most entries belong to a single layout and are listed by [homeLayoutFieldsFor]. The rail entries
+ * Most entries belong to a single layout and are listed by [homeLayoutFieldsFor]. The media entries
  * are the exception: they say which rows home offers rather than how one layout draws, so they are
  * listed by [homeRailFields] and a host places them among its own content rows.
  */
@@ -55,15 +55,18 @@ enum class HomeLayoutSettingField {
     CUSTOM_GRID_EMPTY_SLOTS,
     CUSTOM_GRID_PERSIST_PAGES,
     CUSTOM_GRID_AUTO_FIT,
+    RAIL_MEDIA_LIBRARIES,
     RAIL_CONTINUE_WATCHING,
     RAIL_NEXT_UP
 }
 
 /**
- * The rail toggles, in render order. Kept apart from the per-layout lists because a rail is not a
- * layout setting; a host that draws rows at all draws these regardless of which layout is selected.
+ * The media row toggles, in render order. Kept apart from the per-layout lists because which rows
+ * home offers is not a layout setting; a host that draws rows at all draws these regardless of which
+ * layout is selected.
  */
 fun homeRailFields(): List<HomeLayoutSettingField> = listOf(
+    HomeLayoutSettingField.RAIL_MEDIA_LIBRARIES,
     HomeLayoutSettingField.RAIL_CONTINUE_WATCHING,
     HomeLayoutSettingField.RAIL_NEXT_UP
 )
@@ -146,6 +149,8 @@ fun adjustHomeLayoutField(
             settings.copy(customGrid = settings.customGrid.copy(persistBlankPages = direction > 0))
         HomeLayoutSettingField.CUSTOM_GRID_AUTO_FIT ->
             settings.copy(customGrid = settings.customGrid.copy(autoFit = direction > 0))
+        HomeLayoutSettingField.RAIL_MEDIA_LIBRARIES ->
+            settings.copy(rails = settings.rails.copy(showLibraries = direction > 0))
         HomeLayoutSettingField.RAIL_CONTINUE_WATCHING ->
             settings.copy(rails = settings.rails.copy(showContinueWatching = direction > 0))
         HomeLayoutSettingField.RAIL_NEXT_UP ->
@@ -180,6 +185,8 @@ fun toggleHomeLayoutField(settings: HomeLayoutSettings, field: HomeLayoutSetting
             )
         HomeLayoutSettingField.CUSTOM_GRID_AUTO_FIT ->
             settings.copy(customGrid = settings.customGrid.copy(autoFit = !settings.customGrid.autoFit))
+        HomeLayoutSettingField.RAIL_MEDIA_LIBRARIES ->
+            settings.copy(rails = settings.rails.copy(showLibraries = !settings.rails.showLibraries))
         HomeLayoutSettingField.RAIL_CONTINUE_WATCHING ->
             settings.copy(
                 rails = settings.rails.copy(
@@ -361,6 +368,13 @@ fun HomeLayoutSettingRow(
             title = "Auto-fit Cells",
             subtitle = "Move or shrink tiles a placement lands on, instead of refusing it",
             isEnabled = settings.customGrid.autoFit,
+            isFocused = isFocused,
+            onToggle = { onToggle() }
+        )
+        HomeLayoutSettingField.RAIL_MEDIA_LIBRARIES -> SwitchPreference(
+            title = "Media Libraries",
+            subtitle = "A row for each library on your media server",
+            isEnabled = settings.rails.showLibraries,
             isFocused = isFocused,
             onToggle = { onToggle() }
         )

@@ -29,6 +29,7 @@ import com.nendo.argosy.ui.common.coverSizeWithin
 import com.nendo.argosy.ui.common.rememberCoverAspectRatio
 import com.nendo.argosy.ui.screens.home.GameDownloadIndicator
 import com.nendo.argosy.ui.screens.home.HomeGameUi
+import com.nendo.argosy.ui.screens.home.HomeMediaUi
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalBoxArtStyle
 import com.nendo.argosy.ui.theme.Motion
@@ -92,6 +93,16 @@ sealed class CarouselItem {
         val game: HomeGameUi,
         val downloadIndicator: GameDownloadIndicator = GameDownloadIndicator.NONE,
         val coverPathOverride: String? = null
+    ) : CarouselItem()
+
+    /**
+     * A show or a film on one of home's media rails. It is its own member rather than a dressed-up
+     * [Game] because the two share nothing but a rectangle: this one carries a poster, the episode a
+     * press will start, how far through it the reader is and whether it is on the device.
+     */
+    data class Media(
+        override val key: String,
+        val media: HomeMediaUi
     ) : CarouselItem()
 
     data class ViewAll(
@@ -353,30 +364,19 @@ fun CarouselRail(
                 animationSpec = Motion.focusSpring,
                 label = "carouselPush"
             )
+            val tapModifier = carouselTapModifier(tapMode, index, onItemTap, onItemLongPress)
+            val placementModifier = Modifier
+                .graphicsLayer { this.translationX = translationX }
+                .then(
+                    if (metrics.focusedOverlapsNeighbours) {
+                        Modifier.zIndex(if (isFocused) 1f else 0f)
+                    } else {
+                        Modifier
+                    }
+                )
             when (item) {
                 is CarouselItem.Game -> {
-                    val longPress = onItemLongPress
-                    val tapModifier = when (tapMode) {
-                        CarouselTapMode.CLICK -> if (longPress != null) {
-                            Modifier.clickableNoFocus(
-                                onClick = { onItemTap(index) },
-                                onLongClick = { longPress(index) }
-                            )
-                        } else {
-                            Modifier.clickableNoFocus { onItemTap(index) }
-                        }
-                        CarouselTapMode.TOUCH -> Modifier.touchOnly { onItemTap(index) }
-                    }
-                    val cardModifier = Modifier
-                        .graphicsLayer { this.translationX = translationX }
-                        .then(
-                            if (metrics.focusedOverlapsNeighbours) {
-                                Modifier.zIndex(if (isFocused) 1f else 0f)
-                            } else {
-                                Modifier
-                            }
-                        )
-                        .then(tapModifier)
+                    val cardModifier = placementModifier.then(tapModifier)
                     CarouselGameCard(
                         item = item,
                         isFocused = isFocused,
@@ -390,6 +390,18 @@ fun CarouselRail(
                         onCoverLoadFailed = onCoverLoadFailed,
                         onCoverLoaded = onCoverLoaded,
                         modifier = cardModifier
+                    )
+                }
+                is CarouselItem.Media -> {
+                    CarouselMediaCard(
+                        item = item,
+                        isFocused = isFocused,
+                        showFocusVisuals = showFocusVisuals,
+                        metrics = metrics,
+                        overrides = overrides,
+                        modifier = placementModifier
+                            .padding(top = NEW_BADGE_TOP_OVERFLOW)
+                            .then(tapModifier)
                     )
                 }
                 is CarouselItem.ViewAll -> {
@@ -418,6 +430,52 @@ fun CarouselRail(
             }
         }
     }
+}
+
+private fun carouselTapModifier(
+    tapMode: CarouselTapMode,
+    index: Int,
+    onItemTap: (Int) -> Unit,
+    onItemLongPress: ((Int) -> Unit)?
+): Modifier = when (tapMode) {
+    CarouselTapMode.CLICK -> if (onItemLongPress != null) {
+        Modifier.clickableNoFocus(
+            onClick = { onItemTap(index) },
+            onLongClick = { onItemLongPress(index) }
+        )
+    } else {
+        Modifier.clickableNoFocus { onItemTap(index) }
+    }
+    CarouselTapMode.TOUCH -> Modifier.touchOnly { onItemTap(index) }
+}
+
+/**
+ * A poster fitted inside the slot the metrics describe. Fitting rather than filling is what keeps a
+ * 2:3 poster from being cropped into the shape of whatever box art the reader has chosen, while the
+ * slot itself, and so the rail's rhythm, stays the one the layout worked out.
+ */
+@Composable
+private fun CarouselMediaCard(
+    item: CarouselItem.Media,
+    isFocused: Boolean,
+    showFocusVisuals: Boolean,
+    metrics: CarouselMetrics,
+    overrides: CarouselOverrides,
+    modifier: Modifier = Modifier
+) {
+    val maxWidth = if (isFocused) metrics.focusedCardWidth else metrics.cardWidth
+    val maxHeight = if (isFocused) metrics.focusedCardHeight else metrics.cardHeight
+    val cardSize = coverSizeWithin(maxWidth, maxHeight, mediaPosterAspectRatio)
+
+    MediaCard(
+        media = item.media,
+        isFocused = isFocused && showFocusVisuals,
+        focusScale = metrics.focusScale,
+        scalePivotY = metrics.scalePivotY,
+        scaleOverride = if (isFocused) overrides.focusedScale else null,
+        alphaOverride = if (isFocused) overrides.focusedAlpha else overrides.unfocusedAlpha,
+        modifier = modifier.size(cardSize.width, cardSize.height)
+    )
 }
 
 @Composable

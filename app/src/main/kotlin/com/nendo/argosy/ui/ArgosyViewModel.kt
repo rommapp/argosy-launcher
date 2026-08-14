@@ -612,7 +612,8 @@ class ArgosyViewModel @Inject constructor(
     private val drawerNavLastIndex: Int get() = drawerItems.size
 
     fun initDrawerFocus(currentRoute: String?, parentRoute: String? = null) {
-        var index = drawerItems.indexOfFirst { it.route == currentRoute }
+        val activeRoute = currentRoute?.substringBefore("?")
+        var index = drawerItems.indexOfFirst { it.route == activeRoute }
         if (index < 0 && parentRoute != null) {
             index = drawerItems.indexOfFirst { it.route == parentRoute }
         }

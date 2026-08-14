@@ -1904,9 +1904,7 @@ fun ArgosyApp(
                                 args = PlayerArgs(
                                     itemId = itemId,
                                     startPositionMs = if (startOver) 0L else -1L
-                                ),
-                                options = activity?.displayAffinityHelper
-                                    ?.getActivityOptions(forEmulator = false)
+                                )
                             )
                         },
                         modifier = Modifier.blur(contentBlur)

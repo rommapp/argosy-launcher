@@ -697,6 +697,14 @@ class StorageAttributionRepository @Inject constructor(
     }
 
     /**
+     * Re-reads the mount table and publishes it, so a following [isPathAvailable] answers from what
+     * is connected now rather than from whatever the last refresh saw. A caller about to act on the
+     * answer -- anything that would forget a record because its storage looked gone -- asks for this
+     * first: a card unplugged since the last pass is still listed until it does.
+     */
+    fun refreshVolumes(): List<StorageVolumeInfo> = detectVolumes().also { _volumes.value = it }
+
+    /**
      * Whether a path can be read right now. A path that no longer resolves and sits on no mounted
      * volume is unreachable rather than empty, which is what separates an unplugged card from a file
      * the user deleted.

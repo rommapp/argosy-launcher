@@ -434,8 +434,10 @@ class JellyfinSettingsDelegate @Inject constructor(
     ) {
         scope.launch {
             if (moveFiles) {
-                mediaDirectoryManager.relocate(File(oldPath), File(newPath))
-                mediaRepository.repointDownloads(oldPath, newPath)
+                mediaDirectoryManager.underRelocationLock {
+                    mediaDirectoryManager.relocate(File(oldPath), File(newPath))
+                    mediaRepository.repointDownloads(oldPath, newPath)
+                }
             }
             preferencesRepository.setMediaStoragePath(newPath)
             _state.update { it.copy(mediaDirPath = newPath) }

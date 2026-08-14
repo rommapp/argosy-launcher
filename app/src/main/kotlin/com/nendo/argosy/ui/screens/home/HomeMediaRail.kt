@@ -17,7 +17,6 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.outlined.Inbox
 import androidx.compose.material3.CircularProgressIndicator
@@ -35,6 +34,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import coil.compose.AsyncImage
 import com.nendo.argosy.ui.primitives.FocusIndicators
 import com.nendo.argosy.ui.primitives.argosyFocusIndicators
+import com.nendo.argosy.ui.screens.media.components.MediaDownloadBadge
 import com.nendo.argosy.ui.screens.media.components.MediaMessageState
 import com.nendo.argosy.ui.screens.media.components.MediaProgressBar
 import com.nendo.argosy.ui.screens.media.components.MediaSignedOutState
@@ -149,17 +149,13 @@ private fun HomeMediaTile(
                     modifier = Modifier.size(Dimens.iconLg).align(Alignment.Center)
                 )
             }
-            if (media.isDownloaded) {
-                Icon(
-                    imageVector = Icons.Default.Download,
-                    contentDescription = "Downloaded",
-                    tint = theme.textPrimary,
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .padding(Dimens.spacingXs)
-                        .size(Dimens.iconSm)
-                )
-            }
+            MediaDownloadBadge(
+                availability = media.availability,
+                size = Dimens.iconSm,
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(Dimens.spacingXs)
+            )
             if (media.progressFraction > 0f) {
                 MediaProgressBar(
                     fraction = media.progressFraction,

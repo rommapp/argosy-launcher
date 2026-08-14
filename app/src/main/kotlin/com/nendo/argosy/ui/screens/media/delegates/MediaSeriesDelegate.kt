@@ -1,5 +1,6 @@
 package com.nendo.argosy.ui.screens.media.delegates
 
+import com.nendo.argosy.data.media.MediaAvailabilityVerifier
 import com.nendo.argosy.data.remote.jellyfin.JellyfinResult
 import com.nendo.argosy.data.repository.MediaRepository
 import com.nendo.argosy.ui.screens.media.MediaItemUi
@@ -26,7 +27,8 @@ import javax.inject.Singleton
  */
 @Singleton
 class MediaSeriesDelegate @Inject constructor(
-    private val mediaRepository: MediaRepository
+    private val mediaRepository: MediaRepository,
+    private val availabilityVerifier: MediaAvailabilityVerifier
 ) {
     /**
      * The seasons of one series. Deduplicated because the underlying query re-runs on any write to
@@ -44,10 +46,14 @@ class MediaSeriesDelegate @Inject constructor(
      * push a new value through this flow, and bumping the version is what does it.
      */
     fun episodesFlow(seasonId: String, watchStateVersion: Flow<Int>): Flow<List<MediaItemUi>> =
-        combine(mediaRepository.observeEpisodes(seasonId), watchStateVersion) { entities, _ -> entities }
-            .map { entities ->
+        combine(
+            mediaRepository.observeEpisodes(seasonId),
+            watchStateVersion,
+            availabilityVerifier.availability
+        ) { entities, _, verified -> entities to verified }
+            .map { (entities, verified) ->
                 val userData = mediaRepository.getUserDataFor(entities.map { it.itemId })
-                entities.map { it.toMediaItemUi(mediaRepository, userData[it.itemId]) }
+                entities.map { it.toMediaItemUi(mediaRepository, userData[it.itemId], verified) }
             }
 
     /**

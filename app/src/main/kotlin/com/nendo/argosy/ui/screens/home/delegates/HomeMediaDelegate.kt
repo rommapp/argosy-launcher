@@ -3,6 +3,9 @@ package com.nendo.argosy.ui.screens.home.delegates
 import com.nendo.argosy.data.local.entity.MediaItemEntity
 import com.nendo.argosy.data.local.entity.MediaItemType
 import com.nendo.argosy.data.local.entity.MediaUserDataEntity
+import com.nendo.argosy.data.media.MediaAvailability
+import com.nendo.argosy.data.media.MediaAvailabilityVerifier
+import com.nendo.argosy.data.media.mediaAvailabilityOf
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.repository.MediaRepository
 import com.nendo.argosy.ui.screens.home.HomeMediaUi
@@ -11,6 +14,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -45,7 +49,8 @@ data class HomeMediaState(
 @Singleton
 class HomeMediaDelegate @Inject constructor(
     private val mediaRepository: MediaRepository,
-    private val preferencesRepository: UserPreferencesRepository
+    private val preferencesRepository: UserPreferencesRepository,
+    private val availabilityVerifier: MediaAvailabilityVerifier
 ) {
     private val _state = MutableStateFlow(HomeMediaState())
     val state: StateFlow<HomeMediaState> = _state.asStateFlow()
@@ -67,14 +72,18 @@ class HomeMediaDelegate @Inject constructor(
             }
         }
         scope.launch {
-            mediaRepository.observeNextUp().collect { entities ->
-                val tiles = toTiles(entities)
+            combine(
+                mediaRepository.observeNextUp(),
+                availabilityVerifier.availability
+            ) { entities, verified -> toTiles(entities, verified) }.collect { tiles ->
                 _state.update { it.copy(nextUp = tiles, isLoading = false) }
             }
         }
         scope.launch {
-            mediaRepository.observeContinueWatching().collect { entities ->
-                val tiles = toTiles(entities)
+            combine(
+                mediaRepository.observeContinueWatching(),
+                availabilityVerifier.availability
+            ) { entities, verified -> toTiles(entities, verified) }.collect { tiles ->
                 _state.update { it.copy(continueWatching = tiles, isLoading = false) }
             }
         }
@@ -87,6 +96,7 @@ class HomeMediaDelegate @Inject constructor(
      */
     fun refresh(scope: CoroutineScope) {
         if (!_state.value.isSignedIn) return
+        availabilityVerifier.verifyOnOpen()
         scope.launch { mediaRepository.refreshNextUp() }
         scope.launch { mediaRepository.refreshContinueWatching() }
     }
@@ -115,17 +125,23 @@ class HomeMediaDelegate @Inject constructor(
         _state.update { it.copy(resumePrompt = null) }
     }
 
-    private suspend fun toTiles(entities: List<MediaItemEntity>): List<HomeMediaUi> {
+    private suspend fun toTiles(
+        entities: List<MediaItemEntity>,
+        verified: Map<String, MediaAvailability>
+    ): List<HomeMediaUi> {
         if (entities.isEmpty()) return emptyList()
         val userData = mediaRepository.getUserDataFor(entities.map { it.itemId })
         val seriesIds = entities.mapNotNull { it.seriesId }.distinct()
         val series = seriesIds.mapNotNull { mediaRepository.getItem(it) }.associateBy { it.itemId }
-        return entities.map { entity -> entity.toTile(userData[entity.itemId], series[entity.seriesId]) }
+        return entities.map { entity ->
+            entity.toTile(userData[entity.itemId], series[entity.seriesId], verified[entity.itemId])
+        }
     }
 
     private fun MediaItemEntity.toTile(
         userData: MediaUserDataEntity?,
-        series: MediaItemEntity?
+        series: MediaItemEntity?,
+        verified: MediaAvailability?
     ): HomeMediaUi {
         val position = userData?.playbackPositionTicks ?: 0
         val played = userData?.played ?: false
@@ -144,7 +160,7 @@ class HomeMediaDelegate @Inject constructor(
             posterUrl = mediaRepository.posterUrl(posterId, posterTag),
             seriesId = seriesId,
             isEpisode = isEpisode,
-            isDownloaded = localPath != null,
+            availability = mediaAvailabilityOf(localPath, verified),
             resumeTicks = position,
             progressFraction = progressFraction(position, runTimeTicks, played)
         )

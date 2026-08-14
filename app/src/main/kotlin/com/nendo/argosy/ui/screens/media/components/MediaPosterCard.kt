@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -111,14 +110,7 @@ private fun MediaTileBadges(item: MediaItemUi, modifier: Modifier = Modifier) {
                 modifier = Modifier.size(Dimens.iconSm)
             )
         }
-        if (item.isDownloaded) {
-            Icon(
-                imageVector = Icons.Default.Download,
-                contentDescription = "Downloaded",
-                tint = theme.textPrimary,
-                modifier = Modifier.size(Dimens.iconSm)
-            )
-        }
+        MediaDownloadBadge(availability = item.availability, size = Dimens.iconSm)
     }
 }
 

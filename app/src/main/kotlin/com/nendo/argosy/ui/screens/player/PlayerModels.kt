@@ -1,5 +1,6 @@
 package com.nendo.argosy.ui.screens.player
 
+import com.nendo.argosy.data.media.MediaAvailability
 import java.util.Locale
 
 /**
@@ -72,6 +73,10 @@ data class SideloadedSubtitle(
  * [isLocalFile] marks the one answer that was never negotiated: a downloaded copy plays from disk,
  * so there is no play session, no encoder to free and no server to tell. Everything that reports to
  * the server is gated on it.
+ *
+ * [localCopy] is what became of the downloaded copy this playback would have preferred. On a stream
+ * it is how the fallback is explained to the viewer: bandwidth is being spent on a title they had
+ * already stored, and which of the two reasons applies changes what they can do about it.
  */
 data class NegotiatedPlayback(
     val itemId: String,
@@ -87,7 +92,8 @@ data class NegotiatedPlayback(
     val audioStreamIndex: Int?,
     val subtitleStreamIndex: Int?,
     val sideloadedSubtitles: List<SideloadedSubtitle>,
-    val isLocalFile: Boolean = false
+    val isLocalFile: Boolean = false,
+    val localCopy: MediaAvailability = MediaAvailability.NOT_DOWNLOADED
 )
 
 /**
@@ -139,6 +145,7 @@ data class PlayerUiState(
     val selectedSubtitleStreamIndex: Int? = null,
     val burnInImageSubtitles: Boolean = false,
     val isLocalPlayback: Boolean = false,
+    val playbackNotice: String? = null,
     val subtitleNotice: String? = null,
     val chapters: List<PlayerChapter> = emptyList(),
     val activeSkip: PlayerSkipSegment? = null,

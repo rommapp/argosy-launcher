@@ -4,6 +4,7 @@ import android.content.Intent
 import com.nendo.argosy.data.emulator.EmulatorDetector
 import com.nendo.argosy.data.local.entity.PlatformEntity
 import com.nendo.argosy.data.local.entity.getDisplayName
+import com.nendo.argosy.data.media.MediaAvailability
 import com.nendo.argosy.data.platform.PlatformDefinitions
 import com.nendo.argosy.data.preferences.HomeBackgroundMode
 import com.nendo.argosy.domain.model.HomeSectionKind
@@ -89,11 +90,13 @@ data class HomeMediaUi(
     val posterUrl: String,
     val seriesId: String? = null,
     val isEpisode: Boolean = false,
-    val isDownloaded: Boolean = false,
+    val availability: MediaAvailability = MediaAvailability.NOT_DOWNLOADED,
     val resumeTicks: Long = 0,
     val progressFraction: Float = 0f
 ) {
     val hasResumePosition: Boolean get() = resumeTicks > 0
+
+    val isDownloaded: Boolean get() = availability.hasLocalCopy
 
     /**
      * What opening the details of this tile should show. An episode's details are its show's, since

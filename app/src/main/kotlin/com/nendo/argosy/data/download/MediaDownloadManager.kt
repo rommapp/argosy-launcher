@@ -12,6 +12,8 @@ import com.nendo.argosy.data.local.entity.MediaDownloadQueueEntity
 import com.nendo.argosy.data.local.entity.MediaItemEntity
 import com.nendo.argosy.data.local.entity.MediaItemType
 import com.nendo.argosy.data.local.entity.MediaSourceEntity
+import com.nendo.argosy.data.media.MediaAvailability
+import com.nendo.argosy.data.media.MediaAvailabilityVerifier
 import com.nendo.argosy.data.media.MediaDirectoryManager
 import com.nendo.argosy.data.preferences.MediaDownloadQuality
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
@@ -165,6 +167,7 @@ class MediaDownloadManager @Inject constructor(
     private val directoryManager: MediaDirectoryManager,
     private val fileAccessLayer: FileAccessLayer,
     private val storageAttribution: StorageAttributionRepository,
+    private val availabilityVerifier: MediaAvailabilityVerifier,
     private val preferencesRepository: UserPreferencesRepository,
     private val notificationManager: NotificationManager,
     private val downloadManager: dagger.Lazy<DownloadManager>,
@@ -442,7 +445,7 @@ class MediaDownloadManager @Inject constructor(
         if (!item.isDownloadable) return EnqueueOutcome.UNAVAILABLE
         if (isInFlight(itemId)) return EnqueueOutcome.ALREADY_QUEUED
         if (_downloadQueue.value.any { it.itemId == itemId }) return EnqueueOutcome.ALREADY_QUEUED
-        if (item.localPath != null && satisfiedByExistingCopy(item, quality)) {
+        if (item.localPath != null && satisfiedByExistingCopy(item, quality) && copyStillCounts(itemId)) {
             return EnqueueOutcome.ALREADY_DOWNLOADED
         }
 
@@ -485,6 +488,17 @@ class MediaDownloadManager @Inject constructor(
      * nothing has negotiated yet is unknown rather than small, so it downloads too - which is exactly
      * what happens today.
      */
+    /**
+     * Whether the recorded copy is still worth refusing a re-download for.
+     *
+     * A stored path is not a file. One that turned out to be gone from storage that could be read is
+     * no reason to decline: the record is dropped as part of asking, and the request goes through
+     * rather than answering "already downloaded" about a file the user deleted themselves. A copy on
+     * a card that is merely unplugged still counts, and re-fetching it would cost the download twice.
+     */
+    private suspend fun copyStillCounts(itemId: String): Boolean =
+        availabilityVerifier.verify(itemId) != MediaAvailability.ABSENT
+
     private suspend fun satisfiedByExistingCopy(
         item: MediaItemEntity,
         quality: MediaDownloadQuality

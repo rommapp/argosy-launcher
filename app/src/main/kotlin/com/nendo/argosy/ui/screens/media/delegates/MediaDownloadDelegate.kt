@@ -3,6 +3,9 @@ package com.nendo.argosy.ui.screens.media.delegates
 import com.nendo.argosy.data.download.MediaDownloadManager
 import com.nendo.argosy.data.download.MediaSizeEstimate
 import com.nendo.argosy.data.download.isInFlight
+import com.nendo.argosy.data.media.MediaAvailability
+import com.nendo.argosy.data.media.MediaAvailabilityVerifier
+import com.nendo.argosy.data.media.mediaAvailabilityOf
 import com.nendo.argosy.data.preferences.MediaDownloadQuality
 import com.nendo.argosy.data.repository.MediaRepository
 import com.nendo.argosy.ui.screens.media.MediaDownloadOption
@@ -36,7 +39,8 @@ private const val STORAGE_HEADROOM_BYTES = 200L * 1024 * 1024
 @Singleton
 class MediaDownloadDelegate @Inject constructor(
     private val mediaRepository: MediaRepository,
-    private val mediaDownloadManager: MediaDownloadManager
+    private val mediaDownloadManager: MediaDownloadManager,
+    private val availabilityVerifier: MediaAvailabilityVerifier
 ) {
 
     /**
@@ -58,20 +62,28 @@ class MediaDownloadDelegate @Inject constructor(
     /**
      * How much of a series is on this device. [pending] counts what the queue is holding for it, so
      * a batch that was just enqueued reads as in-flight rather than as absent.
+     *
+     * Episodes on storage that is not connected stay inside the downloaded count and are reported
+     * separately. Shrinking the count when a card is pulled would say the copies were lost, which is
+     * the one thing that did not happen.
      */
     suspend fun summaryFor(item: MediaItemUi, pending: Int): MediaDownloadSummary {
         if (!item.isSeries) {
             return MediaDownloadSummary(
                 downloaded = if (item.isDownloaded) 1 else 0,
                 known = 1,
-                pending = pending
+                pending = pending,
+                unavailable = if (item.availability == MediaAvailability.UNAVAILABLE) 1 else 0
             )
         }
         val episodes = mediaRepository.getSeriesEpisodes(item.itemId)
+        val verified = availabilityVerifier.availability.value
+        val states = episodes.map { mediaAvailabilityOf(it.localPath, verified[it.itemId]) }
         return MediaDownloadSummary(
-            downloaded = mediaRepository.countDownloadedInSeries(item.itemId),
+            downloaded = states.count { it.hasLocalCopy },
             known = episodes.size,
-            pending = pending
+            pending = pending,
+            unavailable = states.count { it == MediaAvailability.UNAVAILABLE }
         )
     }
 

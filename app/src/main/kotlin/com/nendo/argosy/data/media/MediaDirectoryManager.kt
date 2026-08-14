@@ -7,6 +7,8 @@ import com.nendo.argosy.util.AppPaths
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.io.File
 import javax.inject.Inject
@@ -24,6 +26,16 @@ class MediaDirectoryManager @Inject constructor(
     @ApplicationContext private val context: Context,
     private val storagePreferences: StoragePreferencesRepository
 ) {
+
+    private val relocationMutex = Mutex()
+
+    /**
+     * Serialises whatever must not see a half-moved tree. Moving the files and repointing the rows
+     * that name them are one operation from outside: between the two, every stored path names a file
+     * that has already left, and a reader that concluded those files were deleted would clear records
+     * that are about to be corrected.
+     */
+    suspend fun <T> underRelocationLock(block: suspend () -> T): T = relocationMutex.withLock { block() }
 
     fun defaultMediaDir(): File = AppPaths.mediaDir(context.filesDir)
 

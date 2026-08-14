@@ -178,11 +178,6 @@ class MediaRepository @Inject constructor(
         return mediaItemDao.getByParent(owner, seasonId)
     }
 
-    suspend fun countDownloadedInSeries(seriesId: String): Int {
-        val owner = currentOwner() ?: return 0
-        return mediaItemDao.countDownloadedInSeries(owner, seriesId)
-    }
-
     /**
      * Every episode of a series that has been stored locally. Episodes arrive a season at a time, so
      * this is what is known rather than what the server holds, and it is the honest denominator for a

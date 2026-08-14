@@ -2,6 +2,8 @@ package com.nendo.argosy.ui.screens.player
 
 import android.net.Uri
 import androidx.media3.common.MimeTypes
+import com.nendo.argosy.data.media.MediaAvailability
+import com.nendo.argosy.data.media.MediaAvailabilityVerifier
 import com.nendo.argosy.data.preferences.JellyfinPreferences
 import com.nendo.argosy.data.preferences.JellyfinPreferencesRepository
 import com.nendo.argosy.data.preferences.MediaSubtitleMode
@@ -51,7 +53,8 @@ class PlaybackNegotiator @Inject constructor(
     private val apiClient: JellyfinApiClient,
     private val profileBuilder: JellyfinDeviceProfileBuilder,
     private val jellyfinPreferencesRepository: JellyfinPreferencesRepository,
-    private val mediaRepository: MediaRepository
+    private val mediaRepository: MediaRepository,
+    private val availabilityVerifier: MediaAvailabilityVerifier
 ) {
 
     suspend fun readPreferences(): JellyfinPreferences =
@@ -72,7 +75,14 @@ class PlaybackNegotiator @Inject constructor(
         subtitleStreamIndex: Int? = null,
         mediaSourceId: String? = null
     ): PlaybackNegotiation = withContext(Dispatchers.IO) {
-        downloadedPlayback(itemId)?.let { return@withContext PlaybackNegotiation.Ready(it) }
+        val localCopy = availabilityVerifier.verify(itemId)
+        val fromDisk = if (localCopy.playsFromDisk) downloadedPlayback(itemId) else null
+        if (fromDisk != null) return@withContext PlaybackNegotiation.Ready(fromDisk)
+        val fallbackFrom = if (localCopy == MediaAvailability.PRESENT) {
+            MediaAvailability.UNAVAILABLE
+        } else {
+            localCopy
+        }
 
         val prefs = jellyfinPreferencesRepository.preferences.first()
         val userId = apiClient.currentUserId()
@@ -110,17 +120,30 @@ class PlaybackNegotiator @Inject constructor(
                     requestedAudio = audioStreamIndex,
                     requestedSubtitle = subtitleStreamIndex,
                     prefs = prefs
-                )
+                ).fallenBackFrom(fallbackFrom)
             }
         }
     }
 
     /**
+     * Marks a stream that was reached only because the downloaded copy could not be opened. The
+     * fallback itself is right - a viewer who presses play gets a picture - but it spends metered
+     * bandwidth on a title they already paid to store, so the player says so rather than letting it
+     * pass for the copy.
+     */
+    private fun PlaybackNegotiation.fallenBackFrom(state: MediaAvailability): PlaybackNegotiation =
+        when (this) {
+            is PlaybackNegotiation.Ready -> copy(playback = playback.copy(localCopy = state))
+            is PlaybackNegotiation.Failed -> this
+        }
+
+    /**
      * The downloaded copy, when there is one that can actually be opened.
      *
-     * A path that no longer resolves is not treated as a missing download - an unplugged volume
-     * keeps its row - it simply means this playback streams instead, and the row is left untouched
-     * for the volume to come back to.
+     * Whether the copy is there at all was already settled by the verifier, which is also what keeps
+     * an unplugged volume from being read as a missing download. The check here is the last one, on
+     * the handle about to be opened: a file that verified as present and still will not open is
+     * treated as unreadable rather than gone, and this playback streams while the row stays put.
      *
      * The tracks are left empty on purpose: nothing negotiated this file, so what it contains is
      * whatever the player finds inside it, and that is read from the player once it is open.
@@ -144,7 +167,8 @@ class PlaybackNegotiator @Inject constructor(
             audioStreamIndex = null,
             subtitleStreamIndex = null,
             sideloadedSubtitles = emptyList(),
-            isLocalFile = true
+            isLocalFile = true,
+            localCopy = MediaAvailability.PRESENT
         )
     }
 

@@ -1,5 +1,6 @@
 package com.nendo.argosy.ui.screens.media
 
+import com.nendo.argosy.data.media.MediaAvailability
 import com.nendo.argosy.data.preferences.MediaDownloadQuality
 
 enum class MediaDetailMode { MOVIE, SERIES }
@@ -19,11 +20,16 @@ enum class MediaDetailAction { PLAY, DOWNLOAD, FAVORITE, WATCHED }
  * read: [downloaded] counts the episodes that have a file, [known] counts the episodes this device
  * has heard of at all - episodes arrive a season at a time - and [pending] counts the ones queued or
  * in flight. A caller that wants a yes-or-no answer has to say which of those it means.
+ *
+ * [unavailable] is how many of the [downloaded] sit on storage that is not connected. It is reported
+ * beside the count rather than taken out of it: unplugging a card does not un-download anything, and
+ * a series that read "8 of 24" yesterday still has eight copies today.
  */
 data class MediaDownloadSummary(
     val downloaded: Int = 0,
     val known: Int = 0,
-    val pending: Int = 0
+    val pending: Int = 0,
+    val unavailable: Int = 0
 ) {
     val isComplete: Boolean get() = known > 0 && downloaded >= known
     val isPartial: Boolean get() = downloaded > 0 && !isComplete
@@ -32,10 +38,17 @@ data class MediaDownloadSummary(
     val label: String
         get() = when {
             known == 0 -> "Download"
-            isComplete && pending == 0 -> "Downloaded"
-            pending > 0 -> "$downloaded of $known, $pending queued"
-            downloaded > 0 -> "$downloaded of $known"
+            isComplete && pending == 0 -> "Downloaded$availabilitySuffix"
+            pending > 0 -> "$downloaded of $known, $pending queued$availabilitySuffix"
+            downloaded > 0 -> "$downloaded of $known$availabilitySuffix"
             else -> "Download"
+        }
+
+    private val availabilitySuffix: String
+        get() = when {
+            unavailable == 0 -> ""
+            known == 1 -> " - not connected"
+            else -> " - $unavailable not connected"
         }
 }
 
@@ -112,7 +125,7 @@ data class MediaItemUi(
     val episodeNumber: Int? = null,
     val childCount: Int? = null,
     val isSeries: Boolean = false,
-    val isDownloaded: Boolean = false,
+    val availability: MediaAvailability = MediaAvailability.NOT_DOWNLOADED,
     val resumeTicks: Long = 0,
     val runTimeTicks: Long? = null,
     val played: Boolean = false,
@@ -122,6 +135,8 @@ data class MediaItemUi(
     val hasResumePosition: Boolean get() = resumeTicks > 0 && !played
 
     val isPlayable: Boolean get() = !isSeries
+
+    val isDownloaded: Boolean get() = availability.hasLocalCopy
 
     val episodeLabel: String?
         get() {

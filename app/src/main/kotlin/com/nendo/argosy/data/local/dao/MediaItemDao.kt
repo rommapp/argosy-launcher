@@ -97,16 +97,6 @@ interface MediaItemDao {
     )
     suspend fun countByLibrary(ownerUserId: String, libraryId: String, itemType: String): Int
 
-    /**
-     * Downloaded children of a series or season. A series is downloaded in part far more often than
-     * in whole, so the aggregate is counted rather than stored as a flag.
-     */
-    @Query(
-        "SELECT COUNT(*) FROM media_items WHERE ownerUserId = :ownerUserId AND seriesId = :seriesId " +
-            "AND localPath IS NOT NULL"
-    )
-    suspend fun countDownloadedInSeries(ownerUserId: String, seriesId: String): Int
-
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(item: MediaItemEntity): Long
 

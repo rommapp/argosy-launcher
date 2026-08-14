@@ -3,6 +3,7 @@ package com.nendo.argosy.ui.screens.media
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.nendo.argosy.core.input.SoundType
+import com.nendo.argosy.data.media.MediaAvailabilityVerifier
 import com.nendo.argosy.data.repository.MediaRepository
 import com.nendo.argosy.ui.input.InputHandler
 import com.nendo.argosy.ui.input.InputResult
@@ -27,7 +28,8 @@ private const val PLAY_TARGET_WAIT_MS = 10_000L
 class MediaDetailViewModel @Inject constructor(
     private val mediaRepository: MediaRepository,
     private val seriesDelegate: MediaSeriesDelegate,
-    private val downloadDelegate: MediaDownloadDelegate
+    private val downloadDelegate: MediaDownloadDelegate,
+    private val availabilityVerifier: MediaAvailabilityVerifier
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(MediaDetailUiState())
@@ -59,12 +61,15 @@ class MediaDetailViewModel @Inject constructor(
         playJob = null
         _uiState.value = MediaDetailUiState(isLoading = true)
 
+        availabilityVerifier.verifyOnOpen()
         itemJob = viewModelScope.launch {
             combine(
                 mediaRepository.observeItem(itemId),
-                mediaRepository.observeUserData(itemId)
-            ) { entity, userData -> entity?.toMediaItemUi(mediaRepository, userData) }
-                .collect { item -> applyItem(itemId, item) }
+                mediaRepository.observeUserData(itemId),
+                availabilityVerifier.availability
+            ) { entity, userData, verified ->
+                entity?.toMediaItemUi(mediaRepository, userData, verified)
+            }.collect { item -> applyItem(itemId, item) }
         }
     }
 
@@ -110,11 +115,15 @@ class MediaDetailViewModel @Inject constructor(
     /**
      * Keeps the aggregate fresh. A series' downloaded state is a count against a count, and both
      * halves move without the series row itself changing - an episode finishing rewrites the episode,
-     * and the queue shrinking is not a database write at all.
+     * the queue shrinking is not a database write at all, and a card being pulled changes how many of
+     * the copies can be reached without changing how many exist.
      */
     private fun observeDownloadSummary(item: MediaItemUi) {
         downloadJob = viewModelScope.launch {
-            downloadDelegate.pendingCount(item.itemId, item.isSeries).collect { pending ->
+            combine(
+                downloadDelegate.pendingCount(item.itemId, item.isSeries),
+                availabilityVerifier.availability
+            ) { pending, _ -> pending }.collect { pending ->
                 val current = _uiState.value.item ?: item
                 val summary = downloadDelegate.summaryFor(current, pending)
                 _uiState.update { it.copy(downloadSummary = summary) }

@@ -139,6 +139,15 @@ private fun PlayerChrome(state: PlayerUiState, viewModel: PlayerViewModel) {
                     overflow = TextOverflow.Ellipsis
                 )
             }
+            state.playbackNotice?.let { notice ->
+                Text(
+                    text = notice,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = theme.textMute,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
         }
 
         Box(modifier = Modifier.weight(1f))

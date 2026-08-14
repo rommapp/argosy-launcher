@@ -3,6 +3,7 @@ package com.nendo.argosy.ui.screens.media
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.nendo.argosy.core.input.SoundType
+import com.nendo.argosy.data.media.MediaAvailabilityVerifier
 import com.nendo.argosy.data.remote.jellyfin.JellyfinResult
 import com.nendo.argosy.data.repository.MediaRepository
 import com.nendo.argosy.ui.input.InputHandler
@@ -12,6 +13,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flatMapLatest
@@ -23,7 +25,8 @@ import javax.inject.Inject
 @OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class MediaLibraryViewModel @Inject constructor(
-    private val mediaRepository: MediaRepository
+    private val mediaRepository: MediaRepository,
+    private val availabilityVerifier: MediaAvailabilityVerifier
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(MediaLibraryUiState())
@@ -35,6 +38,7 @@ class MediaLibraryViewModel @Inject constructor(
         observeSignInState()
         observeLibraries()
         observeItems()
+        availabilityVerifier.verifyOnOpen()
     }
 
     private fun observeSignInState() {
@@ -63,15 +67,21 @@ class MediaLibraryViewModel @Inject constructor(
         }
     }
 
+    /**
+     * The grid, rebuilt whenever its contents or their availability changes. Availability arrives as
+     * an already-computed map, so a shelf of several hundred tiles costs map reads rather than a
+     * filesystem call per tile.
+     */
     private fun observeItems() {
         viewModelScope.launch {
             selectedLibraryId
                 .filterNotNull()
                 .distinctUntilChanged()
                 .flatMapLatest { libraryId -> mediaRepository.observeLibraryItems(libraryId) }
-                .map { entities ->
+                .combine(availabilityVerifier.availability) { entities, verified -> entities to verified }
+                .map { (entities, verified) ->
                     val userData = mediaRepository.getUserDataFor(entities.map { it.itemId })
-                    entities.map { it.toMediaItemUi(mediaRepository, userData[it.itemId]) }
+                    entities.map { it.toMediaItemUi(mediaRepository, userData[it.itemId], verified) }
                 }
                 .collect { items ->
                     _uiState.update { state ->
@@ -133,6 +143,7 @@ class MediaLibraryViewModel @Inject constructor(
 
     fun refresh() {
         if (_uiState.value.isRefreshing) return
+        availabilityVerifier.verifyOnOpen()
         viewModelScope.launch {
             _uiState.update { it.copy(isRefreshing = true, refreshLabel = "Refreshing", errorMessage = null) }
             when (val result = mediaRepository.refreshLibraries()) {

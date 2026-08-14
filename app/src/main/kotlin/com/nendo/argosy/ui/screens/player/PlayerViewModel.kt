@@ -9,6 +9,7 @@ import androidx.media3.common.Tracks
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import com.nendo.argosy.data.emulator.PlaySessionTracker
+import com.nendo.argosy.data.media.MediaAvailability
 import com.nendo.argosy.data.media.MediaPlaybackTracker
 import com.nendo.argosy.data.remote.jellyfin.JellyfinApiClient
 import com.nendo.argosy.data.remote.jellyfin.TICKS_PER_MILLISECOND
@@ -257,6 +258,20 @@ class PlayerViewModel @Inject constructor(
         }
     }
 
+    /**
+     * What to say when a title with a downloaded copy is streaming anyway. Silence would hide a
+     * choice the viewer would make differently: one of the two reasons is fixed by reconnecting the
+     * storage, the other by downloading the title again.
+     */
+    private fun streamingFallbackNotice(playback: NegotiatedPlayback): String? = when {
+        playback.isLocalFile -> null
+        playback.localCopy == MediaAvailability.UNAVAILABLE ->
+            "Streaming - your download is on storage that is not connected"
+        playback.localCopy == MediaAvailability.ABSENT ->
+            "Streaming - your download is no longer on this device"
+        else -> null
+    }
+
     private fun reload(
         audioStreamIndex: Int? = null,
         subtitleStreamIndex: Int? = null,
@@ -311,6 +326,7 @@ class PlayerViewModel @Inject constructor(
                 positionMs = startPositionMs,
                 scrubTargetMs = null,
                 isLocalPlayback = playback.isLocalFile,
+                playbackNotice = streamingFallbackNotice(playback),
                 errorMessage = null
             )
         }

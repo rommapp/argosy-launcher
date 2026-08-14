@@ -5,6 +5,8 @@ import com.nendo.argosy.data.local.entity.MediaItemEntity
 import com.nendo.argosy.data.local.entity.MediaItemType
 import com.nendo.argosy.data.local.entity.MediaLibraryEntity
 import com.nendo.argosy.data.local.entity.MediaUserDataEntity
+import com.nendo.argosy.data.media.MediaAvailability
+import com.nendo.argosy.data.media.mediaAvailabilityOf
 import com.nendo.argosy.data.repository.MediaRepository
 
 private const val TICKS_PER_SECOND = MediaRepository.TICKS_PER_SECOND
@@ -30,10 +32,15 @@ fun MediaItemEntity.toMediaSeasonUi(): MediaSeasonUi = MediaSeasonUi(
  * Builds the drawable form of an item. Image addresses are asked of the repository rather than
  * assembled here: they carry the server's own image tag, which is what makes them cacheable
  * forever, and a hand-built address that drops the tag silently loses that.
+ *
+ * [verified] is what a verification pass established about downloaded copies. It is passed in as a
+ * whole map rather than looked up per item so that building a screenful of tiles stays a set of map
+ * reads; nothing here touches the filesystem.
  */
 fun MediaItemEntity.toMediaItemUi(
     repository: MediaRepository,
-    userData: MediaUserDataEntity?
+    userData: MediaUserDataEntity?,
+    verified: Map<String, MediaAvailability> = emptyMap()
 ): MediaItemUi {
     val position = userData?.playbackPositionTicks ?: 0
     val played = userData?.played ?: false
@@ -56,7 +63,7 @@ fun MediaItemEntity.toMediaItemUi(
         episodeNumber = indexNumber,
         childCount = childCount,
         isSeries = MediaItemType.fromWire(itemType) == MediaItemType.SERIES,
-        isDownloaded = localPath != null,
+        availability = mediaAvailabilityOf(localPath, verified[itemId]),
         resumeTicks = position,
         runTimeTicks = runTimeTicks,
         played = played,

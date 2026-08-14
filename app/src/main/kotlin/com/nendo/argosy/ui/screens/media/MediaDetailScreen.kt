@@ -29,6 +29,7 @@ import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
+import com.nendo.argosy.data.media.MediaAvailability
 import com.nendo.argosy.ui.components.FooterHints
 import com.nendo.argosy.ui.components.InputButton
 import com.nendo.argosy.ui.input.LocalInputDispatcher
@@ -282,10 +283,10 @@ private fun buildDetailHints(uiState: MediaDetailUiState): List<Pair<InputButton
 }
 
 private fun downloadHint(uiState: MediaDetailUiState): String = when {
-    uiState.section == MediaDetailSection.EPISODES && uiState.focusedEpisode?.isDownloaded == true ->
-        "Downloaded"
-    uiState.section == MediaDetailSection.EPISODES -> "Download Episode"
-    else -> "Downloads"
+    uiState.section != MediaDetailSection.EPISODES -> "Downloads"
+    uiState.focusedEpisode?.availability == MediaAvailability.UNAVAILABLE -> "Not Connected"
+    uiState.focusedEpisode?.isDownloaded == true -> "Downloaded"
+    else -> "Download Episode"
 }
 
 private fun confirmHint(uiState: MediaDetailUiState): String {

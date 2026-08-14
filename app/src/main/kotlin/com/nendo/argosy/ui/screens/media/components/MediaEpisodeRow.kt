@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.Download
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -107,14 +106,7 @@ fun MediaEpisodeRow(
                         modifier = Modifier.size(Dimens.iconXs)
                     )
                 }
-                if (episode.isDownloaded) {
-                    Icon(
-                        imageVector = Icons.Default.Download,
-                        contentDescription = "Downloaded",
-                        tint = theme.textMute,
-                        modifier = Modifier.size(Dimens.iconXs)
-                    )
-                }
+                MediaDownloadBadge(availability = episode.availability, size = Dimens.iconXs)
             }
             val supporting = listOfNotNull(episode.runtimeLabel, episode.overview).joinToString(" - ")
             if (supporting.isNotBlank()) {

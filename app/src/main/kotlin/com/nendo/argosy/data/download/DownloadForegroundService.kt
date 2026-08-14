@@ -132,10 +132,13 @@ class DownloadForegroundService : Service() {
                     if (currentDownload != null) {
                         val title = when (currentDownload.state) {
                             DownloadState.EXTRACTING -> "Extracting: ${currentDownload.displayTitle}"
+                            DownloadState.MOVING -> "Moving to ROM storage: ${currentDownload.displayTitle}"
                             else -> "Downloading: ${currentDownload.displayTitle}"
                         }
                         if (currentDownload.state == DownloadState.EXTRACTING) {
                             updateNotification(title, 0, 0)
+                        } else if (currentDownload.state == DownloadState.MOVING) {
+                            updateNotification(title, (currentDownload.extractionPercent * 100).toInt(), 100)
                         } else {
                             val progressPercent = (currentDownload.progressPercent * 100).toInt()
                             updateNotification(title, progressPercent, 100)

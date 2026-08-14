@@ -2,7 +2,6 @@ package com.nendo.argosy.data.download
 
 import android.util.Log
 import android.content.Context
-import android.os.StatFs
 import com.nendo.argosy.data.local.dao.DownloadQueueDao
 import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.dao.GameDiscDao
@@ -50,6 +49,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 private const val STORAGE_BUFFER_BYTES = 50 * 1024 * 1024L
+private const val INTERNAL_STAGING_RESERVE_BYTES = 1024 * 1024 * 1024L
 private const val DOWNLOAD_BUFFER_SIZE = 64 * 1024
 private const val UI_UPDATE_INTERVAL_MS = 500L
 private const val DB_UPDATE_INTERVAL_MS = 5000L
@@ -100,6 +100,7 @@ enum class DownloadState {
     WAITING_FOR_STORAGE,
     DOWNLOADING,
     EXTRACTING,
+    MOVING,
     PAUSED,
     COMPLETED,
     FAILED,
@@ -109,6 +110,7 @@ enum class DownloadState {
 private sealed class DownloadResult {
     data class Success(val bytesWritten: Long) : DownloadResult()
     data class Failure(val reason: String) : DownloadResult()
+    data class WaitingForStorage(val reason: String) : DownloadResult()
     data object Cancelled : DownloadResult()
 }
 
@@ -153,7 +155,8 @@ class DownloadManager @Inject constructor(
     private val syncPreferencesRepository: SyncPreferencesRepository,
     private val homeTileRepository: com.nendo.argosy.data.repository.HomeTileRepository,
     private val homeTilePromptQueue: com.nendo.argosy.data.repository.HomeTilePromptQueue,
-    private val extContentOrganizer: ExtContentOrganizer
+    private val extContentOrganizer: ExtContentOrganizer,
+    private val romStagingManager: RomStagingManager
 ) {
     private val _state = MutableStateFlow(DownloadQueueState())
     val state: StateFlow<DownloadQueueState> = _state.asStateFlow()
@@ -221,15 +224,17 @@ class DownloadManager @Inject constructor(
         Log.d(TAG, "restoreQueueFromDatabase: found ${pending.size} pending downloads")
         pending.forEach { Log.d(TAG, "  - ${it.gameTitle}: state=${it.state}, bytes=${it.bytesDownloaded}/${it.totalBytes}") }
 
+        sweepAbandonedStaging(pending.map { it.id }.toSet())
+
         if (pending.isEmpty()) {
             updateAvailableStorage()
             return
         }
 
-        // Reset active states to QUEUED so they can be reprocessed on restart
         val statesToReset = setOf(
             DownloadState.DOWNLOADING.name,
-            DownloadState.EXTRACTING.name
+            DownloadState.EXTRACTING.name,
+            DownloadState.MOVING.name
         )
         for (entity in pending) {
             if (entity.state in statesToReset) {
@@ -240,8 +245,7 @@ class DownloadManager @Inject constructor(
 
         val restored = pending.map {
             val progress = it.toDownloadProgress()
-            // Ensure restored items are in QUEUED state for processing
-            if (progress.state == DownloadState.DOWNLOADING || progress.state == DownloadState.EXTRACTING) {
+            if (progress.state.name in statesToReset) {
                 progress.copy(state = DownloadState.QUEUED)
             } else {
                 progress
@@ -289,30 +293,87 @@ class DownloadManager @Inject constructor(
 
     private suspend fun getAvailableStorageBytes(platformSlug: String): Long {
         return withContext(Dispatchers.IO) {
-            try {
-                val downloadDir = getDownloadDir(platformSlug)
-                val stat = StatFs(downloadDir.absolutePath)
-                stat.availableBytes
-            } catch (_: Exception) {
-                0L
-            }
+            val downloadDir = getDownloadDir(platformSlug)
+            romStagingManager.availableBytes(downloadDir) ?: 0L
         }
     }
 
-    private fun hasEnoughStorage(requiredBytes: Long, availableBytes: Long): Boolean {
-        return availableBytes >= requiredBytes + STORAGE_BUFFER_BYTES
+    private sealed class StoragePlan {
+        data class Staged(val destinationDir: File) : StoragePlan()
+        data object Direct : StoragePlan()
+        data class Insufficient(val requiredBytes: Long, val availableBytes: Long) : StoragePlan()
+    }
+
+    /**
+     * Where this download will write, and whether the volumes it writes to can hold it.
+     *
+     * An archive costs its own bytes and its unpacked bytes at the same time, because the unpack
+     * writes beside the archive and the archive is only removed once the unpack has finished.
+     * Reserving for the transfer alone is what lets a download pass the gate and then run the card
+     * dry halfway through extracting, so both halves are charged to whichever volume actually
+     * receives them:
+     *
+     * - staged: internal pays archive + unpacked, the rom folder pays the finished output only
+     * - direct: the rom folder pays archive + unpacked together
+     *
+     * A volume Argosy cannot stat does not veto the download; a volume it can stat does.
+     */
+    private suspend fun planStorage(progress: DownloadProgress, claimStaging: Boolean): StoragePlan =
+        withContext(Dispatchers.IO) {
+            val destinationDir = getDownloadDir(progress.platformSlug)
+            val destinationFree = romStagingManager.availableBytes(destinationDir)
+            val remainingArchive = (progress.totalBytes - progress.bytesDownloaded).coerceAtLeast(0L)
+            val expands = !progress.isGameFileDownload &&
+                ArchiveExpansion.expandsOnDisk(
+                    progress.fileName, progress.platformSlug, progress.isMultiFileRom
+                )
+            val unpackedBytes = if (expands) ArchiveExpansion.estimate(progress.totalBytes) else 0L
+
+            if (expands && preferencesRepository.userPreferences.first().stageDownloadsInternally) {
+                val staged = planStaged(
+                    progress, destinationDir, destinationFree,
+                    remainingArchive, unpackedBytes, claimStaging
+                )
+                if (staged != null) return@withContext staged
+            }
+
+            val directRequirement = remainingArchive + unpackedBytes + STORAGE_BUFFER_BYTES
+            if (destinationFree != null && destinationFree < directRequirement) {
+                StoragePlan.Insufficient(directRequirement, destinationFree)
+            } else {
+                StoragePlan.Direct
+            }
+        }
+
+    private fun planStaged(
+        progress: DownloadProgress,
+        destinationDir: File,
+        destinationFree: Long?,
+        remainingArchive: Long,
+        unpackedBytes: Long,
+        claimStaging: Boolean
+    ): StoragePlan? {
+        if (claimStaging && !romStagingManager.claim(progress.id)) return null
+        val internalFree = romStagingManager.internalAvailableBytes()
+        val internalRequirement = remainingArchive + unpackedBytes + INTERNAL_STAGING_RESERVE_BYTES
+        val destinationRequirement = unpackedBytes + STORAGE_BUFFER_BYTES
+        val fits = internalFree != null && internalFree >= internalRequirement &&
+            (destinationFree == null || destinationFree >= destinationRequirement)
+        if (fits) return StoragePlan.Staged(destinationDir)
+        Logger.info(
+            TAG,
+            "Staging unavailable, downloading direct | game=${progress.gameTitle} " +
+                "internalFree=$internalFree need=$internalRequirement destFree=$destinationFree"
+        )
+        if (claimStaging) romStagingManager.release(progress.id)
+        return null
     }
 
     private suspend fun getGlobalStorageBytes(): Long {
         return withContext(Dispatchers.IO) {
-            try {
-                val prefs = preferencesRepository.userPreferences.first()
-                val dir = prefs.romStoragePath?.let { File(it) } ?: defaultDownloadDir
-                val stat = StatFs(dir.absolutePath)
-                stat.availableBytes
-            } catch (_: Exception) {
-                0L
-            }
+            val prefs = preferencesRepository.userPreferences.first()
+            val dir = prefs.romStoragePath?.let { File(it) } ?: defaultDownloadDir
+            romStagingManager.availableBytes(dir) ?: 0L
         }
     }
 
@@ -329,10 +390,10 @@ class DownloadManager @Inject constructor(
     }
 
     private suspend fun startDownloadJob(progress: DownloadProgress) {
+        val plan = planStorage(progress, claimStaging = true)
         val availableStorage = getAvailableStorageBytes(progress.platformSlug)
-        val requiredBytes = progress.totalBytes - progress.bytesDownloaded
 
-        if (!hasEnoughStorage(requiredBytes, availableStorage)) {
+        if (plan is StoragePlan.Insufficient) {
             downloadQueueDao.updateState(progress.id, DownloadState.WAITING_FOR_STORAGE.name)
             _state.value = _state.value.copy(
                 activeDownloads = _state.value.activeDownloads.filter { it.id != progress.id },
@@ -357,33 +418,54 @@ class DownloadManager @Inject constructor(
         downloadQueueDao.updateState(progress.id, DownloadState.DOWNLOADING.name)
 
         downloadJobs[progress.id] = scope.launch {
-            val result = downloadRom(progress)
+            settleDownload(progress, downloadRom(progress, plan))
+        }
+    }
 
-            val finalProgress = when (result) {
-                is DownloadResult.Success -> {
-                    downloadQueueDao.updateState(progress.id, DownloadState.COMPLETED.name)
-                    soundManager.play(SoundType.DOWNLOAD_COMPLETE)
-                    progress.copy(
-                        state = DownloadState.COMPLETED,
-                        bytesDownloaded = result.bytesWritten
-                    )
-                }
-                is DownloadResult.Failure -> {
-                    downloadQueueDao.updateState(progress.id, DownloadState.FAILED.name, result.reason)
-                    soundManager.play(SoundType.ERROR)
-                    progress.copy(
-                        state = DownloadState.FAILED,
-                        errorReason = result.reason
-                    )
-                }
-                is DownloadResult.Cancelled -> {
-                    progress.copy(state = DownloadState.PAUSED)
-                }
+    /**
+     * Retires a finished job: records the outcome, frees the slot and the staging holder, and moves
+     * the row to wherever it now belongs.
+     *
+     * A download that ran out of room on the rom volume goes back to the queue rather than to the
+     * failed list. Its archive is already fetched and unpacked in staging, and a failed row is
+     * cleared on the next start, which would throw that work away over a condition the user can fix
+     * by deleting one game.
+     */
+    private suspend fun settleDownload(progress: DownloadProgress, result: DownloadResult) {
+        val finalProgress = when (result) {
+            is DownloadResult.Success -> {
+                downloadQueueDao.updateState(progress.id, DownloadState.COMPLETED.name)
+                soundManager.play(SoundType.DOWNLOAD_COMPLETE)
+                progress.copy(state = DownloadState.COMPLETED, bytesDownloaded = result.bytesWritten)
             }
+            is DownloadResult.Failure -> {
+                downloadQueueDao.updateState(progress.id, DownloadState.FAILED.name, result.reason)
+                soundManager.play(SoundType.ERROR)
+                progress.copy(state = DownloadState.FAILED, errorReason = result.reason)
+            }
+            is DownloadResult.WaitingForStorage -> {
+                downloadQueueDao.updateState(
+                    progress.id, DownloadState.WAITING_FOR_STORAGE.name, result.reason
+                )
+                progress.copy(state = DownloadState.WAITING_FOR_STORAGE, errorReason = result.reason)
+            }
+            is DownloadResult.Cancelled -> progress.copy(state = DownloadState.PAUSED)
+        }
 
-            downloadJobs.remove(progress.id)
+        downloadJobs.remove(progress.id)
+        romStagingManager.release(progress.id)
 
-            if (result !is DownloadResult.Cancelled) {
+        when (result) {
+            is DownloadResult.Cancelled -> return
+            is DownloadResult.WaitingForStorage -> {
+                _state.value = _state.value.copy(
+                    activeDownloads = _state.value.activeDownloads.filter { it.id != progress.id },
+                    queue = _state.value.queue.filter { it.id != progress.id } + finalProgress,
+                    availableStorageBytes = getAvailableStorageBytes(progress.platformSlug)
+                )
+                notifySlotFreed()
+            }
+            else -> {
                 _state.value = _state.value.copy(
                     activeDownloads = _state.value.activeDownloads.filter { it.id != progress.id },
                     completed = _state.value.completed + finalProgress
@@ -446,6 +528,7 @@ class DownloadManager @Inject constructor(
                 val tempFile = File(path)
                 if (tempFile.exists()) tempFile.delete()
             }
+            discardStagingFor(existing.id)
             downloadQueueDao.deleteByGameId(gameId)
         }
 
@@ -833,11 +916,11 @@ class DownloadManager @Inject constructor(
                 continue
             }
 
+            val plan = planStorage(next, claimStaging = true)
             val availableStorage = getAvailableStorageBytes(next.platformSlug)
-            val requiredBytes = next.totalBytes - next.bytesDownloaded
-            Log.d(TAG, "processQueue: ${next.gameTitle} requires $requiredBytes bytes, available=$availableStorage")
 
-            if (!hasEnoughStorage(requiredBytes, availableStorage)) {
+            if (plan is StoragePlan.Insufficient) {
+                Log.d(TAG, "processQueue: ${next.gameTitle} needs ${plan.requiredBytes}, has ${plan.availableBytes}")
                 downloadQueueDao.updateState(next.id, DownloadState.WAITING_FOR_STORAGE.name)
                 _state.value = _state.value.copy(
                     queue = _state.value.queue.map {
@@ -859,71 +942,67 @@ class DownloadManager @Inject constructor(
             downloadQueueDao.updateState(next.id, DownloadState.DOWNLOADING.name)
 
             downloadJobs[next.id] = scope.launch {
-                val result = downloadRom(next)
-
-                val finalProgress = when (result) {
-                    is DownloadResult.Success -> {
-                        downloadQueueDao.updateState(next.id, DownloadState.COMPLETED.name)
-                        soundManager.play(SoundType.DOWNLOAD_COMPLETE)
-                        next.copy(
-                            state = DownloadState.COMPLETED,
-                            bytesDownloaded = result.bytesWritten
-                        )
-                    }
-                    is DownloadResult.Failure -> {
-                        downloadQueueDao.updateState(next.id, DownloadState.FAILED.name, result.reason)
-                        soundManager.play(SoundType.ERROR)
-                        next.copy(
-                            state = DownloadState.FAILED,
-                            errorReason = result.reason
-                        )
-                    }
-                    is DownloadResult.Cancelled -> {
-                        next.copy(state = DownloadState.PAUSED)
-                    }
-                }
-
-                downloadJobs.remove(next.id)
-
-                if (result !is DownloadResult.Cancelled) {
-                    _state.value = _state.value.copy(
-                        activeDownloads = _state.value.activeDownloads.filter { it.id != next.id },
-                        completed = _state.value.completed + finalProgress
-                    )
-                    notifySlotFreed()
-                    if (result is DownloadResult.Success) {
-                        broadcastDownloadCompleted(next.gameId)
-                    }
-                }
+                settleDownload(next, downloadRom(next, plan))
             }
         }
     }
 
-    private suspend fun downloadRom(progress: DownloadProgress): DownloadResult =
+    private suspend fun downloadRom(
+        progress: DownloadProgress,
+        plan: StoragePlan = StoragePlan.Direct
+    ): DownloadResult =
         withContext(Dispatchers.IO) {
             try {
                 val platformDir = getDownloadDir(progress.platformSlug)
 
-                val downloadDir = if (progress.isGameFileDownload && progress.fileCategory != null) {
-                    val gameFolder = resolveAddonFolder(
-                        progress.gameId, progress.platformSlug, progress.gameFolderName,
-                        progress.gameTitle, progress.fileCategory
+                val carriedOver = romStagingManager.list()
+                    .firstOrNull { it.manifest.downloadId == progress.id }
+                if (carriedOver?.manifest?.phase == StagingPhase.MOVING) {
+                    return@withContext resumeStagedDeploy(carriedOver, progress)
+                }
+                val alreadyStaged = carriedOver?.takeIf { hasCompleteStagedArchive(it, progress) }
+                if (carriedOver != null && alreadyStaged == null && plan !is StoragePlan.Staged) {
+                    Logger.info(
+                        TAG,
+                        "Discarding staged work, download now goes direct | game=${progress.gameTitle}"
                     )
-                    resolveGameFileDir(
-                        progress.gameId, progress.gameFileId, progress.platformSlug,
-                        progress.fileCategory, gameFolder
+                    romStagingManager.discard(carriedOver)
+                }
+
+                val stagingArea = alreadyStaged ?: (plan as? StoragePlan.Staged)?.let { staged ->
+                    romStagingManager.open(
+                        StagingManifest(
+                            downloadId = progress.id,
+                            gameId = progress.gameId,
+                            gameTitle = progress.gameTitle,
+                            fileName = progress.fileName,
+                            destinationDir = staged.destinationDir.absolutePath,
+                            phase = StagingPhase.DOWNLOADING
+                        )
                     )
-                } else {
-                    platformDir
+                }
+
+                val downloadDir = when {
+                    stagingArea != null -> stagingArea.archiveDir
+                    progress.isGameFileDownload && progress.fileCategory != null -> {
+                        val gameFolder = resolveAddonFolder(
+                            progress.gameId, progress.platformSlug, progress.gameFolderName,
+                            progress.gameTitle, progress.fileCategory
+                        )
+                        resolveGameFileDir(
+                            progress.gameId, progress.gameFileId, progress.platformSlug,
+                            progress.fileCategory, gameFolder
+                        )
+                    }
+                    else -> platformDir
                 }
 
                 val tempFile = File(downloadDir, "${progress.fileName}.tmp")
                 val targetFile = File(downloadDir, progress.fileName)
 
-                // Check if download is already complete (e.g., app crashed during extraction)
                 if (targetFile.exists() && targetFile.length() >= progress.totalBytes && progress.totalBytes > 0) {
                     Log.d(TAG, "Target file already complete (${targetFile.length()} bytes), finalizing")
-                    return@withContext finalizeCompletedFile(targetFile, platformDir, progress)
+                    return@withContext finalizeCompletedFile(targetFile, platformDir, progress, stagingArea)
                 }
 
                 val existingBytes = if (tempFile.exists()) tempFile.length() else 0L
@@ -935,7 +1014,7 @@ class DownloadManager @Inject constructor(
                     if (existingBytes == progress.totalBytes) {
                         Log.d(TAG, "Temp file matches expected size ($existingBytes bytes), promoting to target")
                         promoteTempFile(tempFile, targetFile)
-                        return@withContext finalizeCompletedFile(targetFile, platformDir, progress)
+                        return@withContext finalizeCompletedFile(targetFile, platformDir, progress, stagingArea)
                     } else if (existingBytes > progress.totalBytes) {
                         Log.w(TAG, "Temp file oversized ($existingBytes > ${progress.totalBytes}), deleting")
                         tempFile.delete()
@@ -1062,7 +1141,10 @@ class DownloadManager @Inject constructor(
                                 downloadQueueDao.updateProgress(progress.id, bytesRead)
 
                                 promoteTempFile(tempFile, targetFile)
-                                finalizeCompletedFile(targetFile, platformDir, progress.copy(totalBytes = totalSize))
+                                finalizeCompletedFile(
+                                    targetFile, platformDir,
+                                    progress.copy(totalBytes = totalSize), stagingArea
+                                )
                             }
                         }
                     }
@@ -1072,12 +1154,12 @@ class DownloadManager @Inject constructor(
                             if (progress.totalBytes > 0 && tempSize == progress.totalBytes) {
                                 Log.w(TAG, "416: temp file ($tempSize bytes) matches expected, promoting as complete")
                                 promoteTempFile(tempFile, targetFile)
-                                return@withContext finalizeCompletedFile(targetFile, platformDir, progress)
+                                return@withContext finalizeCompletedFile(targetFile, platformDir, progress, stagingArea)
                             } else {
                                 Log.w(TAG, "416: temp file ($tempSize bytes) vs expected (${progress.totalBytes}), deleting and retrying")
                                 tempFile.delete()
                                 downloadQueueDao.updateProgress(progress.id, 0)
-                                return@withContext downloadRom(progress.copy(bytesDownloaded = 0))
+                                return@withContext downloadRom(progress.copy(bytesDownloaded = 0), plan)
                             }
                         }
                         Logger.warn(
@@ -1103,14 +1185,19 @@ class DownloadManager @Inject constructor(
     private suspend fun finalizeCompletedFile(
         targetFile: File,
         platformDir: File,
-        progress: DownloadProgress
+        progress: DownloadProgress,
+        stagingArea: StagingArea? = null
     ): DownloadResult {
-        var finalPath = if (progress.isGameFileDownload) {
+        val unpackDir = stagingArea?.outputDir ?: platformDir
+        checkUnpackRoom(targetFile, unpackDir, progress, staged = stagingArea != null)
+            ?.let { return it }
+
+        val unpackedPath = if (progress.isGameFileDownload) {
             targetFile.absolutePath
         } else {
             processDownloadedFile(
                 targetFile = targetFile,
-                platformDir = platformDir,
+                platformDir = unpackDir,
                 platformSlug = progress.platformSlug,
                 gameTitle = progress.gameTitle,
                 progressId = progress.id,
@@ -1129,7 +1216,25 @@ class DownloadManager @Inject constructor(
             )
         }
 
-        Log.d(TAG, "finalizeCompletedFile: path=$finalPath, gameTitle=${progress.gameTitle}")
+        val finalPath = if (stagingArea != null) {
+            when (val deployed = deployStagedOutput(stagingArea, unpackedPath, progress)) {
+                is StagedDeployResult.Success -> deployed.finalPath
+                is StagedDeployResult.Failure -> return deployed.result
+            }
+        } else {
+            unpackedPath
+        }
+
+        return linkCompletedDownload(progress, finalPath, platformDir)
+    }
+
+    private suspend fun linkCompletedDownload(
+        progress: DownloadProgress,
+        deployedPath: String,
+        platformDir: File
+    ): DownloadResult {
+        var finalPath = deployedPath
+        Log.d(TAG, "linkCompletedDownload: path=$finalPath, gameTitle=${progress.gameTitle}")
 
         if (progress.isGameFileDownload && !File(finalPath).exists()) {
             Logger.warn(
@@ -1192,6 +1297,201 @@ class DownloadManager @Inject constructor(
         )
 
         return DownloadResult.Success(progress.totalBytes)
+    }
+
+    /**
+     * True when staging already holds the whole archive for this download.
+     *
+     * Those bytes are spent: re-fetching them because internal storage no longer has room for a
+     * fresh staged download would charge the user a second transfer for a file that is sitting on
+     * the device. Whether the unpack can go ahead is a separate question, answered against the
+     * real expanded size once the archive is opened.
+     */
+    private fun hasCompleteStagedArchive(area: StagingArea, progress: DownloadProgress): Boolean {
+        if (progress.totalBytes <= 0) return false
+        val archive = File(area.archiveDir, progress.fileName)
+        return archive.isFile && archive.length() >= progress.totalBytes
+    }
+
+    /**
+     * The second half of the storage gate, run once the archive is on disk.
+     *
+     * The pre-download reserve could only guess at how far the archive would expand. Zip and 7z
+     * both publish their uncompressed totals, so the guess is replaced with the real figure before
+     * a single entry is written - a highly compressible archive can expand far past any multiplier,
+     * and the volume it expands onto is the one that runs dry. Returns null when there is room, or
+     * the result to settle the download with when there is not; the archive is kept either way, so
+     * freeing space and resuming costs no transfer.
+     */
+    private suspend fun checkUnpackRoom(
+        archive: File,
+        unpackDir: File,
+        progress: DownloadProgress,
+        staged: Boolean
+    ): DownloadResult? = withContext(Dispatchers.IO) {
+        if (progress.isGameFileDownload) return@withContext null
+        if (!ArchiveExpansion.expandsOnDisk(progress.fileName, progress.platformSlug, progress.isMultiFileRom)) {
+            return@withContext null
+        }
+        val expandedBytes = ArchiveExpansion.measure(archive) ?: return@withContext null
+        val reserve = if (staged) INTERNAL_STAGING_RESERVE_BYTES else STORAGE_BUFFER_BYTES
+        val required = expandedBytes + reserve
+        val free = romStagingManager.availableBytes(unpackDir) ?: return@withContext null
+        if (free >= required) return@withContext null
+
+        val where = if (staged) "internal storage" else "ROM storage"
+        Logger.warn(
+            TAG,
+            "Unpack deferred, $where full | game=${progress.gameTitle} " +
+                "expanded=$expandedBytes need=$required free=$free"
+        )
+        DownloadResult.WaitingForStorage(
+            "Unpacking needs ${formatMegabytes(required)} in $where, ${formatMegabytes(free)} free"
+        )
+    }
+
+    private sealed class StagedDeployResult {
+        data class Success(val finalPath: String) : StagedDeployResult()
+        data class Failure(val result: DownloadResult) : StagedDeployResult()
+    }
+
+    private suspend fun deployStagedOutput(
+        area: StagingArea,
+        unpackedPath: String,
+        progress: DownloadProgress
+    ): StagedDeployResult {
+        val outputPrefix = area.outputDir.absolutePath + File.separator
+        if (!unpackedPath.startsWith(outputPrefix)) {
+            romStagingManager.discard(area)
+            Logger.warn(
+                TAG,
+                "Staged unpack escaped its folder | game=${progress.gameTitle} path=$unpackedPath"
+            )
+            return StagedDeployResult.Failure(
+                DownloadResult.Failure("Unpacked game did not land in the staging folder")
+            )
+        }
+        val relative = unpackedPath.removePrefix(outputPrefix)
+        return deployStagedArea(romStagingManager.advance(area, StagingPhase.MOVING, relative), progress)
+    }
+
+    /**
+     * Carries a finished staged tree onto the rom volume.
+     *
+     * The destination is measured again here rather than trusted from the pre-download estimate:
+     * by this point the real unpacked size is on disk and the card may have filled during a
+     * multi-hour transfer. Running out here parks the download instead of failing it, because the
+     * archive is already fetched and unpacked - throwing that away to make room is the opposite of
+     * what the user wants.
+     */
+    private suspend fun deployStagedArea(
+        area: StagingArea,
+        progress: DownloadProgress
+    ): StagedDeployResult {
+        val relative = area.manifest.launchRelPath
+            ?: return StagedDeployResult.Failure(DownloadResult.Failure("Staged game has no recorded path"))
+        val destinationDir = area.destinationDir
+        val outputBytes = romStagingManager.outputBytes(area)
+        val destinationFree = romStagingManager.availableBytes(destinationDir)
+        val required = outputBytes + STORAGE_BUFFER_BYTES
+
+        if (destinationFree != null && destinationFree < required) {
+            Logger.warn(
+                TAG,
+                "Deploy deferred, ROM storage full | game=${progress.gameTitle} " +
+                    "need=$required free=$destinationFree"
+            )
+            return StagedDeployResult.Failure(
+                DownloadResult.WaitingForStorage(
+                    "Needs ${formatMegabytes(required)} in ROM storage, ${formatMegabytes(destinationFree)} free"
+                )
+            )
+        }
+
+        downloadQueueDao.updateState(progress.id, DownloadState.MOVING.name)
+        updateProgress(
+            progress.copy(
+                state = DownloadState.MOVING,
+                extractionBytesWritten = 0,
+                extractionTotalBytes = outputBytes
+            )
+        )
+
+        val moved = withContext(Dispatchers.IO) {
+            romStagingManager.deploy(area) { copiedBytes, totalBytes ->
+                updateProgress(
+                    progress.copy(
+                        state = DownloadState.MOVING,
+                        extractionBytesWritten = copiedBytes,
+                        extractionTotalBytes = totalBytes
+                    )
+                )
+            }
+        }
+        if (!moved) {
+            return StagedDeployResult.Failure(
+                DownloadResult.Failure("Could not move the game into ROM storage")
+            )
+        }
+
+        val finalFile = File(destinationDir, relative)
+        if (!finalFile.exists()) {
+            Logger.warn(TAG, "Deploy verify failed | expected ${finalFile.absolutePath}")
+            return StagedDeployResult.Failure(
+                DownloadResult.Failure("Moved game was not found in ROM storage")
+            )
+        }
+
+        romStagingManager.discard(area)
+        attributionRepository.markDirty(StorageCategory.ROM_STAGING)
+        Logger.info(
+            TAG,
+            "Deployed staged game | game=${progress.gameTitle} bytes=$outputBytes " +
+                "path=${finalFile.absolutePath}"
+        )
+        return StagedDeployResult.Success(finalFile.absolutePath)
+    }
+
+    private suspend fun resumeStagedDeploy(area: StagingArea, progress: DownloadProgress): DownloadResult {
+        val platformDir = getDownloadDir(progress.platformSlug)
+        Logger.info(TAG, "Resuming interrupted move | game=${progress.gameTitle}")
+        return when (val deployed = deployStagedArea(area, progress)) {
+            is StagedDeployResult.Success ->
+                linkCompletedDownload(progress, deployed.finalPath, platformDir)
+            is StagedDeployResult.Failure -> deployed.result
+        }
+    }
+
+    private fun formatMegabytes(bytes: Long): String = "${bytes / 1024 / 1024} MB"
+
+    /**
+     * A download parked mid-move only needs room for what is left to carry across, not for the
+     * archive it already fetched and unpacked. Charging it the download requirement again would
+     * hold it in the queue long after the user has freed exactly the space it asked for.
+     */
+    private suspend fun hasRoomForStagedMove(area: StagingArea): Boolean = withContext(Dispatchers.IO) {
+        val free = romStagingManager.availableBytes(area.destinationDir) ?: return@withContext true
+        free >= romStagingManager.outputBytes(area) + STORAGE_BUFFER_BYTES
+    }
+
+    private suspend fun sweepAbandonedStaging(liveDownloadIds: Set<Long>) {
+        val freed = withContext(Dispatchers.IO) { romStagingManager.cleanAbandoned(liveDownloadIds) }
+        if (freed > 0) attributionRepository.markDirty(StorageCategory.ROM_STAGING)
+    }
+
+    /**
+     * Discards every staging folder whose download is no longer queued, and reports the bytes
+     * reclaimed. Work belonging to a live queue row is left alone, so this cannot cost a user a
+     * download that is merely paused.
+     */
+    suspend fun cleanAbandonedStaging(): Long {
+        val live = downloadQueueDao.getPendingDownloads().map { it.id }.toSet() +
+            _state.value.activeDownloads.map { it.id } +
+            _state.value.queue.map { it.id }
+        val freed = withContext(Dispatchers.IO) { romStagingManager.cleanAbandoned(live) }
+        if (freed > 0) attributionRepository.markDirty(StorageCategory.ROM_STAGING)
+        Logger.info(TAG, "Cleaned abandoned download staging | bytes=$freed")
+        return freed
     }
 
     private fun promoteTempFile(tempFile: File, targetFile: File) {
@@ -1429,11 +1729,21 @@ class DownloadManager @Inject constructor(
             return
         }
 
+        val stagedMoves = withContext(Dispatchers.IO) {
+            romStagingManager.list()
+                .filter { it.manifest.phase == StagingPhase.MOVING }
+                .associateBy { it.manifest.downloadId }
+        }
+
         var anyResumed = false
         for (item in waiting) {
-            val availableStorage = getAvailableStorageBytes(item.platformSlug)
-            val requiredBytes = item.totalBytes - item.bytesDownloaded
-            if (hasEnoughStorage(requiredBytes, availableStorage)) {
+            val staged = stagedMoves[item.id]
+            val admitted = if (staged != null) {
+                hasRoomForStagedMove(staged)
+            } else {
+                planStorage(item, claimStaging = false) !is StoragePlan.Insufficient
+            }
+            if (admitted) {
                 downloadQueueDao.updateState(item.id, DownloadState.QUEUED.name)
                 anyResumed = true
             }
@@ -1459,6 +1769,7 @@ class DownloadManager @Inject constructor(
                     val tempFile = File(platformDir, "${active.fileName}.tmp")
                     if (tempFile.exists()) tempFile.delete()
                 }
+                discardStagingFor(active.id)
             }
             _state.value = _state.value.copy(
                 activeDownloads = _state.value.activeDownloads.filter { it.id != active.id }
@@ -1474,6 +1785,7 @@ class DownloadManager @Inject constructor(
                         val tempFile = File(platformDir, "${queued.fileName}.tmp")
                         if (tempFile.exists()) tempFile.delete()
                     }
+                    discardStagingFor(queued.id)
                 }
                 _state.value = _state.value.copy(
                     queue = _state.value.queue.filter { it.rommId != rommId }
@@ -1645,8 +1957,18 @@ class DownloadManager @Inject constructor(
             if (targetFile.exists()) targetFile.delete()
             if (tempFile.exists()) tempFile.delete()
 
+            discardStagingFor(queueEntry.id)
             downloadQueueDao.deleteByGameId(gameId)
         }
+    }
+
+    private suspend fun discardStagingFor(downloadId: Long) {
+        val discarded = withContext(Dispatchers.IO) {
+            romStagingManager.list()
+                .firstOrNull { it.manifest.downloadId == downloadId }
+                ?.also { romStagingManager.discard(it) }
+        }
+        if (discarded != null) attributionRepository.markDirty(StorageCategory.ROM_STAGING)
     }
 
     private suspend fun relocateSoundtrackFiles(

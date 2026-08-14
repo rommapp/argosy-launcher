@@ -12,6 +12,8 @@ object AppPaths {
 
     const val ROM_CACHE_DIR = "rom_cache"
 
+    const val ROM_STAGING_DIR = "rom_staging"
+
     const val MEDIA_DIR = "media"
 
     const val LIBRETRO_SAVES_SUBDIR = "libretro/saves"
@@ -64,6 +66,11 @@ object AppPaths {
     private const val OWNER_DIR_PREFIX = "u"
 
     fun romCacheDir(filesDir: File): File = File(filesDir, ROM_CACHE_DIR)
+
+    fun romStagingRoot(filesDir: File): File = File(filesDir, ROM_STAGING_DIR)
+
+    fun romStagingDir(filesDir: File, downloadId: Long): File =
+        File(filesDir, "$ROM_STAGING_DIR/$downloadId")
 
     fun mediaDir(filesDir: File): File = File(filesDir, MEDIA_DIR)
 

@@ -40,6 +40,7 @@ data class DownloadGroup(val items: List<DownloadProgress>) {
             val state = when {
                 items.any { it.state == DownloadState.DOWNLOADING } -> DownloadState.DOWNLOADING
                 items.any { it.state == DownloadState.EXTRACTING } -> DownloadState.EXTRACTING
+                items.any { it.state == DownloadState.MOVING } -> DownloadState.MOVING
                 items.any { it.state == DownloadState.QUEUED } -> DownloadState.QUEUED
                 items.any { it.state == DownloadState.PAUSED } -> DownloadState.PAUSED
                 items.any { it.state == DownloadState.WAITING_FOR_STORAGE } -> DownloadState.WAITING_FOR_STORAGE

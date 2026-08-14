@@ -92,6 +92,7 @@ internal sealed class StorageCachesItem(
     data object ScreenshotsToggle : StorageCachesItem("screenshotsToggle", "media")
     data object BoxArtToggle : StorageCachesItem("boxArtToggle", "media")
     data object RomExtractionClear : StorageCachesItem("romExtractionClear", "media")
+    data object RomStagingClear : StorageCachesItem("romStagingClear", "media")
     data object SfxCacheClear : StorageCachesItem("sfxCacheClear", "media")
     data object EmulatorApksClear : StorageCachesItem("emulatorApksClear", "media")
     data object MiscDownloadsClear : StorageCachesItem("miscDownloadsClear", "media")
@@ -121,7 +122,7 @@ internal sealed class StorageCachesItem(
                 ImageCacheClear, ValidateImageCache,
                 InfoRow(KEY_ARTWORK_CACHE_INFO, "media"),
                 ScreenshotsToggle, BoxArtToggle,
-                RomExtractionClear, SfxCacheClear, EmulatorApksClear, MiscDownloadsClear,
+                RomExtractionClear, RomStagingClear, SfxCacheClear, EmulatorApksClear, MiscDownloadsClear,
                 SectionSpacer("systemSpacer", "system"),
                 Header("systemHeader", "system", "SYSTEM"),
                 InfoRow(KEY_BIOS_INFO, "system"),
@@ -349,6 +350,16 @@ fun StorageCachesSection(uiState: SettingsUiState, viewModel: SettingsViewModel)
                 isFocused = isFocused(item),
                 isEnabled = !isBusy(CachesClearTarget.ROM_EXTRACTION),
                 onClick = { viewModel.requestCachesClear(CachesClearTarget.ROM_EXTRACTION) }
+            )
+
+            StorageCachesItem.RomStagingClear -> ActionPreference(
+                title = "Abandoned Download Staging",
+                subtitle = if (isBusy(CachesClearTarget.ROM_STAGING)) "Clearing..."
+                    else "Leftovers from downloads that were unpacked internally and never finished",
+                trailingText = formatBytes(categoryBytes(snapshot, StorageCategory.ROM_STAGING)),
+                isFocused = isFocused(item),
+                isEnabled = !isBusy(CachesClearTarget.ROM_STAGING),
+                onClick = { viewModel.requestCachesClear(CachesClearTarget.ROM_STAGING) }
             )
 
             StorageCachesItem.SfxCacheClear -> ActionPreference(

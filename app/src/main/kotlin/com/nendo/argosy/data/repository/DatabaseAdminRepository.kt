@@ -94,6 +94,7 @@ class DatabaseAdminRepository @Inject constructor(
 
         deleteDownloadedFiles(GameSource.entries)
         purgeDatabase(GameSource.entries, includeLocalCollections = true, clearImages = true)
+        downloadManager.get().cleanAbandonedStaging()
         soundFeedbackManager.get().clearSfxCache()
         if (!emulatorDownloadManager.get().clearApkCache()) {
             Log.w(TAG, "hardReset: emulator APK cache skipped, download became active mid-reset")

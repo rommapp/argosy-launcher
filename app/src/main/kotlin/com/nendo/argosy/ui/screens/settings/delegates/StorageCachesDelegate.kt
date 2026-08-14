@@ -31,6 +31,7 @@ import javax.inject.Inject
 class StorageCachesDelegate @Inject constructor(
     @ApplicationContext private val context: Context,
     private val databaseAdminRepository: DatabaseAdminRepository,
+    private val downloadManager: com.nendo.argosy.data.download.DownloadManager,
     private val emulatorDownloadManager: EmulatorDownloadManager,
     private val driverFetcherRepository: DriverFetcherRepository,
     private val socialRepository: SocialRepository,
@@ -118,6 +119,10 @@ class StorageCachesDelegate @Inject constructor(
             val performed = databaseAdminRepository.clearRomExtractionCache()
             if (!performed) notificationManager.showError("Cannot clear extracted ROMs while a game is running")
             performed
+        }
+        CachesClearTarget.ROM_STAGING -> {
+            downloadManager.cleanAbandonedStaging()
+            true
         }
         CachesClearTarget.SFX_CACHE -> {
             soundFeedbackManager.clearSfxCache()

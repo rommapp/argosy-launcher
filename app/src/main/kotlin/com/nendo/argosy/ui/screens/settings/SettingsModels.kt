@@ -723,6 +723,7 @@ data class StorageState(
     val downloadedGamesCount: Int = 0,
     val maxConcurrentDownloads: Int = 1,
     val instantDownloadThresholdMb: Int = 50,
+    val stageDownloadsInternally: Boolean = true,
     val availableSpace: Long = 0,
     val hasAllFilesAccess: Boolean = false,
     val platformConfigs: List<PlatformStorageConfig> = emptyList(),
@@ -794,6 +795,7 @@ data class StoragePlatformGamesState(
 enum class CachesClearTarget {
     IMAGE_CACHE,
     ROM_EXTRACTION,
+    ROM_STAGING,
     SFX_CACHE,
     EMULATOR_APKS,
     MISC_DOWNLOADS,

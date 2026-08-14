@@ -24,6 +24,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.FolderZip
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.DriveFileMove
 import androidx.compose.material.icons.filled.Error
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.Schedule
@@ -152,8 +153,10 @@ fun DownloadsScreen(
 
             if (activeGroups.isNotEmpty()) {
                 val hasExtracting = activeGroups.any { it.aggregate.state == DownloadState.EXTRACTING }
+                val hasMoving = activeGroups.any { it.aggregate.state == DownloadState.MOVING }
                 val totalSpeed = activeGroups.sumOf { it.aggregate.bytesPerSecond }
                 val headerText = when {
+                    hasMoving -> "Moving to ROM Storage"
                     hasExtracting -> "Extracting"
                     totalSpeed > 0 -> "Downloading"
                     else -> "Active"
@@ -271,6 +274,7 @@ private fun GroupFileRows(group: DownloadGroup) {
                     text = when (file.state) {
                         DownloadState.COMPLETED -> "Done"
                         DownloadState.EXTRACTING -> "Extracting"
+                        DownloadState.MOVING -> "Moving"
                         DownloadState.DOWNLOADING ->
                             "${(file.progressPercent * 100).toInt()}%"
                         DownloadState.FAILED -> "Failed"
@@ -365,12 +369,14 @@ private fun DownloadItem(
 ) {
     val theme = LocalArgosyTheme.current
     val workingColor = if (theme.isDark) ColorTokens.Semantic.Dark.progress else ColorTokens.Semantic.Light.progress
-    val isExtracting = download.state == DownloadState.EXTRACTING
+    val isMoving = download.state == DownloadState.MOVING
+    val isExtracting = download.state == DownloadState.EXTRACTING || isMoving
     val isActiveDownload = isInActiveList && !isExtracting && download.state != DownloadState.PAUSED &&
         download.state != DownloadState.WAITING_FOR_STORAGE && download.state != DownloadState.FAILED
     val byteText = "${formatBytes(download.bytesDownloaded)} / ${formatBytes(download.totalBytes)}"
 
     val (statusIcon, iconTint) = when {
+        isMoving -> Icons.Filled.DriveFileMove to workingColor
         isExtracting -> Icons.Filled.FolderZip to workingColor
         isActiveDownload -> Icons.Default.Download to theme.focusAccent
         download.state == DownloadState.PAUSED -> Icons.Default.Pause to theme.textMute
@@ -388,6 +394,16 @@ private fun DownloadItem(
         ) {
             DownloadItemHeader(download)
             when {
+                isMoving -> {
+                    ArgosyProgressBar(progress = download.extractionPercent, style = ProgressBarStyle.Working)
+                    Text(
+                        text = "Moving to ROM storage...",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = workingColor,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
                 isExtracting -> {
                     ArgosyProgressBar(progress = null, style = ProgressBarStyle.Working)
                     Text(

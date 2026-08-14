@@ -1612,6 +1612,7 @@ private fun SettingsFooter(
 private fun cachesClearConfirmTitle(target: CachesClearTarget?): String = when (target) {
     CachesClearTarget.IMAGE_CACHE -> "Clear Image Cache?"
     CachesClearTarget.ROM_EXTRACTION -> "Clear Extracted ROMs?"
+    CachesClearTarget.ROM_STAGING -> "Clear Abandoned Staging?"
     CachesClearTarget.SFX_CACHE -> "Clear Sound Effects Cache?"
     CachesClearTarget.EMULATOR_APKS -> "Clear Emulator Installers?"
     CachesClearTarget.MISC_DOWNLOADS -> "Clear Misc Downloads?"
@@ -1626,6 +1627,8 @@ private fun cachesClearConfirmMessage(target: CachesClearTarget?): String = when
         "This will delete all cached covers, backgrounds, and screenshots. Images re-download from the server as you browse."
     CachesClearTarget.ROM_EXTRACTION ->
         "This will delete extracted working copies of compressed games. They re-extract the next time each game launches."
+    CachesClearTarget.ROM_STAGING ->
+        "This will delete internal working files left behind by downloads that never finished. Downloads still in the queue keep theirs and continue where they left off."
     CachesClearTarget.SFX_CACHE ->
         "This will delete transcoded custom sound files. They rebuild automatically the next time sounds load."
     CachesClearTarget.MISC_DOWNLOADS ->

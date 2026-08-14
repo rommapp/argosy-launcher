@@ -890,6 +890,7 @@ class StorageAttributionRepository @Inject constructor(
                 AppPaths.stateCacheDir(filesDir)
             ),
             StorageCategory.ROM_EXTRACTION to listOf(AppPaths.romCacheDir(filesDir)),
+            StorageCategory.ROM_STAGING to listOf(AppPaths.romStagingRoot(filesDir)),
             StorageCategory.SFX_CACHE to listOf(File(cacheDir, "sfx")),
             StorageCategory.BIOS to listOfNotNull(
                 File(filesDir, "bios"),

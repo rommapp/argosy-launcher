@@ -71,6 +71,7 @@ class DownloadNotificationObserver @Inject constructor(
             DownloadState.WAITING_FOR_STORAGE -> Triple("Waiting for Storage", NotificationType.WARNING, true)
             DownloadState.DOWNLOADING -> return
             DownloadState.EXTRACTING -> Triple("Extracting", NotificationType.INFO, false)
+            DownloadState.MOVING -> Triple("Moving to ROM Storage", NotificationType.INFO, false)
             DownloadState.PAUSED -> Triple("Paused", NotificationType.INFO, false)
             DownloadState.COMPLETED -> Triple("Completed", NotificationType.SUCCESS, true)
             DownloadState.FAILED -> Triple("Failed", NotificationType.ERROR, true)

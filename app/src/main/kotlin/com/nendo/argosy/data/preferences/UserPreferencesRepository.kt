@@ -113,6 +113,7 @@ class UserPreferencesRepository @Inject constructor(
             appOrder = app.appOrder,
             maxConcurrentDownloads = storage.maxConcurrentDownloads,
             instantDownloadThresholdMb = storage.instantDownloadThresholdMb,
+            stageDownloadsInternally = storage.stageDownloadsInternally,
             gridDensity = display.gridDensity,
             libraryDefaultSort = display.libraryDefaultSort,
             libraryDefaultSortDescending = display.libraryDefaultSortDescending,
@@ -412,6 +413,7 @@ class UserPreferencesRepository @Inject constructor(
     suspend fun setRomStoragePath(path: String) = storagePrefs.setRomStoragePath(path)
     suspend fun setMaxConcurrentDownloads(count: Int) = storagePrefs.setMaxConcurrentDownloads(count)
     suspend fun setInstantDownloadThresholdMb(value: Int) = storagePrefs.setInstantDownloadThresholdMb(value)
+    suspend fun setStageDownloadsInternally(enabled: Boolean) = storagePrefs.setStageDownloadsInternally(enabled)
     suspend fun setCustomBiosPath(path: String?) = storagePrefs.setCustomBiosPath(path)
     suspend fun setWeeklyIntegrityCheckEnabled(enabled: Boolean) = storagePrefs.setWeeklyIntegrityCheckEnabled(enabled)
     suspend fun setLastIntegrityCheckTime(timeMs: Long) = storagePrefs.setLastIntegrityCheckTime(timeMs)
@@ -713,6 +715,7 @@ data class UserPreferences(
     val appOrder: List<String> = emptyList(),
     val maxConcurrentDownloads: Int = 1,
     val instantDownloadThresholdMb: Int = 50,
+    val stageDownloadsInternally: Boolean = true,
     val gridDensity: GridDensity = GridDensity.NORMAL,
     val libraryDefaultSort: String = "TITLE",
     val libraryDefaultSortDescending: Boolean? = null,

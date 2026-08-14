@@ -45,8 +45,7 @@ import androidx.compose.foundation.layout.height
 import com.nendo.argosy.ui.screens.settings.components.SectionHeader
 import com.nendo.argosy.ui.screens.settings.menu.SettingsLayout
 import com.nendo.argosy.ui.theme.Dimens
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
+import com.nendo.argosy.util.formatClockDateTime
 
 internal sealed class MainSettingsItem(
     val key: String,
@@ -141,10 +140,7 @@ fun MainSettingsSection(uiState: SettingsUiState, viewModel: SettingsViewModel) 
             ConnectionStatus.OFFLINE -> "Server offline"
             ConnectionStatus.ONLINE -> {
                 uiState.server.lastRommSync?.let { instant ->
-                    val formatter = DateTimeFormatter
-                        .ofPattern("MMM d, h:mm a")
-                        .withZone(ZoneId.systemDefault())
-                    "Last sync: ${formatter.format(instant)}"
+                    "Last sync: ${formatClockDateTime(context, instant.toEpochMilli())}"
                 } ?: "Never synced"
             }
         }

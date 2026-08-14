@@ -41,6 +41,7 @@ import com.nendo.argosy.ui.components.CategoryTile
 import com.nendo.argosy.ui.components.CyclePreference
 import com.nendo.argosy.ui.components.ListSection
 import com.nendo.argosy.ui.components.SliderPreference
+import com.nendo.argosy.ui.components.SwitchPreference
 import androidx.compose.material3.MaterialTheme
 import com.nendo.argosy.ui.components.VolumeMeterCategory
 import com.nendo.argosy.ui.components.VolumeMeterHero
@@ -113,6 +114,7 @@ internal sealed class StorageItem(
 
     data object MaxDownloads : StorageItem("maxDownloads", "downloads")
     data object Threshold : StorageItem("threshold", "downloads")
+    data object InternalStaging : StorageItem("internalStaging", "downloads")
 
     data object ResetLibrary : StorageItem("resetLibrary", "danger")
     data object HardReset : StorageItem("hardReset", "danger")
@@ -130,7 +132,7 @@ internal sealed class StorageItem(
                 VolumeHero, RecomputeRow, GamesTile, MediaTile, MusicTile, CachesTile, SteamTile,
                 LocationsSpacer, LocationsHeader,
                 GlobalRomPath, ImageCache, MusicLocation, BiosFolder, BuiltinSavePath, BuiltinStatePath,
-                DownloadsSpacer, DownloadsHeader, MaxDownloads, Threshold,
+                DownloadsSpacer, DownloadsHeader, MaxDownloads, Threshold, InternalStaging,
                 DangerSpacer, DangerHeader, ResetLibrary, HardReset
             )
     }
@@ -534,6 +536,15 @@ fun StorageSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                     pickerRequestToken = if (uiState.enumPickerKey == item.key) uiState.enumPickerToken else 0
                 )
             }
+
+            StorageItem.InternalStaging -> SwitchPreference(
+                title = "Unpack on Internal Storage",
+                subtitle = "Download and extract compressed games internally, then move the finished " +
+                    "game to your ROM folder. Falls back to the ROM folder when internal space is short.",
+                isEnabled = storage.stageDownloadsInternally,
+                isFocused = isFocused(item),
+                onToggle = { viewModel.toggleStageDownloadsInternally() }
+            )
 
             StorageItem.ResetLibrary -> {
                 val isPurging = storage.isPurgingAll

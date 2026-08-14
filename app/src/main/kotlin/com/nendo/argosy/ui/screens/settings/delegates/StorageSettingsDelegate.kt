@@ -128,6 +128,14 @@ class StorageSettingsDelegate @Inject constructor(
         }
     }
 
+    fun toggleStageDownloadsInternally(scope: CoroutineScope) {
+        scope.launch {
+            val next = !_state.value.stageDownloadsInternally
+            preferencesRepository.setStageDownloadsInternally(next)
+            _state.update { it.copy(stageDownloadsInternally = next) }
+        }
+    }
+
     fun cycleInstantDownloadThreshold(scope: CoroutineScope, direction: Int = 1) {
         scope.launch {
             val thresholds = listOf(50, 100, 250, 500)

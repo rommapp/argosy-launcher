@@ -11,10 +11,10 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface DownloadQueueDao {
 
-    @Query("SELECT * FROM download_queue WHERE state IN ('QUEUED', 'PAUSED', 'DOWNLOADING', 'EXTRACTING', 'WAITING_FOR_STORAGE') ORDER BY createdAt ASC")
+    @Query("SELECT * FROM download_queue WHERE state IN ('QUEUED', 'PAUSED', 'DOWNLOADING', 'EXTRACTING', 'MOVING', 'WAITING_FOR_STORAGE') ORDER BY createdAt ASC")
     suspend fun getPendingDownloads(): List<DownloadQueueEntity>
 
-    @Query("SELECT * FROM download_queue WHERE state IN ('QUEUED', 'DOWNLOADING', 'EXTRACTING', 'PAUSED', 'WAITING_FOR_STORAGE')")
+    @Query("SELECT * FROM download_queue WHERE state IN ('QUEUED', 'DOWNLOADING', 'EXTRACTING', 'MOVING', 'PAUSED', 'WAITING_FOR_STORAGE')")
     fun observeActiveDownloads(): Flow<List<DownloadQueueEntity>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
@@ -60,7 +60,7 @@ interface DownloadQueueDao {
     @Query("""
         SELECT COUNT(*) FROM download_queue
         WHERE ownerUserId = :ownerUserId
-          AND state IN ('QUEUED', 'PAUSED', 'DOWNLOADING', 'EXTRACTING', 'WAITING_FOR_STORAGE')
+          AND state IN ('QUEUED', 'PAUSED', 'DOWNLOADING', 'EXTRACTING', 'MOVING', 'WAITING_FOR_STORAGE')
     """)
     suspend fun countUnfinishedForOwner(ownerUserId: Long): Int
 

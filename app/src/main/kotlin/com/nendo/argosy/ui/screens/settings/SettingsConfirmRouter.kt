@@ -506,6 +506,10 @@ private fun routeStorageConfirm(vm: SettingsViewModel, state: SettingsUiState): 
             vm.requestEnumPicker(StorageItem.Threshold.key)
             return InputResult.handled(SoundType.OPEN_MODAL)
         }
+        StorageItem.InternalStaging -> {
+            vm.toggleStageDownloadsInternally()
+            return InputResult.handled(SoundType.TOGGLE)
+        }
         StorageItem.ResetLibrary -> vm.requestPurgeAll()
         StorageItem.HardReset -> {
             if (!state.storage.isHardResetting && !state.storage.isPurgingAll) vm.requestHardReset()
@@ -595,6 +599,7 @@ private fun routeStorageCachesConfirm(vm: SettingsViewModel, state: SettingsUiSt
             return InputResult.handled(SoundType.TOGGLE)
         }
         StorageCachesItem.RomExtractionClear -> vm.requestCachesClear(CachesClearTarget.ROM_EXTRACTION)
+        StorageCachesItem.RomStagingClear -> vm.requestCachesClear(CachesClearTarget.ROM_STAGING)
         StorageCachesItem.SfxCacheClear -> vm.requestCachesClear(CachesClearTarget.SFX_CACHE)
         StorageCachesItem.EmulatorApksClear -> vm.requestCachesClear(CachesClearTarget.EMULATOR_APKS)
         StorageCachesItem.MiscDownloadsClear -> vm.requestCachesClear(CachesClearTarget.MISC_DOWNLOADS)

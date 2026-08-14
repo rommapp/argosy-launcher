@@ -1366,6 +1366,9 @@ class SettingsViewModel @Inject constructor(
     fun adjustMaxConcurrentDownloads(delta: Int) = routeAdjustMaxConcurrentDownloads(this, delta)
 
     fun cycleInstantDownloadThreshold(direction: Int = 1) = storageDelegate.cycleInstantDownloadThreshold(viewModelScope, direction)
+
+    fun toggleStageDownloadsInternally() = storageDelegate.toggleStageDownloadsInternally(viewModelScope)
+
     fun toggleScreenDimmer() = storageDelegate.toggleScreenDimmer(viewModelScope)
     fun cycleScreenDimmerTimeout() = storageDelegate.cycleScreenDimmerTimeout(viewModelScope)
 

@@ -49,7 +49,8 @@ class HomeDownloadDelegate @Inject constructor(
 
                 downloadState.activeDownloads.forEach { download ->
                     indicators[download.gameId] = when (download.state) {
-                        DownloadState.EXTRACTING -> GameDownloadIndicator(isExtracting = true, progress = download.extractionPercent)
+                        DownloadState.EXTRACTING,
+                        DownloadState.MOVING -> GameDownloadIndicator(isExtracting = true, progress = download.extractionPercent)
                         else -> GameDownloadIndicator(isDownloading = true, progress = download.progressPercent)
                     }
                 }

@@ -10,6 +10,7 @@ enum class StorageCategory {
     REMOTE_IMAGE_CACHE,
     SAVE_STATE_CACHE,
     ROM_EXTRACTION,
+    ROM_STAGING,
     SFX_CACHE,
     BIOS,
     CORES_SYSTEM,

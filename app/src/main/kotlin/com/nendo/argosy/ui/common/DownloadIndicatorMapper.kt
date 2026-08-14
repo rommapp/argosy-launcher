@@ -65,7 +65,8 @@ fun SteamDownloadState.toNotificationText(gameName: String): String? = when (thi
 fun DownloadState.toIndicator(progressPercent: Float, extractionPercent: Float): GameDownloadIndicator =
     when (this) {
         DownloadState.DOWNLOADING -> GameDownloadIndicator(isDownloading = true, progress = progressPercent)
-        DownloadState.EXTRACTING -> GameDownloadIndicator(isExtracting = true, progress = extractionPercent)
+        DownloadState.EXTRACTING,
+        DownloadState.MOVING -> GameDownloadIndicator(isExtracting = true, progress = extractionPercent)
         DownloadState.PAUSED -> GameDownloadIndicator(isPaused = true, progress = progressPercent)
         DownloadState.QUEUED -> GameDownloadIndicator(isQueued = true)
         else -> GameDownloadIndicator.NONE

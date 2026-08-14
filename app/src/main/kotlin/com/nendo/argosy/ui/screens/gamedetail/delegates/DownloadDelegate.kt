@@ -106,13 +106,14 @@ class DownloadDelegate @Inject constructor(
                 val completed = queueState.completed.filter { it.gameId == gameId }.maxByOrNull { it.id }
 
                 val result: Pair<GameDownloadStatus, Float>? = when {
-                    activeDownload?.state == DownloadState.EXTRACTING -> {
+                    activeDownload?.state == DownloadState.EXTRACTING ||
+                        activeDownload?.state == DownloadState.MOVING -> {
                         GameDownloadStatus.EXTRACTING to activeDownload.extractionPercent
                     }
                     activeDownload != null -> {
                         GameDownloadStatus.DOWNLOADING to activeDownload.progressPercent
                     }
-                    queued?.state == DownloadState.EXTRACTING -> {
+                    queued?.state == DownloadState.EXTRACTING || queued?.state == DownloadState.MOVING -> {
                         GameDownloadStatus.EXTRACTING to queued.extractionPercent
                     }
                     queued?.state == DownloadState.PAUSED -> {

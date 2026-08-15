@@ -204,6 +204,19 @@ data class MediaDownloadPrompt(
 
     val focusedEpisodeRow: MediaEpisodePickerRow?
         get() = episodes.visibleRows.getOrNull(focusedIndex)
+
+    /**
+     * The chooser's two actions sit at the end of the same run the rows are in, so walking down off
+     * the last episode arrives at them rather than wrapping past them, and one index describes
+     * everything the cursor can be on.
+     */
+    val episodeRowCount: Int get() = episodes.visibleRows.size
+
+    val isEpisodeCancelFocused: Boolean
+        get() = step == MediaDownloadStep.EPISODES && focusedIndex == episodeRowCount
+
+    val isEpisodeDownloadFocused: Boolean
+        get() = step == MediaDownloadStep.EPISODES && focusedIndex == episodeRowCount + 1
 }
 
 /**

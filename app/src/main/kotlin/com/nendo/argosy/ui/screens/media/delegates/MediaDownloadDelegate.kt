@@ -23,6 +23,11 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import javax.inject.Inject
 import javax.inject.Singleton
 
+/**
+ * Cancel and Download, which the cursor reaches as the last two positions of the episode chooser.
+ */
+private const val EPISODE_ACTION_COUNT = 2
+
 private const val NEXT_FIVE = 5
 private const val NEXT_TEN = 10
 private const val BYTES_PER_GIGABYTE = 1024.0 * 1024.0 * 1024.0
@@ -197,8 +202,7 @@ class MediaDownloadDelegate @Inject constructor(
 
     fun moveFocus(prompt: MediaDownloadPrompt, delta: Int): MediaDownloadPrompt {
         if (prompt.step == MediaDownloadStep.EPISODES) {
-            val size = prompt.episodes.visibleRows.size
-            if (size == 0) return prompt
+            val size = prompt.episodeRowCount + EPISODE_ACTION_COUNT
             return prompt.copy(focusedIndex = (prompt.focusedIndex + delta).mod(size))
         }
         if (prompt.options.isEmpty()) return prompt
@@ -459,16 +463,33 @@ class MediaDownloadDelegate @Inject constructor(
         return prompt.copy(episodes = selection.copy(selected = updated))
     }
 
-    fun toggleSeasonCollapsed(prompt: MediaDownloadPrompt): MediaDownloadPrompt {
-        val row = prompt.focusedEpisodeRow ?: return prompt
-        if (!row.isHeader) return prompt
+    /**
+     * What sideways means depends on what the cursor is on.
+     *
+     * A season heading folds and unfolds, because that is the only row folding could refer to. An
+     * episode has no such axis of its own, so sideways leaves the list for the action nearest that
+     * side - the way out on the left, the way on with it on the right. From the actions themselves
+     * it simply moves between the two.
+     */
+    fun moveSideways(prompt: MediaDownloadPrompt, towardsEnd: Boolean): MediaDownloadPrompt {
+        if (prompt.step != MediaDownloadStep.EPISODES) return prompt
+        val row = prompt.focusedEpisodeRow
+            ?: return prompt.copy(
+                focusedIndex = prompt.episodeRowCount + if (towardsEnd) 1 else 0
+            )
+        if (!row.isHeader) {
+            return prompt.copy(focusedIndex = prompt.episodeRowCount + if (towardsEnd) 1 else 0)
+        }
         val collapsed = prompt.episodes.collapsed
-        val updated = if (row.seasonKey in collapsed) collapsed - row.seasonKey
-                      else collapsed + row.seasonKey
-        return prompt.copy(
-            episodes = prompt.episodes.copy(collapsed = updated),
-            focusedIndex = prompt.focusedIndex
-        )
+        val isCollapsed = row.seasonKey in collapsed
+        if (towardsEnd == !isCollapsed) return prompt
+        val updated = if (towardsEnd) collapsed - row.seasonKey else collapsed + row.seasonKey
+        val episodes = prompt.episodes.copy(collapsed = updated)
+        val headerIndex = episodes.visibleRows
+            .indexOfFirst { it.isHeader && it.seasonKey == row.seasonKey }
+            .takeIf { it >= 0 }
+            ?: prompt.focusedIndex
+        return prompt.copy(episodes = episodes, focusedIndex = headerIndex)
     }
 
     private suspend fun nextEpisodeIds(seriesId: String, count: Int): List<String> {

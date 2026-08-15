@@ -188,6 +188,7 @@ class ArgosyViewModel @Inject constructor(
     private val platformSyncQueue: com.nendo.argosy.data.sync.PlatformSyncQueue,
     private val socialRepository: SocialRepository,
     private val steamContentManager: com.nendo.argosy.data.steam.SteamContentManager,
+    private val mediaDownloadManager: com.nendo.argosy.data.download.MediaDownloadManager,
     val steamDownloadPromptController: com.nendo.argosy.data.steam.SteamDownloadPromptController,
     val coreCrashController: com.nendo.argosy.libretro.CoreCrashController,
     private val netplayPreflightChecker: NetplayPreflightChecker,
@@ -486,7 +487,9 @@ class ArgosyViewModel @Inject constructor(
             steamContentManager.activeDownload,
             steamContentManager.downloadQueue,
             ownedConflictCount(),
-            preferencesRepository.userPreferences
+            preferencesRepository.userPreferences,
+            mediaDownloadManager.activeDownload,
+            mediaDownloadManager.downloadQueue
         )
     ) { values ->
         val connection = values[0] as ConnectionState
@@ -505,11 +508,15 @@ class ArgosyViewModel @Inject constructor(
         val steamQueue = values[11] as List<com.nendo.argosy.data.steam.QueuedSteamDownload>
         val saveSyncAttentionCount = values[12] as Int
         val userPrefs = values[13] as com.nendo.argosy.data.preferences.UserPreferences
+        val mediaActiveDownload = values[14] as com.nendo.argosy.data.download.MediaDownloadProgress?
+        @Suppress("UNCHECKED_CAST")
+        val mediaQueue = values[15] as List<com.nendo.argosy.data.download.QueuedMediaDownload>
 
         val steamActive = steamActiveDownload != null
         val steamQueued = steamQueue.size
         val downloadCount = downloads.activeDownloads.size + downloads.queue.size +
-            (if (steamActive) 1 else 0) + steamQueued
+            (if (steamActive) 1 else 0) + steamQueued +
+            (if (mediaActiveDownload != null) 1 else 0) + mediaQueue.size
         val sortedFriends = friends
             .filter { it.friendshipStatus.value == "accepted" }
             .sortedWith(

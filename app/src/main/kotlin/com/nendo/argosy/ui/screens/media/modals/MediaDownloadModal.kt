@@ -4,6 +4,7 @@ import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -40,7 +41,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
 import com.nendo.argosy.core.input.SoundType
 import com.nendo.argosy.ui.components.FocusedScroll
 import com.nendo.argosy.ui.input.InputHandler
@@ -73,7 +76,7 @@ fun MediaDownloadModalHost(
     onConfirm: () -> Unit,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
-    onCollapseSeason: () -> Unit = {},
+    onCollapseSeason: (Boolean) -> Unit = {},
     onCommitSelection: () -> Unit = {}
 ) {
     val currentOnMove by rememberUpdatedState(onMove)
@@ -104,14 +107,19 @@ fun MediaDownloadModalHost(
                 return InputResult.handled(SoundType.CLOSE_MODAL)
             }
 
-            override fun onLeft(): InputResult = InputResult.HANDLED
-            override fun onRight(): InputResult = InputResult.HANDLED
-            override fun onMenu(): InputResult = InputResult.HANDLED
-
-            override fun onSecondaryAction(): InputResult {
-                currentOnCollapse()
+            override fun onLeft(): InputResult {
+                currentOnCollapse(false)
                 return InputResult.HANDLED
             }
+
+            override fun onRight(): InputResult {
+                currentOnCollapse(true)
+                return InputResult.HANDLED
+            }
+
+            override fun onMenu(): InputResult = InputResult.HANDLED
+
+            override fun onSecondaryAction(): InputResult = InputResult.HANDLED
 
             override fun onContextMenu(): InputResult {
                 currentOnCommit()
@@ -134,8 +142,14 @@ fun MediaDownloadModalHost(
     val theme = LocalArgosyTheme.current
     val warningColor = LocalLauncherTheme.current.semanticColors.warning
 
+    val screenHeight = LocalConfiguration.current.screenHeightDp.dp
+
     ModalScaffold(visible = true, onDismiss = onDismiss, modifier = modifier) {
-        Column(modifier = Modifier.padding(Dimens.spacingLg)) {
+        Column(
+            modifier = Modifier
+                .heightIn(max = screenHeight - (Dimens.footerHeight + Dimens.spacingLg) * 2)
+                .padding(Dimens.spacingLg)
+        ) {
             Text(
                 text = content.title,
                 style = MaterialTheme.typography.titleMedium,
@@ -188,7 +202,12 @@ fun MediaDownloadModalHost(
             }
             Spacer(Modifier.height(Dimens.spacingLg))
             val listState = rememberLazyListState()
-            FocusedScroll(listState = listState, focusedIndex = content.focusedIndex)
+            FocusedScroll(
+                listState = listState,
+                focusedIndex = content.focusedIndex.coerceAtMost(
+                    (content.episodeRowCount - 1).coerceAtLeast(0)
+                )
+            )
             LazyColumn(
                 state = listState,
                 modifier = Modifier.weight(1f, fill = false),
@@ -237,8 +256,68 @@ fun MediaDownloadModalHost(
                     style = MaterialTheme.typography.bodySmall,
                     color = theme.textDim
                 )
+                Spacer(Modifier.height(Dimens.spacingSm))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
+                ) {
+                    MediaEpisodeActionButton(
+                        label = "Cancel",
+                        isPrimary = false,
+                        isFocused = content.isEpisodeCancelFocused,
+                        onClick = onDismiss,
+                        modifier = Modifier.weight(1f)
+                    )
+                    MediaEpisodeActionButton(
+                        label = "Download",
+                        isPrimary = content.episodes.selected.isNotEmpty(),
+                        isFocused = content.isEpisodeDownloadFocused,
+                        onClick = { if (content.episodes.selected.isNotEmpty()) onCommitSelection() },
+                        modifier = Modifier.weight(1f)
+                    )
+                }
             }
         }
+    }
+}
+
+/**
+ * The two ways out of the episode chooser, drawn because a controller's B and X are invisible to a
+ * finger. The gamepad still reaches both through the handler; these are the same acts with a
+ * surface to press.
+ */
+@Composable
+private fun MediaEpisodeActionButton(
+    label: String,
+    isPrimary: Boolean,
+    isFocused: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val theme = LocalArgosyTheme.current
+    val shape = RoundedCornerShape(Dimens.radiusControl)
+    val background by animateColorAsState(
+        targetValue = when {
+            isFocused -> theme.focusAccent
+            isPrimary -> theme.focusAccent.copy(alpha = 0.35f).compositeOver(theme.surfaceElevated)
+            else -> theme.surfaceElevated
+        },
+        animationSpec = Motion.focusColorSpec,
+        label = "media-episode-action-bg"
+    )
+    Box(
+        modifier = modifier
+            .clip(shape)
+            .background(background)
+            .clickableNoFocus(onClick = onClick)
+            .padding(vertical = Dimens.spacingSm),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelLarge,
+            color = if (isFocused || isPrimary) theme.textPrimary else theme.textDim
+        )
     }
 }
 

@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.nendo.argosy.core.emulator.EmulatorDownloadState
 import com.nendo.argosy.data.cache.GradientPreset
 import com.nendo.argosy.data.emulator.EmulatorRegistry
+import com.nendo.argosy.data.emulator.RetroArchConfigSource
 import com.nendo.argosy.data.platform.PlatformDefinitions
 import com.nendo.argosy.data.preferences.EmulatorDisplayTarget
 import com.nendo.argosy.data.emulator.SavePathRegistry
@@ -395,19 +396,22 @@ internal fun routeLoadSettings(vm: SettingsViewModel) {
 
             val userSaveConfig = effectiveSaveConfigId?.let { vm.emulatorDelegate.getEmulatorSaveConfig(it) }
             val isUserSavePathOverride = userSaveConfig?.isUserOverride == true
-            val effectiveSavePath = when {
-                savePathConfig == null -> null
-                isRetroArch && emulatorId != null -> {
-                    val req = com.nendo.argosy.data.emulator.RetroArchPathResolver.Request(
+            val retroArchSave = if (isRetroArch && emulatorId != null && savePathConfig != null) {
+                vm.retroArchPathResolver.describeSavePath(
+                    com.nendo.argosy.data.emulator.RetroArchPathResolver.Request(
                         emulatorId = emulatorId,
                         coreName = selectedCore,
                         romPath = null,
                     )
-                    when (val display = vm.retroArchPathResolver.displaySavePath(req)) {
-                        is com.nendo.argosy.data.emulator.RetroArchPathResolver.DisplayPath.ContentDirectory -> "(ROM directory)"
-                        is com.nendo.argosy.data.emulator.RetroArchPathResolver.DisplayPath.Resolved -> display.path
-                        com.nendo.argosy.data.emulator.RetroArchPathResolver.DisplayPath.Unknown -> null
-                    }
+                )
+            } else null
+            val retroArchConfigSource = retroArchSave?.source
+            val effectiveSavePath = when {
+                savePathConfig == null -> null
+                retroArchSave != null -> when (val display = retroArchSave.path) {
+                    is com.nendo.argosy.data.emulator.RetroArchPathResolver.DisplayPath.ContentDirectory -> "(ROM directory)"
+                    is com.nendo.argosy.data.emulator.RetroArchPathResolver.DisplayPath.Resolved -> display.path
+                    com.nendo.argosy.data.emulator.RetroArchPathResolver.DisplayPath.Unknown -> null
                 }
                 isUserSavePathOverride -> userSaveConfig?.savePathPattern
                 else -> SavePathRegistry.resolvePathWithPackage(savePathConfig, emulatorPackage).firstOrNull()
@@ -432,6 +436,16 @@ internal fun routeLoadSettings(vm: SettingsViewModel) {
                 effectiveSavePath = effectiveSavePath,
                 isUserSavePathOverride = isUserSavePathOverride,
                 showSavePath = showSavePath,
+                retroArchConfigStatus = when (retroArchConfigSource) {
+                    is RetroArchConfigSource.Loaded -> RetroArchConfigStatus.LOADED
+                    is RetroArchConfigSource.Unreadable -> RetroArchConfigStatus.UNREADABLE
+                    else -> RetroArchConfigStatus.MISSING
+                },
+                retroArchConfigPath = when (retroArchConfigSource) {
+                    is RetroArchConfigSource.Loaded -> retroArchConfigSource.path
+                    is RetroArchConfigSource.Unreadable -> retroArchConfigSource.path
+                    else -> null
+                },
                 extensionOptions = extensionOptions,
                 selectedExtension = selectedExtension,
                 useFileUri = defaultConfig?.useFileUri ?: false,

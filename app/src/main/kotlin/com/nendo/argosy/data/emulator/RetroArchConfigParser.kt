@@ -24,6 +24,23 @@ data class RetroArchStateConfig(
     val sortByCore: Boolean
 )
 
+/**
+ * Where a package's RetroArch configuration was found and whether it could be read. [Loaded]
+ * carries the parsed contents so a caller that needs both the location and the settings pays
+ * for a single read.
+ */
+sealed interface RetroArchConfigSource {
+    data class Loaded(
+        val path: String,
+        val save: RetroArchSaveConfig,
+        val state: RetroArchStateConfig
+    ) : RetroArchConfigSource
+
+    data class Unreadable(val path: String) : RetroArchConfigSource
+
+    data object Missing : RetroArchConfigSource
+}
+
 @Singleton
 class RetroArchConfigParser @Inject constructor(
     private val fileAccessLayer: FileAccessLayer
@@ -31,13 +48,34 @@ class RetroArchConfigParser @Inject constructor(
 
     private val primaryRoot: String get() = StoragePathUtils.primaryExternalRoot
 
+    /**
+     * Every location a RetroArch build is known to keep `retroarch.cfg`, most likely first.
+     *
+     * The first four are the canonical ones and their order is load-bearing: an install whose
+     * config is found today must keep resolving to the same file. Entries after them are the
+     * layouts that only apply when those are absent.
+     *
+     * Upstream sources:
+     * - `UserPreferences.getDefaultConfigPath` writes `getExternalFilesDir(null)/retroarch.cfg`,
+     *   which is `Android/data/<package>/files/` on primary external storage.
+     * - `platform_unix.c` (`frontend_android_get_env`) builds every default directory under a
+     *   parent path, and places saved configurations in its `config` subdirectory.
+     * - That parent path is `<external root>/RetroArch` when external storage is writable, and
+     *   `MainMenuActivity.startRetroActivity` supplies `getExternalMediaDirs()[0]` as the
+     *   external root for Play Store builds and for any build without all-files access, which
+     *   puts the tree under `Android/media/<package>/`.
+     */
     private val configPaths: List<String>
-        get() = listOf(
-            "$primaryRoot/Android/data/com.retroarch/files/retroarch.cfg",
-            "$primaryRoot/Android/data/com.retroarch.aarch64/files/retroarch.cfg",
-            "$primaryRoot/Android/data/com.retroarch.ra32/files/retroarch.cfg",
-            "$primaryRoot/RetroArch/retroarch.cfg"
-        )
+        get() = buildList {
+            RETROARCH_PACKAGES.forEach { add("$primaryRoot/Android/data/$it/files/retroarch.cfg") }
+            add("$primaryRoot/RetroArch/retroarch.cfg")
+            add("$primaryRoot/RetroArch/config/retroarch.cfg")
+            RETROARCH_PACKAGES.forEach { pkg ->
+                add("$primaryRoot/Android/media/$pkg/RetroArch/retroarch.cfg")
+                add("$primaryRoot/Android/media/$pkg/RetroArch/config/retroarch.cfg")
+                add("$primaryRoot/Android/data/$pkg/files/config/retroarch.cfg")
+            }
+        }
 
     fun findConfigPath(packageName: String): String? {
         val packageSpecificPath = when (packageName) {
@@ -106,28 +144,26 @@ class RetroArchConfigParser @Inject constructor(
         return fileAccessLayer.writeBytes(path, (rewritten.joinToString("\n") + "\n").toByteArray())
     }
 
-    fun parse(packageName: String): RetroArchSaveConfig? {
+    /**
+     * Locates and reads the configuration in one pass, reporting where it came from.
+     */
+    fun locateConfig(packageName: String): RetroArchConfigSource {
         val path = findConfigPath(packageName)
         if (path == null) {
             Logger.debug(TAG, "No retroarch.cfg found for $packageName")
-            return null
+            return RetroArchConfigSource.Missing
         }
 
         Logger.debug(TAG, "Parsing config: $path")
-        val raw = readConfig(path) ?: return null
-        return raw.toSaveConfig()
+        val raw = readConfig(path) ?: return RetroArchConfigSource.Unreadable(path)
+        return RetroArchConfigSource.Loaded(path, raw.toSaveConfig(), raw.toStateConfig())
     }
 
-    fun parseStateConfig(packageName: String): RetroArchStateConfig? {
-        val path = findConfigPath(packageName)
-        if (path == null) {
-            Logger.debug(TAG, "No retroarch.cfg found for $packageName")
-            return null
-        }
+    fun parse(packageName: String): RetroArchSaveConfig? =
+        (locateConfig(packageName) as? RetroArchConfigSource.Loaded)?.save
 
-        val raw = readConfig(path) ?: return null
-        return raw.toStateConfig()
-    }
+    fun parseStateConfig(packageName: String): RetroArchStateConfig? =
+        (locateConfig(packageName) as? RetroArchConfigSource.Loaded)?.state
 
     // Reads cfg via the FAL so SAF / alt-access fallbacks cover Android 11+
     // scoped storage on /Android/data/<other-app>/. Direct java.io.File hits
@@ -361,6 +397,12 @@ class RetroArchConfigParser @Inject constructor(
     }
 
     companion object {
+        private val RETROARCH_PACKAGES = listOf(
+            "com.retroarch",
+            "com.retroarch.aarch64",
+            "com.retroarch.ra32"
+        )
+
         private val KNOWN_CORE_NAMES = setOf(
             "mGBA", "Gambatte", "Snes9x", "bsnes", "Genesis Plus GX", "PPSSPP",
             "Mupen64Plus-Next", "DeSmuME", "melonDS", "Beetle PSX", "PCSX-ReARMed",

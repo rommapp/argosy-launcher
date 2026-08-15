@@ -35,13 +35,13 @@ internal class PlatformDetailSectionInput(
                 } else InputResult.UNHANDLED
             }
             PlatformDetailItem.SavePath -> {
-                if (!config.effectiveEmulatorIsRetroArch && storageConfig?.isUserSavePathOverride == true) {
+                if (storageConfig?.isUserSavePathOverride == true) {
                     viewModel.resetPlatformSavePath(config.platform.id)
                     InputResult.HANDLED
                 } else InputResult.UNHANDLED
             }
             PlatformDetailItem.StatePath -> {
-                if (!config.effectiveEmulatorIsRetroArch && storageConfig?.isUserStatePathOverride == true) {
+                if (storageConfig?.isUserStatePathOverride == true) {
                     viewModel.resetPlatformStatePath(config.platform.id)
                     InputResult.HANDLED
                 } else InputResult.UNHANDLED

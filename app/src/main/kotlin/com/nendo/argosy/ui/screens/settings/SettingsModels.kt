@@ -131,6 +131,12 @@ internal const val ROMM_AUTH_METHOD_PICKER_KEY = "rommAuthMethod"
 
 internal const val SYNC_REGION_MODE_PICKER_KEY = "syncRegionMode"
 
+/**
+ * Whether the external RetroArch configuration behind a platform's save and state paths was
+ * read, was present but unreadable, or was not found at all.
+ */
+enum class RetroArchConfigStatus { LOADED, UNREADABLE, MISSING }
+
 data class PlatformEmulatorConfig(
     val platform: PlatformEntity,
     val selectedEmulator: String?,
@@ -147,6 +153,8 @@ data class PlatformEmulatorConfig(
     val effectiveSavePath: String? = null,
     val isUserSavePathOverride: Boolean = false,
     val showSavePath: Boolean = false,
+    val retroArchConfigStatus: RetroArchConfigStatus = RetroArchConfigStatus.MISSING,
+    val retroArchConfigPath: String? = null,
     val extensionOptions: List<ExtensionOption> = emptyList(),
     val selectedExtension: String? = null,
     val useFileUri: Boolean = false,

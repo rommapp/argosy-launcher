@@ -1535,8 +1535,8 @@ private fun SettingsFooter(
             }
             val canReset = when (focusedItem) {
                 is PlatformDetailItem.RomPath -> storageConfig?.customRomPath != null
-                is PlatformDetailItem.SavePath -> !config!!.effectiveEmulatorIsRetroArch && storageConfig?.isUserSavePathOverride == true
-                is PlatformDetailItem.StatePath -> !config!!.effectiveEmulatorIsRetroArch && storageConfig?.isUserStatePathOverride == true
+                is PlatformDetailItem.SavePath -> storageConfig?.isUserSavePathOverride == true
+                is PlatformDetailItem.StatePath -> storageConfig?.isUserStatePathOverride == true
                 else -> false
             }
             if (canReset) {

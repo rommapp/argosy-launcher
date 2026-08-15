@@ -22,10 +22,22 @@ class RetroArchPathResolver @Inject constructor(
         val romPath: String?,
     )
 
-    suspend fun displaySavePath(req: Request): DisplayPath {
+    /**
+     * A resolved display path together with the configuration it was derived from, so a caller
+     * can state which retroarch.cfg is in play instead of assuming one was read.
+     */
+    data class SavePathDisplay(
+        val path: DisplayPath,
+        val source: RetroArchConfigSource
+    )
+
+    suspend fun describeSavePath(req: Request): SavePathDisplay {
         val packageName = packageForEmulatorId(req.emulatorId)
-        val raConfig = parser.parse(packageName)
-        if (raConfig?.savefilesInContentDir == true) return DisplayPath.ContentDirectory
+        val source = parser.locateConfig(packageName)
+        val raConfig = (source as? RetroArchConfigSource.Loaded)?.save
+        if (raConfig?.savefilesInContentDir == true) {
+            return SavePathDisplay(DisplayPath.ContentDirectory, source)
+        }
 
         val override = userSaveOverride(req.emulatorId)
         val candidates = parser.resolveSavePathsWithConfig(
@@ -35,8 +47,11 @@ class RetroArchPathResolver @Inject constructor(
             contentDirectory = contentDirectory(req.romPath),
             basePathOverride = override,
         )
-        return candidates.firstOrNull()?.let { DisplayPath.Resolved(it) } ?: DisplayPath.Unknown
+        val path = candidates.firstOrNull()?.let { DisplayPath.Resolved(it) } ?: DisplayPath.Unknown
+        return SavePathDisplay(path, source)
     }
+
+    suspend fun displaySavePath(req: Request): DisplayPath = describeSavePath(req).path
 
     suspend fun displayStatePath(req: Request): DisplayPath {
         val packageName = packageForEmulatorId(req.emulatorId)

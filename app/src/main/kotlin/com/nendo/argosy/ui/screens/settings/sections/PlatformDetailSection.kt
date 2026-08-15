@@ -38,6 +38,7 @@ import com.nendo.argosy.ui.components.NavigationPreference
 import com.nendo.argosy.ui.components.SwitchPreference
 import com.nendo.argosy.ui.screens.settings.PlatformEmulatorConfig
 import com.nendo.argosy.ui.screens.settings.PlatformDetailState
+import com.nendo.argosy.ui.screens.settings.RetroArchConfigStatus
 import com.nendo.argosy.ui.screens.settings.SettingsUiState
 import com.nendo.argosy.ui.screens.settings.SettingsViewModel
 import com.nendo.argosy.ui.screens.settings.components.EmulatorPickerPopup
@@ -474,32 +475,25 @@ fun PlatformDetailSection(
                     onReset = { viewModel.resetPlatformRomPath(config.platform.id) }
                 )
                 PlatformDetailItem.SavePath -> {
-                    if (config.effectiveEmulatorIsRetroArch) {
-                        InfoPreference(
-                            title = "Save Path",
-                            value = formatPath(storageConfig?.effectiveSavePath),
-                            isFocused = isFocused(item),
-                            subtitle = if (storageConfig?.effectiveSavePath == "(ROM directory)") {
-                                "content dir (from retroarch.cfg)"
-                            } else {
-                                "from retroarch.cfg"
-                            }
-                        )
-                    } else {
-                        val isBuiltinEmulator = config.effectiveEmulatorId == "builtin"
-                        val accessBlocked = !isBuiltinEmulator && detail.packagePathAccessible == false &&
-                            storageConfig?.isUserSavePathOverride != true
-                        ActionPreference(
-                            title = "Save Path",
-                            subtitle = if (accessBlocked) "Access blocked -- set a custom save path"
-                                       else formatPath(storageConfig?.effectiveSavePath),
-                            trailingText = if (storageConfig?.isUserSavePathOverride == true) "(custom)" else null,
-                            isFocused = isFocused(item),
-                            onClick = { viewModel.launchSavePathPicker(config.platform.id) },
-                            showResetButton = storageConfig?.isUserSavePathOverride == true,
-                            onReset = { viewModel.resetPlatformSavePath(config.platform.id) }
-                        )
-                    }
+                    val hasOverride = storageConfig?.isUserSavePathOverride == true
+                    val isBuiltinEmulator = config.effectiveEmulatorId == "builtin"
+                    val accessBlocked = !isBuiltinEmulator && !config.effectiveEmulatorIsRetroArch &&
+                        detail.packagePathAccessible == false && !hasOverride
+                    ActionPreference(
+                        title = "Save Path",
+                        subtitle = when {
+                            accessBlocked -> "Access blocked -- set a custom save path"
+                            config.effectiveEmulatorIsRetroArch -> retroArchPathSubtitle(
+                                config, storageConfig?.effectiveSavePath, hasOverride
+                            )
+                            else -> formatPath(storageConfig?.effectiveSavePath)
+                        },
+                        trailingText = if (hasOverride) "(custom)" else null,
+                        isFocused = isFocused(item),
+                        onClick = { viewModel.launchSavePathPicker(config.platform.id) },
+                        showResetButton = hasOverride,
+                        onReset = { viewModel.resetPlatformSavePath(config.platform.id) }
+                    )
                 }
                 PlatformDetailItem.MemoryCard -> {
                     val cardCount = storageConfig?.folderMemcardCount ?: -1
@@ -532,28 +526,20 @@ fun PlatformDetailSection(
                     )
                 }
                 PlatformDetailItem.StatePath -> {
-                    if (config.effectiveEmulatorIsRetroArch) {
-                        InfoPreference(
-                            title = "State Path",
-                            value = formatPath(storageConfig?.effectiveStatePath),
-                            isFocused = isFocused(item),
-                            subtitle = if (storageConfig?.effectiveStatePath == "(ROM directory)") {
-                                "content dir (from retroarch.cfg)"
-                            } else {
-                                "from retroarch.cfg"
-                            }
-                        )
-                    } else {
-                        ActionPreference(
-                            title = "State Path",
-                            subtitle = formatPath(storageConfig?.effectiveStatePath),
-                            trailingText = if (storageConfig?.isUserStatePathOverride == true) "(custom)" else null,
-                            isFocused = isFocused(item),
-                            onClick = { viewModel.launchStatePathPicker(config.platform.id) },
-                            showResetButton = storageConfig?.isUserStatePathOverride == true,
-                            onReset = { viewModel.resetPlatformStatePath(config.platform.id) }
-                        )
-                    }
+                    val hasOverride = storageConfig?.isUserStatePathOverride == true
+                    ActionPreference(
+                        title = "State Path",
+                        subtitle = if (config.effectiveEmulatorIsRetroArch) {
+                            retroArchPathSubtitle(config, storageConfig?.effectiveStatePath, hasOverride)
+                        } else {
+                            formatPath(storageConfig?.effectiveStatePath)
+                        },
+                        trailingText = if (hasOverride) "(custom)" else null,
+                        isFocused = isFocused(item),
+                        onClick = { viewModel.launchStatePathPicker(config.platform.id) },
+                        showResetButton = hasOverride,
+                        onReset = { viewModel.resetPlatformStatePath(config.platform.id) }
+                    )
                 }
 
                 // -- SYNC section --
@@ -762,6 +748,34 @@ internal fun formatPath(path: String?): String {
     if (path == null) return "Not configured"
     val maxLen = 40
     return if (path.length > maxLen) "...${path.takeLast(maxLen)}" else path
+}
+
+private fun formatConfigLocation(path: String?): String {
+    if (path == null) return "retroarch.cfg"
+    val root = com.nendo.argosy.data.storage.StoragePathUtils.primaryExternalRoot
+    return formatPath(path.removePrefix(root).trimStart('/'))
+}
+
+/**
+ * Second line under a RetroArch save or state path, naming the configuration the path came
+ * from. A manual path speaks for itself and gets no second line.
+ */
+private fun retroArchPathSubtitle(
+    config: PlatformEmulatorConfig,
+    resolvedPath: String?,
+    hasOverride: Boolean
+): String {
+    val path = formatPath(resolvedPath)
+    if (hasOverride) return path
+    val source = when (config.retroArchConfigStatus) {
+        RetroArchConfigStatus.LOADED -> "From ${formatConfigLocation(config.retroArchConfigPath)}"
+        RetroArchConfigStatus.UNREADABLE ->
+            "${formatConfigLocation(config.retroArchConfigPath)} could not be read -- " +
+                "set the folder RetroArch uses"
+        RetroArchConfigStatus.MISSING ->
+            "No RetroArch configuration found -- set the folder RetroArch uses"
+    }
+    return "$path\n$source"
 }
 
 

@@ -1424,10 +1424,9 @@ private fun routePlatformDetailConfirm(vm: SettingsViewModel, state: SettingsUiS
         PlatformDetailItem.ScanFiles -> vm.scanFilesForPlatform(config.platform.id)
         PlatformDetailItem.ScanApps -> vm.scanInstalledAndroidGames()
         PlatformDetailItem.RomPath -> vm.openPlatformFolderPicker(config.platform.id)
-        // RetroArch owns its own save/state paths via retroarch.cfg; rows are read-only for RA.
-        PlatformDetailItem.SavePath -> if (!config.effectiveEmulatorIsRetroArch) vm.launchSavePathPicker(config.platform.id)
+        PlatformDetailItem.SavePath -> vm.launchSavePathPicker(config.platform.id)
         PlatformDetailItem.MemoryCard -> vm.openMemcardPicker(config)
-        PlatformDetailItem.StatePath -> if (!config.effectiveEmulatorIsRetroArch) vm.launchStatePathPicker(config.platform.id)
+        PlatformDetailItem.StatePath -> vm.launchStatePathPicker(config.platform.id)
         PlatformDetailItem.SyncToggle -> {
             val currentSync = state.storage.platformConfigs
                 .find { it.platformId == config.platform.id }

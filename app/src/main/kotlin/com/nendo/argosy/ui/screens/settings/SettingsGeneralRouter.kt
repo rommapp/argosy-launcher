@@ -10,6 +10,8 @@ import com.nendo.argosy.data.preferences.GridDensity
 import com.nendo.argosy.data.remote.romm.ConnectionState
 import com.nendo.argosy.ui.input.HapticPattern
 import com.nendo.argosy.core.input.SoundType
+import com.nendo.argosy.ui.theme.GRIP_RESERVE_MAX_PERCENT
+import com.nendo.argosy.ui.theme.GRIP_RESERVE_MIN_PERCENT
 import com.nendo.argosy.core.notification.NotificationProgress
 import com.nendo.argosy.core.notification.NotificationType
 import com.nendo.argosy.core.notification.showError
@@ -286,7 +288,7 @@ internal fun routeAdjustUiScale(vm: SettingsViewModel, delta: Int) {
 
 internal fun routeAdjustGripReservePercent(vm: SettingsViewModel, delta: Int) {
     val current = vm.uiState.value.display.gripReservePercent
-    val wouldBe = (current + delta).coerceIn(5, 40)
+    val wouldBe = (current + delta).coerceIn(GRIP_RESERVE_MIN_PERCENT, GRIP_RESERVE_MAX_PERCENT)
     if (wouldBe == current && delta != 0) {
         vm.hapticManager.vibrate(HapticPattern.BOUNDARY_HIT)
     }

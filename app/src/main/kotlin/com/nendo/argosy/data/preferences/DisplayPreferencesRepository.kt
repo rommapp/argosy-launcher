@@ -9,6 +9,7 @@ import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.nendo.argosy.data.cache.GradientPreset
+import com.nendo.argosy.domain.model.GripAutoControllers
 import com.nendo.argosy.ui.theme.generated.ComponentDefaults
 import com.nendo.argosy.util.DisplayAffinityHelper
 import kotlinx.coroutines.flow.Flow
@@ -147,10 +148,7 @@ class DisplayPreferencesRepository @Inject constructor(
         val HOME_LAYOUT_CONFIG = stringPreferencesKey("home_layout_config")
         val USE_ACCENT_COLOR_FOOTER = booleanPreferencesKey("use_accent_color_footer")
         val COMPACT_FOOTER = booleanPreferencesKey("compact_footer")
-        val GRIP_AUTO_CONTROLLER_ID = stringPreferencesKey("grip_auto_controller_id")
-        val GRIP_AUTO_CONTROLLER_NAME = stringPreferencesKey("grip_auto_controller_name")
         val GRIP_AUTO_CONTROLLERS = stringPreferencesKey("grip_auto_controllers")
-        val GRIP_AUTO_ENABLED = booleanPreferencesKey("grip_auto_enabled")
         val GRIP_RESERVE_MODE = stringPreferencesKey("grip_reserve_mode")
         val BOX_ART_SHAPE = stringPreferencesKey("box_art_shape")
         val BOX_ART_CORNER_RADIUS = stringPreferencesKey("box_art_corner_radius")
@@ -621,26 +619,18 @@ class DisplayPreferencesRepository @Inject constructor(
         dataStore.edit { it[Keys.INSTALLED_ONLY_HOME] = enabled }
     }
 
+    /**
+     * The mode a stored preference resolves to. A build that predates the three-way mode only ever
+     * wrote [Keys.GRIP_RESERVE_ENABLED], so that is the one value read forward.
+     */
     private fun readGripReserveMode(prefs: Preferences): GripReserveMode {
         prefs[Keys.GRIP_RESERVE_MODE]?.let { return GripReserveMode.fromString(it) }
-        if (prefs[Keys.GRIP_RESERVE_ENABLED] == true) return GripReserveMode.ON
-        val autoEnabled = prefs[Keys.GRIP_AUTO_ENABLED] ?: true
-        val hasControllers = readGripAutoControllers(prefs).controllers.isNotEmpty()
-        return if (autoEnabled && hasControllers) GripReserveMode.AUTO else GripReserveMode.OFF
+        return if (prefs[Keys.GRIP_RESERVE_ENABLED] == true) GripReserveMode.ON else GripReserveMode.OFF
     }
 
-    private fun readGripAutoControllers(
-        prefs: Preferences
-    ): com.nendo.argosy.domain.model.GripAutoControllers {
+    private fun readGripAutoControllers(prefs: Preferences): GripAutoControllers {
         val stored = prefs[Keys.GRIP_AUTO_CONTROLLERS]
-        if (!stored.isNullOrBlank()) {
-            return com.nendo.argosy.domain.model.GripAutoControllers.fromJson(stored)
-        }
-        val legacyId = prefs[Keys.GRIP_AUTO_CONTROLLER_ID].orEmpty()
-        if (legacyId.isEmpty()) return com.nendo.argosy.domain.model.GripAutoControllers()
-        return com.nendo.argosy.domain.model.GripAutoControllers().with(
-            controllerId = legacyId,
-            name = prefs[Keys.GRIP_AUTO_CONTROLLER_NAME].orEmpty().ifEmpty { "Controller" }
-        )
+        if (stored.isNullOrBlank()) return GripAutoControllers()
+        return GripAutoControllers.fromJson(stored)
     }
 }

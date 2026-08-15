@@ -26,7 +26,6 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -55,7 +54,6 @@ import com.nendo.argosy.ui.components.FooterBar
 import com.nendo.argosy.ui.components.InputButton
 import com.nendo.argosy.ui.components.NavigationPreference
 import com.nendo.argosy.ui.components.SectionFocusedScroll
-import com.nendo.argosy.ui.components.SliderPreference
 import com.nendo.argosy.ui.components.SwitchPreference
 import com.nendo.argosy.ui.screens.settings.CoreOptionViewItem
 import com.nendo.argosy.ui.input.InputHandler
@@ -77,12 +75,9 @@ import com.nendo.argosy.ui.screens.settings.menu.SettingsLayout
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.data.preferences.GripReserveMode
 import com.nendo.argosy.ui.theme.GRIP_RESERVE_DEFAULT_PERCENT
-import com.nendo.argosy.ui.theme.GRIP_RESERVE_MAX_PERCENT
-import com.nendo.argosy.ui.theme.GRIP_RESERVE_MIN_PERCENT
 import com.nendo.argosy.ui.theme.gripReserveBottomInset
 import com.nendo.argosy.ui.util.touchOnly
 
-private const val GRIP_RESERVE_PERCENT_STEP = 2
 
 enum class InGameSettingsTab(val label: String) {
     VIDEO("Video"),

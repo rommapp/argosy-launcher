@@ -47,6 +47,7 @@ interface HomeInputActions {
     fun cycleTilePickerCategory(delta: Int)
     fun launchTileApp(packageName: String)
     fun openTileCollection(collectionId: Long)
+    fun playTileMedia(itemId: String)
     fun confirmPendingTileAdd()
     fun dismissPendingTileAdd()
     fun movePendingTileAddFocus(delta: Int)
@@ -60,6 +61,7 @@ interface HomeInputActions {
     fun queueSteamDownload(gameId: Long)
     fun navigateToLibrary(platformId: Long?, sourceFilter: String?)
     fun toggleFavorite(gameId: Long)
+    fun unfavoriteMedia(itemId: String)
     fun setNavigationContext(gameIds: List<Long>)
     fun scrollToFirst(): Boolean
     fun navigateToContinuePlaying(): Boolean
@@ -187,6 +189,8 @@ class HomeInputHandler(
                 actions.launchTileApp(target.packageName)
             is com.nendo.argosy.domain.model.HomeTileTargetRef.Collection ->
                 actions.openTileCollection(target.collectionId)
+            is com.nendo.argosy.domain.model.HomeTileTargetRef.Media ->
+                actions.playTileMedia(target.itemId)
             else -> actions.openTilePicker()
         }
     }
@@ -325,15 +329,23 @@ class HomeInputHandler(
         return InputResult.HANDLED
     }
 
+    /**
+     * The curated grid is asked before the row is, here and in every other method that branches on
+     * what is focused.
+     *
+     * Which row the cursor was last on survives a change of layout, so a grid shown while a media
+     * row happens to be current would otherwise answer for the row and never for the grid -- the
+     * tile menu would not open, and a hold would raise a resume prompt instead of picking a tile up.
+     */
     override fun onSelect(): InputResult {
         val state = actions.uiState.value
         if (state.showAddToCollectionModal) return InputResult.HANDLED
-        if (state.isMediaRow) return InputResult.HANDLED
         if (isCustomGrid(state)) {
             if (state.customGrid.isEditing) return InputResult.HANDLED
             actions.openTileMenu()
             return InputResult.handled(SoundType.OPEN_MODAL)
         }
+        if (state.isMediaRow) return InputResult.HANDLED
         if (state.focusedGame != null) {
             actions.toggleGameMenu()
         }
@@ -341,36 +353,46 @@ class HomeInputHandler(
     }
 
     /**
+     * Whether the thing under the cursor is a title rather than a game. Read off the item, not off
+     * the row: the Favorites row carries both, so a row-level answer would give the wrong buttons to
+     * half of it.
+     */
+    private fun focusedIsMedia(state: HomeUiState): Boolean =
+        state.focusedItem is HomeRowItem.Media
+
+    /**
      * Holding confirm picks a tile up and puts it down again, so arranging never has to go through
      * the select menu. Committing on the second hold matches the press that started it.
      *
-     * On any media row the same hold asks whether to start over instead, since a plain press already
+     * On a title the same hold asks whether to start over instead, since a plain press already
      * resumes. A tile with nothing stored has no second answer to give, so the hold plays it rather
-     * than opening a prompt that offers the same thing twice.
+     * than opening a prompt that offers the same thing twice. The grid keeps the arranging meaning
+     * for every kind of tile, so a pinned title is picked up exactly like a pinned game.
      */
     override fun onLongConfirm(): InputResult {
         val state = actions.uiState.value
-        if (state.isMediaRow) {
-            if (state.focusedMedia == null) return InputResult.UNHANDLED
-            if (actions.openMediaResumePrompt()) return InputResult.handled(SoundType.OPEN_MODAL)
-            actions.playFocusedMedia()
-            return InputResult.HANDLED
+        if (isCustomGrid(state)) {
+            if (state.showTilePicker || state.customGrid.showMenu) return InputResult.UNHANDLED
+            if (state.customGrid.isEditing) {
+                actions.commitTileEdit()
+            } else {
+                actions.enterTileMoveMode()
+            }
+            return InputResult.handled(SoundType.TOGGLE)
         }
-        if (!isCustomGrid(state) || state.showTilePicker || state.customGrid.showMenu) {
-            return InputResult.UNHANDLED
-        }
-        if (state.customGrid.isEditing) {
-            actions.commitTileEdit()
-        } else {
-            actions.enterTileMoveMode()
-        }
-        return InputResult.handled(SoundType.TOGGLE)
+        if (!focusedIsMedia(state)) return InputResult.UNHANDLED
+        if (actions.openMediaResumePrompt()) return InputResult.handled(SoundType.OPEN_MODAL)
+        actions.playFocusedMedia()
+        return InputResult.HANDLED
     }
 
     /**
-     * On a media row this is the second way to the Start Over prompt, alongside holding confirm. It
-     * carries no footer hint of its own: starting over is the rarer of the two answers a prompt
-     * already offers, and the bar is for what the focused control does not already say.
+     * The row's second verb. On a row of games it marks and unmarks a favourite; on a media rail it
+     * is the second way to the Start Over prompt, alongside holding confirm.
+     *
+     * The Favorites row is a row of favourites whichever kind is under the cursor, so it keeps the
+     * first meaning for both halves: the button that put a title there is the button that takes it
+     * back out, which is what the media half was missing.
      */
     override fun onSecondaryAction(): InputResult {
         val state = actions.uiState.value
@@ -378,8 +400,12 @@ class HomeInputHandler(
             actions.toggleTilePickerSearch()
             return InputResult.HANDLED
         }
-        if (state.isMediaRow) {
-            if (state.focusedMedia == null) return InputResult.UNHANDLED
+        if (!isCustomGrid(state) && focusedIsMedia(state)) {
+            val media = state.focusedMedia ?: return InputResult.UNHANDLED
+            if (state.currentRow == HomeRow.Favorites) {
+                actions.unfavoriteMedia(media.itemId)
+                return InputResult.HANDLED
+            }
             if (actions.openMediaResumePrompt()) return InputResult.handled(SoundType.OPEN_MODAL)
             return InputResult.handled(SoundType.BOUNDARY)
         }
@@ -424,11 +450,11 @@ class HomeInputHandler(
             actions.toggleTileEditMode()
             return InputResult.handled(SoundType.TOGGLE)
         }
-        if (state.isMediaRow) {
-            if (state.focusedMedia == null) return InputResult.UNHANDLED
+        if (state.focusedMedia != null) {
             actions.openFocusedMediaDetail()
             return InputResult.HANDLED
         }
+        if (!isCustomGrid(state) && state.isMediaRow) return InputResult.UNHANDLED
         val game = state.focusedGame ?: return InputResult.UNHANDLED
         actions.setNavigationContext(
             state.currentItems.filterIsInstance<HomeRowItem.Game>().map { it.game.id }

@@ -45,6 +45,8 @@ import com.nendo.argosy.domain.model.HomeTile
 import com.nendo.argosy.domain.model.TileRect
 import com.nendo.argosy.ui.primitives.FocusIndicators
 import com.nendo.argosy.ui.primitives.argosyFocusIndicators
+import com.nendo.argosy.ui.screens.media.components.MediaDownloadBadge
+import com.nendo.argosy.ui.screens.media.components.MediaProgressBar
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalArgosyTheme
 import com.nendo.argosy.ui.theme.generated.ComponentDefaults
@@ -119,9 +121,11 @@ fun customGridMetrics(size: IntSize, laneCount: Int, gapPx: Float): CustomGridMe
 data class CustomGridTileContent(
     val game: com.nendo.argosy.ui.screens.home.HomeGameUi?,
     val label: String,
+    val media: com.nendo.argosy.ui.screens.home.HomeMediaUi? = null,
     val isMissing: Boolean = false,
     val packageName: String? = null,
     val coverPath: String? = null,
+    val posterUrl: String? = null,
     val subtitle: String? = null,
     val stats: List<TileStat> = emptyList()
 )
@@ -317,6 +321,34 @@ private fun CustomGridCellBox(
             onClick = onClick,
             onLongClick = onLongClick
         )
+        return
+    }
+
+    val media = content?.media
+    if (media != null) {
+        Box(modifier = placement, contentAlignment = Alignment.Center) {
+            MediaCard(
+                media = media,
+                isFocused = isFocused,
+                focusScale = focusScaleForSpan(rect),
+                alphaOverride = if (isOverlapped) OVERLAPPED_ALPHA else null,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .then(
+                        if (onLongClick == null) {
+                            Modifier.clickableNoFocus(onClick = onClick)
+                        } else {
+                            Modifier.clickableNoFocus(onClick = onClick, onLongClick = onLongClick)
+                        }
+                    )
+            )
+            if (editModeLabel != null && isFocused) {
+                TileModeTab(
+                    label = editModeLabel,
+                    modifier = Modifier.align(Alignment.TopEnd)
+                )
+            }
+        }
         return
     }
 
@@ -615,6 +647,7 @@ private fun WideTileBox(
             val coverPath = content.game?.coverPath ?: content.coverPath
             val cover = com.nendo.argosy.ui.common.rememberFileImageModel(coverPath)
             val appIcon = content.packageName?.let { com.nendo.argosy.ui.coil.AppIconData(it) }
+            val poster = content.posterUrl?.takeIf { it.isNotBlank() }
             Box(
                 modifier = Modifier
                     .fillMaxHeight()
@@ -627,12 +660,33 @@ private fun WideTileBox(
                         contentDescription = null,
                         modifier = Modifier.fillMaxSize().padding(Dimens.spacingSm)
                     )
+                    poster != null -> coil.compose.AsyncImage(
+                        model = poster,
+                        contentDescription = null,
+                        contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize()
+                    )
                     cover != null -> coil.compose.AsyncImage(
                         model = cover,
                         contentDescription = null,
                         contentScale = androidx.compose.ui.layout.ContentScale.Crop,
                         modifier = Modifier.fillMaxSize()
                     )
+                }
+                content.media?.let { media ->
+                    MediaDownloadBadge(
+                        availability = media.availability,
+                        size = Dimens.iconSm,
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(Dimens.spacingXs)
+                    )
+                    if (media.progressFraction > 0f) {
+                        MediaProgressBar(
+                            fraction = media.progressFraction,
+                            modifier = Modifier.align(Alignment.BottomCenter)
+                        )
+                    }
                 }
             }
             Column(

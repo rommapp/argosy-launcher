@@ -45,6 +45,7 @@ import com.nendo.argosy.util.DisplayAffinityHelper
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import com.nendo.argosy.data.preferences.SessionStateStore
@@ -281,6 +282,12 @@ data class DualHomeUiState(
     val focusedTileGameId: Long?
         get() = customGrid.focusedGameId
 
+    /**
+     * What a tile draws on the companion. A media target reads as unavailable rather than being
+     * drawn: this screen has no media repository to resolve one against, and such tiles are filtered
+     * out before they arrive, so the branch is there to make a new kind of target a compile error
+     * here instead of a square that silently renders nothing.
+     */
     fun tileContentFor(
         tile: com.nendo.argosy.domain.model.HomeTile
     ): com.nendo.argosy.ui.components.CustomGridTileContent? =
@@ -328,6 +335,7 @@ data class DualHomeUiState(
                     subtitle = "App"
                 )
             }
+            is com.nendo.argosy.domain.model.HomeTileTargetRef.Media,
             com.nendo.argosy.domain.model.HomeTileTargetRef.Unresolvable ->
                 com.nendo.argosy.ui.components.CustomGridTileContent(
                     game = null,
@@ -389,6 +397,9 @@ class DualHomeViewModel(
     /**
      * Reads the library rather than the cached list, because that cache is only filled once the
      * library grid has been opened and the picker has to work on a first run too.
+     *
+     * The media tab is never offered on this screen, so its branch answers with nothing rather than
+     * being reached.
      */
     private suspend fun tilePickerEntriesFor(
         category: com.nendo.argosy.ui.components.TilePickerCategory,
@@ -443,6 +454,7 @@ class DualHomeViewModel(
                         packageName = app.packageName
                     )
                 }
+        com.nendo.argosy.ui.components.TilePickerCategory.MEDIA -> emptyList()
     }
 
     private var latestDownloads: Map<Long, com.nendo.argosy.data.local.entity.DownloadQueueEntity> = emptyMap()
@@ -1084,11 +1096,20 @@ class DualHomeViewModel(
     /**
      * Mirrors the phone's tile observation so both surfaces read one curated grid. Editing happens
      * on whichever screen the grid is shown on, which on a dual-screen handheld is the lower one.
+     *
+     * Media tiles are left off this screen, the same way media rows are: the companion has no media
+     * repository to resolve one against, and the second screen already shows what is being watched
+     * in its own panel. Nothing is written, so the tiles are still on the page the phone draws.
      */
     fun observeHomeTiles() {
         val tiles = homeTileRepository ?: return
         viewModelScope.launch {
             tiles.observeTiles(syncPreferencesRepository?.getRommUserId())
+                .map { stored ->
+                    stored.filterNot {
+                        it.target is com.nendo.argosy.domain.model.HomeTileTargetRef.Media
+                    }
+                }
                 .collect { rows ->
                     val gameIds = rows.mapNotNull {
                         (it.target as? com.nendo.argosy.domain.model.HomeTileTargetRef.Game)?.gameId

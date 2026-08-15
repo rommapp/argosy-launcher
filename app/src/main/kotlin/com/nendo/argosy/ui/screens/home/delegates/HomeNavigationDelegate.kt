@@ -178,7 +178,7 @@ class HomeNavigationDelegate @Inject constructor(
         if (currentPlatforms.isEmpty() && newPlatforms.isNotEmpty()) {
             val newRow = when {
                 state.recentGames.isNotEmpty() -> state.currentRow
-                state.favoriteGames.isNotEmpty() -> state.currentRow
+                state.hasFavorites -> state.currentRow
                 else -> HomeRow.Platform(0)
             }
             return PlatformChangeResult.Initial(newRow, newPlatforms)

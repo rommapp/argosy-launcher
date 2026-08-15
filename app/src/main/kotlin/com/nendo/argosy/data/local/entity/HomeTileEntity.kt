@@ -46,6 +46,7 @@ data class HomeTileEntity(
     val virtualType: String? = null,
     val virtualName: String? = null,
     val packageName: String? = null,
+    val mediaItemId: String? = null,
     val createdAt: Long = System.currentTimeMillis()
 )
 
@@ -53,4 +54,4 @@ data class HomeTileEntity(
  * What a tile points at. Stored as a string so an unknown value from a newer build reads back as
  * unresolvable instead of throwing.
  */
-enum class HomeTileTarget { GAME, COLLECTION, VIRTUAL_COLLECTION, APP }
+enum class HomeTileTarget { GAME, COLLECTION, VIRTUAL_COLLECTION, APP, MEDIA }

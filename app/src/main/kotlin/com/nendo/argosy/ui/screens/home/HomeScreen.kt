@@ -858,16 +858,16 @@ fun HomeScreen(
                                 InputButton.B to "Cancel"
                             )
                         } else {
-                            listOf(
-                                InputButton.LB_RB to "Page",
-                                InputButton.A to if (grid.focusedGameId != null) "Play" else "Add",
-                                InputButton.SELECT to "Options"
-                            )
+                            buildList {
+                                add(InputButton.LB_RB to "Page")
+                                grid.confirmLabel?.let { add(InputButton.A to it) }
+                                add(InputButton.SELECT to "Options")
+                            }
                         },
                         variant = FooterVariant.SUBTLE
                     )
                     FooterSpacer()
-                } else if (uiState.isMediaRow) {
+                } else if (uiState.isMediaRow || uiState.focusedMedia != null) {
                     val focusedMedia = uiState.focusedMedia
                     FooterHints(
                         hints = buildList {
@@ -885,6 +885,9 @@ fun HomeScreen(
                                     InputButton.A to
                                         if (focusedMedia.hasResumePosition) "Resume" else "Play"
                                 )
+                                if (uiState.currentRow == HomeRow.Favorites) {
+                                    add(InputButton.Y to "Unfavorite")
+                                }
                                 add(InputButton.X to "Details")
                             }
                         },
@@ -1003,8 +1006,8 @@ fun HomeScreen(
             )
 
             GameInfo(
-                title = uiState.focusedGame?.title ?: "",
-                developer = uiState.focusedGame?.developer,
+                title = uiState.focusedGame?.title ?: uiState.focusedMedia?.title ?: "",
+                developer = uiState.focusedGame?.developer ?: uiState.focusedMedia?.subtitle,
                 rating = uiState.focusedGame?.rating,
                 userRating = uiState.focusedGame?.userRating ?: 0,
                 userDifficulty = uiState.focusedGame?.userDifficulty ?: 0,
@@ -1151,6 +1154,7 @@ fun HomeScreen(
                 searchActive = uiState.customGrid.pickerSearchActive,
                 onQueryChange = viewModel::setTilePickerQuery,
                 category = uiState.customGrid.pickerCategory,
+                categories = uiState.customGrid.pickerCategories,
                 onSelectCategory = { viewModel.setTilePickerCategory(it) },
                 canDeletePage = uiState.customGrid.canDeletePage,
                 onDeletePage = viewModel::deleteCustomGridPage

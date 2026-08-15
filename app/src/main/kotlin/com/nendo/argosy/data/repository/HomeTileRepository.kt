@@ -112,6 +112,7 @@ class HomeTileRepository @Inject constructor(
             is HomeTileTargetRef.VirtualCollection ->
                 base.copy(virtualType = target.type, virtualName = target.name)
             is HomeTileTargetRef.App -> base.copy(packageName = target.packageName)
+            is HomeTileTargetRef.Media -> base.copy(mediaItemId = target.itemId)
             HomeTileTargetRef.Unresolvable -> base
         }
     }
@@ -127,6 +128,7 @@ private fun HomeTileTargetRef.storedType(): String = when (this) {
     is HomeTileTargetRef.Collection -> HomeTileTarget.COLLECTION.name
     is HomeTileTargetRef.VirtualCollection -> HomeTileTarget.VIRTUAL_COLLECTION.name
     is HomeTileTargetRef.App -> HomeTileTarget.APP.name
+    is HomeTileTargetRef.Media -> HomeTileTarget.MEDIA.name
     HomeTileTargetRef.Unresolvable -> ""
 }
 
@@ -150,5 +152,6 @@ private fun HomeTileEntity.resolveTarget(): HomeTileTargetRef =
             HomeTileTargetRef.VirtualCollection(type, virtualName.orEmpty())
         }
         HomeTileTarget.APP -> packageName?.let { HomeTileTargetRef.App(it) }
+        HomeTileTarget.MEDIA -> mediaItemId?.let { HomeTileTargetRef.Media(it) }
         null -> null
     } ?: HomeTileTargetRef.Unresolvable

@@ -3236,3 +3236,17 @@ object Migration_170_171 : Migration(170, 171) {
         )
     }
 }
+
+/**
+ * Gives a home tile somewhere to record the media item it points at.
+ *
+ * The column is added rather than the target being folded into an existing one, matching how every
+ * other kind of target is stored: each keeps its own nullable column, and the type string says which
+ * one to read. Existing rows carry a null here and are untouched, so a grid arranged by an earlier
+ * build reads back exactly as it was written.
+ */
+object Migration_171_172 : Migration(171, 172) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE `home_tiles` ADD COLUMN `mediaItemId` TEXT")
+    }
+}

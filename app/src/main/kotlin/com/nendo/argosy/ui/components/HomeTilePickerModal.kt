@@ -53,22 +53,32 @@ data class TilePickerEntry(
     val title: String,
     val subtitle: String,
     val coverPath: String? = null,
-    val packageName: String? = null
+    val packageName: String? = null,
+    val posterUrl: String? = null
 ) {
     val gameId: Long?
         get() = (target as? com.nendo.argosy.domain.model.HomeTileTargetRef.Game)?.gameId
 
-    val key: String get() = "${target::class.simpleName}:${gameId ?: packageName ?: title}"
+    val mediaItemId: String?
+        get() = (target as? com.nendo.argosy.domain.model.HomeTileTargetRef.Media)?.itemId
+
+    val key: String
+        get() = "${target::class.simpleName}:${gameId ?: mediaItemId ?: packageName ?: title}"
 }
 
 /**
- * What the picker is currently listing. A curated page mixes games, collections and apps, and a
- * flat list of all three would bury the games; each kind gets its own tab instead.
+ * What the picker is currently listing. A curated page mixes games, collections, apps and titles,
+ * and a flat list of all four would bury the games; each kind gets its own tab instead.
+ *
+ * Which tabs are actually offered is the caller's answer, not this enum's: with no media account
+ * there is no Media tab, because a tab that lists nothing advertises a feature the reader has not
+ * asked for.
  */
 enum class TilePickerCategory(val label: String) {
     GAMES("Games"),
     COLLECTIONS("Collections"),
-    APPS("Apps")
+    APPS("Apps"),
+    MEDIA("Media")
 }
 
 /**
@@ -91,6 +101,7 @@ fun HomeTilePickerModal(
     searchActive: Boolean = false,
     onQueryChange: (String) -> Unit = {},
     category: TilePickerCategory = TilePickerCategory.GAMES,
+    categories: List<TilePickerCategory> = TilePickerCategory.entries,
     onSelectCategory: (TilePickerCategory) -> Unit = {},
     canDeletePage: Boolean = false,
     onDeletePage: () -> Unit = {}
@@ -106,6 +117,7 @@ fun HomeTilePickerModal(
     ) {
         TilePickerTabs(
             category = category,
+            categories = categories,
             onSelectCategory = onSelectCategory,
             modifier = Modifier.padding(bottom = Dimens.spacingSm)
         )
@@ -123,6 +135,7 @@ fun HomeTilePickerModal(
                     TilePickerCategory.GAMES -> "No installed games to add"
                     TilePickerCategory.COLLECTIONS -> "No collections yet"
                     TilePickerCategory.APPS -> "No apps found"
+                    TilePickerCategory.MEDIA -> "No titles to add"
                 }
                 } else {
                     "Nothing matches that search"
@@ -220,12 +233,19 @@ private fun TilePickerRow(
         ) {
             val cover = rememberFileImageModel(entry.coverPath)
             val appIcon = entry.packageName?.let { com.nendo.argosy.ui.coil.AppIconData(it) }
+            val poster = entry.posterUrl?.takeIf { it.isNotBlank() }
             when {
                 appIcon != null -> AsyncImage(
                     model = appIcon,
                     contentDescription = null,
                     contentScale = ContentScale.Fit,
                     modifier = Modifier.fillMaxSize().padding(Dimens.spacingXs)
+                )
+                poster != null -> AsyncImage(
+                    model = poster,
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize()
                 )
                 cover != null -> AsyncImage(
                     model = cover,
@@ -322,6 +342,7 @@ private fun TilePickerSearchField(
 @Composable
 private fun TilePickerTabs(
     category: TilePickerCategory,
+    categories: List<TilePickerCategory>,
     onSelectCategory: (TilePickerCategory) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -331,7 +352,7 @@ private fun TilePickerTabs(
         modifier = modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
     ) {
-        TilePickerCategory.entries.forEach { entry ->
+        categories.forEach { entry ->
             val isCurrent = entry == category
             Text(
                 text = entry.label.uppercase(),

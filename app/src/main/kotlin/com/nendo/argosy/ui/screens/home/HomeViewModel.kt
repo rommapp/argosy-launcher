@@ -111,11 +111,16 @@ class HomeViewModel @Inject constructor(
                     libraryDelegate.collectionsForTiles(query)
                 com.nendo.argosy.ui.components.TilePickerCategory.APPS ->
                     libraryDelegate.appsForTiles(query)
+                com.nendo.argosy.ui.components.TilePickerCategory.MEDIA ->
+                    mediaDelegate.searchForTiles(query)
             }
         },
         read = { _uiState.value.customGrid },
         write = { transform -> _uiState.update { it.copy(customGrid = transform(it.customGrid)) } }
     )
+
+    private var storedTiles: List<com.nendo.argosy.domain.model.HomeTile> = emptyList()
+    private var tileMediaShown: Boolean = false
 
     private var achievementPrefetchJob: Job? = null
     private val achievementPrefetchDebounceMs = 300L
@@ -217,6 +222,8 @@ class HomeViewModel @Inject constructor(
                     val updated = state.copy(
                         nextUpMedia = media.nextUp,
                         continueWatchingMedia = media.continueWatching,
+                        favoriteMedia = media.favorites,
+                        tileMedia = media.tileItems,
                         mediaLibraries = media.libraries,
                         mediaLibraryItems = media.libraryItems,
                         mediaLibraryItemsFor = media.libraryItemsFor,
@@ -241,8 +248,24 @@ class HomeViewModel @Inject constructor(
                     }
                 }
                 syncSelectedMediaLibrary()
+                customGrid.setMediaAvailable(media.isSignedIn)
+                applyTileMediaVisibility(media.isSignedIn)
             }
         }
+    }
+
+    /**
+     * Keeps the curated grid's tiles in step with whether media exists here at all.
+     *
+     * Signing out takes the media tiles off the page rather than leaving them as dead squares: with
+     * no account there is nothing behind one, and a permanent unavailable tile is exactly the orphan
+     * a reader who does not use media should never meet. Nothing is deleted -- the rows stay stored
+     * and the tiles come back on the next sign-in, taking whatever cells are still free.
+     */
+    private fun applyTileMediaVisibility(signedIn: Boolean) {
+        if (signedIn == tileMediaShown) return
+        tileMediaShown = signedIn
+        viewModelScope.launch { publishHomeTiles(storedTiles) }
     }
 
     /**
@@ -483,6 +506,10 @@ class HomeViewModel @Inject constructor(
      * has nothing to say about it. Running the game path over one would reset its cursor to the
      * first tile on every return to the foreground and, on an empty rail, throw the user off the row
      * instead of leaving the empty state up.
+     *
+     * A refresh only ever speaks for the games on a row, so the row itself is asked before the
+     * cursor is moved off it: Favorites can hold nothing but titles, and those are not gone just
+     * because the game half of the answer came back empty.
      */
     private suspend fun refreshCurrentRowInternal() {
         val state = _uiState.value
@@ -500,11 +527,16 @@ class HomeViewModel @Inject constructor(
 
         flushLibraryState()
 
-        if (result.isEmpty) {
+        if (result.isEmpty && _uiState.value.currentItems.isEmpty()) {
             val newRow = _uiState.value.availableRows.firstOrNull() ?: HomeRow.Continue
             _uiState.update { it.copy(currentRow = newRow, focusedGameIndex = 0) }
         } else {
-            _uiState.update { it.copy(focusedGameIndex = newIndex) }
+            _uiState.update {
+                it.copy(
+                    focusedGameIndex = newIndex
+                        .coerceIn(0, (it.currentItems.size - 1).coerceAtLeast(0))
+                )
+            }
         }
     }
 
@@ -652,25 +684,39 @@ class HomeViewModel @Inject constructor(
         viewModelScope.launch {
             homeTileRepository.observeTiles(syncPreferencesRepository.getRommUserId())
                 .collect { tiles ->
-                    val gameIds = tiles.mapNotNull {
-                        (it.target as? HomeTileTargetRef.Game)?.gameId
-                    }.distinct()
-                    val games = libraryDelegate.resolveTileGames(gameIds)
-                    val collections = libraryDelegate.resolveTileCollections(
-                        tiles.mapNotNull {
-                            (it.target as? HomeTileTargetRef.Collection)?.collectionId
-                        }.distinct()
-                    )
-                    val apps = libraryDelegate.resolveTileApps(
-                        tiles.mapNotNull {
-                            (it.target as? HomeTileTargetRef.App)?.packageName
-                        }.distinct()
-                    )
-                    customGrid.setTiles(tiles)
-                    _uiState.update {
-                        it.copy(tileGames = games, tileCollections = collections, tileApps = apps)
-                    }
+                    storedTiles = tiles
+                    publishHomeTiles(tiles)
                 }
+        }
+    }
+
+    /**
+     * Hands the grid the tiles it can actually draw, and resolves what each one points at.
+     *
+     * The stored list is kept whole here and filtered on the way out, so hiding media while signed
+     * out never writes anything: the page the database holds is still the page the user arranged.
+     */
+    private suspend fun publishHomeTiles(tiles: List<com.nendo.argosy.domain.model.HomeTile>) {
+        val shown = if (tileMediaShown) {
+            tiles
+        } else {
+            tiles.filterNot { it.target is HomeTileTargetRef.Media }
+        }
+        val games = libraryDelegate.resolveTileGames(
+            shown.mapNotNull { (it.target as? HomeTileTargetRef.Game)?.gameId }.distinct()
+        )
+        val collections = libraryDelegate.resolveTileCollections(
+            shown.mapNotNull { (it.target as? HomeTileTargetRef.Collection)?.collectionId }.distinct()
+        )
+        val apps = libraryDelegate.resolveTileApps(
+            shown.mapNotNull { (it.target as? HomeTileTargetRef.App)?.packageName }.distinct()
+        )
+        mediaDelegate.selectTileItems(
+            shown.mapNotNull { (it.target as? HomeTileTargetRef.Media)?.itemId }.distinct()
+        )
+        customGrid.setTiles(shown)
+        _uiState.update {
+            it.copy(tileGames = games, tileCollections = collections, tileApps = apps)
         }
     }
 
@@ -798,6 +844,22 @@ class HomeViewModel @Inject constructor(
         viewModelScope.launch { _events.emit(HomeEvent.NavigateToCollections(collectionId)) }
     }
 
+    /**
+     * Plays a pinned title. The tile holds the show, so which episode starts is worked out here the
+     * same way a row's tile works it out -- resume where one was left, otherwise whatever the server
+     * says comes next -- and a show nothing playable can be found in opens its detail screen instead
+     * of doing nothing. A tile whose title has not been synced yet has nothing to resolve, so the
+     * press opens what the grid can offer rather than failing silently.
+     */
+    override fun playTileMedia(itemId: String) {
+        val media = _uiState.value.tileMedia[itemId]
+        if (media == null) {
+            viewModelScope.launch { _events.emit(HomeEvent.NavigateToMediaDetail(itemId)) }
+            return
+        }
+        startMedia(media, startOver = false)
+    }
+
     override fun enterTileMoveMode() = customGrid.enterMoveMode()
 
     override fun exitTileMoveMode() = customGrid.commitEdit()
@@ -921,6 +983,15 @@ class HomeViewModel @Inject constructor(
 
     override fun toggleFavorite(gameId: Long) {
         gameMenuDelegate.toggleFavorite(viewModelScope, gameId) { refreshCurrentRowInternal() }
+    }
+
+    /**
+     * Unmarks the title under the cursor. Only the Favorites row reaches this, so the answer is
+     * always to remove: the row is the set, and the button that put a title in it is the button that
+     * takes it back out. The row rebuilds itself from the stored flag, so nothing has to be told.
+     */
+    override fun unfavoriteMedia(itemId: String) {
+        viewModelScope.launch { mediaDelegate.unfavorite(itemId) }
     }
 
     fun hideGame(gameId: Long) {

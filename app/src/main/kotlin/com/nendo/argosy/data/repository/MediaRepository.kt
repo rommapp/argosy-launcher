@@ -135,6 +135,27 @@ class MediaRepository @Inject constructor(
     fun observeUserData(itemId: String): Flow<MediaUserDataEntity?> =
         scoped(null) { owner -> mediaUserDataDao.observeByItem(owner, itemId) }
 
+    /**
+     * What this account has marked as a favourite, most recently marked first.
+     *
+     * Watch state is what carries the flag, so this answers with the state rows rather than with
+     * items: an item favourited on another client is a flag the server has told us about before the
+     * library sync has stored the title itself, and a join here would silently drop it. The caller
+     * resolves the ones it can draw.
+     */
+    fun observeFavorites(): Flow<List<MediaUserDataEntity>> =
+        scoped(emptyList()) { owner -> mediaUserDataDao.observeFavorites(owner) }
+
+    /**
+     * The stored items for a list of ids, in one read. An id with no stored item is absent rather
+     * than represented by a placeholder, so a caller can tell "not synced yet" from "synced empty".
+     */
+    suspend fun getItems(itemIds: List<String>): List<MediaItemEntity> {
+        val owner = currentOwner() ?: return emptyList()
+        if (itemIds.isEmpty()) return emptyList()
+        return itemIds.chunked(SQL_VARIABLE_LIMIT).flatMap { mediaItemDao.getByItemIds(owner, it) }
+    }
+
     fun observeStreams(itemId: String): Flow<List<MediaStreamEntity>> =
         scoped(emptyList()) { owner -> mediaStreamDao.observeByItem(owner, itemId) }
 
@@ -192,6 +213,48 @@ class MediaRepository @Inject constructor(
     suspend fun getSeriesEpisodes(seriesId: String): List<MediaItemEntity> {
         val owner = currentOwner() ?: return emptyList()
         return mediaItemDao.getBySeries(owner, seriesId, MediaItemType.EPISODE.wireValue)
+    }
+
+    /**
+     * How many top-level titles each library actually holds here, keyed by library id.
+     *
+     * Counted rather than read back from [MediaLibraryEntity.itemCount], which is only rewritten
+     * when a whole sync pass completes: a library the server has listed but nothing has crawled yet
+     * reads zero, and a pass that failed part way through leaves the stored figure describing a
+     * table that has since changed. A caller putting a number in front of the user needs the one the
+     * browse will actually show.
+     *
+     * A library whose collection type this build cannot place is absent rather than zero. Nothing
+     * can be counted for it, and zero would read as an answer.
+     */
+    suspend fun countsByLibrary(): Map<String, Int> {
+        val owner = currentOwner() ?: return emptyMap()
+        return mediaLibraryDao.getLibraries(owner).mapNotNull { library ->
+            val itemType = topLevelTypeOf(library.collectionType) ?: return@mapNotNull null
+            library.libraryId to
+                mediaItemDao.countByLibrary(owner, library.libraryId, itemType.wireValue)
+        }.toMap()
+    }
+
+    /**
+     * The top level of every library at once, capped, in library order then sort name.
+     *
+     * Each library is asked for its own kind rather than the table being read flat, which is what
+     * keeps a season or an episode out of an answer that is supposed to be a list of titles. The cap
+     * is applied across the whole set, so a first library of thousands cannot spend it before the
+     * second is reached -- it is taken a library at a time and stopped when full.
+     */
+    suspend fun topLevelItems(limit: Int): List<MediaItemEntity> {
+        val owner = currentOwner() ?: return emptyList()
+        val collected = mutableListOf<MediaItemEntity>()
+        for (library in mediaLibraryDao.getLibraries(owner)) {
+            if (collected.size >= limit) break
+            val itemType = topLevelTypeOf(library.collectionType) ?: continue
+            collected += mediaItemDao
+                .getByLibrary(owner, library.libraryId, itemType.wireValue)
+                .take(limit - collected.size)
+        }
+        return collected
     }
 
     suspend fun getLibraryName(libraryId: String): String? {
@@ -268,10 +331,21 @@ class MediaRepository @Inject constructor(
         attributionRepository.get().markDirty(StorageCategory.MEDIA)
     }
 
+    /**
+     * Titles matching a query: films and shows, never their seasons or episodes.
+     *
+     * Episodes are excluded because they are stored a season at a time, as a season is opened, so the
+     * episode table holds what has been browsed rather than what the server has. Searching it would
+     * answer with the episodes of the handful of shows already visited and silently with none of the
+     * rest, and a result set that depends on browsing history is one the reader has no way to read as
+     * incomplete. A show is found by its own name, and its episodes are on its detail screen.
+     *
+     * Seasons are excluded for the plainer reason that they are named "Season 1".
+     */
     suspend fun search(query: String, limit: Int = SEARCH_LIMIT): List<MediaItemEntity> {
         val owner = currentOwner() ?: return emptyList()
         if (query.isBlank()) return emptyList()
-        return mediaItemDao.search(owner, query, limit)
+        return mediaItemDao.search(owner, query, SEARCHABLE_TYPES, limit)
     }
 
     /**
@@ -435,6 +509,11 @@ class MediaRepository @Inject constructor(
     companion object {
         const val TICKS_PER_SECOND = 10_000_000L
         private const val SEARCH_LIMIT = 50
+
+        private val SEARCHABLE_TYPES = listOf(
+            MediaItemType.MOVIE.wireValue,
+            MediaItemType.SERIES.wireValue
+        )
 
         /**
          * SQLite binds each element of an `IN` list as its own variable and refuses past 999 of

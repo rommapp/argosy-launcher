@@ -239,6 +239,7 @@ fun DualHomeLowerContent(
                 searchActive = uiState.customGrid.pickerSearchActive,
                 onQueryChange = viewModel::setTilePickerQuery,
                 category = uiState.customGrid.pickerCategory,
+                categories = uiState.customGrid.pickerCategories,
                 onSelectCategory = { viewModel.setTilePickerCategory(it) },
                 canDeletePage = uiState.customGrid.canDeletePage,
                 onDeletePage = viewModel::deleteCustomGridPage

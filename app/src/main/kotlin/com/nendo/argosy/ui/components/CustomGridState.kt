@@ -47,9 +47,20 @@ data class CustomGridState(
     val pickerCategory: TilePickerCategory = TilePickerCategory.GAMES,
     val pickerFocusIndex: Int = 0,
     val pickerEntries: List<TilePickerEntry> = emptyList(),
+    val mediaAvailable: Boolean = false,
     val pendingAdd: TilePickerEntry? = null,
     val pendingAddFocusIndex: Int = 0
 ) {
+
+    /**
+     * The kinds this grid can currently be filled from. Media is absent unless an account is signed
+     * in, which is what keeps a reader with no media server from meeting a tab, a heading or an
+     * empty list belonging to a feature they do not have.
+     */
+    val pickerCategories: List<TilePickerCategory>
+        get() = TilePickerCategory.entries.filter {
+            it != TilePickerCategory.MEDIA || mediaAvailable
+        }
 
     val storedPageCount: Int
         get() = maxOf(
@@ -144,6 +155,28 @@ data class CustomGridState(
 
     val focusedGameId: Long?
         get() = (focusedTile?.target as? HomeTileTargetRef.Game)?.gameId
+
+    val focusedMediaItemId: String?
+        get() = (focusedTile?.target as? HomeTileTargetRef.Media)?.itemId
+
+    /**
+     * What confirm will do to the cell under the cursor, as a word. Read off the target rather than
+     * off whether a game is there, so an app tile no longer offers to add something to a cell that
+     * is already full.
+     *
+     * A tile whose target this build cannot read answers null: confirm does nothing on one, and a
+     * hint promising otherwise is worse than no hint.
+     */
+    val confirmLabel: String?
+        get() = when (focusedTile?.target) {
+            is HomeTileTargetRef.Game -> "Play"
+            is HomeTileTargetRef.Media -> "Play"
+            is HomeTileTargetRef.App -> "Open"
+            is HomeTileTargetRef.Collection -> "Open"
+            is HomeTileTargetRef.VirtualCollection -> "Open"
+            HomeTileTargetRef.Unresolvable -> null
+            null -> "Add"
+        }
 
     /**
      * Tiles the edited one is currently sitting on top of. They fade rather than refuse the move,

@@ -35,6 +35,15 @@ private const val FINISHED_FRACTION = 0.95f
 private const val SPECIALS_SEASON_NUMBER = 0
 
 /**
+ * How many titles the curated grid's picker offers at once, matching the game picker's own cap.
+ */
+private const val TILE_PICKER_LIMIT = 60
+
+private const val SERIES_LABEL = "Series"
+
+private const val MOVIE_LABEL = "Movie"
+
+/**
  * What a press on a media tile turns into once the tile has been asked what it actually stands for.
  *
  * [OpenDetail] is the answer for a series nothing playable can be found in, not a refusal: the detail
@@ -54,10 +63,12 @@ sealed class MediaPlayTarget {
 data class HomeMediaState(
     val nextUp: List<HomeMediaUi> = emptyList(),
     val continueWatching: List<HomeMediaUi> = emptyList(),
+    val favorites: List<HomeMediaUi> = emptyList(),
     val libraries: List<MediaLibraryUi> = emptyList(),
     val librariesLoaded: Boolean = false,
     val libraryItems: List<HomeMediaUi> = emptyList(),
     val libraryItemsFor: String? = null,
+    val tileItems: Map<String, HomeMediaUi> = emptyMap(),
     val isSignedIn: Boolean = false,
     val isLoading: Boolean = false,
     val showNextUp: Boolean = true,
@@ -96,6 +107,7 @@ class HomeMediaDelegate @Inject constructor(
     val state: StateFlow<HomeMediaState> = _state.asStateFlow()
 
     private val selectedLibraryId = MutableStateFlow<String?>(null)
+    private val tileItemIds = MutableStateFlow<List<String>>(emptyList())
     private val librarySyncRequested = AtomicBoolean(false)
 
     fun observe(scope: CoroutineScope) {
@@ -133,6 +145,69 @@ class HomeMediaDelegate @Inject constructor(
         }
         observeLibraries(scope)
         observeLibraryItems(scope)
+        observeFavorites(scope)
+        observeTileItems(scope)
+    }
+
+    /**
+     * The titles this account has marked as favourites, as tiles for home's Favorites row.
+     *
+     * Marked state is stored per item, so a favourite the library sync has not stored a title for
+     * yet resolves to nothing and is simply not drawn: the flag stays, the row fills in once the
+     * title arrives. A show among them carries whatever the Continue Watching rail knows about it,
+     * the same treatment a library row's tiles get, so the footer's promise of Resume is true.
+     */
+    private fun observeFavorites(scope: CoroutineScope) {
+        scope.launch {
+            mediaRepository.observeFavorites()
+                .map { rows -> rows.map { it.itemId } }
+                .distinctUntilChanged()
+                .combine(availabilityVerifier.availability) { itemIds, verified ->
+                    toTiles(orderedItems(itemIds), verified)
+                }
+                .combine(inProgressEpisodes()) { tiles, inProgress ->
+                    tiles.map { it.withResume(inProgress) }
+                }
+                .collect { tiles -> _state.update { it.copy(favorites = tiles) } }
+        }
+    }
+
+    /**
+     * The titles a curated grid points at, keyed by item id.
+     *
+     * Read here rather than by the grid so a pinned show carries the same facts a row's tile does --
+     * whether it is on the device, how far through it the viewer is, which episode a press resumes --
+     * and so both come from one place instead of the grid growing its own idea of a media tile.
+     */
+    private fun observeTileItems(scope: CoroutineScope) {
+        scope.launch {
+            tileItemIds
+                .combine(availabilityVerifier.availability) { itemIds, verified ->
+                    toTiles(orderedItems(itemIds), verified)
+                }
+                .combine(inProgressEpisodes()) { tiles, inProgress ->
+                    tiles.associate { tile -> tile.itemId to tile.withResume(inProgress) }
+                }
+                .collect { tiles -> _state.update { it.copy(tileItems = tiles) } }
+        }
+    }
+
+    /**
+     * Names the media items the curated grid is currently showing, so only those are resolved.
+     */
+    fun selectTileItems(itemIds: List<String>) {
+        tileItemIds.value = itemIds
+    }
+
+    /**
+     * The stored items for [itemIds], kept in the order asked for. The read answers in whatever
+     * order the database finds them, and for the favourites row that order is the answer: it is the
+     * order they were marked in.
+     */
+    private suspend fun orderedItems(itemIds: List<String>): List<MediaItemEntity> {
+        if (itemIds.isEmpty()) return emptyList()
+        val byId = mediaRepository.getItems(itemIds).associateBy { it.itemId }
+        return itemIds.mapNotNull { byId[it] }
     }
 
     private fun observeLibraries(scope: CoroutineScope) {
@@ -256,6 +331,45 @@ class HomeMediaDelegate @Inject constructor(
     }
 
     /**
+     * Titles a curated grid can be filled from.
+     *
+     * A blank query answers with the favourites first and then whatever else has been synced, so the
+     * list opens on the titles most likely to be worth pinning rather than on whatever the library
+     * happens to hold first. Only movies and series are offered: a tile stands for a show, not for
+     * one episode of it, which would be stale the moment it was watched.
+     */
+    suspend fun searchForTiles(query: String): List<com.nendo.argosy.ui.components.TilePickerEntry> {
+        if (!_state.value.isSignedIn) return emptyList()
+        val matches = if (query.isBlank()) {
+            _state.value.favorites.map { it.toPickerEntry() } +
+                mediaRepository.topLevelItems(TILE_PICKER_LIMIT).map { it.toPickerEntry() }
+        } else {
+            mediaRepository.search(query, TILE_PICKER_LIMIT).map { it.toPickerEntry() }
+        }
+        return matches.distinctBy { it.target }.take(TILE_PICKER_LIMIT)
+    }
+
+    private fun HomeMediaUi.toPickerEntry() =
+        com.nendo.argosy.ui.components.TilePickerEntry(
+            target = com.nendo.argosy.domain.model.HomeTileTargetRef.Media(detailItemId),
+            title = title,
+            subtitle = if (isSeries || isEpisode) SERIES_LABEL else MOVIE_LABEL,
+            posterUrl = posterUrl
+        )
+
+    private fun MediaItemEntity.toPickerEntry() =
+        com.nendo.argosy.ui.components.TilePickerEntry(
+            target = com.nendo.argosy.domain.model.HomeTileTargetRef.Media(itemId),
+            title = name,
+            subtitle = if (MediaItemType.fromWire(itemType) == MediaItemType.SERIES) {
+                SERIES_LABEL
+            } else {
+                MOVIE_LABEL
+            },
+            posterUrl = mediaRepository.posterUrl(itemId, primaryImageTag)
+        )
+
+    /**
      * Raises the Start Over prompt for one tile. A tile with no stored position has no choice to
      * offer, so it answers false and the caller plays instead of showing a prompt with one real
      * option in it.
@@ -280,6 +394,14 @@ class HomeMediaDelegate @Inject constructor(
 
     fun dismissResumePrompt() {
         _state.update { it.copy(resumePrompt = null) }
+    }
+
+    /**
+     * Clears the favourite flag on one title, locally and on the server. The favourites row observes
+     * the flag, so it empties the tile out on its own rather than being told to.
+     */
+    suspend fun unfavorite(itemId: String) {
+        mediaRepository.setFavorite(itemId, isFavorite = false)
     }
 
     /**

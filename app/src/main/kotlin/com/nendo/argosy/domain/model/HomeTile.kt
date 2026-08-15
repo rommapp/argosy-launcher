@@ -34,6 +34,14 @@ sealed interface HomeTileTargetRef {
     data class Collection(val collectionId: Long) : HomeTileTargetRef
     data class VirtualCollection(val type: String, val name: String) : HomeTileTargetRef
     data class App(val packageName: String) : HomeTileTargetRef
+
+    /**
+     * A show or a film on the media server. It is the item's own id rather than an episode's, because
+     * a pinned show stands for the show: which episode a press starts is worked out at the moment of
+     * the press, the way it is on a media row, and baking one in would leave the tile pointing at an
+     * episode that has since been watched.
+     */
+    data class Media(val itemId: String) : HomeTileTargetRef
     data object Unresolvable : HomeTileTargetRef
 }
 

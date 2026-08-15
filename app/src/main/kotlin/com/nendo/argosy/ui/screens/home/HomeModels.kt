@@ -187,6 +187,7 @@ data class HomeUiState(
     val pinnedGamesLoading: Set<Long> = emptySet(),
     val nextUpMedia: List<HomeMediaUi> = emptyList(),
     val continueWatchingMedia: List<HomeMediaUi> = emptyList(),
+    val favoriteMedia: List<HomeMediaUi> = emptyList(),
     val mediaLibraries: List<com.nendo.argosy.ui.screens.media.MediaLibraryUi> = emptyList(),
     val mediaLibraryItems: List<HomeMediaUi> = emptyList(),
     val mediaLibraryItemsFor: String? = null,
@@ -211,6 +212,7 @@ data class HomeUiState(
     val tileGames: Map<Long, HomeGameUi> = emptyMap(),
     val tileCollections: Map<Long, com.nendo.argosy.ui.components.TileCollectionUi> = emptyMap(),
     val tileApps: Map<String, String> = emptyMap(),
+    val tileMedia: Map<String, HomeMediaUi> = emptyMap(),
     val isLoading: Boolean = true,
     val isRommConfigured: Boolean = false,
     val showGameMenu: Boolean = false,
@@ -257,7 +259,7 @@ data class HomeUiState(
         HomeSectionKind.CONTINUE -> HomeRow.Continue.takeIf { recentGames.isNotEmpty() }
         HomeSectionKind.RECOMMENDATIONS ->
             HomeRow.Recommendations.takeIf { recommendedGames.isNotEmpty() }
-        HomeSectionKind.FAVORITES -> HomeRow.Favorites.takeIf { favoriteGames.isNotEmpty() }
+        HomeSectionKind.FAVORITES -> HomeRow.Favorites.takeIf { hasFavorites }
         HomeSectionKind.ANDROID -> HomeRow.Android.takeIf { androidGames.isNotEmpty() }
         HomeSectionKind.STEAM -> HomeRow.Steam.takeIf { steamGames.isNotEmpty() }
         HomeSectionKind.CONTINUE_WATCHING ->
@@ -307,6 +309,22 @@ data class HomeUiState(
     private fun showsMediaRow(enabled: Boolean): Boolean = enabled && isMediaSignedIn
 
     /**
+     * The titles among the favourites, which is nothing at all without a media account. Marking a
+     * title a favourite writes to the media server, so the row can only speak for an account that is
+     * signed in; the flags are not lost while it is not, they simply have nobody to belong to.
+     */
+    val favoriteMediaShown: List<HomeMediaUi>
+        get() = if (isMediaSignedIn) favoriteMedia else emptyList()
+
+    /**
+     * Whether the Favorites row stands. Either kind alone is enough: a library of favourite shows
+     * and no favourite games is still a set of favourites, and hiding the row for it would be the
+     * same write-only button the media half was before it had anywhere to appear.
+     */
+    val hasFavorites: Boolean
+        get() = favoriteGames.isNotEmpty() || favoriteMediaShown.isNotEmpty()
+
+    /**
      * Whether the row under the cursor is still one of the rows on offer.
      *
      * A library row is held while the library listing has not arrived: until then there are no
@@ -326,14 +344,22 @@ data class HomeUiState(
     val currentMediaLibrary: com.nendo.argosy.ui.screens.media.MediaLibraryUi?
         get() = (currentRow as? HomeRow.MediaLibrary)?.let { mediaLibraries.getOrNull(it.index) }
 
+    /**
+     * What the row under the cursor holds, in the order it is walked.
+     *
+     * Favorites is the one row carrying both kinds, and they run one after the other -- games, then
+     * titles -- rather than being interleaved, the way search holds its two kinds apart. There is no
+     * sort key both answer to: a game orders by its sort title and a title by the server's own, so
+     * any merged order would be invented here and would shuffle on every refresh. Games lead because
+     * the row was theirs, and an existing shelf should not move when titles start appearing after it.
+     */
     val currentItems: List<HomeRowItem>
         get() = when (currentRow) {
             HomeRow.Favorites -> {
-                if (favoriteGames.isEmpty()) emptyList()
-                else favoriteGames.map { HomeRowItem.Game(it) } + HomeRowItem.ViewAll(
-                    sourceFilter = "FAVORITES",
-                    label = "View All"
-                )
+                if (!hasFavorites) emptyList()
+                else favoriteGames.map { HomeRowItem.Game(it) } +
+                    favoriteMediaShown.map { HomeRowItem.Media(it) } +
+                    HomeRowItem.ViewAll(sourceFilter = "FAVORITES", label = "View All")
             }
             is HomeRow.Platform -> platformItems
             HomeRow.Continue -> {
@@ -409,8 +435,17 @@ data class HomeUiState(
             else -> isMediaLoading
         }
 
+    /**
+     * The title under the cursor, whichever layout is showing. A curated grid answers from its own
+     * cursor for the same reason [focusedGame] does: the tiles on a page are not a row, so nothing
+     * downstream can find the focused title by looking at one.
+     */
     val focusedMedia: HomeMediaUi?
-        get() = (focusedItem as? HomeRowItem.Media)?.media
+        get() = if (layoutKind == com.nendo.argosy.domain.model.HomeLayoutKind.CUSTOM_GRID) {
+            focusedTileMedia
+        } else {
+            (focusedItem as? HomeRowItem.Media)?.media
+        }
 
     val focusedItem: HomeRowItem?
         get() = currentItems.getOrNull(focusedGameIndex)
@@ -434,6 +469,10 @@ data class HomeUiState(
     val focusedTileGame: HomeGameUi?
         get() = (focusedTile?.target as? com.nendo.argosy.domain.model.HomeTileTargetRef.Game)
             ?.let { tileGames[it.gameId] }
+
+    val focusedTileMedia: HomeMediaUi?
+        get() = (focusedTile?.target as? com.nendo.argosy.domain.model.HomeTileTargetRef.Media)
+            ?.let { tileMedia[it.itemId] }
 
     val rowTitle: String
         get() = when (currentRow) {
@@ -510,7 +549,9 @@ data class HomeUiState(
 
     /**
      * What a tile draws. A game whose row survived but whose library entry did not resolves to a
-     * missing marker rather than to nothing, so a page keeps its shape and says what is wrong.
+     * missing marker rather than to nothing, so a page keeps its shape and says what is wrong. A
+     * pinned title the library sync has not stored yet reads the same way, and fills itself in as
+     * soon as the library holding it is read.
      */
     fun tileContentFor(
         tile: com.nendo.argosy.domain.model.HomeTile
@@ -557,6 +598,17 @@ data class HomeUiState(
                     isMissing = name == null,
                     packageName = target.packageName,
                     subtitle = "App"
+                )
+            }
+            is com.nendo.argosy.domain.model.HomeTileTargetRef.Media -> {
+                val media = tileMedia[target.itemId]
+                com.nendo.argosy.ui.components.CustomGridTileContent(
+                    game = null,
+                    media = media,
+                    label = media?.title ?: "Missing title",
+                    isMissing = media == null,
+                    subtitle = media?.subtitle,
+                    posterUrl = media?.posterUrl
                 )
             }
             com.nendo.argosy.domain.model.HomeTileTargetRef.Unresolvable ->

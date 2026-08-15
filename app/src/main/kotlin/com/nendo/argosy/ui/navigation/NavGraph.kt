@@ -115,6 +115,9 @@ fun NavGraph(
                 onGameSelect = { gameId ->
                     navController.navigate(Screen.GameDetail.createRoute(gameId))
                 },
+                onMediaLibrarySelect = { libraryId ->
+                    navController.navigate(Screen.MediaLibrary.createRoute(libraryId))
+                },
                 onNavigateToDefault = navigateToDefault,
                 onDrawerToggle = onDrawerToggle
             )
@@ -297,6 +300,9 @@ fun NavGraph(
             SearchScreen(
                 onGameSelect = { gameId ->
                     navController.navigate(Screen.GameDetail.createRoute(gameId))
+                },
+                onMediaSelect = { itemId ->
+                    navController.navigate(Screen.MediaDetail.createRoute(itemId))
                 },
                 onBack = navigateToDefault
             )

@@ -48,6 +48,28 @@ class CustomGridCoordinator(
     fun applyConfig(autoFit: Boolean, storedPages: Int) =
         write { it.copy(autoFit = autoFit, storedPages = storedPages) }
 
+    /**
+     * Says whether media can be pinned at all. Signing out closes the Media tab and moves off it, so
+     * the picker is never left listing a kind that has stopped existing underneath it.
+     */
+    fun setMediaAvailable(available: Boolean) {
+        if (read().mediaAvailable == available) return
+        write { state ->
+            val category = state.pickerCategory
+            state.copy(
+                mediaAvailable = available,
+                pickerCategory = if (
+                    !available && category == TilePickerCategory.MEDIA
+                ) {
+                    TilePickerCategory.GAMES
+                } else {
+                    category
+                }
+            )
+        }
+        if (read().showPicker) refreshPicker()
+    }
+
     fun setShape(columns: Int, rows: Int) = write { it.copy(columns = columns, rows = rows) }
 
     fun setCell(cell: GridCell) = write { it.copy(cell = cell) }
@@ -464,14 +486,23 @@ class CustomGridCoordinator(
      * do with each other, so keeping a position from one in another lands somewhere arbitrary.
      */
     fun setPickerCategory(category: TilePickerCategory) {
-        if (read().pickerCategory == category) return
+        val current = read()
+        if (current.pickerCategory == category) return
+        if (category !in current.pickerCategories) return
         write { it.copy(pickerCategory = category, pickerFocusIndex = 0) }
         refreshPicker()
     }
 
+    /**
+     * Steps between the kinds actually on offer, not between every kind that exists. Cycling through
+     * the enum would stop on a Media tab that is not drawn when nobody is signed in.
+     */
     fun cyclePickerCategory(delta: Int) {
-        val entries = TilePickerCategory.entries
-        val next = entries[(read().pickerCategory.ordinal + delta).mod(entries.size)]
+        val current = read()
+        val entries = current.pickerCategories
+        if (entries.isEmpty()) return
+        val position = entries.indexOf(current.pickerCategory).coerceAtLeast(0)
+        val next = entries[(position + delta).mod(entries.size)]
         write { it.copy(pickerCategory = next, pickerFocusIndex = 0) }
         refreshPicker()
     }

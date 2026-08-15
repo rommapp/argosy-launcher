@@ -5,19 +5,23 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -28,7 +32,9 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -40,12 +46,12 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.nendo.argosy.ui.common.rememberFileImageModel
+import com.nendo.argosy.ui.components.FocusedScroll
 import com.nendo.argosy.ui.components.FooterHints
 import com.nendo.argosy.ui.components.FooterSpacer
 import com.nendo.argosy.ui.components.InputButton
@@ -53,20 +59,28 @@ import com.nendo.argosy.ui.input.LocalInputDispatcher
 import com.nendo.argosy.ui.navigation.Screen
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalArgosyTheme
+import com.nendo.argosy.ui.util.clickableNoFocus
+
+private const val FOCUS_TINT_ALPHA = 0.15f
+
+private const val PLACEHOLDER_ALPHA = 0.6f
 
 @Composable
 fun SearchScreen(
     onGameSelect: (Long) -> Unit,
+    onMediaSelect: (String) -> Unit,
     onBack: () -> Unit,
     viewModel: SearchViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val focusRequester = remember { FocusRequester() }
+    val listState = rememberLazyListState()
 
     val inputDispatcher = LocalInputDispatcher.current
-    val inputHandler = remember(onGameSelect, onBack) {
+    val inputHandler = remember(onGameSelect, onMediaSelect, onBack) {
         viewModel.createInputHandler(
             onGameSelect = onGameSelect,
+            onMediaSelect = onMediaSelect,
             onBack = onBack
         )
     }
@@ -100,24 +114,23 @@ fun SearchScreen(
             query = uiState.query,
             onQueryChange = { viewModel.updateQuery(it) },
             isSearching = uiState.isSearching,
+            mediaSearchable = uiState.mediaSearchable,
             focusRequester = focusRequester
         )
 
         when {
-            uiState.isSearching -> {
-                LoadingState()
-            }
-            uiState.query.length < 2 -> {
+            uiState.isSearching -> LoadingState()
+            uiState.query.length < MIN_QUERY_LENGTH -> {
                 EmptyState(message = "Type at least 2 characters to search")
             }
-            uiState.results.isEmpty() -> {
-                EmptyState(message = "No games found for \"${uiState.query}\"")
-            }
+            !uiState.hasResults -> EmptyState(message = "No results for \"${uiState.query}\"")
             else -> {
                 SearchResults(
-                    results = uiState.results,
-                    focusedIndex = uiState.focusedIndex,
-                    onSelect = onGameSelect
+                    state = uiState,
+                    listState = listState,
+                    onSelect = { index ->
+                        viewModel.openAt(index, onGameSelect, onMediaSelect)
+                    }
                 )
             }
         }
@@ -125,11 +138,13 @@ fun SearchScreen(
         Spacer(modifier = Modifier.weight(1f))
 
         SearchFooter(
-            resultCount = uiState.results.size,
+            resultCount = uiState.resultCount,
+            showGroupJump = uiState.hasBothKinds,
             onHintClick = { button ->
                 when (button) {
                     InputButton.A -> { inputHandler.onConfirm() }
                     InputButton.B -> { inputHandler.onBack() }
+                    InputButton.LB_RB -> { viewModel.toggleGroup() }
                     else -> Unit
                 }
             }
@@ -142,6 +157,7 @@ private fun SearchHeader(
     query: String,
     onQueryChange: (String) -> Unit,
     isSearching: Boolean,
+    mediaSearchable: Boolean,
     focusRequester: FocusRequester
 ) {
     Row(
@@ -172,9 +188,14 @@ private fun SearchHeader(
             Box(modifier = Modifier.weight(1f)) {
                 if (query.isEmpty()) {
                     Text(
-                        text = "Search games...",
+                        text = if (mediaSearchable) {
+                            "Search games and media..."
+                        } else {
+                            "Search games..."
+                        },
                         style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                            .copy(alpha = PLACEHOLDER_ALPHA)
                     )
                 }
                 BasicTextField(
@@ -196,111 +217,236 @@ private fun SearchHeader(
                 Spacer(modifier = Modifier.width(Dimens.radiusLg))
                 CircularProgressIndicator(
                     modifier = Modifier.size(Dimens.iconSm),
-                    strokeWidth = 2.dp
+                    strokeWidth = Dimens.borderMedium
                 )
             }
         }
     }
 }
 
+/**
+ * Games first, then media, under headings that appear only when both kinds are present. A single
+ * heading over the only group there is labels nothing, and the rows already say which kind they are.
+ */
 @Composable
 private fun SearchResults(
-    results: List<SearchResultUi>,
-    focusedIndex: Int,
-    onSelect: (Long) -> Unit
+    state: SearchUiState,
+    listState: LazyListState,
+    onSelect: (Int) -> Unit
 ) {
+    val showHeadings = state.hasBothKinds
+    val focusedListIndex = remember(
+        state.focusedIndex,
+        state.gameResults.size,
+        state.mediaResults.size,
+        showHeadings
+    ) {
+        listIndexOfFocus(state, showHeadings)
+    }
+
+    FocusedScroll(listState = listState, focusedIndex = focusedListIndex)
+
     LazyColumn(
+        state = listState,
         modifier = Modifier.padding(horizontal = Dimens.spacingMd),
+        contentPadding = PaddingValues(vertical = Dimens.spacingSm),
         verticalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
     ) {
-        item { Spacer(modifier = Modifier.height(Dimens.spacingSm)) }
-
-        itemsIndexed(results, key = { _, result -> result.id }) { index, result ->
-            SearchResultItem(
-                result = result,
-                isFocused = index == focusedIndex,
-                onClick = { onSelect(result.id) }
-            )
+        if (showHeadings && state.gameResults.isNotEmpty()) {
+            item(key = "heading:games") { GroupHeading(text = "Games") }
+        }
+        itemsIndexed(state.gameResults, key = { _, result -> result.key }) { index, result ->
+            SearchResultRow(
+                isFocused = index == state.focusedIndex,
+                onClick = { onSelect(index) }
+            ) {
+                GameResultContent(result = result)
+            }
         }
 
-        item { Spacer(modifier = Modifier.height(Dimens.spacingSm)) }
+        if (showHeadings && state.mediaResults.isNotEmpty()) {
+            item(key = "heading:media") { GroupHeading(text = "Media") }
+        }
+        itemsIndexed(state.mediaResults, key = { _, result -> result.key }) { index, result ->
+            val focusIndex = state.gameResults.size + index
+            SearchResultRow(
+                isFocused = focusIndex == state.focusedIndex,
+                onClick = { onSelect(focusIndex) }
+            ) {
+                MediaResultContent(result = result)
+            }
+        }
+    }
+}
+
+/**
+ * Where the focused result sits in the rendered list, which is not where it sits in the focus order
+ * once headings are between the groups.
+ */
+private fun listIndexOfFocus(state: SearchUiState, showHeadings: Boolean): Int {
+    val gamesHeading = if (showHeadings && state.gameResults.isNotEmpty()) 1 else 0
+    val mediaHeading = if (showHeadings && state.mediaResults.isNotEmpty()) 1 else 0
+    val focused = state.focusedIndex.coerceAtLeast(0)
+    return if (focused < state.gameResults.size) {
+        gamesHeading + focused
+    } else {
+        gamesHeading + state.gameResults.size + mediaHeading + (focused - state.gameResults.size)
     }
 }
 
 @Composable
-private fun SearchResultItem(
-    result: SearchResultUi,
+private fun GroupHeading(text: String) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.labelMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(
+            start = Dimens.spacingSm,
+            top = Dimens.spacingSm,
+            bottom = Dimens.spacingXs
+        )
+    )
+}
+
+@Composable
+private fun SearchResultRow(
     isFocused: Boolean,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    content: @Composable RowScope.() -> Unit
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .then(
                 if (isFocused) {
-                    Modifier.border(2.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(Dimens.radiusControl))
-                } else Modifier
+                    Modifier.border(
+                        Dimens.borderMedium,
+                        MaterialTheme.colorScheme.primary,
+                        RoundedCornerShape(Dimens.radiusControl)
+                    )
+                } else {
+                    Modifier
+                }
             )
             .background(
-                if (isFocused) LocalArgosyTheme.current.focusAccent.copy(alpha = 0.15f)
-                    .compositeOver(MaterialTheme.colorScheme.surface)
-                else MaterialTheme.colorScheme.surface,
+                if (isFocused) {
+                    LocalArgosyTheme.current.focusAccent.copy(alpha = FOCUS_TINT_ALPHA)
+                        .compositeOver(MaterialTheme.colorScheme.surface)
+                } else {
+                    MaterialTheme.colorScheme.surface
+                },
                 RoundedCornerShape(Dimens.radiusControl)
             )
+            .clickableNoFocus { onClick() }
             .padding(Dimens.radiusLg),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        AsyncImage(
-            model = rememberFileImageModel(result.coverPath),
-            contentDescription = result.title,
-            contentScale = ContentScale.Crop,
-            modifier = Modifier
-                .size(56.dp)
-                .clip(RoundedCornerShape(Dimens.radiusMd))
-                .background(MaterialTheme.colorScheme.surfaceVariant)
-        )
+        content()
+    }
+}
 
-        Spacer(modifier = Modifier.width(Dimens.spacingMd))
+@Composable
+private fun RowScope.GameResultContent(result: SearchResultUi.Game) {
+    AsyncImage(
+        model = rememberFileImageModel(result.coverPath),
+        contentDescription = result.title,
+        contentScale = ContentScale.Crop,
+        modifier = Modifier
+            .size(Dimens.searchResultArtwork)
+            .clip(RoundedCornerShape(Dimens.radiusMd))
+            .background(MaterialTheme.colorScheme.surfaceVariant)
+    )
 
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = result.title,
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface
+    Spacer(modifier = Modifier.width(Dimens.spacingMd))
+
+    ResultLabels(
+        title = result.title,
+        primaryDetail = result.platformName,
+        details = listOfNotNull(result.releaseYear?.toString(), result.developer)
+    )
+}
+
+/**
+ * A title identifies itself by its library the way a game identifies itself by its platform. Where
+ * the server holds no poster the kind stands in, because an unlabelled grey square in a mixed list is
+ * the one row the reader cannot place.
+ */
+@Composable
+private fun RowScope.MediaResultContent(result: SearchResultUi.Media) {
+    var posterFailed by remember(result.posterUrl) { mutableStateOf(false) }
+
+    Box(
+        modifier = Modifier
+            .size(Dimens.searchResultArtwork)
+            .clip(RoundedCornerShape(Dimens.radiusMd))
+            .background(MaterialTheme.colorScheme.surfaceVariant),
+        contentAlignment = Alignment.Center
+    ) {
+        if (result.posterUrl.isBlank() || posterFailed) {
+            Icon(
+                imageVector = Icons.Default.Movie,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(Dimens.iconMd)
             )
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
+        } else {
+            AsyncImage(
+                model = result.posterUrl,
+                contentDescription = result.title,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize(),
+                onError = { posterFailed = true }
+            )
+        }
+    }
+
+    Spacer(modifier = Modifier.width(Dimens.spacingMd))
+
+    ResultLabels(
+        title = result.title,
+        primaryDetail = result.libraryName ?: result.kindLabel,
+        details = listOfNotNull(result.releaseYear?.toString())
+    )
+}
+
+@Composable
+private fun RowScope.ResultLabels(
+    title: String,
+    primaryDetail: String,
+    details: List<String>
+) {
+    Column(modifier = Modifier.weight(WEIGHT_FILL)) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onSurface,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = primaryDetail,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.primary,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            details.forEach { detail ->
                 Text(
-                    text = result.platformName,
+                    text = "|",
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.primary
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                result.releaseYear?.let { year ->
-                    Text(
-                        text = "|",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Text(
-                        text = year.toString(),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-                result.developer?.let { dev ->
-                    Text(
-                        text = "|",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Text(
-                        text = dev,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
+                Text(
+                    text = detail,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
             }
         }
     }
@@ -337,14 +483,18 @@ private fun LoadingState() {
 @Composable
 private fun SearchFooter(
     resultCount: Int,
+    showGroupJump: Boolean,
     onHintClick: ((InputButton) -> Unit)? = null
 ) {
+    val hints = remember(showGroupJump) {
+        buildList {
+            if (showGroupJump) add(InputButton.LB_RB to "Games / Media")
+            add(InputButton.A to "Select")
+            add(InputButton.B to "Back/Clear")
+        }
+    }
     FooterHints(
-        hints = listOf(
-            InputButton.DPAD to "Navigate",
-            InputButton.A to "Select",
-            InputButton.B to "Back/Clear"
-        ),
+        hints = hints,
         onHintClick = onHintClick,
         trailingContent = if (resultCount > 0) {
             {
@@ -354,8 +504,12 @@ private fun SearchFooter(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
-        } else null
+        } else {
+            null
+        }
     )
     FooterSpacer()
 }
 
+private const val MIN_QUERY_LENGTH = 2
+private const val WEIGHT_FILL = 1f

@@ -73,11 +73,21 @@ interface MediaItemDao {
         itemType: String
     ): List<MediaItemEntity>
 
+    /**
+     * The kinds to match are named by the caller rather than left open, because the limit is applied
+     * by SQLite before any caller-side filtering could run: a query that matched enough episodes
+     * would fill the limit with them and answer with none of the films it also matched.
+     */
     @Query(
         "SELECT * FROM media_items WHERE ownerUserId = :ownerUserId AND name LIKE '%' || :query || '%' " +
-            "ORDER BY sortName ASC LIMIT :limit"
+            "AND itemType IN (:itemTypes) ORDER BY sortName ASC LIMIT :limit"
     )
-    suspend fun search(ownerUserId: String, query: String, limit: Int): List<MediaItemEntity>
+    suspend fun search(
+        ownerUserId: String,
+        query: String,
+        itemTypes: List<String>,
+        limit: Int
+    ): List<MediaItemEntity>
 
     @Query(
         "SELECT * FROM media_items WHERE ownerUserId = :ownerUserId AND localPath IS NOT NULL " +

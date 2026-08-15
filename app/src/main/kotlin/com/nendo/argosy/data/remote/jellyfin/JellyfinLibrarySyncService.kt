@@ -2,10 +2,12 @@ package com.nendo.argosy.data.remote.jellyfin
 
 import androidx.room.withTransaction
 import com.nendo.argosy.data.local.ALauncherDatabase
+import com.nendo.argosy.data.local.dao.MediaCreditDao
 import com.nendo.argosy.data.local.dao.MediaItemDao
 import com.nendo.argosy.data.local.dao.MediaLibraryDao
 import com.nendo.argosy.data.local.dao.MediaUserDataDao
 import com.nendo.argosy.data.local.entity.MediaCollectionType
+import com.nendo.argosy.data.local.entity.MediaCreditEntity
 import com.nendo.argosy.data.local.entity.MediaItemEntity
 import com.nendo.argosy.data.local.entity.MediaItemType
 import com.nendo.argosy.data.local.entity.MediaLibraryEntity
@@ -57,6 +59,7 @@ class JellyfinLibrarySyncService @Inject constructor(
     private val database: ALauncherDatabase,
     private val mediaLibraryDao: MediaLibraryDao,
     private val mediaItemDao: MediaItemDao,
+    private val mediaCreditDao: MediaCreditDao,
     private val mediaUserDataDao: MediaUserDataDao
 ) {
     private val syncMutex = Mutex()
@@ -171,7 +174,8 @@ class JellyfinLibrarySyncService @Inject constructor(
                 parentId = library.libraryId,
                 includeItemTypes = itemType.wireValue,
                 startIndex = startIndex,
-                limit = JellyfinApiClient.DEFAULT_PAGE_SIZE
+                limit = JellyfinApiClient.DEFAULT_PAGE_SIZE,
+                fields = JellyfinApiClient.TITLE_FIELDS
             )
             val page = when (val result = apiClient.getItems(params)) {
                 is JellyfinResult.Success -> result.data
@@ -184,6 +188,7 @@ class JellyfinLibrarySyncService @Inject constructor(
 
             val entities = page.items.mapNotNull { it.toItemEntity(owner, library.libraryId) }
             persistItems(owner, entities)
+            persistCredits(owner, page.items)
             persistUserData(owner, page.items)
             entities.forEach { seenTopLevel += it.itemId }
             added += entities.size
@@ -499,6 +504,35 @@ class JellyfinLibrarySyncService @Inject constructor(
      * asked for comes back absent, and absent is not empty, so the stored value stands instead of
      * being overwritten with a null the server never asserted.
      */
+    /**
+     * Stores the people credited on each title that answered with any.
+     *
+     * A title whose response carried no `People` at all is left alone rather than cleared: the
+     * field is only requested at the top level of a library, so an absent list means this response
+     * was not asked for it, not that the title lost its cast.
+     */
+    private suspend fun persistCredits(owner: String, items: List<JellyfinItem>) {
+        items.forEach { item ->
+            val people = item.people ?: return@forEach
+            val itemId = item.id ?: return@forEach
+            val credits = people.mapIndexedNotNull { index, person ->
+                val personId = person.id ?: return@mapIndexedNotNull null
+                val name = person.name ?: return@mapIndexedNotNull null
+                MediaCreditEntity(
+                    ownerUserId = owner,
+                    itemId = itemId,
+                    personId = personId,
+                    name = name,
+                    role = person.role?.takeIf { it.isNotBlank() },
+                    personType = person.type ?: PERSON_TYPE_ACTOR,
+                    sortOrder = index,
+                    primaryImageTag = person.primaryImageTag
+                )
+            }
+            mediaCreditDao.replaceForItem(owner, itemId, credits)
+        }
+    }
+
     private suspend fun persistItems(
         owner: String,
         items: List<MediaItemEntity>,

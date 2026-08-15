@@ -42,6 +42,8 @@ import com.nendo.argosy.ui.components.SectionFocusedScroll
 import com.nendo.argosy.ui.input.LocalInputDispatcher
 import com.nendo.argosy.ui.navigation.Screen
 import com.nendo.argosy.ui.screens.media.components.MediaBackdrop
+import com.nendo.argosy.ui.screens.media.components.MediaCastRail
+import com.nendo.argosy.ui.screens.media.components.MediaSimilarRail
 import com.nendo.argosy.ui.screens.media.components.MediaDetailMenu
 import com.nendo.argosy.ui.screens.media.components.MediaDetailSkeleton
 import com.nendo.argosy.ui.screens.media.components.MediaEpisodeRow
@@ -233,10 +235,75 @@ private fun MediaDetailContent(
                         onPlay = onPlay,
                         modifier = Modifier.weight(1f)
                     )
+                } else {
+                    Box(modifier = Modifier.weight(1f))
                 }
+
+                MediaExtraRails(uiState = uiState, viewModel = viewModel)
             }
         }
     }
+}
+
+/**
+ * The rails that sit under whatever the title's main region is: who is in it, then what is like it.
+ *
+ * Each is drawn only when it has something in it, and only the focused one shows a heading in its
+ * active colour, so the pair reads as one run rather than two competing lists. They are laid out
+ * after the region above them rather than inside it, which is what keeps a series' pinned tabs
+ * pinned while these still scroll their own axis.
+ */
+@Composable
+private fun MediaExtraRails(
+    uiState: MediaDetailUiState,
+    viewModel: MediaDetailViewModel
+) {
+    if (uiState.cast.isEmpty() && uiState.similar.isEmpty()) return
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = Dimens.footerHeight + Dimens.spacingSm),
+        verticalArrangement = Arrangement.spacedBy(Dimens.spacingXs)
+    ) {
+        if (uiState.cast.isNotEmpty()) {
+            MediaRailHeading(
+                text = "Cast",
+                isFocused = uiState.section == MediaDetailSection.CAST
+            )
+            MediaCastRail(
+                cast = uiState.cast,
+                focusedIndex = uiState.castIndex,
+                isSectionFocused = uiState.section == MediaDetailSection.CAST,
+                onSelect = viewModel::setCastIndex
+            )
+        }
+
+        if (uiState.similar.isNotEmpty()) {
+            MediaRailHeading(
+                text = "More Like This",
+                isFocused = uiState.section == MediaDetailSection.SIMILAR
+            )
+            MediaSimilarRail(
+                titles = uiState.similar,
+                focusedIndex = uiState.similarIndex,
+                isSectionFocused = uiState.section == MediaDetailSection.SIMILAR,
+                onSelect = viewModel::setSimilarIndex,
+                onOpen = { viewModel.openSimilarTitle() }
+            )
+        }
+    }
+}
+
+@Composable
+private fun MediaRailHeading(text: String, isFocused: Boolean) {
+    val theme = LocalArgosyTheme.current
+    Text(
+        text = text,
+        style = MaterialTheme.typography.titleSmall,
+        color = if (isFocused) theme.textPrimary else theme.textMute,
+        modifier = Modifier.padding(horizontal = Dimens.spacingLg, vertical = Dimens.spacingXs)
+    )
 }
 
 /**
@@ -379,11 +446,14 @@ private fun confirmHint(uiState: MediaDetailUiState): String {
     val resumeTarget = when (uiState.section) {
         MediaDetailSection.EPISODES -> uiState.focusedEpisode
         MediaDetailSection.SEASONS -> null
+        MediaDetailSection.CAST -> null
+        MediaDetailSection.SIMILAR -> null
         MediaDetailSection.MENU ->
             if (uiState.focusedRow == MediaDetailRow.PLAY) uiState.playTarget else null
     }
     if (resumeTarget?.hasResumePosition == true) return "Resume"
     if (uiState.section == MediaDetailSection.SEASONS) return "Open Season"
+    if (uiState.section == MediaDetailSection.SIMILAR) return "Open Title"
     if (uiState.section != MediaDetailSection.MENU) return "Play"
     return when (uiState.focusedRow) {
         MediaDetailRow.DOWNLOAD -> "Downloads"

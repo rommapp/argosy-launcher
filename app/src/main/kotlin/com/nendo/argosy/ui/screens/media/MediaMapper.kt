@@ -1,6 +1,7 @@
 package com.nendo.argosy.ui.screens.media
 
 import com.nendo.argosy.data.local.entity.MediaCollectionType
+import com.nendo.argosy.data.local.entity.MediaCreditEntity
 import com.nendo.argosy.data.local.entity.MediaItemEntity
 import com.nendo.argosy.data.local.entity.MediaItemType
 import com.nendo.argosy.data.local.entity.MediaLibraryEntity
@@ -152,6 +153,21 @@ fun formatRuntime(ticks: Long): String {
         else -> "${minutes}m"
     }
 }
+
+/**
+ * A credit as the cast rail draws it.
+ *
+ * The portrait is addressed against the PERSON's id, not the title's: a portrait belongs to the
+ * person and is the same image wherever they are credited.
+ */
+fun MediaCreditEntity.toCastUi(repository: MediaRepository): MediaCastUi = MediaCastUi(
+    personId = personId,
+    name = name,
+    role = role,
+    imageUrl = primaryImageTag
+        ?.let { repository.imageUrl(personId, MediaImageType.PRIMARY, it) }
+        .orEmpty()
+)
 
 /**
  * A position as a clock reading. The hour field is dropped below an hour so a short episode does not

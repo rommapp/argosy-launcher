@@ -317,6 +317,15 @@ class JellyfinApiClient @Inject constructor(
         const val ITEM_FIELDS = "Overview,Genres,Studios,DateCreated,SortName,ChildCount,ParentId"
 
         /**
+         * What a title's own page needs on top of a library row: the people credited on it.
+         *
+         * Asked for only at the top level of a library, where the rows are movies and series. An
+         * episode carries its own guest cast, and a library of several thousand of them would pay
+         * for a list nothing renders.
+         */
+        const val TITLE_FIELDS = "$ITEM_FIELDS,People"
+
+        /**
          * A home rail draws a tile and starts playback from it, so it needs the hierarchy an
          * episode sits in but none of the descriptive metadata.
          */

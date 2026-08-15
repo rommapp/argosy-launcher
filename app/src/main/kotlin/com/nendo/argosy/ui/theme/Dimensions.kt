@@ -50,6 +50,10 @@ object Dimens {
     val mediaBackdropHeight: Dp @Composable get() = DimensionTokens.Layout.mediaBackdropHeight.dp * scale
     val mediaEpisodeRowHeight: Dp @Composable get() = DimensionTokens.Layout.mediaEpisodeRowHeight.dp * scale
     val mediaSeasonTabHeight: Dp @Composable get() = DimensionTokens.Layout.mediaSeasonTabHeight.dp * scale
+    val mediaCastPortraitSize: Dp @Composable get() = DimensionTokens.Layout.mediaCastPortraitSize.dp * scale
+    val mediaCastTileWidth: Dp @Composable get() = DimensionTokens.Layout.mediaCastTileWidth.dp * scale
+    val mediaSimilarTileWidth: Dp @Composable get() = DimensionTokens.Layout.mediaSimilarTileWidth.dp * scale
+    val mediaSimilarTileHeight: Dp @Composable get() = DimensionTokens.Layout.mediaSimilarTileHeight.dp * scale
     val mediaMenuRailWidth: Dp @Composable get() = DimensionTokens.Layout.mediaMenuRailWidth.dp * scale
     val searchResultArtwork: Dp @Composable get() = DimensionTokens.Layout.searchResultArtwork.dp * scale
 

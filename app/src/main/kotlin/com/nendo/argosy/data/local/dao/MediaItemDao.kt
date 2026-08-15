@@ -45,6 +45,42 @@ interface MediaItemDao {
     suspend fun getByItemIds(ownerUserId: String, itemIds: List<String>): List<MediaItemEntity>
 
     /**
+     * Browsable titles sharing a genre and released near [yearLo]..[yearHi].
+     *
+     * Genres are stored comma-joined, so a token is matched by substring the way the game library
+     * matches its own. A title with no year is excluded rather than treated as adjacent to
+     * everything.
+     */
+    @Query(
+        "SELECT * FROM media_items WHERE ownerUserId = :ownerUserId AND itemId != :excludeItemId " +
+            "AND itemType IN (:itemTypes) AND productionYear BETWEEN :yearLo AND :yearHi " +
+            "AND genres LIKE '%' || :token || '%' " +
+            "ORDER BY communityRating DESC LIMIT :limit"
+    )
+    suspend fun getRelatedByGenreAndYear(
+        ownerUserId: String,
+        token: String,
+        yearLo: Int,
+        yearHi: Int,
+        excludeItemId: String,
+        itemTypes: List<String>,
+        limit: Int
+    ): List<MediaItemEntity>
+
+    @Query(
+        "SELECT * FROM media_items WHERE ownerUserId = :ownerUserId AND itemId != :excludeItemId " +
+            "AND itemType IN (:itemTypes) AND studios LIKE '%' || :token || '%' " +
+            "ORDER BY communityRating DESC LIMIT :limit"
+    )
+    suspend fun getRelatedByStudio(
+        ownerUserId: String,
+        token: String,
+        excludeItemId: String,
+        itemTypes: List<String>,
+        limit: Int
+    ): List<MediaItemEntity>
+
+    /**
      * The children one level below a series or a season, in the order the server numbers them. A
      * child whose number is missing sorts last rather than first, so an unnumbered special does not
      * displace episode one.

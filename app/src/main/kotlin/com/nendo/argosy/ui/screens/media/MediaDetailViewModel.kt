@@ -6,6 +6,7 @@ import com.nendo.argosy.core.input.SoundType
 import com.nendo.argosy.data.media.MediaAvailabilityVerifier
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.repository.MediaRepository
+import com.nendo.argosy.domain.usecase.media.GetRelatedMediaUseCase
 import com.nendo.argosy.ui.input.InputHandler
 import com.nendo.argosy.ui.input.InputResult
 import com.nendo.argosy.ui.screens.media.delegates.MediaDownloadDelegate
@@ -31,6 +32,7 @@ class MediaDetailViewModel @Inject constructor(
     private val seriesDelegate: MediaSeriesDelegate,
     private val downloadDelegate: MediaDownloadDelegate,
     private val availabilityVerifier: MediaAvailabilityVerifier,
+    private val getRelatedMedia: GetRelatedMediaUseCase,
     preferencesRepository: UserPreferencesRepository
 ) : ViewModel() {
 
@@ -51,6 +53,7 @@ class MediaDetailViewModel @Inject constructor(
     private var downloadJob: Job? = null
     private var playJob: Job? = null
     private var siblingsJob: Job? = null
+    private var extrasJob: Job? = null
 
     init {
         viewModelScope.launch {
@@ -92,11 +95,13 @@ class MediaDetailViewModel @Inject constructor(
         episodesJob?.cancel()
         downloadJob?.cancel()
         playJob?.cancel()
+        extrasJob?.cancel()
         itemJob = null
         seasonsJob = null
         episodesJob = null
         downloadJob = null
         playJob = null
+        extrasJob = null
         val siblings = _uiState.value.siblingItemIds
         _uiState.value = MediaDetailUiState(
             isLoading = true,
@@ -145,6 +150,22 @@ class MediaDetailViewModel @Inject constructor(
         }
         if (mode == MediaDetailMode.SERIES && seasonsJob == null) observeSeasons(itemId)
         if (downloadJob == null) observeDownloadSummary(item)
+        if (extrasJob == null) loadExtras(itemId)
+    }
+
+    /**
+     * Fills the cast and the titles like this one. Both are answered from what is already stored, so
+     * a title opened with no network still draws them; a title synced before credits were collected
+     * simply has none until its library syncs again.
+     */
+    private fun loadExtras(itemId: String) {
+        extrasJob = viewModelScope.launch {
+            val entity = mediaRepository.getItem(itemId) ?: return@launch
+            val cast = mediaRepository.getCredits(itemId).map { it.toCastUi(mediaRepository) }
+            val similar = getRelatedMedia(entity).map { it.toMediaItemUi(mediaRepository, null) }
+            if (itemId != loadedItemId) return@launch
+            _uiState.update { it.copy(cast = cast, similar = similar).withRail() }
+        }
     }
 
     /**
@@ -458,6 +479,8 @@ class MediaDetailViewModel @Inject constructor(
             val index = when (section) {
                 MediaDetailSection.SEASONS -> state.rowIndexOf(MediaDetailRow.SEASONS) ?: state.rowIndex
                 MediaDetailSection.EPISODES -> state.rowIndexOf(MediaDetailRow.EPISODES) ?: state.rowIndex
+                MediaDetailSection.CAST -> state.rowIndexOf(MediaDetailRow.CAST) ?: state.rowIndex
+                MediaDetailSection.SIMILAR -> state.rowIndexOf(MediaDetailRow.SIMILAR) ?: state.rowIndex
                 MediaDetailSection.MENU -> state.lastActionIndex
             }
             state.copy(section = section, rowIndex = index)
@@ -510,6 +533,8 @@ class MediaDetailViewModel @Inject constructor(
             MediaDetailRow.OPTIONS -> { openMenu(); true }
             MediaDetailRow.SEASONS -> openSection(MediaDetailSection.SEASONS)
             MediaDetailRow.EPISODES -> openSection(MediaDetailSection.EPISODES)
+            MediaDetailRow.CAST -> openSection(MediaDetailSection.CAST)
+            MediaDetailRow.SIMILAR -> openSection(MediaDetailSection.SIMILAR)
             null -> false
         }
 
@@ -534,8 +559,61 @@ class MediaDetailViewModel @Inject constructor(
                 setEpisodeIndex(state.episodeIndex)
                 true
             }
+            MediaDetailSection.CAST -> {
+                if (state.cast.isEmpty()) return false
+                setSection(MediaDetailSection.CAST)
+                true
+            }
+            MediaDetailSection.SIMILAR -> {
+                if (state.similar.isEmpty()) return false
+                setSection(MediaDetailSection.SIMILAR)
+                true
+            }
             else -> false
         }
+    }
+
+    /**
+     * Steps focus out of a horizontal rail and up to whatever sits above it, which is the region
+     * before it when the title has one and the left rail when it does not.
+     */
+    private fun leaveSectionUpwards(state: MediaDetailUiState, section: MediaDetailSection) {
+        val previous = state.sectionBefore(section)
+        if (previous == null || !openSection(previous)) setSection(MediaDetailSection.MENU)
+    }
+
+    fun setCastIndex(index: Int) {
+        val size = _uiState.value.cast.size
+        if (size == 0) return
+        _uiState.update { state ->
+            state.copy(
+                section = MediaDetailSection.CAST,
+                castIndex = index.coerceIn(0, size - 1),
+                rowIndex = state.rowIndexOf(MediaDetailRow.CAST) ?: state.rowIndex
+            )
+        }
+    }
+
+    fun setSimilarIndex(index: Int) {
+        val size = _uiState.value.similar.size
+        if (size == 0) return
+        _uiState.update { state ->
+            state.copy(
+                section = MediaDetailSection.SIMILAR,
+                similarIndex = index.coerceIn(0, size - 1),
+                rowIndex = state.rowIndexOf(MediaDetailRow.SIMILAR) ?: state.rowIndex
+            )
+        }
+    }
+
+    /**
+     * Opens the title the similar rail is pointing at, replacing this screen's subject the way the
+     * shoulder buttons do. Going somewhere from here is going to another title, not to a new screen
+     * stacked on this one.
+     */
+    fun openSimilarTitle() {
+        val target = _uiState.value.focusedSimilar ?: return
+        openItem(target.itemId)
     }
 
     fun setEpisodeIndex(index: Int) {
@@ -637,6 +715,10 @@ class MediaDetailViewModel @Inject constructor(
                     else setSection(if (state.hasSeasons) MediaDetailSection.SEASONS else MediaDetailSection.MENU)
                     InputResult.HANDLED
                 }
+                MediaDetailSection.CAST, MediaDetailSection.SIMILAR -> {
+                    leaveSectionUpwards(state, state.section)
+                    InputResult.HANDLED
+                }
             }
         }
 
@@ -656,11 +738,18 @@ class MediaDetailViewModel @Inject constructor(
                     else InputResult.handled(SoundType.BOUNDARY)
                 MediaDetailSection.EPISODES -> {
                     if (state.episodeIndex >= state.episodes.lastIndex) {
-                        return InputResult.handled(SoundType.BOUNDARY)
+                        return if (openSection(state.sectionAfter(MediaDetailSection.EPISODES))) {
+                            InputResult.HANDLED
+                        } else {
+                            InputResult.handled(SoundType.BOUNDARY)
+                        }
                     }
                     setEpisodeIndex(state.episodeIndex + 1)
                     InputResult.HANDLED
                 }
+                MediaDetailSection.CAST, MediaDetailSection.SIMILAR ->
+                    if (openSection(state.sectionAfter(state.section))) InputResult.HANDLED
+                    else InputResult.handled(SoundType.BOUNDARY)
             }
         }
 
@@ -685,6 +774,16 @@ class MediaDetailViewModel @Inject constructor(
                     setSection(if (state.hasSeasons) MediaDetailSection.SEASONS else MediaDetailSection.MENU)
                     InputResult.HANDLED
                 }
+                MediaDetailSection.CAST -> {
+                    if (state.castIndex > 0) setCastIndex(state.castIndex - 1)
+                    else setSection(MediaDetailSection.MENU)
+                    InputResult.HANDLED
+                }
+                MediaDetailSection.SIMILAR -> {
+                    if (state.similarIndex > 0) setSimilarIndex(state.similarIndex - 1)
+                    else setSection(MediaDetailSection.MENU)
+                    InputResult.HANDLED
+                }
             }
         }
 
@@ -702,6 +801,20 @@ class MediaDetailViewModel @Inject constructor(
                     InputResult.HANDLED
                 }
                 MediaDetailSection.EPISODES -> InputResult.handled(SoundType.BOUNDARY)
+                MediaDetailSection.CAST -> {
+                    if (state.castIndex >= state.cast.lastIndex) {
+                        return InputResult.handled(SoundType.BOUNDARY)
+                    }
+                    setCastIndex(state.castIndex + 1)
+                    InputResult.HANDLED
+                }
+                MediaDetailSection.SIMILAR -> {
+                    if (state.similarIndex >= state.similar.lastIndex) {
+                        return InputResult.handled(SoundType.BOUNDARY)
+                    }
+                    setSimilarIndex(state.similarIndex + 1)
+                    InputResult.HANDLED
+                }
             }
         }
 
@@ -719,6 +832,12 @@ class MediaDetailViewModel @Inject constructor(
                     onPlay(episode.itemId, false)
                     InputResult.HANDLED
                 }
+                MediaDetailSection.CAST -> InputResult.handled(SoundType.SILENT)
+                MediaDetailSection.SIMILAR -> {
+                    if (state.focusedSimilar == null) return InputResult.handled(SoundType.BOUNDARY)
+                    openSimilarTitle()
+                    InputResult.HANDLED
+                }
             }
         }
 
@@ -729,6 +848,8 @@ class MediaDetailViewModel @Inject constructor(
                 MediaDetailSection.MENU ->
                     if (state.focusedRow == MediaDetailRow.PLAY) state.playTarget else null
                 MediaDetailSection.SEASONS -> null
+                MediaDetailSection.CAST -> null
+                MediaDetailSection.SIMILAR -> state.focusedSimilar?.takeIf { it.isPlayable }
             } ?: return InputResult.handled(SoundType.SILENT)
             if (!openResumePrompt(target)) onPlay(target.itemId, false)
             return InputResult.HANDLED

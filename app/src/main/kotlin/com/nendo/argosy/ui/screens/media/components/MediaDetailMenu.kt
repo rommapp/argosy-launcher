@@ -24,7 +24,9 @@ import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.DownloadDone
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.Layers
+import androidx.compose.material.icons.filled.Recommend
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.RadioButtonUnchecked
 import androidx.compose.material.icons.filled.Tune
@@ -250,6 +252,8 @@ private fun labelFor(row: MediaDetailRow, uiState: MediaDetailUiState): String =
     MediaDetailRow.OPTIONS -> "Options"
     MediaDetailRow.SEASONS -> "Seasons"
     MediaDetailRow.EPISODES -> "Episodes"
+    MediaDetailRow.CAST -> "Cast"
+    MediaDetailRow.SIMILAR -> "More Like This"
 }
 
 private fun iconFor(row: MediaDetailRow, uiState: MediaDetailUiState): ImageVector = when (row) {
@@ -263,4 +267,6 @@ private fun iconFor(row: MediaDetailRow, uiState: MediaDetailUiState): ImageVect
     MediaDetailRow.OPTIONS -> Icons.Default.Tune
     MediaDetailRow.SEASONS -> Icons.Default.Layers
     MediaDetailRow.EPISODES -> Icons.AutoMirrored.Filled.List
+    MediaDetailRow.CAST -> Icons.Default.Groups
+    MediaDetailRow.SIMILAR -> Icons.Default.Recommend
 }

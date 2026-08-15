@@ -3301,3 +3301,40 @@ object Migration_172_173 : Migration(172, 173) {
         )
     }
 }
+
+/**
+ * Adds the cast and crew credited on a media title. Nothing is backfilled: credits arrive with the
+ * item, so an existing library shows them from its next sync rather than needing a reset.
+ */
+object Migration_173_174 : Migration(173, 174) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS `media_credits` (
+                `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                `ownerUserId` TEXT NOT NULL,
+                `itemId` TEXT NOT NULL,
+                `personId` TEXT NOT NULL,
+                `name` TEXT NOT NULL,
+                `role` TEXT,
+                `personType` TEXT NOT NULL,
+                `sortOrder` INTEGER NOT NULL,
+                `primaryImageTag` TEXT
+            )
+            """.trimIndent()
+        )
+        db.execSQL(
+            "CREATE UNIQUE INDEX IF NOT EXISTS " +
+                "`index_media_credits_ownerUserId_itemId_personId_personType` " +
+                "ON `media_credits` (`ownerUserId`, `itemId`, `personId`, `personType`)"
+        )
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS `index_media_credits_ownerUserId_itemId` " +
+                "ON `media_credits` (`ownerUserId`, `itemId`)"
+        )
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS `index_media_credits_ownerUserId_personId` " +
+                "ON `media_credits` (`ownerUserId`, `personId`)"
+        )
+    }
+}

@@ -15,7 +15,7 @@ enum class MediaDetailMode { MOVIE, SERIES }
  * that last action row, which is somewhere the user can act rather than a doorway that would open
  * again underneath them.
  */
-enum class MediaDetailSection { MENU, SEASONS, EPISODES }
+enum class MediaDetailSection { MENU, SEASONS, EPISODES, CAST, SIMILAR }
 
 /**
  * One row of the left rail, in render order.
@@ -27,12 +27,14 @@ enum class MediaDetailSection { MENU, SEASONS, EPISODES }
  * is entered rather than stood on.
  */
 enum class MediaDetailRow {
-    PLAY, DOWNLOAD, FAVORITE, WATCHED, OPTIONS, SEASONS, EPISODES;
+    PLAY, DOWNLOAD, FAVORITE, WATCHED, OPTIONS, SEASONS, EPISODES, CAST, SIMILAR;
 
     val section: MediaDetailSection?
         get() = when (this) {
             SEASONS -> MediaDetailSection.SEASONS
             EPISODES -> MediaDetailSection.EPISODES
+            CAST -> MediaDetailSection.CAST
+            SIMILAR -> MediaDetailSection.SIMILAR
             else -> null
         }
 }
@@ -41,13 +43,16 @@ enum class MediaDetailRow {
  * The rail for what this title actually has.
  *
  * A series has no Watched row: a series is watched an episode at a time, and the rail acts on the
- * title, so the flag it would toggle is not the one the user is looking at. A movie has no section
- * rows at all, which is what leaves its rail ending at Options with no divider under it.
+ * title, so the flag it would toggle is not the one the user is looking at. Section rows appear
+ * only for regions that have something in them, so a movie with neither a cast nor anything like it
+ * still ends its rail at Options with no divider under it.
  */
 fun buildMediaRail(
     mode: MediaDetailMode,
     hasSeasons: Boolean,
-    hasEpisodes: Boolean
+    hasEpisodes: Boolean,
+    hasCast: Boolean = false,
+    hasSimilar: Boolean = false
 ): List<MediaDetailRow> = buildList {
     add(MediaDetailRow.PLAY)
     add(MediaDetailRow.DOWNLOAD)
@@ -56,7 +61,23 @@ fun buildMediaRail(
     add(MediaDetailRow.OPTIONS)
     if (hasSeasons) add(MediaDetailRow.SEASONS)
     if (hasEpisodes) add(MediaDetailRow.EPISODES)
+    if (hasCast) add(MediaDetailRow.CAST)
+    if (hasSimilar) add(MediaDetailRow.SIMILAR)
 }
+
+/**
+ * One person credited on a title, as the cast rail draws them.
+ *
+ * [role] is the character an actor played and is absent for crew, so it is what the rail puts under
+ * a name when there is one to put. [imageUrl] is empty when the server holds no portrait, which the
+ * rail answers with initials rather than a gap.
+ */
+data class MediaCastUi(
+    val personId: String,
+    val name: String,
+    val role: String? = null,
+    val imageUrl: String = ""
+)
 
 /**
  * The last row that acts on the title, and so the far end of the rail's own vertical run. Always a
@@ -312,6 +333,10 @@ data class MediaDetailUiState(
     val seasonIndex: Int = 0,
     val episodes: List<MediaItemUi> = emptyList(),
     val episodeIndex: Int = 0,
+    val cast: List<MediaCastUi> = emptyList(),
+    val castIndex: Int = 0,
+    val similar: List<MediaItemUi> = emptyList(),
+    val similarIndex: Int = 0,
     val isLoading: Boolean = true,
     val isLoadingEpisodes: Boolean = false,
     val errorMessage: String? = null,
@@ -324,6 +349,7 @@ data class MediaDetailUiState(
     val focusedRow: MediaDetailRow? get() = rows.getOrNull(rowIndex)
     val selectedSeason: MediaSeasonUi? get() = seasons.getOrNull(seasonIndex)
     val focusedEpisode: MediaItemUi? get() = episodes.getOrNull(episodeIndex)
+    val focusedSimilar: MediaItemUi? get() = similar.getOrNull(similarIndex)
     val hasSeasons: Boolean get() = mode == MediaDetailMode.SERIES && seasons.isNotEmpty()
 
     val lastActionIndex: Int get() = rows.lastActionIndex()
@@ -345,8 +371,33 @@ data class MediaDetailUiState(
         get() = when {
             hasSeasons -> MediaDetailSection.SEASONS
             episodes.isNotEmpty() -> MediaDetailSection.EPISODES
+            cast.isNotEmpty() -> MediaDetailSection.CAST
+            similar.isNotEmpty() -> MediaDetailSection.SIMILAR
             else -> null
         }
+
+    /**
+     * The regions this title has, in the order focus walks down through them. The rail's section
+     * rows read from the same list, so a region can never be reachable one way and not the other.
+     */
+    val contentSections: List<MediaDetailSection>
+        get() = buildList {
+            if (hasSeasons) add(MediaDetailSection.SEASONS)
+            if (episodes.isNotEmpty()) add(MediaDetailSection.EPISODES)
+            if (cast.isNotEmpty()) add(MediaDetailSection.CAST)
+            if (similar.isNotEmpty()) add(MediaDetailSection.SIMILAR)
+        }
+
+    fun sectionAfter(section: MediaDetailSection): MediaDetailSection? {
+        val order = contentSections
+        return order.getOrNull(order.indexOf(section) + 1)
+    }
+
+    fun sectionBefore(section: MediaDetailSection): MediaDetailSection? {
+        val order = contentSections
+        val index = order.indexOf(section)
+        return if (index > 0) order[index - 1] else null
+    }
 
     fun rowIndexOf(row: MediaDetailRow): Int? = rows.indexOf(row).takeIf { it >= 0 }
 
@@ -381,18 +432,28 @@ data class MediaDetailUiState(
  * while one is open, and never past the last action row once none is.
  */
 fun MediaDetailUiState.withRail(): MediaDetailUiState {
-    val rebuilt = buildMediaRail(mode, hasSeasons, episodes.isNotEmpty())
+    val rebuilt = buildMediaRail(
+        mode = mode,
+        hasSeasons = hasSeasons,
+        hasEpisodes = episodes.isNotEmpty(),
+        hasCast = cast.isNotEmpty(),
+        hasSimilar = similar.isNotEmpty()
+    )
     val openSection = when (section) {
         MediaDetailSection.EPISODES ->
             if (episodes.isNotEmpty()) section
             else if (hasSeasons) MediaDetailSection.SEASONS
             else MediaDetailSection.MENU
         MediaDetailSection.SEASONS -> if (hasSeasons) section else MediaDetailSection.MENU
+        MediaDetailSection.CAST -> if (cast.isNotEmpty()) section else MediaDetailSection.MENU
+        MediaDetailSection.SIMILAR -> if (similar.isNotEmpty()) section else MediaDetailSection.MENU
         MediaDetailSection.MENU -> section
     }
     val anchoredIndex = when (openSection) {
         MediaDetailSection.SEASONS -> rebuilt.indexOf(MediaDetailRow.SEASONS)
         MediaDetailSection.EPISODES -> rebuilt.indexOf(MediaDetailRow.EPISODES)
+        MediaDetailSection.CAST -> rebuilt.indexOf(MediaDetailRow.CAST)
+        MediaDetailSection.SIMILAR -> rebuilt.indexOf(MediaDetailRow.SIMILAR)
         MediaDetailSection.MENU -> rowIndex.coerceAtMost(rebuilt.lastActionIndex())
     }.coerceIn(0, rebuilt.lastIndex.coerceAtLeast(0))
     if (rebuilt == rows && openSection == section && anchoredIndex == rowIndex) return this

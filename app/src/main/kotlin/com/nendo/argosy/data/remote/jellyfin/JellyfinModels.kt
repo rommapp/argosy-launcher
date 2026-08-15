@@ -106,6 +106,25 @@ data class JellyfinNameId(
 )
 
 /**
+ * Someone credited on a title.
+ *
+ * [role] is the character for an actor and is absent for everyone else, so it is what separates a
+ * cast entry from a crew one in the same list. [primaryImageTag] addresses a portrait held against
+ * the PERSON's id, not the title's.
+ */
+@JsonClass(generateAdapter = true)
+data class JellyfinPerson(
+    @Json(name = "Id") val id: String? = null,
+    @Json(name = "Name") val name: String? = null,
+    @Json(name = "Role") val role: String? = null,
+    @Json(name = "Type") val type: String? = null,
+    @Json(name = "PrimaryImageTag") val primaryImageTag: String? = null
+)
+
+const val PERSON_TYPE_ACTOR = "Actor"
+const val PERSON_TYPE_DIRECTOR = "Director"
+
+/**
  * One item at any level of the hierarchy: a library view, a movie, a series, a season or an episode.
  *
  * The server answers with one shape for all of them and fills only the fields that apply, so this
@@ -149,6 +168,7 @@ data class JellyfinItem(
     @Json(name = "Status") val status: String? = null,
     @Json(name = "Genres") val genres: List<String>? = null,
     @Json(name = "Studios") val studios: List<JellyfinNameId>? = null,
+    @Json(name = "People") val people: List<JellyfinPerson>? = null,
     @Json(name = "ImageTags") val imageTags: Map<String, String>? = null,
     @Json(name = "BackdropImageTags") val backdropImageTags: List<String>? = null,
     @Json(name = "ParentBackdropImageTags") val parentBackdropImageTags: List<String>? = null,

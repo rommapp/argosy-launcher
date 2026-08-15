@@ -1,5 +1,6 @@
 package com.nendo.argosy.data.repository
 
+import com.nendo.argosy.data.local.dao.MediaCreditDao
 import com.nendo.argosy.data.local.dao.MediaItemDao
 import com.nendo.argosy.data.local.dao.MediaLibraryDao
 import com.nendo.argosy.data.local.dao.MediaDownloadQueueDao
@@ -7,6 +8,7 @@ import com.nendo.argosy.data.local.dao.MediaSourceDao
 import com.nendo.argosy.data.local.dao.MediaStreamDao
 import com.nendo.argosy.data.local.dao.MediaUserDataDao
 import com.nendo.argosy.data.local.entity.MediaCollectionType
+import com.nendo.argosy.data.local.entity.MediaCreditEntity
 import com.nendo.argosy.data.local.entity.MediaItemEntity
 import com.nendo.argosy.data.local.entity.MediaItemType
 import com.nendo.argosy.data.local.entity.MediaLibraryEntity
@@ -69,6 +71,7 @@ class MediaRepository @Inject constructor(
     private val jellyfinPreferencesRepository: JellyfinPreferencesRepository,
     private val mediaLibraryDao: MediaLibraryDao,
     private val mediaItemDao: MediaItemDao,
+    private val mediaCreditDao: MediaCreditDao,
     private val mediaUserDataDao: MediaUserDataDao,
     private val mediaStreamDao: MediaStreamDao,
     private val mediaSourceDao: MediaSourceDao,
@@ -174,6 +177,18 @@ class MediaRepository @Inject constructor(
     suspend fun getItem(itemId: String): MediaItemEntity? {
         val owner = currentOwner() ?: return null
         return mediaItemDao.getByItemId(owner, itemId)
+    }
+
+    /**
+     * The people credited on a title, in the billing order the server sent.
+     *
+     * Empty for a title whose library has not synced since credits started being collected, which
+     * is indistinguishable here from a title that genuinely has none: both mean there is no cast to
+     * draw, and the next library sync settles which it was.
+     */
+    suspend fun getCredits(itemId: String): List<MediaCreditEntity> {
+        val owner = currentOwner() ?: return emptyList()
+        return mediaCreditDao.getForItem(owner, itemId)
     }
 
     suspend fun getUserData(itemId: String): MediaUserDataEntity? {

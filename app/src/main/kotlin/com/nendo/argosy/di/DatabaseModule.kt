@@ -26,6 +26,7 @@ import com.nendo.argosy.data.local.dao.FirmwareDao
 import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.dao.GameDiscDao
 import com.nendo.argosy.data.local.dao.GameFileDao
+import com.nendo.argosy.data.local.dao.MediaCreditDao
 import com.nendo.argosy.data.local.dao.MediaDownloadQueueDao
 import com.nendo.argosy.data.local.dao.MediaItemDao
 import com.nendo.argosy.data.local.dao.MediaLibraryDao
@@ -304,6 +305,10 @@ object DatabaseModule {
     @Provides
     fun provideMediaItemDao(database: ALauncherDatabase): MediaItemDao =
         database.mediaItemDao()
+
+    @Provides
+    fun provideMediaCreditDao(database: ALauncherDatabase): MediaCreditDao =
+        database.mediaCreditDao()
 
     @Provides
     fun provideMediaStreamDao(database: ALauncherDatabase): MediaStreamDao =

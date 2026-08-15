@@ -21,7 +21,11 @@ data class GameDownloadIndicator(
     val isQueued: Boolean = false,
     val progress: Float = 0f
 ) {
-    val isActive: Boolean get() = isDownloading || isExtracting || isPaused || isQueued
+    /**
+     * Whether work is moving right now. Paused is not active: nothing is progressing, and a cover
+     * that keeps filling over a stopped download states the opposite of what is true.
+     */
+    val isActive: Boolean get() = isDownloading || isExtracting || isQueued
 
     companion object {
         val NONE = GameDownloadIndicator()

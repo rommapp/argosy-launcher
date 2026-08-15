@@ -15,13 +15,12 @@ enum class MediaDownloadDbState {
 
     companion object {
         /**
-         * Whether a stored state means a copy is still on its way. A paused download counts: it is
-         * work the user started and has not abandoned, and a tile that stops showing it looks like
-         * the download was lost.
+         * Whether a stored state means a copy is on its way right now. Paused is deliberately not
+         * one: nothing is moving, and an indicator that keeps animating over a stopped download
+         * says the opposite of what is true.
          */
         fun isActive(stored: String): Boolean =
-            stored == QUEUED.name || stored == PREPARING.name ||
-                stored == DOWNLOADING.name || stored == PAUSED.name
+            stored == QUEUED.name || stored == PREPARING.name || stored == DOWNLOADING.name
     }
 }
 

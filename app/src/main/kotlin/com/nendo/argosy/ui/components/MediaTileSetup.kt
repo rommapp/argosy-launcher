@@ -42,9 +42,9 @@ enum class MediaTileModeOption(
 }
 
 /**
- * One season or one episode as the setup lists it. [isLocal] is carried so the list can say which
- * rows are already on the device, which is what makes the download notice predictable rather than a
- * surprise at the end.
+ * One season as the setup lists it. [isLocal] is carried so the list can say which rows are already
+ * on the device, which is what makes the download notice predictable rather than a surprise at the
+ * end.
  */
 data class MediaTileOption(
     val itemId: String,
@@ -90,7 +90,7 @@ data class MediaTileSetup(
     val focusIndex: Int = 0,
     val mode: MediaTilePlayMode? = null,
     val seasons: List<MediaTileOption> = emptyList(),
-    val episodes: List<MediaTileOption> = emptyList(),
+    val picker: EpisodePickerState = EpisodePickerState(),
     val selected: List<String> = emptyList(),
     val scopeId: String? = null,
     val notice: MediaTileNotice? = null,
@@ -99,19 +99,15 @@ data class MediaTileSetup(
 ) {
 
     /**
-     * How many rows the current step can focus. The episode step carries one row past its list, which
-     * is the row that commits the choice - a chooser whose only way out is a button the d-pad cannot
-     * reach is a chooser a controller cannot finish.
+     * How many positions the current step can focus. The episode step counts its own, because its
+     * rows and its two actions are one run.
      */
     val rowCount: Int
         get() = when (step) {
             MediaTileStep.MODE -> MediaTileModeOption.entries.size
             MediaTileStep.SEASON -> seasons.size
-            MediaTileStep.EPISODES -> episodes.size + 1
+            MediaTileStep.EPISODES -> picker.focusCount
         }
-
-    val isCommitRowFocused: Boolean
-        get() = step == MediaTileStep.EPISODES && focusIndex >= episodes.size
 
     val title: String get() = entry.title
 
@@ -119,20 +115,8 @@ data class MediaTileSetup(
         get() = when (step) {
             MediaTileStep.MODE -> "What should this tile play?"
             MediaTileStep.SEASON -> "Choose a season"
-            MediaTileStep.EPISODES -> selectionLabel
+            MediaTileStep.EPISODES -> "Choose episodes"
         }
-
-    private val selectionLabel: String
-        get() = when (selected.size) {
-            0 -> "Choose episodes"
-            1 -> "1 episode chosen"
-            else -> "${selected.size} episodes chosen"
-        }
-
-    val commitLabel: String
-        get() = if (selected.isEmpty()) "Choose at least one episode" else "Use these episodes"
-
-    val isCommitEnabled: Boolean get() = selected.isNotEmpty()
 
     /**
      * The empty state for whichever list the current step shows. A season list that came back empty
@@ -144,8 +128,10 @@ data class MediaTileSetup(
             isLoading -> null
             step == MediaTileStep.SEASON && seasons.isEmpty() ->
                 "No seasons have been synced for this series yet"
-            step == MediaTileStep.EPISODES && episodes.isEmpty() ->
+            step == MediaTileStep.EPISODES && picker.isEmpty ->
                 "No episodes have been synced for this series yet"
             else -> null
         }
 }
+
+const val MEDIA_TILE_EPISODES_CONFIRM_LABEL = "Use these episodes"

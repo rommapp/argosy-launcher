@@ -502,6 +502,33 @@ class CustomGridCoordinator(
         it.copy(pickerFocusIndex = (it.pickerFocusIndex + delta).coerceIn(0, maxIndex))
     }
 
+    /**
+     * Jumps the picker to the next or previous initial letter, so a long library is crossed in
+     * presses rather than in rows.
+     */
+    fun jumpPickerLetter(forward: Boolean) = write { state ->
+        val entries = state.pickerEntries
+        if (entries.isEmpty()) return@write state
+        val from = state.pickerFocusIndex.coerceIn(0, entries.lastIndex)
+        val current = entries[from].title.firstOrNull()?.uppercaseChar()
+        val target = if (forward) {
+            entries.withIndex().firstOrNull { (index, entry) ->
+                index > from && entry.title.firstOrNull()?.uppercaseChar() != current
+            }?.index
+        } else {
+            val start = entries.withIndex().lastOrNull { (index, entry) ->
+                index < from && entry.title.firstOrNull()?.uppercaseChar() != current
+            }?.index
+            start?.let { end ->
+                val letter = entries[end].title.firstOrNull()?.uppercaseChar()
+                entries.withIndex().first { (index, entry) ->
+                    index <= end && entry.title.firstOrNull()?.uppercaseChar() == letter
+                }.index
+            }
+        }
+        state.copy(pickerFocusIndex = target ?: if (forward) entries.lastIndex else 0)
+    }
+
     fun setPickerQuery(query: String) {
         write { it.copy(pickerQuery = query, pickerFocusIndex = 0) }
         refreshPicker()
@@ -627,6 +654,9 @@ class CustomGridCoordinator(
     }
 
     fun moveMediaSetupFocus(delta: Int) = mediaSetupController.moveFocus(delta)
+
+    fun moveMediaSetupSideways(towardsEnd: Boolean) =
+        mediaSetupController.moveSideways(towardsEnd)
 
     fun confirmMediaSetup(index: Int? = null) = mediaSetupController.confirm(index)
 

@@ -18,7 +18,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.outlined.Download
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -41,15 +40,13 @@ import com.nendo.argosy.ui.util.clickableNoFocus
  * all belong to the caller, so the gamepad drives this through the same handler as the grid behind
  * it and touch and the d-pad end up at the same call.
  *
- * [onToggle] is separate from [onSelect] because the episode step is the one list where a row can be
- * pressed without leaving the list. Everywhere else the two are the same act and the caller wires
- * both to the same thing.
+ * [onSelect] is given a focus index and answers every step, including the chooser's rows and its two
+ * actions, so a tap and a press of confirm arrive at the same call.
  */
 @Composable
 fun MediaTileSetupModal(
     setup: MediaTileSetup,
     onSelect: (Int) -> Unit,
-    onToggle: (Int) -> Unit,
     onCommit: () -> Unit,
     onDismiss: () -> Unit
 ) {
@@ -80,26 +77,15 @@ fun MediaTileSetupModal(
                 listState = listState,
                 onSelect = onSelect
             )
-            setup.step == MediaTileStep.EPISODES -> OptionList(
-                options = setup.episodes,
-                focusIndex = setup.focusIndex,
-                selected = setup.selected.toSet(),
-                listState = listState,
-                onSelect = onToggle
+            setup.step == MediaTileStep.EPISODES -> EpisodePickerContent(
+                state = setup.picker,
+                confirmLabel = MEDIA_TILE_EPISODES_CONFIRM_LABEL,
+                onPressAt = onSelect,
+                onCancel = onDismiss,
+                onCommit = onCommit,
+                showDownloadMarks = true
             )
             else -> Unit
-        }
-        if (setup.step == MediaTileStep.EPISODES && setup.episodes.isNotEmpty()) {
-            HorizontalDivider(
-                modifier = Modifier.padding(vertical = Dimens.spacingXs),
-                color = theme.hairlineLow
-            )
-            CommitRow(
-                label = setup.commitLabel,
-                enabled = setup.isCommitEnabled,
-                isFocused = setup.isCommitRowFocused,
-                onClick = onCommit
-            )
         }
     }
 }
@@ -244,28 +230,3 @@ private fun SetupRow(
     }
 }
 
-@Composable
-private fun CommitRow(
-    label: String,
-    enabled: Boolean,
-    isFocused: Boolean,
-    onClick: () -> Unit
-) {
-    val theme = LocalArgosyTheme.current
-    val shape = RoundedCornerShape(Dimens.radiusControl)
-    Text(
-        text = label,
-        style = MaterialTheme.typography.bodyMedium,
-        color = if (enabled) theme.textPrimary else theme.textDim,
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(shape)
-            .argosyFocusIndicators(
-                focused = isFocused,
-                indicators = FocusIndicators.ListRow,
-                shape = shape
-            )
-            .clickableNoFocus(enabled = enabled, onClick = onClick)
-            .padding(Dimens.spacingSm)
-    )
-}

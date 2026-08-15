@@ -10,6 +10,7 @@ import com.nendo.argosy.data.repository.MediaRepository
 import com.nendo.argosy.domain.model.HomeTile
 import com.nendo.argosy.domain.model.MediaTilePlayback
 import com.nendo.argosy.domain.usecase.media.ResolveMediaTileUseCase
+import com.nendo.argosy.ui.components.EpisodePickerEntry
 import com.nendo.argosy.ui.components.MediaTileOption
 import com.nendo.argosy.ui.home.grid.MEDIA_TILE_SIZE_WARNING_THRESHOLD
 import com.nendo.argosy.ui.home.grid.MediaTileCatalog
@@ -91,7 +92,7 @@ class HomeTilePickerDelegate @Inject constructor(
             }
     }
 
-    override suspend fun episodes(seriesId: String, seasonId: String?): List<MediaTileOption> {
+    override suspend fun episodes(seriesId: String, seasonId: String?): List<EpisodePickerEntry> {
         val verified = availabilityVerifier.availability.value
         val rows = if (seasonId == null) {
             mediaRepository.getSeriesEpisodes(seriesId)
@@ -99,11 +100,11 @@ class HomeTilePickerDelegate @Inject constructor(
             mediaRepository.getEpisodes(seasonId)
         }
         return rows.map { episode ->
-            MediaTileOption(
+            EpisodePickerEntry(
                 itemId = episode.itemId,
+                seasonNumber = episode.parentIndexNumber,
                 label = episodeLabel(episode),
-                supporting = episode.productionYear?.toString(),
-                isLocal = mediaAvailabilityOf(
+                isDownloaded = mediaAvailabilityOf(
                     episode.localPath,
                     verified[episode.itemId]
                 ).hasLocalCopy
@@ -161,16 +162,8 @@ class HomeTilePickerDelegate @Inject constructor(
         else -> "$local of $total on this device"
     }
 
-    private fun episodeLabel(episode: MediaItemEntity): String {
-        val season = episode.parentIndexNumber
-        val number = episode.indexNumber
-        val marker = when {
-            season != null && number != null -> "S$season E$number"
-            number != null -> "E$number"
-            else -> null
-        }
-        return listOfNotNull(marker, episode.name).joinToString(" - ")
-    }
+    private fun episodeLabel(episode: MediaItemEntity): String =
+        episode.indexNumber?.let { "$it. ${episode.name}" } ?: episode.name
 
     private fun formatGigabytes(bytes: Long): String = "%.1f GB".format(bytes / BYTES_PER_GIGABYTE)
 }

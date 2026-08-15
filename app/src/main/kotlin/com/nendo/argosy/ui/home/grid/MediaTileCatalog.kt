@@ -1,5 +1,6 @@
 package com.nendo.argosy.ui.home.grid
 
+import com.nendo.argosy.ui.components.EpisodePickerEntry
 import com.nendo.argosy.ui.components.MediaTileOption
 import com.nendo.argosy.ui.components.TilePickerEntry
 
@@ -30,9 +31,10 @@ interface MediaTileCatalog {
     suspend fun seasons(seriesId: String): List<MediaTileOption>
 
     /**
-     * The episodes of one season, or of the whole series when [seasonId] is null.
+     * The episodes of one season, or of the whole series when [seasonId] is null, each carrying the
+     * season it belongs to so the chooser can group them.
      */
-    suspend fun episodes(seriesId: String, seasonId: String?): List<MediaTileOption>
+    suspend fun episodes(seriesId: String, seasonId: String?): List<EpisodePickerEntry>
 
     /**
      * The picker row a placed tile came from, so its curation can be reopened without asking the

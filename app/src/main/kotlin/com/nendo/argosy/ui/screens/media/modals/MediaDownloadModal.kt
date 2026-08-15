@@ -4,7 +4,6 @@ import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -18,12 +17,7 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CheckBox
-import androidx.compose.material.icons.filled.CheckBoxOutlineBlank
-import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.DownloadDone
-import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.HighQuality
 import androidx.compose.material.icons.filled.Subtitles
@@ -45,6 +39,7 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.nendo.argosy.core.input.SoundType
+import com.nendo.argosy.ui.components.EpisodePickerContent
 import com.nendo.argosy.ui.components.FocusedScroll
 import com.nendo.argosy.ui.input.InputHandler
 import com.nendo.argosy.ui.input.InputResult
@@ -52,9 +47,7 @@ import com.nendo.argosy.ui.input.ModalInputEffect
 import com.nendo.argosy.ui.primitives.ModalScaffold
 import com.nendo.argosy.ui.screens.media.MediaDownloadOption
 import com.nendo.argosy.ui.screens.media.MediaDownloadPrompt
-import com.nendo.argosy.ui.screens.media.MediaDownloadScope
 import com.nendo.argosy.ui.screens.media.MediaDownloadStep
-import com.nendo.argosy.ui.screens.media.MediaEpisodePickerRow
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalArgosyTheme
 import com.nendo.argosy.ui.theme.LocalLauncherTheme
@@ -201,41 +194,28 @@ fun MediaDownloadModalHost(
                 }
             }
             Spacer(Modifier.height(Dimens.spacingLg))
-            val listState = rememberLazyListState()
-            FocusedScroll(
-                listState = listState,
-                focusedIndex = content.focusedIndex.coerceAtMost(
-                    (content.episodeRowCount - 1).coerceAtLeast(0)
+            if (content.step == MediaDownloadStep.EPISODES) {
+                EpisodePickerContent(
+                    state = content.episodes,
+                    confirmLabel = "Download",
+                    onPressAt = { index ->
+                        onFocus(index)
+                        onConfirm()
+                    },
+                    onCancel = onDismiss,
+                    onCommit = onCommitSelection
                 )
-            )
-            LazyColumn(
-                state = listState,
-                modifier = Modifier.weight(1f, fill = false),
-                verticalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
-            ) {
-                if (content.step == MediaDownloadStep.EPISODES) {
-                    val rows = content.episodes.visibleRows
-                    itemsIndexed(
-                        items = rows,
-                        key = { _, row -> row.itemId ?: "season-${row.seasonKey}" }
-                    ) { index, row ->
-                        MediaEpisodePickerRowView(
-                            row = row,
-                            isSelected = row.itemId in content.episodes.selected,
-                            isCollapsed = row.seasonKey in content.episodes.collapsed,
-                            focused = index == content.focusedIndex,
-                            onClick = {
-                                onFocus(index)
-                                onConfirm()
-                            }
-                        )
-                    }
-                } else {
+            } else {
+                val listState = rememberLazyListState()
+                FocusedScroll(listState = listState, focusedIndex = content.focusedIndex)
+                LazyColumn(
+                    state = listState,
+                    modifier = Modifier.weight(1f, fill = false),
+                    verticalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
+                ) {
                     itemsIndexed(
                         items = content.options,
-                        key = { _, option ->
-                            option.quality?.name ?: option.scope?.name ?: option.label
-                        }
+                        key = { _, option -> option.quality?.name ?: option.label }
                     ) { index, option ->
                         MediaDownloadOptionRow(
                             option = option,
@@ -248,151 +228,6 @@ fun MediaDownloadModalHost(
                         )
                     }
                 }
-            }
-            if (content.step == MediaDownloadStep.EPISODES) {
-                Spacer(Modifier.height(Dimens.spacingSm))
-                Text(
-                    text = selectionSummary(content.episodes.selected.size),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = theme.textDim
-                )
-                Spacer(Modifier.height(Dimens.spacingSm))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
-                ) {
-                    MediaEpisodeActionButton(
-                        label = "Cancel",
-                        isPrimary = false,
-                        isFocused = content.isEpisodeCancelFocused,
-                        onClick = onDismiss,
-                        modifier = Modifier.weight(1f)
-                    )
-                    MediaEpisodeActionButton(
-                        label = "Download",
-                        isPrimary = content.episodes.selected.isNotEmpty(),
-                        isFocused = content.isEpisodeDownloadFocused,
-                        onClick = { if (content.episodes.selected.isNotEmpty()) onCommitSelection() },
-                        modifier = Modifier.weight(1f)
-                    )
-                }
-            }
-        }
-    }
-}
-
-/**
- * The chooser's two actions, as surfaces a finger can press.
- */
-@Composable
-private fun MediaEpisodeActionButton(
-    label: String,
-    isPrimary: Boolean,
-    isFocused: Boolean,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    val theme = LocalArgosyTheme.current
-    val shape = RoundedCornerShape(Dimens.radiusControl)
-    val background by animateColorAsState(
-        targetValue = when {
-            isFocused -> theme.focusAccent
-            isPrimary -> theme.focusAccent.copy(alpha = 0.35f).compositeOver(theme.surfaceElevated)
-            else -> theme.surfaceElevated
-        },
-        animationSpec = Motion.focusColorSpec,
-        label = "media-episode-action-bg"
-    )
-    Box(
-        modifier = modifier
-            .clip(shape)
-            .background(background)
-            .clickableNoFocus(onClick = onClick)
-            .padding(vertical = Dimens.spacingSm),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelLarge,
-            color = if (isFocused || isPrimary) theme.textPrimary else theme.textDim
-        )
-    }
-}
-
-private fun selectionSummary(count: Int): String = when (count) {
-    0 -> "Nothing chosen yet"
-    1 -> "1 episode chosen"
-    else -> "$count episodes chosen"
-}
-
-/**
- * A season to fold, or an episode to tick. A season carries no tick of its own: pressing it takes
- * the whole season on or off, which is a different act from choosing one episode and reads better
- * as a heading than as a third checkbox state.
- */
-@Composable
-private fun MediaEpisodePickerRowView(
-    row: MediaEpisodePickerRow,
-    isSelected: Boolean,
-    isCollapsed: Boolean,
-    focused: Boolean,
-    onClick: () -> Unit
-) {
-    val theme = LocalArgosyTheme.current
-    val shape = RoundedCornerShape(Dimens.radiusControl)
-    val background by animateColorAsState(
-        targetValue = if (focused) {
-            theme.focusAccent.copy(alpha = 0.2f).compositeOver(theme.surfaceElevated)
-        } else if (row.isHeader) {
-            theme.surfaceRaised
-        } else {
-            theme.surfaceElevated
-        },
-        animationSpec = Motion.focusColorSpec,
-        label = "media-episode-row-bg"
-    )
-
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(shape)
-            .background(background)
-            .clickableNoFocus(onClick = onClick)
-            .padding(horizontal = Dimens.spacingMd, vertical = Dimens.spacingSm),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
-    ) {
-        Icon(
-            imageVector = when {
-                row.isHeader && isCollapsed -> Icons.Default.ChevronRight
-                row.isHeader -> Icons.Default.ExpandMore
-                row.isDownloaded -> Icons.Default.DownloadDone
-                isSelected -> Icons.Default.CheckBox
-                else -> Icons.Default.CheckBoxOutlineBlank
-            },
-            contentDescription = null,
-            tint = if (row.isDownloaded) theme.focusAccent else theme.textDim,
-            modifier = Modifier.size(Dimens.iconSm)
-        )
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = row.label,
-                style = if (row.isHeader) {
-                    MaterialTheme.typography.labelLarge
-                } else {
-                    MaterialTheme.typography.bodyMedium
-                },
-                color = if (row.isDownloaded) theme.textMute else theme.textPrimary,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-            row.supporting?.let {
-                Text(
-                    text = it,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = theme.textMute,
-                    maxLines = 1
-                )
             }
         }
     }
@@ -442,7 +277,7 @@ private fun MediaDownloadOptionRow(
         horizontalArrangement = Arrangement.spacedBy(Dimens.spacingMd)
     ) {
         val icon = when {
-            option.scope == MediaDownloadScope.REMOVE -> Icons.Default.Delete
+            option.isRemoval -> Icons.Default.Delete
             step == MediaDownloadStep.QUALITY -> Icons.Default.HighQuality
             else -> Icons.Default.Download
         }

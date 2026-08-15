@@ -234,6 +234,15 @@ object LibretroCoreRegistry {
             requiresBios = listOf("bios7.bin", "bios9.bin", "firmware.bin")
         ),
 
+        CoreInfo(
+            coreId = "azahar",
+            fileName = "azahar_libretro.so",
+            displayName = "Azahar",
+            platforms = setOf("3ds", "n3ds"),
+            estimatedSizeBytes = 37_800_000L,
+            isDefault = true
+        ),
+
         // Sony PSP
         CoreInfo(
             coreId = "ppsspp",

@@ -3,6 +3,9 @@ package com.nendo.argosy.ui.home.grid
 import com.nendo.argosy.data.local.entity.MediaTilePlayMode
 import com.nendo.argosy.domain.model.HomeTileTargetRef
 import com.nendo.argosy.ui.components.CustomGridState
+import com.nendo.argosy.ui.components.EpisodePickerState
+import com.nendo.argosy.ui.components.EpisodeSelection
+import com.nendo.argosy.ui.components.buildEpisodePickerRows
 import com.nendo.argosy.ui.components.MediaTileModeOption
 import com.nendo.argosy.ui.components.MediaTileNotice
 import com.nendo.argosy.ui.components.MediaTileSetup
@@ -68,9 +71,24 @@ class MediaTileSetupController(
             moveNoticeFocus(delta)
             return
         }
+        if (current.step == MediaTileStep.EPISODES) {
+            update { it.copy(picker = it.picker.move(delta)) }
+            return
+        }
         val count = current.rowCount
         if (count <= 0) return
         update { it.copy(focusIndex = (it.focusIndex + delta).mod(count)) }
+    }
+
+    /**
+     * Folds a season away in the chooser, or steps out of the list to its actions. Nothing else in
+     * the run answers sideways, so the other steps refuse it.
+     */
+    fun moveSideways(towardsEnd: Boolean) {
+        val current = setup ?: return
+        if (current.notice != null || current.isLoading) return
+        if (current.step != MediaTileStep.EPISODES) return
+        update { it.copy(picker = it.picker.moveSideways(towardsEnd)) }
     }
 
     fun moveNoticeFocus(delta: Int) {
@@ -85,11 +103,15 @@ class MediaTileSetupController(
     fun confirm(index: Int? = null) {
         val current = setup ?: return
         if (current.isLoading) return
+        if (current.step == MediaTileStep.EPISODES) {
+            confirmEpisode(index ?: current.picker.focusedIndex)
+            return
+        }
         if (index != null) update { it.copy(focusIndex = index) }
         when (current.step) {
             MediaTileStep.MODE -> confirmMode(index ?: current.focusIndex)
             MediaTileStep.SEASON -> confirmSeason(index ?: current.focusIndex)
-            MediaTileStep.EPISODES -> confirmEpisode(index ?: current.focusIndex)
+            MediaTileStep.EPISODES -> Unit
         }
     }
 
@@ -109,7 +131,7 @@ class MediaTileSetupController(
                 step = MediaTileStep.MODE,
                 focusIndex = 0,
                 seasons = emptyList(),
-                episodes = emptyList(),
+                picker = EpisodePickerState(),
                 selected = emptyList(),
                 scopeId = null,
                 error = null
@@ -166,26 +188,21 @@ class MediaTileSetupController(
     }
 
     /**
-     * A press inside the episode list either ticks a row or commits the run, depending on which of
-     * the two the cursor is over. Ticking keeps the order the rows were chosen in, because that order
-     * is the run and nothing else records it.
+     * A press inside the chooser ticks a row, steps back a question, or commits the run, depending on
+     * which of the three the cursor is over. Ticking keeps the order the rows were chosen in, because
+     * that order is the run and nothing else records it.
      */
     private fun confirmEpisode(index: Int) {
         val current = setup ?: return
-        if (index >= current.episodes.size) {
-            if (current.selected.isEmpty()) return
-            settle(current.selected)
-            return
-        }
-        val option = current.episodes.getOrNull(index) ?: return
-        update {
-            it.copy(
-                selected = if (option.itemId in it.selected) {
-                    it.selected - option.itemId
-                } else {
-                    it.selected + option.itemId
-                }
-            )
+        val picker = current.picker.focus(index)
+        update { it.copy(picker = picker) }
+        when {
+            picker.isCancelFocused -> back()
+            picker.isConfirmFocused ->
+                if (picker.hasSelection) settle(picker.selection.selected)
+            picker.focusedQuickAction != null ->
+                update { it.copy(picker = it.picker.applyFocusedQuickAction()) }
+            else -> update { it.copy(picker = it.picker.toggleFocused()) }
         }
     }
 
@@ -204,12 +221,19 @@ class MediaTileSetupController(
                 focusIndex = 0,
                 isLoading = true,
                 error = null,
+                picker = EpisodePickerState(),
                 selected = emptyList()
             )
         }
         scope.launch {
             val episodes = catalog?.episodes(seriesId, seasonId).orEmpty()
-            update { it.copy(episodes = episodes, isLoading = false) }
+            val rows = buildEpisodePickerRows(episodes)
+            update {
+                it.copy(
+                    picker = EpisodePickerState(selection = EpisodeSelection(rows = rows)),
+                    isLoading = false
+                )
+            }
         }
     }
 

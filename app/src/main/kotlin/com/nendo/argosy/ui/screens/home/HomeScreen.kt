@@ -857,6 +857,7 @@ fun HomeScreen(
                             grid.isMediaSetupOpen -> listOf(InputButton.B to "Back")
                             grid.showPicker -> listOf(
                                 InputButton.LB_RB to "Tab",
+                                InputButton.LT_RT to "Jump",
                                 InputButton.Y to "Search"
                             )
                             grid.isEditing -> listOf(
@@ -1177,8 +1178,9 @@ fun HomeScreen(
             com.nendo.argosy.ui.components.MediaTileSetupModal(
                 setup = mediaTileSetup,
                 onSelect = viewModel::confirmMediaTileSetupAt,
-                onToggle = viewModel::confirmMediaTileSetupAt,
-                onCommit = { viewModel.confirmMediaTileSetupAt(mediaTileSetup.episodes.size) },
+                onCommit = {
+                    viewModel.confirmMediaTileSetupAt(mediaTileSetup.picker.confirmIndex)
+                },
                 onDismiss = viewModel::backFromMediaTileSetup
             )
         }

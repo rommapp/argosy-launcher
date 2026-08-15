@@ -9,11 +9,14 @@ import com.nendo.argosy.data.media.MediaAvailabilityVerifier
 import com.nendo.argosy.data.media.mediaAvailabilityOf
 import com.nendo.argosy.data.preferences.MediaDownloadQuality
 import com.nendo.argosy.data.repository.MediaRepository
+import com.nendo.argosy.ui.components.EpisodePickerEntry
+import com.nendo.argosy.ui.components.EpisodePickerQuickAction
+import com.nendo.argosy.ui.components.EpisodePickerRow
+import com.nendo.argosy.ui.components.EpisodePickerState
+import com.nendo.argosy.ui.components.EpisodeSelection
+import com.nendo.argosy.ui.components.buildEpisodePickerRows
 import com.nendo.argosy.ui.screens.media.MediaDownloadOption
 import com.nendo.argosy.ui.screens.media.MediaDownloadPrompt
-import com.nendo.argosy.ui.screens.media.MediaEpisodePickerRow
-import com.nendo.argosy.ui.screens.media.MediaEpisodeSelection
-import com.nendo.argosy.ui.screens.media.MediaDownloadScope
 import com.nendo.argosy.ui.screens.media.MediaDownloadStep
 import com.nendo.argosy.ui.screens.media.MediaDownloadSummary
 import com.nendo.argosy.ui.screens.media.MediaItemUi
@@ -23,8 +26,6 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import javax.inject.Inject
 import javax.inject.Singleton
 
-private const val EPISODE_ACTION_COUNT = 2
-
 private const val NEXT_FIVE = 5
 private const val NEXT_TEN = 10
 private const val BYTES_PER_GIGABYTE = 1024.0 * 1024.0 * 1024.0
@@ -33,9 +34,9 @@ private const val STORAGE_HEADROOM_BYTES = 200L * 1024 * 1024
 /**
  * The download half of a media detail view.
  *
- * A series is asked what to fetch before it is asked at what quality, because the answer to the
- * first changes the size of the second: the estimate shown against each quality is the size of the
- * whole batch. A movie or a single episode skips straight to the quality question.
+ * A series opens the episode chooser and is asked at what quality afterwards, because the answer to
+ * the first changes the size of the second: the estimate shown against each quality is the size of
+ * the whole batch. A movie or a single episode skips straight to the quality question.
  *
  * Nothing here decides that a series is or is not downloaded. That is a count against a count -
  * partial seasons are the ordinary case - and the screen renders whichever of the three numbers in
@@ -92,11 +93,10 @@ class MediaDownloadDelegate @Inject constructor(
         )
     }
 
-    suspend fun openPrompt(
-        item: MediaItemUi,
-        seasonEpisodes: List<MediaItemUi>,
-        summary: MediaDownloadSummary
-    ): MediaDownloadPrompt? {
+    /**
+     * A movie is asked only for a quality; a series opens the chooser.
+     */
+    suspend fun openPrompt(item: MediaItemUi): MediaDownloadPrompt? {
         if (!item.isSeries) {
             return qualityPrompt(
                 title = item.title,
@@ -105,7 +105,42 @@ class MediaDownloadDelegate @Inject constructor(
                 allowRemove = item.isDownloaded
             )
         }
-        return scopePrompt(item, seasonEpisodes, summary)
+        return episodesPrompt(item)
+    }
+
+    private suspend fun episodesPrompt(item: MediaItemUi): MediaDownloadPrompt? {
+        val rows = episodePickerRows(item.itemId)
+        if (rows.isEmpty()) return null
+        return MediaDownloadPrompt(
+            step = MediaDownloadStep.EPISODES,
+            title = item.title,
+            subtitle = "Choose episodes",
+            episodes = EpisodePickerState(
+                selection = EpisodeSelection(rows = rows),
+                quickActions = quickActionsFor(item.itemId)
+            )
+        )
+    }
+
+    /**
+     * The two "decide for me" shortcuts, resolved from one walk of the rolling window so the shorter
+     * one is always the head of the longer one.
+     */
+    private suspend fun quickActionsFor(seriesId: String): List<EpisodePickerQuickAction> {
+        val rolling = nextEpisodeIds(seriesId, NEXT_TEN)
+        if (rolling.isEmpty()) return emptyList()
+        return listOf(
+            EpisodePickerQuickAction(
+                key = "next-$NEXT_FIVE",
+                label = "Next $NEXT_FIVE",
+                itemIds = rolling.take(NEXT_FIVE)
+            ),
+            EpisodePickerQuickAction(
+                key = "next-$NEXT_TEN",
+                label = "Next $NEXT_TEN",
+                itemIds = rolling
+            )
+        )
     }
 
     /**
@@ -124,20 +159,18 @@ class MediaDownloadDelegate @Inject constructor(
     }
 
     /**
-     * Moves the prompt to its next state. A scope choice resolves the titles it covers and asks for
-     * a quality; a quality choice enqueues and closes; removal asks once more before it deletes
-     * anything, because the files it takes are not fetched back in a moment.
+     * Moves the prompt to its next state. A quality choice enqueues and closes; removal asks once
+     * more before it deletes anything, because the files it takes are not fetched back in a moment.
      */
     suspend fun advance(
         prompt: MediaDownloadPrompt,
-        item: MediaItemUi,
-        seasonEpisodes: List<MediaItemUi>
+        item: MediaItemUi
     ): MediaDownloadPrompt? {
         val option = prompt.focusedOption ?: return null
         if (!option.enabled) return prompt
 
         if (prompt.step == MediaDownloadStep.CONFIRM) {
-            if (option.scope == MediaDownloadScope.REMOVE) removeAll(prompt.targets)
+            if (option.isRemoval) removeAll(prompt.targets)
             return null
         }
 
@@ -146,30 +179,12 @@ class MediaDownloadDelegate @Inject constructor(
             return null
         }
 
-        if (option.scope == MediaDownloadScope.REMOVE) {
-            val targets = if (prompt.step == MediaDownloadStep.QUALITY) {
-                prompt.targets
-            } else {
-                downloadedEpisodeIds(item.itemId)
-            }
-            if (targets.isEmpty()) return null
-            return removalPrompt(item.title, targets)
+        if (option.isRemoval) {
+            if (prompt.targets.isEmpty()) return null
+            return removalPrompt(item.title, prompt.targets)
         }
 
-        if (option.scope == MediaDownloadScope.CHOOSE) {
-            val rows = episodePickerRows(item.itemId)
-            if (rows.isEmpty()) return null
-            return MediaDownloadPrompt(
-                step = MediaDownloadStep.EPISODES,
-                title = item.title,
-                subtitle = "Choose episodes",
-                episodes = MediaEpisodeSelection(rows = rows)
-            )
-        }
-
-        val targets = targetsFor(option.scope, item, seasonEpisodes)
-        if (targets.isEmpty()) return null
-        return qualityPrompt(item.title, targets, runtimeOf(targets, seasonEpisodes))
+        return null
     }
 
     /**
@@ -177,36 +192,23 @@ class MediaDownloadDelegate @Inject constructor(
      * nothing is ticked, so confirming an empty set closes rather than queueing nothing.
      */
     suspend fun confirmEpisodeSelection(prompt: MediaDownloadPrompt): MediaDownloadPrompt? {
-        val targets = prompt.episodes.rows
-            .filter { !it.isHeader && it.itemId in prompt.episodes.selected }
-            .mapNotNull { it.itemId }
+        val targets = prompt.episodes.selectedIdsInRowOrder()
         if (targets.isEmpty()) return null
         return qualityPrompt(prompt.title, targets, 0)
     }
 
-    private suspend fun targetsFor(
-        scope: MediaDownloadScope?,
-        item: MediaItemUi,
-        seasonEpisodes: List<MediaItemUi>
-    ): List<String> = when (scope) {
-        MediaDownloadScope.SEASON -> seasonEpisodes.filterNot { it.isDownloaded }.map { it.itemId }
-        MediaDownloadScope.NEXT_FIVE -> nextEpisodeIds(item.itemId, NEXT_FIVE)
-        MediaDownloadScope.NEXT_TEN -> nextEpisodeIds(item.itemId, NEXT_TEN)
-        MediaDownloadScope.REMOVE -> downloadedEpisodeIds(item.itemId)
-        MediaDownloadScope.CHOOSE -> emptyList()
-        MediaDownloadScope.THIS_ITEM, null -> listOf(item.itemId)
-    }
-
     fun moveFocus(prompt: MediaDownloadPrompt, delta: Int): MediaDownloadPrompt {
         if (prompt.step == MediaDownloadStep.EPISODES) {
-            val size = prompt.episodeRowCount + EPISODE_ACTION_COUNT
-            return prompt.copy(focusedIndex = (prompt.focusedIndex + delta).mod(size))
+            return prompt.copy(episodes = prompt.episodes.move(delta))
         }
         if (prompt.options.isEmpty()) return prompt
         return prompt.copy(focusedIndex = (prompt.focusedIndex + delta).mod(prompt.options.size))
     }
 
     fun focus(prompt: MediaDownloadPrompt, index: Int): MediaDownloadPrompt {
+        if (prompt.step == MediaDownloadStep.EPISODES) {
+            return prompt.copy(episodes = prompt.episodes.focus(index))
+        }
         if (prompt.options.isEmpty()) return prompt
         return prompt.copy(focusedIndex = index.coerceIn(0, prompt.options.lastIndex))
     }
@@ -231,9 +233,9 @@ class MediaDownloadDelegate @Inject constructor(
                     supporting = "Nothing is deleted"
                 ),
                 MediaDownloadOption(
-                    scope = MediaDownloadScope.REMOVE,
                     label = "Remove",
-                    supporting = "Deletes ${downloadCount(targets.size)} from this device"
+                    supporting = "Deletes ${downloadCount(targets.size)} from this device",
+                    isRemoval = true
                 )
             ),
             targets = targets,
@@ -242,65 +244,6 @@ class MediaDownloadDelegate @Inject constructor(
 
     private fun downloadCount(count: Int): String =
         if (count == 1) "1 download" else "$count downloads"
-
-    private suspend fun scopePrompt(
-        item: MediaItemUi,
-        seasonEpisodes: List<MediaItemUi>,
-        summary: MediaDownloadSummary
-    ): MediaDownloadPrompt {
-        val seasonPending = seasonEpisodes.count { !it.isDownloaded }
-        val nextFive = nextEpisodeIds(item.itemId, NEXT_FIVE)
-        val nextTen = nextEpisodeIds(item.itemId, NEXT_TEN)
-        val options = buildList {
-            add(
-                MediaDownloadOption(
-                    scope = MediaDownloadScope.SEASON,
-                    label = "This Season",
-                    supporting = if (seasonPending == 0) "Every episode is already downloaded"
-                                 else "$seasonPending to download",
-                    enabled = seasonPending > 0
-                )
-            )
-            add(
-                MediaDownloadOption(
-                    scope = MediaDownloadScope.NEXT_FIVE,
-                    label = "Next $NEXT_FIVE Episodes",
-                    supporting = supportingForNext(nextFive.size),
-                    enabled = nextFive.isNotEmpty()
-                )
-            )
-            add(
-                MediaDownloadOption(
-                    scope = MediaDownloadScope.NEXT_TEN,
-                    label = "Next $NEXT_TEN Episodes",
-                    supporting = supportingForNext(nextTen.size),
-                    enabled = nextTen.isNotEmpty()
-                )
-            )
-            add(
-                MediaDownloadOption(
-                    scope = MediaDownloadScope.CHOOSE,
-                    label = "Choose Episodes",
-                    supporting = "Pick season by season"
-                )
-            )
-            if (summary.downloaded > 0) {
-                add(
-                    MediaDownloadOption(
-                        scope = MediaDownloadScope.REMOVE,
-                        label = "Remove Downloads",
-                        supporting = "Frees ${summary.downloaded} episodes from this device"
-                    )
-                )
-            }
-        }
-        return MediaDownloadPrompt(
-            step = MediaDownloadStep.SCOPE,
-            title = item.title,
-            subtitle = summary.label,
-            options = options
-        )
-    }
 
     private suspend fun qualityPrompt(
         title: String,
@@ -324,9 +267,9 @@ class MediaDownloadDelegate @Inject constructor(
             if (allowRemove) {
                 add(
                     MediaDownloadOption(
-                        scope = MediaDownloadScope.REMOVE,
                         label = "Remove Download",
-                        supporting = "Deletes the copy on this device"
+                        supporting = "Deletes the copy on this device",
+                        isRemoval = true
                     )
                 )
             }
@@ -394,96 +337,47 @@ class MediaDownloadDelegate @Inject constructor(
         return "$scope - ${formatGigabytes(availableBytes)} free"
     }
 
-    private fun supportingForNext(count: Int): String =
-        if (count == 0) "Nothing left to download" else "$count to download"
-
-    /**
-     * The episodes the viewer is up to, in broadcast order: unwatched first, already-downloaded ones
-     * skipped, so asking twice does not re-fetch what the first ask already took.
-     */
     /**
      * The whole series as a chooser: a header per season, an episode under it, in the order they
      * were broadcast. Episodes already on the device are listed and locked rather than dropped, so
      * a season reads as what it is rather than as what is left of it.
      */
-    private suspend fun episodePickerRows(seriesId: String): List<MediaEpisodePickerRow> {
+    private suspend fun episodePickerRows(seriesId: String): List<EpisodePickerRow> {
         val episodes = mediaRepository.getSeriesEpisodes(seriesId)
         if (episodes.isEmpty()) return emptyList()
-        return buildList {
-            episodes.groupBy { it.parentIndexNumber }.forEach { (season, rows) ->
-                val seasonKey = season?.toString() ?: "specials"
-                val remaining = rows.count { it.localPath == null }
-                add(
-                    MediaEpisodePickerRow(
-                        isHeader = true,
-                        seasonKey = seasonKey,
-                        label = season?.let { "Season $it" } ?: "Specials",
-                        supporting = if (remaining == 0) "All downloaded" else "$remaining available"
-                    )
+        return buildEpisodePickerRows(
+            entries = episodes.map { episode ->
+                EpisodePickerEntry(
+                    itemId = episode.itemId,
+                    seasonNumber = episode.parentIndexNumber,
+                    label = episode.indexNumber?.let { "$it. ${episode.name}" } ?: episode.name,
+                    isDownloaded = episode.localPath != null
                 )
-                rows.forEach { episode ->
-                    add(
-                        MediaEpisodePickerRow(
-                            isHeader = false,
-                            seasonKey = seasonKey,
-                            label = episode.indexNumber
-                                ?.let { "$it. ${episode.name}" }
-                                ?: episode.name,
-                            itemId = episode.itemId,
-                            isDownloaded = episode.localPath != null
-                        )
-                    )
-                }
-            }
-        }
+            },
+            lockDownloaded = true
+        )
     }
 
     /**
-     * Ticks or unticks one episode. A header toggles its whole season instead, taking the season to
-     * all-on unless it is already all-on, which is the only reading that lets one press both select
-     * and clear.
+     * Answers a press inside the chooser: a shortcut ticks its set, anything else ticks the row.
      */
     fun toggleEpisode(prompt: MediaDownloadPrompt): MediaDownloadPrompt {
-        val row = prompt.focusedEpisodeRow ?: return prompt
-        val selection = prompt.episodes
-        val updated = if (row.isHeader) {
-            val season = selection.seasonRows(row.seasonKey).mapNotNull { it.itemId }
-            if (season.isEmpty()) selection.selected
-            else if (season.all { it in selection.selected }) selection.selected - season.toSet()
-            else selection.selected + season
-        } else {
-            val itemId = row.itemId ?: return prompt
-            if (row.isDownloaded) return prompt
-            if (itemId in selection.selected) selection.selected - itemId
-            else selection.selected + itemId
+        val picker = prompt.episodes
+        if (picker.focusedQuickAction != null) {
+            return prompt.copy(episodes = picker.applyFocusedQuickAction())
         }
-        return prompt.copy(episodes = selection.copy(selected = updated))
+        return prompt.copy(episodes = picker.toggleFocused())
+    }
+
+    fun moveSideways(prompt: MediaDownloadPrompt, towardsEnd: Boolean): MediaDownloadPrompt {
+        if (prompt.step != MediaDownloadStep.EPISODES) return prompt
+        return prompt.copy(episodes = prompt.episodes.moveSideways(towardsEnd))
     }
 
     /**
-     * On a season heading, folds or unfolds it. On anything else, moves to Cancel or Download.
+     * The episodes the viewer is up to, in broadcast order: unwatched first, already-downloaded ones
+     * skipped, so asking twice does not re-fetch what the first ask already took.
      */
-    fun moveSideways(prompt: MediaDownloadPrompt, towardsEnd: Boolean): MediaDownloadPrompt {
-        if (prompt.step != MediaDownloadStep.EPISODES) return prompt
-        val row = prompt.focusedEpisodeRow
-            ?: return prompt.copy(
-                focusedIndex = prompt.episodeRowCount + if (towardsEnd) 1 else 0
-            )
-        if (!row.isHeader) {
-            return prompt.copy(focusedIndex = prompt.episodeRowCount + if (towardsEnd) 1 else 0)
-        }
-        val collapsed = prompt.episodes.collapsed
-        val isCollapsed = row.seasonKey in collapsed
-        if (towardsEnd == !isCollapsed) return prompt
-        val updated = if (towardsEnd) collapsed - row.seasonKey else collapsed + row.seasonKey
-        val episodes = prompt.episodes.copy(collapsed = updated)
-        val headerIndex = episodes.visibleRows
-            .indexOfFirst { it.isHeader && it.seasonKey == row.seasonKey }
-            .takeIf { it >= 0 }
-            ?: prompt.focusedIndex
-        return prompt.copy(episodes = episodes, focusedIndex = headerIndex)
-    }
-
     private suspend fun nextEpisodeIds(seriesId: String, count: Int): List<String> {
         val episodes = mediaRepository.getSeriesEpisodes(seriesId)
         if (episodes.isEmpty()) return emptyList()
@@ -499,18 +393,6 @@ class MediaDownloadDelegate @Inject constructor(
         mediaRepository.getSeriesEpisodes(seriesId)
             .filter { it.localPath != null }
             .map { it.itemId }
-
-    /**
-     * Total runtime of a batch. The open season is already loaded, so its episodes answer from
-     * memory and only titles from other seasons cost a read.
-     */
-    private suspend fun runtimeOf(itemIds: List<String>, seasonEpisodes: List<MediaItemUi>): Long {
-        if (itemIds.isEmpty()) return 0
-        val loaded = seasonEpisodes.associateBy { it.itemId }
-        return itemIds.sumOf { id ->
-            loaded[id]?.runTimeTicks ?: mediaRepository.getItem(id)?.runTimeTicks ?: 0L
-        }
-    }
 
     private fun formatGigabytes(bytes: Long): String = "%.1f GB".format(bytes / BYTES_PER_GIGABYTE)
 }

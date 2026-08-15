@@ -2,6 +2,7 @@ package com.nendo.argosy.ui.screens.media
 
 import com.nendo.argosy.data.media.MediaAvailability
 import com.nendo.argosy.data.preferences.MediaDownloadQuality
+import com.nendo.argosy.ui.components.EpisodePickerState
 
 enum class MediaDetailMode { MOVIE, SERIES }
 
@@ -132,46 +133,14 @@ data class MediaDownloadSummary(
         }
 }
 
-/**
- * Which titles a download choice applies to.
- */
-enum class MediaDownloadScope { THIS_ITEM, SEASON, NEXT_FIVE, NEXT_TEN, CHOOSE, REMOVE }
-
-enum class MediaDownloadStep { SCOPE, EPISODES, QUALITY, CONFIRM }
-
-/**
- * One line of the episode chooser: a season to collapse, or an episode to tick.
- */
-data class MediaEpisodePickerRow(
-    val isHeader: Boolean,
-    val seasonKey: String,
-    val label: String,
-    val supporting: String? = null,
-    val itemId: String? = null,
-    val isDownloaded: Boolean = false
-)
-
-/**
- * Which episodes are ticked, and which seasons are folded away. Keyed by item id, not position.
- */
-data class MediaEpisodeSelection(
-    val rows: List<MediaEpisodePickerRow> = emptyList(),
-    val selected: Set<String> = emptySet(),
-    val collapsed: Set<String> = emptySet()
-) {
-    val visibleRows: List<MediaEpisodePickerRow>
-        get() = rows.filter { it.isHeader || it.seasonKey !in collapsed }
-
-    fun seasonRows(seasonKey: String): List<MediaEpisodePickerRow> =
-        rows.filter { !it.isHeader && it.seasonKey == seasonKey && !it.isDownloaded }
-}
+enum class MediaDownloadStep { EPISODES, QUALITY, CONFIRM }
 
 data class MediaDownloadOption(
-    val scope: MediaDownloadScope? = null,
     val quality: MediaDownloadQuality? = null,
     val label: String,
     val supporting: String? = null,
-    val enabled: Boolean = true
+    val enabled: Boolean = true,
+    val isRemoval: Boolean = false
 )
 
 /**
@@ -180,6 +149,9 @@ data class MediaDownloadOption(
  * [targets] is resolved before the quality is asked so the size estimate on each quality is the size
  * of the whole batch rather than of one episode, and [totalRuntimeTicks] is what that estimate is
  * computed from.
+ *
+ * [focusedIndex] belongs to the option steps only. The chooser step keeps its own index inside
+ * [episodes], because its rows and its actions are one run and nothing else indexes into them.
  */
 data class MediaDownloadPrompt(
     val step: MediaDownloadStep,
@@ -191,23 +163,9 @@ data class MediaDownloadPrompt(
     val totalRuntimeTicks: Long = 0,
     val note: String? = null,
     val warning: String? = null,
-    val episodes: MediaEpisodeSelection = MediaEpisodeSelection()
+    val episodes: EpisodePickerState = EpisodePickerState()
 ) {
     val focusedOption: MediaDownloadOption? get() = options.getOrNull(focusedIndex)
-
-    val focusedEpisodeRow: MediaEpisodePickerRow?
-        get() = episodes.visibleRows.getOrNull(focusedIndex)
-
-    /**
-     * Rows before the chooser's two actions, which occupy the next two focus indices.
-     */
-    val episodeRowCount: Int get() = episodes.visibleRows.size
-
-    val isEpisodeCancelFocused: Boolean
-        get() = step == MediaDownloadStep.EPISODES && focusedIndex == episodeRowCount
-
-    val isEpisodeDownloadFocused: Boolean
-        get() = step == MediaDownloadStep.EPISODES && focusedIndex == episodeRowCount + 1
 }
 
 /**

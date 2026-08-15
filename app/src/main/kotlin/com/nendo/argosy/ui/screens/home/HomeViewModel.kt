@@ -824,10 +824,15 @@ class HomeViewModel @Inject constructor(
 
     override fun cycleTilePickerCategory(delta: Int) = customGrid.cyclePickerCategory(delta)
 
+    override fun jumpTilePickerLetter(forward: Boolean) = customGrid.jumpPickerLetter(forward)
+
     fun setTilePickerCategory(category: com.nendo.argosy.ui.components.TilePickerCategory) =
         customGrid.setPickerCategory(category)
 
     override fun moveMediaTileSetupFocus(delta: Int) = customGrid.moveMediaSetupFocus(delta)
+
+    override fun moveMediaTileSetupSideways(towardsEnd: Boolean) =
+        customGrid.moveMediaSetupSideways(towardsEnd)
 
     override fun confirmMediaTileSetup() = customGrid.confirmMediaSetup()
 

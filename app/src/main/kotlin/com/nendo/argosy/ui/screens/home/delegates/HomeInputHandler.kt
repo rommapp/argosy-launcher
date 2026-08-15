@@ -45,6 +45,8 @@ interface HomeInputActions {
     fun closeTilePicker()
     fun toggleTilePickerSearch()
     fun cycleTilePickerCategory(delta: Int)
+
+    fun jumpTilePickerLetter(forward: Boolean)
     fun launchTileApp(packageName: String)
     fun openTileCollection(collectionId: Long)
     fun playTileMedia(itemId: String)
@@ -54,6 +56,7 @@ interface HomeInputActions {
     fun moveTilePickerFocus(delta: Int)
     fun confirmTilePickerSelection()
     fun moveMediaTileSetupFocus(delta: Int)
+    fun moveMediaTileSetupSideways(towardsEnd: Boolean)
     fun confirmMediaTileSetup()
     fun backFromMediaTileSetup()
     fun confirmMediaTileNotice()
@@ -163,7 +166,10 @@ class HomeInputHandler(
             actions.moveMediaTileNoticeFocus(-1)
             return InputResult.HANDLED
         }
-        if (state.customGrid.isMediaSetupOpen) return InputResult.HANDLED
+        if (state.customGrid.isMediaSetupOpen) {
+            actions.moveMediaTileSetupSideways(false)
+            return InputResult.HANDLED
+        }
         if (state.showAddToCollectionModal || state.showGameMenu) return InputResult.HANDLED
         if (isCustomGrid(state)) return customMove(GridDirection2D.LEFT)
         if (isGrid(state)) return gridMove(GridDirection.LEFT)
@@ -181,7 +187,10 @@ class HomeInputHandler(
             actions.moveMediaTileNoticeFocus(1)
             return InputResult.HANDLED
         }
-        if (state.customGrid.isMediaSetupOpen) return InputResult.HANDLED
+        if (state.customGrid.isMediaSetupOpen) {
+            actions.moveMediaTileSetupSideways(true)
+            return InputResult.HANDLED
+        }
         if (state.showAddToCollectionModal || state.showGameMenu) return InputResult.HANDLED
         if (isCustomGrid(state)) return customMove(GridDirection2D.RIGHT)
         if (isGrid(state)) return gridMove(GridDirection.RIGHT)
@@ -460,6 +469,18 @@ class HomeInputHandler(
         val game = state.focusedGame ?: return InputResult.UNHANDLED
         actions.toggleFavorite(game.id)
         return InputResult.HANDLED
+    }
+
+    override fun onPrevTrigger(): InputResult {
+        if (!actions.uiState.value.showTilePicker) return InputResult.UNHANDLED
+        actions.jumpTilePickerLetter(false)
+        return InputResult.handled(SoundType.SECTION_CHANGE)
+    }
+
+    override fun onNextTrigger(): InputResult {
+        if (!actions.uiState.value.showTilePicker) return InputResult.UNHANDLED
+        actions.jumpTilePickerLetter(true)
+        return InputResult.handled(SoundType.SECTION_CHANGE)
     }
 
     override fun onPrevSection(): InputResult {

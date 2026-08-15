@@ -249,7 +249,7 @@ class MediaDetailViewModel @Inject constructor(
         val item = state.item ?: return
         val target = if (state.section == MediaDetailSection.EPISODES) state.focusedEpisode ?: item else item
         viewModelScope.launch {
-            val prompt = downloadDelegate.openPrompt(target, state.episodes, state.downloadSummary)
+            val prompt = downloadDelegate.openPrompt(target)
             _uiState.update { it.copy(downloadPrompt = prompt) }
         }
     }
@@ -270,8 +270,8 @@ class MediaDetailViewModel @Inject constructor(
         val item = state.item ?: return
         if (prompt.step == MediaDownloadStep.EPISODES) {
             when {
-                prompt.isEpisodeCancelFocused -> dismissDownloadPrompt()
-                prompt.isEpisodeDownloadFocused -> commitEpisodeSelection()
+                prompt.episodes.isCancelFocused -> dismissDownloadPrompt()
+                prompt.episodes.isConfirmFocused -> commitEpisodeSelection()
                 else -> _uiState.update {
                     it.copy(downloadPrompt = downloadDelegate.toggleEpisode(prompt))
                 }
@@ -279,7 +279,7 @@ class MediaDetailViewModel @Inject constructor(
             return
         }
         viewModelScope.launch {
-            val next = downloadDelegate.advance(prompt, item, state.episodes)
+            val next = downloadDelegate.advance(prompt, item)
             _uiState.update { it.copy(downloadPrompt = next) }
             if (next == null) refreshDownloadSummary()
         }
@@ -303,6 +303,7 @@ class MediaDetailViewModel @Inject constructor(
     fun commitEpisodeSelection() {
         val prompt = _uiState.value.downloadPrompt ?: return
         if (prompt.step != MediaDownloadStep.EPISODES) return
+        if (!prompt.episodes.hasSelection) return
         viewModelScope.launch {
             val next = downloadDelegate.confirmEpisodeSelection(prompt)
             _uiState.update { it.copy(downloadPrompt = next) }

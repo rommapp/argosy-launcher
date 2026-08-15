@@ -36,9 +36,10 @@ private const val FINISHED_FRACTION = 0.95f
 private const val SPECIALS_SEASON_NUMBER = 0
 
 /**
- * How many titles the curated grid's picker offers at once, matching the game picker's own cap.
+ * How many titles the picker lists. High enough to reach a whole library by scrolling; the list is
+ * lazy, so the cost is the query rather than the rows.
  */
-private const val TILE_PICKER_LIMIT = 60
+private const val TILE_PICKER_LIMIT = 2000
 
 private const val SERIES_LABEL = "Series"
 

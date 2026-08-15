@@ -316,6 +316,10 @@ class PlaySessionTracker @Inject constructor(
         }
         try {
             val orphaned = preferencesRepository.getPersistedSession() ?: return
+            if (isSessionStillOnScreen(orphaned)) {
+                resumePersistedSession(orphaned)
+                return
+            }
             Logger.warn(TAG, "[SaveSync] ORPHAN gameId=${orphaned.gameId} | Detected orphaned session from ${orphaned.startTime}")
 
             val endTime = Instant.now()
@@ -332,6 +336,57 @@ class PlaySessionTracker @Inject constructor(
             endingSession.set(false)
             saveRecoveryGate.markComplete()
         }
+    }
+
+    /**
+     * Whether the session written to disk still has its emulator on a screen.
+     *
+     * This is the one question that separates a launcher process that died under a running game
+     * from a player who put the game down: both come back with every in-memory signal cleared and
+     * the same record on disk, and only the emulator's own windows say which happened. Silence -
+     * no usage access, no events - answers false, so a session that cannot be observed is still
+     * treated as ended and its save is still recovered.
+     */
+    private fun isSessionStillOnScreen(persisted: PersistedSession): Boolean =
+        permissionHelper.isPackageOnScreenOrRecent(application, persisted.emulatorPackage)
+
+    /**
+     * Adopts a persisted session back into memory rather than closing it out.
+     *
+     * The record on disk is the authority here: it outlived the process that wrote it, and the game
+     * it describes is still being played. Ending it would archive a save mid-play, hand the player's
+     * screen back to the launcher, and leave the real end of the session with nothing to record.
+     * The save watcher is started again behind the game so the rest of the session still syncs.
+     */
+    private suspend fun resumePersistedSession(persisted: PersistedSession) {
+        Logger.info(
+            TAG,
+            "[SaveSync] SESSION gameId=${persisted.gameId} | Persisted session still on screen, resuming it | emulator=${persisted.emulatorPackage}"
+        )
+        saveObserved.set(false)
+        isScreenOn = true
+        lastScreenOnTime = Instant.now()
+        lastScreenOffTime = null
+        marathonSegmentDuration = Duration.ZERO
+        longestMarathonSegment = Duration.ZERO
+
+        _activeSession.value = ActiveSession(
+            gameId = persisted.gameId,
+            startTime = persisted.startTime,
+            emulatorPackage = persisted.emulatorPackage,
+            coreName = persisted.coreName,
+            isHardcore = persisted.isHardcore,
+            channelName = persisted.channelName,
+            variantFileId = persisted.variantFileId
+        )
+        broadcastSessionChanged(persisted.gameId, persisted.channelName, persisted.isHardcore)
+        startGameSessionService(
+            gameId = persisted.gameId,
+            emulatorPackage = persisted.emulatorPackage,
+            coreName = persisted.coreName,
+            isHardcore = persisted.isHardcore,
+            sessionStartTime = persisted.startTime.toEpochMilli()
+        )
     }
 
     private suspend fun recoverOrphanedStates(orphaned: PersistedSession) {

@@ -44,6 +44,7 @@ import com.nendo.argosy.ui.input.LocalXYIconsSwapped
 import com.nendo.argosy.ui.input.LocalSwapStartSelect
 import com.nendo.argosy.ui.input.mapKeycodeToGamepadEvent
 import com.nendo.argosy.ui.screens.secondaryhome.SecondaryHomeViewModel
+import com.nendo.argosy.util.PermissionHelper
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
@@ -137,31 +138,14 @@ class SecondaryHomeActivity :
             CompanionGuardService.stop(this)
             finish()
             return
-        } else {
-            android.util.Log.w("SecondaryHome", "DSM not available, launching MainActivity")
-            startActivity(
-                Intent(this, com.nendo.argosy.MainActivity::class.java).apply {
-                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                },
-                android.app.ActivityOptions.makeBasic()
-                    .setLaunchDisplayId(android.view.Display.DEFAULT_DISPLAY).toBundle()
+        } else if (sessionHoldsThisDisplay()) {
+            android.util.Log.i(
+                "SecondaryHome",
+                "Respawned behind a running session on this display, waiting for it to end"
             )
-            lifecycleScope.launch {
-                var attempts = 0
-                while (DualScreenManagerHolder.instance == null && attempts < 50) {
-                    kotlinx.coroutines.delay(100)
-                    attempts++
-                }
-                val holder = DualScreenManagerHolder.instance
-                if (holder == null) {
-                    android.util.Log.e("SecondaryHome", "DSM still null after waiting, finishing")
-                    finish()
-                    return@launch
-                }
-                dsm = holder
-                initializeCompanion()
-                dsm.onCompanionResumed()
-            }
+            awaitSessionEnd()
+        } else {
+            recoverThroughMainActivity()
         }
 
         setContent {
@@ -303,26 +287,35 @@ class SecondaryHomeActivity :
         }
         dualHomeViewModel.stopDrawerForwarding()
         launchedExternalApp = false
+        syncFromSessionStore()
+        broadcasts.broadcastCompanionResumed()
+        endSessionIfEmulatorGone()
+    }
+
+    private fun syncFromSessionStore() {
         val store = dsm.sessionStateStore
         store.setForeignAppOnSecondary(false)
         isGameActive = store.hasActiveSession()
         isHardcore = store.isHardcore()
         currentChannelName = store.getChannelName()
         isSaveDirty = store.isSaveDirty()
-        broadcasts.broadcastCompanionResumed()
+    }
 
-        if (isGameActive && !dsm.isLaunchingGame) {
-            val emulatorDisplay = dsm.emulatorDisplayId
-            val ownDisplay = window.decorView.display?.displayId
-            if (emulatorDisplay != null && ownDisplay != null && emulatorDisplay == ownDisplay &&
-                !dsm.isEmulatorStillOnScreen(this)
-            ) {
-                android.util.Log.d("SecondaryHome", "Companion resumed and the emulator is gone, ending session")
-                dsm.emulatorDisplayId = null
-                dsm.playSessionTracker.endSessionInBackground()
-                dsm.broadcastSessionCleared()
-            }
-        }
+    /**
+     * Ends a session whose emulator has left this display. The companion getting its display back is
+     * the one event that says a game running on it is over, and it is the only one there is: nothing
+     * else observes an emulator the launcher does not own.
+     */
+    private fun endSessionIfEmulatorGone() {
+        if (!isGameActive || dsm.isLaunchingGame) return
+        val emulatorDisplay = dsm.emulatorDisplayId ?: return
+        val ownDisplay = window.decorView.display?.displayId ?: return
+        if (emulatorDisplay != ownDisplay) return
+        if (dsm.isEmulatorStillOnScreen(this)) return
+        android.util.Log.d("SecondaryHome", "Companion resumed and the emulator is gone, ending session")
+        dsm.emulatorDisplayId = null
+        dsm.playSessionTracker.endSessionInBackground()
+        dsm.broadcastSessionCleared()
     }
 
     override fun onStop() {
@@ -502,15 +495,21 @@ class SecondaryHomeActivity :
 
     override fun onForegroundChanged(isForeground: Boolean) {
         isArgosyForeground = isForeground
-        if (isForeground && isGameActive) {
-            val outOfGame = if (isShowcaseRole) {
-                !dsm.hasLiveSession()
-            } else {
-                true
-            }
-            if (outOfGame) onSessionEnded()
-        }
+        if (isForeground && isGameActive && !sessionKeepsItsScreen()) onSessionEnded()
         isInitialized = true
+    }
+
+    /**
+     * Whether the game keeps the screen it was on as the launcher UI comes forward. Only one on the
+     * other display does: with a single pair of panels, the launcher arriving is the game losing the
+     * one it had. The launcher UI lives on the default display, so a game anywhere else is untouched
+     * by it - which is also the exemption the launcher side applies before it tears a session down,
+     * and the two have to agree or the companion drops the in-game panel out from under a live game.
+     */
+    private fun sessionKeepsItsScreen(): Boolean {
+        if (!dsm.hasLiveSession()) return false
+        if (isShowcaseRole) return true
+        return dsm.emulatorDisplayId?.let { it != Display.DEFAULT_DISPLAY } ?: false
     }
 
     override fun onWizardStateChanged(isActive: Boolean) {
@@ -1109,6 +1108,80 @@ class SecondaryHomeActivity :
     }
 
     /**
+     * Whether the session written to disk is still being played on this display.
+     *
+     * The companion is pinned as this display's home, so the OS recreates it the moment the launcher
+     * process dies - underneath the game, which knows nothing about any of it. Every in-memory signal
+     * that a game is running died with the process; the record on disk and the emulator's own windows
+     * are what is left, and together they say a restart happened rather than a player coming back.
+     * Silence from usage access answers false, which is the old behaviour: recover and let the
+     * launcher come forward.
+     */
+    private fun sessionHoldsThisDisplay(): Boolean {
+        val store = SessionStateStore(applicationContext)
+        if (!store.hasActiveSession()) return false
+        val emulatorPackage = store.getEmulatorPackage() ?: return false
+        val emulatorDisplay = store.getEmulatorDisplayId()
+        val ownDisplay = try {
+            window.decorView.display?.displayId ?: windowManager.defaultDisplay.displayId
+        } catch (_: Exception) { null }
+        if (emulatorDisplay != null && ownDisplay != null && emulatorDisplay != ownDisplay) return false
+        return PermissionHelper().isPackageOnScreenOrRecent(this, emulatorPackage)
+    }
+
+    /**
+     * Holds the companion still until the game on this display is done with it, then recovers.
+     *
+     * Polled rather than driven by this activity's own lifecycle: a companion recreated underneath a
+     * game may never be resumed, and one the OS chose to bring forward is resumed while the game is
+     * still there, so neither event answers on its own. The poll runs only in this one state - no
+     * manager, a session on this display - and ends the moment it recovers.
+     */
+    private fun awaitSessionEnd() {
+        lifecycleScope.launch {
+            while (sessionHoldsThisDisplay()) {
+                kotlinx.coroutines.delay(SESSION_END_POLL_MS)
+            }
+            recoverThroughMainActivity()
+        }
+    }
+
+    /**
+     * Brings the launcher process back up and attaches to the manager it creates. Only ever called
+     * when nothing is being played on this display: it puts an activity on the default display and
+     * finishes this one on failure, and the OS respawning a pinned home activity turns that into a
+     * loop if a game is what it keeps landing behind.
+     */
+    private fun recoverThroughMainActivity() {
+        android.util.Log.w("SecondaryHome", "DSM not available, launching MainActivity")
+        startActivity(
+            Intent(this, com.nendo.argosy.MainActivity::class.java).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            },
+            android.app.ActivityOptions.makeBasic()
+                .setLaunchDisplayId(android.view.Display.DEFAULT_DISPLAY).toBundle()
+        )
+        lifecycleScope.launch {
+            var attempts = 0
+            while (DualScreenManagerHolder.instance == null && attempts < 50) {
+                kotlinx.coroutines.delay(100)
+                attempts++
+            }
+            val holder = DualScreenManagerHolder.instance
+            if (holder == null) {
+                android.util.Log.e("SecondaryHome", "DSM still null after waiting, finishing")
+                finish()
+                return@launch
+            }
+            dsm = holder
+            initializeCompanion()
+            syncFromSessionStore()
+            dsm.onCompanionResumed()
+            endSessionIfEmulatorGone()
+        }
+    }
+
+    /**
      * The companion is only ever launched onto the secondary display, so landing on the default
      * one means the OS refused that placement - it does not permit a home activity there. Left
      * running it would cover the launcher and be relaunched in a loop, so release the component
@@ -1197,3 +1270,4 @@ class SecondaryHomeActivity :
 }
 
 private const val CONFIRM_HOLD_MS = 500L
+private const val SESSION_END_POLL_MS = 3000L

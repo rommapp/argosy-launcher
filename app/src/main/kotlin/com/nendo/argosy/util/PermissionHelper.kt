@@ -129,6 +129,22 @@ class PermissionHelper @Inject constructor() {
         return lastByActivity.values.any { it.second != UsageEvents.Event.ACTIVITY_STOPPED }
     }
 
+    /**
+     * Whether [packageName] still holds a screen, falling back to how recently it was used when the
+     * window-level answer is unavailable. Anything asking "is that game still up" wants both halves:
+     * [isPackageOnScreen] is the accurate answer and frequently has none, while recency alone reports
+     * a perfectly live app on a second display as gone. Without usage access neither half can answer
+     * and the result is false, so a caller that must not act on silence checks the permission itself.
+     */
+    fun isPackageOnScreenOrRecent(
+        context: Context,
+        packageName: String,
+        recencyMs: Long = 15_000
+    ): Boolean {
+        isPackageOnScreen(context, packageName)?.let { return it }
+        return isPackageInForeground(context, packageName, recencyMs)
+    }
+
     fun currentForegroundPackage(context: Context, lookbackMs: Long = 5 * 60 * 1000L): String? {
         if (!hasUsageStatsPermission(context)) return null
         val usm = context.getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager

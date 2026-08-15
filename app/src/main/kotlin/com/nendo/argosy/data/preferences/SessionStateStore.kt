@@ -35,12 +35,29 @@ class SessionStateStore(context: Context) {
 
     fun getEmulatorPackage(): String? = prefs.getString(KEY_EMULATOR_PACKAGE, null)
 
+    /**
+     * The display the running game occupies, written with commit() because its whole purpose is to
+     * outlive the process that set it: every site that lets a game on the other display survive the
+     * launcher coming forward reads this, and a launcher that comes back without it cannot tell a
+     * game on the other screen from one it just covered.
+     */
+    fun setEmulatorDisplayId(displayId: Int?) {
+        val editor = prefs.edit()
+        if (displayId == null) editor.remove(KEY_EMULATOR_DISPLAY_ID)
+        else editor.putInt(KEY_EMULATOR_DISPLAY_ID, displayId)
+        editor.commit()
+    }
+
+    fun getEmulatorDisplayId(): Int? =
+        if (prefs.contains(KEY_EMULATOR_DISPLAY_ID)) prefs.getInt(KEY_EMULATOR_DISPLAY_ID, 0) else null
+
     fun clearSession() {
         prefs.edit()
             .putBoolean(KEY_HAS_SESSION, false)
             .putLong(KEY_GAME_ID, -1)
             .remove(KEY_CHANNEL_NAME)
             .remove(KEY_EMULATOR_PACKAGE)
+            .remove(KEY_EMULATOR_DISPLAY_ID)
             .putBoolean(KEY_IS_HARDCORE, false)
             .putLong(KEY_SESSION_START_TIME, 0)
             .putString(KEY_COMPANION_SCREEN, "HOME")
@@ -375,6 +392,7 @@ class SessionStateStore(context: Context) {
         private const val KEY_CAROUSEL_FRANCHISES = "carousel_filter_franchises"
         private const val KEY_SESSION_START_TIME = "session_start_time"
         private const val KEY_EMULATOR_PACKAGE = "emulator_package"
+        private const val KEY_EMULATOR_DISPLAY_ID = "emulator_display_id"
         private const val KEY_WIZARD_ACTIVE = "wizard_active"
         private const val KEY_FIRST_RUN_COMPLETE = "first_run_complete"
         private const val KEY_ACTIVE_MODAL = "active_modal"

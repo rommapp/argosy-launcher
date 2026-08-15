@@ -283,7 +283,26 @@ class DualScreenManager(
         }
     var emulatorMotionDispatcher: ((android.view.MotionEvent) -> Boolean)? = null
 
+    /**
+     * The display the running game occupies, mirrored to disk so it survives the process.
+     *
+     * A launcher killed under a running game comes back with this field null, and null reads as
+     * "the game is on my display" at every site that exempts a cross-display session - which is how
+     * a restart ends up tearing down, and taking the screen from, a game running on the other panel.
+     * The persisted value is only consulted while the field is empty and only while a session is
+     * recorded behind it, so a live launch always wins and a finished game never leaves a display
+     * claim behind it.
+     */
     var emulatorDisplayId: Int? = null
+        get() = field ?: persistedEmulatorDisplayId()
+        set(value) {
+            field = value
+            sessionStateStore.setEmulatorDisplayId(value)
+        }
+
+    private fun persistedEmulatorDisplayId(): Int? =
+        if (sessionStateStore.hasActiveSession()) sessionStateStore.getEmulatorDisplayId() else null
+
     var isLaunchingGame = false
         private set
     private var launchGuardJob: Job? = null
@@ -733,8 +752,7 @@ class DualScreenManager(
      */
     fun isEmulatorStillOnScreen(context: Context): Boolean {
         val emulatorPackage = sessionStateStore.getEmulatorPackage() ?: return false
-        permissionHelper.isPackageOnScreen(context, emulatorPackage)?.let { return it }
-        return permissionHelper.isPackageInForeground(context, emulatorPackage, 15_000)
+        return permissionHelper.isPackageOnScreenOrRecent(context, emulatorPackage)
     }
 
     val homeAppsList: List<String>

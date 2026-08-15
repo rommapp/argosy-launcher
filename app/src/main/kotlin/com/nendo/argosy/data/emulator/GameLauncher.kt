@@ -26,7 +26,9 @@ import com.nendo.argosy.data.local.dao.PlatformDao
 import com.nendo.argosy.data.local.dao.GameDiscDao
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.libretro.coreoptions.CoreOptionResolver
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.withContext
 import com.nendo.argosy.data.local.entity.GameDiscEntity
 import com.nendo.argosy.data.platform.platformRomRoots
 import com.nendo.argosy.data.local.entity.GameEntity
@@ -116,6 +118,13 @@ class GameLauncher @Inject constructor(
     @Volatile
     private var lastCoreDownloadError: String? = null
 
+    /**
+     * Resolving a launch reads and rewrites the disk - it walks rom folders, extracts archives,
+     * reorganises add-on content and shells out - so it owns the move off the main thread rather
+     * than trusting whichever scope called it. Every caller is a ViewModel coroutine, and those run
+     * on the main dispatcher: left here, the work freezes the UI for as long as it takes and the
+     * launch overlay drawn over it cannot paint.
+     */
     suspend fun launch(
         gameId: Long,
         discId: Long? = null,
@@ -125,6 +134,28 @@ class GameLauncher @Inject constructor(
         skipVariantPrompt: Boolean = false,
         allowVariantPrompt: Boolean = true,
         prefetchedGame: GameEntity? = null
+    ): LaunchResult = withContext(Dispatchers.IO) {
+        launchInternal(
+            gameId = gameId,
+            discId = discId,
+            forResume = forResume,
+            selectedDiscPath = selectedDiscPath,
+            variantFileId = variantFileId,
+            skipVariantPrompt = skipVariantPrompt,
+            allowVariantPrompt = allowVariantPrompt,
+            prefetchedGame = prefetchedGame
+        )
+    }
+
+    private suspend fun launchInternal(
+        gameId: Long,
+        discId: Long?,
+        forResume: Boolean,
+        selectedDiscPath: String?,
+        variantFileId: Long?,
+        skipVariantPrompt: Boolean,
+        allowVariantPrompt: Boolean,
+        prefetchedGame: GameEntity?
     ): LaunchResult {
         Logger.debug(TAG, "launch() called: gameId=$gameId, discId=$discId, forResume=$forResume, variantFileId=$variantFileId, skipVariantPrompt=$skipVariantPrompt")
 
@@ -1140,7 +1171,7 @@ class GameLauncher @Inject constructor(
         )
     }
 
-    suspend fun forceStopEmulator(packageName: String) {
+    suspend fun forceStopEmulator(packageName: String) = withContext(Dispatchers.IO) {
         try {
             val am = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
             am.killBackgroundProcesses(packageName)

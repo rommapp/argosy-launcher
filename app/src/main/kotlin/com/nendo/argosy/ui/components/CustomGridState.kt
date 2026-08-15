@@ -9,6 +9,7 @@ import com.nendo.argosy.domain.model.fitTilesToPage
 
 enum class CustomTileMenuAction(val label: String) {
     ARRANGE("Move or resize"),
+    RECURATE("Change what it plays"),
     REMOVE("Remove from grid"),
     DELETE_PAGE("Delete Page")
 }
@@ -156,6 +157,14 @@ data class CustomGridState(
             it.rect.covers(cell.columnIndex, cell.rowIndex)
         }
 
+    /**
+     * Whether the focused tile has a choice behind it worth revisiting. A tile pointing at one
+     * library title was fully described when it was placed; a series tile carries a mode, and
+     * possibly a season or a hand-picked run, which is the thing someone comes back to change.
+     */
+    val isFocusedTileCurated: Boolean
+        get() = (focusedTile?.target as? HomeTileTargetRef.Media)?.playMode != null
+
     fun tileAt(target: GridCell): HomeTile? =
         tilesOnPage(page).firstOrNull { it.rect.covers(target.columnIndex, target.rowIndex) }
 
@@ -207,6 +216,7 @@ data class CustomGridState(
         get() = buildList {
             if (focusedTile != null) {
                 add(CustomTileMenuAction.ARRANGE)
+                if (isFocusedTileCurated) add(CustomTileMenuAction.RECURATE)
                 add(CustomTileMenuAction.REMOVE)
             }
             if (canDeletePage) add(CustomTileMenuAction.DELETE_PAGE)

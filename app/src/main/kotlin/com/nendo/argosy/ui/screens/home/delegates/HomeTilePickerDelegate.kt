@@ -2,8 +2,10 @@ package com.nendo.argosy.ui.screens.home.delegates
 
 import com.nendo.argosy.data.download.MediaDownloadManager
 import com.nendo.argosy.data.local.entity.MediaItemEntity
+import com.nendo.argosy.data.local.entity.MediaItemType
 import com.nendo.argosy.data.media.MediaAvailabilityVerifier
 import com.nendo.argosy.data.media.mediaAvailabilityOf
+import com.nendo.argosy.data.repository.MediaImageType
 import com.nendo.argosy.data.repository.MediaRepository
 import com.nendo.argosy.domain.model.HomeTile
 import com.nendo.argosy.domain.model.MediaTilePlayback
@@ -50,6 +52,26 @@ class HomeTilePickerDelegate @Inject constructor(
      * again rather than offering the episode that was just watched.
      */
     fun onTilePlayed(tileId: Long) = resolveMediaTile.releaseRandomChoice(tileId)
+
+    /**
+     * Rebuilds the picker row for a title already on the grid. A tile stores the item it stands for
+     * and nothing about how it was found, so the row is reconstructed from the library rather than
+     * remembered.
+     */
+    override suspend fun entryFor(itemId: String): com.nendo.argosy.ui.components.TilePickerEntry? {
+        val item = mediaRepository.getItem(itemId) ?: return null
+        val isSeries = MediaItemType.fromWire(item.itemType) == MediaItemType.SERIES
+        return com.nendo.argosy.ui.components.TilePickerEntry(
+            target = com.nendo.argosy.domain.model.HomeTileTargetRef.Media(itemId),
+            title = item.name,
+            subtitle = if (isSeries) "Series" else "Movie",
+            posterUrl = item.primaryImageTag
+                ?.let { mediaRepository.imageUrl(itemId, MediaImageType.PRIMARY, it) }
+                .orEmpty(),
+            isSeries = isSeries,
+            isLocal = item.localPath != null
+        )
+    }
 
     override suspend fun seasons(seriesId: String): List<MediaTileOption> {
         val verified = availabilityVerifier.availability.value

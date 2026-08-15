@@ -46,10 +46,22 @@ class CustomGridCoordinator(
         read = read,
         write = write,
         onPlace = { target, playlist ->
-            placeOnFocusedCell(target, playlist)
+            val editing = recuratingTileId
+            if (editing == null) {
+                placeOnFocusedCell(target, playlist)
+            } else {
+                retargetTile(editing, target, playlist)
+            }
+            recuratingTileId = null
             closePicker()
         }
     )
+
+    /**
+     * The tile whose curation is being changed, or null when the setup flow is placing a new one.
+     * The two paths ask exactly the same questions and differ only in where the answer lands.
+     */
+    private var recuratingTileId: Long? = null
 
     fun setTiles(tiles: List<HomeTile>) = write { it.copy(tiles = tiles) }
 
@@ -163,6 +175,7 @@ class CustomGridCoordinator(
         closeMenu()
         when (action) {
             CustomTileMenuAction.ARRANGE -> enterMoveMode()
+            CustomTileMenuAction.RECURATE -> recurateFocusedTile()
             CustomTileMenuAction.REMOVE -> removeFocusedTile()
             CustomTileMenuAction.DELETE_PAGE -> deleteCurrentPage()
         }
@@ -673,6 +686,27 @@ class CustomGridCoordinator(
         val entry = read().pendingAdd ?: return
         write { it.copy(pendingAdd = null) }
         entry.gameId?.let(onResolved)
+    }
+
+    private fun retargetTile(tileId: Long, target: HomeTileTargetRef, playlist: List<String>) {
+        val tiles = repository ?: return
+        val tile = read().tiles.firstOrNull { it.id == tileId } ?: return
+        scope.launch { tiles.retarget(tile, ownerUserId(), target, playlist) }
+    }
+
+    /**
+     * Reopens the media setup flow for a tile already on the grid, so its answers land back on that
+     * tile instead of placing another one beside it.
+     */
+    fun recurateFocusedTile() {
+        val tile = read().focusedTile ?: return
+        val target = tile.target as? HomeTileTargetRef.Media ?: return
+        val catalog = mediaCatalog ?: return
+        scope.launch {
+            val entry = catalog.entryFor(target.itemId) ?: return@launch
+            recuratingTileId = tile.id
+            mediaSetupController.begin(entry)
+        }
     }
 
     fun placeOnFocusedCell(target: HomeTileTargetRef, playlist: List<String> = emptyList()) {

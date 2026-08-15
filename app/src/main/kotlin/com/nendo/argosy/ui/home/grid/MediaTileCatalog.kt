@@ -1,6 +1,7 @@
 package com.nendo.argosy.ui.home.grid
 
 import com.nendo.argosy.ui.components.MediaTileOption
+import com.nendo.argosy.ui.components.TilePickerEntry
 
 /**
  * How many titles a batch may be missing before its size is worth stating. Below this the count on
@@ -32,6 +33,12 @@ interface MediaTileCatalog {
      * The episodes of one season, or of the whole series when [seasonId] is null.
      */
     suspend fun episodes(seriesId: String, seasonId: String?): List<MediaTileOption>
+
+    /**
+     * The picker row a placed tile came from, so its curation can be reopened without asking the
+     * viewer to find the title again.
+     */
+    suspend fun entryFor(itemId: String): TilePickerEntry?
 
     suspend fun planDownloads(itemIds: List<String>): MediaTileDownloadPlan
 

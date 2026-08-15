@@ -35,6 +35,22 @@ interface MediaDownloadQueueDao {
     )
     suspend fun getBySeries(ownerUserId: String, seriesId: String): List<MediaDownloadQueueEntity>
 
+    /**
+     * Moves every row of a series that is in [from] into [to], leaving anything already finished or
+     * failed alone. Acting on the set is what makes a series one thing to pause or resume without
+     * the queue needing a record of the series itself.
+     */
+    @Query(
+        "UPDATE media_download_queue SET state = :to WHERE ownerUserId = :ownerUserId " +
+            "AND seriesId = :seriesId AND state IN (:from)"
+    )
+    suspend fun updateSeriesState(
+        ownerUserId: String,
+        seriesId: String,
+        from: List<String>,
+        to: String
+    )
+
     @Query(
         "SELECT COUNT(*) FROM media_download_queue WHERE ownerUserId = :ownerUserId " +
             "AND state IN ('QUEUED', 'PREPARING', 'DOWNLOADING')"

@@ -407,6 +407,61 @@ class MediaDownloadManager @Inject constructor(
         }
     }
 
+    /**
+     * Stops a whole series without abandoning it. The episode actually in flight is paused through
+     * the same path a single download takes, so its partial file and its transcode session are
+     * handled exactly once; everything still waiting is simply moved out of the queue's way.
+     */
+    fun pauseSeries(seriesId: String) {
+        scope.launch {
+            val owner = mediaRepository.currentUserId() ?: return@launch
+            if (_activeDownload.value?.seriesId == seriesId) pauseActiveDownload()
+            mediaDownloadQueueDao.updateSeriesState(
+                ownerUserId = owner,
+                seriesId = seriesId,
+                from = listOf(MediaDownloadDbState.QUEUED.name, MediaDownloadDbState.PREPARING.name),
+                to = MediaDownloadDbState.PAUSED.name
+            )
+            _downloadQueue.value = _downloadQueue.value.filterNot { it.seriesId == seriesId }
+        }
+    }
+
+    /**
+     * Puts a paused series back in line, in the order its episodes were queued in rather than the
+     * order they happen to be read back in.
+     */
+    fun resumeSeries(seriesId: String) {
+        scope.launch {
+            val owner = mediaRepository.currentUserId() ?: return@launch
+            mediaDownloadQueueDao.updateSeriesState(
+                ownerUserId = owner,
+                seriesId = seriesId,
+                from = listOf(MediaDownloadDbState.PAUSED.name),
+                to = MediaDownloadDbState.QUEUED.name
+            )
+            val rows = mediaDownloadQueueDao.getBySeries(owner, seriesId)
+                .filter { it.state == MediaDownloadDbState.QUEUED.name }
+            val known = _downloadQueue.value.map { it.itemId }.toSet()
+            _downloadQueue.value = _downloadQueue.value +
+                rows.filterNot { it.itemId in known }.map { it.toQueued() }
+            DownloadForegroundService.start(context)
+            processNextInQueue()
+        }
+    }
+
+    /**
+     * Drops a series from the queue entirely. Each episode goes through the single-item path so an
+     * in-flight one is torn down properly rather than left with a transcode running on the server.
+     */
+    fun cancelSeries(seriesId: String) {
+        scope.launch {
+            val owner = mediaRepository.currentUserId() ?: return@launch
+            mediaDownloadQueueDao.getBySeries(owner, seriesId)
+                .filterNot { it.state == MediaDownloadDbState.COMPLETED.name }
+                .forEach { cancelDownload(it.itemId) }
+        }
+    }
+
     fun resumeDownload(itemId: String) {
         scope.launch {
             val owner = mediaRepository.currentUserId() ?: return@launch

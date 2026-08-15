@@ -27,6 +27,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
@@ -89,35 +90,16 @@ fun MediaCard(
     alphaOverride: Float? = null
 ) {
     val theme = LocalArgosyTheme.current
-    val shape = RoundedCornerShape(Dimens.radiusMd)
-
-    val scale by animateFloatAsState(
-        targetValue = scaleOverride
-            ?: if (isFocused) focusScale else ComponentDefaults.Focus.scaleDefault,
-        animationSpec = Motion.focusSpring,
-        label = "mediaCardScale"
-    )
-    val alpha by animateFloatAsState(
-        targetValue = alphaOverride ?: if (isFocused) {
-            ComponentDefaults.Focus.alphaFocused
-        } else {
-            ComponentDefaults.Focus.alphaUnfocused
-        },
-        animationSpec = Motion.focusSpring,
-        label = "mediaCardAlpha"
-    )
 
     BoxWithConstraints(
-        modifier = modifier
-            .graphicsLayer {
-                scaleX = scale
-                scaleY = scale
-                transformOrigin = TransformOrigin(0.5f, scalePivotY)
-                this.alpha = alpha
-            }
-            .argosyFocusIndicators(focused = isFocused, indicators = MEDIA_TILE_FOCUS, shape = shape)
-            .clip(shape)
-            .background(theme.surfaceRaised)
+        modifier = modifier.boxArtFrame(
+            isFocused = isFocused,
+            focusScale = focusScale,
+            scalePivotY = scalePivotY,
+            scaleOverride = scaleOverride,
+            alphaOverride = alphaOverride,
+            background = SolidColor(theme.surfaceRaised)
+        )
     ) {
         val showLabel = maxWidth >= Dimens.mediaPosterWidth * MEDIA_LABEL_MIN_WIDTH_FRACTION
         var artworkFailed by remember(media.posterUrl) { mutableStateOf(false) }

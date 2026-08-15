@@ -4,6 +4,7 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,6 +18,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -140,35 +144,104 @@ fun MediaStickyCollapsedHeader(
     }
 }
 
+/**
+ * The facts about a title, then what kind of title it is.
+ *
+ * Two runs rather than one: a year, a runtime and a certificate answer different questions than a
+ * genre list does, and a title carrying five genres swamps them when everything shares a line. The
+ * certificate is boxed because it is an authority's mark rather than a description, and the score
+ * is starred so a bare number is not left to explain itself.
+ */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun MediaMetadataChips(item: MediaItemUi, modifier: Modifier = Modifier) {
     val theme = LocalArgosyTheme.current
-    val chips = buildList {
+    val facts = buildList {
         item.year?.let { add(it.toString()) }
         item.runtimeLabel?.let { add(it) }
-        item.officialRating?.let { add(it) }
-        item.communityRating?.let { add("%.1f".format(it)) }
         item.childCount?.takeIf { item.isSeries && it > 0 }?.let {
             add(if (it == 1) "1 season" else "$it seasons")
         }
-        item.genres?.let { add(it) }
     }
-    if (chips.isEmpty()) return
-    FlowRow(
+    val genres = item.genres?.takeIf { it.isNotBlank() }
+    if (facts.isEmpty() && genres == null && item.officialRating == null &&
+        item.communityRating == null
+    ) {
+        return
+    }
+
+    Column(
         modifier = modifier,
-        horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm),
         verticalArrangement = Arrangement.spacedBy(Dimens.spacingXs)
     ) {
-        chips.forEach { chip ->
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm),
+            verticalArrangement = Arrangement.spacedBy(Dimens.spacingXs)
+        ) {
+            facts.forEachIndexed { index, fact ->
+                if (index > 0) MetadataSeparator()
+                Text(
+                    text = fact,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = theme.textDim,
+                    maxLines = 1
+                )
+            }
+            item.officialRating?.let { rating ->
+                Text(
+                    text = rating,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = theme.textDim,
+                    maxLines = 1,
+                    modifier = Modifier
+                        .border(
+                            width = Dimens.borderThin,
+                            color = theme.hairlineLow,
+                            shape = RoundedCornerShape(Dimens.radiusSm)
+                        )
+                        .padding(horizontal = Dimens.spacingXs)
+                )
+            }
+            item.communityRating?.let { rating ->
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(Dimens.spacingXs),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Star,
+                        contentDescription = null,
+                        tint = theme.focusAccent,
+                        modifier = Modifier.size(Dimens.iconXs)
+                    )
+                    Text(
+                        text = "%.1f".format(rating),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = theme.textDim,
+                        maxLines = 1
+                    )
+                }
+            }
+        }
+
+        genres?.let {
             Text(
-                text = chip,
+                text = it,
                 style = MaterialTheme.typography.labelMedium,
                 color = theme.textMute,
-                maxLines = 1
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
             )
         }
     }
+}
+
+@Composable
+private fun MetadataSeparator() {
+    Text(
+        text = "·",
+        style = MaterialTheme.typography.labelMedium,
+        color = LocalArgosyTheme.current.textMute
+    )
 }
 
 private const val OVERVIEW_LINES_WIDE = 5

@@ -1,9 +1,9 @@
 package com.nendo.argosy.ui.screens.media.components
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -16,14 +16,13 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import coil.compose.AsyncImage
 import com.nendo.argosy.ui.components.FocusedScroll
-import com.nendo.argosy.ui.primitives.FocusIndicators
-import com.nendo.argosy.ui.primitives.argosyFocusIndicators
+import com.nendo.argosy.ui.components.boxArtFrame
 import com.nendo.argosy.ui.screens.media.MediaCastUi
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalArgosyTheme
@@ -51,7 +50,8 @@ fun MediaCastRail(
         modifier = modifier,
         horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm),
         contentPadding = androidx.compose.foundation.layout.PaddingValues(
-            horizontal = Dimens.spacingLg
+            horizontal = Dimens.spacingLg,
+            vertical = Dimens.spacingSm
         )
     ) {
         itemsIndexed(items = cast, key = { _, person -> person.personId }) { index, person ->
@@ -82,13 +82,12 @@ private fun MediaCastTile(
         Box(
             modifier = Modifier
                 .size(Dimens.mediaCastPortraitSize)
-                .clip(CircleShape)
-                .argosyFocusIndicators(
-                    focused = isFocused,
-                    indicators = FocusIndicators.Tile,
-                    shape = CircleShape
-                )
-                .background(theme.surfaceRaised),
+                .boxArtFrame(
+                    isFocused = isFocused,
+                    scaleOverride = 1f,
+                    background = SolidColor(theme.surfaceRaised),
+                    shapeOverride = CircleShape
+                ),
             contentAlignment = Alignment.Center
         ) {
             if (person.imageUrl.isNotEmpty()) {
@@ -96,7 +95,7 @@ private fun MediaCastTile(
                     model = person.imageUrl,
                     contentDescription = person.name,
                     contentScale = ContentScale.Crop,
-                    modifier = Modifier.size(Dimens.mediaCastPortraitSize).clip(CircleShape)
+                    modifier = Modifier.fillMaxSize()
                 )
             } else {
                 Text(
@@ -111,7 +110,7 @@ private fun MediaCastTile(
             text = person.name,
             style = MaterialTheme.typography.labelMedium,
             color = if (isFocused) theme.textPrimary else theme.textDim,
-            maxLines = 2,
+            maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             textAlign = TextAlign.Center
         )

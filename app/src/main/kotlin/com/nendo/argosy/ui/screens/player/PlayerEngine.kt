@@ -5,6 +5,7 @@ import android.net.Uri
 import androidx.annotation.OptIn
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
+import com.nendo.argosy.util.Logger
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MimeTypes
 import androidx.media3.common.Player
@@ -28,6 +29,7 @@ import okhttp3.OkHttpClient
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 
+private const val TAG = "PlayerEngine"
 private const val STREAM_READ_TIMEOUT_SECONDS = 60L
 private const val STREAM_CONNECT_TIMEOUT_SECONDS = 30L
 
@@ -131,6 +133,15 @@ class PlayerEngine @Inject constructor(
         }
 
         val subtitleGroup = subtitleKey?.let { subtitleGroup(tracks, it, subtitlesAreEmbedded) }
+        if (subtitleKey != null && subtitleGroup == null) {
+            Logger.warn(
+                TAG,
+                "no text track matched key=$subtitleKey embedded=$subtitlesAreEmbedded; ids=" +
+                    tracks.groups.filter { it.type == C.TRACK_TYPE_TEXT }.joinToString(",") { group ->
+                        (0 until group.length).joinToString(",") { group.getTrackFormat(it).id.toString() }
+                    }
+            )
+        }
         if (subtitleGroup != null) {
             builder.setTrackTypeDisabled(C.TRACK_TYPE_TEXT, false)
             builder.setOverrideForType(TrackSelectionOverride(subtitleGroup.mediaTrackGroup, 0))
@@ -187,9 +198,20 @@ class PlayerEngine @Inject constructor(
         val id = sideloadedSubtitleId(key)
         return tracks.groups.firstOrNull { group ->
             group.type == C.TRACK_TYPE_TEXT &&
-                (0 until group.length).any { group.getTrackFormat(it).id == id }
+                (0 until group.length).any { group.getTrackFormat(it).id.matchesSideloadedId(id) }
         }
     }
+
+    /**
+     * Whether a track format carries the id we attached the sidecar under.
+     *
+     * The player qualifies a sideloaded track's id with the index of the source it was merged in
+     * from, so what comes back is "1:our-id" rather than the id we set. Matching the tail is what
+     * survives that, and anchoring on the colon keeps one id from matching another that merely ends
+     * the same way.
+     */
+    private fun String?.matchesSideloadedId(id: String): Boolean =
+        this == id || this?.endsWith(":$id") == true
 
     private fun dataSourceFactory(authorizationHeader: String?): DataSource.Factory {
         val client = OkHttpClient.Builder()

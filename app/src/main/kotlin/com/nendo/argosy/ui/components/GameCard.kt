@@ -201,103 +201,16 @@ fun GameCard(
 
     BoxWithConstraints(
         modifier = modifier
-            .graphicsLayer {
-                scaleX = scale
-                scaleY = scale
-                transformOrigin = TransformOrigin(0.5f, scalePivotY)
-                this.alpha = alpha
-                this.clip = false
-            }
-            .then(
-                if (showOuterEffect) {
-                    Modifier.drawBehind {
-                        drawIntoCanvas { canvas ->
-                            val cornerRadius = boxArtStyle.cornerRadiusDp.toPx()
-                            val spread = outerEffectRadius
-                            when (outerEffect) {
-                                BoxArtOuterEffect.GLOW -> {
-                                    val glowAlpha = boxArtStyle.glowAlpha
-                                    val frameworkPaint = android.graphics.Paint().apply {
-                                        maskFilter = android.graphics.BlurMaskFilter(
-                                            outerEffectRadius,
-                                            android.graphics.BlurMaskFilter.Blur.NORMAL
-                                        )
-                                        if (glowGradientColors != null) {
-                                            shader = android.graphics.LinearGradient(
-                                                0f, 0f,
-                                                0f, size.height,
-                                                glowGradientColors.first.copy(alpha = glowAlpha).toArgb(),
-                                                glowGradientColors.second.copy(alpha = glowAlpha).toArgb(),
-                                                android.graphics.Shader.TileMode.CLAMP
-                                            )
-                                        } else {
-                                            color = glowColor.copy(alpha = glowAlpha).toArgb()
-                                        }
-                                    }
-                                    canvas.nativeCanvas.drawRoundRect(
-                                        -spread, -spread,
-                                        size.width + spread, size.height + spread,
-                                        cornerRadius + spread, cornerRadius + spread,
-                                        frameworkPaint
-                                    )
-                                }
-                                BoxArtOuterEffect.SHADOW -> {
-                                    val paint = Paint().apply {
-                                        color = Color.Black.copy(alpha = 0.3f)
-                                    }
-                                    val frameworkPaint = paint.asFrameworkPaint().apply {
-                                        maskFilter = android.graphics.BlurMaskFilter(
-                                            outerEffectRadius,
-                                            android.graphics.BlurMaskFilter.Blur.NORMAL
-                                        )
-                                    }
-                                    canvas.nativeCanvas.drawRoundRect(
-                                        -spread, -spread,
-                                        size.width + spread, size.height + spread,
-                                        cornerRadius + spread, cornerRadius + spread,
-                                        frameworkPaint
-                                    )
-                                }
-                                BoxArtOuterEffect.SHINE -> {
-                                    val shineWidth = size.width * 0.4f
-                                    val shineX = outerShineOffset * (size.width + shineWidth) - shineWidth
-                                    val paint = android.graphics.Paint().apply {
-                                        maskFilter = android.graphics.BlurMaskFilter(
-                                            outerEffectRadius / 2,
-                                            android.graphics.BlurMaskFilter.Blur.NORMAL
-                                        )
-                                        shader = android.graphics.LinearGradient(
-                                            shineX, 0f,
-                                            shineX + shineWidth, size.height,
-                                            intArrayOf(
-                                                android.graphics.Color.TRANSPARENT,
-                                                android.graphics.Color.argb(150, 255, 255, 255),
-                                                android.graphics.Color.TRANSPARENT
-                                            ),
-                                            floatArrayOf(0f, 0.5f, 1f),
-                                            android.graphics.Shader.TileMode.CLAMP
-                                        )
-                                    }
-                                    canvas.nativeCanvas.drawRoundRect(
-                                        -spread, -spread,
-                                        size.width + spread, size.height + spread,
-                                        cornerRadius + spread, cornerRadius + spread,
-                                        paint
-                                    )
-                                }
-                                BoxArtOuterEffect.OFF -> {}
-                            }
-                        }
-                    }
-                } else Modifier
+            .boxArtFrame(
+                isFocused = isFocused,
+                focusScale = focusScale,
+                scalePivotY = scalePivotY,
+                scaleOverride = scaleOverride,
+                alphaOverride = alphaOverride,
+                artworkGradient = coverGradientColors,
+                background = cardBackgroundBrush,
+                drawBorder = !spineActiveForBackground
             )
-            .then(
-                if (!spineActiveForBackground && isFocused && boxArtStyle.borderThicknessDp.value > 0f && boxArtStyle.borderStyle == BoxArtBorderStyle.SOLID) {
-                    Modifier.border(boxArtStyle.borderThicknessDp, borderColor, shape)
-                } else Modifier
-            )
-            .clip(shape)
-            .background(cardBackgroundBrush)
     ) {
         val spineBlurredBackdrop = spineActiveForBackground &&
             boxArtStyle.borderStyle == BoxArtBorderStyle.GLASS &&

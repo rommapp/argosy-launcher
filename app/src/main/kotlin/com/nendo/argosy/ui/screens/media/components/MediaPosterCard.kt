@@ -24,9 +24,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.graphics.SolidColor
 import coil.compose.AsyncImage
-import com.nendo.argosy.ui.primitives.FocusIndicators
-import com.nendo.argosy.ui.primitives.argosyFocusIndicators
+import com.nendo.argosy.ui.components.boxArtFrame
 import com.nendo.argosy.ui.screens.media.MediaItemUi
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalArgosyTheme
@@ -42,14 +42,13 @@ fun MediaPosterCard(
     isFocused: Boolean,
     onClick: () -> Unit,
     onLongClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    scaleOverride: Float? = null
 ) {
     val theme = LocalArgosyTheme.current
-    val shape = RoundedCornerShape(Dimens.radiusMd)
     Column(
         modifier = modifier
             .width(Dimens.mediaPosterWidth)
-            .argosyFocusIndicators(focused = isFocused, indicators = FocusIndicators.Tile, shape = shape)
             .clickableNoFocus(onClick = onClick, onLongClick = onLongClick),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -57,8 +56,11 @@ fun MediaPosterCard(
             modifier = Modifier
                 .width(Dimens.mediaPosterWidth)
                 .height(Dimens.mediaPosterHeight)
-                .clip(shape)
-                .background(theme.surfaceRaised)
+                .boxArtFrame(
+                    isFocused = isFocused,
+                    scaleOverride = scaleOverride,
+                    background = SolidColor(theme.surfaceRaised)
+                )
         ) {
             AsyncImage(
                 model = item.posterUrl,

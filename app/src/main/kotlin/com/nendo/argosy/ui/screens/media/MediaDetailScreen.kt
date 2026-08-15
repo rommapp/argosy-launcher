@@ -6,6 +6,8 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -228,43 +230,56 @@ private fun MediaDetailContent(
                     MediaExpandedHeader(item = detail)
                 }
 
-                if (uiState.mode == MediaDetailMode.SERIES) {
-                    MediaSeriesPane(
+                when {
+                    uiState.mode == MediaDetailMode.SERIES &&
+                        uiState.section != MediaDetailSection.CAST &&
+                        uiState.section != MediaDetailSection.SIMILAR ->
+                        MediaSeriesPane(
+                            uiState = uiState,
+                            viewModel = viewModel,
+                            onPlay = onPlay,
+                            modifier = Modifier.weight(1f)
+                        )
+
+                    else -> MediaExtraRails(
                         uiState = uiState,
                         viewModel = viewModel,
-                        onPlay = onPlay,
                         modifier = Modifier.weight(1f)
                     )
-                } else {
-                    Box(modifier = Modifier.weight(1f))
                 }
-
-                MediaExtraRails(uiState = uiState, viewModel = viewModel)
             }
         }
     }
 }
 
 /**
- * The rails that sit under whatever the title's main region is: who is in it, then what is like it.
+ * Who is in this title and what is like it, both on the page rather than behind a door.
  *
- * Each is drawn only when it has something in it, and only the focused one shows a heading in its
- * active colour, so the pair reads as one run rather than two competing lists. They are laid out
- * after the region above them rather than inside it, which is what keeps a series' pinned tabs
- * pinned while these still scroll their own axis.
+ * A title with no episode list has the column to spare, so hiding these behind the rail only made
+ * opening one feel like leaving the page. The rail rows still lead here; they move focus to a
+ * region that was already in front of the viewer.
  */
 @Composable
 private fun MediaExtraRails(
     uiState: MediaDetailUiState,
-    viewModel: MediaDetailViewModel
+    viewModel: MediaDetailViewModel,
+    modifier: Modifier = Modifier
 ) {
-    if (uiState.cast.isEmpty() && uiState.similar.isEmpty()) return
+    val scrollState = rememberScrollState()
+    LaunchedEffect(uiState.section) {
+        when (uiState.section) {
+            MediaDetailSection.CAST -> scrollState.animateScrollTo(0)
+            MediaDetailSection.SIMILAR -> scrollState.animateScrollTo(scrollState.maxValue)
+            else -> Unit
+        }
+    }
 
     Column(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
-            .padding(bottom = Dimens.footerHeight + Dimens.spacingSm),
-        verticalArrangement = Arrangement.spacedBy(Dimens.spacingXs)
+            .verticalScroll(scrollState)
+            .padding(top = Dimens.spacingSm, bottom = Dimens.footerHeight + Dimens.spacingSm),
+        verticalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
     ) {
         if (uiState.cast.isNotEmpty()) {
             MediaRailHeading(
@@ -301,8 +316,8 @@ private fun MediaRailHeading(text: String, isFocused: Boolean) {
     Text(
         text = text,
         style = MaterialTheme.typography.titleSmall,
-        color = if (isFocused) theme.textPrimary else theme.textMute,
-        modifier = Modifier.padding(horizontal = Dimens.spacingLg, vertical = Dimens.spacingXs)
+        color = if (isFocused) theme.textPrimary else theme.textDim,
+        modifier = Modifier.padding(horizontal = Dimens.spacingLg)
     )
 }
 

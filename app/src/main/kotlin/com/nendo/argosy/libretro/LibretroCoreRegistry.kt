@@ -96,7 +96,7 @@ object LibretroCoreRegistry {
             fileName = "vba_next_libretro_android.so",
             displayName = "VBA Next",
             platforms = setOf("gba"),
-            estimatedSizeBytes = 2_000_000L
+            estimatedSizeBytes = 800_000L
         ),
 
         // Nintendo 64
@@ -462,7 +462,7 @@ object LibretroCoreRegistry {
             fileName = "freechaf_libretro_android.so",
             displayName = "FreeChaF",
             platforms = setOf("channelf"),
-            estimatedSizeBytes = 300_000L,
+            estimatedSizeBytes = 70_000L,
             requiresBios = listOf("sl31253.bin", "sl31254.bin"),
             isDefault = true
         ),

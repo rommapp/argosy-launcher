@@ -48,6 +48,8 @@ import java.time.format.DateTimeFormatter
 import javax.inject.Inject
 import javax.inject.Singleton
 
+private const val HTTP_NOT_FOUND = 404
+
 data class DiscoveredState(
     val file: File,
     val slotNumber: Int,
@@ -429,6 +431,7 @@ class StateCacheManager @Inject constructor(
         val cacheFile = File(cacheBaseDir, entity.cachePath)
         val parentDir = cacheFile.parentFile
         cacheFile.delete()
+        entity.screenshotPath?.let { File(cacheBaseDir, it).delete() }
         if (parentDir?.listFiles()?.isEmpty() == true) {
             parentDir.delete()
         }
@@ -841,18 +844,56 @@ class StateCacheManager @Inject constructor(
             }
 
             val uploadFileName = buildUploadFileName(state, romBaseName)
-            val requestBody = cacheFile.asRequestBody("application/octet-stream".toMediaType())
-            val filePart = MultipartBody.Part.createFormData("stateFile", uploadFileName, requestBody)
 
-            val screenshotPart = getScreenshotFile(state)?.let { ssFile ->
+            fun buildStatePart(): MultipartBody.Part {
+                val requestBody = cacheFile.asRequestBody("application/octet-stream".toMediaType())
+                return MultipartBody.Part.createFormData("stateFile", uploadFileName, requestBody)
+            }
+
+            fun buildScreenshotPart(): MultipartBody.Part? = getScreenshotFile(state)?.let { ssFile ->
                 val ssBody = ssFile.asRequestBody("image/png".toMediaType())
                 MultipartBody.Part.createFormData("screenshotFile", ssFile.name, ssBody)
             }
 
-            val response = if (state.rommSaveId != null) {
-                api.updateState(state.rommSaveId, stateFile = filePart, screenshotFile = screenshotPart)
+            val firstResponse = if (state.rommSaveId != null) {
+                api.updateState(
+                    state.rommSaveId,
+                    stateFile = buildStatePart(),
+                    screenshotFile = buildScreenshotPart()
+                )
             } else {
-                api.uploadState(rommId, state.emulatorId, stateFile = filePart, screenshotFile = screenshotPart)
+                api.uploadState(
+                    rommId,
+                    state.emulatorId,
+                    stateFile = buildStatePart(),
+                    screenshotFile = buildScreenshotPart()
+                )
+            }
+
+            val response = if (
+                !firstResponse.isSuccessful &&
+                firstResponse.code() == HTTP_NOT_FOUND &&
+                state.rommSaveId != null
+            ) {
+                Log.w(
+                    TAG,
+                    "[StateSync] UPLOAD stateId=${state.id} | Server state ${state.rommSaveId} is gone, re-creating"
+                )
+                stateCacheDao.updateSyncState(
+                    id = state.id,
+                    rommSaveId = null,
+                    syncStatus = StateCacheEntity.STATUS_PENDING_UPLOAD,
+                    serverUpdatedAt = null,
+                    lastUploadedHash = null
+                )
+                api.uploadState(
+                    rommId,
+                    state.emulatorId,
+                    stateFile = buildStatePart(),
+                    screenshotFile = buildScreenshotPart()
+                )
+            } else {
+                firstResponse
             }
 
             if (response.isSuccessful) {
@@ -952,7 +993,17 @@ class StateCacheManager @Inject constructor(
             val cachePath = "$relativeDir/$fileName"
             val now = Instant.now()
 
+            val existing = stateCacheDao.getBySlotAndCore(
+                gameId = gameId,
+                emulatorId = emulatorId,
+                slotNumber = parsedSlot,
+                channelName = channelName,
+                coreId = coreId,
+                ownerUserId = ownerUserId
+            )
+
             val entity = StateCacheEntity(
+                id = existing?.id ?: 0,
                 gameId = gameId,
                 platformSlug = platformSlug,
                 emulatorId = emulatorId,
@@ -963,14 +1014,14 @@ class StateCacheManager @Inject constructor(
                 cachePath = cachePath,
                 screenshotPath = screenshotCachePath,
                 coreId = coreId,
-                coreVersion = null,
-                isLocked = false,
-                note = null,
+                coreVersion = existing?.coreVersion,
+                isLocked = existing?.isLocked ?: false,
+                note = existing?.note,
                 rommSaveId = rommStateId,
                 syncStatus = StateCacheEntity.STATUS_SYNCED,
-                serverUpdatedAt = now,
+                serverUpdatedAt = parseTimestamp(serverState.updatedAt) ?: now,
                 lastUploadedHash = contentHash,
-                ownerUserId = ownerUserId
+                ownerUserId = existing?.ownerUserId ?: ownerUserId
             )
 
             stateCacheDao.upsert(entity)
@@ -980,6 +1031,21 @@ class StateCacheManager @Inject constructor(
             Log.e(TAG, "[StateSync] DOWNLOAD rommStateId=$rommStateId | Exception", e)
             StateCloudResult.Error(e.message ?: "Download failed")
         }
+    }
+
+    /**
+     * Drops a cached state's link to a server object that is no longer there, leaving the cached
+     * file untouched and queued to be re-created. A server rom's own state list is the authority
+     * on which ids are live, so a link missing from it can never be repaired by retrying.
+     */
+    suspend fun clearServerLink(stateId: Long) = withContext(Dispatchers.IO) {
+        stateCacheDao.updateSyncState(
+            id = stateId,
+            rommSaveId = null,
+            syncStatus = StateCacheEntity.STATUS_PENDING_UPLOAD,
+            serverUpdatedAt = null,
+            lastUploadedHash = null
+        )
     }
 
     suspend fun checkServerStates(rommId: Long, api: RomMApi): List<RomMState> = withContext(Dispatchers.IO) {

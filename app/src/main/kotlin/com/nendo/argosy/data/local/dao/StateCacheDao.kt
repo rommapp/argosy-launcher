@@ -175,11 +175,16 @@ interface StateCacheDao {
     """)
     suspend fun getByRommSaveId(rommSaveId: Long, ownerUserId: Long?): StateCacheEntity?
 
+    /**
+     * Ordered so that the row a caller should prefer for a slot comes LAST: callers reduce this
+     * with `associateBy`, which keeps the final entry. Attributed rows therefore follow
+     * unattributed ones and the newest follows the oldest.
+     */
     @Query("""
         SELECT * FROM state_cache
         WHERE gameId = :gameId AND emulatorId = :emulatorId
         AND (ownerUserId IS NULL OR ownerUserId IS :ownerUserId)
-        ORDER BY slotNumber ASC
+        ORDER BY slotNumber ASC, (ownerUserId IS NULL) DESC, id ASC
     """)
     suspend fun getByGameAndEmulator(gameId: Long, emulatorId: String, ownerUserId: Long?): List<StateCacheEntity>
 

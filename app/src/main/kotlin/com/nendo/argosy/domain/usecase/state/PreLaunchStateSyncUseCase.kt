@@ -16,6 +16,38 @@ import javax.inject.Inject
 
 private const val TAG = "PreLaunchStateSync"
 
+internal data class ReconciledState(
+    val state: StateCacheEntity,
+    val linkWasDropped: Boolean
+)
+
+/**
+ * Drops links to server states that are no longer on the server. A rom's own state list is the
+ * authority on which ids are live, so an id missing from it can never be repaired by retrying:
+ * downloads stay blocked and uploads keep failing against a dead object.
+ *
+ * A dropped row keeps its cached file and is queued to be re-created, so the slot is never
+ * resolved by discarding what the player has locally.
+ */
+internal fun reconcileDeadServerLinks(
+    localStates: List<StateCacheEntity>,
+    liveServerIds: Set<Long>
+): List<ReconciledState> = localStates.map { local ->
+    if (local.rommSaveId == null || local.rommSaveId in liveServerIds) {
+        ReconciledState(local, linkWasDropped = false)
+    } else {
+        ReconciledState(
+            local.copy(
+                rommSaveId = null,
+                syncStatus = StateCacheEntity.STATUS_PENDING_UPLOAD,
+                serverUpdatedAt = null,
+                lastUploadedHash = null
+            ),
+            linkWasDropped = true
+        )
+    }
+}
+
 class PreLaunchStateSyncUseCase @Inject constructor(
     private val stateCacheManager: StateCacheManager,
     private val saveSyncRepository: SaveSyncRepository,
@@ -84,8 +116,19 @@ class PreLaunchStateSyncUseCase @Inject constructor(
         Log.d(TAG, "Found ${serverStates.size} server states for ${game.title}")
 
         val localStates = stateCacheManager.getByGameAndEmulator(gameId, emulatorId)
-        val localByRommId = localStates.filter { it.rommSaveId != null }.associateBy { it.rommSaveId }
-        val localBySlot = localStates.associateBy { it.slotNumber }
+        val reconciled = reconcileDeadServerLinks(localStates, serverStates.map { it.id }.toSet())
+        reconciled.filter { it.linkWasDropped }.forEach {
+            Log.w(
+                TAG,
+                "Slot ${it.state.slotNumber} points at a server state that no longer exists, " +
+                    "dropping the link"
+            )
+            stateCacheManager.clearServerLink(it.state.id)
+        }
+
+        val repaired = reconciled.map { it.state }
+        val localByRommId = repaired.filter { it.rommSaveId != null }.associateBy { it.rommSaveId }
+        val localBySlot = repaired.associateBy { it.slotNumber }
 
         var downloadedCount = 0
 

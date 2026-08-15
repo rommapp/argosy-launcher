@@ -3250,3 +3250,54 @@ object Migration_171_172 : Migration(171, 172) {
         db.execSQL("ALTER TABLE `home_tiles` ADD COLUMN `mediaItemId` TEXT")
     }
 }
+
+/**
+ * Collapses duplicate `state_cache` rows down to one per slot. The unique index spans three
+ * nullable columns, and SQLite treats NULLs as distinct, so REPLACE never fired for the ordinary
+ * case and every pre-launch download inserted another row for a slot it already held.
+ *
+ * A survivor missing a server link inherits one from a sibling first, so collapsing the group
+ * cannot strand a state object on the server. Cached files are left on disk untouched.
+ */
+object Migration_172_173 : Migration(172, 173) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            """
+            UPDATE state_cache
+            SET rommSaveId = (
+                SELECT sibling.rommSaveId FROM state_cache AS sibling
+                WHERE sibling.gameId = state_cache.gameId
+                  AND sibling.emulatorId = state_cache.emulatorId
+                  AND sibling.slotNumber = state_cache.slotNumber
+                  AND sibling.channelName IS state_cache.channelName
+                  AND sibling.coreId IS state_cache.coreId
+                  AND sibling.ownerUserId IS state_cache.ownerUserId
+                  AND sibling.rommSaveId IS NOT NULL
+                ORDER BY sibling.id DESC
+                LIMIT 1
+            )
+            WHERE rommSaveId IS NULL
+              AND EXISTS (
+                SELECT 1 FROM state_cache AS sibling
+                WHERE sibling.gameId = state_cache.gameId
+                  AND sibling.emulatorId = state_cache.emulatorId
+                  AND sibling.slotNumber = state_cache.slotNumber
+                  AND sibling.channelName IS state_cache.channelName
+                  AND sibling.coreId IS state_cache.coreId
+                  AND sibling.ownerUserId IS state_cache.ownerUserId
+                  AND sibling.rommSaveId IS NOT NULL
+              )
+            """.trimIndent()
+        )
+
+        db.execSQL(
+            """
+            DELETE FROM state_cache
+            WHERE id NOT IN (
+                SELECT MAX(id) FROM state_cache
+                GROUP BY gameId, emulatorId, slotNumber, channelName, coreId, ownerUserId
+            )
+            """.trimIndent()
+        )
+    }
+}

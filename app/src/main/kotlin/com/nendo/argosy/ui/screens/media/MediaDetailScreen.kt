@@ -157,7 +157,9 @@ fun MediaDetailScreen(
         onMove = viewModel::moveDownloadFocus,
         onFocus = viewModel::focusDownloadOption,
         onConfirm = viewModel::confirmDownloadOption,
-        onDismiss = viewModel::dismissDownloadPrompt
+        onDismiss = viewModel::dismissDownloadPrompt,
+        onCollapseSeason = viewModel::collapseDownloadSeason,
+        onCommitSelection = viewModel::commitEpisodeSelection
     )
 
     MediaDetailMenuModalHost(

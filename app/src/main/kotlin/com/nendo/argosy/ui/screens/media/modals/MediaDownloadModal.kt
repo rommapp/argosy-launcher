@@ -17,7 +17,12 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CheckBox
+import androidx.compose.material.icons.filled.CheckBoxOutlineBlank
+import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.DownloadDone
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.HighQuality
 import androidx.compose.material.icons.filled.Subtitles
@@ -46,6 +51,7 @@ import com.nendo.argosy.ui.screens.media.MediaDownloadOption
 import com.nendo.argosy.ui.screens.media.MediaDownloadPrompt
 import com.nendo.argosy.ui.screens.media.MediaDownloadScope
 import com.nendo.argosy.ui.screens.media.MediaDownloadStep
+import com.nendo.argosy.ui.screens.media.MediaEpisodePickerRow
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalArgosyTheme
 import com.nendo.argosy.ui.theme.LocalLauncherTheme
@@ -66,11 +72,15 @@ fun MediaDownloadModalHost(
     onFocus: (Int) -> Unit,
     onConfirm: () -> Unit,
     onDismiss: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onCollapseSeason: () -> Unit = {},
+    onCommitSelection: () -> Unit = {}
 ) {
     val currentOnMove by rememberUpdatedState(onMove)
     val currentOnConfirm by rememberUpdatedState(onConfirm)
     val currentOnDismiss by rememberUpdatedState(onDismiss)
+    val currentOnCollapse by rememberUpdatedState(onCollapseSeason)
+    val currentOnCommit by rememberUpdatedState(onCommitSelection)
 
     val inputHandler = remember {
         object : InputHandler {
@@ -97,8 +107,16 @@ fun MediaDownloadModalHost(
             override fun onLeft(): InputResult = InputResult.HANDLED
             override fun onRight(): InputResult = InputResult.HANDLED
             override fun onMenu(): InputResult = InputResult.HANDLED
-            override fun onSecondaryAction(): InputResult = InputResult.HANDLED
-            override fun onContextMenu(): InputResult = InputResult.HANDLED
+
+            override fun onSecondaryAction(): InputResult {
+                currentOnCollapse()
+                return InputResult.HANDLED
+            }
+
+            override fun onContextMenu(): InputResult {
+                currentOnCommit()
+                return InputResult.HANDLED
+            }
             override fun onPrevSection(): InputResult = InputResult.HANDLED
             override fun onNextSection(): InputResult = InputResult.HANDLED
             override fun onPrevTrigger(): InputResult = InputResult.HANDLED
@@ -176,20 +194,128 @@ fun MediaDownloadModalHost(
                 modifier = Modifier.weight(1f, fill = false),
                 verticalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
             ) {
-                itemsIndexed(
-                    items = content.options,
-                    key = { _, option -> option.quality?.name ?: option.scope?.name ?: option.label }
-                ) { index, option ->
-                    MediaDownloadOptionRow(
-                        option = option,
-                        step = content.step,
-                        focused = index == content.focusedIndex,
-                        onClick = {
-                            onFocus(index)
-                            onConfirm()
+                if (content.step == MediaDownloadStep.EPISODES) {
+                    val rows = content.episodes.visibleRows
+                    itemsIndexed(
+                        items = rows,
+                        key = { _, row -> row.itemId ?: "season-${row.seasonKey}" }
+                    ) { index, row ->
+                        MediaEpisodePickerRowView(
+                            row = row,
+                            isSelected = row.itemId in content.episodes.selected,
+                            isCollapsed = row.seasonKey in content.episodes.collapsed,
+                            focused = index == content.focusedIndex,
+                            onClick = {
+                                onFocus(index)
+                                onConfirm()
+                            }
+                        )
+                    }
+                } else {
+                    itemsIndexed(
+                        items = content.options,
+                        key = { _, option ->
+                            option.quality?.name ?: option.scope?.name ?: option.label
                         }
-                    )
+                    ) { index, option ->
+                        MediaDownloadOptionRow(
+                            option = option,
+                            step = content.step,
+                            focused = index == content.focusedIndex,
+                            onClick = {
+                                onFocus(index)
+                                onConfirm()
+                            }
+                        )
+                    }
                 }
+            }
+            if (content.step == MediaDownloadStep.EPISODES) {
+                Spacer(Modifier.height(Dimens.spacingSm))
+                Text(
+                    text = selectionSummary(content.episodes.selected.size),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = theme.textDim
+                )
+            }
+        }
+    }
+}
+
+private fun selectionSummary(count: Int): String = when (count) {
+    0 -> "Nothing chosen yet"
+    1 -> "1 episode chosen"
+    else -> "$count episodes chosen"
+}
+
+/**
+ * A season to fold, or an episode to tick. A season carries no tick of its own: pressing it takes
+ * the whole season on or off, which is a different act from choosing one episode and reads better
+ * as a heading than as a third checkbox state.
+ */
+@Composable
+private fun MediaEpisodePickerRowView(
+    row: MediaEpisodePickerRow,
+    isSelected: Boolean,
+    isCollapsed: Boolean,
+    focused: Boolean,
+    onClick: () -> Unit
+) {
+    val theme = LocalArgosyTheme.current
+    val shape = RoundedCornerShape(Dimens.radiusControl)
+    val background by animateColorAsState(
+        targetValue = if (focused) {
+            theme.focusAccent.copy(alpha = 0.2f).compositeOver(theme.surfaceElevated)
+        } else if (row.isHeader) {
+            theme.surfaceRaised
+        } else {
+            theme.surfaceElevated
+        },
+        animationSpec = Motion.focusColorSpec,
+        label = "media-episode-row-bg"
+    )
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(shape)
+            .background(background)
+            .clickableNoFocus(onClick = onClick)
+            .padding(horizontal = Dimens.spacingMd, vertical = Dimens.spacingSm),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
+    ) {
+        Icon(
+            imageVector = when {
+                row.isHeader && isCollapsed -> Icons.Default.ChevronRight
+                row.isHeader -> Icons.Default.ExpandMore
+                row.isDownloaded -> Icons.Default.DownloadDone
+                isSelected -> Icons.Default.CheckBox
+                else -> Icons.Default.CheckBoxOutlineBlank
+            },
+            contentDescription = null,
+            tint = if (row.isDownloaded) theme.focusAccent else theme.textDim,
+            modifier = Modifier.size(Dimens.iconSm)
+        )
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = row.label,
+                style = if (row.isHeader) {
+                    MaterialTheme.typography.labelLarge
+                } else {
+                    MaterialTheme.typography.bodyMedium
+                },
+                color = if (row.isDownloaded) theme.textMute else theme.textPrimary,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            row.supporting?.let {
+                Text(
+                    text = it,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = theme.textMute,
+                    maxLines = 1
+                )
             }
         }
     }

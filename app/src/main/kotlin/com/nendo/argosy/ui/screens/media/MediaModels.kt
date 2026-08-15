@@ -135,9 +135,43 @@ data class MediaDownloadSummary(
 /**
  * Which titles a download choice applies to.
  */
-enum class MediaDownloadScope { THIS_ITEM, SEASON, NEXT_FIVE, NEXT_TEN, REMOVE }
+enum class MediaDownloadScope { THIS_ITEM, SEASON, NEXT_FIVE, NEXT_TEN, CHOOSE, REMOVE }
 
-enum class MediaDownloadStep { SCOPE, QUALITY, CONFIRM }
+enum class MediaDownloadStep { SCOPE, EPISODES, QUALITY, CONFIRM }
+
+/**
+ * One line of the episode chooser: a season to collapse, or an episode to tick.
+ *
+ * Seasons and episodes share one list because they share one cursor - the chooser is a single
+ * vertical run, the same way the rail beside it is. An episode already on the device is shown and
+ * locked rather than hidden, so the set the viewer sees is the season as it actually is.
+ */
+data class MediaEpisodePickerRow(
+    val isHeader: Boolean,
+    val seasonKey: String,
+    val label: String,
+    val supporting: String? = null,
+    val itemId: String? = null,
+    val isDownloaded: Boolean = false
+)
+
+/**
+ * Which episodes are ticked, and which seasons are folded away.
+ *
+ * [selected] holds item ids rather than positions so a collapse cannot silently change what is
+ * about to be fetched.
+ */
+data class MediaEpisodeSelection(
+    val rows: List<MediaEpisodePickerRow> = emptyList(),
+    val selected: Set<String> = emptySet(),
+    val collapsed: Set<String> = emptySet()
+) {
+    val visibleRows: List<MediaEpisodePickerRow>
+        get() = rows.filter { it.isHeader || it.seasonKey !in collapsed }
+
+    fun seasonRows(seasonKey: String): List<MediaEpisodePickerRow> =
+        rows.filter { !it.isHeader && it.seasonKey == seasonKey && !it.isDownloaded }
+}
 
 data class MediaDownloadOption(
     val scope: MediaDownloadScope? = null,
@@ -163,9 +197,13 @@ data class MediaDownloadPrompt(
     val targets: List<String> = emptyList(),
     val totalRuntimeTicks: Long = 0,
     val note: String? = null,
-    val warning: String? = null
+    val warning: String? = null,
+    val episodes: MediaEpisodeSelection = MediaEpisodeSelection()
 ) {
     val focusedOption: MediaDownloadOption? get() = options.getOrNull(focusedIndex)
+
+    val focusedEpisodeRow: MediaEpisodePickerRow?
+        get() = episodes.visibleRows.getOrNull(focusedIndex)
 }
 
 /**

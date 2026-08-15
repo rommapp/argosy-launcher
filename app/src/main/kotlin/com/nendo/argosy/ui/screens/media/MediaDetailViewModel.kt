@@ -268,8 +268,35 @@ class MediaDetailViewModel @Inject constructor(
         val state = _uiState.value
         val prompt = state.downloadPrompt ?: return
         val item = state.item ?: return
+        if (prompt.step == MediaDownloadStep.EPISODES) {
+            _uiState.update { it.copy(downloadPrompt = downloadDelegate.toggleEpisode(prompt)) }
+            return
+        }
         viewModelScope.launch {
             val next = downloadDelegate.advance(prompt, item, state.episodes)
+            _uiState.update { it.copy(downloadPrompt = next) }
+            if (next == null) refreshDownloadSummary()
+        }
+    }
+
+    /**
+     * Folds a season away in the chooser. Separate from confirm because in that step confirm means
+     * "tick this", and a press that both ticks and folds would make one of the two unreachable.
+     */
+    fun collapseDownloadSeason() {
+        val prompt = _uiState.value.downloadPrompt ?: return
+        if (prompt.step != MediaDownloadStep.EPISODES) return
+        _uiState.update { it.copy(downloadPrompt = downloadDelegate.toggleSeasonCollapsed(prompt)) }
+    }
+
+    /**
+     * Leaves the chooser with whatever is ticked and asks for a quality.
+     */
+    fun commitEpisodeSelection() {
+        val prompt = _uiState.value.downloadPrompt ?: return
+        if (prompt.step != MediaDownloadStep.EPISODES) return
+        viewModelScope.launch {
+            val next = downloadDelegate.confirmEpisodeSelection(prompt)
             _uiState.update { it.copy(downloadPrompt = next) }
             if (next == null) refreshDownloadSummary()
         }

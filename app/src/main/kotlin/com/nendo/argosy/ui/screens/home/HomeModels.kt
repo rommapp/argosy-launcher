@@ -192,6 +192,7 @@ data class HomeUiState(
     val mediaLibraryItems: List<HomeMediaUi> = emptyList(),
     val mediaLibraryItemsFor: String? = null,
     val mediaLibrariesLoaded: Boolean = false,
+    val mediaDownloadProgress: Map<String, Float> = emptyMap(),
     val isMediaSignedIn: Boolean = false,
     val isMediaLoading: Boolean = false,
     val showNextUpRow: Boolean = true,
@@ -526,6 +527,18 @@ data class HomeUiState(
 
     fun downloadIndicatorFor(gameId: Long): GameDownloadIndicator =
         downloadIndicators[gameId] ?: GameDownloadIndicator.NONE
+
+    /**
+     * The same indicator a game tile gets, for a title being fetched. A series answers for whatever
+     * episode of it is on the way, so the row a viewer is actually looking at is the one that shows
+     * the work.
+     */
+    fun mediaDownloadIndicatorFor(media: HomeMediaUi): GameDownloadIndicator {
+        val fraction = mediaDownloadProgress[media.itemId]
+            ?: media.seriesId?.let { mediaDownloadProgress[it] }
+            ?: return GameDownloadIndicator.NONE
+        return GameDownloadIndicator(isDownloading = true, progress = fraction)
+    }
 
     val homeTiles: List<com.nendo.argosy.domain.model.HomeTile> get() = customGrid.tiles
 

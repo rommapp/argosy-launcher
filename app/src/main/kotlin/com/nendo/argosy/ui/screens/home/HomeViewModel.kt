@@ -228,6 +228,7 @@ class HomeViewModel @Inject constructor(
                         mediaLibraryItems = media.libraryItems,
                         mediaLibraryItemsFor = media.libraryItemsFor,
                         mediaLibrariesLoaded = media.librariesLoaded,
+                        mediaDownloadProgress = media.downloadProgress,
                         isMediaSignedIn = media.isSignedIn,
                         isMediaLoading = media.isLoading,
                         showNextUpRow = media.showNextUp,

@@ -9,6 +9,7 @@ import com.nendo.argosy.data.local.dao.MediaStreamDao
 import com.nendo.argosy.data.local.dao.MediaUserDataDao
 import com.nendo.argosy.data.local.entity.MediaCollectionType
 import com.nendo.argosy.data.local.entity.MediaCreditEntity
+import com.nendo.argosy.data.local.entity.MediaDownloadDbState
 import com.nendo.argosy.data.local.entity.MediaItemEntity
 import com.nendo.argosy.data.local.entity.MediaItemType
 import com.nendo.argosy.data.local.entity.MediaLibraryEntity
@@ -177,6 +178,29 @@ class MediaRepository @Inject constructor(
     suspend fun getItem(itemId: String): MediaItemEntity? {
         val owner = currentOwner() ?: return null
         return mediaItemDao.getByItemId(owner, itemId)
+    }
+
+    /**
+     * How far along every copy currently being fetched is, keyed by the item it belongs to.
+     *
+     * An entry exists only while a download is genuinely moving, so a tile can ask "is this one of
+     * mine" and get an answer that means work in flight rather than work already finished. A series
+     * is keyed by its own id as well as the episode's, because the row a viewer is looking at on the
+     * home screen is the series, not the episode being fetched underneath it.
+     */
+    fun observeDownloadProgress(): Flow<Map<String, Float>> = scoped(emptyMap()) { owner ->
+        mediaDownloadQueueDao.observeQueue(owner).map { rows ->
+            buildMap {
+                rows.filter { it.totalBytes > 0 && MediaDownloadDbState.isActive(it.state) }
+                    .forEach { row ->
+                        val fraction = (row.bytesDownloaded.toFloat() / row.totalBytes).coerceIn(0f, 1f)
+                        put(row.itemId, fraction)
+                        row.seriesId?.let { series ->
+                            merge(series, fraction) { existing, _ -> minOf(existing, fraction) }
+                        }
+                    }
+            }
+        }
     }
 
     /**

@@ -69,6 +69,12 @@ data class HomeMediaState(
     val libraryItems: List<HomeMediaUi> = emptyList(),
     val libraryItemsFor: String? = null,
     val tileItems: Map<String, HomeMediaUi> = emptyMap(),
+    /**
+     * How far along anything currently downloading is, keyed by item id and by series id. Held
+     * beside the tiles rather than on them because a download moves far more often than a tile's
+     * own contents do.
+     */
+    val downloadProgress: Map<String, Float> = emptyMap(),
     val isSignedIn: Boolean = false,
     val isLoading: Boolean = false,
     val showNextUp: Boolean = true,
@@ -147,6 +153,7 @@ class HomeMediaDelegate @Inject constructor(
         observeLibraryItems(scope)
         observeFavorites(scope)
         observeTileItems(scope)
+        observeDownloadProgress(scope)
     }
 
     /**
@@ -157,6 +164,14 @@ class HomeMediaDelegate @Inject constructor(
      * title arrives. A show among them carries whatever the Continue Watching rail knows about it,
      * the same treatment a library row's tiles get, so the footer's promise of Resume is true.
      */
+    private fun observeDownloadProgress(scope: CoroutineScope) {
+        scope.launch {
+            mediaRepository.observeDownloadProgress()
+                .distinctUntilChanged()
+                .collect { progress -> _state.update { it.copy(downloadProgress = progress) } }
+        }
+    }
+
     private fun observeFavorites(scope: CoroutineScope) {
         scope.launch {
             mediaRepository.observeFavorites()

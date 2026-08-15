@@ -797,9 +797,11 @@ fun HomeScreen(
                                 showPlatformBadge = uiState.currentRow !is HomeRow.Platform &&
                                     uiState.currentRow != HomeRow.Steam && uiState.currentRow != HomeRow.Android,
                                 downloadIndicatorFor = { item ->
-                                    (item as? CarouselItem.Game)
-                                        ?.let { uiState.downloadIndicatorFor(it.game.id) }
-                                        ?: GameDownloadIndicator.NONE
+                                    when (item) {
+                                        is CarouselItem.Game -> uiState.downloadIndicatorFor(item.game.id)
+                                        is CarouselItem.Media -> uiState.mediaDownloadIndicatorFor(item.media)
+                                        else -> GameDownloadIndicator.NONE
+                                    }
                                 },
                                 onCoverLoadFailed = viewModel::repairCoverImage,
                                 onCoverLoaded = viewModel::extractGradientForGame,

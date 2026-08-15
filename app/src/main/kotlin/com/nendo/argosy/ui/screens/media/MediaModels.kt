@@ -141,10 +141,6 @@ enum class MediaDownloadStep { SCOPE, EPISODES, QUALITY, CONFIRM }
 
 /**
  * One line of the episode chooser: a season to collapse, or an episode to tick.
- *
- * Seasons and episodes share one list because they share one cursor - the chooser is a single
- * vertical run, the same way the rail beside it is. An episode already on the device is shown and
- * locked rather than hidden, so the set the viewer sees is the season as it actually is.
  */
 data class MediaEpisodePickerRow(
     val isHeader: Boolean,
@@ -156,10 +152,7 @@ data class MediaEpisodePickerRow(
 )
 
 /**
- * Which episodes are ticked, and which seasons are folded away.
- *
- * [selected] holds item ids rather than positions so a collapse cannot silently change what is
- * about to be fetched.
+ * Which episodes are ticked, and which seasons are folded away. Keyed by item id, not position.
  */
 data class MediaEpisodeSelection(
     val rows: List<MediaEpisodePickerRow> = emptyList(),
@@ -206,9 +199,7 @@ data class MediaDownloadPrompt(
         get() = episodes.visibleRows.getOrNull(focusedIndex)
 
     /**
-     * The chooser's two actions sit at the end of the same run the rows are in, so walking down off
-     * the last episode arrives at them rather than wrapping past them, and one index describes
-     * everything the cursor can be on.
+     * Rows before the chooser's two actions, which occupy the next two focus indices.
      */
     val episodeRowCount: Int get() = episodes.visibleRows.size
 

@@ -18,9 +18,7 @@ import javax.inject.Singleton
  * `channelName` and the restore point is its `cachedAt`, so a row whose timestamp the server
  * moves carries the pointer with it and needs no second write.
  *
- * A slot with nothing saved in it yet has no such row, so the slot registry carries which slot is
- * selected in that case. Reads prefer the cache row, because a slot holding saves knows its own
- * restore point; the registry answers only when there is no save to ask.
+ * An empty slot has no such row, so the slot registry answers instead. Reads prefer the cache row.
  */
 @Singleton
 class ActiveSaveRepository @Inject constructor(
@@ -75,10 +73,6 @@ class ActiveSaveRepository @Inject constructor(
 
     /**
      * Records a slot that holds nothing yet and points this game at it.
-     *
-     * A slot used to be inferred from the saves in it, so creating one and not yet saving into it
-     * left nothing behind: the slot vanished from the list and the next save went to whichever slot
-     * was active before. Registering it is what makes the empty slot a real destination.
      */
     suspend fun createChannel(gameId: Long, channelName: String) {
         val ownerUserId = activeOwnerId()

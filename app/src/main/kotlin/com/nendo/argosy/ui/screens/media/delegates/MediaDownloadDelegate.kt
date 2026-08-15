@@ -23,9 +23,6 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import javax.inject.Inject
 import javax.inject.Singleton
 
-/**
- * Cancel and Download, which the cursor reaches as the last two positions of the episode chooser.
- */
 private const val EPISODE_ACTION_COUNT = 2
 
 private const val NEXT_FIVE = 5
@@ -464,12 +461,7 @@ class MediaDownloadDelegate @Inject constructor(
     }
 
     /**
-     * What sideways means depends on what the cursor is on.
-     *
-     * A season heading folds and unfolds, because that is the only row folding could refer to. An
-     * episode has no such axis of its own, so sideways leaves the list for the action nearest that
-     * side - the way out on the left, the way on with it on the right. From the actions themselves
-     * it simply moves between the two.
+     * On a season heading, folds or unfolds it. On anything else, moves to Cancel or Download.
      */
     fun moveSideways(prompt: MediaDownloadPrompt, towardsEnd: Boolean): MediaDownloadPrompt {
         if (prompt.step != MediaDownloadStep.EPISODES) return prompt

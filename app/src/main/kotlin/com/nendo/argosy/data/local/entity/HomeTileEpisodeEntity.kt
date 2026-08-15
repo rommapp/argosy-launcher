@@ -7,13 +7,8 @@ import androidx.room.PrimaryKey
 /**
  * One episode a media tile was told to play, and where it sits in that tile's run.
  *
- * A chosen set is a list rather than a value, so it lives beside the tile instead of in a column on
- * it. [orderIndex] is stored because the run is the order the viewer picked, which is not always
- * broadcast order and cannot be recovered from the episodes themselves.
- *
- * [tileId] is not a foreign key, for the reason the tile's own target is not one: a cascade would
- * quietly rewrite a page the user arranged by hand. Rows orphaned by a deleted tile are cleared
- * when the tile is deleted, in the same transaction.
+ * [orderIndex] is the order the viewer picked, which is not always broadcast order. [tileId] is not
+ * a foreign key, matching the tile's own target; rows are cleared with the tile instead.
  */
 @Entity(
     tableName = "home_tile_episodes",

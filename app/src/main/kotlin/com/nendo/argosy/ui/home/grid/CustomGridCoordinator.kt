@@ -58,8 +58,7 @@ class CustomGridCoordinator(
     )
 
     /**
-     * The tile whose curation is being changed, or null when the setup flow is placing a new one.
-     * The two paths ask exactly the same questions and differ only in where the answer lands.
+     * Tile being re-curated, or null when the setup flow is placing a new one.
      */
     private var recuratingTileId: Long? = null
 
@@ -695,8 +694,7 @@ class CustomGridCoordinator(
     }
 
     /**
-     * Reopens the media setup flow for a tile already on the grid, so its answers land back on that
-     * tile instead of placing another one beside it.
+     * Reopens the media setup flow for a tile already on the grid.
      */
     fun recurateFocusedTile() {
         val tile = read().focusedTile ?: return

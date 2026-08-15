@@ -112,7 +112,7 @@ fun MediaDetailMenu(
                         focused = focused,
                         selected = selected,
                         isCompact = isCompact,
-                        badge = if (row == MediaDetailRow.DOWNLOAD) {
+                        badge = if (isCompact && row == MediaDetailRow.DOWNLOAD) {
                             uiState.downloadSummary.activeCount
                         } else {
                             0
@@ -237,7 +237,6 @@ private fun MediaMenuRow(
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f)
                 )
-                if (badge > 0) MediaCountChip(count = badge)
                 Icon(
                     imageVector = icon,
                     contentDescription = null,
@@ -250,10 +249,7 @@ private fun MediaMenuRow(
 }
 
 /**
- * How many of something a row is currently carrying, when the count is the reason to look at it.
- *
- * Downloads in flight are the case this exists for: the row's own label already says what is
- * happening, but a queue that is moving should be legible without reading a sentence.
+ * A count for the collapsed rail, where there is no room for the label that carries it.
  */
 @Composable
 private fun MediaCountChip(count: Int, modifier: Modifier = Modifier) {

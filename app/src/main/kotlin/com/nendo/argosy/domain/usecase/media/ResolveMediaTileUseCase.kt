@@ -20,25 +20,11 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * What a curated media tile plays at this moment.
+ * What a curated media tile plays right now.
  *
- * Every mode but one is a question about the library, answered from what is already stored. The
- * exception is [MediaTilePlayMode.SEQUENTIAL], which is deliberately derived from watch state rather
- * than from a pointer of the tile's own: where the viewer is up to is already recorded, so finishing
- * an episode anywhere - fullscreen, a home rail, another client entirely - moves the tile on, and
- * there is no second record of progress that can disagree with the first.
- *
- * [MediaTilePlayMode.RANDOM] is the one mode that has to remember anything, and it remembers in
- * memory only. A tile that re-picked on every resolution pass would change what it was offering while
- * the viewer looked at it, so a choice is held until it is watched and then made again. Losing that
- * choice when the launcher restarts is correct: a random tile that survived a restart pointing at the
- * same episode would not be random.
- *
- * Both derived modes run over the episodes this device actually holds, and wrap round to the first
- * of them once the last has been watched. A tile is a thing to glance at and press, not a standing
- * order for a whole series: there is no telling when the viewer will next reach the server, so the
- * tile keeps offering what is to hand rather than pointing at something that cannot be played.
- * Downloading more is a choice made in the picker, never a consequence of placing a tile.
+ * SEQUENTIAL derives its position from watch state rather than a stored pointer. RANDOM holds its
+ * choice in memory until it is watched. Both run only over episodes present on this device and wrap
+ * to the first.
  */
 @Singleton
 class ResolveMediaTileUseCase @Inject constructor(
@@ -124,12 +110,7 @@ class ResolveMediaTileUseCase @Inject constructor(
         }
 
     /**
-     * The episodes of a series that are actually on this device, in broadcast order.
-     *
-     * A tile deriving its own episode plays from what the viewer has rather than from what the
-     * series contains. Walking the whole series instead would make a tile placed on a long-running
-     * show ask for the entire show, and would leave it pointing at an episode nobody can watch until
-     * a download nobody asked for finishes.
+     * Episodes of a series present on this device, in broadcast order.
      */
     private suspend fun localEpisodesOf(seriesId: String): List<String> =
         mediaRepository.getSeriesEpisodes(seriesId)

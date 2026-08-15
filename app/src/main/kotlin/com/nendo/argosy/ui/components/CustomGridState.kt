@@ -158,9 +158,7 @@ data class CustomGridState(
         }
 
     /**
-     * Whether the focused tile has a choice behind it worth revisiting. A tile pointing at one
-     * library title was fully described when it was placed; a series tile carries a mode, and
-     * possibly a season or a hand-picked run, which is the thing someone comes back to change.
+     * Whether the focused tile carries a play mode, and so has curation worth reopening.
      */
     val isFocusedTileCurated: Boolean
         get() = (focusedTile?.target as? HomeTileTargetRef.Media)?.playMode != null

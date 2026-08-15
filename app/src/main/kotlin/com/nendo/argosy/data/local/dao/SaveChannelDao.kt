@@ -48,9 +48,7 @@ interface SaveChannelDao {
     suspend fun markActive(gameId: Long, channelName: String, ownerUserId: Long?)
 
     /**
-     * Records a slot and makes it the one this game saves into, in one step. Registering without
-     * selecting would leave the slot listed but not the destination, which is the half-created state
-     * this table exists to remove.
+     * Records a slot and makes it this game's destination in one step.
      */
     @Transaction
     suspend fun registerAndActivate(gameId: Long, channelName: String, ownerUserId: Long?) {

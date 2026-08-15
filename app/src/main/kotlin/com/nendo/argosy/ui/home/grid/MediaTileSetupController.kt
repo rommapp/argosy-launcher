@@ -236,10 +236,8 @@ class MediaTileSetupController(
     }
 
     /**
-     * A tile that works out its own episode plays whatever is on the device and wraps round at the
-     * end, so it needs no download to be useful. The whole series is offered rather than fetched:
-     * placing a tile is not a standing order for every episode of a long-running show, and a viewer
-     * who wants the lot can say so here.
+     * Offers the series rather than fetching it. A derived-mode tile plays what is already on the
+     * device, so the download is optional.
      */
     private fun offerBulkDownload(targets: List<String>) {
         update { it.copy(selected = emptyList(), isLoading = true, error = null) }

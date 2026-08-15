@@ -70,27 +70,17 @@ private const val MINUTES_PER_HOUR = 60L
  * A grid tile that plays a local video file in place: muted and looping while it is only a preview,
  * audible and captioned with a transport readout once the caller says the tile is engaged.
  *
- * The picture is drawn into a `TextureView` rather than the default `SurfaceView`. A surface is
- * punched through the window and is not affected by the `graphicsLayer` transforms the grid applies
- * for focus scaling, so a surface-backed tile paints at the untransformed position while its own
- * chrome moves. A texture is an ordinary view and transforms with everything else.
+ * Draws into a `TextureView`, not a `SurfaceView`: a punched-through surface ignores the grid's
+ * focus-scale `graphicsLayer` and would paint in the wrong place.
  *
- * The player is created and fully released rather than paused. Handhelds expose two to four
- * concurrent hardware video decoders, shared with the emulator and the fullscreen player, so a held
- * decoder behind a paused preview is a decoder another surface cannot have. Every exit -- the caller
- * clearing [isPlaying], the file turning out to be unreadable, a decode error, the lifecycle
- * dropping below STARTED, and the composable leaving composition -- collapses into the same
- * `onDispose`, which is the only place a player instance is let go of.
- *
- * Platform audio focus alone does not quiet the launcher's own music, which is played by a manager
- * that registers no focus listener. [onTakeAudio] and [onReleaseAudio] are how the caller silences
- * and restores it, so the one component does not need a route to that singleton.
+ * The player is released, never paused, on every exit path. Hardware decoders are finite and shared
+ * with the emulator and the fullscreen player.
  *
  * @param filePath an already resolved local path; nothing here opens a network stream.
  * @param isPlaying the caller's decision to spend a decoder on this tile.
  * @param isEngaged sound on, audio focus taken, transport readout visible.
  * @param onTakeAudio raised when this tile starts sounding, for the caller to hush its own audio.
- * @param onReleaseAudio raised when it stops, whether by disengaging or by going away entirely.
+ * @param onReleaseAudio raised when it stops.
  */
 @OptIn(UnstableApi::class)
 @Composable

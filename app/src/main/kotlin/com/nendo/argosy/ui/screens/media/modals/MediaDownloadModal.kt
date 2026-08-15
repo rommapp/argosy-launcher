@@ -282,9 +282,7 @@ fun MediaDownloadModalHost(
 }
 
 /**
- * The two ways out of the episode chooser, drawn because a controller's B and X are invisible to a
- * finger. The gamepad still reaches both through the handler; these are the same acts with a
- * surface to press.
+ * The chooser's two actions, as surfaces a finger can press.
  */
 @Composable
 private fun MediaEpisodeActionButton(

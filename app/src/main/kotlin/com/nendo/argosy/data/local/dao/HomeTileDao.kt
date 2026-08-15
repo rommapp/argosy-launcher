@@ -55,31 +55,18 @@ interface HomeTileDao {
     @Query("DELETE FROM home_tile_episodes WHERE tileId = :tileId")
     suspend fun deleteEpisodesForTile(tileId: Long)
 
-    /**
-     * Clears the runs belonging to a whole page. Deleting the page alone would leave its chosen
-     * episodes behind with nothing referring to them, and the next tile to be handed one of those
-     * ids would inherit a run it was never given.
-     */
     @Query(
         "DELETE FROM home_tile_episodes WHERE tileId IN (SELECT id FROM home_tiles " +
             "WHERE (ownerUserId = :ownerUserId OR ownerUserId IS NULL) AND pageIndex = :pageIndex)"
     )
     suspend fun deleteEpisodesForPage(ownerUserId: Long?, pageIndex: Int)
 
-    /**
-     * Replaces a tile's chosen episodes as one unit, so a tile can never be caught showing both the
-     * run it had and the run it was just given.
-     */
     @Transaction
     suspend fun replaceEpisodes(tileId: Long, rows: List<HomeTileEpisodeEntity>) {
         deleteEpisodesForTile(tileId)
         if (rows.isNotEmpty()) insertEpisodes(rows)
     }
 
-    /**
-     * Removes a tile and whatever run was chosen for it together, so a later tile reusing the id
-     * cannot inherit episodes it was never given.
-     */
     @Transaction
     suspend fun deleteTileWithEpisodes(id: Long) {
         deleteEpisodesForTile(id)

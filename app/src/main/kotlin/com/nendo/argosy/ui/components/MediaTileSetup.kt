@@ -63,10 +63,8 @@ data class MediaTileOption(
 /**
  * The question asked between choosing what a tile plays and placing it.
  *
- * [placesOnDecline] separates a requirement from an offer. A curated run has to be fetched to exist,
- * so declining there means abandoning the tile; a tile that derives its own episode already plays
- * from whatever is on the device, so declining the download is a perfectly good answer and still
- * leaves a working tile behind.
+ * [placesOnDecline] marks the download as an offer rather than a requirement: declining still
+ * places the tile.
  */
 data class MediaTileNotice(
     val message: String,

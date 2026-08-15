@@ -78,11 +78,7 @@ class HomeTileRepository @Inject constructor(
     }
 
     /**
-     * Changes what a placed tile plays without moving it.
-     *
-     * The run is replaced rather than written over, because a tile changed from a hand-picked run to
-     * one that works its own episode out has no playlist any more, and leaving the old rows behind
-     * would have it quietly playing a set the viewer had just abandoned.
+     * Changes what a placed tile plays without moving it. The playlist is replaced, not merged.
      */
     suspend fun retarget(tile: HomeTile, ownerUserId: Long?, target: HomeTileTargetRef, playlist: List<String>) {
         homeTileDao.update(
@@ -96,10 +92,6 @@ class HomeTileRepository @Inject constructor(
         )
     }
 
-    /**
-     * Removes a tile and the run chosen for it together, so a later tile handed the same id cannot
-     * inherit episodes it was never given.
-     */
     suspend fun remove(tileId: Long) = homeTileDao.deleteTileWithEpisodes(tileId)
 
     private suspend fun writePlaylist(tileId: Long, playlist: List<String>) {

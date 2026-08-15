@@ -3371,12 +3371,8 @@ object Migration_174_175 : Migration(174, 175) {
 }
 
 /**
- * Gives a save slot somewhere to exist before anything has been saved into it.
- *
- * Slots were inferred from the saves that existed, so one that had just been created was announced
- * and then gone: the list rebuilt without it and the next save went elsewhere. Nothing is backfilled
- * here - every slot that already holds a save keeps being found the way it always was, and this
- * table only carries the ones that would otherwise have nowhere to live.
+ * Adds a registry for save slots with nothing saved in them yet. Nothing is backfilled; slots that
+ * already hold saves are still found from those.
  */
 object Migration_175_176 : Migration(175, 176) {
     override fun migrate(db: SupportSQLiteDatabase) {

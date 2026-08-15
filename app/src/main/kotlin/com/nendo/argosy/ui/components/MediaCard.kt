@@ -39,6 +39,7 @@ import coil.request.ImageRequest
 import com.nendo.argosy.ui.common.AlwaysCrossfadeFactory
 import com.nendo.argosy.ui.primitives.FocusIndicators
 import com.nendo.argosy.ui.primitives.argosyFocusIndicators
+import com.nendo.argosy.ui.screens.home.GameDownloadIndicator
 import com.nendo.argosy.ui.screens.home.HomeMediaUi
 import com.nendo.argosy.ui.screens.media.components.MediaDownloadBadge
 import com.nendo.argosy.ui.screens.media.components.MediaProgressBar
@@ -90,7 +91,8 @@ fun MediaCard(
     focusScale: Float = ComponentDefaults.Focus.scaleFocused,
     scalePivotY: Float = 0.5f,
     scaleOverride: Float? = null,
-    alphaOverride: Float? = null
+    alphaOverride: Float? = null,
+    downloadIndicator: GameDownloadIndicator = GameDownloadIndicator.NONE
 ) {
     val theme = LocalArgosyTheme.current
 
@@ -108,6 +110,13 @@ fun MediaCard(
         var artworkFailed by remember(media.posterUrl) { mutableStateOf(false) }
         if (media.posterUrl.isBlank() || artworkFailed) {
             MediaPosterStub(title = media.title, showTitle = !showLabel)
+        } else if (downloadIndicator.isActive) {
+            DownloadProgressCover(
+                imageData = media.posterUrl,
+                progress = downloadIndicator.progress,
+                badgeSize = Dimens.iconLg,
+                modifier = Modifier.fillMaxSize()
+            )
         } else {
             AsyncImage(
                 model = ImageRequest.Builder(LocalContext.current)

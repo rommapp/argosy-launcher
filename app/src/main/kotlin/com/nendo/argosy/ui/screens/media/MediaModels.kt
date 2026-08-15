@@ -108,6 +108,13 @@ data class MediaDownloadSummary(
     val isPartial: Boolean get() = downloaded > 0 && !isComplete
     val hasAny: Boolean get() = downloaded > 0 || pending > 0
 
+    /**
+     * How many copies are being fetched right now. The chip beside the row reads from this rather
+     * than from [pending] alone so it means the same thing for a film as for a series: work in
+     * flight, not work already finished.
+     */
+    val activeCount: Int get() = pending
+
     val label: String
         get() = when {
             known == 0 -> "Download"

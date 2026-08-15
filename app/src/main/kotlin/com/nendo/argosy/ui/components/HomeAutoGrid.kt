@@ -359,6 +359,7 @@ private fun AutoGridCell(
                 MediaCard(
                     media = item.media,
                     isFocused = isFocused,
+                    downloadIndicator = downloadIndicator,
                     modifier = Modifier
                         .then(if (fitByHeight) Modifier.fillMaxHeight() else Modifier.fillMaxWidth())
                         .aspectRatio(posterRatio, matchHeightConstraintsFirst = fitByHeight)

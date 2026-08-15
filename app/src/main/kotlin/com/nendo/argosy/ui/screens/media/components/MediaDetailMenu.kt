@@ -112,6 +112,11 @@ fun MediaDetailMenu(
                         focused = focused,
                         selected = selected,
                         isCompact = isCompact,
+                        badge = if (row == MediaDetailRow.DOWNLOAD) {
+                            uiState.downloadSummary.activeCount
+                        } else {
+                            0
+                        },
                         onClick = { onRow(index) }
                     )
                 }
@@ -180,6 +185,7 @@ private fun MediaMenuRow(
     focused: Boolean,
     selected: Boolean,
     isCompact: Boolean,
+    badge: Int = 0,
     onClick: () -> Unit
 ) {
     val theme = LocalArgosyTheme.current
@@ -203,12 +209,20 @@ private fun MediaMenuRow(
         contentAlignment = if (isCompact) Alignment.Center else Alignment.CenterStart
     ) {
         if (isCompact) {
-            Icon(
-                imageVector = icon,
-                contentDescription = label,
-                tint = contentColor,
-                modifier = Modifier.size(Dimens.iconSm)
-            )
+            Box {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = label,
+                    tint = contentColor,
+                    modifier = Modifier.size(Dimens.iconSm)
+                )
+                if (badge > 0) {
+                    MediaCountChip(
+                        count = badge,
+                        modifier = Modifier.align(Alignment.TopEnd)
+                    )
+                }
+            }
         } else {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -223,6 +237,7 @@ private fun MediaMenuRow(
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f)
                 )
+                if (badge > 0) MediaCountChip(count = badge)
                 Icon(
                     imageVector = icon,
                     contentDescription = null,
@@ -232,6 +247,25 @@ private fun MediaMenuRow(
             }
         }
     }
+}
+
+/**
+ * How many of something a row is currently carrying, when the count is the reason to look at it.
+ *
+ * Downloads in flight are the case this exists for: the row's own label already says what is
+ * happening, but a queue that is moving should be legible without reading a sentence.
+ */
+@Composable
+private fun MediaCountChip(count: Int, modifier: Modifier = Modifier) {
+    val theme = LocalArgosyTheme.current
+    Text(
+        text = count.toString(),
+        style = MaterialTheme.typography.labelSmall,
+        color = theme.textPrimary,
+        modifier = modifier
+            .background(theme.focusAccent, RoundedCornerShape(Dimens.radiusSm))
+            .padding(horizontal = Dimens.spacingXs)
+    )
 }
 
 private fun playLabel(uiState: MediaDetailUiState): String {

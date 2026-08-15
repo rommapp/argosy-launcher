@@ -60,11 +60,22 @@ data class MediaTileOption(
  * approximate terms on purpose: a queued row starts with no size at all and the figure is a bitrate
  * estimate until the server has been asked, so stating it exactly would be stating something untrue.
  */
+/**
+ * The question asked between choosing what a tile plays and placing it.
+ *
+ * [placesOnDecline] separates a requirement from an offer. A curated run has to be fetched to exist,
+ * so declining there means abandoning the tile; a tile that derives its own episode already plays
+ * from whatever is on the device, so declining the download is a perfectly good answer and still
+ * leaves a working tile behind.
+ */
 data class MediaTileNotice(
     val message: String,
     val warning: String? = null,
     val downloadIds: List<String> = emptyList(),
-    val buttonIndex: Int = 0
+    val buttonIndex: Int = 0,
+    val confirmLabel: String = "Add and download",
+    val declineLabel: String = "Cancel",
+    val placesOnDecline: Boolean = false
 )
 
 /**

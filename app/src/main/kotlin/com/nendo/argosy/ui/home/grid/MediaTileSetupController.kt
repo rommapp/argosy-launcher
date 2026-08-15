@@ -127,7 +127,10 @@ class MediaTileSetupController(
     }
 
     fun dismissNotice() {
+        val current = setup ?: return
+        val notice = current.notice ?: return
         update { it.copy(notice = null) }
+        if (notice.placesOnDecline) place(current)
     }
 
     private fun confirmMode(index: Int) {
@@ -228,8 +231,50 @@ class MediaTileSetupController(
                 }
                 return@launch
             }
-            settle(episodes.map { it.itemId })
+            offerBulkDownload(episodes.map { it.itemId })
         }
+    }
+
+    /**
+     * A tile that works out its own episode plays whatever is on the device and wraps round at the
+     * end, so it needs no download to be useful. The whole series is offered rather than fetched:
+     * placing a tile is not a standing order for every episode of a long-running show, and a viewer
+     * who wants the lot can say so here.
+     */
+    private fun offerBulkDownload(targets: List<String>) {
+        update { it.copy(selected = emptyList(), isLoading = true, error = null) }
+        scope.launch {
+            val plan = catalog?.planDownloads(targets) ?: MediaTileDownloadPlan()
+            val settled = setup ?: return@launch
+            if (plan.missingIds.isEmpty()) {
+                update { it.copy(isLoading = false) }
+                place(settled)
+                return@launch
+            }
+            val onDevice = targets.size - plan.missingIds.size
+            update {
+                it.copy(
+                    isLoading = false,
+                    notice = MediaTileNotice(
+                        message = derivedModeMessage(onDevice),
+                        warning = noticeWarning(plan.missingIds.size, plan.approximateSize),
+                        downloadIds = plan.missingIds,
+                        buttonIndex = if (onDevice > 0) CANCEL_BUTTON else CONFIRM_BUTTON,
+                        confirmLabel = "Download all",
+                        declineLabel = if (onDevice > 0) "Use downloaded" else "Cancel",
+                        placesOnDecline = onDevice > 0
+                    )
+                )
+            }
+        }
+    }
+
+    private fun derivedModeMessage(onDevice: Int): String = when (onDevice) {
+        0 -> "No episodes of this show are on this device yet. This tile plays downloaded episodes, " +
+            "so it stays empty until some arrive."
+        1 -> "This tile plays the 1 episode on this device, and starts it again when it ends."
+        else -> "This tile plays the $onDevice episodes on this device, in order, looping back to " +
+            "the first when it reaches the end."
     }
 
     /**

@@ -33,6 +33,12 @@ import javax.inject.Singleton
  * the viewer looked at it, so a choice is held until it is watched and then made again. Losing that
  * choice when the launcher restarts is correct: a random tile that survived a restart pointing at the
  * same episode would not be random.
+ *
+ * Both derived modes run over the episodes this device actually holds, and wrap round to the first
+ * of them once the last has been watched. A tile is a thing to glance at and press, not a standing
+ * order for a whole series: there is no telling when the viewer will next reach the server, so the
+ * tile keeps offering what is to hand rather than pointing at something that cannot be played.
+ * Downloading more is a choice made in the picker, never a consequence of placing a tile.
  */
 @Singleton
 class ResolveMediaTileUseCase @Inject constructor(
@@ -113,11 +119,22 @@ class ResolveMediaTileUseCase @Inject constructor(
                     nextOf(mediaRepository.getEpisodes(season).map { it.itemId })
                 }
             }
-            MediaTilePlayMode.SEQUENTIAL ->
-                nextOf(mediaRepository.getSeriesEpisodes(target.itemId).map { it.itemId })
-            MediaTilePlayMode.RANDOM ->
-                randomOf(tile.id, mediaRepository.getSeriesEpisodes(target.itemId).map { it.itemId })
+            MediaTilePlayMode.SEQUENTIAL -> nextOf(localEpisodesOf(target.itemId))
+            MediaTilePlayMode.RANDOM -> randomOf(tile.id, localEpisodesOf(target.itemId))
         }
+
+    /**
+     * The episodes of a series that are actually on this device, in broadcast order.
+     *
+     * A tile deriving its own episode plays from what the viewer has rather than from what the
+     * series contains. Walking the whole series instead would make a tile placed on a long-running
+     * show ask for the entire show, and would leave it pointing at an episode nobody can watch until
+     * a download nobody asked for finishes.
+     */
+    private suspend fun localEpisodesOf(seriesId: String): List<String> =
+        mediaRepository.getSeriesEpisodes(seriesId)
+            .filter { it.localPath != null }
+            .map { it.itemId }
 
     /**
      * Where a run is up to, read the way the rails read it: the episode left part way through, then

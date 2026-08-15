@@ -1186,13 +1186,17 @@ fun HomeScreen(
         val mediaTileNotice = uiState.mediaTileNotice
         if (mediaTileNotice != null) {
             com.nendo.argosy.ui.primitives.ArgosyConfirmModal(
-                title = "Download to play here",
+                title = if (mediaTileNotice.placesOnDecline) {
+                    "Plays from this device"
+                } else {
+                    "Download to play here"
+                },
                 message = listOfNotNull(
                     mediaTileNotice.message,
                     mediaTileNotice.warning
                 ).joinToString("\n\n"),
-                confirmLabel = "Add and download",
-                cancelLabel = "Cancel",
+                confirmLabel = mediaTileNotice.confirmLabel,
+                cancelLabel = mediaTileNotice.declineLabel,
                 focusedIndex = mediaTileNotice.buttonIndex,
                 onConfirm = viewModel::confirmMediaTileNotice,
                 onDismiss = viewModel::dismissMediaTileNotice

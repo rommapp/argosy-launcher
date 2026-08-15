@@ -77,6 +77,7 @@ object SavePathRegistry {
             defaultPaths = listOf(
                 "{extStorage}/Android/data/org.dolphinemu.dolphinemu/files/GC",
                 "{extStorage}/Android/data/org.dolphinemu.handheld/files/GC",
+                "{extStorage}/Android/data/com.joeyos.dolphinemu/files/GC",
                 "{extStorage}/dolphin-emu/GC"
             ),
             saveExtensions = listOf("gci"),
@@ -184,6 +185,7 @@ object SavePathRegistry {
             defaultPaths = listOf(
                 "{extStorage}/Android/data/org.dolphinemu.dolphinemu/files/Wii/title/00010000",
                 "{extStorage}/Android/data/org.dolphinemu.handheld/files/Wii/title/00010000",
+                "{extStorage}/Android/data/com.joeyos.dolphinemu/files/Wii/title/00010000",
                 "{extStorage}/dolphin-emu/Wii/title/00010000"
             ),
             saveExtensions = listOf("*"),
@@ -609,6 +611,7 @@ object SavePathRegistry {
         "org.dolphinemu.dolphinemu" to "dolphin",
         "org.dolphinemu.mmjr" to "dolphin_mmjr",
         "org.dolphinemu.handheld" to "dolphin",
+        "com.joeyos.dolphinemu" to "dolphin",
         "com.retroarch" to "retroarch",
         "com.retroarch.aarch64" to "retroarch_64",
         "com.retroarch.ra32" to "retroarch_32",

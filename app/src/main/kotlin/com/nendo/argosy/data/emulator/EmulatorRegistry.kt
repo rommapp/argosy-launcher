@@ -447,6 +447,19 @@ object EmulatorRegistry {
             downloadUrl = "https://dolphin-emu.org/download/"
         ),
         EmulatorDef(
+            id = "dolphin_cs",
+            packageName = "com.joeyos.dolphinemu",
+            displayName = "DolphinCS",
+            supportedPlatforms = setOf("gc", "wii"),
+            launchAction = Intent.ACTION_MAIN,
+            launchConfig = LaunchConfig.Custom(
+                activityClass = "org.dolphinemu.dolphinemu.ui.main.MainActivity",
+                intentExtras = mapOf("AutoStartFile" to ExtraValue.FileUri)
+            ),
+            downloadUrl = "https://github.com/JoeysRetroHandhelds/DolphinCS/releases",
+            releaseSource = ReleaseSource.GitHub("JoeysRetroHandhelds/DolphinCS")
+        ),
+        EmulatorDef(
             id = "cemu",
             packageName = "info.cemu.cemu",
             displayName = "Cemu",
@@ -1026,8 +1039,8 @@ object EmulatorRegistry {
         "n64" to listOf("builtin", "mupen64plus_fz", "retroarch", "retroarch_64", "retroarch_32"),
         "nds" to listOf("builtin", "drastic", "melonds", "melondualds", "retroarch", "retroarch_64", "retroarch_32"),
         "3ds" to listOf("azahar", "citra_mmj", "borked3ds", "citra", "retroarch", "retroarch_64", "retroarch_32"),
-        "gc" to listOf("dolphin", "dolphin_handheld", "retroarch", "retroarch_64", "retroarch_32"),
-        "wii" to listOf("dolphin", "dolphin_handheld", "retroarch", "retroarch_64", "retroarch_32"),
+        "gc" to listOf("dolphin", "dolphin_handheld", "dolphin_cs", "retroarch", "retroarch_64", "retroarch_32"),
+        "wii" to listOf("dolphin", "dolphin_handheld", "dolphin_cs", "retroarch", "retroarch_64", "retroarch_32"),
         "wiiu" to listOf("cemu", "cemu_dualscreen"),
         "switch" to listOf("eden", "citron", "sudachi", "ryujinx", "yuzu", "strato", "skyline"),
         "gba" to listOf("builtin", "pizza_boy_gba", "linkboy", "retroarch", "retroarch_64", "retroarch_32"),

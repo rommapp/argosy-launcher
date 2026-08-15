@@ -249,6 +249,7 @@ object StatePathRegistry {
             emulatorId = "dolphin",
             defaultPaths = listOf(
                 "{extStorage}/Android/data/org.dolphinemu.dolphinemu/files/StateSaves",
+                "{extStorage}/Android/data/com.joeyos.dolphinemu/files/StateSaves",
                 "{extStorage}/dolphin-emu/StateSaves"
             ),
             slotPattern = StateSlotPattern.NameAndSlot(

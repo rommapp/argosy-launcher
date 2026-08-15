@@ -251,7 +251,7 @@ object LibretroCoreRegistry {
             fileName = "mednafen_vb_libretro_android.so",
             displayName = "Beetle VB",
             platforms = setOf("vb", "virtualboy"),
-            estimatedSizeBytes = 1_500_000L,
+            estimatedSizeBytes = 400_000L,
             isDefault = true
         ),
 

@@ -53,9 +53,9 @@ class InterfaceCompactFooterLayoutTest {
     }
 
     @Test
-    fun `a row hidden by its own condition is not reachable`() {
-        assertEquals(-1, interfaceFocusIndexOf(InterfaceItem.GripReservePercent, layoutState))
-        val shown = InterfaceLayoutState(display = DisplayState(gripReserveEnabled = true))
-        assertTrue(interfaceFocusIndexOf(InterfaceItem.GripReservePercent, shown) > 0)
+    fun `the controller grip submenu row is reachable like its siblings`() {
+        val index = interfaceFocusIndexOf(InterfaceItem.ControllerGrip, layoutState)
+        assertTrue(index > 0)
+        assertEquals(InterfaceItem.ControllerGrip, interfaceItemAtFocusIndex(index, layoutState))
     }
 }

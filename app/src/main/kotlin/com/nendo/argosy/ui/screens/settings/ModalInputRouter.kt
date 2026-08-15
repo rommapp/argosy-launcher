@@ -14,7 +14,8 @@ internal class ModalInputRouter(private val viewModel: SettingsViewModel) {
     fun intercept(state: SettingsUiState, method: InputMethod): InputResult? {
         if (state.builtinControls.showControllerOrderModal ||
             state.builtinControls.showInputMappingModal ||
-            state.builtinControls.showHotkeysModal
+            state.builtinControls.showHotkeysModal ||
+            state.display.showGripControllerModal
         ) return null
 
         interceptGpuDriverPrompt(state, method)?.let { return it }

@@ -13,6 +13,7 @@ import com.nendo.argosy.data.local.entity.GameListItem
 import com.nendo.argosy.data.local.entity.PlatformEntity
 import com.nendo.argosy.data.local.entity.PlatformLibretroSettingsEntity
 import com.nendo.argosy.data.preferences.BoxArtBorderStyle
+import com.nendo.argosy.data.preferences.GripReserveMode
 import com.nendo.argosy.data.preferences.BoxArtBorderThickness
 import com.nendo.argosy.data.preferences.BoxArtCornerRadius
 import com.nendo.argosy.data.preferences.BoxArtShape
@@ -41,6 +42,7 @@ import com.nendo.argosy.data.preferences.DisplayRoleOverride
 import com.nendo.argosy.data.preferences.EmulatorDisplayTarget
 import com.nendo.argosy.core.input.SoundConfig
 import com.nendo.argosy.ui.input.SoundPreset
+import com.nendo.argosy.ui.theme.GRIP_RESERVE_DEFAULT_PERCENT
 import com.nendo.argosy.ui.theme.backdrop.BackdropConfig
 import com.nendo.argosy.core.input.SoundType
 import com.nendo.argosy.util.LogLevel
@@ -92,6 +94,7 @@ enum class SettingsSection {
     THEME_BACKDROP,
     INTERFACE,
     BOX_ART,
+    CONTROLLER_GRIP,
     HOME_SCREEN,
     LIBRARY_VIEW,
     DISPLAYS,
@@ -250,8 +253,11 @@ data class DisplayState(
     val videoWallpaperDelaySeconds: Int = 3,
     val videoWallpaperMuted: Boolean = false,
     val uiScale: Int = 100,
-    val gripReserveEnabled: Boolean = false,
-    val gripReservePercent: Int = 20,
+    val gripReserveMode: GripReserveMode = GripReserveMode.OFF,
+    val gripReservePercent: Int = GRIP_RESERVE_DEFAULT_PERCENT,
+    val gripAutoControllers: com.nendo.argosy.domain.model.GripAutoControllers =
+        com.nendo.argosy.domain.model.GripAutoControllers(),
+    val showGripControllerModal: Boolean = false,
     val ambientLedEnabled: Boolean = false,
     val ambientLedBrightness: Int = 100,
     val ambientLedAudioBrightness: Boolean = true,

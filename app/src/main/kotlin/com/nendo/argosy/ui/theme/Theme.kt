@@ -389,7 +389,10 @@ fun ProvideArgosyThemeLocals(
         scale = themeState.uiScale / 100f,
         aspectRatioClass = aspectRatioClass,
         bottomReservedFraction = resolveGripReserveFraction(
-            enabled = themeState.gripReserveEnabled,
+            enabled = isGripReserveActive(
+                mode = themeState.gripReserveMode,
+                autoControllerConnected = themeState.gripAutoControllerConnected
+            ),
             percent = themeState.gripReservePercent,
             screenWidthDp = configuration.screenWidthDp,
             screenHeightDp = configuration.screenHeightDp,

@@ -277,6 +277,8 @@ fun StepperControl(
                 text = shown,
                 style = MaterialTheme.typography.bodyMedium,
                 color = if (focused) lerp(theme.focusAccent, Color.White, 0.45f) else theme.textPrimary,
+                maxLines = 1,
+                softWrap = false,
             )
         }
         Text(

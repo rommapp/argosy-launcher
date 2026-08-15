@@ -26,6 +26,7 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -54,11 +55,13 @@ import com.nendo.argosy.ui.components.FooterBar
 import com.nendo.argosy.ui.components.InputButton
 import com.nendo.argosy.ui.components.NavigationPreference
 import com.nendo.argosy.ui.components.SectionFocusedScroll
+import com.nendo.argosy.ui.components.SliderPreference
 import com.nendo.argosy.ui.components.SwitchPreference
 import com.nendo.argosy.ui.screens.settings.CoreOptionViewItem
 import com.nendo.argosy.ui.input.InputHandler
 import com.nendo.argosy.ui.input.InputResult
 import com.nendo.argosy.ui.screens.settings.components.ControllerOrderModal
+import com.nendo.argosy.ui.screens.settings.components.GripSettingsModal
 import com.nendo.argosy.ui.screens.settings.components.HotkeysModal
 import com.nendo.argosy.data.repository.MappingPlatforms
 import com.nendo.argosy.ui.screens.settings.components.InputMappingModal
@@ -72,8 +75,14 @@ import com.nendo.argosy.ui.screens.settings.libretro.libretroSettingsItemAtFocus
 import com.nendo.argosy.ui.screens.settings.libretro.libretroSettingsMaxFocusIndex
 import com.nendo.argosy.ui.screens.settings.menu.SettingsLayout
 import com.nendo.argosy.ui.theme.Dimens
+import com.nendo.argosy.data.preferences.GripReserveMode
+import com.nendo.argosy.ui.theme.GRIP_RESERVE_DEFAULT_PERCENT
+import com.nendo.argosy.ui.theme.GRIP_RESERVE_MAX_PERCENT
+import com.nendo.argosy.ui.theme.GRIP_RESERVE_MIN_PERCENT
 import com.nendo.argosy.ui.theme.gripReserveBottomInset
 import com.nendo.argosy.ui.util.touchOnly
+
+private const val GRIP_RESERVE_PERCENT_STEP = 2
 
 enum class InGameSettingsTab(val label: String) {
     VIDEO("Video"),
@@ -105,6 +114,9 @@ data class InGameControlsState(
         com.nendo.argosy.data.local.entity.FastForwardMode.HOLD,
     val fastForwardPreservePitch: Boolean = false,
     val controllerOrderCount: Int = 0,
+    val gripReserveMode: GripReserveMode = GripReserveMode.OFF,
+    val gripReservePercent: Int = GRIP_RESERVE_DEFAULT_PERCENT,
+    val gripAutoControllers: List<com.nendo.argosy.domain.model.GripAutoController> = emptyList(),
     val touchEnabled: Boolean = true,
     val touchOpacityLandscape: Float = 0.45f,
     val touchOpacityPortrait: Float = 1.0f,
@@ -134,7 +146,12 @@ sealed class InGameControlsAction {
     data class CycleControllerType(val port: Int, val direction: Int) : InGameControlsAction()
     data class SelectControllerType(val port: Int, val optionIndex: Int) : InGameControlsAction()
     data class ResetControllerType(val port: Int) : InGameControlsAction()
+    data class CycleGripReserveMode(val direction: Int) : InGameControlsAction()
+    data class AdjustGripReservePercent(val delta: Int) : InGameControlsAction()
+    data class AddGripAutoController(val controllerId: String, val name: String) : InGameControlsAction()
+    data class RemoveGripAutoController(val controllerId: String) : InGameControlsAction()
     data object ShowControllerOrder : InGameControlsAction()
+    data object ShowGripSettings : InGameControlsAction()
     data object ShowInputMapping : InGameControlsAction()
     data object ShowHotkeys : InGameControlsAction()
     data class SetTouchEnabled(val enabled: Boolean) : InGameControlsAction()
@@ -183,6 +200,7 @@ internal sealed class InGameControlsItem(
     data object ControllerOrder : InGameControlsItem("controllerOrder", "controllers")
     data class ControllerType(val port: Int) : InGameControlsItem("controllerType$port", "controllers")
     data object InputMapping : InGameControlsItem("inputMapping", "controllers")
+    data object ControllerGrip : InGameControlsItem("controllerGrip", "controllers")
     data object Rumble : InGameControlsItem("rumble", "controllers")
     data object AnalogAsDpad : InGameControlsItem("analogAsDpad", "sticks")
     data object DpadAsAnalog : InGameControlsItem("dpadAsAnalog", "sticks")
@@ -206,6 +224,7 @@ internal sealed class InGameControlsItem(
                 ControllerType(2),
                 ControllerType(3),
                 InputMapping,
+                ControllerGrip,
                 Rumble,
                 Header("sticksHeader", "sticks", "Analog Sticks"),
                 AnalogAsDpad,
@@ -306,6 +325,7 @@ fun InGameSettingsScreen(
     var showControllerOrderModal by remember { mutableStateOf(false) }
     var showInputMappingModal by remember { mutableStateOf(false) }
     var showHotkeysModal by remember { mutableStateOf(false) }
+    var showGripSettingsModal by remember { mutableStateOf(false) }
 
     val isDarkTheme = isSystemInDarkTheme()
     val overlayColor = if (isDarkTheme) Color.Black.copy(alpha = 0.7f) else Color.White.copy(alpha = 0.5f)
@@ -419,6 +439,7 @@ fun InGameSettingsScreen(
             is InGameControlsItem.ControllerType ->
                 action(InGameControlsAction.CycleControllerType(item.port, 1))
             InGameControlsItem.InputMapping -> showInputMappingModal = true
+            InGameControlsItem.ControllerGrip -> showGripSettingsModal = true
             InGameControlsItem.AnalogAsDpad -> action(InGameControlsAction.SetAnalogAsDpad(!state.analogAsDpad))
             InGameControlsItem.DpadAsAnalog -> action(InGameControlsAction.SetDpadAsAnalog(!state.dpadAsAnalog))
             InGameControlsItem.Hotkeys -> showHotkeysModal = true
@@ -663,6 +684,7 @@ fun InGameSettingsScreen(
                                 onAction = { action ->
                                     when (action) {
                                         InGameControlsAction.ShowControllerOrder -> showControllerOrderModal = true
+                                        InGameControlsAction.ShowGripSettings -> showGripSettingsModal = true
                                         InGameControlsAction.ShowInputMapping -> showInputMappingModal = true
                                         InGameControlsAction.ShowHotkeys -> showHotkeysModal = true
                                         else -> onControlsAction(action)
@@ -720,6 +742,23 @@ fun InGameSettingsScreen(
                 onSaveMapping = modalCallbacks.onSaveMapping,
                 onApplyPreset = modalCallbacks.onApplyPreset,
                 onDismiss = { showInputMappingModal = false }
+            )
+        }
+
+        if (showGripSettingsModal) {
+            GripSettingsModal(
+                mode = controlsState.gripReserveMode,
+                reservePercent = controlsState.gripReservePercent,
+                controllers = controlsState.gripAutoControllers,
+                onCycleMode = { onControlsAction(InGameControlsAction.CycleGripReserveMode(it)) },
+                onAdjustPercent = { onControlsAction(InGameControlsAction.AdjustGripReservePercent(it)) },
+                onAddController = { id, name ->
+                    onControlsAction(InGameControlsAction.AddGripAutoController(id, name))
+                },
+                onRemoveController = { id ->
+                    onControlsAction(InGameControlsAction.RemoveGripAutoController(id))
+                },
+                onDismiss = { showGripSettingsModal = false }
             )
         }
 
@@ -868,6 +907,14 @@ private fun InGameControlsSection(
                         )
                     }
                 }
+
+                InGameControlsItem.ControllerGrip -> NavigationPreference(
+                    icon = Icons.Default.Gamepad,
+                    title = "Controller Grip",
+                    subtitle = "Shift the UI up out of the area a grip covers",
+                    isFocused = isFocused(item),
+                    onClick = { onAction(InGameControlsAction.ShowGripSettings) }
+                )
 
                 InGameControlsItem.InputMapping -> NavigationPreference(
                     icon = Icons.Default.Gamepad,

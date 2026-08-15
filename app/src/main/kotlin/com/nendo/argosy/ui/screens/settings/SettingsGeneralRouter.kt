@@ -79,6 +79,10 @@ internal fun routeNavigateToBoxArt(vm: SettingsViewModel) {
     vm.loadPreviewGames()
 }
 
+internal fun routeNavigateToControllerGrip(vm: SettingsViewModel) {
+    vm._uiState.update { it.copy(currentSection = SettingsSection.CONTROLLER_GRIP, focusedIndex = 0) }
+}
+
 internal fun routeNavigateToHomeScreen(vm: SettingsViewModel) {
     vm._uiState.update { it.copy(currentSection = SettingsSection.HOME_SCREEN, focusedIndex = 0) }
 }

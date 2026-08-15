@@ -909,9 +909,6 @@ class SettingsViewModel @Inject constructor(
 
     fun adjustUiScale(delta: Int) = routeAdjustUiScale(this, delta)
 
-    fun setGripReserveEnabled(enabled: Boolean) =
-        displayDelegate.setGripReserveEnabled(viewModelScope, enabled)
-
     fun adjustGripReservePercent(delta: Int) = routeAdjustGripReservePercent(this, delta)
 
     fun adjustBackgroundBlur(delta: Int) = routeAdjustBackgroundBlur(this, delta)
@@ -928,10 +925,28 @@ class SettingsViewModel @Inject constructor(
     fun cycleHomeBackgroundMode(direction: Int = 1) = displayDelegate.cycleHomeBackgroundMode(viewModelScope, direction)
     fun setUseAccentColorFooter(use: Boolean) = displayDelegate.setUseAccentColorFooter(viewModelScope, use)
     fun setCompactFooter(enabled: Boolean) = displayDelegate.setCompactFooter(viewModelScope, enabled)
+
+    fun showGripControllerModal() = displayDelegate.showGripControllerModal()
+
+    fun hideGripControllerModal() = displayDelegate.hideGripControllerModal()
+
+    fun setGripReserveMode(mode: com.nendo.argosy.data.preferences.GripReserveMode) =
+        displayDelegate.setGripReserveMode(viewModelScope, mode)
+
+    fun cycleGripReserveMode(direction: Int) =
+        displayDelegate.cycleGripReserveMode(viewModelScope, direction)
+
+    fun addGripAutoController(controllerId: String, controllerName: String) =
+        displayDelegate.addGripAutoController(viewModelScope, controllerId, controllerName)
+
+    fun removeGripAutoController(controllerId: String) =
+        displayDelegate.removeGripAutoController(viewModelScope, controllerId)
     fun setCustomBackgroundPath(path: String?) = displayDelegate.setCustomBackgroundPath(viewModelScope, path)
     fun openBackgroundPicker() = displayDelegate.openBackgroundPicker(viewModelScope)
 
     fun navigateToBoxArt() = routeNavigateToBoxArt(this)
+    fun navigateToControllerGrip() = routeNavigateToControllerGrip(this)
+
     fun navigateToHomeScreen() = routeNavigateToHomeScreen(this)
     fun navigateToAmbientLed() = routeNavigateToAmbientLed(this)
     fun navigateToThemeSounds() = routeNavigateToThemeSounds(this)

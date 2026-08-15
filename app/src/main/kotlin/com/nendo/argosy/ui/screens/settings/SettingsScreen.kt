@@ -94,6 +94,7 @@ import com.nendo.argosy.ui.screens.settings.sections.CoreOptionsSection
 import com.nendo.argosy.ui.screens.settings.sections.coreOptionsItemAtFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.RomMSection
 import com.nendo.argosy.ui.screens.settings.sections.SavesSection
+import com.nendo.argosy.ui.screens.settings.sections.ControllerGripSection
 import com.nendo.argosy.ui.screens.settings.sections.HomeScreenSection
 import com.nendo.argosy.ui.screens.settings.sections.InterfaceSection
 import com.nendo.argosy.ui.screens.settings.sections.JellyfinSection
@@ -567,6 +568,7 @@ fun SettingsScreen(
                         SettingsSection.THEME_BACKDROP -> "SURFACE BACKDROP"
                         SettingsSection.INTERFACE -> "INTERFACE"
                         SettingsSection.BOX_ART -> "BOX ART"
+                        SettingsSection.CONTROLLER_GRIP -> "CONTROLLER GRIP"
                         SettingsSection.HOME_SCREEN -> "HOME SCREEN"
                         SettingsSection.LIBRARY_VIEW -> "LIBRARY"
                         SettingsSection.DISPLAYS -> "DISPLAYS"
@@ -642,6 +644,7 @@ fun SettingsScreen(
                     SettingsSection.THEME_BACKDROP -> ThemeBackdropSection(uiState, viewModel)
                     SettingsSection.INTERFACE -> InterfaceSection(uiState, viewModel)
                     SettingsSection.BOX_ART -> BoxArtSection(uiState, viewModel)
+                    SettingsSection.CONTROLLER_GRIP -> ControllerGripSection(uiState, viewModel)
                     SettingsSection.HOME_SCREEN -> HomeScreenSection(uiState, viewModel)
                     SettingsSection.LIBRARY_VIEW -> LibrarySection(uiState, viewModel)
                     SettingsSection.DISPLAYS -> DisplaysSection(uiState, viewModel)

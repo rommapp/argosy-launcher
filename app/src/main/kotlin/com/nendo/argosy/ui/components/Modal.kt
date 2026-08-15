@@ -40,6 +40,7 @@ fun Modal(
     onDismiss: (() -> Unit)? = null,
     footerHints: List<Pair<InputButton, String>>? = null,
     inlineFooterHints: Boolean = false,
+    onFooterHintClick: ((InputButton) -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit
 ) {
     val isDarkTheme = LocalLauncherTheme.current.isDarkTheme
@@ -99,11 +100,12 @@ fun Modal(
                     if (shown.isNotEmpty()) {
                         FooterBarWithState(
                             hints = shown.map { FooterHintItem(it.first, it.second) },
+                            onHintClick = onFooterHintClick,
                             forceVisible = true
                         )
                     }
                 } else {
-                    FooterHints(hints = footerHints)
+                    FooterHints(hints = footerHints, onHintClick = onFooterHintClick)
                 }
             }
         }

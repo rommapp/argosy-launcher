@@ -168,8 +168,9 @@ class UserPreferencesRepository @Inject constructor(
             videoWallpaperDelaySeconds = display.videoWallpaperDelaySeconds,
             videoWallpaperMuted = display.videoWallpaperMuted,
             uiScale = display.uiScale,
-            gripReserveEnabled = display.gripReserveEnabled,
+            gripReserveMode = display.gripReserveMode,
             gripReservePercent = display.gripReservePercent,
+            gripAutoControllers = display.gripAutoControllers,
             ambientLedEnabled = display.ambientLedEnabled,
             ambientLedBrightness = display.ambientLedBrightness,
             ambientLedAudioBrightness = display.ambientLedAudioBrightness,
@@ -256,6 +257,10 @@ class UserPreferencesRepository @Inject constructor(
         displayPrefs.setHomeLayout(settings)
     suspend fun setUseAccentColorFooter(use: Boolean) = displayPrefs.setUseAccentColorFooter(use)
     suspend fun setCompactFooter(enabled: Boolean) = displayPrefs.setCompactFooter(enabled)
+    suspend fun setGripAutoControllers(
+        controllers: com.nendo.argosy.domain.model.GripAutoControllers
+    ) = displayPrefs.setGripAutoControllers(controllers)
+    suspend fun setGripReserveMode(mode: GripReserveMode) = displayPrefs.setGripReserveMode(mode)
     suspend fun setBoxArtShape(shape: BoxArtShape) = displayPrefs.setBoxArtShape(shape)
     suspend fun setBoxArtCornerRadius(radius: BoxArtCornerRadius) = displayPrefs.setBoxArtCornerRadius(radius)
     suspend fun setBoxArtBorderThickness(thickness: BoxArtBorderThickness) = displayPrefs.setBoxArtBorderThickness(thickness)
@@ -743,8 +748,10 @@ data class UserPreferences(
     val videoWallpaperDelaySeconds: Int = 3,
     val videoWallpaperMuted: Boolean = false,
     val uiScale: Int = 100,
-    val gripReserveEnabled: Boolean = false,
-    val gripReservePercent: Int = 20,
+    val gripReserveMode: GripReserveMode = GripReserveMode.OFF,
+    val gripReservePercent: Int = 35,
+    val gripAutoControllers: com.nendo.argosy.domain.model.GripAutoControllers =
+        com.nendo.argosy.domain.model.GripAutoControllers(),
     val ambientLedEnabled: Boolean = false,
     val ambientLedBrightness: Int = 100,
     val ambientLedAudioBrightness: Boolean = true,
@@ -789,6 +796,17 @@ data class UserPreferences(
     val quayPassTicketBalance: Int = 0
 ) {
     val isSocialLinked: Boolean get() = socialSessionToken != null
+}
+
+enum class GripReserveMode(val displayName: String) {
+    OFF("Off"),
+    ON("On"),
+    AUTO("Auto");
+
+    companion object {
+        fun fromString(value: String?): GripReserveMode =
+            entries.firstOrNull { it.name == value } ?: OFF
+    }
 }
 
 enum class ThemeMode(val displayName: String) {

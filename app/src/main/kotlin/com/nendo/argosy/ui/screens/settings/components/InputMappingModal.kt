@@ -437,7 +437,8 @@ private fun ControllerListContent(
         footerHints = listOf(
             InputButton.A to "Select",
             InputButton.B to "Back"
-        )
+        ),
+        onFooterHintClick = { button -> if (button == InputButton.B) onDismiss() }
     ) {
         if (controllers.isEmpty()) {
             Box(
@@ -595,7 +596,8 @@ private fun PlatformMappingContent(
         },
         baseWidth = 450.dp,
         onDismiss = onDismiss,
-        footerHints = footerHints
+        footerHints = footerHints,
+        onFooterHintClick = { button -> if (button == InputButton.B) onDismiss() }
     ) {
         LazyColumn(
             state = listState,
@@ -724,7 +726,8 @@ private fun RecordingOverlay(
         subtitle = "Recording input for $targetButton",
         baseWidth = 350.dp,
         onDismiss = onDismiss,
-        footerHints = listOf(InputButton.B to "Hold to Cancel")
+        footerHints = listOf(InputButton.B to "Hold to Cancel"),
+        onFooterHintClick = { button -> if (button == InputButton.B) onDismiss() }
     ) {
         Box(
             modifier = Modifier

@@ -11,6 +11,10 @@ import com.nendo.argosy.ui.screens.settings.sections.AboutItem
 import com.nendo.argosy.ui.screens.settings.sections.BiosItem
 import com.nendo.argosy.ui.screens.settings.sections.BuiltinEmulatorItem
 import com.nendo.argosy.ui.screens.settings.sections.NavigationItem
+import com.nendo.argosy.ui.screens.settings.sections.ControllerGripItem
+import com.nendo.argosy.ui.screens.settings.sections.GRIP_RESERVE_PERCENT_STEP
+import com.nendo.argosy.ui.screens.settings.sections.controllerGripItemAtFocusIndex
+import com.nendo.argosy.ui.screens.settings.sections.controllerGripSections
 import com.nendo.argosy.ui.screens.settings.sections.HomeScreenItem
 import com.nendo.argosy.ui.screens.settings.sections.SavesItem
 import com.nendo.argosy.ui.screens.settings.sections.SavesLayoutState
@@ -75,6 +79,7 @@ internal class LightSectionsInput(
             SettingsSection.BIOS -> handleBiosLeftRight(direction)
             SettingsSection.ROMM -> handleRomMLeftRight(direction)
             SettingsSection.SAVES -> handleSavesLeftRight(direction)
+            SettingsSection.CONTROLLER_GRIP -> handleControllerGripLeftRight(direction)
             SettingsSection.HOME_SCREEN -> handleHomeScreenLeftRight(direction)
             SettingsSection.LIBRARY_VIEW -> handleLibraryViewLeftRight(direction)
             SettingsSection.NAVIGATION -> handleNavigationLeftRight(direction)
@@ -144,6 +149,21 @@ internal class LightSectionsInput(
             return InputResult.HANDLED
         }
         return InputResult.UNHANDLED
+    }
+
+    private fun handleControllerGripLeftRight(direction: Int): InputResult {
+        val state = viewModel.uiState.value
+        return when (controllerGripItemAtFocusIndex(state.focusedIndex, state.display)) {
+            ControllerGripItem.Mode -> {
+                viewModel.cycleGripReserveMode(direction)
+                InputResult.HANDLED
+            }
+            ControllerGripItem.ReservedHeight -> {
+                viewModel.adjustGripReservePercent(direction * GRIP_RESERVE_PERCENT_STEP)
+                InputResult.HANDLED
+            }
+            else -> InputResult.UNHANDLED
+        }
     }
 
     private fun handleHomeScreenLeftRight(direction: Int): InputResult {
@@ -293,6 +313,7 @@ internal class LightSectionsInput(
     private fun handleSectionJump(direction: Int): InputResult {
         val state = viewModel.uiState.value
         val sections = when (state.currentSection) {
+            SettingsSection.CONTROLLER_GRIP -> controllerGripSections(state.display)
             SettingsSection.HOME_SCREEN -> homeScreenSections(state.display)
             SettingsSection.LIBRARY_VIEW -> librarySections(LibraryLayoutState.from(state))
             SettingsSection.BIOS -> biosSections(state.bios.platformGroups, state.bios.expandedPlatformIndex)

@@ -25,6 +25,7 @@ import com.nendo.argosy.ui.screens.settings.sections.AudioItem
 import com.nendo.argosy.ui.screens.settings.sections.NavigationItem
 import com.nendo.argosy.ui.screens.settings.sections.DisplaysItem
 import com.nendo.argosy.ui.screens.settings.sections.DisplaysLayoutState
+import com.nendo.argosy.ui.screens.settings.sections.ControllerGripItem
 import com.nendo.argosy.ui.screens.settings.sections.HomeScreenItem
 import com.nendo.argosy.ui.screens.settings.sections.InterfaceItem
 import com.nendo.argosy.ui.screens.settings.sections.InterfaceLayoutState
@@ -65,6 +66,7 @@ import com.nendo.argosy.ui.screens.settings.sections.displaysFocusIndexOf
 import com.nendo.argosy.ui.screens.settings.sections.displaysItemAtFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.createStorageLayoutInfo
 import com.nendo.argosy.ui.screens.settings.sections.homeScreenFocusIndexOf
+import com.nendo.argosy.ui.screens.settings.sections.controllerGripItemAtFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.homeScreenItemAtFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.interfaceFocusIndexOf
 import com.nendo.argosy.ui.screens.settings.sections.interfaceItemAtFocusIndex
@@ -82,6 +84,7 @@ import com.nendo.argosy.ui.screens.settings.sections.EmulatorsItem
 import com.nendo.argosy.ui.screens.settings.sections.createEmulatorsLayoutInfo
 import com.nendo.argosy.ui.screens.settings.sections.emulatorsItemAtFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.emulatorsMaxFocusIndex
+import com.nendo.argosy.ui.screens.settings.sections.controllerGripMaxFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.homeScreenMaxFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.interfaceMaxFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.mainSettingsMaxFocusIndex
@@ -254,6 +257,7 @@ internal fun routeConfirm(vm: SettingsViewModel): InputResult {
         SettingsSection.THEME_FONTS -> routeThemeFontsConfirm(vm, state)
         SettingsSection.THEME_BACKDROP -> routeThemeBackdropConfirm(vm, state)
         SettingsSection.INTERFACE -> routeInterfaceConfirm(vm, state)
+        SettingsSection.CONTROLLER_GRIP -> routeControllerGripConfirm(vm, state)
         SettingsSection.HOME_SCREEN -> routeHomeScreenConfirm(vm, state)
         SettingsSection.LIBRARY_VIEW -> routeLibraryViewConfirm(vm, state)
         SettingsSection.BOX_ART -> routeBoxArtConfirm(vm, state)
@@ -534,7 +538,7 @@ private fun routeInterfaceConfirm(vm: SettingsViewModel, state: SettingsUiState)
     val layoutState = InterfaceLayoutState.from(state)
     when (interfaceItemAtFocusIndex(state.focusedIndex, layoutState)) {
         InterfaceItem.CompactFooter -> vm.setCompactFooter(!state.display.compactFooter)
-        InterfaceItem.GripReserve -> vm.setGripReserveEnabled(!state.display.gripReserveEnabled)
+        InterfaceItem.ControllerGrip -> vm.navigateToControllerGrip()
         InterfaceItem.HomeScreen -> vm.navigateToHomeScreen()
         InterfaceItem.LibraryView -> vm.navigateToLibraryView()
         InterfaceItem.BoxArt -> vm.navigateToBoxArt()
@@ -688,6 +692,20 @@ private fun routeThemeBackdropConfirm(vm: SettingsViewModel, state: SettingsUiSt
         else -> {}
     }
     return InputResult.HANDLED
+}
+
+private fun routeControllerGripConfirm(vm: SettingsViewModel, state: SettingsUiState): InputResult {
+    return when (controllerGripItemAtFocusIndex(state.focusedIndex, state.display)) {
+        ControllerGripItem.Mode -> {
+            vm.requestEnumPicker(ControllerGripItem.Mode.key)
+            InputResult.handled(SoundType.OPEN_MODAL)
+        }
+        ControllerGripItem.Controllers -> {
+            vm.showGripControllerModal()
+            InputResult.handled(SoundType.OPEN_MODAL)
+        }
+        else -> InputResult.HANDLED
+    }
 }
 
 private fun routeHomeScreenConfirm(vm: SettingsViewModel, state: SettingsUiState): InputResult {
@@ -1084,6 +1102,11 @@ internal fun routeNavigateBack(vm: SettingsViewModel): Boolean {
             val focusIdx = displaysFocusIndexOf(DisplaysItem.AmbientLedSettings, layoutState)
             vm._uiState.update { it.copy(currentSection = SettingsSection.DISPLAYS, focusedIndex = focusIdx) }; true
         }
+        state.currentSection == SettingsSection.CONTROLLER_GRIP -> {
+            val layoutState = InterfaceLayoutState.from(state)
+            val focusIdx = interfaceFocusIndexOf(InterfaceItem.ControllerGrip, layoutState)
+            vm._uiState.update { it.copy(currentSection = SettingsSection.INTERFACE, focusedIndex = focusIdx) }; true
+        }
         state.currentSection == SettingsSection.HOME_SCREEN -> {
             val layoutState = InterfaceLayoutState.from(state)
             val focusIdx = interfaceFocusIndexOf(InterfaceItem.HomeScreen, layoutState)
@@ -1237,6 +1260,7 @@ private fun computeMaxFocusIndex(
     SettingsSection.THEME_FONTS -> themeFontsMaxFocusIndex(ThemeFontsLayoutState.from(state))
     SettingsSection.THEME_BACKDROP -> themeBackdropMaxFocusIndex(ThemeBackdropLayoutState.from(state))
     SettingsSection.INTERFACE -> interfaceMaxFocusIndex(InterfaceLayoutState.from(state))
+    SettingsSection.CONTROLLER_GRIP -> controllerGripMaxFocusIndex(state.display)
     SettingsSection.HOME_SCREEN -> homeScreenMaxFocusIndex(state.display)
     SettingsSection.LIBRARY_VIEW -> libraryMaxFocusIndex(LibraryLayoutState.from(state))
     SettingsSection.BOX_ART -> boxArtMaxFocusIndex(state.display)

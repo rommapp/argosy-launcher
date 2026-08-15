@@ -44,6 +44,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.ComposeView
 import com.nendo.argosy.libretro.ui.RAConnectionNotification
+import com.nendo.argosy.core.input.ConnectedControllerTracker
 import com.nendo.argosy.core.input.ControllerDetector
 import com.nendo.argosy.core.input.DetectedLayout
 import com.nendo.argosy.ui.input.LocalABIconsSwapped
@@ -120,7 +121,11 @@ import com.nendo.argosy.libretro.shader.ShaderDownloader
 import com.nendo.argosy.libretro.shader.ShaderPreviewRenderer
 import com.nendo.argosy.libretro.shader.ShaderRegistry
 import com.nendo.argosy.ui.theme.ALauncherTheme
+import com.nendo.argosy.ui.theme.GRIP_RESERVE_DEFAULT_PERCENT
+import com.nendo.argosy.ui.theme.isGripAutoControllerConnected
+import com.nendo.argosy.ui.theme.isGripReserveActive
 import com.nendo.argosy.ui.theme.GRIP_RESERVE_MAX_PERCENT
+import com.nendo.argosy.ui.theme.GRIP_RESERVE_MIN_PERCENT
 import com.nendo.argosy.ui.theme.resolveGripReserveFraction
 import com.nendo.argosy.data.preferences.BuiltinEmulatorSettings
 import com.nendo.argosy.util.AppPaths
@@ -136,6 +141,7 @@ import com.nendo.argosy.data.local.entity.GameCoreOptionOverrideEntity
 import com.nendo.argosy.ui.screens.settings.CoreOptionViewItem
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -152,6 +158,7 @@ class LibretroActivity : ComponentActivity() {
     @Inject lateinit var preferencesRepository: UserPreferencesRepository
     @Inject lateinit var touchLayoutRepository: com.nendo.argosy.data.repository.TouchLayoutRepository
     @Inject lateinit var inputConfigRepository: InputConfigRepository
+    @Inject lateinit var connectedControllerTracker: ConnectedControllerTracker
     @Inject lateinit var cheatDao: CheatDao
     @Inject lateinit var gameDao: GameDao
     @Inject lateinit var gameOverlayWriter: com.nendo.argosy.data.repository.GameUserOverlayWriter
@@ -277,8 +284,12 @@ class LibretroActivity : ComponentActivity() {
     private var currentRotationState by mutableStateOf(0)
     private var touchSettingsState by mutableStateOf(com.nendo.argosy.data.preferences.BuiltinEmulatorSettings())
     private var portraitPositionState by mutableStateOf("Auto")
-    private var gripReserveEnabledState by mutableStateOf(false)
-    private var gripReservePercentState by mutableStateOf(GRIP_RESERVE_MAX_PERCENT)
+    private var gripReserveModeState by mutableStateOf(com.nendo.argosy.data.preferences.GripReserveMode.OFF)
+    private var gripReservePercentState by mutableStateOf(GRIP_RESERVE_DEFAULT_PERCENT)
+    private var gripAutoControllerConnectedState by mutableStateOf(false)
+    private var gripAutoControllersState by mutableStateOf(
+        com.nendo.argosy.domain.model.GripAutoControllers()
+    )
     private var coreOptionOverrides by mutableStateOf<Map<String, String>>(emptyMap())
     private var gameCoreOptionOverrides by mutableStateOf<Map<String, String>>(emptyMap())
     private var perGameSettingsEnabled by mutableStateOf(false)
@@ -683,14 +694,25 @@ class LibretroActivity : ComponentActivity() {
             splitColumn?.let { applyPortraitSplit(it) }
         }
         lifecycleScope.launch {
-            preferencesRepository.preferences.collect { prefs ->
-                if (prefs.gripReserveEnabled == gripReserveEnabledState &&
-                    prefs.gripReservePercent == gripReservePercentState
-                ) return@collect
-                gripReserveEnabledState = prefs.gripReserveEnabled
-                gripReservePercentState = prefs.gripReservePercent
-                splitColumn?.let { applyPortraitSplit(it) }
-            }
+            preferencesRepository.preferences
+                .combine(connectedControllerTracker.connectedControllerIds) { prefs, connectedIds ->
+                    prefs to isGripAutoControllerConnected(
+                        autoEnabled = prefs.gripReserveMode == com.nendo.argosy.data.preferences.GripReserveMode.AUTO,
+                        autoControllerIds = prefs.gripAutoControllers.controllerIds,
+                        connectedControllerIds = connectedIds
+                    )
+                }
+                .collect { (prefs, autoConnected) ->
+                    gripAutoControllersState = prefs.gripAutoControllers
+                    if (prefs.gripReserveMode == gripReserveModeState &&
+                        prefs.gripReservePercent == gripReservePercentState &&
+                        autoConnected == gripAutoControllerConnectedState
+                    ) return@collect
+                    gripReserveModeState = prefs.gripReserveMode
+                    gripReservePercentState = prefs.gripReservePercent
+                    gripAutoControllerConnectedState = autoConnected
+                    splitColumn?.let { applyPortraitSplit(it) }
+                }
         }
     }
 
@@ -1103,7 +1125,10 @@ class LibretroActivity : ComponentActivity() {
             else -> if (overlayWouldShow) "Top" else "Center"
         }
         val reserved = resolveGripReserveFraction(
-            enabled = gripReserveEnabledState,
+            enabled = isGripReserveActive(
+                mode = gripReserveModeState,
+                autoControllerConnected = gripAutoControllerConnectedState
+            ),
             percent = gripReservePercentState,
             screenWidthDp = resources.configuration.screenWidthDp,
             screenHeightDp = resources.configuration.screenHeightDp,
@@ -1881,6 +1906,9 @@ class LibretroActivity : ComponentActivity() {
                 fastForwardMode = videoSettings.fastForwardMode,
                 fastForwardPreservePitch = videoSettings.fastForwardPreservePitch,
                 controllerOrderCount = inputConfig.controllerOrderCount,
+                gripReserveMode = gripReserveModeState,
+                gripReservePercent = gripReservePercentState,
+                gripAutoControllers = gripAutoControllersState.controllers,
                 touchEnabled = touchSettingsState.showTouchControlsWhenNoGamepad,
                 touchOpacityLandscape = touchSettingsState.touchControlsOpacityLandscape,
                 touchOpacityPortrait = touchSettingsState.touchControlsOpacityPortrait,
@@ -2514,6 +2542,33 @@ class LibretroActivity : ComponentActivity() {
                 videoSettings.currentDpadAsAnalog = action.enabled
                 videoSettings.persistControlSetting("dpadAsAnalog", action.enabled)
             }
+            is InGameControlsAction.CycleGripReserveMode -> {
+                val modes = com.nendo.argosy.data.preferences.GripReserveMode.entries
+                val current = modes.indexOf(gripReserveModeState).coerceAtLeast(0)
+                val next = modes[(current + action.direction).mod(modes.size)]
+                lifecycleScope.launch { preferencesRepository.setGripReserveMode(next) }
+            }
+            is InGameControlsAction.AddGripAutoController -> {
+                lifecycleScope.launch {
+                    preferencesRepository.setGripAutoControllers(
+                        gripAutoControllersState.with(action.controllerId, action.name)
+                    )
+                }
+            }
+            is InGameControlsAction.RemoveGripAutoController -> {
+                lifecycleScope.launch {
+                    preferencesRepository.setGripAutoControllers(
+                        gripAutoControllersState.without(action.controllerId)
+                    )
+                }
+            }
+            is InGameControlsAction.AdjustGripReservePercent -> {
+                val next = (gripReservePercentState + action.delta)
+                    .coerceIn(GRIP_RESERVE_MIN_PERCENT, GRIP_RESERVE_MAX_PERCENT)
+                if (next != gripReservePercentState) {
+                    lifecycleScope.launch { preferencesRepository.setGripReservePercent(next) }
+                }
+            }
             is InGameControlsAction.CycleControllerType ->
                 cycleControllerType(action.port, action.direction)
             is InGameControlsAction.SelectControllerType ->
@@ -2542,6 +2597,7 @@ class LibretroActivity : ComponentActivity() {
             }
             InGameControlsAction.ShowControllerOrder,
             InGameControlsAction.ShowInputMapping,
+            InGameControlsAction.ShowGripSettings,
             InGameControlsAction.ShowHotkeys -> {}
             is InGameControlsAction.SetTouchEnabled -> {
                 lifecycleScope.launch { preferencesRepository.setTouchControlsShowWhenNoGamepad(action.enabled) }

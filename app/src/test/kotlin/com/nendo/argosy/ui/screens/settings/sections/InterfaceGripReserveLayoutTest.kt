@@ -1,5 +1,6 @@
 package com.nendo.argosy.ui.screens.settings.sections
 
+import com.nendo.argosy.data.preferences.GripReserveMode
 import com.nendo.argosy.ui.screens.settings.DisplayState
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -8,52 +9,54 @@ import org.junit.Test
 
 class InterfaceGripReserveLayoutTest {
 
-    private fun layout(enabled: Boolean) =
-        InterfaceLayoutState(DisplayState(gripReserveEnabled = enabled))
+    private fun display(mode: GripReserveMode) = DisplayState(gripReserveMode = mode)
 
-    private fun focusableItems(enabled: Boolean): List<InterfaceItem?> {
-        val state = layout(enabled)
-        return (0..interfaceMaxFocusIndex(state)).map { interfaceItemAtFocusIndex(it, state) }
+    private fun focusableItems(mode: GripReserveMode): List<ControllerGripItem?> {
+        val state = display(mode)
+        return (0..controllerGripMaxFocusIndex(state)).map { controllerGripItemAtFocusIndex(it, state) }
     }
 
     @Test
-    fun `percent row is not reachable while the grip reserve is off`() {
-        assertFalse(focusableItems(enabled = false).contains(InterfaceItem.GripReservePercent))
+    fun `off shows the mode row alone`() {
+        val items = focusableItems(GripReserveMode.OFF)
+
+        assertEquals(listOf<ControllerGripItem?>(ControllerGripItem.Mode), items)
     }
 
     @Test
-    fun `percent row is reachable once the grip reserve is on`() {
-        assertTrue(focusableItems(enabled = true).contains(InterfaceItem.GripReservePercent))
+    fun `the reserved height row appears for on and auto but never for off`() {
+        assertFalse(focusableItems(GripReserveMode.OFF).contains(ControllerGripItem.ReservedHeight))
+        assertTrue(focusableItems(GripReserveMode.ON).contains(ControllerGripItem.ReservedHeight))
+        assertTrue(focusableItems(GripReserveMode.AUTO).contains(ControllerGripItem.ReservedHeight))
     }
 
     @Test
-    fun `the toggle itself is always reachable`() {
-        assertTrue(focusableItems(enabled = false).contains(InterfaceItem.GripReserve))
-        assertTrue(focusableItems(enabled = true).contains(InterfaceItem.GripReserve))
+    fun `the controllers row appears only for auto`() {
+        assertFalse(focusableItems(GripReserveMode.OFF).contains(ControllerGripItem.Controllers))
+        assertFalse(focusableItems(GripReserveMode.ON).contains(ControllerGripItem.Controllers))
+        assertTrue(focusableItems(GripReserveMode.AUTO).contains(ControllerGripItem.Controllers))
     }
 
     @Test
-    fun `enabling the grip reserve adds exactly one focusable row`() {
+    fun `the mode row is always reachable`() {
+        GripReserveMode.entries.forEach { mode ->
+            assertTrue(focusableItems(mode).contains(ControllerGripItem.Mode))
+        }
+    }
+
+    @Test
+    fun `auto adds exactly one row over on`() {
         assertEquals(
-            interfaceMaxFocusIndex(layout(enabled = false)) + 1,
-            interfaceMaxFocusIndex(layout(enabled = true))
+            controllerGripMaxFocusIndex(display(GripReserveMode.ON)) + 1,
+            controllerGripMaxFocusIndex(display(GripReserveMode.AUTO))
         )
     }
 
     @Test
-    fun `percent row sits directly beneath its toggle`() {
-        val state = layout(enabled = true)
+    fun `the reserved height row shifts up when the controllers row is hidden`() {
         assertEquals(
-            interfaceFocusIndexOf(InterfaceItem.GripReserve, state) + 1,
-            interfaceFocusIndexOf(InterfaceItem.GripReservePercent, state)
-        )
-    }
-
-    @Test
-    fun `rows after the percent row shift up when it is hidden`() {
-        assertEquals(
-            interfaceFocusIndexOf(InterfaceItem.HomeScreen, layout(enabled = true)) - 1,
-            interfaceFocusIndexOf(InterfaceItem.HomeScreen, layout(enabled = false))
+            controllerGripFocusIndexOf(ControllerGripItem.ReservedHeight, display(GripReserveMode.AUTO)) - 1,
+            controllerGripFocusIndexOf(ControllerGripItem.ReservedHeight, display(GripReserveMode.ON))
         )
     }
 }

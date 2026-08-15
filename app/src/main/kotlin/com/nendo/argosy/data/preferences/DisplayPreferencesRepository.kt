@@ -47,8 +47,10 @@ data class DisplayPreferences(
     val libraryDefaultSource: String = "ALL",
     val libraryDefaultPlatform: String = "",
     val uiScale: Int = 100,
-    val gripReserveEnabled: Boolean = false,
-    val gripReservePercent: Int = 20,
+    val gripReserveMode: GripReserveMode = GripReserveMode.OFF,
+    val gripReservePercent: Int = 35,
+    val gripAutoControllers: com.nendo.argosy.domain.model.GripAutoControllers =
+        com.nendo.argosy.domain.model.GripAutoControllers(),
     val backgroundBlur: Int = 0,
     val backgroundSaturation: Int = 100,
     val backgroundOpacity: Int = 100,
@@ -145,6 +147,11 @@ class DisplayPreferencesRepository @Inject constructor(
         val HOME_LAYOUT_CONFIG = stringPreferencesKey("home_layout_config")
         val USE_ACCENT_COLOR_FOOTER = booleanPreferencesKey("use_accent_color_footer")
         val COMPACT_FOOTER = booleanPreferencesKey("compact_footer")
+        val GRIP_AUTO_CONTROLLER_ID = stringPreferencesKey("grip_auto_controller_id")
+        val GRIP_AUTO_CONTROLLER_NAME = stringPreferencesKey("grip_auto_controller_name")
+        val GRIP_AUTO_CONTROLLERS = stringPreferencesKey("grip_auto_controllers")
+        val GRIP_AUTO_ENABLED = booleanPreferencesKey("grip_auto_enabled")
+        val GRIP_RESERVE_MODE = stringPreferencesKey("grip_reserve_mode")
         val BOX_ART_SHAPE = stringPreferencesKey("box_art_shape")
         val BOX_ART_CORNER_RADIUS = stringPreferencesKey("box_art_corner_radius")
         val BOX_ART_BORDER_THICKNESS = stringPreferencesKey("box_art_border_thickness")
@@ -217,8 +224,9 @@ class DisplayPreferencesRepository @Inject constructor(
             libraryDefaultSource = prefs[Keys.LIBRARY_DEFAULT_SOURCE] ?: "ALL",
             libraryDefaultPlatform = prefs[Keys.LIBRARY_DEFAULT_PLATFORM] ?: "",
             uiScale = prefs[Keys.UI_SCALE] ?: 100,
-            gripReserveEnabled = prefs[Keys.GRIP_RESERVE_ENABLED] ?: false,
-            gripReservePercent = prefs[Keys.GRIP_RESERVE_PERCENT] ?: 20,
+            gripReserveMode = readGripReserveMode(prefs),
+            gripReservePercent = (prefs[Keys.GRIP_RESERVE_PERCENT] ?: 35).coerceIn(10, 40),
+            gripAutoControllers = readGripAutoControllers(prefs),
             backgroundBlur = prefs[Keys.BACKGROUND_BLUR] ?: 40,
             backgroundSaturation = prefs[Keys.BACKGROUND_SATURATION] ?: 100,
             backgroundOpacity = prefs[Keys.BACKGROUND_OPACITY] ?: 100,
@@ -405,7 +413,7 @@ class DisplayPreferencesRepository @Inject constructor(
     }
 
     suspend fun setGripReservePercent(percent: Int) {
-        dataStore.edit { it[Keys.GRIP_RESERVE_PERCENT] = percent.coerceIn(5, 40) }
+        dataStore.edit { it[Keys.GRIP_RESERVE_PERCENT] = percent.coerceIn(10, 40) }
     }
 
     suspend fun setBackgroundBlur(blur: Int) {
@@ -445,6 +453,16 @@ class DisplayPreferencesRepository @Inject constructor(
 
     suspend fun setCompactFooter(enabled: Boolean) {
         dataStore.edit { it[Keys.COMPACT_FOOTER] = enabled }
+    }
+
+    suspend fun setGripAutoControllers(
+        controllers: com.nendo.argosy.domain.model.GripAutoControllers
+    ) {
+        dataStore.edit { it[Keys.GRIP_AUTO_CONTROLLERS] = controllers.toJson() }
+    }
+
+    suspend fun setGripReserveMode(mode: GripReserveMode) {
+        dataStore.edit { it[Keys.GRIP_RESERVE_MODE] = mode.name }
     }
 
     suspend fun setBoxArtShape(shape: BoxArtShape) {
@@ -601,5 +619,28 @@ class DisplayPreferencesRepository @Inject constructor(
 
     suspend fun setInstalledOnlyHome(enabled: Boolean) {
         dataStore.edit { it[Keys.INSTALLED_ONLY_HOME] = enabled }
+    }
+
+    private fun readGripReserveMode(prefs: Preferences): GripReserveMode {
+        prefs[Keys.GRIP_RESERVE_MODE]?.let { return GripReserveMode.fromString(it) }
+        if (prefs[Keys.GRIP_RESERVE_ENABLED] == true) return GripReserveMode.ON
+        val autoEnabled = prefs[Keys.GRIP_AUTO_ENABLED] ?: true
+        val hasControllers = readGripAutoControllers(prefs).controllers.isNotEmpty()
+        return if (autoEnabled && hasControllers) GripReserveMode.AUTO else GripReserveMode.OFF
+    }
+
+    private fun readGripAutoControllers(
+        prefs: Preferences
+    ): com.nendo.argosy.domain.model.GripAutoControllers {
+        val stored = prefs[Keys.GRIP_AUTO_CONTROLLERS]
+        if (!stored.isNullOrBlank()) {
+            return com.nendo.argosy.domain.model.GripAutoControllers.fromJson(stored)
+        }
+        val legacyId = prefs[Keys.GRIP_AUTO_CONTROLLER_ID].orEmpty()
+        if (legacyId.isEmpty()) return com.nendo.argosy.domain.model.GripAutoControllers()
+        return com.nendo.argosy.domain.model.GripAutoControllers().with(
+            controllerId = legacyId,
+            name = prefs[Keys.GRIP_AUTO_CONTROLLER_NAME].orEmpty().ifEmpty { "Controller" }
+        )
     }
 }

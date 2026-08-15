@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Gamepad
 import androidx.compose.material.icons.outlined.GridView
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Image
@@ -16,7 +17,6 @@ import androidx.compose.ui.Modifier
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.repeatOnLifecycle
-import com.nendo.argosy.ui.components.CyclePreference
 import com.nendo.argosy.ui.components.NavigationPreference
 import com.nendo.argosy.ui.components.SwitchPreference
 import com.nendo.argosy.ui.screens.settings.components.SectionPaneLayout
@@ -54,12 +54,7 @@ internal sealed class InterfaceItem(
 
     data object UiScale : InterfaceItem("uiScale", "layout")
     data object CompactFooter : InterfaceItem("compactFooter", "layout")
-    data object GripReserve : InterfaceItem("gripReserve", "layout")
-    data object GripReservePercent : InterfaceItem(
-        "gripReservePercent",
-        "layout",
-        visibleWhen = { it.display.gripReserveEnabled }
-    )
+    data object ControllerGrip : InterfaceItem("controllerGrip", "layout")
     data object HomeScreen : InterfaceItem("homeScreen", "layout")
     data object LibraryView : InterfaceItem("libraryView", "layout")
     data object BoxArt : InterfaceItem("boxArt", "layout")
@@ -73,7 +68,7 @@ internal sealed class InterfaceItem(
          */
         val ALL: List<InterfaceItem>
             get() = listOf(
-                UiScale, CompactFooter, GripReserve, GripReservePercent,
+                UiScale, CompactFooter, ControllerGrip,
                 HomeScreen, LibraryView, BoxArt
             )
     }
@@ -157,23 +152,12 @@ fun InterfaceSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                     onToggle = { viewModel.setCompactFooter(it) }
                 )
 
-                InterfaceItem.GripReserve -> SwitchPreference(
+                InterfaceItem.ControllerGrip -> NavigationPreference(
+                    icon = Icons.Outlined.Gamepad,
                     title = "Controller Grip",
-                    subtitle = "Shift the UI up out of the area a grip covers in portrait",
-                    isEnabled = display.gripReserveEnabled,
+                    subtitle = "Shift the UI up out of the area a grip covers",
                     isFocused = isFocused(item),
-                    onToggle = { viewModel.setGripReserveEnabled(!display.gripReserveEnabled) }
-                )
-
-                InterfaceItem.GripReservePercent -> SliderPreference(
-                    title = "Reserved Height",
-                    value = display.gripReservePercent,
-                    minValue = 5,
-                    maxValue = 40,
-                    isFocused = isFocused(item),
-                    step = 5,
-                    suffix = "%",
-                    onAdjust = { viewModel.adjustGripReservePercent(it) }
+                    onClick = { viewModel.navigateToControllerGrip() }
                 )
 
                 InterfaceItem.HomeScreen -> NavigationPreference(

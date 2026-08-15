@@ -130,7 +130,14 @@ fun ControllerOrderModal(
         footerHints = listOf(
             InputButton.A to "Confirm",
             InputButton.B to "Unregister/Back"
-        )
+        ),
+        onFooterHintClick = { button ->
+            when (button) {
+                InputButton.A -> if (assignments.isNotEmpty()) onDismiss()
+                InputButton.B -> onDismiss()
+                else -> {}
+            }
+        }
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),

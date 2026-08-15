@@ -15,6 +15,7 @@ import com.nendo.argosy.data.preferences.BoxArtInnerEffectThickness
 import com.nendo.argosy.data.preferences.BoxArtOuterEffect
 import com.nendo.argosy.data.preferences.BoxArtOuterEffectThickness
 import com.nendo.argosy.data.preferences.GlowColorMode
+import com.nendo.argosy.data.preferences.GripReserveMode
 import com.nendo.argosy.data.preferences.PlatformIndicatorContent
 import com.nendo.argosy.data.preferences.PlatformIndicatorStyle
 import com.nendo.argosy.data.preferences.SystemIconPadding
@@ -29,8 +30,10 @@ import com.nendo.argosy.hardware.AmbientLedManager
 import com.nendo.argosy.ui.theme.backdrop.BackdropConfig
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
+import com.nendo.argosy.core.input.ConnectedControllerTracker
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
@@ -66,8 +69,9 @@ data class ThemeState(
     val useAccentColorFooter: Boolean = false,
     val compactFooter: Boolean = false,
     val uiScale: Int = 100,
-    val gripReserveEnabled: Boolean = false,
-    val gripReservePercent: Int = 20,
+    val gripReserveMode: GripReserveMode = GripReserveMode.OFF,
+    val gripReservePercent: Int = GRIP_RESERVE_DEFAULT_PERCENT,
+    val gripAutoControllerConnected: Boolean = false,
     val displayFontScale: Int = 100,
     val bodyFontScale: Int = 100
 )
@@ -75,7 +79,8 @@ data class ThemeState(
 @HiltViewModel
 class ThemeViewModel @Inject constructor(
     private val preferencesRepository: UserPreferencesRepository,
-    private val ambientLedManager: AmbientLedManager
+    private val ambientLedManager: AmbientLedManager,
+    private val connectedControllerTracker: ConnectedControllerTracker
 ) : ViewModel() {
 
     init {
@@ -93,8 +98,18 @@ class ThemeViewModel @Inject constructor(
             .launchIn(viewModelScope)
     }
 
-    val themeState: StateFlow<ThemeState> = preferencesRepository.userPreferences
-        .map { it.toThemeState() }
+    val themeState: StateFlow<ThemeState> = combine(
+        preferencesRepository.userPreferences,
+        connectedControllerTracker.connectedControllerIds
+    ) { prefs, connectedIds ->
+        prefs.toThemeState().copy(
+            gripAutoControllerConnected = isGripAutoControllerConnected(
+                autoEnabled = prefs.gripReserveMode == GripReserveMode.AUTO,
+                autoControllerIds = prefs.gripAutoControllers.controllerIds,
+                connectedControllerIds = connectedIds
+            )
+        )
+    }
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
@@ -197,7 +212,7 @@ fun UserPreferences.toThemeState(): ThemeState = ThemeState(
     useAccentColorFooter = useAccentColorFooter,
     compactFooter = compactFooter,
     uiScale = uiScale,
-    gripReserveEnabled = gripReserveEnabled,
+    gripReserveMode = gripReserveMode,
     gripReservePercent = gripReservePercent,
     displayFontScale = displayFontScale,
     bodyFontScale = bodyFontScale

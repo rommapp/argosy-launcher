@@ -1,5 +1,7 @@
 package com.nendo.argosy.ui.theme
 
+import com.nendo.argosy.data.preferences.DisplayPreferences
+import com.nendo.argosy.data.preferences.UserPreferences
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
@@ -65,8 +67,30 @@ class GripReserveFractionTest {
     }
 
     @Test
+    fun `the stored defaults agree with the constant the ui defaults from`() {
+        assertEquals(GRIP_RESERVE_DEFAULT_PERCENT, DisplayPreferences().gripReservePercent)
+        assertEquals(GRIP_RESERVE_DEFAULT_PERCENT, UserPreferences().gripReservePercent)
+    }
+
+    @Test
+    fun `the default sits inside the range the settings slider offers`() {
+        assertEquals(
+            GRIP_RESERVE_DEFAULT_PERCENT,
+            GRIP_RESERVE_DEFAULT_PERCENT.coerceIn(GRIP_RESERVE_MIN_PERCENT, GRIP_RESERVE_MAX_PERCENT)
+        )
+    }
+
+    @Test
     fun `a percent outside the settings range is pulled back into it`() {
-        assertEquals(0.05f, resolveGripReserveFraction(true, -10, PORTRAIT_W, PORTRAIT_H), 0.0001f)
-        assertEquals(0.40f, resolveGripReserveFraction(true, 250, PORTRAIT_W, PORTRAIT_H), 0.0001f)
+        assertEquals(
+            GRIP_RESERVE_MIN_PERCENT / 100f,
+            resolveGripReserveFraction(true, -10, PORTRAIT_W, PORTRAIT_H),
+            0.0001f
+        )
+        assertEquals(
+            GRIP_RESERVE_MAX_PERCENT / 100f,
+            resolveGripReserveFraction(true, 250, PORTRAIT_W, PORTRAIT_H),
+            0.0001f
+        )
     }
 }

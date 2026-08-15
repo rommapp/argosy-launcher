@@ -654,7 +654,10 @@ internal fun routeLoadSettings(vm: SettingsViewModel) {
             subtitleLanguage = prefs.mediaSubtitleLanguage,
             burnInImageSubtitles = prefs.mediaBurnInImageSubtitles,
             sharePresence = prefs.shareMediaPresence,
-            mediaDirPath = jellyfinInFlight.mediaDirPath
+            mediaDirPath = jellyfinInFlight.mediaDirPath,
+            isSyncingLibrary = jellyfinInFlight.isSyncingLibrary,
+            lastLibrarySync = jellyfinInFlight.lastLibrarySync,
+            librarySyncError = jellyfinInFlight.librarySyncError
         ))
         vm.jellyfinDelegate.refreshMediaDirPath(vm.viewModelScope)
 

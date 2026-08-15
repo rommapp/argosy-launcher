@@ -1,9 +1,14 @@
 package com.nendo.argosy.ui.screens.settings.delegates
 
 import com.nendo.argosy.core.notification.NotificationManager
+import com.nendo.argosy.core.notification.NotificationProgress
+import com.nendo.argosy.core.notification.NotificationType
 import com.nendo.argosy.core.notification.showError
 import com.nendo.argosy.data.download.MediaDownloadManager
 import com.nendo.argosy.data.media.MediaDirectoryManager
+import com.nendo.argosy.data.remote.jellyfin.JellyfinResult
+import com.nendo.argosy.data.remote.jellyfin.JellyfinSyncProgress
+import com.nendo.argosy.data.remote.jellyfin.JellyfinSyncResult
 import com.nendo.argosy.data.repository.MediaRepository
 import com.nendo.argosy.data.preferences.MediaAudioLanguage
 import com.nendo.argosy.data.preferences.MediaDownloadQuality
@@ -14,6 +19,7 @@ import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.ui.screens.settings.JellyfinState
 import com.nendo.argosy.ui.screens.settings.MediaRelocationPrompt
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -22,8 +28,12 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.File
+import java.time.Instant
 import javax.inject.Inject
+
+private const val MEDIA_SYNC_NOTIFICATION_KEY = "jellyfin_library_sync"
 
 /**
  * What a password sign-in needs to reach the connection layer. The delegate never holds the
@@ -55,6 +65,8 @@ class JellyfinSettingsDelegate @Inject constructor(
 ) {
     private val _state = MutableStateFlow(JellyfinState())
     val state: StateFlow<JellyfinState> = _state.asStateFlow()
+
+    val librarySyncProgress: StateFlow<JellyfinSyncProgress> = mediaRepository.syncProgress
 
     private val _quickConnectRequestEvent = MutableSharedFlow<String>()
     val quickConnectRequestEvent: SharedFlow<String> = _quickConnectRequestEvent.asSharedFlow()
@@ -308,6 +320,86 @@ class JellyfinSettingsDelegate @Inject constructor(
                 )
             }
         }
+    }
+
+    /**
+     * Runs the pull the user asked for. It outlives the screen it was started from: the pass is
+     * uncancellable and reports through the persistent notification, so walking away from settings
+     * neither stops it nor leaves a progress bar that never finishes.
+     */
+    fun syncLibrary(scope: CoroutineScope) {
+        val current = _state.value
+        if (current.isSyncingLibrary || !current.isSignedIn) return
+        _state.update { it.copy(isSyncingLibrary = true, librarySyncError = null) }
+        notificationManager.showPersistent(
+            title = "Syncing Media",
+            subtitle = "Starting...",
+            key = MEDIA_SYNC_NOTIFICATION_KEY,
+            progress = NotificationProgress(0, 0)
+        )
+        scope.launch {
+            withContext(NonCancellable) {
+                val progressJob = launch {
+                    mediaRepository.syncProgress.collect { progress ->
+                        if (progress.isSyncing && progress.currentLibrary.isNotBlank()) {
+                            notificationManager.updatePersistent(
+                                key = MEDIA_SYNC_NOTIFICATION_KEY,
+                                subtitle = progress.currentLibrary,
+                                progress = NotificationProgress(
+                                    progress.librariesDone + 1,
+                                    progress.librariesTotal
+                                )
+                            )
+                        }
+                    }
+                }
+                val outcome = mediaRepository.refreshLibraries()
+                progressJob.cancel()
+                finishLibrarySync(outcome)
+            }
+        }
+    }
+
+    private fun finishLibrarySync(outcome: JellyfinResult<JellyfinSyncResult>) {
+        when (outcome) {
+            is JellyfinResult.Success -> {
+                val failure = outcome.data.errors.firstOrNull()
+                notificationManager.completePersistent(
+                    key = MEDIA_SYNC_NOTIFICATION_KEY,
+                    title = if (failure == null) "Media up to date" else "Some libraries were missed",
+                    subtitle = failure ?: describeSyncCounts(outcome.data),
+                    type = if (failure == null) NotificationType.SUCCESS else NotificationType.ERROR
+                )
+                _state.update {
+                    it.copy(
+                        isSyncingLibrary = false,
+                        lastLibrarySync = Instant.now(),
+                        librarySyncError = failure
+                    )
+                }
+            }
+            is JellyfinResult.Error -> {
+                notificationManager.completePersistent(
+                    key = MEDIA_SYNC_NOTIFICATION_KEY,
+                    title = "Media sync failed",
+                    subtitle = outcome.message,
+                    type = NotificationType.ERROR
+                )
+                _state.update {
+                    it.copy(isSyncingLibrary = false, librarySyncError = outcome.message)
+                }
+            }
+        }
+    }
+
+    /**
+     * The item count is what the pass persisted, not what was new to it, so it is reported as a
+     * size rather than as an addition.
+     */
+    private fun describeSyncCounts(result: JellyfinSyncResult): String {
+        val libraries = if (result.librariesSynced == 1) "1 library" else "${result.librariesSynced} libraries"
+        val titles = if (result.itemsAdded == 1) "1 title" else "${result.itemsAdded} titles"
+        return "$libraries, $titles"
     }
 
     fun cycleDownloadQuality(scope: CoroutineScope, direction: Int) {

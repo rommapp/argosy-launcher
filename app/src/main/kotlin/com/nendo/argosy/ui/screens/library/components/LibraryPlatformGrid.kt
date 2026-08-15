@@ -18,6 +18,8 @@ import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.GridView
+import androidx.compose.material.icons.filled.Movie
+import androidx.compose.material.icons.filled.Tv
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -37,7 +39,8 @@ import com.nendo.argosy.ui.components.GridFocusedScroll
 import com.nendo.argosy.ui.components.PlatformIconAssets
 import com.nendo.argosy.ui.primitives.FocusIndicators
 import com.nendo.argosy.ui.primitives.argosyFocusIndicators
-import com.nendo.argosy.ui.screens.library.LibraryPlatformCellUi
+import com.nendo.argosy.ui.screens.library.LibraryCellUi
+import com.nendo.argosy.ui.screens.library.MediaCellKind
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.util.clickableNoFocus
 
@@ -49,7 +52,8 @@ val LibraryPlatformGridHeaderHeight: Dp
     @Composable get() = Dimens.headerHeight
 
 /**
- * The library's landing: every platform the user actually has, one jump from the games inside it.
+ * The library's landing: every collection the user actually has - platforms first, then the media
+ * libraries a signed-in media account can see - one jump from what is inside each.
  *
  * All Games leads rather than being replaced by the grid, so the unfiltered library stays a
  * destination for anyone who wants to browse everything at once.
@@ -61,7 +65,7 @@ val LibraryPlatformGridHeaderHeight: Dp
  */
 @Composable
 fun LibraryPlatformGrid(
-    cells: List<LibraryPlatformCellUi>,
+    cells: List<LibraryCellUi>,
     focusedIndex: Int,
     columns: Int,
     gridState: LazyGridState,
@@ -101,7 +105,7 @@ fun LibraryPlatformGrid(
 }
 
 /**
- * A platform badge: the mark, its name, and one line of small print.
+ * A collection badge: the mark, its name, and one line of small print.
  *
  * The cell takes the height its content asks for instead of squaring off, because the square spent
  * most of a row on air and this screen is worth having only while a platform stays one jump away.
@@ -110,7 +114,7 @@ fun LibraryPlatformGrid(
  */
 @Composable
 private fun PlatformCell(
-    cell: LibraryPlatformCellUi,
+    cell: LibraryCellUi,
     isFocused: Boolean,
     onClick: () -> Unit
 ) {
@@ -174,13 +178,17 @@ private fun PlatformCell(
 }
 
 /**
- * A platform's mark, in the order it can be trusted: the bundled slug asset, then the logo the
- * server sent, then the short name as text. A cell that draws nothing would be unrecognisable, which
- * is the one thing this grid exists to avoid.
+ * A cell's mark, in the order it can be trusted: the bundled slug asset, then the logo the server
+ * sent, then the short name as text. A cell that draws nothing would be unrecognisable, which is the
+ * one thing this grid exists to avoid.
+ *
+ * A media library takes a tinted vector for what it holds rather than the poster its server offers.
+ * The poster is a photograph, and at this size it would read as a different kind of object sitting
+ * among flat monochrome marks - the same reason All Games draws a glyph instead of a cover collage.
  */
 @Composable
 private fun PlatformCellIcon(
-    cell: LibraryPlatformCellUi,
+    cell: LibraryCellUi,
     iconUri: String?,
     isFocused: Boolean
 ) {
@@ -189,10 +197,21 @@ private fun PlatformCellIcon(
     } else {
         MaterialTheme.colorScheme.onSurfaceVariant
     }
+    val mediaIcon = when (cell.mediaKind) {
+        MediaCellKind.MOVIES -> Icons.Default.Movie
+        MediaCellKind.SHOWS -> Icons.Default.Tv
+        null -> null
+    }
 
     when {
         cell.isAllGames -> Icon(
             imageVector = Icons.Default.GridView,
+            contentDescription = null,
+            tint = tint,
+            modifier = Modifier.size(Dimens.iconXl)
+        )
+        mediaIcon != null -> Icon(
+            imageVector = mediaIcon,
             contentDescription = null,
             tint = tint,
             modifier = Modifier.size(Dimens.iconXl)

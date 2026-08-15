@@ -2055,6 +2055,9 @@ class SettingsViewModel @Inject constructor(
     fun setJellyfinSharePresence(enabled: Boolean) =
         jellyfinDelegate.setSharePresence(viewModelScope, enabled)
 
+    val mediaSyncProgress get() = jellyfinDelegate.librarySyncProgress
+    fun syncJellyfinLibrary() = jellyfinDelegate.syncLibrary(viewModelScope)
+
     fun openMediaLocationPicker() = jellyfinDelegate.openMediaLocationPicker(viewModelScope)
     fun onMediaLocationSelected(path: String) =
         jellyfinDelegate.onMediaLocationSelected(viewModelScope, path)

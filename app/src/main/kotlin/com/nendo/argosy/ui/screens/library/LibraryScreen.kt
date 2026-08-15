@@ -144,6 +144,7 @@ import kotlin.math.abs
 fun LibraryScreen(
     isDefaultView: Boolean,
     onGameSelect: (Long) -> Unit,
+    onMediaLibrarySelect: (String) -> Unit,
     onNavigateToDefault: () -> Unit,
     onDrawerToggle: () -> Unit,
     initialPlatformId: Long? = null,
@@ -254,10 +255,11 @@ fun LibraryScreen(
     }
 
     val inputDispatcher = LocalInputDispatcher.current
-    val inputHandler = remember(onGameSelect, onDrawerToggle, isDefaultView) {
+    val inputHandler = remember(onGameSelect, onMediaLibrarySelect, onDrawerToggle, isDefaultView) {
         viewModel.createInputHandler(
             isDefaultView = isDefaultView,
             onGameSelect = onGameSelect,
+            onMediaLibrarySelect = onMediaLibrarySelect,
             onNavigateToDefault = onNavigateToDefault,
             onDrawerToggle = onDrawerToggle
         )
@@ -348,7 +350,7 @@ fun LibraryScreen(
                                 focusedIndex = uiState.platformGridFocusedIndex,
                                 columns = uiState.platformGridColumns,
                                 gridState = platformGridState,
-                                onCellClick = { viewModel.openPlatformCell(it) }
+                                onCellClick = { viewModel.openLandingCell(it, onMediaLibrarySelect) }
                             )
                         }
                     }
@@ -460,7 +462,8 @@ fun LibraryScreen(
             Box(modifier = Modifier.align(Alignment.TopCenter)) {
                 if (uiState.isPlatformGrid) {
                     LibraryPlatformGridHeader(
-                        platformCount = (uiState.platformCells.size - 1).coerceAtLeast(0)
+                        platformCount = uiState.platformCellCount,
+                        mediaLibraryCount = uiState.mediaCellCount
                     )
                 } else {
                     LibraryHeader(
@@ -914,9 +917,12 @@ private fun LibraryHeader(
  * Header for the platform landing. It carries no platform stepper: the grid itself is the chooser,
  * so the bumper arrows the game list needs would point at nothing here. Nor does it echo the focused
  * cell's name, which the cell under the cursor is already saying.
+ *
+ * The count names the media libraries only when there are any, so a device with no media account
+ * reads exactly as it did before rather than being told it has none.
  */
 @Composable
-private fun LibraryPlatformGridHeader(platformCount: Int) {
+private fun LibraryPlatformGridHeader(platformCount: Int, mediaLibraryCount: Int) {
     val surfaceColor = MaterialTheme.colorScheme.surface
     Box(
         modifier = Modifier
@@ -943,7 +949,14 @@ private fun LibraryPlatformGridHeader(platformCount: Int) {
                 color = MaterialTheme.colorScheme.onSurface
             )
             Text(
-                text = if (platformCount == 1) "1 platform" else "$platformCount platforms",
+                text = listOfNotNull(
+                    if (platformCount == 1) "1 platform" else "$platformCount platforms",
+                    when {
+                        mediaLibraryCount == 0 -> null
+                        mediaLibraryCount == 1 -> "1 library"
+                        else -> "$mediaLibraryCount libraries"
+                    }
+                ).joinToString(" · "),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )

@@ -1,5 +1,6 @@
 package com.nendo.argosy.ui.screens.settings.sections
 
+import android.content.Context
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -15,16 +16,20 @@ import androidx.compose.material.icons.filled.Dns
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Login
 import androidx.compose.material.icons.filled.Password
+import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import com.nendo.argosy.data.preferences.MediaAudioLanguage
 import com.nendo.argosy.data.preferences.MediaDownloadQuality
 import com.nendo.argosy.data.preferences.MediaStreamingQuality
 import com.nendo.argosy.data.preferences.MediaSubtitleLanguage
 import com.nendo.argosy.data.preferences.MediaSubtitleMode
+import com.nendo.argosy.data.remote.jellyfin.JellyfinSyncProgress
 import com.nendo.argosy.ui.components.ActionPreference
 import com.nendo.argosy.ui.components.CyclePreference
 import com.nendo.argosy.ui.components.NavigationPreference
@@ -39,6 +44,7 @@ import com.nendo.argosy.ui.screens.settings.components.SectionPaneLayout
 import com.nendo.argosy.ui.screens.settings.menu.SettingsLayout
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalArgosyTheme
+import com.nendo.argosy.util.formatClockDateTime
 
 internal data class JellyfinLayoutState(
     val hasServer: Boolean,
@@ -93,6 +99,8 @@ internal sealed class JellyfinItem(
         { it.showPasswordFallback }
     )
 
+    data object SyncLibrary : JellyfinItem("jellyfinSyncLibrary", "library", { it.hasServer })
+
     data object StreamingQuality : JellyfinItem("jellyfinStreamingQuality", "playback", { it.hasServer })
     data object AudioLanguage : JellyfinItem("jellyfinAudioLanguage", "playback", { it.hasServer })
     data object Subtitles : JellyfinItem("jellyfinSubtitles", "playback", { it.hasServer })
@@ -115,6 +123,8 @@ internal sealed class JellyfinItem(
             get() = listOf(
                 Header("jellyfinServerHeader", "server", "SERVER"),
                 MediaServer, Account, QuickConnectCode, SignInError, PasswordSignIn,
+                Header("jellyfinLibraryHeader", "library", "LIBRARY", { it.hasServer }),
+                SyncLibrary,
                 Header("jellyfinPlaybackHeader", "playback", "PLAYBACK", { it.hasServer }),
                 StreamingQuality, AudioLanguage, Subtitles, SubtitleLanguage, BurnInSubtitles,
                 Header("jellyfinDownloadsHeader", "downloads", "DOWNLOADS", { it.hasServer }),
@@ -133,6 +143,7 @@ private val jellyfinLayout = SettingsLayout<JellyfinItem, JellyfinLayoutState>(
     sectionTitle = {
         when (it) {
             "server" -> "SERVER"
+            "library" -> "LIBRARY"
             "playback" -> "PLAYBACK"
             "downloads" -> "DOWNLOADS"
             "privacy" -> "PRIVACY"
@@ -165,6 +176,25 @@ private fun accountSubtitle(jellyfin: JellyfinState): String = when {
     jellyfin.quickConnectRequested -> "Asking the server for a code"
     jellyfin.quickConnectAvailable -> "Approve a Quick Connect code from your Jellyfin app"
     else -> "Sign in with your Jellyfin username and password"
+}
+
+/**
+ * What the row says about the library, in the order the user cares about: what is happening now,
+ * then what stopped it happening, then when it last happened.
+ */
+private fun syncLibrarySubtitle(
+    jellyfin: JellyfinState,
+    progress: JellyfinSyncProgress,
+    context: Context
+): String = when {
+    jellyfin.isSyncingLibrary && progress.currentLibrary.isNotBlank() && progress.librariesTotal > 0 ->
+        "${progress.currentLibrary} (${progress.librariesDone + 1} of ${progress.librariesTotal})"
+    jellyfin.isSyncingLibrary -> "Reading your libraries"
+    !jellyfin.isSignedIn -> "Sign in to bring your movies and shows across"
+    jellyfin.librarySyncError != null -> jellyfin.librarySyncError
+    jellyfin.lastLibrarySync != null ->
+        "Last: ${formatClockDateTime(context, jellyfin.lastLibrarySync.toEpochMilli())}"
+    else -> "Bring your movies, shows and episodes in line with the server"
 }
 
 private fun subtitleModeSubtitle(mode: MediaSubtitleMode): String = when (mode) {
@@ -307,6 +337,25 @@ private fun JellyfinContent(uiState: SettingsUiState, viewModel: SettingsViewMod
                 isFocused = isFocused(item),
                 onClick = { viewModel.showJellyfinLoginForm() }
             )
+
+            JellyfinItem.SyncLibrary -> {
+                val progress = viewModel.mediaSyncProgress.collectAsState().value
+                val context = LocalContext.current
+                ActionPreference(
+                    icon = Icons.Default.Sync,
+                    title = "Sync Library",
+                    subtitle = syncLibrarySubtitle(jellyfin, progress, context),
+                    isFocused = isFocused(item),
+                    isEnabled = jellyfin.isSignedIn && !jellyfin.isSyncingLibrary,
+                    iconTint = if (jellyfin.librarySyncError != null && !jellyfin.isSyncingLibrary) {
+                        MaterialTheme.colorScheme.error
+                    } else {
+                        null
+                    },
+                    spinIcon = jellyfin.isSyncingLibrary,
+                    onClick = { viewModel.syncJellyfinLibrary() }
+                )
+            }
 
             JellyfinItem.StreamingQuality -> CyclePreference(
                 title = "Streaming Quality",

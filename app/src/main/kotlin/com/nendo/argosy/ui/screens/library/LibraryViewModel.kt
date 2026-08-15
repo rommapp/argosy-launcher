@@ -15,12 +15,14 @@ import com.nendo.argosy.data.cache.ImageCacheManager
 import com.nendo.argosy.data.emulator.EmulatorDetector
 import com.nendo.argosy.data.repository.CollectionRepository
 import com.nendo.argosy.data.repository.GameRepository
+import com.nendo.argosy.data.repository.MediaRepository
 import com.nendo.argosy.data.repository.PlatformRepository
 import com.nendo.argosy.data.remote.playstore.PlayStoreService
 import com.nendo.argosy.data.update.ApkInstallManager
 import com.nendo.argosy.data.local.entity.CollectionType
 import com.nendo.argosy.data.local.entity.GameEntity
 import com.nendo.argosy.data.local.entity.GameListItem
+import com.nendo.argosy.data.local.entity.MediaLibraryEntity
 import com.nendo.argosy.data.local.entity.PlatformEntity
 import com.nendo.argosy.data.local.entity.getDisplayName
 import com.nendo.argosy.data.model.ActiveSort
@@ -208,7 +210,7 @@ data class LibraryGameUi(
 
 data class LibraryUiState(
     val view: LibraryView = LibraryView.PLATFORM_GRID,
-    val platformCells: List<LibraryPlatformCellUi> = emptyList(),
+    val platformCells: List<LibraryCellUi> = emptyList(),
     val platformGridFocusedIndex: Int = 0,
     val canReturnToPlatformGrid: Boolean = false,
     val platforms: List<HomePlatformUi> = emptyList(),
@@ -268,13 +270,20 @@ data class LibraryUiState(
         get() = GridUtils.getGameGridColumns(gridDensity, screenWidthDp)
 
     /**
-     * Nothing to land on: no platform carries games and neither does the library as a whole. A user
-     * with games but no platform rows still gets the grid, since All Games alone is a real
-     * destination and hiding it would strand them.
+     * Nothing to land on: no platform row, no media library, and nothing in the library as a whole.
+     * A user with games but no platform rows still gets the grid, since All Games alone is a real
+     * destination and hiding it would strand them, and so does one whose only collection is a media
+     * library.
      */
     val platformGridIsEmpty: Boolean
         get() = platformCells.none { !it.isAllGames } &&
-            platformCells.sumOf { it.gameCount } == 0
+            platformCells.sumOf { it.itemCount } == 0
+
+    val platformCellCount: Int
+        get() = platformCells.count { it.isPlatform }
+
+    val mediaCellCount: Int
+        get() = platformCells.count { it.isMedia }
 
     val columnsCount: Int
         get() = GridUtils.getGameGridColumns(gridDensity, screenWidthDp)
@@ -371,6 +380,7 @@ class LibraryViewModel @Inject constructor(
     @dagger.hilt.android.qualifiers.ApplicationContext private val context: android.content.Context,
     private val platformRepository: PlatformRepository,
     private val gameRepository: GameRepository,
+    private val mediaRepository: MediaRepository,
     private val displayAffinityHelper: com.nendo.argosy.util.DisplayAffinityHelper,
     private val collectionRepository: CollectionRepository,
     private val gameNavigationContext: GameNavigationContext,
@@ -411,6 +421,7 @@ class LibraryViewModel @Inject constructor(
     private var explicitDestinationRequested = false
     private var cachedPlatformDisplayNames: Map<Long, String> = emptyMap()
     private var cachedPlatformEntities: List<PlatformEntity> = emptyList()
+    private var cachedMediaLibraries: List<MediaLibraryEntity> = emptyList()
 
     private val pendingCoverRepairs = mutableSetOf<Long>()
 
@@ -437,6 +448,7 @@ class LibraryViewModel @Inject constructor(
         }.launchIn(viewModelScope)
 
         loadPlatforms()
+        observeMediaLibraries()
         loadFilterOptions()
         applyLibraryDefaults()
         observeGridDensity()
@@ -498,16 +510,56 @@ class LibraryViewModel @Inject constructor(
     }
 
     /**
-     * Rebuilds the landing cells from one aggregate count query rather than by sizing any game list.
+     * The media libraries the landing offers, or none at all while nobody is signed in.
+     *
+     * Sign-in is checked alongside the rows rather than relied on through them: the stored rows
+     * outlive a sign-out until the next sync reconciles them, and a landing that kept offering the
+     * previous account's libraries would open browses that answer empty.
+     *
+     * Nothing is synced from here. The library listing is filled by home's media delegate, which
+     * already asks for it once when the table is empty, and a second unprompted crawl would make
+     * opening the library cost a whole-server round trip.
+     */
+    private fun observeMediaLibraries() {
+        viewModelScope.launch {
+            combine(
+                mediaRepository.isSignedIn,
+                mediaRepository.observeLibraries()
+            ) { signedIn, libraries ->
+                if (signedIn) libraries else emptyList<MediaLibraryEntity>()
+            }
+                .collect { libraries ->
+                    cachedMediaLibraries = libraries
+                    refreshPlatformCells()
+                }
+        }
+    }
+
+    /**
+     * Rebuilds the landing cells from aggregate count queries rather than by sizing any list.
      *
      * Hiding a game changes what a platform contains without touching the platforms table, so this
      * runs on the hidden-list flow as well as on the platform flow; otherwise a count would sit
      * stale against the list it labels.
+     *
+     * Media libraries follow the platforms rather than sorting in among them. The two families are
+     * ordered by different things - platforms by the game library's own order, libraries by the
+     * media server's - so there is no shared key to interleave on, and a fixed tail is the one
+     * arrangement that puts them in the same place every time. Vertical focus wraps, so the tail is
+     * one press up from the first row however many platforms sit between.
      */
     private suspend fun refreshPlatformCells() {
         val counts = gameRepository.countsByPlatform()
+        val mediaCounts: Map<String, Int> = if (cachedMediaLibraries.isEmpty()) {
+            emptyMap()
+        } else {
+            mediaRepository.countsByLibrary()
+        }
         val cells = listOf(allGamesCell(counts.values.sum())) +
-            cachedPlatformEntities.map { it.toLibraryPlatformCellUi(counts[it.id] ?: 0) }
+            cachedPlatformEntities.map { it.toLibraryCellUi(counts[it.id] ?: 0) } +
+            cachedMediaLibraries.mapNotNull { library ->
+                mediaCounts[library.libraryId]?.let { library.toLibraryCellUi(it) }
+            }
         _uiState.update { state ->
             state.copy(
                 platformCells = cells,
@@ -1068,12 +1120,26 @@ class LibraryViewModel @Inject constructor(
         return true
     }
 
-    fun openPlatformCell(index: Int) {
+    /**
+     * Opens whatever the cell under [index] stands for.
+     *
+     * A platform or All Games swaps this screen over to its games. A media library is a destination
+     * of its own screen, so it leaves rather than filtering: the cursor is parked on the cell first
+     * so that coming back lands on the library that was opened, not on the top of the grid.
+     */
+    fun openLandingCell(index: Int, onMediaLibrarySelect: (String) -> Unit) {
         val state = _uiState.value
         val cell = state.platformCells.getOrNull(index) ?: return
 
-        val platformIndex = cell.platformId
-            ?.let { id -> state.platforms.indexOfFirst { it.id == id } }
+        val target = cell.target
+        if (target is LibraryCellTarget.Media) {
+            _uiState.update { it.copy(platformGridFocusedIndex = index) }
+            onMediaLibrarySelect(target.libraryId)
+            return
+        }
+
+        val platformIndex = (target as? LibraryCellTarget.Platform)
+            ?.let { platform -> state.platforms.indexOfFirst { it.id == platform.platformId } }
             ?.takeIf { it >= 0 }
             ?: -1
 
@@ -1680,6 +1746,7 @@ class LibraryViewModel @Inject constructor(
     fun createInputHandler(
         isDefaultView: Boolean,
         onGameSelect: (Long) -> Unit,
+        onMediaLibrarySelect: (String) -> Unit,
         onNavigateToDefault: () -> Unit,
         onDrawerToggle: () -> Unit
     ): InputHandler = object : InputHandler {
@@ -1735,7 +1802,7 @@ class LibraryViewModel @Inject constructor(
             val state = _uiState.value
             return when {
                 state.isPlatformGrid -> {
-                    openPlatformCell(state.platformGridFocusedIndex)
+                    openLandingCell(state.platformGridFocusedIndex, onMediaLibrarySelect)
                     InputResult.HANDLED
                 }
                 state.showAddToCollectionModal -> {

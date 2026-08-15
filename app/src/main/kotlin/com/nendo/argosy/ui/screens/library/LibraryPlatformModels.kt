@@ -1,38 +1,79 @@
 package com.nendo.argosy.ui.screens.library
 
+import com.nendo.argosy.data.local.entity.MediaCollectionType
+import com.nendo.argosy.data.local.entity.MediaLibraryEntity
 import com.nendo.argosy.data.local.entity.PlatformEntity
 import com.nendo.argosy.data.local.entity.getDisplayName
 
 private const val NAME_MAX_LENGTH = 16
 
 /**
- * One cell of the library's platform landing.
+ * What a cell of the library landing opens.
  *
- * A null [platformId] is the All Games cell, which is why it is nullable rather than a sentinel: the
- * landing has to offer the unfiltered library as a destination, and every other field means the same
- * thing for it as for a platform.
+ * The landing answers "which of my collections do I want", and a media library is one of those, so
+ * the three destinations sit in one list rather than behind separate entry points. A sealed target
+ * rather than a nullable id per kind: a cell has exactly one destination, and spelling that out is
+ * what lets confirm route without inspecting three fields to work out which one is set.
  */
-data class LibraryPlatformCellUi(
-    val platformId: Long?,
+sealed interface LibraryCellTarget {
+    data object AllGames : LibraryCellTarget
+    data class Platform(val platformId: Long) : LibraryCellTarget
+    data class Media(val libraryId: String) : LibraryCellTarget
+}
+
+/**
+ * What a media library holds, and what one of its titles is called. The noun is carried rather than
+ * derived at the render site so a media cell's small print is built the same way a platform's is.
+ */
+enum class MediaCellKind(val singular: String, val plural: String) {
+    MOVIES("movie", "movies"),
+    SHOWS("show", "shows")
+}
+
+/**
+ * One cell of the library's landing: a platform, a media library, or the All Games shortcut.
+ *
+ * [mediaKind] is what separates the two families at render time - it is null for everything that
+ * holds games - and it is also the one thing a media cell knows that a platform does not, since a
+ * library has no slug and no bundled mark.
+ */
+data class LibraryCellUi(
+    val target: LibraryCellTarget,
     val name: String,
     val slug: String,
     val slugs: List<String>,
-    val gameCount: Int,
-    val logoPath: String?
+    val itemCount: Int,
+    val logoPath: String?,
+    val mediaKind: MediaCellKind? = null
 ) {
-    val key: String get() = platformId?.toString() ?: "all-games"
+    val key: String
+        get() = when (target) {
+            LibraryCellTarget.AllGames -> "all-games"
+            is LibraryCellTarget.Platform -> "platform-${target.platformId}"
+            is LibraryCellTarget.Media -> "media-${target.libraryId}"
+        }
 
-    val isAllGames: Boolean get() = platformId == null
+    val isAllGames: Boolean get() = target == LibraryCellTarget.AllGames
+
+    val isPlatform: Boolean get() = target is LibraryCellTarget.Platform
+
+    val isMedia: Boolean get() = target is LibraryCellTarget.Media
 
     /**
      * The one line of small print under the name: what this row is called on disk, and how much is
      * in it. Both halves are single-line by construction, so every cell in a row ends at the same
      * baseline no matter how much the platform has to say for itself.
+     *
+     * A media library has no on-disk name to print, so it prints only the count - which is already
+     * how a platform whose slug merely respells its own name reads, and is why the two families make
+     * one grid rather than two.
      */
     val metaLine: String
         get() {
-            val count = if (gameCount == 1) "1 game" else "$gameCount games"
-            return (slugs + count).joinToString(" · ")
+            val noun = mediaKind
+                ?.let { if (itemCount == 1) it.singular else it.plural }
+                ?: if (itemCount == 1) "game" else "games"
+            return (slugs + "$itemCount $noun").joinToString(" · ")
         }
 }
 
@@ -68,21 +109,49 @@ private fun normalizeSlug(value: String): String =
  * so "Super Nintendo Entertainment System" arrives as "SNES" and reads at a glance instead of
  * ellipsing into a guess.
  */
-fun PlatformEntity.toLibraryPlatformCellUi(gameCount: Int): LibraryPlatformCellUi =
-    LibraryPlatformCellUi(
-        platformId = id,
+fun PlatformEntity.toLibraryCellUi(gameCount: Int): LibraryCellUi =
+    LibraryCellUi(
+        target = LibraryCellTarget.Platform(id),
         name = getDisplayName(maxLength = NAME_MAX_LENGTH),
         slug = slug,
         slugs = platformSlugCoverage(slug, fsSlug, name, shortName),
-        gameCount = gameCount,
+        itemCount = gameCount,
         logoPath = logoPath
     )
 
-fun allGamesCell(gameCount: Int): LibraryPlatformCellUi = LibraryPlatformCellUi(
-    platformId = null,
+/**
+ * A media library as a cell, or null for one whose collection type this build cannot place.
+ *
+ * An unplaceable type is not a cell that could be repaired into a working one: the item type a
+ * library is browsed by comes from its collection type, so a cell built without it would open a
+ * screen that can only ever be empty. The sync already refuses to store such a row, so this only
+ * ever sees one written by an older build.
+ *
+ * A library carries one name and no short form, so a long one ellipses rather than falling back the
+ * way a platform's does. There is nothing to fall back to.
+ */
+fun MediaLibraryEntity.toLibraryCellUi(itemCount: Int): LibraryCellUi? {
+    val kind = when (MediaCollectionType.fromWire(collectionType)) {
+        MediaCollectionType.MOVIES -> MediaCellKind.MOVIES
+        MediaCollectionType.TV_SHOWS -> MediaCellKind.SHOWS
+        null -> return null
+    }
+    return LibraryCellUi(
+        target = LibraryCellTarget.Media(libraryId),
+        name = name,
+        slug = "",
+        slugs = emptyList(),
+        itemCount = itemCount,
+        logoPath = null,
+        mediaKind = kind
+    )
+}
+
+fun allGamesCell(gameCount: Int): LibraryCellUi = LibraryCellUi(
+    target = LibraryCellTarget.AllGames,
     name = "All Games",
     slug = "",
     slugs = emptyList(),
-    gameCount = gameCount,
+    itemCount = gameCount,
     logoPath = null
 )

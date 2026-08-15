@@ -1098,7 +1098,10 @@ data class JellyfinState(
     val burnInImageSubtitles: Boolean = false,
     val sharePresence: Boolean = true,
     val mediaDirPath: String? = null,
-    val pendingMediaRelocation: MediaRelocationPrompt? = null
+    val pendingMediaRelocation: MediaRelocationPrompt? = null,
+    val isSyncingLibrary: Boolean = false,
+    val lastLibrarySync: java.time.Instant? = null,
+    val librarySyncError: String? = null
 ) {
     val hasServer: Boolean get() = serverUrl.isNotBlank()
     val hasQuickConnectCode: Boolean get() = quickConnectRequested && quickConnectCode.isNotBlank()

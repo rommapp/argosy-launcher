@@ -20,7 +20,9 @@ import com.nendo.argosy.ui.screens.settings.sections.biosItemAtFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.SteamItem
 import com.nendo.argosy.ui.screens.settings.sections.StorageItem
 import com.nendo.argosy.ui.screens.settings.sections.createStorageCachesLayoutInfo
+import com.nendo.argosy.ui.screens.settings.sections.createStorageGamesLayoutInfo
 import com.nendo.argosy.ui.screens.settings.sections.createStorageLayoutInfo
+import com.nendo.argosy.ui.screens.settings.sections.storageGamesFocusIndexOfPlatform
 import com.nendo.argosy.ui.screens.settings.sections.steamItemAtFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.storageCachesFocusIndexOfSteam
 import com.nendo.argosy.ui.screens.settings.sections.storageFocusIndexOf
@@ -31,19 +33,86 @@ import kotlinx.coroutines.launch
 
 // --- Navigation ---
 
-internal fun routeNavigateToSection(vm: SettingsViewModel, section: SettingsSection) {
-    val currentState = vm._uiState.value
-    val parentIndex = if (currentState.currentSection == SettingsSection.MAIN) {
-        currentState.focusedIndex
-    } else {
-        currentState.parentFocusIndex
+/**
+ * Enters [section] as a child of whatever is on screen, remembering where focus was so Back
+ * can return to it. Every route into a sub-screen goes through here; a destination that
+ * declares its own parent would be wrong the moment a second route into it exists.
+ */
+internal fun routePushSection(vm: SettingsViewModel, section: SettingsSection, entryFocus: Int = 0) {
+    vm._uiState.update { it.pushedSection(section, entryFocus) }
+}
+
+/**
+ * Opens [section] as the root of the stack, for deep links that land mid-tree. Back from a
+ * screen reached this way leaves settings rather than surfacing a parent the user never
+ * opened.
+ */
+internal fun routeStartAtSection(vm: SettingsViewModel, section: SettingsSection) {
+    vm._uiState.update {
+        it.copy(backStack = emptyList(), currentSection = section, focusedIndex = 0)
     }
-    vm._uiState.update { it.copy(currentSection = section, focusedIndex = 0, parentFocusIndex = parentIndex) }
+    routeApplySectionEntry(vm, section)
+}
+
+internal fun routePopSection(vm: SettingsViewModel): Boolean {
+    val state = vm._uiState.value
+    val parent = state.backStack.lastOrNull() ?: return false
+    routeApplySectionExit(vm, state.currentSection)
+    val restoredFocus = routeReresolveParentFocus(vm, state, parent)
+    vm._uiState.update { it.poppedSection(restoredFocus) ?: it }
+    vm._uiState.update {
+        it.copy(focusedIndex = it.focusedIndex.coerceIn(0, routeMaxFocusIndexOf(vm, it)))
+    }
+    return true
+}
+
+/**
+ * A remembered index is a position, and a position stops meaning the same row when the parent
+ * list can reorder or lose entries while a child is open. Those parents are re-resolved by
+ * identity instead; every other parent restores the index it was left on.
+ */
+private fun routeReresolveParentFocus(
+    vm: SettingsViewModel,
+    state: SettingsUiState,
+    parent: SettingsNavEntry
+): Int? = when {
+    state.currentSection == SettingsSection.PLATFORM_DETAIL &&
+        parent.section == SettingsSection.PLATFORMS -> {
+        val platformId = state.emulators.platforms
+            .getOrNull(state.platformDetail.platformIndex)?.platform?.id
+        vm.focusIndexForPlatform(platformId)
+    }
+    state.currentSection == SettingsSection.STORAGE_PLATFORM_GAMES &&
+        parent.section == SettingsSection.STORAGE_GAMES ->
+        storageGamesFocusIndexOfPlatform(
+            state.storagePlatformGames.selectedPlatformId,
+            createStorageGamesLayoutInfo(state)
+        ).coerceAtLeast(0)
+    else -> null
+}
+
+/**
+ * Work a section needs done when it is left, as opposed to when its parent is re-entered.
+ * Pops only -- re-entering the parent from somewhere else must not run any of it.
+ */
+private fun routeApplySectionExit(vm: SettingsViewModel, section: SettingsSection) {
+    when (section) {
+        SettingsSection.SHADER_STACK -> routeFlushShaderChain(vm)
+        SettingsSection.STEAM_SETTINGS -> vm.cancelSteamQrAuth()
+        else -> {}
+    }
+}
+
+internal fun routeNavigateToSection(vm: SettingsViewModel, section: SettingsSection) {
+    routePushSection(vm, section)
+    routeApplySectionEntry(vm, section)
+}
+
+private fun routeApplySectionEntry(vm: SettingsViewModel, section: SettingsSection) {
     when (section) {
         SettingsSection.ACCOUNTS -> {
             vm.accountsDelegate.resetRowActionFocus()
             vm.accountsDelegate.dismissNotice()
-            vm._uiState.update { it.copy(accounts = it.accounts.copy(enteredExternally = false)) }
         }
         SettingsSection.PLATFORMS -> vm.refreshEmulators()
         SettingsSection.ROMM -> {
@@ -77,65 +146,56 @@ internal fun routeNavigateToSection(vm: SettingsViewModel, section: SettingsSect
 }
 
 internal fun routeNavigateToBoxArt(vm: SettingsViewModel) {
-    vm._uiState.update { it.copy(currentSection = SettingsSection.BOX_ART, focusedIndex = 0) }
+    routePushSection(vm, SettingsSection.BOX_ART)
     vm.loadPreviewGames()
 }
 
 internal fun routeNavigateToControllerGrip(vm: SettingsViewModel) {
-    vm._uiState.update { it.copy(currentSection = SettingsSection.CONTROLLER_GRIP, focusedIndex = 0) }
+    routePushSection(vm, SettingsSection.CONTROLLER_GRIP)
 }
 
 internal fun routeNavigateToHomeScreen(vm: SettingsViewModel) {
-    vm._uiState.update { it.copy(currentSection = SettingsSection.HOME_SCREEN, focusedIndex = 0) }
+    routePushSection(vm, SettingsSection.HOME_SCREEN)
 }
 
 internal fun routeNavigateToLibraryView(vm: SettingsViewModel) {
-    vm._uiState.update { it.copy(currentSection = SettingsSection.LIBRARY_VIEW, focusedIndex = 0) }
+    routePushSection(vm, SettingsSection.LIBRARY_VIEW)
 }
 
 internal fun routeNavigateToAmbientLed(vm: SettingsViewModel) {
-    vm._uiState.update { it.copy(currentSection = SettingsSection.AMBIENT_LED, focusedIndex = 0) }
+    routePushSection(vm, SettingsSection.AMBIENT_LED)
 }
 
 internal fun routeNavigateToThemeSounds(vm: SettingsViewModel) {
-    vm._uiState.update { it.copy(currentSection = SettingsSection.THEME_SOUNDS, focusedIndex = 0) }
+    routePushSection(vm, SettingsSection.THEME_SOUNDS)
 }
 
 internal fun routeNavigateToThemeMusic(vm: SettingsViewModel) {
-    vm.attributionDelegate.setMusicEnteredFromStorage(false)
-    vm._uiState.update { it.copy(currentSection = SettingsSection.THEME_MUSIC, focusedIndex = 0) }
-}
-
-internal fun routeNavigateToThemeMusicFromStorage(vm: SettingsViewModel) {
-    vm.attributionDelegate.setMusicEnteredFromStorage(true)
-    vm._uiState.update { it.copy(currentSection = SettingsSection.THEME_MUSIC, focusedIndex = 0) }
+    routePushSection(vm, SettingsSection.THEME_MUSIC)
 }
 
 internal fun routeNavigateToStorageGames(vm: SettingsViewModel) {
-    vm._uiState.update { it.copy(currentSection = SettingsSection.STORAGE_GAMES, focusedIndex = 0) }
+    routePushSection(vm, SettingsSection.STORAGE_GAMES)
 }
 
 internal fun routeNavigateToStorageMedia(vm: SettingsViewModel) {
-    vm._uiState.update { it.copy(currentSection = SettingsSection.STORAGE_MEDIA, focusedIndex = 0) }
+    routePushSection(vm, SettingsSection.STORAGE_MEDIA)
 }
 
 internal fun routeNavigateToStorageCaches(vm: SettingsViewModel, entryFocus: Int) {
-    vm.attributionDelegate.setCachesEntryFocus(entryFocus)
     vm.syncDelegate.loadLibrarySettings(vm.viewModelScope)
     vm.storageCachesDelegate.refreshOnOpen(vm.viewModelScope)
-    vm._uiState.update { state ->
-        val entered = state.copy(currentSection = SettingsSection.STORAGE_CACHES, focusedIndex = 0)
-        if (entryFocus == CACHES_ENTRY_STEAM) {
-            val steamFocus = storageCachesFocusIndexOfSteam(createStorageCachesLayoutInfo(entered))
-            entered.copy(focusedIndex = steamFocus.coerceAtLeast(0))
-        } else {
-            entered
+    routePushSection(vm, SettingsSection.STORAGE_CACHES)
+    if (entryFocus == CACHES_ENTRY_STEAM) {
+        vm._uiState.update { state ->
+            val steamFocus = storageCachesFocusIndexOfSteam(createStorageCachesLayoutInfo(state))
+            state.copy(focusedIndex = steamFocus.coerceAtLeast(0))
         }
     }
 }
 
 internal fun routeNavigateToThemeBackdrop(vm: SettingsViewModel) {
-    vm._uiState.update { it.copy(currentSection = SettingsSection.THEME_BACKDROP, focusedIndex = 0) }
+    routePushSection(vm, SettingsSection.THEME_BACKDROP)
 }
 
 // --- Emulator methods ---

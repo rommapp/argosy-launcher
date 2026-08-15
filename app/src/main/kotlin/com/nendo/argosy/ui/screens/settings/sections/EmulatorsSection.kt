@@ -118,6 +118,11 @@ fun EmulatorsSection(
     fun isFocused(item: EmulatorsItem): Boolean =
         uiState.focusedIndex == layout.focusIndexOf(item, Unit)
 
+    fun openFrom(item: EmulatorsItem, enter: () -> Unit) {
+        viewModel.setFocusIndex(layout.focusIndexOf(item, Unit))
+        enter()
+    }
+
     val modalBlur by animateDpAsState(
         targetValue = if (emulators.showEmulatorPicker || emulators.showSavePathModal || emulators.showVariantPicker || emulators.updateModal != null) Motion.blurRadiusModal else 0.dp,
         animationSpec = Motion.focusSpringDp,
@@ -165,7 +170,7 @@ fun EmulatorsSection(
                             trailingText = if (isDisabled) null else emulatorName,
                             badge = if (hasUpdate) "Update" else null,
                             isEnabled = !isDisabled,
-                            onClick = { viewModel.navigateToPlatformDetail(item.index) }
+                            onClick = { openFrom(item) { viewModel.navigateToPlatformDetail(item.index) } }
                         )
                     }
                 }

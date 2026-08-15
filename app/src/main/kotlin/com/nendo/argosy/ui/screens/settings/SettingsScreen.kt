@@ -148,10 +148,8 @@ fun SettingsScreen(
             val section = SettingsSection.entries.find { it.name.equals(initialSection, ignoreCase = true) }
             if (section == SettingsSection.PLATFORM_DETAIL && initialPlatformId != null) {
                 viewModel.openPlatformDetailById(initialPlatformId)
-            } else if (section == SettingsSection.ACCOUNTS) {
-                viewModel.openAccountsFromDeepLink()
             } else if (section != null) {
-                viewModel.navigateToSection(section)
+                viewModel.startAtSection(section)
                 kotlinx.coroutines.delay(300)
                 when (initialAction) {
                     "rommConfig" -> viewModel.startRommConfig()

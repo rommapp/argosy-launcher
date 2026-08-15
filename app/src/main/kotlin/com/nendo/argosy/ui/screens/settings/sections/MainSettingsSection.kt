@@ -193,6 +193,9 @@ fun MainSettingsSection(uiState: SettingsUiState, viewModel: SettingsViewModel) 
     }
 
     fun handleClick(item: MainSettingsItem) {
+        if (item !is MainSettingsItem.Header) {
+            viewModel.setFocusIndex(mainSettingsLayout.focusIndexOf(item, Unit))
+        }
         when (item) {
             is MainSettingsItem.Header -> Unit
             MainSettingsItem.DeviceSettings -> context.startActivity(Intent(Settings.ACTION_SETTINGS))

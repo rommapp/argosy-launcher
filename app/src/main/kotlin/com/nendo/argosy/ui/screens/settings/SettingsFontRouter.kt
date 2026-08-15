@@ -31,7 +31,7 @@ private sealed class FontImportResult {
 }
 
 internal fun routeNavigateToThemeFonts(vm: SettingsViewModel) {
-    vm._uiState.update { it.copy(currentSection = SettingsSection.THEME_FONTS, focusedIndex = 0) }
+    routePushSection(vm, SettingsSection.THEME_FONTS)
 }
 
 internal fun routeImportFont(vm: SettingsViewModel, slot: FontSlot, uri: Uri) {

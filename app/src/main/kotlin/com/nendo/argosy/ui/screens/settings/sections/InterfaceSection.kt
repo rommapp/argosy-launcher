@@ -115,6 +115,11 @@ fun InterfaceSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
     fun isFocused(item: InterfaceItem): Boolean =
         uiState.focusedIndex == interfaceLayout.focusIndexOf(item, layoutState)
 
+    fun openFrom(item: InterfaceItem, enter: () -> Unit) {
+        viewModel.setFocusIndex(interfaceLayout.focusIndexOf(item, layoutState))
+        enter()
+    }
+
     fun pickerToken(item: InterfaceItem): Int =
         if (uiState.enumPickerKey == item.key) uiState.enumPickerToken else 0
 
@@ -157,7 +162,7 @@ fun InterfaceSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                     title = "Controller Grip",
                     subtitle = "Shift the UI up out of the area a grip covers",
                     isFocused = isFocused(item),
-                    onClick = { viewModel.navigateToControllerGrip() }
+                    onClick = { openFrom(item) { viewModel.navigateToControllerGrip() } }
                 )
 
                 InterfaceItem.HomeScreen -> NavigationPreference(
@@ -165,7 +170,7 @@ fun InterfaceSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                     title = "Home Screen",
                     subtitle = "Layout, content and background",
                     isFocused = isFocused(item),
-                    onClick = { viewModel.navigateToHomeScreen() }
+                    onClick = { openFrom(item) { viewModel.navigateToHomeScreen() } }
                 )
 
                 InterfaceItem.LibraryView -> NavigationPreference(
@@ -173,7 +178,7 @@ fun InterfaceSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                     title = "Library",
                     subtitle = "Grid density and default filters",
                     isFocused = isFocused(item),
-                    onClick = { viewModel.navigateToLibraryView() }
+                    onClick = { openFrom(item) { viewModel.navigateToLibraryView() } }
                 )
 
                 InterfaceItem.BoxArt -> NavigationPreference(
@@ -181,7 +186,7 @@ fun InterfaceSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                     title = "Box Art",
                     subtitle = "Cover shape, borders and effects",
                     isFocused = isFocused(item),
-                    onClick = { viewModel.navigateToBoxArt() }
+                    onClick = { openFrom(item) { viewModel.navigateToBoxArt() } }
                 )
 
             }

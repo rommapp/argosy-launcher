@@ -360,6 +360,11 @@ fun StorageSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
     fun isFocused(item: StorageItem): Boolean =
         uiState.focusedIndex == storageLayout.focusIndexOf(item, layoutState)
 
+    fun openFrom(item: StorageItem, enter: () -> Unit) {
+        viewModel.setFocusIndex(storageLayout.focusIndexOf(item, layoutState))
+        enter()
+    }
+
     SectionPaneLayout(
         items = visibleItems,
         sections = sections,
@@ -398,7 +403,7 @@ fun StorageSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                 secondaryStat = "$gamesCount games",
                 isFocused = isFocused(item),
                 isWorking = walkProgress[StorageCategory.GAMES].isActiveWalk(),
-                onClick = { viewModel.navigateToStorageGames() }
+                onClick = { openFrom(item) { viewModel.navigateToStorageGames() } }
             )
 
             StorageItem.MediaTile -> CategoryTile(
@@ -408,7 +413,7 @@ fun StorageSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                 secondaryStat = if (mediaCount == 1) "1 title downloaded" else "$mediaCount titles downloaded",
                 isFocused = isFocused(item),
                 isWorking = walkProgress[StorageCategory.MEDIA].isActiveWalk(),
-                onClick = { viewModel.navigateToStorageMedia() }
+                onClick = { openFrom(item) { viewModel.navigateToStorageMedia() } }
             )
 
             StorageItem.MusicTile -> CategoryTile(
@@ -418,7 +423,7 @@ fun StorageSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                 secondaryStat = "Manage playlist",
                 isFocused = isFocused(item),
                 isWorking = walkProgress[StorageCategory.MUSIC].isActiveWalk(),
-                onClick = { viewModel.navigateToThemeMusicFromStorage() }
+                onClick = { openFrom(item) { viewModel.navigateToThemeMusic() } }
             )
 
             StorageItem.CachesTile -> CategoryTile(
@@ -428,7 +433,7 @@ fun StorageSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                 secondaryStat = "$cachesFileCount files",
                 isFocused = isFocused(item),
                 isWorking = CACHES_CATEGORIES.any { walkProgress[it].isActiveWalk() },
-                onClick = { viewModel.navigateToStorageCaches() }
+                onClick = { openFrom(item) { viewModel.navigateToStorageCaches() } }
             )
 
             StorageItem.SteamTile -> CategoryTile(
@@ -438,7 +443,7 @@ fun StorageSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                 secondaryStat = "Stores, installs, and staging",
                 isFocused = isFocused(item),
                 isWorking = walkProgress[StorageCategory.STEAM].isActiveWalk(),
-                onClick = { viewModel.navigateToStorageCachesForSteam() }
+                onClick = { openFrom(item) { viewModel.navigateToStorageCachesForSteam() } }
             )
 
             StorageItem.GlobalRomPath -> ActionPreference(

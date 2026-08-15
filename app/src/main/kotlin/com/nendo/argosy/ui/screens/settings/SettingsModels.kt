@@ -470,8 +470,6 @@ data class PlatformContext(
 
 data class PlatformDetailState(
     val platformIndex: Int = 0,
-    val builtinEnteredFromPlatform: Boolean = false,
-    val enteredExternally: Boolean = false,
     val showRemoveConfirm: Boolean = false,
     val combineRestoreCount: Int = 0,
     val totalGames: Int = 0,
@@ -767,7 +765,6 @@ enum class StorageGamesSortMode { PLATFORM, SIZE }
 
 internal const val CACHES_ENTRY_TOP = 0
 internal const val CACHES_ENTRY_STEAM = 1
-internal const val CACHES_ENTRY_SAVES = 2
 
 data class StorageAttributionState(
     val snapshot: com.nendo.argosy.data.storage.StorageSnapshot? = null,
@@ -775,8 +772,6 @@ data class StorageAttributionState(
     val walkProgress: Map<com.nendo.argosy.data.storage.StorageCategory, com.nendo.argosy.data.storage.WalkState> = emptyMap(),
     val isRefreshing: Boolean = false,
     val gamesSortMode: StorageGamesSortMode = StorageGamesSortMode.PLATFORM,
-    val musicEnteredFromStorage: Boolean = false,
-    val cachesEntryFocus: Int = CACHES_ENTRY_TOP,
     val steamTileLatched: Boolean = false,
     val mediaTileLatched: Boolean = false
 )
@@ -892,11 +887,6 @@ data class AccountPairingState(
 data class AccountsState(
     val accounts: List<AccountUi> = emptyList(),
     val isLoading: Boolean = true,
-    /**
-     * True when the screen was opened by a deep link (drawer, notification) rather than from
-     * the RomM screen; Back then leaves settings instead of surfacing an unopened parent.
-     */
-    val enteredExternally: Boolean = false,
     val rowActionIndex: Int = 0,
     val pairing: AccountPairingState = AccountPairingState(),
     val notice: String? = null,
@@ -1353,10 +1343,50 @@ data class SocialState(
     val quayPassEnabled: Boolean = false
 )
 
+/**
+ * One ancestor of the section currently on screen, holding the focus the user left it on.
+ * `focusedIndex` is captured at push time rather than recomputed on pop, so Back returns to
+ * the row that was actually used to leave rather than to a row named by the destination.
+ */
+data class SettingsNavEntry(
+    val section: SettingsSection,
+    val focusedIndex: Int
+)
+
+/**
+ * Enters [section] as a child of the section on screen, remembering the row being left.
+ */
+internal fun SettingsUiState.pushedSection(
+    section: SettingsSection,
+    entryFocus: Int = 0
+): SettingsUiState = copy(
+    backStack = backStack + SettingsNavEntry(currentSection, focusedIndex),
+    currentSection = section,
+    focusedIndex = entryFocus
+)
+
+/**
+ * Returns to the parent, restoring the focus it was left on. Null when nothing is above the
+ * current screen, which is the caller's signal to leave settings entirely.
+ */
+internal fun SettingsUiState.poppedSection(restoredFocus: Int? = null): SettingsUiState? {
+    val parent = backStack.lastOrNull() ?: return null
+    return copy(
+        backStack = backStack.dropLast(1),
+        currentSection = parent.section,
+        focusedIndex = restoredFocus ?: parent.focusedIndex
+    )
+}
+
 data class SettingsUiState(
     val currentSection: SettingsSection = SettingsSection.MAIN,
     val focusedIndex: Int = 0,
-    val parentFocusIndex: Int = 0,
+    /**
+     * Ancestors of [currentSection], oldest first, excluding [currentSection] itself. Empty
+     * means there is nothing above the current screen and Back leaves settings, which is
+     * also the state a deep link starts in.
+     */
+    val backStack: List<SettingsNavEntry> = emptyList(),
     val enumPickerKey: String? = null,
     val enumPickerToken: Int = 0,
     val systemizeResult: com.nendo.argosy.util.SystemizeWriteResult? = null,

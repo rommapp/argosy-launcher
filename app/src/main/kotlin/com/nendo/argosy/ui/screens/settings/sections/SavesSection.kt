@@ -118,6 +118,11 @@ fun SavesSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
     fun isFocused(item: SavesItem): Boolean =
         uiState.focusedIndex == layout.focusIndexOf(item, layoutState)
 
+    fun openFrom(item: SavesItem, enter: () -> Unit) {
+        viewModel.setFocusIndex(layout.focusIndexOf(item, layoutState))
+        enter()
+    }
+
     val isLocked = !layoutState.isConnected
 
     SectionPaneLayout(
@@ -208,7 +213,7 @@ fun SavesSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                 title = "Save Caches",
                 subtitle = "Clear cached saves and detected paths",
                 isFocused = isFocused(item),
-                onClick = { viewModel.navigateToStorageCachesForSaves() }
+                onClick = { openFrom(item) { viewModel.navigateToStorageCaches() } }
             )
         }
     }

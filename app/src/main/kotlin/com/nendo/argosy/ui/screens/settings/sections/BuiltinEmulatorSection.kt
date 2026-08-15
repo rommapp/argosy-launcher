@@ -90,7 +90,10 @@ fun BuiltinEmulatorSection(
                     title = "A/V & Performance",
                     subtitle = "Shaders, display, performance, saving",
                     isFocused = uiState.focusedIndex == BuiltinEmulatorItem.VIDEO.focusIndex,
-                    onClick = { viewModel.navigateToBuiltinVideo() }
+                    onClick = {
+                        viewModel.setFocusIndex(BuiltinEmulatorItem.VIDEO.focusIndex)
+                        viewModel.navigateToBuiltinVideo()
+                    }
                 )
             }
             item(key = "builtin_controls") {
@@ -98,7 +101,10 @@ fun BuiltinEmulatorSection(
                     title = "Controls",
                     subtitle = "Rumble, input mapping, hotkeys",
                     isFocused = uiState.focusedIndex == BuiltinEmulatorItem.CONTROLS.focusIndex,
-                    onClick = { viewModel.navigateToBuiltinControls() }
+                    onClick = {
+                        viewModel.setFocusIndex(BuiltinEmulatorItem.CONTROLS.focusIndex)
+                        viewModel.navigateToBuiltinControls()
+                    }
                 )
             }
             item(key = "builtin_cores") {
@@ -107,7 +113,10 @@ fun BuiltinEmulatorSection(
                     title = "Manage Cores",
                     subtitle = "${emulators.installedCoreCount} of ${emulators.totalCoreCount} cores installed",
                     isFocused = uiState.focusedIndex == BuiltinEmulatorItem.CORE_MANAGEMENT.focusIndex,
-                    onClick = { viewModel.navigateToCoreManagement() },
+                    onClick = {
+                        viewModel.setFocusIndex(BuiltinEmulatorItem.CORE_MANAGEMENT.focusIndex)
+                        viewModel.navigateToCoreManagement()
+                    },
                     badge = if (updatesAvailable > 0) "$updatesAvailable update${if (updatesAvailable > 1) "s" else ""}" else null
                 )
             }
@@ -116,7 +125,10 @@ fun BuiltinEmulatorSection(
                     title = "Core Options",
                     subtitle = "Per-core settings and overrides",
                     isFocused = uiState.focusedIndex == BuiltinEmulatorItem.CORE_OPTIONS.focusIndex,
-                    onClick = { viewModel.navigateToCoreOptions() }
+                    onClick = {
+                        viewModel.setFocusIndex(BuiltinEmulatorItem.CORE_OPTIONS.focusIndex)
+                        viewModel.navigateToCoreOptions()
+                    }
                 )
             }
             item(key = "builtin_two_column_menu") {

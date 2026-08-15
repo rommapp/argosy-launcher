@@ -315,7 +315,6 @@ class SettingsViewModel @Inject constructor(
             .takeIf { it >= 0 } ?: s.coreOptions.platformContextIndex
         _uiState.update {
             it.copy(
-                platformDetail = it.platformDetail.copy(builtinEnteredFromPlatform = true),
                 coreOptions = it.coreOptions.copy(
                     platformContextIndex = targetIndex,
                     selectedCoreIndex = 0
@@ -331,22 +330,22 @@ class SettingsViewModel @Inject constructor(
             } ?: return@launch
             val index = platforms.indexOfFirst { it.platform.id == platformId }
             if (index < 0) {
-                navigateToSection(SettingsSection.PLATFORMS)
+                startAtSection(SettingsSection.PLATFORMS)
                 return@launch
             }
-            _uiState.update { it.copy(platformDetail = it.platformDetail.copy(enteredExternally = true)) }
-            navigateToPlatformDetail(index)
+            _uiState.update {
+                it.copy(platformDetail = it.platformDetail.copy(platformIndex = index))
+            }
+            startAtSection(SettingsSection.PLATFORM_DETAIL)
+            loadPlatformDetailStats(index)
         }
     }
 
     fun navigateToPlatformDetail(platformIndex: Int) {
-        _uiState.update { it.copy(
-            currentSection = SettingsSection.PLATFORM_DETAIL,
-            focusedIndex = 0,
-            platformDetail = it.platformDetail.copy(
-                platformIndex = platformIndex
-            )
-        ) }
+        _uiState.update {
+            it.copy(platformDetail = it.platformDetail.copy(platformIndex = platformIndex))
+        }
+        routePushSection(this, SettingsSection.PLATFORM_DETAIL)
         loadPlatformDetailStats(platformIndex)
     }
 
@@ -460,10 +459,9 @@ class SettingsViewModel @Inject constructor(
         val ctxIndex = _uiState.value.builtinVideo.availablePlatforms
             .indexOfFirst { it.platformId == config.platform.id }
         if (ctxIndex >= 0) {
-            _uiState.update { it.copy(
-                builtinVideo = it.builtinVideo.copy(platformContextIndex = ctxIndex + 1),
-                platformDetail = it.platformDetail.copy(builtinEnteredFromPlatform = true)
-            ) }
+            _uiState.update {
+                it.copy(builtinVideo = it.builtinVideo.copy(platformContextIndex = ctxIndex + 1))
+            }
         }
         emulatorDelegate.navigateToBuiltinVideo(viewModelScope)
     }
@@ -473,10 +471,9 @@ class SettingsViewModel @Inject constructor(
         val ctxIndex = _uiState.value.builtinVideo.availablePlatforms
             .indexOfFirst { it.platformId == config.platform.id }
         if (ctxIndex >= 0) {
-            _uiState.update { it.copy(
-                builtinVideo = it.builtinVideo.copy(platformContextIndex = ctxIndex + 1),
-                platformDetail = it.platformDetail.copy(builtinEnteredFromPlatform = true)
-            ) }
+            _uiState.update {
+                it.copy(builtinVideo = it.builtinVideo.copy(platformContextIndex = ctxIndex + 1))
+            }
         }
         emulatorDelegate.navigateToBuiltinControls(viewModelScope)
     }
@@ -951,14 +948,12 @@ class SettingsViewModel @Inject constructor(
     fun navigateToAmbientLed() = routeNavigateToAmbientLed(this)
     fun navigateToThemeSounds() = routeNavigateToThemeSounds(this)
     fun navigateToThemeMusic() = routeNavigateToThemeMusic(this)
-    fun navigateToThemeMusicFromStorage() = routeNavigateToThemeMusicFromStorage(this)
     fun navigateToThemeFonts() = routeNavigateToThemeFonts(this)
     fun navigateToThemeBackdrop() = routeNavigateToThemeBackdrop(this)
     fun navigateToStorageGames() = routeNavigateToStorageGames(this)
     fun navigateToStorageMedia() = routeNavigateToStorageMedia(this)
     fun navigateToStorageCaches() = routeNavigateToStorageCaches(this, CACHES_ENTRY_TOP)
     fun navigateToStorageCachesForSteam() = routeNavigateToStorageCaches(this, CACHES_ENTRY_STEAM)
-    fun navigateToStorageCachesForSaves() = routeNavigateToStorageCaches(this, CACHES_ENTRY_SAVES)
 
     fun navigateToSaveSyncScreen() {
         viewModelScope.launch {
@@ -969,13 +964,10 @@ class SettingsViewModel @Inject constructor(
     }
 
     /**
-     * Deep links (drawer, notifications) land on Accounts with no parent screen behind it, so
-     * Back has to leave settings rather than surface a RomM screen the user never opened.
+     * Deep links (drawer, notifications) land mid-tree with no parent screen behind them, so
+     * Back has to leave settings rather than surface a screen the user never opened.
      */
-    fun openAccountsFromDeepLink() {
-        navigateToSection(SettingsSection.ACCOUNTS)
-        _uiState.update { it.copy(accounts = it.accounts.copy(enteredExternally = true)) }
-    }
+    fun startAtSection(section: SettingsSection) = routeStartAtSection(this, section)
     fun refreshStorageAttribution(deep: Boolean = false) = attributionDelegate.refresh(force = true, deep = deep)
 
     fun toggleStateCache() = syncDelegate.toggleStateCache(viewModelScope)
@@ -1007,7 +999,7 @@ class SettingsViewModel @Inject constructor(
     fun openStoragePlatformGames(platformId: Long) {
         val name = _uiState.value.attribution.snapshot?.gamesPerPlatform
             ?.firstOrNull { it.platformId == platformId }?.name ?: ""
-        _uiState.update { it.copy(currentSection = SettingsSection.STORAGE_PLATFORM_GAMES, focusedIndex = 0) }
+        routePushSection(this, SettingsSection.STORAGE_PLATFORM_GAMES)
         storagePlatformGamesDelegate.open(platformId, name, viewModelScope)
     }
 
@@ -1064,12 +1056,7 @@ class SettingsViewModel @Inject constructor(
         }
 
     private fun backToStorageGamesFromPlatform() {
-        val platformId = _uiState.value.storagePlatformGames.selectedPlatformId
-        val focusIdx = com.nendo.argosy.ui.screens.settings.sections.storageGamesFocusIndexOfPlatform(
-            platformId,
-            com.nendo.argosy.ui.screens.settings.sections.createStorageGamesLayoutInfo(_uiState.value)
-        )
-        _uiState.update { it.copy(currentSection = SettingsSection.STORAGE_GAMES, focusedIndex = focusIdx) }
+        routePopSection(this)
     }
 
     fun openFontPicker(slot: FontSlot) {

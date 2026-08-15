@@ -168,6 +168,11 @@ fun StorageGamesSection(uiState: SettingsUiState, viewModel: SettingsViewModel) 
     fun isFocused(item: StorageGamesItem): Boolean =
         uiState.focusedIndex == layout.focusIndexOf(item, Unit)
 
+    fun openFrom(item: StorageGamesItem, enter: () -> Unit) {
+        viewModel.setFocusIndex(layout.focusIndexOf(item, Unit))
+        enter()
+    }
+
     SectionPaneLayout(
         items = visibleItems,
         sections = sections,
@@ -214,7 +219,7 @@ fun StorageGamesSection(uiState: SettingsUiState, viewModel: SettingsViewModel) 
                 volumeOrder = volumeOrder,
                 neutralColor = neutral,
                 isFocused = isFocused(item),
-                onClick = { viewModel.openStoragePlatformGames(item.usage.platformId) }
+                onClick = { openFrom(item) { viewModel.openStoragePlatformGames(item.usage.platformId) } }
             )
         }
     }

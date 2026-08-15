@@ -98,6 +98,11 @@ fun ThemeSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
     fun isFocused(item: ThemeItem): Boolean =
         uiState.focusedIndex == themeLayout.focusIndexOf(item, Unit)
 
+    fun openFrom(item: ThemeItem, enter: () -> Unit) {
+        viewModel.setFocusIndex(themeLayout.focusIndexOf(item, Unit))
+        enter()
+    }
+
     fun pickerToken(item: ThemeItem): Int =
         if (uiState.enumPickerKey == item.key) uiState.enumPickerToken else 0
 
@@ -178,7 +183,7 @@ fun ThemeSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                 title = "Surface Backdrop",
                 subtitle = if (display.surfaceBackdrop.enabled) display.surfaceBackdrop.preset.displayName else "Off",
                 isFocused = isFocused(item),
-                onClick = { viewModel.navigateToThemeBackdrop() }
+                onClick = { openFrom(item) { viewModel.navigateToThemeBackdrop() } }
             )
 
             ThemeItem.Fonts -> NavigationPreference(
@@ -186,7 +191,7 @@ fun ThemeSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                 title = "Fonts",
                 subtitle = fontsSubtitle(display.displayFontName, display.bodyFontName),
                 isFocused = isFocused(item),
-                onClick = { viewModel.navigateToThemeFonts() }
+                onClick = { openFrom(item) { viewModel.navigateToThemeFonts() } }
             )
         }
     }

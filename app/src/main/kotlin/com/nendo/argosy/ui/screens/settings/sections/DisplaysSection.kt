@@ -145,6 +145,11 @@ fun DisplaysSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
     fun isFocused(item: DisplaysItem): Boolean =
         uiState.focusedIndex == displaysLayout.focusIndexOf(item, layoutState)
 
+    fun openFrom(item: DisplaysItem, enter: () -> Unit) {
+        viewModel.setFocusIndex(displaysLayout.focusIndexOf(item, layoutState))
+        enter()
+    }
+
     fun pickerToken(item: DisplaysItem): Int =
         if (uiState.enumPickerKey == item.key) uiState.enumPickerToken else 0
 
@@ -222,7 +227,7 @@ fun DisplaysSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                 title = "LED Control",
                 subtitle = "Thumbstick LED colors and effects",
                 isFocused = isFocused(item),
-                onClick = { viewModel.navigateToAmbientLed() }
+                onClick = { openFrom(item) { viewModel.navigateToAmbientLed() } }
             )
         }
     }

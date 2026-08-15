@@ -257,6 +257,11 @@ fun PlatformDetailSection(
     fun isFocused(item: PlatformDetailItem): Boolean =
         uiState.focusedIndex == layout.focusIndexOf(item, visibility)
 
+    fun openFrom(item: PlatformDetailItem, enter: () -> Unit) {
+        viewModel.setFocusIndex(layout.focusIndexOf(item, visibility))
+        enter()
+    }
+
     fun pickerToken(item: PlatformDetailItem): Int =
         if (uiState.enumPickerKey == item.key) uiState.enumPickerToken else 0
 
@@ -381,21 +386,21 @@ fun PlatformDetailSection(
                     title = "Built-in A/V & Performance",
                     subtitle = "Display, performance, and saving overrides",
                     isFocused = isFocused(item),
-                    onClick = { viewModel.navigateToBuiltinVideoForPlatform(detail.platformIndex) }
+                    onClick = { openFrom(item) { viewModel.navigateToBuiltinVideoForPlatform(detail.platformIndex) } }
                 )
                 PlatformDetailItem.BuiltinControls -> NavigationPreference(
                     icon = Icons.Default.Gamepad,
                     title = "Built-in Controls",
                     subtitle = "Rumble, stick mapping overrides",
                     isFocused = isFocused(item),
-                    onClick = { viewModel.navigateToBuiltinControlsForPlatform(detail.platformIndex) }
+                    onClick = { openFrom(item) { viewModel.navigateToBuiltinControlsForPlatform(detail.platformIndex) } }
                 )
                 PlatformDetailItem.BuiltinCoreOptions -> NavigationPreference(
                     icon = Icons.Default.Gamepad,
                     title = "Core Options",
                     subtitle = "Per-core settings for this platform",
                     isFocused = isFocused(item),
-                    onClick = { viewModel.navigateToCoreOptionsForPlatform() }
+                    onClick = { openFrom(item) { viewModel.navigateToCoreOptionsForPlatform() } }
                 )
 
                 // -- PLATFORM section (info items + scan) --

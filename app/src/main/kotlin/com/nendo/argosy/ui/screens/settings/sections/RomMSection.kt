@@ -129,6 +129,11 @@ private fun RomMContent(uiState: SettingsUiState, viewModel: SettingsViewModel) 
     fun isFocused(item: RomMItem): Boolean =
         uiState.focusedIndex == layout.focusIndexOf(item, Unit)
 
+    fun openFrom(item: RomMItem, enter: () -> Unit) {
+        viewModel.setFocusIndex(layout.focusIndexOf(item, Unit))
+        enter()
+    }
+
     SectionPaneLayout(
         items = allItems,
         sections = sections,
@@ -179,7 +184,7 @@ private fun RomMContent(uiState: SettingsUiState, viewModel: SettingsViewModel) 
                 title = "Accounts",
                 subtitle = accountsSummary(uiState),
                 isFocused = isFocused(item),
-                onClick = { viewModel.navigateToSection(SettingsSection.ACCOUNTS) }
+                onClick = { openFrom(item) { viewModel.navigateToSection(SettingsSection.ACCOUNTS) } }
             )
 
             RomMItem.SyncSettings -> NavigationPreference(
@@ -187,7 +192,7 @@ private fun RomMContent(uiState: SettingsUiState, viewModel: SettingsViewModel) 
                 title = "Sync Settings",
                 subtitle = "Filters and media options",
                 isFocused = isFocused(item),
-                onClick = { viewModel.navigateToSection(SettingsSection.SYNC_SETTINGS) }
+                onClick = { openFrom(item) { viewModel.navigateToSection(SettingsSection.SYNC_SETTINGS) } }
             )
 
             RomMItem.SyncLibrary -> {

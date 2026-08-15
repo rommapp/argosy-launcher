@@ -48,7 +48,6 @@ import com.nendo.argosy.ui.screens.settings.sections.themeBackdropItemAtFocusInd
 import com.nendo.argosy.ui.screens.settings.sections.themeBackdropMaxFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.themeFontsItemAtFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.themeFontsMaxFocusIndex
-import com.nendo.argosy.ui.screens.settings.sections.themeFocusIndexOf
 import com.nendo.argosy.ui.screens.settings.sections.themeItemAtFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.themeMaxFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.themeMusicItemAtFocusIndex
@@ -58,17 +57,13 @@ import com.nendo.argosy.ui.screens.settings.sections.themeSoundsMaxFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.aboutHasChangelog
 import com.nendo.argosy.ui.screens.settings.sections.aboutItemAtFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.boxArtItemAtFocusIndex
-import com.nendo.argosy.ui.screens.settings.sections.audioFocusIndexOf
 import com.nendo.argosy.ui.screens.settings.sections.audioItemAtFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.audioMaxFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.navigationItemAtFocusIndex
-import com.nendo.argosy.ui.screens.settings.sections.displaysFocusIndexOf
 import com.nendo.argosy.ui.screens.settings.sections.displaysItemAtFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.createStorageLayoutInfo
-import com.nendo.argosy.ui.screens.settings.sections.homeScreenFocusIndexOf
 import com.nendo.argosy.ui.screens.settings.sections.controllerGripItemAtFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.homeScreenItemAtFocusIndex
-import com.nendo.argosy.ui.screens.settings.sections.interfaceFocusIndexOf
 import com.nendo.argosy.ui.screens.settings.sections.interfaceItemAtFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.mainSettingsItemAtFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.aboutMaxFocusIndex
@@ -89,11 +84,9 @@ import com.nendo.argosy.ui.screens.settings.sections.homeScreenMaxFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.interfaceMaxFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.mainSettingsMaxFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.permissionsMaxFocusIndex
-import com.nendo.argosy.ui.screens.settings.sections.storageFocusIndexOf
 import com.nendo.argosy.ui.screens.settings.sections.storageItemAtFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.StorageGamesItem
 import com.nendo.argosy.ui.screens.settings.sections.createStorageGamesLayoutInfo
-import com.nendo.argosy.ui.screens.settings.sections.storageGamesFocusIndexOfPlatform
 import com.nendo.argosy.ui.screens.settings.sections.storageGamesItemAtFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.storageGamesMaxFocusIndex
 import com.nendo.argosy.domain.usecase.storage.GameStorageBucket
@@ -125,8 +118,6 @@ import com.nendo.argosy.ui.screens.settings.sections.coreManagementMaxFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.buildRomMItemsFromState
 import com.nendo.argosy.ui.screens.settings.sections.rommItemAtFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.rommMaxFocusIndex
-import com.nendo.argosy.ui.screens.settings.sections.rommFocusIndexOf
-import com.nendo.argosy.ui.screens.settings.sections.createSavesLayout
 import com.nendo.argosy.ui.screens.settings.sections.savesItemAtFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.savesMaxFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.syncSettingsItemAtFocusIndex
@@ -436,7 +427,7 @@ private fun routeSavesConfirm(vm: SettingsViewModel, state: SettingsUiState): In
             return InputResult.handled(SoundType.OPEN_MODAL)
         }
         SavesItem.ManageSaveSync -> vm.navigateToSaveSyncScreen()
-        SavesItem.SaveCaches -> vm.navigateToStorageCachesForSaves()
+        SavesItem.SaveCaches -> vm.navigateToStorageCaches()
         else -> {}
     }
     return InputResult.HANDLED
@@ -497,7 +488,7 @@ private fun routeStorageConfirm(vm: SettingsViewModel, state: SettingsUiState): 
         StorageItem.RecomputeRow -> if (!state.attribution.isRefreshing) vm.refreshStorageAttribution()
         StorageItem.GamesTile -> vm.navigateToStorageGames()
         StorageItem.MediaTile -> vm.navigateToStorageMedia()
-        StorageItem.MusicTile -> vm.navigateToThemeMusicFromStorage()
+        StorageItem.MusicTile -> vm.navigateToThemeMusic()
         StorageItem.CachesTile -> vm.navigateToStorageCaches()
         StorageItem.SteamTile -> vm.navigateToStorageCachesForSteam()
         StorageItem.GlobalRomPath -> vm.openFolderPicker()
@@ -1062,25 +1053,20 @@ private fun routeFramePickerConfirm(vm: SettingsViewModel, state: SettingsUiStat
     return InputResult.HANDLED
 }
 
-internal fun builtinEmulatorParentItem(section: SettingsSection): BuiltinEmulatorItem? = when (section) {
-    SettingsSection.BUILTIN_VIDEO -> BuiltinEmulatorItem.VIDEO
-    SettingsSection.BUILTIN_CONTROLS -> BuiltinEmulatorItem.CONTROLS
-    SettingsSection.CORE_MANAGEMENT -> BuiltinEmulatorItem.CORE_MANAGEMENT
-    SettingsSection.CORE_OPTIONS -> BuiltinEmulatorItem.CORE_OPTIONS
-    else -> null
-}
-
-private fun routeReturnToBuiltinEmulator(vm: SettingsViewModel, childSection: SettingsSection) {
-    val parentItem = requireNotNull(builtinEmulatorParentItem(childSection))
-    vm._uiState.update {
-        it.copy(
-            currentSection = SettingsSection.BUILTIN_EMULATOR,
-            focusedIndex = parentItem.focusIndex
-        )
-    }
-}
-
+/**
+ * Back for the whole settings tree: overlays first, then the section stack. Returning false
+ * means nothing here consumed it and the caller should leave settings.
+ */
 internal fun routeNavigateBack(vm: SettingsViewModel): Boolean {
+    if (routeDismissTopOverlay(vm)) return true
+    return routePopSection(vm)
+}
+
+/**
+ * Modals, pickers and in-place prompts drawn over a section. These consume Back ahead of the
+ * section itself, matching the order [ModalInputRouter] already applies to the modals it owns.
+ */
+private fun routeDismissTopOverlay(vm: SettingsViewModel): Boolean {
     val state = vm._uiState.value
     return when {
         state.changelog.visible -> { vm.closeChangelog(); true }
@@ -1106,161 +1092,12 @@ internal fun routeNavigateBack(vm: SettingsViewModel): Boolean {
         state.server.rommConfiguring -> { vm.cancelRommConfig(); true }
         state.jellyfin.configuring -> { vm.cancelJellyfinConfig(); true }
         state.jellyfin.showLoginForm -> { vm.hideJellyfinLoginForm(); true }
-        state.currentSection == SettingsSection.SYNC_SETTINGS -> {
-            val items = buildRomMItemsFromState(state)
-            val idx = rommFocusIndexOf(RomMItem.SyncSettings, items).coerceAtLeast(0)
-            vm._uiState.update { it.copy(currentSection = SettingsSection.ROMM, focusedIndex = idx) }; true
-        }
-        state.currentSection == SettingsSection.ACCOUNTS && state.accounts.enteredExternally -> false
-        state.currentSection == SettingsSection.ACCOUNTS -> {
-            val items = buildRomMItemsFromState(state)
-            val idx = rommFocusIndexOf(RomMItem.Accounts, items).coerceAtLeast(0)
-            vm._uiState.update { it.copy(currentSection = SettingsSection.ROMM, focusedIndex = idx) }; true
-        }
-        state.currentSection == SettingsSection.STEAM_SETTINGS -> {
-            vm.cancelSteamQrAuth()
-            vm._uiState.update {
-                it.copy(currentSection = SettingsSection.MAIN, focusedIndex = state.parentFocusIndex)
-            }; true
-        }
         state.retroAchievements.showLoginForm -> { vm.hideRALoginForm(); true }
-        state.currentSection == SettingsSection.RETRO_ACHIEVEMENTS -> {
-            vm._uiState.update { it.copy(currentSection = SettingsSection.MAIN, focusedIndex = state.parentFocusIndex) }; true
-        }
-        state.currentSection == SettingsSection.BOX_ART -> {
-            val layoutState = InterfaceLayoutState.from(state)
-            val focusIdx = interfaceFocusIndexOf(InterfaceItem.BoxArt, layoutState)
-            vm._uiState.update { it.copy(currentSection = SettingsSection.THEME, focusedIndex = focusIdx) }; true
-        }
-        state.currentSection == SettingsSection.THEME_SOUNDS -> {
-            val focusIdx = audioFocusIndexOf(AudioItem.Sounds)
-            vm._uiState.update { it.copy(currentSection = SettingsSection.AUDIO, focusedIndex = focusIdx) }; true
-        }
-        state.currentSection == SettingsSection.THEME_MUSIC && state.attribution.musicEnteredFromStorage -> {
-            vm.attributionDelegate.setMusicEnteredFromStorage(false)
-            val info = createStorageLayoutInfo(state)
-            val focusIdx = storageFocusIndexOf(StorageItem.MusicTile, info).coerceAtLeast(0)
-            vm._uiState.update { it.copy(currentSection = SettingsSection.STORAGE, focusedIndex = focusIdx) }; true
-        }
-        state.currentSection == SettingsSection.THEME_MUSIC -> {
-            val focusIdx = audioFocusIndexOf(AudioItem.Music)
-            vm._uiState.update { it.copy(currentSection = SettingsSection.AUDIO, focusedIndex = focusIdx) }; true
-        }
-        state.currentSection == SettingsSection.STORAGE_GAMES -> {
-            val info = createStorageLayoutInfo(state)
-            val focusIdx = storageFocusIndexOf(StorageItem.GamesTile, info).coerceAtLeast(0)
-            vm._uiState.update { it.copy(currentSection = SettingsSection.STORAGE, focusedIndex = focusIdx) }; true
-        }
-        state.currentSection == SettingsSection.STORAGE_MEDIA -> {
-            val info = createStorageLayoutInfo(state)
-            val focusIdx = storageFocusIndexOf(StorageItem.MediaTile, info).coerceAtLeast(0)
-            vm._uiState.update { it.copy(currentSection = SettingsSection.STORAGE, focusedIndex = focusIdx) }; true
-        }
-        state.currentSection == SettingsSection.STORAGE_PLATFORM_GAMES -> {
-            val platformId = state.storagePlatformGames.selectedPlatformId
-            val focusIdx = storageGamesFocusIndexOfPlatform(platformId, createStorageGamesLayoutInfo(state))
-            vm._uiState.update { it.copy(currentSection = SettingsSection.STORAGE_GAMES, focusedIndex = focusIdx) }; true
-        }
-        state.currentSection == SettingsSection.STORAGE_CACHES &&
-            state.attribution.cachesEntryFocus == CACHES_ENTRY_SAVES -> {
-            vm.attributionDelegate.setCachesEntryFocus(CACHES_ENTRY_TOP)
-            val savesLayout = SavesLayoutState.from(state)
-            val focusIdx = createSavesLayout(savesLayout)
-                .focusIndexOf(SavesItem.SaveCaches, savesLayout)
-                .coerceAtLeast(0)
-            vm._uiState.update { it.copy(currentSection = SettingsSection.SAVES, focusedIndex = focusIdx) }; true
-        }
-        state.currentSection == SettingsSection.STORAGE_CACHES -> {
-            val fromSteam = state.attribution.cachesEntryFocus == CACHES_ENTRY_STEAM
-            vm.attributionDelegate.setCachesEntryFocus(CACHES_ENTRY_TOP)
-            val info = createStorageLayoutInfo(state)
-            val tile = if (fromSteam) StorageItem.SteamTile else StorageItem.CachesTile
-            val focusIdx = storageFocusIndexOf(tile, info).coerceAtLeast(0)
-            vm._uiState.update { it.copy(currentSection = SettingsSection.STORAGE, focusedIndex = focusIdx) }; true
-        }
-        state.currentSection == SettingsSection.THEME_FONTS -> {
-            val focusIdx = themeFocusIndexOf(ThemeItem.Fonts)
-            vm._uiState.update { it.copy(currentSection = SettingsSection.THEME, focusedIndex = focusIdx) }; true
-        }
-        state.currentSection == SettingsSection.THEME_BACKDROP -> {
-            val focusIdx = themeFocusIndexOf(ThemeItem.Backdrop)
-            vm._uiState.update { it.copy(currentSection = SettingsSection.THEME, focusedIndex = focusIdx) }; true
-        }
-        state.currentSection == SettingsSection.AMBIENT_LED -> {
-            val layoutState = DisplaysLayoutState.from(state)
-            val focusIdx = displaysFocusIndexOf(DisplaysItem.AmbientLedSettings, layoutState)
-            vm._uiState.update { it.copy(currentSection = SettingsSection.DISPLAYS, focusedIndex = focusIdx) }; true
-        }
-        state.currentSection == SettingsSection.CONTROLLER_GRIP -> {
-            val layoutState = InterfaceLayoutState.from(state)
-            val focusIdx = interfaceFocusIndexOf(InterfaceItem.ControllerGrip, layoutState)
-            vm._uiState.update { it.copy(currentSection = SettingsSection.INTERFACE, focusedIndex = focusIdx) }; true
-        }
-        state.currentSection == SettingsSection.HOME_SCREEN -> {
-            val layoutState = InterfaceLayoutState.from(state)
-            val focusIdx = interfaceFocusIndexOf(InterfaceItem.HomeScreen, layoutState)
-            vm._uiState.update { it.copy(currentSection = SettingsSection.INTERFACE, focusedIndex = focusIdx) }; true
-        }
-        state.currentSection == SettingsSection.SHADER_STACK -> {
-            routeFlushShaderChain(vm)
-            vm._uiState.update { it.copy(currentSection = SettingsSection.BUILTIN_VIDEO, focusedIndex = 1) }; true
-        }
-        state.currentSection == SettingsSection.FRAME_PICKER -> {
-            vm._uiState.update { it.copy(currentSection = SettingsSection.BUILTIN_VIDEO, focusedIndex = 2) }; true
-        }
-        state.currentSection == SettingsSection.BUILTIN_VIDEO -> {
-            if (state.platformDetail.builtinEnteredFromPlatform) {
-                vm._uiState.update { it.copy(
-                    currentSection = SettingsSection.PLATFORM_DETAIL,
-                    focusedIndex = 0,
-                    platformDetail = it.platformDetail.copy(builtinEnteredFromPlatform = false)
-                ) }
-            } else {
-                routeReturnToBuiltinEmulator(vm, state.currentSection)
-            }; true
-        }
-        state.currentSection == SettingsSection.BUILTIN_CONTROLS -> {
-            if (state.platformDetail.builtinEnteredFromPlatform) {
-                vm._uiState.update { it.copy(
-                    currentSection = SettingsSection.PLATFORM_DETAIL,
-                    focusedIndex = 0,
-                    platformDetail = it.platformDetail.copy(builtinEnteredFromPlatform = false)
-                ) }
-            } else {
-                routeReturnToBuiltinEmulator(vm, state.currentSection)
-            }; true
-        }
-        state.currentSection == SettingsSection.CORE_MANAGEMENT -> {
-            routeReturnToBuiltinEmulator(vm, state.currentSection); true
-        }
-        state.currentSection == SettingsSection.CORE_OPTIONS -> {
-            if (state.platformDetail.builtinEnteredFromPlatform) {
-                vm._uiState.update { it.copy(
-                    currentSection = SettingsSection.PLATFORM_DETAIL,
-                    focusedIndex = 0,
-                    platformDetail = it.platformDetail.copy(builtinEnteredFromPlatform = false)
-                ) }
-            } else {
-                routeReturnToBuiltinEmulator(vm, state.currentSection)
-            }; true
-        }
         state.currentSection == SettingsSection.PLATFORM_DETAIL && state.platformDetail.showRemoveConfirm -> {
             vm._uiState.update { it.copy(platformDetail = it.platformDetail.copy(showRemoveConfirm = false)) }; true
         }
         state.currentSection == SettingsSection.PLATFORM_DETAIL && state.platformDetail.combineRestoreCount > 0 -> {
             vm.dismissCombineRestore(); true
-        }
-        state.currentSection == SettingsSection.PLATFORM_DETAIL && state.platformDetail.enteredExternally -> false
-        state.currentSection == SettingsSection.PLATFORM_DETAIL -> {
-            val toggledId = state.emulators.platforms
-                .getOrNull(state.platformDetail.platformIndex)?.platform?.id
-            vm._uiState.update { it.copy(
-                currentSection = SettingsSection.PLATFORMS,
-                focusedIndex = vm.focusIndexForPlatform(toggledId)
-            ) }; true
-        }
-        state.currentSection != SettingsSection.MAIN -> {
-            vm._uiState.update { it.copy(currentSection = SettingsSection.MAIN, focusedIndex = state.parentFocusIndex) }; true
         }
         else -> false
     }
@@ -1309,6 +1146,14 @@ internal fun routeMoveFocus(vm: SettingsViewModel, delta: Int): Boolean {
     }
     return moved
 }
+
+/**
+ * Highest focusable row of the section [state] is currently on. Used both to clamp movement
+ * and to keep a focus index restored by Back inside a parent whose rows changed while a
+ * child was open.
+ */
+internal fun routeMaxFocusIndexOf(vm: SettingsViewModel, state: SettingsUiState): Int =
+    computeMaxFocusIndex(vm, state, isConnected = false)
 
 private fun computeMaxFocusIndex(
     vm: SettingsViewModel,

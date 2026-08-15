@@ -51,14 +51,6 @@ class StorageAttributionDelegate @Inject constructor(
         _state.update { it.copy(gamesSortMode = mode) }
     }
 
-    fun setMusicEnteredFromStorage(entered: Boolean) {
-        _state.update { it.copy(musicEnteredFromStorage = entered) }
-    }
-
-    fun setCachesEntryFocus(focus: Int) {
-        _state.update { it.copy(cachesEntryFocus = focus) }
-    }
-
     /** Latched at STORAGE entry so the Steam tile cannot insert mid-visit and shift focus indices. */
     fun latchSteamTileVisible(visible: Boolean) {
         _state.update { it.copy(steamTileLatched = visible) }

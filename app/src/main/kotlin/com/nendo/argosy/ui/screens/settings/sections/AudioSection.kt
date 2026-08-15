@@ -50,6 +50,11 @@ fun AudioSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
     fun isFocused(item: AudioItem): Boolean =
         uiState.focusedIndex == audioLayout.focusIndexOf(item, Unit)
 
+    fun openFrom(item: AudioItem, enter: () -> Unit) {
+        viewModel.setFocusIndex(audioLayout.focusIndexOf(item, Unit))
+        enter()
+    }
+
     SectionPaneLayout(
         items = visibleItems,
         sections = sections,
@@ -67,7 +72,7 @@ fun AudioSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                 title = "Sounds",
                 subtitle = if (uiState.sounds.enabled) "On, ${uiState.sounds.volume}%" else "Off",
                 isFocused = isFocused(item),
-                onClick = { viewModel.navigateToThemeSounds() }
+                onClick = { openFrom(item) { viewModel.navigateToThemeSounds() } }
             )
 
             AudioItem.Music -> NavigationPreference(
@@ -75,7 +80,7 @@ fun AudioSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                 title = "Music",
                 subtitle = if (uiState.ambientAudio.enabled) "On, ${uiState.ambientAudio.volume}%" else "Off",
                 isFocused = isFocused(item),
-                onClick = { viewModel.navigateToThemeMusic() }
+                onClick = { openFrom(item) { viewModel.navigateToThemeMusic() } }
             )
         }
     }

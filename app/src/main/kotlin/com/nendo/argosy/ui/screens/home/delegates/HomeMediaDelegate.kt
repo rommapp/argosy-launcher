@@ -9,6 +9,7 @@ import com.nendo.argosy.data.media.mediaAvailabilityOf
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.remote.jellyfin.JellyfinResult
 import com.nendo.argosy.data.repository.MediaRepository
+import com.nendo.argosy.data.repository.MediaTransferProgress
 import com.nendo.argosy.ui.screens.home.HomeMediaUi
 import com.nendo.argosy.ui.screens.media.MediaLibraryUi
 import com.nendo.argosy.ui.screens.media.MediaResumePrompt
@@ -74,7 +75,7 @@ data class HomeMediaState(
      * beside the tiles rather than on them because a download moves far more often than a tile's
      * own contents do.
      */
-    val downloadProgress: Map<String, Float> = emptyMap(),
+    val downloadProgress: Map<String, MediaTransferProgress> = emptyMap(),
     val isSignedIn: Boolean = false,
     val isLoading: Boolean = false,
     val showNextUp: Boolean = true,

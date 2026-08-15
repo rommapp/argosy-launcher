@@ -110,11 +110,12 @@ fun MediaCard(
         var artworkFailed by remember(media.posterUrl) { mutableStateOf(false) }
         if (media.posterUrl.isBlank() || artworkFailed) {
             MediaPosterStub(title = media.title, showTitle = !showLabel)
-        } else if (downloadIndicator.isActive) {
+        } else if (downloadIndicator.isShown) {
             DownloadProgressCover(
                 imageData = media.posterUrl,
                 progress = downloadIndicator.progress,
                 badgeSize = Dimens.iconLg,
+                paused = downloadIndicator.isPaused,
                 modifier = Modifier.fillMaxSize()
             )
         } else {

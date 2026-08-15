@@ -12,6 +12,9 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Pause
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -27,16 +30,26 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import com.nendo.argosy.ui.theme.generated.ComponentDefaults
 import kotlin.math.sin
 
 private const val TWO_PI = (2.0 * Math.PI).toFloat()
 
+/**
+ * A cover filling up as its download proceeds.
+ *
+ * [paused] stills it: the surface goes flat and the badge shows a pause mark instead of a
+ * percentage. Motion is what says "this is moving", so a paused transfer that kept rippling would
+ * claim progress it is not making, while a cover with no fill at all would lose the fact that a
+ * part-finished copy is waiting.
+ */
 @Composable
 fun DownloadProgressCover(
     imageData: Any,
     progress: Float,
     badgeSize: Dp,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    paused: Boolean = false
 ) {
     val animatedProgress by animateFloatAsState(
         targetValue = progress,
@@ -97,7 +110,7 @@ fun DownloadProgressCover(
         startY: Float,
         endY: Float
     ): Path {
-        val baseAmp = 5.dp.value // raw dp, toPx happens in drawscope
+        val baseAmp = if (paused) 0f else ComponentDefaults.DownloadCover.waveAmplitudeDp.toFloat()
         val amp1 = baseAmp * ampScale1
         val amp2 = baseAmp * 0.4f * ampScale2
         return Path().apply {
@@ -152,11 +165,20 @@ fun DownloadProgressCover(
                 ),
             contentAlignment = Alignment.Center
         ) {
-            Text(
-                text = "${(progress * 100).toInt()}%",
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurface
-            )
+            if (paused) {
+                Icon(
+                    imageVector = Icons.Default.Pause,
+                    contentDescription = "Paused",
+                    tint = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.size(badgeSize / 2)
+                )
+            } else {
+                Text(
+                    text = "${(progress * 100).toInt()}%",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            }
         }
     }
 }

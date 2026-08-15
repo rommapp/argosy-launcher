@@ -60,7 +60,7 @@ class HomeDownloadDelegate @Inject constructor(
                     val indicator = download.state.toIndicator(
                         download.progressPercent, download.extractionPercent
                     )
-                    if (indicator.isActive) {
+                    if (indicator.isShown) {
                         indicators[download.gameId] = indicator
                     }
                 }

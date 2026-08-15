@@ -23,9 +23,15 @@ data class GameDownloadIndicator(
 ) {
     /**
      * Whether work is moving right now. Paused is not active: nothing is progressing, and a cover
-     * that keeps filling over a stopped download states the opposite of what is true.
+     * that keeps rippling over a stopped download states the opposite of what is true.
      */
     val isActive: Boolean get() = isDownloading || isExtracting || isQueued
+
+    /**
+     * Whether the cover should be drawn as a part-finished copy at all. Wider than [isActive],
+     * because a paused transfer still has bytes on disk worth showing - it is stilled, not gone.
+     */
+    val isShown: Boolean get() = isActive || isPaused
 
     companion object {
         val NONE = GameDownloadIndicator()
@@ -196,7 +202,8 @@ data class HomeUiState(
     val mediaLibraryItems: List<HomeMediaUi> = emptyList(),
     val mediaLibraryItemsFor: String? = null,
     val mediaLibrariesLoaded: Boolean = false,
-    val mediaDownloadProgress: Map<String, Float> = emptyMap(),
+    val mediaDownloadProgress: Map<String, com.nendo.argosy.data.repository.MediaTransferProgress> =
+        emptyMap(),
     val isMediaSignedIn: Boolean = false,
     val isMediaLoading: Boolean = false,
     val showNextUpRow: Boolean = true,
@@ -538,10 +545,14 @@ data class HomeUiState(
      * the work.
      */
     fun mediaDownloadIndicatorFor(media: HomeMediaUi): GameDownloadIndicator {
-        val fraction = mediaDownloadProgress[media.itemId]
+        val transfer = mediaDownloadProgress[media.itemId]
             ?: media.seriesId?.let { mediaDownloadProgress[it] }
             ?: return GameDownloadIndicator.NONE
-        return GameDownloadIndicator(isDownloading = true, progress = fraction)
+        return GameDownloadIndicator(
+            isDownloading = !transfer.isPaused,
+            isPaused = transfer.isPaused,
+            progress = transfer.fraction
+        )
     }
 
     val homeTiles: List<com.nendo.argosy.domain.model.HomeTile> get() = customGrid.tiles

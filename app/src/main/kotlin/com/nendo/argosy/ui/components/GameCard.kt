@@ -408,11 +408,12 @@ private fun CoverContent(
 ) {
     val imageData = rememberFileImageModel(effectiveCoverPath)
 
-    if (downloadIndicator.isActive && imageData != null) {
+    if (downloadIndicator.isShown && imageData != null) {
         DownloadProgressCover(
             imageData = imageData,
             progress = downloadIndicator.progress,
-            badgeSize = 28.dp,
+            badgeSize = Dimens.iconLg,
+            paused = downloadIndicator.isPaused,
             modifier = Modifier.fillMaxSize()
         )
     } else {

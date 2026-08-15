@@ -21,6 +21,12 @@ enum class MediaDownloadDbState {
          */
         fun isActive(stored: String): Boolean =
             stored == QUEUED.name || stored == PREPARING.name || stored == DOWNLOADING.name
+
+        /**
+         * Whether a stored state still has a part-finished copy worth drawing, which includes a
+         * paused one.
+         */
+        fun isShown(stored: String): Boolean = isActive(stored) || stored == PAUSED.name
     }
 }
 

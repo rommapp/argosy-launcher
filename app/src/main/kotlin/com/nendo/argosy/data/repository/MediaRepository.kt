@@ -188,20 +188,27 @@ class MediaRepository @Inject constructor(
      * is keyed by its own id as well as the episode's, because the row a viewer is looking at on the
      * home screen is the series, not the episode being fetched underneath it.
      */
-    fun observeDownloadProgress(): Flow<Map<String, Float>> = scoped(emptyMap()) { owner ->
-        mediaDownloadQueueDao.observeQueue(owner).map { rows ->
-            buildMap {
-                rows.filter { it.totalBytes > 0 && MediaDownloadDbState.isActive(it.state) }
-                    .forEach { row ->
-                        val fraction = (row.bytesDownloaded.toFloat() / row.totalBytes).coerceIn(0f, 1f)
-                        put(row.itemId, fraction)
-                        row.seriesId?.let { series ->
-                            merge(series, fraction) { existing, _ -> minOf(existing, fraction) }
+    fun observeDownloadProgress(): Flow<Map<String, MediaTransferProgress>> =
+        scoped(emptyMap()) { owner ->
+            mediaDownloadQueueDao.observeQueue(owner).map { rows ->
+                buildMap {
+                    rows.filter { it.totalBytes > 0 && MediaDownloadDbState.isShown(it.state) }
+                        .forEach { row ->
+                            val transfer = MediaTransferProgress(
+                                fraction = (row.bytesDownloaded.toFloat() / row.totalBytes)
+                                    .coerceIn(0f, 1f),
+                                isPaused = row.state == MediaDownloadDbState.PAUSED.name
+                            )
+                            put(row.itemId, transfer)
+                            row.seriesId?.let { series ->
+                                merge(series, transfer) { existing, _ ->
+                                    if (transfer.fraction < existing.fraction) transfer else existing
+                                }
+                            }
                         }
-                    }
+                }
             }
         }
-    }
 
     /**
      * The people credited on a title, in the billing order the server sent.
@@ -566,6 +573,15 @@ class MediaRepository @Inject constructor(
  * The image kinds this client asks for, carrying the server's own image-type tokens so a request
  * spells the kind the same way the item's tag map does.
  */
+/**
+ * How far a copy has been fetched, and whether it is currently moving. A paused transfer keeps its
+ * fraction: the bytes are on disk, they are simply not growing.
+ */
+data class MediaTransferProgress(
+    val fraction: Float,
+    val isPaused: Boolean
+)
+
 enum class MediaImageType(val wireValue: String) {
     PRIMARY(IMAGE_TYPE_PRIMARY),
     BACKDROP(IMAGE_TYPE_BACKDROP),

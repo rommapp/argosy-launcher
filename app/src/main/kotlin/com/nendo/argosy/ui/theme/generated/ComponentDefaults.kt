@@ -208,6 +208,10 @@ object ComponentDefaults {
         const val crossfadeMs = 160
     }
 
+    object DownloadCover {
+        const val waveAmplitudeDp = 5
+    }
+
     object CustomGrid {
         const val swipePageThresholdDp = 48
     }

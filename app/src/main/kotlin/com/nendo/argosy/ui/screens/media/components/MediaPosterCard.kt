@@ -25,12 +25,26 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.platform.LocalContext
 import coil.compose.AsyncImage
+import coil.request.ImageRequest
+import com.nendo.argosy.ui.common.AlwaysCrossfadeFactory
 import com.nendo.argosy.ui.components.boxArtFrame
+import com.nendo.argosy.ui.theme.generated.ComponentDefaults
 import com.nendo.argosy.ui.screens.media.MediaItemUi
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalArgosyTheme
 import com.nendo.argosy.ui.util.clickableNoFocus
+
+/**
+ * How many lines a title always occupies, whether or not it needs them.
+ *
+ * A tile that grows for a long title changes the height of the row it sits in, and in a lazy row
+ * that height is recomputed from whatever is currently composed - so titles entering and leaving
+ * view make the whole row rise and fall. Reserving the space costs a little air under short titles
+ * and buys a row that does not move.
+ */
+private const val TITLE_LINES = 2
 
 /**
  * One movie or series in the browse grid. Long press mirrors the gamepad's hold-confirm, so the
@@ -63,7 +77,10 @@ fun MediaPosterCard(
                 )
         ) {
             AsyncImage(
-                model = item.posterUrl,
+                model = ImageRequest.Builder(LocalContext.current)
+                    .data(item.posterUrl)
+                    .transitionFactory(AlwaysCrossfadeFactory(ComponentDefaults.MediaCover.crossfadeMs))
+                    .build(),
                 contentDescription = item.title,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize()
@@ -92,7 +109,8 @@ fun MediaPosterCard(
             text = item.title,
             style = MaterialTheme.typography.bodySmall,
             color = if (isFocused) theme.textPrimary else theme.textDim,
-            maxLines = 2,
+            minLines = TITLE_LINES,
+            maxLines = TITLE_LINES,
             overflow = TextOverflow.Ellipsis,
             textAlign = TextAlign.Center,
             modifier = Modifier.fillMaxWidth()

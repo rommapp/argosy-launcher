@@ -104,6 +104,10 @@ fun FocusedScroll(
         val lastListIndex = layoutInfo.totalItemsCount - 1
 
         if (focusedIndex >= lastListIndex) {
+            val alreadyWhole = targetItem != null &&
+                targetItem.offset >= layoutInfo.viewportStartOffset &&
+                targetItem.offset + targetItem.size <= layoutInfo.viewportEndOffset
+            if (alreadyWhole) return@LaunchedEffect
             val bottomAlignOffset = if (targetItem != null) itemHeight - viewportHeight else 0
             if (instant) {
                 listState.scrollToItem(lastListIndex, bottomAlignOffset)

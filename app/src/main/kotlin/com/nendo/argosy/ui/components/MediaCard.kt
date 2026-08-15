@@ -33,7 +33,10 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.platform.LocalContext
 import coil.compose.AsyncImage
+import coil.request.ImageRequest
+import com.nendo.argosy.ui.common.AlwaysCrossfadeFactory
 import com.nendo.argosy.ui.primitives.FocusIndicators
 import com.nendo.argosy.ui.primitives.argosyFocusIndicators
 import com.nendo.argosy.ui.screens.home.HomeMediaUi
@@ -107,7 +110,10 @@ fun MediaCard(
             MediaPosterStub(title = media.title, showTitle = !showLabel)
         } else {
             AsyncImage(
-                model = media.posterUrl,
+                model = ImageRequest.Builder(LocalContext.current)
+                    .data(media.posterUrl)
+                    .transitionFactory(AlwaysCrossfadeFactory(ComponentDefaults.MediaCover.crossfadeMs))
+                    .build(),
                 contentDescription = media.title,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize(),

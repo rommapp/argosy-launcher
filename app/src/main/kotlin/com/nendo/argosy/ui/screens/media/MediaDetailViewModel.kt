@@ -161,7 +161,9 @@ class MediaDetailViewModel @Inject constructor(
     private fun loadExtras(itemId: String) {
         extrasJob = viewModelScope.launch {
             val entity = mediaRepository.getItem(itemId) ?: return@launch
-            val cast = mediaRepository.getCredits(itemId).map { it.toCastUi(mediaRepository) }
+            val cast = mediaRepository.getCredits(itemId)
+                .distinctBy { it.personId }
+                .map { it.toCastUi(mediaRepository) }
             val similar = getRelatedMedia(entity).map { it.toMediaItemUi(mediaRepository, null) }
             if (itemId != loadedItemId) return@launch
             _uiState.update { it.copy(cast = cast, similar = similar).withRail() }

@@ -50,8 +50,10 @@ fun MediaCastRail(
         modifier = modifier,
         horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm),
         contentPadding = androidx.compose.foundation.layout.PaddingValues(
-            horizontal = Dimens.spacingLg,
-            vertical = Dimens.spacingSm
+            start = Dimens.spacingLg,
+            end = Dimens.spacingXl,
+            top = Dimens.spacingSm,
+            bottom = Dimens.spacingSm
         )
     ) {
         itemsIndexed(items = cast, key = { _, person -> person.personId }) { index, person ->
@@ -115,16 +117,15 @@ private fun MediaCastTile(
             textAlign = TextAlign.Center
         )
 
-        person.role?.let { role ->
-            Text(
-                text = role,
-                style = MaterialTheme.typography.labelSmall,
-                color = theme.textMute,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                textAlign = TextAlign.Center
-            )
-        }
+        Text(
+            text = person.role.orEmpty(),
+            style = MaterialTheme.typography.labelSmall,
+            color = theme.textMute,
+            minLines = 1,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            textAlign = TextAlign.Center
+        )
     }
 }
 

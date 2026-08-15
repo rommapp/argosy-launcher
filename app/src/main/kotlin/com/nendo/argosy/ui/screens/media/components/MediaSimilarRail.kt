@@ -35,8 +35,10 @@ fun MediaSimilarRail(
         modifier = modifier,
         horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm),
         contentPadding = PaddingValues(
-            horizontal = Dimens.spacingLg,
-            vertical = Dimens.spacingSm
+            start = Dimens.spacingLg,
+            end = Dimens.spacingXl,
+            top = Dimens.spacingSm,
+            bottom = Dimens.spacingSm
         )
     ) {
         itemsIndexed(items = titles, key = { _, title -> title.itemId }) { index, title ->

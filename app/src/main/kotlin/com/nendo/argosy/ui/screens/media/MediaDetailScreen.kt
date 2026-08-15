@@ -266,7 +266,7 @@ private fun MediaExtraRails(
     modifier: Modifier = Modifier
 ) {
     val scrollState = rememberScrollState()
-    LaunchedEffect(uiState.section) {
+    LaunchedEffect(uiState.section, scrollState.maxValue) {
         when (uiState.section) {
             MediaDetailSection.CAST -> scrollState.animateScrollTo(0)
             MediaDetailSection.SIMILAR -> scrollState.animateScrollTo(scrollState.maxValue)
@@ -277,8 +277,8 @@ private fun MediaExtraRails(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .verticalScroll(scrollState)
-            .padding(top = Dimens.spacingSm, bottom = Dimens.footerHeight + Dimens.spacingSm),
+            .padding(top = Dimens.spacingSm, bottom = Dimens.footerHeight + Dimens.spacingMd)
+            .verticalScroll(scrollState),
         verticalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
     ) {
         if (uiState.cast.isNotEmpty()) {

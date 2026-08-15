@@ -204,6 +204,10 @@ object ComponentDefaults {
         const val crossfadeMs = 380
     }
 
+    object MediaCover {
+        const val crossfadeMs = 160
+    }
+
     object CustomGrid {
         const val swipePageThresholdDp = 48
     }

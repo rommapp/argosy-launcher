@@ -24,6 +24,27 @@ import androidx.room.PrimaryKey
  * arrangement; the overlap is resolved when the arrangement is committed, not forbidden by the
  * schema.
  */
+/**
+ * What a media tile plays when its target is a series.
+ *
+ * [SEQUENTIAL] deliberately stores no pointer. Where the viewer is up to is already known from the
+ * library's own watch state, so deriving it means finishing an episode anywhere - fullscreen, a
+ * home rail, another client entirely - moves the tile on, and there is no second record of progress
+ * that can disagree with the first.
+ */
+enum class MediaTilePlayMode {
+    SINGLE,
+    RANDOM,
+    SEQUENTIAL,
+    SEASON,
+    PLAYLIST;
+
+    companion object {
+        fun fromStored(value: String?): MediaTilePlayMode? =
+            entries.find { it.name == value }
+    }
+}
+
 @Entity(
     tableName = "home_tiles",
     indices = [
@@ -47,6 +68,21 @@ data class HomeTileEntity(
     val virtualName: String? = null,
     val packageName: String? = null,
     val mediaItemId: String? = null,
+    /**
+     * What a media tile plays, when the thing it points at is a series rather than one title.
+     * Stored as a string so a mode written by a newer build reads back as unresolvable rather than
+     * crashing, the same way [targetType] and [virtualType] are treated.
+     */
+    val mediaPlayMode: String? = null,
+    /**
+     * The season a [MediaTilePlayMode.SEASON] tile is confined to. Null for every other mode.
+     */
+    val mediaScopeId: String? = null,
+    /**
+     * A video or animation on this device that the tile plays instead of a library title. A sibling
+     * of [packageName]: it names something outside the media library entirely.
+     */
+    val mediaFilePath: String? = null,
     val createdAt: Long = System.currentTimeMillis()
 )
 

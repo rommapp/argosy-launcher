@@ -3338,3 +3338,34 @@ object Migration_173_174 : Migration(173, 174) {
         )
     }
 }
+
+/**
+ * Lets a home tile play something rather than only point at it: how a series tile chooses its
+ * episode, the season a tile is confined to, a file on this device, and the episodes a tile was
+ * given by hand. Existing tiles carry nulls and keep behaving exactly as they did.
+ */
+object Migration_174_175 : Migration(174, 175) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE `home_tiles` ADD COLUMN `mediaPlayMode` TEXT")
+        db.execSQL("ALTER TABLE `home_tiles` ADD COLUMN `mediaScopeId` TEXT")
+        db.execSQL("ALTER TABLE `home_tiles` ADD COLUMN `mediaFilePath` TEXT")
+        db.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS `home_tile_episodes` (
+                `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                `tileId` INTEGER NOT NULL,
+                `itemId` TEXT NOT NULL,
+                `orderIndex` INTEGER NOT NULL
+            )
+            """.trimIndent()
+        )
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS `index_home_tile_episodes_tileId` " +
+                "ON `home_tile_episodes` (`tileId`)"
+        )
+        db.execSQL(
+            "CREATE UNIQUE INDEX IF NOT EXISTS `index_home_tile_episodes_tileId_itemId` " +
+                "ON `home_tile_episodes` (`tileId`, `itemId`)"
+        )
+    }
+}

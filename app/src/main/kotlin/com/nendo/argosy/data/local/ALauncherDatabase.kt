@@ -180,6 +180,7 @@ import com.nendo.argosy.data.local.entity.SteamLicenseEntity
         QuayPassDailyStatsEntity::class,
         QuayPassPendingReportEntity::class,
         com.nendo.argosy.data.local.entity.HomeTileEntity::class,
+        com.nendo.argosy.data.local.entity.HomeTileEpisodeEntity::class,
         MediaLibraryEntity::class,
         MediaItemEntity::class,
         MediaStreamEntity::class,
@@ -188,7 +189,7 @@ import com.nendo.argosy.data.local.entity.SteamLicenseEntity
         MediaDownloadQueueEntity::class,
         MediaCreditEntity::class
     ],
-    version = 174,
+    version = 175,
     exportSchema = true
 )
 @TypeConverters(Converters::class)

@@ -4,8 +4,10 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Transaction
 import androidx.room.Update
 import com.nendo.argosy.data.local.entity.HomeTileEntity
+import com.nendo.argosy.data.local.entity.HomeTileEpisodeEntity
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -40,6 +42,38 @@ interface HomeTileDao {
 
     @Query("DELETE FROM home_tiles WHERE id = :id")
     suspend fun deleteById(id: Long)
+
+    @Query("SELECT * FROM home_tile_episodes WHERE tileId = :tileId ORDER BY orderIndex ASC")
+    suspend fun getEpisodes(tileId: Long): List<HomeTileEpisodeEntity>
+
+    @Query("SELECT * FROM home_tile_episodes ORDER BY tileId ASC, orderIndex ASC")
+    fun observeAllEpisodes(): Flow<List<HomeTileEpisodeEntity>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertEpisodes(rows: List<HomeTileEpisodeEntity>)
+
+    @Query("DELETE FROM home_tile_episodes WHERE tileId = :tileId")
+    suspend fun deleteEpisodesForTile(tileId: Long)
+
+    /**
+     * Replaces a tile's chosen episodes as one unit, so a tile can never be caught showing both the
+     * run it had and the run it was just given.
+     */
+    @Transaction
+    suspend fun replaceEpisodes(tileId: Long, rows: List<HomeTileEpisodeEntity>) {
+        deleteEpisodesForTile(tileId)
+        if (rows.isNotEmpty()) insertEpisodes(rows)
+    }
+
+    /**
+     * Removes a tile and whatever run was chosen for it together, so a later tile reusing the id
+     * cannot inherit episodes it was never given.
+     */
+    @Transaction
+    suspend fun deleteTileWithEpisodes(id: Long) {
+        deleteEpisodesForTile(id)
+        deleteById(id)
+    }
 
     @Query(
         "DELETE FROM home_tiles WHERE (ownerUserId = :ownerUserId OR ownerUserId IS NULL) " +

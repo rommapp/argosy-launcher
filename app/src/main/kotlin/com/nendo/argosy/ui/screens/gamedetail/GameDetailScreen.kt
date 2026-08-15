@@ -111,11 +111,11 @@ import kotlinx.coroutines.launch
 @Composable
 fun GameDetailScreen(
     gameId: Long,
+    argosyViewModel: ArgosyViewModel,
     onBack: () -> Unit,
     onNavigateToPlatformSettings: (platformId: Long) -> Unit = {},
     onNavigateToGame: (gameId: Long) -> Unit = {},
-    viewModel: GameDetailViewModel = hiltViewModel(),
-    argosyViewModel: ArgosyViewModel = hiltViewModel()
+    viewModel: GameDetailViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val requestSafGrant by viewModel.requestSafGrant.collectAsState()

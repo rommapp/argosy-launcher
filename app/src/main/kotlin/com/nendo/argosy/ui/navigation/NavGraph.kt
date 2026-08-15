@@ -12,6 +12,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import androidx.navigation.navDeepLink
+import com.nendo.argosy.ui.ArgosyViewModel
 import com.nendo.argosy.ui.screens.apps.AppsScreen
 import com.nendo.argosy.ui.screens.collections.CollectionDetailScreen
 import com.nendo.argosy.ui.screens.collections.CollectionsScreen
@@ -39,6 +40,7 @@ fun NavGraph(
     navController: NavHostController,
     startDestination: String,
     onDrawerToggle: () -> Unit,
+    argosyViewModel: ArgosyViewModel,
     modifier: Modifier = Modifier,
     onPlayMedia: (itemId: String, startOver: Boolean) -> Unit = { _, _ -> }
 ) {
@@ -249,6 +251,7 @@ fun NavGraph(
             val gameId = backStackEntry.arguments?.getLong("gameId") ?: return@composable
             GameDetailScreen(
                 gameId = gameId,
+                argosyViewModel = argosyViewModel,
                 onBack = { navController.popBackStack() },
                 onNavigateToPlatformSettings = { platformId ->
                     navController.navigate(

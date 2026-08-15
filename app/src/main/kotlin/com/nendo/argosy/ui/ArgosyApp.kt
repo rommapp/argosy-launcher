@@ -1915,6 +1915,7 @@ fun ArgosyApp(
                         navController = navController,
                         startDestination = startDestination,
                         onDrawerToggle = { if (isDrawerOpen) closeDrawer() else openDrawer() },
+                        argosyViewModel = viewModel,
                         onPlayMedia = { itemId, startOver ->
                             PlayerActivity.start(
                                 context = context,

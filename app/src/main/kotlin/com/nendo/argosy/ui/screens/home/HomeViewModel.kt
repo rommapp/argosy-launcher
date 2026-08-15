@@ -37,6 +37,7 @@ import com.nendo.argosy.ui.screens.home.delegates.HomeMediaDelegate
 import com.nendo.argosy.ui.screens.home.delegates.HomeNavigationDelegate
 import com.nendo.argosy.ui.screens.home.delegates.MediaPlayTarget
 import com.nendo.argosy.ui.screens.home.delegates.HomeSyncDelegate
+import com.nendo.argosy.ui.screens.home.delegates.HomeTilePickerDelegate
 import com.nendo.argosy.ui.screens.home.delegates.HomeVideoPreviewDelegate
 import com.nendo.argosy.ui.screens.home.delegates.PlatformChangeResult
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -80,6 +81,7 @@ class HomeViewModel @Inject constructor(
     val videoPreviewDelegate: HomeVideoPreviewDelegate,
     val gameMenuDelegate: HomeGameMenuDelegate,
     val mediaDelegate: HomeMediaDelegate,
+    val tilePickerDelegate: HomeTilePickerDelegate,
     private val steamContentManager: com.nendo.argosy.data.steam.SteamContentManager,
     private val steamDownloadPromptController: com.nendo.argosy.data.steam.SteamDownloadPromptController,
     private val appsRepository: com.nendo.argosy.data.repository.AppsRepository,
@@ -115,6 +117,7 @@ class HomeViewModel @Inject constructor(
                     mediaDelegate.searchForTiles(query)
             }
         },
+        mediaCatalog = tilePickerDelegate,
         read = { _uiState.value.customGrid },
         write = { transform -> _uiState.update { it.copy(customGrid = transform(it.customGrid)) } }
     )
@@ -150,6 +153,7 @@ class HomeViewModel @Inject constructor(
         observeDelegateStates()
         observeHomeTiles()
         observeTilePrompts()
+        customGrid.setLocalVideoSupported(true)
         mediaDelegate.observe(viewModelScope)
         gradientExtractionDelegate.startBackgroundProcessing(viewModelScope)
     }
@@ -822,6 +826,30 @@ class HomeViewModel @Inject constructor(
 
     fun setTilePickerCategory(category: com.nendo.argosy.ui.components.TilePickerCategory) =
         customGrid.setPickerCategory(category)
+
+    override fun moveMediaTileSetupFocus(delta: Int) = customGrid.moveMediaSetupFocus(delta)
+
+    override fun confirmMediaTileSetup() = customGrid.confirmMediaSetup()
+
+    /**
+     * The touch entry to the same answer the d-pad gives. A tapped row names its own position, so
+     * focus moves there before it is acted on and the two modalities cannot diverge.
+     */
+    fun confirmMediaTileSetupAt(index: Int) = customGrid.confirmMediaSetup(index)
+
+    override fun backFromMediaTileSetup() {
+        customGrid.backFromMediaSetup()
+    }
+
+    override fun confirmMediaTileNotice() = customGrid.confirmMediaTileNotice()
+
+    override fun dismissMediaTileNotice() = customGrid.dismissMediaTileNotice()
+
+    override fun moveMediaTileNoticeFocus(delta: Int) = customGrid.moveMediaTileNoticeFocus(delta)
+
+    fun closeTileFileBrowser() = customGrid.closeFileBrowser()
+
+    fun placeLocalVideoTile(path: String) = customGrid.placeLocalVideo(path)
 
     /**
      * Activates a tile that is not a game. An app launches through the same intent path the apps

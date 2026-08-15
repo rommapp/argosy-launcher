@@ -336,6 +336,7 @@ data class DualHomeUiState(
                 )
             }
             is com.nendo.argosy.domain.model.HomeTileTargetRef.Media,
+            is com.nendo.argosy.domain.model.HomeTileTargetRef.LocalMedia,
             com.nendo.argosy.domain.model.HomeTileTargetRef.Unresolvable ->
                 com.nendo.argosy.ui.components.CustomGridTileContent(
                     game = null,
@@ -1107,7 +1108,8 @@ class DualHomeViewModel(
             tiles.observeTiles(syncPreferencesRepository?.getRommUserId())
                 .map { stored ->
                     stored.filterNot {
-                        it.target is com.nendo.argosy.domain.model.HomeTileTargetRef.Media
+                        it.target is com.nendo.argosy.domain.model.HomeTileTargetRef.Media ||
+                            it.target is com.nendo.argosy.domain.model.HomeTileTargetRef.LocalMedia
                     }
                 }
                 .collect { rows ->

@@ -12,6 +12,7 @@ import com.nendo.argosy.domain.model.settleAfterEdit
 import com.nendo.argosy.ui.components.CustomGridState
 import com.nendo.argosy.ui.components.CustomTileMenuAction
 import com.nendo.argosy.ui.components.TileEditMode
+import com.nendo.argosy.ui.components.TilePickerAction
 import com.nendo.argosy.ui.components.TilePickerCategory
 import com.nendo.argosy.ui.components.TilePickerEntry
 import kotlinx.coroutines.CoroutineScope
@@ -32,11 +33,23 @@ class CustomGridCoordinator(
     private val pickerEntries: suspend (TilePickerCategory, String) -> List<TilePickerEntry>,
     private val onPageAdded: ((Int) -> Unit)? = null,
     private val onPageRemoved: ((Int) -> Unit)? = null,
+    private val mediaCatalog: MediaTileCatalog? = null,
     private val read: () -> CustomGridState,
     private val write: ((CustomGridState) -> CustomGridState) -> Unit
 ) {
 
     val state: CustomGridState get() = read()
+
+    private val mediaSetupController = MediaTileSetupController(
+        scope = scope,
+        catalog = mediaCatalog,
+        read = read,
+        write = write,
+        onPlace = { target, playlist ->
+            placeOnFocusedCell(target, playlist)
+            closePicker()
+        }
+    )
 
     fun setTiles(tiles: List<HomeTile>) = write { it.copy(tiles = tiles) }
 
@@ -68,6 +81,16 @@ class CustomGridCoordinator(
             )
         }
         if (read().showPicker) refreshPicker()
+    }
+
+    /**
+     * Says whether this surface can play a file already on the device. It is what keeps the Media tab
+     * on offer for a reader with no media server: a video on their own storage is something they
+     * have rather than a feature being advertised at them.
+     */
+    fun setLocalVideoSupported(supported: Boolean) {
+        if (read().supportsLocalVideo == supported) return
+        write { it.copy(supportsLocalVideo = supported) }
     }
 
     fun setShape(columns: Int, rows: Int) = write { it.copy(columns = columns, rows = rows) }
@@ -223,10 +246,13 @@ class CustomGridCoordinator(
     fun resizeEditingTileTo(target: GridCell): Boolean {
         val current = read()
         val tile = current.editingTile ?: return false
+        val floor = tile.minSpan
+        val columnCeiling = (current.columns - tile.rect.columnIndex).coerceAtLeast(1)
+        val rowCeiling = (current.rows - tile.rect.rowIndex).coerceAtLeast(1)
         val columnSpan = (target.columnIndex - tile.rect.columnIndex + 1)
-            .coerceIn(1, (current.columns - tile.rect.columnIndex).coerceAtLeast(1))
+            .coerceIn(floor.coerceAtMost(columnCeiling), columnCeiling)
         val rowSpan = (target.rowIndex - tile.rect.rowIndex + 1)
-            .coerceIn(1, (current.rows - tile.rect.rowIndex).coerceAtLeast(1))
+            .coerceIn(floor.coerceAtMost(rowCeiling), rowCeiling)
         write {
             it.copy(editingRect = tile.rect.copy(columnSpan = columnSpan, rowSpan = rowSpan))
         }
@@ -283,7 +309,8 @@ class CustomGridCoordinator(
         } else {
             tile.rect.copy(rowSpan = tile.rect.rowSpan + step)
         }
-        if (resized.columnSpan < 1 || resized.rowSpan < 1) return false
+        val floor = tile.minSpan
+        if (resized.columnSpan < floor || resized.rowSpan < floor) return false
         if (!resized.withinBounds(current.columns, current.rows)) return false
         write { it.copy(editingRect = resized) }
         return true
@@ -438,7 +465,13 @@ class CustomGridCoordinator(
     }
 
     fun closePicker() = write {
-        it.copy(showPicker = false, pickerQuery = "", pickerSearchActive = false)
+        it.copy(
+            showPicker = false,
+            pickerQuery = "",
+            pickerSearchActive = false,
+            mediaSetup = null,
+            showFileBrowser = false
+        )
     }
 
     /**
@@ -470,7 +503,10 @@ class CustomGridCoordinator(
     private fun refreshPicker() {
         scope.launch {
             val current = read()
-            val entries = pickerEntries(current.pickerCategory, current.pickerQuery.trim().lowercase())
+            val entries = withLocalVideoRow(
+                current,
+                pickerEntries(current.pickerCategory, current.pickerQuery.trim().lowercase())
+            )
             write { state ->
                 val updated = state.copy(pickerEntries = entries)
                 updated.copy(
@@ -507,6 +543,30 @@ class CustomGridCoordinator(
         refreshPicker()
     }
 
+    /**
+     * The video and animation files a tile can be pointed at, offered at the head of the Media tab.
+     *
+     * It leads the list rather than trailing it because it is the one row that always works: the
+     * titles under it depend on a media server having been reached, while a file on this device is
+     * there whether anything has been synced or not.
+     */
+    private fun withLocalVideoRow(
+        current: CustomGridState,
+        entries: List<TilePickerEntry>
+    ): List<TilePickerEntry> {
+        if (current.pickerCategory != TilePickerCategory.MEDIA) return entries
+        if (!current.supportsLocalVideo) return entries
+        return listOf(
+            TilePickerEntry(
+                target = HomeTileTargetRef.Unresolvable,
+                title = "Choose a video on this device",
+                subtitle = "Plays straight from your storage",
+                action = TilePickerAction.BROWSE_LOCAL_FILE,
+                isLocal = true
+            )
+        ) + entries
+    }
+
     fun confirmPickerSelection() {
         val current = read()
         if (current.isPickerDeletePageFocused) {
@@ -514,14 +574,67 @@ class CustomGridCoordinator(
             return
         }
         val entry = current.pickerEntries.getOrNull(current.pickerFocusIndex) ?: return
+        selectPickerEntry(entry)
+    }
+
+    /**
+     * Acts on a chosen row. Three of the kinds go straight onto the page; the two media kinds do not,
+     * because one needs a file naming and the other needs to be asked what part of a show it stands
+     * for. Both a tap and a press of confirm arrive here, so neither can behave differently.
+     */
+    fun selectPickerEntry(entry: TilePickerEntry) {
+        if (entry.action == TilePickerAction.BROWSE_LOCAL_FILE) {
+            openFileBrowser()
+            return
+        }
+        if (entry.target is HomeTileTargetRef.Media) {
+            if (entry.isSeries) {
+                mediaSetupController.begin(entry)
+            } else {
+                mediaSetupController.offerSingle(entry)
+            }
+            return
+        }
         placeOnFocusedCell(entry.target)
         closePicker()
     }
 
-    fun selectPickerEntry(entry: TilePickerEntry) {
-        placeOnFocusedCell(entry.target)
+    fun openFileBrowser() = write { it.copy(showFileBrowser = true) }
+
+    fun closeFileBrowser() = write { it.copy(showFileBrowser = false) }
+
+    /**
+     * Places a file from this device. Nothing is fetched and nothing is asked: the file is already
+     * where it needs to be, which is the whole point of offering it.
+     */
+    fun placeLocalVideo(path: String) {
+        write { it.copy(showFileBrowser = false) }
+        if (path.isBlank()) return
+        placeOnFocusedCell(HomeTileTargetRef.LocalMedia(path))
         closePicker()
     }
+
+    fun moveMediaSetupFocus(delta: Int) = mediaSetupController.moveFocus(delta)
+
+    fun confirmMediaSetup(index: Int? = null) = mediaSetupController.confirm(index)
+
+    /**
+     * Steps back through the media questions, closing the whole run once there is nothing behind the
+     * first one. Answers whether anything was handled, so the caller can fall through to closing the
+     * picker itself.
+     */
+    fun backFromMediaSetup(): Boolean {
+        if (read().mediaSetup == null) return false
+        if (mediaSetupController.back()) return true
+        mediaSetupController.close()
+        return true
+    }
+
+    fun confirmMediaTileNotice() = mediaSetupController.confirmNotice()
+
+    fun dismissMediaTileNotice() = mediaSetupController.dismissNotice()
+
+    fun moveMediaTileNoticeFocus(delta: Int) = mediaSetupController.moveNoticeFocus(delta)
 
     /**
      * Raises the offer a finished download left behind. Only one is shown at a time: a batch of
@@ -562,7 +675,7 @@ class CustomGridCoordinator(
         entry.gameId?.let(onResolved)
     }
 
-    fun placeOnFocusedCell(target: HomeTileTargetRef) {
+    fun placeOnFocusedCell(target: HomeTileTargetRef, playlist: List<String> = emptyList()) {
         val current = read()
         val tiles = repository ?: return
         scope.launch {
@@ -570,7 +683,8 @@ class CustomGridCoordinator(
                 ownerUserId = ownerUserId(),
                 pageIndex = current.page,
                 rect = TileRect(current.cell.columnIndex, current.cell.rowIndex),
-                target = target
+                target = target,
+                playlist = playlist
             )
         }
     }

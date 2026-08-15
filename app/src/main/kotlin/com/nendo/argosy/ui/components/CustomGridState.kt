@@ -48,18 +48,24 @@ data class CustomGridState(
     val pickerFocusIndex: Int = 0,
     val pickerEntries: List<TilePickerEntry> = emptyList(),
     val mediaAvailable: Boolean = false,
+    val supportsLocalVideo: Boolean = false,
+    val mediaSetup: MediaTileSetup? = null,
+    val showFileBrowser: Boolean = false,
     val pendingAdd: TilePickerEntry? = null,
     val pendingAddFocusIndex: Int = 0
 ) {
 
     /**
-     * The kinds this grid can currently be filled from. Media is absent unless an account is signed
-     * in, which is what keeps a reader with no media server from meeting a tab, a heading or an
-     * empty list belonging to a feature they do not have.
+     * The kinds this grid can currently be filled from.
+     *
+     * Media stands on either of two feet. A signed-in account gives it library titles, and a surface
+     * that can play a file already on the device gives it that file - so a reader with no media
+     * server still meets the tab, because a video on their own storage is something they have rather
+     * than a feature being advertised at them. A surface with neither sees no tab at all.
      */
     val pickerCategories: List<TilePickerCategory>
         get() = TilePickerCategory.entries.filter {
-            it != TilePickerCategory.MEDIA || mediaAvailable
+            it != TilePickerCategory.MEDIA || mediaAvailable || supportsLocalVideo
         }
 
     val storedPageCount: Int
@@ -171,6 +177,7 @@ data class CustomGridState(
         get() = when (focusedTile?.target) {
             is HomeTileTargetRef.Game -> "Play"
             is HomeTileTargetRef.Media -> "Play"
+            is HomeTileTargetRef.LocalMedia -> "Play"
             is HomeTileTargetRef.App -> "Open"
             is HomeTileTargetRef.Collection -> "Open"
             is HomeTileTargetRef.VirtualCollection -> "Open"
@@ -217,4 +224,15 @@ data class CustomGridState(
 
     val isPickerDeletePageFocused: Boolean
         get() = canDeletePage && pickerFocusIndex >= pickerEntries.size
+
+    /**
+     * Whether the media setup is the thing input should be reaching. The download notice is drawn as
+     * its own confirmation over the setup, so it answers separately: the two are never both the
+     * target of a press.
+     */
+    val isMediaSetupOpen: Boolean
+        get() = mediaSetup != null && mediaSetup.notice == null
+
+    val mediaTileNotice: MediaTileNotice?
+        get() = mediaSetup?.notice
 }

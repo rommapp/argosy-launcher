@@ -56,6 +56,17 @@ interface HomeTileDao {
     suspend fun deleteEpisodesForTile(tileId: Long)
 
     /**
+     * Clears the runs belonging to a whole page. Deleting the page alone would leave its chosen
+     * episodes behind with nothing referring to them, and the next tile to be handed one of those
+     * ids would inherit a run it was never given.
+     */
+    @Query(
+        "DELETE FROM home_tile_episodes WHERE tileId IN (SELECT id FROM home_tiles " +
+            "WHERE (ownerUserId = :ownerUserId OR ownerUserId IS NULL) AND pageIndex = :pageIndex)"
+    )
+    suspend fun deleteEpisodesForPage(ownerUserId: Long?, pageIndex: Int)
+
+    /**
      * Replaces a tile's chosen episodes as one unit, so a tile can never be caught showing both the
      * run it had and the run it was just given.
      */

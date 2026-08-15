@@ -848,8 +848,18 @@ fun HomeScreen(
                 if (isCustomGrid) {
                     val grid = uiState.customGrid
                     FooterHints(
-                        hints = if (grid.isEditing) {
-                            listOf(
+                        hints = when {
+                            grid.mediaTileNotice != null ->
+                                listOf(InputButton.DPAD_HORIZONTAL to "Choose")
+                            grid.isMediaSetupOpen && grid.mediaSetup?.step ==
+                                com.nendo.argosy.ui.components.MediaTileStep.EPISODES ->
+                                listOf(InputButton.A to "Tick", InputButton.B to "Back")
+                            grid.isMediaSetupOpen -> listOf(InputButton.B to "Back")
+                            grid.showPicker -> listOf(
+                                InputButton.LB_RB to "Tab",
+                                InputButton.Y to "Search"
+                            )
+                            grid.isEditing -> listOf(
                                 InputButton.DPAD to grid.editLabel.orEmpty(),
                                 InputButton.X to if (grid.editMode == TileEditMode.MOVE) {
                                     "Resize"
@@ -859,8 +869,7 @@ fun HomeScreen(
                                 InputButton.A to "Place",
                                 InputButton.B to "Cancel"
                             )
-                        } else {
-                            buildList {
+                            else -> buildList {
                                 add(InputButton.LB_RB to "Page")
                                 grid.confirmLabel?.let { add(InputButton.A to it) }
                                 add(InputButton.SELECT to "Options")
@@ -1160,6 +1169,45 @@ fun HomeScreen(
                 onSelectCategory = { viewModel.setTilePickerCategory(it) },
                 canDeletePage = uiState.customGrid.canDeletePage,
                 onDeletePage = viewModel::deleteCustomGridPage
+            )
+        }
+
+        val mediaTileSetup = uiState.mediaTileSetup
+        if (mediaTileSetup != null && uiState.showMediaTileSetup) {
+            com.nendo.argosy.ui.components.MediaTileSetupModal(
+                setup = mediaTileSetup,
+                onSelect = viewModel::confirmMediaTileSetupAt,
+                onToggle = viewModel::confirmMediaTileSetupAt,
+                onCommit = { viewModel.confirmMediaTileSetupAt(mediaTileSetup.episodes.size) },
+                onDismiss = viewModel::backFromMediaTileSetup
+            )
+        }
+
+        val mediaTileNotice = uiState.mediaTileNotice
+        if (mediaTileNotice != null) {
+            com.nendo.argosy.ui.primitives.ArgosyConfirmModal(
+                title = "Download to play here",
+                message = listOfNotNull(
+                    mediaTileNotice.message,
+                    mediaTileNotice.warning
+                ).joinToString("\n\n"),
+                confirmLabel = "Add and download",
+                cancelLabel = "Cancel",
+                focusedIndex = mediaTileNotice.buttonIndex,
+                onConfirm = viewModel::confirmMediaTileNotice,
+                onDismiss = viewModel::dismissMediaTileNotice
+            )
+        }
+
+        if (uiState.showTileFileBrowser) {
+            com.nendo.argosy.ui.filebrowser.FileBrowserScreen(
+                mode = com.nendo.argosy.ui.filebrowser.FileBrowserMode.FILE_SELECTION,
+                title = "Choose a video",
+                fileFilter = com.nendo.argosy.ui.filebrowser.FileFilter(
+                    extensions = com.nendo.argosy.core.media.VideoFileTypes.EXTENSIONS
+                ),
+                onPathSelected = viewModel::placeLocalVideoTile,
+                onDismiss = viewModel::closeTileFileBrowser
             )
         }
 

@@ -59,8 +59,14 @@ class SaveChannelDelegate @Inject constructor(
 
         scope.launch {
             val activeSaveTimestamp = activeSaveRepository.getActiveTimestamp(gameId)
+            val registeredChannels = activeSaveRepository.registeredChannels(gameId)
             val localEntries = savesDelegate.loadLocalEntries()
-            val localSlots = savesDelegate.buildSaveSlots(localEntries, activeChannel, isDeviceAware)
+            val localSlots = savesDelegate.buildSaveSlots(
+                localEntries,
+                activeChannel,
+                isDeviceAware,
+                registeredChannels
+            )
 
             val states = statesDelegate.loadInitialStates(
                 emulatorId = emulatorId,
@@ -88,7 +94,12 @@ class SaveChannelDelegate @Inject constructor(
             savesDelegate.updateHistoryForFocusedSlot()
 
             val fullEntries = savesDelegate.loadInitialEntries()
-            val fullSlots = savesDelegate.buildSaveSlots(fullEntries, activeChannel, isDeviceAware)
+            val fullSlots = savesDelegate.buildSaveSlots(
+                fullEntries,
+                activeChannel,
+                isDeviceAware,
+                registeredChannels
+            )
             val focusedKey = _state.value.saveSlots.getOrNull(_state.value.selectedSlotIndex)?.slotKey
             val restoredIndex = fullSlots.indexOfFirst { it.slotKey == focusedKey }
                 .takeIf { it >= 0 }

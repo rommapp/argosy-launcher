@@ -45,8 +45,22 @@ import com.nendo.argosy.ui.theme.LocalArgosyTheme
 import com.nendo.argosy.ui.util.clickableNoFocus
 
 /**
+ * What confirming a picker row does.
+ *
+ * [BROWSE_LOCAL_FILE] is a row that opens the device's own file browser rather than placing
+ * anything. It lives among the entries instead of beside them because a curated grid is filled by
+ * choosing from this list, and an action reachable only by a second control is an action a reader
+ * on a television never finds.
+ */
+enum class TilePickerAction { PLACE, BROWSE_LOCAL_FILE }
+
+/**
  * What the picker can offer. Held as a resolved target rather than an id so the list can mix the
  * kinds of thing a tile may point at, and so placing one is the same call whichever kind it is.
+ *
+ * [isSeries] is carried because a series is the one entry that cannot be placed from this list
+ * alone: it stands for a whole show, and which part of it a tile plays is a question with four
+ * answers that has to be asked before anything is stored.
  */
 data class TilePickerEntry(
     val target: com.nendo.argosy.domain.model.HomeTileTargetRef,
@@ -54,7 +68,10 @@ data class TilePickerEntry(
     val subtitle: String,
     val coverPath: String? = null,
     val packageName: String? = null,
-    val posterUrl: String? = null
+    val posterUrl: String? = null,
+    val action: TilePickerAction = TilePickerAction.PLACE,
+    val isSeries: Boolean = false,
+    val isLocal: Boolean = false
 ) {
     val gameId: Long?
         get() = (target as? com.nendo.argosy.domain.model.HomeTileTargetRef.Game)?.gameId
@@ -63,7 +80,8 @@ data class TilePickerEntry(
         get() = (target as? com.nendo.argosy.domain.model.HomeTileTargetRef.Media)?.itemId
 
     val key: String
-        get() = "${target::class.simpleName}:${gameId ?: mediaItemId ?: packageName ?: title}"
+        get() = "$action:${target::class.simpleName}:" +
+            "${gameId ?: mediaItemId ?: packageName ?: title}"
 }
 
 /**

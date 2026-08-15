@@ -572,6 +572,16 @@ data class HomeUiState(
     val tilePickerEntries: List<com.nendo.argosy.ui.components.TilePickerEntry>
         get() = customGrid.pickerEntries
 
+    val mediaTileSetup: com.nendo.argosy.ui.components.MediaTileSetup?
+        get() = customGrid.mediaSetup
+
+    val mediaTileNotice: com.nendo.argosy.ui.components.MediaTileNotice?
+        get() = customGrid.mediaTileNotice
+
+    val showMediaTileSetup: Boolean get() = customGrid.isMediaSetupOpen
+
+    val showTileFileBrowser: Boolean get() = customGrid.showFileBrowser
+
     fun tilesOnPage(pageIndex: Int): List<com.nendo.argosy.domain.model.HomeTile> =
         customGrid.tilesOnPage(pageIndex)
 
@@ -639,6 +649,12 @@ data class HomeUiState(
                     posterUrl = media?.posterUrl
                 )
             }
+            is com.nendo.argosy.domain.model.HomeTileTargetRef.LocalMedia ->
+                com.nendo.argosy.ui.components.CustomGridTileContent(
+                    game = null,
+                    label = target.filePath.substringAfterLast('/').substringBeforeLast('.'),
+                    subtitle = "On this device"
+                )
             com.nendo.argosy.domain.model.HomeTileTargetRef.Unresolvable ->
                 com.nendo.argosy.ui.components.CustomGridTileContent(
                     game = null,

@@ -41,9 +41,12 @@ class SaveChannelSavesDelegate @Inject constructor(
     fun buildSaveSlots(
         entries: List<UnifiedSaveEntry>,
         activeChannel: String?,
-        isDeviceAwareMode: Boolean = false
+        isDeviceAwareMode: Boolean = false,
+        registeredChannels: List<String> = emptyList()
     ): List<SaveSlotItem> {
-        val channelGroups = entries.groupBy { it.channelName }
+        val channelGroups = entries.groupBy { it.channelName } + registeredChannels
+            .filterNot { name -> entries.any { it.channelName.equals(name, ignoreCase = true) } }
+            .associateWith { emptyList<UnifiedSaveEntry>() }
         val slotItems = mutableListOf<SaveSlotItem>()
         val legacyNames = mutableListOf<String>()
 
@@ -67,7 +70,8 @@ class SaveChannelSavesDelegate @Inject constructor(
         namedChannels.filterKeys {
             !it.equals(SaveSyncApiClient.AUTOSAVE_SLOT_NAME, ignoreCase = true)
         }.forEach { (name, saves) ->
-            val isUserCreated = saves.any { it.isUserCreatedSlot }
+            val isUserCreated = saves.any { it.isUserCreatedSlot } ||
+                registeredChannels.any { it.equals(name, ignoreCase = true) }
 
             if (isDeviceAwareMode && !isUserCreated) {
                 legacyNames.add(name!!)
@@ -615,7 +619,7 @@ class SaveChannelSavesDelegate @Inject constructor(
             val game = gameRepository.getById(currentGameId) ?: return@launch
             val emulatorId = _state.value.emulatorId
 
-            activeSaveRepository.activateChannel(currentGameId, name)
+            activeSaveRepository.createChannel(currentGameId, name)
 
             if (emulatorId != null) {
                 restoreCachedSaveUseCase.clearActiveSave(currentGameId, emulatorId)
@@ -947,7 +951,10 @@ class SaveChannelSavesDelegate @Inject constructor(
         val entries = getUnifiedSavesUseCase(currentGameId, expandHistory = true)
         holder.rawEntries = entries
         val saveSlots = buildSaveSlots(
-            entries, state.activeChannel, state.isDeviceAwareMode
+            entries,
+            state.activeChannel,
+            state.isDeviceAwareMode,
+            activeSaveRepository.registeredChannels(currentGameId)
         )
 
         _state.update {

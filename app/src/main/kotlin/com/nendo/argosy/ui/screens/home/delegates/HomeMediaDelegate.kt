@@ -365,25 +365,29 @@ class HomeMediaDelegate @Inject constructor(
         return matches.distinctBy { it.target }.take(TILE_PICKER_LIMIT)
     }
 
-    private fun HomeMediaUi.toPickerEntry() =
-        com.nendo.argosy.ui.components.TilePickerEntry(
+    private fun HomeMediaUi.toPickerEntry(): com.nendo.argosy.ui.components.TilePickerEntry {
+        val standsForSeries = isSeries || isEpisode
+        return com.nendo.argosy.ui.components.TilePickerEntry(
             target = com.nendo.argosy.domain.model.HomeTileTargetRef.Media(detailItemId),
             title = title,
-            subtitle = if (isSeries || isEpisode) SERIES_LABEL else MOVIE_LABEL,
-            posterUrl = posterUrl
+            subtitle = if (standsForSeries) SERIES_LABEL else MOVIE_LABEL,
+            posterUrl = posterUrl,
+            isSeries = standsForSeries,
+            isLocal = isDownloaded
         )
+    }
 
-    private fun MediaItemEntity.toPickerEntry() =
-        com.nendo.argosy.ui.components.TilePickerEntry(
+    private fun MediaItemEntity.toPickerEntry(): com.nendo.argosy.ui.components.TilePickerEntry {
+        val standsForSeries = MediaItemType.fromWire(itemType) == MediaItemType.SERIES
+        return com.nendo.argosy.ui.components.TilePickerEntry(
             target = com.nendo.argosy.domain.model.HomeTileTargetRef.Media(itemId),
             title = name,
-            subtitle = if (MediaItemType.fromWire(itemType) == MediaItemType.SERIES) {
-                SERIES_LABEL
-            } else {
-                MOVIE_LABEL
-            },
-            posterUrl = mediaRepository.posterUrl(itemId, primaryImageTag)
+            subtitle = if (standsForSeries) SERIES_LABEL else MOVIE_LABEL,
+            posterUrl = mediaRepository.posterUrl(itemId, primaryImageTag),
+            isSeries = standsForSeries,
+            isLocal = localPath != null
         )
+    }
 
     /**
      * Raises the Start Over prompt for one tile. A tile with no stored position has no choice to

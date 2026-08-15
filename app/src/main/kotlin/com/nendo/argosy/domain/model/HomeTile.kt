@@ -1,5 +1,14 @@
 package com.nendo.argosy.domain.model
 
+import com.nendo.argosy.data.local.entity.MediaTilePlayMode
+
+/**
+ * The smallest a media tile is allowed to be. A moving picture in a one-cell square reads as an
+ * artefact rather than as something playing, so the kind carries a floor the placement and resize
+ * paths both obey.
+ */
+const val MEDIA_TILE_MIN_SPAN = 2
+
 /**
  * A tile's rectangle on a page, anchored at its top-left cell. Growth runs down and right from the
  * anchor, so extending a tile never moves it.
@@ -22,6 +31,13 @@ data class TileRect(
 
     fun withinBounds(columns: Int, rows: Int): Boolean =
         columnIndex >= 0 && rowIndex >= 0 && lastColumn < columns && lastRow < rows
+
+    /**
+     * The same rectangle grown to at least [span] in both directions. Growth runs down and right, so
+     * the anchor is untouched and a tile raised to its floor stays where its owner put it.
+     */
+    fun atLeast(span: Int): TileRect =
+        copy(columnSpan = maxOf(columnSpan, span), rowSpan = maxOf(rowSpan, span))
 }
 
 /**
@@ -41,16 +57,43 @@ sealed interface HomeTileTargetRef {
      * the press, the way it is on a media row, and baking one in would leave the tile pointing at an
      * episode that has since been watched.
      */
-    data class Media(val itemId: String) : HomeTileTargetRef
+    data class Media(
+        val itemId: String,
+        val playMode: MediaTilePlayMode = MediaTilePlayMode.SINGLE,
+        val scopeId: String? = null
+    ) : HomeTileTargetRef
+
+    /**
+     * A video or animation already on this device, named by its path rather than by a library id.
+     * A sibling of [App]: it stands for something outside the media library entirely, so nothing has
+     * to be fetched before it plays and nothing on a server can take it away.
+     */
+    data class LocalMedia(val filePath: String) : HomeTileTargetRef
+
     data object Unresolvable : HomeTileTargetRef
 }
 
+/**
+ * The floor [target] imposes on a tile's span. Everything but media sits happily in one cell.
+ */
+fun minimumSpanFor(target: HomeTileTargetRef): Int = when (target) {
+    is HomeTileTargetRef.Media, is HomeTileTargetRef.LocalMedia -> MEDIA_TILE_MIN_SPAN
+    else -> 1
+}
+
+/**
+ * [playlist] is the run a media tile was told to play, in the order it was chosen. It is empty for
+ * every other kind and for every play mode that works the run out rather than being handed one.
+ */
 data class HomeTile(
     val id: Long,
     val pageIndex: Int,
     val rect: TileRect,
-    val target: HomeTileTargetRef
-)
+    val target: HomeTileTargetRef,
+    val playlist: List<String> = emptyList()
+) {
+    val minSpan: Int get() = minimumSpanFor(target)
+}
 
 /**
  * Places [tiles] onto a page of [columns] by [rows], keeping the ones that fit and reporting the
@@ -70,7 +113,7 @@ fun placeTiles(tiles: List<HomeTile>, columns: Int, rows: Int): TilePlacement {
             displaced += tile
             continue
         }
-        var fitted = tile.rect
+        var fitted = tile.rect.atLeast(tile.minSpan)
         while (
             !fitted.withinBounds(columns, rows) ||
             placed.any { it.rect.overlaps(fitted) }
@@ -108,9 +151,24 @@ fun fitTilesToPage(tiles: List<HomeTile>, columns: Int, rows: Int): List<HomeTil
             settled += tile
             continue
         }
-        settled += tile.copy(rect = TileRect(free.columnIndex, free.rowIndex))
+        settled += tile.copy(rect = anchoredAt(free, tile, columns, rows))
     }
     return settled
+}
+
+/**
+ * A tile placed at [cell] carrying whatever of its own floor the page has room for. A media tile
+ * dropped into the last free corner of a page cannot always be two cells wide, and clipping it off
+ * the edge would be worse than showing it smaller than its kind prefers.
+ */
+private fun anchoredAt(cell: GridCell, tile: HomeTile, columns: Int, rows: Int): TileRect {
+    val span = tile.minSpan
+    return TileRect(
+        columnIndex = cell.columnIndex,
+        rowIndex = cell.rowIndex,
+        columnSpan = span.coerceAtMost((columns - cell.columnIndex).coerceAtLeast(1)),
+        rowSpan = span.coerceAtMost((rows - cell.rowIndex).coerceAtLeast(1))
+    )
 }
 
 /**
@@ -195,7 +253,7 @@ fun settleAfterEdit(
         }
         val relocated = firstFreeCell(settled, columns, rows)
         if (relocated != null) {
-            settled += tile.copy(rect = TileRect(relocated.columnIndex, relocated.rowIndex))
+            settled += tile.copy(rect = anchoredAt(relocated, tile, columns, rows))
             continue
         }
         dropped += tile
@@ -222,13 +280,19 @@ private fun pushClear(
     return candidates.firstOrNull { fits(it, taken, columns, rows) }
 }
 
+/**
+ * Shrinks [tile] until it clears everything already settled. The tile's own floor is tried first and
+ * only abandoned when nothing at that size fits, so a media tile gives up its minimum only to avoid
+ * being dropped from the page entirely.
+ */
 private fun shrinkClear(
     tile: HomeTile,
     taken: List<HomeTile>,
     columns: Int,
     rows: Int
 ): TileRect? {
-    var rect = tile.rect
+    var rect = tile.rect.atLeast(tile.minSpan)
+    if (fits(rect, taken, columns, rows)) return rect
     while (rect.columnSpan > 1 || rect.rowSpan > 1) {
         rect = if (rect.columnSpan >= rect.rowSpan) {
             rect.copy(columnSpan = rect.columnSpan - 1)

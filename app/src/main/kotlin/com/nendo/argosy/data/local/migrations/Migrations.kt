@@ -3369,3 +3369,37 @@ object Migration_174_175 : Migration(174, 175) {
         )
     }
 }
+
+/**
+ * Gives a save slot somewhere to exist before anything has been saved into it.
+ *
+ * Slots were inferred from the saves that existed, so one that had just been created was announced
+ * and then gone: the list rebuilt without it and the next save went elsewhere. Nothing is backfilled
+ * here - every slot that already holds a save keeps being found the way it always was, and this
+ * table only carries the ones that would otherwise have nowhere to live.
+ */
+object Migration_175_176 : Migration(175, 176) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS `save_channels` (
+                `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                `ownerUserId` INTEGER,
+                `gameId` INTEGER NOT NULL,
+                `channelName` TEXT NOT NULL,
+                `isActive` INTEGER NOT NULL,
+                `createdAt` INTEGER NOT NULL
+            )
+            """.trimIndent()
+        )
+        db.execSQL(
+            "CREATE UNIQUE INDEX IF NOT EXISTS " +
+                "`index_save_channels_ownerUserId_gameId_channelName` " +
+                "ON `save_channels` (`ownerUserId`, `gameId`, `channelName`)"
+        )
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS `index_save_channels_ownerUserId_gameId` " +
+                "ON `save_channels` (`ownerUserId`, `gameId`)"
+        )
+    }
+}

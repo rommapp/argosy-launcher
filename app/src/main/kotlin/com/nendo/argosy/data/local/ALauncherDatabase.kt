@@ -49,6 +49,7 @@ import com.nendo.argosy.data.local.dao.QuayPassDailyStatsDao
 import com.nendo.argosy.data.local.dao.QuayPassEncounterDao
 import com.nendo.argosy.data.local.dao.QuayPassPendingReportDao
 import com.nendo.argosy.data.local.dao.SaveCacheDao
+import com.nendo.argosy.data.local.dao.SaveChannelDao
 import com.nendo.argosy.data.local.dao.RomMAccountDao
 import com.nendo.argosy.data.local.dao.SaveOwnershipDao
 import com.nendo.argosy.data.local.dao.SaveSyncDao
@@ -107,6 +108,7 @@ import com.nendo.argosy.data.local.entity.QuayPassDailyStatsEntity
 import com.nendo.argosy.data.local.entity.QuayPassEncounterEntity
 import com.nendo.argosy.data.local.entity.QuayPassPendingReportEntity
 import com.nendo.argosy.data.local.entity.SaveCacheEntity
+import com.nendo.argosy.data.local.entity.SaveChannelEntity
 import com.nendo.argosy.data.local.entity.RomMAccountEntity
 import com.nendo.argosy.data.local.entity.SaveOwnershipEntity
 import com.nendo.argosy.data.local.entity.SaveSyncEntity
@@ -135,6 +137,7 @@ import com.nendo.argosy.data.local.entity.SteamLicenseEntity
         GameDiscEntity::class,
         AchievementEntity::class,
         SaveCacheEntity::class,
+        SaveChannelEntity::class,
         SaveOwnershipEntity::class,
         RomMAccountEntity::class,
         StateCacheEntity::class,
@@ -189,7 +192,7 @@ import com.nendo.argosy.data.local.entity.SteamLicenseEntity
         MediaDownloadQueueEntity::class,
         MediaCreditEntity::class
     ],
-    version = 175,
+    version = 176,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -208,6 +211,7 @@ abstract class ALauncherDatabase : RoomDatabase() {
     abstract fun emulatorLaunchArgsDao(): EmulatorLaunchArgsDao
     abstract fun achievementDao(): AchievementDao
     abstract fun saveCacheDao(): SaveCacheDao
+    abstract fun saveChannelDao(): SaveChannelDao
     abstract fun saveOwnershipDao(): SaveOwnershipDao
     abstract fun rommAccountDao(): RomMAccountDao
     abstract fun stateCacheDao(): StateCacheDao

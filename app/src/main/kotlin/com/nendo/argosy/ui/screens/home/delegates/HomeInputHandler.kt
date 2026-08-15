@@ -53,6 +53,12 @@ interface HomeInputActions {
     fun movePendingTileAddFocus(delta: Int)
     fun moveTilePickerFocus(delta: Int)
     fun confirmTilePickerSelection()
+    fun moveMediaTileSetupFocus(delta: Int)
+    fun confirmMediaTileSetup()
+    fun backFromMediaTileSetup()
+    fun confirmMediaTileNotice()
+    fun dismissMediaTileNotice()
+    fun moveMediaTileNoticeFocus(delta: Int)
     fun focusedTileGameId(): Long?
     fun installApk(gameId: Long)
     fun launchGame(gameId: Long, channelName: String? = null)
@@ -83,6 +89,11 @@ class HomeInputHandler(
 
     override fun onUp(): InputResult {
         val state = actions.uiState.value
+        if (state.customGrid.mediaTileNotice != null) return InputResult.HANDLED
+        if (state.customGrid.isMediaSetupOpen) {
+            actions.moveMediaTileSetupFocus(-1)
+            return InputResult.HANDLED
+        }
         if (state.customGrid.showMenu) {
             actions.moveTileMenuFocus(-1)
             return InputResult.HANDLED
@@ -111,6 +122,11 @@ class HomeInputHandler(
 
     override fun onDown(): InputResult {
         val state = actions.uiState.value
+        if (state.customGrid.mediaTileNotice != null) return InputResult.HANDLED
+        if (state.customGrid.isMediaSetupOpen) {
+            actions.moveMediaTileSetupFocus(1)
+            return InputResult.HANDLED
+        }
         if (state.customGrid.showMenu) {
             actions.moveTileMenuFocus(1)
             return InputResult.HANDLED
@@ -143,6 +159,11 @@ class HomeInputHandler(
             return InputResult.HANDLED
         }
         val state = actions.uiState.value
+        if (state.customGrid.mediaTileNotice != null) {
+            actions.moveMediaTileNoticeFocus(-1)
+            return InputResult.HANDLED
+        }
+        if (state.customGrid.isMediaSetupOpen) return InputResult.HANDLED
         if (state.showAddToCollectionModal || state.showGameMenu) return InputResult.HANDLED
         if (isCustomGrid(state)) return customMove(GridDirection2D.LEFT)
         if (isGrid(state)) return gridMove(GridDirection.LEFT)
@@ -156,6 +177,11 @@ class HomeInputHandler(
             return InputResult.HANDLED
         }
         val state = actions.uiState.value
+        if (state.customGrid.mediaTileNotice != null) {
+            actions.moveMediaTileNoticeFocus(1)
+            return InputResult.HANDLED
+        }
+        if (state.customGrid.isMediaSetupOpen) return InputResult.HANDLED
         if (state.showAddToCollectionModal || state.showGameMenu) return InputResult.HANDLED
         if (isCustomGrid(state)) return customMove(GridDirection2D.RIGHT)
         if (isGrid(state)) return gridMove(GridDirection.RIGHT)
@@ -234,7 +260,17 @@ class HomeInputHandler(
             }
             return InputResult.HANDLED
         }
+        val notice = state.customGrid.mediaTileNotice
+        if (notice != null) {
+            if (notice.buttonIndex == 0) {
+                actions.dismissMediaTileNotice()
+            } else {
+                actions.confirmMediaTileNotice()
+            }
+            return InputResult.HANDLED
+        }
         when {
+            state.customGrid.isMediaSetupOpen -> actions.confirmMediaTileSetup()
             state.showTilePicker -> actions.confirmTilePickerSelection()
             state.customGrid.showMenu -> actions.confirmTileMenu()
             state.customGrid.isEditing -> {
@@ -278,6 +314,14 @@ class HomeInputHandler(
             actions.dismissPendingTileAdd()
             return InputResult.HANDLED
         }
+        if (state.customGrid.mediaTileNotice != null) {
+            actions.dismissMediaTileNotice()
+            return InputResult.handled(SoundType.CLOSE_MODAL)
+        }
+        if (state.customGrid.isMediaSetupOpen) {
+            actions.backFromMediaTileSetup()
+            return InputResult.handled(SoundType.CLOSE_MODAL)
+        }
         if (state.customGrid.pickerSearchActive) {
             actions.toggleTilePickerSearch()
             return InputResult.HANDLED
@@ -317,6 +361,7 @@ class HomeInputHandler(
 
     override fun onMenu(): InputResult {
         val state = actions.uiState.value
+        if (state.customGrid.mediaSetup != null) return InputResult.HANDLED
         if (state.showAddToCollectionModal) {
             actions.dismissAddToCollectionModal()
             return InputResult.UNHANDLED
@@ -340,6 +385,7 @@ class HomeInputHandler(
     override fun onSelect(): InputResult {
         val state = actions.uiState.value
         if (state.showAddToCollectionModal) return InputResult.HANDLED
+        if (state.customGrid.mediaSetup != null) return InputResult.HANDLED
         if (isCustomGrid(state)) {
             if (state.customGrid.isEditing) return InputResult.HANDLED
             actions.openTileMenu()
@@ -372,6 +418,7 @@ class HomeInputHandler(
     override fun onLongConfirm(): InputResult {
         val state = actions.uiState.value
         if (isCustomGrid(state)) {
+            if (state.customGrid.mediaSetup != null) return InputResult.HANDLED
             if (state.showTilePicker || state.customGrid.showMenu) return InputResult.UNHANDLED
             if (state.customGrid.isEditing) {
                 actions.commitTileEdit()
@@ -396,6 +443,7 @@ class HomeInputHandler(
      */
     override fun onSecondaryAction(): InputResult {
         val state = actions.uiState.value
+        if (state.customGrid.mediaSetup != null) return InputResult.HANDLED
         if (state.showTilePicker) {
             actions.toggleTilePickerSearch()
             return InputResult.HANDLED
@@ -417,6 +465,7 @@ class HomeInputHandler(
     override fun onPrevSection(): InputResult {
         val state = actions.uiState.value
         if (state.showAddToCollectionModal || state.showGameMenu) return InputResult.HANDLED
+        if (state.customGrid.mediaSetup != null) return InputResult.HANDLED
         if (state.showTilePicker) {
             actions.cycleTilePickerCategory(-1)
             return InputResult.handled(SoundType.SECTION_CHANGE)
@@ -432,6 +481,7 @@ class HomeInputHandler(
     override fun onNextSection(): InputResult {
         val state = actions.uiState.value
         if (state.showAddToCollectionModal || state.showGameMenu) return InputResult.HANDLED
+        if (state.customGrid.mediaSetup != null) return InputResult.HANDLED
         if (state.showTilePicker) {
             actions.cycleTilePickerCategory(1)
             return InputResult.handled(SoundType.SECTION_CHANGE)
@@ -446,6 +496,7 @@ class HomeInputHandler(
 
     override fun onContextMenu(): InputResult {
         val state = actions.uiState.value
+        if (state.customGrid.mediaSetup != null) return InputResult.HANDLED
         if (isCustomGrid(state) && state.customGrid.isEditing) {
             actions.toggleTileEditMode()
             return InputResult.handled(SoundType.TOGGLE)

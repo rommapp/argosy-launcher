@@ -1,6 +1,7 @@
 package com.nendo.argosy.data.repository
 
 import com.nendo.argosy.data.local.dao.SaveCacheDao
+import com.nendo.argosy.data.local.dao.SaveChannelDao
 import com.nendo.argosy.data.local.entity.SaveCacheEntity
 import com.nendo.argosy.data.preferences.SyncPreferencesRepository
 import kotlinx.coroutines.flow.Flow
@@ -15,12 +16,16 @@ import javax.inject.Singleton
  *
  * The target is a `save_cache` row rather than a column on `games`: the channel is that row's
  * `channelName` and the restore point is its `cachedAt`, so a row whose timestamp the server
- * moves carries the pointer with it and needs no second write. A row with no cache entry cannot
- * be the target, which is why selecting an empty channel leaves the game with no active save.
+ * moves carries the pointer with it and needs no second write.
+ *
+ * A slot with nothing saved in it yet has no such row, so the slot registry carries which slot is
+ * selected in that case. Reads prefer the cache row, because a slot holding saves knows its own
+ * restore point; the registry answers only when there is no save to ask.
  */
 @Singleton
 class ActiveSaveRepository @Inject constructor(
     private val saveCacheDao: SaveCacheDao,
+    private val saveChannelDao: SaveChannelDao,
     private val syncPreferencesRepository: SyncPreferencesRepository
 ) {
     suspend fun activeOwnerId(): Long? = syncPreferencesRepository.getRommUserId()
@@ -28,7 +33,9 @@ class ActiveSaveRepository @Inject constructor(
     suspend fun getActiveRow(gameId: Long): SaveCacheEntity? =
         saveCacheDao.getActive(gameId, activeOwnerId())
 
-    suspend fun getActiveChannel(gameId: Long): String? = getActiveRow(gameId)?.channelName
+    suspend fun getActiveChannel(gameId: Long): String? =
+        getActiveRow(gameId)?.channelName
+            ?: saveChannelDao.getActiveChannel(gameId, activeOwnerId())
 
     suspend fun getActiveTimestamp(gameId: Long): Long? =
         getActiveRow(gameId)?.cachedAt?.toEpochMilli()
@@ -56,6 +63,7 @@ class ActiveSaveRepository @Inject constructor(
 
     suspend fun activateChannel(gameId: Long, channelName: String?): Boolean {
         val ownerUserId = activeOwnerId()
+        saveChannelDao.setActive(gameId, channelName, ownerUserId)
         val cacheId = saveCacheDao.getNewestIdInChannelForOwner(gameId, ownerUserId, channelName)
         if (cacheId == null) {
             saveCacheDao.clearActive(gameId, ownerUserId)
@@ -63,6 +71,29 @@ class ActiveSaveRepository @Inject constructor(
         }
         saveCacheDao.setActiveRow(gameId, ownerUserId, cacheId)
         return true
+    }
+
+    /**
+     * Records a slot that holds nothing yet and points this game at it.
+     *
+     * A slot used to be inferred from the saves in it, so creating one and not yet saving into it
+     * left nothing behind: the slot vanished from the list and the next save went to whichever slot
+     * was active before. Registering it is what makes the empty slot a real destination.
+     */
+    suspend fun createChannel(gameId: Long, channelName: String) {
+        val ownerUserId = activeOwnerId()
+        saveChannelDao.registerAndActivate(gameId, channelName, ownerUserId)
+        saveCacheDao.clearActive(gameId, ownerUserId)
+    }
+
+    /**
+     * Every slot this device knows of for a game, including ones nothing has been saved into.
+     */
+    suspend fun registeredChannels(gameId: Long): List<String> =
+        saveChannelDao.getForGame(gameId, activeOwnerId()).map { it.channelName }
+
+    suspend fun forgetChannel(gameId: Long, channelName: String) {
+        saveChannelDao.delete(gameId, channelName, activeOwnerId())
     }
 
     suspend fun activateTimestamp(gameId: Long, timestamp: Long): Boolean {

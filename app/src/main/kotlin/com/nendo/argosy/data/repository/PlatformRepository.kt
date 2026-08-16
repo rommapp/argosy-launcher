@@ -10,6 +10,32 @@ import javax.inject.Singleton
 class PlatformRepository @Inject constructor(
     private val platformDao: PlatformDao
 ) {
+    /**
+     * Moves a platform one place along the order every platform list is drawn in, swapping with the
+     * neighbour it passes so the sequence stays contiguous.
+     *
+     * Answers false at either end, and when the platform is not in the stored order at all.
+     */
+    suspend fun movePlatform(platformId: Long, delta: Int): Boolean {
+        if (delta == 0) return false
+        val ordered = platformDao.getAllPlatforms()
+            .sortedWith(compareBy({ it.sortOrder }, { it.name }))
+        val index = ordered.indexOfFirst { it.id == platformId }
+        if (index < 0) return false
+        val target = index + delta
+        if (target !in ordered.indices) return false
+        val moving = ordered[index]
+        val displaced = ordered[target]
+        platformDao.updateSortOrder(moving.id, target)
+        platformDao.updateSortOrder(displaced.id, index)
+        ordered.forEachIndexed { position, platform ->
+            if (position != index && position != target && platform.sortOrder != position) {
+                platformDao.updateSortOrder(platform.id, position)
+            }
+        }
+        return true
+    }
+
     fun observeVisiblePlatforms(): Flow<List<PlatformEntity>> =
         platformDao.observeVisiblePlatforms()
 

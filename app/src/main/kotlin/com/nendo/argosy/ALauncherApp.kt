@@ -60,6 +60,10 @@ class ArgosyApp : Application(), Configuration.Provider, ImageLoaderFactory {
     lateinit var platformDao: PlatformDao
 
     @Inject
+    lateinit var appPreferencesRepository:
+        com.nendo.argosy.data.preferences.AppPreferencesRepository
+
+    @Inject
     lateinit var gameDao: GameDao
 
     @Inject
@@ -176,8 +180,13 @@ class ArgosyApp : Application(), Configuration.Provider, ImageLoaderFactory {
         startService(intent)
     }
 
+    /**
+     * Brings stored platform order back in line with the built-in one, unless the user has arranged
+     * it themselves, in which case their order is what should survive a relaunch.
+     */
     private fun syncPlatformSortOrders() {
         appScope.launch {
+            if (appPreferencesRepository.isPlatformOrderCustomised()) return@launch
             PlatformDefinitions.getAll().forEach { def ->
                 val platform = platformDao.getBySlug(def.slug) ?: return@forEach
                 if (platform.sortOrder != def.sortOrder) {

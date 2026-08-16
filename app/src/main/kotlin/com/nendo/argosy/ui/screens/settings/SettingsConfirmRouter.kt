@@ -1267,6 +1267,8 @@ private fun routePlatformDetailConfirm(vm: SettingsViewModel, state: SettingsUiS
         PlatformDetailItem.BuiltinVideo -> vm.navigateToBuiltinVideoForPlatform(state.platformDetail.platformIndex)
         PlatformDetailItem.BuiltinControls -> vm.navigateToBuiltinControlsForPlatform(state.platformDetail.platformIndex)
         PlatformDetailItem.BuiltinCoreOptions -> vm.navigateToCoreOptionsForPlatform()
+        PlatformDetailItem.MoveEarlier -> vm.movePlatformOrder(config.platform.id, -1)
+        PlatformDetailItem.MoveLater -> vm.movePlatformOrder(config.platform.id, 1)
         PlatformDetailItem.ScanFiles -> vm.scanFilesForPlatform(config.platform.id)
         PlatformDetailItem.ScanApps -> vm.scanInstalledAndroidGames()
         PlatformDetailItem.RomPath -> vm.openPlatformFolderPicker(config.platform.id)

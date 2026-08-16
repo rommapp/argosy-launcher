@@ -7,6 +7,7 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.nendo.argosy.util.LogLevel
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import java.time.Instant
 import javax.inject.Inject
@@ -42,6 +43,7 @@ class AppPreferencesRepository @Inject constructor(
         val SECONDARY_HOME_APPS = stringPreferencesKey("secondary_home_apps")
         val VISIBLE_SYSTEM_APPS = stringPreferencesKey("visible_system_apps")
         val APP_ORDER = stringPreferencesKey("app_order")
+        val PLATFORM_ORDER_CUSTOMISED = booleanPreferencesKey("platform_order_customised")
         val LAST_SEEN_VERSION = stringPreferencesKey("last_seen_version")
         val LIBRARY_RECENT_SEARCHES = stringPreferencesKey("library_recent_searches")
         val RECOMMENDED_GAME_IDS = stringPreferencesKey("recommended_game_ids")
@@ -131,6 +133,17 @@ class AppPreferencesRepository @Inject constructor(
             if (order.isEmpty()) prefs.remove(Keys.APP_ORDER)
             else prefs[Keys.APP_ORDER] = order.joinToString(",")
         }
+    }
+
+    /**
+     * Whether the user has arranged the platform order themselves. Once they have, the built-in
+     * order stops being reapplied at startup, or their arrangement would not survive a relaunch.
+     */
+    suspend fun isPlatformOrderCustomised(): Boolean =
+        dataStore.data.first()[Keys.PLATFORM_ORDER_CUSTOMISED] ?: false
+
+    suspend fun setPlatformOrderCustomised() {
+        dataStore.edit { it[Keys.PLATFORM_ORDER_CUSTOMISED] = true }
     }
 
     suspend fun setLastSeenVersion(version: String) {

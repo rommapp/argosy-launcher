@@ -85,6 +85,8 @@ class SettingsViewModel @Inject constructor(
     internal val preferencesRepository: UserPreferencesRepository,
     internal val hapticManager: HapticFeedbackManager,
     internal val platformRepository: PlatformRepository,
+    internal val appPreferencesRepository:
+        com.nendo.argosy.data.preferences.AppPreferencesRepository,
     internal val libretroSettingsRepo: LibretroSettingsRepository,
     internal val touchLayoutRepository: com.nendo.argosy.data.repository.TouchLayoutRepository,
     internal val launchArgsRepo: com.nendo.argosy.data.repository.LaunchArgsRepository,
@@ -402,6 +404,23 @@ class SettingsViewModel @Inject constructor(
     }
 
     val librarySyncProgress get() = romMRepository.syncProgress
+
+    /**
+     * Moves a platform one place in the order every platform list follows. Marks the order as the
+     * user's from the first successful move, so it is not overwritten on the next launch.
+     */
+    fun movePlatformOrder(platformId: Long, delta: Int) {
+        viewModelScope.launch {
+            if (!platformRepository.movePlatform(platformId, delta)) return@launch
+            appPreferencesRepository.setPlatformOrderCustomised()
+            val moved = uiState
+                .map { state -> state.emulators.platforms.indexOfFirst { it.platform.id == platformId } }
+                .first { it >= 0 }
+            _uiState.update {
+                it.copy(platformDetail = it.platformDetail.copy(platformIndex = moved))
+            }
+        }
+    }
 
     fun scanFilesForPlatform(platformId: Long) {
         val platformIndex = _uiState.value.platformDetail.platformIndex

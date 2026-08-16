@@ -17,6 +17,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Gamepad
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Sync
@@ -76,6 +78,8 @@ internal sealed class PlatformDetailItem(
     data object BuiltinControls : PlatformDetailItem("builtin_controls", "emulator", { it.isBuiltin && !it.isAndroid })
     data object BuiltinCoreOptions : PlatformDetailItem("builtin_core_options", "emulator", { it.isBuiltin && !it.isAndroid })
 
+    data object MoveEarlier : PlatformDetailItem("move_earlier", "platform")
+    data object MoveLater : PlatformDetailItem("move_later", "platform")
     data object ScanFiles : PlatformDetailItem("scan_files", "platform", { !it.isAndroid })
     data object ScanApps : PlatformDetailItem("scan_apps", "platform", { it.isAndroid })
 
@@ -103,7 +107,7 @@ internal sealed class PlatformDetailItem(
                 Emulator, Core, Extension, DisplayTarget, LegacyMode, LaunchArgs, BuiltinVideo, BuiltinControls, BuiltinCoreOptions,
                 Header("header_platform", "platform", "Platform"),
                 InfoItem("info_platform_stats", "platform"),
-                ScanFiles, ScanApps,
+                MoveEarlier, MoveLater, ScanFiles, ScanApps,
                 Header("header_bios", "bios", "BIOS", { it.hasBios && !it.isAndroid }),
                 InfoItem("info_bios_status", "bios", { it.hasBios && !it.isAndroid }), BiosDownload, BiosInstall, BiosCopy,
                 Header("header_sync", "sync", "Storage & Sync"),
@@ -451,6 +455,20 @@ fun PlatformDetailSection(
                         }
                     }
                 }
+                PlatformDetailItem.MoveEarlier -> ActionPreference(
+                    title = "Move Earlier",
+                    subtitle = "Show this platform sooner everywhere platforms are listed",
+                    isFocused = isFocused(item),
+                    icon = Icons.Default.KeyboardArrowUp,
+                    onClick = { viewModel.movePlatformOrder(config.platform.id, -1) }
+                )
+                PlatformDetailItem.MoveLater -> ActionPreference(
+                    title = "Move Later",
+                    subtitle = "Show this platform further along everywhere platforms are listed",
+                    isFocused = isFocused(item),
+                    icon = Icons.Default.KeyboardArrowDown,
+                    onClick = { viewModel.movePlatformOrder(config.platform.id, 1) }
+                )
                 PlatformDetailItem.ScanFiles -> ActionPreference(
                     title = if (detail.isScanning) "Scanning..." else "Scan for Files",
                     subtitle = "Check for new or missing ROM files",

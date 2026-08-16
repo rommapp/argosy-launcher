@@ -174,7 +174,6 @@ fun HomeCustomGridPage(
     onCommitEdit: (() -> Unit)? = null,
     isResizing: Boolean = false,
     tilePlayback: Map<Long, String> = emptyMap(),
-    previewingTileId: Long? = null,
     engagedTileId: Long? = null,
     onTakeAudio: () -> Unit = {},
     onReleaseAudio: () -> Unit = {}
@@ -256,7 +255,6 @@ fun HomeCustomGridPage(
                 onCoverLoadFailed = onCoverLoadFailed,
                 onCoverLoaded = onCoverLoaded,
                 playbackPath = tilePlayback[tile.id],
-                isPreviewing = tile.id == previewingTileId,
                 isEngaged = tile.id == engagedTileId,
                 onTakeAudio = onTakeAudio,
                 onReleaseAudio = onReleaseAudio
@@ -303,7 +301,6 @@ private fun CustomGridCellBox(
     onCoverLoadFailed: ((Long, String) -> Unit)?,
     onCoverLoaded: ((Long, android.graphics.Bitmap) -> Unit)?,
     playbackPath: String? = null,
-    isPreviewing: Boolean = false,
     isEngaged: Boolean = false,
     onTakeAudio: () -> Unit = {},
     onReleaseAudio: () -> Unit = {}
@@ -325,6 +322,39 @@ private fun CustomGridCellBox(
         }
         .size(width, height)
 
+    if (playbackPath != null && content?.media != null) {
+        Box(modifier = placement, contentAlignment = Alignment.Center) {
+            InlineTilePlayer(
+                filePath = playbackPath,
+                isPlaying = true,
+                isEngaged = isEngaged,
+                onTakeAudio = onTakeAudio,
+                onReleaseAudio = onReleaseAudio,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .boxArtFrame(
+                        isFocused = isFocused,
+                        focusScale = focusScaleForSpan(rect),
+                        alphaOverride = if (isOverlapped) OVERLAPPED_ALPHA else null
+                    )
+                    .then(
+                        if (onLongClick == null) {
+                            Modifier.clickableNoFocus(onClick = onClick)
+                        } else {
+                            Modifier.clickableNoFocus(onClick = onClick, onLongClick = onLongClick)
+                        }
+                    )
+            )
+            if (editModeLabel != null) {
+                TileModeTab(
+                    label = editModeLabel,
+                    modifier = Modifier.align(Alignment.TopEnd)
+                )
+            }
+        }
+        return
+    }
+
     if (rect.columnSpan > rect.rowSpan && content != null && !content.isMissing) {
         WideTileBox(
             placement = placement,
@@ -342,26 +372,6 @@ private fun CustomGridCellBox(
     val media = content?.media
     if (media != null) {
         Box(modifier = placement, contentAlignment = Alignment.Center) {
-            if (playbackPath != null && isPreviewing) {
-                InlineTilePlayer(
-                    filePath = playbackPath,
-                    isPlaying = true,
-                    isEngaged = isEngaged,
-                    onTakeAudio = onTakeAudio,
-                    onReleaseAudio = onReleaseAudio,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .clip(shape)
-                        .clickableNoFocus(onClick = onClick)
-                )
-                if (editModeLabel != null && isFocused) {
-                    TileModeTab(
-                        label = editModeLabel,
-                        modifier = Modifier.align(Alignment.TopEnd)
-                    )
-                }
-                return@Box
-            }
             MediaCard(
                 media = media,
                 isFocused = isFocused,

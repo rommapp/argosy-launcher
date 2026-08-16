@@ -421,6 +421,7 @@ class HomeInputHandler(
         val state = actions.uiState.value
         if (state.showAddToCollectionModal) return InputResult.HANDLED
         if (state.customGrid.mediaSetup != null) return InputResult.HANDLED
+        if (state.customGrid.engagedTileId != null) return InputResult.HANDLED
         if (isCustomGrid(state)) {
             if (state.customGrid.isEditing) return InputResult.HANDLED
             actions.openTileMenu()

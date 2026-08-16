@@ -108,7 +108,6 @@ fun CustomGridSurface(
                     onCommitEdit = onCommitEdit,
                     isResizing = state.editMode == TileEditMode.RESIZE,
                     tilePlayback = state.tilePlayback,
-                    previewingTileId = state.previewingTileId,
                     engagedTileId = state.engagedTileId,
                     onTakeAudio = onTakeAudio,
                     onReleaseAudio = onReleaseAudio,

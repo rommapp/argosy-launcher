@@ -178,13 +178,6 @@ data class CustomGridState(
         get() = engagedTileId?.let { tilePlayback[it] }
 
     /**
-     * The one tile allowed to spend a decoder: the engaged tile, or the focused one when nothing
-     * is engaged. Handhelds hold two to four hardware decoders in total, shared with the emulator.
-     */
-    val previewingTileId: Long?
-        get() = engagedTileId ?: focusedTile?.id?.takeIf { it in tilePlayback }
-
-    /**
      * Whether the focused tile carries a play mode, and so has curation worth reopening.
      */
     val isFocusedTileCurated: Boolean

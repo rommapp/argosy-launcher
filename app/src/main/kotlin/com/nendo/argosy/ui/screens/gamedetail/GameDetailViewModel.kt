@@ -1518,9 +1518,36 @@ class GameDetailViewModel @Inject constructor(
     fun showCoverPicker() {
         val game = _uiState.value.game ?: return
         moreOptionsDelegate.reset()
-        pickerModalDelegate.showCoverPicker()
+        pickerModalDelegate.showCoverPicker(game.title)
+        searchCoverArt(game.title)
+    }
+
+    fun setCoverPickerQuery(query: String) = pickerModalDelegate.setCoverPickerQuery(query)
+
+    fun openCoverFileBrowser() = pickerModalDelegate.openCoverFileBrowser()
+
+    fun closeCoverFileBrowser() = pickerModalDelegate.closeCoverFileBrowser()
+
+    fun selectCoverFile(path: String) {
+        val gameId = currentGameId
+        pickerModalDelegate.closeCoverFileBrowser()
+        pickerModalDelegate.dismissCoverPicker()
         viewModelScope.launch {
-            when (val result = romMRepository.searchCovers(game.title)) {
+            imageCacheManager.applyManualCoverFromFile(gameId, path)
+            loadGame(gameId)
+        }
+    }
+
+    /**
+     * Runs the artwork search against whatever the user has typed, which is the stored title only
+     * until they change it.
+     */
+    fun searchCoverArt(query: String = pickerModalDelegate.state.value.coverPickerQuery) {
+        val term = query.trim()
+        if (term.isEmpty()) return
+        pickerModalDelegate.setCoverPickerSearching()
+        viewModelScope.launch {
+            when (val result = romMRepository.searchCovers(term)) {
                 is RomMResult.Success -> pickerModalDelegate.setCoverCandidates(
                     result.data.mapNotNull { resource ->
                         val url = resource.fullResUrl ?: return@mapNotNull null
@@ -2217,6 +2244,9 @@ class GameDetailViewModel @Inject constructor(
         override fun onSecondaryAction(): InputResult {
             val state = _uiState.value
             val saveState = state.saveChannel
+            if (pickerModalDelegate.state.value.showCoverPicker) {
+                openCoverFileBrowser(); return InputResult.HANDLED
+            }
             if (saveState.isVisible && !saveState.showRestoreConfirmation && !saveState.showRenameDialog && !saveState.showDeleteConfirmation && !saveState.showMigrateConfirmation && !saveState.showDeleteLegacyConfirmation) {
                 saveChannelSecondaryAction(); return InputResult.HANDLED
             }
@@ -2226,6 +2256,9 @@ class GameDetailViewModel @Inject constructor(
         override fun onContextMenu(): InputResult {
             val state = _uiState.value
             val saveState = state.saveChannel
+            if (pickerModalDelegate.state.value.showCoverPicker) {
+                searchCoverArt(); return InputResult.HANDLED
+            }
             if (pickerModalDelegate.state.value.showFilePicker) { confirmFilePicker(); return InputResult.HANDLED }
             if (saveState.isVisible && !saveState.showRestoreConfirmation && !saveState.showRenameDialog && !saveState.showDeleteConfirmation && !saveState.showMigrateConfirmation && !saveState.showDeleteLegacyConfirmation) {
                 saveChannelTertiaryAction(); return InputResult.HANDLED

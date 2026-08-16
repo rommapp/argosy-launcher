@@ -361,6 +361,12 @@ class ImageCacheManager @Inject constructor(
      * while that happens; anything past [MAX_IN_MEMORY_IMAGE_BYTES] spills to a temp file
      * so an unexpectedly huge response cannot be turned into a heap spike.
      */
+    private fun decodeAndResize(file: File, maxWidth: Int): Bitmap? = runCatching {
+        decodeSampled(maxWidth) { options ->
+            BitmapFactory.decodeFile(file.absolutePath, options)
+        }
+    }.getOrNull()
+
     private fun downloadAndResize(url: String, maxWidth: Int): Bitmap? {
         return try {
             val connection = URL(url).openConnection()
@@ -1269,6 +1275,40 @@ class ImageCacheManager @Inject constructor(
         _localCoverWritten.tryEmit(gameId to cachedFile.absolutePath)
         cachedFile.absolutePath
     }
+
+    /**
+     * Takes a picture the user already has as the cover. Copied into the cache rather than pointed
+     * at where it sits, so moving or deleting the original does not leave the game without art.
+     */
+    suspend fun applyManualCoverFromFile(gameId: Long, path: String): String? =
+        withContext(Dispatchers.IO) {
+            val source = File(path)
+            if (!source.isFile || !source.canRead()) return@withContext null
+            val slug = resolveGamePlatformSlug(gameId)
+            val coverDir = platformDir(slug, "covers")
+            val baseName = "cover_manual_${gameId}_${path.md5Hash()}"
+
+            val bitmap = decodeAndResize(source, 400) ?: return@withContext null
+            val hasTransparency = hasTransparentPixels(bitmap)
+            val cachedFile = File(coverDir, "$baseName.${if (hasTransparency) "png" else "jpg"}")
+            FileOutputStream(cachedFile).use { out ->
+                if (hasTransparency) {
+                    bitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
+                } else {
+                    bitmap.compress(Bitmap.CompressFormat.JPEG, 85, out)
+                }
+            }
+            bitmap.recycle()
+
+            if (!isValidImageFile(cachedFile)) {
+                cachedFile.delete()
+                return@withContext null
+            }
+
+            gameDao.setManualCover(gameId, cachedFile.absolutePath)
+            _localCoverWritten.tryEmit(gameId to cachedFile.absolutePath)
+            cachedFile.absolutePath
+        }
 
     suspend fun resetManualCover(gameId: Long) = withContext(Dispatchers.IO) {
         gameDao.resetManualCover(gameId)

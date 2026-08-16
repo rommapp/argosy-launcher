@@ -1126,7 +1126,22 @@ private fun GameDetailModals(
             isLoading = pickerState.coverPickerLoading,
             errorMessage = pickerState.coverPickerError,
             onSelect = viewModel::selectCover,
-            onDismiss = viewModel::dismissCoverPicker
+            onDismiss = viewModel::dismissCoverPicker,
+            query = pickerState.coverPickerQuery,
+            onQueryChange = viewModel::setCoverPickerQuery,
+            onSearch = { viewModel.searchCoverArt() },
+            onChooseFile = viewModel::openCoverFileBrowser
+        )
+    }
+    if (pickerState.showCoverFileBrowser) {
+        com.nendo.argosy.ui.filebrowser.FileBrowserScreen(
+            mode = com.nendo.argosy.ui.filebrowser.FileBrowserMode.FILE_SELECTION,
+            title = "Choose cover art",
+            fileFilter = com.nendo.argosy.ui.filebrowser.FileFilter(
+                extensions = setOf("png", "jpg", "jpeg", "webp")
+            ),
+            onPathSelected = viewModel::selectCoverFile,
+            onDismiss = viewModel::closeCoverFileBrowser
         )
     }
 

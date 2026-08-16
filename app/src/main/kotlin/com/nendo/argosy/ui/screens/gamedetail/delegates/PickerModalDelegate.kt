@@ -54,7 +54,13 @@ data class PickerModalState(
     val coverCandidates: List<com.nendo.argosy.ui.screens.gamedetail.CoverCandidate> = emptyList(),
     val coverPickerFocusIndex: Int = 0,
     val coverPickerLoading: Boolean = false,
-    val coverPickerError: String? = null
+    val coverPickerError: String? = null,
+    /**
+     * What the artwork search is actually looking for. Seeded from the title but the user's to
+     * change, because a stored title is often not what the artwork is filed under.
+     */
+    val coverPickerQuery: String = "",
+    val showCoverFileBrowser: Boolean = false
 ) {
     val hasAnyPickerOpen: Boolean
         get() = showEmulatorPicker || showCorePicker || showSteamLauncherPicker ||
@@ -89,17 +95,36 @@ class PickerModalDelegate @Inject constructor(
         _selection.value = null
     }
 
-    fun showCoverPicker() {
+    fun showCoverPicker(query: String = "") {
         _state.update {
             it.copy(
                 showCoverPicker = true,
                 coverCandidates = emptyList(),
                 coverPickerFocusIndex = 0,
                 coverPickerLoading = true,
-                coverPickerError = null
+                coverPickerError = null,
+                coverPickerQuery = query
             )
         }
         soundManager.play(SoundType.OPEN_MODAL)
+    }
+
+    fun setCoverPickerQuery(query: String) {
+        _state.update { it.copy(coverPickerQuery = query) }
+    }
+
+    fun openCoverFileBrowser() {
+        _state.update { it.copy(showCoverFileBrowser = true) }
+    }
+
+    fun closeCoverFileBrowser() {
+        _state.update { it.copy(showCoverFileBrowser = false) }
+    }
+
+    fun setCoverPickerSearching() {
+        _state.update {
+            it.copy(coverPickerLoading = true, coverPickerError = null, coverCandidates = emptyList())
+        }
     }
 
     fun setCoverCandidates(candidates: List<com.nendo.argosy.ui.screens.gamedetail.CoverCandidate>) {

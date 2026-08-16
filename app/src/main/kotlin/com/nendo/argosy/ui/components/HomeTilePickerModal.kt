@@ -140,7 +140,7 @@ fun HomeTilePickerModal(
             modifier = Modifier.padding(bottom = Dimens.spacingSm)
         )
         if (searchActive) {
-            TilePickerSearchField(
+            ModalSearchField(
                 query = query,
                 onQueryChange = onQueryChange,
                 modifier = Modifier.padding(bottom = Dimens.spacingSm)
@@ -293,65 +293,6 @@ private fun TilePickerRow(
 }
 
 private const val COVER_ASPECT = 0.7f
-
-/**
- * The one place the grid gives focus to Compose. A soft keyboard has to reach a text field, and
- * nothing else on this modal competes for it, so the exception stays contained to typing.
- */
-@Composable
-private fun TilePickerSearchField(
-    query: String,
-    onQueryChange: (String) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    val theme = LocalArgosyTheme.current
-    val focusRequester = remember { FocusRequester() }
-    val shape = RoundedCornerShape(Dimens.radiusControl)
-
-    LaunchedEffect(Unit) { focusRequester.requestFocus() }
-
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .clip(shape)
-            .background(theme.surfaceRaised)
-            .padding(Dimens.spacingSm),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
-    ) {
-        Icon(
-            imageVector = Icons.Default.Search,
-            contentDescription = null,
-            tint = theme.textDim,
-            modifier = Modifier.size(Dimens.iconSm)
-        )
-        BasicTextField(
-            value = query,
-            onValueChange = onQueryChange,
-            modifier = Modifier
-                .weight(1f)
-                .focusRequester(focusRequester),
-            textStyle = TextStyle(
-                color = theme.textPrimary,
-                fontSize = MaterialTheme.typography.bodyMedium.fontSize
-            ),
-            cursorBrush = SolidColor(theme.focusAccent),
-            singleLine = true,
-            decorationBox = { innerTextField ->
-                Box {
-                    if (query.isEmpty()) {
-                        Text(
-                            text = "Search...",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = theme.textDim
-                        )
-                    }
-                    innerTextField()
-                }
-            }
-        )
-    }
-}
 
 /**
  * The tabs across the top of the picker. They are a readout rather than a control: the bumpers move

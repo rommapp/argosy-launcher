@@ -46,7 +46,11 @@ fun CoverPickerModal(
     isLoading: Boolean,
     errorMessage: String?,
     onSelect: (CoverCandidate) -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    query: String = "",
+    onQueryChange: (String) -> Unit = {},
+    onSearch: () -> Unit = {},
+    onChooseFile: (() -> Unit)? = null
 ) {
     val gridState = rememberLazyGridState()
 
@@ -67,12 +71,21 @@ fun CoverPickerModal(
         subtitle = gameTitle,
         baseWidth = 560.dp,
         onDismiss = onDismiss,
-        footerHints = listOf(
+        footerHints = listOfNotNull(
             InputButton.DPAD to "Navigate",
             InputButton.A to "Select",
+            InputButton.X to "Search",
+            (InputButton.Y to "From file").takeIf { onChooseFile != null },
             InputButton.B to "Cancel"
         )
     ) {
+        com.nendo.argosy.ui.components.ModalSearchField(
+            query = query,
+            onQueryChange = onQueryChange,
+            placeholder = "Search artwork...",
+            autoFocus = false,
+            modifier = Modifier.padding(bottom = Dimens.spacingSm)
+        )
         when {
             isLoading -> LoadingState()
             errorMessage != null -> MessageState(errorMessage)

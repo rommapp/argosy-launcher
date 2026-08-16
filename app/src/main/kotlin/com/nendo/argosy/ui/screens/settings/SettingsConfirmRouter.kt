@@ -1267,6 +1267,7 @@ private fun routePlatformDetailConfirm(vm: SettingsViewModel, state: SettingsUiS
         PlatformDetailItem.BuiltinVideo -> vm.navigateToBuiltinVideoForPlatform(state.platformDetail.platformIndex)
         PlatformDetailItem.BuiltinControls -> vm.navigateToBuiltinControlsForPlatform(state.platformDetail.platformIndex)
         PlatformDetailItem.BuiltinCoreOptions -> vm.navigateToCoreOptionsForPlatform()
+        PlatformDetailItem.ClearArtCache -> vm.clearPlatformArtCache(config.platform.slug)
         PlatformDetailItem.MoveEarlier -> vm.movePlatformOrder(config.platform.id, -1)
         PlatformDetailItem.MoveLater -> vm.movePlatformOrder(config.platform.id, 1)
         PlatformDetailItem.ScanFiles -> vm.scanFilesForPlatform(config.platform.id)

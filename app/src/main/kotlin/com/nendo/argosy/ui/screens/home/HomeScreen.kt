@@ -6,6 +6,7 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -726,17 +727,25 @@ fun HomeScreen(
                         }
                         isCustomGrid -> {
                             val pageSettings = uiState.customGrid.currentPageSettings
-                            if (pageSettings.hasBackground) {
-                                com.nendo.argosy.ui.components.PageBackdrop(
-                                    path = pageSettings.backgroundPath,
-                                    modifier = Modifier.fillMaxSize()
-                                )
+                            Crossfade(
+                                targetState = pageSettings.backgroundPath
+                                    .takeIf { pageSettings.hasBackground },
+                                animationSpec = tween(Motion.durationSlide, easing = Motion.argosyEase),
+                                label = "page-backdrop"
+                            ) { path ->
+                                if (path != null) {
+                                    com.nendo.argosy.ui.components.PageBackdrop(
+                                        path = path,
+                                        modifier = Modifier.fillMaxSize()
+                                    )
+                                }
                             }
-                            if (pageSettings.audioKind ==
-                                com.nendo.argosy.data.local.entity.PageAudioKind.THEME
-                            ) {
-                                com.nendo.argosy.ui.components.PageThemePlayer(pageSettings.audioPath)
-                            }
+                            com.nendo.argosy.ui.components.PageThemePlayer(
+                                filePath = pageSettings.audioPath.takeIf {
+                                    pageSettings.audioKind ==
+                                        com.nendo.argosy.data.local.entity.PageAudioKind.THEME
+                                }
+                            )
                             com.nendo.argosy.ui.components.CustomGridSurface(
                                 state = uiState.customGrid,
                                 contentFor = { tile -> uiState.tileContentFor(tile) },
@@ -1386,7 +1395,7 @@ private fun HomeHeader(
             horizontalArrangement = Arrangement.End,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            SystemStatusBar()
+            SystemStatusBar(isScrapingArtwork = uiState.isScrapingArtwork)
         }
         return
     }
@@ -1403,7 +1412,7 @@ private fun HomeHeader(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.End
             ) {
-                SystemStatusBar()
+                SystemStatusBar(isScrapingArtwork = uiState.isScrapingArtwork)
             }
             PlatformBreadcrumb(
                 uiState = uiState,
@@ -1434,7 +1443,7 @@ private fun HomeHeader(
             modifier = Modifier.weight(1f)
         )
 
-        SystemStatusBar()
+        SystemStatusBar(isScrapingArtwork = uiState.isScrapingArtwork)
     }
 }
 

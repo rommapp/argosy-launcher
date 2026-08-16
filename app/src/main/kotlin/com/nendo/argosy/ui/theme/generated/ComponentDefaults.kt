@@ -242,6 +242,7 @@ object ComponentDefaults {
         const val positionPollMs = 500
         const val overlayScrimAlpha = 0.55f
         const val posterIconAlpha = 0.45f
+        const val audioFadeMs = 450
     }
 
 }

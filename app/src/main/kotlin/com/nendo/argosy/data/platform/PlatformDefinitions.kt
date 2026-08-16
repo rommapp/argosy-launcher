@@ -303,6 +303,7 @@ object PlatformDefinitions {
         "amstrad_cpc" to "amstradcpc",
         "amstrad-cpc" to "amstradcpc",
         "acpc" to "amstradcpc",
+        "zxs" to "zx",
         "zxspectrum" to "zx",
         "zx_spectrum" to "zx",
         "zx-spectrum" to "zx",

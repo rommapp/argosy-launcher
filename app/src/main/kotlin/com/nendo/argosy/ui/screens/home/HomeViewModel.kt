@@ -89,6 +89,7 @@ class HomeViewModel @Inject constructor(
     private val appsRepository: com.nendo.argosy.data.repository.AppsRepository,
     private val homeTileRepository: com.nendo.argosy.data.repository.HomeTileRepository,
     private val homeGridPageRepository: com.nendo.argosy.data.repository.HomeGridPageRepository,
+    private val imageCacheManager: com.nendo.argosy.data.cache.ImageCacheManager,
     private val homeTilePromptQueue: com.nendo.argosy.data.repository.HomeTilePromptQueue,
     private val syncPreferencesRepository: com.nendo.argosy.data.preferences.SyncPreferencesRepository
 ) : ViewModel(), HomeInputActions {
@@ -149,6 +150,7 @@ class HomeViewModel @Inject constructor(
         observeBackgroundSettings()
         observeGradientChanges()
         observeSyncOverlay()
+        observeArtworkScraping()
         observePlatformChanges()
         observeAchievementUpdates()
         libraryDelegate.observePinnedCollections(viewModelScope)
@@ -696,6 +698,14 @@ class HomeViewModel @Inject constructor(
         customGrid.dismissPendingAdd { homeTilePromptQueue.resolve(it) }
 
     override fun movePendingTileAddFocus(delta: Int) = customGrid.movePendingAddFocus(delta)
+
+    private fun observeArtworkScraping() {
+        viewModelScope.launch {
+            imageCacheManager.progress.collect { progress ->
+                _uiState.update { it.copy(isScrapingArtwork = progress.isProcessing) }
+            }
+        }
+    }
 
     private fun observeHomeTiles() {
         viewModelScope.launch {

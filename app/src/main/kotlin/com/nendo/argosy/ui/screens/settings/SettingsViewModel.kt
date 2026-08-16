@@ -422,6 +422,22 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
+    fun clearPlatformArtCache(platformSlug: String) {
+        viewModelScope.launch {
+            val reclaimed = imageCacheManager.clearPlatformCache(platformSlug)
+            notificationManager.show(
+                title = "Artwork Cache",
+                subtitle = if (reclaimed > 0) {
+                    "Cleared ${com.nendo.argosy.util.formatBytes(reclaimed)}"
+                } else {
+                    "Nothing cached to clear"
+                },
+                type = com.nendo.argosy.core.notification.NotificationType.SUCCESS,
+                duration = com.nendo.argosy.core.notification.NotificationDuration.MEDIUM
+            )
+        }
+    }
+
     fun scanFilesForPlatform(platformId: Long) {
         val platformIndex = _uiState.value.platformDetail.platformIndex
         val config = _uiState.value.emulators.platforms.getOrNull(platformIndex)

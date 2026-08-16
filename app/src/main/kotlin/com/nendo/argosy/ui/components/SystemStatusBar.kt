@@ -5,10 +5,19 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.os.BatteryManager
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Image
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -89,7 +98,8 @@ fun rememberBatteryState(): State<BatteryState> {
 @Composable
 fun SystemStatusBar(
     modifier: Modifier = Modifier,
-    contentColor: Color = Color.Unspecified
+    contentColor: Color = Color.Unspecified,
+    isScrapingArtwork: Boolean = false
 ) {
     val effectiveColor = if (contentColor == Color.Unspecified) {
         MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
@@ -111,6 +121,10 @@ fun SystemStatusBar(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(Dimens.radiusLg)
     ) {
+        if (isScrapingArtwork) {
+            ArtworkScrapeIndicator(color = effectiveColor)
+        }
+
         Text(
             text = formatClockTime(LocalContext.current, currentTime.longValue),
             style = MaterialTheme.typography.titleMedium,
@@ -123,6 +137,30 @@ fun SystemStatusBar(
             color = effectiveColor
         )
     }
+}
+
+/**
+ * Says that artwork is still being fetched, without saying what. It pulses so it reads as work in
+ * progress rather than a warning; the detail lives in Settings > Sync for anyone who wants it.
+ */
+@Composable
+private fun ArtworkScrapeIndicator(color: Color, modifier: Modifier = Modifier) {
+    val transition = rememberInfiniteTransition(label = "artworkScrape")
+    val alpha by transition.animateFloat(
+        initialValue = 0.35f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(900, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "artworkScrapeAlpha"
+    )
+    Icon(
+        imageVector = Icons.Outlined.Image,
+        contentDescription = null,
+        tint = color.copy(alpha = alpha),
+        modifier = modifier.size(Dimens.iconSm)
+    )
 }
 
 @Composable

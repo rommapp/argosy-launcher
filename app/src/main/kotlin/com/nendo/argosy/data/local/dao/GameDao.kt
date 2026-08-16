@@ -952,6 +952,24 @@ interface GameDao {
     """)
     fun searchInstalled(query: String, ownerUserId: Long?, limit: Int): Flow<List<GameEntity>>
 
+    @Query(
+        "SELECT coverPath FROM games WHERE platformSlug = :platformSlug " +
+            "AND coverSetManually = 1 AND coverPath IS NOT NULL"
+    )
+    suspend fun getManualCoverPathsForPlatform(platformSlug: String): List<String>
+
+    /**
+     * Forgets where cached art was kept for a platform, so the next sync fetches it again. Artwork
+     * the user chose themselves is left alone; it is their work, not a cache.
+     */
+    @Query(
+        """
+        UPDATE games SET coverPath = NULL, backgroundPath = NULL, cachedScreenshotPaths = NULL
+        WHERE platformSlug = :platformSlug AND coverSetManually = 0
+        """
+    )
+    suspend fun clearCachedArtForPlatform(platformSlug: String)
+
     @Query("SELECT coverAspectRatio FROM games WHERE id = :gameId")
     suspend fun getCoverAspectRatio(gameId: Long): Float?
 

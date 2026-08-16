@@ -1355,13 +1355,40 @@ class DownloadManager @Inject constructor(
         data class Failure(val result: DownloadResult) : StagedDeployResult()
     }
 
+    /**
+     * Carries a download that is already its own deliverable from the staging area's archive folder
+     * into its output folder, and answers with the path the deploy should look for.
+     *
+     * Platforms whose cores read an archive directly are never unpacked, so nothing is written to
+     * the output folder and the file to install is the download itself. Moving it keeps one deploy
+     * path for both kinds rather than teaching the mover about a second source.
+     */
+    private fun promoteArchiveToOutput(area: StagingArea, archivePath: String): String? {
+        val source = File(archivePath)
+        if (!source.isFile) return null
+        if (!area.outputDir.isDirectory && !area.outputDir.mkdirs()) return null
+        val destination = File(area.outputDir, source.name)
+        if (source.renameTo(destination)) return destination.name
+        return runCatching {
+            source.copyTo(destination, overwrite = true)
+            source.delete()
+            destination.name
+        }.getOrNull()
+    }
+
     private suspend fun deployStagedOutput(
         area: StagingArea,
         unpackedPath: String,
         progress: DownloadProgress
     ): StagedDeployResult {
         val outputPrefix = area.outputDir.absolutePath + File.separator
-        if (!unpackedPath.startsWith(outputPrefix)) {
+        val archivePrefix = area.archiveDir.absolutePath + File.separator
+        val relative = when {
+            unpackedPath.startsWith(outputPrefix) -> unpackedPath.removePrefix(outputPrefix)
+            unpackedPath.startsWith(archivePrefix) -> promoteArchiveToOutput(area, unpackedPath)
+            else -> null
+        }
+        if (relative == null) {
             romStagingManager.discard(area)
             Logger.warn(
                 TAG,
@@ -1371,7 +1398,6 @@ class DownloadManager @Inject constructor(
                 DownloadResult.Failure("Unpacked game did not land in the staging folder")
             )
         }
-        val relative = unpackedPath.removePrefix(outputPrefix)
         return deployStagedArea(romStagingManager.advance(area, StagingPhase.MOVING, relative), progress)
     }
 

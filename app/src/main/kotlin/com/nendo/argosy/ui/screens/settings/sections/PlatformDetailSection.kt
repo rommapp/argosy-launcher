@@ -18,6 +18,7 @@ import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Gamepad
 import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
@@ -78,6 +79,7 @@ internal sealed class PlatformDetailItem(
     data object BuiltinControls : PlatformDetailItem("builtin_controls", "emulator", { it.isBuiltin && !it.isAndroid })
     data object BuiltinCoreOptions : PlatformDetailItem("builtin_core_options", "emulator", { it.isBuiltin && !it.isAndroid })
 
+    data object ClearArtCache : PlatformDetailItem("clear_art_cache", "platform")
     data object MoveEarlier : PlatformDetailItem("move_earlier", "platform")
     data object MoveLater : PlatformDetailItem("move_later", "platform")
     data object ScanFiles : PlatformDetailItem("scan_files", "platform", { !it.isAndroid })
@@ -107,7 +109,7 @@ internal sealed class PlatformDetailItem(
                 Emulator, Core, Extension, DisplayTarget, LegacyMode, LaunchArgs, BuiltinVideo, BuiltinControls, BuiltinCoreOptions,
                 Header("header_platform", "platform", "Platform"),
                 InfoItem("info_platform_stats", "platform"),
-                MoveEarlier, MoveLater, ScanFiles, ScanApps,
+                MoveEarlier, MoveLater, ScanFiles, ScanApps, ClearArtCache,
                 Header("header_bios", "bios", "BIOS", { it.hasBios && !it.isAndroid }),
                 InfoItem("info_bios_status", "bios", { it.hasBios && !it.isAndroid }), BiosDownload, BiosInstall, BiosCopy,
                 Header("header_sync", "sync", "Storage & Sync"),
@@ -455,6 +457,13 @@ fun PlatformDetailSection(
                         }
                     }
                 }
+                PlatformDetailItem.ClearArtCache -> ActionPreference(
+                    title = "Clear Cached Artwork",
+                    subtitle = "Delete downloaded covers and screenshots for this platform so they are fetched again. Covers you chose yourself are kept",
+                    isFocused = isFocused(item),
+                    icon = Icons.Default.Refresh,
+                    onClick = { viewModel.clearPlatformArtCache(config.platform.slug) }
+                )
                 PlatformDetailItem.MoveEarlier -> ActionPreference(
                     title = "Move Earlier",
                     subtitle = "Show this platform sooner everywhere platforms are listed",

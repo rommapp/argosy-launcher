@@ -463,6 +463,34 @@ class ImageCacheManager @Inject constructor(
         return isSquare && isSmall
     }
 
+    /**
+     * Drops the cached artwork for one platform and forgets where it was, so the next sync fetches
+     * it again. Covers the user chose themselves are kept: they live in the same folder but they are
+     * the user's work rather than something that can be fetched back.
+     *
+     * Returns the number of bytes reclaimed.
+     */
+    suspend fun clearPlatformCache(platformSlug: String): Long = withContext(Dispatchers.IO) {
+        val keep = gameDao.getManualCoverPathsForPlatform(platformSlug).toSet()
+        val root = File(cacheDir, platformSlug)
+        if (!root.exists()) return@withContext 0L
+        var reclaimed = 0L
+        root.walkBottomUp().forEach { entry ->
+            when {
+                entry.isDirectory -> if (entry != root && entry.listFiles().isNullOrEmpty()) entry.delete()
+                entry.name == ".nomedia" -> Unit
+                entry.absolutePath in keep -> Unit
+                else -> {
+                    val size = entry.length()
+                    if (entry.delete()) reclaimed += size
+                }
+            }
+        }
+        gameDao.clearCachedArtForPlatform(platformSlug)
+        clearDecodedImageCache()
+        reclaimed
+    }
+
     fun clearCache() {
         cacheDir.listFiles()?.forEach { entry ->
             if (entry.isDirectory) {

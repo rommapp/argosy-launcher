@@ -207,6 +207,7 @@ data class HomeUiState(
         emptyMap(),
     val isMediaSignedIn: Boolean = false,
     val isMediaLoading: Boolean = false,
+    val isScrapingArtwork: Boolean = false,
     val showNextUpRow: Boolean = true,
     val showContinueWatchingRow: Boolean = false,
     val showMediaLibraryRows: Boolean = true,

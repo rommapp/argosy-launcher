@@ -23,6 +23,13 @@ object CoreControlManifestRegistry {
                 control(RetroButton.L3, "Close lid")
             )
         )
+        add(
+            manifest(
+                "azahar",
+                control(RetroButton.L3, "Swap screens"),
+                control(RetroButton.R3, "Tap touch screen")
+            )
+        )
         add(manifest("handy", control(RetroButton.SELECT, "Rotate screen")))
         add(manifest("mednafen_lynx", control(RetroButton.SELECT, "Rotate screen")))
         add(manifest("mednafen_wswan", control(RetroButton.SELECT, "Rotate screen")))

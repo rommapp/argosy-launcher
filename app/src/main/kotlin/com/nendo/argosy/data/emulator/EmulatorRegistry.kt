@@ -1038,7 +1038,10 @@ object EmulatorRegistry {
         "vita" to listOf("vita3k-zx", "vita3k"),
         "n64" to listOf("builtin", "mupen64plus_fz", "retroarch", "retroarch_64", "retroarch_32"),
         "nds" to listOf("builtin", "drastic", "melonds", "melondualds", "retroarch", "retroarch_64", "retroarch_32"),
-        "3ds" to listOf("azahar", "citra_mmj", "borked3ds", "citra", "retroarch", "retroarch_64", "retroarch_32"),
+        "3ds" to listOf(
+            "azahar", "citra_mmj", "borked3ds", "citra", "builtin",
+            "retroarch", "retroarch_64", "retroarch_32"
+        ),
         "gc" to listOf("dolphin", "dolphin_handheld", "dolphin_cs", "retroarch", "retroarch_64", "retroarch_32"),
         "wii" to listOf("dolphin", "dolphin_handheld", "dolphin_cs", "retroarch", "retroarch_64", "retroarch_32"),
         "wiiu" to listOf("cemu", "cemu_dualscreen"),

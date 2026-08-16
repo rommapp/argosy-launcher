@@ -576,6 +576,21 @@ object SavePathRegistry {
             supported = true
         ),
 
+        /**
+         * Azahar puts its user directory at `<save dir>/Azahar/` when the core's save-path option
+         * is left at its default, so the sdmc tree hangs off that rather than off the saves root.
+         */
+        "${BUILTIN_EMULATOR_ID}_3ds" to SavePathConfig(
+            emulatorId = BUILTIN_EMULATOR_ID,
+            defaultPaths = listOf(
+                "{filesDir}/${AppPaths.LIBRETRO_SAVES_SUBDIR}/Azahar/sdmc/Nintendo 3DS"
+            ),
+            saveExtensions = listOf("*"),
+            usesFolderBasedSaves = true,
+            usesInternalStorage = true,
+            supported = true
+        ),
+
         "${BUILTIN_EMULATOR_ID}_gc" to SavePathConfig(
             emulatorId = BUILTIN_EMULATOR_ID,
             defaultPaths = listOf("{filesDir}/${AppPaths.LIBRETRO_SAVES_SUBDIR}/User/GC"),

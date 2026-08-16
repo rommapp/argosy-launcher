@@ -13,6 +13,7 @@ object PlatformWeightRegistry {
         "dreamcast",
         "psp",
         "nds", "dsi",
+        "3ds",
         "3do",
         "jaguar", "jaguarcd"
     )

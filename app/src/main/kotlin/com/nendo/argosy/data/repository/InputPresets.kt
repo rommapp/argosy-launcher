@@ -613,6 +613,29 @@ object MappingPlatforms {
         ) + DPAD
     )
 
+    val THREEDS = MappingPlatform(
+        id = "3ds",
+        displayName = "Nintendo 3DS",
+        buttons = listOf(
+            RetroButton.A, RetroButton.B, RetroButton.X, RetroButton.Y,
+            RetroButton.L, RetroButton.R, RetroButton.L2, RetroButton.R2,
+            RetroButton.L3, RetroButton.R3,
+            RetroButton.START, RetroButton.SELECT
+        ) + DPAD,
+        buttonLabels = mapOf(
+            RetroButton.L2 to "ZL",
+            RetroButton.R2 to "ZR",
+            RetroButton.L3 to "Swap Screens",
+            RetroButton.R3 to "Tap Touch Screen"
+        ),
+        hotkeyBlockingButtons = setOf(
+            RetroButton.A, RetroButton.B, RetroButton.X, RetroButton.Y,
+            RetroButton.L, RetroButton.R, RetroButton.L2, RetroButton.R2,
+            RetroButton.L3, RetroButton.R3,
+            RetroButton.START, RetroButton.SELECT
+        ) + DPAD
+    )
+
     val GAMECUBE = MappingPlatform(
         id = "gamecube",
         displayName = "GameCube",
@@ -1037,7 +1060,9 @@ object MappingPlatforms {
 
         "psp", "vita" -> PSP
 
-        "nds", "dsi", "3ds", "n3ds" -> DS
+        "nds", "dsi" -> DS
+
+        "3ds", "n3ds" -> THREEDS
 
         "gc", "ngc", "gamecube" -> GAMECUBE
 

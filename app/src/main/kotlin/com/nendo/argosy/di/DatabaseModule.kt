@@ -192,6 +192,11 @@ object DatabaseModule {
     ): com.nendo.argosy.data.local.dao.HomeTileDao = database.homeTileDao()
 
     @Provides
+    fun provideHomeGridPageDao(
+        database: ALauncherDatabase
+    ): com.nendo.argosy.data.local.dao.HomeGridPageDao = database.homeGridPageDao()
+
+    @Provides
     fun provideGameFileDao(database: ALauncherDatabase): GameFileDao =
         database.gameFileDao()
 

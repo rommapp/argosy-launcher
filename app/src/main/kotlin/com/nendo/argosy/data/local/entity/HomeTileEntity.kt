@@ -45,7 +45,8 @@ enum class MediaTilePlayMode {
     tableName = "home_tiles",
     indices = [
         Index(value = ["ownerUserId", "pageIndex"]),
-        Index(value = ["ownerUserId", "pageIndex", "columnIndex", "rowIndex"])
+        Index(value = ["ownerUserId", "pageIndex", "columnIndex", "rowIndex"]),
+        Index(value = ["pageId"])
     ]
 )
 data class HomeTileEntity(
@@ -53,6 +54,8 @@ data class HomeTileEntity(
     val id: Long = 0,
     val ownerUserId: Long?,
     val pageIndex: Int,
+    val pageId: Long? = null,
+    val artStyle: String? = null,
     val columnIndex: Int,
     val rowIndex: Int,
     val columnSpan: Int = 1,

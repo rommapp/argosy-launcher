@@ -58,6 +58,7 @@ data class GameEntity(
     val coverPath: String? = null,
     val originalCoverPath: String? = null,
     val coverSetManually: Boolean = false,
+    val coverAspectRatio: Float? = null,
     val gradientColors: String? = null,
     val backgroundPath: String? = null,
     val screenshotPaths: String? = null,

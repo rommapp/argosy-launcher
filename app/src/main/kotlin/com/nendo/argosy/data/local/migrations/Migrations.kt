@@ -3399,3 +3399,58 @@ object Migration_175_176 : Migration(175, 176) {
         )
     }
 }
+
+/**
+ * Gives curated grid pages an identity of their own, so a background or a sound belongs to the page
+ * rather than to whatever currently sits at that position. Existing pages are recovered from the
+ * tiles standing on them and every tile is repointed, so an arrangement survives the change.
+ *
+ * Also records the shape of a cover once it is known, so a grid can allocate space before the image
+ * is decoded, and the art style a tile was placed with.
+ */
+object Migration_176_177 : Migration(176, 177) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE `games` ADD COLUMN `coverAspectRatio` REAL")
+        db.execSQL("ALTER TABLE `home_tiles` ADD COLUMN `artStyle` TEXT")
+        db.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS `home_grid_pages` (
+                `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                `ownerUserId` INTEGER,
+                `sortOrder` INTEGER NOT NULL,
+                `name` TEXT,
+                `backgroundKind` TEXT NOT NULL DEFAULT 'NONE',
+                `backgroundPath` TEXT,
+                `backgroundGameId` INTEGER,
+                `audioKind` TEXT NOT NULL DEFAULT 'GLOBAL',
+                `audioPath` TEXT,
+                `createdAt` INTEGER NOT NULL
+            )
+            """.trimIndent()
+        )
+        db.execSQL(
+            "CREATE UNIQUE INDEX IF NOT EXISTS `index_home_grid_pages_ownerUserId_sortOrder` " +
+                "ON `home_grid_pages` (`ownerUserId`, `sortOrder`)"
+        )
+        db.execSQL("ALTER TABLE `home_tiles` ADD COLUMN `pageId` INTEGER")
+        db.execSQL(
+            """
+            INSERT INTO `home_grid_pages` (`ownerUserId`, `sortOrder`, `createdAt`)
+            SELECT DISTINCT `ownerUserId`, `pageIndex`, ${System.currentTimeMillis()}
+            FROM `home_tiles`
+            """.trimIndent()
+        )
+        db.execSQL(
+            """
+            UPDATE `home_tiles` SET `pageId` = (
+                SELECT p.`id` FROM `home_grid_pages` p
+                WHERE p.`sortOrder` = `home_tiles`.`pageIndex`
+                AND (p.`ownerUserId` IS `home_tiles`.`ownerUserId`)
+            )
+            """.trimIndent()
+        )
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS `index_home_tiles_pageId` ON `home_tiles` (`pageId`)"
+        )
+    }
+}

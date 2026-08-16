@@ -1,5 +1,7 @@
 package com.nendo.argosy.ui.components
 
+import com.nendo.argosy.data.local.entity.PageAudioKind
+import com.nendo.argosy.data.local.entity.PageBackgroundKind
 import com.nendo.argosy.data.repository.HomeTileRepository
 import com.nendo.argosy.domain.model.GridCell
 import com.nendo.argosy.domain.model.HomeTile
@@ -11,7 +13,30 @@ enum class CustomTileMenuAction(val label: String) {
     ARRANGE("Move or resize"),
     RECURATE("Change what it plays"),
     REMOVE("Remove from grid"),
+    PAGE_BACKGROUND("Page Background"),
+    PAGE_SOUND("Page Sound"),
     DELETE_PAGE("Delete Page")
+}
+
+/**
+ * What a page shows behind its tiles and what it does about sound. Held per page rather than per
+ * position, so an arrangement keeps its look when the pages around it move.
+ */
+data class GridPageSettings(
+    val backgroundKind: PageBackgroundKind = PageBackgroundKind.NONE,
+    val backgroundPath: String? = null,
+    val backgroundGameId: Long? = null,
+    val audioKind: PageAudioKind = PageAudioKind.GLOBAL,
+    val audioPath: String? = null
+) {
+    val hasBackground: Boolean
+        get() = backgroundKind != PageBackgroundKind.NONE && backgroundPath != null
+
+    /**
+     * Whether the launcher's own music should stand aside while this page is shown.
+     */
+    val silencesGlobalAudio: Boolean
+        get() = audioKind != PageAudioKind.GLOBAL
 }
 
 /**
@@ -74,6 +99,13 @@ data class CustomGridState(
      * starts that one from the beginning.
      */
     val playbackPositions: Map<String, Long> = emptyMap(),
+    /**
+     * Per-page look and sound, keyed by the page's position. Absent means the page has never been
+     * given either and draws the launcher's own background and music.
+     */
+    val pageSettings: Map<Int, GridPageSettings> = emptyMap(),
+    val pendingBackgroundPage: Int? = null,
+    val pendingAudioPage: Int? = null,
     val mediaSetup: MediaTileSetup? = null,
     val showFileBrowser: Boolean = false,
     val pendingAdd: TilePickerEntry? = null,
@@ -181,6 +213,9 @@ data class CustomGridState(
             it.rect.covers(cell.columnIndex, cell.rowIndex)
         }
 
+    val currentPageSettings: GridPageSettings
+        get() = pageSettings[page] ?: GridPageSettings()
+
     val engagedTile: HomeTile?
         get() = engagedTileId?.let { id -> tiles.firstOrNull { it.id == id } }
 
@@ -249,6 +284,10 @@ data class CustomGridState(
                 add(CustomTileMenuAction.ARRANGE)
                 if (isFocusedTileCurated) add(CustomTileMenuAction.RECURATE)
                 add(CustomTileMenuAction.REMOVE)
+            }
+            if (!isOnAddPage) {
+                add(CustomTileMenuAction.PAGE_BACKGROUND)
+                add(CustomTileMenuAction.PAGE_SOUND)
             }
             if (canDeletePage) add(CustomTileMenuAction.DELETE_PAGE)
         }

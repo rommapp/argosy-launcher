@@ -88,6 +88,7 @@ class HomeViewModel @Inject constructor(
     private val steamDownloadPromptController: com.nendo.argosy.data.steam.SteamDownloadPromptController,
     private val appsRepository: com.nendo.argosy.data.repository.AppsRepository,
     private val homeTileRepository: com.nendo.argosy.data.repository.HomeTileRepository,
+    private val homeGridPageRepository: com.nendo.argosy.data.repository.HomeGridPageRepository,
     private val homeTilePromptQueue: com.nendo.argosy.data.repository.HomeTilePromptQueue,
     private val syncPreferencesRepository: com.nendo.argosy.data.preferences.SyncPreferencesRepository
 ) : ViewModel(), HomeInputActions {
@@ -104,6 +105,7 @@ class HomeViewModel @Inject constructor(
     private val customGrid = com.nendo.argosy.ui.home.grid.CustomGridCoordinator(
         scope = viewModelScope,
         repository = homeTileRepository,
+        pageRepository = homeGridPageRepository,
         ownerUserId = { syncPreferencesRepository.getRommUserId() },
         onPageAdded = { count -> persistCustomGridPageCount(count) },
         onPageRemoved = { count -> persistCustomGridPageRemoval(count) },
@@ -703,6 +705,25 @@ class HomeViewModel @Inject constructor(
                     publishHomeTiles(tiles)
                 }
         }
+        viewModelScope.launch {
+            homeGridPageRepository.observePages(syncPreferencesRepository.getRommUserId())
+                .collect { pages ->
+                    customGrid.setPageSettings(
+                        pages.associate { page ->
+                            page.sortOrder to com.nendo.argosy.ui.components.GridPageSettings(
+                                backgroundKind = com.nendo.argosy.data.local.entity
+                                    .PageBackgroundKind.fromString(page.backgroundKind),
+                                backgroundPath = page.backgroundPath,
+                                backgroundGameId = page.backgroundGameId,
+                                audioKind = com.nendo.argosy.data.local.entity
+                                    .PageAudioKind.fromString(page.audioKind),
+                                audioPath = page.audioPath
+                            )
+                        }
+                    )
+                    applyPageAudio()
+                }
+        }
     }
 
     /**
@@ -765,7 +786,22 @@ class HomeViewModel @Inject constructor(
         direction: com.nendo.argosy.domain.model.GridDirection2D
     ): Boolean = customGrid.moveFocus(direction)
 
-    override fun turnCustomGridPage(delta: Int): Boolean = customGrid.turnPage(delta)
+    override fun turnCustomGridPage(delta: Int): Boolean {
+        val turned = customGrid.turnPage(delta)
+        if (turned) applyPageAudio()
+        return turned
+    }
+
+    /**
+     * Hands the output to the page in view, so a page carrying its own sound replaces the
+     * launcher's music for as long as it is shown.
+     */
+    private fun applyPageAudio() {
+        val grid = _uiState.value.customGrid
+        val pageOwns = _uiState.value.layoutKind == HomeLayoutKind.CUSTOM_GRID &&
+            grid.currentPageSettings.silencesGlobalAudio
+        videoPreviewDelegate.setPageOwnsAudio(pageOwns)
+    }
 
     fun setCustomGridCell(cell: com.nendo.argosy.domain.model.GridCell) = customGrid.setCell(cell)
 

@@ -725,6 +725,18 @@ fun HomeScreen(
                             LoadingState()
                         }
                         isCustomGrid -> {
+                            val pageSettings = uiState.customGrid.currentPageSettings
+                            if (pageSettings.hasBackground) {
+                                com.nendo.argosy.ui.components.PageBackdrop(
+                                    path = pageSettings.backgroundPath,
+                                    modifier = Modifier.fillMaxSize()
+                                )
+                            }
+                            if (pageSettings.audioKind ==
+                                com.nendo.argosy.data.local.entity.PageAudioKind.THEME
+                            ) {
+                                com.nendo.argosy.ui.components.PageThemePlayer(pageSettings.audioPath)
+                            }
                             com.nendo.argosy.ui.components.CustomGridSurface(
                                 state = uiState.customGrid,
                                 contentFor = { tile -> uiState.tileContentFor(tile) },
@@ -1221,11 +1233,21 @@ fun HomeScreen(
         }
 
         if (uiState.showTileFileBrowser) {
+            val choosingBackground = uiState.customGrid.pendingBackgroundPage != null
+            val choosingTheme = uiState.customGrid.pendingAudioPage != null
             com.nendo.argosy.ui.filebrowser.FileBrowserScreen(
                 mode = com.nendo.argosy.ui.filebrowser.FileBrowserMode.FILE_SELECTION,
-                title = "Choose a video",
+                title = when {
+                    choosingBackground -> "Choose a background"
+                    choosingTheme -> "Choose a track for this page"
+                    else -> "Choose a video"
+                },
                 fileFilter = com.nendo.argosy.ui.filebrowser.FileFilter(
-                    extensions = com.nendo.argosy.core.media.VideoFileTypes.EXTENSIONS
+                    extensions = when {
+                        choosingBackground -> PAGE_BACKGROUND_EXTENSIONS
+                        choosingTheme -> PAGE_THEME_EXTENSIONS
+                        else -> com.nendo.argosy.core.media.VideoFileTypes.EXTENSIONS
+                    }
                 ),
                 onPathSelected = viewModel::placeLocalVideoTile,
                 onDismiss = viewModel::closeTileFileBrowser
@@ -1448,6 +1470,16 @@ enum class GameInfoPlacement { CENTERED, SPLIT }
 /**
  * How much of the row's width the details block occupies when it sits to one side.
  */
+/**
+ * What a curated page will accept behind its tiles. Stills and animations sit alongside short video
+ * because a page background is decoration rather than something being watched.
+ */
+private val PAGE_BACKGROUND_EXTENSIONS: Set<String> =
+    setOf("png", "jpg", "jpeg", "webp", "gif") + com.nendo.argosy.core.media.VideoFileTypes.EXTENSIONS
+
+private val PAGE_THEME_EXTENSIONS: Set<String> =
+    setOf("mp3", "ogg", "oga", "m4a", "aac", "flac", "wav", "opus")
+
 private const val GAME_INFO_SIDE_WIDTH_FRACTION = 0.6f
 
 /**

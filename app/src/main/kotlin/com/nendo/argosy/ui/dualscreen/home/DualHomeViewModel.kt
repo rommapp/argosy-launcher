@@ -362,6 +362,8 @@ class DualHomeViewModel(
     private val getGamesForPinnedCollectionUseCase: GetGamesForPinnedCollectionUseCase? = null,
     private val sessionStateStore: SessionStateStore? = null,
     private val homeTileRepository: com.nendo.argosy.data.repository.HomeTileRepository? = null,
+    private val homeGridPageRepository:
+        com.nendo.argosy.data.repository.HomeGridPageRepository? = null,
     private val homeTilePromptQueue: com.nendo.argosy.data.repository.HomeTilePromptQueue? = null,
     private val appsRepository: com.nendo.argosy.data.repository.AppsRepository? = null,
     private val syncPreferencesRepository: com.nendo.argosy.data.preferences.SyncPreferencesRepository? = null
@@ -387,6 +389,7 @@ class DualHomeViewModel(
     private val customGrid = com.nendo.argosy.ui.home.grid.CustomGridCoordinator(
         scope = viewModelScope,
         repository = homeTileRepository,
+        pageRepository = homeGridPageRepository,
         ownerUserId = { syncPreferencesRepository?.getRommUserId() },
         onPageAdded = { count -> persistCustomGridPageCount(count) },
         onPageRemoved = { count -> persistCustomGridPageRemoval(count) },

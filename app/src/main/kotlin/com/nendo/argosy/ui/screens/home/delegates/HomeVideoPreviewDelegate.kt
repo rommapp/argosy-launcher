@@ -56,6 +56,14 @@ class HomeVideoPreviewDelegate @Inject constructor(
 
     fun releaseTileAudio() = ambientAudioManager.fadeIn()
 
+    /**
+     * Hands the output to the page being shown, or takes it back. A page that carries its own sound
+     * stands in for the launcher's music for as long as it is the page in view.
+     */
+    fun setPageOwnsAudio(pageOwnsAudio: Boolean) {
+        if (pageOwnsAudio) ambientAudioManager.fadeOut() else ambientAudioManager.fadeIn()
+    }
+
     fun startVideoPreviewLoading(videoId: String) {
         _state.update {
             it.copy(

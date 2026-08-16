@@ -9,8 +9,11 @@ import com.nendo.argosy.domain.model.HomeTileTargetRef
 import com.nendo.argosy.domain.model.TileRect
 import com.nendo.argosy.domain.model.customGridStep
 import com.nendo.argosy.domain.model.settleAfterEdit
+import com.nendo.argosy.data.local.entity.PageAudioKind
+import com.nendo.argosy.data.local.entity.PageBackgroundKind
 import com.nendo.argosy.ui.components.CustomGridState
 import com.nendo.argosy.ui.components.CustomTileMenuAction
+import com.nendo.argosy.ui.components.GridPageSettings
 import com.nendo.argosy.ui.components.TileEditMode
 import com.nendo.argosy.ui.components.TilePickerAction
 import com.nendo.argosy.ui.components.TilePickerCategory
@@ -29,6 +32,7 @@ import kotlinx.coroutines.launch
 class CustomGridCoordinator(
     private val scope: CoroutineScope,
     private val repository: HomeTileRepository?,
+    private val pageRepository: com.nendo.argosy.data.repository.HomeGridPageRepository? = null,
     private val ownerUserId: suspend () -> Long?,
     private val pickerEntries: suspend (TilePickerCategory, String) -> List<TilePickerEntry>,
     private val onPageAdded: ((Int) -> Unit)? = null,
@@ -222,6 +226,8 @@ class CustomGridCoordinator(
             CustomTileMenuAction.ARRANGE -> enterMoveMode()
             CustomTileMenuAction.RECURATE -> recurateFocusedTile()
             CustomTileMenuAction.REMOVE -> removeFocusedTile()
+            CustomTileMenuAction.PAGE_BACKGROUND -> openPageBackgroundBrowser()
+            CustomTileMenuAction.PAGE_SOUND -> cyclePageAudio()
             CustomTileMenuAction.DELETE_PAGE -> deleteCurrentPage()
         }
     }
@@ -502,8 +508,10 @@ class CustomGridCoordinator(
             )
         }
         if (!wasPending) {
-            repository?.let { tiles ->
-                scope.launch { tiles.removePage(ownerUserId(), target) }
+            scope.launch {
+                val owner = ownerUserId()
+                repository?.removePage(owner, target)
+                pageRepository?.removePage(owner, target)
             }
         }
         onPageRemoved?.invoke(remaining)
@@ -685,15 +693,114 @@ class CustomGridCoordinator(
         closePicker()
     }
 
+    /**
+     * Opens the file browser against the current page rather than a tile, so the same picker serves
+     * both and the choice is applied to whichever asked for it.
+     */
+    fun openPageBackgroundBrowser() = write {
+        it.copy(showFileBrowser = true, pendingBackgroundPage = it.page)
+    }
+
+    /**
+     * Applies a chosen file to the page that asked for it. A page already carrying a background is
+     * cleared instead, so the same action both sets and removes one.
+     */
+    fun setPageBackground(path: String) {
+        val page = read().pendingBackgroundPage ?: return
+        write { it.copy(showFileBrowser = false, pendingBackgroundPage = null) }
+        if (path.isBlank()) return
+        applyPageSettings(page) {
+            it.copy(
+                backgroundKind = PageBackgroundKind.FILE,
+                backgroundPath = path,
+                backgroundGameId = null
+            )
+        }
+        scope.launch {
+            pageRepository?.setBackground(ownerUserId(), page, PageBackgroundKind.FILE, path)
+        }
+    }
+
+    fun clearPageBackground() {
+        val page = read().page
+        applyPageSettings(page) {
+            it.copy(
+                backgroundKind = PageBackgroundKind.NONE,
+                backgroundPath = null,
+                backgroundGameId = null
+            )
+        }
+        scope.launch { pageRepository?.setBackground(ownerUserId(), page, PageBackgroundKind.NONE) }
+    }
+
+    /**
+     * Steps a page through what it can do about sound. A page with no theme file of its own skips
+     * straight past that option rather than offering silence.
+     */
+    fun cyclePageAudio() {
+        val current = read()
+        val page = current.page
+        val settings = current.currentPageSettings
+        val next = when (settings.audioKind) {
+            PageAudioKind.GLOBAL -> PageAudioKind.TILE
+            PageAudioKind.TILE -> PageAudioKind.THEME
+            PageAudioKind.THEME -> PageAudioKind.GLOBAL
+        }
+        if (next == PageAudioKind.THEME && settings.audioPath == null) {
+            write { it.copy(showFileBrowser = true, pendingAudioPage = page) }
+            return
+        }
+        applyPageSettings(page) { it.copy(audioKind = next) }
+        scope.launch {
+            pageRepository?.setAudio(ownerUserId(), page, next, settings.audioPath)
+        }
+    }
+
+    /**
+     * Applies a chosen file as the page's own music. Choosing one is what puts the page into that
+     * mode, so there is never a page set to play a theme it does not have.
+     */
+    fun setPageTheme(path: String) {
+        val page = read().pendingAudioPage ?: return
+        write { it.copy(showFileBrowser = false, pendingAudioPage = null) }
+        if (path.isBlank()) return
+        applyPageSettings(page) {
+            it.copy(audioKind = PageAudioKind.THEME, audioPath = path)
+        }
+        scope.launch {
+            pageRepository?.setAudio(ownerUserId(), page, PageAudioKind.THEME, path)
+        }
+    }
+
+    private fun applyPageSettings(page: Int, transform: (GridPageSettings) -> GridPageSettings) =
+        write { state ->
+            val existing = state.pageSettings[page] ?: GridPageSettings()
+            state.copy(pageSettings = state.pageSettings + (page to transform(existing)))
+        }
+
+    fun setPageSettings(settings: Map<Int, GridPageSettings>) = write {
+        it.copy(pageSettings = settings)
+    }
+
     fun openFileBrowser() = write { it.copy(showFileBrowser = true) }
 
-    fun closeFileBrowser() = write { it.copy(showFileBrowser = false) }
+    fun closeFileBrowser() = write {
+        it.copy(showFileBrowser = false, pendingBackgroundPage = null, pendingAudioPage = null)
+    }
 
     /**
      * Places a file from this device. Nothing is fetched and nothing is asked: the file is already
      * where it needs to be, which is the whole point of offering it.
      */
     fun placeLocalVideo(path: String) {
+        if (read().pendingBackgroundPage != null) {
+            setPageBackground(path)
+            return
+        }
+        if (read().pendingAudioPage != null) {
+            setPageTheme(path)
+            return
+        }
         write { it.copy(showFileBrowser = false) }
         if (path.isBlank()) return
         placeOnFocusedCell(HomeTileTargetRef.LocalMedia(path))

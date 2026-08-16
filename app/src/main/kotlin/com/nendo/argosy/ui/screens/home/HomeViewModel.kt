@@ -922,22 +922,16 @@ class HomeViewModel @Inject constructor(
 
     override fun disengageTile(): Boolean {
         val released = customGrid.disengageTile()
-        if (released) {
-            videoPreviewDelegate.releaseTileAudio()
-            _uiState.update { it.copy(engagedTilePaused = false, engagedTileSeek = 0) }
-        }
+        if (released) videoPreviewDelegate.releaseTileAudio()
         return released
     }
 
-    override fun toggleEngagedPlayback() {
-        _uiState.update { it.copy(engagedTilePaused = !it.engagedTilePaused) }
-    }
+    override fun toggleEngagedPlayback() = customGrid.toggleEngagedPlayback()
 
-    override fun seekEngagedTile(forward: Boolean) {
-        _uiState.update {
-            it.copy(engagedTileSeek = it.engagedTileSeek + if (forward) 1 else -1)
-        }
-    }
+    override fun seekEngagedTile(forward: Boolean) = customGrid.seekEngagedTile(forward)
+
+    fun rememberTilePlaybackPosition(filePath: String, positionMs: Long) =
+        customGrid.rememberPlaybackPosition(filePath, positionMs)
 
     /**
      * Hands the engaged tile to the fullscreen player and lets go of it here, so one file is never

@@ -56,11 +56,24 @@ data class CustomGridState(
      * is always a way out.
      */
     val engagedTileId: Long? = null,
+    val engagedPaused: Boolean = false,
+    /**
+     * Counts seek presses since the tile was engaged, signed by direction. The player owns the
+     * clock, so a press is sent as a step to take rather than a position to move to.
+     */
+    val engagedSeekTicks: Int = 0,
     /**
      * Local files the media tiles on this page resolve to, keyed by tile id. Only tiles with an
      * entry here can preview; everything else draws its poster.
      */
     val tilePlayback: Map<Long, String> = emptyMap(),
+    /**
+     * Where playback had reached when a tile was last torn down, keyed by the file itself. A page
+     * turn releases the decoders that page was using, so without this a tile restarts every time it
+     * is returned to. Keyed by file rather than by tile so a tile that moves on to another episode
+     * starts that one from the beginning.
+     */
+    val playbackPositions: Map<String, Long> = emptyMap(),
     val mediaSetup: MediaTileSetup? = null,
     val showFileBrowser: Boolean = false,
     val pendingAdd: TilePickerEntry? = null,

@@ -28,6 +28,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -65,6 +66,7 @@ private const val VOLUME_MUTED = 0f
 private const val VOLUME_ENGAGED = 1f
 private const val SECONDS_PER_MINUTE = 60L
 private const val MINUTES_PER_HOUR = 60L
+private const val SEEK_STEP_MS = 10_000L
 
 /**
  * A grid tile that plays a local video file in place: muted and looping while it is only a preview,
@@ -79,6 +81,12 @@ private const val MINUTES_PER_HOUR = 60L
  * @param filePath an already resolved local path; nothing here opens a network stream.
  * @param isPlaying the caller's decision to spend a decoder on this tile.
  * @param isEngaged sound on, audio focus taken, transport readout visible.
+ * @param isPaused holds the file where it is; a preview that is not engaged is never paused.
+ * @param seekTicks a running count of seek presses, signed by direction. Each new tick moves the
+ *   file by one step; the caller never has to know where it had reached.
+ * @param startPositionMs where to open the file, for a tile returning to something it was already
+ *   part way through.
+ * @param onPositionChanged reports where the file reached, as it plays and once more as it closes.
  * @param onTakeAudio raised when this tile starts sounding, for the caller to hush its own audio.
  * @param onReleaseAudio raised when it stops.
  */
@@ -89,6 +97,10 @@ fun InlineTilePlayer(
     isPlaying: Boolean,
     isEngaged: Boolean,
     modifier: Modifier = Modifier,
+    isPaused: Boolean = false,
+    seekTicks: Int = 0,
+    startPositionMs: Long = 0L,
+    onPositionChanged: (Long) -> Unit = {},
     onTakeAudio: () -> Unit = {},
     onReleaseAudio: () -> Unit = {}
 ) {
@@ -107,6 +119,7 @@ fun InlineTilePlayer(
     var durationMs by remember(filePath) { mutableLongStateOf(0L) }
     var hasAudioFocus by remember { mutableStateOf(false) }
     var player by remember { mutableStateOf<ExoPlayer?>(null) }
+    var lastSeekTicks by remember(filePath, isEngaged) { mutableIntStateOf(seekTicks) }
 
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
@@ -144,16 +157,38 @@ fun InlineTilePlayer(
                 videoAspect = aspectOf(size)
             }
         }
-        val created = if (shouldPlay) createTilePlayer(context, filePath, listener) else null
+        val created = if (shouldPlay) {
+            createTilePlayer(context, filePath, listener, startPositionMs)
+        } else {
+            null
+        }
         if (shouldPlay && created == null) hasFailed = true
         player = created
         onDispose {
             player = null
             hasFirstFrame = false
             isAdvancing = false
+            created?.let { onPositionChanged(it.currentPosition.coerceAtLeast(0L)) }
             created?.removeListener(listener)
             created?.release()
         }
+    }
+
+    LaunchedEffect(player, isPaused) {
+        player?.playWhenReady = !isPaused
+    }
+
+    LaunchedEffect(player, seekTicks) {
+        val active = player ?: return@LaunchedEffect
+        val previous = lastSeekTicks
+        lastSeekTicks = seekTicks
+        val steps = seekTicks - previous
+        if (steps == 0) return@LaunchedEffect
+        val limit = active.duration.takeIf { it > 0L } ?: Long.MAX_VALUE
+        val target = (active.currentPosition + steps * SEEK_STEP_MS).coerceIn(0L, limit)
+        active.seekTo(target)
+        positionMs = target
+        onPositionChanged(target)
     }
 
     DisposableEffect(isEngaged, player) {
@@ -183,6 +218,7 @@ fun InlineTilePlayer(
         while (isActive) {
             positionMs = active.currentPosition.coerceAtLeast(0L)
             durationMs = active.duration.takeIf { it > 0L } ?: 0L
+            onPositionChanged(positionMs)
             delay(ComponentDefaults.InlineTilePlayer.positionPollMs.toLong())
         }
     }
@@ -290,7 +326,8 @@ private fun TileTransport(
 private fun createTilePlayer(
     context: Context,
     filePath: String,
-    listener: Player.Listener
+    listener: Player.Listener,
+    startPositionMs: Long
 ): ExoPlayer? = runCatching {
     ExoPlayer.Builder(context).build().apply {
         setAudioAttributes(
@@ -303,7 +340,10 @@ private fun createTilePlayer(
         repeatMode = Player.REPEAT_MODE_ONE
         volume = VOLUME_MUTED
         addListener(listener)
-        setMediaItem(MediaItem.fromUri(Uri.fromFile(File(filePath))))
+        setMediaItem(
+            MediaItem.fromUri(Uri.fromFile(File(filePath))),
+            startPositionMs.coerceAtLeast(0L)
+        )
         prepare()
         playWhenReady = true
     }

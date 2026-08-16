@@ -175,6 +175,10 @@ fun HomeCustomGridPage(
     isResizing: Boolean = false,
     tilePlayback: Map<Long, String> = emptyMap(),
     engagedTileId: Long? = null,
+    engagedPaused: Boolean = false,
+    engagedSeekTicks: Int = 0,
+    playbackPositions: Map<String, Long> = emptyMap(),
+    onPlaybackPosition: (String, Long) -> Unit = { _, _ -> },
     onTakeAudio: () -> Unit = {},
     onReleaseAudio: () -> Unit = {}
 ) {
@@ -256,6 +260,10 @@ fun HomeCustomGridPage(
                 onCoverLoaded = onCoverLoaded,
                 playbackPath = tilePlayback[tile.id],
                 isEngaged = tile.id == engagedTileId,
+                isPaused = tile.id == engagedTileId && engagedPaused,
+                seekTicks = if (tile.id == engagedTileId) engagedSeekTicks else 0,
+                startPositionMs = tilePlayback[tile.id]?.let { playbackPositions[it] } ?: 0L,
+                onPlaybackPosition = onPlaybackPosition,
                 onTakeAudio = onTakeAudio,
                 onReleaseAudio = onReleaseAudio
             )
@@ -302,6 +310,10 @@ private fun CustomGridCellBox(
     onCoverLoaded: ((Long, android.graphics.Bitmap) -> Unit)?,
     playbackPath: String? = null,
     isEngaged: Boolean = false,
+    isPaused: Boolean = false,
+    seekTicks: Int = 0,
+    startPositionMs: Long = 0L,
+    onPlaybackPosition: (String, Long) -> Unit = { _, _ -> },
     onTakeAudio: () -> Unit = {},
     onReleaseAudio: () -> Unit = {}
 ) {
@@ -328,6 +340,10 @@ private fun CustomGridCellBox(
                 filePath = playbackPath,
                 isPlaying = true,
                 isEngaged = isEngaged,
+                isPaused = isPaused,
+                seekTicks = seekTicks,
+                startPositionMs = startPositionMs,
+                onPositionChanged = { onPlaybackPosition(playbackPath, it) },
                 onTakeAudio = onTakeAudio,
                 onReleaseAudio = onReleaseAudio,
                 modifier = Modifier

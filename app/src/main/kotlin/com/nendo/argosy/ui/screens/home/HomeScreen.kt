@@ -747,6 +747,9 @@ fun HomeScreen(
                                 onCommitEdit = { viewModel.commitTileEdit() },
                                 onTakeAudio = { viewModel.videoPreviewDelegate.holdForTileAudio() },
                                 onReleaseAudio = { viewModel.videoPreviewDelegate.releaseTileAudio() },
+                                onPlaybackPosition = { path, position ->
+                                    viewModel.rememberTilePlaybackPosition(path, position)
+                                },
                                 showEmptySlots = uiState.customGridConfig.showEmptySlots,
                                 onShapeResolved = { columns, rows ->
                                     viewModel.setCustomGridShape(columns, rows)
@@ -852,7 +855,7 @@ fun HomeScreen(
                     FooterHints(
                         hints = when {
                             grid.engagedTileId != null -> listOfNotNull(
-                                InputButton.A to if (uiState.engagedTilePaused) "Play" else "Pause",
+                                InputButton.A to if (grid.engagedPaused) "Play" else "Pause",
                                 InputButton.DPAD_HORIZONTAL to "Seek",
                                 (InputButton.X to "Fullscreen").takeIf {
                                     grid.engagedTile?.target is

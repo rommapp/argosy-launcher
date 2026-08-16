@@ -74,14 +74,39 @@ class CustomGridCoordinator(
         val current = read()
         val tile = current.focusedTile ?: return false
         if (tile.id !in current.tilePlayback) return false
-        write { it.copy(engagedTileId = tile.id, showMenu = false) }
+        write {
+            it.copy(
+                engagedTileId = tile.id,
+                engagedPaused = false,
+                engagedSeekTicks = 0,
+                showMenu = false
+            )
+        }
         return true
     }
 
     fun disengageTile(): Boolean {
         if (read().engagedTileId == null) return false
-        write { it.copy(engagedTileId = null) }
+        write { it.copy(engagedTileId = null, engagedPaused = false, engagedSeekTicks = 0) }
         return true
+    }
+
+    fun toggleEngagedPlayback() {
+        if (read().engagedTileId == null) return
+        write { it.copy(engagedPaused = !it.engagedPaused) }
+    }
+
+    fun seekEngagedTile(forward: Boolean) {
+        if (read().engagedTileId == null) return
+        write { it.copy(engagedSeekTicks = it.engagedSeekTicks + if (forward) 1 else -1) }
+    }
+
+    /**
+     * Records where a file had reached, so the next tile to play it starts from there rather than
+     * from the beginning.
+     */
+    fun rememberPlaybackPosition(filePath: String, positionMs: Long) = write {
+        it.copy(playbackPositions = it.playbackPositions + (filePath to positionMs))
     }
 
     /**

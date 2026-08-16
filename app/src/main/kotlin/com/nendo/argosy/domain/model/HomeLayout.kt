@@ -33,7 +33,8 @@ data class CarouselConfig(
     val inverted: Boolean = false,
     val restingScale: Float = 0.5f,
     val neighbourPush: Boolean = true,
-    val showPlatformBadge: Boolean = true
+    val showPlatformBadge: Boolean = true,
+    val useBoxArt: Boolean = false
 ) : HomeLayoutConfig {
     override val kind: HomeLayoutKind get() = HomeLayoutKind.CAROUSEL
 
@@ -50,7 +51,9 @@ const val MIN_RESTING_SCALE = 0.5f
 data class AutoGridConfig(
     val scrollAxis: HomeScrollAxis = HomeScrollAxis.VERTICAL,
     val laneCount: Int = DEFAULT_LANE_COUNT,
-    val showTitles: Boolean = true
+    val showTitles: Boolean = true,
+    val showAllGames: Boolean = false,
+    val useBoxArt: Boolean = false
 ) : HomeLayoutConfig {
     override val kind: HomeLayoutKind get() = HomeLayoutKind.AUTO_GRID
 }
@@ -140,6 +143,7 @@ data class HomeLayoutSettings(
                 put(KEY_RESTING_SCALE, carousel.restingScale.toDouble())
                 put(KEY_NEIGHBOUR_PUSH, carousel.neighbourPush)
                 put(KEY_PLATFORM_BADGE, carousel.showPlatformBadge)
+                put(KEY_USE_BOX_ART, carousel.useBoxArt)
             }
         )
         put(
@@ -148,6 +152,8 @@ data class HomeLayoutSettings(
                 put(KEY_SCROLL_AXIS, autoGrid.scrollAxis.name)
                 put(KEY_LANE_COUNT, autoGrid.laneCount)
                 put(KEY_SHOW_TITLES, autoGrid.showTitles)
+                put(KEY_SHOW_ALL_GAMES, autoGrid.showAllGames)
+                put(KEY_USE_BOX_ART, autoGrid.useBoxArt)
             }
         )
         put(
@@ -185,6 +191,8 @@ data class HomeLayoutSettings(
         private const val KEY_SCROLL_AXIS = "scrollAxis"
         private const val KEY_LANE_COUNT = "laneCount"
         private const val KEY_SHOW_TITLES = "showTitles"
+        private const val KEY_SHOW_ALL_GAMES = "showAllGames"
+        private const val KEY_USE_BOX_ART = "useBoxArt"
         private const val KEY_AUTO_ADD = "autoAdd"
         private const val KEY_EMPTY_SLOTS = "showEmptySlots"
         private const val KEY_PERSIST_PAGES = "persistBlankPages"
@@ -227,7 +235,9 @@ data class HomeLayoutSettings(
                     neighbourPush = carousel?.optBoolean(KEY_NEIGHBOUR_PUSH, defaults.carousel.neighbourPush)
                         ?: defaults.carousel.neighbourPush,
                     showPlatformBadge = carousel?.optBoolean(KEY_PLATFORM_BADGE, defaults.carousel.showPlatformBadge)
-                        ?: defaults.carousel.showPlatformBadge
+                        ?: defaults.carousel.showPlatformBadge,
+                    useBoxArt = carousel?.optBoolean(KEY_USE_BOX_ART, defaults.carousel.useBoxArt)
+                        ?: defaults.carousel.useBoxArt
                 ),
                 autoGrid = AutoGridConfig(
                     scrollAxis = enumOrDefault(
@@ -237,7 +247,13 @@ data class HomeLayoutSettings(
                     laneCount = autoGrid?.optInt(KEY_LANE_COUNT, defaults.autoGrid.laneCount)
                         ?.coerceIn(MIN_LANE_COUNT, MAX_LANE_COUNT) ?: defaults.autoGrid.laneCount,
                     showTitles = autoGrid?.optBoolean(KEY_SHOW_TITLES, defaults.autoGrid.showTitles)
-                        ?: defaults.autoGrid.showTitles
+                        ?: defaults.autoGrid.showTitles,
+                    showAllGames = autoGrid?.optBoolean(
+                        KEY_SHOW_ALL_GAMES,
+                        defaults.autoGrid.showAllGames
+                    ) ?: defaults.autoGrid.showAllGames,
+                    useBoxArt = autoGrid?.optBoolean(KEY_USE_BOX_ART, defaults.autoGrid.useBoxArt)
+                        ?: defaults.autoGrid.useBoxArt
                 ),
                 customGrid = CustomGridConfig(
                     laneCount = customGrid?.optInt(KEY_LANE_COUNT, defaults.customGrid.laneCount)

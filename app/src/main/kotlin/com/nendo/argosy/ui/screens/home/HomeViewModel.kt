@@ -24,6 +24,7 @@ import com.nendo.argosy.hardware.AmbientLedContext
 import com.nendo.argosy.hardware.AmbientLedManager
 import com.nendo.argosy.ui.common.GridDirection
 import com.nendo.argosy.ui.common.GridFocusNavigator
+import com.nendo.argosy.domain.model.HomeLayoutKind
 import com.nendo.argosy.domain.model.HomeTileTargetRef
 import com.nendo.argosy.domain.model.MediaTilePlayback
 import com.nendo.argosy.ui.components.AutoGridMove
@@ -130,6 +131,7 @@ class HomeViewModel @Inject constructor(
     private val achievementPrefetchDebounceMs = 300L
     private val achievementRefetchThresholdMs = 5 * 60 * 1000L
     private var currentBorderStyle: BoxArtBorderStyle = BoxArtBorderStyle.SOLID
+    private var lastShowsEveryGame: Boolean? = null
 
     init {
         modalResetSignal.signal.onEach {
@@ -431,6 +433,13 @@ class HomeViewModel @Inject constructor(
                     autoFit = prefs.homeLayout.customGrid.autoFit,
                     storedPages = prefs.homeLayout.customGrid.pageCount
                 )
+
+                val showsEveryGame = prefs.homeLayout.selected == HomeLayoutKind.AUTO_GRID &&
+                    prefs.homeLayout.autoGrid.showAllGames
+                if (lastShowsEveryGame != null && lastShowsEveryGame != showsEveryGame) {
+                    refreshCurrentRowInternal()
+                }
+                lastShowsEveryGame = showsEveryGame
 
                 videoPreviewDelegate.updateFromPreferences(
                     muteVideoPreview = prefs.videoWallpaperMuted,

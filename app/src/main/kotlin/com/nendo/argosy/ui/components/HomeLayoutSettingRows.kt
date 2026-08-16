@@ -50,6 +50,9 @@ enum class HomeLayoutSettingField {
     SCROLL_AXIS,
     AUTO_GRID_LANES,
     SHOW_TITLES,
+    AUTO_GRID_SHOW_ALL,
+    CAROUSEL_BOX_ART,
+    AUTO_GRID_BOX_ART,
     CUSTOM_GRID_LANES,
     CUSTOM_GRID_AUTO_ADD,
     CUSTOM_GRID_EMPTY_SLOTS,
@@ -87,12 +90,15 @@ fun homeLayoutFieldsFor(kind: HomeLayoutKind): List<HomeLayoutSettingField> = wh
         HomeLayoutSettingField.RESTING_SCALE,
         HomeLayoutSettingField.NEIGHBOUR_PUSH,
         HomeLayoutSettingField.PLATFORM_BADGE,
+        HomeLayoutSettingField.CAROUSEL_BOX_ART,
         HomeLayoutSettingField.INVERTED
     )
     HomeLayoutKind.AUTO_GRID -> listOf(
         HomeLayoutSettingField.SCROLL_AXIS,
         HomeLayoutSettingField.AUTO_GRID_LANES,
-        HomeLayoutSettingField.SHOW_TITLES
+        HomeLayoutSettingField.SHOW_TITLES,
+        HomeLayoutSettingField.AUTO_GRID_BOX_ART,
+        HomeLayoutSettingField.AUTO_GRID_SHOW_ALL
     )
     HomeLayoutKind.CUSTOM_GRID -> listOf(
         HomeLayoutSettingField.CUSTOM_GRID_LANES,
@@ -137,6 +143,12 @@ fun adjustHomeLayoutField(
             settings.copy(autoGrid = settings.autoGrid.copy(scrollAxis = cycle(settings.autoGrid.scrollAxis, direction)))
         HomeLayoutSettingField.SHOW_TITLES ->
             settings.copy(autoGrid = settings.autoGrid.copy(showTitles = direction > 0))
+        HomeLayoutSettingField.AUTO_GRID_SHOW_ALL ->
+            settings.copy(autoGrid = settings.autoGrid.copy(showAllGames = direction > 0))
+        HomeLayoutSettingField.CAROUSEL_BOX_ART ->
+            settings.copy(carousel = settings.carousel.copy(useBoxArt = direction > 0))
+        HomeLayoutSettingField.AUTO_GRID_BOX_ART ->
+            settings.copy(autoGrid = settings.autoGrid.copy(useBoxArt = direction > 0))
         HomeLayoutSettingField.AUTO_GRID_LANES ->
             settings.copy(autoGrid = settings.autoGrid.copy(laneCount = stepSpan(settings.autoGrid.laneCount, direction)))
         HomeLayoutSettingField.CUSTOM_GRID_LANES ->
@@ -171,6 +183,14 @@ fun toggleHomeLayoutField(settings: HomeLayoutSettings, field: HomeLayoutSetting
             settings.copy(carousel = settings.carousel.copy(showPlatformBadge = !settings.carousel.showPlatformBadge))
         HomeLayoutSettingField.SHOW_TITLES ->
             settings.copy(autoGrid = settings.autoGrid.copy(showTitles = !settings.autoGrid.showTitles))
+        HomeLayoutSettingField.AUTO_GRID_SHOW_ALL ->
+            settings.copy(
+                autoGrid = settings.autoGrid.copy(showAllGames = !settings.autoGrid.showAllGames)
+            )
+        HomeLayoutSettingField.CAROUSEL_BOX_ART ->
+            settings.copy(carousel = settings.carousel.copy(useBoxArt = !settings.carousel.useBoxArt))
+        HomeLayoutSettingField.AUTO_GRID_BOX_ART ->
+            settings.copy(autoGrid = settings.autoGrid.copy(useBoxArt = !settings.autoGrid.useBoxArt))
         HomeLayoutSettingField.CUSTOM_GRID_EMPTY_SLOTS ->
             settings.copy(
                 customGrid = settings.customGrid.copy(
@@ -324,6 +344,27 @@ fun HomeLayoutSettingRow(
         HomeLayoutSettingField.SHOW_TITLES -> SwitchPreference(
             title = "Show Titles",
             isEnabled = settings.autoGrid.showTitles,
+            isFocused = isFocused,
+            onToggle = { onToggle() }
+        )
+        HomeLayoutSettingField.AUTO_GRID_SHOW_ALL -> SwitchPreference(
+            title = "Show Every Game",
+            subtitle = "Scroll a platform's whole library instead of stopping at View All",
+            isEnabled = settings.autoGrid.showAllGames,
+            isFocused = isFocused,
+            onToggle = { onToggle() }
+        )
+        HomeLayoutSettingField.CAROUSEL_BOX_ART -> SwitchPreference(
+            title = "3D Box Art",
+            subtitle = "Draw games that have a spine as a box, and the rest as covers",
+            isEnabled = settings.carousel.useBoxArt,
+            isFocused = isFocused,
+            onToggle = { onToggle() }
+        )
+        HomeLayoutSettingField.AUTO_GRID_BOX_ART -> SwitchPreference(
+            title = "3D Box Art",
+            subtitle = "Draw games that have a spine as a box, and the rest as covers",
+            isEnabled = settings.autoGrid.useBoxArt,
             isFocused = isFocused,
             onToggle = { onToggle() }
         )

@@ -837,6 +837,7 @@ fun HomeScreen(
                                 ),
                                 showPlatformBadge = uiState.carouselConfig.showPlatformBadge &&
                                     uiState.currentRow !is HomeRow.Platform && uiState.currentRow != HomeRow.Steam && uiState.currentRow != HomeRow.Android,
+                                useBoxArt = uiState.carouselConfig.useBoxArt,
                                 onCoverLoadFailed = viewModel::repairCoverImage,
                                 onCoverLoaded = viewModel::extractGradientForGame,
                                 onItemTap = { index -> viewModel.handleItemTap(index, onGameSelect) },

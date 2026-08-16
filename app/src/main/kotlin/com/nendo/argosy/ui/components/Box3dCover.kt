@@ -57,7 +57,8 @@ fun Box3dCover(
     frontPath: String,
     spinePath: String,
     backPath: String? = null,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    isInteractive: Boolean = true
 ) {
     var faces by remember(frontPath, spinePath, backPath) { mutableStateOf<BoxFaces?>(null) }
     androidx.compose.runtime.LaunchedEffect(frontPath, spinePath, backPath) {
@@ -78,8 +79,8 @@ fun Box3dCover(
     var isDragging by remember(frontPath, spinePath, backPath) { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
-    androidx.compose.runtime.LaunchedEffect(isDragging, faces) {
-        if (isDragging || faces == null) return@LaunchedEffect
+    androidx.compose.runtime.LaunchedEffect(isDragging, faces, isInteractive) {
+        if (!isInteractive || isDragging || faces == null) return@LaunchedEffect
         while (true) {
             yaw.animateTo(yaw.value + 360f, tween(SPIN_PERIOD_MS, easing = LinearEasing))
         }
@@ -87,6 +88,13 @@ fun Box3dCover(
 
     val loaded = faces ?: return
     val compositeRatio = loaded.frontRatio + loaded.spineRatio
+
+    if (!isInteractive) {
+        Canvas(modifier = modifier.aspectRatio(compositeRatio)) {
+            drawBox(loaded, REST_YAW_DEG, 0f)
+        }
+        return
+    }
 
     Canvas(
         modifier = modifier

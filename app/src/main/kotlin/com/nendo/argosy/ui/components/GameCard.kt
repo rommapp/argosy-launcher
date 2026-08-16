@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -53,6 +54,7 @@ import androidx.compose.ui.graphics.BlurEffect
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.CompositingStrategy
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.Paint
 import androidx.compose.ui.graphics.TileMode
@@ -106,7 +108,8 @@ fun GameCard(
     onCoverLoaded: ((gameId: Long, bitmap: Bitmap) -> Unit)? = null,
     scaleOverride: Float? = null,
     alphaOverride: Float? = null,
-    saturationOverride: Float? = null
+    saturationOverride: Float? = null,
+    useBoxArt: Boolean = false
 ) {
     val themeConfig = LocalLauncherTheme.current
     val boxArtStyle = LocalBoxArtStyle.current
@@ -198,6 +201,31 @@ fun GameCard(
         ),
         label = "outerShine"
     ) ?: remember { mutableStateOf(0f) }
+
+    val boxSpinePath = game.boxSpinePath
+    if (useBoxArt && boxSpinePath != null && effectiveCoverPath.isNotEmpty()) {
+        Box(
+            modifier = modifier.boxArtFrame(
+                isFocused = isFocused,
+                focusScale = focusScale,
+                scalePivotY = scalePivotY,
+                scaleOverride = scaleOverride,
+                alphaOverride = alphaOverride,
+                artworkGradient = coverGradientColors,
+                background = SolidColor(Color.Transparent),
+                drawBorder = false
+            ),
+            contentAlignment = Alignment.Center
+        ) {
+            Box3dCover(
+                frontPath = effectiveCoverPath,
+                spinePath = boxSpinePath,
+                isInteractive = false,
+                modifier = Modifier.fillMaxHeight()
+            )
+        }
+        return
+    }
 
     BoxWithConstraints(
         modifier = modifier
@@ -813,7 +841,8 @@ fun GameCardWithNewBadge(
     onCoverLoadFailed: ((gameId: Long, failedPath: String) -> Unit)? = null,
     onCoverLoaded: ((gameId: Long, bitmap: Bitmap) -> Unit)? = null,
     scaleOverride: Float? = null,
-    alphaOverride: Float? = null
+    alphaOverride: Float? = null,
+    useBoxArt: Boolean = false
 ) {
     val showNewBadge = game.isNew && !downloadIndicator.isActive
     val badgeWidthDp = 44.dp
@@ -841,6 +870,7 @@ fun GameCardWithNewBadge(
                 scalePivotY = scalePivotY,
                 downloadIndicator = downloadIndicator,
                 showPlatformBadge = showPlatformBadge,
+                useBoxArt = useBoxArt,
                 coverPathOverride = coverPathOverride,
                 onCoverLoadFailed = onCoverLoadFailed,
                 onCoverLoaded = onCoverLoaded,

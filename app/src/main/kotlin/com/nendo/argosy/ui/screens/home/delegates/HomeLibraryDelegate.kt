@@ -6,11 +6,13 @@ import com.nendo.argosy.data.model.GameSource
 import com.nendo.argosy.data.emulator.EmulatorDetector
 import com.nendo.argosy.data.platform.LocalPlatformIds
 import com.nendo.argosy.data.preferences.BoxArtBorderStyle
+import com.nendo.argosy.data.preferences.UserPreferences
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.repository.DownloadFileStatusRepository
 import com.nendo.argosy.data.repository.GameRepository
 import com.nendo.argosy.data.repository.PlatformRepository
 import com.nendo.argosy.domain.model.CompletionStatus
+import com.nendo.argosy.domain.model.HomeLayoutKind
 import com.nendo.argosy.domain.model.PinnedCollection
 import com.nendo.argosy.domain.usecase.collection.GetGamesForPinnedCollectionUseCase
 import com.nendo.argosy.domain.usecase.collection.GetPinnedCollectionsUseCase
@@ -47,6 +49,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 private const val PLATFORM_GAMES_LIMIT = 20
+private const val PLATFORM_GAMES_UNCAPPED = Int.MAX_VALUE
 private const val TILE_PICKER_LIMIT = 60
 private const val MAX_DISPLAYED_RECOMMENDATIONS = 16
 private const val RECOMMENDATION_PENALTY = 0.9f
@@ -56,6 +59,7 @@ private val EXCLUDED_RECOMMENDATION_STATUSES = setOf(
     CompletionStatus.NEVER_PLAYING.apiValue
 )
 private const val RECENT_GAMES_LIMIT = 10
+private const val RECENT_GAMES_LIMIT_GRID = 32
 private const val RECENT_GAMES_CANDIDATE_POOL = 40
 private const val NEW_GAME_THRESHOLD_HOURS = 24L
 private const val RECENT_PLAYED_THRESHOLD_HOURS = 4L
@@ -168,7 +172,7 @@ class HomeLibraryDelegate @Inject constructor(
 
         val playableGames = filterPlayable(allCandidates)
         val sortedRecent = sortRecentGamesWithNewPriority(playableGames)
-        val validatedRecent = sortedRecent.take(RECENT_GAMES_LIMIT).map { it.toUi() }
+        val validatedRecent = sortedRecent.take(recentGamesLimit()).map { it.toUi() }
         recentGamesCache.set(RecentGamesCache(validatedRecent, recentGamesCache.get().version))
 
         val platformUis = platforms.map { it.toHomePlatformUi(emulatorDetector) }
@@ -233,7 +237,7 @@ class HomeLibraryDelegate @Inject constructor(
 
                 val playableGames = filterPlayable(allCandidates)
                 val sorted = sortRecentGamesWithNewPriority(playableGames)
-                val validated = sorted.take(RECENT_GAMES_LIMIT).map { it.toUi() }
+                val validated = sorted.take(recentGamesLimit()).map { it.toUi() }
 
                 recentGamesCache.set(RecentGamesCache(validated, recentGamesCache.get().version))
                 _state.update { it.copy(recentGames = validated) }
@@ -275,7 +279,7 @@ class HomeLibraryDelegate @Inject constructor(
 
             val playableGames = filterPlayable(allCandidates)
             val sorted = sortRecentGamesWithNewPriority(playableGames)
-            val validated = sorted.take(RECENT_GAMES_LIMIT).map { it.toUi() }
+            val validated = sorted.take(recentGamesLimit()).map { it.toUi() }
 
             recentGamesCache.compareAndSet(
                 RecentGamesCache(null, startVersion),
@@ -389,17 +393,19 @@ class HomeLibraryDelegate @Inject constructor(
     }
 
     suspend fun loadGamesForPlatformInternal(platformId: Long, platformIndex: Int) {
-        var games = gameRepository.getByPlatformSorted(platformId, limit = PLATFORM_GAMES_LIMIT)
+        val prefs = preferencesRepository.userPreferences.first()
+        val uncapped = showsEveryGame(prefs)
+        val limit = if (uncapped) PLATFORM_GAMES_UNCAPPED else PLATFORM_GAMES_LIMIT
+        var games = gameRepository.getByPlatformSorted(platformId, limit = limit)
         if (discoverGamesIfNeeded(games)) {
-            games = gameRepository.getByPlatformSorted(platformId, limit = PLATFORM_GAMES_LIMIT)
+            games = gameRepository.getByPlatformSorted(platformId, limit = limit)
         }
-        val installedOnly = preferencesRepository.userPreferences.first().installedOnlyHome
-        if (installedOnly) {
+        if (prefs.installedOnlyHome) {
             games = filterPlayable(games)
         }
         val platform = _state.value.platforms.getOrNull(platformIndex)
         val gameItems: List<HomeRowItem> = games.map { HomeRowItem.Game(it.toUi()) }
-        val items: List<HomeRowItem> = if (platform != null) {
+        val items: List<HomeRowItem> = if (platform != null && !uncapped) {
             gameItems + HomeRowItem.ViewAll(
                 platformId = platform.id,
                 platformName = platform.name,
@@ -410,6 +416,27 @@ class HomeLibraryDelegate @Inject constructor(
         }
         _state.update { it.copy(platformItems = items) }
     }
+
+    /**
+     * Whether a platform row should carry its whole library rather than a leading slice and a way
+     * into the library screen. Only the auto grid offers this: a carousel walks one cover at a time,
+     * so an uncapped rail there is a corridor rather than a shortcut.
+     */
+    private fun showsEveryGame(prefs: UserPreferences): Boolean =
+        prefs.homeLayout.selected == HomeLayoutKind.AUTO_GRID &&
+            prefs.homeLayout.autoGrid.showAllGames
+
+    /**
+     * How deep the resume shelf runs. It is a shelf rather than a library even when the grid shows
+     * everything else in full: past a certain depth nothing on it is what the user came back for.
+     * The grid earns a deeper one only because it fits far more on a screen than a rail does.
+     */
+    private suspend fun recentGamesLimit(): Int =
+        if (showsEveryGame(preferencesRepository.userPreferences.first())) {
+            RECENT_GAMES_LIMIT_GRID
+        } else {
+            RECENT_GAMES_LIMIT
+        }
 
     suspend fun loadGamesForPinnedCollection(pinId: Long) {
         val pinned = _state.value.pinnedCollections.find { it.id == pinId } ?: return
@@ -451,7 +478,7 @@ class HomeLibraryDelegate @Inject constructor(
 
                 val playableGames = filterPlayable(allCandidates)
                 val sorted = sortRecentGamesWithNewPriority(playableGames)
-                val validated = sorted.take(RECENT_GAMES_LIMIT).map { it.toUi() }
+                val validated = sorted.take(recentGamesLimit()).map { it.toUi() }
 
                 val currentCache = recentGamesCache.get()
                 recentGamesCache.compareAndSet(
@@ -464,17 +491,25 @@ class HomeLibraryDelegate @Inject constructor(
             }
             is HomeRow.Platform -> {
                 val platform = _state.value.platforms.getOrNull(currentRow.index) ?: return RefreshResult(emptyList())
-                var games = gameRepository.getByPlatformSorted(platform.id, limit = PLATFORM_GAMES_LIMIT)
-                val installedOnly = preferencesRepository.userPreferences.first().installedOnlyHome
-                if (installedOnly) {
+                val prefs = preferencesRepository.userPreferences.first()
+                val uncapped = showsEveryGame(prefs)
+                var games = gameRepository.getByPlatformSorted(
+                    platform.id,
+                    limit = if (uncapped) PLATFORM_GAMES_UNCAPPED else PLATFORM_GAMES_LIMIT
+                )
+                if (prefs.installedOnlyHome) {
                     games = filterPlayable(games)
                 }
                 val gameItems: List<HomeRowItem> = games.map { HomeRowItem.Game(it.toUi()) }
-                val items: List<HomeRowItem> = gameItems + HomeRowItem.ViewAll(
-                    platformId = platform.id,
-                    platformName = platform.name,
-                    logoPath = platform.logoPath
-                )
+                val items: List<HomeRowItem> = if (uncapped) {
+                    gameItems
+                } else {
+                    gameItems + HomeRowItem.ViewAll(
+                        platformId = platform.id,
+                        platformName = platform.name,
+                        logoPath = platform.logoPath
+                    )
+                }
                 _state.update { it.copy(platformItems = items) }
                 RefreshResult(items.mapNotNull { (it as? HomeRowItem.Game)?.game?.id })
             }

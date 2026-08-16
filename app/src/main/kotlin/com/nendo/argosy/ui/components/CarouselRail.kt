@@ -304,6 +304,7 @@ fun CarouselRail(
     showFocusVisuals: Boolean = true,
     showPlatformBadge: Boolean = true,
     showNewBadge: Boolean = true,
+    useBoxArt: Boolean = false,
     viewAllStyle: ViewAllCardStyle = ViewAllCardStyle.OUTLINE_GRID,
     onItemTap: (Int) -> Unit = {},
     onItemLongPress: ((Int) -> Unit)? = null,
@@ -387,6 +388,7 @@ fun CarouselRail(
                         fallbackAspectRatio = boxArtStyle.aspectRatio,
                         showPlatformBadge = showPlatformBadge,
                         showNewBadge = showNewBadge,
+                        useBoxArt = useBoxArt,
                         onCoverLoadFailed = onCoverLoadFailed,
                         onCoverLoaded = onCoverLoaded,
                         modifier = cardModifier
@@ -489,6 +491,7 @@ private fun CarouselGameCard(
     fallbackAspectRatio: Float,
     showPlatformBadge: Boolean,
     showNewBadge: Boolean,
+    useBoxArt: Boolean,
     onCoverLoadFailed: ((Long, String) -> Unit)?,
     onCoverLoaded: ((Long, Bitmap) -> Unit)?,
     modifier: Modifier = Modifier
@@ -516,6 +519,7 @@ private fun CarouselGameCard(
         scalePivotY = metrics.scalePivotY,
         downloadIndicator = item.downloadIndicator,
         showPlatformBadge = showPlatformBadge,
+        useBoxArt = useBoxArt,
         coverPathOverride = item.coverPathOverride,
         onCoverLoadFailed = onCoverLoadFailed,
         onCoverLoaded = onCoverLoaded,

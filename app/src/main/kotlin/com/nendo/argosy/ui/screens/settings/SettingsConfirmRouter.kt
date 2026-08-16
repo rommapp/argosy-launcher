@@ -1026,6 +1026,7 @@ private fun routeAboutConfirm(vm: SettingsViewModel, state: SettingsUiState): In
             return InputResult.handled(SoundType.TOGGLE)
         }
         AboutItem.SystemizeHelper -> vm.writeSystemizeScript()
+        AboutItem.RestartApp -> vm.restartApp()
         else -> {}
     }
     return InputResult.HANDLED

@@ -929,6 +929,29 @@ interface GameDao {
     """)
     fun searchForQuickMenu(query: String, ownerUserId: Long?, limit: Int = 10): Flow<List<GameEntity>>
 
+    /**
+     * Search narrowed to games that could be on this device, so the limit applies to candidates the
+     * caller can actually use. Whether the file is still on disk is settled afterwards; everything
+     * that was never downloaded is excluded here.
+     */
+    @Query("""
+        SELECT * FROM games
+        WHERE searchTitle LIKE '%' || :query || '%'
+        AND NOT EXISTS (SELECT 1 FROM user_roms_hidden h WHERE h.gameId = games.id AND (h.ownerUserId IS NULL OR h.ownerUserId IS :ownerUserId))
+        AND (
+            source = 'ANDROID_APP'
+            OR localPath IS NOT NULL
+            OR (steamLauncher IS NOT NULL AND steamLauncher != 'native')
+        )
+        ORDER BY
+            CASE WHEN searchTitle LIKE :query || '%' THEN 0 ELSE 1 END,
+            CASE WHEN rating IS NULL THEN 1 ELSE 0 END,
+            rating DESC,
+            sortTitle ASC
+        LIMIT :limit
+    """)
+    fun searchInstalled(query: String, ownerUserId: Long?, limit: Int): Flow<List<GameEntity>>
+
     @Query("""
         SELECT id, title, rating FROM games
         WHERE NOT EXISTS (SELECT 1 FROM user_roms_hidden h WHERE h.gameId = games.id AND (h.ownerUserId IS NULL OR h.ownerUserId IS :ownerUserId))

@@ -148,7 +148,11 @@ class DualCustomGridInputRouter(
         return InputResult.handled(SoundType.SECTION_CHANGE)
     }
 
-    private fun move(direction: GridDirection2D): InputResult {
+    /**
+     * Returns null when the cursor could not move, so a press at the edge of a page reaches the
+     * surfaces around the grid rather than being swallowed by it.
+     */
+    private fun move(direction: GridDirection2D): InputResult? {
         val grid = viewModel.uiState.value.customGrid
         val vertical = direction == GridDirection2D.UP || direction == GridDirection2D.DOWN
         val delta = if (direction == GridDirection2D.UP) -1 else 1
@@ -177,7 +181,7 @@ class DualCustomGridInputRouter(
             }
             TileEditMode.NONE -> Unit
         }
-        viewModel.moveCustomGridFocus(direction)
+        if (!viewModel.moveCustomGridFocus(direction)) return null
         onBroadcastSelection()
         return InputResult.HANDLED
     }

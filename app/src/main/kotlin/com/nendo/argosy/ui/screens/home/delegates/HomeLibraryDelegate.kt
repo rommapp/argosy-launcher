@@ -705,7 +705,7 @@ class HomeLibraryDelegate @Inject constructor(
      */
     suspend fun searchInstalledForTiles(query: String): List<com.nendo.argosy.ui.components.TilePickerEntry> {
         val matches = gameRepository
-            .searchForQuickMenu(query.trim(), TILE_PICKER_LIMIT)
+            .searchInstalled(query.trim(), TILE_PICKER_LIMIT)
             .first()
         return filterPlayable(matches).map { game ->
             com.nendo.argosy.ui.components.TilePickerEntry(

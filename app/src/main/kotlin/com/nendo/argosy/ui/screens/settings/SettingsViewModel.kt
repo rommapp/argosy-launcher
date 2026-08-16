@@ -1557,6 +1557,19 @@ class SettingsViewModel @Inject constructor(
         _uiState.update { it.copy(systemizeResult = com.nendo.argosy.util.SystemizeScript.write(context)) }
     }
 
+    /**
+     * Relaunches the app through a fresh task so the process is replaced rather than resumed. As a
+     * home launcher Argosy is otherwise awkward to restart by hand.
+     */
+    fun restartApp() {
+        val intent = context.packageManager.getLaunchIntentForPackage(context.packageName)
+            ?.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+            ?.addFlags(android.content.Intent.FLAG_ACTIVITY_CLEAR_TASK)
+            ?: return
+        context.startActivity(intent)
+        Runtime.getRuntime().exit(0)
+    }
+
     fun dismissSystemizeDialog() {
         _uiState.update { it.copy(systemizeResult = null) }
     }

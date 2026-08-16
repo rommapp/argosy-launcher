@@ -16,6 +16,7 @@ import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.HealthAndSafety
 import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material.icons.outlined.Article
+import androidx.compose.material.icons.outlined.RestartAlt
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -72,6 +73,7 @@ internal sealed class AboutItem(
     data object BetaUpdates : AboutItem("betaUpdates", "version")
     data object SystemSpacer : AboutItem("systemSpacer", "system")
     data object SystemizeHelper : AboutItem("systemizeHelper", "system")
+    data object RestartApp : AboutItem("restartApp", "system")
     data object SectionSpacer : AboutItem("spacer", "debug")
     data object FileLogging : AboutItem("fileLogging", "debug")
     data object LogLevel : AboutItem(
@@ -94,7 +96,7 @@ internal sealed class AboutItem(
         val ALL: List<AboutItem>
             get() = listOf(
                 VersionHeader, VersionInfo, CheckUpdates, ChangelogPreview, BetaUpdates,
-                SystemSpacer, SystemHeader, SystemizeHelper,
+                SystemSpacer, SystemHeader, SystemizeHelper, RestartApp,
                 SectionSpacer, DebugHeader, FileLogging, LogLevel, SaveDebugLogging
             )
     }
@@ -235,6 +237,14 @@ fun AboutSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                     subtitle = "Argosy can be force-closed when a demanding emulator uses most of the RAM. On a rooted device, this writes a script that makes Argosy a system app so it is no longer killed.",
                     isFocused = isFocused(item),
                     onClick = { viewModel.writeSystemizeScript() }
+                )
+
+                AboutItem.RestartApp -> ActionPreference(
+                    icon = Icons.Outlined.RestartAlt,
+                    title = "Restart Argosy",
+                    subtitle = "Close and reopen the launcher",
+                    isFocused = isFocused(item),
+                    onClick = { viewModel.restartApp() }
                 )
 
                 AboutItem.SectionSpacer -> Spacer(modifier = Modifier.height(Dimens.spacingMd))

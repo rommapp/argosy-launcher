@@ -48,6 +48,14 @@ class HomeVideoPreviewDelegate @Inject constructor(
         }
     }
 
+    /**
+     * Quiets the launcher's music while an engaged tile is sounding. Platform audio focus does not
+     * reach it, so this is the only thing that does.
+     */
+    fun holdForTileAudio() = ambientAudioManager.fadeOut()
+
+    fun releaseTileAudio() = ambientAudioManager.fadeIn()
+
     fun startVideoPreviewLoading(videoId: String) {
         _state.update {
             it.copy(

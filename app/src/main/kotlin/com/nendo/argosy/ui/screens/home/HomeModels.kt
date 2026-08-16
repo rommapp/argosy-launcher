@@ -204,6 +204,13 @@ data class HomeUiState(
     val mediaLibrariesLoaded: Boolean = false,
     val mediaDownloadProgress: Map<String, com.nendo.argosy.data.repository.MediaTransferProgress> =
         emptyMap(),
+    val engagedTilePaused: Boolean = false,
+    /**
+     * Counts seek presses rather than holding a position: the player owns the clock, and a number
+     * that only ever changes lets it act on each press without the state pretending to know where
+     * the file is.
+     */
+    val engagedTileSeek: Int = 0,
     val isMediaSignedIn: Boolean = false,
     val isMediaLoading: Boolean = false,
     val showNextUpRow: Boolean = true,

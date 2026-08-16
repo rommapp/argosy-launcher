@@ -745,6 +745,8 @@ fun HomeScreen(
                                 onTileResize = { cell -> viewModel.resizeEditingTileTo(cell) },
                                 onToggleEditMode = { viewModel.toggleTileEditMode() },
                                 onCommitEdit = { viewModel.commitTileEdit() },
+                                onTakeAudio = { viewModel.videoPreviewDelegate.holdForTileAudio() },
+                                onReleaseAudio = { viewModel.videoPreviewDelegate.releaseTileAudio() },
                                 showEmptySlots = uiState.customGridConfig.showEmptySlots,
                                 onShapeResolved = { columns, rows ->
                                     viewModel.setCustomGridShape(columns, rows)
@@ -849,6 +851,15 @@ fun HomeScreen(
                     val grid = uiState.customGrid
                     FooterHints(
                         hints = when {
+                            grid.engagedTileId != null -> listOfNotNull(
+                                InputButton.A to if (uiState.engagedTilePaused) "Play" else "Pause",
+                                InputButton.DPAD_HORIZONTAL to "Seek",
+                                (InputButton.X to "Fullscreen").takeIf {
+                                    grid.engagedTile?.target is
+                                        com.nendo.argosy.domain.model.HomeTileTargetRef.Media
+                                },
+                                InputButton.B to "Back to grid"
+                            )
                             grid.mediaTileNotice != null ->
                                 listOf(InputButton.DPAD_HORIZONTAL to "Choose")
                             grid.isMediaSetupOpen && grid.mediaSetup?.step ==

@@ -172,7 +172,12 @@ fun HomeCustomGridPage(
     onTileResize: ((GridCell) -> Unit)? = null,
     onToggleEditMode: (() -> Unit)? = null,
     onCommitEdit: (() -> Unit)? = null,
-    isResizing: Boolean = false
+    isResizing: Boolean = false,
+    tilePlayback: Map<Long, String> = emptyMap(),
+    previewingTileId: Long? = null,
+    engagedTileId: Long? = null,
+    onTakeAudio: () -> Unit = {},
+    onReleaseAudio: () -> Unit = {}
 ) {
     val density = LocalDensity.current
     var measured by remember { mutableStateOf(IntSize.Zero) }
@@ -249,7 +254,12 @@ fun HomeCustomGridPage(
                     androidx.compose.ui.geometry.Offset.Zero,
                 downloadIndicatorFor = downloadIndicatorFor,
                 onCoverLoadFailed = onCoverLoadFailed,
-                onCoverLoaded = onCoverLoaded
+                onCoverLoaded = onCoverLoaded,
+                playbackPath = tilePlayback[tile.id],
+                isPreviewing = tile.id == previewingTileId,
+                isEngaged = tile.id == engagedTileId,
+                onTakeAudio = onTakeAudio,
+                onReleaseAudio = onReleaseAudio
             )
             }
         }
@@ -291,7 +301,12 @@ private fun CustomGridCellBox(
     isOverlapped: Boolean,
     downloadIndicatorFor: (Long) -> com.nendo.argosy.ui.screens.home.GameDownloadIndicator,
     onCoverLoadFailed: ((Long, String) -> Unit)?,
-    onCoverLoaded: ((Long, android.graphics.Bitmap) -> Unit)?
+    onCoverLoaded: ((Long, android.graphics.Bitmap) -> Unit)?,
+    playbackPath: String? = null,
+    isPreviewing: Boolean = false,
+    isEngaged: Boolean = false,
+    onTakeAudio: () -> Unit = {},
+    onReleaseAudio: () -> Unit = {}
 ) {
     val theme = LocalArgosyTheme.current
     val boxArtStyle = com.nendo.argosy.ui.theme.LocalBoxArtStyle.current
@@ -327,6 +342,26 @@ private fun CustomGridCellBox(
     val media = content?.media
     if (media != null) {
         Box(modifier = placement, contentAlignment = Alignment.Center) {
+            if (playbackPath != null && isPreviewing) {
+                InlineTilePlayer(
+                    filePath = playbackPath,
+                    isPlaying = true,
+                    isEngaged = isEngaged,
+                    onTakeAudio = onTakeAudio,
+                    onReleaseAudio = onReleaseAudio,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .clip(shape)
+                        .clickableNoFocus(onClick = onClick)
+                )
+                if (editModeLabel != null && isFocused) {
+                    TileModeTab(
+                        label = editModeLabel,
+                        modifier = Modifier.align(Alignment.TopEnd)
+                    )
+                }
+                return@Box
+            }
             MediaCard(
                 media = media,
                 isFocused = isFocused,

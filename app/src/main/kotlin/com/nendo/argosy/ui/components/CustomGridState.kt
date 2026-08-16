@@ -50,6 +50,17 @@ data class CustomGridState(
     val pickerEntries: List<TilePickerEntry> = emptyList(),
     val mediaAvailable: Boolean = false,
     val supportsLocalVideo: Boolean = false,
+    /**
+     * The tile currently holding the d-pad, or null. An engaged tile plays with sound and takes
+     * the directional keys for its own transport; Menu and system Back are never taken, so there
+     * is always a way out.
+     */
+    val engagedTileId: Long? = null,
+    /**
+     * Local files the media tiles on this page resolve to, keyed by tile id. Only tiles with an
+     * entry here can preview; everything else draws its poster.
+     */
+    val tilePlayback: Map<Long, String> = emptyMap(),
     val mediaSetup: MediaTileSetup? = null,
     val showFileBrowser: Boolean = false,
     val pendingAdd: TilePickerEntry? = null,
@@ -156,6 +167,22 @@ data class CustomGridState(
         get() = editingTile ?: tilesOnPage(page).firstOrNull {
             it.rect.covers(cell.columnIndex, cell.rowIndex)
         }
+
+    val engagedTile: HomeTile?
+        get() = engagedTileId?.let { id -> tiles.firstOrNull { it.id == id } }
+
+    /**
+     * The file the engaged tile is playing, if it has one.
+     */
+    val engagedPlaybackPath: String?
+        get() = engagedTileId?.let { tilePlayback[it] }
+
+    /**
+     * The one tile allowed to spend a decoder: the engaged tile, or the focused one when nothing
+     * is engaged. Handhelds hold two to four hardware decoders in total, shared with the emulator.
+     */
+    val previewingTileId: Long?
+        get() = engagedTileId ?: focusedTile?.id?.takeIf { it in tilePlayback }
 
     /**
      * Whether the focused tile carries a play mode, and so has curation worth reopening.

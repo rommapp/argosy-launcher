@@ -25,6 +25,7 @@ import com.nendo.argosy.hardware.AmbientLedManager
 import com.nendo.argosy.ui.common.GridDirection
 import com.nendo.argosy.ui.common.GridFocusNavigator
 import com.nendo.argosy.domain.model.HomeTileTargetRef
+import com.nendo.argosy.domain.model.MediaTilePlayback
 import com.nendo.argosy.ui.components.AutoGridMove
 import com.nendo.argosy.ui.components.autoGridMove
 import com.nendo.argosy.ui.screens.home.delegates.GameMenuAction
@@ -723,6 +724,25 @@ class HomeViewModel @Inject constructor(
         _uiState.update {
             it.copy(tileGames = games, tileCollections = collections, tileApps = apps)
         }
+        resolveTilePlayback(shown)
+    }
+
+    /**
+     * Works out which tiles have a file on this device to play. A tile with nothing local draws its
+     * poster, so the map is the whole answer to whether a tile can preview or be engaged.
+     */
+    private fun resolveTilePlayback(tiles: List<com.nendo.argosy.domain.model.HomeTile>) {
+        viewModelScope.launch {
+            val playable = tiles
+                .filter { it.target is HomeTileTargetRef.Media || it.target is HomeTileTargetRef.LocalMedia }
+                .mapNotNull { tile ->
+                    val path = (tilePickerDelegate.playbackFor(tile) as? MediaTilePlayback.Ready)
+                        ?.localPath
+                    path?.let { tile.id to it }
+                }
+                .toMap()
+            customGrid.setTilePlayback(playable)
+        }
     }
 
     /**
@@ -892,6 +912,43 @@ class HomeViewModel @Inject constructor(
             return
         }
         startMedia(media, startOver = false)
+    }
+
+    override fun engageFocusedTile(): Boolean {
+        val engaged = customGrid.engageFocusedTile()
+        if (engaged) videoPreviewDelegate.holdForTileAudio()
+        return engaged
+    }
+
+    override fun disengageTile(): Boolean {
+        val released = customGrid.disengageTile()
+        if (released) {
+            videoPreviewDelegate.releaseTileAudio()
+            _uiState.update { it.copy(engagedTilePaused = false, engagedTileSeek = 0) }
+        }
+        return released
+    }
+
+    override fun toggleEngagedPlayback() {
+        _uiState.update { it.copy(engagedTilePaused = !it.engagedTilePaused) }
+    }
+
+    override fun seekEngagedTile(forward: Boolean) {
+        _uiState.update {
+            it.copy(engagedTileSeek = it.engagedTileSeek + if (forward) 1 else -1)
+        }
+    }
+
+    /**
+     * Hands the engaged tile to the fullscreen player and lets go of it here, so one file is never
+     * open on two surfaces at once. A tile pointing at a loose file has no library item behind it
+     * to open, so it stays where it is and keeps playing.
+     */
+    override fun openEngagedFullscreen() {
+        val target = _uiState.value.customGrid.engagedTile?.target
+        if (target !is HomeTileTargetRef.Media) return
+        disengageTile()
+        playTileMedia(target.itemId)
     }
 
     override fun enterTileMoveMode() = customGrid.enterMoveMode()

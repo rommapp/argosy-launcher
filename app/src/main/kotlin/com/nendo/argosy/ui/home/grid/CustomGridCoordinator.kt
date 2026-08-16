@@ -64,6 +64,26 @@ class CustomGridCoordinator(
 
     fun setTiles(tiles: List<HomeTile>) = write { it.copy(tiles = tiles) }
 
+    fun setTilePlayback(playback: Map<Long, String>) = write { it.copy(tilePlayback = playback) }
+
+    /**
+     * Hands the d-pad to the focused tile. Answers false when it has nothing to play, so the caller
+     * can fall back to whatever a press on that tile otherwise means.
+     */
+    fun engageFocusedTile(): Boolean {
+        val current = read()
+        val tile = current.focusedTile ?: return false
+        if (tile.id !in current.tilePlayback) return false
+        write { it.copy(engagedTileId = tile.id, showMenu = false) }
+        return true
+    }
+
+    fun disengageTile(): Boolean {
+        if (read().engagedTileId == null) return false
+        write { it.copy(engagedTileId = null) }
+        return true
+    }
+
     /**
      * Applies the parts of the layout config the grid itself has to obey. Kept on the state rather
      * than read from preferences at each decision point, so a placement and the page it lands on
@@ -147,6 +167,7 @@ class CustomGridCoordinator(
         write {
             it.copy(
                 page = target,
+                engagedTileId = null,
                 cell = GridCell(
                     entryColumn,
                     it.cell.rowIndex.coerceIn(0, (it.rows - 1).coerceAtLeast(0))
@@ -188,6 +209,7 @@ class CustomGridCoordinator(
                 editingTileId = tile.id,
                 editingRect = tile.rect,
                 editingPage = it.page,
+                engagedTileId = null,
                 showMenu = false
             )
         }

@@ -47,6 +47,16 @@ interface HomeInputActions {
     fun cycleTilePickerCategory(delta: Int)
 
     fun jumpTilePickerLetter(forward: Boolean)
+
+    fun engageFocusedTile(): Boolean
+
+    fun disengageTile(): Boolean
+
+    fun toggleEngagedPlayback()
+
+    fun seekEngagedTile(forward: Boolean)
+
+    fun openEngagedFullscreen()
     fun launchTileApp(packageName: String)
     fun openTileCollection(collectionId: Long)
     fun playTileMedia(itemId: String)
@@ -92,6 +102,7 @@ class HomeInputHandler(
 
     override fun onUp(): InputResult {
         val state = actions.uiState.value
+        if (state.customGrid.engagedTileId != null) return InputResult.handled(SoundType.BOUNDARY)
         if (state.customGrid.mediaTileNotice != null) return InputResult.HANDLED
         if (state.customGrid.isMediaSetupOpen) {
             actions.moveMediaTileSetupFocus(-1)
@@ -125,6 +136,7 @@ class HomeInputHandler(
 
     override fun onDown(): InputResult {
         val state = actions.uiState.value
+        if (state.customGrid.engagedTileId != null) return InputResult.handled(SoundType.BOUNDARY)
         if (state.customGrid.mediaTileNotice != null) return InputResult.HANDLED
         if (state.customGrid.isMediaSetupOpen) {
             actions.moveMediaTileSetupFocus(1)
@@ -157,6 +169,10 @@ class HomeInputHandler(
     }
 
     override fun onLeft(): InputResult {
+        if (actions.uiState.value.customGrid.engagedTileId != null) {
+            actions.seekEngagedTile(false)
+            return InputResult.HANDLED
+        }
         if (actions.uiState.value.customGrid.pendingAdd != null) {
             actions.movePendingTileAddFocus(-1)
             return InputResult.HANDLED
@@ -178,6 +194,10 @@ class HomeInputHandler(
     }
 
     override fun onRight(): InputResult {
+        if (actions.uiState.value.customGrid.engagedTileId != null) {
+            actions.seekEngagedTile(true)
+            return InputResult.HANDLED
+        }
         if (actions.uiState.value.customGrid.pendingAdd != null) {
             actions.movePendingTileAddFocus(1)
             return InputResult.HANDLED
@@ -217,6 +237,7 @@ class HomeInputHandler(
             actions.confirmAddPage()
             return
         }
+        if (actions.engageFocusedTile()) return
         when (val target = state.customGrid.focusedTile?.target) {
             is com.nendo.argosy.domain.model.HomeTileTargetRef.Game ->
                 actions.launchGame(target.gameId)
@@ -261,6 +282,10 @@ class HomeInputHandler(
 
     override fun onConfirm(): InputResult {
         val state = actions.uiState.value
+        if (state.customGrid.engagedTileId != null) {
+            actions.toggleEngagedPlayback()
+            return InputResult.HANDLED
+        }
         if (state.customGrid.pendingAdd != null) {
             if (state.customGrid.pendingAddFocusIndex == 0) {
                 actions.confirmPendingTileAdd()
@@ -319,6 +344,7 @@ class HomeInputHandler(
 
     override fun onBack(): InputResult {
         val state = actions.uiState.value
+        if (actions.disengageTile()) return InputResult.handled(SoundType.CLOSE_MODAL)
         if (state.customGrid.pendingAdd != null) {
             actions.dismissPendingTileAdd()
             return InputResult.HANDLED
@@ -517,6 +543,10 @@ class HomeInputHandler(
 
     override fun onContextMenu(): InputResult {
         val state = actions.uiState.value
+        if (state.customGrid.engagedTileId != null) {
+            actions.openEngagedFullscreen()
+            return InputResult.HANDLED
+        }
         if (state.customGrid.mediaSetup != null) return InputResult.HANDLED
         if (isCustomGrid(state) && state.customGrid.isEditing) {
             actions.toggleTileEditMode()

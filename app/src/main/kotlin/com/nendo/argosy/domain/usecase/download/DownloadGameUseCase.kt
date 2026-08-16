@@ -247,7 +247,8 @@ class DownloadGameUseCase @Inject constructor(
             ?: return fileName
 
         val currentExt = fileName.substringAfterLast('.', "").lowercase()
-        if (currentExt !in CONVERTIBLE_3DS_EXTENSIONS) return fileName
+        val group = INTERCHANGEABLE_3DS_EXTENSIONS.firstOrNull { currentExt in it } ?: return fileName
+        if (preferredExt.lowercase() !in group) return fileName
         if (currentExt == preferredExt.lowercase()) return fileName
 
         return fileName.replaceAfterLast('.', preferredExt)
@@ -266,6 +267,14 @@ class DownloadGameUseCase @Inject constructor(
             "html", "htm", "txt", "pdf"
         )
 
-        private val CONVERTIBLE_3DS_EXTENSIONS = setOf("3ds", "cci")
+        /**
+         * Extensions that name the same container, so one may be swapped for another. Compressed
+         * and plain forms are separate groups: renaming across them would describe bytes the file
+         * does not hold.
+         */
+        private val INTERCHANGEABLE_3DS_EXTENSIONS = listOf(
+            setOf("3ds", "cci"),
+            setOf("z3ds", "zcci")
+        )
     }
 }

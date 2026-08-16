@@ -13,9 +13,72 @@ enum class CustomTileMenuAction(val label: String) {
     ARRANGE("Move or resize"),
     RECURATE("Change what it plays"),
     REMOVE("Remove from grid"),
-    PAGE_BACKGROUND("Page Background"),
-    PAGE_SOUND("Page Sound"),
+    PAGE_BACKDROP("Backdrop for this page"),
+    PAGE_MUSIC("Music for this page"),
     DELETE_PAGE("Delete Page")
+}
+
+/**
+ * Which of a page's two decorations is being chosen. Both are picked the same way, so they share a
+ * chooser rather than each growing their own.
+ */
+enum class PageChooserKind { BACKDROP, MUSIC }
+
+/**
+ * What confirming a row in the page chooser does. Rows that lead somewhere are separate from rows
+ * that settle the choice, so the chooser never has to guess which it is looking at.
+ */
+sealed interface PageChooserAction {
+    data object OpenFileBrowser : PageChooserAction
+    data object BrowseGameArt : PageChooserAction
+    data class OpenGameArt(val gameId: Long, val title: String) : PageChooserAction
+    data class UseArt(val path: String) : PageChooserAction
+    data class UseTrack(val path: String) : PageChooserAction
+    data object UseTileAudio : PageChooserAction
+    data object UseLauncherMusic : PageChooserAction
+    data object ClearBackdrop : PageChooserAction
+}
+
+/**
+ * A row in the page chooser. A header labels the group beneath it and is skipped by the cursor, so
+ * a long list reads as sections rather than one run of rows.
+ */
+data class PageChooserEntry(
+    val label: String,
+    val subtitle: String? = null,
+    val previewPath: String? = null,
+    val isHeader: Boolean = false,
+    val action: PageChooserAction? = null
+)
+
+/**
+ * Choosing what a page shows or plays. [gameId] is set once a game has been opened, which is what
+ * tells Back whether to leave the chooser or step back to the list of games.
+ */
+data class PageChooserState(
+    val kind: PageChooserKind,
+    val page: Int,
+    val entries: List<PageChooserEntry> = emptyList(),
+    val focusIndex: Int = 0,
+    val query: String = "",
+    val isSearching: Boolean = false,
+    val isLoading: Boolean = false,
+    val gameId: Long? = null,
+    val gameTitle: String? = null
+) {
+    val title: String
+        get() = when {
+            gameTitle != null -> gameTitle
+            kind == PageChooserKind.BACKDROP -> "Backdrop"
+            else -> "Music"
+        }
+
+    val subtitle: String
+        get() = when {
+            gameId != null -> "Artwork and screenshots"
+            kind == PageChooserKind.BACKDROP -> "What this page shows behind its tiles"
+            else -> "What this page plays"
+        }
 }
 
 /**
@@ -105,7 +168,7 @@ data class CustomGridState(
      */
     val pageSettings: Map<Int, GridPageSettings> = emptyMap(),
     val pendingBackgroundPage: Int? = null,
-    val pendingAudioPage: Int? = null,
+    val pageChooser: PageChooserState? = null,
     val mediaSetup: MediaTileSetup? = null,
     val showFileBrowser: Boolean = false,
     val pendingAdd: TilePickerEntry? = null,
@@ -286,8 +349,8 @@ data class CustomGridState(
                 add(CustomTileMenuAction.REMOVE)
             }
             if (!isOnAddPage) {
-                add(CustomTileMenuAction.PAGE_BACKGROUND)
-                add(CustomTileMenuAction.PAGE_SOUND)
+                add(CustomTileMenuAction.PAGE_BACKDROP)
+                add(CustomTileMenuAction.PAGE_MUSIC)
             }
             if (canDeletePage) add(CustomTileMenuAction.DELETE_PAGE)
         }

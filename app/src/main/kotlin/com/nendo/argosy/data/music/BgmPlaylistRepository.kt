@@ -110,6 +110,17 @@ class BgmPlaylistRepository @Inject constructor(
     }
 
     /** Ordered playable paths: enabled file rows in position order, filtered to files that exist. */
+    /**
+     * The tracks that can actually be played, as rows rather than paths. Folder entries stand for a
+     * source rather than a file and disabled ones were switched off, so neither belongs anywhere a
+     * single track is being chosen.
+     */
+    suspend fun playableTracks(): List<BgmPlaylistEntity> = withContext(Dispatchers.IO) {
+        bgmPlaylistDao.getAll()
+            .filter { it.entryType != BgmPlaylistEntity.TYPE_FOLDER && it.enabled }
+            .filter { File(it.filePath).isFile }
+    }
+
     suspend fun resolvePlaybackPaths(): List<String> = withContext(Dispatchers.IO) {
         bgmPlaylistDao.getAll()
             .filter { it.entryType != BgmPlaylistEntity.TYPE_FOLDER && it.enabled }

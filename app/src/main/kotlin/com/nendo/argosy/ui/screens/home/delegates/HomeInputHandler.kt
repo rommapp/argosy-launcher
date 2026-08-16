@@ -36,6 +36,9 @@ interface HomeInputActions {
     fun commitTileEdit()
     fun cancelTileEdit()
     fun toggleTileEditMode()
+    fun movePageChooserFocus(delta: Int)
+    fun confirmPageChooser()
+    fun backOutOfPageChooser()
     fun openTileMenu()
     fun closeTileMenu()
     fun moveTileMenuFocus(delta: Int)
@@ -108,6 +111,10 @@ class HomeInputHandler(
             actions.moveMediaTileSetupFocus(-1)
             return InputResult.HANDLED
         }
+        if (state.customGrid.pageChooser != null) {
+            actions.movePageChooserFocus(-1)
+            return InputResult.HANDLED
+        }
         if (state.customGrid.showMenu) {
             actions.moveTileMenuFocus(-1)
             return InputResult.HANDLED
@@ -140,6 +147,10 @@ class HomeInputHandler(
         if (state.customGrid.mediaTileNotice != null) return InputResult.HANDLED
         if (state.customGrid.isMediaSetupOpen) {
             actions.moveMediaTileSetupFocus(1)
+            return InputResult.HANDLED
+        }
+        if (state.customGrid.pageChooser != null) {
+            actions.movePageChooserFocus(1)
             return InputResult.HANDLED
         }
         if (state.customGrid.showMenu) {
@@ -304,6 +315,7 @@ class HomeInputHandler(
             return InputResult.HANDLED
         }
         when {
+            state.customGrid.pageChooser != null -> actions.confirmPageChooser()
             state.customGrid.isMediaSetupOpen -> actions.confirmMediaTileSetup()
             state.showTilePicker -> actions.confirmTilePickerSelection()
             state.customGrid.showMenu -> actions.confirmTileMenu()
@@ -364,6 +376,10 @@ class HomeInputHandler(
         if (state.showTilePicker) {
             actions.closeTilePicker()
             return InputResult.HANDLED
+        }
+        if (state.customGrid.pageChooser != null) {
+            actions.backOutOfPageChooser()
+            return InputResult.handled(SoundType.CLOSE_MODAL)
         }
         if (state.customGrid.showMenu) {
             actions.closeTileMenu()

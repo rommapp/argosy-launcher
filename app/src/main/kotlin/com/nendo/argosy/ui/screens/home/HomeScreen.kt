@@ -550,6 +550,25 @@ fun HomeScreen(
             if (backdropEnabled) {
                 Box(modifier = Modifier.fillMaxSize().surfaceBackdrop(BackdropRole.CONTENT))
             }
+            if (isCustomGrid) {
+                val pageSettings = uiState.customGrid.currentPageSettings
+                Crossfade(
+                    targetState = pageSettings.backgroundPath.takeIf { pageSettings.hasBackground },
+                    animationSpec = tween(Motion.durationSlide, easing = Motion.argosyEase),
+                    label = "page-backdrop",
+                    modifier = Modifier.fillMaxSize()
+                ) { path ->
+                    if (path != null) {
+                        val pageBlur = backgroundBlurDp + combinedBlur
+                        com.nendo.argosy.ui.components.PageBackdrop(
+                            path = path,
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .let { if (pageBlur > 0.dp) it.blur(pageBlur) else it }
+                        )
+                    }
+                }
+            }
             if (showArtLayer) {
                 Box(
                     modifier = Modifier
@@ -727,19 +746,6 @@ fun HomeScreen(
                         }
                         isCustomGrid -> {
                             val pageSettings = uiState.customGrid.currentPageSettings
-                            Crossfade(
-                                targetState = pageSettings.backgroundPath
-                                    .takeIf { pageSettings.hasBackground },
-                                animationSpec = tween(Motion.durationSlide, easing = Motion.argosyEase),
-                                label = "page-backdrop"
-                            ) { path ->
-                                if (path != null) {
-                                    com.nendo.argosy.ui.components.PageBackdrop(
-                                        path = path,
-                                        modifier = Modifier.fillMaxSize()
-                                    )
-                                }
-                            }
                             com.nendo.argosy.ui.components.PageThemePlayer(
                                 filePath = pageSettings.audioPath.takeIf {
                                     pageSettings.audioKind ==
@@ -1243,23 +1249,30 @@ fun HomeScreen(
 
         if (uiState.showTileFileBrowser) {
             val choosingBackground = uiState.customGrid.pendingBackgroundPage != null
-            val choosingTheme = uiState.customGrid.pendingAudioPage != null
             com.nendo.argosy.ui.filebrowser.FileBrowserScreen(
                 mode = com.nendo.argosy.ui.filebrowser.FileBrowserMode.FILE_SELECTION,
-                title = when {
-                    choosingBackground -> "Choose a background"
-                    choosingTheme -> "Choose a track for this page"
-                    else -> "Choose a video"
-                },
+                title = if (choosingBackground) "Choose a backdrop" else "Choose a video",
                 fileFilter = com.nendo.argosy.ui.filebrowser.FileFilter(
-                    extensions = when {
-                        choosingBackground -> PAGE_BACKGROUND_EXTENSIONS
-                        choosingTheme -> PAGE_THEME_EXTENSIONS
-                        else -> com.nendo.argosy.core.media.VideoFileTypes.EXTENSIONS
+                    extensions = if (choosingBackground) {
+                        PAGE_BACKGROUND_EXTENSIONS
+                    } else {
+                        com.nendo.argosy.core.media.VideoFileTypes.EXTENSIONS
                     }
                 ),
                 onPathSelected = viewModel::placeLocalVideoTile,
                 onDismiss = viewModel::closeTileFileBrowser
+            )
+        }
+
+        uiState.customGrid.pageChooser?.let { chooser ->
+            com.nendo.argosy.ui.components.PageChooserModal(
+                state = chooser,
+                onSelect = { index ->
+                    viewModel.movePageChooserFocus(index - chooser.focusIndex)
+                    viewModel.confirmPageChooser()
+                },
+                onQueryChange = viewModel::setPageChooserQuery,
+                onDismiss = viewModel::closePageChooser
             )
         }
 
@@ -1485,9 +1498,6 @@ enum class GameInfoPlacement { CENTERED, SPLIT }
  */
 private val PAGE_BACKGROUND_EXTENSIONS: Set<String> =
     setOf("png", "jpg", "jpeg", "webp", "gif") + com.nendo.argosy.core.media.VideoFileTypes.EXTENSIONS
-
-private val PAGE_THEME_EXTENSIONS: Set<String> =
-    setOf("mp3", "ogg", "oga", "m4a", "aac", "flac", "wav", "opus")
 
 private const val GAME_INFO_SIDE_WIDTH_FRACTION = 0.6f
 

@@ -14,6 +14,10 @@ import com.nendo.argosy.data.local.entity.PageBackgroundKind
 import com.nendo.argosy.ui.components.CustomGridState
 import com.nendo.argosy.ui.components.CustomTileMenuAction
 import com.nendo.argosy.ui.components.GridPageSettings
+import com.nendo.argosy.ui.components.PageChooserAction
+import com.nendo.argosy.ui.components.PageChooserEntry
+import com.nendo.argosy.ui.components.PageChooserKind
+import com.nendo.argosy.ui.components.PageChooserState
 import com.nendo.argosy.ui.components.TileEditMode
 import com.nendo.argosy.ui.components.TilePickerAction
 import com.nendo.argosy.ui.components.TilePickerCategory
@@ -35,6 +39,7 @@ class CustomGridCoordinator(
     private val pageRepository: com.nendo.argosy.data.repository.HomeGridPageRepository? = null,
     private val ownerUserId: suspend () -> Long?,
     private val pickerEntries: suspend (TilePickerCategory, String) -> List<TilePickerEntry>,
+    private val pageChooserEntries: (suspend (PageChooserState) -> List<PageChooserEntry>)? = null,
     private val onPageAdded: ((Int) -> Unit)? = null,
     private val onPageRemoved: ((Int) -> Unit)? = null,
     private val mediaCatalog: MediaTileCatalog? = null,
@@ -226,8 +231,8 @@ class CustomGridCoordinator(
             CustomTileMenuAction.ARRANGE -> enterMoveMode()
             CustomTileMenuAction.RECURATE -> recurateFocusedTile()
             CustomTileMenuAction.REMOVE -> removeFocusedTile()
-            CustomTileMenuAction.PAGE_BACKGROUND -> openPageBackgroundBrowser()
-            CustomTileMenuAction.PAGE_SOUND -> cyclePageAudio()
+            CustomTileMenuAction.PAGE_BACKDROP -> openPageChooser(PageChooserKind.BACKDROP)
+            CustomTileMenuAction.PAGE_MUSIC -> openPageChooser(PageChooserKind.MUSIC)
             CustomTileMenuAction.DELETE_PAGE -> deleteCurrentPage()
         }
     }
@@ -694,11 +699,167 @@ class CustomGridCoordinator(
     }
 
     /**
-     * Opens the file browser against the current page rather than a tile, so the same picker serves
-     * both and the choice is applied to whichever asked for it.
+     * Opens the chooser for one of a page's decorations. The rows are fetched rather than held,
+     * because both the soundtrack library and the games with artwork change while the app runs.
      */
-    fun openPageBackgroundBrowser() = write {
-        it.copy(showFileBrowser = true, pendingBackgroundPage = it.page)
+    fun openPageChooser(kind: PageChooserKind) {
+        val page = read().page
+        write {
+            it.copy(
+                showMenu = false,
+                pageChooser = PageChooserState(kind = kind, page = page, isLoading = true)
+            )
+        }
+        loadChooserEntries()
+    }
+
+    fun closePageChooser() = write { it.copy(pageChooser = null) }
+
+    /**
+     * Steps the cursor over headers, which label a group rather than being something to choose.
+     */
+    fun movePageChooserFocus(delta: Int) = write { state ->
+        val chooser = state.pageChooser ?: return@write state
+        if (chooser.entries.isEmpty() || delta == 0) return@write state
+        val step = if (delta > 0) 1 else -1
+        var index = chooser.focusIndex
+        repeat(kotlin.math.abs(delta)) {
+            var next = index + step
+            while (next in chooser.entries.indices && chooser.entries[next].isHeader) {
+                next += step
+            }
+            if (next in chooser.entries.indices) index = next
+        }
+        state.copy(pageChooser = chooser.copy(focusIndex = index))
+    }
+
+    fun setPageChooserQuery(query: String) {
+        write { state ->
+            val chooser = state.pageChooser ?: return@write state
+            state.copy(pageChooser = chooser.copy(query = query, focusIndex = 0, isLoading = true))
+        }
+        loadChooserEntries()
+    }
+
+    fun togglePageChooserSearch() = write { state ->
+        val chooser = state.pageChooser ?: return@write state
+        state.copy(pageChooser = chooser.copy(isSearching = !chooser.isSearching))
+    }
+
+    /**
+     * Steps back out of a game's artwork to the list of games, and only leaves the chooser when
+     * there is nowhere left to step back to.
+     */
+    fun backOutOfPageChooser(): Boolean {
+        val chooser = read().pageChooser ?: return false
+        if (chooser.gameId == null) {
+            closePageChooser()
+            return true
+        }
+        write {
+            it.copy(
+                pageChooser = chooser.copy(
+                    gameId = null,
+                    gameTitle = null,
+                    focusIndex = 0,
+                    isLoading = true
+                )
+            )
+        }
+        loadChooserEntries()
+        return true
+    }
+
+    private fun loadChooserEntries() {
+        val source = pageChooserEntries ?: return
+        scope.launch {
+            val chooser = read().pageChooser ?: return@launch
+            val entries = source(chooser)
+            write { state ->
+                val current = state.pageChooser ?: return@write state
+                state.copy(
+                    pageChooser = current.copy(
+                        entries = entries,
+                        isLoading = false,
+                        focusIndex = entries.indexOfFirst { !it.isHeader }.coerceAtLeast(0)
+                    )
+                )
+            }
+        }
+    }
+
+    fun confirmPageChooser() {
+        val chooser = read().pageChooser ?: return
+        val entry = chooser.entries.getOrNull(chooser.focusIndex) ?: return
+        when (val action = entry.action ?: return) {
+            PageChooserAction.OpenFileBrowser ->
+                write { it.copy(showFileBrowser = true, pendingBackgroundPage = chooser.page) }
+
+            PageChooserAction.BrowseGameArt -> {
+                write {
+                    it.copy(
+                        pageChooser = chooser.copy(
+                            gameId = null,
+                            gameTitle = "",
+                            focusIndex = 0,
+                            isLoading = true
+                        )
+                    )
+                }
+                loadChooserEntries()
+            }
+
+            is PageChooserAction.OpenGameArt -> {
+                write {
+                    it.copy(
+                        pageChooser = chooser.copy(
+                            gameId = action.gameId,
+                            gameTitle = action.title,
+                            focusIndex = 0,
+                            isLoading = true
+                        )
+                    )
+                }
+                loadChooserEntries()
+            }
+
+            is PageChooserAction.UseArt -> {
+                applyBackdrop(chooser.page, PageBackgroundKind.GAME_ART, action.path, chooser.gameId)
+                closePageChooser()
+            }
+
+            PageChooserAction.ClearBackdrop -> {
+                applyBackdrop(chooser.page, PageBackgroundKind.NONE, null, null)
+                closePageChooser()
+            }
+
+            is PageChooserAction.UseTrack -> {
+                applyAudio(chooser.page, PageAudioKind.THEME, action.path)
+                closePageChooser()
+            }
+
+            PageChooserAction.UseTileAudio -> {
+                applyAudio(chooser.page, PageAudioKind.TILE, null)
+                closePageChooser()
+            }
+
+            PageChooserAction.UseLauncherMusic -> {
+                applyAudio(chooser.page, PageAudioKind.GLOBAL, null)
+                closePageChooser()
+            }
+        }
+    }
+
+    private fun applyBackdrop(page: Int, kind: PageBackgroundKind, path: String?, gameId: Long?) {
+        applyPageSettings(page) {
+            it.copy(backgroundKind = kind, backgroundPath = path, backgroundGameId = gameId)
+        }
+        scope.launch { pageRepository?.setBackground(ownerUserId(), page, kind, path, gameId) }
+    }
+
+    private fun applyAudio(page: Int, kind: PageAudioKind, path: String?) {
+        applyPageSettings(page) { it.copy(audioKind = kind, audioPath = path ?: it.audioPath) }
+        scope.launch { pageRepository?.setAudio(ownerUserId(), page, kind, path) }
     }
 
     /**
@@ -733,45 +894,6 @@ class CustomGridCoordinator(
         scope.launch { pageRepository?.setBackground(ownerUserId(), page, PageBackgroundKind.NONE) }
     }
 
-    /**
-     * Steps a page through what it can do about sound. A page with no theme file of its own skips
-     * straight past that option rather than offering silence.
-     */
-    fun cyclePageAudio() {
-        val current = read()
-        val page = current.page
-        val settings = current.currentPageSettings
-        val next = when (settings.audioKind) {
-            PageAudioKind.GLOBAL -> PageAudioKind.TILE
-            PageAudioKind.TILE -> PageAudioKind.THEME
-            PageAudioKind.THEME -> PageAudioKind.GLOBAL
-        }
-        if (next == PageAudioKind.THEME && settings.audioPath == null) {
-            write { it.copy(showFileBrowser = true, pendingAudioPage = page) }
-            return
-        }
-        applyPageSettings(page) { it.copy(audioKind = next) }
-        scope.launch {
-            pageRepository?.setAudio(ownerUserId(), page, next, settings.audioPath)
-        }
-    }
-
-    /**
-     * Applies a chosen file as the page's own music. Choosing one is what puts the page into that
-     * mode, so there is never a page set to play a theme it does not have.
-     */
-    fun setPageTheme(path: String) {
-        val page = read().pendingAudioPage ?: return
-        write { it.copy(showFileBrowser = false, pendingAudioPage = null) }
-        if (path.isBlank()) return
-        applyPageSettings(page) {
-            it.copy(audioKind = PageAudioKind.THEME, audioPath = path)
-        }
-        scope.launch {
-            pageRepository?.setAudio(ownerUserId(), page, PageAudioKind.THEME, path)
-        }
-    }
-
     private fun applyPageSettings(page: Int, transform: (GridPageSettings) -> GridPageSettings) =
         write { state ->
             val existing = state.pageSettings[page] ?: GridPageSettings()
@@ -785,7 +907,7 @@ class CustomGridCoordinator(
     fun openFileBrowser() = write { it.copy(showFileBrowser = true) }
 
     fun closeFileBrowser() = write {
-        it.copy(showFileBrowser = false, pendingBackgroundPage = null, pendingAudioPage = null)
+        it.copy(showFileBrowser = false, pendingBackgroundPage = null)
     }
 
     /**
@@ -795,10 +917,6 @@ class CustomGridCoordinator(
     fun placeLocalVideo(path: String) {
         if (read().pendingBackgroundPage != null) {
             setPageBackground(path)
-            return
-        }
-        if (read().pendingAudioPage != null) {
-            setPageTheme(path)
             return
         }
         write { it.copy(showFileBrowser = false) }

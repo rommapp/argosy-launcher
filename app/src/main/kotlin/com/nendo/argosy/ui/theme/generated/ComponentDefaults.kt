@@ -238,6 +238,12 @@ object ComponentDefaults {
         const val pageDwellMs = 1800
     }
 
+    object PageChooser {
+        const val modalWidthDp = 520
+        const val rowHeightDp = 64
+        const val previewSizeDp = 48
+    }
+
     object InlineTilePlayer {
         const val positionPollMs = 500
         const val overlayScrimAlpha = 0.55f

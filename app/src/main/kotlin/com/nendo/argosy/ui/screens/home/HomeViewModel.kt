@@ -90,6 +90,7 @@ class HomeViewModel @Inject constructor(
     private val homeTileRepository: com.nendo.argosy.data.repository.HomeTileRepository,
     private val homeGridPageRepository: com.nendo.argosy.data.repository.HomeGridPageRepository,
     private val imageCacheManager: com.nendo.argosy.data.cache.ImageCacheManager,
+    private val bgmPlaylistRepository: com.nendo.argosy.data.music.BgmPlaylistRepository,
     private val homeTilePromptQueue: com.nendo.argosy.data.repository.HomeTilePromptQueue,
     private val syncPreferencesRepository: com.nendo.argosy.data.preferences.SyncPreferencesRepository
 ) : ViewModel(), HomeInputActions {
@@ -107,6 +108,7 @@ class HomeViewModel @Inject constructor(
         scope = viewModelScope,
         repository = homeTileRepository,
         pageRepository = homeGridPageRepository,
+        pageChooserEntries = { chooser -> pageChooserEntriesFor(chooser) },
         ownerUserId = { syncPreferencesRepository.getRommUserId() },
         onPageAdded = { count -> persistCustomGridPageCount(count) },
         onPageRemoved = { count -> persistCustomGridPageRemoval(count) },
@@ -699,6 +701,97 @@ class HomeViewModel @Inject constructor(
 
     override fun movePendingTileAddFocus(delta: Int) = customGrid.movePendingAddFocus(delta)
 
+    /**
+     * The rows a page chooser shows, fetched fresh each time because the soundtrack library and the
+     * artwork a game has both change while the app is running.
+     */
+    private suspend fun pageChooserEntriesFor(
+        chooser: com.nendo.argosy.ui.components.PageChooserState
+    ): List<com.nendo.argosy.ui.components.PageChooserEntry> = when {
+        chooser.kind == com.nendo.argosy.ui.components.PageChooserKind.MUSIC -> musicChooserEntries()
+        chooser.gameId != null -> gameArtEntries(chooser.gameId)
+        chooser.gameTitle != null -> gameArtSourceEntries(chooser.query)
+        else -> backdropRootEntries()
+    }
+
+    private fun backdropRootEntries(): List<com.nendo.argosy.ui.components.PageChooserEntry> =
+        listOf(
+            com.nendo.argosy.ui.components.PageChooserEntry(
+                label = "Artwork from a game",
+                subtitle = "Covers and screenshots already in your library",
+                action = com.nendo.argosy.ui.components.PageChooserAction.BrowseGameArt
+            ),
+            com.nendo.argosy.ui.components.PageChooserEntry(
+                label = "A file on this device",
+                subtitle = "A picture, an animation, or a short video",
+                action = com.nendo.argosy.ui.components.PageChooserAction.OpenFileBrowser
+            ),
+            com.nendo.argosy.ui.components.PageChooserEntry(
+                label = "No backdrop",
+                subtitle = "Show the launcher's own background",
+                action = com.nendo.argosy.ui.components.PageChooserAction.ClearBackdrop
+            )
+        )
+
+    private suspend fun gameArtSourceEntries(
+        query: String
+    ): List<com.nendo.argosy.ui.components.PageChooserEntry> =
+        libraryDelegate.gamesWithArtwork(query).map { game ->
+            com.nendo.argosy.ui.components.PageChooserEntry(
+                label = game.title,
+                subtitle = game.subtitle,
+                previewPath = game.coverPath,
+                action = com.nendo.argosy.ui.components.PageChooserAction.OpenGameArt(
+                    gameId = game.id,
+                    title = game.title
+                )
+            )
+        }
+
+    private suspend fun gameArtEntries(
+        gameId: Long
+    ): List<com.nendo.argosy.ui.components.PageChooserEntry> =
+        libraryDelegate.artworkFor(gameId).map { art ->
+            com.nendo.argosy.ui.components.PageChooserEntry(
+                label = art.label,
+                previewPath = art.path,
+                action = com.nendo.argosy.ui.components.PageChooserAction.UseArt(art.path)
+            )
+        }
+
+    private suspend fun musicChooserEntries(): List<com.nendo.argosy.ui.components.PageChooserEntry> {
+        val tracks = bgmPlaylistRepository.playableTracks()
+        return buildList {
+            add(
+                com.nendo.argosy.ui.components.PageChooserEntry(
+                    label = "Launcher music",
+                    action = com.nendo.argosy.ui.components.PageChooserAction.UseLauncherMusic
+                )
+            )
+            add(
+                com.nendo.argosy.ui.components.PageChooserEntry(
+                    label = "This page's video",
+                    action = com.nendo.argosy.ui.components.PageChooserAction.UseTileAudio
+                )
+            )
+            if (tracks.isEmpty()) return@buildList
+            add(
+                com.nendo.argosy.ui.components.PageChooserEntry(
+                    label = "Your soundtracks",
+                    isHeader = true
+                )
+            )
+            tracks.forEach { track ->
+                add(
+                    com.nendo.argosy.ui.components.PageChooserEntry(
+                        label = track.displayName,
+                        action = com.nendo.argosy.ui.components.PageChooserAction.UseTrack(track.filePath)
+                    )
+                )
+            }
+        }
+    }
+
     private fun observeArtworkScraping() {
         viewModelScope.launch {
             imageCacheManager.progress.collect { progress ->
@@ -1009,6 +1102,18 @@ class HomeViewModel @Inject constructor(
     override fun cancelTileEdit() = customGrid.cancelEdit()
 
     override fun toggleTileEditMode() = customGrid.toggleEditMode()
+
+    override fun movePageChooserFocus(delta: Int) = customGrid.movePageChooserFocus(delta)
+
+    override fun confirmPageChooser() = customGrid.confirmPageChooser()
+
+    override fun backOutOfPageChooser() {
+        customGrid.backOutOfPageChooser()
+    }
+
+    fun setPageChooserQuery(query: String) = customGrid.setPageChooserQuery(query)
+
+    fun closePageChooser() = customGrid.closePageChooser()
 
     override fun moveFocusedTile(
         direction: com.nendo.argosy.domain.model.GridDirection2D

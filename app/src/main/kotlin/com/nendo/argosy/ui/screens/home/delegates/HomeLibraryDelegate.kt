@@ -685,6 +685,38 @@ class HomeLibraryDelegate @Inject constructor(
         return true
     }
 
+    /**
+     * Games that have artwork worth showing behind a page, so the chooser never offers a title that
+     * would resolve to nothing.
+     */
+    suspend fun gamesWithArtwork(query: String): List<ArtworkGame> {
+        val matches = gameRepository.searchForQuickMenu(query.trim(), TILE_PICKER_LIMIT).first()
+        return matches.filter { artworkPathsOf(it).isNotEmpty() }.map { game ->
+            ArtworkGame(
+                id = game.id,
+                title = game.title,
+                subtitle = cachedPlatformDisplayNames[game.platformId].orEmpty(),
+                coverPath = game.coverPath
+            )
+        }
+    }
+
+    suspend fun artworkFor(gameId: Long): List<ArtworkChoice> {
+        val game = gameRepository.getById(gameId) ?: return emptyList()
+        return artworkPathsOf(game)
+    }
+
+    private fun artworkPathsOf(game: GameEntity): List<ArtworkChoice> = buildList {
+        game.backgroundPath?.takeIf { it.startsWith("/") }?.let {
+            add(ArtworkChoice("Background art", it))
+        }
+        game.coverPath?.takeIf { it.startsWith("/") }?.let { add(ArtworkChoice("Cover", it)) }
+        game.cachedScreenshotPaths
+            ?.split(",")
+            ?.filter { it.isNotBlank() && it.startsWith("/") }
+            ?.forEachIndexed { index, path -> add(ArtworkChoice("Screenshot ${index + 1}", path)) }
+    }.distinctBy { it.path }
+
     private suspend fun filterPlayable(candidates: List<GameEntity>): List<GameEntity> {
         return candidates.filter { downloadFileStatusRepository.isContentAvailable(it) }
     }
@@ -838,6 +870,15 @@ class HomeLibraryDelegate @Inject constructor(
     private suspend fun filterSteamInstalled(games: List<GameEntity>): List<GameEntity> =
         games.filter { steamPathResolver.isGameInstalled(it) }
 }
+
+data class ArtworkGame(
+    val id: Long,
+    val title: String,
+    val subtitle: String,
+    val coverPath: String?
+)
+
+data class ArtworkChoice(val label: String, val path: String)
 
 data class RefreshResult(
     val gameIds: List<Long>,

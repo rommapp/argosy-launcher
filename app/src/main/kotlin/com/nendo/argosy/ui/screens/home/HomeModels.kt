@@ -45,6 +45,7 @@ data class HomeGameUi(
     val platformSlug: String,
     val platformDisplayName: String,
     val coverPath: String?,
+    val coverAspectRatio: Float? = null,
     val gradientColors: Pair<androidx.compose.ui.graphics.Color, androidx.compose.ui.graphics.Color>? = null,
     val backgroundPath: String?,
     val boxBackPath: String? = null,

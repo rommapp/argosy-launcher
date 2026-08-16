@@ -952,6 +952,12 @@ interface GameDao {
     """)
     fun searchInstalled(query: String, ownerUserId: Long?, limit: Int): Flow<List<GameEntity>>
 
+    @Query("SELECT coverAspectRatio FROM games WHERE id = :gameId")
+    suspend fun getCoverAspectRatio(gameId: Long): Float?
+
+    @Query("UPDATE games SET coverAspectRatio = :ratio WHERE id = :gameId")
+    suspend fun updateCoverAspectRatio(gameId: Long, ratio: Float)
+
     @Query("""
         SELECT id, title, rating FROM games
         WHERE NOT EXISTS (SELECT 1 FROM user_roms_hidden h WHERE h.gameId = games.id AND (h.ownerUserId IS NULL OR h.ownerUserId IS :ownerUserId))

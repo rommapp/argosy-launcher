@@ -585,6 +585,17 @@ class HomeLibraryDelegate @Inject constructor(
 
     fun extractGradientForGame(scope: CoroutineScope, gameId: Long, bitmap: android.graphics.Bitmap, isFocused: Boolean) {
         gradientExtractionDelegate.extractForGame(scope, gameId, bitmap, prioritize = isFocused)
+        recordCoverShape(scope, gameId, bitmap)
+    }
+
+    /**
+     * Stores the shape of a cover the first time one is drawn, so later screens can allocate space
+     * for it before the image is decoded rather than reflowing once it arrives.
+     */
+    private fun recordCoverShape(scope: CoroutineScope, gameId: Long, bitmap: android.graphics.Bitmap) {
+        if (bitmap.width <= 0 || bitmap.height <= 0) return
+        val ratio = bitmap.width.toFloat() / bitmap.height.toFloat()
+        scope.launch { gameRepository.recordCoverAspectRatio(gameId, ratio) }
     }
 
     fun repairCoverImage(scope: CoroutineScope, gameId: Long, failedPath: String) {

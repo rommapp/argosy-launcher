@@ -499,7 +499,7 @@ private fun CarouselGameCard(
     val maxWidth = if (isFocused) metrics.focusedCardWidth else metrics.cardWidth
     val maxHeight = if (isFocused) metrics.focusedCardHeight else metrics.cardHeight
     val cardSize = if (nativeAspectRatio) {
-        val ratio = rememberCoverAspectRatio(
+        val ratio = item.game.coverAspectRatio ?: rememberCoverAspectRatio(
             item.coverPathOverride ?: item.game.coverPath,
             fallbackAspectRatio
         )

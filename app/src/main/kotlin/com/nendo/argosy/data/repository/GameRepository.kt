@@ -41,6 +41,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 private const val TAG = "GameRepository"
+private const val COVER_RATIO_TOLERANCE = 0.001f
 
 data class PlatformStats(
     val platformId: Long,
@@ -905,6 +906,17 @@ class GameRepository @Inject constructor(
                 limit
             )
         )
+    }
+
+    /**
+     * Writes only when the shape is new or has changed, so drawing a cover does not queue a write
+     * on every pass over a row.
+     */
+    suspend fun recordCoverAspectRatio(gameId: Long, ratio: Float) {
+        if (!ratio.isFinite() || ratio <= 0f) return
+        val stored = gameDao.getCoverAspectRatio(gameId)
+        if (stored != null && kotlin.math.abs(stored - ratio) < COVER_RATIO_TOLERANCE) return
+        gameDao.updateCoverAspectRatio(gameId, ratio)
     }
 
     fun searchInstalled(query: String, limit: Int): Flow<List<GameEntity>> = flow {

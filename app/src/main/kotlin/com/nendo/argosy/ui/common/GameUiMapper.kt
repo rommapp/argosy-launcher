@@ -48,6 +48,7 @@ suspend fun GameEntity.toHomeGameUi(
         platformSlug = platformSlug,
         platformDisplayName = platformDisplayName ?: platformSlug,
         coverPath = coverPath,
+        coverAspectRatio = coverAspectRatio,
         gradientColors = gradientColors,
         backgroundPath = effectiveBackground,
         boxBackPath = boxBackPath?.takeIf { it.startsWith("/") },

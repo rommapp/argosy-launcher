@@ -38,6 +38,12 @@ data class GameDownloadIndicator(
     }
 }
 
+/**
+ * How deep the resume rail runs on the carousel. A rail is walked one cover at a time, so it stays
+ * short and ends in the way into the full list; a grid shows the whole shelf at once and does not.
+ */
+private const val CAROUSEL_RECENT_LIMIT = 10
+
 data class HomeGameUi(
     val id: Long,
     val title: String,
@@ -376,7 +382,13 @@ data class HomeUiState(
                     HomeRowItem.ViewAll(sourceFilter = "FAVORITES", label = "View All")
             }
             is HomeRow.Platform -> platformItems
-            HomeRow.Continue -> recentGames.map { HomeRowItem.Game(it) }
+            HomeRow.Continue -> when {
+                recentGames.isEmpty() -> emptyList()
+                layoutKind == com.nendo.argosy.domain.model.HomeLayoutKind.CAROUSEL ->
+                    recentGames.take(CAROUSEL_RECENT_LIMIT).map { HomeRowItem.Game(it) } +
+                        HomeRowItem.ViewAll(sourceFilter = "PLAYABLE", label = "View All")
+                else -> recentGames.map { HomeRowItem.Game(it) }
+            }
             HomeRow.Recommendations -> {
                 if (recommendedGames.isEmpty()) emptyList()
                 else recommendedGames.map { HomeRowItem.Game(it) }

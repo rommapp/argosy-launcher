@@ -57,6 +57,7 @@ import java.time.temporal.ChronoUnit
 private const val NEW_GAME_THRESHOLD_HOURS = 24L
 private const val RECENT_PLAYED_THRESHOLD_HOURS = 4L
 private const val RECENT_GAMES_LIMIT = 20
+private const val RECENT_GAMES_LIMIT_GRID = 32
 private const val PLATFORM_GAMES_LIMIT = 20
 private const val LIBRARY_GRID_COLUMNS = 6
 
@@ -758,9 +759,23 @@ class DualHomeViewModel(
         return preferencesRepository?.userPreferences?.first()?.installedOnlyHome == true
     }
 
+    /**
+     * Whether a section should carry its whole library rather than a leading slice. The companion
+     * display answers the same setting the main one does, or the option would only work on
+     * whichever screen happened to be looked at.
+     */
+    private suspend fun showsEveryGame(): Boolean {
+        val layout = preferencesRepository?.userPreferences?.first()?.homeLayout ?: return false
+        return layout.selected == com.nendo.argosy.domain.model.HomeLayoutKind.AUTO_GRID &&
+            layout.autoGrid.showAllGames
+    }
+
     private suspend fun loadGamesForCurrentSectionSuspend() {
         val section = _uiState.value.currentSection ?: return
         val installedOnly = isInstalledOnlyEnabled()
+        val uncapped = showsEveryGame()
+        val platformLimit = if (uncapped) Int.MAX_VALUE else PLATFORM_GAMES_LIMIT
+        val recentLimit = if (uncapped) RECENT_GAMES_LIMIT_GRID else RECENT_GAMES_LIMIT
 
         var realCount = 0
         val games = when (section) {
@@ -769,10 +784,10 @@ class DualHomeViewModel(
                     NEW_GAME_THRESHOLD_HOURS, ChronoUnit.HOURS
                 )
                 val recentlyPlayed = gameRepository.getRecentlyPlayed(
-                    limit = RECENT_GAMES_LIMIT
+                    limit = recentLimit
                 )
                 val newlyAdded = gameRepository.getNewlyAddedPlayable(
-                    newThreshold, RECENT_GAMES_LIMIT
+                    newThreshold, recentLimit
                 )
                 val allCandidates = (recentlyPlayed + newlyAdded)
                     .distinctBy { it.id }
@@ -780,7 +795,7 @@ class DualHomeViewModel(
                 val playable = filterPlayable(allCandidates)
 
                 sortRecentGamesWithNewPriority(playable)
-                    .take(RECENT_GAMES_LIMIT)
+                    .take(recentLimit)
                     .map { it.toUi() }
             }
             is DualHomeSection.Favorites -> {
@@ -791,7 +806,7 @@ class DualHomeViewModel(
             is DualHomeSection.Platform -> {
                 realCount = gameRepository.countByPlatform(section.id)
                 var platformGames = gameRepository.getByPlatformSorted(
-                    section.id, limit = PLATFORM_GAMES_LIMIT
+                    section.id, limit = platformLimit
                 )
                 if (installedOnly) platformGames = filterPlayable(platformGames)
                 platformGames.map { it.toUi() }
@@ -803,14 +818,14 @@ class DualHomeViewModel(
             }
             is DualHomeSection.Android -> {
                 var androidGames = gameRepository.getByPlatformSorted(
-                    LocalPlatformIds.ANDROID, limit = PLATFORM_GAMES_LIMIT
+                    LocalPlatformIds.ANDROID, limit = platformLimit
                 )
                 if (installedOnly) androidGames = filterPlayable(androidGames)
                 androidGames.map { it.toUi() }
             }
             is DualHomeSection.Steam -> {
                 gameRepository.getByPlatformSorted(
-                    LocalPlatformIds.STEAM, limit = PLATFORM_GAMES_LIMIT
+                    LocalPlatformIds.STEAM, limit = platformLimit
                 ).map { it.toUi() }
             }
             is DualHomeSection.Pinned -> {

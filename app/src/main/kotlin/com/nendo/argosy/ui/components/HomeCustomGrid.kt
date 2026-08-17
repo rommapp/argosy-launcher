@@ -387,6 +387,8 @@ private fun CustomGridCellBox(
 
     val media = content?.media
     if (media != null) {
+        val tileRatio = width / height
+        val fitByHeight = mediaPosterAspectRatio <= tileRatio
         Box(modifier = placement, contentAlignment = Alignment.Center) {
             MediaCard(
                 media = media,
@@ -394,7 +396,10 @@ private fun CustomGridCellBox(
                 focusScale = focusScaleForSpan(rect),
                 alphaOverride = if (isOverlapped) OVERLAPPED_ALPHA else null,
                 modifier = Modifier
-                    .fillMaxSize()
+                    .then(
+                        if (fitByHeight) Modifier.fillMaxHeight() else Modifier.fillMaxWidth()
+                    )
+                    .aspectRatio(mediaPosterAspectRatio, matchHeightConstraintsFirst = fitByHeight)
                     .then(
                         if (onLongClick == null) {
                             Modifier.clickableNoFocus(onClick = onClick)

@@ -58,8 +58,7 @@ private val EXCLUDED_RECOMMENDATION_STATUSES = setOf(
     CompletionStatus.COMPLETED_100.apiValue,
     CompletionStatus.NEVER_PLAYING.apiValue
 )
-private const val RECENT_GAMES_LIMIT = 10
-private const val RECENT_GAMES_LIMIT_GRID = 32
+private const val RECENT_GAMES_LIMIT = 32
 private const val RECENT_GAMES_CANDIDATE_POOL = 40
 private const val NEW_GAME_THRESHOLD_HOURS = 24L
 private const val RECENT_PLAYED_THRESHOLD_HOURS = 4L
@@ -172,7 +171,7 @@ class HomeLibraryDelegate @Inject constructor(
 
         val playableGames = filterPlayable(allCandidates)
         val sortedRecent = sortRecentGamesWithNewPriority(playableGames)
-        val validatedRecent = sortedRecent.take(recentGamesLimit()).map { it.toUi() }
+        val validatedRecent = sortedRecent.take(RECENT_GAMES_LIMIT).map { it.toUi() }
         recentGamesCache.set(RecentGamesCache(validatedRecent, recentGamesCache.get().version))
 
         val platformUis = platforms.map { it.toHomePlatformUi(emulatorDetector) }
@@ -237,7 +236,7 @@ class HomeLibraryDelegate @Inject constructor(
 
                 val playableGames = filterPlayable(allCandidates)
                 val sorted = sortRecentGamesWithNewPriority(playableGames)
-                val validated = sorted.take(recentGamesLimit()).map { it.toUi() }
+                val validated = sorted.take(RECENT_GAMES_LIMIT).map { it.toUi() }
 
                 recentGamesCache.set(RecentGamesCache(validated, recentGamesCache.get().version))
                 _state.update { it.copy(recentGames = validated) }
@@ -279,7 +278,7 @@ class HomeLibraryDelegate @Inject constructor(
 
             val playableGames = filterPlayable(allCandidates)
             val sorted = sortRecentGamesWithNewPriority(playableGames)
-            val validated = sorted.take(recentGamesLimit()).map { it.toUi() }
+            val validated = sorted.take(RECENT_GAMES_LIMIT).map { it.toUi() }
 
             recentGamesCache.compareAndSet(
                 RecentGamesCache(null, startVersion),
@@ -426,18 +425,6 @@ class HomeLibraryDelegate @Inject constructor(
         prefs.homeLayout.selected == HomeLayoutKind.AUTO_GRID &&
             prefs.homeLayout.autoGrid.showAllGames
 
-    /**
-     * How deep the resume shelf runs. It is a shelf rather than a library even when the grid shows
-     * everything else in full: past a certain depth nothing on it is what the user came back for.
-     * The grid earns a deeper one only because it fits far more on a screen than a rail does.
-     */
-    private suspend fun recentGamesLimit(): Int =
-        if (showsEveryGame(preferencesRepository.userPreferences.first())) {
-            RECENT_GAMES_LIMIT_GRID
-        } else {
-            RECENT_GAMES_LIMIT
-        }
-
     suspend fun loadGamesForPinnedCollection(pinId: Long) {
         val pinned = _state.value.pinnedCollections.find { it.id == pinId } ?: return
         var games = getGamesForPinnedCollectionUseCase(pinned).first()
@@ -478,7 +465,7 @@ class HomeLibraryDelegate @Inject constructor(
 
                 val playableGames = filterPlayable(allCandidates)
                 val sorted = sortRecentGamesWithNewPriority(playableGames)
-                val validated = sorted.take(recentGamesLimit()).map { it.toUi() }
+                val validated = sorted.take(RECENT_GAMES_LIMIT).map { it.toUi() }
 
                 val currentCache = recentGamesCache.get()
                 recentGamesCache.compareAndSet(

@@ -43,12 +43,6 @@ import com.nendo.argosy.ui.theme.generated.ComponentDefaults
 import com.nendo.argosy.ui.util.clickableNoFocus
 
 /**
- * The space a cell reserves when covers are drawn at their own shape. Cells stay a fixed size so
- * the cursor steps by a constant stride; only the artwork inside them varies.
- */
-private const val NATIVE_CELL_ASPECT_RATIO = 1f
-
-/**
  * What a d-pad press resolves to inside the grid. Callers act on the verdict rather than deriving
  * one from a direction, so the boundary policy lives here and cannot drift between the surfaces
  * that host the grid.
@@ -140,11 +134,7 @@ fun HomeAutoGrid(
                 available = with(density) { across.toDp() },
                 lanes = lanes,
                 scrollAxis = config.scrollAxis,
-                coverAspectRatio = if (LocalBoxArtStyle.current.nativeAspectRatio) {
-                    NATIVE_CELL_ASPECT_RATIO
-                } else {
-                    LocalBoxArtStyle.current.aspectRatio
-                },
+                coverAspectRatio = LocalBoxArtStyle.current.aspectRatio,
             )
             val padding = metrics.padding
             val cell: @Composable (Int, CarouselItem) -> Unit = { index, item ->
@@ -348,11 +338,7 @@ private fun AutoGridCell(
     Column(modifier = if (cellWidth != null) Modifier.width(cellWidth) else Modifier.fillMaxWidth()) {
         when (item) {
             is CarouselItem.Game -> {
-                val cellRatio = if (boxArtStyle.nativeAspectRatio) {
-                    NATIVE_CELL_ASPECT_RATIO
-                } else {
-                    coverAspectRatio
-                }
+                val cellRatio = coverAspectRatio
                 val artRatio = if (boxArtStyle.nativeAspectRatio) {
                     item.game.coverAspectRatio ?: coverAspectRatio
                 } else {

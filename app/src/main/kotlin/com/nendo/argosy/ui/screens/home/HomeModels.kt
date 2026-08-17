@@ -376,13 +376,7 @@ data class HomeUiState(
                     HomeRowItem.ViewAll(sourceFilter = "FAVORITES", label = "View All")
             }
             is HomeRow.Platform -> platformItems
-            HomeRow.Continue -> {
-                if (recentGames.isEmpty()) emptyList()
-                else recentGames.map { HomeRowItem.Game(it) } + HomeRowItem.ViewAll(
-                    sourceFilter = "PLAYABLE",
-                    label = "View All"
-                )
-            }
+            HomeRow.Continue -> recentGames.map { HomeRowItem.Game(it) }
             HomeRow.Recommendations -> {
                 if (recommendedGames.isEmpty()) emptyList()
                 else recommendedGames.map { HomeRowItem.Game(it) }

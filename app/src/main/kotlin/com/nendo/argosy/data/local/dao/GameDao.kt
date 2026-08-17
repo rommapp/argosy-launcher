@@ -597,10 +597,16 @@ interface GameDao {
     @Query("SELECT COUNT(*) FROM games WHERE backgroundPath LIKE '/%' AND (rommId IS NOT NULL OR steamAppId IS NOT NULL)")
     suspend fun countGamesWithCachedBackgrounds(): Int
 
-    @Query("UPDATE games SET coverPath = :path, gradientColors = NULL WHERE id = :gameId")
+    @Query(
+        "UPDATE games SET coverPath = :path, gradientColors = NULL, coverAspectRatio = NULL " +
+            "WHERE id = :gameId"
+    )
     suspend fun updateCoverPath(gameId: Long, path: String)
 
-    @Query("UPDATE games SET coverPath = NULL, gradientColors = NULL WHERE id = :gameId")
+    @Query(
+        "UPDATE games SET coverPath = NULL, gradientColors = NULL, coverAspectRatio = NULL " +
+            "WHERE id = :gameId"
+    )
     suspend fun clearCoverPath(gameId: Long)
 
     @Query(
@@ -609,7 +615,8 @@ interface GameDao {
             originalCoverPath = CASE WHEN coverSetManually = 1 THEN originalCoverPath ELSE coverPath END,
             coverPath = :path,
             coverSetManually = 1,
-            gradientColors = NULL
+            gradientColors = NULL,
+            coverAspectRatio = NULL
         WHERE id = :gameId
         """
     )
@@ -621,7 +628,8 @@ interface GameDao {
             coverPath = originalCoverPath,
             originalCoverPath = NULL,
             coverSetManually = 0,
-            gradientColors = NULL
+            gradientColors = NULL,
+            coverAspectRatio = NULL
         WHERE id = :gameId AND coverSetManually = 1
         """
     )
@@ -904,7 +912,7 @@ interface GameDao {
     @Query("SELECT * FROM games")
     suspend fun getAllGames(): List<GameEntity>
 
-    @Query("UPDATE games SET coverPath = :coverPath, backgroundPath = :backgroundPath, cachedScreenshotPaths = :cachedScreenshotPaths, gradientColors = NULL WHERE id = :gameId")
+    @Query("UPDATE games SET coverPath = :coverPath, backgroundPath = :backgroundPath, cachedScreenshotPaths = :cachedScreenshotPaths, gradientColors = NULL, coverAspectRatio = NULL WHERE id = :gameId")
     suspend fun updateImagePaths(gameId: Long, coverPath: String?, backgroundPath: String?, cachedScreenshotPaths: String?)
 
     @Query("""

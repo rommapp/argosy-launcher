@@ -52,7 +52,6 @@ public:
 
     static bool callback_environment(unsigned cmd, void *data);
 
-    void setEnableVirtualFileSystem(bool value);
     void setEnableMicrophone(bool value);
 
 private:
@@ -139,7 +138,6 @@ private:
     std::string systemDirectory;
     retro_hw_get_current_framebuffer_t callback_get_current_framebuffer = nullptr;
     unsigned language = RETRO_LANGUAGE_ENGLISH;
-    bool useVirtualFileSystem = false;
     bool enableMicrophone = false;
 
     int pixelFormat = RETRO_PIXEL_FORMAT_RGB565;

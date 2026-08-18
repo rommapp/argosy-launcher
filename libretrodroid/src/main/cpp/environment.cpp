@@ -155,6 +155,19 @@ bool Environment::environment_handle_set_controller_info(const struct retro_cont
 }
 
 bool Environment::environment_handle_set_hw_render(struct retro_hw_render_callback* hw_render_callback) {
+    switch (hw_render_callback->context_type) {
+        case RETRO_HW_CONTEXT_OPENGLES2:
+        case RETRO_HW_CONTEXT_OPENGLES3:
+        case RETRO_HW_CONTEXT_OPENGLES_VERSION:
+            break;
+        default:
+            LOGE(
+                "Refusing hardware context type %d: only GLES contexts can be presented",
+                hw_render_callback->context_type
+            );
+            return false;
+    }
+
     useHWAcceleration = true;
     useDepth = hw_render_callback->depth;
     useStencil = hw_render_callback->stencil;
@@ -169,7 +182,8 @@ bool Environment::environment_handle_set_hw_render(struct retro_hw_render_callba
 }
 
 bool Environment::environment_handle_get_vfs_interface(struct retro_vfs_interface_info* vfsInterfaceInfo) {
-    if (!useVirtualFileSystem) {
+    if (vfsInterfaceInfo->required_interface_version >
+        static_cast<uint32_t>(libretrodroid::VFS::SUPPORTED_VERSION)) {
         return false;
     }
 
@@ -585,10 +599,6 @@ void Environment::clearScreenRotationUpdated() {
 
 std::array<libretrodroid::RumbleState, 4>& Environment::getLastRumbleStates() {
     return rumbleStates;
-}
-
-void Environment::setEnableVirtualFileSystem(bool value) {
-    this->useVirtualFileSystem = value;
 }
 
 void Environment::setEnableMicrophone(bool value) {

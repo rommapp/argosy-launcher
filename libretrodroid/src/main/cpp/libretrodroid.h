@@ -97,7 +97,6 @@ public:
         float refreshRate,
         bool lowLatencyAudio,
         bool forceSoftwareTiming,
-        bool enableVirtualFileSystem,
         bool enableMicrophone,
         bool duplicateFrames,
         std::optional<ImmersiveMode::Config> immersiveModeConfig,

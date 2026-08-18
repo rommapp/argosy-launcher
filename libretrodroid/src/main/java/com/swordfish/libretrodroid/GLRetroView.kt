@@ -179,7 +179,6 @@ class GLRetroView(
             getDefaultRefreshRate(),
             data.preferLowLatencyAudio,
             data.forceSoftwareTiming,
-            data.gameVirtualFiles.isNotEmpty(),
             data.enableMicrophone,
             data.skipDuplicateFrames,
             data.immersiveMode,

@@ -19,6 +19,7 @@
 
 #include <unistd.h>
 #include <optional>
+#include <sys/stat.h>
 
 #include "vfs/vfs_implementation.h"
 #include "../log.h"
@@ -91,8 +92,55 @@ int64_t VFS::truncate(struct retro_vfs_file_handle* stream, int64_t length) {
     return retro_vfs_file_truncate_impl(stream, length);
 }
 
+int VFS::stat(const char *path, int32_t *size) {
+    LOGV("VFS Calling stat: %s", path);
+
+    VFSFile* virtualFile = VFS::getInstance().findVirtualFile(path);
+    if (virtualFile != nullptr) {
+        struct ::stat fileStat {};
+        if (::fstat(virtualFile->getFD(), &fileStat) == 0) {
+            if (size != nullptr) {
+                *size = static_cast<int32_t>(fileStat.st_size);
+            }
+            return RETRO_VFS_STAT_IS_VALID;
+        }
+    }
+
+    return retro_vfs_stat_impl(path, size);
+}
+
+int VFS::mkdir(const char *dir) {
+    LOGV("VFS Calling mkdir");
+    return retro_vfs_mkdir_impl(dir);
+}
+
+struct retro_vfs_dir_handle* VFS::opendir(const char *dir, bool include_hidden) {
+    LOGV("VFS Calling opendir");
+    return retro_vfs_opendir_impl(dir, include_hidden);
+}
+
+bool VFS::readdir(struct retro_vfs_dir_handle *dirstream) {
+    LOGV("VFS Calling readdir");
+    return retro_vfs_readdir_impl(dirstream);
+}
+
+const char* VFS::dirent_get_name(struct retro_vfs_dir_handle *dirstream) {
+    LOGV("VFS Calling dirent_get_name");
+    return retro_vfs_dirent_get_name_impl(dirstream);
+}
+
+bool VFS::dirent_is_dir(struct retro_vfs_dir_handle *dirstream) {
+    LOGV("VFS Calling dirent_is_dir");
+    return retro_vfs_dirent_is_dir_impl(dirstream);
+}
+
+int VFS::closedir(struct retro_vfs_dir_handle *dirstream) {
+    LOGV("VFS Calling closedir");
+    return retro_vfs_closedir_impl(dirstream);
+}
+
 retro_vfs_interface * VFS::getInterface() {
-    return new retro_vfs_interface {
+    static retro_vfs_interface vfsInterface {
         /* Introduced in VFS API v1 */
         &VFS::path,
         &VFS::open,
@@ -107,8 +155,18 @@ retro_vfs_interface * VFS::getInterface() {
         &VFS::rename,
 
         /* Introduced in VFS API v2 */
-        &VFS::truncate
+        &VFS::truncate,
+
+        /* Introduced in VFS API v3 */
+        &VFS::stat,
+        &VFS::mkdir,
+        &VFS::opendir,
+        &VFS::readdir,
+        &VFS::dirent_get_name,
+        &VFS::dirent_is_dir,
+        &VFS::closedir
     };
+    return &vfsInterface;
 }
 
 void VFS::initialize(std::vector<VFSFile> files) {

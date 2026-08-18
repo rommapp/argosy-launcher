@@ -33,7 +33,7 @@ namespace libretrodroid {
 
 class VFS {
 public:
-    static const int SUPPORTED_VERSION = 2;
+    static const int SUPPORTED_VERSION = 3;
     static VFS& getInstance()
     {
         static VFS instance;
@@ -68,6 +68,14 @@ public:
     static int rename(const char *old_path, const char *new_path);
 
     static int64_t truncate(struct retro_vfs_file_handle *stream, int64_t length);
+
+    static int stat(const char *path, int32_t *size);
+    static int mkdir(const char *dir);
+    static struct retro_vfs_dir_handle* opendir(const char *dir, bool include_hidden);
+    static bool readdir(struct retro_vfs_dir_handle *dirstream);
+    static const char* dirent_get_name(struct retro_vfs_dir_handle *dirstream);
+    static bool dirent_is_dir(struct retro_vfs_dir_handle *dirstream);
+    static int closedir(struct retro_vfs_dir_handle *dirstream);
 
 private:
     std::vector<VFSFile> virtualFiles;

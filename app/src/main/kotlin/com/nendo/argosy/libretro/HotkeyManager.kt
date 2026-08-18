@@ -125,6 +125,29 @@ class HotkeyManager(
         }
     }
 
+    /**
+     * True while this press could still complete a longer combo, so the caller must hold it back
+     * from the core instead of forwarding it.
+     *
+     * A combo is only recognised once its last key arrives, so without this the earlier keys reach
+     * the game first: opening the menu with START+SELECT rotates the screen on Handy and starts the
+     * game from a title screen. Call after [onKeyDown] has returned no hotkey.
+     */
+    fun isPotentialComboKey(keyCode: Int, controllerId: String?): Boolean {
+        if (!isHotkeyKey(keyCode)) return false
+        if (limitToPlayer1 && player1ControllerId != null && controllerId != player1ControllerId) {
+            return false
+        }
+        if (keyCode in pendingComboKeyCodes) return true
+        return hotkeys.any { hotkey ->
+            hotkey.isEnabled &&
+                hotkey.keyCodes.size > 1 &&
+                keyCode in hotkey.keyCodes &&
+                (hotkey.controllerId == null || hotkey.controllerId == controllerId) &&
+                !pressedKeys.containsAll(hotkey.keyCodes)
+        }
+    }
+
     private fun isPlatformMappedButton(keyCode: Int, controllerId: String?): Boolean {
         val controllerButtons = controllerId?.let(platformMappedButtonsByController::get)
         return controllerButtons?.contains(keyCode)

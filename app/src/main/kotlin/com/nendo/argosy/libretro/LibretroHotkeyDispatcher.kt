@@ -37,7 +37,8 @@ class LibretroHotkeyDispatcher(
     private val onSpeedrunUndoSplit: () -> Unit,
     private val onSpeedrunSkipSplit: () -> Unit,
     private val onSpeedrunToggleTimer: () -> Unit,
-    private val onSpeedrunResetTimer: () -> Unit
+    private val onSpeedrunResetTimer: () -> Unit,
+    private val onHotkeyFired: () -> Unit = {}
 ) {
     var isFastForwarding: Boolean by androidx.compose.runtime.mutableStateOf(false)
         private set
@@ -70,13 +71,20 @@ class LibretroHotkeyDispatcher(
     )
 
     init {
-        hotkeyManager.setDispatch { config -> inner.dispatch(config) }
+        hotkeyManager.setDispatch { config ->
+            onHotkeyFired()
+            inner.dispatch(config)
+        }
     }
 
     fun onKeyDown(keyCode: Int, controllerId: String?): Boolean {
         val triggered = hotkeyManager.onKeyDown(keyCode, controllerId) ?: return false
+        onHotkeyFired()
         return inner.dispatch(triggered)
     }
+
+    fun isPotentialComboKey(keyCode: Int, controllerId: String?): Boolean =
+        hotkeyManager.isPotentialComboKey(keyCode, controllerId)
 
     fun onKeyUp(keyCode: Int) {
         hotkeyManager.onKeyUp(keyCode)

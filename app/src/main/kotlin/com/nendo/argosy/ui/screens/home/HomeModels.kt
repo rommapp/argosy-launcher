@@ -615,12 +615,14 @@ data class HomeUiState(
             }
             is com.nendo.argosy.domain.model.HomeTileTargetRef.Collection -> {
                 val collection = tileCollections[target.collectionId]
+                val focus = target.focusGameId?.let { tileGames[it] }
                 com.nendo.argosy.ui.components.CustomGridTileContent(
-                    game = null,
-                    label = collection?.name ?: "Missing collection",
+                    game = focus,
+                    label = focus?.title ?: collection?.name ?: "Missing collection",
                     isMissing = collection == null,
-                    coverPath = collection?.coverPath,
-                    subtitle = "Collection",
+                    coverPath = if (focus == null) collection?.coverPath else null,
+                    subtitle = collection?.name?.takeIf { focus != null } ?: "Collection",
+                    isCollectionQueue = focus != null,
                     stats = collection?.let {
                         listOf(
                             com.nendo.argosy.ui.components.TileStat(

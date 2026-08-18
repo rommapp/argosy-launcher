@@ -13,6 +13,8 @@ enum class CustomTileMenuAction(val label: String) {
     ARRANGE("Move or resize"),
     RECURATE("Change what it plays"),
     REMOVE("Remove from grid"),
+    SET_FOCUS_GAME("Pick the game to play"),
+    ADVANCE_FOCUS_GAME("Finished - play the next one"),
     PAGE_BACKDROP("Backdrop for this page"),
     PAGE_MUSIC("Music for this page"),
     DELETE_PAGE("Delete Page")
@@ -22,7 +24,7 @@ enum class CustomTileMenuAction(val label: String) {
  * Which of a page's two decorations is being chosen. Both are picked the same way, so they share a
  * chooser rather than each growing their own.
  */
-enum class PageChooserKind { BACKDROP, MUSIC }
+enum class PageChooserKind { BACKDROP, MUSIC, FOCUS_GAME }
 
 /**
  * What confirming a row in the page chooser does. Rows that lead somewhere are separate from rows
@@ -34,6 +36,7 @@ sealed interface PageChooserAction {
     data class OpenGameArt(val gameId: Long, val title: String) : PageChooserAction
     data class UseArt(val path: String) : PageChooserAction
     data class UseTrack(val path: String) : PageChooserAction
+    data class UseFocusGame(val gameId: Long) : PageChooserAction
     data object UseTileAudio : PageChooserAction
     data object UseLauncherMusic : PageChooserAction
     data object ClearBackdrop : PageChooserAction
@@ -68,6 +71,7 @@ data class PageChooserState(
 ) {
     val title: String
         get() = when {
+            kind == PageChooserKind.FOCUS_GAME -> "Play Next"
             gameTitle != null -> gameTitle
             kind == PageChooserKind.BACKDROP -> "Backdrop"
             else -> "Music"
@@ -75,6 +79,7 @@ data class PageChooserState(
 
     val subtitle: String
         get() = when {
+            kind == PageChooserKind.FOCUS_GAME -> "The game this tile plays"
             gameId != null -> "Artwork and screenshots"
             kind == PageChooserKind.BACKDROP -> "What this page shows behind its tiles"
             else -> "What this page plays"
@@ -294,6 +299,13 @@ data class CustomGridState(
     val isFocusedTileCurated: Boolean
         get() = (focusedTile?.target as? HomeTileTargetRef.Media)?.playMode != null
 
+    /**
+     * The collection tile under the cursor, if it is one. A collection can be played through rather
+     * than opened, so it is the one target that answers to more than a single action.
+     */
+    val focusedCollection: HomeTileTargetRef.Collection?
+        get() = focusedTile?.target as? HomeTileTargetRef.Collection
+
     fun tileAt(target: GridCell): HomeTile? =
         tilesOnPage(page).firstOrNull { it.rect.covers(target.columnIndex, target.rowIndex) }
 
@@ -312,12 +324,12 @@ data class CustomGridState(
      * hint promising otherwise is worse than no hint.
      */
     val confirmLabel: String?
-        get() = when (focusedTile?.target) {
+        get() = when (val target = focusedTile?.target) {
             is HomeTileTargetRef.Game -> "Play"
             is HomeTileTargetRef.Media -> "Play"
             is HomeTileTargetRef.LocalMedia -> "Play"
             is HomeTileTargetRef.App -> "Open"
-            is HomeTileTargetRef.Collection -> "Open"
+            is HomeTileTargetRef.Collection -> if (target.focusGameId != null) "Play" else "Open"
             is HomeTileTargetRef.VirtualCollection -> "Open"
             HomeTileTargetRef.Unresolvable -> null
             null -> "Add"
@@ -346,6 +358,12 @@ data class CustomGridState(
             if (focusedTile != null) {
                 add(CustomTileMenuAction.ARRANGE)
                 if (isFocusedTileCurated) add(CustomTileMenuAction.RECURATE)
+                focusedCollection?.let { collection ->
+                    add(CustomTileMenuAction.SET_FOCUS_GAME)
+                    if (collection.focusGameId != null) {
+                        add(CustomTileMenuAction.ADVANCE_FOCUS_GAME)
+                    }
+                }
                 add(CustomTileMenuAction.REMOVE)
             }
             if (!isOnAddPage) {

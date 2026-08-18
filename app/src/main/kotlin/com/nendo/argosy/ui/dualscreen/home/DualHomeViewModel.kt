@@ -305,12 +305,14 @@ data class DualHomeUiState(
             }
             is com.nendo.argosy.domain.model.HomeTileTargetRef.Collection -> {
                 val collection = tileCollections[target.collectionId]
+                val focus = target.focusGameId?.let { tileGames[it] }
                 com.nendo.argosy.ui.components.CustomGridTileContent(
-                    game = null,
-                    label = collection?.name ?: "Missing collection",
+                    game = focus,
+                    label = focus?.title ?: collection?.name ?: "Missing collection",
                     isMissing = collection == null,
-                    coverPath = collection?.coverPath,
-                    subtitle = "Collection",
+                    coverPath = if (focus == null) collection?.coverPath else null,
+                    subtitle = collection?.name?.takeIf { focus != null } ?: "Collection",
+                    isCollectionQueue = focus != null,
                     stats = collection?.let {
                         listOf(
                             com.nendo.argosy.ui.components.TileStat(
@@ -351,6 +353,8 @@ class DualHomeViewModel(
     private val gameRepository: GameRepository,
     private val platformRepository: PlatformRepository,
     private val collectionRepository: CollectionRepository,
+    private val advanceCollectionFocusUseCase:
+        com.nendo.argosy.domain.usecase.collection.AdvanceCollectionFocusUseCase? = null,
     private val downloadQueueRepository: DownloadQueueRepository,
     private val displayAffinityHelper: DisplayAffinityHelper,
     private val context: Context,
@@ -395,6 +399,7 @@ class DualHomeViewModel(
         onPageAdded = { count -> persistCustomGridPageCount(count) },
         onPageRemoved = { count -> persistCustomGridPageRemoval(count) },
         pickerEntries = { category, query -> tilePickerEntriesFor(category, query) },
+        onAdvanceFocusGame = { collectionId, current -> advanceCollectionFocus(collectionId, current) },
         read = { _uiState.value.customGrid },
         write = { transform -> _uiState.update { it.copy(customGrid = transform(it.customGrid)) } }
     )
@@ -1132,7 +1137,12 @@ class DualHomeViewModel(
                 }
                 .collect { rows ->
                     val gameIds = rows.mapNotNull {
-                        (it.target as? com.nendo.argosy.domain.model.HomeTileTargetRef.Game)?.gameId
+                        when (val target = it.target) {
+                            is com.nendo.argosy.domain.model.HomeTileTargetRef.Game -> target.gameId
+                            is com.nendo.argosy.domain.model.HomeTileTargetRef.Collection ->
+                                target.focusGameId
+                            else -> null
+                        }
                     }.distinct()
                     val games = if (gameIds.isEmpty()) {
                         emptyMap()
@@ -1300,6 +1310,11 @@ class DualHomeViewModel(
     }
 
     fun openTilePicker() = customGrid.openPicker()
+
+    fun advanceFocusGame() = customGrid.advanceFocusGame()
+
+    private suspend fun advanceCollectionFocus(collectionId: Long, currentGameId: Long): Long? =
+        advanceCollectionFocusUseCase?.invoke(collectionId, currentGameId)?.nextGameId
 
     fun closeTilePicker() = customGrid.closePicker()
 

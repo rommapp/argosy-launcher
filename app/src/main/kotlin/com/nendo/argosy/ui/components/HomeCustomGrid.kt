@@ -20,6 +20,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.outlined.Layers
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -127,7 +128,12 @@ data class CustomGridTileContent(
     val coverPath: String? = null,
     val posterUrl: String? = null,
     val subtitle: String? = null,
-    val stats: List<TileStat> = emptyList()
+    val stats: List<TileStat> = emptyList(),
+    /**
+     * Marks a tile that plays one game out of a collection, so a queue is distinguishable from the
+     * plain game tile it otherwise looks exactly like.
+     */
+    val isCollectionQueue: Boolean = false
 )
 
 /**
@@ -441,6 +447,9 @@ private fun CustomGridCellBox(
                         }
                     )
             )
+            if (content.isCollectionQueue) {
+                CollectionQueueBadge(modifier = Modifier.align(Alignment.TopStart))
+            }
             if (editModeLabel != null && isFocused) {
                 TileModeTab(
                     label = editModeLabel,
@@ -626,8 +635,32 @@ private const val DOT_IDLE_ALPHA = 0.35f
  * rather than applied as a parent layer: a cover composites with blend modes internally, and
  * wrapping that in an alpha layer flattens it to black instead of fading it.
  */
+private const val COLLECTION_BADGE_SCRIM_ALPHA = 0.7f
 private const val OVERLAPPED_ALPHA = 0.6f
 private const val OVERLAPPED_SATURATION = 0.15f
+
+/**
+ * Says a tile showing one game is really a collection being played through, so it is not mistaken
+ * for a plain game tile that happens to sit next to it.
+ */
+@Composable
+private fun CollectionQueueBadge(modifier: Modifier = Modifier) {
+    val theme = LocalArgosyTheme.current
+    Box(
+        modifier = modifier
+            .padding(Dimens.spacingXs)
+            .clip(RoundedCornerShape(Dimens.radiusSm))
+            .background(theme.surfaceBase.copy(alpha = COLLECTION_BADGE_SCRIM_ALPHA))
+            .padding(Dimens.spacingXs)
+    ) {
+        Icon(
+            imageVector = Icons.Outlined.Layers,
+            contentDescription = null,
+            tint = theme.textPrimary,
+            modifier = Modifier.size(Dimens.iconSm)
+        )
+    }
+}
 
 /**
  * A tab hanging off the tile's lower edge naming the mode the d-pad is currently in. It is the

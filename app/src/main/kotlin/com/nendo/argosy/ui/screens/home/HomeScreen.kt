@@ -915,6 +915,9 @@ fun HomeScreen(
                             else -> buildList {
                                 add(InputButton.LB_RB to "Page")
                                 grid.confirmLabel?.let { add(InputButton.A to it) }
+                                if (grid.focusedCollection?.focusGameId != null) {
+                                    add(InputButton.Y to "Finished")
+                                }
                                 add(InputButton.SELECT to "Options")
                             }
                         },

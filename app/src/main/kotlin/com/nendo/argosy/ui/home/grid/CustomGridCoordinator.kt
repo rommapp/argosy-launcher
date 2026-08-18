@@ -40,6 +40,7 @@ class CustomGridCoordinator(
     private val ownerUserId: suspend () -> Long?,
     private val pickerEntries: suspend (TilePickerCategory, String) -> List<TilePickerEntry>,
     private val pageChooserEntries: (suspend (PageChooserState) -> List<PageChooserEntry>)? = null,
+    private val onAdvanceFocusGame: (suspend (Long, Long) -> Long?)? = null,
     private val onPageAdded: ((Int) -> Unit)? = null,
     private val onPageRemoved: ((Int) -> Unit)? = null,
     private val mediaCatalog: MediaTileCatalog? = null,
@@ -231,6 +232,8 @@ class CustomGridCoordinator(
             CustomTileMenuAction.ARRANGE -> enterMoveMode()
             CustomTileMenuAction.RECURATE -> recurateFocusedTile()
             CustomTileMenuAction.REMOVE -> removeFocusedTile()
+            CustomTileMenuAction.SET_FOCUS_GAME -> openPageChooser(PageChooserKind.FOCUS_GAME)
+            CustomTileMenuAction.ADVANCE_FOCUS_GAME -> advanceFocusGame()
             CustomTileMenuAction.PAGE_BACKDROP -> openPageChooser(PageChooserKind.BACKDROP)
             CustomTileMenuAction.PAGE_MUSIC -> openPageChooser(PageChooserKind.MUSIC)
             CustomTileMenuAction.DELETE_PAGE -> deleteCurrentPage()
@@ -833,6 +836,11 @@ class CustomGridCoordinator(
                 closePageChooser()
             }
 
+            is PageChooserAction.UseFocusGame -> {
+                setFocusGame(action.gameId)
+                closePageChooser()
+            }
+
             is PageChooserAction.UseTrack -> {
                 applyAudio(chooser.page, PageAudioKind.THEME, action.path)
                 closePageChooser()
@@ -847,6 +855,44 @@ class CustomGridCoordinator(
                 applyAudio(chooser.page, PageAudioKind.GLOBAL, null)
                 closePageChooser()
             }
+        }
+    }
+
+    /**
+     * Points a collection tile at the game to play. The tile keeps its collection: the choice is
+     * which of its games is current, not what the tile is.
+     */
+    fun setFocusGame(gameId: Long?) {
+        val tile = read().focusedTile ?: return
+        val collection = tile.target as? HomeTileTargetRef.Collection ?: return
+        val retargeted = collection.copy(focusGameId = gameId)
+        write { state ->
+            state.copy(
+                tiles = state.tiles.map {
+                    if (it.id == tile.id) it.copy(target = retargeted) else it
+                }
+            )
+        }
+        scope.launch {
+            repository?.retarget(tile, ownerUserId(), retargeted, emptyList())
+        }
+    }
+
+    /**
+     * Moves a collection tile on to the next game and marks the one being left as finished, which is
+     * what advancing means: the queue only moves because something was played through.
+     *
+     * Wraps at the end rather than stopping, so a finished list starts again instead of becoming a
+     * tile that does nothing.
+     */
+    fun advanceFocusGame() {
+        val tile = read().focusedTile ?: return
+        val collection = tile.target as? HomeTileTargetRef.Collection ?: return
+        val current = collection.focusGameId ?: return
+        val advance = onAdvanceFocusGame ?: return
+        scope.launch {
+            val next = advance(collection.collectionId, current) ?: return@launch
+            setFocusGame(next)
         }
     }
 

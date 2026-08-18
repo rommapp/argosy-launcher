@@ -169,7 +169,10 @@ class HomeTileRepository @Inject constructor(
         )
         return when (target) {
             is HomeTileTargetRef.Game -> base.copy(gameId = target.gameId)
-            is HomeTileTargetRef.Collection -> base.copy(collectionId = target.collectionId)
+            is HomeTileTargetRef.Collection -> base.copy(
+                collectionId = target.collectionId,
+                gameId = target.focusGameId
+            )
             is HomeTileTargetRef.VirtualCollection ->
                 base.copy(virtualType = target.type, virtualName = target.name)
             is HomeTileTargetRef.App -> base.copy(packageName = target.packageName)
@@ -223,7 +226,9 @@ private fun HomeTileEntity.toDomain(playlist: List<String>): HomeTile = HomeTile
 private fun HomeTileEntity.resolveTarget(): HomeTileTargetRef =
     when (runCatching { HomeTileTarget.valueOf(targetType) }.getOrNull()) {
         HomeTileTarget.GAME -> gameId?.let { HomeTileTargetRef.Game(it) }
-        HomeTileTarget.COLLECTION -> collectionId?.let { HomeTileTargetRef.Collection(it) }
+        HomeTileTarget.COLLECTION -> collectionId?.let {
+            HomeTileTargetRef.Collection(it, focusGameId = gameId)
+        }
         HomeTileTarget.VIRTUAL_COLLECTION -> virtualType?.let { type ->
             HomeTileTargetRef.VirtualCollection(type, virtualName.orEmpty())
         }

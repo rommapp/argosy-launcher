@@ -91,6 +91,9 @@ class HomeViewModel @Inject constructor(
     private val homeGridPageRepository: com.nendo.argosy.data.repository.HomeGridPageRepository,
     private val imageCacheManager: com.nendo.argosy.data.cache.ImageCacheManager,
     private val bgmPlaylistRepository: com.nendo.argosy.data.music.BgmPlaylistRepository,
+    private val collectionRepository: com.nendo.argosy.data.repository.CollectionRepository,
+    private val advanceCollectionFocusUseCase:
+        com.nendo.argosy.domain.usecase.collection.AdvanceCollectionFocusUseCase,
     private val homeTilePromptQueue: com.nendo.argosy.data.repository.HomeTilePromptQueue,
     private val syncPreferencesRepository: com.nendo.argosy.data.preferences.SyncPreferencesRepository
 ) : ViewModel(), HomeInputActions {
@@ -109,6 +112,7 @@ class HomeViewModel @Inject constructor(
         repository = homeTileRepository,
         pageRepository = homeGridPageRepository,
         pageChooserEntries = { chooser -> pageChooserEntriesFor(chooser) },
+        onAdvanceFocusGame = { collectionId, current -> advanceCollectionFocus(collectionId, current) },
         ownerUserId = { syncPreferencesRepository.getRommUserId() },
         onPageAdded = { count -> persistCustomGridPageCount(count) },
         onPageRemoved = { count -> persistCustomGridPageRemoval(count) },
@@ -708,10 +712,30 @@ class HomeViewModel @Inject constructor(
     private suspend fun pageChooserEntriesFor(
         chooser: com.nendo.argosy.ui.components.PageChooserState
     ): List<com.nendo.argosy.ui.components.PageChooserEntry> = when {
+        chooser.kind == com.nendo.argosy.ui.components.PageChooserKind.FOCUS_GAME ->
+            focusGameEntries()
         chooser.kind == com.nendo.argosy.ui.components.PageChooserKind.MUSIC -> musicChooserEntries()
         chooser.gameId != null -> gameArtEntries(chooser.gameId)
         chooser.gameTitle != null -> gameArtSourceEntries(chooser.query)
         else -> backdropRootEntries()
+    }
+
+    /**
+     * Marks the game being left as finished and answers with the next one in the collection.
+     *
+     * Finishing is the reason the queue moves, so it is recorded through the path that also tells
+     * RomM rather than only the local row. A status the user set deliberately to say they are done
+     * with a game -- retired, never playing, already 100% -- is left alone.
+     */
+    private suspend fun advanceCollectionFocus(collectionId: Long, currentGameId: Long): Long? {
+        val result = advanceCollectionFocusUseCase(collectionId, currentGameId) ?: return null
+        notificationManager.show(
+            title = "Playing next",
+            subtitle = result.nextTitle,
+            type = com.nendo.argosy.core.notification.NotificationType.SUCCESS,
+            duration = com.nendo.argosy.core.notification.NotificationDuration.SHORT
+        )
+        return result.nextGameId
     }
 
     private fun backdropRootEntries(): List<com.nendo.argosy.ui.components.PageChooserEntry> =
@@ -758,6 +782,22 @@ class HomeViewModel @Inject constructor(
                 action = com.nendo.argosy.ui.components.PageChooserAction.UseArt(art.path)
             )
         }
+
+    /**
+     * The games of the collection under the cursor, in the order the collection holds them, with
+     * the one being played now marked so the list says where the queue has reached.
+     */
+    private suspend fun focusGameEntries(): List<com.nendo.argosy.ui.components.PageChooserEntry> {
+        val collection = _uiState.value.customGrid.focusedCollection ?: return emptyList()
+        return collectionRepository.getGamesInCollection(collection.collectionId).map { game ->
+            com.nendo.argosy.ui.components.PageChooserEntry(
+                label = game.title,
+                subtitle = if (game.id == collection.focusGameId) "Playing now" else null,
+                previewPath = game.coverPath,
+                action = com.nendo.argosy.ui.components.PageChooserAction.UseFocusGame(game.id)
+            )
+        }
+    }
 
     private suspend fun musicChooserEntries(): List<com.nendo.argosy.ui.components.PageChooserEntry> {
         val tracks = bgmPlaylistRepository.playableTracks()
@@ -842,7 +882,13 @@ class HomeViewModel @Inject constructor(
             tiles.filterNot { it.target is HomeTileTargetRef.Media }
         }
         val games = libraryDelegate.resolveTileGames(
-            shown.mapNotNull { (it.target as? HomeTileTargetRef.Game)?.gameId }.distinct()
+            shown.mapNotNull {
+                when (val target = it.target) {
+                    is HomeTileTargetRef.Game -> target.gameId
+                    is HomeTileTargetRef.Collection -> target.focusGameId
+                    else -> null
+                }
+            }.distinct()
         )
         val collections = libraryDelegate.resolveTileCollections(
             shown.mapNotNull { (it.target as? HomeTileTargetRef.Collection)?.collectionId }.distinct()
@@ -1102,6 +1148,8 @@ class HomeViewModel @Inject constructor(
     override fun cancelTileEdit() = customGrid.cancelEdit()
 
     override fun toggleTileEditMode() = customGrid.toggleEditMode()
+
+    override fun advanceFocusGame() = customGrid.advanceFocusGame()
 
     override fun movePageChooserFocus(delta: Int) = customGrid.movePageChooserFocus(delta)
 

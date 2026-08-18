@@ -127,6 +127,10 @@ class DualCustomGridInputRouter(
                     viewModel.toggleTilePickerSearch()
                     return InputResult.HANDLED
                 }
+                if (grid.focusedCollection?.focusGameId != null) {
+                    viewModel.advanceFocusGame()
+                    return InputResult.HANDLED
+                }
                 grid.focusedGameId?.let { viewModel.toggleFavoriteById(it) }
                 InputResult.HANDLED
             }
@@ -198,10 +202,16 @@ class DualCustomGridInputRouter(
                 if (game == null) viewModel.openTilePicker() else onLaunchGame(game)
             }
             is HomeTileTargetRef.App -> onLaunchApp(target.packageName)
-            is HomeTileTargetRef.Collection ->
-                viewModel.enterCollectionGames(target.collectionId, fromTile = true) {
-                    onEnterCollectionGames()
+            is HomeTileTargetRef.Collection -> {
+                val focus = target.focusGameId?.let { state.tileGames[it] }
+                if (focus != null) {
+                    onLaunchGame(focus)
+                } else {
+                    viewModel.enterCollectionGames(target.collectionId, fromTile = true) {
+                        onEnterCollectionGames()
+                    }
                 }
+            }
             else -> viewModel.openTilePicker()
         }
         return InputResult.HANDLED

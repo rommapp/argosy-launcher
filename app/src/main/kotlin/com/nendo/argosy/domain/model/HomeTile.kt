@@ -47,7 +47,14 @@ data class TileRect(
  */
 sealed interface HomeTileTargetRef {
     data class Game(val gameId: Long) : HomeTileTargetRef
-    data class Collection(val collectionId: Long) : HomeTileTargetRef
+    /**
+     * [focusGameId] turns the tile into a queue: the game being played now, launched directly, with
+     * the collection behind it as the list to advance through. Null is a plain collection tile.
+     */
+    data class Collection(
+        val collectionId: Long,
+        val focusGameId: Long? = null
+    ) : HomeTileTargetRef
     data class VirtualCollection(val type: String, val name: String) : HomeTileTargetRef
     data class App(val packageName: String) : HomeTileTargetRef
 

@@ -36,6 +36,7 @@ interface HomeInputActions {
     fun commitTileEdit()
     fun cancelTileEdit()
     fun toggleTileEditMode()
+    fun advanceFocusGame()
     fun movePageChooserFocus(delta: Int)
     fun confirmPageChooser()
     fun backOutOfPageChooser()
@@ -255,7 +256,11 @@ class HomeInputHandler(
             is com.nendo.argosy.domain.model.HomeTileTargetRef.App ->
                 actions.launchTileApp(target.packageName)
             is com.nendo.argosy.domain.model.HomeTileTargetRef.Collection ->
-                actions.openTileCollection(target.collectionId)
+                if (target.focusGameId != null) {
+                    actions.launchGame(target.focusGameId)
+                } else {
+                    actions.openTileCollection(target.collectionId)
+                }
             is com.nendo.argosy.domain.model.HomeTileTargetRef.Media ->
                 actions.playTileMedia(target.itemId)
             else -> actions.openTilePicker()
@@ -499,6 +504,13 @@ class HomeInputHandler(
         if (state.showTilePicker) {
             actions.toggleTilePickerSearch()
             return InputResult.HANDLED
+        }
+        if (isCustomGrid(state)) {
+            val collection = state.customGrid.focusedCollection
+            if (collection?.focusGameId != null) {
+                actions.advanceFocusGame()
+                return InputResult.HANDLED
+            }
         }
         if (!isCustomGrid(state) && focusedIsMedia(state)) {
             val media = state.focusedMedia ?: return InputResult.UNHANDLED

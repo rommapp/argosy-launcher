@@ -341,7 +341,7 @@ class BiosRepository @Inject constructor(
     ): Int = withContext(Dispatchers.IO) {
         val config = BiosPathRegistry.getEmulatorBiosPaths(emulatorId) ?: return@withContext 0
         val canonicalSlug = PlatformDefinitions.getCanonicalSlug(platformSlug)
-        if (canonicalSlug !in config.supportedPlatforms) return@withContext 0
+        if (!config.supports(canonicalSlug)) return@withContext 0
 
         val downloaded = firmwareDao.getByPlatformSlug(platformSlug).filter { it.localPath != null }
         if (downloaded.isEmpty()) return@withContext 0

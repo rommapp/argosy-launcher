@@ -13,11 +13,25 @@ data class BiosRequirement(
     val isRequired: Boolean = true
 )
 
+/**
+ * Where an emulator reads BIOS files from, and which platforms it will accept them for.
+ *
+ * [acceptsAnyPlatform] belongs to the built-in emulator alone: it owns its system directory, so
+ * every platform a downloaded firmware file names is one it can be handed. Listing platforms
+ * there instead would restate what the firmware rows already say, and a platform missing from
+ * the list gets no BIOS with nothing on screen to say why. Its [defaultPaths] are empty for the
+ * same reason the others are not: the directory is internal and resolved at runtime by
+ * BiosRepository.getLibretroSystemDir.
+ */
 data class BiosPathConfig(
     val emulatorId: String,
     val defaultPaths: List<String>,
-    val supportedPlatforms: Set<String>
-)
+    val supportedPlatforms: Set<String>,
+    val acceptsAnyPlatform: Boolean = false
+) {
+    fun supports(canonicalSlug: String): Boolean =
+        acceptsAnyPlatform || canonicalSlug in supportedPlatforms
+}
 
 object BiosPathRegistry {
 
@@ -70,11 +84,10 @@ object BiosPathRegistry {
         "145eaef5bd3037cbc247c213bb3da1b3" to "firmware.bin",
         "94bc5094607c5e6598d50472c52f27f2" to "firmware.bin",
 
-        // DSi - melonDS (DSi mode requires separate folder)
-        "559dae4ea78eb9d67702c56c1d791e81" to "bios7.bin",
-        "87b665fce118f76251271c3732532777" to "bios9.bin",
-        "74f23348012d7b3e1cc216c47192ffeb" to "firmware.bin",
-        "d71edf897ddd06bf335feeb68edeb272" to "nand.bin",
+        "559dae4ea78eb9d67702c56c1d791e81" to "dsi_bios7.bin",
+        "87b665fce118f76251271c3732532777" to "dsi_bios9.bin",
+        "74f23348012d7b3e1cc216c47192ffeb" to "dsi_firmware.bin",
+        "d71edf897ddd06bf335feeb68edeb272" to "dsi_nand.bin",
 
         // PC Engine CD - Beetle PCE
         "38179df8f4ac870017db21ebcbf53114" to "syscard3.pce",
@@ -309,12 +322,9 @@ object BiosPathRegistry {
         ),
         BUILTIN_EMULATOR_ID to BiosPathConfig(
             emulatorId = BUILTIN_EMULATOR_ID,
-            defaultPaths = emptyList(), // Paths set dynamically via getBuiltInSystemDir()
-            supportedPlatforms = setOf(
-                "psx", "saturn", "scd", "dreamcast", "dc", "neogeo",
-                "gba", "tgcd", "lynx", "3do", "intellivision",
-                "amiga", "amigacd32", "cdtv"
-            )
+            defaultPaths = emptyList(),
+            supportedPlatforms = emptySet(),
+            acceptsAnyPlatform = true
         )
         )
     }
@@ -343,7 +353,7 @@ object BiosPathRegistry {
 
     fun getEmulatorsForPlatform(platformSlug: String): List<BiosPathConfig> {
         val canonical = PlatformDefinitions.getCanonicalSlug(platformSlug)
-        return emulatorBiosPaths.values.filter { canonical in it.supportedPlatforms }
+        return emulatorBiosPaths.values.filter { it.supports(canonical) }
     }
 
     fun getAllBiosConfigs(): Map<String, BiosPathConfig> = emulatorBiosPaths

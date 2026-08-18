@@ -12,6 +12,16 @@ data class RomMPlaySessionEntry(
     @Json(name = "duration_ms") val durationMs: Long
 )
 
+/**
+ * Says a device is playing a game right now. Both fields must resolve server-side or the call is
+ * refused: an unregistered device answers 404 rather than recording anonymous activity.
+ */
+@JsonClass(generateAdapter = true)
+data class RomMActivityHeartbeatPayload(
+    @Json(name = "rom_id") val romId: Long,
+    @Json(name = "device_id") val deviceId: String
+)
+
 @JsonClass(generateAdapter = true)
 data class RomMPlaySessionIngestPayload(
     @Json(name = "device_id") val deviceId: String? = null,

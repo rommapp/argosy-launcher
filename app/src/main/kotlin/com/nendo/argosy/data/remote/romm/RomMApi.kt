@@ -326,6 +326,21 @@ interface RomMApi {
         @Body body: RomMPlaySessionIngestPayload
     ): Response<RomMPlaySessionIngestResponse>
 
+    /**
+     * Says this device is playing [RomMActivityHeartbeatPayload.romId] right now. The server holds
+     * it for 90 seconds, so it has to be repeated while play continues; the reply is discarded
+     * because everything it carries is already known here.
+     */
+    @POST("api/activity/heartbeat")
+    suspend fun sendActivityHeartbeat(
+        @Body body: RomMActivityHeartbeatPayload
+    ): Response<ResponseBody>
+
+    @DELETE("api/activity/heartbeat")
+    suspend fun clearActivity(
+        @Query("device_id") deviceId: String
+    ): Response<ResponseBody>
+
     @POST("api/sync/negotiate")
     suspend fun negotiateSync(
         @Body body: RomMSyncNegotiatePayload

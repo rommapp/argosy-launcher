@@ -40,6 +40,8 @@ import dagger.hilt.android.AndroidEntryPoint
 import com.nendo.argosy.util.SafeCoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -54,6 +56,8 @@ class GameSessionService : Service() {
     @Inject lateinit var activeSaveRepository: com.nendo.argosy.data.repository.ActiveSaveRepository
     @Inject lateinit var screenshotCaptureMonitor: ScreenshotCaptureMonitor
     @Inject lateinit var playSessionTracker: dagger.Lazy<PlaySessionTracker>
+    @Inject lateinit var activityReporter:
+        com.nendo.argosy.data.social.uploader.RomMActivityReporter
 
     private val serviceScope = SafeCoroutineScope(Dispatchers.IO, "GameSessionService")
     private val handler = Handler(Looper.getMainLooper())
@@ -65,6 +69,7 @@ class GameSessionService : Service() {
     private var windowManager: WindowManager? = null
     private var overlayView: View? = null
 
+    private var activityJob: kotlinx.coroutines.Job? = null
     private var currentGameId: Long = -1
     private var currentEmulatorId: String? = null
     private var currentSavePath: String? = null
@@ -145,6 +150,7 @@ class GameSessionService : Service() {
                 }
 
                 screenshotCaptureMonitor.start(gameId, emulatorPackage, sessionStartTime)
+                startActivityReporting(gameId)
             }
         }
         return START_REDELIVER_INTENT
@@ -154,6 +160,8 @@ class GameSessionService : Service() {
 
     override fun onDestroy() {
         Logger.debug(TAG, "Service destroyed")
+        stopActivityReporting()
+        activityReporter.clearAsync()
         cleanupPresenceKeepalive()
         screenshotCaptureMonitor.stop()
         stopWatching()
@@ -195,6 +203,29 @@ class GameSessionService : Service() {
     }
 
     private var screenOffReceiver: BroadcastReceiver? = null
+
+    /**
+     * Keeps RomM's live view of this device current for as long as the session runs. Restarted on
+     * each launch so a session that follows another does not inherit the previous game's loop.
+     *
+     * A game RomM cannot place, or a server that refuses the first report, ends the loop rather
+     * than repeating a call that has already been answered.
+     */
+    private fun startActivityReporting(gameId: Long) {
+        stopActivityReporting()
+        if (gameId <= 0) return
+        activityJob = serviceScope.launch {
+            while (isActive) {
+                if (!activityReporter.report(gameId)) return@launch
+                delay(ACTIVITY_HEARTBEAT_INTERVAL_MS)
+            }
+        }
+    }
+
+    private fun stopActivityReporting() {
+        activityJob?.cancel()
+        activityJob = null
+    }
 
     private fun cleanupPresenceKeepalive() {
         screenOffReceiver?.let {
@@ -614,6 +645,12 @@ class GameSessionService : Service() {
         private const val RESET_DELAY_MS = 1700L
         private const val OVERLAY_DEBOUNCE_MS = 5 * 60 * 1000L
         private const val POLL_INTERVAL_MS = 2000L
+
+        /**
+         * Comfortably inside the 90 seconds RomM holds a device's activity for, so one lost call
+         * does not make the device look like it stopped playing.
+         */
+        private const val ACTIVITY_HEARTBEAT_INTERVAL_MS = 30_000L
         private const val STARTUP_COOLDOWN_MS = 20000L
         private const val CACHE_DEBOUNCE_MS = 250L
         private val IGNORED_DIRECTORY_PATTERNS = setOf(

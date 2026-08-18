@@ -426,6 +426,18 @@ class HomeMediaDelegate @Inject constructor(
     }
 
     /**
+     * Carries a tile's playback position into the stored one, so the fullscreen player opens where
+     * the tile had reached instead of where the library was last left.
+     */
+    suspend fun handOffPosition(itemId: String, positionMs: Long) {
+        if (positionMs <= 0) return
+        mediaRepository.recordPosition(
+            itemId,
+            positionMs * com.nendo.argosy.data.remote.jellyfin.TICKS_PER_MILLISECOND
+        )
+    }
+
+    /**
      * What a press on this tile plays.
      *
      * A movie and a rail's episode play themselves. A series has to be asked, and the order the

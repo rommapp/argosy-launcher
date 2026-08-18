@@ -355,6 +355,8 @@ class DualHomeViewModel(
     private val collectionRepository: CollectionRepository,
     private val advanceCollectionFocusUseCase:
         com.nendo.argosy.domain.usecase.collection.AdvanceCollectionFocusUseCase? = null,
+    private val prepareCollectionQueueUseCase:
+        com.nendo.argosy.domain.usecase.collection.PrepareCollectionQueueUseCase? = null,
     private val downloadQueueRepository: DownloadQueueRepository,
     private val displayAffinityHelper: DisplayAffinityHelper,
     private val context: Context,
@@ -400,6 +402,10 @@ class DualHomeViewModel(
         onPageRemoved = { count -> persistCustomGridPageRemoval(count) },
         pickerEntries = { category, query -> tilePickerEntriesFor(category, query) },
         onAdvanceFocusGame = { collectionId, current -> advanceCollectionFocus(collectionId, current) },
+        onPrepareQueue = { collectionId, active ->
+            prepareCollectionQueueUseCase?.invoke(collectionId, active)
+            Unit
+        },
         onOpenLibrary = { onOpenLibraryFromGrid?.invoke() },
         read = { _uiState.value.customGrid },
         write = { transform -> _uiState.update { it.copy(customGrid = transform(it.customGrid)) } }

@@ -114,6 +114,10 @@ class DualScreenManager(
     private val gameThemeAudioCoordinator: com.nendo.argosy.ui.audio.GameThemeAudioCoordinator,
     internal val getPinnedCollectionsUseCase: com.nendo.argosy.domain.usecase.collection.GetPinnedCollectionsUseCase? = null,
     internal val getGamesForPinnedCollectionUseCase: com.nendo.argosy.domain.usecase.collection.GetGamesForPinnedCollectionUseCase? = null,
+    internal val advanceCollectionFocusUseCase:
+        com.nendo.argosy.domain.usecase.collection.AdvanceCollectionFocusUseCase,
+    internal val prepareCollectionQueueUseCase:
+        com.nendo.argosy.domain.usecase.collection.PrepareCollectionQueueUseCase,
     internal val mediaRepository: com.nendo.argosy.data.repository.MediaRepository,
     private val mediaPlaybackTracker: com.nendo.argosy.data.media.MediaPlaybackTracker,
     initialRolesSwapped: Boolean = false
@@ -789,6 +793,8 @@ class DualScreenManager(
             gradientExtractionDelegate = gradientExtractionDelegate,
             getPinnedCollectionsUseCase = getPinnedCollectionsUseCase,
             getGamesForPinnedCollectionUseCase = getGamesForPinnedCollectionUseCase,
+            advanceCollectionFocusUseCase = advanceCollectionFocusUseCase,
+            prepareCollectionQueueUseCase = prepareCollectionQueueUseCase,
             sessionStateStore = sessionStateStore,
             homeTileRepository = homeTileRepository,
             homeTilePromptQueue = homeTilePromptQueue,

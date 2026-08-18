@@ -13,8 +13,9 @@ enum class CustomTileMenuAction(val label: String) {
     ARRANGE("Move or resize"),
     RECURATE("Change what it plays"),
     REMOVE("Remove from grid"),
-    SET_FOCUS_GAME("Pick the game to play"),
-    ADVANCE_FOCUS_GAME("Finished - play the next one"),
+    START_GAME_QUEUE("Make game queue"),
+    SET_FOCUS_GAME("Set the active game"),
+    ADVANCE_FOCUS_GAME("Finish/skip game"),
     OPEN_LIBRARY("Open Library"),
     PAGE_BACKDROP("Backdrop for this page"),
     PAGE_MUSIC("Music for this page"),
@@ -310,8 +311,17 @@ data class CustomGridState(
     fun tileAt(target: GridCell): HomeTile? =
         tilesOnPage(page).firstOrNull { it.rect.covers(target.columnIndex, target.rowIndex) }
 
+    /**
+     * The game under the cursor, which for a collection running as a queue is the game it would
+     * launch. Everything acting on "the game here" then agrees, rather than a queue tile reading as
+     * no game at all.
+     */
     val focusedGameId: Long?
-        get() = (focusedTile?.target as? HomeTileTargetRef.Game)?.gameId
+        get() = when (val target = focusedTile?.target) {
+            is HomeTileTargetRef.Game -> target.gameId
+            is HomeTileTargetRef.Collection -> target.focusGameId
+            else -> null
+        }
 
     val focusedMediaItemId: String?
         get() = (focusedTile?.target as? HomeTileTargetRef.Media)?.itemId
@@ -360,8 +370,10 @@ data class CustomGridState(
                 add(CustomTileMenuAction.ARRANGE)
                 if (isFocusedTileCurated) add(CustomTileMenuAction.RECURATE)
                 focusedCollection?.let { collection ->
-                    add(CustomTileMenuAction.SET_FOCUS_GAME)
-                    if (collection.focusGameId != null) {
+                    if (collection.focusGameId == null) {
+                        add(CustomTileMenuAction.START_GAME_QUEUE)
+                    } else {
+                        add(CustomTileMenuAction.SET_FOCUS_GAME)
                         add(CustomTileMenuAction.ADVANCE_FOCUS_GAME)
                     }
                 }

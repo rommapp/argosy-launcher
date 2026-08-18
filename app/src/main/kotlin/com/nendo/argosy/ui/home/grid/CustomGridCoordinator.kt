@@ -41,6 +41,7 @@ class CustomGridCoordinator(
     private val pickerEntries: suspend (TilePickerCategory, String) -> List<TilePickerEntry>,
     private val pageChooserEntries: (suspend (PageChooserState) -> List<PageChooserEntry>)? = null,
     private val onAdvanceFocusGame: (suspend (Long, Long) -> Long?)? = null,
+    private val onPrepareQueue: (suspend (Long, Long) -> Unit)? = null,
     /**
      * The way out to the wider library. The curated grid claims the button that reaches it
      * elsewhere, so without an entry in this menu the library has no route from a grid page.
@@ -122,6 +123,15 @@ class CustomGridCoordinator(
      */
     fun rememberPlaybackPosition(filePath: String, positionMs: Long) = write {
         it.copy(playbackPositions = it.playbackPositions + (filePath to positionMs))
+    }
+
+    /**
+     * Starting points from the library, for files this session has not played yet. A position
+     * reached here outranks the stored one, so seeding never rewinds a tile that is mid-playback.
+     */
+    fun seedPlaybackPositions(positions: Map<String, Long>) = write { state ->
+        val unseen = positions.filterKeys { it !in state.playbackPositions }
+        if (unseen.isEmpty()) state else state.copy(playbackPositions = state.playbackPositions + unseen)
     }
 
     /**
@@ -238,6 +248,7 @@ class CustomGridCoordinator(
             CustomTileMenuAction.RECURATE -> recurateFocusedTile()
             CustomTileMenuAction.REMOVE -> removeFocusedTile()
             CustomTileMenuAction.OPEN_LIBRARY -> onOpenLibrary?.invoke()
+            CustomTileMenuAction.START_GAME_QUEUE -> openPageChooser(PageChooserKind.FOCUS_GAME)
             CustomTileMenuAction.SET_FOCUS_GAME -> openPageChooser(PageChooserKind.FOCUS_GAME)
             CustomTileMenuAction.ADVANCE_FOCUS_GAME -> advanceFocusGame()
             CustomTileMenuAction.PAGE_BACKDROP -> openPageChooser(PageChooserKind.BACKDROP)
@@ -867,6 +878,9 @@ class CustomGridCoordinator(
     /**
      * Points a collection tile at the game to play. The tile keeps its collection: the choice is
      * which of its games is current, not what the tile is.
+     *
+     * Naming a game is also what arms the queue, so the game and its successor are fetched here
+     * rather than at launch, where a missing file is already a failure.
      */
     fun setFocusGame(gameId: Long?) {
         val tile = read().focusedTile ?: return
@@ -881,6 +895,9 @@ class CustomGridCoordinator(
         }
         scope.launch {
             repository?.retarget(tile, ownerUserId(), retargeted, emptyList())
+            if (gameId != null) {
+                onPrepareQueue?.invoke(collection.collectionId, gameId)
+            }
         }
     }
 

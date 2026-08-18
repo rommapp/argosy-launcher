@@ -917,6 +917,8 @@ class SecondaryHomeActivity :
             gradientExtractionDelegate = dsm.gradientExtractionDelegate,
             getPinnedCollectionsUseCase = dsm.getPinnedCollectionsUseCase,
             getGamesForPinnedCollectionUseCase = dsm.getGamesForPinnedCollectionUseCase,
+            advanceCollectionFocusUseCase = dsm.advanceCollectionFocusUseCase,
+            prepareCollectionQueueUseCase = dsm.prepareCollectionQueueUseCase,
             sessionStateStore = dsm.sessionStateStore,
             homeTileRepository = dsm.homeTileRepository,
             homeTilePromptQueue = dsm.homeTilePromptQueue,

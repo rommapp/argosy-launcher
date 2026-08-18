@@ -93,6 +93,8 @@ class HomeViewModel @Inject constructor(
     private val collectionRepository: com.nendo.argosy.data.repository.CollectionRepository,
     private val advanceCollectionFocusUseCase:
         com.nendo.argosy.domain.usecase.collection.AdvanceCollectionFocusUseCase,
+    private val prepareCollectionQueueUseCase:
+        com.nendo.argosy.domain.usecase.collection.PrepareCollectionQueueUseCase,
     private val homeTilePromptQueue: com.nendo.argosy.data.repository.HomeTilePromptQueue,
     private val syncPreferencesRepository: com.nendo.argosy.data.preferences.SyncPreferencesRepository
 ) : ViewModel(), HomeInputActions {
@@ -112,6 +114,7 @@ class HomeViewModel @Inject constructor(
         pageRepository = homeGridPageRepository,
         pageChooserEntries = { chooser -> pageChooserEntriesFor(chooser) },
         onAdvanceFocusGame = { collectionId, current -> advanceCollectionFocus(collectionId, current) },
+        onPrepareQueue = { collectionId, active -> prepareCollectionQueueUseCase(collectionId, active) },
         onOpenLibrary = {
             viewModelScope.launch {
                 _events.emit(HomeEvent.NavigateToLibrary(platformId = null, sourceFilter = null))
@@ -907,15 +910,21 @@ class HomeViewModel @Inject constructor(
      */
     private fun resolveTilePlayback(tiles: List<com.nendo.argosy.domain.model.HomeTile>) {
         viewModelScope.launch {
-            val playable = tiles
+            val playable = mutableMapOf<Long, String>()
+            val resumePoints = mutableMapOf<String, Long>()
+            tiles
                 .filter { it.target is HomeTileTargetRef.Media || it.target is HomeTileTargetRef.LocalMedia }
-                .mapNotNull { tile ->
-                    val path = (tilePickerDelegate.playbackFor(tile) as? MediaTilePlayback.Ready)
-                        ?.localPath
-                    path?.let { tile.id to it }
+                .forEach { tile ->
+                    val ready = tilePickerDelegate.playbackFor(tile) as? MediaTilePlayback.Ready
+                        ?: return@forEach
+                    playable[tile.id] = ready.localPath
+                    if (ready.resumeTicks > 0) {
+                        resumePoints[ready.localPath] =
+                            ready.resumeTicks / com.nendo.argosy.data.remote.jellyfin.TICKS_PER_MILLISECOND
+                    }
                 }
-                .toMap()
             customGrid.setTilePlayback(playable)
+            customGrid.seedPlaybackPositions(resumePoints)
         }
     }
 
@@ -1128,10 +1137,16 @@ class HomeViewModel @Inject constructor(
      * to open, so it stays where it is and keeps playing.
      */
     override fun openEngagedFullscreen() {
-        val target = _uiState.value.customGrid.engagedTile?.target
+        val grid = _uiState.value.customGrid
+        val engaged = grid.engagedTile ?: return
+        val target = engaged.target
         if (target !is HomeTileTargetRef.Media) return
+        val reached = grid.tilePlayback[engaged.id]?.let { grid.playbackPositions[it] } ?: 0L
         disengageTile()
-        playTileMedia(target.itemId)
+        viewModelScope.launch {
+            mediaDelegate.handOffPosition(target.itemId, reached)
+            playTileMedia(target.itemId)
+        }
     }
 
     override fun enterTileMoveMode() = customGrid.enterMoveMode()

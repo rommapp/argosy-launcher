@@ -100,6 +100,8 @@ class MainActivity : ComponentActivity() {
     @Inject lateinit var syncPlatformUseCase: com.nendo.argosy.domain.usecase.sync.SyncPlatformUseCase
     @Inject lateinit var gameThemeAudioCoordinator: com.nendo.argosy.ui.audio.GameThemeAudioCoordinator
     @Inject lateinit var getPinnedCollectionsUseCase: com.nendo.argosy.domain.usecase.collection.GetPinnedCollectionsUseCase
+    @Inject lateinit var advanceCollectionFocusUseCase: com.nendo.argosy.domain.usecase.collection.AdvanceCollectionFocusUseCase
+    @Inject lateinit var prepareCollectionQueueUseCase: com.nendo.argosy.domain.usecase.collection.PrepareCollectionQueueUseCase
     @Inject lateinit var getGamesForPinnedCollectionUseCase: com.nendo.argosy.domain.usecase.collection.GetGamesForPinnedCollectionUseCase
     @Inject lateinit var gameLaunchDelegate: GameLaunchDelegate
     @Inject lateinit var saveCacheManager: SaveCacheManager
@@ -329,6 +331,8 @@ class MainActivity : ComponentActivity() {
                 gameThemeAudioCoordinator = gameThemeAudioCoordinator,
                 getPinnedCollectionsUseCase = getPinnedCollectionsUseCase,
                 getGamesForPinnedCollectionUseCase = getGamesForPinnedCollectionUseCase,
+                advanceCollectionFocusUseCase = advanceCollectionFocusUseCase,
+                prepareCollectionQueueUseCase = prepareCollectionQueueUseCase,
                 mediaRepository = mediaRepository,
                 mediaPlaybackTracker = mediaPlaybackTracker,
                 imageCacheManager = imageCacheManager,

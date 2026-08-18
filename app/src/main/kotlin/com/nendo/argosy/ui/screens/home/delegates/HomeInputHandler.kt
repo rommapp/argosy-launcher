@@ -581,6 +581,12 @@ class HomeInputHandler(
             actions.toggleTileEditMode()
             return InputResult.handled(SoundType.TOGGLE)
         }
+        if (isCustomGrid(state)) {
+            state.customGrid.focusedGameId?.let { gameId ->
+                onGameSelect(gameId)
+                return InputResult.HANDLED
+            }
+        }
         if (state.focusedMedia != null) {
             actions.openFocusedMediaDetail()
             return InputResult.HANDLED

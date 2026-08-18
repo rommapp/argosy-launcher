@@ -11,7 +11,21 @@ data class ClaimTarget(
     val title: String
 )
 
+private val PLAYLIST_SUFFIXES = setOf("m3u", "m3u8")
+
 private fun stemOf(name: String): String = name.substringBeforeLast('.')
+
+/**
+ * Directory names are compared verbatim because a title may legitimately contain a period
+ * ("Mr. Do!"), so only a playlist suffix is stripped -- that suffix is a container marker
+ * under the ES-DE folder convention, never part of the name.
+ */
+private fun folderNames(name: String): List<String> =
+    if (name.substringAfterLast('.', "").lowercase() in PLAYLIST_SUFFIXES) {
+        listOf(name, name.substringBeforeLast('.'))
+    } else {
+        listOf(name)
+    }
 
 private fun normalize(name: String): String = name
     .replace(Regex("[\\\\:*?\"<>|/]"), "_")
@@ -27,18 +41,20 @@ private fun matches(tier: Tier, target: ClaimTarget, candidate: ClaimCandidate):
         Tier.EXACT_FILE ->
             !candidate.isDirectory && romm != null && candidate.name.equals(romm, ignoreCase = true)
         Tier.EXACT_FOLDER ->
-            candidate.isDirectory && romm != null && candidate.name.equals(romm, ignoreCase = true)
+            candidate.isDirectory && romm != null &&
+                folderNames(candidate.name).any { it.equals(romm, ignoreCase = true) }
         Tier.STEM_FILE ->
             !candidate.isDirectory && romm != null &&
                 stemOf(candidate.name).equals(stemOf(romm), ignoreCase = true)
         Tier.STEM_FOLDER ->
             candidate.isDirectory && romm != null &&
-                candidate.name.equals(stemOf(romm), ignoreCase = true)
+                folderNames(candidate.name).any { it.equals(stemOf(romm), ignoreCase = true) }
         Tier.TITLE_FILE ->
             !candidate.isDirectory && romm == null &&
                 normalize(stemOf(candidate.name)) == normalize(target.title)
         Tier.TITLE_FOLDER ->
-            candidate.isDirectory && normalize(candidate.name) == normalize(target.title)
+            candidate.isDirectory &&
+                folderNames(candidate.name).any { normalize(it) == normalize(target.title) }
     }
 }
 

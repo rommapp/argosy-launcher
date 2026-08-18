@@ -14,6 +14,8 @@ object RomMSyncFilter {
     private val HACK_PAREN_REGEX = Regex("\\(.*\\bhack\\b.*\\)")
     private val BAD_DUMP_REGEX = Regex("\\[[bopBOP][0-9]*\\]")
 
+    private val PLAYLIST_EXTENSIONS = setOf("m3u", "m3u8")
+
     fun shouldSyncRom(rom: RomMRom, filters: SyncFilterPreferences): Boolean {
         val extension = extractExtension(rom)
         if (!passesExtensionFilter(rom, extension)) {
@@ -37,6 +39,7 @@ object RomMSyncFilter {
 
     private fun passesExtensionFilter(rom: RomMRom, extension: String?): Boolean {
         if (extension == null) return true
+        if (extension in PLAYLIST_EXTENSIONS) return true
 
         val effectiveSlug = PlatformDefinitions.resolveImportSlug(rom.platformSlug, rom.platformName)
         val platformDef = PlatformDefinitions.getBySlug(effectiveSlug) ?: return true

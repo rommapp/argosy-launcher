@@ -129,6 +129,42 @@ class LocalRomClaimsTest {
     }
 
     @Test
+    fun `an es-de playlist folder is claimed by the game it holds`() {
+        val claims = claimLocalEntries(
+            listOf(ClaimTarget(1, "Final Fantasy VII (USA)", "Final Fantasy VII")),
+            listOf(dir("Final Fantasy VII (USA).m3u"))
+        )
+        assertEquals("Final Fantasy VII (USA).m3u", claims[1]?.name)
+    }
+
+    @Test
+    fun `a server that itself names roms after the playlist still claims exactly`() {
+        val claims = claimLocalEntries(
+            listOf(ClaimTarget(1, "Final Fantasy VII (USA).m3u", "Final Fantasy VII")),
+            listOf(dir("Final Fantasy VII (USA).m3u"))
+        )
+        assertEquals("Final Fantasy VII (USA).m3u", claims[1]?.name)
+    }
+
+    @Test
+    fun `a playlist folder falls back to the title when the server gave another name`() {
+        val claims = claimLocalEntries(
+            listOf(ClaimTarget(1, "Some Server Name", "Pretty Title")),
+            listOf(dir("Pretty Title.m3u"))
+        )
+        assertEquals("Pretty Title.m3u", claims[1]?.name)
+    }
+
+    @Test
+    fun `a period in the title is not mistaken for a playlist suffix`() {
+        val claims = claimLocalEntries(
+            listOf(ClaimTarget(1, null, "Mr. Do!")),
+            listOf(dir("Mr. Do!"))
+        )
+        assertEquals("Mr. Do!", claims[1]?.name)
+    }
+
+    @Test
     fun `one entry is never handed to two games`() {
         val claims = claimLocalEntries(
             listOf(ClaimTarget(1, "Game.zip", "Game"), ClaimTarget(2, null, "Game")),

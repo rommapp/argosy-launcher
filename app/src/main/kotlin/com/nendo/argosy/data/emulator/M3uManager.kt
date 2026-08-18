@@ -190,11 +190,22 @@ class M3uManager @Inject constructor(
             }
         }
 
-        val m3uFileName = sanitizeFileName(game.title) + ".m3u"
-        val m3uFile = File(parentDir, m3uFileName)
+        val targetDir = conformToPlaylistFolder(parentDir, downloadFolderName(game.title)) ?: parentDir
+        val m3uFile = File(targetDir, playlistNameFor(targetDir, game.title))
 
         val content = launchableFiles.joinToString("\n") {
-            it.relativeToOrNull(parentDir)?.path ?: it.name
+            val placed = rebase(it, parentDir, targetDir)
+            placed.relativeToOrNull(targetDir)?.path ?: placed.name
+        }
+
+        if (targetDir != parentDir) {
+            discs.forEach { disc ->
+                val path = disc.localPath ?: return@forEach
+                gameDiscDao.updateLocalPath(disc.id, rebase(File(path), parentDir, targetDir).absolutePath)
+            }
+            game.localPath?.let {
+                gameDao.relocateLocalPath(game.id, rebase(File(it), parentDir, targetDir).absolutePath)
+            }
         }
 
         try {
@@ -206,6 +217,56 @@ class M3uManager @Inject constructor(
             Log.e(TAG, "Failed to generate m3u", e)
             M3uResult.Error("Failed to write m3u: ${e.message}")
         }
+    }
+
+    /**
+     * Renames a game's disc folder to `<title>.m3u` so ES-DE collapses it to a single entry.
+     *
+     * ES-DE treats a directory as one game only when its name matches a playlist inside it.
+     * The rename is refused unless the directory is demonstrably this game's own folder, since
+     * discs downloaded straight into a platform directory share it with every other game.
+     * Returns null when the folder must be left alone.
+     */
+    private fun conformToPlaylistFolder(parentDir: File, sanitizedTitle: String): File? {
+        val playlistName = "$sanitizedTitle.m3u"
+        if (parentDir.name.equals(playlistName, ignoreCase = true)) return parentDir
+        if (!parentDir.name.equals(sanitizedTitle, ignoreCase = true)) return null
+
+        val target = File(parentDir.parentFile ?: return null, playlistName)
+        if (target.exists()) {
+            Log.w(TAG, "Playlist folder already occupied, keeping ${parentDir.name}")
+            return null
+        }
+        if (!parentDir.renameTo(target)) {
+            Log.w(TAG, "Could not rename ${parentDir.name} to $playlistName")
+            return null
+        }
+        return target
+    }
+
+    /**
+     * The playlist takes the folder's own name once the folder is conformed, so the two agree
+     * even where the download path and this one sanitize a title differently.
+     */
+    private fun playlistNameFor(targetDir: File, title: String): String =
+        if (targetDir.name.endsWith(".m3u", ignoreCase = true)) {
+            targetDir.name
+        } else {
+            sanitizeFileName(title) + ".m3u"
+        }
+
+    private fun downloadFolderName(title: String): String = title
+        .replace(Regex("[\\\\/:*?\"<>|]"), "_")
+        .replace(Regex("\\s+"), " ")
+        .trim()
+        .take(200)
+
+    private fun rebase(file: File, from: File, to: File): File {
+        if (from.absolutePath == to.absolutePath) return file
+        val prefix = from.absolutePath + File.separator
+        val path = file.absolutePath
+        if (!path.startsWith(prefix)) return file
+        return File(to, path.removePrefix(prefix))
     }
 
     private fun validateM3u(m3uFile: File, discs: List<GameDiscEntity>): Boolean {

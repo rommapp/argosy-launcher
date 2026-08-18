@@ -727,7 +727,16 @@ class DownloadManager @Inject constructor(
             .replace(Regex("\\s+"), " ")
             .trim()
             .take(200)
-        return File(platformDir, sanitizedTitle).apply { mkdirs() }
+        return resolveGameFolder(platformDir, sanitizedTitle).apply { mkdirs() }
+    }
+
+    /**
+     * A multi-disc folder conformed for ES-DE carries a `.m3u` suffix, so later downloads for
+     * the same game must land in it rather than recreating the unsuffixed folder beside it.
+     */
+    private fun resolveGameFolder(platformDir: File, sanitizedTitle: String): File {
+        val playlistFolder = File(platformDir, "$sanitizedTitle.m3u")
+        return if (playlistFolder.isDirectory) playlistFolder else File(platformDir, sanitizedTitle)
     }
 
     /** Server dir of this file relative to the rom root, or null for root files. */
@@ -1681,7 +1690,7 @@ class DownloadManager @Inject constructor(
             .replace(Regex("\\s+"), " ")
             .trim()
             .take(200)
-        val gameFolder = File(platformDir, sanitizedTitle).apply { mkdirs() }
+        val gameFolder = resolveGameFolder(platformDir, sanitizedTitle).apply { mkdirs() }
         val targetFile = File(gameFolder, romFile.name)
 
         if (romFile.absolutePath != targetFile.absolutePath) {

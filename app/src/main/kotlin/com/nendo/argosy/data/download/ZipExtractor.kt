@@ -541,7 +541,12 @@ object ZipExtractor {
     ): ExtractedFolderRom {
         val validExtensions = PlatformDefinitions.getBySlug(platformSlug)?.extensions ?: emptySet()
         val sanitizedTitle = sanitizeFileName(gameTitle)
-        val gameFolder = File(platformDir, sanitizedTitle)
+        val existingPlaylistFolder = File(platformDir, "$sanitizedTitle.m3u")
+        val gameFolder = if (existingPlaylistFolder.isDirectory) {
+            existingPlaylistFolder
+        } else {
+            File(platformDir, sanitizedTitle)
+        }
 
         Log.d(TAG, "=== Folder ROM Extraction Start ===")
         Log.d(TAG, "Archive file: ${archiveFilePath.absolutePath}")
@@ -592,13 +597,58 @@ object ZipExtractor {
             else -> generateM3uFile(gameFolder, sanitizedTitle, launchableDiscFiles)
         }
 
+        val allFiles = extractionResult.allFiles.filterNot { it.extension.equals("m3u", ignoreCase = true) }
+
+        if (m3uFile == null) {
+            return ExtractedFolderRom(
+                primaryFile = extractionResult.primaryFile,
+                discFiles = extractionResult.rootDiscFiles.sortedBy { it.name },
+                m3uFile = null,
+                gameFolder = gameFolder,
+                allFiles = allFiles
+            )
+        }
+
+        val playlistFolder = conformToPlaylistFolder(gameFolder, sanitizedTitle) ?: gameFolder
+
         return ExtractedFolderRom(
-            primaryFile = extractionResult.primaryFile,
-            discFiles = extractionResult.rootDiscFiles.sortedBy { it.name },
-            m3uFile = m3uFile,
-            gameFolder = gameFolder,
-            allFiles = extractionResult.allFiles.filterNot { it.extension.equals("m3u", ignoreCase = true) }
+            primaryFile = extractionResult.primaryFile?.let { rebase(it, gameFolder, playlistFolder) },
+            discFiles = extractionResult.rootDiscFiles.map { rebase(it, gameFolder, playlistFolder) }
+                .sortedBy { it.name },
+            m3uFile = rebase(m3uFile, gameFolder, playlistFolder),
+            gameFolder = playlistFolder,
+            allFiles = allFiles.map { rebase(it, gameFolder, playlistFolder) }
         )
+    }
+
+    /**
+     * Renames a multi-disc folder to `<title>.m3u` so ES-DE collapses it to a single entry.
+     *
+     * ES-DE treats a directory as one game only when its name matches a playlist file inside
+     * it; without this it lists the folder and the user has to descend into it to launch.
+     * Returns null when the rename cannot be done, leaving the caller on the original folder.
+     */
+    private fun conformToPlaylistFolder(gameFolder: File, sanitizedTitle: String): File? {
+        val target = File(gameFolder.parentFile ?: return null, "$sanitizedTitle.m3u")
+        if (target.absolutePath == gameFolder.absolutePath) return gameFolder
+        if (target.exists()) {
+            Log.w(TAG, "Playlist folder already occupied, keeping ${gameFolder.name}")
+            return null
+        }
+        if (!gameFolder.renameTo(target)) {
+            Log.w(TAG, "Could not rename ${gameFolder.name} to ${target.name}")
+            return null
+        }
+        Log.d(TAG, "Conformed multi-disc folder to ${target.name}")
+        return target
+    }
+
+    private fun rebase(file: File, from: File, to: File): File {
+        if (from.absolutePath == to.absolutePath) return file
+        val prefix = from.absolutePath + File.separator
+        val path = file.absolutePath
+        if (!path.startsWith(prefix)) return file
+        return File(to, path.removePrefix(prefix))
     }
 
     private data class RawExtractionResult(

@@ -440,6 +440,12 @@ interface GameDao {
     @Query("UPDATE games SET localPath = :path, source = :source, addedAt = :addedAt WHERE id = :gameId")
     suspend fun updateLocalPath(gameId: Long, path: String?, source: GameSource, addedAt: Instant = Instant.now())
 
+    /**
+     * Repoints a game at the same content in a new location, leaving source and addedAt intact.
+     */
+    @Query("UPDATE games SET localPath = :path WHERE id = :gameId")
+    suspend fun relocateLocalPath(gameId: Long, path: String)
+
     @Query("DELETE FROM games WHERE id = :gameId")
     suspend fun delete(gameId: Long)
 

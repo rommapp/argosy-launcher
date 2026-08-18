@@ -182,6 +182,13 @@ class LibretroActivity : ComponentActivity() {
     @Inject lateinit var stateOwnershipTracker: com.nendo.argosy.data.sync.StateOwnershipTracker
 
     private var coreLoadedSuccessfully = false
+
+    /**
+     * Set when the core rejected the content, which the GL surface coming up does not tell us.
+     * Every path that touches core memory has to stay off a core with no game in it: Beetle Saturn
+     * aborts the process inside `retro_serialize_size` rather than reporting an error.
+     */
+    private var gameLoadFailed = false
     @Volatile private var coreDestroyed = false
     private var autoSaveStateCaptured = false
     private lateinit var retroView: GLRetroView
@@ -307,6 +314,7 @@ class LibretroActivity : ComponentActivity() {
     private var speedrunStartOnReset = true
     private var speedrunPanelSidePref = "Right"
     private val hotkeyConsumedKeys = mutableSetOf<Int>()
+    private val deferredCoreKeys = mutableSetOf<Int>()
     private var speedrunPickerVisible by mutableStateOf(false)
     private var speedrunPickerFocusIndex by mutableStateOf(0)
     private var speedrunPickerCategories by mutableStateOf<List<com.nendo.argosy.data.local.entity.SpeedrunCategoryEntity>>(emptyList())
@@ -767,6 +775,8 @@ class LibretroActivity : ComponentActivity() {
                 }
                 Log.e(TAG, "GLRetroView error: code=$errorCode, message=$errorMessage")
                 Log.e(TAG, "Context: gameId=$gameId, core=$coreName, rom=$romPath")
+                gameLoadFailed = true
+                coreLoadedSuccessfully = false
                 inGameMessage = errorMessage
                 finish()
             }
@@ -780,6 +790,7 @@ class LibretroActivity : ComponentActivity() {
                 }
                 when (event) {
                     is GLRetroView.GLRetroEvents.SurfaceCreated -> {
+                        if (gameLoadFailed) return@collect
                         coreLoadedSuccessfully = true
                         Log.i(TAG, "[Startup] GL surface created - render pipeline ready")
                         videoSettings.currentFrame?.let { frameId ->
@@ -860,7 +871,8 @@ class LibretroActivity : ComponentActivity() {
             onSpeedrunUndoSplit = { speedrunTimer.undoSplit() },
             onSpeedrunSkipSplit = { speedrunTimer.skipSplit() },
             onSpeedrunToggleTimer = { speedrunTimer.togglePause() },
-            onSpeedrunResetTimer = { speedrunTimer.resetRun() }
+            onSpeedrunResetTimer = { speedrunTimer.resetRun() },
+            onHotkeyFired = { deferredCoreKeys.clear() }
         )
     }
 
@@ -2721,9 +2733,16 @@ class LibretroActivity : ComponentActivity() {
         val event = KeyEvent(action, keyCode)
         if (action == KeyEvent.ACTION_DOWN) {
             if (hotkeyDispatcher.onKeyDown(keyCode, null)) return
+            if (hotkeyDispatcher.isPotentialComboKey(keyCode, null)) {
+                deferredCoreKeys.add(keyCode)
+                return
+            }
             retroView.onKeyDown(keyCode, event)
         } else {
             hotkeyDispatcher.onKeyUp(keyCode)
+            if (deferredCoreKeys.remove(keyCode)) {
+                retroView.onKeyDown(keyCode, KeyEvent(KeyEvent.ACTION_DOWN, keyCode))
+            }
             retroView.onKeyUp(keyCode, event)
         }
     }
@@ -2732,10 +2751,15 @@ class LibretroActivity : ComponentActivity() {
         if (isAnyMenuOpen) return super.onKeyDown(keyCode, event)
 
         if (event.repeatCount > 0 && keyCode in hotkeyConsumedKeys) return true
+        if (event.repeatCount > 0 && keyCode in deferredCoreKeys) return true
         if (event.repeatCount == 0) {
             val controllerId = event.device?.let { getControllerId(it) }
             if (hotkeyDispatcher.onKeyDown(keyCode, controllerId)) {
                 hotkeyConsumedKeys.add(keyCode)
+                return true
+            }
+            if (hotkeyDispatcher.isPotentialComboKey(keyCode, controllerId)) {
+                deferredCoreKeys.add(keyCode)
                 return true
             }
         }
@@ -2755,6 +2779,14 @@ class LibretroActivity : ComponentActivity() {
 
     override fun onKeyUp(keyCode: Int, event: KeyEvent): Boolean {
         if (isAnyMenuOpen) return super.onKeyUp(keyCode, event)
+
+        if (deferredCoreKeys.remove(keyCode)) {
+            if (!shouldFilterShoulderButton(keyCode, event.device)) {
+                retroView.onKeyDown(keyCode, KeyEvent(KeyEvent.ACTION_DOWN, keyCode))
+                retroView.onKeyUp(keyCode, event)
+            }
+            return true
+        }
 
         if (shouldFilterShoulderButton(keyCode, event.device)) return true
 

@@ -192,9 +192,9 @@ void Video::updateProgram() {
     renderer->setShaders(shaders);
 }
 
-void Video::renderFrame() {
+void Video::renderFrame(bool force) {
     bool shaderPending = !loadedShaderType.has_value() || !(loadedShaderType.value() == requestedShaderConfig);
-    if (skipDuplicateFrames && !bfiEnabled && !isDirty && !shaderPending) {
+    if (!force && skipDuplicateFrames && !bfiEnabled && !isDirty && !shaderPending) {
         return;
     }
     isDirty = false;

@@ -92,7 +92,12 @@ public:
     void setBackgroundFrame(const uint8_t* data, int width, int height);
     void clearBackgroundFrame();
 
-    void renderFrame();
+    /**
+     * Draws the current frame. Pass force = true when the caller has no new core frame to show
+     * but still owns a swap (e.g. while emulation is paused): skipping the draw there leaves the
+     * surface undrawn on every swap, which some drivers answer with a dequeue timeout.
+     */
+    void renderFrame(bool force = false);
     void renderBlackFrame();
 
     void onNewFrame(const void *data, unsigned width, unsigned height, size_t pitch);

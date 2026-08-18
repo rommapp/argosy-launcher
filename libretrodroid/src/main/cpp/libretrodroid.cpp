@@ -941,7 +941,7 @@ double LibretroDroid::getContentFps() const {
 
 void LibretroDroid::renderFrameOnly() {
     if (video) {
-        video->renderFrame();
+        video->renderFrame(true);
     }
 }
 

@@ -1303,10 +1303,10 @@ object EmulatorRegistry {
             RetroArchCore("picodrive", "PicoDrive")
         ),
         "psx" to listOf(
-            RetroArchCore("pcsx_rearmed", "PCSX ReARMed"),
+            RetroArchCore("pcsx_rearmed", "PCSX-ReARMed"),
             RetroArchCore("swanstation", "SwanStation"),
-            RetroArchCore("mednafen_psx", "Mednafen PSX"),
-            RetroArchCore("mednafen_psx_hw", "Mednafen PSX HW")
+            RetroArchCore("mednafen_psx", "Beetle PSX"),
+            RetroArchCore("mednafen_psx_hw", "Beetle PSX HW")
         ),
         "psp" to listOf(
             RetroArchCore("ppsspp", "PPSSPP")
@@ -1314,7 +1314,7 @@ object EmulatorRegistry {
         "saturn" to listOf(
             RetroArchCore("yabasanshiro", "YabaSanshiro"),
             RetroArchCore("yabause", "Yabause"),
-            RetroArchCore("mednafen_saturn", "Mednafen Saturn")
+            RetroArchCore("mednafen_saturn", "Beetle Saturn")
         ),
         "dreamcast" to listOf(
             RetroArchCore("flycast", "Flycast")
@@ -1323,15 +1323,15 @@ object EmulatorRegistry {
             RetroArchCore("flycast", "Flycast")
         ),
         "tg16" to listOf(
-            RetroArchCore("mednafen_pce_fast", "Mednafen PCE Fast"),
-            RetroArchCore("mednafen_pce", "Mednafen PCE")
+            RetroArchCore("mednafen_pce_fast", "Beetle PCE Fast"),
+            RetroArchCore("mednafen_pce", "Beetle PCE")
         ),
         "tgcd" to listOf(
-            RetroArchCore("mednafen_pce_fast", "Mednafen PCE Fast"),
-            RetroArchCore("mednafen_pce", "Mednafen PCE")
+            RetroArchCore("mednafen_pce_fast", "Beetle PCE Fast"),
+            RetroArchCore("mednafen_pce", "Beetle PCE")
         ),
         "pcfx" to listOf(
-            RetroArchCore("mednafen_pcfx", "Mednafen PC-FX")
+            RetroArchCore("mednafen_pcfx", "Beetle PC-FX")
         ),
         "3do" to listOf(
             RetroArchCore("opera", "Opera")
@@ -1345,7 +1345,7 @@ object EmulatorRegistry {
             RetroArchCore("a5200", "a5200")
         ),
         "dos" to listOf(
-            RetroArchCore("dosbox_pure", "DOSBox Pure"),
+            RetroArchCore("dosbox_pure", "DOSBox-pure"),
             RetroArchCore("dosbox_core", "DOSBox-core"),
             RetroArchCore("dosbox_svn", "DOSBox-SVN")
         ),
@@ -1354,13 +1354,13 @@ object EmulatorRegistry {
         ),
         "lynx" to listOf(
             RetroArchCore("handy", "Handy"),
-            RetroArchCore("mednafen_lynx", "Mednafen Lynx")
+            RetroArchCore("mednafen_lynx", "Beetle Lynx")
         ),
         "ngp" to listOf(
-            RetroArchCore("mednafen_ngp", "Mednafen NGP")
+            RetroArchCore("mednafen_ngp", "Beetle NeoPop")
         ),
         "ngpc" to listOf(
-            RetroArchCore("mednafen_ngp", "Mednafen NGP")
+            RetroArchCore("mednafen_ngp", "Beetle NeoPop")
         ),
         "neogeo" to listOf(
             RetroArchCore("fbneo", "FinalBurn Neo"),
@@ -1378,7 +1378,7 @@ object EmulatorRegistry {
             RetroArchCore("crocods", "CrocoDS")
         ),
         "windows" to listOf(
-            RetroArchCore("dosbox_pure", "DOSBox Pure"),
+            RetroArchCore("dosbox_pure", "DOSBox-pure"),
             RetroArchCore("dosbox_core", "DOSBox-core")
         ),
         "c128" to listOf(
@@ -1417,7 +1417,7 @@ object EmulatorRegistry {
         "arcade" to listOf(
             RetroArchCore("fbneo", "FinalBurn Neo"),
             RetroArchCore("mame2003_plus", "MAME 2003-Plus"),
-            RetroArchCore("mame2010", "MAME 2010"),
+            RetroArchCore("mame2010", "MAME 2010 (0.139)"),
             RetroArchCore("fbalpha2012", "FB Alpha 2012")
         ),
         "fbneo" to listOf(
@@ -1426,7 +1426,7 @@ object EmulatorRegistry {
         ),
         "mame" to listOf(
             RetroArchCore("mame2003_plus", "MAME 2003-Plus"),
-            RetroArchCore("mame2010", "MAME 2010")
+            RetroArchCore("mame2010", "MAME 2010 (0.139)")
         ),
         "cps1" to listOf(
             RetroArchCore("fbneo", "FinalBurn Neo"),
@@ -1449,10 +1449,10 @@ object EmulatorRegistry {
             RetroArchCore("fmsx", "fMSX")
         ),
         "wonderswan" to listOf(
-            RetroArchCore("mednafen_wswan", "Mednafen WonderSwan")
+            RetroArchCore("mednafen_wswan", "Beetle WonderSwan")
         ),
         "wsc" to listOf(
-            RetroArchCore("mednafen_wswan", "Mednafen WonderSwan")
+            RetroArchCore("mednafen_wswan", "Beetle WonderSwan")
         ),
         "pokemini" to listOf(
             RetroArchCore("pokemini", "PokeMini")

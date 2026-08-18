@@ -668,7 +668,6 @@ fun HomeScreen(
                 )
             }
 
-        var gameInfoHeight by remember { mutableStateOf(0.dp) }
         val defaultHeaderHeight = Dimens.headerHeight
         var headerBlockHeight by remember { mutableStateOf(defaultHeaderHeight) }
         val localDensity = LocalDensity.current
@@ -682,7 +681,7 @@ fun HomeScreen(
              * use. Reading the last measured height there would reserve room for a panel that is
              * not on screen and shrink the rail for no reason.
              */
-            val infoHeight = if (uiState.isMediaRow) 0.dp else gameInfoHeight
+            val infoHeight = if (uiState.isMediaRow) 0.dp else reservedGameInfoHeight()
             val cardSize = rememberCarouselCardSize(
                 availableHeight = maxHeight - headerBlockHeight - infoHeight -
                     Dimens.footerHeight - Dimens.spacingLg - Dimens.spacingXl,
@@ -1109,10 +1108,6 @@ fun HomeScreen(
                             0.dp
                         }
                     )
-                    .onSizeChanged { size ->
-                        val measured = with(localDensity) { size.height.toDp() }
-                        if (measured != gameInfoHeight) gameInfoHeight = measured
-                    }
             )
             }
         }
@@ -1509,6 +1504,30 @@ private const val GAME_INFO_SIDE_WIDTH_FRACTION = 0.6f
  * gutter down the middle so neither half crowds the focused card.
  */
 private const val GAME_INFO_SPLIT_WIDTH_FRACTION = 0.45f
+
+/**
+ * The room the details block is given, as a constant rather than whatever the current game happens
+ * to measure.
+ *
+ * Measuring it fed the rail: a game with no subtitle produced a shorter block, which grew every
+ * card, which moved every card and gap one frame after the focus changed. Stepping across a game
+ * that had one and a game that did not resized the whole rail mid-scroll. The schematic preview of
+ * this layout already models the block as a fixed two-line reserve, so this is what the two were
+ * meant to agree on.
+ *
+ * Sized for the tallest the block gets: a title that wraps to a second line for its series, the
+ * subtitle beneath it, and the badge row.
+ */
+@Composable
+private fun reservedGameInfoHeight(): Dp {
+    val typography = MaterialTheme.typography
+    val density = LocalDensity.current
+    return with(density) {
+        val titleLine = typography.headlineMedium.lineHeight.toDp()
+        val bodyLine = typography.bodyMedium.lineHeight.toDp()
+        titleLine * 2 + Dimens.spacingXs + bodyLine + Dimens.spacingXs + bodyLine
+    }
+}
 
 /**
  * Which corner the details block occupies. It sits opposite the focused card, on the half of the

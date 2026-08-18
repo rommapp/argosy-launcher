@@ -88,6 +88,9 @@ class DualScreenManager(
     internal val displayAffinityHelper: DisplayAffinityHelper,
     internal val sessionStateStore: SessionStateStore,
     internal val preferencesRepository: UserPreferencesRepository,
+    internal val imageCacheManager: com.nendo.argosy.data.cache.ImageCacheManager,
+    internal val hapticManager: com.nendo.argosy.ui.input.HapticFeedbackManager,
+    internal val soundManager: com.nendo.argosy.ui.input.SoundFeedbackManager,
     internal val syncPreferencesRepository: com.nendo.argosy.data.preferences.SyncPreferencesRepository,
     internal val homeTileRepository: com.nendo.argosy.data.repository.HomeTileRepository,
     internal val homeTilePromptQueue: com.nendo.argosy.data.repository.HomeTilePromptQueue,
@@ -319,6 +322,13 @@ class DualScreenManager(
         get() = displayAffinityHelper.secondaryDisplayType == SecondaryDisplayType.EXTERNAL
 
     var onRoleSwapped: ((Boolean) -> Unit)? = null
+
+    /**
+     * What a press on the companion display feels and sounds like. That screen routes its own key
+     * events rather than going through the dispatcher, so without this it is silent and still while
+     * the main screen is not.
+     */
+    val inputFeedback = com.nendo.argosy.ui.input.InputFeedbackPlayer(hapticManager, soundManager)
 
     private val _dualScreenShowcase = MutableStateFlow(DualHomeShowcaseState())
     val dualScreenShowcase: StateFlow<DualHomeShowcaseState> = _dualScreenShowcase

@@ -41,6 +41,11 @@ class CustomGridCoordinator(
     private val pickerEntries: suspend (TilePickerCategory, String) -> List<TilePickerEntry>,
     private val pageChooserEntries: (suspend (PageChooserState) -> List<PageChooserEntry>)? = null,
     private val onAdvanceFocusGame: (suspend (Long, Long) -> Long?)? = null,
+    /**
+     * The way out to the wider library. The curated grid claims the button that reaches it
+     * elsewhere, so without an entry in this menu the library has no route from a grid page.
+     */
+    private val onOpenLibrary: (() -> Unit)? = null,
     private val onPageAdded: ((Int) -> Unit)? = null,
     private val onPageRemoved: ((Int) -> Unit)? = null,
     private val mediaCatalog: MediaTileCatalog? = null,
@@ -232,6 +237,7 @@ class CustomGridCoordinator(
             CustomTileMenuAction.ARRANGE -> enterMoveMode()
             CustomTileMenuAction.RECURATE -> recurateFocusedTile()
             CustomTileMenuAction.REMOVE -> removeFocusedTile()
+            CustomTileMenuAction.OPEN_LIBRARY -> onOpenLibrary?.invoke()
             CustomTileMenuAction.SET_FOCUS_GAME -> openPageChooser(PageChooserKind.FOCUS_GAME)
             CustomTileMenuAction.ADVANCE_FOCUS_GAME -> advanceFocusGame()
             CustomTileMenuAction.PAGE_BACKDROP -> openPageChooser(PageChooserKind.BACKDROP)

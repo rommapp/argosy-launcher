@@ -159,51 +159,10 @@ class InputDispatcher(
         return result
     }
 
-    private var boundaryLatched = false
+    private val feedbackPlayer = InputFeedbackPlayer(hapticManager, soundManager)
 
-    private fun latchBoundary(override: SoundType?): SoundType? {
-        if (override != SoundType.BOUNDARY) {
-            boundaryLatched = false
-            return override
-        }
-        if (boundaryLatched) return SoundType.SILENT
-        boundaryLatched = true
-        return override
-    }
-
-    private fun playFeedback(event: GamepadEvent, result: InputResult) {
-        if (!result.handled) return
-
-        when (event) {
-            GamepadEvent.Up, GamepadEvent.Down, GamepadEvent.Left, GamepadEvent.Right -> {
-                val override = latchBoundary(result.soundOverride)
-                if (override != SoundType.SILENT) {
-                    hapticManager?.vibrate(HapticPattern.FOCUS_CHANGE)
-                }
-                soundManager?.play(override ?: SoundType.NAVIGATE)
-            }
-            GamepadEvent.PrevSection, GamepadEvent.NextSection,
-            GamepadEvent.PrevTrigger, GamepadEvent.NextTrigger -> {
-                val override = latchBoundary(result.soundOverride)
-                if (override != SoundType.SILENT) {
-                    hapticManager?.vibrate(HapticPattern.FOCUS_CHANGE)
-                }
-                soundManager?.play(override ?: SoundType.SECTION_CHANGE)
-            }
-            GamepadEvent.Confirm -> {
-                hapticManager?.vibrate(HapticPattern.SELECTION)
-                soundManager?.play(result.soundOverride ?: SoundType.SELECT)
-            }
-            GamepadEvent.LongConfirm -> {
-                hapticManager?.vibrate(HapticPattern.SELECTION)
-                soundManager?.play(result.soundOverride ?: SoundType.SELECT)
-            }
-            GamepadEvent.Back -> {
-                soundManager?.play(result.soundOverride ?: SoundType.BACK)
-            }
-            else -> {}
-        }
-    }
+    private fun playFeedback(event: GamepadEvent, result: InputResult) =
+        feedbackPlayer.play(event, result)
 
     private fun dispatchToHandler(event: GamepadEvent, handler: InputHandler): InputResult {
         return when (event) {

@@ -66,6 +66,7 @@ data class DualHomeShowcaseState(
     val gameId: Long = -1,
     val title: String = "",
     val coverPath: String? = null,
+    val coverAspectRatio: Float? = null,
     val backgroundPath: String? = null,
     val boxBackPath: String? = null,
     val boxSpinePath: String? = null,
@@ -163,13 +164,22 @@ private fun ShowcaseHeroCard(state: DualHomeShowcaseState) {
             modifier = Modifier.fillMaxHeight(0.72f)
         )
     } else {
+        val artRatio = if (boxArtStyle.nativeAspectRatio) {
+            state.coverAspectRatio
+                ?: com.nendo.argosy.ui.common.rememberCoverAspectRatio(
+                    state.coverPath,
+                    boxArtStyle.aspectRatio
+                )
+        } else {
+            boxArtStyle.aspectRatio
+        }
         AsyncImage(
             model = rememberFileImageModel(state.coverPath),
             contentDescription = null,
             contentScale = ContentScale.Crop,
             modifier = Modifier
                 .fillMaxHeight(0.72f)
-                .aspectRatio(boxArtStyle.aspectRatio)
+                .aspectRatio(artRatio)
                 .clip(RoundedCornerShape(Dimens.radiusSm))
         )
     }

@@ -1041,6 +1041,7 @@ fun HomeGameUi.toShowcaseState() = DualHomeShowcaseState(
     gameId = id,
     title = title,
     coverPath = coverPath,
+    coverAspectRatio = coverAspectRatio,
     backgroundPath = backgroundPath,
     boxBackPath = boxBackPath,
     boxSpinePath = boxSpinePath,

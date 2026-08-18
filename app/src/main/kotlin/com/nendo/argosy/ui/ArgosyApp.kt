@@ -1018,6 +1018,10 @@ fun ArgosyApp(
         }
     }
 
+    val isScrapingArtwork by viewModel.imageCacheManager.progress
+        .collectAsState()
+        .let { state -> remember { derivedStateOf { state.value.isProcessing } } }
+
     CompositionLocalProvider(
         LocalInputDispatcher provides inputDispatcher,
         LocalGamepadInputHandler provides viewModel.gamepadInputHandler,
@@ -1026,6 +1030,7 @@ fun ArgosyApp(
         LocalSwapStartSelect provides uiState.swapStartSelect,
         LocalFooterHost provides footerHostController,
         com.nendo.argosy.ui.common.LocalImageCacheManager provides viewModel.imageCacheManager,
+        com.nendo.argosy.ui.components.LocalArtworkScraping provides isScrapingArtwork,
         com.nendo.argosy.ui.components.friends.LocalUserAvatarState provides
             com.nendo.argosy.ui.components.friends.LocalUserAvatarInfo(
                 userId = drawerUiState.localUser?.id,

@@ -12,6 +12,7 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.core.view.doOnAttach
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -175,10 +176,13 @@ class SecondaryHomeActivity :
             }
             SecondaryHomeTheme(themeState = themeState.value, fonts = customFonts.value) {
                 if (!isInitialized) return@SecondaryHomeTheme
+                val scrapingArtwork by dsm.imageCacheManager.progress.collectAsState()
                 androidx.compose.runtime.CompositionLocalProvider(
                     LocalABIconsSwapped provides abIconsSwapped,
                     LocalXYIconsSwapped provides xyIconsSwapped,
-                    LocalSwapStartSelect provides startSelectSwapped
+                    LocalSwapStartSelect provides startSelectSwapped,
+                    com.nendo.argosy.ui.components.LocalArtworkScraping provides
+                        scrapingArtwork.isProcessing
                 ) {
                     if (isShowcaseRole) {
                         ShowcaseRoleContent(
@@ -416,6 +420,7 @@ class SecondaryHomeActivity :
             val result = inputHandler.routeInput(
                 gamepadEvent, true, isGameActive, currentScreen
             )
+            if (::dsm.isInitialized) dsm.inputFeedback.play(gamepadEvent, result)
             if (result.handled) return true
         }
         return false

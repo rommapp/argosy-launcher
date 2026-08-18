@@ -400,6 +400,7 @@ class DualHomeViewModel(
         onPageRemoved = { count -> persistCustomGridPageRemoval(count) },
         pickerEntries = { category, query -> tilePickerEntriesFor(category, query) },
         onAdvanceFocusGame = { collectionId, current -> advanceCollectionFocus(collectionId, current) },
+        onOpenLibrary = { onOpenLibraryFromGrid?.invoke() },
         read = { _uiState.value.customGrid },
         write = { transform -> _uiState.update { it.copy(customGrid = transform(it.customGrid)) } }
     )
@@ -1312,6 +1313,12 @@ class DualHomeViewModel(
     fun openTilePicker() = customGrid.openPicker()
 
     fun advanceFocusGame() = customGrid.advanceFocusGame()
+
+    /**
+     * Set by the input handler, which owns the broadcast the library view needs on entry. The
+     * coordinator only knows that something should happen, not what the companion has to be told.
+     */
+    var onOpenLibraryFromGrid: (() -> Unit)? = null
 
     private suspend fun advanceCollectionFocus(collectionId: Long, currentGameId: Long): Long? =
         advanceCollectionFocusUseCase?.invoke(collectionId, currentGameId)?.nextGameId

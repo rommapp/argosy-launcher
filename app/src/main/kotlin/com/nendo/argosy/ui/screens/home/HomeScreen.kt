@@ -1411,7 +1411,7 @@ private fun HomeHeader(
             horizontalArrangement = Arrangement.End,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            SystemStatusBar(isScrapingArtwork = uiState.isScrapingArtwork)
+            SystemStatusBar()
         }
         return
     }
@@ -1428,7 +1428,7 @@ private fun HomeHeader(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.End
             ) {
-                SystemStatusBar(isScrapingArtwork = uiState.isScrapingArtwork)
+                SystemStatusBar()
             }
             PlatformBreadcrumb(
                 uiState = uiState,
@@ -1459,7 +1459,7 @@ private fun HomeHeader(
             modifier = Modifier.weight(1f)
         )
 
-        SystemStatusBar(isScrapingArtwork = uiState.isScrapingArtwork)
+        SystemStatusBar()
     }
 }
 

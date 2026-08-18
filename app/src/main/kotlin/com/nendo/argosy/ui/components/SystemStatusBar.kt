@@ -95,12 +95,20 @@ fun rememberBatteryState(): State<BatteryState> {
     return batteryState
 }
 
+/**
+ * Whether artwork is still being fetched, for the status bar to show without every surface that
+ * draws one having to be told. The bar appears on both displays and in the drawer; a parameter
+ * would mean each caller remembering to pass it, which is how the companion screen ends up missing
+ * what the main one shows.
+ */
+val LocalArtworkScraping = androidx.compose.runtime.compositionLocalOf { false }
+
 @Composable
 fun SystemStatusBar(
     modifier: Modifier = Modifier,
-    contentColor: Color = Color.Unspecified,
-    isScrapingArtwork: Boolean = false
+    contentColor: Color = Color.Unspecified
 ) {
+    val isScrapingArtwork = LocalArtworkScraping.current
     val effectiveColor = if (contentColor == Color.Unspecified) {
         MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
     } else {

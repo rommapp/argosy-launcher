@@ -89,7 +89,6 @@ class HomeViewModel @Inject constructor(
     private val appsRepository: com.nendo.argosy.data.repository.AppsRepository,
     private val homeTileRepository: com.nendo.argosy.data.repository.HomeTileRepository,
     private val homeGridPageRepository: com.nendo.argosy.data.repository.HomeGridPageRepository,
-    private val imageCacheManager: com.nendo.argosy.data.cache.ImageCacheManager,
     private val bgmPlaylistRepository: com.nendo.argosy.data.music.BgmPlaylistRepository,
     private val collectionRepository: com.nendo.argosy.data.repository.CollectionRepository,
     private val advanceCollectionFocusUseCase:
@@ -113,6 +112,11 @@ class HomeViewModel @Inject constructor(
         pageRepository = homeGridPageRepository,
         pageChooserEntries = { chooser -> pageChooserEntriesFor(chooser) },
         onAdvanceFocusGame = { collectionId, current -> advanceCollectionFocus(collectionId, current) },
+        onOpenLibrary = {
+            viewModelScope.launch {
+                _events.emit(HomeEvent.NavigateToLibrary(platformId = null, sourceFilter = null))
+            }
+        },
         ownerUserId = { syncPreferencesRepository.getRommUserId() },
         onPageAdded = { count -> persistCustomGridPageCount(count) },
         onPageRemoved = { count -> persistCustomGridPageRemoval(count) },
@@ -156,7 +160,6 @@ class HomeViewModel @Inject constructor(
         observeBackgroundSettings()
         observeGradientChanges()
         observeSyncOverlay()
-        observeArtworkScraping()
         observePlatformChanges()
         observeAchievementUpdates()
         libraryDelegate.observePinnedCollections(viewModelScope)
@@ -828,14 +831,6 @@ class HomeViewModel @Inject constructor(
                         action = com.nendo.argosy.ui.components.PageChooserAction.UseTrack(track.filePath)
                     )
                 )
-            }
-        }
-    }
-
-    private fun observeArtworkScraping() {
-        viewModelScope.launch {
-            imageCacheManager.progress.collect { progress ->
-                _uiState.update { it.copy(isScrapingArtwork = progress.isProcessing) }
             }
         }
     }

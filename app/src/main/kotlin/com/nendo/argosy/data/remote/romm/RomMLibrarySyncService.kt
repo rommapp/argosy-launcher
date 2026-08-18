@@ -494,7 +494,7 @@ class RomMLibrarySyncService @Inject constructor(
             gameCount = remote.romCount,
             isVisible = existing?.isVisible ?: true,
             logoPath = logoUrl ?: existing?.logoPath,
-            sortOrder = platformDef?.sortOrder ?: existing?.sortOrder ?: 999,
+            sortOrder = existing?.sortOrder ?: platformDef?.sortOrder ?: 999,
             lastScanned = existing?.lastScanned,
             syncEnabled = existing?.syncEnabled ?: true,
             customRomPath = existing?.customRomPath,

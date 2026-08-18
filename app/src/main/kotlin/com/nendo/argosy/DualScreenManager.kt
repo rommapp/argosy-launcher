@@ -89,6 +89,8 @@ class DualScreenManager(
     internal val sessionStateStore: SessionStateStore,
     internal val preferencesRepository: UserPreferencesRepository,
     internal val imageCacheManager: com.nendo.argosy.data.cache.ImageCacheManager,
+    internal val resolveGameEmulatorContext:
+        com.nendo.argosy.domain.usecase.emulator.ResolveGameEmulatorContextUseCase,
     internal val hapticManager: com.nendo.argosy.ui.input.HapticFeedbackManager,
     internal val soundManager: com.nendo.argosy.ui.input.SoundFeedbackManager,
     internal val syncPreferencesRepository: com.nendo.argosy.data.preferences.SyncPreferencesRepository,
@@ -2557,6 +2559,7 @@ class DualScreenManager(
             downloadFileStatusRepository = downloadFileStatusRepository,
             sessionStateStore = sessionStateStore,
             preferencesRepository = preferencesRepository,
+            resolveGameEmulatorContext = resolveGameEmulatorContext,
             context = appContext
         )
         vm.loadGame(gameId)

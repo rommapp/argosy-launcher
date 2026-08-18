@@ -77,6 +77,8 @@ class MainActivity : ComponentActivity() {
     @Inject lateinit var gamepadInputHandler: GamepadInputHandler
     @Inject lateinit var triggerAxisKeyEmitter: com.nendo.argosy.ui.input.TriggerAxisKeyEmitter
     @Inject lateinit var imageCacheManager: ImageCacheManager
+    @Inject lateinit var resolveGameEmulatorContext:
+        com.nendo.argosy.domain.usecase.emulator.ResolveGameEmulatorContextUseCase
     @Inject lateinit var hapticFeedbackManager: com.nendo.argosy.ui.input.HapticFeedbackManager
     @Inject lateinit var soundFeedbackManager: com.nendo.argosy.ui.input.SoundFeedbackManager
     @Inject lateinit var androidGameScanner: com.nendo.argosy.data.scanner.AndroidGameScanner
@@ -330,6 +332,7 @@ class MainActivity : ComponentActivity() {
                 mediaRepository = mediaRepository,
                 mediaPlaybackTracker = mediaPlaybackTracker,
                 imageCacheManager = imageCacheManager,
+                resolveGameEmulatorContext = resolveGameEmulatorContext,
                 hapticManager = hapticFeedbackManager,
                 soundManager = soundFeedbackManager,
                 initialRolesSwapped = initialSwapped

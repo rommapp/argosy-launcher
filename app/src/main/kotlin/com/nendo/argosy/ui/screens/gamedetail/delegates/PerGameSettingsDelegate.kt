@@ -101,6 +101,8 @@ class PerGameSettingsDelegate @Inject constructor(
     private val preferencesRepository: UserPreferencesRepository,
     private val gameRepository: GameRepository,
     private val saveHandlerRegistry: PlatformSaveHandlerRegistry,
+    private val resolveGameEmulatorContext:
+        com.nendo.argosy.domain.usecase.emulator.ResolveGameEmulatorContextUseCase,
     private val displayAffinityHelper: DisplayAffinityHelper,
     private val soundManager: SoundFeedbackManager
 ) {
@@ -265,11 +267,11 @@ class PerGameSettingsDelegate @Inject constructor(
         }
         val coreName = if (isCoreSelectable) cores.find { it.id == selectedCoreId }?.displayName else null
 
-        val effectivePackage = emulatorResolver.getEmulatorPackageForGame(gameId, game.platformId, game.platformSlug)
-        val effectiveEmulatorId = effectivePackage?.let { emulatorResolver.resolveEmulatorId(it) }
-        val saveConfig = effectivePackage?.let { SavePathRegistry.getConfigForPlatformByPackage(it, game.platformSlug) }
-            ?: effectiveEmulatorId?.let { SavePathRegistry.getConfigForPlatform(it, game.platformSlug) }
-        val showSavePathRow = EmulatorSettingScope.showsPerGameSavePath(saveConfig, game.platformSlug)
+        val emulatorContext = resolveGameEmulatorContext(gameId, game.platformId, game.platformSlug)
+        val effectivePackage = emulatorContext.effectivePackage
+        val effectiveEmulatorId = emulatorContext.effectiveEmulatorId
+        val saveConfig = emulatorContext.saveConfig
+        val showSavePathRow = emulatorContext.supportsPerGameSavePath
 
         val perGamePath = emulatorConfigDao.getSavePathForGame(gameId)?.takeIf { it.isNotBlank() }
         val isRetroArch = emulatorDef?.launchConfig is LaunchConfig.RetroArch
@@ -313,26 +315,10 @@ class PerGameSettingsDelegate @Inject constructor(
         val preferredExtension = emulatorConfigDao.getPreferredExtensionForGame(gameId)?.takeIf { it.isNotBlank() }
         val inheritedExtension = emulatorConfigDao.getPreferredExtension(game.platformId)?.takeIf { it.isNotBlank() }
 
-        val isPs2 = PlatformDefinitions.getCanonicalSlug(game.platformSlug) == "ps2"
-        val memcardCanonicalId = if (isPs2 && effectivePackage != null && effectiveEmulatorId != null) {
-            SavePathRegistry.canonicalConfigId(effectiveEmulatorId, effectivePackage)
-        } else {
-            null
-        }
+        val memcardCanonicalId = emulatorContext.memcardCanonicalId
         val memcardUserConfig = memcardCanonicalId?.let { emulatorSaveConfigRepository.getByEmulator(it) }
-        val memcardBaseOverride = memcardUserConfig?.takeIf { it.isUserOverride }?.savePathPattern
-        val memcardCards = if (memcardCanonicalId != null) {
-            withContext(Dispatchers.IO) {
-                saveHandlerRegistry.listPs2FolderMemcardsForEmulator(
-                    emulatorId = memcardCanonicalId,
-                    emulatorPackage = effectivePackage,
-                    basePathOverride = memcardBaseOverride
-                )
-            }
-        } else {
-            emptyList()
-        }
-        val showMemcardRow = EmulatorSettingScope.showsMemoryCard(game.platformSlug, memcardCards.size)
+        val memcardCards = emulatorContext.memcards
+        val showMemcardRow = emulatorContext.showMemcardRow
         val perGameMemcardPath = emulatorConfigDao.getSelectedMemcardForGame(gameId)?.takeIf { it.isNotBlank() }
         val inheritedMemcardPath = memcardUserConfig?.selectedMemcardPath?.takeIf { it.isNotBlank() }
         val inheritedMemcardName = inheritedMemcardPath

@@ -71,6 +71,8 @@ class DualGameDetailViewModel(
     private val downloadFileStatusRepository: com.nendo.argosy.data.repository.DownloadFileStatusRepository,
     private val sessionStateStore: SessionStateStore,
     private val preferencesRepository: com.nendo.argosy.data.preferences.UserPreferencesRepository,
+    private val resolveGameEmulatorContext:
+        com.nendo.argosy.domain.usecase.emulator.ResolveGameEmulatorContextUseCase,
     private val context: Context
 ) : ViewModel() {
 
@@ -355,32 +357,21 @@ class DualGameDetailViewModel(
             val configuredEmulatorPackage = gameSpecificConfig?.packageName ?: platformDefaultConfig?.packageName
             val configuredEmulatorName = gameSpecificConfig?.displayName ?: platformDefaultConfig?.displayName
 
-            val detector = com.nendo.argosy.data.emulator.getSharedEmulatorDetector(context)
-            if (detector.installedEmulators.value.isEmpty()) detector.detectEmulators()
-            val builtinEnabled = preferencesRepository.userPreferences.first().builtinLibretroEnabled
-            val effectiveSavePackage = configuredEmulatorPackage
-                ?: detector.getPreferredEmulator(game.platformSlug, builtinEnabled)?.def?.packageName
-            val saveConfig = effectiveSavePackage?.let {
-                com.nendo.argosy.data.emulator.SavePathRegistry.getConfigForPlatformByPackage(it, game.platformSlug)
-            }
-            val hasFileBasedSaves = com.nendo.argosy.data.emulator.SavePathRegistry
-                .supportsPerGameSavePath(saveConfig, game.platformSlug)
+            val emulatorContext = resolveGameEmulatorContext(
+                gameId = game.id,
+                platformId = game.platformId,
+                platformSlug = game.platformSlug
+            )
+            val effectiveSavePackage = emulatorContext.effectivePackage
+            val saveConfig = emulatorContext.saveConfig
+            val hasFileBasedSaves = emulatorContext.supportsPerGameSavePath
 
-            val ps2Memcards = if (game.platformSlug == "ps2") {
-                withContext(Dispatchers.IO) {
-                    saveHandlerRegistry.listPs2FolderMemcardsForEmulator(
-                        emulatorId = saveConfig?.emulatorId ?: "",
-                        emulatorPackage = effectiveSavePackage
-                    )
-                }
-            } else emptyList()
+            val ps2Memcards = emulatorContext.memcards
             val selectedMemcardPath = emulatorConfigDao.getSelectedMemcardForGame(game.id)
-            val hasMultipleMemcards = ps2Memcards.size > 1
+            val hasMultipleMemcards = emulatorContext.showMemcardRow
             val selectedMemcardName = ps2Memcards.find { it.path == selectedMemcardPath }?.name
 
-            val emulatorDef = configuredEmulatorPackage?.let { pkg ->
-                EmulatorRegistry.getByPackage(pkg)
-            } ?: detector.getPreferredEmulator(game.platformSlug, builtinEnabled)?.def
+            val emulatorDef = effectiveSavePackage?.let { EmulatorRegistry.getByPackage(it) }
             val isBuiltInEmulator = emulatorDef?.launchConfig is LaunchConfig.BuiltIn
             val platformCores = EmulatorRegistry.getSelectableCores(game.platformSlug, isBuiltInEmulator)
             val isCoreSelectable = emulatorDef?.launchConfig?.isCoreSelectable ?: true

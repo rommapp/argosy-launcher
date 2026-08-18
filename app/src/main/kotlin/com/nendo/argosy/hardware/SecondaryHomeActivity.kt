@@ -954,7 +954,8 @@ class SecondaryHomeActivity :
             steamContentManager = dsm.steamContentManager,
             displayAffinityHelper = affinityHelper,
             downloadFileStatusRepository = dsm.downloadFileStatusRepository,
-            preferencesRepository = dsm.preferencesRepository
+            preferencesRepository = dsm.preferencesRepository,
+            resolveGameEmulatorContext = dsm.resolveGameEmulatorContext
         )
 
         inputHandler = SecondaryHomeInputHandler(

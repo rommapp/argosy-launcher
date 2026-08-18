@@ -426,29 +426,52 @@ private fun CustomGridCellBox(
 
     val game = content?.game
     if (game != null) {
+        val boxArtStyle = com.nendo.argosy.ui.theme.LocalBoxArtStyle.current
+        val tileRatio = width / height
+        val artRatio = if (boxArtStyle.nativeAspectRatio) {
+            game.coverAspectRatio
+                ?: com.nendo.argosy.ui.common.rememberCoverAspectRatio(
+                    game.coverPath,
+                    boxArtStyle.aspectRatio
+                )
+        } else {
+            tileRatio
+        }
+        val fitByHeight = artRatio <= tileRatio
         Box(modifier = placement, contentAlignment = Alignment.Center) {
-            GameCard(
-                game = game,
-                isFocused = isFocused,
-                focusScale = focusScaleForSpan(rect),
-                downloadIndicator = downloadIndicatorFor(game.id),
-                showPlatformBadge = false,
-                saturationOverride = if (isOverlapped) OVERLAPPED_SATURATION else null,
-                alphaOverride = if (isOverlapped) OVERLAPPED_ALPHA else null,
-                onCoverLoadFailed = onCoverLoadFailed,
-                onCoverLoaded = onCoverLoaded,
+            Box(
                 modifier = Modifier
-                    .fillMaxSize()
                     .then(
-                        if (onLongClick == null) {
-                            Modifier.clickableNoFocus(onClick = onClick)
-                        } else {
-                            Modifier.clickableNoFocus(onClick = onClick, onLongClick = onLongClick)
-                        }
+                        if (fitByHeight) Modifier.fillMaxHeight() else Modifier.fillMaxWidth()
                     )
-            )
-            if (content.isCollectionQueue) {
-                CollectionQueueBadge(modifier = Modifier.align(Alignment.TopStart))
+                    .aspectRatio(artRatio, matchHeightConstraintsFirst = fitByHeight)
+            ) {
+                GameCard(
+                    game = game,
+                    isFocused = isFocused,
+                    focusScale = focusScaleForSpan(rect),
+                    downloadIndicator = downloadIndicatorFor(game.id),
+                    showPlatformBadge = false,
+                    saturationOverride = if (isOverlapped) OVERLAPPED_SATURATION else null,
+                    alphaOverride = if (isOverlapped) OVERLAPPED_ALPHA else null,
+                    onCoverLoadFailed = onCoverLoadFailed,
+                    onCoverLoaded = onCoverLoaded,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .then(
+                            if (onLongClick == null) {
+                                Modifier.clickableNoFocus(onClick = onClick)
+                            } else {
+                                Modifier.clickableNoFocus(
+                                    onClick = onClick,
+                                    onLongClick = onLongClick
+                                )
+                            }
+                        )
+                )
+                if (content.isCollectionQueue) {
+                    CollectionQueueBadge(modifier = Modifier.align(Alignment.TopStart))
+                }
             }
             if (editModeLabel != null && isFocused) {
                 TileModeTab(

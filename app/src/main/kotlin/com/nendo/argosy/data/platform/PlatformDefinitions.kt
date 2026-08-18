@@ -655,9 +655,17 @@ object PlatformDefinitions {
     fun getAliasDisplayName(slug: String): Pair<String, String>? =
         aliasDisplayNames[slug.lowercase()]
 
+    /**
+     * Names a sub-platform from its slug, as `<parent short name> <suffix>`.
+     *
+     * A slug the registry already knows is a platform in its own right, never a parent plus a
+     * suffix: IGDB spells a slash as `-slash-`, so `genesis-slash-megadrive` would otherwise
+     * derive as "Genesis Slash Megadrive".
+     */
     fun deriveDisplayName(slug: String?): Pair<String, String>? {
         if (slug.isNullOrBlank()) return null
         val lower = slug.lowercase()
+        if (lower in slugAliases || lower in platformMap) return null
         val sep = lower.indexOfFirst { it == '-' || it == '_' || it == ' ' }
         if (sep <= 0 || sep >= lower.length - 1) return null
         val prefix = lower.substring(0, sep)

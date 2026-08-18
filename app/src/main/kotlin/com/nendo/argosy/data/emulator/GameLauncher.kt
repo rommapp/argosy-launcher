@@ -21,6 +21,7 @@ import com.nendo.argosy.data.local.entity.EmulatorLaunchArgsEntity
 import com.nendo.argosy.data.repository.BiosRepository
 import com.nendo.argosy.libretro.LibretroActivity
 import com.nendo.argosy.libretro.LibretroCoreManager
+import com.nendo.argosy.libretro.LibretroCoreRegistry
 import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.dao.PlatformDao
 import com.nendo.argosy.data.local.dao.GameDiscDao
@@ -579,8 +580,10 @@ class GameLauncher @Inject constructor(
         biosRepository.distributeBiosToEmulator(game.platformSlug, EmulatorRegistry.BUILTIN_PACKAGE)
         val systemDir = biosRepository.getLibretroSystemDir()
 
-        val coreName = coreFile.nameWithoutExtension
-            .removeSuffix("_libretro_android")
+        val coreName = LibretroCoreRegistry.getCoreByFileName(coreFile.name)?.coreId
+            ?: coreFile.nameWithoutExtension
+                .removeSuffix("_libretro_android")
+                .removeSuffix("_libretro")
 
         if (!coreSystemDataManager.ensureCoreSystemData(coreName, systemDir)) {
             Logger.error(TAG, "Failed to download system data for $coreName")

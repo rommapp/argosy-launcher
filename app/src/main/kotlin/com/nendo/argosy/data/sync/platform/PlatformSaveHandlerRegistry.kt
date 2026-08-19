@@ -147,6 +147,22 @@ class PlatformSaveHandlerRegistry @Inject constructor(
 private fun String.asArchiveName(): String = replace('/', '_')
 
 /**
+ * Whether [needle] appears verbatim in the bytes. PARAM.SFO keeps its key names in a plain
+ * ASCII key table, so presence of a key is a substring test rather than a parse.
+ */
+private fun ByteArray.containsAscii(needle: String): Boolean {
+    val target = needle.toByteArray(Charsets.US_ASCII)
+    if (target.isEmpty() || target.size > size) return false
+    outer@ for (start in 0..size - target.size) {
+        for (i in target.indices) {
+            if (this[start + i] != target[i]) continue@outer
+        }
+        return true
+    }
+    return false
+}
+
+/**
  * PSP saves are folders under `PSP/SAVEDATA/` named `<DISC_ID><SAVE_NAME>` where the 9-char
  * disc id (e.g. `ULUS10064`) is shared across all of a game's profile/system folders. A single
  * game commonly produces several siblings (`ULUS10064DATA00`, `ULUS10064SETTINGS`, ...), so the
@@ -154,6 +170,13 @@ private fun String.asArchiveName(): String = replace('/', '_')
  *
  * Mirrors the GameCube GCI handler's pattern - bundle all matches on upload, delete all matches
  * on download before extracting back into the parent.
+ *
+ * Game-data installs land in the same place under the same prefix (PPSSPP's
+ * `PSPGamedataInstallDialog` writes to `PSP/SAVEDATA/<gameName><dataName>/`), but they are
+ * copies of disc content, not progress. They are told apart by their PARAM.SFO: every savedata
+ * write emits `SAVEDATA_PARAMS` and `SAVEDATA_FILE_LIST`, and the install path emits neither.
+ * Excluding them keeps hundreds of megabytes of disc data out of an upload and, just as
+ * importantly, off the deletion list a restore runs before it extracts.
  */
 private class PspFolderHandler(
     context: Context,
@@ -165,10 +188,35 @@ private class PspFolderHandler(
 
     companion object {
         private const val TAG = "PspFolderHandler"
+        private const val PARAM_SFO = "PARAM.SFO"
+        private const val MAX_SFO_BYTES = 64 * 1024L
+        private val SAVEDATA_KEYS = listOf("SAVEDATA_PARAMS", "SAVEDATA_FILE_LIST")
     }
 
     override fun folderMatches(folderName: String, saveId: String): Boolean =
         folderName.startsWith(saveId, ignoreCase = true)
+
+    override fun findAllSaveFoldersBySaveId(basePath: String, saveId: String): List<String> =
+        super.findAllSaveFoldersBySaveId(basePath, saveId).filterNot { path ->
+            isGameDataInstall(path).also { skipped ->
+                if (skipped) {
+                    Logger.debug(TAG, "Skipping installed game data | path=$path, saveId=$saveId")
+                }
+            }
+        }
+
+    /**
+     * A prefix-matched folder holding installed disc data rather than a save. Only a folder
+     * whose PARAM.SFO is readable and carries neither savedata key is refused: a folder with no
+     * PARAM.SFO, or one we cannot read, stays in the save unit rather than being dropped on a
+     * guess.
+     */
+    private fun isGameDataInstall(folderPath: String): Boolean {
+        val sfo = fal.getTransformedFile("$folderPath/$PARAM_SFO")
+        if (!sfo.isFile || sfo.length() > MAX_SFO_BYTES) return false
+        val bytes = runCatching { sfo.readBytes() }.getOrElse { return false }
+        return SAVEDATA_KEYS.none { bytes.containsAscii(it) }
+    }
 
     override fun findSaveFolderBySaveId(basePath: String, saveId: String): String? {
         if (!fal.exists(basePath) || !fal.isDirectory(basePath)) return null

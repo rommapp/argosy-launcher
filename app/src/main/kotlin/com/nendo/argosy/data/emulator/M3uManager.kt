@@ -8,7 +8,6 @@ import com.nendo.argosy.data.local.entity.GameEntity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
-import java.nio.charset.Charset
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -209,7 +208,7 @@ class M3uManager @Inject constructor(
         }
 
         try {
-            m3uFile.writeText(content, Charset.forName("US-ASCII"))
+            m3uFile.writeText(content, Charsets.UTF_8)
             gameDao.updateM3uPath(game.id, m3uFile.absolutePath)
             Log.d(TAG, "Generated m3u: ${m3uFile.absolutePath}")
             M3uResult.Generated(m3uFile)

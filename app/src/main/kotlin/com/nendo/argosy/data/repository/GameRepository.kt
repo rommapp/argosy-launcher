@@ -9,6 +9,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.withTimeoutOrNull
 import com.nendo.argosy.data.download.ZipExtractor
 import com.nendo.argosy.data.emulator.M3uManager
+import com.nendo.argosy.util.FileNames
 import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.dao.GameDiscDao
 import com.nendo.argosy.data.local.dao.GameFileDao
@@ -135,7 +136,7 @@ class GameRepository @Inject constructor(
 
     private fun normalizeForMatch(name: String): String {
         return name
-            .replace(Regex("[\\\\:*?\"<>|/]"), "_")
+            .replace(FileNames.INVALID_CHARS, "_")
             .replace(Regex("\\s+"), " ")
             .lowercase()
             .trim()

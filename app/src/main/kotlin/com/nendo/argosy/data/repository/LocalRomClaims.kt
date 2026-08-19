@@ -1,5 +1,7 @@
 package com.nendo.argosy.data.repository
 
+import com.nendo.argosy.util.FileNames
+
 data class ClaimCandidate(
     val name: String,
     val isDirectory: Boolean
@@ -28,7 +30,7 @@ private fun folderNames(name: String): List<String> =
     }
 
 private fun normalize(name: String): String = name
-    .replace(Regex("[\\\\:*?\"<>|/]"), "_")
+    .replace(FileNames.INVALID_CHARS, "_")
     .replace(Regex("\\s+"), " ")
     .lowercase()
     .trim()

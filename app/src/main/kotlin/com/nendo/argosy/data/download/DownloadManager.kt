@@ -24,6 +24,7 @@ import com.nendo.argosy.data.storage.StorageAttributionRepository
 import com.nendo.argosy.data.storage.StorageCategory
 import com.nendo.argosy.DualScreenManagerHolder
 import dagger.hilt.android.qualifiers.ApplicationContext
+import com.nendo.argosy.util.FileNames
 import com.nendo.argosy.util.Logger
 import com.nendo.argosy.util.SafeCoroutineScope
 import kotlinx.coroutines.CancellationException
@@ -533,12 +534,13 @@ class DownloadManager @Inject constructor(
         }
 
         val platformDir = getDownloadDir(platformSlug)
-        val tempFilePath = File(platformDir, "${fileName}.tmp").absolutePath
+        val diskFileName = FileNames.sanitize(fileName)
+        val tempFilePath = File(platformDir, "${diskFileName}.tmp").absolutePath
 
         val entity = DownloadQueueEntity(
             gameId = gameId,
             rommId = rommId,
-            fileName = fileName,
+            fileName = diskFileName,
             gameTitle = gameTitle,
             platformSlug = platformSlug,
             coverPath = coverPath,
@@ -564,7 +566,7 @@ class DownloadManager @Inject constructor(
             id = id,
             gameId = gameId,
             rommId = rommId,
-            fileName = fileName,
+            fileName = diskFileName,
             gameTitle = gameTitle,
             platformSlug = platformSlug,
             coverPath = coverPath,
@@ -601,14 +603,15 @@ class DownloadManager @Inject constructor(
         if (currentState.queue.any { it.discId == discId }) return
 
         val platformDir = getDownloadDir(platformSlug)
-        val tempFilePath = File(platformDir, "${fileName}.tmp").absolutePath
+        val diskFileName = FileNames.sanitize(fileName)
+        val tempFilePath = File(platformDir, "${diskFileName}.tmp").absolutePath
 
         val entity = DownloadQueueEntity(
             gameId = gameId,
             rommId = rommId,
             discId = discId,
             discNumber = discNumber,
-            fileName = fileName,
+            fileName = diskFileName,
             gameTitle = gameTitle,
             platformSlug = platformSlug,
             coverPath = coverPath,
@@ -629,7 +632,7 @@ class DownloadManager @Inject constructor(
             rommId = rommId,
             discId = discId,
             discNumber = discNumber,
-            fileName = fileName,
+            fileName = diskFileName,
             gameTitle = gameTitle,
             platformSlug = platformSlug,
             coverPath = coverPath,
@@ -666,11 +669,12 @@ class DownloadManager @Inject constructor(
 
         val gameFolder = resolveAddonFolder(gameId, platformSlug, gameFolderName, gameTitle, category)
         val categoryFolder = resolveGameFileDir(gameId, gameFileId, platformSlug, category, gameFolder)
-        val tempFilePath = File(categoryFolder, "${fileName}.tmp").absolutePath
+        val diskFileName = FileNames.sanitize(fileName)
+        val tempFilePath = File(categoryFolder, "${diskFileName}.tmp").absolutePath
         Logger.info(
             TAG,
             "Enqueue $category | game=$gameTitle gameId=$gameId rommFileId=$rommFileId " +
-                "file=$fileName folder=${gameFolder.name} dest=${categoryFolder.name}"
+                "file=$diskFileName folder=${gameFolder.name} dest=${categoryFolder.name}"
         )
 
         val entity = DownloadQueueEntity(
@@ -678,7 +682,7 @@ class DownloadManager @Inject constructor(
             rommId = rommFileId,
             gameFileId = gameFileId,
             fileCategory = category,
-            fileName = fileName,
+            fileName = diskFileName,
             gameTitle = gameTitle,
             gameFolderName = gameFolderName,
             platformSlug = platformSlug,
@@ -700,7 +704,7 @@ class DownloadManager @Inject constructor(
             rommId = rommFileId,
             gameFileId = gameFileId,
             fileCategory = category,
-            fileName = fileName,
+            fileName = diskFileName,
             gameTitle = gameTitle,
             gameFolderName = gameFolderName,
             platformSlug = platformSlug,

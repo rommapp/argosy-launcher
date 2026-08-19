@@ -3,6 +3,7 @@ package com.nendo.argosy.data.download
 import android.util.Log
 import com.nendo.argosy.data.emulator.M3uManager
 import com.nendo.argosy.data.platform.PlatformDefinitions
+import com.nendo.argosy.util.FileNames
 import org.apache.commons.compress.archivers.sevenz.SevenZFile
 import org.apache.commons.compress.archivers.zip.ZipFile
 import java.io.File
@@ -679,7 +680,7 @@ object ZipExtractor {
             Log.d(TAG, "Total entries found: ${entries.size}, total bytes: $totalBytes")
 
             entries.forEach { entry ->
-                val entryPath = entry.name
+                val entryPath = FileNames.sanitizeRelativePath(entry.name)
                 val fileName = File(entryPath).name
                 val ext = fileName.substringAfterLast('.', "").lowercase()
                 val isRootFile = !entryPath.contains("/") && !entryPath.contains("\\")
@@ -746,7 +747,7 @@ object ZipExtractor {
             while (entry != null) {
                 if (!entry.isDirectory) {
                     entryCount++
-                    val entryPath = entry.name
+                    val entryPath = FileNames.sanitizeRelativePath(entry.name)
                     val fileName = File(entryPath).name
                     val ext = fileName.substringAfterLast('.', "").lowercase()
                     val isRootFile = !entryPath.contains("/") && !entryPath.contains("\\")

@@ -134,13 +134,7 @@ class GameRepository @Inject constructor(
         }
     }
 
-    private fun normalizeForMatch(name: String): String {
-        return name
-            .replace(FileNames.INVALID_CHARS, "_")
-            .replace(Regex("\\s+"), " ")
-            .lowercase()
-            .trim()
-    }
+    private fun normalizeForMatch(name: String): String = FileNames.normalizeForMatch(name)
 
     private fun titlesMatch(a: String, b: String): Boolean {
         return normalizeForMatch(a) == normalizeForMatch(b)

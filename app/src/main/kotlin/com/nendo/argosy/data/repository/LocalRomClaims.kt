@@ -29,11 +29,7 @@ private fun folderNames(name: String): List<String> =
         listOf(name)
     }
 
-private fun normalize(name: String): String = name
-    .replace(FileNames.INVALID_CHARS, "_")
-    .replace(Regex("\\s+"), " ")
-    .lowercase()
-    .trim()
+private fun normalize(name: String): String = FileNames.normalizeForMatch(name)
 
 private enum class Tier { EXACT_FILE, EXACT_FOLDER, STEM_FILE, STEM_FOLDER, TITLE_FILE, TITLE_FOLDER }
 

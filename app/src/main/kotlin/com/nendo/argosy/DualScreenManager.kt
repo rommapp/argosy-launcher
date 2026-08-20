@@ -101,6 +101,9 @@ class DualScreenManager(
     internal val appsRepository: com.nendo.argosy.data.repository.AppsRepository,
     private val notificationManager: com.nendo.argosy.core.notification.NotificationManager,
     private val titleIdDownloadObserver: com.nendo.argosy.data.emulator.TitleIdDownloadObserver,
+    internal val homeGridPageRepository: com.nendo.argosy.data.repository.HomeGridPageRepository,
+    internal val pageChooserEntrySource: com.nendo.argosy.ui.home.grid.PageChooserEntrySource,
+    internal val ambientAudioManager: com.nendo.argosy.ui.audio.AmbientAudioManager,
     internal val emulatorConfigDao: com.nendo.argosy.data.local.dao.EmulatorConfigDao,
     internal val configureEmulatorUseCase: com.nendo.argosy.domain.usecase.game.ConfigureEmulatorUseCase,
     internal val builtinCoreResolver: com.nendo.argosy.data.emulator.BuiltinCoreResolver,
@@ -800,9 +803,12 @@ class DualScreenManager(
             prepareCollectionQueueUseCase = prepareCollectionQueueUseCase,
             sessionStateStore = sessionStateStore,
             homeTileRepository = homeTileRepository,
+            homeGridPageRepository = homeGridPageRepository,
             homeTilePromptQueue = homeTilePromptQueue,
             appsRepository = appsRepository,
-            syncPreferencesRepository = syncPreferencesRepository
+            syncPreferencesRepository = syncPreferencesRepository,
+            pageChooserEntrySource = pageChooserEntrySource,
+            ambientAudioManager = ambientAudioManager
         )
         swappedDualHomeViewModel?.observeHomeTiles()
         swappedDualHomeViewModel?.observeTilePrompts()

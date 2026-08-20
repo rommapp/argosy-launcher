@@ -373,7 +373,9 @@ class DualHomeViewModel(
         com.nendo.argosy.data.repository.HomeGridPageRepository? = null,
     private val homeTilePromptQueue: com.nendo.argosy.data.repository.HomeTilePromptQueue? = null,
     private val appsRepository: com.nendo.argosy.data.repository.AppsRepository? = null,
-    private val syncPreferencesRepository: com.nendo.argosy.data.preferences.SyncPreferencesRepository? = null
+    private val syncPreferencesRepository: com.nendo.argosy.data.preferences.SyncPreferencesRepository? = null,
+    private val pageChooserEntrySource: com.nendo.argosy.ui.home.grid.PageChooserEntrySource? = null,
+    private val ambientAudioManager: com.nendo.argosy.ui.audio.AmbientAudioManager? = null
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(DualHomeUiState())
@@ -406,7 +408,8 @@ class DualHomeViewModel(
             prepareCollectionQueueUseCase?.invoke(collectionId, active)
             Unit
         },
-        onOpenLibrary = { onOpenLibraryFromGrid?.invoke() },
+        onFirstQueueGame = { collectionId -> firstGameInCollection(collectionId) },
+        pageChooserEntries = { chooser -> pageChooserEntriesFor(chooser) },
         read = { _uiState.value.customGrid },
         write = { transform -> _uiState.update { it.copy(customGrid = transform(it.customGrid)) } }
     )
@@ -1149,6 +1152,7 @@ class DualHomeViewModel(
      * in its own panel. Nothing is written, so the tiles are still on the page the phone draws.
      */
     fun observeHomeTiles() {
+        customGrid.observePageSettings { applyPageAudio() }
         val tiles = homeTileRepository ?: return
         viewModelScope.launch {
             tiles.observeTiles(syncPreferencesRepository?.getRommUserId())
@@ -1262,7 +1266,23 @@ class DualHomeViewModel(
         direction: com.nendo.argosy.domain.model.GridDirection2D
     ): Boolean = customGrid.moveFocus(direction)
 
-    fun turnCustomGridPage(delta: Int): Boolean = customGrid.turnPage(delta)
+    fun turnCustomGridPage(delta: Int): Boolean {
+        val turned = customGrid.turnPage(delta)
+        if (turned) applyPageAudio()
+        return turned
+    }
+
+    /**
+     * Hands the output to the page in view, so a page carrying its own sound replaces the
+     * launcher's music for as long as it is shown.
+     */
+    private fun applyPageAudio() {
+        val audio = ambientAudioManager ?: return
+        val pageOwns = _uiState.value.layoutKind ==
+            com.nendo.argosy.domain.model.HomeLayoutKind.CUSTOM_GRID &&
+            _uiState.value.customGrid.currentPageSettings.silencesGlobalAudio
+        if (pageOwns) audio.fadeOut() else audio.fadeIn()
+    }
 
     fun setCustomGridCell(cell: com.nendo.argosy.domain.model.GridCell) = customGrid.setCell(cell)
 
@@ -1336,11 +1356,22 @@ class DualHomeViewModel(
 
     fun advanceFocusGame() = customGrid.advanceFocusGame()
 
+    private suspend fun firstGameInCollection(collectionId: Long): Long? =
+        collectionRepository.getGamesInCollection(collectionId).firstOrNull()?.id
+
     /**
-     * Set by the input handler, which owns the broadcast the library view needs on entry. The
-     * coordinator only knows that something should happen, not what the companion has to be told.
+     * The rows the shared page chooser shows here. The file browser is a Compose screen with its
+     * own view model, which this display cannot host, so its source is left out of the backdrop
+     * list until the companion can open one.
      */
-    var onOpenLibraryFromGrid: (() -> Unit)? = null
+    private suspend fun pageChooserEntriesFor(
+        chooser: com.nendo.argosy.ui.components.PageChooserState
+    ): List<com.nendo.argosy.ui.components.PageChooserEntry> =
+        pageChooserEntrySource?.entriesFor(
+            chooser = chooser,
+            focusedCollection = _uiState.value.customGrid.focusedCollection,
+            canBrowseFiles = false
+        ) ?: emptyList()
 
     private suspend fun advanceCollectionFocus(collectionId: Long, currentGameId: Long): Long? =
         advanceCollectionFocusUseCase?.invoke(collectionId, currentGameId)?.nextGameId
@@ -1357,6 +1388,14 @@ class DualHomeViewModel(
 
     fun selectTilePickerEntry(entry: com.nendo.argosy.ui.components.TilePickerEntry) =
         customGrid.selectPickerEntry(entry)
+
+    fun movePageChooserFocus(delta: Int) = customGrid.movePageChooserFocus(delta)
+
+    fun confirmPageChooser() = customGrid.confirmPageChooser()
+
+    fun closePageChooser() = customGrid.closePageChooser()
+
+    fun setPageChooserQuery(query: String) = customGrid.setPageChooserQuery(query)
 
     fun cycleTilePickerCategory(delta: Int) = customGrid.cyclePickerCategory(delta)
 

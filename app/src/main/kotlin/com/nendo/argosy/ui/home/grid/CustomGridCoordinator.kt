@@ -42,11 +42,7 @@ class CustomGridCoordinator(
     private val pageChooserEntries: (suspend (PageChooserState) -> List<PageChooserEntry>)? = null,
     private val onAdvanceFocusGame: (suspend (Long, Long) -> Long?)? = null,
     private val onPrepareQueue: (suspend (Long, Long) -> Unit)? = null,
-    /**
-     * The way out to the wider library. The curated grid claims the button that reaches it
-     * elsewhere, so without an entry in this menu the library has no route from a grid page.
-     */
-    private val onOpenLibrary: (() -> Unit)? = null,
+    private val onFirstQueueGame: (suspend (Long) -> Long?)? = null,
     private val onPageAdded: ((Int) -> Unit)? = null,
     private val onPageRemoved: ((Int) -> Unit)? = null,
     private val mediaCatalog: MediaTileCatalog? = null,
@@ -247,8 +243,7 @@ class CustomGridCoordinator(
             CustomTileMenuAction.ARRANGE -> enterMoveMode()
             CustomTileMenuAction.RECURATE -> recurateFocusedTile()
             CustomTileMenuAction.REMOVE -> removeFocusedTile()
-            CustomTileMenuAction.OPEN_LIBRARY -> onOpenLibrary?.invoke()
-            CustomTileMenuAction.START_GAME_QUEUE -> openPageChooser(PageChooserKind.FOCUS_GAME)
+            CustomTileMenuAction.START_GAME_QUEUE -> startGameQueue()
             CustomTileMenuAction.SET_FOCUS_GAME -> openPageChooser(PageChooserKind.FOCUS_GAME)
             CustomTileMenuAction.ADVANCE_FOCUS_GAME -> advanceFocusGame()
             CustomTileMenuAction.PAGE_BACKDROP -> openPageChooser(PageChooserKind.BACKDROP)
@@ -885,6 +880,31 @@ class CustomGridCoordinator(
     fun setFocusGame(gameId: Long?) {
         val tile = read().focusedTile ?: return
         val collection = tile.target as? HomeTileTargetRef.Collection ?: return
+        applyFocusGame(tile, collection, gameId)
+    }
+
+    /**
+     * Arms the queue on the collection's own order: the first game becomes the one to play and the
+     * lookahead fetches it along with its successor.
+     *
+     * Starting is the point where no game has been chosen yet, so it does not ask which one -- the
+     * list already says. Naming a different game is what the queue's own menu entry is for.
+     */
+    fun startGameQueue() {
+        val tile = read().focusedTile ?: return
+        val collection = tile.target as? HomeTileTargetRef.Collection ?: return
+        val firstGame = onFirstQueueGame ?: return
+        scope.launch {
+            val gameId = firstGame(collection.collectionId) ?: return@launch
+            applyFocusGame(tile, collection, gameId)
+        }
+    }
+
+    private fun applyFocusGame(
+        tile: HomeTile,
+        collection: HomeTileTargetRef.Collection,
+        gameId: Long?
+    ) {
         val retargeted = collection.copy(focusGameId = gameId)
         write { state ->
             state.copy(
@@ -971,6 +991,33 @@ class CustomGridCoordinator(
 
     fun setPageSettings(settings: Map<Int, GridPageSettings>) = write {
         it.copy(pageSettings = settings)
+    }
+
+    /**
+     * Keeps the pages' look and sound in step with what is stored, for whichever surface asked.
+     *
+     * Both home surfaces draw a page's backdrop and play its music, so both have to be reading the
+     * same rows: a surface that never subscribed would show a page the user had already decorated
+     * as bare.
+     */
+    fun observePageSettings(onChanged: () -> Unit = {}) {
+        val pages = pageRepository ?: return
+        scope.launch {
+            pages.observePages(ownerUserId()).collect { rows ->
+                setPageSettings(
+                    rows.associate { page ->
+                        page.sortOrder to GridPageSettings(
+                            backgroundKind = PageBackgroundKind.fromString(page.backgroundKind),
+                            backgroundPath = page.backgroundPath,
+                            backgroundGameId = page.backgroundGameId,
+                            audioKind = PageAudioKind.fromString(page.audioKind),
+                            audioPath = page.audioPath
+                        )
+                    }
+                )
+                onChanged()
+            }
+        }
     }
 
     fun openFileBrowser() = write { it.copy(showFileBrowser = true) }

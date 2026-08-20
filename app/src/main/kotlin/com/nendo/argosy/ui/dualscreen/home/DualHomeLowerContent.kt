@@ -242,6 +242,18 @@ fun DualHomeLowerContent(
             )
         }
 
+        uiState.customGrid.pageChooser?.let { chooser ->
+            com.nendo.argosy.ui.components.PageChooserModal(
+                state = chooser,
+                onSelect = { index ->
+                    viewModel.movePageChooserFocus(index - chooser.focusIndex)
+                    viewModel.confirmPageChooser()
+                },
+                onQueryChange = viewModel::setPageChooserQuery,
+                onDismiss = viewModel::closePageChooser
+            )
+        }
+
         if (forwardingMode == ForwardingMode.OVERLAY) {
             Box(
                 modifier = Modifier

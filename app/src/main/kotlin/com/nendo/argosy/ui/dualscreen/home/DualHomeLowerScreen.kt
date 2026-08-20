@@ -6,6 +6,8 @@
  */
 package com.nendo.argosy.ui.dualscreen.home
 
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -92,6 +94,7 @@ import com.nendo.argosy.ui.screens.home.HomeGameUi
 import com.nendo.argosy.ui.components.SectionBreadcrumb
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalArgosyTheme
+import com.nendo.argosy.ui.theme.Motion
 import com.nendo.argosy.ui.theme.LocalBoxArtStyle
 import com.nendo.argosy.ui.theme.backdrop.BackdropRole
 import com.nendo.argosy.ui.theme.backdrop.surfaceBackdrop
@@ -222,12 +225,16 @@ fun DualHomeLowerScreen(
         }
     }
 
-    Column(
+    Box(
         modifier = modifier
             .fillMaxSize()
             .background(LocalArgosyTheme.current.surfaceBase)
             .surfaceBackdrop(BackdropRole.CONTENT)
     ) {
+        if (isCustomGrid) {
+            PageDecoration(customGridState)
+        }
+        Column(modifier = Modifier.fillMaxSize()) {
         if (viewMode == DualHomeViewMode.CAROUSEL && !isCustomGrid && sectionLabels.isNotEmpty()) {
             SectionBreadcrumb(
                 labels = sectionLabels,
@@ -361,6 +368,34 @@ fun DualHomeLowerScreen(
             )
         }
     }
+    }
+}
+
+/**
+ * A curated page's own backdrop and music on this display. Both are the shared components the
+ * phone-sized home uses, so a page decorated on one screen looks and sounds the same on the other.
+ */
+@Composable
+private fun PageDecoration(state: com.nendo.argosy.ui.components.CustomGridState) {
+    val pageSettings = state.currentPageSettings
+    Crossfade(
+        targetState = pageSettings.backgroundPath.takeIf { pageSettings.hasBackground },
+        animationSpec = tween(Motion.durationSlide, easing = Motion.argosyEase),
+        label = "page-backdrop",
+        modifier = Modifier.fillMaxSize()
+    ) { path ->
+        if (path != null) {
+            com.nendo.argosy.ui.components.PageBackdrop(
+                path = path,
+                modifier = Modifier.fillMaxSize()
+            )
+        }
+    }
+    com.nendo.argosy.ui.components.PageThemePlayer(
+        filePath = pageSettings.audioPath.takeIf {
+            pageSettings.audioKind == com.nendo.argosy.data.local.entity.PageAudioKind.THEME
+        }
+    )
 }
 
 // --- Collection List ---

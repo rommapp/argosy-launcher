@@ -49,6 +49,10 @@ Every user-facing feature, no exceptions unless justified in review:
 1. Dual-modality input: touch via clickableNoFocus AND gamepad via
    InputHandler with ViewModel-owned focus index. One modality = incomplete.
 2. Dual-screen parity considered (built OR explicitly deferred with reason).
+   Where a shared component already exists, parity means rendering it on the
+   other surface. Hiding the entry point instead is a ghost setting, not a
+   deferral; a capability flag is legitimate only when it names what the surface
+   cannot host.
 3. TV/AspectRatioClass behavior (TV has no touch): every action needs a
    controller mapping and/or a navigable menu path, never touch alone
    (e.g. favorites: gamepad button + game-details action + library menu).

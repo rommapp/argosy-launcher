@@ -47,6 +47,10 @@ class DualCustomGridInputRouter(
             GamepadEvent.Right -> move(GridDirection2D.RIGHT)
 
             GamepadEvent.Confirm -> when {
+                grid.pageChooser != null -> {
+                    viewModel.confirmPageChooser()
+                    InputResult.HANDLED
+                }
                 grid.pendingAdd != null -> {
                     if (grid.pendingAddFocusIndex == 0) {
                         viewModel.confirmPendingTileAdd()
@@ -75,7 +79,9 @@ class DualCustomGridInputRouter(
             }
 
             GamepadEvent.LongConfirm -> {
-                if (grid.showPicker || grid.showMenu) return InputResult.HANDLED
+                if (grid.showPicker || grid.showMenu || grid.pageChooser != null) {
+                    return InputResult.HANDLED
+                }
                 if (grid.isEditing) {
                     viewModel.commitTileEdit()
                     return InputResult.handled(SoundType.TOGGLE)
@@ -85,6 +91,10 @@ class DualCustomGridInputRouter(
             }
 
             GamepadEvent.Back -> when {
+                grid.pageChooser != null -> {
+                    viewModel.closePageChooser()
+                    InputResult.handled(SoundType.CLOSE_MODAL)
+                }
                 grid.pendingAdd != null -> {
                     viewModel.dismissPendingTileAdd()
                     InputResult.HANDLED
@@ -109,7 +119,9 @@ class DualCustomGridInputRouter(
             }
 
             GamepadEvent.Select -> {
-                if (grid.isEditing || grid.showPicker || grid.showMenu || grid.pendingAdd != null) {
+                if (grid.isEditing || grid.showPicker || grid.showMenu ||
+                    grid.pendingAdd != null || grid.pageChooser != null
+                ) {
                     return InputResult.HANDLED
                 }
                 com.nendo.argosy.DualScreenManagerHolder.instance?.swapRoles()
@@ -117,6 +129,7 @@ class DualCustomGridInputRouter(
             }
 
             GamepadEvent.ContextMenu -> {
+                if (grid.pageChooser != null) return InputResult.HANDLED
                 if (grid.isEditing) {
                     viewModel.toggleTileEditMode()
                     return InputResult.handled(SoundType.TOGGLE)
@@ -127,6 +140,7 @@ class DualCustomGridInputRouter(
             }
 
             GamepadEvent.SecondaryAction -> {
+                if (grid.pageChooser != null) return InputResult.HANDLED
                 if (grid.showPicker) {
                     viewModel.toggleTilePickerSearch()
                     return InputResult.HANDLED
@@ -147,6 +161,7 @@ class DualCustomGridInputRouter(
     }
 
     private fun turnPage(delta: Int): InputResult {
+        if (viewModel.uiState.value.customGrid.pageChooser != null) return InputResult.HANDLED
         if (viewModel.uiState.value.customGrid.showPicker) {
             viewModel.cycleTilePickerCategory(delta)
         } else {
@@ -165,6 +180,10 @@ class DualCustomGridInputRouter(
         val vertical = direction == GridDirection2D.UP || direction == GridDirection2D.DOWN
         val delta = if (direction == GridDirection2D.UP) -1 else 1
 
+        if (grid.pageChooser != null) {
+            if (vertical) viewModel.movePageChooserFocus(delta)
+            return InputResult.HANDLED
+        }
         if (grid.pendingAdd != null) {
             if (!vertical) viewModel.movePendingTileAddFocus(delta)
             return InputResult.HANDLED

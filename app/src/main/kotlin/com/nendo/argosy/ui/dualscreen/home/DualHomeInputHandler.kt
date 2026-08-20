@@ -42,15 +42,6 @@ class DualHomeInputHandler(
         }
     )
 
-    init {
-        viewModel.onOpenLibraryFromGrid = {
-            viewModel.enterLibraryGrid {
-                onBroadcastViewModeChange()
-                onBroadcastLibraryGameSelection()
-            }
-        }
-    }
-
     fun handleForViewMode(): InputResult {
         if (viewModel.forwardingMode.value != ForwardingMode.NONE) {
             return InputResult.HANDLED

@@ -16,7 +16,6 @@ enum class CustomTileMenuAction(val label: String) {
     START_GAME_QUEUE("Make game queue"),
     SET_FOCUS_GAME("Set the active game"),
     ADVANCE_FOCUS_GAME("Finish/skip game"),
-    OPEN_LIBRARY("Open Library"),
     PAGE_BACKDROP("Backdrop for this page"),
     PAGE_MUSIC("Music for this page"),
     DELETE_PAGE("Delete Page")
@@ -379,7 +378,6 @@ data class CustomGridState(
                 }
                 add(CustomTileMenuAction.REMOVE)
             }
-            add(CustomTileMenuAction.OPEN_LIBRARY)
             if (!isOnAddPage) {
                 add(CustomTileMenuAction.PAGE_BACKDROP)
                 add(CustomTileMenuAction.PAGE_MUSIC)

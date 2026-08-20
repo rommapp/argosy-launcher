@@ -403,6 +403,42 @@ session-survival rules above. Companion launch uses `getCompanionLaunchOptions()
   touch via `touchOnly`/`clickableNoFocus` on the composables (grep
   `broadcastRefocusUpper` in DualHomeLowerContent.kt for the dim-tap pattern).
 
+## Shared Surfaces, Not Second Copies (read before "DS does not have this")
+
+The home surfaces are ONE feature drawn on two displays. When something the
+phone-sized home has is missing on dual screen, the fix is to render the SAME
+component there, never to build a companion-only variant and never to hide the
+entry that leads to it.
+
+The shared layer already exists, and it is where new grid behaviour goes:
+
+- `ui/home/grid/CustomGridCoordinator.kt` - every action the curated grid takes,
+  for both surfaces. Behaviour belongs here, not in a view model.
+- `ui/home/grid/DualCustomGridInputRouter.kt` - gamepad routing for the grid on a
+  companion display, shared by both DS handlers.
+- `ui/home/grid/PageChooserEntrySource.kt` - the rows the page chooser offers.
+- `ui/components/` - `CustomTileMenuModal`, `HomeTilePickerModal`,
+  `PageChooserModal`, `PageBackdrop`, `PageThemePlayer`. All take state in and
+  hand callbacks out; none of them know which display they are on.
+
+A missing DS feature is therefore almost always three small edits: render the
+component in `DualHomeLowerContent`, route its input in
+`DualCustomGridInputRouter`, and delegate the view-model calls in
+`DualHomeViewModel`. Do not describe that as parity work to be scheduled.
+
+Two rules that follow:
+
+- Hiding a menu entry on DS is not a fix. If an action opens something the
+  companion does not draw, build the consumption site - the setting is otherwise
+  a ghost, which the AGENTS.md settings-chain law already forbids.
+- A capability flag is only legitimate for something the surface genuinely
+  cannot host, and it must name the blocker. Today there is exactly one:
+  `PageChooserEntrySource.canBrowseFiles`, false on the companion because
+  `FileBrowserScreen` needs `LocalInputDispatcher` and a `hiltViewModel()`, and
+  `SecondaryHomeActivity` is deliberately not a Hilt entry point and provides no
+  Compose input dispatcher. Removing that flag means giving the companion those
+  two things, or pushing browsable rows from DSM the way FILE_PICKER does.
+
 ## New Dual-Screen Feature Checklist
 
 1. [ ] State: add a StateFlow on DSM (never an activity field). Companion
@@ -432,3 +468,6 @@ session-survival rules above. Companion launch uses `getCompanionLaunchOptions()
 9. [ ] Prefs: read once at operation start, pass down.
 10. [ ] DS parity: verify in BOTH roles (normal and swapped/showcase) - a
         feature that only works in one role is incomplete.
+11. [ ] Home-surface work: reuse the shared grid layer above. A component that
+        already takes state and callbacks gets rendered on DS, not reimplemented
+        and not gated off.

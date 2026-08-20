@@ -89,7 +89,7 @@ class HomeViewModel @Inject constructor(
     private val appsRepository: com.nendo.argosy.data.repository.AppsRepository,
     private val homeTileRepository: com.nendo.argosy.data.repository.HomeTileRepository,
     private val homeGridPageRepository: com.nendo.argosy.data.repository.HomeGridPageRepository,
-    private val bgmPlaylistRepository: com.nendo.argosy.data.music.BgmPlaylistRepository,
+    private val pageChooserEntrySource: com.nendo.argosy.ui.home.grid.PageChooserEntrySource,
     private val collectionRepository: com.nendo.argosy.data.repository.CollectionRepository,
     private val advanceCollectionFocusUseCase:
         com.nendo.argosy.domain.usecase.collection.AdvanceCollectionFocusUseCase,
@@ -115,11 +115,7 @@ class HomeViewModel @Inject constructor(
         pageChooserEntries = { chooser -> pageChooserEntriesFor(chooser) },
         onAdvanceFocusGame = { collectionId, current -> advanceCollectionFocus(collectionId, current) },
         onPrepareQueue = { collectionId, active -> prepareCollectionQueueUseCase(collectionId, active) },
-        onOpenLibrary = {
-            viewModelScope.launch {
-                _events.emit(HomeEvent.NavigateToLibrary(platformId = null, sourceFilter = null))
-            }
-        },
+        onFirstQueueGame = { collectionId -> firstGameInCollection(collectionId) },
         ownerUserId = { syncPreferencesRepository.getRommUserId() },
         onPageAdded = { count -> persistCustomGridPageCount(count) },
         onPageRemoved = { count -> persistCustomGridPageRemoval(count) },
@@ -717,14 +713,11 @@ class HomeViewModel @Inject constructor(
      */
     private suspend fun pageChooserEntriesFor(
         chooser: com.nendo.argosy.ui.components.PageChooserState
-    ): List<com.nendo.argosy.ui.components.PageChooserEntry> = when {
-        chooser.kind == com.nendo.argosy.ui.components.PageChooserKind.FOCUS_GAME ->
-            focusGameEntries()
-        chooser.kind == com.nendo.argosy.ui.components.PageChooserKind.MUSIC -> musicChooserEntries()
-        chooser.gameId != null -> gameArtEntries(chooser.gameId)
-        chooser.gameTitle != null -> gameArtSourceEntries(chooser.query)
-        else -> backdropRootEntries()
-    }
+    ): List<com.nendo.argosy.ui.components.PageChooserEntry> =
+        pageChooserEntrySource.entriesFor(chooser, _uiState.value.customGrid.focusedCollection)
+
+    private suspend fun firstGameInCollection(collectionId: Long): Long? =
+        collectionRepository.getGamesInCollection(collectionId).firstOrNull()?.id
 
     /**
      * Marks the game being left as finished and answers with the next one in the collection.
@@ -744,100 +737,6 @@ class HomeViewModel @Inject constructor(
         return result.nextGameId
     }
 
-    private fun backdropRootEntries(): List<com.nendo.argosy.ui.components.PageChooserEntry> =
-        listOf(
-            com.nendo.argosy.ui.components.PageChooserEntry(
-                label = "Artwork from a game",
-                subtitle = "Covers and screenshots already in your library",
-                action = com.nendo.argosy.ui.components.PageChooserAction.BrowseGameArt
-            ),
-            com.nendo.argosy.ui.components.PageChooserEntry(
-                label = "A file on this device",
-                subtitle = "A picture, an animation, or a short video",
-                action = com.nendo.argosy.ui.components.PageChooserAction.OpenFileBrowser
-            ),
-            com.nendo.argosy.ui.components.PageChooserEntry(
-                label = "No backdrop",
-                subtitle = "Show the launcher's own background",
-                action = com.nendo.argosy.ui.components.PageChooserAction.ClearBackdrop
-            )
-        )
-
-    private suspend fun gameArtSourceEntries(
-        query: String
-    ): List<com.nendo.argosy.ui.components.PageChooserEntry> =
-        libraryDelegate.gamesWithArtwork(query).map { game ->
-            com.nendo.argosy.ui.components.PageChooserEntry(
-                label = game.title,
-                subtitle = game.subtitle,
-                previewPath = game.coverPath,
-                action = com.nendo.argosy.ui.components.PageChooserAction.OpenGameArt(
-                    gameId = game.id,
-                    title = game.title
-                )
-            )
-        }
-
-    private suspend fun gameArtEntries(
-        gameId: Long
-    ): List<com.nendo.argosy.ui.components.PageChooserEntry> =
-        libraryDelegate.artworkFor(gameId).map { art ->
-            com.nendo.argosy.ui.components.PageChooserEntry(
-                label = art.label,
-                previewPath = art.path,
-                action = com.nendo.argosy.ui.components.PageChooserAction.UseArt(art.path)
-            )
-        }
-
-    /**
-     * The games of the collection under the cursor, in the order the collection holds them, with
-     * the one being played now marked so the list says where the queue has reached.
-     */
-    private suspend fun focusGameEntries(): List<com.nendo.argosy.ui.components.PageChooserEntry> {
-        val collection = _uiState.value.customGrid.focusedCollection ?: return emptyList()
-        return collectionRepository.getGamesInCollection(collection.collectionId).map { game ->
-            com.nendo.argosy.ui.components.PageChooserEntry(
-                label = game.title,
-                subtitle = if (game.id == collection.focusGameId) "Playing now" else null,
-                previewPath = game.coverPath,
-                action = com.nendo.argosy.ui.components.PageChooserAction.UseFocusGame(game.id)
-            )
-        }
-    }
-
-    private suspend fun musicChooserEntries(): List<com.nendo.argosy.ui.components.PageChooserEntry> {
-        val tracks = bgmPlaylistRepository.playableTracks()
-        return buildList {
-            add(
-                com.nendo.argosy.ui.components.PageChooserEntry(
-                    label = "Launcher music",
-                    action = com.nendo.argosy.ui.components.PageChooserAction.UseLauncherMusic
-                )
-            )
-            add(
-                com.nendo.argosy.ui.components.PageChooserEntry(
-                    label = "This page's video",
-                    action = com.nendo.argosy.ui.components.PageChooserAction.UseTileAudio
-                )
-            )
-            if (tracks.isEmpty()) return@buildList
-            add(
-                com.nendo.argosy.ui.components.PageChooserEntry(
-                    label = "Your soundtracks",
-                    isHeader = true
-                )
-            )
-            tracks.forEach { track ->
-                add(
-                    com.nendo.argosy.ui.components.PageChooserEntry(
-                        label = track.displayName,
-                        action = com.nendo.argosy.ui.components.PageChooserAction.UseTrack(track.filePath)
-                    )
-                )
-            }
-        }
-    }
-
     private fun observeHomeTiles() {
         viewModelScope.launch {
             homeTileRepository.observeTiles(syncPreferencesRepository.getRommUserId())
@@ -846,25 +745,7 @@ class HomeViewModel @Inject constructor(
                     publishHomeTiles(tiles)
                 }
         }
-        viewModelScope.launch {
-            homeGridPageRepository.observePages(syncPreferencesRepository.getRommUserId())
-                .collect { pages ->
-                    customGrid.setPageSettings(
-                        pages.associate { page ->
-                            page.sortOrder to com.nendo.argosy.ui.components.GridPageSettings(
-                                backgroundKind = com.nendo.argosy.data.local.entity
-                                    .PageBackgroundKind.fromString(page.backgroundKind),
-                                backgroundPath = page.backgroundPath,
-                                backgroundGameId = page.backgroundGameId,
-                                audioKind = com.nendo.argosy.data.local.entity
-                                    .PageAudioKind.fromString(page.audioKind),
-                                audioPath = page.audioPath
-                            )
-                        }
-                    )
-                    applyPageAudio()
-                }
-        }
+        customGrid.observePageSettings { applyPageAudio() }
     }
 
     /**

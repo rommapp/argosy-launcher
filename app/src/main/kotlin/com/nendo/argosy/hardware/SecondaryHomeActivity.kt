@@ -915,9 +915,12 @@ class SecondaryHomeActivity :
             prepareCollectionQueueUseCase = dsm.prepareCollectionQueueUseCase,
             sessionStateStore = dsm.sessionStateStore,
             homeTileRepository = dsm.homeTileRepository,
+            homeGridPageRepository = dsm.homeGridPageRepository,
             homeTilePromptQueue = dsm.homeTilePromptQueue,
             appsRepository = dsm.appsRepository,
-            syncPreferencesRepository = dsm.syncPreferencesRepository
+            syncPreferencesRepository = dsm.syncPreferencesRepository,
+            pageChooserEntrySource = dsm.pageChooserEntrySource,
+            ambientAudioManager = dsm.ambientAudioManager
         )
         dualHomeViewModel.observeHomeTiles()
         dualHomeViewModel.observeTilePrompts()

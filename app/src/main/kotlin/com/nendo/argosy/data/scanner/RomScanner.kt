@@ -179,7 +179,15 @@ class RomScanner @Inject constructor(
             }
         }
 
-        return candidates.minByOrNull { it.sortOrder } ?: candidates.first()
+        val extension = file.extension.lowercase()
+        return candidates
+            .sortedWith(
+                compareBy(
+                    { if (extension in it.primaryExtensions) 0 else 1 },
+                    { it.sortOrder }
+                )
+            )
+            .firstOrNull() ?: candidates.first()
     }
 
     private fun cleanRomTitle(filename: String): String {

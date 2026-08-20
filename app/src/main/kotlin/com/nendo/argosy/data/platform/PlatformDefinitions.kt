@@ -11,12 +11,26 @@ object LocalPlatformIds {
     const val AMAZON = -6L
 }
 
+/**
+ * A platform and the file extensions its cores accept.
+ *
+ * [extensions] is the full upstream-declared set, so nothing a core can open is refused. Several
+ * of those are shared blobs, and a local scan that finds a bare `.bin` in a folder naming no
+ * platform can only guess between the platforms claiming it. [primaryExtensions] is the subset
+ * that identifies this platform on its own, so the guess prefers a format that means something.
+ */
 data class PlatformDef(
     val slug: String,
     val name: String,
     val shortName: String,
     val extensions: Set<String>,
     val sortOrder: Int
+) {
+    val primaryExtensions: Set<String> get() = extensions - AMBIGUOUS_EXTENSIONS
+}
+
+private val AMBIGUOUS_EXTENSIONS = setOf(
+    "bin", "iso", "img", "chd", "cue", "rom", "zip", "7z", "com", "bat", "dsk", "cas", "tap"
 )
 
 object PlatformDefinitions {
@@ -384,12 +398,12 @@ object PlatformDefinitions {
         // =====================================================================
         PlatformDef("nes", "Nintendo Entertainment System", "NES", setOf("nes", "unf", "unif", "fds", "zip", "7z"), 100),
         PlatformDef("fds", "Famicom Disk System", "FDS", setOf("fds", "zip", "7z"), 102),
-        PlatformDef("snes", "Super Nintendo", "SNES", setOf("sfc", "smc", "fig", "swc", "bs", "zip", "7z"), 105),
+        PlatformDef("snes", "Super Nintendo", "SNES", setOf("sfc", "smc", "fig", "swc", "bs", "st", "gd3", "gd7", "dx2", "zip", "7z"), 105),
         PlatformDef("satellaview", "Satellaview", "BS-X", setOf("bs", "sfc", "zip", "7z"), 106),
-        PlatformDef("n64", "Nintendo 64", "N64", setOf("n64", "z64", "v64", "zip", "7z"), 110),
+        PlatformDef("n64", "Nintendo 64", "N64", setOf("n64", "z64", "v64", "bin", "u1", "zip", "7z"), 110),
         PlatformDef("n64dd", "Nintendo 64DD", "64DD", setOf("ndd", "zip", "7z"), 111),
-        PlatformDef("gc", "GameCube", "GCN", setOf("iso", "gcm", "gcz", "rvz", "ciso", "wbfs", "zip", "7z"), 115),
-        PlatformDef("wii", "Wii", "Wii", setOf("wbfs", "iso", "rvz", "gcz", "wad", "zip", "7z"), 120),
+        PlatformDef("gc", "GameCube", "GCN", setOf("iso", "gcm", "gcz", "rvz", "ciso", "wia", "wbfs", "zip", "7z"), 115),
+        PlatformDef("wii", "Wii", "Wii", setOf("wbfs", "iso", "rvz", "gcz", "ciso", "wia", "wad", "zip", "7z"), 120),
         PlatformDef("wiiu", "Wii U", "Wii U", setOf("wud", "wux", "rpx", "wua", "zip", "7z"), 125),
         PlatformDef("switch", "Switch", "Switch", setOf("nsp", "xci", "nsz", "xcz", "zip", "7z"), 130),
 
@@ -397,20 +411,20 @@ object PlatformDefinitions {
         // NINTENDO HANDHELDS (150-199) - Chronological order
         // =====================================================================
         PlatformDef("gameandwatch", "Game & Watch", "G&W", setOf("mgw", "zip", "7z"), 150),
-        PlatformDef("gb", "Game Boy", "GB", setOf("gb", "zip", "7z"), 155),
-        PlatformDef("gbc", "Game Boy Color", "GBC", setOf("gbc", "gb", "zip", "7z"), 160),
-        PlatformDef("vb", "Virtual Boy", "VB", setOf("vb", "vboy", "zip", "7z"), 163),
-        PlatformDef("gba", "Game Boy Advance", "GBA", setOf("gba", "zip", "7z"), 165),
+        PlatformDef("gb", "Game Boy", "GB", setOf("gb", "dmg", "sgb", "zip", "7z"), 155),
+        PlatformDef("gbc", "Game Boy Color", "GBC", setOf("gbc", "gb", "dmg", "cgb", "sgb", "zip", "7z"), 160),
+        PlatformDef("vb", "Virtual Boy", "VB", setOf("vb", "vboy", "bin", "zip", "7z"), 163),
+        PlatformDef("gba", "Game Boy Advance", "GBA", setOf("gba", "bin", "zip", "7z"), 165),
         PlatformDef("pokemini", "Pokemon Mini", "PokeMini", setOf("min", "zip", "7z"), 167),
-        PlatformDef("nds", "Nintendo DS", "NDS", setOf("nds", "dsi", "zip", "7z"), 170),
-        PlatformDef("dsi", "Nintendo DSi", "DSi", setOf("nds", "dsi", "zip", "7z"), 172),
+        PlatformDef("nds", "Nintendo DS", "NDS", setOf("nds", "dsi", "ids", "bin", "zip", "7z"), 170),
+        PlatformDef("dsi", "Nintendo DSi", "DSi", setOf("nds", "dsi", "ids", "zip", "7z"), 172),
         PlatformDef("3ds", "Nintendo 3DS", "3DS", setOf("3ds", "cci", "cia", "cxi", "app", "z3ds", "zcci", "zcxi", "zip", "7z"), 175),
         PlatformDef("n3ds", "New Nintendo 3DS", "N3DS", setOf("3ds", "cci", "cia", "cxi", "app", "z3ds", "zcci", "zcxi", "zip", "7z"), 177),
 
         // =====================================================================
         // SONY CONSOLES (200-249) - Chronological order
         // =====================================================================
-        PlatformDef("psx", "PlayStation", "PS1", setOf("bin", "iso", "img", "chd", "pbp", "cue", "ecm", "zip", "7z"), 200),
+        PlatformDef("psx", "PlayStation", "PS1", setOf("bin", "iso", "img", "chd", "pbp", "cue", "ecm", "mdf", "mds", "toc", "zip", "7z"), 200),
         PlatformDef("ps2", "PlayStation 2", "PS2", setOf("iso", "bin", "chd", "gz", "cso", "zso", "zip", "7z"), 210),
         PlatformDef("ps3", "PlayStation 3", "PS3", setOf("iso", "pkg", "zip", "7z"), 220),
         PlatformDef("ps4", "PlayStation 4", "PS4", setOf("pkg", "zip", "7z"), 230),
@@ -425,25 +439,25 @@ object PlatformDefinitions {
         // =====================================================================
         // SEGA CONSOLES (300-349) - Chronological order
         // =====================================================================
-        PlatformDef("sg1000", "SG-1000", "SG-1000", setOf("sg", "zip", "7z"), 300),
-        PlatformDef("sms", "Master System", "SMS", setOf("sms", "sg", "zip", "7z"), 305),
-        PlatformDef("genesis", "Genesis", "Genesis", setOf("md", "gen", "smd", "bin", "zip", "7z"), 310),
+        PlatformDef("sg1000", "SG-1000", "SG-1000", setOf("sg", "bin", "zip", "7z"), 300),
+        PlatformDef("sms", "Master System", "SMS", setOf("sms", "sg", "bms", "bin", "zip", "7z"), 305),
+        PlatformDef("genesis", "Genesis", "Genesis", setOf("md", "gen", "smd", "mdx", "bin", "zip", "7z"), 310),
         PlatformDef("scd", "Sega CD", "Sega CD", setOf("iso", "bin", "chd", "cue", "zip", "7z"), 315),
-        PlatformDef("32x", "32X", "32X", setOf("32x", "zip", "7z"), 317),
-        PlatformDef("pico", "Pico", "Pico", setOf("md", "bin", "zip", "7z"), 318),
-        PlatformDef("saturn", "Saturn", "Saturn", setOf("iso", "bin", "cue", "chd", "zip", "7z"), 320),
-        PlatformDef("dreamcast", "Dreamcast", "DC", setOf("gdi", "cdi", "chd", "zip", "7z"), 325),
+        PlatformDef("32x", "32X", "32X", setOf("32x", "bin", "zip", "7z"), 317),
+        PlatformDef("pico", "Pico", "Pico", setOf("md", "bin", "pco", "zip", "7z"), 318),
+        PlatformDef("saturn", "Saturn", "Saturn", setOf("iso", "bin", "cue", "chd", "ccd", "toc", "mds", "zip", "7z"), 320),
+        PlatformDef("dreamcast", "Dreamcast", "DC", setOf("gdi", "cdi", "chd", "bin", "cue", "zip", "7z"), 325),
 
         // =====================================================================
         // SEGA HANDHELDS (350-399)
         // =====================================================================
         PlatformDef("gg", "Game Gear", "GG", setOf("gg", "zip", "7z"), 350),
-        PlatformDef("nomad", "Nomad", "Nomad", setOf("md", "gen", "zip", "7z"), 355),
+        PlatformDef("nomad", "Nomad", "Nomad", setOf("md", "gen", "smd", "bin", "zip", "7z"), 355),
 
         // =====================================================================
         // SEGA ARCADE (360-379)
         // =====================================================================
-        PlatformDef("naomi", "NAOMI", "NAOMI", setOf("zip", "7z", "chd"), 360),
+        PlatformDef("naomi", "NAOMI", "NAOMI", setOf("zip", "7z", "chd", "gdi", "cdi", "bin", "cue"), 360),
         PlatformDef("naomi2", "NAOMI 2", "NAOMI 2", setOf("zip", "7z", "chd"), 361),
         PlatformDef("atomiswave", "Atomiswave", "Atomiswave", setOf("zip", "7z", "chd"), 365),
 
@@ -459,33 +473,33 @@ object PlatformDefinitions {
         // ATARI CONSOLES (450-469) - Chronological order
         // =====================================================================
         PlatformDef("atari2600", "Atari 2600", "2600", setOf("a26", "bin", "zip", "7z"), 450),
-        PlatformDef("atari5200", "Atari 5200", "5200", setOf("a52", "bin", "zip", "7z"), 455),
-        PlatformDef("atari7800", "Atari 7800", "7800", setOf("a78", "bin", "zip", "7z"), 460),
-        PlatformDef("jaguar", "Jaguar", "Jaguar", setOf("j64", "jag", "zip", "7z"), 470),
+        PlatformDef("atari5200", "Atari 5200", "5200", setOf("a52", "bin", "car", "zip", "7z"), 455),
+        PlatformDef("atari7800", "Atari 7800", "7800", setOf("a78", "bin", "cdf", "zip", "7z"), 460),
+        PlatformDef("jaguar", "Jaguar", "Jaguar", setOf("j64", "jag", "bin", "zip", "7z"), 470),
         PlatformDef("jaguarcd", "Jaguar CD", "Jag CD", setOf("chd", "cue", "zip", "7z"), 475),
 
         // =====================================================================
         // ATARI HANDHELDS & COMPUTERS (480-499)
         // =====================================================================
-        PlatformDef("lynx", "Lynx", "Lynx", setOf("lnx", "zip", "7z"), 480),
+        PlatformDef("lynx", "Lynx", "Lynx", setOf("lnx", "lyx", "o", "zip", "7z"), 480),
         PlatformDef("atarist", "Atari ST", "ST", setOf("st", "stx", "msa", "zip", "7z"), 485),
-        PlatformDef("atari8bit", "Atari 8-bit", "A8", setOf("atr", "xex", "xfd", "zip", "7z"), 490),
+        PlatformDef("atari8bit", "Atari 8-bit", "A8", setOf("atr", "xex", "xfd", "dcm", "cas", "bin", "car", "com", "zip", "7z"), 490),
 
         // =====================================================================
         // NEC (500-549) - Chronological order
         // =====================================================================
         PlatformDef("tg16", "TurboGrafx-16", "TG16", setOf("pce", "zip", "7z"), 500),
         PlatformDef("supergrafx", "SuperGrafx", "SGX", setOf("pce", "sgx", "zip", "7z"), 505),
-        PlatformDef("tgcd", "TurboGrafx-CD", "TG-CD", setOf("chd", "cue", "ccd", "zip", "7z"), 510),
-        PlatformDef("pcfx", "PC-FX", "PC-FX", setOf("chd", "cue", "ccd", "zip", "7z"), 520),
+        PlatformDef("tgcd", "TurboGrafx-CD", "TG-CD", setOf("chd", "cue", "ccd", "toc", "zip", "7z"), 510),
+        PlatformDef("pcfx", "PC-FX", "PC-FX", setOf("chd", "cue", "ccd", "toc", "zip", "7z"), 520),
 
         // =====================================================================
         // SNK (550-599) - Chronological order
         // =====================================================================
         PlatformDef("neogeo", "Neo Geo", "Neo Geo", setOf("zip", "7z"), 550),
-        PlatformDef("neogeocd", "Neo Geo CD", "NGCD", setOf("chd", "cue", "iso", "zip", "7z"), 555),
-        PlatformDef("ngp", "Neo Geo Pocket", "NGP", setOf("ngp", "ngc", "zip", "7z"), 560),
-        PlatformDef("ngpc", "Neo Geo Pocket Color", "NGPC", setOf("ngpc", "ngc", "zip", "7z"), 565),
+        PlatformDef("neogeocd", "Neo Geo CD", "NGCD", setOf("chd", "cue", "ccd", "iso", "zip", "7z"), 555),
+        PlatformDef("ngp", "Neo Geo Pocket", "NGP", setOf("ngp", "ngc", "npc", "zip", "7z"), 560),
+        PlatformDef("ngpc", "Neo Geo Pocket Color", "NGPC", setOf("ngpc", "ngc", "npc", "zip", "7z"), 565),
         PlatformDef("hyperneogeo64", "Hyper Neo Geo 64", "HNG64", setOf("zip", "7z"), 570),
 
         // =====================================================================
@@ -497,8 +511,8 @@ object PlatformDefinitions {
         PlatformDef("plus4", "Commodore Plus/4", "Plus/4", setOf("d64", "d81", "t64", "tap", "prg", "p00", "crt", "zip", "7z"), 612),
         PlatformDef("cpet", "Commodore PET", "PET", setOf("d64", "d80", "d82", "t64", "tap", "prg", "p00", "zip", "7z"), 615),
         PlatformDef("amiga", "Amiga", "Amiga", setOf("adf", "adz", "dms", "fdi", "ipf", "hdf", "hdz", "lha", "slave", "info", "cue", "ccd", "nrg", "mds", "iso", "chd", "uae", "m3u", "rp9", "zip", "7z"), 620),
-        PlatformDef("amigacd32", "Amiga CD32", "CD32", setOf("chd", "cue", "iso", "zip", "7z"), 625),
-        PlatformDef("cdtv", "CDTV", "CDTV", setOf("chd", "cue", "iso", "zip", "7z"), 627),
+        PlatformDef("amigacd32", "Amiga CD32", "CD32", setOf("chd", "cue", "ccd", "nrg", "mds", "iso", "zip", "7z"), 625),
+        PlatformDef("cdtv", "CDTV", "CDTV", setOf("chd", "cue", "ccd", "nrg", "mds", "iso", "zip", "7z"), 627),
 
         // =====================================================================
         // ARCADE (650-699) - Alphabetical by system name
@@ -522,37 +536,37 @@ object PlatformDefinitions {
         PlatformDef("bbcmicro", "BBC Micro", "BBC", setOf("ssd", "dsd", "uef", "zip", "7z"), 705),
         PlatformDef("dos", "DOS", "DOS", setOf("exe", "com", "bat", "iso", "cue", "img", "ima", "vhd", "dosz", "m3u", "m3u8", "conf", "zip", "7z"), 710),
         PlatformDef("fmtowns", "FM Towns", "FM Towns", setOf("chd", "cue", "iso", "zip", "7z"), 715),
-        PlatformDef("msx", "MSX", "MSX", setOf("rom", "mx1", "mx2", "dsk", "zip", "7z"), 720),
-        PlatformDef("msx2", "MSX2", "MSX2", setOf("rom", "mx2", "dsk", "zip", "7z"), 721),
+        PlatformDef("msx", "MSX", "MSX", setOf("rom", "mx1", "mx2", "dsk", "fdi", "cas", "zip", "7z"), 720),
+        PlatformDef("msx2", "MSX2", "MSX2", setOf("rom", "mx1", "mx2", "dsk", "fdi", "cas", "zip", "7z"), 721),
         PlatformDef("pc8800", "PC-8800", "PC-88", setOf("d88", "zip", "7z"), 725),
         PlatformDef("pc9800", "PC-9800", "PC-98", setOf("hdi", "fdi", "d98", "zip", "7z"), 726),
         PlatformDef("mac", "Macintosh", "Mac", setOf("dsk", "img", "hvf", "cmd", "zip", "7z"), 723),
         PlatformDef("scummvm", "ScummVM", "ScummVM", setOf("scummvm", "zip", "7z"), 730),
         PlatformDef("sharpx1", "Sharp X1", "X1", setOf("2d", "zip", "7z"), 735),
         PlatformDef("x68000", "X68000", "X68K", setOf("dim", "xdf", "hdm", "zip", "7z"), 736),
-        PlatformDef("zx", "ZX Spectrum", "ZX", setOf("tzx", "tap", "z80", "sna", "zip", "7z"), 740),
+        PlatformDef("zx", "ZX Spectrum", "ZX", setOf("tzx", "tap", "z80", "sna", "scl", "trd", "dsk", "dck", "szx", "ipf", "zip", "7z"), 740),
         PlatformDef("zx81", "ZX81", "ZX81", setOf("p", "81", "zip", "7z"), 741),
         PlatformDef("pc", "PC", "PC", emptySet(), 745),
         PlatformDef("ti83", "TI-83", "TI-83", setOf("8xp", "8xk", "8xg", "zip", "7z"), 743),
         PlatformDef("j2me", "Java ME", "J2ME", setOf("jar", "jad", "jam", "zip", "7z"), 744),
-        PlatformDef("windows", "Windows", "Windows", setOf("exe", "zip", "7z"), 746),
+        PlatformDef("windows", "Windows", "Windows", setOf("exe", "com", "bat", "iso", "cue", "img", "ima", "vhd", "dosz", "conf", "chd", "zip", "7z"), 746),
 
         // =====================================================================
         // OTHER CLASSIC (750-799) - Alphabetical by name
         // =====================================================================
-        PlatformDef("3do", "3DO", "3DO", setOf("iso", "chd", "cue", "zip", "7z"), 750),
+        PlatformDef("3do", "3DO", "3DO", setOf("iso", "chd", "cue", "bin", "zip", "7z"), 750),
         PlatformDef("cdi", "CD-i", "CD-i", setOf("chd", "cue", "iso", "zip", "7z"), 755),
         PlatformDef("channelf", "Channel F", "Channel F", setOf("bin", "chf", "zip", "7z"), 760),
-        PlatformDef("coleco", "ColecoVision", "Coleco", setOf("col", "zip", "7z"), 765),
+        PlatformDef("coleco", "ColecoVision", "Coleco", setOf("col", "rom", "cv", "bin", "zip", "7z"), 765),
         PlatformDef("intellivision", "Intellivision", "Intv", setOf("int", "bin", "rom", "zip", "7z"), 770),
         PlatformDef("odyssey2", "Odyssey 2", "O2", setOf("bin", "zip", "7z"), 775),
-        PlatformDef("vectrex", "Vectrex", "Vectrex", setOf("vec", "zip", "7z"), 780),
+        PlatformDef("vectrex", "Vectrex", "Vectrex", setOf("vec", "bin", "zip", "7z"), 780),
 
         // =====================================================================
         // BANDAI (800-849)
         // =====================================================================
-        PlatformDef("wonderswan", "WonderSwan", "WS", setOf("ws", "zip", "7z"), 800),
-        PlatformDef("wsc", "WonderSwan Color", "WSC", setOf("wsc", "ws", "zip", "7z"), 805),
+        PlatformDef("wonderswan", "WonderSwan", "WS", setOf("ws", "pc2", "pcv2", "zip", "7z"), 800),
+        PlatformDef("wsc", "WonderSwan Color", "WSC", setOf("wsc", "ws", "pc2", "pcv2", "zip", "7z"), 805),
         PlatformDef("playdia", "Playdia", "Playdia", setOf("chd", "cue", "zip", "7z"), 810),
 
         // =====================================================================
@@ -564,7 +578,7 @@ object PlatformDefinitions {
         PlatformDef("evercade", "Evercade", "Evercade", emptySet(), 855),
         PlatformDef("gamate", "Gamate", "Gamate", setOf("bin", "zip", "7z"), 860),
         PlatformDef("gp32", "GP32", "GP32", setOf("gxb", "zip", "7z"), 865),
-        PlatformDef("megaduck", "Mega Duck", "Mega Duck", setOf("bin", "zip", "7z"), 870),
+        PlatformDef("megaduck", "Mega Duck", "Mega Duck", setOf("bin", "duck", "zip", "7z"), 870),
         PlatformDef("supervision", "Supervision", "Supervision", setOf("sv", "bin", "zip", "7z"), 875),
         PlatformDef("playdate", "Playdate", "Playdate", setOf("pdx", "zip", "7z"), 880),
         PlatformDef("nuon", "Nuon", "Nuon", setOf("iso", "zip", "7z"), 885),

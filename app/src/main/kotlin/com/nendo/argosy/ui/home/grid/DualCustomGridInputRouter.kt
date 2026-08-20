@@ -76,8 +76,12 @@ class DualCustomGridInputRouter(
 
             GamepadEvent.LongConfirm -> {
                 if (grid.showPicker || grid.showMenu) return InputResult.HANDLED
-                if (grid.isEditing) viewModel.commitTileEdit() else viewModel.enterTileMoveMode()
-                InputResult.handled(SoundType.TOGGLE)
+                if (grid.isEditing) {
+                    viewModel.commitTileEdit()
+                    return InputResult.handled(SoundType.TOGGLE)
+                }
+                viewModel.openTileMenu()
+                InputResult.handled(SoundType.OPEN_MODAL)
             }
 
             GamepadEvent.Back -> when {
@@ -105,11 +109,11 @@ class DualCustomGridInputRouter(
             }
 
             GamepadEvent.Select -> {
-                if (grid.isEditing || grid.showPicker || grid.pendingAdd != null) {
+                if (grid.isEditing || grid.showPicker || grid.showMenu || grid.pendingAdd != null) {
                     return InputResult.HANDLED
                 }
-                viewModel.openTileMenu()
-                InputResult.handled(SoundType.OPEN_MODAL)
+                com.nendo.argosy.DualScreenManagerHolder.instance?.swapRoles()
+                InputResult.handled(SoundType.TOGGLE)
             }
 
             GamepadEvent.ContextMenu -> {

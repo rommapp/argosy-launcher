@@ -158,12 +158,11 @@ class DualHomeInputHandler(
                     InputResult.HANDLED
                 } else if (moveGrid(GridDirection.UP)) {
                     InputResult.HANDLED
-                } else {
-                    viewModel.enterCollections()
-                    onBroadcastViewModeChange()
-                    onBroadcastCollectionFocused()
-                    InputResult.HANDLED
-                }
+                } else InputResult.UNHANDLED
+            }
+            com.nendo.argosy.ui.input.GamepadEvent.Select -> {
+                com.nendo.argosy.DualScreenManagerHolder.instance?.swapRoles()
+                InputResult.HANDLED
             }
             com.nendo.argosy.ui.input.GamepadEvent.PrevSection -> {
                 if (inAppBar) viewModel.focusCarousel()
@@ -173,16 +172,6 @@ class DualHomeInputHandler(
             com.nendo.argosy.ui.input.GamepadEvent.NextSection -> {
                 if (inAppBar) viewModel.focusCarousel()
                 viewModel.nextSection()
-                InputResult.HANDLED
-            }
-            com.nendo.argosy.ui.input.GamepadEvent.Select -> {
-                viewModel.toggleLibraryGrid {
-                    onBroadcastViewModeChange()
-                    if (viewModel.uiState.value.viewMode == DualHomeViewMode.LIBRARY_GRID)
-                        onBroadcastLibraryGameSelection()
-                    else
-                        onBroadcastCurrentGameSelection()
-                }
                 InputResult.HANDLED
             }
             com.nendo.argosy.ui.input.GamepadEvent.Confirm -> {
@@ -358,10 +347,7 @@ class DualHomeInputHandler(
                 InputResult.HANDLED
             }
             com.nendo.argosy.ui.input.GamepadEvent.Select -> {
-                viewModel.toggleLibraryGrid {
-                    onBroadcastViewModeChange()
-                    onBroadcastCurrentGameSelection()
-                }
+                com.nendo.argosy.DualScreenManagerHolder.instance?.swapRoles()
                 InputResult.HANDLED
             }
             com.nendo.argosy.ui.input.GamepadEvent.Back -> {

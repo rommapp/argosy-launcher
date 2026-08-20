@@ -507,12 +507,7 @@ class SecondaryHomeInputHandler(
                     InputResult.HANDLED
                 } else if (moveGrid(GridDirection.UP)) {
                     InputResult.HANDLED
-                } else {
-                    dualHomeViewModel.enterCollections()
-                    broadcasts.broadcastViewModeChange()
-                    broadcasts.broadcastCollectionFocused()
-                    InputResult.HANDLED
-                }
+                } else InputResult.UNHANDLED
             }
             GamepadEvent.PrevSection -> {
                 if (inAppBar) {
@@ -531,19 +526,7 @@ class SecondaryHomeInputHandler(
                 InputResult.HANDLED
             }
             GamepadEvent.Select -> {
-                if (inAppBar) {
-                    viewModel.openDrawer()
-                    broadcasts.broadcastViewModeChange(drawerOpen = true)
-                } else {
-                    dualHomeViewModel.toggleLibraryGrid {
-                        broadcasts.broadcastViewModeChange()
-                        val s = dualHomeViewModel.uiState.value
-                        if (s.viewMode == DualHomeViewMode.LIBRARY_GRID)
-                            broadcasts.broadcastLibraryGameSelection()
-                        else
-                            broadcasts.broadcastCurrentGameSelection()
-                    }
-                }
+                com.nendo.argosy.DualScreenManagerHolder.instance?.swapRoles()
                 InputResult.HANDLED
             }
             GamepadEvent.Confirm -> {
@@ -737,10 +720,7 @@ class SecondaryHomeInputHandler(
                 InputResult.HANDLED
             }
             GamepadEvent.Select -> {
-                dualHomeViewModel.toggleLibraryGrid {
-                    broadcasts.broadcastViewModeChange()
-                    broadcasts.broadcastCurrentGameSelection()
-                }
+                com.nendo.argosy.DualScreenManagerHolder.instance?.swapRoles()
                 InputResult.HANDLED
             }
             GamepadEvent.Back -> {

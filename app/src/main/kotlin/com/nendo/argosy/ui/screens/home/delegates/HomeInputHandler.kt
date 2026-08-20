@@ -431,23 +431,24 @@ class HomeInputHandler(
     }
 
     /**
-     * The curated grid is asked before the row is, here and in every other method that branches on
-     * what is focused.
+     * Swaps which display holds which role, the same meaning Select carries on every home surface.
      *
-     * Which row the cursor was last on survives a change of layout, so a grid shown while a media
-     * row happens to be current would otherwise answer for the row and never for the grid -- the
-     * tile menu would not open, and a hold would raise a resume prompt instead of picking a tile up.
+     * A device with one display has no roles to trade, so there the button keeps its older job of
+     * opening the focused game's menu. Holding A reaches that menu on both kinds of device, which
+     * is what keeps the actions on a controller when a second screen claims the press.
      */
     override fun onSelect(): InputResult {
         val state = actions.uiState.value
         if (state.showAddToCollectionModal) return InputResult.HANDLED
         if (state.customGrid.mediaSetup != null) return InputResult.HANDLED
         if (state.customGrid.engagedTileId != null) return InputResult.HANDLED
-        if (isCustomGrid(state)) {
-            if (state.customGrid.isEditing) return InputResult.HANDLED
-            actions.openTileMenu()
-            return InputResult.handled(SoundType.OPEN_MODAL)
+        val dualScreen = com.nendo.argosy.DualScreenManagerHolder.instance
+            ?.takeIf { it.isDualScreenDevice.value }
+        if (dualScreen != null) {
+            dualScreen.swapRoles()
+            return InputResult.handled(SoundType.TOGGLE)
         }
+        if (isCustomGrid(state)) return InputResult.UNHANDLED
         if (state.isMediaRow) return InputResult.HANDLED
         if (state.focusedGame != null) {
             actions.toggleGameMenu()
@@ -464,13 +465,13 @@ class HomeInputHandler(
         state.focusedItem is HomeRowItem.Media
 
     /**
-     * Holding confirm picks a tile up and puts it down again, so arranging never has to go through
-     * the select menu. Committing on the second hold matches the press that started it.
+     * Holding confirm opens the menu for whatever is under the cursor: the tile menu on the grid,
+     * where arranging is its first entry, and the game menu on a row. A menu that names its
+     * actions is reachable in a way a hold that silently starts a drag never was.
      *
-     * On a title the same hold asks whether to start over instead, since a plain press already
-     * resumes. A tile with nothing stored has no second answer to give, so the hold plays it rather
-     * than opening a prompt that offers the same thing twice. The grid keeps the arranging meaning
-     * for every kind of tile, so a pinned title is picked up exactly like a pinned game.
+     * Committing on the second hold still matches the press that started an arrange. On a title
+     * the hold asks whether to start over instead, since a plain press already resumes, and a
+     * title with nothing stored is played rather than asked about twice.
      */
     override fun onLongConfirm(): InputResult {
         val state = actions.uiState.value
@@ -479,12 +480,16 @@ class HomeInputHandler(
             if (state.showTilePicker || state.customGrid.showMenu) return InputResult.UNHANDLED
             if (state.customGrid.isEditing) {
                 actions.commitTileEdit()
-            } else {
-                actions.enterTileMoveMode()
+                return InputResult.handled(SoundType.TOGGLE)
             }
-            return InputResult.handled(SoundType.TOGGLE)
+            actions.openTileMenu()
+            return InputResult.handled(SoundType.OPEN_MODAL)
         }
-        if (!focusedIsMedia(state)) return InputResult.UNHANDLED
+        if (!focusedIsMedia(state)) {
+            if (state.focusedGame == null) return InputResult.UNHANDLED
+            actions.toggleGameMenu()
+            return InputResult.handled(SoundType.OPEN_MODAL)
+        }
         if (actions.openMediaResumePrompt()) return InputResult.handled(SoundType.OPEN_MODAL)
         actions.playFocusedMedia()
         return InputResult.HANDLED

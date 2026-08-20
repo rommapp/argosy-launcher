@@ -30,6 +30,11 @@ data class Notification(
     val title: String,
     val subtitle: String? = null,
     val imagePath: String? = null,
+    /**
+     * Draws this platform's own icon in place of the launcher's mark. Carried as a slug rather
+     * than a path because the asset it resolves to is a UI concern the notification does not have.
+     */
+    val platformSlug: String? = null,
     val duration: NotificationDuration = NotificationDuration.SHORT,
     val immediate: Boolean = false,
     val progress: NotificationProgress? = null,

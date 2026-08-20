@@ -92,7 +92,8 @@ class SyncLibraryUseCase @Inject constructor(
                                     notificationManager.updatePersistent(
                                         key = NOTIFICATION_KEY,
                                         subtitle = "${sp.currentPlatform}$gameInfo",
-                                        progress = NotificationProgress(sp.platformsDone + 1, sp.platformsTotal)
+                                        progress = NotificationProgress(sp.platformsDone + 1, sp.platformsTotal),
+                                        platformSlug = sp.currentPlatformSlug.takeIf { it.isNotBlank() }
                                     )
                                 }
                             }

@@ -36,6 +36,7 @@ class NotificationManager @Inject constructor() {
         subtitle: String? = null,
         type: NotificationType = NotificationType.INFO,
         imagePath: String? = null,
+        platformSlug: String? = null,
         duration: NotificationDuration = NotificationDuration.SHORT,
         key: String? = null,
         immediate: Boolean = false,
@@ -47,6 +48,7 @@ class NotificationManager @Inject constructor() {
             title = title,
             subtitle = subtitle,
             imagePath = imagePath,
+            platformSlug = platformSlug,
             duration = duration,
             immediate = immediate,
             accentColor = accentColor
@@ -123,7 +125,8 @@ class NotificationManager @Inject constructor() {
         title: String,
         subtitle: String? = null,
         key: String,
-        progress: NotificationProgress? = null
+        progress: NotificationProgress? = null,
+        platformSlug: String? = null
     ): Boolean {
         val current = _persistentNotification.value
         if (current != null && current.key != key) {
@@ -135,7 +138,8 @@ class NotificationManager @Inject constructor() {
             type = NotificationType.INFO,
             title = title,
             subtitle = subtitle,
-            progress = progress
+            progress = progress,
+            platformSlug = platformSlug
         )
         return true
     }
@@ -144,7 +148,8 @@ class NotificationManager @Inject constructor() {
         key: String,
         title: String? = null,
         subtitle: String? = null,
-        progress: NotificationProgress? = null
+        progress: NotificationProgress? = null,
+        platformSlug: String? = null
     ) {
         val current = _persistentNotification.value ?: return
         if (current.key != key) return
@@ -152,7 +157,8 @@ class NotificationManager @Inject constructor() {
         _persistentNotification.value = current.copy(
             title = title ?: current.title,
             subtitle = subtitle ?: current.subtitle,
-            progress = progress ?: current.progress
+            progress = progress ?: current.progress,
+            platformSlug = platformSlug ?: current.platformSlug
         )
     }
 
@@ -160,7 +166,8 @@ class NotificationManager @Inject constructor() {
         key: String,
         title: String,
         subtitle: String? = null,
-        type: NotificationType
+        type: NotificationType,
+        platformSlug: String? = null
     ) {
         Log.d(TAG, "completePersistent: key=$key, title=$title, subtitle=$subtitle, type=$type")
         val current = _persistentNotification.value
@@ -181,6 +188,7 @@ class NotificationManager @Inject constructor() {
             title = title,
             subtitle = subtitle,
             type = type,
+            platformSlug = platformSlug,
             duration = NotificationDuration.SHORT,
             immediate = true
         )

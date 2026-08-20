@@ -470,6 +470,7 @@ fun <T> RomMResult<T>.toResult(): Result<T> = when (this) {
 data class SyncProgress(
     val isSyncing: Boolean = false,
     val currentPlatform: String = "",
+    val currentPlatformSlug: String = "",
     val platformsTotal: Int = 0,
     val platformsDone: Int = 0,
     val gamesTotal: Int = 0,

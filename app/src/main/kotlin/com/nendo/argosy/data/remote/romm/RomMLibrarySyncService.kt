@@ -195,7 +195,10 @@ class RomMLibrarySyncService @Inject constructor(
 
             syncPlatformMetadata(platform)
 
-            _syncProgress.value = _syncProgress.value.copy(currentPlatform = platform.name)
+            _syncProgress.value = _syncProgress.value.copy(
+                currentPlatform = platform.name,
+                currentPlatformSlug = platform.slug
+            )
 
             val storageId = storagePlatformId(platform)
             gameDao.markSyncDirtyForOwner(storageId, ROMM_SOURCES, scope.ownerUserId)
@@ -314,6 +317,7 @@ class RomMLibrarySyncService @Inject constructor(
 
                 _syncProgress.value = _syncProgress.value.copy(
                     currentPlatform = platform.name,
+                    currentPlatformSlug = platform.slug,
                     platformsDone = index
                 )
 

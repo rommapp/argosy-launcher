@@ -41,7 +41,8 @@ class SyncPlatformUseCase @Inject constructor(
         notificationManager.showPersistent(
             title = "Syncing $platformName",
             subtitle = "Fetching games...",
-            key = NOTIFICATION_KEY
+            key = NOTIFICATION_KEY,
+            platformSlug = platform.slug
         )
 
         return try {
@@ -65,7 +66,8 @@ class SyncPlatformUseCase @Inject constructor(
                         key = NOTIFICATION_KEY,
                         title = "$platformName synced",
                         subtitle = subtitle,
-                        type = NotificationType.SUCCESS
+                        type = NotificationType.SUCCESS,
+                        platformSlug = platform.slug
                     )
                 } else {
                     notificationManager.completePersistent(

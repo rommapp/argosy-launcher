@@ -28,18 +28,21 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.nendo.argosy.R
+import com.nendo.argosy.ui.components.PlatformIconAssets
 import com.nendo.argosy.ui.primitives.ArgosyProgressBar
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalLauncherTheme
@@ -202,8 +205,13 @@ private fun NotificationBar(
             .padding(Dimens.spacingSm),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        if (notification.imagePath != null) {
-            AsyncImage(
+        val platformIconUri = notification.platformSlug?.let { slug ->
+            val context = LocalContext.current
+            remember(slug) { PlatformIconAssets.resolveAssetUri(context, slug) }
+        }
+
+        when {
+            notification.imagePath != null -> AsyncImage(
                 model = notification.imagePath,
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
@@ -211,8 +219,13 @@ private fun NotificationBar(
                     .size(Dimens.iconLg)
                     .clip(RoundedCornerShape(Dimens.spacingSm - Dimens.borderMedium))
             )
-        } else {
-            Icon(
+            platformIconUri != null -> AsyncImage(
+                model = platformIconUri,
+                contentDescription = null,
+                contentScale = ContentScale.Fit,
+                modifier = Modifier.size(Dimens.iconMd)
+            )
+            else -> Icon(
                 painter = painterResource(R.drawable.ic_helm),
                 contentDescription = null,
                 tint = colors.icon,
@@ -265,11 +278,32 @@ private fun PersistentNotificationBar(
             modifier = Modifier.padding(Dimens.spacingSm),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            CircularProgressIndicator(
-                modifier = Modifier.size(Dimens.iconSm + Dimens.borderMedium),
-                color = accentColor,
-                strokeWidth = Dimens.borderMedium
-            )
+            val platformIconUri = notification.platformSlug?.let { slug ->
+                val context = LocalContext.current
+                remember(slug) { PlatformIconAssets.resolveAssetUri(context, slug) }
+            }
+
+            if (platformIconUri != null) {
+                Box(contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(Dimens.iconLg),
+                        color = accentColor,
+                        strokeWidth = Dimens.borderMedium
+                    )
+                    AsyncImage(
+                        model = platformIconUri,
+                        contentDescription = null,
+                        contentScale = ContentScale.Fit,
+                        modifier = Modifier.size(Dimens.iconSm)
+                    )
+                }
+            } else {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(Dimens.iconSm + Dimens.borderMedium),
+                    color = accentColor,
+                    strokeWidth = Dimens.borderMedium
+                )
+            }
 
             Spacer(modifier = Modifier.width(Dimens.spacingSm))
 

@@ -576,7 +576,7 @@ object LibretroCoreRegistry {
      * Platforms whose only built-in core cannot produce a state at all. `cdi` is here because
      * SAME CDi declares `savestate = "false"` upstream, not because of an observed crash.
      */
-    val PLATFORMS_WITHOUT_STATE_SUPPORT = setOf("psp", "cdi")
+    val PLATFORMS_WITHOUT_STATE_SUPPORT = setOf("psp", "cdi", "3ds")
 
     fun serializeMayCrash(coreId: String?): Boolean = coreId in unsafeSerializeCores
 

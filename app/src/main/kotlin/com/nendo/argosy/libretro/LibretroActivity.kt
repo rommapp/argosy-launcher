@@ -2833,7 +2833,9 @@ class LibretroActivity : ComponentActivity() {
         if (secondScreenDisplay() == null) return
 
         dualScreenOutput = output
-        retroView.updateVariables(Variable(output.layoutOptionKey, output.layoutOptionValue))
+        output.coreOptions.forEach { (key, value) ->
+            retroView.updateVariables(Variable(key, value))
+        }
         retroView.setScreenSplit(output.primary, output.primaryAspect)
         retroView.secondaryCrop = output.secondary
         retroView.secondaryAspectRatio = output.secondaryAspect
@@ -2872,9 +2874,22 @@ class LibretroActivity : ComponentActivity() {
             Log.w(TAG, "Second screen: no display to show on yet")
             return
         }
-        val presentation = SecondScreenPresentation(this, display) { surface ->
-            if (::retroView.isInitialized) retroView.setSecondaryOutput(surface)
-        }
+        val presentation = SecondScreenPresentation(
+            context = this,
+            display = display,
+            onSurfaceChanged = { surface ->
+                if (::retroView.isInitialized) retroView.setSecondaryOutput(surface)
+            },
+            onTouch = { x, y, width, height ->
+                val output = dualScreenOutput
+                if (output != null && ::retroView.isInitialized) {
+                    retroView.sendSecondaryTouch(output.frameTouchAt(x, y, width, height))
+                }
+            },
+            onTouchReleased = {
+                if (::retroView.isInitialized) retroView.sendSecondaryTouch(null)
+            }
+        )
         val shown = runCatching { presentation.show() }
             .onFailure { Log.w(TAG, "Second screen could not be shown: ${it.message}") }
             .isSuccess

@@ -135,6 +135,16 @@ class GLRetroView(
      * Splits a two-screen console's frame across the displays. Held below the video settings, so
      * applying an aspect ratio or an overscan crop does not clear it.
      */
+    /**
+     * A touch on the second display, given as a position in the whole frame rather than in the
+     * screen being shown there: the core composites both screens into that frame and decides for
+     * itself which part its touch screen occupies. Pass null to lift the touch.
+     */
+    fun sendSecondaryTouch(position: PointF?) {
+        val point = position ?: TOUCH_EVENT_OUTSIDE
+        LibretroDroid.onMotionEvent(0, MOTION_SOURCE_POINTER, point.x, point.y)
+    }
+
     fun setScreenSplit(primaryCrop: RectF?, primaryAspectRatio: Float) {
         val crop = primaryCrop ?: RectF(0f, 0f, 0f, 0f)
         runOnGLThread {

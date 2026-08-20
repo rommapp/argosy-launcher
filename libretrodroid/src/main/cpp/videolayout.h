@@ -50,6 +50,10 @@ public:
     std::array<float, 12>& getTextureCoordinates() { return textureCoordinates; }
     std::array<float, 4>& getRelativeForegroundBounds() { return relativeForegroundBounds; }
 
+    float getAspectRatio() { return aspectRatio; }
+
+    bool isBottomLeftOrigin() { return bottomLeftOrigin; }
+
     int getScreenWidth() { return screenWidth; }
 
     int getScreenHeight() { return screenHeight; }

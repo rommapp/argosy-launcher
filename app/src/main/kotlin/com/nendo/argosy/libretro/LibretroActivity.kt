@@ -285,6 +285,8 @@ class LibretroActivity : ComponentActivity() {
         get() = if (::netplay.isInitialized) netplay.isGuestJoinedSession else false
     private var corePath: String = ""
     private var resolvedCoreId: String? = null
+    private var dualScreenOutput: DualScreenOutput? = null
+    private var secondScreen: SecondScreenPresentation? = null
 
     private var isGamepadConnectedState by mutableStateOf(false)
     private var currentOrientationState by mutableStateOf(android.content.res.Configuration.ORIENTATION_LANDSCAPE)
@@ -517,6 +519,7 @@ class LibretroActivity : ComponentActivity() {
         )
 
         buildContentView()
+        setUpSecondScreen()
 
         if (gameId != -1L) {
             val isNewGame = launchMode == LaunchMode.NEW_CASUAL || launchMode == LaunchMode.NEW_HARDCORE
@@ -2814,7 +2817,77 @@ class LibretroActivity : ComponentActivity() {
         autoSaveStateCaptured = false
         enterImmersiveMode()
         retroView.onResume()
+        showSecondScreen()
         startRollingSave()
+    }
+
+    /**
+     * Puts the console's lower screen on the other display, for the cores that have one.
+     *
+     * The crops assume the core's own screen arrangement, so the layout option that produces it is
+     * set alongside them rather than left to whatever the user last chose.
+     */
+    private fun setUpSecondScreen() {
+        if (!isDualScreenMode()) return
+        val output = DualScreenOutput.forCore(resolvedCoreId) ?: return
+        if (secondScreenDisplay() == null) return
+
+        dualScreenOutput = output
+        retroView.updateVariables(Variable(output.layoutOptionKey, output.layoutOptionValue))
+        retroView.setScreenSplit(output.primary, output.primaryAspect)
+        retroView.secondaryCrop = output.secondary
+        retroView.secondaryAspectRatio = output.secondaryAspect
+    }
+
+    /**
+     * Whether the launcher is running as two screens right now, which is the only state a console's
+     * second screen belongs in. A display being attached is not enough: dual screen can be off in
+     * settings, or latched off after the companion failed to come up on this device.
+     */
+    private fun isDualScreenMode(): Boolean =
+        com.nendo.argosy.DualScreenManagerHolder.instance
+            ?.displayAffinityHelper
+            ?.hasSecondaryDisplay == true
+
+    /**
+     * The display the second screen belongs on: any usable display that is not the game's own.
+     */
+    private fun secondScreenDisplay(): android.view.Display? {
+        val displayManager = getSystemService(android.content.Context.DISPLAY_SERVICE)
+            as android.hardware.display.DisplayManager
+        val gameDisplayId = windowManager.defaultDisplay.displayId
+        return displayManager.displays.firstOrNull {
+            it.displayId != gameDisplayId && it.isValid
+        }
+    }
+
+    /**
+     * Rebuilds the second screen's window. Its surface belongs to the display, not to us, so it is
+     * taken down whenever this activity leaves and built again on the way back rather than kept.
+     */
+    private fun showSecondScreen() {
+        if (dualScreenOutput == null || secondScreen != null) return
+        val display = secondScreenDisplay()
+        if (display == null) {
+            Log.w(TAG, "Second screen: no display to show on yet")
+            return
+        }
+        val presentation = SecondScreenPresentation(this, display) { surface ->
+            if (::retroView.isInitialized) retroView.setSecondaryOutput(surface)
+        }
+        val shown = runCatching { presentation.show() }
+            .onFailure { Log.w(TAG, "Second screen could not be shown: ${it.message}") }
+            .isSuccess
+        secondScreen = presentation.takeIf { shown }
+        Log.i(TAG, "Second screen: show on display ${display.displayId} shown=$shown")
+    }
+
+    private fun hideSecondScreen() {
+        secondScreen?.let { presentation ->
+            secondScreen = null
+            runCatching { presentation.dismiss() }
+        }
+        if (::retroView.isInitialized) retroView.setSecondaryOutput(null)
     }
 
     private val isHwCore: Boolean
@@ -2846,6 +2919,7 @@ class LibretroActivity : ComponentActivity() {
     }
 
     override fun onPause() {
+        hideSecondScreen()
         stopRollingSave()
         Log.i(
             TAG,
@@ -3052,6 +3126,7 @@ class LibretroActivity : ComponentActivity() {
 
     override fun onDestroy() {
         Log.d(TAG, "onDestroy: isFinishing=$isFinishing, isChangingConfigurations=$isChangingConfigurations")
+        hideSecondScreen()
         coreDestroyed = true
         if (isFinishing) speedrunTimer.disarm()
         unregisterGamepadDetection()

@@ -18,6 +18,7 @@
 #include <jni.h>
 
 #include <EGL/egl.h>
+#include <android/native_window_jni.h>
 
 #include <memory>
 #include <string>
@@ -845,6 +846,53 @@ JNIEXPORT void JNICALL Java_com_swordfish_libretrodroid_LibretroDroid_setTexture
     jfloat bottom
 ) {
     LibretroDroid::getInstance().setTextureCrop(left, top, right, bottom);
+}
+
+JNIEXPORT void JNICALL Java_com_swordfish_libretrodroid_LibretroDroid_setSecondaryOutput(
+    JNIEnv* env,
+    jclass obj,
+    jobject surface
+) {
+    ANativeWindow* window = surface != nullptr
+        ? ANativeWindow_fromSurface(env, surface)
+        : nullptr;
+    LibretroDroid::getInstance().setSecondaryWindow(window);
+}
+
+JNIEXPORT void JNICALL Java_com_swordfish_libretrodroid_LibretroDroid_setSecondaryCrop(
+    JNIEnv* env,
+    jclass obj,
+    jfloat left,
+    jfloat top,
+    jfloat right,
+    jfloat bottom
+) {
+    LibretroDroid::getInstance().setSecondaryCrop(left, top, right, bottom);
+}
+
+JNIEXPORT void JNICALL Java_com_swordfish_libretrodroid_LibretroDroid_setSecondaryAspectRatio(
+    JNIEnv* env,
+    jclass obj,
+    jfloat aspectRatio
+) {
+    LibretroDroid::getInstance().setSecondaryAspectRatio(aspectRatio);
+}
+
+JNIEXPORT void JNICALL Java_com_swordfish_libretrodroid_LibretroDroid_setScreenSplit(
+    JNIEnv* env,
+    jclass obj,
+    jboolean enabled,
+    jfloat primaryLeft,
+    jfloat primaryTop,
+    jfloat primaryRight,
+    jfloat primaryBottom,
+    jfloat primaryAspectRatio
+) {
+    LibretroDroid::getInstance().setScreenSplit(
+        enabled,
+        primaryLeft, primaryTop, primaryRight, primaryBottom,
+        primaryAspectRatio
+    );
 }
 
 JNIEXPORT void JNICALL Java_com_swordfish_libretrodroid_LibretroDroid_refreshAspectRatio(

@@ -35,6 +35,7 @@
 #include "audio.h"
 #include "video.h"
 #include "renderers/renderer.h"
+#include "secondaryoutput.h"
 #include "fpssync.h"
 #include "input.h"
 #include "rumble.h"
@@ -169,6 +170,35 @@ public:
     void setFilterMode(int mode);
     void setIntegerScaling(bool enabled);
     void setTextureCrop(float left, float top, float right, float bottom);
+
+    /**
+     * Presents the same frame on a second display, showing the region [left, top, right, bottom]
+     * of the core's framebuffer. Pass a null window to stop; the window is adopted and released
+     * on the GL thread, so the caller may drop its reference immediately.
+     */
+    void setSecondaryWindow(ANativeWindow* window);
+
+    void setSecondaryCrop(float left, float top, float right, float bottom);
+
+    /**
+     * The aspect ratio of the cropped screen, so the other display centres it as its own picture
+     * rather than as a slice of the whole frame. Zero keeps the frame's own ratio.
+     */
+    void setSecondaryAspectRatio(float aspectRatio);
+
+    /**
+     * Splits a two-screen console's frame across the displays: the primary keeps [primaryCrop] at
+     * [primaryAspectRatio], the second display gets the rest.
+     *
+     * The split is held here rather than pushed through the texture crop and aspect override,
+     * because those belong to the video settings and are rewritten whenever they are applied. A
+     * user crop still composes on top of the split.
+     */
+    void setScreenSplit(
+        bool enabled,
+        float primaryLeft, float primaryTop, float primaryRight, float primaryBottom,
+        float primaryAspectRatio
+    );
     void setBlackFrameInsertion(bool enabled);
     void renderBlackFrame();
 
@@ -229,6 +259,19 @@ private:
 
     float defaultAspectRatio = 1.0;
     bool dirtyVideo = false;
+
+    void renderSecondaryFrame();
+    void applyPrimaryCrop();
+    void orientSplitCrop(const float* source, float* target);
+
+    SecondaryOutput secondaryOutput;
+    float requestedCrop[4] = { 0.0F, 0.0F, 0.0F, 0.0F };
+    float primaryCrop[4] = { 0.0F, 0.0F, 0.0F, 0.0F };
+    bool screenSplitEnabled = false;
+    float splitPrimaryCrop[4] = { 0.0F, 0.0F, 0.0F, 0.0F };
+    float splitPrimaryAspect = 0.0F;
+    float secondaryCrop[4] = { 0.0F, 0.0F, 0.0F, 0.0F };
+    float secondaryAspect = 0.0F;
 
     std::unique_ptr<Core> core;
     std::unique_ptr<Audio> audio;

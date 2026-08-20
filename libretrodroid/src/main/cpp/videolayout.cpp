@@ -304,10 +304,17 @@ void VideoLayout::setHWFrameCrop(float left, float right, float top, float botto
 }
 
 void VideoLayout::updateTextureCoordinates() {
-    float u0 = cropLeft + hwCropLeft;
-    float u1 = 1.0F - cropRight - hwCropRight;
-    float v0 = cropTop + hwCropTop;
-    float v1 = 1.0F - cropBottom - hwCropBottom;
+    // A hardware core draws its frame into one corner of a much larger framebuffer, so the two
+    // crops are not in the same units: the hw crop selects the frame, and the requested crop is a
+    // fraction OF that frame. Added together instead, cropping half of a 400x480 frame that lives
+    // in a 7200x4800 buffer runs the coordinates past each other and nothing is drawn at all.
+    float usedU = 1.0F - hwCropLeft - hwCropRight;
+    float usedV = 1.0F - hwCropTop - hwCropBottom;
+
+    float u0 = hwCropLeft + cropLeft * usedU;
+    float u1 = 1.0F - hwCropRight - cropRight * usedU;
+    float v0 = hwCropTop + cropTop * usedV;
+    float v1 = 1.0F - hwCropBottom - cropBottom * usedV;
 
     // Triangle 1: TL, BL, TR
     textureCoordinates[0] = u0;  textureCoordinates[1] = v0;

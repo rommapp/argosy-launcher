@@ -92,6 +92,8 @@ add_library(libretrodroid SHARED
         backgroundframe.cpp
         videolayout.h
         videolayout.cpp
+        secondaryoutput.h
+        secondaryoutput.cpp
         renderers/renderer.h
         renderers/renderer.cpp
         renderers/es3/es3utils.h

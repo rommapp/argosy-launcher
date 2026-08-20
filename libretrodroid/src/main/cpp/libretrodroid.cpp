@@ -626,6 +626,8 @@ void LibretroDroid::destroy() {
     LOGD("Performing libretrodroid destroy");
     ScopedSignalStackGuard signalStackGuard;
 
+    secondaryOutput.destroy();
+
     auto contextDestroy = Environment::getInstance().getHwContextDestroy();
     if (contextDestroy != nullptr && video && video->isHWAccelerated()) {
         video->bindHWContext();
@@ -739,6 +741,11 @@ void LibretroDroid::step() {
         achievements.evaluateFrame();
     }
 
+    // The second display is drawn before the game's own frame, never after: changing the draw
+    // surface between the emulator's draw and the swap that presents it loses that frame on
+    // Adreno, so the primary's draw and its swap stay adjacent with nothing in between.
+    renderSecondaryFrame();
+
     if (video && !video->rendersInVideoCallback()) {
         video->renderFrame();
     }
@@ -817,6 +824,11 @@ void LibretroDroid::stepForNetplay() {
     if (achievements.isActive()) {
         achievements.evaluateFrame();
     }
+
+    // The second display is drawn before the game's own frame, never after: changing the draw
+    // surface between the emulator's draw and the swap that presents it loses that frame on
+    // Adreno, so the primary's draw and its swap stay adjacent with nothing in between.
+    renderSecondaryFrame();
 
     if (video && !video->rendersInVideoCallback()) {
         video->renderFrame();
@@ -951,7 +963,12 @@ float LibretroDroid::getAspectRatio() {
 }
 
 void LibretroDroid::refreshAspectRatio() {
-    if (video) video->updateAspectRatio(getAspectRatio());
+    if (!video) return;
+    if (screenSplitEnabled && splitPrimaryAspect > 0.0F) {
+        video->updateAspectRatio(splitPrimaryAspect);
+        return;
+    }
+    video->updateAspectRatio(getAspectRatio());
 }
 
 void LibretroDroid::setAspectRatioOverride(float ratio) {
@@ -1194,9 +1211,123 @@ void LibretroDroid::setViewport(Rect viewportRect) {
 }
 
 void LibretroDroid::setTextureCrop(float left, float top, float right, float bottom) {
-    if (video != nullptr) {
-        video->setTextureCrop(left, top, right, bottom);
+    requestedCrop[0] = left;
+    requestedCrop[1] = top;
+    requestedCrop[2] = right;
+    requestedCrop[3] = bottom;
+    applyPrimaryCrop();
+}
+
+/**
+ * Combines what the video settings asked for with the screen split, so applying one never drops
+ * the other. Both are fractions of the same frame, so they add.
+ */
+void LibretroDroid::applyPrimaryCrop() {
+    float split[4] = { 0.0F, 0.0F, 0.0F, 0.0F };
+    if (screenSplitEnabled) {
+        orientSplitCrop(splitPrimaryCrop, split);
     }
+    for (int i = 0; i < 4; i++) {
+        primaryCrop[i] = requestedCrop[i] + split[i];
+    }
+    if (video != nullptr) {
+        video->setTextureCrop(primaryCrop[0], primaryCrop[1], primaryCrop[2], primaryCrop[3]);
+    }
+}
+
+/**
+ * Restates a split crop in the frame's own coordinates.
+ *
+ * A split is written as the picture reads - the console's upper screen is the upper part - but a
+ * hardware-rendered frame arrives bottom row first, which puts that screen in the lower half of
+ * the texture. The vertical trims swap when the frame does, so the same table serves a core whose
+ * renderer can be switched between software and OpenGL at runtime.
+ */
+void LibretroDroid::orientSplitCrop(const float* source, float* target) {
+    target[0] = source[0];
+    target[2] = source[2];
+    bool flipped = video != nullptr && video->getLayout().isBottomLeftOrigin();
+    target[1] = flipped ? source[3] : source[1];
+    target[3] = flipped ? source[1] : source[3];
+}
+
+void LibretroDroid::setScreenSplit(
+    bool enabled,
+    float primaryLeft, float primaryTop, float primaryRight, float primaryBottom,
+    float primaryAspectRatio
+) {
+    screenSplitEnabled = enabled;
+    splitPrimaryCrop[0] = primaryLeft;
+    splitPrimaryCrop[1] = primaryTop;
+    splitPrimaryCrop[2] = primaryRight;
+    splitPrimaryCrop[3] = primaryBottom;
+    splitPrimaryAspect = primaryAspectRatio;
+    applyPrimaryCrop();
+    refreshAspectRatio();
+}
+
+void LibretroDroid::setSecondaryWindow(ANativeWindow* window) {
+    secondaryOutput.setWindow(window);
+}
+
+void LibretroDroid::setSecondaryCrop(float left, float top, float right, float bottom) {
+    secondaryCrop[0] = left;
+    secondaryCrop[1] = top;
+    secondaryCrop[2] = right;
+    secondaryCrop[3] = bottom;
+}
+
+void LibretroDroid::setSecondaryAspectRatio(float aspectRatio) {
+    secondaryAspect = aspectRatio;
+}
+
+/**
+ * Draws the frame already on screen a second time, into the other display's window.
+ *
+ * The layout is the emulator's own, so it is borrowed rather than duplicated: the secondary size
+ * and crop are applied, the frame is drawn, and the primary values are put back before the caller
+ * sees the layout again. A frame that cannot bind is skipped rather than retried, because the
+ * window is rebuilt by the display's own lifecycle.
+ */
+void LibretroDroid::renderSecondaryFrame() {
+    if (video == nullptr || !secondaryOutput.hasWindow()) {
+        return;
+    }
+    if (!secondaryOutput.beginFrame()) {
+        return;
+    }
+
+    static bool loggedFirstFrame = false;
+    if (!loggedFirstFrame) {
+        loggedFirstFrame = true;
+        LOGI(
+            "Secondary output: drawing %u x %u",
+            secondaryOutput.getWidth(),
+            secondaryOutput.getHeight()
+        );
+    }
+
+    auto& layout = video->getLayout();
+    unsigned primaryWidth = layout.getScreenWidth();
+    unsigned primaryHeight = layout.getScreenHeight();
+    float primaryAspect = layout.getAspectRatio();
+
+    // Video::updateScreenSize re-caches the hardware core's window surface from whatever is
+    // current, so going through it here would hand the core this window and strand the game's own.
+    // The layout centres what it draws by aspect ratio, and that ratio belongs to the whole frame.
+    // A cropped screen has its own, so it travels with the crop or the picture is drawn squashed.
+    float secondary[4];
+    orientSplitCrop(secondaryCrop, secondary);
+    layout.setTextureCrop(secondary[0], secondary[1], secondary[2], secondary[3]);
+    if (secondaryAspect > 0.0F) layout.updateAspectRatio(secondaryAspect);
+    layout.updateScreenSize(secondaryOutput.getWidth(), secondaryOutput.getHeight());
+    video->renderFrame(true);
+
+    layout.setTextureCrop(primaryCrop[0], primaryCrop[1], primaryCrop[2], primaryCrop[3]);
+    layout.updateAspectRatio(primaryAspect);
+    layout.updateScreenSize(primaryWidth, primaryHeight);
+
+    secondaryOutput.endFrame();
 }
 
 void LibretroDroid::initAchievements(const std::vector<AchievementDef>& achievementDefs, uint32_t consoleId) {

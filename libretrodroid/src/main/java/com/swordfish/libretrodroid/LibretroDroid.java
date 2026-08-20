@@ -129,6 +129,17 @@ public class LibretroDroid {
     public static native void clearBackgroundFrame();
     public static native void setViewport(float x, float y, float width, float height);
     public static native void setTextureCrop(float left, float top, float right, float bottom);
+    public static native void setSecondaryOutput(android.view.Surface surface);
+    public static native void setSecondaryCrop(float left, float top, float right, float bottom);
+    public static native void setSecondaryAspectRatio(float aspectRatio);
+    public static native void setScreenSplit(
+        boolean enabled,
+        float primaryLeft,
+        float primaryTop,
+        float primaryRight,
+        float primaryBottom,
+        float primaryAspectRatio
+    );
 
     public static native byte[] serializeState();
     public static native boolean unserializeState(byte[] state);

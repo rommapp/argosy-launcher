@@ -112,6 +112,55 @@ class GLRetroView(
         }
     }
 
+    /**
+     * The part of the frame drawn on the second display, as a crop of the core's framebuffer.
+     */
+    var secondaryCrop: RectF by Delegates.observable(RectF(0f, 0f, 0f, 0f)) { _, _, value ->
+        runOnGLThread {
+            LibretroDroid.setSecondaryCrop(value.left, value.top, value.right, value.bottom)
+        }
+    }
+
+    /**
+     * The aspect ratio of the cropped screen shown on the second display. Zero keeps the ratio of
+     * the whole frame, which squashes a screen that is only part of it.
+     */
+    var secondaryAspectRatio: Float by Delegates.observable(0f) { _, _, value ->
+        runOnGLThread {
+            LibretroDroid.setSecondaryAspectRatio(value)
+        }
+    }
+
+    /**
+     * Splits a two-screen console's frame across the displays. Held below the video settings, so
+     * applying an aspect ratio or an overscan crop does not clear it.
+     */
+    fun setScreenSplit(primaryCrop: RectF?, primaryAspectRatio: Float) {
+        val crop = primaryCrop ?: RectF(0f, 0f, 0f, 0f)
+        runOnGLThread {
+            LibretroDroid.setScreenSplit(
+                primaryCrop != null,
+                crop.left,
+                crop.top,
+                crop.right,
+                crop.bottom,
+                primaryAspectRatio
+            )
+        }
+    }
+
+    /**
+     * Presents the frame on a second display, or stops when given null.
+     *
+     * Hand over the surface a Presentation just created and null the moment it is destroyed. The
+     * window is adopted on the GL thread, so a surface withdrawn here is never drawn into again.
+     */
+    fun setSecondaryOutput(surface: android.view.Surface?) {
+        runOnGLThread {
+            LibretroDroid.setSecondaryOutput(surface)
+        }
+    }
+
     var portResolver: PortResolver? = null
     var keyMapper: KeyMapper? = null
 

@@ -359,9 +359,18 @@ fun InGameSettingsScreen(
         controlsLayout.maxFocusIndex(controlsVisibility)
     }
 
+    /**
+     * The input handler is remembered once, so every bound it reads has to be a state it can
+     * re-read. Captured as values they froze at the composition that built the handler, and a
+     * later pass that changed how many rows are drawn left navigation addressing the old list.
+     */
+    val currentVideoLibretroCount = rememberUpdatedState(videoLibretroCount)
+    val currentMaxVideoFocusIndex = rememberUpdatedState(maxVideoFocusIndex)
+    val currentControlsMaxFocusIndex = rememberUpdatedState(controlsMaxFocusIndex)
+
     fun getMaxFocusIndex(): Int = when (currentTab) {
-        InGameSettingsTab.VIDEO -> maxVideoFocusIndex
-        InGameSettingsTab.CONTROLS -> controlsMaxFocusIndex
+        InGameSettingsTab.VIDEO -> currentMaxVideoFocusIndex.value
+        InGameSettingsTab.CONTROLS -> currentControlsMaxFocusIndex.value
         InGameSettingsTab.CORE_OPTIONS -> {
             val offset = if (currentPerGameSupported.value) 1 else 0
             (currentCoreOptions.value.size - 1 + offset).coerceAtLeast(0)
@@ -381,7 +390,7 @@ fun InGameSettingsScreen(
 
     fun getHudItemAtIndex(index: Int): InGameHudItem? =
         if (currentTab == InGameSettingsTab.VIDEO) {
-            InGameHudItem.entries.getOrNull(index - videoLibretroCount)
+            InGameHudItem.entries.getOrNull(index - currentVideoLibretroCount.value)
         } else {
             null
         }

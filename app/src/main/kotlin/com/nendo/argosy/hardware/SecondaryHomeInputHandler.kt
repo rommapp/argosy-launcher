@@ -409,6 +409,9 @@ class SecondaryHomeInputHandler(
                     broadcasts.broadcastCollectionModalOpen(vm)
                 }
             }
+            GameDetailOption.TITLE_ID -> {
+                broadcasts.broadcastDirectAction("REFRESH_TITLE_ID", gameId)
+            }
             GameDetailOption.FILES -> {
                 broadcasts.broadcastDirectAction("FILES", gameId)
             }

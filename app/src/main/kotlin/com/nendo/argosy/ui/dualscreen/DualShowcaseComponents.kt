@@ -77,12 +77,18 @@ fun ShowcaseAmbience(artPath: String?) {
 }
 
 @Composable
-fun ShowcaseEyebrow(platformName: String?, releaseYear: Int?, developer: String?) {
+fun ShowcaseEyebrow(
+    platformName: String?,
+    releaseYear: Int?,
+    developer: String?,
+    titleId: String? = null
+) {
     Text(
         text = listOfNotNull(
             platformName?.takeIf { it.isNotBlank() }?.uppercase(),
             releaseYear?.toString(),
-            developer
+            developer,
+            titleId?.takeIf { it.isNotBlank() }
         ).joinToString("  ·  "),
         style = MaterialTheme.typography.labelLarge.copy(letterSpacing = 1.5.sp),
         color = LocalArgosyTheme.current.focusAccent

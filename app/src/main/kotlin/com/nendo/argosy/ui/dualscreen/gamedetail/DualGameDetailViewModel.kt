@@ -25,6 +25,7 @@ import com.nendo.argosy.data.emulator.EmulatorRegistry
 import com.nendo.argosy.data.download.ZipExtractor
 import com.nendo.argosy.data.steam.SteamDownloadState
 import com.nendo.argosy.ui.common.appId
+import com.nendo.argosy.ui.common.displayTitleId
 import com.nendo.argosy.ui.common.isAndroidApp
 import com.nendo.argosy.ui.common.isRommGame
 import com.nendo.argosy.ui.common.isSteamGame
@@ -451,7 +452,8 @@ class DualGameDetailViewModel(
                 activeChannel = activeChannel,
                 activeSaveTimestamp = activeSaveTimestamp,
                 isMultiDisc = game.isMultiDisc,
-                isHidden = gameRepository.isGameHidden(game.id)
+                isHidden = gameRepository.isGameHidden(game.id),
+                titleId = game.displayTitleId
             )
             val sameGame = _uiState.value.gameId == game.id
             _uiState.value = newState

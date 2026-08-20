@@ -635,6 +635,7 @@ class DualGameDetailInputHandler(
                     onBroadcastCollectionModalOpen(vm)
                 }
             }
+            GameDetailOption.TITLE_ID -> onBroadcastDirectAction("REFRESH_TITLE_ID", gameId, null)
             GameDetailOption.FILES -> onBroadcastDirectAction("FILES", gameId, null)
             GameDetailOption.REFRESH_METADATA -> onBroadcastDirectAction("REFRESH_METADATA", gameId, null)
             GameDetailOption.DELETE -> onBroadcastDirectAction("DELETE", gameId, null)

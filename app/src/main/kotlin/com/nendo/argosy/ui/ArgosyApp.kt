@@ -1862,6 +1862,9 @@ fun ArgosyApp(
                                             )
                                         }
                                     }
+                                    GameDetailOption.TITLE_ID -> {
+                                        dualScreenManager.handleDirectAction("REFRESH_TITLE_ID", gameId)
+                                    }
                                     GameDetailOption.FILES -> {
                                         dualScreenManager.handleDirectAction("FILES", gameId)
                                     }

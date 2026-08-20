@@ -11,6 +11,7 @@ import com.nendo.argosy.data.emulator.EmulatorRegistry
 import com.nendo.argosy.data.emulator.LaunchConfig
 import com.nendo.argosy.data.emulator.EmulatorResolver
 import com.nendo.argosy.data.emulator.SavePathRegistry
+import com.nendo.argosy.data.emulator.TitleIdRecheck
 import com.nendo.argosy.data.launcher.SteamLaunchers
 import com.nendo.argosy.data.local.dao.EmulatorConfigDao
 import com.nendo.argosy.data.local.dao.GameDiscDao
@@ -39,6 +40,7 @@ import com.nendo.argosy.core.notification.NotificationManager
 import com.nendo.argosy.core.notification.showError
 import com.nendo.argosy.core.notification.showSuccess
 import com.nendo.argosy.ui.common.isAndroidApp
+import com.nendo.argosy.ui.common.reportTitleIdRecheck
 import com.nendo.argosy.ui.common.isSteamGame
 import com.nendo.argosy.ui.common.toHomeGameUi
 import com.nendo.argosy.ui.screens.common.CollectionModalDelegate
@@ -1729,8 +1731,9 @@ class GameDetailViewModel @Inject constructor(
     private fun refreshTitleId() {
         val gameId = _uiState.value.game?.id ?: return
         viewModelScope.launch {
-            moreOptionsDelegate.reset()
-            titleIdDownloadObserver.extractTitleIdForGame(gameId)
+            val result = titleIdDownloadObserver.recheckTitleId(gameId)
+            if (result is TitleIdRecheck.Found) loadGame(gameId)
+            notificationManager.reportTitleIdRecheck(result)
         }
     }
 

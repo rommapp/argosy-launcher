@@ -46,6 +46,7 @@ import androidx.compose.material.icons.filled.Album
 import androidx.compose.material.icons.filled.SdCard
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.Tag
 import androidx.compose.material.icons.filled.Checklist
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
@@ -179,6 +180,7 @@ fun DualGameDetailLowerScreen(
                         activeSaveTimestamp = state.activeSaveTimestamp,
                         saveSyncStatusName = state.saveSyncStatusName,
                         isHidden = state.isHidden,
+                        titleId = state.titleId,
                         selectedIndex = selectedOptionIndex,
                         onOptionSelected = onOptionSelected
                     )
@@ -752,6 +754,7 @@ private fun OptionsTabContent(
     activeSaveTimestamp: Long?,
     saveSyncStatusName: String?,
     isHidden: Boolean,
+    titleId: String?,
     selectedIndex: Int,
     onOptionSelected: (GameDetailOption) -> Unit
 ) {
@@ -905,6 +908,9 @@ private fun OptionsTabContent(
         GameDetailOption.SELECT_DISC -> OptionEntry(
             option, Icons.Filled.Album, "Select Disc"
         )
+        GameDetailOption.TITLE_ID -> OptionEntry(
+            option, Icons.Filled.Tag, "Title ID", titleId ?: "Not detected"
+        )
         GameDetailOption.FILES -> OptionEntry(
             option, Icons.Filled.Checklist, "Files"
         )
@@ -938,6 +944,7 @@ private fun OptionsTabContent(
         GameDetailOption.MEMORY_CARD,
         GameDetailOption.SELECT_VARIANT,
         GameDetailOption.SELECT_DISC,
+        GameDetailOption.TITLE_ID,
         GameDetailOption.FILES,
         GameDetailOption.ADD_TO_COLLECTION,
         GameDetailOption.REFRESH_METADATA

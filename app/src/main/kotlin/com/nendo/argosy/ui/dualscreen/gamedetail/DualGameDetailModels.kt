@@ -5,6 +5,7 @@ package com.nendo.argosy.ui.dualscreen.gamedetail
 
 import com.nendo.argosy.data.emulator.DiscOption
 import com.nendo.argosy.data.model.visibleWithCollapsed
+import com.nendo.argosy.data.platform.PlatformDefinitions
 import com.nendo.argosy.domain.model.UnifiedSaveEntry
 import com.nendo.argosy.domain.model.UnifiedStateEntry
 import com.nendo.argosy.ui.common.savechannel.SaveFocusColumn
@@ -36,6 +37,7 @@ enum class GameDetailOption {
     MEMORY_CARD,
     SELECT_VARIANT,
     SELECT_DISC,
+    TITLE_ID,
     FILES,
     ADD_TO_COLLECTION,
     REFRESH_METADATA,
@@ -100,11 +102,13 @@ data class DualGameDetailUiState(
     val downloadState: String? = null,
     val isDeleting: Boolean = false,
     val isMultiDisc: Boolean = false,
-    val isHidden: Boolean = false
+    val isHidden: Boolean = false,
+    val titleId: String? = null
 )
 
 fun DualGameDetailUiState.visibleOptions(): List<GameDetailOption> {
     val isEmulated = !isSteamGame && !isAndroidApp
+    val usesTitleId = platformSlug in PlatformDefinitions.TITLE_ID_PLATFORMS
     return buildList {
         if (!isDeleting) add(GameDetailOption.PLAY)
         add(GameDetailOption.RATING)
@@ -118,6 +122,7 @@ fun DualGameDetailUiState.visibleOptions(): List<GameDetailOption> {
         if (hasMultipleMemcards && isEmulated) add(GameDetailOption.MEMORY_CARD)
         if (hasMultipleVariants && isEmulated) add(GameDetailOption.SELECT_VARIANT)
         if (isMultiDisc && isEmulated) add(GameDetailOption.SELECT_DISC)
+        if (usesTitleId && isEmulated) add(GameDetailOption.TITLE_ID)
         if (isDownloaded && !isDeleting) add(GameDetailOption.FILES)
         add(GameDetailOption.ADD_TO_COLLECTION)
         if (isRommGame || isAndroidApp) add(GameDetailOption.REFRESH_METADATA)

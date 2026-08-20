@@ -414,7 +414,8 @@ private fun GameInfoDisplay(
                 ShowcaseEyebrow(
                     platformName = state.platformName,
                     releaseYear = state.releaseYear,
-                    developer = state.developer
+                    developer = state.developer,
+                    titleId = state.titleId
                 )
                 Spacer(modifier = Modifier.height(Dimens.spacingSm))
                 GameTitle(

@@ -135,7 +135,14 @@ class GameLauncherTest {
             notificationManager = mockk(relaxed = true),
             attributionRepository = mockk(relaxed = true),
             accountSwitchMarkerStore = mockk(relaxed = true),
-            extContentOrganizer = mockk(relaxed = true)
+            extContentOrganizer = mockk(relaxed = true),
+            baseRomFileResolver = BaseRomFileResolver(
+                context = context,
+                gameDao = gameDao,
+                gameFileDao = gameFileDao,
+                platformDao = platformDao,
+                userPreferencesRepository = userPreferencesRepository
+            )
         )
     }
 

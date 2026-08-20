@@ -2,6 +2,7 @@ package com.nendo.argosy.data.emulator
 
 import com.nendo.argosy.data.download.DownloadManager
 import com.nendo.argosy.data.local.dao.GameDao
+import com.nendo.argosy.data.local.entity.GameEntity
 import com.nendo.argosy.util.Logger
 import com.nendo.argosy.util.SafeCoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -14,12 +15,20 @@ private const val TAG = "TitleIdDownloadObserver"
 
 private val TITLE_ID_PLATFORMS = com.nendo.argosy.data.platform.PlatformDefinitions.TITLE_ID_PLATFORMS
 
+sealed interface TitleIdRecheck {
+    data class Found(val titleId: String, val replaced: String?) : TitleIdRecheck
+    data class NotFound(val fileName: String) : TitleIdRecheck
+    data object NoFile : TitleIdRecheck
+    data object Unsupported : TitleIdRecheck
+}
+
 @Singleton
 class TitleIdDownloadObserver @Inject constructor(
     private val downloadManager: DownloadManager,
     private val gameDao: GameDao,
     private val titleIdExtractor: TitleIdExtractor,
-    private val emulatorResolver: EmulatorResolver
+    private val emulatorResolver: EmulatorResolver,
+    private val baseRomFileResolver: BaseRomFileResolver
 ) {
     private val scope = SafeCoroutineScope(Dispatchers.IO, "TitleIdDownloadObserver")
 
@@ -83,11 +92,7 @@ class TitleIdDownloadObserver @Inject constructor(
             return true
         }
 
-        val romPath = game.localPath ?: return false
-        val romFile = File(romPath)
-        if (!romFile.exists()) {
-            return false
-        }
+        val romFile = resolveGameFile(game) ?: return false
 
         val emulatorPackage = emulatorResolver.getEmulatorPackageForGame(
             gameId,
@@ -95,7 +100,39 @@ class TitleIdDownloadObserver @Inject constructor(
             game.platformSlug
         )
 
-        return extractAndStoreTitleId(gameId, romFile, game.platformSlug, emulatorPackage)
+        return extractAndStoreTitleId(gameId, romFile, game.platformSlug, emulatorPackage) != null
+    }
+
+    /**
+     * Reads the title id off the game's own file again, past an established lock.
+     *
+     * Extraction gains platforms and formats over time, so the id a game carries is only as good
+     * as the reader that produced it, and a recheck has to be able to replace one.
+     */
+    suspend fun recheckTitleId(gameId: Long): TitleIdRecheck {
+        val game = gameDao.getById(gameId) ?: return TitleIdRecheck.Unsupported
+
+        if (game.platformSlug !in TITLE_ID_PLATFORMS) {
+            return TitleIdRecheck.Unsupported
+        }
+
+        val romFile = resolveGameFile(game) ?: return TitleIdRecheck.NoFile
+
+        val emulatorPackage = emulatorResolver.getEmulatorPackageForGame(
+            gameId,
+            game.platformId,
+            game.platformSlug
+        )
+
+        val titleId = extractAndStoreTitleId(gameId, romFile, game.platformSlug, emulatorPackage)
+            ?: return TitleIdRecheck.NotFound(romFile.name)
+        return TitleIdRecheck.Found(titleId, game.titleId?.takeIf { it != titleId })
+    }
+
+    private suspend fun resolveGameFile(game: GameEntity): File? {
+        val recorded = File(game.localPath ?: return null)
+        if (!recorded.exists()) return null
+        return baseRomFileResolver.resolve(game, recorded).takeIf { it.exists() }
     }
 
     private suspend fun extractAndStoreTitleId(
@@ -103,15 +140,15 @@ class TitleIdDownloadObserver @Inject constructor(
         romFile: File,
         platformSlug: String,
         emulatorPackage: String?
-    ): Boolean {
+    ): String? {
         val result = titleIdExtractor.extractTitleIdWithSource(romFile, platformSlug, emulatorPackage)
         if (result == null) {
             Logger.debug(TAG, "No title ID extracted for game $gameId from ${romFile.name}")
-            return false
+            return null
         }
 
         Logger.info(TAG, "Extracted title ID for game $gameId: ${result.titleId} (saveId=${result.saveId}, fromBinary=${result.fromBinary})")
         gameDao.setTitleAndSaveIdWithLock(gameId, result.titleId, result.saveId, result.fromBinary)
-        return true
+        return result.titleId
     }
 }

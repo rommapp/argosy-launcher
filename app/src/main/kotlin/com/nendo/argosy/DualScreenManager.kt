@@ -27,6 +27,8 @@ import com.nendo.argosy.data.remote.ra.RAConsoleIds
 import com.nendo.argosy.domain.usecase.achievement.FetchAchievementsUseCase
 import com.nendo.argosy.domain.usecase.save.GetUnifiedSavesUseCase
 import com.nendo.argosy.domain.usecase.save.RestoreCachedSaveUseCase
+import com.nendo.argosy.ui.common.displayTitleId
+import com.nendo.argosy.ui.common.reportTitleIdRecheck
 import com.nendo.argosy.ui.dualscreen.gamedetail.ActiveModal
 import com.nendo.argosy.ui.dualscreen.gamedetail.DualCollectionItem
 import com.nendo.argosy.ui.dualscreen.gamedetail.DualGameDetailUpperState
@@ -98,6 +100,7 @@ class DualScreenManager(
     internal val homeTilePromptQueue: com.nendo.argosy.data.repository.HomeTilePromptQueue,
     internal val appsRepository: com.nendo.argosy.data.repository.AppsRepository,
     private val notificationManager: com.nendo.argosy.core.notification.NotificationManager,
+    private val titleIdDownloadObserver: com.nendo.argosy.data.emulator.TitleIdDownloadObserver,
     internal val emulatorConfigDao: com.nendo.argosy.data.local.dao.EmulatorConfigDao,
     internal val configureEmulatorUseCase: com.nendo.argosy.domain.usecase.game.ConfigureEmulatorUseCase,
     internal val builtinCoreResolver: com.nendo.argosy.data.emulator.BuiltinCoreResolver,
@@ -959,7 +962,7 @@ class DualScreenManager(
                         rating = game.userRating.takeIf { it > 0 },
                         userDifficulty = game.userDifficulty,
                         communityRating = game.rating,
-                        titleId = game.raId?.toString()
+                        titleId = game.displayTitleId
                     )
                 }
             }
@@ -1169,6 +1172,7 @@ class DualScreenManager(
             "PLAY" -> handleDualPlay(gameId, channelName)
             "DOWNLOAD" -> handleDualDownload(gameId)
             "REFRESH_METADATA" -> handleDualRefresh(gameId)
+            "REFRESH_TITLE_ID" -> handleTitleIdRecheck(gameId)
             "RESYNC_PLATFORM" -> handleDualResyncPlatform(gameId)
             "DELETE" -> handleDualDelete(gameId)
             "HIDE" -> handleDualHide(gameId)
@@ -2251,6 +2255,20 @@ class DualScreenManager(
                     title = updated.title
                 )
             }
+        }
+    }
+
+    private fun handleTitleIdRecheck(gameId: Long) {
+        scope.launch(Dispatchers.IO) {
+            val result = titleIdDownloadObserver.recheckTitleId(gameId)
+            if (result is com.nendo.argosy.data.emulator.TitleIdRecheck.Found) {
+                _dualGameDetailState.update { s ->
+                    if (s?.gameId == gameId) s.copy(titleId = result.titleId) else s
+                }
+                companionHost?.onDirectActionResult("REFRESH_DONE", gameId)
+                _swappedGameDetailViewModel?.loadGame(gameId)
+            }
+            notificationManager.reportTitleIdRecheck(result)
         }
     }
 

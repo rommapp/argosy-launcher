@@ -121,8 +121,6 @@ fun DualHomeLowerScreen(
     onGameSelected: (Long) -> Unit,
     onCoverLoadFailed: (Long, String) -> Unit = { _, _ -> },
     onAppClick: (String) -> Unit,
-    onCollectionsClick: () -> Unit,
-    onLibraryToggle: () -> Unit,
     onViewAllClick: () -> Unit,
     onOpenDrawer: () -> Unit = {},
     mediaToggle: com.nendo.argosy.hardware.CompanionMediaToggle? = null,
@@ -230,39 +228,6 @@ fun DualHomeLowerScreen(
             .background(LocalArgosyTheme.current.surfaceBase)
             .surfaceBackdrop(BackdropRole.CONTENT)
     ) {
-        if (viewMode == DualHomeViewMode.CAROUSEL) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(LocalArgosyTheme.current.surfaceRaised.copy(alpha = 0.4f))
-                    .padding(horizontal = Dimens.spacingLg, vertical = Dimens.spacingXs),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                ActionButton(onClick = onCollectionsClick) {
-                    Icon(
-                        Icons.Default.Folder,
-                        contentDescription = null,
-                        tint = LocalArgosyTheme.current.textPrimary,
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(
-                        text = "Collections",
-                        style = MaterialTheme.typography.labelLarge,
-                        color = LocalArgosyTheme.current.textPrimary
-                    )
-                }
-                IconButton(onClick = onLibraryToggle) {
-                    Icon(
-                        Icons.Default.GridView,
-                        contentDescription = "Library Grid",
-                        tint = LocalArgosyTheme.current.textDim
-                    )
-                }
-            }
-        }
-
         if (viewMode == DualHomeViewMode.CAROUSEL && !isCustomGrid && sectionLabels.isNotEmpty()) {
             SectionBreadcrumb(
                 labels = sectionLabels,

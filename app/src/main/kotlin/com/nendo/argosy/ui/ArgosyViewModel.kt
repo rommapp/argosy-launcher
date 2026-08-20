@@ -563,11 +563,6 @@ class ArgosyViewModel @Inject constructor(
         DrawerItem(Screen.Settings.route, "Settings")
     )
 
-    private val dualScreenHiddenRoutes = setOf(
-        Screen.Collections.route,
-        Screen.Library.route
-    )
-
     private var _isDualScreenMode = false
 
     private var _isMediaSignedIn = false
@@ -575,9 +570,6 @@ class ArgosyViewModel @Inject constructor(
     val drawerItems: List<DrawerItem>
         get() {
             var items = allDrawerItems
-            if (_isDualScreenMode) {
-                items = items.filter { it.route !in dualScreenHiddenRoutes }
-            }
             if (socialRepository.connectionState.value !is SocialConnectionState.Connected) {
                 items = items.filter { it.route != Screen.Social.route }
             }

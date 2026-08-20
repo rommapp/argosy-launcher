@@ -218,12 +218,6 @@ class SecondaryHomeActivity :
                             dualGameDetailViewModel = dualGameDetailViewModel,
                             onAppClick = ::launchApp,
                             onGameSelected = ::selectGame,
-                            onCollectionsClick = {
-                                dualHomeViewModel.enterCollections()
-                                broadcasts.broadcastViewModeChange()
-                                broadcasts.broadcastCollectionFocused()
-                            },
-                            onLibraryToggle = ::handleLibraryToggle,
                             onViewAllClick = ::handleViewAllClick,
                             onCollectionTapped = ::handleCollectionTapped,
                             onGridGameTapped = ::handleGridGameTapped,
@@ -1040,17 +1034,6 @@ class SecondaryHomeActivity :
                 quickActionsAvailable = dsm.sessionQuickActions != null,
                 hasQuickSave = dsm.companionHasQuickSave
             )
-        }
-    }
-
-    private fun handleLibraryToggle() {
-        dualHomeViewModel.toggleLibraryGrid {
-            broadcasts.broadcastViewModeChange()
-            val state = dualHomeViewModel.uiState.value
-            if (state.viewMode == DualHomeViewMode.LIBRARY_GRID)
-                broadcasts.broadcastLibraryGameSelection()
-            else
-                broadcasts.broadcastCurrentGameSelection()
         }
     }
 

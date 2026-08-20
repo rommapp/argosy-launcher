@@ -1700,26 +1700,6 @@ fun ArgosyApp(
                                     context.startActivity(launchIntent)
                                 }
                             },
-                            onCollectionsClick = {
-                                swappedVm.enterCollections()
-                                dualScreenManager.onViewModeChanged(DualHomeViewMode.COLLECTIONS.name, false, false)
-                                pushSwappedCollectionShowcase()
-                            },
-                            onLibraryToggle = {
-                                swappedVm.toggleLibraryGrid {
-                                    dualScreenManager.onViewModeChanged(
-                                        swappedVm.uiState.value.viewMode.name, false, false
-                                    )
-                                    if (swappedVm.uiState.value.viewMode == DualHomeViewMode.LIBRARY_GRID) {
-                                        val state = swappedVm.uiState.value
-                                        val game = state.libraryGames.getOrNull(state.libraryFocusedIndex)
-                                        if (game != null) dualScreenManager.onGameSelected(game.toShowcaseState())
-                                    } else {
-                                        val game = swappedVm.uiState.value.selectedGame
-                                        if (game != null) dualScreenManager.onGameSelected(game.toShowcaseState())
-                                    }
-                                }
-                            },
                             onViewAllClick = {
                                 val platformId = swappedVm.uiState.value.currentPlatformId
                                 val afterSwitch = {

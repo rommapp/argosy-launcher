@@ -1,6 +1,5 @@
 package com.nendo.argosy.data.remote.romm
 
-import com.nendo.argosy.data.platform.PlatformDefinitions
 import com.nendo.argosy.data.preferences.RegionFilterMode
 import com.nendo.argosy.data.preferences.SyncFilterPreferences
 import com.nendo.argosy.util.Logger
@@ -14,7 +13,23 @@ object RomMSyncFilter {
     private val HACK_PAREN_REGEX = Regex("\\(.*\\bhack\\b.*\\)")
     private val BAD_DUMP_REGEX = Regex("\\[[bopBOP][0-9]*\\]")
 
-    private val PLAYLIST_EXTENSIONS = setOf("m3u", "m3u8")
+    /**
+     * True for the working files a library scan sweeps up beside the games. Mirrors RomM's own
+     * DEFAULT_EXCLUDED_EXTENSIONS plus the save and state sidecars that only appear once files
+     * reach a device. Shared with the sync service so the row filter and the local-pointer
+     * cleanup cannot disagree about what counts as content.
+     */
+    fun isNonGameExtension(extension: String): Boolean {
+        val lower = extension.lowercase()
+        return lower in NON_GAME_EXTENSIONS || NUMBERED_STATE_SUFFIX.matches(lower)
+    }
+
+    private val NUMBERED_STATE_SUFFIX = Regex("""state\d+""")
+
+    private val NON_GAME_EXTENSIONS = setOf(
+        "db", "ini", "tmp", "bak", "lock", "log", "cache", "crdownload",
+        "srm", "sav", "state"
+    )
 
     fun shouldSyncRom(rom: RomMRom, filters: SyncFilterPreferences): Boolean {
         val extension = extractExtension(rom)
@@ -37,15 +52,14 @@ object RomMSyncFilter {
         return true
     }
 
+    /**
+     * Whether a file the server is offering is worth a library row. Refuses only working files,
+     * never deciding from the extension whether something is a game, because which emulator can
+     * open a file is answered later when one is resolved.
+     */
     private fun passesExtensionFilter(rom: RomMRom, extension: String?): Boolean {
         if (extension == null) return true
-        if (extension in PLAYLIST_EXTENSIONS) return true
-
-        val effectiveSlug = PlatformDefinitions.resolveImportSlug(rom.platformSlug, rom.platformName)
-        val platformDef = PlatformDefinitions.getBySlug(effectiveSlug) ?: return true
-        if (platformDef.extensions.isEmpty()) return true
-
-        return extension in platformDef.extensions
+        return extension !in NON_GAME_EXTENSIONS
     }
 
     private fun extractExtension(rom: RomMRom): String? {

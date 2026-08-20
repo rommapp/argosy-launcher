@@ -1309,10 +1309,7 @@ class RomMLibrarySyncService @Inject constructor(
             val extension = localPath.substringAfterLast('.', "").lowercase()
             if (extension.isEmpty()) continue
 
-            val platformDef = PlatformDefinitions.getBySlug(game.platformSlug) ?: continue
-            if (platformDef.extensions.isEmpty()) continue
-
-            if (extension !in platformDef.extensions) {
+            if (RomMSyncFilter.isNonGameExtension(extension)) {
                 gameDao.clearLocalPath(game.id)
                 cleared++
                 Logger.info(TAG, "cleanupInvalidExtensionGames: cleared invalid pointer for ${game.title}: $localPath")

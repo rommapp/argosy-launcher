@@ -77,6 +77,7 @@ fun DualHomeLowerContent(
                     customGridState = uiState.customGrid,
                     customGridContentFor = { tile -> uiState.tileContentFor(tile) },
                     customGridConfig = uiState.customGridConfig,
+                    backgroundBlur = uiState.backgroundBlur,
                     onCustomGridCellTap = { cell ->
                         val grid = uiState.customGrid
                         val onFocused = grid.tileAt(cell)

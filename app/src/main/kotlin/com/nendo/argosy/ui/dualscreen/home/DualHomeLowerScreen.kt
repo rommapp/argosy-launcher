@@ -63,6 +63,7 @@ import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.compositeOver
@@ -74,6 +75,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.nendo.argosy.hardware.CompanionAppBar
+import com.nendo.argosy.ui.common.backgroundBlurDp
 import com.nendo.argosy.ui.common.rememberCoverAspectRatio
 import com.nendo.argosy.ui.common.rememberFileImageModel
 import com.nendo.argosy.ui.components.AlphabetSidebar
@@ -141,6 +143,7 @@ fun DualHomeLowerScreen(
     com.nendo.argosy.ui.components.CustomGridTileContent? = { null },
     customGridConfig: com.nendo.argosy.domain.model.CustomGridConfig =
         com.nendo.argosy.domain.model.CustomGridConfig(),
+    backgroundBlur: Int = 0,
     onCustomGridCellTap: (com.nendo.argosy.domain.model.GridCell) -> Unit = {},
     onCustomGridShape: (Int, Int) -> Unit = { _, _ -> },
     onCustomGridAddPage: () -> Unit = {},
@@ -232,7 +235,7 @@ fun DualHomeLowerScreen(
             .surfaceBackdrop(BackdropRole.CONTENT)
     ) {
         if (isCustomGrid) {
-            PageDecoration(customGridState)
+            PageDecoration(customGridState, backgroundBlur)
         }
         Column(modifier = Modifier.fillMaxSize()) {
         if (viewMode == DualHomeViewMode.CAROUSEL && !isCustomGrid && sectionLabels.isNotEmpty()) {
@@ -376,8 +379,12 @@ fun DualHomeLowerScreen(
  * phone-sized home uses, so a page decorated on one screen looks and sounds the same on the other.
  */
 @Composable
-private fun PageDecoration(state: com.nendo.argosy.ui.components.CustomGridState) {
+private fun PageDecoration(
+    state: com.nendo.argosy.ui.components.CustomGridState,
+    backgroundBlur: Int
+) {
     val pageSettings = state.currentPageSettings
+    val blur = backgroundBlur.backgroundBlurDp
     Crossfade(
         targetState = pageSettings.backgroundPath.takeIf { pageSettings.hasBackground },
         animationSpec = tween(Motion.durationSlide, easing = Motion.argosyEase),
@@ -387,7 +394,9 @@ private fun PageDecoration(state: com.nendo.argosy.ui.components.CustomGridState
         if (path != null) {
             com.nendo.argosy.ui.components.PageBackdrop(
                 path = path,
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier
+                    .fillMaxSize()
+                    .let { if (blur > 0.dp) it.blur(blur) else it }
             )
         }
     }

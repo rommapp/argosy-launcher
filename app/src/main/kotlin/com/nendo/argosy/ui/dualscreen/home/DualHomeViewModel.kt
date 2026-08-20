@@ -190,6 +190,7 @@ data class DualHomeUiState(
         com.nendo.argosy.domain.model.HomeLayoutKind.CAROUSEL,
     val customGridConfig: com.nendo.argosy.domain.model.CustomGridConfig =
         com.nendo.argosy.domain.model.CustomGridConfig(),
+    val backgroundBlur: Int = 0,
     val collectionOpenedFromTile: Boolean = false,
     val showLibraryMenu: Boolean = false,
     val libraryMenuFocusIndex: Int = 0,
@@ -535,7 +536,8 @@ class DualHomeViewModel(
                         carouselConfig = preferences.homeLayout.carousel,
                         autoGridConfig = preferences.homeLayout.autoGrid,
                         customGridConfig = preferences.homeLayout.customGrid,
-                        layoutKind = preferences.homeLayout.selected
+                        layoutKind = preferences.homeLayout.selected,
+                        backgroundBlur = preferences.backgroundBlur
                     )
                 }
                 customGrid.applyConfig(

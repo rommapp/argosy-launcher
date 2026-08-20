@@ -58,6 +58,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import com.nendo.argosy.ui.common.AlwaysCrossfadeFactory
+import com.nendo.argosy.ui.common.backgroundBlurDp
 import com.nendo.argosy.ui.common.rememberFileImageModel
 import com.nendo.argosy.ui.components.GameTitle
 import com.nendo.argosy.ui.components.SectionBreadcrumb
@@ -503,7 +504,7 @@ fun HomeScreen(
         label = "railOffsetX"
     )
 
-    val backgroundBlurDp = (uiState.backgroundBlur * 0.5f).dp
+    val backgroundBlurDp = uiState.backgroundBlur.backgroundBlurDp
     val saturationFraction = uiState.backgroundSaturation / 100f
     val opacityFraction = uiState.backgroundOpacity / 100f
     val overlayAlphaTop = 0.3f + (1f - opacityFraction) * 0.4f

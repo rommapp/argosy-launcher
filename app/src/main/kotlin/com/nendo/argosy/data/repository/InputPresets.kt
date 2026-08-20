@@ -794,6 +794,65 @@ object MappingPlatforms {
         )
     )
 
+    val PCFX = MappingPlatform(
+        id = "pcfx",
+        displayName = "PC-FX",
+        buttons = listOf(
+            RetroButton.A, RetroButton.B, RetroButton.X, RetroButton.Y,
+            RetroButton.L, RetroButton.R, RetroButton.L2, RetroButton.R2,
+            RetroButton.START, RetroButton.SELECT
+        ) + DPAD,
+        buttonLabels = mapOf(
+            RetroButton.A to "I",
+            RetroButton.B to "II",
+            RetroButton.X to "III",
+            RetroButton.Y to "IV",
+            RetroButton.L to "V",
+            RetroButton.R to "VI",
+            RetroButton.L2 to "Mode 1 (Switch)",
+            RetroButton.R2 to "Mode 2 (Switch)",
+            RetroButton.START to "Run"
+        )
+    )
+
+    val JAGUAR = MappingPlatform(
+        id = "jaguar",
+        displayName = "Jaguar",
+        buttons = listOf(
+            RetroButton.A, RetroButton.B, RetroButton.Y, RetroButton.X,
+            RetroButton.L, RetroButton.R, RetroButton.L2, RetroButton.R2,
+            RetroButton.L3, RetroButton.R3,
+            RetroButton.START, RetroButton.SELECT
+        ) + DPAD,
+        buttonLabels = mapOf(
+            RetroButton.A to "A",
+            RetroButton.B to "B",
+            RetroButton.Y to "C",
+            RetroButton.X to "Numpad 0",
+            RetroButton.L to "Numpad 1",
+            RetroButton.R to "Numpad 2",
+            RetroButton.L2 to "Numpad 3",
+            RetroButton.R2 to "Numpad 4",
+            RetroButton.L3 to "Numpad 5",
+            RetroButton.R3 to "Numpad 6",
+            RetroButton.START to "Option",
+            RetroButton.SELECT to "Pause"
+        )
+    )
+
+    val CDI = MappingPlatform(
+        id = "cdi",
+        displayName = "CD-i",
+        buttons = listOf(
+            RetroButton.A, RetroButton.B, RetroButton.X
+        ) + DPAD,
+        buttonLabels = mapOf(
+            RetroButton.A to "Button 1",
+            RetroButton.B to "Button 2",
+            RetroButton.X to "Button 3"
+        )
+    )
+
     val NEOGEO = MappingPlatform(
         id = "neogeo",
         displayName = "Neo Geo",
@@ -993,7 +1052,7 @@ object MappingPlatforms {
         C64, AMIGA, MSX, COLECO, ZX, ODYSSEY2, CHANNELF, POKEMINI, FDS, PICO8,
         ARCADE_MAME, ARCADE_6PANEL, ARCADE_MODERN,
         ARCADE_MAME_FIGHTSTICK, ARCADE_MAME_8BUTTON, ARCADE_MAME_6BUTTON,
-        SATURN_3D
+        SATURN_3D, PCFX, JAGUAR, CDI
     )
 
     fun getByIndex(index: Int): MappingPlatform = ALL[index.coerceIn(0, ALL.lastIndex)]
@@ -1052,7 +1111,13 @@ object MappingPlatforms {
         "vb" -> VIRTUALBOY
 
         "tg16", "pce", "turbografx16", "pcengine",
-        "supergrafx", "tgcd", "pcfx" -> PCE
+        "supergrafx", "tgcd" -> PCE
+
+        "pcfx" -> PCFX
+
+        "jaguar" -> JAGUAR
+
+        "cdi" -> CDI
 
         "n64", "n64dd" -> N64
 

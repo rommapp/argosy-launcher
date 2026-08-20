@@ -28,7 +28,8 @@ object TouchLayoutRegistry {
                 nesLike(label1 = "1", label2 = "2")
             "lynx" -> lynx()
             "snes" -> snes()
-            "tg16", "pce", "turbografx16", "pcengine", "tgcd", "supergrafx", "pcfx" -> pcEngine()
+            "tg16", "pce", "turbografx16", "pcengine", "tgcd", "supergrafx" -> pcEngine()
+            "pcfx" -> pcfx()
             "saturn" -> saturn()
             "vb", "virtualboy" -> snes()
             "psx", "ps1", "playstation" -> psxLike(true, colouredPsx)
@@ -49,7 +50,9 @@ object TouchLayoutRegistry {
             "atari2600", "2600" -> atari2600()
             "atari5200" -> atari5200()
             "atari7800" -> atari7800()
+            "jaguar" -> jaguar()
             "3do" -> threedo()
+            "cdi" -> cdi()
             "dos", "pc9800" -> generic()
             else -> generic()
         }
@@ -117,6 +120,56 @@ object TouchLayoutRegistry {
         shoulderSlots = emptyList(),
         system = listOf(slot(RetroButton.SELECT, "Select"), slot(RetroButton.START, "Run")),
         analog = AnalogConfig.None
+    )
+
+    private fun pcfx(): TouchLayoutSpec = TouchLayoutSpec(
+        dpad = DpadStyle.EightWay,
+        face = FaceShape.Stack2x3,
+        faceSlots = listOf(
+            slot(RetroButton.Y, "IV"),
+            slot(RetroButton.L, "V"),
+            slot(RetroButton.R, "VI"),
+            slot(RetroButton.X, "III"),
+            slot(RetroButton.B, "II"),
+            slot(RetroButton.A, "I")
+        ),
+        shoulders = ShoulderShape.TopPair,
+        shoulderSlots = listOf(slot(RetroButton.L2, "Mode 1"), slot(RetroButton.R2, "Mode 2")),
+        system = listOf(slot(RetroButton.SELECT, "Select"), slot(RetroButton.START, "Run")),
+        analog = AnalogConfig.None
+    )
+
+    private fun jaguar(): TouchLayoutSpec = TouchLayoutSpec(
+        dpad = DpadStyle.EightWay,
+        face = FaceShape.HorizontalTrio,
+        faceSlots = listOf(
+            slot(RetroButton.A, "A"),
+            slot(RetroButton.B, "B"),
+            slot(RetroButton.Y, "C")
+        ),
+        shoulders = ShoulderShape.FourCorners,
+        shoulderSlots = listOf(
+            slot(RetroButton.L, "1"), slot(RetroButton.L2, "3"),
+            slot(RetroButton.R, "2"), slot(RetroButton.R2, "4")
+        ),
+        system = listOf(slot(RetroButton.SELECT, "Pause"), slot(RetroButton.START, "Option")),
+        analog = AnalogConfig.None,
+        notes = "Shoulders carry numpad 1-4; 0, 5 and 6 stay on X and the stick clicks"
+    )
+
+    private fun cdi(): TouchLayoutSpec = TouchLayoutSpec(
+        dpad = DpadStyle.EightWay,
+        face = FaceShape.HorizontalTrio,
+        faceSlots = listOf(
+            slot(RetroButton.A, "1"),
+            slot(RetroButton.B, "2"),
+            slot(RetroButton.X, "3")
+        ),
+        shoulders = ShoulderShape.None,
+        shoulderSlots = emptyList(),
+        system = emptyList(),
+        analog = AnalogConfig.LeftOnly,
+        notes = "CD-i controllers are a pointer plus buttons 1-3; the console has no start or select"
     )
 
     private fun saturn(): TouchLayoutSpec = TouchLayoutSpec(

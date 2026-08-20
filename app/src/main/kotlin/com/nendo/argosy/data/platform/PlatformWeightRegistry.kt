@@ -45,7 +45,7 @@ object PlatformWeightRegistry {
         "saturn",
         "nds", "dsi", "3ds",
         "3do",
-        "jaguar", "jaguarcd"
+        "cdi"
     )
 
     fun hasAnalogStick(platformSlug: String): Boolean =

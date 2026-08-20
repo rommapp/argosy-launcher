@@ -322,6 +322,9 @@ class BiosRepository @Inject constructor(
                 for (firmware in firmwareFiles) {
                     try {
                         File(dir, firmware.fileName).let { if (it.exists()) it.delete() }
+                        BiosPathRegistry.getNestedBiosPath(firmware.fileName)?.let { nested ->
+                            File(dir, nested).let { if (it.exists()) it.delete() }
+                        }
                         firmware.md5Hash?.let { md5 ->
                             BiosPathRegistry.getRetroArchBiosName(md5)?.let { raName ->
                                 File(dir, raName).let { if (it.exists()) it.delete() }
@@ -369,8 +372,11 @@ class BiosRepository @Inject constructor(
                 if (!sourceFile.exists()) continue
 
                 val targetFileName = if (requiresExactFilenames) {
-                    val md5 = firmware.md5Hash ?: calculateMd5(sourceFile)
-                    BiosPathRegistry.getRetroArchBiosName(md5) ?: firmware.fileName
+                    BiosPathRegistry.getNestedBiosPath(firmware.fileName)
+                        ?: run {
+                            val md5 = firmware.md5Hash ?: calculateMd5(sourceFile)
+                            BiosPathRegistry.getRetroArchBiosName(md5) ?: firmware.fileName
+                        }
                 } else {
                     firmware.fileName
                 }

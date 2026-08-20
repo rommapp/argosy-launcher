@@ -124,6 +124,21 @@ object BiosPathRegistry {
         return retroArchBiosNames[md5Hash.lowercase()]
     }
 
+    /**
+     * Firmware that belongs in a subdirectory of the system directory rather than at its root,
+     * keyed by file name because the content hash cannot identify it. A MAME romset is a zip of
+     * ROM files: repacking it changes the archive's MD5 while leaving every ROM inside correct, so
+     * an MD5 row would only ever match the one repack we happened to hash. The name is the stable
+     * identifier - MAME resolves a set by archive name, and refuses any other spelling.
+     */
+    private val nestedBiosPaths: Map<String, String> = mapOf(
+        "cdimono1.zip" to "same_cdi/bios/cdimono1.zip",
+        "cdimono2.zip" to "same_cdi/bios/cdimono2.zip",
+        "cdibios.zip" to "same_cdi/bios/cdibios.zip"
+    )
+
+    fun getNestedBiosPath(fileName: String): String? = nestedBiosPaths[fileName.lowercase()]
+
     private val platformBiosFiles: Map<String, List<BiosRequirement>> = mapOf(
         "psx" to listOf(
             BiosRequirement("psx", "scph1001.bin", "924e392ed05558ffdb115408c263dccf", "PlayStation NTSC-U BIOS"),
@@ -167,7 +182,12 @@ object BiosPathRegistry {
             BiosRequirement("tgcd", "syscard3.pce", null, "TurboGrafx-CD System Card 3")
         ),
         "pcfx" to listOf(
-            BiosRequirement("pcfx", "pcfx.rom", null, "PC-FX BIOS")
+            BiosRequirement("pcfx", "pcfx.rom", "08e36edbea28a017f79f8d4f7ff9b6d7", "PC-FX BIOS")
+        ),
+        "cdi" to listOf(
+            BiosRequirement("cdi", "cdimono1.zip", null, "CD-i Mono-I romset"),
+            BiosRequirement("cdi", "cdimono2.zip", null, "CD-i Mono-II romset", isRequired = false),
+            BiosRequirement("cdi", "cdibios.zip", null, "CD-i shared BIOS romset", isRequired = false)
         ),
         "lynx" to listOf(
             BiosRequirement("lynx", "lynxboot.img", null, "Atari Lynx Boot ROM")
@@ -223,7 +243,7 @@ object BiosPathRegistry {
             supportedPlatforms = setOf(
                 "psx", "saturn", "scd", "dreamcast", "dc", "neogeo",
                 "3do", "nds", "gba", "tgcd", "pcfx", "lynx", "arcade",
-                "fbneo", "mame",
+                "fbneo", "mame", "cdi",
                 "amiga", "amigacd32", "cdtv"
             )
         ),
@@ -236,7 +256,7 @@ object BiosPathRegistry {
             supportedPlatforms = setOf(
                 "psx", "saturn", "scd", "dreamcast", "dc", "neogeo",
                 "3do", "nds", "gba", "tgcd", "pcfx", "lynx", "arcade",
-                "fbneo", "mame",
+                "fbneo", "mame", "cdi",
                 "amiga", "amigacd32", "cdtv"
             )
         ),
@@ -249,7 +269,7 @@ object BiosPathRegistry {
             supportedPlatforms = setOf(
                 "psx", "saturn", "scd", "dreamcast", "dc", "neogeo",
                 "3do", "nds", "gba", "tgcd", "pcfx", "lynx", "arcade",
-                "fbneo", "mame",
+                "fbneo", "mame", "cdi",
                 "amiga", "amigacd32", "cdtv"
             )
         ),

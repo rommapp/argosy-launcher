@@ -696,10 +696,18 @@ class GameLauncher @Inject constructor(
         )
     }
 
+    /**
+     * Firmware a platform cannot boot without, as paths relative to the libretro system directory
+     * and spelled exactly as the core looks them up. Each inner list is a set of alternatives, one
+     * of which must be present. SAME CDi searches `same_cdi/bios/` rather than the system root, so
+     * the CD-i entry carries that prefix.
+     */
     private val mandatoryBios: Map<String, List<List<String>>> = mapOf(
         "saturn" to listOf(listOf("sega_101.bin", "mpr-17933.bin")),
         "3do" to listOf(listOf("panafz10.bin", "panafz1.bin", "goldstar.bin")),
-        "tgcd" to listOf(listOf("syscard3.pcd")),
+        "tgcd" to listOf(listOf("syscard3.pce")),
+        "pcfx" to listOf(listOf("pcfx.rom")),
+        "cdi" to listOf(listOf("same_cdi/bios/cdimono1.zip")),
         "scd" to listOf(listOf("bios_CD_U.bin", "bios_CD_E.bin", "bios_CD_J.bin")),
         "segacd" to listOf(listOf("bios_CD_U.bin", "bios_CD_E.bin", "bios_CD_J.bin"))
     )

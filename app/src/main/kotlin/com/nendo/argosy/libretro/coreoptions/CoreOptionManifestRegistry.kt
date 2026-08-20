@@ -39,7 +39,10 @@ import com.nendo.argosy.libretro.coreoptions.manifests.GenesisPlusGxManifest
 import com.nendo.argosy.libretro.coreoptions.manifests.GwManifest
 import com.nendo.argosy.libretro.coreoptions.manifests.Mame2003PlusManifest
 import com.nendo.argosy.libretro.coreoptions.manifests.MednafenPceManifest
+import com.nendo.argosy.libretro.coreoptions.manifests.MednafenPcfxManifest
 import com.nendo.argosy.libretro.coreoptions.manifests.MednafenSupergrafxManifest
+import com.nendo.argosy.libretro.coreoptions.manifests.SameCdiManifest
+import com.nendo.argosy.libretro.coreoptions.manifests.VirtualjaguarManifest
 import com.nendo.argosy.libretro.coreoptions.manifests.Np2kaiManifest
 import com.nendo.argosy.libretro.coreoptions.manifests.O2emManifest
 import com.nendo.argosy.libretro.coreoptions.manifests.PicodriveManifest
@@ -95,6 +98,9 @@ object CoreOptionManifestRegistry {
         put(StellaManifest.coreId, StellaManifest)
         put(MednafenPceManifest.coreId, MednafenPceManifest)
         put(MednafenSupergrafxManifest.coreId, MednafenSupergrafxManifest)
+        put(MednafenPcfxManifest.coreId, MednafenPcfxManifest)
+        put(SameCdiManifest.coreId, SameCdiManifest)
+        put(VirtualjaguarManifest.coreId, VirtualjaguarManifest)
         put(A5200Manifest.coreId, A5200Manifest)
         put(ProsystemManifest.coreId, ProsystemManifest)
         put(BluemxManifest.coreId, BluemxManifest)

@@ -204,6 +204,14 @@ object LibretroCoreRegistry {
             isDefault = true,
             netplaySupport = NetplaySupportLevel.SUPPORTED
         ),
+        CoreInfo(
+            coreId = "virtualjaguar",
+            fileName = "virtualjaguar_libretro_android.so",
+            displayName = "Virtual Jaguar",
+            platforms = setOf("jaguar"),
+            estimatedSizeBytes = 1_700_000L,
+            isDefault = true
+        ),
 
         // NEC
         CoreInfo(
@@ -214,6 +222,15 @@ object LibretroCoreRegistry {
             estimatedSizeBytes = 1_500_000L,
             isDefault = true,
             netplaySupport = NetplaySupportLevel.SUPPORTED
+        ),
+        CoreInfo(
+            coreId = "mednafen_pcfx",
+            fileName = "mednafen_pcfx_libretro_android.so",
+            displayName = "Beetle PC-FX",
+            platforms = setOf("pcfx"),
+            estimatedSizeBytes = 1_700_000L,
+            requiresBios = listOf("pcfx.rom"),
+            isDefault = true
         ),
 
         // Nintendo DS
@@ -362,6 +379,16 @@ object LibretroCoreRegistry {
             platforms = setOf("3do"),
             estimatedSizeBytes = 400_000L,
             requiresBios = listOf("panafz10.bin"),
+            isDefault = true
+        ),
+
+        CoreInfo(
+            coreId = "same_cdi",
+            fileName = "same_cdi_libretro_android.so",
+            displayName = "SAME CDi",
+            platforms = setOf("cdi"),
+            estimatedSizeBytes = 11_500_000L,
+            requiresBios = listOf("cdimono1.zip"),
             isDefault = true
         ),
 
@@ -545,7 +572,11 @@ object LibretroCoreRegistry {
      */
     private val unsafeSerializeCores = setOf("dolphin", "flycast")
 
-    val PLATFORMS_WITHOUT_STATE_SUPPORT = setOf("psp")
+    /**
+     * Platforms whose only built-in core cannot produce a state at all. `cdi` is here because
+     * SAME CDi declares `savestate = "false"` upstream, not because of an observed crash.
+     */
+    val PLATFORMS_WITHOUT_STATE_SUPPORT = setOf("psp", "cdi")
 
     fun serializeMayCrash(coreId: String?): Boolean = coreId in unsafeSerializeCores
 

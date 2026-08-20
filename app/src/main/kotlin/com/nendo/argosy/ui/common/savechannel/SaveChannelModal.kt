@@ -442,6 +442,12 @@ private fun StatesTabContent(
             )
         }
     } else {
+        Text(
+            text = state.activeChannel?.let { "States in $it" } ?: "States in the default slot",
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(horizontal = Dimens.spacingSm, vertical = Dimens.spacingXs)
+        )
         LazyColumn(
             state = listState,
             modifier = Modifier

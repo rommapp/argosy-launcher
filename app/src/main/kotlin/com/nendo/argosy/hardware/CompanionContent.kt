@@ -402,6 +402,16 @@ private fun HeroGameCard(state: CompanionInGameState) {
                             overflow = TextOverflow.Ellipsis
                         )
                     }
+                    if (state.channelName != null) {
+                        MetadataDot()
+                        Text(
+                            text = state.channelName,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color.White.copy(alpha = 0.7f),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
                     if (state.releaseYear != null) {
                         MetadataDot()
                         Text(

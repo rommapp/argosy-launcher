@@ -70,7 +70,8 @@ class SyncPlatformUseCaseTest {
             notificationManager.showPersistent(
                 title = "Syncing Game Boy",
                 subtitle = "Fetching games...",
-                key = "romm-platform-sync"
+                key = "romm-platform-sync",
+                platformSlug = "gb"
             )
         }
     }
@@ -129,7 +130,8 @@ class SyncPlatformUseCaseTest {
                 key = "romm-platform-sync",
                 title = "SNES synced",
                 subtitle = "5 added, 3 updated, 1 removed",
-                type = NotificationType.SUCCESS
+                type = NotificationType.SUCCESS,
+                platformSlug = "gb"
             )
         }
     }
@@ -146,7 +148,8 @@ class SyncPlatformUseCaseTest {
                 key = "romm-platform-sync",
                 title = "SNES synced",
                 subtitle = "5 added, 3 updated",
-                type = NotificationType.SUCCESS
+                type = NotificationType.SUCCESS,
+                platformSlug = "gb"
             )
         }
     }

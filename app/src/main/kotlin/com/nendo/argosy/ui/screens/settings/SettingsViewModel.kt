@@ -520,6 +520,20 @@ class SettingsViewModel @Inject constructor(
     fun downloadCoreWithNotification(coreId: String) = routeDownloadCoreWithNotification(this, coreId)
     fun deleteCore(coreId: String) = routeDeleteCore(this, coreId)
 
+    fun requestDeleteCore(coreId: String) = _uiState.update {
+        it.copy(coreOptions = it.coreOptions.copy(pendingDeleteCoreId = coreId))
+    }
+
+    fun cancelDeleteCore() = _uiState.update {
+        it.copy(coreOptions = it.coreOptions.copy(pendingDeleteCoreId = null))
+    }
+
+    fun confirmDeleteCore() {
+        val coreId = _uiState.value.coreOptions.pendingDeleteCoreId ?: return
+        cancelDeleteCore()
+        deleteCore(coreId)
+    }
+
     fun cycleBuiltinArchitecture(direction: Int) = routeCycleBuiltinArchitecture(this, direction)
     fun setBuiltinShader(value: String) = routeSetBuiltinShader(this, value)
     fun setBuiltinFramesEnabled(enabled: Boolean) = routeSetBuiltinFramesEnabled(this, enabled)
@@ -1122,7 +1136,17 @@ class SettingsViewModel @Inject constructor(
     fun cycleBoxArtGlowStrength(direction: Int = 1) = displayDelegate.cycleBoxArtGlowStrength(viewModelScope, direction)
     fun cycleBoxArtOuterEffect(direction: Int = 1) = displayDelegate.cycleBoxArtOuterEffect(viewModelScope, direction)
     fun cycleBoxArtOuterEffectThickness(direction: Int = 1) = displayDelegate.cycleBoxArtOuterEffectThickness(viewModelScope, direction)
-    fun cycleGlowColorMode(direction: Int = 1) = displayDelegate.cycleGlowColorMode(viewModelScope, direction)
+    /**
+     * Cycle the glow source, refreshing the preview card's sampled colours with it.
+     *
+     * Only the gradient-preset and sampling routes used to trigger extraction, and every control
+     * that reaches them is hidden unless the border style is Gradient. Picking Cover under any
+     * other border style therefore left the card showing whatever was sampled last, or nothing.
+     */
+    fun cycleGlowColorMode(direction: Int = 1) {
+        displayDelegate.cycleGlowColorMode(viewModelScope, direction)
+        extractGradientForPreview()
+    }
     fun cycleSystemIconPosition(direction: Int = 1) = displayDelegate.cycleSystemIconPosition(viewModelScope, direction)
     fun cycleSystemIconPadding(direction: Int = 1) = displayDelegate.cycleSystemIconPadding(viewModelScope, direction)
     fun cyclePlatformIndicatorStyle(direction: Int = 1) = displayDelegate.cyclePlatformIndicatorStyle(viewModelScope, direction)
@@ -1131,6 +1155,8 @@ class SettingsViewModel @Inject constructor(
     fun cycleBoxArtInnerEffectThickness(direction: Int = 1) = displayDelegate.cycleBoxArtInnerEffectThickness(viewModelScope, direction)
     fun setLibraryDefaultSortIndex(index: Int) = displayDelegate.setLibraryDefaultSortIndex(viewModelScope, index)
     fun cycleLibraryDefaultSort(direction: Int) = displayDelegate.cycleLibraryDefaultSort(viewModelScope, direction)
+    fun setSortInstalledFirst(enabled: Boolean) = displayDelegate.setSortInstalledFirst(viewModelScope, enabled)
+    fun setSortFavoritesFirst(enabled: Boolean) = displayDelegate.setSortFavoritesFirst(viewModelScope, enabled)
     fun setLibraryDefaultSource(source: String) = displayDelegate.setLibraryDefaultSource(viewModelScope, source)
     fun cycleLibraryDefaultSource(direction: Int) = displayDelegate.cycleLibraryDefaultSource(viewModelScope, direction)
     fun setLibraryDefaultPlatform(name: String) = displayDelegate.setLibraryDefaultPlatform(viewModelScope, name)

@@ -693,6 +693,20 @@ class DisplaySettingsDelegate @Inject constructor(
         setLibraryDefaultSortIndex(scope, next)
     }
 
+    fun setSortInstalledFirst(scope: CoroutineScope, enabled: Boolean) {
+        scope.launch {
+            preferencesRepository.setSortInstalledFirst(enabled)
+            _state.update { it.copy(sortInstalledFirst = enabled) }
+        }
+    }
+
+    fun setSortFavoritesFirst(scope: CoroutineScope, enabled: Boolean) {
+        scope.launch {
+            preferencesRepository.setSortFavoritesFirst(enabled)
+            _state.update { it.copy(sortFavoritesFirst = enabled) }
+        }
+    }
+
     fun setLibraryDefaultSource(scope: CoroutineScope, source: String) {
         scope.launch {
             preferencesRepository.setLibraryDefaultSource(source)

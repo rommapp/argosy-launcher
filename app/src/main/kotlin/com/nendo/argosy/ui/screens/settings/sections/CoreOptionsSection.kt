@@ -32,6 +32,8 @@ internal sealed class CoreOptionItem(val key: String) {
 
     data object DownloadCore : CoreOptionItem("download_core")
 
+    data object DeleteCore : CoreOptionItem("delete_core")
+
     data class Option(
         val optionKey: String,
         val displayName: String,
@@ -52,6 +54,7 @@ internal fun buildCoreOptionItems(state: CoreOptionsState): List<CoreOptionItem>
     add(CoreOptionItem.CoreSelector)
     val core = state.selectedCore ?: return@buildList
     add(CoreOptionItem.DownloadCore)
+    if (core.isInstalled) add(CoreOptionItem.DeleteCore)
     val hasManifest = CoreOptionManifestRegistry.hasManifest(core.coreId)
     if (hasManifest) {
         for (option in state.options) {
@@ -187,6 +190,18 @@ fun CoreOptionsSection(
                             if (!isDownloadingThis) {
                                 selectedCore?.let { viewModel.downloadCoreWithNotification(it.coreId) }
                             }
+                        }
+                    )
+                }
+
+                is CoreOptionItem.DeleteCore -> {
+                    ActionPreference(
+                        title = "Delete Core",
+                        subtitle = "Free up space, keeping your settings for it",
+                        isFocused = isFocused,
+                        isDangerous = true,
+                        onClick = {
+                            selectedCore?.let { viewModel.requestDeleteCore(it.coreId) }
                         }
                     )
                 }

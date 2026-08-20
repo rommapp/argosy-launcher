@@ -8,6 +8,11 @@ import com.nendo.argosy.data.download.DownloadManager
 import com.nendo.argosy.data.repository.GameRepository
 import com.nendo.argosy.data.repository.PlatformRepository
 import com.nendo.argosy.data.local.entity.GameEntity
+import com.nendo.argosy.data.model.ActiveSort
+import com.nendo.argosy.data.model.GameEntityProps
+import com.nendo.argosy.data.model.SortOption
+import com.nendo.argosy.data.model.SortPartition
+import com.nendo.argosy.data.model.computePartitionedSections
 import com.nendo.argosy.data.preferences.GridDensity
 import com.nendo.argosy.data.preferences.SyncPreferencesRepository
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
@@ -301,8 +306,25 @@ class SecondaryHomeViewModel @Inject constructor(
                     gameRepository.getFavorites().map { it.toUi(hiddenIds) }
                 }
                 is HomeSection.Platform -> {
-                    gameRepository.getByPlatformSorted(section.id, limit = 200)
-                        .map { it.toUi(hiddenIds) }
+                    val prefs = preferencesRepository?.userPreferences?.first()
+                    val entities = gameRepository.getByPlatformSorted(section.id, limit = 200)
+                    val ordered = if (prefs == null) entities else {
+                        val option = runCatching { SortOption.valueOf(prefs.libraryDefaultSort) }
+                            .getOrDefault(SortOption.TITLE)
+                        computePartitionedSections(
+                            entities,
+                            ActiveSort(
+                                option,
+                                prefs.libraryDefaultSortDescending ?: option.defaultDescending
+                            ),
+                            GameEntityProps,
+                            SortPartition(
+                                installedFirst = prefs.sortInstalledFirst,
+                                favoritesFirst = prefs.sortFavoritesFirst
+                            )
+                        ).flatMap { it.items }
+                    }
+                    ordered.map { it.toUi(hiddenIds) }
                 }
             }
 

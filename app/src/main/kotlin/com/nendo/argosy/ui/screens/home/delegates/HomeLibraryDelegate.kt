@@ -2,7 +2,12 @@ package com.nendo.argosy.ui.screens.home.delegates
 
 import com.nendo.argosy.data.local.entity.GameEntity
 import com.nendo.argosy.data.local.entity.getDisplayName
+import com.nendo.argosy.data.model.ActiveSort
+import com.nendo.argosy.data.model.GameEntityProps
 import com.nendo.argosy.data.model.GameSource
+import com.nendo.argosy.data.model.SortOption
+import com.nendo.argosy.data.model.SortPartition
+import com.nendo.argosy.data.model.computePartitionedSections
 import com.nendo.argosy.data.emulator.EmulatorDetector
 import com.nendo.argosy.data.platform.LocalPlatformIds
 import com.nendo.argosy.data.preferences.BoxArtBorderStyle
@@ -402,6 +407,9 @@ class HomeLibraryDelegate @Inject constructor(
         if (prefs.installedOnlyHome) {
             games = filterPlayable(games)
         }
+        if (uncapped) {
+            games = orderedForEveryGame(games, prefs)
+        }
         val platform = _state.value.platforms.getOrNull(platformIndex)
         val gameItems: List<HomeRowItem> = games.map { HomeRowItem.Game(it.toUi()) }
         val items: List<HomeRowItem> = if (platform != null && !uncapped) {
@@ -424,6 +432,28 @@ class HomeLibraryDelegate @Inject constructor(
     private fun showsEveryGame(prefs: UserPreferences): Boolean =
         prefs.homeLayout.selected == HomeLayoutKind.AUTO_GRID &&
             prefs.homeLayout.autoGrid.showAllGames
+
+    /**
+     * Put a whole platform in the order the user chose for their library.
+     *
+     * The DAO's order leads with what is installed, favourited and recently played and then falls
+     * back to community rating, which suits a rail of twenty covers and reads as shuffled once the
+     * row carries hundreds.
+     */
+    private fun orderedForEveryGame(
+        games: List<GameEntity>,
+        prefs: UserPreferences
+    ): List<GameEntity> {
+        val option = runCatching { SortOption.valueOf(prefs.libraryDefaultSort) }
+            .getOrDefault(SortOption.TITLE)
+        val sort = ActiveSort(option, prefs.libraryDefaultSortDescending ?: option.defaultDescending)
+        val partition = SortPartition(
+            installedFirst = prefs.sortInstalledFirst,
+            favoritesFirst = prefs.sortFavoritesFirst
+        )
+        return computePartitionedSections(games, sort, GameEntityProps, partition)
+            .flatMap { it.items }
+    }
 
     suspend fun loadGamesForPinnedCollection(pinId: Long) {
         val pinned = _state.value.pinnedCollections.find { it.id == pinId } ?: return
@@ -486,6 +516,9 @@ class HomeLibraryDelegate @Inject constructor(
                 )
                 if (prefs.installedOnlyHome) {
                     games = filterPlayable(games)
+                }
+                if (uncapped) {
+                    games = orderedForEveryGame(games, prefs)
                 }
                 val gameItems: List<HomeRowItem> = games.map { HomeRowItem.Game(it.toUi()) }
                 val items: List<HomeRowItem> = if (uncapped) {

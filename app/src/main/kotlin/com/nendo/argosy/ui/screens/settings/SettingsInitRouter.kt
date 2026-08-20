@@ -518,6 +518,8 @@ internal fun routeLoadSettings(vm: SettingsViewModel) {
             platformIndicatorContent = prefs.platformIndicatorContent,
             libraryDefaultSort = prefs.libraryDefaultSort,
             libraryDefaultSortDescending = prefs.libraryDefaultSortDescending,
+            sortInstalledFirst = prefs.sortInstalledFirst,
+            sortFavoritesFirst = prefs.sortFavoritesFirst,
             libraryDefaultSource = prefs.libraryDefaultSource,
             libraryDefaultPlatform = prefs.libraryDefaultPlatform,
             videoWallpaperEnabled = prefs.videoWallpaperEnabled,

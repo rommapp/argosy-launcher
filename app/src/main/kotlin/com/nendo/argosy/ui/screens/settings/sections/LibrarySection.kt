@@ -10,6 +10,7 @@ import com.nendo.argosy.data.local.entity.getDisplayName
 import com.nendo.argosy.data.model.SortOption
 import com.nendo.argosy.data.preferences.GridDensity
 import com.nendo.argosy.ui.components.CyclePreference
+import com.nendo.argosy.ui.components.SwitchPreference
 import com.nendo.argosy.ui.screens.settings.SettingsUiState
 import com.nendo.argosy.ui.screens.settings.SettingsViewModel
 import com.nendo.argosy.ui.screens.settings.components.SectionPaneLayout
@@ -38,6 +39,8 @@ internal sealed class LibraryItem(val key: String, val section: String) {
 
     data object GridDensityItem : LibraryItem("libraryGridDensity", "layout")
     data object DefaultSort : LibraryItem("libraryDefaultSort", "defaults")
+    data object InstalledFirst : LibraryItem("sortInstalledFirst", "defaults")
+    data object FavoritesFirst : LibraryItem("sortFavoritesFirst", "defaults")
     data object DefaultPlatform : LibraryItem("libraryDefaultPlatform", "defaults")
     data object DefaultSource : LibraryItem("libraryDefaultSource", "defaults")
 
@@ -47,7 +50,7 @@ internal sealed class LibraryItem(val key: String, val section: String) {
                 Header("libraryLayoutHeader", "layout", "Layout"),
                 GridDensityItem,
                 Header("libraryDefaultsHeader", "defaults", "Defaults"),
-                DefaultSort, DefaultPlatform, DefaultSource
+                DefaultSort, InstalledFirst, FavoritesFirst, DefaultPlatform, DefaultSource
             )
     }
 }
@@ -150,6 +153,22 @@ fun LibrarySection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                 options = remember { librarySortOptions() },
                 onSelect = { viewModel.setLibraryDefaultSortIndex(it) },
                 pickerRequestToken = pickerToken(item)
+            )
+
+            LibraryItem.InstalledFirst -> SwitchPreference(
+                title = "Installed First",
+                subtitle = "Group games you have downloaded ahead of the rest",
+                isEnabled = display.sortInstalledFirst,
+                isFocused = isFocused(item),
+                onToggle = { viewModel.setSortInstalledFirst(!display.sortInstalledFirst) }
+            )
+
+            LibraryItem.FavoritesFirst -> SwitchPreference(
+                title = "Favorites First",
+                subtitle = "Group your favorites ahead of the rest",
+                isEnabled = display.sortFavoritesFirst,
+                isFocused = isFocused(item),
+                onToggle = { viewModel.setSortFavoritesFirst(!display.sortFavoritesFirst) }
             )
 
             LibraryItem.DefaultPlatform -> CyclePreference(

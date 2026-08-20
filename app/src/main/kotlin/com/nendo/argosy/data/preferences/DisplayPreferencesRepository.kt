@@ -45,6 +45,8 @@ data class DisplayPreferences(
     val gridDensity: GridDensity = GridDensity.NORMAL,
     val libraryDefaultSort: String = "TITLE",
     val libraryDefaultSortDescending: Boolean? = null,
+    val sortInstalledFirst: Boolean = false,
+    val sortFavoritesFirst: Boolean = false,
     val libraryDefaultSource: String = "ALL",
     val libraryDefaultPlatform: String = "",
     val uiScale: Int = 100,
@@ -134,6 +136,8 @@ class DisplayPreferencesRepository @Inject constructor(
         val UI_DENSITY = stringPreferencesKey("ui_density")
         val LIBRARY_DEFAULT_SORT = stringPreferencesKey("library_default_sort")
         val LIBRARY_DEFAULT_SORT_DESC = booleanPreferencesKey("library_default_sort_desc")
+        val SORT_INSTALLED_FIRST = booleanPreferencesKey("sort_installed_first")
+        val SORT_FAVORITES_FIRST = booleanPreferencesKey("sort_favorites_first")
         val LIBRARY_DEFAULT_SOURCE = stringPreferencesKey("library_default_source")
         val LIBRARY_DEFAULT_PLATFORM = stringPreferencesKey("library_default_platform")
         val UI_SCALE = intPreferencesKey("ui_scale")
@@ -219,6 +223,8 @@ class DisplayPreferencesRepository @Inject constructor(
             gridDensity = GridDensity.fromString(prefs[Keys.UI_DENSITY]),
             libraryDefaultSort = prefs[Keys.LIBRARY_DEFAULT_SORT] ?: "TITLE",
             libraryDefaultSortDescending = prefs[Keys.LIBRARY_DEFAULT_SORT_DESC],
+            sortInstalledFirst = prefs[Keys.SORT_INSTALLED_FIRST] ?: false,
+            sortFavoritesFirst = prefs[Keys.SORT_FAVORITES_FIRST] ?: false,
             libraryDefaultSource = prefs[Keys.LIBRARY_DEFAULT_SOURCE] ?: "ALL",
             libraryDefaultPlatform = prefs[Keys.LIBRARY_DEFAULT_PLATFORM] ?: "",
             uiScale = prefs[Keys.UI_SCALE] ?: 100,
@@ -392,6 +398,14 @@ class DisplayPreferencesRepository @Inject constructor(
             it[Keys.LIBRARY_DEFAULT_SORT] = option
             it[Keys.LIBRARY_DEFAULT_SORT_DESC] = descending
         }
+    }
+
+    suspend fun setSortInstalledFirst(enabled: Boolean) {
+        dataStore.edit { it[Keys.SORT_INSTALLED_FIRST] = enabled }
+    }
+
+    suspend fun setSortFavoritesFirst(enabled: Boolean) {
+        dataStore.edit { it[Keys.SORT_FAVORITES_FIRST] = enabled }
     }
 
     suspend fun setLibraryDefaultSource(source: String) {

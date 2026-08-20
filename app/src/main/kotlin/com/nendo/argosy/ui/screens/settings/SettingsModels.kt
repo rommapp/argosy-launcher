@@ -255,6 +255,8 @@ data class DisplayState(
     val platformIndicatorContent: PlatformIndicatorContent = PlatformIndicatorContent.NAME,
     val libraryDefaultSort: String = "TITLE",
     val libraryDefaultSortDescending: Boolean? = null,
+    val sortInstalledFirst: Boolean = false,
+    val sortFavoritesFirst: Boolean = false,
     val libraryDefaultSource: String = "ALL",
     val libraryDefaultPlatform: String = "",
     val videoWallpaperEnabled: Boolean = false,
@@ -670,7 +672,8 @@ data class CoreOptionsState(
     val options: List<CoreOptionViewItem> = emptyList(),
     val overrides: Map<String, String> = emptyMap(),
     val isDownloading: Boolean = false,
-    val downloadingCoreId: String? = null
+    val downloadingCoreId: String? = null,
+    val pendingDeleteCoreId: String? = null
 ) {
     val currentPlatformContext: PlatformContext? get() =
         if (platformContextIndex in availablePlatforms.indices)

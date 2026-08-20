@@ -1020,6 +1020,18 @@ fun SettingsScreen(
         onDismiss = { viewModel.cancelCachesClear() }
     )
 
+    val pendingDeleteCoreId = uiState.coreOptions.pendingDeleteCoreId
+    ArgosyConfirmModalHost(
+        visible = pendingDeleteCoreId != null,
+        title = "Delete core?",
+        message = "The core is removed from this device. Games set to use it will need it " +
+            "downloaded again before they run.",
+        confirmLabel = "Delete",
+        destructive = true,
+        onConfirm = { viewModel.confirmDeleteCore() },
+        onDismiss = { viewModel.cancelDeleteCore() }
+    )
+
     ArgosyConfirmModal(
         visible = uiState.syncSettings.showForceSyncConfirm,
         title = "Sync Saves?",

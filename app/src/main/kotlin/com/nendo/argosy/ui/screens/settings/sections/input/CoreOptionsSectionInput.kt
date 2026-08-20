@@ -36,6 +36,11 @@ internal class CoreOptionsSectionInput(
                 if (core != null) viewModel.downloadCoreWithNotification(core.coreId)
                 InputResult.HANDLED
             }
+            is CoreOptionItem.DeleteCore -> {
+                val core = state.coreOptions.selectedCore
+                if (core != null) viewModel.requestDeleteCore(core.coreId)
+                InputResult.handled(SoundType.OPEN_MODAL)
+            }
             is CoreOptionItem.ResetAll -> {
                 viewModel.resetAllCoreOptions()
                 InputResult.HANDLED

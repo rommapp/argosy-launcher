@@ -226,6 +226,8 @@ internal fun routeDeleteCore(vm: SettingsViewModel, coreId: String) {
     vm.viewModelScope.launch {
         vm.coreManager.deleteCore(coreId)
         vm.emulatorDelegate.updateCoreCounts()
+        refreshCoreOptionsInstallState(vm)
+        vm.loadCoreManagementState(preserveFocus = true)
     }
 }
 

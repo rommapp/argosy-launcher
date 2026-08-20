@@ -117,6 +117,8 @@ class UserPreferencesRepository @Inject constructor(
             gridDensity = display.gridDensity,
             libraryDefaultSort = display.libraryDefaultSort,
             libraryDefaultSortDescending = display.libraryDefaultSortDescending,
+            sortInstalledFirst = display.sortInstalledFirst,
+            sortFavoritesFirst = display.sortFavoritesFirst,
             libraryDefaultSource = display.libraryDefaultSource,
             libraryDefaultPlatform = display.libraryDefaultPlatform,
             soundConfigs = controls.soundConfigs,
@@ -256,6 +258,10 @@ class UserPreferencesRepository @Inject constructor(
 
     suspend fun setLibraryDefaultSort(option: String, descending: Boolean) =
         displayPrefs.setLibraryDefaultSort(option, descending)
+
+    suspend fun setSortInstalledFirst(enabled: Boolean) = displayPrefs.setSortInstalledFirst(enabled)
+
+    suspend fun setSortFavoritesFirst(enabled: Boolean) = displayPrefs.setSortFavoritesFirst(enabled)
 
     suspend fun setLibraryDefaultSource(source: String) = displayPrefs.setLibraryDefaultSource(source)
 
@@ -724,6 +730,8 @@ data class UserPreferences(
     val gridDensity: GridDensity = GridDensity.NORMAL,
     val libraryDefaultSort: String = "TITLE",
     val libraryDefaultSortDescending: Boolean? = null,
+    val sortInstalledFirst: Boolean = false,
+    val sortFavoritesFirst: Boolean = false,
     val libraryDefaultSource: String = "ALL",
     val libraryDefaultPlatform: String = "",
     val soundConfigs: Map<SoundType, SoundConfig> = emptyMap(),

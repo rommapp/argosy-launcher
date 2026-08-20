@@ -507,10 +507,26 @@ class DualHomeViewModel(
         observeLayoutConfig()
     }
 
+    @Volatile
+    private var sortPartition: com.nendo.argosy.data.model.SortPartition =
+        com.nendo.argosy.data.model.SortPartition.NONE
+
     private fun observeLayoutConfig() {
         val prefs = preferencesRepository ?: return
         viewModelScope.launch {
             prefs.userPreferences.collect { preferences ->
+                val partition = com.nendo.argosy.data.model.SortPartition(
+                    installedFirst = preferences.sortInstalledFirst,
+                    favoritesFirst = preferences.sortFavoritesFirst
+                )
+                if (partition != sortPartition) {
+                    sortPartition = partition
+                    if (allLibraryGames.isNotEmpty()) {
+                        val filters = _uiState.value.activeFilters
+                        val filtered = applyFiltersToList(allLibraryGames, filters)
+                        updateLibraryState(applySort(filtered, filters.sort), preserveFocus = true)
+                    }
+                }
                 _uiState.update {
                     it.copy(
                         carouselConfig = preferences.homeLayout.carousel,
@@ -1854,8 +1870,9 @@ class DualHomeViewModel(
 
     private fun updateLibraryFocus(newIndex: Int) {
         val state = _uiState.value
-        val sections = computeGenericSections(state.libraryGames, state.activeFilters.sort, HomeGameUiSortProps)
-        val orderedSections = if (state.activeFilters.sort.descending) sections else sections.reversed()
+        val orderedSections = com.nendo.argosy.data.model.computePartitionedSections(
+            state.libraryGames, state.activeFilters.sort, HomeGameUiSortProps, sortPartition
+        )
         val newLabel = sectionLabelForGameIndex(newIndex, orderedSections)
         _uiState.update { it.copy(
             libraryFocusedIndex = newIndex,
@@ -1878,8 +1895,9 @@ class DualHomeViewModel(
     fun jumpToSection(label: String) {
         libraryNav.resetStickyColumn()
         val state = _uiState.value
-        val sections = computeGenericSections(state.libraryGames, state.activeFilters.sort, HomeGameUiSortProps)
-        val orderedSections = if (state.activeFilters.sort.descending) sections else sections.reversed()
+        val orderedSections = com.nendo.argosy.data.model.computePartitionedSections(
+            state.libraryGames, state.activeFilters.sort, HomeGameUiSortProps, sortPartition
+        )
         var offset = 0
         for (section in orderedSections) {
             if (section.sidebarLabel == label) {
@@ -2166,8 +2184,9 @@ class DualHomeViewModel(
     )
 
     private fun applySort(games: List<HomeGameUi>, sort: ActiveSort): SortResult {
-        val sections = computeGenericSections(games, sort, HomeGameUiSortProps)
-        val orderedSections = if (sort.descending) sections else sections.reversed()
+        val orderedSections = com.nendo.argosy.data.model.computePartitionedSections(
+            games, sort, HomeGameUiSortProps, sortPartition
+        )
         val sortedGames = orderedSections.flatMap { it.items }
         val labels = orderedSections.map { it.sidebarLabel }
         var gameOffset = 0
@@ -2360,6 +2379,8 @@ class DualHomeViewModel(
 }
 
 object HomeGameUiSortProps : SortableProps<HomeGameUi> {
+    override fun isInstalled(item: HomeGameUi) = item.isDownloaded
+    override fun isFavorite(item: HomeGameUi) = item.isFavorite
     override fun sortTitle(item: HomeGameUi) = item.sortTitle
     override fun rating(item: HomeGameUi) = item.rating
     override fun userRating(item: HomeGameUi) = item.userRating

@@ -671,10 +671,21 @@ class LibraryViewModel @Inject constructor(
         _uiState.update { it.copy(memcardPickerFocusIndex = index) }
     }
 
+    @Volatile
+    private var sortPartition: com.nendo.argosy.data.model.SortPartition =
+        com.nendo.argosy.data.model.SortPartition.NONE
+
     private fun observeGridDensity() {
         viewModelScope.launch {
             preferencesRepository.userPreferences.collectLatest { prefs ->
                 gradientExtractionDelegate.updatePreferences(prefs.gradientPreset, prefs.boxArtBorderStyle)
+                val partition = com.nendo.argosy.data.model.SortPartition(
+                    installedFirst = prefs.sortInstalledFirst,
+                    favoritesFirst = prefs.sortFavoritesFirst
+                )
+                val partitionChanged = partition != sortPartition
+                sortPartition = partition
+                if (partitionChanged) loadGames()
                 _uiState.update {
                     it.copy(
                         gridDensity = prefs.gridDensity,
@@ -858,7 +869,7 @@ class LibraryViewModel @Inject constructor(
                         matchesSearch && matchesPlatform && matchesGenre && matchesPlayers && matchesSeries
                     }
 
-                    val sections = computeSections(filteredGames, filters.sort)
+                    val sections = computeSections(filteredGames, filters.sort, sortPartition)
                     val sectionLabels = sections.map { it.sidebarLabel }
 
                     var gameOffset = 0

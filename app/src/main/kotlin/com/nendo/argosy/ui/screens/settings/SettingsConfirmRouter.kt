@@ -126,6 +126,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import com.nendo.argosy.ui.screens.settings.sections.libraryMaxFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.libraryItemAtFocusIndex
+import com.nendo.argosy.ui.screens.settings.sections.LibraryItem
 import com.nendo.argosy.ui.screens.settings.sections.LibraryLayoutState
 
 private fun rommConfigMaxIndex(server: ServerState): Int {
@@ -913,8 +914,20 @@ private fun routeNavigationConfirm(vm: SettingsViewModel, state: SettingsUiState
 private fun routeLibraryViewConfirm(vm: SettingsViewModel, state: SettingsUiState): InputResult {
     val layoutState = LibraryLayoutState.from(state)
     val item = libraryItemAtFocusIndex(state.focusedIndex, layoutState) ?: return InputResult.HANDLED
-    vm.requestEnumPicker(item.key)
-    return InputResult.handled(SoundType.OPEN_MODAL)
+    return when (item) {
+        LibraryItem.InstalledFirst -> {
+            vm.setSortInstalledFirst(!state.display.sortInstalledFirst)
+            InputResult.handled(SoundType.TOGGLE)
+        }
+        LibraryItem.FavoritesFirst -> {
+            vm.setSortFavoritesFirst(!state.display.sortFavoritesFirst)
+            InputResult.handled(SoundType.TOGGLE)
+        }
+        else -> {
+            vm.requestEnumPicker(item.key)
+            InputResult.handled(SoundType.OPEN_MODAL)
+        }
+    }
 }
 
 private fun routeEmulatorsConfirm(vm: SettingsViewModel, state: SettingsUiState): InputResult {

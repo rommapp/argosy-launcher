@@ -33,15 +33,78 @@ data class Section<T>(
     val items: List<T>
 )
 
+/**
+ * Groups lifted above the chosen sort, for surfaces that want what you own or care about within
+ * reach before the rest of the library. Both off is the plain sort, unchanged.
+ */
+data class SortPartition(
+    val installedFirst: Boolean = false,
+    val favoritesFirst: Boolean = false
+) {
+    val isEmpty: Boolean get() = !installedFirst && !favoritesFirst
+
+    companion object {
+        val NONE = SortPartition()
+    }
+}
+
 fun computeSections(
     games: List<GameListItem>,
-    sort: ActiveSort
-): List<GameSection> {
-    val props = GameListItemProps
-    val sections = computeGenericSections(games, sort, props)
-    val result = sections.map { GameSection(it.label, it.sidebarLabel, it.items) }
-    return if (sort.descending) result else result.reversed()
+    sort: ActiveSort,
+    partition: SortPartition = SortPartition.NONE
+): List<GameSection> =
+    computePartitionedSections(games, sort, GameListItemProps, partition)
+        .map { GameSection(it.label, it.sidebarLabel, it.items) }
+
+/**
+ * Section a list, honouring [partition] before the sort.
+ *
+ * A lifted group keeps the chosen sort inside itself and stays at the top whichever direction the
+ * sort runs, so flipping A-Z to Z-A reorders the library without burying what was lifted.
+ */
+fun <T> computePartitionedSections(
+    items: List<T>,
+    sort: ActiveSort,
+    props: SortableProps<T>,
+    partition: SortPartition = SortPartition.NONE
+): List<Section<T>> {
+    if (partition.isEmpty) return orderedSections(items, sort, props)
+
+    val leading = mutableListOf<Section<T>>()
+    var rest = items
+
+    if (partition.installedFirst) {
+        val (installed, others) = rest.partition { props.isInstalled(it) }
+        if (installed.isNotEmpty()) {
+            leading += Section("Installed", "Inst", flatOrdered(installed, sort, props))
+        }
+        rest = others
+    }
+    if (partition.favoritesFirst) {
+        val (favorites, others) = rest.partition { props.isFavorite(it) }
+        if (favorites.isNotEmpty()) {
+            leading += Section("Favorites", "Favs", flatOrdered(favorites, sort, props))
+        }
+        rest = others
+    }
+
+    return leading + orderedSections(rest, sort, props)
 }
+
+private fun <T> orderedSections(
+    items: List<T>,
+    sort: ActiveSort,
+    props: SortableProps<T>
+): List<Section<T>> {
+    val sections = computeGenericSections(items, sort, props)
+    return if (sort.descending) sections else sections.reversed()
+}
+
+private fun <T> flatOrdered(
+    items: List<T>,
+    sort: ActiveSort,
+    props: SortableProps<T>
+): List<T> = orderedSections(items, sort, props).flatMap { it.items }
 
 fun <T> computeGenericSections(
     items: List<T>,
@@ -62,6 +125,8 @@ fun <T> computeGenericSections(
 }
 
 interface SortableProps<T> {
+    fun isInstalled(item: T): Boolean
+    fun isFavorite(item: T): Boolean
     fun sortTitle(item: T): String
     fun rating(item: T): Float?
     fun userRating(item: T): Int
@@ -73,7 +138,25 @@ interface SortableProps<T> {
     fun addedAtEpochMilli(item: T): Long
 }
 
+object GameEntityProps : SortableProps<com.nendo.argosy.data.local.entity.GameEntity> {
+    override fun isInstalled(item: com.nendo.argosy.data.local.entity.GameEntity) = item.localPath != null
+    override fun isFavorite(item: com.nendo.argosy.data.local.entity.GameEntity) = item.isFavorite
+    override fun sortTitle(item: com.nendo.argosy.data.local.entity.GameEntity) = item.sortTitle
+    override fun rating(item: com.nendo.argosy.data.local.entity.GameEntity) = item.rating
+    override fun userRating(item: com.nendo.argosy.data.local.entity.GameEntity) = item.userRating
+    override fun userDifficulty(item: com.nendo.argosy.data.local.entity.GameEntity) = item.userDifficulty
+    override fun releaseYear(item: com.nendo.argosy.data.local.entity.GameEntity) = item.releaseYear
+    override fun playCount(item: com.nendo.argosy.data.local.entity.GameEntity) = item.playCount
+    override fun playTimeMinutes(item: com.nendo.argosy.data.local.entity.GameEntity) = item.playTimeMinutes
+    override fun lastPlayedEpochMilli(item: com.nendo.argosy.data.local.entity.GameEntity) =
+        item.lastPlayed?.toEpochMilli()
+    override fun addedAtEpochMilli(item: com.nendo.argosy.data.local.entity.GameEntity) =
+        item.addedAt.toEpochMilli()
+}
+
 object GameListItemProps : SortableProps<GameListItem> {
+    override fun isInstalled(item: GameListItem) = item.localPath != null
+    override fun isFavorite(item: GameListItem) = item.isFavorite
     override fun sortTitle(item: GameListItem) = item.sortTitle
     override fun rating(item: GameListItem) = item.rating
     override fun userRating(item: GameListItem) = item.userRating

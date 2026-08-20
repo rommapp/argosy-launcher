@@ -991,6 +991,16 @@ class PlaySessionTracker @Inject constructor(
         return Duration.between(session.startTime, Instant.now())
     }
 
+    /**
+     * End a session too short to be worth archiving its save, without discarding its save states.
+     *
+     * The caller decides a session is not worth backing up from elapsed time and whether the
+     * watcher saw the game write its SRAM. A game with no battery save never produces that write,
+     * so every short session on one lands here - and a state the player deliberately saved is
+     * worth keeping whatever the clock says. States are cached to Room before this point but only
+     * queued for upload by [endSession], so without this flush the row has nothing left to drain
+     * it until some later, longer session for the same game happens to run.
+     */
     fun cancelSession() {
         if (endingSession.get()) {
             Logger.debug(TAG, "[SaveSync] SESSION | cancelSession skipped: endSession already in progress")
@@ -999,8 +1009,17 @@ class PlaySessionTracker @Inject constructor(
         val session = _activeSession.value ?: return
         _activeSession.value = null
         GameSessionService.stop(application)
-        Logger.debug(TAG, "[SaveSync] SESSION gameId=${session.gameId} | Cancelled (no backup)")
-        scope.launch { clearSessionAndBroadcast() }
+        Logger.debug(TAG, "[SaveSync] SESSION gameId=${session.gameId} | Cancelled (no save backup)")
+        scope.launch {
+            if (session.variantFileId == null && !session.isNetplayGuest) {
+                try {
+                    syncStateData(session.gameId, session.emulatorPackage)
+                } catch (e: Exception) {
+                    Logger.error(TAG, "[StateSync] SESSION gameId=${session.gameId} | State flush on cancel failed", e)
+                }
+            }
+            clearSessionAndBroadcast()
+        }
     }
 
     fun endSessionInBackground(skipSaveSync: Boolean = false) {

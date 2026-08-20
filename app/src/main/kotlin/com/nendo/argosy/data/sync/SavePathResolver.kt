@@ -641,6 +641,15 @@ class SavePathResolver @Inject constructor(
         return null
     }
 
+    /**
+     * Build the path a save should be written to, for callers that could not discover one.
+     *
+     * [folderShaped] says whether this particular save is a folder, defaulting to the shape the
+     * platform usually produces. A platform can hold both at once - PS2 keeps folder memcards
+     * beside file saves such as `.resume.p2s` - and the folder branch creates a directory at the
+     * path it returns, so a file save resolved through the platform default has a directory
+     * written over its target and the download that follows cannot write there.
+     */
     suspend fun constructSavePath(
         emulatorId: String,
         gameTitle: String,
@@ -648,7 +657,8 @@ class SavePathResolver @Inject constructor(
         romPath: String?,
         coreName: String? = null,
         cachedSaveId: String? = null,
-        gameId: Long? = null
+        gameId: Long? = null,
+        folderShaped: Boolean? = null
     ): String? {
         val config = SavePathRegistry.getConfigForPlatform(emulatorId, platformSlug)
             ?: SavePathRegistry.getConfig(emulatorId)
@@ -690,7 +700,7 @@ class SavePathResolver @Inject constructor(
             return "$baseDir/${File(romPath).nameWithoutExtension}.$extension"
         }
 
-        if (config.usesFolderBasedSaves && cachedSaveId != null) {
+        if ((folderShaped ?: config.usesFolderBasedSaves) && cachedSaveId != null) {
             saveHandlerRegistry.getFolderHandler(platformSlug)?.constructSavePath(baseDir, cachedSaveId)?.let {
                 saveArchiver.getFileForPath(it).mkdirs()
                 return it

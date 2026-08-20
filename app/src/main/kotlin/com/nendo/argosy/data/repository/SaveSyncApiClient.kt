@@ -444,8 +444,11 @@ class SaveSyncApiClient @Inject constructor(
         romPath: String?,
         coreName: String? = null,
         cachedSaveId: String? = null,
-        gameId: Long? = null
-    ): String? = savePathResolver.constructSavePath(emulatorId, gameTitle, platformSlug, romPath, coreName, cachedSaveId, gameId)
+        gameId: Long? = null,
+        folderShaped: Boolean? = null
+    ): String? = savePathResolver.constructSavePath(
+        emulatorId, gameTitle, platformSlug, romPath, coreName, cachedSaveId, gameId, folderShaped
+    )
 
     suspend fun predictFolderSavePath(
         emulatorId: String,

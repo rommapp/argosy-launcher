@@ -50,7 +50,8 @@ class RestoreCachedSaveUseCase @Inject constructor(
             emulatorPackage = emulatorPackage,
             gameId = gameId
         ) ?: saveSyncRepository.constructSavePath(
-            emulatorId, game.title, game.platformSlug, game.localPath, coreName, game.saveId ?: game.titleId, gameId
+            emulatorId, game.title, game.platformSlug, game.localPath, coreName, game.saveId ?: game.titleId, gameId,
+            folderShaped = entry.serverFileName?.endsWith(".zip", ignoreCase = true)
         ) ?: return Result.Error("Cannot determine save location")
 
         if (!saveSyncRepository.clearSavesForTitle(targetPath, game.platformSlug, game.saveId ?: game.titleId)) {

@@ -27,6 +27,7 @@ import io.mockk.unmockkStatic
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Test
@@ -417,6 +418,27 @@ class SavePathResolverDiscoveryTest {
         )
 
         assertEquals("/path/found/$titleId", result)
+    }
+
+    @Test
+    fun `a file shaped save on a folder based platform is not given the memcard directory`() = runTest {
+        val memcardDir = File(tempDir, "memcards/Shared.ps2").absolutePath
+        val folderHandler = mockk<com.nendo.argosy.data.sync.platform.FolderSaveHandler>(relaxed = true)
+        every { saveHandlerRegistry.getFolderHandler("ps2") } returns folderHandler
+        every { folderHandler.constructSavePath(any(), any()) } returns memcardDir
+
+        val folderShapedResult = resolver.constructSavePath(
+            emulatorId = "nethersx2", gameTitle = "Shadow of the Colossus", platformSlug = "ps2",
+            romPath = "/roms/sotc.iso", cachedSaveId = "SCUS-97472", gameId = 1L,
+        )
+        val fileShapedResult = resolver.constructSavePath(
+            emulatorId = "nethersx2", gameTitle = "Shadow of the Colossus", platformSlug = "ps2",
+            romPath = "/roms/sotc.iso", cachedSaveId = "SCUS-97472", gameId = 1L,
+            folderShaped = false,
+        )
+
+        assertEquals(memcardDir, folderShapedResult)
+        assertNotEquals(memcardDir, fileShapedResult)
     }
 
     private fun rommGame(): GameEntity = GameEntity(

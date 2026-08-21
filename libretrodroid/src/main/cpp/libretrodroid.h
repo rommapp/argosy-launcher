@@ -262,6 +262,7 @@ private:
 
     void renderSecondaryFrame();
     void applyPrimaryCrop();
+    void clearScreenSplit();
     void orientSplitCrop(const float* source, float* target);
 
     SecondaryOutput secondaryOutput;

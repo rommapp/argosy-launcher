@@ -627,6 +627,7 @@ void LibretroDroid::destroy() {
     ScopedSignalStackGuard signalStackGuard;
 
     secondaryOutput.destroy();
+    clearScreenSplit();
 
     auto contextDestroy = Environment::getInstance().getHwContextDestroy();
     if (contextDestroy != nullptr && video && video->isHWAccelerated()) {
@@ -1279,6 +1280,21 @@ void LibretroDroid::setSecondaryCrop(float left, float top, float right, float b
 
 void LibretroDroid::setSecondaryAspectRatio(float aspectRatio) {
     secondaryAspect = aspectRatio;
+}
+
+/**
+ * Forgets the split. This object outlives a game, so a console with two screens would otherwise
+ * leave its crop and aspect behind for whatever is loaded next to be drawn with.
+ */
+void LibretroDroid::clearScreenSplit() {
+    screenSplitEnabled = false;
+    for (int i = 0; i < 4; i++) {
+        splitPrimaryCrop[i] = 0.0F;
+        secondaryCrop[i] = 0.0F;
+    }
+    splitPrimaryAspect = 0.0F;
+    secondaryAspect = 0.0F;
+    applyPrimaryCrop();
 }
 
 /**

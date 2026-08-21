@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import android.app.ActivityManager
 import android.content.Intent
 import android.graphics.Bitmap
+import android.graphics.RectF
 import android.os.Bundle
 import android.os.VibrationEffect
 import android.os.Vibrator
@@ -2828,9 +2829,12 @@ class LibretroActivity : ComponentActivity() {
      * set alongside them rather than left to whatever the user last chose.
      */
     private fun setUpSecondScreen() {
-        if (!isDualScreenMode()) return
-        val output = DualScreenOutput.forCore(resolvedCoreId) ?: return
-        if (secondScreenDisplay() == null) return
+        val output = DualScreenOutput.forCore(resolvedCoreId)
+            ?.takeIf { isDualScreenMode() && secondScreenDisplay() != null }
+        if (output == null) {
+            clearScreenSplit()
+            return
+        }
 
         dualScreenOutput = output
         output.coreOptions.forEach { (key, value) ->
@@ -2839,6 +2843,18 @@ class LibretroActivity : ComponentActivity() {
         retroView.setScreenSplit(output.primary, output.primaryAspect)
         retroView.secondaryCrop = output.secondary
         retroView.secondaryAspectRatio = output.secondaryAspect
+    }
+
+    /**
+     * Puts the frame back the way a one-screen console needs it. The emulator is a single object
+     * for the life of the process, so a split left behind is drawn over the next game loaded.
+     */
+    private fun clearScreenSplit() {
+        dualScreenOutput = null
+        if (!::retroView.isInitialized) return
+        retroView.setScreenSplit(null, 0f)
+        retroView.secondaryCrop = RectF(0f, 0f, 0f, 0f)
+        retroView.secondaryAspectRatio = 0f
     }
 
     /**

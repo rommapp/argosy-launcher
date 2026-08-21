@@ -198,6 +198,26 @@ interface SaveCacheDao {
     """)
     suspend fun getMostRecentInChannel(gameId: Long, ownerUserId: Long?, channelName: String): SaveCacheEntity?
 
+    @Query("""
+        SELECT * FROM save_cache
+        WHERE gameId = :gameId AND channelName = :channelName
+          AND (ownerUserId IS NULL OR ownerUserId = :ownerUserId)
+        ORDER BY cachedAt DESC
+    """)
+    suspend fun getAllInChannel(gameId: Long, ownerUserId: Long?, channelName: String): List<SaveCacheEntity>
+
+    /**
+     * Renames every save in a channel, not only the one the user had selected. A channel is one
+     * unit: leaving its other saves under the old name splits it in two, and the half left behind
+     * answers to a name nothing shows any more.
+     */
+    @Query("""
+        UPDATE save_cache SET note = :newName, channelName = :newName
+        WHERE gameId = :gameId AND channelName = :oldName
+          AND (ownerUserId IS NULL OR ownerUserId = :ownerUserId)
+    """)
+    suspend fun renameChannel(gameId: Long, ownerUserId: Long?, oldName: String, newName: String)
+
     @Query("DELETE FROM save_cache WHERE gameId IN (SELECT id FROM games WHERE platformId = :platformId)")
     suspend fun deleteByPlatform(platformId: Long)
 

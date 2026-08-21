@@ -26,6 +26,8 @@ private const val TAG = "LaunchWithSync"
 class LaunchWithSyncUseCase @Inject constructor(
     private val gameDao: GameDao,
     private val activeSaveRepository: com.nendo.argosy.data.repository.ActiveSaveRepository,
+    private val activateSaveChannelUseCase:
+        com.nendo.argosy.domain.usecase.savechannel.ActivateSaveChannelUseCase,
     private val emulatorConfigDao: EmulatorConfigDao,
     private val emulatorResolver: EmulatorResolver,
     private val preferencesRepository: UserPreferencesRepository,
@@ -128,7 +130,7 @@ class LaunchWithSyncUseCase @Inject constructor(
         if (channelName != null) {
             val currentChannel = activeSaveRepository.getActiveChannel(gameId)
             if (currentChannel != channelName) {
-                activeSaveRepository.activateChannel(gameId, channelName)
+                activateSaveChannelUseCase(gameId, channelName)
             }
         }
 

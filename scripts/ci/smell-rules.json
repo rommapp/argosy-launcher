@@ -45,6 +45,21 @@
         "app/src/main/**/Dimens*.kt"
       ],
       "added_regex": "\\b(?!0\\.dp)\\d+(?:\\.\\d+)?\\.dp\\b"
+    },
+    {
+      "id": "raw-save-channel-primitive",
+      "summary": "Save-channel primitive called outside domain/usecase/savechannel",
+      "message": "Save channels carry their states with them. activateChannel / createChannel / renameChannel / copyToChannel / deleteStatesForChannel / moveStatesToChannel are halves of a channel operation, and calling one directly moves the save while leaving the state behind. Route through domain/usecase/savechannel (ActivateSaveChannelUseCase and siblings), which owns both halves. See AGENTS.md (save-sync axis).",
+      "path_include": [
+        "app/src/main/**/*.kt"
+      ],
+      "path_exclude": [
+        "app/src/main/**/domain/usecase/savechannel/**",
+        "app/src/main/**/data/repository/ActiveSaveRepository.kt",
+        "app/src/main/**/data/repository/SaveCacheManager.kt",
+        "app/src/main/**/data/repository/StateCacheManager.kt"
+      ],
+      "added_regex": "\\.(activateChannel|createChannel|renameChannel|copyToChannel|deleteStatesForChannel|moveStatesToChannel|duplicateStatesForChannel)\\s*\\("
     }
   ]
 }

@@ -189,10 +189,21 @@ class SaveChannelDelegate @Inject constructor(
         val state = _state.value
         when (state.selectedTab) {
             SaveTab.SAVES -> savesDelegate.confirmSlotOrHistory(
-                scope, emulatorId, onSaveStatusChanged, onRestored
+                scope, emulatorId, onSaveStatusChanged, refreshingStates(scope, onRestored)
             )
             SaveTab.STATES -> statesDelegate.confirmFocusedState(scope)
         }
+    }
+
+    /**
+     * The states tab shows the active channel, so a save action that changes which channel is
+     * active leaves it displaying the channel before it, and that channel's server states are the
+     * only ones ever asked for. Refreshing as the action finishes is what fetches the states of the
+     * channel now in force, rather than leaving them until the modal is next opened.
+     */
+    private fun refreshingStates(scope: CoroutineScope, onRestored: () -> Unit): () -> Unit = {
+        scope.launch { statesDelegate.refreshStates() }
+        onRestored()
     }
 
     fun dismissRestoreConfirmation() = savesDelegate.dismissRestoreConfirmation()
@@ -203,7 +214,9 @@ class SaveChannelDelegate @Inject constructor(
         syncToServer: Boolean,
         onSaveStatusChanged: (SaveStatusEvent) -> Unit,
         onRestored: () -> Unit = {}
-    ) = savesDelegate.restoreSave(scope, emulatorId, syncToServer, onSaveStatusChanged, onRestored)
+    ) = savesDelegate.restoreSave(
+        scope, emulatorId, syncToServer, onSaveStatusChanged, refreshingStates(scope, onRestored)
+    )
 
     fun dismissRenameDialog() = savesDelegate.dismissRenameDialog()
 

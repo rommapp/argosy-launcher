@@ -571,6 +571,24 @@ class SaveCacheManager @Inject constructor(
         saveCacheDao.setNote(cacheId, name?.takeIf { it.isNotBlank() })
     }
 
+    suspend fun renameChannel(gameId: Long, oldName: String, newName: String) = withContext(Dispatchers.IO) {
+        saveCacheDao.renameChannel(
+            gameId = gameId,
+            ownerUserId = syncPreferencesRepository.getRommUserId(),
+            oldName = oldName,
+            newName = newName
+        )
+    }
+
+    suspend fun getSavesInChannel(gameId: Long, channelName: String): List<SaveCacheEntity> =
+        withContext(Dispatchers.IO) {
+            saveCacheDao.getAllInChannel(
+                gameId = gameId,
+                ownerUserId = syncPreferencesRepository.getRommUserId(),
+                channelName = channelName
+            )
+        }
+
     suspend fun channelExists(gameId: Long, channelName: String): Boolean = withContext(Dispatchers.IO) {
         saveCacheDao.getByGameAndChannel(gameId, channelName) != null
     }

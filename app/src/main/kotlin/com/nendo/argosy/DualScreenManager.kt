@@ -90,6 +90,16 @@ class DualScreenManager(
         com.nendo.argosy.domain.usecase.state.GetUnifiedStatesUseCase,
     private val stateCacheManager: com.nendo.argosy.data.repository.StateCacheManager,
     private val restoreCachedSaveUseCase: RestoreCachedSaveUseCase,
+    private val activateSaveChannelUseCase:
+        com.nendo.argosy.domain.usecase.savechannel.ActivateSaveChannelUseCase,
+    private val restoreSaveChannelPointUseCase:
+        com.nendo.argosy.domain.usecase.savechannel.RestoreSaveChannelPointUseCase,
+    private val createSaveChannelUseCase:
+        com.nendo.argosy.domain.usecase.savechannel.CreateSaveChannelUseCase,
+    private val copySaveChannelUseCase:
+        com.nendo.argosy.domain.usecase.savechannel.CopySaveChannelUseCase,
+    private val restoreStateUseCase:
+        com.nendo.argosy.domain.usecase.state.RestoreStateUseCase,
     private val emulatorResolver: EmulatorResolver,
     private val fetchAchievementsUseCase: FetchAchievementsUseCase,
     internal val displayAffinityHelper: DisplayAffinityHelper,
@@ -1210,6 +1220,7 @@ class DualScreenManager(
                     }
                 }
             }
+            "STATE_RESTORE" -> handleStateRestore(gameId, channelName)
             "STATE_DELETE" -> handleStateDelete(gameId, channelName)
             "STATE_COPY" -> handleStateCopy(gameId, channelName)
             "SELECT_DISC" -> handleSelectDisc(gameId)
@@ -2336,7 +2347,7 @@ class DualScreenManager(
                 gameId, game.platformId, game.platformSlug
             )
 
-            activeSaveRepository.activateChannel(gameId, channelName)
+            activateSaveChannelUseCase(gameId, channelName)
 
             if (emulatorId != null) {
                 val entries = getUnifiedSavesUseCase(gameId, expandHistory = true)
@@ -2389,6 +2400,11 @@ class DualScreenManager(
                 }
 
                 if (targetEntry != null) {
+                    restoreSaveChannelPointUseCase(
+                        gameId = gameId,
+                        channelName = channelName,
+                        isLatest = targetEntry.isLatest
+                    )
                     val result = restoreCachedSaveUseCase(
                         targetEntry, gameId, emulatorId, false
                     )
@@ -2406,33 +2422,39 @@ class DualScreenManager(
 
             broadcastSaveActionResult("SAVE_RESTORE_DONE", gameId)
             broadcastUnifiedSaves(gameId)
+            broadcastUnifiedStates(gameId)
         }
     }
 
     private fun handleCreateSlot(gameId: Long, name: String) {
         scope.launch(Dispatchers.IO) {
-            val game = gameDao.getById(gameId) ?: return@launch
-            val emulatorId = emulatorResolver.getEmulatorIdForGame(
-                gameId, game.platformId, game.platformSlug
-            )
-
-            activeSaveRepository.activateChannel(gameId, name)
-
-            if (emulatorId != null) {
-                restoreCachedSaveUseCase.clearActiveSave(gameId, emulatorId)
-            }
+            createSaveChannelUseCase(gameId, name)
 
             broadcastSaveActionResult("SAVE_CREATE_DONE", gameId)
             broadcastUnifiedSaves(gameId)
+            broadcastUnifiedStates(gameId)
         }
     }
 
     private fun handleLockAsSlot(gameId: Long, cacheId: Long?, name: String) {
         if (cacheId == null) return
         scope.launch(Dispatchers.IO) {
-            saveCacheManager.copyToChannel(cacheId, name)
+            val sourceChannel = getUnifiedSavesUseCase(gameId, expandHistory = true)
+                .firstOrNull { it.localCacheId == cacheId }
+                ?.channelName
+
+            copySaveChannelUseCase(
+                gameId = gameId,
+                sourceChannel = sourceChannel,
+                targetChannel = name,
+                localCacheId = cacheId,
+                serverSaveId = null,
+                emulatorId = null
+            )
+
             broadcastSaveActionResult("SAVE_LOCK_DONE", gameId)
             broadcastUnifiedSaves(gameId)
+            broadcastUnifiedStates(gameId)
         }
     }
 
@@ -2506,6 +2528,46 @@ class DualScreenManager(
 
     private fun stateSlotLabel(slot: Int): String =
         if (slot < 0) "auto state" else "state slot $slot"
+
+    /**
+     * A state the companion restores goes through the same use case the handheld uses, so a
+     * version mismatch is refused here too. The companion has nowhere to ask the user to override,
+     * so a mismatch is reported rather than forced: restoring a state a different core wrote is
+     * how a save file gets corrupted.
+     */
+    private fun handleStateRestore(gameId: Long, slotArg: String?) {
+        val slot = slotArg?.toIntOrNull() ?: return
+        scope.launch(Dispatchers.IO) {
+            val entry = stateEntriesFor(gameId).firstOrNull { it.slotNumber == slot } ?: return@launch
+            val cacheId = entry.localCacheId ?: return@launch
+            val game = gameDao.getById(gameId) ?: return@launch
+            val romPath = game.localPath
+            if (romPath == null) {
+                notificationManager.showError("Game has no local path")
+                return@launch
+            }
+            val emulatorId = emulatorResolver.getEmulatorIdForGame(
+                gameId, game.platformId, game.platformSlug
+            ) ?: return@launch
+
+            when (restoreStateUseCase(
+                cacheId = cacheId,
+                emulatorId = emulatorId,
+                platformId = game.platformSlug,
+                romPath = romPath
+            )) {
+                is com.nendo.argosy.domain.usecase.state.RestoreStateResult.Success ->
+                    notificationManager.showSuccess("Restored ${stateSlotLabel(slot)}")
+                is com.nendo.argosy.domain.usecase.state.RestoreStateResult.VersionMismatch ->
+                    notificationManager.showError(
+                        "${stateSlotLabel(slot)} was made by a different core version"
+                    )
+                else ->
+                    notificationManager.showError("Could not restore ${stateSlotLabel(slot)}")
+            }
+            broadcastUnifiedStates(gameId)
+        }
+    }
 
     private fun handleStateDelete(gameId: Long, slotArg: String?) {
         val slot = slotArg?.toIntOrNull() ?: return

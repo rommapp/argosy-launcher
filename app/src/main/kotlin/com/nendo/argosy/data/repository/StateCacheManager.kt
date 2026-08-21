@@ -80,6 +80,7 @@ class StateCacheManager @Inject constructor(
 ) {
     companion object {
         private const val TAG = "StateCacheManager"
+        private const val UNKNOWN_CORE_DIR = "unknown"
         private const val MIN_UNLOCKED_SLOTS = 3
         private const val BUFFER_SIZE = 8192
         private val UPLOAD_TIMESTAMP_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss")
@@ -598,12 +599,7 @@ class StateCacheManager @Inject constructor(
             val sourceFile = File(cacheBaseDir, source.cachePath)
             if (!sourceFile.exists()) continue
 
-            val coreDirName = source.coreId ?: "unknown"
-            val gameRelativeDir = source.cachePath
-                .substringBeforeLast('/')
-                .substringBeforeLast('/')
-                .substringBeforeLast('/')
-            val targetRelativeDir = "$gameRelativeDir/$targetChannel/$coreDirName"
+            val targetRelativeDir = channelRelativeDir(source.cachePath, source.coreId, targetChannel)
             val targetDir = File(cacheBaseDir, targetRelativeDir)
             targetDir.mkdirs()
 
@@ -645,6 +641,76 @@ class StateCacheManager @Inject constructor(
 
         Log.d(TAG, "Duplicated $copied states from channel ${sourceChannel ?: "default"} to $targetChannel for game $gameId")
         copied
+    }
+
+    /**
+     * Where a channel's states for one core are cached, relative to the cache root.
+     *
+     * The channel name is a path segment, so it is part of a state's address and not only a column
+     * on its row. Anything that changes which channel a state belongs to has to move the file too.
+     */
+    private fun channelRelativeDir(cachePath: String, coreId: String?, targetChannel: String): String {
+        val gameRelativeDir = cachePath
+            .substringBeforeLast('/')
+            .substringBeforeLast('/')
+            .substringBeforeLast('/')
+        return "$gameRelativeDir/$targetChannel/${coreId ?: UNKNOWN_CORE_DIR}"
+    }
+
+    /**
+     * Carries a channel's states over to a new name, files and rows together.
+     *
+     * Renaming a channel without this strands its states under a name nothing will ask for again.
+     * A state whose file has already gone still has its row moved: the row is what the slot list
+     * reads, so leaving it behind would show the state under the old name forever.
+     */
+    suspend fun moveStatesToChannel(
+        gameId: Long,
+        sourceChannel: String?,
+        targetChannel: String
+    ): Int = withContext(Dispatchers.IO) {
+        if (sourceChannel == targetChannel) return@withContext 0
+        val ownerUserId = syncPreferencesRepository.getRommUserId()
+        val sourceStates = if (sourceChannel != null) {
+            stateCacheDao.getByChannel(gameId, sourceChannel, ownerUserId)
+        } else {
+            stateCacheDao.getDefaultChannel(gameId, ownerUserId)
+        }
+        if (sourceStates.isEmpty()) return@withContext 0
+
+        var moved = 0
+        for (source in sourceStates) {
+            val targetRelativeDir = channelRelativeDir(source.cachePath, source.coreId, targetChannel)
+            File(cacheBaseDir, targetRelativeDir).mkdirs()
+
+            val sourceFile = File(cacheBaseDir, source.cachePath)
+            val targetCachePath = "$targetRelativeDir/${sourceFile.name}"
+            if (sourceFile.exists()) {
+                sourceFile.copyTo(File(cacheBaseDir, targetCachePath), overwrite = true)
+                sourceFile.delete()
+            }
+
+            val targetScreenshotPath = source.screenshotPath?.let { screenshot ->
+                val screenshotFile = File(cacheBaseDir, screenshot)
+                val movedPath = "$targetRelativeDir/${screenshotFile.name}"
+                if (screenshotFile.exists()) {
+                    screenshotFile.copyTo(File(cacheBaseDir, movedPath), overwrite = true)
+                    screenshotFile.delete()
+                }
+                movedPath
+            }
+
+            stateCacheDao.update(
+                source.copy(
+                    channelName = targetChannel,
+                    cachePath = targetCachePath,
+                    screenshotPath = targetScreenshotPath
+                )
+            )
+            moved++
+        }
+        Log.d(TAG, "Moved $moved states from ${sourceChannel ?: "default"} to $targetChannel for game $gameId")
+        moved
     }
 
     suspend fun getStatesForChannel(gameId: Long, channelName: String): List<StateCacheEntity> =
@@ -785,7 +851,7 @@ class StateCacheManager @Inject constructor(
         coreId: String?
     ): String {
         val channelDirName = channelName ?: "default"
-        val coreDirName = coreId ?: "unknown"
+        val coreDirName = coreId ?: UNKNOWN_CORE_DIR
         return "${AppPaths.ownerCacheSegment(ownerUserId)}$platformSlug/$gameId/$channelDirName/$coreDirName"
     }
 

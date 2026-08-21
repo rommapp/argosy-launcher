@@ -68,6 +68,17 @@ class GetUnifiedStatesUseCase @Inject constructor(
         )
     }
 
+    /**
+     * Brings down the server states of one channel and returns the ones it still has tombstoned.
+     *
+     * Scoped to [channelName] on purpose. Only the active channel's states are ever shown, and a
+     * state is a whole emulator snapshot, so fetching the channels nothing is going to draw spends
+     * the user's bandwidth and storage on files that will not be read.
+     *
+     * Deduplication stays inside one channel for the same reason it must: two channels each holding
+     * a slot 1 hold two different states, and collapsing them on slot number alone would tombstone
+     * one of them.
+     */
     private suspend fun syncServerStates(
         rommId: Long,
         gameId: Long,
@@ -86,6 +97,7 @@ class GetUnifiedStatesUseCase @Inject constructor(
             val parsed = stateCacheManager.parseStateFileName(serverState.fileName)
             channelName == null || parsed.channelName == channelName
         }
+
 
         channelMatched
             .groupBy { stateCacheManager.parseStateFileName(it.fileName).slotNumber }

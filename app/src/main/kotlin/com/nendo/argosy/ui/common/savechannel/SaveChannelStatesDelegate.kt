@@ -313,7 +313,7 @@ class SaveChannelStatesDelegate @Inject constructor(
         }
     }
 
-    private suspend fun refreshStates() {
+    suspend fun refreshStates() {
         val state = _state.value
         val game = gameRepository.getById(currentGameId)
         val resolvedEmulatorId = game?.let {

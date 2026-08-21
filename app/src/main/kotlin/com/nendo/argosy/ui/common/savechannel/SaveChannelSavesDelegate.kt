@@ -11,7 +11,12 @@ import com.nendo.argosy.data.sync.SyncCoordinator
 import com.nendo.argosy.domain.model.UnifiedSaveEntry
 import com.nendo.argosy.domain.usecase.save.GetUnifiedSavesUseCase
 import com.nendo.argosy.domain.usecase.save.RestoreCachedSaveUseCase
-import com.nendo.argosy.domain.usecase.state.RestoreCachedStatesUseCase
+import com.nendo.argosy.domain.usecase.savechannel.ActivateSaveChannelUseCase
+import com.nendo.argosy.domain.usecase.savechannel.CopySaveChannelUseCase
+import com.nendo.argosy.domain.usecase.savechannel.CreateSaveChannelUseCase
+import com.nendo.argosy.domain.usecase.savechannel.DeleteSaveChannelUseCase
+import com.nendo.argosy.domain.usecase.savechannel.RenameSaveChannelUseCase
+import com.nendo.argosy.domain.usecase.savechannel.RestoreSaveChannelPointUseCase
 import com.nendo.argosy.core.notification.NotificationManager
 import com.nendo.argosy.core.notification.showError
 import com.nendo.argosy.core.notification.showSuccess
@@ -25,10 +30,14 @@ class SaveChannelSavesDelegate @Inject constructor(
     private val holder: SaveChannelStateHolder,
     private val getUnifiedSavesUseCase: GetUnifiedSavesUseCase,
     private val restoreCachedSaveUseCase: RestoreCachedSaveUseCase,
-    private val restoreCachedStatesUseCase: RestoreCachedStatesUseCase,
+    private val activateSaveChannelUseCase: ActivateSaveChannelUseCase,
+    private val restoreSaveChannelPointUseCase: RestoreSaveChannelPointUseCase,
+    private val createSaveChannelUseCase: CreateSaveChannelUseCase,
+    private val copySaveChannelUseCase: CopySaveChannelUseCase,
+    private val renameSaveChannelUseCase: RenameSaveChannelUseCase,
+    private val deleteSaveChannelUseCase: DeleteSaveChannelUseCase,
     private val saveCacheManager: SaveCacheManager,
     private val saveSyncRepository: SaveSyncRepository,
-    private val stateCacheManager: StateCacheManager,
     private val gameRepository: GameRepository,
     private val activeSaveRepository: ActiveSaveRepository,
     private val notificationManager: NotificationManager,
@@ -315,7 +324,7 @@ class SaveChannelSavesDelegate @Inject constructor(
         val emulatorPackage = state.emulatorPackage
 
         scope.launch {
-            activeSaveRepository.activateChannel(currentGameId, channelName)
+            activateSaveChannelUseCase(currentGameId, channelName, state.currentCoreId)
             _state.update {
                 it.copy(activeChannel = channelName, activeSaveTimestamp = null, activeSaveCacheId = null)
             }
@@ -324,15 +333,6 @@ class SaveChannelSavesDelegate @Inject constructor(
             )
 
             titleIdDownloadObserver.extractTitleIdForGame(currentGameId)
-
-            if (emulatorPackage != null && state.supportsStates) {
-                restoreCachedStatesUseCase(
-                    gameId = currentGameId,
-                    channelName = channelName,
-                    emulatorPackage = emulatorPackage,
-                    coreId = state.currentCoreId
-                )
-            }
 
             val candidates = holder.rawEntries.filter { it.channelName == channelName }
             val entry = candidates.maxByOrNull { it.timestamp }
@@ -436,37 +436,12 @@ class SaveChannelSavesDelegate @Inject constructor(
                 source = entry.source.name,
                 isLatest = entry.isLatest
             )
-            val game = gameRepository.getById(currentGameId)
-
-            if (emulatorPackage != null && state.supportsStates) {
-                if (isRestoringLatest) {
-                    restoreCachedStatesUseCase(
-                        gameId = currentGameId,
-                        channelName = targetChannel,
-                        emulatorPackage = emulatorPackage,
-                        coreId = state.currentCoreId,
-                        skipAutoState = false
-                    )
-                } else {
-                    restoreCachedStatesUseCase(
-                        gameId = currentGameId,
-                        channelName = targetChannel,
-                        emulatorPackage = emulatorPackage,
-                        coreId = state.currentCoreId,
-                        skipAutoState = true
-                    )
-                    if (game?.localPath != null) {
-                        stateCacheManager.deleteAutoResumeStatesFromDisk(
-                            emulatorId = emulatorId,
-                            romPath = game.localPath,
-                            platformSlug = game.platformSlug,
-                            emulatorPackage = emulatorPackage,
-                            coreId = state.currentCoreId,
-                            gameId = currentGameId
-                        )
-                    }
-                }
-            }
+            restoreSaveChannelPointUseCase(
+                gameId = currentGameId,
+                channelName = targetChannel,
+                isLatest = isRestoringLatest,
+                coreId = state.currentCoreId
+            )
 
             _state.update {
                 it.copy(
@@ -616,14 +591,7 @@ class SaveChannelSavesDelegate @Inject constructor(
 
     private fun confirmCreateNewSlot(scope: CoroutineScope, name: String) {
         scope.launch {
-            val game = gameRepository.getById(currentGameId) ?: return@launch
-            val emulatorId = _state.value.emulatorId
-
-            activeSaveRepository.createChannel(currentGameId, name)
-
-            if (emulatorId != null) {
-                restoreCachedSaveUseCase.clearActiveSave(currentGameId, emulatorId)
-            }
+            createSaveChannelUseCase(currentGameId, name, _state.value.currentCoreId)
 
             _state.update {
                 it.copy(
@@ -651,26 +619,17 @@ class SaveChannelSavesDelegate @Inject constructor(
     ) {
         val state = _state.value
         scope.launch {
-            val success = if (entry.localCacheId != null) {
-                saveCacheManager.copyToChannel(entry.localCacheId, newName) != null
-            } else if (entry.serverSaveId != null) {
-                saveSyncRepository.downloadSaveAsChannel(
-                    currentGameId,
-                    entry.serverSaveId,
-                    newName,
-                    state.emulatorId
-                )
-            } else {
-                false
-            }
+            val success = copySaveChannelUseCase(
+                gameId = currentGameId,
+                sourceChannel = entry.channelName,
+                targetChannel = newName,
+                localCacheId = entry.localCacheId,
+                serverSaveId = entry.serverSaveId,
+                emulatorId = state.emulatorId,
+                coreId = state.currentCoreId
+            )
 
             if (success) {
-                stateCacheManager.duplicateStatesForChannel(
-                    gameId = currentGameId,
-                    sourceChannel = entry.channelName,
-                    targetChannel = newName
-                )
-
                 refreshEntries()
                 _state.update {
                     it.copy(
@@ -693,13 +652,12 @@ class SaveChannelSavesDelegate @Inject constructor(
         newName: String
     ) {
         val state = _state.value
-        val cacheId = entry.localCacheId ?: return
+        val oldName = entry.channelName ?: return
 
         scope.launch {
-            saveCacheManager.renameSave(cacheId, newName)
+            renameSaveChannelUseCase(currentGameId, oldName, newName, state.currentCoreId)
 
-            if (state.activeChannel == entry.channelName) {
-                activeSaveRepository.activateChannel(currentGameId, newName)
+            if (state.activeChannel == oldName) {
                 _state.update { it.copy(activeChannel = newName) }
             }
 
@@ -747,14 +705,6 @@ class SaveChannelSavesDelegate @Inject constructor(
      * Delete every copy of a save channel -- local cache entries AND their server saves. Deleting
      * only the local cache lets a server-only (or synced) save survive and re-sync back on refresh.
      */
-    private suspend fun deleteChannelEverywhere(channelName: String) {
-        val entries = holder.rawEntries.filter { it.channelName == channelName }
-        entries.mapNotNull { it.serverSaveId }
-            .takeIf { it.isNotEmpty() }
-            ?.let { saveSyncRepository.deleteServerSaves(it) }
-        entries.forEach { entry -> entry.localCacheId?.let { saveCacheManager.deleteSave(it) } }
-    }
-
     fun confirmDeleteChannel(
         scope: CoroutineScope,
         onSaveStatusChanged: (SaveStatusEvent) -> Unit
@@ -764,10 +714,9 @@ class SaveChannelSavesDelegate @Inject constructor(
         val channelName = entry.channelName ?: return
 
         scope.launch {
-            deleteChannelEverywhere(channelName)
+            deleteSaveChannelUseCase(currentGameId, channelName, state.currentCoreId)
 
             if (state.activeChannel == channelName) {
-                activeSaveRepository.clearActive(currentGameId)
                 _state.update {
                     it.copy(activeChannel = null, activeSaveTimestamp = null, activeSaveCacheId = null)
                 }
@@ -891,7 +840,7 @@ class SaveChannelSavesDelegate @Inject constructor(
         val channelName = state.deleteLegacyChannelName ?: return
 
         scope.launch {
-            deleteChannelEverywhere(channelName)
+            deleteSaveChannelUseCase(currentGameId, channelName, state.currentCoreId)
 
             refreshEntries()
             _state.update {

@@ -110,6 +110,16 @@ class MainActivity : ComponentActivity() {
         com.nendo.argosy.domain.usecase.state.GetUnifiedStatesUseCase
     @Inject lateinit var stateCacheManager: com.nendo.argosy.data.repository.StateCacheManager
     @Inject lateinit var restoreCachedSaveUseCase: RestoreCachedSaveUseCase
+    @Inject lateinit var activateSaveChannelUseCase:
+        com.nendo.argosy.domain.usecase.savechannel.ActivateSaveChannelUseCase
+    @Inject lateinit var restoreSaveChannelPointUseCase:
+        com.nendo.argosy.domain.usecase.savechannel.RestoreSaveChannelPointUseCase
+    @Inject lateinit var createSaveChannelUseCase:
+        com.nendo.argosy.domain.usecase.savechannel.CreateSaveChannelUseCase
+    @Inject lateinit var copySaveChannelUseCase:
+        com.nendo.argosy.domain.usecase.savechannel.CopySaveChannelUseCase
+    @Inject lateinit var restoreStateUseCase:
+        com.nendo.argosy.domain.usecase.state.RestoreStateUseCase
     @Inject lateinit var emulatorResolver: EmulatorResolver
     @Inject lateinit var fetchAchievementsUseCase: FetchAchievementsUseCase
     @Inject lateinit var gameFileDao: com.nendo.argosy.data.local.dao.GameFileDao
@@ -313,6 +323,11 @@ class MainActivity : ComponentActivity() {
                 getUnifiedStatesUseCase = getUnifiedStatesUseCase,
                 stateCacheManager = stateCacheManager,
                 restoreCachedSaveUseCase = restoreCachedSaveUseCase,
+                activateSaveChannelUseCase = activateSaveChannelUseCase,
+                restoreSaveChannelPointUseCase = restoreSaveChannelPointUseCase,
+                createSaveChannelUseCase = createSaveChannelUseCase,
+                copySaveChannelUseCase = copySaveChannelUseCase,
+                restoreStateUseCase = restoreStateUseCase,
                 emulatorResolver = emulatorResolver,
                 fetchAchievementsUseCase = fetchAchievementsUseCase,
                 displayAffinityHelper = displayAffinityHelper,

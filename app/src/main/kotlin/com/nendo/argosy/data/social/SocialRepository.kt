@@ -661,9 +661,14 @@ class SocialRepository @Inject constructor(
         _usersCache.clear()
     }
 
-    fun sendPresence(status: PresenceStatus, gameIgdbId: Int? = null, gameTitle: String? = null): Boolean {
+    fun sendPresence(
+        status: PresenceStatus,
+        gameIgdbId: Int? = null,
+        gameTitle: String? = null,
+        media: MediaPresence? = null
+    ): Boolean {
         if (!socialService.isConnected()) return false
-        return socialService.sendPresence(status, gameIgdbId, gameTitle, android.os.Build.MODEL)
+        return socialService.sendPresence(status, gameIgdbId, gameTitle, android.os.Build.MODEL, media)
     }
 
     fun isConnected(): Boolean = socialService.isConnected()

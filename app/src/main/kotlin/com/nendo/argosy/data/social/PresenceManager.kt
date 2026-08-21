@@ -12,6 +12,8 @@ import androidx.lifecycle.ProcessLifecycleOwner
 import com.nendo.argosy.data.emulator.ActiveSession
 import com.nendo.argosy.data.emulator.PlaySessionTracker
 import com.nendo.argosy.data.local.dao.GameDao
+import com.nendo.argosy.data.local.dao.MediaItemDao
+import com.nendo.argosy.data.local.entity.MediaItemType
 import com.nendo.argosy.data.media.ActiveMediaPlayback
 import com.nendo.argosy.data.media.MediaPlaybackTracker
 import com.nendo.argosy.data.preferences.JellyfinPreferencesRepository
@@ -34,13 +36,15 @@ class PresenceManager @Inject constructor(
     private val mediaPlaybackTracker: MediaPlaybackTracker,
     private val preferencesRepository: UserPreferencesRepository,
     private val jellyfinPreferencesRepository: JellyfinPreferencesRepository,
-    private val gameDao: GameDao
+    private val gameDao: GameDao,
+    private val mediaItemDao: MediaItemDao
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     private var lastSentStatus: PresenceStatus? = null
     private var lastSentGameId: Int? = null
     private var lastSentTitle: String? = null
+    private var lastSentMedia: MediaPresence? = null
     private var lastSentSocialUserId: String? = null
     private var lastReconnectAttempt = 0L
 
@@ -96,7 +100,8 @@ class PresenceManager @Inject constructor(
                     showNowPlaying = prefs.socialShowNowPlaying,
                     shareMediaPresence = jellyfinPrefs.shareMediaPresence,
                     isSocialLinked = prefs.isSocialLinked,
-                    socialUserId = prefs.socialUserId
+                    socialUserId = prefs.socialUserId,
+                    mediaOwnerId = jellyfinPrefs.userId
                 )
             }.distinctUntilChanged()
 
@@ -115,6 +120,7 @@ class PresenceManager @Inject constructor(
                     shareMediaPresence = presenceFlags.shareMediaPresence,
                     isSocialLinked = presenceFlags.isSocialLinked,
                     socialUserId = presenceFlags.socialUserId,
+                    mediaOwnerId = presenceFlags.mediaOwnerId,
                     isConnected = serviceState is ArgosSocialService.ConnectionState.Connected,
                     isScreenOn = screenOn
                 )
@@ -133,6 +139,7 @@ class PresenceManager @Inject constructor(
             lastSentStatus = null
             lastSentGameId = null
             lastSentTitle = null
+            lastSentMedia = null
             lastSentSocialUserId = null
             if (context.isScreenOn && context.onlineStatusEnabled) {
                 val now = System.currentTimeMillis()
@@ -151,20 +158,28 @@ class PresenceManager @Inject constructor(
         if (identityChanged ||
             presenceInfo.status != lastSentStatus ||
             presenceInfo.gameIgdbId != lastSentGameId ||
-            presenceInfo.gameTitle != lastSentTitle
+            presenceInfo.gameTitle != lastSentTitle ||
+            presenceInfo.media != lastSentMedia
         ) {
-            Log.d(TAG, "Sending presence: ${presenceInfo.status}, title=${presenceInfo.gameTitle}, igdbId=${presenceInfo.gameIgdbId}")
-            val sent = socialRepository.sendPresence(presenceInfo.status, presenceInfo.gameIgdbId, presenceInfo.gameTitle)
+            Log.d(TAG, "Sending presence: ${presenceInfo.status}, title=${presenceInfo.gameTitle}, igdbId=${presenceInfo.gameIgdbId}, media=${presenceInfo.media}")
+            val sent = socialRepository.sendPresence(
+                presenceInfo.status,
+                presenceInfo.gameIgdbId,
+                presenceInfo.gameTitle,
+                presenceInfo.media
+            )
             if (sent) {
                 lastSentStatus = presenceInfo.status
                 lastSentGameId = presenceInfo.gameIgdbId
                 lastSentTitle = presenceInfo.gameTitle
+                lastSentMedia = presenceInfo.media
                 lastSentSocialUserId = context.socialUserId
             } else {
                 Log.w(TAG, "Presence send failed, will retry on next state change")
                 lastSentStatus = null
                 lastSentGameId = null
                 lastSentTitle = null
+                lastSentMedia = null
                 lastSentSocialUserId = null
             }
         } else {
@@ -172,7 +187,12 @@ class PresenceManager @Inject constructor(
         }
     }
 
-    private data class PresenceInfo(val status: PresenceStatus, val gameIgdbId: Int?, val gameTitle: String?)
+    private data class PresenceInfo(
+        val status: PresenceStatus,
+        val gameIgdbId: Int?,
+        val gameTitle: String?,
+        val media: MediaPresence? = null
+    )
 
     /**
      * A game always outranks media. A play session that exists, or begins while a video is open,
@@ -199,10 +219,53 @@ class PresenceManager @Inject constructor(
 
         val mediaPlayback = context.mediaPlayback
         if (mediaPlayback != null && context.showNowPlaying && context.shareMediaPresence) {
-            return PresenceInfo(PresenceStatus.WATCHING, null, mediaPlayback.title)
+            val media = resolveMedia(context.mediaOwnerId, mediaPlayback)
+            return PresenceInfo(PresenceStatus.WATCHING, null, media.title, media)
         }
 
         return PresenceInfo(PresenceStatus.ONLINE, null, null)
+    }
+
+    /**
+     * Describes the title a cover can be found for, which is not always the one being played: an
+     * episode's own artwork is a still frame, so a watching presence names the series instead.
+     *
+     * Every unresolved step still answers rather than giving up -- a library that has not synced
+     * since the ids were added, an episode whose series row never arrived, a title no metadata
+     * agent matched. What survives is the title, which is what a search needs, and that is the same
+     * shape the receiver has to handle anyway.
+     */
+    private suspend fun resolveMedia(owner: String?, playback: ActiveMediaPlayback): MediaPresence {
+        val unresolved = MediaPresence(null, playback.title, null, null, null, null)
+        val ownerId = owner ?: return unresolved
+        val played = mediaItemDao.getByItemId(ownerId, playback.itemId) ?: return unresolved
+
+        val coverBearing = when (MediaItemType.fromWire(played.itemType)) {
+            MediaItemType.EPISODE, MediaItemType.SEASON ->
+                played.seriesId?.let { mediaItemDao.getByItemId(ownerId, it) }
+                    ?: return MediaPresence(
+                        kind = MediaPresenceKind.SERIES,
+                        title = played.seriesName ?: playback.title,
+                        year = null,
+                        tmdbId = null,
+                        imdbId = null,
+                        tvdbId = null
+                    )
+            else -> played
+        }
+
+        return MediaPresence(
+            kind = when (MediaItemType.fromWire(coverBearing.itemType)) {
+                MediaItemType.MOVIE -> MediaPresenceKind.MOVIE
+                MediaItemType.SERIES -> MediaPresenceKind.SERIES
+                else -> null
+            },
+            title = coverBearing.name,
+            year = coverBearing.productionYear,
+            tmdbId = coverBearing.tmdbId,
+            imdbId = coverBearing.imdbId,
+            tvdbId = coverBearing.tvdbId
+        )
     }
 
     private suspend fun getGameInfo(gameId: Long): Pair<Int?, String?>? {
@@ -215,7 +278,8 @@ class PresenceManager @Inject constructor(
         val showNowPlaying: Boolean,
         val shareMediaPresence: Boolean,
         val isSocialLinked: Boolean,
-        val socialUserId: String?
+        val socialUserId: String?,
+        val mediaOwnerId: String?
     )
 
     /**
@@ -231,6 +295,7 @@ class PresenceManager @Inject constructor(
         val shareMediaPresence: Boolean,
         val isSocialLinked: Boolean,
         val socialUserId: String?,
+        val mediaOwnerId: String?,
         val isConnected: Boolean,
         val isScreenOn: Boolean
     )

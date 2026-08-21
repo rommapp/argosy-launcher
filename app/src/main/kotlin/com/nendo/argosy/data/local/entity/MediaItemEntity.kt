@@ -22,6 +22,11 @@ import java.time.Instant
  * [localPath] is set when a copy has been downloaded and is the item's own record of where its file
  * lives, so the download queue row can be cleared without losing the fact that the item is offline
  * capable. An unreadable volume leaves the path in place: unreadable is not absent.
+ *
+ * [tmdbId], [imdbId] and [tvdbId] are the item's identity outside this server, and are what lets
+ * anything off-device name the title without being handed the library's own artwork. They are
+ * absent for a title the server's metadata agent never matched -- a home video, a mislabelled rip --
+ * and no re-sync will fill them, so a consumer needs a route that works without them.
  */
 @Entity(
     tableName = "media_items",
@@ -50,6 +55,9 @@ data class MediaItemEntity(
     val dateCreated: Instant? = null,
     val communityRating: Float? = null,
     val officialRating: String? = null,
+    val tmdbId: String? = null,
+    val imdbId: String? = null,
+    val tvdbId: String? = null,
     val genres: String? = null,
     val studios: String? = null,
     val runTimeTicks: Long? = null,

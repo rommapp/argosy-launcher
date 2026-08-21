@@ -960,12 +960,28 @@ class ArgosSocialService @Inject constructor(
     private fun parseIsoEpoch(value: String?): Long? =
         value?.takeIf { it.isNotEmpty() }?.let { runCatching { Instant.parse(it).epochSecond }.getOrNull() }
 
-    fun sendPresence(status: PresenceStatus, gameIgdbId: Int? = null, gameTitle: String? = null, deviceName: String? = null): Boolean {
+    /**
+     * [gameTitle] carries the watched title too, so a receiver that knows nothing about [media]
+     * still renders the label it always did. [media] is what a cover can be looked up from.
+     */
+    fun sendPresence(
+        status: PresenceStatus,
+        gameIgdbId: Int? = null,
+        gameTitle: String? = null,
+        deviceName: String? = null,
+        media: MediaPresence? = null
+    ): Boolean {
         return send(MessageTypes.SET_PRESENCE, mapOf(
             "status" to status.value,
             "game_igdb_id" to gameIgdbId,
             "game_title" to gameTitle,
-            "device_name" to deviceName
+            "device_name" to deviceName,
+            "media_kind" to media?.kind?.value,
+            "media_title" to media?.title,
+            "media_year" to media?.year,
+            "media_tmdb_id" to media?.tmdbId,
+            "media_imdb_id" to media?.imdbId,
+            "media_tvdb_id" to media?.tvdbId
         ))
     }
 

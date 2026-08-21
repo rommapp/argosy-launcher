@@ -127,6 +127,35 @@ data class PresenceGameInfo(
     @Json(name = "netplay_session") val netplaySession: NetplaySession? = null
 )
 
+/**
+ * Which level of a media hierarchy a cover is wanted for.
+ *
+ * An episode is absent on purpose: an episode's own artwork is a still frame, so the title a
+ * watching presence names is the series it belongs to.
+ */
+enum class MediaPresenceKind(val value: String) {
+    MOVIE("movie"),
+    SERIES("series")
+}
+
+/**
+ * What a watched title is called outside the user's own media server.
+ *
+ * [title] and [year] are always populated and are the only fields guaranteed to identify anything:
+ * a title the metadata agent never matched has no external id and never will, and a title whose row
+ * predates the ids being stored has none until the next library sync. Every id here is therefore a
+ * shortcut past a search, not a replacement for one, and [kind] is null when the level could not be
+ * established at all.
+ */
+data class MediaPresence(
+    val kind: MediaPresenceKind?,
+    val title: String,
+    val year: Int?,
+    val tmdbId: String?,
+    val imdbId: String?,
+    val tvdbId: String?
+)
+
 enum class FriendshipStatus(val value: String) {
     PENDING("pending"),
     ACCEPTED("accepted"),

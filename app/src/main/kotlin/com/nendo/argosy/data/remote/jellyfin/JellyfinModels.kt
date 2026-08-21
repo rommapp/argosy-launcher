@@ -178,7 +178,8 @@ data class JellyfinItem(
     @Json(name = "MediaSources") val mediaSources: List<JellyfinMediaSource>? = null,
     @Json(name = "MediaStreams") val mediaStreams: List<JellyfinMediaStream>? = null,
     @Json(name = "Chapters") val chapters: List<JellyfinChapter>? = null,
-    @Json(name = "Trickplay") val trickplay: Map<String, Map<String, JellyfinTrickplayInfo>>? = null
+    @Json(name = "Trickplay") val trickplay: Map<String, Map<String, JellyfinTrickplayInfo>>? = null,
+    @Json(name = "ProviderIds") val providerIds: Map<String, String>? = null
 ) {
     val primaryImageTag: String? get() = imageTags?.get(IMAGE_TYPE_PRIMARY)
     val thumbImageTag: String? get() = imageTags?.get(IMAGE_TYPE_THUMB)
@@ -193,12 +194,34 @@ data class JellyfinItem(
      * parent by id.
      */
     val ownBackdropImageTag: String? get() = backdropImageTags?.firstOrNull()
+
+    val tmdbId: String? get() = providerId(PROVIDER_TMDB)
+    val imdbId: String? get() = providerId(PROVIDER_IMDB)
+    val tvdbId: String? get() = providerId(PROVIDER_TVDB)
+
+    /**
+     * Reads one external id by provider name, ignoring case.
+     *
+     * The casing of a key in [providerIds] is decided by whichever metadata plugin wrote it, not by
+     * the server, so the same provider reaches us as `Tmdb` from one library and `TMDB` from
+     * another. An exact-match read finds one and silently misses the other, which looks like a
+     * title that was never matched.
+     */
+    private fun providerId(provider: String): String? = providerIds
+        ?.entries
+        ?.firstOrNull { it.key.equals(provider, ignoreCase = true) }
+        ?.value
+        ?.takeIf { it.isNotBlank() }
 }
 
 const val IMAGE_TYPE_PRIMARY = "Primary"
 const val IMAGE_TYPE_BACKDROP = "Backdrop"
 const val IMAGE_TYPE_THUMB = "Thumb"
 const val IMAGE_TYPE_LOGO = "Logo"
+
+const val PROVIDER_TMDB = "Tmdb"
+const val PROVIDER_IMDB = "Imdb"
+const val PROVIDER_TVDB = "Tvdb"
 
 /**
  * [playedPercentage] is present only while an item is partially watched, so its absence means

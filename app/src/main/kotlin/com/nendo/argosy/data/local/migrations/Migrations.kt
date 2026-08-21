@@ -3454,3 +3454,19 @@ object Migration_176_177 : Migration(176, 177) {
         )
     }
 }
+
+/**
+ * Records what a media title is called outside this server, so something that cannot reach the
+ * library can still identify it.
+ *
+ * Nothing is backfilled: the ids arrive with the responses of the next library sync, and a title
+ * whose row is still bare until then is indistinguishable from one the metadata agent never
+ * matched. Both are answered the same way, by falling back to the title and year.
+ */
+object Migration_177_178 : Migration(177, 178) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE `media_items` ADD COLUMN `tmdbId` TEXT")
+        db.execSQL("ALTER TABLE `media_items` ADD COLUMN `imdbId` TEXT")
+        db.execSQL("ALTER TABLE `media_items` ADD COLUMN `tvdbId` TEXT")
+    }
+}

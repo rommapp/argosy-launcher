@@ -493,18 +493,6 @@ class JellyfinLibrarySyncService @Inject constructor(
     }
 
     /**
-     * Writes items without losing what the server does not know.
-     *
-     * The unique index makes an insert a replace, and a replace drops the row the download fields
-     * live on. Those record a file already on disk, which no sync ever put there and no sync may
-     * take away, so they are carried across explicitly rather than left to survive by accident.
-     *
-     * [narrowFields] marks an answer to a request that asked for less than the full field set - the
-     * home rails do, because a tile needs the hierarchy and nothing else. A field the request never
-     * asked for comes back absent, and absent is not empty, so the stored value stands instead of
-     * being overwritten with a null the server never asserted.
-     */
-    /**
      * Stores the people credited on each title that answered with any.
      *
      * A title whose response carried no `People` at all is left alone rather than cleared: the
@@ -533,6 +521,18 @@ class JellyfinLibrarySyncService @Inject constructor(
         }
     }
 
+    /**
+     * Writes items without losing what the server does not know.
+     *
+     * The unique index makes an insert a replace, and a replace drops the row the download fields
+     * live on. Those record a file already on disk, which no sync ever put there and no sync may
+     * take away, so they are carried across explicitly rather than left to survive by accident.
+     *
+     * [narrowFields] marks an answer to a request that asked for less than the full field set - the
+     * home rails do, because a tile needs the hierarchy and nothing else. A field the request never
+     * asked for comes back absent, and absent is not empty, so the stored value stands instead of
+     * being overwritten with a null the server never asserted.
+     */
     private suspend fun persistItems(
         owner: String,
         items: List<MediaItemEntity>,
@@ -552,7 +552,10 @@ class JellyfinLibrarySyncService @Inject constructor(
                             genres = fresh.genres ?: prior.genres,
                             studios = fresh.studios ?: prior.studios,
                             dateCreated = fresh.dateCreated ?: prior.dateCreated,
-                            childCount = fresh.childCount ?: prior.childCount
+                            childCount = fresh.childCount ?: prior.childCount,
+                            tmdbId = fresh.tmdbId ?: prior.tmdbId,
+                            imdbId = fresh.imdbId ?: prior.imdbId,
+                            tvdbId = fresh.tvdbId ?: prior.tvdbId
                         )
                     } else {
                         fresh
@@ -691,6 +694,9 @@ class JellyfinLibrarySyncService @Inject constructor(
             dateCreated = parseJellyfinInstant(dateCreated),
             communityRating = communityRating,
             officialRating = officialRating,
+            tmdbId = tmdbId,
+            imdbId = imdbId,
+            tvdbId = tvdbId,
             genres = genres?.takeIf { it.isNotEmpty() }?.joinToString(","),
             studios = studios?.mapNotNull { it.name }?.takeIf { it.isNotEmpty() }?.joinToString(","),
             runTimeTicks = runTimeTicks,

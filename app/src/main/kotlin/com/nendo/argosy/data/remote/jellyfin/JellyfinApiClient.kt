@@ -314,7 +314,8 @@ class JellyfinApiClient @Inject constructor(
          * deliberately absent: they are per-playback answers, they multiply the response size of a
          * page by an order of magnitude, and a cached copy of them would go stale.
          */
-        const val ITEM_FIELDS = "Overview,Genres,Studios,DateCreated,SortName,ChildCount,ParentId"
+        const val ITEM_FIELDS =
+            "Overview,Genres,Studios,DateCreated,SortName,ChildCount,ParentId,ProviderIds"
 
         /**
          * What a title's own page needs on top of a library row: the people credited on it.

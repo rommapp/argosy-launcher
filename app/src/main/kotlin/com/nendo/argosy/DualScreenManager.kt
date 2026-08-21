@@ -75,6 +75,8 @@ class DualScreenManager(
     internal val gameDao: GameDao,
     internal val gameRepository: com.nendo.argosy.data.repository.GameRepository,
     internal val activeSaveRepository: com.nendo.argosy.data.repository.ActiveSaveRepository,
+    internal val prefetchGameSaveDataUseCase:
+        com.nendo.argosy.domain.usecase.sync.PrefetchGameSaveDataUseCase,
     internal val platformRepository: PlatformRepository,
     internal val collectionRepository: CollectionRepository,
     internal val downloadQueueDao: DownloadQueueDao,
@@ -2712,6 +2714,7 @@ class DualScreenManager(
         val vm = com.nendo.argosy.ui.dualscreen.gamedetail.DualGameDetailViewModel(
             gameRepository = gameRepository,
             activeSaveRepository = activeSaveRepository,
+            prefetchGameSaveDataUseCase = prefetchGameSaveDataUseCase,
             platformRepository = platformRepository,
             collectionRepository = collectionRepository,
             emulatorConfigDao = emulatorConfigDao,

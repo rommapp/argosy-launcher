@@ -120,6 +120,8 @@ class MainActivity : ComponentActivity() {
         com.nendo.argosy.domain.usecase.savechannel.CopySaveChannelUseCase
     @Inject lateinit var restoreStateUseCase:
         com.nendo.argosy.domain.usecase.state.RestoreStateUseCase
+    @Inject lateinit var prefetchGameSaveDataUseCase:
+        com.nendo.argosy.domain.usecase.sync.PrefetchGameSaveDataUseCase
     @Inject lateinit var emulatorResolver: EmulatorResolver
     @Inject lateinit var fetchAchievementsUseCase: FetchAchievementsUseCase
     @Inject lateinit var gameFileDao: com.nendo.argosy.data.local.dao.GameFileDao
@@ -328,6 +330,7 @@ class MainActivity : ComponentActivity() {
                 createSaveChannelUseCase = createSaveChannelUseCase,
                 copySaveChannelUseCase = copySaveChannelUseCase,
                 restoreStateUseCase = restoreStateUseCase,
+                prefetchGameSaveDataUseCase = prefetchGameSaveDataUseCase,
                 emulatorResolver = emulatorResolver,
                 fetchAchievementsUseCase = fetchAchievementsUseCase,
                 displayAffinityHelper = displayAffinityHelper,

@@ -60,6 +60,8 @@ const val STATE_GRID_COLUMNS = 3
 class DualGameDetailViewModel(
     private val gameRepository: GameRepository,
     private val activeSaveRepository: com.nendo.argosy.data.repository.ActiveSaveRepository,
+    private val prefetchGameSaveDataUseCase:
+        com.nendo.argosy.domain.usecase.sync.PrefetchGameSaveDataUseCase,
     private val platformRepository: PlatformRepository,
     private val collectionRepository: CollectionRepository,
     // TODO: replace with EmulatorConfigRepository once it exists (Agent B settings refactor).
@@ -318,6 +320,7 @@ class DualGameDetailViewModel(
     }
 
     fun loadGame(gameId: Long) {
+        viewModelScope.launch { prefetchGameSaveDataUseCase(gameId) }
         viewModelScope.launch {
             val game = gameRepository.getById(gameId) ?: return@launch
             val platform = platformRepository.getById(game.platformId)

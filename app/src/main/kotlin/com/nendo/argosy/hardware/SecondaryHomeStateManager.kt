@@ -24,6 +24,8 @@ class SecondaryHomeStateManager(
     private val context: Context,
     private val gameRepository: GameRepository,
     private val activeSaveRepository: com.nendo.argosy.data.repository.ActiveSaveRepository,
+    private val prefetchGameSaveDataUseCase:
+        com.nendo.argosy.domain.usecase.sync.PrefetchGameSaveDataUseCase,
     private val platformRepository: PlatformRepository,
     private val collectionRepository: CollectionRepository,
     private val emulatorConfigDao: EmulatorConfigDao,
@@ -124,6 +126,7 @@ class SecondaryHomeStateManager(
             val vm = DualGameDetailViewModel(
                 gameRepository = gameRepository,
                 activeSaveRepository = activeSaveRepository,
+                prefetchGameSaveDataUseCase = prefetchGameSaveDataUseCase,
                 platformRepository = platformRepository,
                 collectionRepository = collectionRepository,
                 emulatorConfigDao = emulatorConfigDao,
@@ -242,6 +245,7 @@ class SecondaryHomeStateManager(
         return DualGameDetailViewModel(
             gameRepository = gameRepository,
             activeSaveRepository = activeSaveRepository,
+            prefetchGameSaveDataUseCase = prefetchGameSaveDataUseCase,
             platformRepository = platformRepository,
             collectionRepository = collectionRepository,
             emulatorConfigDao = emulatorConfigDao,

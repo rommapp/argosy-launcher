@@ -86,6 +86,8 @@ class GameDetailViewModel @Inject constructor(
     private val emulatorDetector: EmulatorDetector,
     private val emulatorResolver: EmulatorResolver,
     private val stateSupportResolver: com.nendo.argosy.data.emulator.StateSupportResolver,
+    private val prefetchGameSaveDataUseCase:
+        com.nendo.argosy.domain.usecase.sync.PrefetchGameSaveDataUseCase,
     private val builtinCoreResolver: BuiltinCoreResolver,
     private val notificationManager: NotificationManager,
     private val gameRepository: GameRepository,
@@ -428,6 +430,7 @@ class GameDetailViewModel @Inject constructor(
         downloadDelegate.reset()
         imageCacheManager.pauseBackgroundCaching()
         gameThemeAudio.enter(gameId)
+        viewModelScope.launch { prefetchGameSaveDataUseCase(gameId) }
         viewModelScope.launch {
             if (emulatorDetector.installedEmulators.value.isEmpty()) {
                 emulatorDetector.detectEmulators()

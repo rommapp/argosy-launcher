@@ -948,6 +948,7 @@ class SecondaryHomeActivity :
         stateManager = SecondaryHomeStateManager(
             context = applicationContext, gameRepository = gameRepository,
             activeSaveRepository = dsm.activeSaveRepository,
+            prefetchGameSaveDataUseCase = dsm.prefetchGameSaveDataUseCase,
             platformRepository = platformRepository,
             collectionRepository = collectionRepository,
             emulatorConfigDao = dsm.emulatorConfigDao,

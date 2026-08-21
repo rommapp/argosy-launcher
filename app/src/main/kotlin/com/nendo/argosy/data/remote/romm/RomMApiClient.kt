@@ -42,10 +42,7 @@ class RomMApiClient @Inject constructor(
         includeFiles: Boolean = false
     ): Map<String, String> {
         return buildMap {
-            platformId?.let {
-                put("platform_ids", it.toString())
-                put("platform_id", it.toString())
-            }
+            platformId?.let { put("platform_ids", it.toString()) }
             searchTerm?.let { put("search_term", it) }
             put("order_by", orderBy)
             put("order_dir", orderDir)
@@ -255,6 +252,27 @@ class RomMApiClient @Inject constructor(
             }
         } catch (e: Exception) {
             cachedPlatformCount() ?: RomMResult.Error(e.message ?: "Failed to fetch platform count")
+        }
+    }
+
+    /**
+     * Every rom id the connected account can see, scoped by the server exactly as `GET /api/roms`
+     * is - a hidden rom is absent from both. Unlike [getPlatformCount] this has no cached fallback:
+     * the set is used as evidence that a rom is gone, and a stale or truncated set is a deletion
+     * of everything it omits. Any failure returns [RomMResult.Error] so the caller withholds.
+     */
+    suspend fun getRomIdentifiers(): RomMResult<Set<Long>> {
+        val currentApi = api ?: return RomMResult.Error("Not connected")
+        return try {
+            val response = currentApi.getRomIdentifiers()
+            val body = response.body()
+            if (response.isSuccessful && body != null) {
+                RomMResult.Success(body.toSet())
+            } else {
+                RomMResult.Error("Failed to fetch rom identifiers", response.code())
+            }
+        } catch (e: Exception) {
+            RomMResult.Error(e.message ?: "Failed to fetch rom identifiers")
         }
     }
 

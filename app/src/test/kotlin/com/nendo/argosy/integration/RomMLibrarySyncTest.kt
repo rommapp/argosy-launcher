@@ -54,7 +54,7 @@ class RomMLibrarySyncTest : RomMIntegrationTest() {
         assertNotNull("ROM page should not be null", page)
         assertTrue("Page should have items", page!!.items.isNotEmpty())
         assertTrue("Items should respect limit", page.items.size <= 5)
-        assertTrue("Total should be positive", page.total > 0)
+        assertTrue("Total should be positive", (page.total ?: 0) > 0)
     }
 
     @Test

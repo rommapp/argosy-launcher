@@ -371,7 +371,7 @@ data class RomMSearchRequest(
 @JsonClass(generateAdapter = true)
 data class RomMRomPage(
     @Json(name = "items") val items: List<RomMRom>,
-    @Json(name = "total") val total: Int = 0,
+    @Json(name = "total") val total: Int? = null,
     @Json(name = "page") val page: Int? = null,
     @Json(name = "size") val size: Int? = null,
     @Json(name = "pages") val pages: Int? = null

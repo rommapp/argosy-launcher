@@ -122,6 +122,14 @@ interface StateCacheDao {
     """)
     suspend fun countByGameAndOwner(gameId: Long, ownerUserId: Long?): Int
 
+    /**
+     * Deliberately spans every account, unlike [countByGameAndOwner]. Its only caller asks whether
+     * deleting this game row would destroy someone's states, and the account running a sync is not
+     * the only account whose states hang off the row.
+     */
+    @Query("SELECT COUNT(*) FROM state_cache WHERE gameId = :gameId")
+    suspend fun countByGameAllOwners(gameId: Long): Int
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(entity: StateCacheEntity): Long
 

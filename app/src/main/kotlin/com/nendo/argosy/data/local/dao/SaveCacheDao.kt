@@ -111,6 +111,14 @@ interface SaveCacheDao {
     )
     suspend fun countByGameAndOwner(gameId: Long, ownerUserId: Long?): Int
 
+    /**
+     * Deliberately spans every account, unlike [countByGameAndOwner]. Its only caller asks whether
+     * deleting this game row would destroy someone's saves, and the account running a sync is not
+     * the only account whose saves hang off the row.
+     */
+    @Query("SELECT COUNT(*) FROM save_cache WHERE gameId = :gameId")
+    suspend fun countByGameAllOwners(gameId: Long): Int
+
     @Query(
         """
         SELECT * FROM save_cache

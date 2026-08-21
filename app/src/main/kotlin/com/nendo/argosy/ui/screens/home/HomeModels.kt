@@ -690,3 +690,14 @@ sealed class HomeEvent {
     data class PlayMedia(val itemId: String, val startOver: Boolean) : HomeEvent()
     data class NavigateToMediaDetail(val itemId: String) : HomeEvent()
 }
+
+/**
+ * Puts the cursor on a row it was actually measured against.
+ *
+ * [HomeUiState.focusedGameIndex] is a position in the current row's items, so carrying it into a
+ * different row aims it at a list it was never measured against, and the tile drawn stops being the
+ * tile launched. Rows loaded during start-up arrive after the row itself is chosen, which is how a
+ * press made as the first screen settled could start a title that was never under the cursor.
+ */
+fun HomeUiState.movedTo(row: HomeRow): HomeUiState =
+    if (row == currentRow) this else copy(currentRow = row, focusedGameIndex = 0)

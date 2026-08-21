@@ -492,7 +492,9 @@ class HomeViewModel @Inject constructor(
             val result = navigationDelegate.reconcilePlatformChange(_uiState.value, currentPlatforms, newPlatformUis)
             when (result) {
                 is PlatformChangeResult.Initial -> {
-                    _uiState.update { it.copy(platforms = result.platforms, currentRow = result.row, isLoading = false) }
+                    _uiState.update {
+                        it.copy(platforms = result.platforms, isLoading = false).movedTo(result.row)
+                    }
                     loadPlatformRowIfNeeded(result.row, result.platforms)
                 }
                 is PlatformChangeResult.DisplayOnly -> {
@@ -515,7 +517,7 @@ class HomeViewModel @Inject constructor(
     private fun loadData() {
         libraryDelegate.loadInitialData(viewModelScope) { startRow ->
             flushLibraryState()
-            _uiState.update { it.copy(currentRow = startRow, isLoading = false) }
+            _uiState.update { it.copy(isLoading = false).movedTo(startRow) }
             viewModelScope.launch {
                 downloadDelegate.observeDownloadState(viewModelScope) {
                     libraryDelegate.invalidateRecentGamesCache()

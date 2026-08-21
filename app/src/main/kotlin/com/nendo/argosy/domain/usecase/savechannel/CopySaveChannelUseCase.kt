@@ -6,17 +6,16 @@ import com.nendo.argosy.data.repository.StateCacheManager
 import javax.inject.Inject
 
 /**
- * Copies a save into a slot of its own, taking the states that belong with it.
+ * Copies a save into a slot of its own, taking the source channel's states with it.
  *
- * A slot locked from a point in history is that point, and the states saved at that point are part
- * of what the user is preserving. Copying the save alone produces a slot whose states are whatever
- * the source channel goes on to accumulate.
+ * The states copied are the channel's current ones, not the ones that existed when the chosen save
+ * was written: a state carries no link back to a save, so there is nothing to select them by. A
+ * slot locked from an old point therefore pairs that save with today's states.
  */
 class CopySaveChannelUseCase @Inject constructor(
     private val saveCacheManager: SaveCacheManager,
     private val saveSyncRepository: SaveSyncRepository,
-    private val stateCacheManager: StateCacheManager,
-    private val contextResolver: SaveChannelContextResolver
+    private val stateCacheManager: StateCacheManager
 ) {
     suspend operator fun invoke(
         gameId: Long,
@@ -24,8 +23,7 @@ class CopySaveChannelUseCase @Inject constructor(
         targetChannel: String,
         localCacheId: Long?,
         serverSaveId: Long?,
-        emulatorId: String?,
-        coreId: String? = null
+        emulatorId: String?
     ): Boolean {
         val copied = when {
             localCacheId != null ->
@@ -36,14 +34,11 @@ class CopySaveChannelUseCase @Inject constructor(
         }
         if (!copied) return false
 
-        val context = contextResolver.resolve(gameId, coreId)
-        if (context.supportsStates) {
-            stateCacheManager.duplicateStatesForChannel(
-                gameId = gameId,
-                sourceChannel = sourceChannel,
-                targetChannel = targetChannel
-            )
-        }
+        stateCacheManager.duplicateStatesForChannel(
+            gameId = gameId,
+            sourceChannel = sourceChannel,
+            targetChannel = targetChannel
+        )
         return true
     }
 }

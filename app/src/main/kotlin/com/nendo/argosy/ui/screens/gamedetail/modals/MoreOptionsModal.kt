@@ -117,6 +117,7 @@ fun MoreOptionsModal(
             isAndroidApp = game.isAndroidApp,
             isSteamGame = game.isSteamGame,
             canManageSaves = game.canManageSaves,
+            canManageStates = game.canManageStates,
             isMultiDisc = game.isMultiDisc,
             hasVariants = hasVariants,
             hasUpdates = updateCount > 0,

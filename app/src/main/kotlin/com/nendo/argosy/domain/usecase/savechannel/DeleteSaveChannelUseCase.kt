@@ -14,16 +14,19 @@ import javax.inject.Inject
  * by the next sync, so a slot the user deleted grows its states back and reappears in the states
  * tab under a channel the save side no longer knows about. Purging tombstones each one first, so a
  * server delete that never lands still cannot resurrect it.
+ *
+ * The purge is not behind the emulator's state-support gate. That gate decides whether states may
+ * SYNC; these rows already exist, and whether the emulator that wrote them is still installed says
+ * nothing about whether the user asked for them to be gone.
  */
 class DeleteSaveChannelUseCase @Inject constructor(
     private val getUnifiedSavesUseCase: GetUnifiedSavesUseCase,
     private val saveCacheManager: SaveCacheManager,
     private val saveSyncRepository: SaveSyncRepository,
     private val stateCacheManager: StateCacheManager,
-    private val activeSaveRepository: ActiveSaveRepository,
-    private val contextResolver: SaveChannelContextResolver
+    private val activeSaveRepository: ActiveSaveRepository
 ) {
-    suspend operator fun invoke(gameId: Long, channelName: String, coreId: String? = null) {
+    suspend operator fun invoke(gameId: Long, channelName: String) {
         val wasActive = activeSaveRepository.getActiveChannel(gameId) == channelName
         val entries = getUnifiedSavesUseCase(gameId, expandHistory = true)
             .filter { it.channelName == channelName }
@@ -33,15 +36,12 @@ class DeleteSaveChannelUseCase @Inject constructor(
             ?.let { saveSyncRepository.deleteServerSaves(it) }
         entries.forEach { entry -> entry.localCacheId?.let { saveCacheManager.deleteSave(it) } }
 
-        val context = contextResolver.resolve(gameId, coreId)
-        if (context.supportsStates) {
-            stateCacheManager.getStatesForChannel(gameId, channelName).forEach { state ->
-                stateCacheManager.purgeState(
-                    gameId = gameId,
-                    cacheId = state.id,
-                    serverStateId = state.rommSaveId
-                )
-            }
+        stateCacheManager.getStatesForChannel(gameId, channelName).forEach { state ->
+            stateCacheManager.purgeState(
+                gameId = gameId,
+                cacheId = state.id,
+                serverStateId = state.rommSaveId
+            )
         }
 
         activeSaveRepository.forgetChannel(gameId, channelName)

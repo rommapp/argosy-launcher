@@ -24,6 +24,7 @@ fun GameEntity.toGameDetailUi(
     selectedCoreName: String? = null,
     achievements: List<AchievementUi> = emptyList(),
     canManageSaves: Boolean = false,
+    canManageStates: Boolean = false,
     steamLauncherName: String? = null,
     isHidden: Boolean = false
 ): GameDetailUi {
@@ -76,6 +77,7 @@ fun GameEntity.toGameDetailUi(
         hasMultipleCores = hasMultipleCores,
         selectedCoreName = selectedCoreName,
         canManageSaves = canManageSaves,
+        canManageStates = canManageStates,
         isSteamGame = isSteamGame,
         steamLauncherName = steamLauncherName,
         isExternallyManaged = isExternallyManaged,

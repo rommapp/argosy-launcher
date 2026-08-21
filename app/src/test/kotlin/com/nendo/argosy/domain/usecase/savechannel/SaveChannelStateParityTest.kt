@@ -95,10 +95,9 @@ class SaveChannelStateParityTest {
 
     @Test
     fun `renaming a channel moves its states to the new name`() = runTest {
-        stubContext()
         coEvery { activeSaveRepository.getActiveChannel(GAME_ID) } returns "old"
         val useCase = RenameSaveChannelUseCase(
-            saveCacheManager, stateCacheManager, activeSaveRepository, contextResolver
+            saveCacheManager, stateCacheManager, activeSaveRepository
         )
 
         useCase(GAME_ID, "old", "new")
@@ -111,7 +110,7 @@ class SaveChannelStateParityTest {
     @Test
     fun `renaming to the same name changes nothing`() = runTest {
         val useCase = RenameSaveChannelUseCase(
-            saveCacheManager, stateCacheManager, activeSaveRepository, contextResolver
+            saveCacheManager, stateCacheManager, activeSaveRepository
         )
 
         useCase(GAME_ID, "same", "same")
@@ -125,7 +124,7 @@ class SaveChannelStateParityTest {
         stubContext()
         coEvery { saveCacheManager.copyToChannel(42L, "locked") } returns 99L
         val useCase = CopySaveChannelUseCase(
-            saveCacheManager, saveSyncRepository, stateCacheManager, contextResolver
+            saveCacheManager, saveSyncRepository, stateCacheManager
         )
 
         val copied = useCase(GAME_ID, "primary", "locked", 42L, null, EMULATOR_ID)
@@ -139,7 +138,7 @@ class SaveChannelStateParityTest {
         stubContext()
         coEvery { saveCacheManager.copyToChannel(42L, "locked") } returns null
         val useCase = CopySaveChannelUseCase(
-            saveCacheManager, saveSyncRepository, stateCacheManager, contextResolver
+            saveCacheManager, saveSyncRepository, stateCacheManager
         )
 
         val copied = useCase(GAME_ID, "primary", "locked", 42L, null, EMULATOR_ID)
@@ -171,7 +170,7 @@ class SaveChannelStateParityTest {
 
         val useCase = DeleteSaveChannelUseCase(
             getUnifiedSaves, saveCacheManager, saveSyncRepository,
-            stateCacheManager, activeSaveRepository, contextResolver
+            stateCacheManager, activeSaveRepository
         )
 
         useCase(GAME_ID, "doomed")
@@ -179,6 +178,50 @@ class SaveChannelStateParityTest {
         coVerify { stateCacheManager.purgeState(GAME_ID, 5L, 808L) }
         coVerify { activeSaveRepository.forgetChannel(GAME_ID, "doomed") }
         coVerify { activeSaveRepository.clearActive(GAME_ID) }
+    }
+
+    @Test
+    fun `an uninstalled emulator still lets a channel's states be renamed`() = runTest {
+        stubContext(supportsStates = false)
+        coEvery { activeSaveRepository.getActiveChannel(GAME_ID) } returns null
+        val useCase = RenameSaveChannelUseCase(
+            saveCacheManager, stateCacheManager, activeSaveRepository
+        )
+
+        useCase(GAME_ID, "old", "new")
+
+        coVerify { stateCacheManager.moveStatesToChannel(GAME_ID, "old", "new") }
+    }
+
+    @Test
+    fun `an uninstalled emulator still lets a channel's states be purged`() = runTest {
+        stubContext(supportsStates = false)
+        coEvery { activeSaveRepository.getActiveChannel(GAME_ID) } returns null
+        coEvery { getUnifiedSaves(GAME_ID, true, any()) } returns emptyList()
+        coEvery { stateCacheManager.getStatesForChannel(GAME_ID, "doomed") } returns listOf(
+            StateCacheEntity(
+                id = 5L,
+                gameId = GAME_ID,
+                platformSlug = "snes",
+                emulatorId = EMULATOR_ID,
+                slotNumber = 1,
+                channelName = "doomed",
+                cachedAt = Instant.EPOCH,
+                stateSize = 10L,
+                cachePath = "states/doomed/snes9x/slot1.state",
+                rommSaveId = 808L
+            )
+        )
+        coEvery { stateCacheManager.purgeState(any(), any(), any()) } just Runs
+
+        val useCase = DeleteSaveChannelUseCase(
+            getUnifiedSaves, saveCacheManager, saveSyncRepository,
+            stateCacheManager, activeSaveRepository
+        )
+
+        useCase(GAME_ID, "doomed")
+
+        coVerify { stateCacheManager.purgeState(GAME_ID, 5L, 808L) }
     }
 
     @Test

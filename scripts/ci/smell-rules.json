@@ -49,7 +49,7 @@
     {
       "id": "raw-save-channel-primitive",
       "summary": "Save-channel primitive called outside domain/usecase/savechannel",
-      "message": "Save channels carry their states with them. activateChannel / createChannel / renameChannel / copyToChannel / deleteStatesForChannel / moveStatesToChannel are halves of a channel operation, and calling one directly moves the save while leaving the state behind. Route through domain/usecase/savechannel (ActivateSaveChannelUseCase and siblings), which owns both halves. See AGENTS.md (save-sync axis).",
+      "message": "A save channel and its states move together. These primitives each move one half, so calling one directly leaves the other half behind - the states of a renamed channel keep the old name, the states of a deleted channel come back on the next sync. Route through domain/usecase/savechannel (ActivateSaveChannelUseCase and siblings), which owns both halves. States remain an independent peer elsewhere: their own sync paths, gates and UI do not go through here. See .claude/skills/investigate/coupling-map.md (SAVE-SYNC axis).",
       "path_include": [
         "app/src/main/**/*.kt"
       ],
@@ -59,7 +59,7 @@
         "app/src/main/**/data/repository/SaveCacheManager.kt",
         "app/src/main/**/data/repository/StateCacheManager.kt"
       ],
-      "added_regex": "\\.(activateChannel|createChannel|renameChannel|copyToChannel|deleteStatesForChannel|moveStatesToChannel|duplicateStatesForChannel)\\s*\\("
+      "added_regex": "\\.(activateChannel|createChannel|renameChannel|copyToChannel|deleteStatesForChannel|deleteStatesForChannelAndCore|moveStatesToChannel|duplicateStatesForChannel)\\s*\\("
     }
   ]
 }

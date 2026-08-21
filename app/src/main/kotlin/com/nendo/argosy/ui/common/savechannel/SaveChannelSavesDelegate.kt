@@ -625,8 +625,7 @@ class SaveChannelSavesDelegate @Inject constructor(
                 targetChannel = newName,
                 localCacheId = entry.localCacheId,
                 serverSaveId = entry.serverSaveId,
-                emulatorId = state.emulatorId,
-                coreId = state.currentCoreId
+                emulatorId = state.emulatorId
             )
 
             if (success) {
@@ -655,7 +654,7 @@ class SaveChannelSavesDelegate @Inject constructor(
         val oldName = entry.channelName ?: return
 
         scope.launch {
-            renameSaveChannelUseCase(currentGameId, oldName, newName, state.currentCoreId)
+            renameSaveChannelUseCase(currentGameId, oldName, newName)
 
             if (state.activeChannel == oldName) {
                 _state.update { it.copy(activeChannel = newName) }
@@ -714,7 +713,7 @@ class SaveChannelSavesDelegate @Inject constructor(
         val channelName = entry.channelName ?: return
 
         scope.launch {
-            deleteSaveChannelUseCase(currentGameId, channelName, state.currentCoreId)
+            deleteSaveChannelUseCase(currentGameId, channelName)
 
             if (state.activeChannel == channelName) {
                 _state.update {
@@ -840,7 +839,7 @@ class SaveChannelSavesDelegate @Inject constructor(
         val channelName = state.deleteLegacyChannelName ?: return
 
         scope.launch {
-            deleteSaveChannelUseCase(currentGameId, channelName, state.currentCoreId)
+            deleteSaveChannelUseCase(currentGameId, channelName)
 
             refreshEntries()
             _state.update {

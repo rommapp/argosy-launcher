@@ -85,6 +85,7 @@ class GameDetailViewModel @Inject constructor(
     private val emulatorConfigDao: EmulatorConfigDao,
     private val emulatorDetector: EmulatorDetector,
     private val emulatorResolver: EmulatorResolver,
+    private val stateSupportResolver: com.nendo.argosy.data.emulator.StateSupportResolver,
     private val builtinCoreResolver: BuiltinCoreResolver,
     private val notificationManager: NotificationManager,
     private val gameRepository: GameRepository,
@@ -533,6 +534,16 @@ class GameDetailViewModel @Inject constructor(
                 emulatorId != null &&
                 SavePathRegistry.getConfig(emulatorId) != null
 
+            val canManageStates = prefs.saveSyncEnabled &&
+                downloadStatus == GameDownloadStatus.DOWNLOADED &&
+                emulatorId != null &&
+                stateSupportResolver.supportsStates(
+                    emulatorId = emulatorId,
+                    gameId = gameId,
+                    platformId = game.platformId,
+                    platformSlug = game.platformSlug
+                )
+
             val activeSave = activeSaveRepository.getActiveRow(gameId)
             val activeSaveChannel = activeSave?.channelName
             val saveStatusInfo = if (canManageSaves) {
@@ -578,6 +589,7 @@ class GameDetailViewModel @Inject constructor(
                         selectedCoreName = selectedCoreName,
                         achievements = cachedAchievements,
                         canManageSaves = canManageSaves,
+                        canManageStates = canManageStates,
                         steamLauncherName = steamLauncherName,
                         isHidden = isHiddenForOwner
                     ),
@@ -1080,6 +1092,7 @@ class GameDetailViewModel @Inject constructor(
             isAndroidApp = state.game?.isAndroidApp == true,
             isSteamGame = state.game?.isSteamGame == true,
             canManageSaves = state.game?.canManageSaves == true,
+            canManageStates = state.game?.canManageStates == true,
             isMultiDisc = state.game?.isMultiDisc == true,
             hasVariants = state.hasVariants,
             hasUpdates = state.updateFiles.isNotEmpty() || state.dlcFiles.isNotEmpty(),

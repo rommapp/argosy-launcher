@@ -97,6 +97,7 @@ data class GameDetailUi(
     val hasMultipleCores: Boolean = false,
     val selectedCoreName: String? = null,
     val canManageSaves: Boolean = false,
+    val canManageStates: Boolean = false,
     val isSteamGame: Boolean = false,
     val steamLauncherName: String? = null,
     val isExternallyManaged: Boolean = false,
@@ -147,6 +148,7 @@ data class MoreOptionsContext(
     val isAndroidApp: Boolean = false,
     val isSteamGame: Boolean = false,
     val canManageSaves: Boolean = false,
+    val canManageStates: Boolean = false,
     val isMultiDisc: Boolean = false,
     val hasVariants: Boolean = false,
     val hasUpdates: Boolean = false,
@@ -165,7 +167,7 @@ fun buildMoreOptions(ctx: MoreOptionsContext): List<MoreOptionAction> = buildLis
     val isEmulatedGame = !ctx.isSteamGame && !ctx.isAndroidApp
     val usesTitleId = ctx.platformSlug in com.nendo.argosy.data.platform.PlatformDefinitions.TITLE_ID_PLATFORMS
 
-    if (ctx.canManageSaves) add(MoreOptionAction.ManageSaves)
+    if (ctx.canManageSaves || ctx.canManageStates) add(MoreOptionAction.ManageSaves)
     if (canTrackProgress) add(MoreOptionAction.RatingsStatus)
     if (ctx.isSteamGame) add(MoreOptionAction.ChangeSteamLauncher)
     if (isEmulatedGame) add(MoreOptionAction.SpeedrunSplits)

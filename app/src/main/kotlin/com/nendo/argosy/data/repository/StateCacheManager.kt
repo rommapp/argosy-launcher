@@ -24,6 +24,7 @@ import com.nendo.argosy.data.preferences.SyncPreferencesRepository
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.remote.romm.RomMApi
 import com.nendo.argosy.data.remote.romm.RomMDeleteSavesRequest
+import com.nendo.argosy.data.remote.romm.RomMDeleteStatesRequest
 import com.nendo.argosy.data.remote.romm.RomMSave
 import com.nendo.argosy.data.remote.romm.RomMState
 import com.nendo.argosy.data.storage.StorageAttributionRepository
@@ -440,6 +441,33 @@ class StateCacheManager @Inject constructor(
         Log.d(TAG, "Deleted state cache $cacheId")
     }
 
+    /**
+     * Removes a state the user asked to be rid of, wherever it lives: the cache row and its files,
+     * and the server copy. The tombstone is written first and kept either way, so a server delete
+     * that never lands cannot bring the state back on the next sync.
+     */
+    suspend fun purgeState(gameId: Long, cacheId: Long?, serverStateId: Long?) {
+        cacheId?.let { deleteState(it) }
+        if (serverStateId == null) return
+        tombstoneServerState(gameId, serverStateId)
+
+        val api = saveSyncApiClient.getApi()
+        if (api == null) {
+            Log.w(TAG, "No API to delete server state $serverStateId; tombstoned locally")
+            return
+        }
+        try {
+            val response = api.deleteStates(RomMDeleteStatesRequest(states = listOf(serverStateId)))
+            if (response.isSuccessful) {
+                Log.i(TAG, "Deleted server state $serverStateId")
+            } else {
+                Log.w(TAG, "Server refused delete of state $serverStateId: ${response.code()}")
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to delete server state $serverStateId", e)
+        }
+    }
+
     suspend fun tombstoneServerState(gameId: Long, rommSaveId: Long) = withContext(Dispatchers.IO) {
         stateTombstoneDao.insert(
             StateTombstoneEntity(
@@ -478,6 +506,78 @@ class StateCacheManager @Inject constructor(
 
     suspend fun getStatesForGameOnce(gameId: Long): List<StateCacheEntity> =
         stateCacheDao.getByGame(gameId, syncPreferencesRepository.getRommUserId())
+
+    /**
+     * Duplicates a cached state into another slot of the same game, channel and core, replacing
+     * whatever occupied that slot. The copy is a new local row queued for upload; the replaced
+     * slot's server state is tombstoned so it cannot come back on the next sync and resurrect the
+     * state the copy was meant to overwrite.
+     */
+    suspend fun copyStateToSlot(cacheId: Long, targetSlot: Int): Boolean = withContext(Dispatchers.IO) {
+        val source = stateCacheDao.getById(cacheId) ?: return@withContext false
+        if (source.slotNumber == targetSlot) return@withContext false
+        val sourceFile = getCacheFile(source) ?: return@withContext false
+
+        val ownerUserId = source.ownerUserId ?: syncPreferencesRepository.getRommUserId()
+        val occupant = stateCacheDao.getBySlotAndCore(
+            gameId = source.gameId,
+            emulatorId = source.emulatorId,
+            slotNumber = targetSlot,
+            channelName = source.channelName,
+            coreId = source.coreId,
+            ownerUserId = ownerUserId
+        )
+        occupant?.let { existing ->
+            purgeState(source.gameId, existing.id, existing.rommSaveId)
+        }
+
+        val coreDir = coreDirFor(source)
+        val targetName = stateFileNameForSlot(sourceFile.name, targetSlot)
+        val targetFile = File(coreDir, targetName)
+        if (targetFile.absolutePath == sourceFile.absolutePath) return@withContext false
+
+        return@withContext try {
+            coreDir.mkdirs()
+            sourceFile.copyTo(targetFile, overwrite = true)
+
+            val relativeDir = source.cachePath.substringBeforeLast('/')
+            var targetScreenshotPath: String? = null
+            getScreenshotFile(source)?.let { shot ->
+                val targetShot = File(coreDir, "$targetName.png")
+                shot.copyTo(targetShot, overwrite = true)
+                targetScreenshotPath = "$relativeDir/$targetName.png"
+            }
+
+            stateCacheDao.upsert(
+                source.copy(
+                    id = 0,
+                    slotNumber = targetSlot,
+                    cachedAt = Instant.now(),
+                    stateSize = targetFile.length(),
+                    cachePath = "$relativeDir/$targetName",
+                    screenshotPath = targetScreenshotPath,
+                    rommSaveId = null,
+                    syncStatus = StateCacheEntity.STATUS_PENDING_UPLOAD,
+                    serverUpdatedAt = null,
+                    lastUploadedHash = null,
+                    ownerUserId = ownerUserId
+                )
+            )
+            true
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to copy state $cacheId into slot $targetSlot", e)
+            targetFile.delete()
+            false
+        }
+    }
+
+    private fun stateFileNameForSlot(sourceName: String, targetSlot: Int): String {
+        val stem = sourceName
+            .removeSuffix(".auto")
+            .replace(Regex("""\.state\d*$"""), "")
+        val suffix = if (targetSlot < 0) ".state.auto" else ".state$targetSlot"
+        return "$stem$suffix"
+    }
 
     suspend fun duplicateStatesForChannel(
         gameId: Long,

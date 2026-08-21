@@ -483,6 +483,8 @@ fun DualGameDetailContent(
     val savesLoading by viewModel.savesLoading.collectAsState()
     val savesApplying by viewModel.savesApplying.collectAsState()
     val savesSyncing by viewModel.savesSyncing.collectAsState()
+    val stateEntries by viewModel.stateEntries.collectAsState()
+    val selectedStateIndex by viewModel.selectedStateIndex.collectAsState()
 
     DualGameDetailLowerScreen(
         state = state,
@@ -491,6 +493,8 @@ fun DualGameDetailContent(
         saveFocusColumn = state.saveFocusColumn,
         selectedSlotIndex = selectedSlotIndex,
         selectedHistoryIndex = selectedHistoryIndex,
+        stateEntries = stateEntries,
+        selectedStateIndex = selectedStateIndex,
         visibleOptions = visibleOptions,
         selectedScreenshotIndex = selectedScreenshotIndex,
         selectedOptionIndex = selectedOptionIndex,
@@ -506,6 +510,18 @@ fun DualGameDetailContent(
         onHistoryTapped = { index ->
             viewModel.moveHistorySelection(index - viewModel.selectedHistoryIndex.value)
         },
+        onStateTapped = { index -> viewModel.tapStateEntry(index) },
+        onStateMenuSelect = { index ->
+            viewModel.setStateMenuFocus(index)
+            viewModel.confirmStateOverlay()
+        },
+        onStateMenuDismiss = { viewModel.dismissStateOverlay() },
+        onStatePromptSelect = { index ->
+            viewModel.setStatePromptFocus(index)
+            viewModel.confirmStateOverlay()
+        },
+        onStatePromptDismiss = { viewModel.dismissStateOverlay() },
+        stateMenuEntries = viewModel.stateMenuActions().map { it.label },
         onScreenshotSelected = { index ->
             viewModel.setScreenshotIndex(index)
         },

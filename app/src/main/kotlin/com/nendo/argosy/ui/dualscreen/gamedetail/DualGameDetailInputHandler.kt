@@ -5,6 +5,46 @@ import com.nendo.argosy.ui.input.GamepadEvent
 import com.nendo.argosy.ui.input.InputHandler
 import com.nendo.argosy.ui.input.InputResult
 
+/**
+ * The states tab's input while its slot menu, one of its confirmations, or the grid standing in as
+ * a copy destination owns the screen. Returns null when none of those are up, so the caller falls
+ * through to the tab's own handling.
+ */
+fun handleDualStateOverlayInput(
+    vm: DualGameDetailViewModel,
+    event: GamepadEvent
+): InputResult? {
+    if (!vm.stateOverlayActive()) return null
+    val state = vm.uiState.value
+
+    when {
+        state.statePrompt != null -> when (event) {
+            GamepadEvent.Left -> vm.moveStatePromptFocus(-1)
+            GamepadEvent.Right -> vm.moveStatePromptFocus(1)
+            GamepadEvent.Confirm -> vm.confirmStateOverlay()
+            GamepadEvent.Back -> vm.dismissStateOverlay()
+            else -> {}
+        }
+        state.stateMenuVisible -> when (event) {
+            GamepadEvent.Up -> vm.moveStateMenuFocus(-1)
+            GamepadEvent.Down -> vm.moveStateMenuFocus(1)
+            GamepadEvent.Confirm -> vm.confirmStateOverlay()
+            GamepadEvent.Back -> vm.dismissStateOverlay()
+            else -> {}
+        }
+        else -> when (event) {
+            GamepadEvent.Up -> vm.moveStateGrid(0, -1)
+            GamepadEvent.Down -> vm.moveStateGrid(0, 1)
+            GamepadEvent.Left -> vm.moveStateGrid(-1, 0)
+            GamepadEvent.Right -> vm.moveStateGrid(1, 0)
+            GamepadEvent.Confirm -> vm.confirmStateOverlay()
+            GamepadEvent.Back -> vm.dismissStateOverlay()
+            else -> {}
+        }
+    }
+    return InputResult.HANDLED
+}
+
 class DualGameDetailInputHandler(
     private val context: android.content.Context,
     private val viewModel: () -> DualGameDetailViewModel?,
@@ -57,6 +97,8 @@ class DualGameDetailInputHandler(
             return handleModal(vm, modal, event)
         }
 
+        handleDualStateOverlayInput(vm, event)?.let { return it }
+
         return when (event) {
             GamepadEvent.PrevSection -> {
                 onBroadcastScreenshotCleared()
@@ -85,7 +127,7 @@ class DualGameDetailInputHandler(
             GamepadEvent.Left -> {
                 when (vm.uiState.value.currentTab) {
                     DualGameDetailTab.SAVES -> vm.focusSlotsColumn()
-                    DualGameDetailTab.STATES -> {}
+                    DualGameDetailTab.STATES -> vm.moveSelectionLeft()
                     DualGameDetailTab.OPTIONS -> handleInlineAdjust(vm, -1)
                     DualGameDetailTab.MEDIA -> {
                         vm.moveSelectionLeft()
@@ -99,7 +141,7 @@ class DualGameDetailInputHandler(
             GamepadEvent.Right -> {
                 when (vm.uiState.value.currentTab) {
                     DualGameDetailTab.SAVES -> vm.focusHistoryColumn()
-                    DualGameDetailTab.STATES -> {}
+                    DualGameDetailTab.STATES -> vm.moveSelectionRight()
                     DualGameDetailTab.OPTIONS -> handleInlineAdjust(vm, 1)
                     DualGameDetailTab.MEDIA -> {
                         vm.moveSelectionRight()
@@ -113,12 +155,7 @@ class DualGameDetailInputHandler(
             GamepadEvent.Confirm -> {
                 when (vm.uiState.value.currentTab) {
                     DualGameDetailTab.SAVES -> handleSaveConfirm(vm)
-                    DualGameDetailTab.STATES -> {
-                        val entry = vm.getFocusedStateEntry()
-                        if (entry != null && entry.canRestore) {
-                            onBroadcastDirectAction("STATE_RESTORE", vm.uiState.value.gameId, entry.slotNumber.toString())
-                        }
-                    }
+                    DualGameDetailTab.STATES -> vm.openStateMenu()
                     DualGameDetailTab.MEDIA -> {
                         val idx = vm.selectedScreenshotIndex.value
                         if (idx >= 0) {
@@ -154,10 +191,7 @@ class DualGameDetailInputHandler(
             }
             GamepadEvent.SecondaryAction -> {
                 if (vm.uiState.value.currentTab == DualGameDetailTab.STATES) {
-                    val entry = vm.getFocusedStateEntry()
-                    if (entry != null && entry.localCacheId != null) {
-                        onBroadcastDirectAction("STATE_DELETE", vm.uiState.value.gameId, entry.slotNumber.toString())
-                    }
+                    vm.promptStateDelete()
                 }
                 InputResult.HANDLED
             }

@@ -748,6 +748,12 @@ class SecondaryHomeActivity :
         }
     }
 
+    override fun onStateEntriesReceived(
+        entries: List<com.nendo.argosy.domain.model.UnifiedStateEntry>
+    ) {
+        dualGameDetailViewModel?.loadStateEntries(entries)
+    }
+
     override fun onSaveDataReceived(json: String, activeChannel: String?, activeTimestamp: Long?, syncing: Boolean) {
         val vm = dualGameDetailViewModel ?: return
         try {

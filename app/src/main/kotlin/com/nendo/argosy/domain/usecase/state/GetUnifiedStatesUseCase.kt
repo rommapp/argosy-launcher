@@ -1,5 +1,6 @@
 package com.nendo.argosy.domain.usecase.state
 
+import android.util.Log
 import com.nendo.argosy.data.emulator.CoreVersionExtractor
 import com.nendo.argosy.data.emulator.EmulatorResolver
 import com.nendo.argosy.data.emulator.StatePathRegistry
@@ -17,6 +18,8 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import javax.inject.Inject
+
+private const val TAG = "GetUnifiedStates"
 
 class GetUnifiedStatesUseCase @Inject constructor(
     private val stateCacheManager: StateCacheManager,
@@ -37,7 +40,10 @@ class GetUnifiedStatesUseCase @Inject constructor(
 
         val effectiveEmulatorId = emulatorId
             ?: emulatorResolver.getEmulatorIdForGame(gameId, game.platformId, game.platformSlug)
-        if (effectiveEmulatorId == null) return emptyList()
+        if (effectiveEmulatorId == null) {
+            Log.w(TAG, "No emulator resolved for gameId=$gameId (${game.platformSlug}), no states")
+            return emptyList()
+        }
 
         val remoteOnlyStates = if (rommId != null) {
             syncServerStates(rommId, gameId, game.platformSlug, effectiveEmulatorId, channelName, currentCoreId)
@@ -97,7 +103,7 @@ class GetUnifiedStatesUseCase @Inject constructor(
 
         stateCacheManager.getByGameAndEmulator(gameId, emulatorId)
             .filter { it.rommSaveId != null && it.rommSaveId in tombstoned }
-            .forEach { stateCacheManager.deleteState(it.id) }
+            .forEach { stateCacheManager.clearServerLink(it.id) }
 
         val localByRommId = stateCacheManager.getByGameAndEmulator(gameId, emulatorId)
             .filter { it.rommSaveId != null }.associateBy { it.rommSaveId }

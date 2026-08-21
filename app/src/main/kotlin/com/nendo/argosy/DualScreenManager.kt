@@ -24,6 +24,7 @@ import com.nendo.argosy.hardware.CompanionGuardService
 import com.nendo.argosy.util.DisplayRoleResolver
 import com.nendo.argosy.domain.model.CompletionStatus
 import com.nendo.argosy.data.remote.ra.RAConsoleIds
+import com.nendo.argosy.domain.model.UnifiedStateEntry
 import com.nendo.argosy.domain.usecase.achievement.FetchAchievementsUseCase
 import com.nendo.argosy.domain.usecase.save.GetUnifiedSavesUseCase
 import com.nendo.argosy.domain.usecase.save.RestoreCachedSaveUseCase
@@ -59,6 +60,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
@@ -84,6 +86,9 @@ class DualScreenManager(
     private val gameLaunchDelegate: GameLaunchDelegate,
     private val saveCacheManager: SaveCacheManager,
     private val getUnifiedSavesUseCase: GetUnifiedSavesUseCase,
+    private val getUnifiedStatesUseCase:
+        com.nendo.argosy.domain.usecase.state.GetUnifiedStatesUseCase,
+    private val stateCacheManager: com.nendo.argosy.data.repository.StateCacheManager,
     private val restoreCachedSaveUseCase: RestoreCachedSaveUseCase,
     private val emulatorResolver: EmulatorResolver,
     private val fetchAchievementsUseCase: FetchAchievementsUseCase,
@@ -132,6 +137,7 @@ class DualScreenManager(
     private val appContext: Context = context.applicationContext
     private var preGameRolesSwapped: Boolean? = null
     private var activityContext: Context = context
+    private var lastStateEntries: Pair<Long, List<UnifiedStateEntry>>? = null
 
     private val _isRolesSwapped = MutableStateFlow(initialRolesSwapped)
     val isRolesSwapped: StateFlow<Boolean> = _isRolesSwapped
@@ -262,6 +268,7 @@ class DualScreenManager(
         fun onModalResult(dismissed: Boolean, type: String?, value: Int, statusSelected: String?, selectedIndex: Int, collectionToggleId: Long, collectionCreateName: String?)
         fun onDirectActionResult(type: String, gameId: Long)
         fun onSaveDataReceived(json: String, activeChannel: String?, activeTimestamp: Long?, syncing: Boolean = false)
+        fun onStateEntriesReceived(entries: List<com.nendo.argosy.domain.model.UnifiedStateEntry>)
         fun onSavesSyncDone()
         fun onDownloadCompleted(gameId: Long)
         fun onSessionActionsChanged(available: Boolean)
@@ -947,6 +954,7 @@ class DualScreenManager(
             _dualGameDetailState.value = DualGameDetailUpperState(gameId = gameId)
         }
         broadcastUnifiedSaves(gameId)
+        broadcastUnifiedStates(gameId)
         scope.launch(Dispatchers.IO) {
             val game = gameDao.getById(gameId) ?: return@launch
             if (showcase.gameId != gameId) {
@@ -1202,6 +1210,8 @@ class DualScreenManager(
                     }
                 }
             }
+            "STATE_DELETE" -> handleStateDelete(gameId, channelName)
+            "STATE_COPY" -> handleStateCopy(gameId, channelName)
             "SELECT_DISC" -> handleSelectDisc(gameId)
             "PLAY_DISC" -> handleDualPlayDisc(gameId, channelName)
             "FILES" -> promptDualManageFilePicker(gameId)
@@ -2354,6 +2364,7 @@ class DualScreenManager(
 
             broadcastSaveActionResult("SAVE_SWITCH_DONE", gameId)
             broadcastUnifiedSaves(gameId)
+            broadcastUnifiedStates(gameId)
         }
     }
 
@@ -2482,6 +2493,69 @@ class DualScreenManager(
 
         val json = entryData.toJsonString()
         companionHost?.onSaveDataReceived(json, activeChannel, activeTimestamp, syncing)
+    }
+
+    /**
+     * Sends the game's states to whichever screen is showing its detail.
+     *
+     * The states tab reads what is delivered here; without it the tab draws its slots over an
+     * empty list however many states are cached or synced.
+     */
+    private fun stateEntriesFor(gameId: Long): List<UnifiedStateEntry> =
+        lastStateEntries?.takeIf { it.first == gameId }?.second ?: emptyList()
+
+    private fun stateSlotLabel(slot: Int): String =
+        if (slot < 0) "auto state" else "state slot $slot"
+
+    private fun handleStateDelete(gameId: Long, slotArg: String?) {
+        val slot = slotArg?.toIntOrNull() ?: return
+        scope.launch(Dispatchers.IO) {
+            val entry = stateEntriesFor(gameId).firstOrNull { it.slotNumber == slot } ?: return@launch
+            stateCacheManager.purgeState(gameId, entry.localCacheId, entry.serverStateId)
+            notificationManager.showSuccess("Deleted ${stateSlotLabel(slot)}")
+            broadcastUnifiedStates(gameId)
+        }
+    }
+
+    private fun handleStateCopy(gameId: Long, slotsArg: String?) {
+        val parts = slotsArg?.split(':') ?: return
+        val sourceSlot = parts.getOrNull(0)?.toIntOrNull() ?: return
+        val targetSlot = parts.getOrNull(1)?.toIntOrNull() ?: return
+        scope.launch(Dispatchers.IO) {
+            val cacheId = stateEntriesFor(gameId)
+                .firstOrNull { it.slotNumber == sourceSlot }?.localCacheId ?: return@launch
+            val copied = stateCacheManager.copyStateToSlot(cacheId, targetSlot)
+            if (copied) {
+                notificationManager.showSuccess(
+                    "Copied ${stateSlotLabel(sourceSlot)} to ${stateSlotLabel(targetSlot)}"
+                )
+                broadcastUnifiedStates(gameId)
+            } else {
+                notificationManager.showError("Could not copy ${stateSlotLabel(sourceSlot)}")
+            }
+        }
+    }
+
+    private fun broadcastUnifiedStates(gameId: Long) {
+        scope.launch(Dispatchers.IO) {
+            try {
+                val channelName = activeSaveRepository.getActiveRow(gameId)?.channelName
+                val entries = getUnifiedStatesUseCase(gameId, channelName = channelName)
+                Log.i(
+                    TAG,
+                    "[StateSync] states for gameId=$gameId channel=$channelName | entries=${entries.size}"
+                )
+                lastStateEntries = gameId to entries
+                withContext(Dispatchers.Main) {
+                    _swappedGameDetailViewModel?.let { vm ->
+                        if (vm.uiState.value.gameId == gameId) vm.loadStateEntries(entries)
+                    }
+                    companionHost?.onStateEntriesReceived(entries)
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to load states for gameId=$gameId", e)
+            }
+        }
     }
 
     private fun deliverSyncingDone(gameId: Long) {

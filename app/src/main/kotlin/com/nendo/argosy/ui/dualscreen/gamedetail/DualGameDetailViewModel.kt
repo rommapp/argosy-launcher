@@ -5,6 +5,7 @@ import android.content.Intent
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.nendo.argosy.DualScreenManagerHolder
 import com.nendo.argosy.data.local.dao.EmulatorConfigDao
 import com.nendo.argosy.data.local.entity.CollectionEntity
 import com.nendo.argosy.data.preferences.EmulatorDisplayTarget
@@ -54,6 +55,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 const val MEDIA_GRID_COLUMNS = 3
+const val STATE_GRID_COLUMNS = 3
 
 class DualGameDetailViewModel(
     private val gameRepository: GameRepository,
@@ -809,13 +811,209 @@ class DualGameDetailViewModel(
         _selectedStateIndex.update { (it + delta).coerceIn(0, max) }
     }
 
+    /**
+     * Walks the states tab the way it is drawn: the auto state is a row above a grid of numbered
+     * slots, so up and down cross whole grid rows and only left and right step one slot.
+     */
+    fun moveStateGrid(dx: Int, dy: Int) {
+        val entries = _stateEntries.value
+        if (entries.isEmpty()) return
+        val autoCount = entries.count { it.slotNumber < 0 }
+        val current = _selectedStateIndex.value
+
+        if (current < autoCount) {
+            if (dy > 0 && entries.size > autoCount) _selectedStateIndex.value = autoCount
+            return
+        }
+
+        val position = current - autoCount
+        val lastPosition = entries.size - autoCount - 1
+        val column = position % STATE_GRID_COLUMNS
+
+        val target = when {
+            dx < 0 -> if (column > 0) position - 1 else position
+            dx > 0 -> if (column < STATE_GRID_COLUMNS - 1 && position < lastPosition) {
+                position + 1
+            } else {
+                position
+            }
+            dy < 0 -> if (position < STATE_GRID_COLUMNS) -1 else position - STATE_GRID_COLUMNS
+            dy > 0 -> (position + STATE_GRID_COLUMNS).coerceAtMost(lastPosition)
+            else -> position
+        }
+
+        _selectedStateIndex.value = if (target < 0) {
+            (autoCount - 1).coerceAtLeast(0)
+        } else {
+            target + autoCount
+        }
+    }
+
     fun getFocusedStateEntry(): UnifiedStateEntry? {
         return _stateEntries.value.getOrNull(_selectedStateIndex.value)
     }
 
+    fun stateMenuActions(): List<DualStateMenuAction> {
+        val entry = getFocusedStateEntry() ?: return emptyList()
+        return buildList {
+            if (entry.canRestore) add(DualStateMenuAction.COPY_TO)
+            if (!entry.isEmpty) add(DualStateMenuAction.DELETE)
+        }
+    }
+
+    /**
+     * Whether the states tab is currently showing something that owns input: the slot menu, one of
+     * its confirmations, or the grid standing in as a copy destination picker.
+     */
+    fun stateOverlayActive(): Boolean {
+        val state = _uiState.value
+        return state.stateMenuVisible ||
+            state.statePrompt != null ||
+            state.stateCopySourceSlot != null
+    }
+
+    fun moveStateMenuFocus(delta: Int) {
+        val max = (stateMenuActions().size - 1).coerceAtLeast(0)
+        _uiState.update {
+            it.copy(stateMenuFocusIndex = (it.stateMenuFocusIndex + delta).coerceIn(0, max))
+        }
+    }
+
+    fun moveStatePromptFocus(delta: Int) {
+        _uiState.update {
+            it.copy(statePromptFocusIndex = (it.statePromptFocusIndex + delta).coerceIn(0, 1))
+        }
+    }
+
+    fun setStateMenuFocus(index: Int) {
+        _uiState.update { it.copy(stateMenuFocusIndex = index) }
+    }
+
+    fun setStatePromptFocus(index: Int) {
+        _uiState.update { it.copy(statePromptFocusIndex = index) }
+    }
+
+    fun openStateMenu() {
+        if (stateMenuActions().isEmpty()) return
+        _uiState.update { it.copy(stateMenuVisible = true, stateMenuFocusIndex = 0) }
+    }
+
+    /**
+     * Back out of one layer of the states tab: a confirmation, then the menu, then copy mode.
+     * Returns whether anything was dismissed, so the caller knows not to leave the screen.
+     */
+    fun dismissStateOverlay(): Boolean {
+        val state = _uiState.value
+        return when {
+            state.statePrompt != null -> {
+                _uiState.update { it.copy(statePrompt = null, statePromptFocusIndex = 0) }
+                true
+            }
+            state.stateMenuVisible -> {
+                _uiState.update { it.copy(stateMenuVisible = false) }
+                true
+            }
+            state.stateCopySourceSlot != null -> {
+                _uiState.update { it.copy(stateCopySourceSlot = null) }
+                true
+            }
+            else -> false
+        }
+    }
+
+    fun confirmStateOverlay() {
+        val state = _uiState.value
+        when {
+            state.statePrompt != null -> confirmStatePrompt()
+            state.stateMenuVisible -> confirmStateMenu()
+            state.stateCopySourceSlot != null -> placeStateCopy()
+            else -> openStateMenu()
+        }
+    }
+
+    fun tapStateEntry(index: Int) {
+        _selectedStateIndex.value = index
+        confirmStateOverlay()
+    }
+
+    private fun confirmStateMenu() {
+        val action = stateMenuActions().getOrNull(_uiState.value.stateMenuFocusIndex)
+        val entry = getFocusedStateEntry()
+        _uiState.update { it.copy(stateMenuVisible = false) }
+        if (action == null || entry == null) return
+        when (action) {
+            DualStateMenuAction.COPY_TO ->
+                _uiState.update { it.copy(stateCopySourceSlot = entry.slotNumber) }
+            DualStateMenuAction.DELETE -> promptStateDelete()
+        }
+    }
+
+    fun promptStateDelete() {
+        val entry = getFocusedStateEntry() ?: return
+        if (entry.isEmpty) return
+        _uiState.update {
+            it.copy(
+                stateMenuVisible = false,
+                statePrompt = DualStatePrompt.DELETE,
+                statePromptSlot = entry.slotNumber,
+                statePromptFocusIndex = 0
+            )
+        }
+    }
+
+    private fun placeStateCopy() {
+        val sourceSlot = _uiState.value.stateCopySourceSlot ?: return
+        val target = getFocusedStateEntry() ?: return
+        if (target.slotNumber == sourceSlot) return
+        if (!target.isEmpty) {
+            _uiState.update {
+                it.copy(
+                    statePrompt = DualStatePrompt.OVERWRITE,
+                    statePromptSlot = target.slotNumber,
+                    statePromptFocusIndex = 0
+                )
+            }
+            return
+        }
+        runStateCopy(sourceSlot, target.slotNumber)
+    }
+
+    private fun confirmStatePrompt() {
+        val state = _uiState.value
+        val prompt = state.statePrompt ?: return
+        val confirmed = state.statePromptFocusIndex == 1
+        _uiState.update { it.copy(statePrompt = null, statePromptFocusIndex = 0) }
+        if (!confirmed) return
+        when (prompt) {
+            DualStatePrompt.DELETE -> stateDirectAction("STATE_DELETE", state.statePromptSlot.toString())
+            DualStatePrompt.OVERWRITE -> {
+                val sourceSlot = state.stateCopySourceSlot ?: return
+                runStateCopy(sourceSlot, state.statePromptSlot)
+            }
+        }
+    }
+
+    private fun runStateCopy(sourceSlot: Int, targetSlot: Int) {
+        _uiState.update { it.copy(stateCopySourceSlot = null) }
+        stateDirectAction("STATE_COPY", "$sourceSlot:$targetSlot")
+    }
+
+    private fun stateDirectAction(type: String, payload: String) {
+        val gameId = _uiState.value.gameId
+        if (gameId < 0) return
+        DualScreenManagerHolder.instance?.handleDirectAction(type, gameId, payload)
+    }
+
     fun setTab(tab: DualGameDetailTab) {
         if (tab !in _uiState.value.availableTabs) return
-        _uiState.update { it.copy(currentTab = tab) }
+        _uiState.update {
+            it.copy(
+                currentTab = tab,
+                stateMenuVisible = false,
+                stateCopySourceSlot = null,
+                statePrompt = null
+            )
+        }
         resetSelectionForTab(tab)
     }
 
@@ -847,7 +1045,7 @@ class DualGameDetailViewModel(
                     moveHistorySelection(-1)
                 }
             }
-            DualGameDetailTab.STATES -> moveStateSelection(-1)
+            DualGameDetailTab.STATES -> moveStateGrid(0, -1)
             DualGameDetailTab.OPTIONS -> {
                 _selectedOptionIndex.update { idx ->
                     (idx - 1).coerceAtLeast(0)
@@ -872,7 +1070,7 @@ class DualGameDetailViewModel(
                     moveHistorySelection(1)
                 }
             }
-            DualGameDetailTab.STATES -> moveStateSelection(1)
+            DualGameDetailTab.STATES -> moveStateGrid(0, 1)
             DualGameDetailTab.OPTIONS -> {
                 _selectedOptionIndex.update { idx ->
                     (idx + 1).coerceAtMost(
@@ -892,6 +1090,10 @@ class DualGameDetailViewModel(
     }
 
     fun moveSelectionLeft() {
+        if (_uiState.value.currentTab == DualGameDetailTab.STATES) {
+            moveStateGrid(-1, 0)
+            return
+        }
         if (_uiState.value.currentTab != DualGameDetailTab.MEDIA) return
         val screenshots = _uiState.value.screenshots
         if (screenshots.isEmpty()) return
@@ -901,6 +1103,10 @@ class DualGameDetailViewModel(
     }
 
     fun moveSelectionRight() {
+        if (_uiState.value.currentTab == DualGameDetailTab.STATES) {
+            moveStateGrid(1, 0)
+            return
+        }
         if (_uiState.value.currentTab != DualGameDetailTab.MEDIA) return
         val screenshots = _uiState.value.screenshots
         if (screenshots.isEmpty()) return

@@ -10,8 +10,10 @@ import com.nendo.argosy.data.local.entity.StateCacheEntity
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.repository.SaveSyncRepository
 import com.nendo.argosy.data.repository.StateCacheManager
+import com.nendo.argosy.data.remote.romm.RomMState
 import kotlinx.coroutines.flow.first
 import java.io.File
+import java.time.Instant
 import javax.inject.Inject
 
 private const val TAG = "PreLaunchStateSync"
@@ -132,7 +134,7 @@ class PreLaunchStateSyncUseCase @Inject constructor(
 
         var downloadedCount = 0
 
-        for (serverState in serverStates) {
+        for (serverState in newestPerSlot(serverStates)) {
             val parsed = stateCacheManager.parseStateFileName(serverState.fileName)
             val slotNumber = parsed.slotNumber
             val linked = localByRommId[serverState.id]
@@ -206,6 +208,30 @@ class PreLaunchStateSyncUseCase @Inject constructor(
             Result.Ready
         }
     }
+
+    /**
+     * The one state per slot worth bringing down: the newest.
+     *
+     * A slot holds the latest quick-save, but a server accumulates one file per session, so
+     * several of them address the same slot. Reconciled as they come, the first claims the slot and
+     * the rest look like they belong to someone else and are dropped - including the recent one.
+     *
+     * Recency is read from the name rather than the server's `updated_at`, which is the time the
+     * file was last rescanned rather than last written.
+     */
+    private fun newestPerSlot(serverStates: List<RomMState>): List<RomMState> =
+        serverStates
+            .groupBy {
+                val parsed = stateCacheManager.parseStateFileName(it.fileName)
+                parsed.slotNumber to parsed.channelName
+            }
+            .map { (_, candidates) ->
+                candidates.maxByOrNull { writtenAt(it) ?: Instant.MIN } ?: candidates.first()
+            }
+
+    private fun writtenAt(serverState: RomMState): Instant? =
+        stateCacheManager.parseStateFileTimestamp(serverState.fileName)
+            ?: stateCacheManager.parseTimestamp(serverState.updatedAt)
 
     private suspend fun materializeToLiveDir(
         rommStateId: Long,

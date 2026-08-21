@@ -20,7 +20,7 @@ import com.nendo.argosy.ui.theme.LocalArgosyTheme
 import com.nendo.argosy.ui.util.clickableNoFocus
 
 /**
- * What can be done to the tile under the cursor. The caller supplies only the entries that would
+ * What can be done to the item under the cursor. The caller supplies only the entries that would
  * actually succeed, so nothing here is greyed out or silently refused.
  *
  * [dangerFromIndex] marks where the destructive tail begins: those entries are tinted and fenced off
@@ -33,11 +33,12 @@ fun CustomTileMenuModal(
     focusIndex: Int,
     onSelect: (Int) -> Unit,
     onDismiss: () -> Unit,
-    dangerFromIndex: Int? = null
+    dangerFromIndex: Int? = null,
+    header: String = "TILE"
 ) {
     val theme = LocalArgosyTheme.current
     Modal(
-        title = "TILE",
+        title = header,
         subtitle = title,
         onDismiss = onDismiss
     ) {

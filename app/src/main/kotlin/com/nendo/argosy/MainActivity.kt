@@ -106,6 +106,9 @@ class MainActivity : ComponentActivity() {
     @Inject lateinit var gameLaunchDelegate: GameLaunchDelegate
     @Inject lateinit var saveCacheManager: SaveCacheManager
     @Inject lateinit var getUnifiedSavesUseCase: GetUnifiedSavesUseCase
+    @Inject lateinit var getUnifiedStatesUseCase:
+        com.nendo.argosy.domain.usecase.state.GetUnifiedStatesUseCase
+    @Inject lateinit var stateCacheManager: com.nendo.argosy.data.repository.StateCacheManager
     @Inject lateinit var restoreCachedSaveUseCase: RestoreCachedSaveUseCase
     @Inject lateinit var emulatorResolver: EmulatorResolver
     @Inject lateinit var fetchAchievementsUseCase: FetchAchievementsUseCase
@@ -307,6 +310,8 @@ class MainActivity : ComponentActivity() {
                 gameLaunchDelegate = gameLaunchDelegate,
                 saveCacheManager = saveCacheManager,
                 getUnifiedSavesUseCase = getUnifiedSavesUseCase,
+                getUnifiedStatesUseCase = getUnifiedStatesUseCase,
+                stateCacheManager = stateCacheManager,
                 restoreCachedSaveUseCase = restoreCachedSaveUseCase,
                 emulatorResolver = emulatorResolver,
                 fetchAchievementsUseCase = fetchAchievementsUseCase,

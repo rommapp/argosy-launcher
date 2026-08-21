@@ -372,6 +372,13 @@ class SaveStateManager(
     var lastStateWriteRealtimeMs: Long? by androidx.compose.runtime.mutableStateOf(null)
         private set
 
+    /**
+     * Writes the quick-save ring, and the auto slot with it.
+     *
+     * The ring is local history and is deliberately never cached or synced, so a player who only
+     * ever quick-saves would have nothing on the server at all. The auto slot is the one slot sync
+     * carries, and it holds what it says: the most recent quick-save.
+     */
     fun performQuickSave(stateData: ByteArray, screenshot: Bitmap? = null): Boolean {
         val emptyIndex = (0 until QUICK_RING_SIZE).firstOrNull {
             !getSlotFile(QUICK_SLOT_BASE + it).exists()
@@ -379,7 +386,11 @@ class SaveStateManager(
         val targetIndex = emptyIndex
             ?: (0 until QUICK_RING_SIZE).minByOrNull { getSlotFile(QUICK_SLOT_BASE + it).lastModified() }
             ?: 0
-        return performSlotSave(QUICK_SLOT_BASE + targetIndex, stateData, screenshot)
+        val written = performSlotSave(QUICK_SLOT_BASE + targetIndex, stateData, screenshot)
+        if (written) {
+            performSlotSave(AUTO_SLOT, stateData, screenshot)
+        }
+        return written
     }
 
     fun performQuickLoad(retroView: GLRetroView): Boolean {

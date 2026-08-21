@@ -159,6 +159,9 @@ class SecondaryHomeInputHandler(
             return handleModalInput(vm, modal, event)
         }
 
+        com.nendo.argosy.ui.dualscreen.gamedetail.handleDualStateOverlayInput(vm, event)
+            ?.let { return it }
+
         return when (event) {
             GamepadEvent.PrevSection -> {
                 broadcasts.broadcastScreenshotCleared()
@@ -189,7 +192,7 @@ class SecondaryHomeInputHandler(
             GamepadEvent.Left -> {
                 when (vm.uiState.value.currentTab) {
                     DualGameDetailTab.SAVES -> vm.focusSlotsColumn()
-                    DualGameDetailTab.STATES -> {}
+                    DualGameDetailTab.STATES -> vm.moveSelectionLeft()
                     DualGameDetailTab.OPTIONS -> handleInlineAdjust(vm, -1)
                     DualGameDetailTab.MEDIA -> {
                         vm.moveSelectionLeft()
@@ -203,7 +206,7 @@ class SecondaryHomeInputHandler(
             GamepadEvent.Right -> {
                 when (vm.uiState.value.currentTab) {
                     DualGameDetailTab.SAVES -> vm.focusHistoryColumn()
-                    DualGameDetailTab.STATES -> {}
+                    DualGameDetailTab.STATES -> vm.moveSelectionRight()
                     DualGameDetailTab.OPTIONS -> handleInlineAdjust(vm, 1)
                     DualGameDetailTab.MEDIA -> {
                         vm.moveSelectionRight()
@@ -217,16 +220,7 @@ class SecondaryHomeInputHandler(
             GamepadEvent.Confirm -> {
                 when (vm.uiState.value.currentTab) {
                     DualGameDetailTab.SAVES -> handleSaveConfirm(vm)
-                    DualGameDetailTab.STATES -> {
-                        val entry = vm.getFocusedStateEntry()
-                        if (entry != null && entry.canRestore) {
-                            broadcasts.broadcastDirectAction(
-                                "STATE_RESTORE",
-                                vm.uiState.value.gameId,
-                                entry.slotNumber.toString()
-                            )
-                        }
-                    }
+                    DualGameDetailTab.STATES -> vm.openStateMenu()
                     DualGameDetailTab.MEDIA -> {
                         val idx = vm.selectedScreenshotIndex.value
                         if (idx >= 0) {
@@ -262,14 +256,7 @@ class SecondaryHomeInputHandler(
             }
             GamepadEvent.SecondaryAction -> {
                 if (vm.uiState.value.currentTab == DualGameDetailTab.STATES) {
-                    val entry = vm.getFocusedStateEntry()
-                    if (entry != null && entry.localCacheId != null) {
-                        broadcasts.broadcastDirectAction(
-                            "STATE_DELETE",
-                            vm.uiState.value.gameId,
-                            entry.slotNumber.toString()
-                        )
-                    }
+                    vm.promptStateDelete()
                 }
                 InputResult.HANDLED
             }

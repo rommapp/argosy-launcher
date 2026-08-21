@@ -60,7 +60,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import com.nendo.argosy.ui.components.CustomTileMenuModal
+import com.nendo.argosy.ui.primitives.ArgosyConfirmModal
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
 import com.nendo.argosy.ui.primitives.ArgosyProgressBar
@@ -93,6 +96,8 @@ import com.nendo.argosy.util.formatSaveSize
 import com.nendo.argosy.util.formatSaveTimestamp
 import com.nendo.argosy.ui.util.touchOnly
 
+private const val COPY_SOURCE_ALPHA = 0.35f
+
 @Composable
 fun DualGameDetailLowerScreen(
     state: DualGameDetailUiState,
@@ -115,6 +120,11 @@ fun DualGameDetailLowerScreen(
     onSlotTapped: (Int) -> Unit,
     onHistoryTapped: (Int) -> Unit,
     onStateTapped: (Int) -> Unit = {},
+    onStateMenuSelect: (Int) -> Unit = {},
+    onStateMenuDismiss: () -> Unit = {},
+    onStatePromptSelect: (Int) -> Unit = {},
+    onStatePromptDismiss: () -> Unit = {},
+    stateMenuEntries: List<String> = emptyList(),
     onScreenshotSelected: (Int) -> Unit,
     onScreenshotView: (Int) -> Unit,
     onOptionSelected: (GameDetailOption) -> Unit,
@@ -153,6 +163,7 @@ fun DualGameDetailLowerScreen(
                     DualGameDetailTab.STATES -> StatesTabContent(
                         entries = stateEntries,
                         selectedIndex = selectedStateIndex,
+                        copySourceSlot = state.stateCopySourceSlot,
                         onStateTapped = onStateTapped
                     )
                     DualGameDetailTab.MEDIA -> MediaTabContent(
@@ -194,6 +205,48 @@ fun DualGameDetailLowerScreen(
                     .fillMaxSize()
                     .background(Color.Black.copy(alpha = 0.5f))
                     .touchOnly { onDimTapped() }
+            )
+        }
+
+        if (state.stateMenuVisible && stateMenuEntries.isNotEmpty()) {
+            val slot = stateEntries.getOrNull(selectedStateIndex)
+            CustomTileMenuModal(
+                header = "STATE",
+                title = slot?.displayName.orEmpty(),
+                entries = stateMenuEntries,
+                focusIndex = state.stateMenuFocusIndex,
+                onSelect = onStateMenuSelect,
+                onDismiss = onStateMenuDismiss,
+                dangerFromIndex = stateMenuEntries.lastIndex
+                    .takeIf { stateMenuEntries.lastOrNull() == DualStateMenuAction.DELETE.label }
+            )
+        }
+
+        state.statePrompt?.let { prompt ->
+            val slotLabel = if (state.statePromptSlot < 0) {
+                "The auto state"
+            } else {
+                "Slot ${state.statePromptSlot}"
+            }
+            ArgosyConfirmModal(
+                title = when (prompt) {
+                    DualStatePrompt.DELETE -> "Delete state"
+                    DualStatePrompt.OVERWRITE -> "Overwrite state"
+                },
+                message = when (prompt) {
+                    DualStatePrompt.DELETE ->
+                        "$slotLabel will be removed from this device and the server."
+                    DualStatePrompt.OVERWRITE ->
+                        "$slotLabel already holds a state. It will be replaced by the copy."
+                },
+                confirmLabel = when (prompt) {
+                    DualStatePrompt.DELETE -> "Delete"
+                    DualStatePrompt.OVERWRITE -> "Overwrite"
+                },
+                onConfirm = { onStatePromptSelect(1) },
+                onDismiss = onStatePromptDismiss,
+                focusedIndex = state.statePromptFocusIndex,
+                destructive = true
             )
         }
     }
@@ -602,6 +655,7 @@ private fun HistoryRow(
 private fun StatesTabContent(
     entries: List<UnifiedStateEntry>,
     selectedIndex: Int,
+    copySourceSlot: Int?,
     onStateTapped: (Int) -> Unit
 ) {
     val theme = LocalArgosyTheme.current
@@ -619,28 +673,130 @@ private fun StatesTabContent(
         return
     }
 
-    val listState = rememberLazyListState()
+    val autoIndex = entries.indexOfFirst { it.slotNumber < 0 }
+    val slotEntries = entries.withIndex().filter { it.value.slotNumber >= 0 }
+    val gridState = rememberLazyGridState()
 
     LaunchedEffect(selectedIndex) {
-        if (selectedIndex >= 0) {
-            listState.animateScrollToItem(selectedIndex)
+        val position = slotEntries.indexOfFirst { it.index == selectedIndex }
+        if (position >= 0) {
+            val info = gridState.layoutInfo
+            val viewport = info.viewportEndOffset - info.viewportStartOffset
+            val itemH = info.visibleItemsInfo.firstOrNull()?.size?.height ?: 0
+            gridState.animateScrollToItem(position, -(viewport - itemH) / 2)
         }
     }
 
-    LazyColumn(
-        state = listState,
-        contentPadding = PaddingValues(horizontal = Dimens.spacingSm, vertical = 12.dp),
-        verticalArrangement = Arrangement.spacedBy(2.dp),
-        modifier = Modifier.fillMaxSize()
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = Dimens.spacingSm, vertical = Dimens.spacingSm),
+        verticalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
     ) {
-        itemsIndexed(entries) { index, entry ->
-            StateSlotRow(
-                entry = entry,
-                isSelected = index == selectedIndex,
-                onClick = { onStateTapped(index) },
-                clickModifier = Modifier.touchOnly { onStateTapped(index) }
+        if (copySourceSlot != null) {
+            Text(
+                text = "Choose a slot to copy into",
+                style = MaterialTheme.typography.labelMedium,
+                color = theme.focusAccent,
+                modifier = Modifier.padding(horizontal = Dimens.spacingXs)
             )
         }
+
+        entries.getOrNull(autoIndex)?.let { auto ->
+            val isSource = copySourceSlot != null && auto.slotNumber == copySourceSlot
+            StateSlotRow(
+                entry = auto,
+                isSelected = selectedIndex == autoIndex,
+                onClick = { if (!isSource) onStateTapped(autoIndex) },
+                clickModifier = Modifier
+                    .alpha(if (isSource) COPY_SOURCE_ALPHA else 1f)
+                    .touchOnly { if (!isSource) onStateTapped(autoIndex) }
+            )
+        }
+
+        LazyVerticalGrid(
+            state = gridState,
+            columns = GridCells.Fixed(STATE_GRID_COLUMNS),
+            horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm),
+            verticalArrangement = Arrangement.spacedBy(Dimens.spacingSm),
+            modifier = Modifier.fillMaxSize()
+        ) {
+            items(slotEntries.size) { position ->
+                val (index, entry) = slotEntries[position]
+                val isSource = copySourceSlot != null && entry.slotNumber == copySourceSlot
+                StateSlotCard(
+                    entry = entry,
+                    isSelected = index == selectedIndex,
+                    isDisabled = isSource,
+                    onClick = { if (!isSource) onStateTapped(index) }
+                )
+            }
+        }
+    }
+}
+
+/**
+ * One numbered slot, drawn as the in-game state manager draws it: the shot it was taken at, with
+ * the slot and its age beneath.
+ */
+@Composable
+private fun StateSlotCard(
+    entry: UnifiedStateEntry,
+    isSelected: Boolean,
+    isDisabled: Boolean = false,
+    onClick: () -> Unit
+) {
+    val theme = LocalArgosyTheme.current
+    val isEmpty = entry.isEmpty
+    val screenshot = entry.screenshotPath
+        ?.let { java.io.File(it) }
+        ?.takeIf { it.exists() }
+
+    Column(
+        modifier = Modifier
+            .alpha(if (isDisabled) COPY_SOURCE_ALPHA else 1f)
+            .clip(RoundedCornerShape(Dimens.radiusControl))
+            .background(
+                if (isSelected) theme.focusAccent.copy(alpha = 0.25f) else theme.surfaceRaised
+            )
+            .argosyFocusIndicators(
+                focused = isSelected,
+                indicators = FocusIndicators.Ring,
+                shape = RoundedCornerShape(Dimens.radiusControl)
+            )
+            .touchOnly { onClick() }
+            .padding(Dimens.spacingXs),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .aspectRatio(4f / 3f)
+                .clip(RoundedCornerShape(Dimens.radiusSm))
+                .background(Color.Black),
+            contentAlignment = Alignment.Center
+        ) {
+            if (screenshot != null) {
+                AsyncImage(
+                    model = rememberFileImageModel(screenshot.absolutePath),
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize()
+                )
+            } else {
+                Text(
+                    text = if (isEmpty) "Empty" else "No shot",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = theme.textDim
+                )
+            }
+        }
+        Text(
+            text = "Slot ${entry.slotNumber}",
+            style = MaterialTheme.typography.labelMedium,
+            color = if (isSelected) theme.textPrimary else theme.textDim,
+            modifier = Modifier.padding(top = Dimens.spacingXs)
+        )
     }
 }
 

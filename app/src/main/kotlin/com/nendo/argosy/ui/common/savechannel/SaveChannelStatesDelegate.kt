@@ -218,8 +218,7 @@ class SaveChannelStatesDelegate @Inject constructor(
         val cacheId = entry.localCacheId ?: return
 
         scope.launch {
-            stateCacheManager.deleteState(cacheId)
-            entry.serverStateId?.let { stateCacheManager.tombstoneServerState(currentGameId, it) }
+            stateCacheManager.purgeState(currentGameId, cacheId, entry.serverStateId)
             refreshStates()
             _state.update {
                 it.copy(
@@ -289,67 +288,17 @@ class SaveChannelStatesDelegate @Inject constructor(
         val sourceCacheId = sourceEntry.localCacheId ?: return
 
         scope.launch {
-            val sourceCache = stateCacheManager.getStateById(sourceCacheId)
-            if (sourceCache == null) {
-                notificationManager.showError("Source state not found")
+            val copied = stateCacheManager.copyStateToSlot(sourceCacheId, -1)
+            if (!copied) {
+                notificationManager.showError("Could not replace the auto state")
+                _state.update {
+                    it.copy(
+                        showStateReplaceAutoConfirmation = false,
+                        stateReplaceAutoTarget = null
+                    )
+                }
                 return@launch
             }
-
-            val sourceFile = stateCacheManager.getCacheFile(sourceCache)
-            if (sourceFile == null) {
-                notificationManager.showError("Source state file not found")
-                return@launch
-            }
-
-            val autoState = state.statesEntries.find { it.slotNumber == -1 }
-            if (autoState?.localCacheId != null) {
-                stateCacheManager.deleteState(autoState.localCacheId)
-            }
-
-            val autoFileName = sourceFile.name.replace(
-                Regex("\\.state\\d+$"),
-                ".state.auto"
-            ).let { name ->
-                if (!name.endsWith(".state.auto")) {
-                    name.replace(".state", ".state.auto")
-                } else name
-            }
-
-            val coreDir = stateCacheManager.coreDirFor(sourceCache)
-            val autoFile = java.io.File(coreDir, autoFileName)
-            sourceFile.copyTo(autoFile, overwrite = true)
-
-            val screenshotFile = stateCacheManager.getScreenshotFile(sourceCache)
-            if (screenshotFile != null) {
-                val autoScreenshot = java.io.File(
-                    coreDir, "$autoFileName.png"
-                )
-                screenshotFile.copyTo(autoScreenshot, overwrite = true)
-            }
-
-            val autoCachePath = "${sourceCache.cachePath.substringBeforeLast('/')}/$autoFileName"
-            val autoScreenshotPath = if (screenshotFile != null) {
-                "$autoCachePath.png"
-            } else null
-
-            val autoEntity = sourceCache.copy(
-                id = 0,
-                slotNumber = -1,
-                cachePath = autoCachePath,
-                screenshotPath = autoScreenshotPath,
-                cachedAt = java.time.Instant.now()
-            )
-            stateCacheManager.cacheState(
-                gameId = autoEntity.gameId,
-                platformSlug = autoEntity.platformSlug,
-                emulatorId = autoEntity.emulatorId,
-                slotNumber = -1,
-                statePath = autoFile.absolutePath,
-                coreId = autoEntity.coreId,
-                coreVersion = autoEntity.coreVersion,
-                channelName = autoEntity.channelName,
-                isLocked = autoEntity.isLocked
-            )
 
             refreshStates()
             _state.update {

@@ -25,6 +25,7 @@ data class UnifiedStateEntry(
     enum class SyncStatus { LOCAL_ONLY, SYNCED, PENDING_UPLOAD, SERVER_ONLY }
 
     val isAutoSlot: Boolean get() = slotNumber == -1
+    val isEmpty: Boolean get() = localCacheId == null && serverStateId == null
     val canRestore: Boolean get() = localCacheId != null
     val canBindToChannel: Boolean get() = localCacheId != null && channelName == null
 

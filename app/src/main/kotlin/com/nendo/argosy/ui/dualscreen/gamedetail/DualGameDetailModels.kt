@@ -24,6 +24,13 @@ enum class DualGameDetailTab {
 
 enum class ActiveModal { NONE, RATING, DIFFICULTY, STATUS, EMULATOR, CORE, SAVE_PATH, DISPLAY_TARGET, MEMORY_CARD, COLLECTION, SAVE_NAME, DISC_PICKER, VARIANT_PICKER, STEAM_INSTALL, FILE_PICKER }
 
+enum class DualStateMenuAction(val label: String) {
+    COPY_TO("Copy to slot"),
+    DELETE("Delete state")
+}
+
+enum class DualStatePrompt { DELETE, OVERWRITE }
+
 enum class GameDetailOption {
     PLAY,
     RATING,
@@ -103,7 +110,13 @@ data class DualGameDetailUiState(
     val isDeleting: Boolean = false,
     val isMultiDisc: Boolean = false,
     val isHidden: Boolean = false,
-    val titleId: String? = null
+    val titleId: String? = null,
+    val stateMenuVisible: Boolean = false,
+    val stateMenuFocusIndex: Int = 0,
+    val stateCopySourceSlot: Int? = null,
+    val statePrompt: DualStatePrompt? = null,
+    val statePromptSlot: Int = 0,
+    val statePromptFocusIndex: Int = 0
 )
 
 fun DualGameDetailUiState.visibleOptions(): List<GameDetailOption> {

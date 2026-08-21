@@ -31,6 +31,14 @@ interface StateCacheDao {
     """)
     suspend fun getByGame(gameId: Long, ownerUserId: Long?): List<StateCacheEntity>
 
+    /**
+     * Every owner's rows for a game, for teardown only. Deleting the game removes it for the whole
+     * device, so rows belonging to another account describe cached files for a game that account
+     * can no longer reach either. Never use this to display or restore anything.
+     */
+    @Query("SELECT * FROM state_cache WHERE gameId = :gameId")
+    suspend fun getAllByGameForTeardown(gameId: Long): List<StateCacheEntity>
+
     @Query("SELECT * FROM state_cache WHERE id = :id")
     suspend fun getById(id: Long): StateCacheEntity?
 

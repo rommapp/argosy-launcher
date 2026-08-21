@@ -774,8 +774,22 @@ class StateCacheManager @Inject constructor(
         Log.d(TAG, "Pruned ${toDelete.size} old state caches for game $gameId owner $ownerUserId (files cleaned)")
     }
 
+    /**
+     * Removes everything this device remembers about one game's states: the cached files, their
+     * rows, who owned them, and the tombstones that suppressed their server copies.
+     *
+     * All three tables, because a game that is gone leaves nothing for any of them to describe. A
+     * tombstone outliving its game suppresses a server id nothing will ask about again, and an
+     * ownership row outliving its game claims a path no game can produce.
+     *
+     * Every owner's rows, not only the signed-in one. The game leaves the device for all of them,
+     * so scoping this to the current account would leave the next account's states cached against
+     * a game it can no longer see.
+     */
     suspend fun deleteAllStatesForGame(gameId: Long) = withContext(Dispatchers.IO) {
-        val caches = stateCacheDao.getByGame(gameId, syncPreferencesRepository.getRommUserId())
+        stateOwnershipTracker.clearForGame(gameId)
+        stateTombstoneDao.deleteByGame(gameId)
+        val caches = stateCacheDao.getAllByGameForTeardown(gameId)
         for (cache in caches) {
             val cacheFile = File(cacheBaseDir, cache.cachePath)
             val parentDir = cacheFile.parentFile

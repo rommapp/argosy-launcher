@@ -33,6 +33,8 @@ class PurgePlatformUseCase @Inject constructor(
     private val notificationManager: NotificationManager,
     private val saveCacheDao: SaveCacheDao,
     private val stateCacheDao: StateCacheDao,
+    private val stateOwnershipDao: com.nendo.argosy.data.local.dao.StateOwnershipDao,
+    private val stateTombstoneDao: com.nendo.argosy.data.local.dao.StateTombstoneDao,
     private val saveSyncDao: SaveSyncDao,
     private val attributionRepository: StorageAttributionRepository,
     private val syncPreferencesRepository: com.nendo.argosy.data.preferences.SyncPreferencesRepository
@@ -84,6 +86,8 @@ class PurgePlatformUseCase @Inject constructor(
         }
 
         stateCacheDao.deleteByPlatform(platformId)
+        stateOwnershipDao.deleteByPlatform(platformId)
+        stateTombstoneDao.deleteByPlatform(platformId)
         saveCacheDao.deleteByPlatform(platformId)
         saveSyncDao.deleteByPlatform(platformId)
 

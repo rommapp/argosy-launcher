@@ -91,6 +91,8 @@ class StateOwnershipTracker @Inject constructor(
         )
     }
 
+    suspend fun clearForGame(gameId: Long) = stateOwnershipDao.deleteByGame(gameId)
+
     suspend fun clear(statePath: String, emulatorId: String) {
         stateOwnershipDao.delete(statePath, emulatorId)
     }

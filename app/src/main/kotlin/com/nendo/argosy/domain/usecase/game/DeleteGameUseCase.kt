@@ -32,6 +32,7 @@ class DeleteGameUseCase @Inject constructor(
     private val downloadQueueDao: DownloadQueueDao,
     private val gameFileDao: GameFileDao,
     private val saveCacheManager: SaveCacheManager,
+    private val stateCacheManager: com.nendo.argosy.data.repository.StateCacheManager,
     private val saveSyncDao: SaveSyncDao,
     private val pendingSyncQueueDao: PendingSyncQueueDao,
     private val orphanedFileDao: OrphanedFileDao,
@@ -60,6 +61,7 @@ class DeleteGameUseCase @Inject constructor(
         gameFileDao.clearLocalPathsByGameIdExcludingPrefix(gameId, musicDirPrefix)
 
         saveCacheManager.deleteAllCachesForGame(gameId)
+        stateCacheManager.deleteAllStatesForGame(gameId)
         saveSyncDao.deleteByGame(gameId)
         deleteQueuedScreenshotFiles(gameId)
         pendingSyncQueueDao.deleteByGameId(gameId)
@@ -99,7 +101,7 @@ class DeleteGameUseCase @Inject constructor(
 
         attributionRepository.markDirty(StorageCategory.GAMES)
         attributionRepository.markDirty(StorageCategory.SAVE_STATE_CACHE)
-        Logger.debug(TAG, "Deleted local file and all save data for game $gameId")
+        Logger.debug(TAG, "Deleted local file, saves and states for game $gameId")
         return true
     }
 

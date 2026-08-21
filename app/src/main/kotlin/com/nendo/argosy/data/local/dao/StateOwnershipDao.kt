@@ -35,4 +35,14 @@ interface StateOwnershipDao {
 
     @Query("DELETE FROM state_ownership WHERE ownerUserId = :ownerUserId")
     suspend fun deleteByOwner(ownerUserId: Long)
+
+    /**
+     * Every owner's rows, not just the signed-in one: the game itself is going, so a row belonging
+     * to another account describes a state on a device path that no longer has a game behind it.
+     */
+    @Query("DELETE FROM state_ownership WHERE gameId = :gameId")
+    suspend fun deleteByGame(gameId: Long)
+
+    @Query("DELETE FROM state_ownership WHERE gameId IN (SELECT id FROM games WHERE platformId = :platformId)")
+    suspend fun deleteByPlatform(platformId: Long)
 }

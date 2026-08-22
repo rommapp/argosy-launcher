@@ -365,15 +365,81 @@ Relocates:
 That is roughly 55% of the payload, and the two largest items need no new client
 fetch site at all.
 
+### Siblings stay, and why the derivation still matters
+
+`sibling_roms` costs 0.69% of the payload - 2.7 MiB of 383 - and the server
+batches it into one query per page rather than one per row. There is no case for
+dropping it on size.
+
+It is worth knowing what it is, though. `sibling_roms` is a SQL *view*, not a
+table: a self-join of `roms` on the same platform where any of igdb, moby, ss,
+launchbox, ra, hasheous or tgdb id matches, or `fs_name_no_tags` matches. A view
+stores no rows, so that self-join runs on every request, and the OR across eight
+columns is close to unindexable - migration 0069 had to add
+`idx_roms_fs_name_no_tags` for it. So the cheap part is that it is one query per
+page, not that it is a view. If sync latency needs another look, what that view
+costs per page is a real unknown, and materialising it is a server-side answer
+rather than a client one. It cannot be measured from here because siblings are
+unconditional; there is no flag to A/B against.
+
+The useful result is that the grouping is exactly reproducible client-side. Every
+column the view matches on is already in the response - `fs_name_no_tags`
+included, which we receive and simply do not bind on `RomMRom`. Deriving groups
+from those columns alone and diffing against the server's answer:
+
+| Platform | Roms | Exact match | Missed | Invented |
+| --- | --- | --- | --- | --- |
+| Game Boy Advance | 2007 | 2007 | 0 | 0 |
+| PlayStation | 1601 | 1601 | 0 | 0 |
+
+One bit is not derivable: `is_main_sibling` comes from `rom_user`, so it is a
+per-account fact rather than a property of the rom. It only overrides winner
+selection, and the shipped default makes that moot anyway - `DEFAULT_REGIONS` is
+empty, so `regionRank` returns UNRANKED for every candidate and the winner is
+whichever member the page returned first. `SiblingWinnerTest` only covers the
+non-empty case.
+
+This is not an argument for dropping the field. It is the evidence that a pass
+which does not see a whole platform can still reconstruct a group - which is what
+section 3 needs, and it does not even require the derivation, because the
+grouping is already persisted: `game_files.versionGroup` holds
+`romm:<memberRommId>` against the winner's game id. No sync-path code reads it.
+Consolidation re-derives everything from the response on every pass, and that
+alone is what makes an incremental pull unsafe.
+
+### Deferring `files` to a pre-download query
+
+Worth 13%, and the two relocations it implies are already true: the music browser
+only ever reads `getMusicTracks`, and `ensureSoundtrackFiles` already re-fetches a
+game's soundtrack rows when theme resolution finds nothing. Neither needs new
+plumbing.
+
+Three things block it, and the first is the one that matters:
+
+**`isFolderMultiDisc` is computed from `files`** (`RomMModels.kt:127-128`), not
+from siblings. Without a file list, `syncRom:777-783` deletes `game_discs` rows
+whose `parentRommId` is null and `:822-826` writes `isMultiDisc = false`, for
+every sibling-based multi-disc game, on the next pass - orphaning downloaded
+discs. Dropping siblings would break multi-disc from one side; dropping files
+breaks it from the other. Multi-disc detection currently needs both, and any
+plan to defer either has to give it a new source first.
+
+**`RomMSyncFilter.extractExtension:67-73` reads `rom.files` first.** Without it,
+folders holding only `.srm` or `.state` start getting library rows.
+
+**`SecondaryHomeViewModel.startDownload:415` never calls `getRom`** and takes
+`expectedSizeBytes = game.fileSizeBytes ?: 0`. It already diverges from
+`DownloadGameUseCase` on file selection, so it wants unifying rather than
+patching.
+
 ### Blockers to clear first
 
-**The `track_meta` null-overwrite is live today, at two sites.**
-`RomMGameFileSync:83-85` and `RomMLibrarySyncService.syncVersionFiles:1204-1206`
-write `trackTitle` / `trackNumber` / `durationSeconds` straight from
-`file.trackMeta?...` with no `?: existing?.` fallback, while the same blocks do
-consult `existing` for `localPath`, `downloadedAt`, `isMultiDisc` and `m3uPath`.
-Any response without `track_meta` wipes those columns for every already-synced
-row. Fix this before anything stops sending track metadata.
+**The `track_meta` null-overwrite (fixed).** `RomMGameFileSync` and
+`syncVersionFiles` wrote `trackTitle` / `trackNumber` / `durationSeconds`
+straight from `file.trackMeta?...` with no `?: existing?.` fallback, so any
+response without track metadata wiped those columns for every already-synced
+row. Both now fall back to the stored value, which is what the surrounding
+fields already did.
 
 **Two download paths bypass the fresh fetch.**
 `SecondaryHomeViewModel.startDownload:415` does not call `getRom` at all and
@@ -412,18 +478,18 @@ it, the cursor and the tombstones have nothing to serve.
 
 ## Remaining
 
-Client-only: the `track_meta` null-overwrite fix at both sites, unifying the two
-download paths that bypass `getRom`, and `updated_after` per section 3 - still
-the only change with an order-of-magnitude effect, and still the one that needs
-design rather than a parameter.
+Client-only: unifying the two download paths that bypass `getRom`, giving
+multi-disc detection a source that does not depend on both `files` and
+`siblings`, and `updated_after` per section 3 - still the only change with an
+order-of-magnitude effect, and still the one that needs design rather than a
+parameter.
 
 Upstream: `track_meta` eager-loading, `include_file_stats` as a parameter, the
 `achievement_count` scalar, and then `GET /api/roms/sync`.
 
-Also stale and worth correcting while in the area: `RomMGameFileSync:14-18` and
-`RomMUserPropertyService:145` both still say the list endpoint returns no files.
-It returns them - they are 13% of the measured payload. Both KDocs predate
-`with_files`.
+Also stale: `RomMUserPropertyService:145` still says the list endpoint carries no
+files. It carries them - they are 13% of the measured payload. That KDoc predates
+`with_files`; the matching one on `RomMGameFileSync` is corrected.
 
 ## Verification status
 

@@ -1000,11 +1000,13 @@ class RomMLibrarySyncService @Inject constructor(
                         skipIndividualDiscIds.addAll(siblingIds)
                         Logger.info(TAG, "syncPlatformRoms: ${rom.name} is folder-based multi-disc, marking ${siblingIds.size} individual disc siblings to skip")
                         for (siblingId in siblingIds) {
-                            val existingGame = gameDao.getByRommId(siblingId)
-                            if (existingGame != null) {
-                                Logger.info(TAG, "syncPlatformRoms: deleting redundant individual disc game: ${existingGame.title}")
-                                gameDao.delete(existingGame.id)
+                            val existingGame = gameDao.getByRommId(siblingId) ?: continue
+                            if (hasLocalContent(existingGame)) {
+                                Logger.info(TAG, "syncPlatformRoms: keeping redundant individual disc game ${existingGame.title}, it holds local content")
+                                continue
                             }
+                            Logger.info(TAG, "syncPlatformRoms: deleting redundant individual disc game: ${existingGame.title}")
+                            gameDao.delete(existingGame.id)
                         }
                     }
                 }
@@ -1201,9 +1203,9 @@ class RomMLibrarySyncService @Inject constructor(
                 m3uPath = existing?.m3uPath,
                 regions = regions,
                 versionGroup = groupKey,
-                trackTitle = file.trackMeta?.title,
-                trackNumber = file.trackMeta?.track,
-                durationSeconds = file.trackMeta?.durationSeconds
+                trackTitle = file.trackMeta?.title ?: existing?.trackTitle,
+                trackNumber = file.trackMeta?.track ?: existing?.trackNumber,
+                durationSeconds = file.trackMeta?.durationSeconds ?: existing?.durationSeconds
             )
         }
         gameFileDao.insertAll(entities)

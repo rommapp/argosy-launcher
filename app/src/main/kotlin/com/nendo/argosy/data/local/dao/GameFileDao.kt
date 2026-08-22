@@ -138,6 +138,19 @@ interface GameFileDao {
     @Query("DELETE FROM game_files WHERE gameId = :gameId AND rommFileId NOT IN (:validRommFileIds)")
     suspend fun deleteInvalidFiles(gameId: Long, validRommFileIds: List<Long>)
 
+    /**
+     * Prunes only the rows this rom contributed. A consolidated game holds the files of every
+     * absorbed sibling under one gameId, so a response describing a single rom is not evidence
+     * about the others and must not be allowed to delete them.
+     */
+    @Query(
+        """
+        DELETE FROM game_files
+        WHERE gameId = :gameId AND romId = :romId AND rommFileId NOT IN (:validRommFileIds)
+        """
+    )
+    suspend fun deleteInvalidFilesForRom(gameId: Long, romId: Long, validRommFileIds: List<Long>)
+
     @Query("""
         SELECT gf.* FROM game_files gf
         INNER JOIN games g ON gf.gameId = g.id

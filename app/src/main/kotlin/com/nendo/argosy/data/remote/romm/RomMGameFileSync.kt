@@ -12,9 +12,12 @@ import javax.inject.Singleton
 /**
  * Writes a ROM's file list - discs, updates, DLC and soundtrack tracks - into `game_files`.
  *
- * Shared by the library sync and the per-game refresh because the list endpoint returns an
- * empty `files` array while the single-ROM endpoint returns the real one, so a game's tracks
- * only ever arrive through a detail fetch.
+ * Shared by the library sync, which asks for files with `with_files`, and the per-game refresh,
+ * which gets them from the single-ROM endpoint.
+ *
+ * A consolidated game holds every absorbed sibling's files under one gameId, so this only ever
+ * prunes and rewrites the rows belonging to the rom it was handed. `versionGroup` and `regions`
+ * carry over from the stored row because only version consolidation knows them.
  *
  * Every file the server reports is recorded. Which of them a platform offers or downloads by
  * default is a decision for the download and variant layers; dropping references here left
@@ -54,7 +57,7 @@ class RomMGameFileSync @Inject constructor(
 
         val validIds = files.mapNotNull { if (it.id > 0) it.id else null }
         if (validIds.isNotEmpty() && fileListIsAuthoritative) {
-            gameFileDao.deleteInvalidFiles(gameId, validIds)
+            gameFileDao.deleteInvalidFilesForRom(gameId, rom.id, validIds)
         }
 
         val entities = files.map { file ->
@@ -80,9 +83,11 @@ class RomMGameFileSync @Inject constructor(
                 isLaunchTarget = category.isLaunchTarget && !(isNested && file.category == null),
                 isMultiDisc = existing?.isMultiDisc ?: false,
                 m3uPath = existing?.m3uPath,
-                trackTitle = file.trackMeta?.title,
-                trackNumber = file.trackMeta?.track,
-                durationSeconds = file.trackMeta?.durationSeconds
+                regions = existing?.regions,
+                versionGroup = existing?.versionGroup,
+                trackTitle = file.trackMeta?.title ?: existing?.trackTitle,
+                trackNumber = file.trackMeta?.track ?: existing?.trackNumber,
+                durationSeconds = file.trackMeta?.durationSeconds ?: existing?.durationSeconds
             )
         }
         gameFileDao.insertAll(entities)

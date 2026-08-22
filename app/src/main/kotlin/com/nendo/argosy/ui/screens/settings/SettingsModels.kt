@@ -234,6 +234,7 @@ data class DisplayState(
     val homeBackgroundMode: HomeBackgroundMode = HomeBackgroundMode.GAME_ART,
     val homeLayout: com.nendo.argosy.domain.model.HomeLayoutSettings =
         com.nendo.argosy.domain.model.HomeLayoutSettings(),
+    val boxArtCapableGames: Int = 0,
     val useAccentColorFooter: Boolean = false,
     val compactFooter: Boolean = false,
     val boxArtShape: BoxArtShape = BoxArtShape.STANDARD,
@@ -697,7 +698,18 @@ data class SavePathModalInfo(
     val savesBesideRom: Boolean = false,
     val besideRomSupported: Boolean = false,
     val chosenPath: String? = null,
-    val pathPresent: Boolean = true
+    val pathPresent: Boolean = true,
+    /**
+     * Why the chosen folder does not look like this platform's save location, when it does not.
+     * Advisory: the path is still used, because a legitimate layout can sit outside the shapes
+     * Argosy knows about.
+     */
+    val shapeWarning: String? = null,
+    /**
+     * What gets appended below [savePath] once a game is known, for platforms whose saves sit in a
+     * per-game directory. Shown so the folder on screen matches what a file browser reveals.
+     */
+    val unresolvedShape: String? = null
 )
 
 data class MemcardPickerInfo(

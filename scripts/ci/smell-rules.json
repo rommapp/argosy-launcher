@@ -60,6 +60,20 @@
         "app/src/main/**/data/repository/StateCacheManager.kt"
       ],
       "added_regex": "\\.(activateChannel|createChannel|renameChannel|copyToChannel|deleteStatesForChannel|deleteStatesForChannelAndCore|moveStatesToChannel|duplicateStatesForChannel)\\s*\\("
+    },
+    {
+      "id": "platform-blind-save-config",
+      "summary": "Save config resolved without a platform",
+      "message": "getConfig and getConfigByPackage answer for an emulator, not for a platform, so a multi-platform emulator resolves to whichever layout is listed first. That is how the Wii row came to display GameCube's path and how both platforms came to share one override row (#380). Ask SavePathAuthority instead: it takes the platform slug as a required argument and returns the layout, the override key, the evaluated path and a validation verdict together. The registry itself and the authority are excluded; everything else goes through the authority.",
+      "path_include": [
+        "app/src/main/**/*.kt"
+      ],
+      "path_exclude": [
+        "app/src/main/**/data/emulator/savepath/**",
+        "app/src/main/**/data/emulator/SavePathRegistry.kt",
+        "app/src/main/**/data/emulator/StatePathRegistry.kt"
+      ],
+      "added_regex": "SavePathRegistry\\.(getConfig|getConfigByPackage|canonicalConfigId)\\s*\\("
     }
   ]
 }

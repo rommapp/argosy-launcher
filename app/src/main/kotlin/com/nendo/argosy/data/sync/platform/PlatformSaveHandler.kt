@@ -68,7 +68,13 @@ data class SaveContext(
     val platformSlug: String,
     val emulatorId: String,
     val localSavePath: String? = null,
-    val coreName: String? = null
+    val coreName: String? = null,
+    /**
+     * The folder the user pointed this emulator at, when they set one. Handlers that build a
+     * destination themselves must prefer it over the packaged default, or a restore lands where
+     * the next discovery pass will not look for it.
+     */
+    val basePathOverride: String? = null
 )
 
 data class PreparedSave(

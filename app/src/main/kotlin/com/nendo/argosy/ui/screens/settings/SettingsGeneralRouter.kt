@@ -276,17 +276,21 @@ internal fun routeShowSavePathModal(vm: SettingsViewModel, config: PlatformEmula
     val installedEmulator = config.availableEmulators
         .find { it.def.displayName == config.selectedEmulator || it.def.displayName == config.effectiveEmulatorName }
         ?: return
-    val emulatorId = SavePathRegistry.canonicalConfigId(
-        installedEmulator.def.id,
-        installedEmulator.def.packageName
-    )
+    val emulatorId = vm.savePathAuthority.configIdFor(
+        com.nendo.argosy.data.emulator.savepath.SavePathRequest(
+            platformSlug = config.platform.slug,
+            emulatorId = installedEmulator.def.id,
+            emulatorPackage = installedEmulator.def.packageName
+        )
+    ) ?: return
     vm.emulatorDelegate.showSavePathModal(
         scope = vm.viewModelScope,
         emulatorId = emulatorId,
         emulatorName = config.effectiveEmulatorName ?: config.selectedEmulator ?: "Unknown",
         platformName = config.platform.name,
         savePath = config.effectiveSavePath,
-        isUserOverride = config.isUserSavePathOverride
+        isUserOverride = config.isUserSavePathOverride,
+        platformSlug = config.platform.slug
     )
 }
 

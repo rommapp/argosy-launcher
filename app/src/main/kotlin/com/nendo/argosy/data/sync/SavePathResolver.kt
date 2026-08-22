@@ -649,6 +649,12 @@ class SavePathResolver @Inject constructor(
      * beside file saves such as `.resume.p2s` - and the folder branch creates a directory at the
      * path it returns, so a file save resolved through the platform default has a directory
      * written over its target and the download that follows cannot write there.
+     *
+     * A user override is exclusive here, matching `discoverSavePath`. If it cannot be used this
+     * returns null rather than falling back to the packaged default: discovery searches only the
+     * override once one exists, so writing anywhere else produces a save the next pass cannot see
+     * and a conflict that never resolves. The override is read under `config.emulatorId`, the same
+     * key discovery uses, so a multi-platform emulator does not pick up the other platform's path.
      */
     suspend fun constructSavePath(
         emulatorId: String,
@@ -678,15 +684,21 @@ class SavePathResolver @Inject constructor(
             return constructRetroArchSavePath(emulatorId, gameTitle, platformSlug, romPath, coreName)
         }
 
-        val userConfig = emulatorSaveConfigDao.getByEmulator(emulatorId)
+        val userConfig = emulatorSaveConfigDao.getByEmulator(config.emulatorId)
         val besideRomDir = if (userConfig?.savesBesideRom == true && romPath != null) File(romPath).parent else null
         val overridePath = besideRomDir
-            ?: emulatorSaveConfigRepository.resolveUserSavePath(emulatorId, platformSlug)
+            ?: emulatorSaveConfigRepository.resolveUserSavePath(config.emulatorId, platformSlug)
         val baseDir = if (overridePath != null) {
-            if (directoryExists(overridePath) || saveArchiver.getFileForPath(overridePath).mkdirs()) overridePath else null
+            if (directoryExists(overridePath) || saveArchiver.getFileForPath(overridePath).mkdirs()) {
+                overridePath
+            } else {
+                Logger.warn(
+                    TAG,
+                    "constructSavePath: override unusable, refusing to write elsewhere | path=$overridePath"
+                )
+                return null
+            }
         } else {
-            null
-        } ?: run {
             val resolvedPaths = resolveSavePaths(config, platformSlug)
             if (resolvedPaths.isEmpty()) {
                 Logger.debug(TAG, "constructSavePath: FAILED - no candidate paths | emulatorId=$emulatorId, platformSlug=$platformSlug, configEmulatorId=${config.emulatorId}")

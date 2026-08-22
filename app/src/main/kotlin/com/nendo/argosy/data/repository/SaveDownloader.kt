@@ -3,6 +3,7 @@ package com.nendo.argosy.data.repository
 import android.content.Context
 import com.nendo.argosy.data.emulator.EmulatorResolver
 import com.nendo.argosy.data.emulator.GameCubeHeaderParser
+import com.nendo.argosy.data.emulator.SavePathConfig
 import com.nendo.argosy.data.emulator.SavePathRegistry
 import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.dao.SaveCacheDao
@@ -47,8 +48,20 @@ class SaveDownloader @Inject constructor(
     private val switchSaveHandler: SwitchSaveHandler,
     private val gciSaveHandler: GciSaveHandler,
     private val apiClient: dagger.Lazy<SaveSyncApiClient>,
-    private val saveUploader: dagger.Lazy<SaveUploader>
+    private val saveUploader: dagger.Lazy<SaveUploader>,
+    private val emulatorSaveConfigRepository: EmulatorSaveConfigRepository
 ) {
+
+    /**
+     * The folder the user pointed this emulator at, keyed by the platform-aware config id so a
+     * multi-platform emulator does not read the other platform's override. Handed to handlers that
+     * build their own destination; without it a restore lands in the packaged default while
+     * discovery keeps reading the override.
+     */
+    private suspend fun overrideBaseFor(config: SavePathConfig?, platformSlug: String): String? =
+        config?.emulatorId?.let {
+            emulatorSaveConfigRepository.resolveUserSavePath(it, platformSlug)
+        }?.takeIf { it.isNotBlank() }
 
     suspend fun downloadSave(
         gameId: Long,
@@ -447,7 +460,8 @@ class SaveDownloader @Inject constructor(
                     platformSlug = game.platformSlug,
                     emulatorId = resolvedEmulatorId,
                     localSavePath = targetPath,
-                    coreName = preferredCore
+                    coreName = preferredCore,
+                    basePathOverride = overrideBaseFor(config, game.platformSlug)
                 )
                 val handler = client.getHandler(config, game.platformSlug, resolvedEmulatorId)
                 val result = handler.extractDownload(tempZipFile, saveContext)
@@ -527,7 +541,8 @@ class SaveDownloader @Inject constructor(
                         gameTitle = game.title,
                         platformSlug = game.platformSlug,
                         emulatorId = resolvedEmulatorId,
-                        coreName = preferredCore
+                        coreName = preferredCore,
+                        basePathOverride = overrideBaseFor(config, game.platformSlug)
                     )
                     val result = gciSaveHandler.extractDownload(tempGciFile, saveContext)
                     if (!result.success) {
@@ -767,7 +782,10 @@ class SaveDownloader @Inject constructor(
 
                     if (isZipBundle) {
                         tempZipFile = tempGciFile
-                        val extractedPaths = gciSaveHandler.extractBundle(tempGciFile, config, romPath, gameId)
+                        val extractedPaths = gciSaveHandler.extractBundle(
+                            tempGciFile, config, romPath, gameId,
+                            platformSlug?.let { overrideBaseFor(config, it) }
+                        )
                         if (extractedPaths.isEmpty()) {
                             Logger.error(TAG, "downloadSaveById: GCI bundle extraction failed")
                             return@withContext false
@@ -780,7 +798,9 @@ class SaveDownloader @Inject constructor(
                             val gciFilename = GameCubeHeaderParser.buildGciFilename(
                                 gciInfo.makerCode, gciInfo.gameId, gciInfo.internalFilename
                             )
-                            val basePaths = SavePathRegistry.resolvePath(config, "ngc", null)
+                            val overrideBase = platformSlug?.let { overrideBaseFor(config, it) }
+                            val basePaths = overrideBase?.let { listOf(it) }
+                                ?: SavePathRegistry.resolvePath(config, "ngc", null)
                             val baseDir = basePaths.firstOrNull { fal.exists(it) && fal.isDirectory(it) } ?: basePaths.firstOrNull()
                             if (baseDir != null) {
                                 val resolvedPath = GameCubeHeaderParser.buildGciPath(baseDir, romInfo.region, gciFilename)

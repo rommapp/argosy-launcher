@@ -60,13 +60,17 @@ class GciSaveHandler @Inject constructor(
             }
 
             if (isZipBundle(tempFile)) {
-                val paths = extractBundle(tempFile, context.config, romPath, context.gameId)
+                val paths = extractBundle(
+                    tempFile, context.config, romPath, context.gameId, context.basePathOverride
+                )
                 if (paths.isEmpty()) {
                     return@withContext ExtractResult(false, null, "GCI bundle extraction failed")
                 }
                 ExtractResult(true, paths.first())
             } else {
-                val path = extractSingleGci(tempFile, romPath, context.config)
+                val path = extractSingleGci(
+                    tempFile, romPath, context.config, context.basePathOverride
+                )
                 if (path == null) {
                     return@withContext ExtractResult(false, null, "Single GCI extraction failed")
                 }
@@ -171,11 +175,18 @@ class GciSaveHandler @Inject constructor(
         }
     }
 
+    /**
+     * [basePathOverride] is the folder the user pointed this emulator at, and it must be honoured
+     * here as well as during discovery. Extracting to the packaged default while discovery reads
+     * the override writes the save somewhere the next sync will not look, so the stale copy keeps
+     * winning and the user is told the download succeeded.
+     */
     suspend fun extractBundle(
         zipFile: File,
         config: SavePathConfig,
         romPath: String,
-        gameId: Long
+        gameId: Long,
+        basePathOverride: String? = null
     ): List<String> = withContext(Dispatchers.IO) {
         val extractedPaths = mutableListOf<String>()
 
@@ -185,7 +196,8 @@ class GciSaveHandler @Inject constructor(
             return@withContext emptyList()
         }
 
-        val basePaths = SavePathRegistry.resolvePath(config, "ngc", context.filesDir.absolutePath)
+        val basePaths = basePathOverride?.let { listOf(it) }
+            ?: SavePathRegistry.resolvePath(config, "ngc", context.filesDir.absolutePath)
         val baseDir = basePaths.firstOrNull { fal.exists(it) && fal.isDirectory(it) }
             ?: basePaths.firstOrNull()
             ?: run {
@@ -246,7 +258,8 @@ class GciSaveHandler @Inject constructor(
     suspend fun extractSingleGci(
         tempGciFile: File,
         romPath: String,
-        config: SavePathConfig
+        config: SavePathConfig,
+        basePathOverride: String? = null
     ): String? = withContext(Dispatchers.IO) {
         val romInfo = parseRomHeader(romPath)
         if (romInfo == null) {
@@ -274,7 +287,8 @@ class GciSaveHandler @Inject constructor(
             gciInfo.internalFilename
         )
 
-        val basePaths = SavePathRegistry.resolvePath(config, "ngc", context.filesDir.absolutePath)
+        val basePaths = basePathOverride?.let { listOf(it) }
+            ?: SavePathRegistry.resolvePath(config, "ngc", context.filesDir.absolutePath)
         val baseDir = basePaths.firstOrNull { fal.exists(it) && fal.isDirectory(it) }
             ?: basePaths.firstOrNull()
             ?: return@withContext null

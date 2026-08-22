@@ -28,6 +28,12 @@ class EmulatorSaveConfigRepository @Inject constructor(
      * emulator never writes.
      *
      * Returns null when no sibling has one, leaving the packaged default in charge.
+     *
+     * The fallback runs only for a genuine emulator id. A platform-qualified save-config id such
+     * as `dolphin_wii` names a layout rather than an installed app, and feeding one to
+     * sibling-family logic resolves it to the base emulator, which is how a GameCube override
+     * became the Wii save base (#380). Siblings are other builds of the same emulator, never other
+     * platforms of the same build.
      */
     suspend fun resolveUserSavePath(emulatorId: String, platformSlug: String?): String? {
         emulatorSaveConfigDao.getByEmulator(emulatorId)
@@ -35,6 +41,8 @@ class EmulatorSaveConfigRepository @Inject constructor(
             ?.savePathPattern
             ?.takeIf { it.isNotBlank() }
             ?.let { return it }
+
+        if (EmulatorRegistry.getById(emulatorId) == null) return null
 
         val slug = platformSlug?.takeIf { it.isNotBlank() } ?: return null
         val base = EmulatorRegistry.familyBaseIdFor(emulatorId)

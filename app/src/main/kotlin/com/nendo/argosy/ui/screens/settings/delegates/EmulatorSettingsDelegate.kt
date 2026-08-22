@@ -14,6 +14,8 @@ import com.nendo.argosy.data.local.entity.EmulatorUpdateEntity
 import com.nendo.argosy.data.local.entity.EmulatorSaveConfigEntity
 import com.nendo.argosy.data.repository.CoreVersionRepository
 import com.nendo.argosy.data.repository.EmulatorConfigRepository
+import com.nendo.argosy.data.emulator.savepath.SavePathRequest
+import com.nendo.argosy.data.emulator.savepath.SavePathVerdict
 import com.nendo.argosy.data.repository.EmulatorSaveConfigRepository
 import com.nendo.argosy.domain.usecase.game.ConfigureEmulatorUseCase
 import com.nendo.argosy.libretro.LibretroCoreManager
@@ -66,7 +68,8 @@ class EmulatorSettingsDelegate @Inject constructor(
     private val emulatorUpdateManager: EmulatorUpdateManager,
     private val emulatorDownloadManager: EmulatorDownloadManager,
     private val emulatorUpdateRepository: EmulatorUpdateRepository,
-    private val saveHandlerRegistry: PlatformSaveHandlerRegistry
+    private val saveHandlerRegistry: PlatformSaveHandlerRegistry,
+    private val savePathAuthority: com.nendo.argosy.data.emulator.savepath.SavePathAuthority
 ) {
     companion object {
         private const val TAG = "EmulatorSettingsDelegate"
@@ -356,13 +359,34 @@ class EmulatorSettingsDelegate @Inject constructor(
         return emulatorSaveConfigRepository.getByEmulator(emulatorId)
     }
 
+    /**
+     * What the save-path row should say about a folder beyond the path itself: whether it looks
+     * like this platform's save location, and what the platform appends below it per game.
+     */
+    private data class SavePathShapeInfo(val warning: String?, val remainder: String?)
+
+    private suspend fun describeSavePathShape(
+        emulatorId: String,
+        platformSlug: String,
+        path: String
+    ): SavePathShapeInfo {
+        val request = SavePathRequest(platformSlug = platformSlug, emulatorId = emulatorId)
+        val resolution = savePathAuthority.resolve(request)
+        val verdict = savePathAuthority.validate(path, resolution.config, platformSlug)
+        return SavePathShapeInfo(
+            warning = (verdict as? SavePathVerdict.LooksWrong)?.reason,
+            remainder = resolution.unresolvedShape
+        )
+    }
+
     fun showSavePathModal(
         scope: CoroutineScope,
         emulatorId: String,
         emulatorName: String,
         platformName: String,
         savePath: String?,
-        isUserOverride: Boolean
+        isUserOverride: Boolean,
+        platformSlug: String? = null
     ) {
         scope.launch {
             val config = emulatorSaveConfigRepository.getByEmulator(emulatorId)
@@ -370,6 +394,11 @@ class EmulatorSettingsDelegate @Inject constructor(
             val pathPresent = savePath?.let {
                 withContext(Dispatchers.IO) { saveHandlerRegistry.pathIsPresent(it) }
             } ?: true
+            val shape = savePath?.let { path ->
+                platformSlug?.let { slug ->
+                    withContext(Dispatchers.IO) { describeSavePathShape(emulatorId, slug, path) }
+                }
+            }
             _state.update {
                 it.copy(
                     showSavePathModal = true,
@@ -381,7 +410,9 @@ class EmulatorSettingsDelegate @Inject constructor(
                         isUserOverride = isUserOverride,
                         savesBesideRom = config?.savesBesideRom == true,
                         besideRomSupported = besideRomSupported,
-                        pathPresent = pathPresent
+                        pathPresent = pathPresent,
+                        shapeWarning = shape?.warning,
+                        unresolvedShape = shape?.remainder
                     ),
                     savePathModalFocusIndex = 0,
                     savePathModalButtonIndex = 0

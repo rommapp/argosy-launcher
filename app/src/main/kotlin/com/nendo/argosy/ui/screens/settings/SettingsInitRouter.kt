@@ -389,8 +389,12 @@ internal fun routeLoadSettings(vm: SettingsViewModel) {
 
             val emulatorId = effectiveEmulatorDef?.id
             val emulatorPackage = effectiveEmulatorDef?.packageName
-            val savePathConfig = emulatorPackage?.let { SavePathRegistry.getConfigByPackage(it) }
-                ?: emulatorId?.let { SavePathRegistry.getConfig(it) }
+            val savePathRequest = com.nendo.argosy.data.emulator.savepath.SavePathRequest(
+                platformSlug = platform.slug,
+                emulatorId = emulatorId,
+                emulatorPackage = emulatorPackage
+            )
+            val savePathConfig = vm.savePathAuthority.configFor(savePathRequest)
             val showSavePath = savePathConfig != null
             val effectiveSaveConfigId = savePathConfig?.emulatorId
 
@@ -465,6 +469,7 @@ internal fun routeLoadSettings(vm: SettingsViewModel) {
         val downloadedSize = vm.gameRepository.getDownloadedGamesSize()
         val downloadedCount = vm.gameRepository.getDownloadedGamesCount()
         val availableSpace = vm.gameRepository.getAvailableStorageBytes()
+        val boxArtCapableGames = vm.gameRepository.countBoxArtCapableGames()
 
         vm.displayDelegate.updateState(DisplayState(
             themeMode = prefs.themeMode,
@@ -497,6 +502,7 @@ internal fun routeLoadSettings(vm: SettingsViewModel) {
             customBackgroundPath = prefs.customBackgroundPath,
             homeBackgroundMode = prefs.homeBackgroundMode,
             homeLayout = prefs.homeLayout,
+            boxArtCapableGames = boxArtCapableGames,
             useAccentColorFooter = prefs.useAccentColorFooter,
             compactFooter = prefs.compactFooter,
             boxArtShape = prefs.boxArtShape,

@@ -58,11 +58,14 @@ fun SavePathModal(
             note = when {
                 info.savePath != null && !info.pathPresent ->
                     "This folder isn't on the device right now. Saves won't be found until it is."
+                info.shapeWarning != null -> info.shapeWarning
                 info.chosenPath != null ->
                     "Moved to where ${info.platformName} saves actually live, below the folder you picked."
+                info.unresolvedShape != null ->
+                    "Each game's save sits under ${info.unresolvedShape} below this folder."
                 else -> null
             },
-            noteIsWarning = info.savePath != null && !info.pathPresent
+            noteIsWarning = (info.savePath != null && !info.pathPresent) || info.shapeWarning != null
         )
 
         if (info.besideRomSupported) {

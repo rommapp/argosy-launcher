@@ -17,6 +17,7 @@ import com.nendo.argosy.data.preferences.GridDensity
 import com.nendo.argosy.data.preferences.SyncPreferencesRepository
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.repository.AppsRepository
+import com.nendo.argosy.domain.usecase.download.DownloadGameUseCase
 import com.nendo.argosy.ui.common.GridDirection
 import com.nendo.argosy.ui.common.GridFocusNavigator
 import com.nendo.argosy.ui.common.isAndroidApp
@@ -104,7 +105,8 @@ class SecondaryHomeViewModel @Inject constructor(
     private val displayAffinityHelper: DisplayAffinityHelper,
     private val downloadManager: DownloadManager?,
     @ApplicationContext private val context: Context,
-    private val syncPreferencesRepository: SyncPreferencesRepository? = null
+    private val syncPreferencesRepository: SyncPreferencesRepository? = null,
+    private val downloadGameUseCase: DownloadGameUseCase? = null
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SecondaryHomeUiState())
@@ -412,25 +414,17 @@ class SecondaryHomeViewModel @Inject constructor(
         return intent to options
     }
 
+    /**
+     * Routes through [DownloadGameUseCase] rather than enqueuing directly: a multi-disc game needs
+     * its own path, and the file name and size have to come from a fresh rom fetch, because the
+     * synced columns are stale for anything the server has rebuilt.
+     */
     fun startDownload(gameId: Long) {
         val dm = downloadManager ?: return
+        val download = downloadGameUseCase ?: return
         viewModelScope.launch {
-            // Try to resume if there's a paused/waiting download first
             dm.resumeDownload(gameId)
-
-            val game = gameRepository.getById(gameId) ?: return@launch
-            val rommId = game.rommId ?: return@launch
-            val fileName = game.rommFileName ?: game.title
-
-            dm.enqueueDownload(
-                gameId = gameId,
-                rommId = rommId,
-                fileName = fileName,
-                gameTitle = game.title,
-                platformSlug = game.platformSlug,
-                coverPath = game.coverPath,
-                expectedSizeBytes = game.fileSizeBytes ?: 0
-            )
+            download(gameId)
         }
     }
 

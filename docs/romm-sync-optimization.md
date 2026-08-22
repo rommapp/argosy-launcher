@@ -441,13 +441,19 @@ response without track metadata wiped those columns for every already-synced
 row. Both now fall back to the stored value, which is what the surrounding
 fields already did.
 
-**Two download paths bypass the fresh fetch.**
-`SecondaryHomeViewModel.startDownload:415` does not call `getRom` at all and
-takes `expectedSizeBytes = game.fileSizeBytes ?: 0`; `DualScreenManager:1219`
-and `FilePickerFlowUseCase:269` pass the synced `game_files.fileSize`. Those go
-to zero if the size leaves sync. The dual-screen path already diverges from
-`DownloadGameUseCase` on file selection, so this is worth unifying rather than
-patching.
+**Download paths that bypass the fresh fetch.**
+`SecondaryHomeViewModel.startDownload` enqueued directly, so it never called
+`getRom`, took `expectedSizeBytes = game.fileSizeBytes ?: 0`, and had no
+multi-disc path at all - a folder rom downloaded as a single file. It now routes
+through `DownloadGameUseCase` like every other surface.
+
+`NetplayJoinService:228` still enqueues directly with the same stale size. It
+does pass `isMultiFileRom`, so it is less wrong, but it is the remaining bypass.
+Netplay is a maintainer domain, so it is flagged rather than changed.
+
+`DualScreenManager:1219` and `FilePickerFlowUseCase:269` read the synced
+`game_files.fileSize` for display rather than for the transfer, so they degrade
+to a wrong number rather than a broken download.
 
 **`getRom` has no coalescing.** Detail open already fires up to four independent
 calls - achievements, screenshots, download-size backfill, theme resolution. On
@@ -478,11 +484,11 @@ it, the cursor and the tombstones have nothing to serve.
 
 ## Remaining
 
-Client-only: unifying the two download paths that bypass `getRom`, giving
-multi-disc detection a source that does not depend on both `files` and
-`siblings`, and `updated_after` per section 3 - still the only change with an
-order-of-magnitude effect, and still the one that needs design rather than a
-parameter.
+Client-only: giving multi-disc detection a source that does not depend on both
+`files` and `siblings`, and `updated_after` per section 3 - still the only change
+with an order-of-magnitude effect, and still the one that needs design rather
+than a parameter. `NetplayJoinService` still enqueues downloads directly and
+wants the same unification, but it is a maintainer domain.
 
 Upstream: `track_meta` eager-loading, `include_file_stats` as a parameter, the
 `achievement_count` scalar, and then `GET /api/roms/sync`.

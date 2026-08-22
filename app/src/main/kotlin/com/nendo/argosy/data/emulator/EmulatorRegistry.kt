@@ -761,7 +761,7 @@ object EmulatorRegistry {
             displayName = "PPSSPP Gold",
             supportedPlatforms = setOf("psp"),
             launchConfig = LaunchConfig.Custom(
-                activityClass = "org.ppsspp.ppssppgold.PpssppActivity",
+                activityClass = "org.ppsspp.ppsspp.PpssppActivity",
             ),
             defaultLaunchMethod = LaunchMethod.SHELL,
             downloadUrl = "https://play.google.com/store/apps/details?id=org.ppsspp.ppssppgold"

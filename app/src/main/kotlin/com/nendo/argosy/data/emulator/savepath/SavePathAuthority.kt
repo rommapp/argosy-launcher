@@ -58,13 +58,18 @@ data class SavePathResolution(
 }
 
 /**
- * The single place that decides which save path applies.
+ * Where the decision about which save path applies is being consolidated.
  *
- * Before this existed the decision was made independently in roughly thirty call sites, and they
- * disagreed in four ways that reached users: the config was looked up without the platform, the
- * override was read under one key and written under two others, discovery treated an override as
- * exclusive while construction fell back past it, and one restore path dropped the override
- * entirely. Those are not four bugs so much as one absent abstraction.
+ * IN PROGRESS, and the count matters to anyone reading this: the settings surfaces resolve through
+ * here, the sync layer does not yet. `SavePathResolver`, `SaveDownloader`, `SaveUploader` and
+ * `GameLauncher` still derive the override key themselves, so several derivations remain live and
+ * this class is not yet the authority its name claims. Do not read it as finished work.
+ *
+ * The decision used to be made independently in roughly thirty call sites, disagreeing in four
+ * ways that reached users: the config was looked up without the platform, the override was read
+ * under one key and written under two others, discovery treated an override as exclusive while
+ * construction fell back past it, and one restore path dropped the override entirely. Those are
+ * not four bugs so much as one absent abstraction.
  *
  * Two kinds of identifier meet here and must not be confused. An emulator id names an installed
  * app; a save-config id names a save layout and may carry a platform, as `dolphin_wii` does. Only
@@ -85,13 +90,19 @@ class SavePathAuthority @Inject constructor(
     /**
      * The save layout for this request, always platform-aware. A multi-platform emulator resolves
      * to the layout of the platform asked about, never to whichever one happens to be listed first.
+     *
+     * Unsupported layouts answer null, matching `SavePathRegistry.getConfig`. An emulator whose
+     * sync is deliberately parked must not be handed a save path to display, or the screen offers
+     * a setting that does nothing.
      */
     fun configFor(request: SavePathRequest): SavePathConfig? =
-        request.emulatorPackage
-            ?.let { SavePathRegistry.getConfigForPlatformByPackage(it, request.platformSlug) }
-            ?: request.emulatorId?.let {
-                SavePathRegistry.getConfigForPlatform(it, request.platformSlug)
-            }
+        (
+            request.emulatorPackage
+                ?.let { SavePathRegistry.getConfigForPlatformByPackage(it, request.platformSlug) }
+                ?: request.emulatorId?.let {
+                    SavePathRegistry.getConfigForPlatform(it, request.platformSlug)
+                }
+            )?.takeIf { it.supported }
 
     /**
      * The one key an override is stored and read under. Every write must use this and no other,
@@ -166,9 +177,19 @@ class SavePathAuthority @Inject constructor(
      * What still gets appended below the base once a game is known. Null when the base is already
      * the answer.
      */
-    private fun unresolvedShapeFor(config: SavePathConfig, platformSlug: String): String? = when {
+    /**
+     * What still gets appended below [basePath] once a game is known, given how deep the base
+     * already reaches. A Wii base that already names a title type has only the id and `data` left
+     * below it, and claiming otherwise prints a path the user will not find.
+     */
+    private fun unresolvedShapeFor(
+        config: SavePathConfig,
+        platformSlug: String,
+        basePath: String
+    ): String? = when {
         config.usesGciFormat -> "<region>/Card A"
-        PlatformDefinitions.getCanonicalSlug(platformSlug) == "wii" -> "title/<type>/<id>/data"
+        PlatformDefinitions.getCanonicalSlug(platformSlug) == "wii" ->
+            if (basePath.contains("/title/")) "<id>/data" else "title/<type>/<id>/data"
         config.usesFolderBasedSaves -> "<save folder>"
         else -> null
     }
@@ -180,7 +201,7 @@ class SavePathAuthority @Inject constructor(
         source: SavePathSource,
         request: SavePathRequest
     ): SavePathResolution {
-        val shape = basePath?.let { unresolvedShapeFor(config, request.platformSlug) }
+        val shape = basePath?.let { unresolvedShapeFor(config, request.platformSlug, it) }
         return SavePathResolution(
             config = config,
             configId = configId,

@@ -288,6 +288,9 @@ private fun LayoutSelectorTile(
  * so when it is zero, because the setting still turns on and still changes nothing: a library whose
  * metadata source never supplied spine art draws every game flat, and without a word here that
  * looks like a broken toggle rather than missing artwork.
+ *
+ * Null means the count was not supplied, and reads as the ordinary subtitle. A caller that forgets
+ * to pass it must not make the screen assert there is no spine art.
  */
 @Composable
 fun HomeLayoutSettingRow(
@@ -296,12 +299,12 @@ fun HomeLayoutSettingRow(
     isFocused: Boolean,
     onAdjust: (Int) -> Unit,
     onToggle: () -> Unit,
-    boxArtCapableGames: Int = 0
+    boxArtCapableGames: Int? = null
 ) {
-    val boxArtSubtitle = if (boxArtCapableGames > 0) {
-        "Draw games that have a spine as a box, and the rest as covers"
-    } else {
+    val boxArtSubtitle = if (boxArtCapableGames == 0) {
         "No game has spine art, so every game draws as a 2D cover"
+    } else {
+        "Draw games that have a spine as a box, and the rest as covers"
     }
     when (field) {
         HomeLayoutSettingField.ROW_ALIGNMENT -> CyclePreference(

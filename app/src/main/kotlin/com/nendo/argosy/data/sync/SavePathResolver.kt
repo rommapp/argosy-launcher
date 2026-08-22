@@ -650,11 +650,16 @@ class SavePathResolver @Inject constructor(
      * path it returns, so a file save resolved through the platform default has a directory
      * written over its target and the download that follows cannot write there.
      *
-     * A user override is exclusive here, matching `discoverSavePath`. If it cannot be used this
-     * returns null rather than falling back to the packaged default: discovery searches only the
-     * override once one exists, so writing anywhere else produces a save the next pass cannot see
-     * and a conflict that never resolves. The override is read under `config.emulatorId`, the same
-     * key discovery uses, so a multi-platform emulator does not pick up the other platform's path.
+     * The override is read under `config.emulatorId`, the key discovery uses, so a multi-platform
+     * emulator does not pick up the other platform's path.
+     *
+     * An unusable override still falls back to the packaged default. That is knowingly wrong -
+     * discovery searches only the override once one exists, so the written save is invisible to
+     * the next pass - but the alternative of returning null is worse today: the download path maps
+     * null to `NoSaveFound`, which `SyncCoordinator` and `SaveSyncOrchestrator` drop silently, so
+     * an override on an ejected card would turn every download into a permanent no-op with nothing
+     * on screen. Making the refusal safe needs a result meaning "target unwritable" that the
+     * coordinator surfaces; until then the visible-but-wrong path is the lesser failure.
      */
     suspend fun constructSavePath(
         emulatorId: String,
@@ -694,11 +699,14 @@ class SavePathResolver @Inject constructor(
             } else {
                 Logger.warn(
                     TAG,
-                    "constructSavePath: override unusable, refusing to write elsewhere | path=$overridePath"
+                    "constructSavePath: override unusable, falling back to the packaged default | " +
+                        "path=$overridePath"
                 )
-                return null
+                null
             }
         } else {
+            null
+        } ?: run {
             val resolvedPaths = resolveSavePaths(config, platformSlug)
             if (resolvedPaths.isEmpty()) {
                 Logger.debug(TAG, "constructSavePath: FAILED - no candidate paths | emulatorId=$emulatorId, platformSlug=$platformSlug, configEmulatorId=${config.emulatorId}")

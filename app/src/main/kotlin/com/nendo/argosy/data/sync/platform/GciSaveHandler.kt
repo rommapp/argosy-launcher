@@ -49,7 +49,7 @@ class GciSaveHandler @Inject constructor(
     override suspend fun sourcePathsFor(localPath: String, context: SaveContext): List<String> =
         withContext(Dispatchers.IO) {
             val romPath = context.romPath ?: return@withContext listOf(localPath)
-            discoverAllSavePaths(context.config, romPath).ifEmpty { listOf(localPath) }
+            discoverAllSavePaths(context.config, romPath, context.basePathOverride).ifEmpty { listOf(localPath) }
         }
 
     override suspend fun extractDownload(tempFile: File, context: SaveContext): ExtractResult =

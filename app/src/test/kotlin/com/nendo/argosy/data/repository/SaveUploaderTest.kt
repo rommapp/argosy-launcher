@@ -119,7 +119,8 @@ class SaveUploaderTest {
             apiClient = dagger.Lazy { apiClient },
             conflictDetector = conflictDetector,
             saveCacheManager = dagger.Lazy { saveCacheManager },
-            syncPreferencesRepository = mockk(relaxed = true)
+            syncPreferencesRepository = mockk(relaxed = true),
+            emulatorSaveConfigRepository = mockk(relaxed = true)
         )
     }
 

@@ -48,7 +48,8 @@ class SaveUploader @Inject constructor(
     private val apiClient: dagger.Lazy<SaveSyncApiClient>,
     private val conflictDetector: ConflictDetector,
     private val saveCacheManager: dagger.Lazy<SaveCacheManager>,
-    private val syncPreferencesRepository: SyncPreferencesRepository
+    private val syncPreferencesRepository: SyncPreferencesRepository,
+    private val emulatorSaveConfigRepository: EmulatorSaveConfigRepository
 ) {
 
     suspend fun uploadSave(
@@ -178,7 +179,10 @@ class SaveUploader @Inject constructor(
             platformSlug = game.platformSlug,
             emulatorId = resolvedEmulatorId,
             localSavePath = localPath,
-            coreName = preferredCore
+            coreName = preferredCore,
+            basePathOverride = config?.emulatorId?.let {
+                emulatorSaveConfigRepository.resolveUserSavePath(it, game.platformSlug)
+            }?.takeIf { it.isNotBlank() }
         )
 
         val prepared = handler.prepareForUpload(localPath, saveContext)

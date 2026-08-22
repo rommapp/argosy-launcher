@@ -755,8 +755,17 @@ private fun routeComputeEvaluatedSavePath(vm: SettingsViewModel, platformId: Lon
     if (!emulatorConfig.effectiveEmulatorIsRetroArch) {
         if (basePathOverride != null) return basePathOverride
         val emulatorId = emulatorConfig.effectiveEmulatorId ?: return null
-        return com.nendo.argosy.data.emulator.SavePathRegistry.getConfig(emulatorId)
-            ?.defaultPaths?.firstOrNull()
+        return vm.savePathAuthority.configFor(
+            com.nendo.argosy.data.emulator.savepath.SavePathRequest(
+                platformSlug = emulatorConfig.platform.slug,
+                emulatorId = emulatorId,
+                emulatorPackage = emulatorConfig.effectiveEmulatorPackage
+            )
+        )?.let {
+            com.nendo.argosy.data.emulator.SavePathRegistry
+                .resolvePathWithPackage(it, emulatorConfig.effectiveEmulatorPackage)
+                .firstOrNull()
+        }
     }
 
     val packageName = emulatorConfig.effectiveEmulatorPackage ?: return basePathOverride
@@ -785,7 +794,11 @@ private fun routeComputeEvaluatedStatePath(vm: SettingsViewModel, platformId: Lo
         if (basePathOverride != null) return basePathOverride
         val emulatorId = emulatorConfig.effectiveEmulatorId ?: return null
         return com.nendo.argosy.data.emulator.StatePathRegistry.getConfig(emulatorId)
-            ?.defaultPaths?.firstOrNull()
+            ?.let {
+                com.nendo.argosy.data.emulator.StatePathRegistry
+                    .resolvePath(it, emulatorConfig.platform.slug)
+                    .firstOrNull()
+            }
     }
 
     val packageName = emulatorConfig.effectiveEmulatorPackage ?: return basePathOverride

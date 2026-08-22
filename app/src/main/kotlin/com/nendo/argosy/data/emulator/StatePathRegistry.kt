@@ -269,6 +269,15 @@ object StatePathRegistry {
             maxSlots = 10,
             supported = false
         ),
+        "mupen64plus_fz_pro" to StatePathConfig(
+            emulatorId = "mupen64plus_fz_pro",
+            defaultPaths = listOf(
+                "{extStorage}/Android/data/org.mupen64plusae.v3.fzurita.pro/files/GameData"
+            ),
+            slotPattern = StateSlotPattern.SuffixNumber(extension = "st"),
+            maxSlots = 10,
+            supported = false
+        ),
         "m64pro_fzx_plus" to StatePathConfig(
             emulatorId = "m64pro_fzx_plus",
             defaultPaths = listOf(

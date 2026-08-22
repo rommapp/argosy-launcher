@@ -62,6 +62,14 @@ object SavePathRegistry {
             saveExtensions = listOf("sra", "eep", "fla", "mpk"),
             usesGameIdSubfolder = true
         ),
+        "mupen64plus_fz_pro" to SavePathConfig(
+            emulatorId = "mupen64plus_fz_pro",
+            defaultPaths = listOf(
+                "{extStorage}/Android/data/org.mupen64plusae.v3.fzurita.pro/files/GameData"
+            ),
+            saveExtensions = listOf("sra", "eep", "fla", "mpk"),
+            usesGameIdSubfolder = true
+        ),
         "m64pro_fzx_plus" to SavePathConfig(
             emulatorId = "m64pro_fzx_plus",
             defaultPaths = listOf(
@@ -633,6 +641,7 @@ object SavePathRegistry {
         "org.ppsspp.ppsspp" to "ppsspp",
         "org.ppsspp.ppssppgold" to "ppsspp_gold",
         "org.mupen64plusae.v3.fzurita" to "mupen64plus_fz",
+        "org.mupen64plusae.v3.fzurita.pro" to "mupen64plus_fz_pro",
         "com.m64.fx.plus.emulate" to "m64pro_fzx_plus",
         "me.magnum.melonds" to "melonds",
         "me.magnum.melondualds" to "melondualds",

@@ -399,6 +399,17 @@ object EmulatorRegistry {
             downloadUrl = "https://play.google.com/store/apps/details?id=org.mupen64plusae.v3.fzurita"
         ),
         EmulatorDef(
+            id = "mupen64plus_fz_pro",
+            packageName = "org.mupen64plusae.v3.fzurita.pro",
+            displayName = "M64Plus FZ Pro",
+            supportedPlatforms = setOf("n64"),
+            launchAction = Intent.ACTION_VIEW,
+            launchConfig = LaunchConfig.Custom(
+                activityClass = "paulscode.android.mupen64plusae.SplashActivity"
+            ),
+            downloadUrl = "https://play.google.com/store/apps/details?id=org.mupen64plusae.v3.fzurita.pro"
+        ),
+        EmulatorDef(
             id = "m64pro_fzx_plus",
             packageName = "com.m64.fx.plus.emulate",
             displayName = "M64Pro FZX Plus+",
@@ -1036,7 +1047,9 @@ object EmulatorRegistry {
             "builtin", "ppsspp", "ppsspp_gold", "ppsspp_legacy", "retroarch", "retroarch_64", "retroarch_32"
         ),
         "vita" to listOf("vita3k-zx", "vita3k"),
-        "n64" to listOf("builtin", "mupen64plus_fz", "retroarch", "retroarch_64", "retroarch_32"),
+        "n64" to listOf(
+            "builtin", "mupen64plus_fz", "mupen64plus_fz_pro", "retroarch", "retroarch_64", "retroarch_32"
+        ),
         "nds" to listOf("builtin", "drastic", "melonds", "melondualds", "retroarch", "retroarch_64", "retroarch_32"),
         "3ds" to listOf(
             "azahar", "citra_mmj", "borked3ds", "citra", "builtin",

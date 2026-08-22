@@ -33,6 +33,7 @@ class SaveManagementDelegate @Inject constructor(
     private val getUnifiedSavesUseCase: com.nendo.argosy.domain.usecase.save.GetUnifiedSavesUseCase,
     private val notificationManager: NotificationManager,
     private val retroArchPathResolver: com.nendo.argosy.data.emulator.RetroArchPathResolver,
+    private val coreVersionExtractor: com.nendo.argosy.data.emulator.CoreVersionExtractor,
     val saveChannelDelegate: SaveChannelDelegate
 ) {
 
@@ -133,16 +134,37 @@ class SaveManagementDelegate @Inject constructor(
             val emulatorPackage = emulatorResolver.getEmulatorPackageForGame(gameId, game.platformId, game.platformSlug)
             val coreName = saveSyncRepository.resolveCoreForGame(gameId)
             val savePath = computeEffectiveSavePath(emulatorId, game.platformSlug, emulatorPackage, coreName)
+            val stateCoreId = coreVersionExtractor.getCoreIdForEmulator(emulatorId, game.platformSlug)
             saveChannelDelegate.show(
                 scope = scope,
                 gameId = gameId,
                 activeChannel = activeChannel,
                 savePath = savePath,
                 emulatorId = emulatorId,
-                emulatorPackage = emulatorPackage
+                emulatorPackage = emulatorPackage,
+                currentCoreId = stateCoreId,
+                currentCoreVersion = stateCoreVersion(stateCoreId, emulatorId, emulatorPackage)
             )
         }
     }
+
+    /**
+     * States identify their core through [CoreVersionExtractor], not through the save-side
+     * `resolveCoreForGame`. The two disagree - notably the built-in emulator, which the save
+     * resolver reports as its libretro core and this one reports as `builtin` - and the states
+     * cache was written by this one, so restoring and validating against anything else compares a
+     * row to a value that never wrote it.
+     */
+    private fun stateCoreVersion(
+        coreId: String?,
+        emulatorId: String,
+        emulatorPackage: String?
+    ): String? =
+        if (coreId != null && emulatorId.startsWith("retroarch")) {
+            coreVersionExtractor.getRetroArchCoreVersion(coreId, emulatorPackage)
+        } else {
+            null
+        }
 
     private suspend fun computeEffectiveSavePath(
         emulatorId: String,

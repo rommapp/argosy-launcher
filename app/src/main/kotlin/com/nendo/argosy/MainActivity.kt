@@ -123,6 +123,7 @@ class MainActivity : ComponentActivity() {
     @Inject lateinit var prefetchGameSaveDataUseCase:
         com.nendo.argosy.domain.usecase.sync.PrefetchGameSaveDataUseCase
     @Inject lateinit var emulatorResolver: EmulatorResolver
+    @Inject lateinit var coreVersionExtractor: com.nendo.argosy.data.emulator.CoreVersionExtractor
     @Inject lateinit var fetchAchievementsUseCase: FetchAchievementsUseCase
     @Inject lateinit var gameFileDao: com.nendo.argosy.data.local.dao.GameFileDao
     @Inject lateinit var downloadManagerInstance: com.nendo.argosy.data.download.DownloadManager
@@ -332,6 +333,7 @@ class MainActivity : ComponentActivity() {
                 restoreStateUseCase = restoreStateUseCase,
                 prefetchGameSaveDataUseCase = prefetchGameSaveDataUseCase,
                 emulatorResolver = emulatorResolver,
+                coreVersionExtractor = coreVersionExtractor,
                 fetchAchievementsUseCase = fetchAchievementsUseCase,
                 displayAffinityHelper = displayAffinityHelper,
                 sessionStateStore = sessionStateStore,

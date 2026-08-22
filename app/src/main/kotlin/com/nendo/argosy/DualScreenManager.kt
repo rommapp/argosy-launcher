@@ -103,6 +103,7 @@ class DualScreenManager(
     private val restoreStateUseCase:
         com.nendo.argosy.domain.usecase.state.RestoreStateUseCase,
     private val emulatorResolver: EmulatorResolver,
+    private val coreVersionExtractor: com.nendo.argosy.data.emulator.CoreVersionExtractor,
     private val fetchAchievementsUseCase: FetchAchievementsUseCase,
     internal val displayAffinityHelper: DisplayAffinityHelper,
     internal val sessionStateStore: SessionStateStore,
@@ -2556,7 +2557,8 @@ class DualScreenManager(
                 cacheId = cacheId,
                 emulatorId = emulatorId,
                 platformId = game.platformSlug,
-                romPath = romPath
+                romPath = romPath,
+                currentCoreId = coreVersionExtractor.getCoreIdForEmulator(emulatorId, game.platformSlug)
             )) {
                 is com.nendo.argosy.domain.usecase.state.RestoreStateResult.Success ->
                     notificationManager.showSuccess("Restored ${stateSlotLabel(slot)}")

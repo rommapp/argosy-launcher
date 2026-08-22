@@ -150,6 +150,43 @@ Not id-derived at all. The save is named for the ROM, not the title:
 `retroarch.cfg`, including the `savefiles_in_content_dir` case where the save
 sits beside the ROM.
 
+## Save states are a peer subsystem with its own rule
+
+Everything above is about saves. States resolve through `StatePathRegistry` and,
+for RetroArch, `RetroArchConfigParser` - not through the save handlers - and they
+have a directory rule saves do not:
+
+```
+<states base>/[<content dir>/]<core dir>/<rom name without extension>.state<N>
+```
+
+The `<core dir>` segment is what `sort_savestates_enable` produces. Read a
+`retroarch.cfg` that omits the key and it is treated as on, where the matching
+`sort_savefiles_enable` is treated as off. When the cfg cannot be read at all
+neither default applies: `resolveStatePathsWithConfig` probes the disk for an
+existing core folder and writes flat if it finds none, which is the case where a
+misplaced state actually happens.
+
+The consequence is that a state cannot be written without knowing the core, and
+a restore that resolves none writes to the parent directory, where the emulator
+will never look for it. The failure is silent, not an error.
+
+**States resolve their core through `CoreVersionExtractor.getCoreIdForEmulator`,
+not the save side's `resolveCoreForGame`.** The two genuinely disagree - the
+built-in emulator is its libretro core to the save resolver and the literal
+`builtin` to this one - and every `state_cache` row was written by the former, so
+validating or pathing a state against the latter compares a row to a value that
+never wrote it. `RestoreStateUseCase` falls back to the cached row's own core
+when a caller supplies none, so a new restore entry point must either pass the
+`CoreVersionExtractor` value or inherit that fallback.
+
+The on-disk core folder is the libretro `corename`, not the core id
+(`EmulatorRegistry.getRetroArchSaveDirName`). Cores whose folder differs from
+their id by case alone are deliberately absent from that map; `matchExistingFolder`
+only rescues a folder that already exists, so the first write into a fresh tree
+uses the raw id and is harmless solely because Android's storage is
+case-insensitive. Do not "complete" that map.
+
 ## Why this matters when changing anything
 
 An archive is accepted for a save only if its root entry matches the id under

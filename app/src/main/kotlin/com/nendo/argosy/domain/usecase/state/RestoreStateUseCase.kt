@@ -22,6 +22,15 @@ sealed class RestoreStateResult {
 class RestoreStateUseCase @Inject constructor(
     private val stateCacheManager: StateCacheManager
 ) {
+    /**
+     * Writes a cached state back to where the emulator will look for it.
+     *
+     * RetroArch sorts states into a per-core folder by default, so the core has to be known to
+     * land the file in the same directory the capture came from - without one the state goes to
+     * the parent and the emulator never sees it. [currentCoreId] is what the caller resolved for
+     * the running configuration and is also what the version guard compares; the cached row's own
+     * core is the fallback for callers that cannot resolve one, so it decides the path only.
+     */
     suspend operator fun invoke(
         cacheId: Long,
         emulatorId: String,
@@ -61,7 +70,7 @@ class RestoreStateUseCase @Inject constructor(
             romBaseName = romBaseName,
             slotNumber = cache.slotNumber,
             emulatorId = emulatorId,
-            coreName = currentCoreId,
+            coreName = currentCoreId ?: cache.coreId,
             romPath = romPath,
             gameId = cache.gameId,
         ) ?: return RestoreStateResult.Error("Could not determine target path")

@@ -24,6 +24,13 @@ class SaveChannelDelegate @Inject constructor(
 
     private val _state get() = holder.state
 
+    /**
+     * Opens the save manager, on whichever tab this game actually has something on.
+     *
+     * A null [savePath] means the emulator has no save location Argosy can resolve, so the saves
+     * tab can only ever be empty. The modal is reachable for such a game because its states are
+     * manageable, and landing on the empty half would look like the feature is broken.
+     */
     fun show(
         scope: CoroutineScope,
         gameId: Long,
@@ -81,7 +88,11 @@ class SaveChannelDelegate @Inject constructor(
                     saveSlots = localSlots,
                     statesEntries = states,
                     supportsStates = stateConfigExists,
-                    selectedTab = SaveTab.SAVES,
+                    selectedTab = if (savePath == null && stateConfigExists) {
+                        SaveTab.STATES
+                    } else {
+                        SaveTab.SAVES
+                    },
                     selectedSlotIndex = 0,
                     selectedHistoryIndex = 0,
                     saveFocusColumn = SaveFocusColumn.SLOTS,

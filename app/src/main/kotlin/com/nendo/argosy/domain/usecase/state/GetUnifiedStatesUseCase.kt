@@ -98,7 +98,6 @@ class GetUnifiedStatesUseCase @Inject constructor(
             channelName == null || parsed.channelName == channelName
         }
 
-
         channelMatched
             .groupBy { stateCacheManager.parseStateFileName(it.fileName).slotNumber }
             .forEach { (_, states) ->

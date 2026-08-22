@@ -187,6 +187,35 @@ only rescues a folder that already exists, so the first write into a fresh tree
 uses the raw id and is harmless solely because Android's storage is
 case-insensitive. Do not "complete" that map.
 
+## Which config answers, and under which key
+
+A save layout is chosen by `(emulator, platform)`, never by emulator alone. The
+registry expresses this by keying platform variants as `<id>_<slug>`, so Dolphin has
+`dolphin` for GameCube and `dolphin_wii` for Wii, and RetroArch has `retroarch_ngc`,
+`retroarch_psp` and `retroarch_3ds` beside the generic entry.
+
+Two consequences that have each already caused a bug:
+
+- **Resolve with the platform.** `getConfig` and `getConfigByPackage` answer for an
+  emulator, so a multi-platform emulator gets whichever layout is listed first. That
+  is how the Wii platform row came to display GameCube's path (#380). Ask
+  `SavePathAuthority`, which takes the platform slug as a required argument. A CI rule
+  (`scripts/ci/smell-rules.json`, `platform-blind-save-config`) refuses new direct
+  calls.
+- **The config id is the override key.** A user's custom save path is stored in
+  `emulator_save_config` under `config.emulatorId`, so a shared config id is a shared
+  row, and GameCube and Wii overwrote each other. Reads and writes must derive it the
+  same way; `SavePathAuthority.configIdFor` is that derivation.
+
+A platform-qualified config id names a layout, not an installed app. Do not hand one
+to sibling-family logic: `familyBaseIdFor("dolphin_wii")` resolves to `dolphin`, which
+is how the GameCube override became the Wii save base.
+
+Two key conventions are live in the registry today and have not been reconciled:
+`builtin_gc` is keyed by the canonical slug while `retroarch_ngc` is keyed by the raw
+one. `getCanonicalSlug("ngc")` is `gc`, so `retroarch_ngc` is reachable only where
+RomM's raw slug survives. Settle this before adding entries.
+
 ## Why this matters when changing anything
 
 An archive is accepted for a save only if its root entry matches the id under

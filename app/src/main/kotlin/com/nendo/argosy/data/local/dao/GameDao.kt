@@ -680,6 +680,20 @@ interface GameDao {
     @Query("UPDATE games SET boxBackPath = :path WHERE id = :gameId")
     suspend fun updateBoxBackPath(gameId: Long, path: String)
 
+    /**
+     * How many games can actually be drawn as a box. The renderer needs a front and a spine
+     * together, so a library with covers but no spine art renders every game flat however the
+     * setting is left.
+     */
+    @Query(
+        """
+        SELECT COUNT(*) FROM games
+        WHERE boxSpinePath IS NOT NULL AND boxSpinePath != ''
+          AND coverPath IS NOT NULL AND coverPath != ''
+        """
+    )
+    suspend fun countBoxArtCapable(): Int
+
     @Query("UPDATE games SET boxSpinePath = :path WHERE id = :gameId")
     suspend fun updateBoxSpinePath(gameId: Long, path: String)
 

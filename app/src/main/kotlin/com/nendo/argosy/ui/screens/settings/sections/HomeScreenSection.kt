@@ -358,7 +358,8 @@ fun HomeScreenSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                     onToggle = {
                         viewModel.setFocusIndex(homeScreenFocusIndexOf(item, display))
                         viewModel.setHomeLayout(toggleHomeLayoutField(display.homeLayout, item.field))
-                    }
+                    },
+                    boxArtCapableGames = display.boxArtCapableGames
                 )
 
                 HomeScreenItem.InstalledOnly -> SwitchPreference(

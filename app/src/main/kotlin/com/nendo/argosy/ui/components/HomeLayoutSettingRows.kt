@@ -283,14 +283,26 @@ private fun LayoutSelectorTile(
  * One layout setting rendered with the standard preference controls, so a layout field looks and
  * behaves like every other row wherever it is hosted.
  */
+/**
+ * [boxArtCapableGames] is how many games hold both a front cover and a spine. The box art rows say
+ * so when it is zero, because the setting still turns on and still changes nothing: a library whose
+ * metadata source never supplied spine art draws every game flat, and without a word here that
+ * looks like a broken toggle rather than missing artwork.
+ */
 @Composable
 fun HomeLayoutSettingRow(
     settings: HomeLayoutSettings,
     field: HomeLayoutSettingField,
     isFocused: Boolean,
     onAdjust: (Int) -> Unit,
-    onToggle: () -> Unit
+    onToggle: () -> Unit,
+    boxArtCapableGames: Int = 0
 ) {
+    val boxArtSubtitle = if (boxArtCapableGames > 0) {
+        "Draw games that have a spine as a box, and the rest as covers"
+    } else {
+        "No game has spine art, so every game draws as a 2D cover"
+    }
     when (field) {
         HomeLayoutSettingField.ROW_ALIGNMENT -> CyclePreference(
             title = "Row Position",
@@ -356,14 +368,14 @@ fun HomeLayoutSettingRow(
         )
         HomeLayoutSettingField.CAROUSEL_BOX_ART -> SwitchPreference(
             title = "3D Box Art",
-            subtitle = "Draw games that have a spine as a box, and the rest as covers",
+            subtitle = boxArtSubtitle,
             isEnabled = settings.carousel.useBoxArt,
             isFocused = isFocused,
             onToggle = { onToggle() }
         )
         HomeLayoutSettingField.AUTO_GRID_BOX_ART -> SwitchPreference(
             title = "3D Box Art",
-            subtitle = "Draw games that have a spine as a box, and the rest as covers",
+            subtitle = boxArtSubtitle,
             isEnabled = settings.autoGrid.useBoxArt,
             isFocused = isFocused,
             onToggle = { onToggle() }

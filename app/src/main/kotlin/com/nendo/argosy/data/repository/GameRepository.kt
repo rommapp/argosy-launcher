@@ -531,6 +531,10 @@ class GameRepository @Inject constructor(
         gameDao.getGamesWithLocalPathIds().size
     }
 
+    suspend fun countBoxArtCapableGames(): Int = withContext(Dispatchers.IO) {
+        gameDao.countBoxArtCapable()
+    }
+
     suspend fun getAvailableStorageBytes(): Long = withContext(Dispatchers.IO) {
         try {
             val downloadDir = getGlobalDownloadDir()

@@ -42,10 +42,19 @@ class ArchiveExpansionTest {
         assertEquals(archive * ArchiveExpansion.ESTIMATE_MULTIPLIER, reserved)
     }
 
+    /**
+     * An NSZ is the compression, not a wrapper around something already compressed. It decompresses
+     * beside itself before the input is removed, so the platform's packed multiplier would reserve
+     * less room than the unpack consumes.
+     */
     @Test
-    fun `compressed switch containers are packed whatever the platform says`() {
-        assertTrue(ArchiveExpansion.isAlreadyPacked("Game.nsz", "unknown-platform"))
-        assertTrue(ArchiveExpansion.isAlreadyPacked("Game.xcz", "unknown-platform"))
+    fun `compressed switch containers reserve more than a packed payload`() {
+        val archive = 20 * GB
+
+        assertFalse(ArchiveExpansion.isAlreadyPacked("Game.nsz", "switch"))
+        assertFalse(ArchiveExpansion.isAlreadyPacked("Game.xcz", "switch"))
+        assertEquals(archive * 2, ArchiveExpansion.estimate(archive, "Game.nsz", "switch"))
+        assertEquals(archive * 2, ArchiveExpansion.estimate(archive, "Game.xcz", "switch"))
     }
 
     @Test

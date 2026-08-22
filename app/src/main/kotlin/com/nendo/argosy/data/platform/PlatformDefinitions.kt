@@ -40,7 +40,18 @@ object PlatformDefinitions {
         "switch", "vita", "psvita", "psp", "3ds", "wiiu", "wii", "gc", "ngc", "gamecube", "ps2"
     )
 
-    // Slug aliases: maps alternate slugs to canonical slug
+    /**
+     * Platforms whose roms are already-compressed containers, so an archive of one barely expands.
+     * Single source of truth -- consumed by the download storage gate, which reserves close to the
+     * archive's own size for these instead of a multiple of it.
+     *
+     * Aliases are listed alongside canonical slugs, as in [TITLE_ID_PLATFORMS], because callers
+     * test raw incoming slugs against this set as well as canonicalised ones.
+     */
+    val PACKED_PAYLOAD_PLATFORMS = setOf(
+        "switch", "ps3", "ps4", "wiiu", "vita", "psvita"
+    )
+
     private val slugAliases = mapOf(
         // Nintendo
         "famicom" to "nes",

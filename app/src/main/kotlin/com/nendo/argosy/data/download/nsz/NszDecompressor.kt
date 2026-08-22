@@ -31,6 +31,80 @@ object NszDecompressor {
         return ext == "nsz" || ext == "xcz"
     }
 
+    /**
+     * The exact size [decompress] will write, read from the container without decompressing it.
+     *
+     * Every NCZ section header records the length of the NCA it expands to, so the total is known
+     * before a byte is written. Null when the file is not a compressed NSW container or its headers
+     * cannot be read, which leaves the caller to fall back to an estimate.
+     */
+    fun measureDecompressedSize(file: File): Long? = runCatching {
+        when (file.extension.lowercase()) {
+            "nsz" -> RandomAccessFile(file, "r").use { nszLayout(it).outputFileSize }
+            "xcz" -> RandomAccessFile(file, "r").use { xczLayout(it).outputFileSize }
+            else -> null
+        }
+    }.getOrNull()?.takeIf { it > 0 }
+
+    private class NszLayout(
+        val entries: List<ContainerEntry>,
+        val outputSizes: List<Long>,
+        val pfs0Header: ByteArray
+    ) {
+        val outputFileSize: Long get() = pfs0Header.size.toLong() + outputSizes.sum()
+    }
+
+    private class XczLayout(
+        val secureEntries: List<ContainerEntry>,
+        val secureHeader: ByteArray,
+        val rootEntries: List<ContainerEntry>,
+        val secureIndex: Int,
+        val rootOutputSizes: List<Long>,
+        val rootHeader: ByteArray
+    ) {
+        val outputFileSize: Long get() =
+            XCI_HEADER_SIZE + rootHeader.size.toLong() + rootOutputSizes.sum()
+    }
+
+    private fun nszLayout(raf: RandomAccessFile): NszLayout {
+        val entries = ContainerParser.parsePfs0(raf)
+        val outputSizes = scanNczSizes(raf, entries)
+        return NszLayout(
+            entries = entries,
+            outputSizes = outputSizes,
+            pfs0Header = ContainerParser.computePfs0Header(entries, outputSizes)
+        )
+    }
+
+    private fun xczLayout(raf: RandomAccessFile): XczLayout {
+        val secureEntries = ContainerParser.parseXciSecurePartition(raf).second
+        val secureOutputSizes = scanNczSizes(raf, secureEntries)
+        val secureHeader = ContainerParser.computeHfs0Header(secureEntries, secureOutputSizes)
+
+        raf.seek(0x130)
+        val offsetBuf = ByteArray(8)
+        raf.readFully(offsetBuf)
+        val rootHfs0Offset = java.nio.ByteBuffer.wrap(offsetBuf)
+            .order(java.nio.ByteOrder.LITTLE_ENDIAN)
+            .long
+
+        val rootEntries = ContainerParser.parseHfs0(raf, rootHfs0Offset)
+        val secureIndex = rootEntries.indexOfFirst { it.name.lowercase() == "secure" }
+        val secureSize = secureHeader.size.toLong() + secureOutputSizes.sum()
+        val rootOutputSizes = rootEntries.mapIndexed { idx, entry ->
+            if (idx == secureIndex) secureSize else entry.size
+        }
+
+        return XczLayout(
+            secureEntries = secureEntries,
+            secureHeader = secureHeader,
+            rootEntries = rootEntries,
+            secureIndex = secureIndex,
+            rootOutputSizes = rootOutputSizes,
+            rootHeader = ContainerParser.computeHfs0Header(rootEntries, rootOutputSizes)
+        )
+    }
+
     fun decompress(
         inputFile: File,
         onProgress: ((bytesWritten: Long, totalBytes: Long) -> Unit)?
@@ -59,18 +133,14 @@ object NszDecompressor {
 
         try {
             RandomAccessFile(inputFile, "r").use { raf ->
-                val entries = ContainerParser.parsePfs0(raf)
+                val layout = nszLayout(raf)
+                val entries = layout.entries
+                val pfs0Header = layout.pfs0Header
+                val totalOutputSize = layout.outputFileSize
 
                 Log.d(
                     TAG,
                     "PFS0 entries: ${entries.map { it.name }}"
-                )
-
-                val outputSizes = scanNczSizes(raf, entries)
-                val totalOutputSize = outputSizes.sum()
-
-                val pfs0Header = ContainerParser.computePfs0Header(
-                    entries, outputSizes
                 )
 
                 BufferedOutputStream(
@@ -127,49 +197,18 @@ object NszDecompressor {
 
         try {
             RandomAccessFile(inputFile, "r").use { raf ->
-                val (secureBaseOffset, secureEntries) =
-                    ContainerParser.parseXciSecurePartition(raf)
+                val layout = xczLayout(raf)
+                val secureEntries = layout.secureEntries
+                val newSecureHfs0Header = layout.secureHeader
+                val rootEntries = layout.rootEntries
+                val secureIdx = layout.secureIndex
+                val newRootHfs0Header = layout.rootHeader
 
                 Log.d(
                     TAG,
                     "XCI secure entries: " +
                         secureEntries.map { it.name }
                 )
-
-                val outputSizes = scanNczSizes(raf, secureEntries)
-
-                val newSecureHfs0Header =
-                    ContainerParser.computeHfs0Header(
-                        secureEntries, outputSizes
-                    )
-
-                raf.seek(0x130)
-                val offsetBuf = ByteArray(8)
-                raf.readFully(offsetBuf)
-                val rootHfs0Offset = java.nio.ByteBuffer.wrap(offsetBuf)
-                    .order(java.nio.ByteOrder.LITTLE_ENDIAN)
-                    .long
-
-                val rootEntries = ContainerParser.parseHfs0(
-                    raf, rootHfs0Offset
-                )
-
-                val secureIdx = rootEntries.indexOfFirst {
-                    it.name.lowercase() == "secure"
-                }
-
-                val newSecureSize =
-                    newSecureHfs0Header.size.toLong() +
-                        outputSizes.sum()
-
-                val rootOutputSizes = rootEntries.mapIndexed { idx, e ->
-                    if (idx == secureIdx) newSecureSize else e.size
-                }
-
-                val newRootHfs0Header =
-                    ContainerParser.computeHfs0Header(
-                        rootEntries, rootOutputSizes
-                    )
 
                 BufferedOutputStream(
                     FileOutputStream(tmpFile),
@@ -196,9 +235,7 @@ object NszDecompressor {
                     var bytesWritten = XCI_HEADER_SIZE +
                         newRootHfs0Header.size.toLong()
 
-                    val totalOutputSize = XCI_HEADER_SIZE +
-                        newRootHfs0Header.size.toLong() +
-                        rootOutputSizes.sum()
+                    val totalOutputSize = layout.outputFileSize
 
                     for (i in rootEntries.indices) {
                         if (i == secureIdx) {

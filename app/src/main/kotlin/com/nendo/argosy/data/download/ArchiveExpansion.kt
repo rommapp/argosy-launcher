@@ -1,5 +1,6 @@
 package com.nendo.argosy.data.download
 
+import com.nendo.argosy.data.download.nsz.NszDecompressor
 import com.nendo.argosy.data.platform.PlatformDefinitions
 import org.apache.commons.compress.archivers.sevenz.SevenZFile
 import org.apache.commons.compress.archivers.zip.ZipFile
@@ -9,9 +10,9 @@ import java.io.File
  * How much room an archive needs once it is unpacked.
  *
  * Zip and 7z both record every entry's uncompressed length in a directory the reader can walk
- * without decompressing anything, so [measure] returns the real number for them. NSZ and XCZ
- * carry their expanded length per compressed NCA section rather than per container, so they fall
- * back to [estimate]. A caller that has no archive on disk yet is always estimating.
+ * without decompressing anything, and every NCZ section in an NSZ or XCZ records the length of the
+ * NCA it expands to, so [measure] returns the real number for all four. A caller that has no
+ * archive on disk yet is always estimating.
  */
 object ArchiveExpansion {
 
@@ -25,19 +26,17 @@ object ArchiveExpansion {
      */
     const val PACKED_PAYLOAD_MULTIPLIER_PERCENT = 110L
 
+    /**
+     * What an NSZ or XCZ expands to before the container has been opened. These are the one case
+     * where the archive is genuinely smaller than what it becomes: zstd over the NCA sections
+     * commonly halves a Switch dump, and the decompressed NSP is written beside the input before
+     * the input is removed. Treating them as already-packed reserves less than the unpack needs.
+     */
+    const val COMPRESSED_NSW_MULTIPLIER_PERCENT = 200L
+
     private val EXPANDING_EXTENSIONS = setOf("zip", "7z", "nsz", "xcz")
 
-    private val ALREADY_PACKED_EXTENSIONS = setOf("nsz", "xcz")
-
-    /**
-     * Platforms whose roms are already-compressed containers, so an archive of one barely expands.
-     * Estimating these at the general multiplier reserves several times what the unpack needs and
-     * refuses downloads a volume can hold - the games are also the largest in a library, which is
-     * where an over-reservation is most likely to exceed free space.
-     */
-    private val ALREADY_PACKED_PLATFORMS = setOf(
-        "switch", "ps3", "ps4", "wiiu", "vita", "psvita"
-    )
+    private val COMPRESSED_NSW_EXTENSIONS = setOf("nsz", "xcz")
 
     fun estimate(archiveBytes: Long): Long = archiveBytes * ESTIMATE_MULTIPLIER
 
@@ -46,23 +45,34 @@ object ArchiveExpansion {
      * archive already on disk should prefer [measure], which reads the real figure.
      */
     fun estimate(archiveBytes: Long, fileName: String, platformSlug: String): Long {
-        return if (isAlreadyPacked(fileName, platformSlug)) {
-            archiveBytes * PACKED_PAYLOAD_MULTIPLIER_PERCENT / 100L
-        } else {
-            estimate(archiveBytes)
+        val extension = fileName.substringAfterLast('.', "").lowercase()
+        return when {
+            extension in COMPRESSED_NSW_EXTENSIONS ->
+                archiveBytes * COMPRESSED_NSW_MULTIPLIER_PERCENT / 100L
+            isAlreadyPacked(fileName, platformSlug) ->
+                archiveBytes * PACKED_PAYLOAD_MULTIPLIER_PERCENT / 100L
+            else -> estimate(archiveBytes)
         }
     }
 
+    /**
+     * Whether this download's payload is content the archiver could not shrink, so its archive and
+     * its contents are close to the same size. Estimating these at the general multiplier reserves
+     * several times what the unpack needs and refuses downloads a volume can hold, and these are
+     * also the largest games in a library, which is where an over-reservation does most damage.
+     */
     fun isAlreadyPacked(fileName: String, platformSlug: String): Boolean {
-        val extension = fileName.substringAfterLast('.', "").lowercase()
-        if (extension in ALREADY_PACKED_EXTENSIONS) return true
+        if (fileName.substringAfterLast('.', "").lowercase() in COMPRESSED_NSW_EXTENSIONS) {
+            return false
+        }
         val lower = platformSlug.lowercase()
-        return lower in ALREADY_PACKED_PLATFORMS ||
-            PlatformDefinitions.getCanonicalSlug(lower) in ALREADY_PACKED_PLATFORMS
+        return lower in PlatformDefinitions.PACKED_PAYLOAD_PLATFORMS ||
+            PlatformDefinitions.getCanonicalSlug(lower) in PlatformDefinitions.PACKED_PAYLOAD_PLATFORMS
     }
 
     fun measure(archive: File): Long? = when {
         !archive.isFile -> null
+        NszDecompressor.isCompressedNsw(archive) -> NszDecompressor.measureDecompressedSize(archive)
         ZipExtractor.isSevenZFile(archive) -> measureSevenZ(archive)
         ZipExtractor.isZipFile(archive) -> measureZip(archive)
         else -> null

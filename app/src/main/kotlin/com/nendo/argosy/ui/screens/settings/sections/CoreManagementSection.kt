@@ -153,7 +153,9 @@ fun CoreManagementSection(
                         focusedCoreIndex = if (isPlatformFocused) coreState.focusedCoreIndex else item.row.activeCoreIndex,
                         isOnline = coreState.isOnline,
                         downloadingCoreId = coreState.downloadingCoreId,
-                        onCoreClick = { viewModel.selectCoreForPlatform() }
+                        onCoreClick = { coreIndex ->
+                            viewModel.selectCoreAt(platformFocusIndex, coreIndex)
+                        }
                     )
                 }
             }
@@ -169,7 +171,7 @@ private fun PlatformCoreRowItem(
     focusedCoreIndex: Int,
     isOnline: Boolean,
     downloadingCoreId: String?,
-    onCoreClick: () -> Unit
+    onCoreClick: (Int) -> Unit
 ) {
     val focusAccent = LocalArgosyTheme.current.focusAccent
     Column(
@@ -210,7 +212,7 @@ private fun PlatformCoreRowItem(
                     isPlatformFocused = isPlatformFocused,
                     isOnline = isOnline,
                     isDownloading = isDownloading,
-                    onClick = onCoreClick
+                    onClick = { onCoreClick(index) }
                 )
             }
         }

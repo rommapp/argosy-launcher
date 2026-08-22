@@ -961,6 +961,30 @@ internal fun routeMoveCoreManagementCoreFocus(vm: SettingsViewModel, delta: Int)
     return true
 }
 
+/**
+ * Acts on the core a tap landed on, by moving the focus there first.
+ *
+ * [routeSelectCoreForPlatform] reads the focused platform and core, which is the right shape for a
+ * gamepad and the wrong one for a touch: every chip on screen is reachable at once, so a tap that
+ * does not carry its own coordinates acts on whatever the cursor happened to be sitting on.
+ * Pointing the focus at the tapped chip keeps both modalities on the single action path.
+ */
+internal fun routeSelectCoreAt(vm: SettingsViewModel, platformIndex: Int, coreIndex: Int) {
+    val state = vm._uiState.value.coreManagement
+    val cores = state.platforms.getOrNull(platformIndex)?.cores ?: return
+    if (coreIndex !in cores.indices) return
+
+    vm._uiState.update {
+        it.copy(
+            coreManagement = it.coreManagement.copy(
+                focusedPlatformIndex = platformIndex,
+                focusedCoreIndex = coreIndex
+            )
+        )
+    }
+    routeSelectCoreForPlatform(vm)
+}
+
 internal fun routeSelectCoreForPlatform(vm: SettingsViewModel) {
     val state = vm._uiState.value.coreManagement
     val platform = state.focusedPlatform ?: return

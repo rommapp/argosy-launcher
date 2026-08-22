@@ -109,6 +109,7 @@ class SettingsViewModel @Inject constructor(
     internal val saveCacheDao: SaveCacheDao,
     internal val retroArchConfigParser: RetroArchConfigParser,
     internal val retroArchPathResolver: com.nendo.argosy.data.emulator.RetroArchPathResolver,
+    internal val savePathAuthority: com.nendo.argosy.data.emulator.savepath.SavePathAuthority,
     val displayDelegate: DisplaySettingsDelegate,
     val controlsDelegate: ControlsSettingsDelegate,
     val soundsDelegate: SoundSettingsDelegate,
@@ -753,6 +754,7 @@ class SettingsViewModel @Inject constructor(
     fun moveCoreManagementPlatformFocus(delta: Int): Boolean = routeMoveCoreManagementPlatformFocus(this, delta)
     fun moveCoreManagementCoreFocus(delta: Int): Boolean = routeMoveCoreManagementCoreFocus(this, delta)
     fun selectCoreForPlatform() = routeSelectCoreForPlatform(this)
+    fun selectCoreAt(platformIndex: Int, coreIndex: Int) = routeSelectCoreAt(this, platformIndex, coreIndex)
 
     fun loadCoreOptionsState() = routeLoadCoreOptionsState(this)
     fun cycleCoreOptionsPlatformContext(direction: Int) = routeCycleCoreOptionsPlatformContext(this, direction)

@@ -78,7 +78,7 @@ class MigrateStorageUseCaseTest {
         assertEquals(0, result.migrated)
         assertEquals(1, result.skipped)
         assertEquals(0, result.failed)
-        coVerify { gameRepository.clearLocalPath(game.id) }
+        coVerify { gameRepository.clearLocalPathIfGenuinelyAbsent(game.id, missingPath) }
     }
 
     @Test

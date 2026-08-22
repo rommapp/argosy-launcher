@@ -29,6 +29,7 @@ import com.nendo.argosy.data.remote.romm.RomMRepository
 import com.nendo.argosy.data.remote.romm.RomMResult
 import com.nendo.argosy.data.storage.StorageAttributionRepository
 import com.nendo.argosy.data.storage.StorageCategory
+import com.nendo.argosy.data.storage.StorageVolumeHealth
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -64,6 +65,7 @@ class GameRepository @Inject constructor(
     private val overlayWriter: GameUserOverlayWriter,
     private val preferencesRepository: UserPreferencesRepository,
     private val fileAccessLayer: com.nendo.argosy.data.storage.FileAccessLayer,
+    private val volumeHealth: StorageVolumeHealth,
     private val attributionRepository: StorageAttributionRepository
 ) {
     private val defaultDownloadDir: File by lazy {
@@ -237,7 +239,23 @@ class GameRepository @Inject constructor(
     }
 
     private fun isGamePathValid(path: String, platformSlug: String): Boolean {
-        return File(path).exists()
+        return fileAccessLayer.exists(path)
+    }
+
+    /**
+     * Whether every root this library can hold roms in currently answers as mounted and listable.
+     * Any sweep that removes rows because their files were not found reads this once, before it
+     * touches anything, so an unmounted card cannot be mistaken for an emptied library.
+     */
+    suspend fun romStorageVolumesReadable(): Boolean = withContext(Dispatchers.IO) {
+        val roots = buildSet {
+            add(defaultDownloadDir.absolutePath)
+            preferencesRepository.userPreferences.first().romStoragePath?.let { add(it) }
+            platformDao.getAllPlatforms().forEach { platform ->
+                platform.customRomPath?.let { add(it) }
+            }
+        }.filter { it.startsWith("/") }
+        volumeHealth.newProbe().allVolumesReadable(roots)
     }
 
     /**
@@ -307,28 +325,39 @@ class GameRepository @Inject constructor(
             return@withContext 0
         }
 
+        val probe = volumeHealth.newProbe()
         val startTime = System.currentTimeMillis()
         val gamesWithPaths = gameDao.getGamesWithLocalPathInfo()
         var invalidated = 0
+        var withheld = 0
         for (info in gamesWithPaths) {
             val path = info.localPath ?: continue
-            if (!isGamePathValid(path, info.platformSlug)) {
-                gameDao.clearLocalPath(info.id)
-                invalidated++
-                Log.d(TAG, "Invalidated game ${info.id}: path no longer valid ($path)")
+            if (isGamePathValid(path, info.platformSlug)) continue
+            if (!probe.isGenuinelyAbsent(path)) {
+                withheld++
+                continue
             }
+            gameDao.clearLocalPath(info.id)
+            invalidated++
+            Log.d(TAG, "Invalidated game ${info.id}: path no longer valid ($path)")
         }
         var invalidatedFiles = 0
         for (row in gameFileDao.getAllWithLocalPath()) {
             val path = row.localPath ?: continue
-            if (!File(path).exists()) {
-                gameFileDao.clearLocalPath(row.id)
-                invalidatedFiles++
-                Log.d(TAG, "Invalidated file row ${row.id} (${row.fileName}): path no longer valid ($path)")
+            if (fileAccessLayer.exists(path)) continue
+            if (!probe.isGenuinelyAbsent(path)) {
+                withheld++
+                continue
             }
+            gameFileDao.clearLocalPath(row.id)
+            invalidatedFiles++
+            Log.d(TAG, "Invalidated file row ${row.id} (${row.fileName}): path no longer valid ($path)")
         }
         val elapsed = System.currentTimeMillis() - startTime
         Log.d(TAG, "Validation complete: $invalidated of ${gamesWithPaths.size} games and $invalidatedFiles file rows invalidated in ${elapsed}ms")
+        if (withheld > 0) {
+            Log.w(TAG, "validateLocalFiles: kept $withheld pointers whose volume could not be read")
+        }
         invalidated + invalidatedFiles
     }
 
@@ -475,6 +504,10 @@ class GameRepository @Inject constructor(
                 }
                 return@withContext true
             }
+            if (!volumeHealth.newProbe().isGenuinelyAbsent(game.localPath)) {
+                Log.w(TAG, "Kept path for ${game.title}: volume could not be read")
+                return@withContext true
+            }
             gameDao.clearLocalPath(gameId)
             Log.d(TAG, "Cleared invalid path for: ${game.title}")
         }
@@ -542,6 +575,29 @@ class GameRepository @Inject constructor(
         gameDao.clearLocalPath(gameId)
     }
 
+    /**
+     * Whether [path] is missing from a volume that answers as mounted and listable. Callers
+     * outside this repository use it so an unreadable card never reads as deleted content.
+     */
+    suspend fun isPathGenuinelyAbsent(path: String): Boolean = withContext(Dispatchers.IO) {
+        volumeHealth.newProbe().isGenuinelyAbsent(path)
+    }
+
+    /**
+     * Drops the pointer only when [path] is missing from a volume that can actually be read.
+     * Returns whether it was dropped, so callers that count "missing" can tell a file the user
+     * removed from one sitting on a card that is not answering.
+     */
+    suspend fun clearLocalPathIfGenuinelyAbsent(gameId: Long, path: String): Boolean =
+        withContext(Dispatchers.IO) {
+            if (!volumeHealth.newProbe().isGenuinelyAbsent(path)) {
+                Log.w(TAG, "Kept pointer for game $gameId: volume could not be read ($path)")
+                return@withContext false
+            }
+            gameDao.clearLocalPath(gameId)
+            true
+        }
+
     suspend fun getPlatformBreakdowns(): List<PlatformStats> = withContext(Dispatchers.IO) {
         val platforms = platformDao.observeAllPlatforms().first()
         val storageInfo = gameDao.getAllStorageInfo(overlayWriter.activeOwnerId())
@@ -588,21 +644,29 @@ class GameRepository @Inject constructor(
     suspend fun validateLocalFilesForPlatform(platformId: Long): Int = withContext(Dispatchers.IO) {
         if (!isStorageReady()) return@withContext 0
 
+        val probe = volumeHealth.newProbe()
         val games = gameDao.getGamesWithLocalPathByPlatform(platformId)
         var invalidated = 0
+        var withheld = 0
         for (game in games) {
             val path = game.localPath ?: continue
-            if (!isGamePathValid(path, game.platformSlug)) {
-                val resolved = resolveFileFallback(path, game.platformSlug)
-                if (resolved != null) {
-                    gameDao.updateLocalPath(game.id, resolved, game.source)
-                    Log.d(TAG, "Resolved (fallback): ${game.title} -> $resolved")
-                } else {
-                    gameDao.clearLocalPath(game.id)
-                    invalidated++
-                    Log.d(TAG, "Invalidated (platform): ${game.title}")
-                }
+            if (isGamePathValid(path, game.platformSlug)) continue
+            val resolved = resolveFileFallback(path, game.platformSlug)
+            if (resolved != null) {
+                gameDao.updateLocalPath(game.id, resolved, game.source)
+                Log.d(TAG, "Resolved (fallback): ${game.title} -> $resolved")
+                continue
             }
+            if (!probe.isGenuinelyAbsent(path)) {
+                withheld++
+                continue
+            }
+            gameDao.clearLocalPath(game.id)
+            invalidated++
+            Log.d(TAG, "Invalidated (platform): ${game.title}")
+        }
+        if (withheld > 0) {
+            Log.w(TAG, "validateLocalFilesForPlatform: kept $withheld pointers whose volume could not be read")
         }
         invalidated
     }
@@ -639,40 +703,45 @@ class GameRepository @Inject constructor(
     }
 
     suspend fun validateDiscLocalFiles(platformId: Long): Int = withContext(Dispatchers.IO) {
+        if (!isStorageReady()) return@withContext 0
+
+        val probe = volumeHealth.newProbe()
         val discs = gameDiscDao.getDiscsWithLocalPathByPlatform(platformId)
         var invalidated = 0
         for (disc in discs) {
             val path = disc.localPath ?: continue
-            if (!File(path).exists()) {
-                gameDiscDao.clearLocalPath(disc.id)
-                invalidated++
-            }
+            if (!probe.isGenuinelyAbsent(path)) continue
+            gameDiscDao.clearLocalPath(disc.id)
+            invalidated++
         }
         invalidated
     }
 
     suspend fun validateFileLocalFiles(platformId: Long): Int = withContext(Dispatchers.IO) {
+        if (!isStorageReady()) return@withContext 0
+
+        val probe = volumeHealth.newProbe()
         val files = gameFileDao.getFilesWithLocalPathByPlatform(platformId)
         var invalidated = 0
         for (file in files) {
             val path = file.localPath ?: continue
-            if (!File(path).exists()) {
-                gameFileDao.clearLocalPath(file.id)
-                invalidated++
-            }
+            if (!probe.isGenuinelyAbsent(path)) continue
+            gameFileDao.clearLocalPath(file.id)
+            invalidated++
         }
         invalidated
     }
 
     suspend fun ensureImagePathValid(gameId: Long): GameEntity? = withContext(Dispatchers.IO) {
         val game = gameDao.getById(gameId) ?: return@withContext null
+        val probe = volumeHealth.newProbe()
         var changed = false
 
-        if (game.coverPath?.startsWith("/") == true && !File(game.coverPath).exists()) {
+        if (game.coverPath?.startsWith("/") == true && probe.isGenuinelyAbsent(game.coverPath)) {
             gameDao.clearCoverPath(gameId)
             changed = true
         }
-        if (game.backgroundPath?.startsWith("/") == true && !File(game.backgroundPath).exists()) {
+        if (game.backgroundPath?.startsWith("/") == true && probe.isGenuinelyAbsent(game.backgroundPath)) {
             gameDao.clearBackgroundPath(gameId)
             changed = true
         }

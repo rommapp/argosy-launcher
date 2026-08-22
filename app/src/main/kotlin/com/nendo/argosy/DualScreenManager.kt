@@ -923,12 +923,12 @@ class DualScreenManager(
     private suspend fun validateShowcaseImagePaths(showcase: DualHomeShowcaseState): DualHomeShowcaseState {
         var result = showcase
         val cover = showcase.coverPath
-        if (cover?.startsWith("/") == true && !java.io.File(cover).exists()) {
+        if (cover?.startsWith("/") == true && gameRepository.isPathGenuinelyAbsent(cover)) {
             gameDao.clearCoverPath(showcase.gameId)
             result = result.copy(coverPath = null)
         }
         val bg = showcase.backgroundPath
-        if (bg?.startsWith("/") == true && !java.io.File(bg).exists()) {
+        if (bg?.startsWith("/") == true && gameRepository.isPathGenuinelyAbsent(bg)) {
             gameDao.clearBackgroundPath(showcase.gameId)
             result = result.copy(backgroundPath = null)
         }

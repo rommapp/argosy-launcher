@@ -16,6 +16,7 @@ import com.nendo.argosy.data.remote.romm.RomMResult
 import com.nendo.argosy.data.model.FilePickerRow
 import com.nendo.argosy.data.storage.StorageAttributionRepository
 import com.nendo.argosy.data.storage.StorageCategory
+import com.nendo.argosy.data.storage.StorageVolumeHealth
 import kotlinx.coroutines.flow.first
 import java.io.File
 import java.time.Instant
@@ -46,7 +47,8 @@ class FilePickerFlowUseCase @Inject constructor(
     private val musicDirectoryManager: MusicDirectoryManager,
     private val controlsPreferencesRepository: ControlsPreferencesRepository,
     private val attributionRepository: StorageAttributionRepository,
-    private val gameRepository: com.nendo.argosy.data.repository.GameRepository
+    private val gameRepository: com.nendo.argosy.data.repository.GameRepository,
+    private val volumeHealth: StorageVolumeHealth
 ) {
 
     /**
@@ -291,14 +293,14 @@ class FilePickerFlowUseCase @Inject constructor(
      */
     suspend fun purgeSoundtrack(gameId: Long): Int {
         val soundtracks = gameFileDao.getFilesByCategory(gameId, VariantCategory.SOUNDTRACK.key)
+        val probe = volumeHealth.newProbe()
         var removed = 0
         for (file in soundtracks) {
             val path = file.localPath ?: continue
-            if (File(path).delete() || !File(path).exists()) {
-                gameFileDao.clearLocalPath(file.id)
-                pruneMusicReferences(path)
-                removed++
-            }
+            if (!File(path).delete() && !probe.isGenuinelyAbsent(path)) continue
+            gameFileDao.clearLocalPath(file.id)
+            pruneMusicReferences(path)
+            removed++
         }
         if (removed > 0) attributionRepository.markDirty(StorageCategory.MUSIC)
         return removed

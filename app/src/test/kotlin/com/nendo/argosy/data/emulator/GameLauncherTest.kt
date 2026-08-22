@@ -142,7 +142,8 @@ class GameLauncherTest {
                 gameFileDao = gameFileDao,
                 platformDao = platformDao,
                 userPreferencesRepository = userPreferencesRepository
-            )
+            ),
+            volumeHealth = mockk(relaxed = true)
         )
     }
 

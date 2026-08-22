@@ -440,12 +440,14 @@ class RomMLibrarySyncService @Inject constructor(
         val dirtyGames = gameDao.getSyncDirtyGames(platformId, ROMM_SOURCES)
         if (dirtyGames.isEmpty()) return 0
 
+        val romVolumesReadable = gameRepository.get().romStorageVolumesReadable()
         val visibility = scope.visibility
         val ownerUserId = scope.ownerUserId
         val serverRomIds = scope.serverRomIds
         var deleted = 0
         var masked = 0
         var stillListed = 0
+        var volumeWithheld = 0
 
         for (game in dirtyGames) {
             val rommId = game.rommId
@@ -477,12 +479,24 @@ class RomMLibrarySyncService @Inject constructor(
                 preserveOrphanedGame(game, ownerUserId)
                 continue
             }
+            if (!romVolumesReadable) {
+                volumeWithheld++
+                continue
+            }
             gameDao.delete(game.id)
             deleted++
         }
 
         if (deleted > 0) {
             homeTileDao.deleteTilesForMissingGames()
+        }
+
+        if (volumeWithheld > 0) {
+            Logger.warn(
+                TAG,
+                "reconcileOrphans: kept $volumeWithheld rows on platform $platformId because a rom " +
+                    "storage volume could not be read, so local content could not be ruled out"
+            )
         }
 
         if (masked > 0) {
@@ -533,6 +547,14 @@ class RomMLibrarySyncService @Inject constructor(
         val missing = gameDao.getServerBackedIdsForOwner(ROMM_SOURCES, scope.ownerUserId)
             .filter { it.rommId !in serverRomIds && !visibility.hides(it.rommId, it.platformId) }
         if (missing.isEmpty()) return 0
+
+        if (!gameRepository.get().romStorageVolumesReadable()) {
+            Logger.warn(
+                TAG,
+                "reconcileDeletedRoms: a rom storage volume could not be read; withholding"
+            )
+            return 0
+        }
 
         var deleted = 0
         var preserved = 0

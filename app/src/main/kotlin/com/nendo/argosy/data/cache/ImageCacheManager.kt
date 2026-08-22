@@ -11,6 +11,8 @@ import android.graphics.drawable.Drawable
 import android.util.Log
 import coil.imageLoader
 import com.nendo.argosy.data.local.dao.AchievementDao
+import com.nendo.argosy.data.storage.StorageVolumeHealth
+import com.nendo.argosy.data.storage.VolumeProbe
 import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.dao.PlatformDao
 import com.nendo.argosy.data.model.GameSource
@@ -100,7 +102,8 @@ class ImageCacheManager @Inject constructor(
     @ApplicationContext private val context: Context,
     private val gameDao: GameDao,
     private val platformDao: PlatformDao,
-    private val achievementDao: AchievementDao
+    private val achievementDao: AchievementDao,
+    private val volumeHealth: StorageVolumeHealth
 ) {
     private val _localCoverWritten = MutableSharedFlow<Pair<Long, String>>(extraBufferCapacity = 64)
     val localCoverWritten: SharedFlow<Pair<Long, String>> = _localCoverWritten.asSharedFlow()
@@ -1684,12 +1687,9 @@ class ImageCacheManager @Inject constructor(
         }
     }
 
-    private fun shouldClearMissingPath(path: String): Boolean {
+    private fun shouldClearMissingPath(path: String, probe: VolumeProbe): Boolean {
         if (!path.startsWith("/")) return false
-        val file = File(path)
-        if (file.exists()) return false
-        val parent = file.parentFile ?: return false
-        return parent.exists() && parent.isDirectory
+        return probe.isGenuinelyAbsent(path)
     }
 
     /**
@@ -1705,6 +1705,7 @@ class ImageCacheManager @Inject constructor(
         var deleted = 0
         var cleared = 0
 
+        val probe = volumeHealth.newProbe()
         val marker = File(cacheDir, VALIDATION_MARKER)
         val validatedThrough = if (force) 0L else marker.takeIf { it.exists() }?.lastModified() ?: 0L
         val sweepStartedAt = System.currentTimeMillis()
@@ -1741,17 +1742,17 @@ class ImageCacheManager @Inject constructor(
 
         withContext(Dispatchers.IO) {
             infos.forEachIndexed { index, info ->
-                if (info.coverPath != null && shouldClearMissingPath(info.coverPath)) {
+                if (info.coverPath != null && shouldClearMissingPath(info.coverPath, probe)) {
                     gameDao.clearCoverPath(info.id)
                     cleared++
                 }
-                if (info.backgroundPath != null && shouldClearMissingPath(info.backgroundPath)) {
+                if (info.backgroundPath != null && shouldClearMissingPath(info.backgroundPath, probe)) {
                     gameDao.clearBackgroundPath(info.id)
                     cleared++
                 }
                 if (info.cachedScreenshotPaths != null) {
                     val paths = info.cachedScreenshotPaths.split(",")
-                    val validPaths = paths.filter { path -> !shouldClearMissingPath(path) }
+                    val validPaths = paths.filter { path -> !shouldClearMissingPath(path, probe) }
                     if (validPaths.size != paths.size) {
                         if (validPaths.isEmpty()) {
                             gameDao.clearCachedScreenshotPaths(info.id)
@@ -1772,7 +1773,7 @@ class ImageCacheManager @Inject constructor(
 
         withContext(Dispatchers.IO) {
             platforms.forEach { platform ->
-                if (platform.logoPath != null && shouldClearMissingPath(platform.logoPath)) {
+                if (platform.logoPath != null && shouldClearMissingPath(platform.logoPath, probe)) {
                     platformDao.clearLogoPath(platform.id)
                     cleared++
                 }

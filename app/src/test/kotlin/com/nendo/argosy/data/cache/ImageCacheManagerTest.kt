@@ -39,7 +39,13 @@ class ImageCacheManagerTest {
         gameDao = mockk(relaxed = true)
         platformDao = mockk(relaxed = true)
         achievementDao = mockk(relaxed = true)
-        imageCacheManager = ImageCacheManager(context, gameDao, platformDao, achievementDao)
+        imageCacheManager = ImageCacheManager(
+            context,
+            gameDao,
+            platformDao,
+            achievementDao,
+            mockk(relaxed = true)
+        )
     }
 
     @Test

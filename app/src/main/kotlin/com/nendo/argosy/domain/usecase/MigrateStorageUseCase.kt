@@ -87,8 +87,8 @@ class MigrateStorageUseCase @Inject constructor(
                     migrated++
                     Log.d(TAG, "Migration: success for ${game.title}")
                 } else {
-                    Log.d(TAG, "Migration: file missing, clearing localPath")
-                    gameRepository.clearLocalPath(game.id)
+                    val cleared = gameRepository.clearLocalPathIfGenuinelyAbsent(game.id, localPath)
+                    Log.d(TAG, "Migration: file missing, localPath cleared=$cleared")
                     skipped++
                 }
             } catch (e: Exception) {

@@ -13,6 +13,7 @@ import com.nendo.argosy.data.local.dao.GameFileDao
 import com.nendo.argosy.data.storage.StorageAttributionRepository
 import com.nendo.argosy.data.storage.StorageCategory
 import com.nendo.argosy.data.storage.StoragePathUtils
+import com.nendo.argosy.data.storage.StorageVolumeHealth
 import com.nendo.argosy.data.launcher.GameNativeLauncher
 import com.nendo.argosy.data.launcher.SteamLaunchers
 import com.nendo.argosy.data.local.dao.EmulatorConfigDao
@@ -102,7 +103,8 @@ class GameLauncher @Inject constructor(
     private val attributionRepository: StorageAttributionRepository,
     private val accountSwitchMarkerStore: com.nendo.argosy.data.preferences.AccountSwitchMarkerStore,
     private val extContentOrganizer: com.nendo.argosy.data.download.ExtContentOrganizer,
-    private val baseRomFileResolver: BaseRomFileResolver
+    private val baseRomFileResolver: BaseRomFileResolver,
+    private val volumeHealth: StorageVolumeHealth
 ) {
     private val shellAmAvailable: Boolean by lazy {
         try {
@@ -223,9 +225,14 @@ class GameLauncher @Inject constructor(
 
         var romFile = File(romPath)
         if (!romFile.exists()) {
-            gameDao.clearLocalPath(game.id)
+            if (volumeHealth.newProbe().isGenuinelyAbsent(romPath)) {
+                gameDao.clearLocalPath(game.id)
+                return LaunchResult.NoRomFile(romPath).also {
+                    Logger.warn(TAG, "launch() failed: ROM file missing; cleared localPath for ${romFile.name}, fullPath=$romPath")
+                }
+            }
             return LaunchResult.NoRomFile(romPath).also {
-                Logger.warn(TAG, "launch() failed: ROM file missing; cleared localPath for ${romFile.name}, fullPath=$romPath")
+                Logger.warn(TAG, "launch() failed: ROM unreachable on an unreadable volume; kept localPath for ${romFile.name}, fullPath=$romPath")
             }
         }
 

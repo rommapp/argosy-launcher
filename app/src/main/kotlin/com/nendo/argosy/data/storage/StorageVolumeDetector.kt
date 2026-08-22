@@ -13,23 +13,31 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import com.nendo.argosy.core.storage.StorageVolume as AppStorageVolume
 
+/**
+ * Mount points removable media is known to appear at on devices that do not report it through
+ * [StorageManager]. Shared with [StorageVolumeHealth], which has to recognise the same roots to
+ * tell an ejected card apart from a deleted file; a second copy of this list would drift and the
+ * half that fell behind would answer "unknown volume" for a card that is plainly there.
+ */
+internal val REMOVABLE_MOUNT_PROBE_PATHS = listOf(
+    "/storage/sdcard1",
+    "/storage/extSdCard",
+    "/mnt/external_sd",
+    "/mnt/extSdCard",
+    "/mnt/usb_storage",
+    "/mnt/usb",
+    "/storage/usb0",
+    "/storage/usb1",
+    "/storage/usb2",
+    "/storage/external_SD",
+    "/mnt/media_rw"
+)
+
 @Singleton
 class StorageVolumeDetector @Inject constructor(
     @ApplicationContext private val context: Context
 ) {
-    private val probePaths = listOf(
-        "/storage/sdcard1",
-        "/storage/extSdCard",
-        "/mnt/external_sd",
-        "/mnt/extSdCard",
-        "/mnt/usb_storage",
-        "/mnt/usb",
-        "/storage/usb0",
-        "/storage/usb1",
-        "/storage/usb2",
-        "/storage/external_SD",
-        "/mnt/media_rw"
-    )
+    private val probePaths = REMOVABLE_MOUNT_PROBE_PATHS
 
     fun detectStorageVolumes(): List<AppStorageVolume> {
         val volumes = mutableListOf<AppStorageVolume>()

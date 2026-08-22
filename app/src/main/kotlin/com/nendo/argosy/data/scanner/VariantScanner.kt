@@ -31,36 +31,47 @@ class VariantScanner @Inject constructor(
         val platformDef = PlatformDefinitions.getBySlug(game.platformSlug) ?: return 0
         val validExtensions = platformDef.extensions + setOf("m3u")
 
-        val categoryDirs = parentDir.listFiles()
-            ?.filter { it.isDirectory }
-            ?.mapNotNull { dir ->
+        val parentEntries = parentDir.listFiles() ?: run {
+            Logger.warn(TAG, "Skipping variant scan for ${game.title}: ${parentDir.absolutePath} would not list")
+            return 0
+        }
+
+        val categoryDirs = parentEntries
+            .filter { it.isDirectory }
+            .mapNotNull { dir ->
                 val category = VariantCategory.fromKey(dir.name.lowercase())
                 if (category.isLaunchTarget && category != VariantCategory.GAME && category != VariantCategory.UNKNOWN) {
                     dir to category
                 } else null
             }
-            ?: emptyList()
 
-        val candidates = categoryDirs.flatMap { (dir, category) ->
-            dir.listFiles()?.filter { file ->
+        val categoryListings = categoryDirs.map { (dir, category) -> Triple(dir, category, dir.listFiles()) }
+        val everyCategoryListed = categoryListings.all { it.third != null }
+
+        val candidates = categoryListings.flatMap { (_, category, entries) ->
+            (entries ?: emptyArray()).filter { file ->
                 val ext = file.extension.lowercase()
                 file.isFile &&
                     !file.name.startsWith("._") &&
                     ext !in PATCH_EXTENSIONS &&
                     ext !in DISC_COMPONENT_EXTENSIONS &&
                     ext in validExtensions
-            }?.map { it to category } ?: emptyList()
+            }.map { it to category }
         }.sortedBy { it.first.name }
 
-        val existingVariants = gameFileDao.getVariantsForGame(game.id)
-        val launchTargetPaths = candidates.map { it.first.absolutePath }.toSet()
-        for (variant in existingVariants) {
-            if (variant.rommFileId != null) continue
-            val path = variant.localPath
-            if (path == null || path !in launchTargetPaths) {
-                gameFileDao.deleteById(variant.id)
-                Logger.debug(TAG, "Removed stale local variant: ${variant.fileName} for game ${game.title}")
+        if (everyCategoryListed) {
+            val existingVariants = gameFileDao.getVariantsForGame(game.id)
+            val launchTargetPaths = candidates.map { it.first.absolutePath }.toSet()
+            for (variant in existingVariants) {
+                if (variant.rommFileId != null) continue
+                val path = variant.localPath
+                if (path == null || path !in launchTargetPaths) {
+                    gameFileDao.deleteById(variant.id)
+                    Logger.debug(TAG, "Removed stale local variant: ${variant.fileName} for game ${game.title}")
+                }
             }
+        } else {
+            Logger.warn(TAG, "Keeping local variant rows for ${game.title}: a category folder would not list")
         }
 
         var added = 0

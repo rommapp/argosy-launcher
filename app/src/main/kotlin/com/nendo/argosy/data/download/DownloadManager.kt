@@ -77,7 +77,12 @@ data class DownloadProgress(
     val isMultiFileRom: Boolean = false,
     val bytesPerSecond: Long = 0,
     val statusMessage: String? = null,
-    val selectedFileIds: List<Long>? = null
+    val selectedFileIds: List<Long>? = null,
+    /**
+     * What the storage gate asked for when it held this download back, which is the transfer plus
+     * the room its unpack needs, not the transfer alone. Null until a gate refuses.
+     */
+    val requiredStorageBytes: Long? = null
 ) {
     val progressPercent: Float
         get() = if (totalBytes > 0) bytesDownloaded.toFloat() / totalBytes else 0f
@@ -328,7 +333,13 @@ class DownloadManager @Inject constructor(
                 ArchiveExpansion.expandsOnDisk(
                     progress.fileName, progress.platformSlug, progress.isMultiFileRom
                 )
-            val unpackedBytes = if (expands) ArchiveExpansion.estimate(progress.totalBytes) else 0L
+            val unpackedBytes = if (expands) {
+                ArchiveExpansion.estimate(
+                    progress.totalBytes, progress.fileName, progress.platformSlug
+                )
+            } else {
+                0L
+            }
 
             if (expands && preferencesRepository.userPreferences.first().stageDownloadsInternally) {
                 val staged = planStaged(
@@ -399,9 +410,21 @@ class DownloadManager @Inject constructor(
             _state.value = _state.value.copy(
                 activeDownloads = _state.value.activeDownloads.filter { it.id != progress.id },
                 queue = _state.value.queue.map {
-                    if (it.id == progress.id) it.copy(state = DownloadState.WAITING_FOR_STORAGE) else it
+                    if (it.id == progress.id) {
+                        it.copy(
+                            state = DownloadState.WAITING_FOR_STORAGE,
+                            requiredStorageBytes = plan.requiredBytes
+                        )
+                    } else {
+                        it
+                    }
                 } + if (_state.value.queue.none { it.id == progress.id }) {
-                    listOf(progress.copy(state = DownloadState.WAITING_FOR_STORAGE))
+                    listOf(
+                        progress.copy(
+                            state = DownloadState.WAITING_FOR_STORAGE,
+                            requiredStorageBytes = plan.requiredBytes
+                        )
+                    )
                 } else emptyList(),
                 availableStorageBytes = availableStorage
             )
@@ -937,7 +960,14 @@ class DownloadManager @Inject constructor(
                 downloadQueueDao.updateState(next.id, DownloadState.WAITING_FOR_STORAGE.name)
                 _state.value = _state.value.copy(
                     queue = _state.value.queue.map {
-                        if (it.id == next.id) it.copy(state = DownloadState.WAITING_FOR_STORAGE) else it
+                        if (it.id == next.id) {
+                            it.copy(
+                                state = DownloadState.WAITING_FOR_STORAGE,
+                                requiredStorageBytes = plan.requiredBytes
+                            )
+                        } else {
+                            it
+                        }
                     },
                     availableStorageBytes = availableStorage
                 )

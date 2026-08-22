@@ -447,7 +447,10 @@ private fun DownloadItem(
                     )
                 }
                 download.state == DownloadState.WAITING_FOR_STORAGE -> Text(
-                    text = "Need ${formatBytes(download.totalBytes - download.bytesDownloaded)}, Available ${formatBytes(availableStorage)}",
+                    text = "Need ${formatBytes(
+                        download.requiredStorageBytes
+                            ?: (download.totalBytes - download.bytesDownloaded)
+                    )}, Available ${formatBytes(availableStorage)}",
                     style = MaterialTheme.typography.bodySmall,
                     color = LocalArgosyTheme.current.destructive,
                     maxLines = 2,

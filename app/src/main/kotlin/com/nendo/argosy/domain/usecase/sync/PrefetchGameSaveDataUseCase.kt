@@ -1,6 +1,9 @@
 package com.nendo.argosy.domain.usecase.sync
 
 import com.nendo.argosy.data.local.dao.GameDao
+import com.nendo.argosy.data.local.dao.GameDiscDao
+import com.nendo.argosy.data.local.dao.GameFileDao
+import com.nendo.argosy.data.local.entity.GameEntity
 import com.nendo.argosy.data.repository.ActiveSaveRepository
 import com.nendo.argosy.data.repository.SaveSyncRepository
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
@@ -33,6 +36,8 @@ private const val THROTTLE_MS = 5 * 60 * 1000L
 @Singleton
 class PrefetchGameSaveDataUseCase @Inject constructor(
     private val gameDao: GameDao,
+    private val gameFileDao: GameFileDao,
+    private val gameDiscDao: GameDiscDao,
     private val preferencesRepository: UserPreferencesRepository,
     private val activeSaveRepository: ActiveSaveRepository,
     private val getUnifiedSavesUseCase: GetUnifiedSavesUseCase,
@@ -44,6 +49,10 @@ class PrefetchGameSaveDataUseCase @Inject constructor(
     /**
      * The attempt is recorded before the work rather than after it, so a game whose prefetch fails
      * waits its turn like any other rather than retrying on every visit to the page.
+     *
+     * A rom id has to be positive, not merely present. A game whose rom left the server is kept
+     * under a synthetic negative id, and asking the server about one is a request that can only
+     * fail.
      */
     suspend operator fun invoke(gameId: Long) {
         val now = System.currentTimeMillis()
@@ -52,8 +61,10 @@ class PrefetchGameSaveDataUseCase @Inject constructor(
 
         if (!preferencesRepository.userPreferences.first().saveSyncEnabled) return
         val game = gameDao.getById(gameId) ?: return
-        if (game.rommId == null) return
+        if (game.rommId == null || game.rommId <= 0L) return
+        if (!isDownloaded(game)) return
 
+        lastRunAt.values.removeAll { now - it >= THROTTLE_MS }
         lastRunAt[gameId] = now
 
         runCatching { prefetchSaves(gameId) }
@@ -61,6 +72,17 @@ class PrefetchGameSaveDataUseCase @Inject constructor(
         runCatching { prefetchStates(gameId) }
             .onFailure { Logger.warn(TAG, "State prefetch failed for gameId=$gameId", it) }
     }
+
+    /**
+     * Whether the game is on this device. A title nobody has downloaded cannot be launched, so
+     * pulling its saves and states spends transfer and storage on a session that cannot happen.
+     * The row's own path, its downloaded files and its downloaded discs each count, because a
+     * multi-file or multi-disc game carries its content in those tables rather than in [localPath].
+     */
+    private suspend fun isDownloaded(game: GameEntity): Boolean =
+        game.localPath != null ||
+            gameFileDao.getDownloadedCount(game.id) > 0 ||
+            gameDiscDao.getDownloadedDiscCount(game.id) > 0
 
     private suspend fun prefetchSaves(gameId: Long) {
         val serverOnly = getUnifiedSavesUseCase(gameId, expandHistory = true)

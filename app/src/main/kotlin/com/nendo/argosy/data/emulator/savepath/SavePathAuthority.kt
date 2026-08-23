@@ -38,32 +38,30 @@ data class SavePathRequest(
 /**
  * One answer about one save path, carrying the reasoning as well as the result.
  *
- * [basePath] is the directory the platform scans from. [evaluatedPath] is the deepest path that
- * can be named without knowing which game, and [unresolvedShape] is what still gets appended per
- * game, so a screen can show the user where saves really land instead of a base they will not
- * find them in. For a flat platform the two are the same and the shape is null.
+ * [basePath] is the directory the platform scans from, and [unresolvedShape] is what still gets
+ * appended per game, so a screen can show the user where saves really land instead of a base they
+ * will not find them in. For a flat platform the shape is null.
  */
 data class SavePathResolution(
     val config: SavePathConfig?,
     val configId: String?,
     val basePath: String?,
-    val evaluatedPath: String?,
     val unresolvedShape: String?,
     val source: SavePathSource,
     val verdict: SavePathVerdict
 ) {
     val isRetroArchManaged: Boolean get() = source == SavePathSource.RETROARCH_CFG
-
-    val displayPath: String? get() = evaluatedPath ?: basePath
 }
 
 /**
  * Where the decision about which save path applies is being consolidated.
  *
  * IN PROGRESS, and the count matters to anyone reading this: the settings surfaces resolve through
- * here, the sync layer does not yet. `SavePathResolver`, `SaveDownloader`, `SaveUploader` and
- * `GameLauncher` still derive the override key themselves, so several derivations remain live and
- * this class is not yet the authority its name claims. Do not read it as finished work.
+ * here, the sync layer does not yet. Twenty-one derivations remain live across nine files, most of
+ * them in `SavePathResolver`, `SaveDownloader`, `SaveUploader`, `SaveSyncConflictResolver`,
+ * `AccountSwitchArtifactService`, `PlaySessionTracker`, `ResolveGameEmulatorContextUseCase` and
+ * `EmulatorSettingsDelegate`. This class is not yet the authority its name claims. Do not read it
+ * as finished work, and do not add a derivation on the strength of the name.
  *
  * The decision used to be made independently in roughly thirty call sites, disagreeing in four
  * ways that reached users: the config was looked up without the platform, the override was read
@@ -134,7 +132,6 @@ class SavePathAuthority @Inject constructor(
                 config = null,
                 configId = null,
                 basePath = null,
-                evaluatedPath = null,
                 unresolvedShape = null,
                 source = SavePathSource.NONE,
                 verdict = SavePathVerdict.Ok
@@ -206,7 +203,6 @@ class SavePathAuthority @Inject constructor(
             config = config,
             configId = configId,
             basePath = basePath,
-            evaluatedPath = basePath,
             unresolvedShape = shape,
             source = source,
             verdict = basePath?.let { validate(it, config, request.platformSlug) } ?: SavePathVerdict.Ok

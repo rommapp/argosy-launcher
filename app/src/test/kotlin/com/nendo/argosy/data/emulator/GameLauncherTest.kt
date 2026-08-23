@@ -129,6 +129,7 @@ class GameLauncherTest {
             coreSystemDataManager = coreSystemDataManager,
             gameFileDao = gameFileDao,
             emulatorSaveConfigRepository = emulatorSaveConfigRepository,
+            savePathAuthority = mockk(relaxed = true),
             saveHandlerRegistry = saveHandlerRegistry,
             libretroStatePathResolver = libretroStatePathResolver,
             libretroSavePathResolver = libretroSavePathResolver,

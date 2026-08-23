@@ -103,7 +103,7 @@ class SavePathAuthorityTest {
         )
 
         assertEquals("title/<type>/<id>/data", resolution.unresolvedShape)
-        assertEquals("/sd/Wii", resolution.displayPath)
+        assertEquals("/sd/Wii", resolution.basePath)
     }
 
     @Test

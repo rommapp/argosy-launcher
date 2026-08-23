@@ -9,6 +9,7 @@ import android.net.Uri
 import android.provider.DocumentsContract
 import androidx.core.content.FileProvider
 import com.nendo.argosy.data.download.ZipExtractor
+import com.nendo.argosy.data.emulator.savepath.SavePathRequest
 import com.nendo.argosy.data.local.dao.GameFileDao
 import com.nendo.argosy.data.storage.StorageAttributionRepository
 import com.nendo.argosy.data.storage.StorageCategory
@@ -96,6 +97,7 @@ class GameLauncher @Inject constructor(
     private val coreSystemDataManager: CoreSystemDataManager,
     private val gameFileDao: GameFileDao,
     private val emulatorSaveConfigRepository: com.nendo.argosy.data.repository.EmulatorSaveConfigRepository,
+    private val savePathAuthority: com.nendo.argosy.data.emulator.savepath.SavePathAuthority,
     private val saveHandlerRegistry: com.nendo.argosy.data.sync.platform.PlatformSaveHandlerRegistry,
     private val libretroStatePathResolver: LibretroStatePathResolver,
     private val libretroSavePathResolver: LibretroSavePathResolver,
@@ -684,7 +686,13 @@ class GameLauncher @Inject constructor(
     private suspend fun ps2MemcardGate(gameId: Long, game: GameEntity, emulator: EmulatorDef): LaunchResult? {
         if (game.platformSlug != "ps2") return null
         if (emulatorConfigDao.getSelectedMemcardForGame(gameId) != null) return null
-        val emulatorId = SavePathRegistry.canonicalConfigId(emulator.id, emulator.packageName)
+        val emulatorId = savePathAuthority.configIdFor(
+            SavePathRequest(
+                platformSlug = game.platformSlug,
+                emulatorId = emulator.id,
+                emulatorPackage = emulator.packageName
+            )
+        ) ?: return null
         val userConfig = emulatorSaveConfigRepository.getByEmulator(emulatorId)
         if (userConfig?.selectedMemcardPath != null) return null
         val basePathOverride = if (userConfig?.isUserOverride == true) userConfig.savePathPattern else null
@@ -1924,6 +1932,15 @@ class GameLauncher @Inject constructor(
         if (cachedRom != null && cachedRom.exists()) {
             Logger.info(TAG, "Using cached extraction: ${cachedRom.name}")
             return cachedRom
+        }
+
+        val validation = ZipExtractor.validateArchive(romFile)
+        if (validation is ZipExtractor.ArchiveValidationResult.Invalid) {
+            Logger.error(
+                TAG,
+                "Archive ${romFile.name} failed validation before launch: ${validation.reason}"
+            )
+            return romFile
         }
 
         Logger.info(TAG, "Extracting archive to cache: ${romFile.name}")

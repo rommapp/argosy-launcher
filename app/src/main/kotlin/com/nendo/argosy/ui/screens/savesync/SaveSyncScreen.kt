@@ -64,7 +64,7 @@ import com.nendo.argosy.ui.navigation.Screen
 import com.nendo.argosy.ui.primitives.ArgosyProgressBar
 import com.nendo.argosy.ui.screens.gamedetail.components.SaveStatusInfo
 import com.nendo.argosy.ui.screens.gamedetail.components.SaveStatusRow
-import com.nendo.argosy.ui.screens.gamedetail.components.SaveSyncStatus
+import com.nendo.argosy.ui.screens.gamedetail.components.mapSaveSyncStatus
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalLauncherTheme
 import com.nendo.argosy.ui.util.clickableNoFocus
@@ -821,7 +821,7 @@ private fun GameSaveRowCard(row: GameSaveRow, isFocused: Boolean) {
                 }
                 SaveStatusRow(
                     status = SaveStatusInfo(
-                        status = mapSyncStatus(row.syncStatus),
+                        status = mapSaveSyncStatus(row.syncStatus),
                         channelName = row.channelDisplay,
                         activeSaveTimestamp = saveTime?.toEpochMilli(),
                         lastSyncTime = saveTime
@@ -841,16 +841,6 @@ private fun GameSaveRowCard(row: GameSaveRow, isFocused: Boolean) {
             }
         }
     }
-}
-
-private fun mapSyncStatus(raw: String): SaveSyncStatus = when (raw) {
-    SaveSyncEntity.STATUS_SYNCED -> SaveSyncStatus.SYNCED
-    SaveSyncEntity.STATUS_LOCAL_NEWER -> SaveSyncStatus.LOCAL_NEWER
-    SaveSyncEntity.STATUS_SERVER_NEWER -> SaveSyncStatus.SYNCED
-    SaveSyncEntity.STATUS_CONFLICT -> SaveSyncStatus.LOCAL_NEWER
-    SaveSyncEntity.STATUS_PENDING_UPLOAD -> SaveSyncStatus.PENDING_UPLOAD
-    SaveSyncEntity.STATUS_NEEDS_HARDCORE_RESOLUTION -> SaveSyncStatus.LOCAL_NEWER
-    else -> SaveSyncStatus.NOT_CONFIGURED
 }
 
 @Composable

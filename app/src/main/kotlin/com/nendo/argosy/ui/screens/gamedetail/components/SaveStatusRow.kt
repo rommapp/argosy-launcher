@@ -7,9 +7,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.CloudDownload
 import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.CloudUpload
 import androidx.compose.material.icons.filled.Error
+import androidx.compose.material.icons.filled.PriorityHigh
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material3.Icon
@@ -26,6 +28,7 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
+import com.nendo.argosy.data.local.entity.SaveSyncEntity
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.util.formatClockDateTime
 import com.nendo.argosy.util.formatRelativeTimeVerbose
@@ -34,10 +37,27 @@ import java.time.Instant
 enum class SaveSyncStatus {
     SYNCED,
     LOCAL_NEWER,
+    SERVER_NEWER,
     LOCAL_ONLY,
     PENDING_UPLOAD,
+    NEEDS_RESOLUTION,
     NO_SAVE,
     NOT_CONFIGURED
+}
+
+/**
+ * The one reading of a stored sync status. Direction is decided in the sync layer and recorded on
+ * the row, so a screen that collapses two directions into one tells the user the opposite of what
+ * happened. `CONFLICT` is absent on purpose: nothing writes it, and a real conflict is parked in
+ * `pending_conflicts` rather than carried here.
+ */
+fun mapSaveSyncStatus(raw: String): SaveSyncStatus = when (raw) {
+    SaveSyncEntity.STATUS_SYNCED -> SaveSyncStatus.SYNCED
+    SaveSyncEntity.STATUS_LOCAL_NEWER -> SaveSyncStatus.LOCAL_NEWER
+    SaveSyncEntity.STATUS_SERVER_NEWER -> SaveSyncStatus.SERVER_NEWER
+    SaveSyncEntity.STATUS_PENDING_UPLOAD -> SaveSyncStatus.PENDING_UPLOAD
+    SaveSyncEntity.STATUS_NEEDS_HARDCORE_RESOLUTION -> SaveSyncStatus.NEEDS_RESOLUTION
+    else -> SaveSyncStatus.NOT_CONFIGURED
 }
 
 data class SaveStatusInfo(
@@ -122,8 +142,10 @@ internal val SaveSyncStatus.icon: ImageVector
     get() = when (this) {
         SaveSyncStatus.SYNCED -> Icons.Default.Check
         SaveSyncStatus.LOCAL_NEWER -> Icons.Default.CloudUpload
+        SaveSyncStatus.SERVER_NEWER -> Icons.Default.CloudDownload
         SaveSyncStatus.LOCAL_ONLY -> Icons.Default.Save
         SaveSyncStatus.PENDING_UPLOAD -> Icons.Default.Sync
+        SaveSyncStatus.NEEDS_RESOLUTION -> Icons.Default.PriorityHigh
         SaveSyncStatus.NO_SAVE -> Icons.Default.CloudOff
         SaveSyncStatus.NOT_CONFIGURED -> Icons.Default.Error
     }
@@ -132,8 +154,10 @@ internal val SaveSyncStatus.icon: ImageVector
 private fun SaveSyncStatus.color() = when (this) {
     SaveSyncStatus.SYNCED -> MaterialTheme.colorScheme.primary
     SaveSyncStatus.LOCAL_NEWER -> LocalLauncherTheme.current.semanticColors.warning
+    SaveSyncStatus.SERVER_NEWER -> LocalLauncherTheme.current.semanticColors.warning
     SaveSyncStatus.LOCAL_ONLY -> MaterialTheme.colorScheme.onSurfaceVariant
     SaveSyncStatus.PENDING_UPLOAD -> MaterialTheme.colorScheme.secondary
+    SaveSyncStatus.NEEDS_RESOLUTION -> MaterialTheme.colorScheme.error
     SaveSyncStatus.NO_SAVE -> MaterialTheme.colorScheme.onSurfaceVariant
     SaveSyncStatus.NOT_CONFIGURED -> MaterialTheme.colorScheme.error
 }
@@ -142,8 +166,10 @@ private fun SaveSyncStatus.color() = when (this) {
 private fun SaveSyncStatus.textColor() = when (this) {
     SaveSyncStatus.SYNCED -> MaterialTheme.colorScheme.onSurfaceVariant
     SaveSyncStatus.LOCAL_NEWER -> LocalLauncherTheme.current.semanticColors.info
+    SaveSyncStatus.SERVER_NEWER -> LocalLauncherTheme.current.semanticColors.info
     SaveSyncStatus.LOCAL_ONLY -> LocalLauncherTheme.current.semanticColors.info
     SaveSyncStatus.PENDING_UPLOAD -> LocalLauncherTheme.current.semanticColors.info
+    SaveSyncStatus.NEEDS_RESOLUTION -> MaterialTheme.colorScheme.error
     SaveSyncStatus.NO_SAVE -> MaterialTheme.colorScheme.onSurfaceVariant
     SaveSyncStatus.NOT_CONFIGURED -> MaterialTheme.colorScheme.error
 }
@@ -152,8 +178,10 @@ private val SaveSyncStatus.displayName: String
     get() = when (this) {
         SaveSyncStatus.SYNCED -> "Synced"
         SaveSyncStatus.LOCAL_NEWER -> "Local newer"
+        SaveSyncStatus.SERVER_NEWER -> "Server newer"
         SaveSyncStatus.LOCAL_ONLY -> "Local"
         SaveSyncStatus.PENDING_UPLOAD -> "Pending upload"
+        SaveSyncStatus.NEEDS_RESOLUTION -> "Needs resolution"
         SaveSyncStatus.NO_SAVE -> "No save"
         SaveSyncStatus.NOT_CONFIGURED -> "Not configured"
     }

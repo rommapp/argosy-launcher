@@ -17,6 +17,7 @@ import com.nendo.argosy.core.notification.showSuccess
 import com.nendo.argosy.ui.screens.gamedetail.components.SaveStatusEvent
 import com.nendo.argosy.ui.screens.gamedetail.components.SaveStatusInfo
 import com.nendo.argosy.ui.screens.gamedetail.components.SaveSyncStatus
+import com.nendo.argosy.ui.screens.gamedetail.components.mapSaveSyncStatus
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -92,14 +93,7 @@ class SaveManagementDelegate @Inject constructor(
 
         return if (syncEntity != null) {
             SaveStatusInfo(
-                status = when (syncEntity.syncStatus) {
-                    SaveSyncEntity.STATUS_SYNCED -> SaveSyncStatus.SYNCED
-                    SaveSyncEntity.STATUS_LOCAL_NEWER -> SaveSyncStatus.LOCAL_NEWER
-                    SaveSyncEntity.STATUS_SERVER_NEWER -> SaveSyncStatus.LOCAL_NEWER
-                    SaveSyncEntity.STATUS_PENDING_UPLOAD -> SaveSyncStatus.PENDING_UPLOAD
-                    SaveSyncEntity.STATUS_CONFLICT -> SaveSyncStatus.LOCAL_NEWER
-                    else -> SaveSyncStatus.NO_SAVE
-                },
+                status = mapSaveSyncStatus(syncEntity.syncStatus),
                 channelName = activeChannel,
                 activeSaveTimestamp = effectiveTimestamp,
                 lastSyncTime = lastSyncTime

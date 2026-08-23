@@ -8,7 +8,7 @@
         "app/src/main/**/*.kt"
       ],
       "path_exclude": [],
-      "added_regex": "^\\s*//(?!/)",
+      "added_regex": "(?:^\\s*|\\S\\s+)//(?!/)",
       "skip_line_regex": "^\\s*(\\*|/\\*)"
     },
     {
@@ -74,6 +74,26 @@
         "app/src/main/**/data/emulator/StatePathRegistry.kt"
       ],
       "added_regex": "SavePathRegistry\\.(getConfig|getConfigByPackage|canonicalConfigId)\\s*\\("
+    },
+    {
+      "id": "domain-imports-compose",
+      "summary": "Compose imported into domain/",
+      "message": "domain/ is Compose-free, and unlike the Android-framework debt this one has no exceptions. A use case that needs to describe state returns a plain type; the UI layer decides how to hold it. See AGENTS.md (Architecture).",
+      "path_include": [
+        "app/src/main/**/domain/**/*.kt"
+      ],
+      "path_exclude": [],
+      "added_regex": "^import\\s+androidx\\.compose\\."
+    },
+    {
+      "id": "ui-reaches-dao",
+      "summary": "ui/ importing a game, platform or collection DAO",
+      "message": "ui/ reaches game, platform and collection data through repositories, never the DAO. The existing violators are a known list that is not being extended. See AGENTS.md (Architecture) and the code-quality skill.",
+      "path_include": [
+        "app/src/main/**/ui/**/*.kt"
+      ],
+      "path_exclude": [],
+      "added_regex": "^import\\s+com\\.nendo\\.argosy\\.data\\.local\\.dao\\.(GameDao|PlatformDao|CollectionDao)$"
     }
   ]
 }

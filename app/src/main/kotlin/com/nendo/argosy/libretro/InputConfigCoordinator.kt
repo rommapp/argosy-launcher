@@ -48,15 +48,18 @@ class InputConfigCoordinator(
             controllerOrderCount = controllerOrder.size
             portResolver.setControllerOrder(controllerOrder)
 
+            val connectedDevices = inputConfigRepository.getConnectedControllers()
+                .mapNotNull { InputDevice.getDevice(it.deviceId) }
+            portResolver.setAutoDetectedOrder(connectedDevices)
+
             val mappings = mutableMapOf<String, Map<InputSource, Int>>()
-            for (controller in inputConfigRepository.getConnectedControllers()) {
-                val device = InputDevice.getDevice(controller.deviceId) ?: continue
+            for (device in connectedDevices) {
                 val mapping = inputConfigRepository.getOrCreateExtendedMappingForDevice(
                     device,
                     profileIdForDevice(device),
                     gameId
                 )
-                mappings[controller.controllerId] = mapping
+                mappings[ControllerPortResolver.getControllerId(device)] = mapping
             }
             inputMapper.setExtendedMappings(mappings)
             inputMapper.setPortResolver { device -> portResolver.getPort(device) }
@@ -68,8 +71,8 @@ class InputConfigCoordinator(
             hotkeyManager.setPlatformMappedButtons(platformMappedButtons(mappings))
             hotkeyManager.setLimitToPlayer1(limitHotkeysToPlayer1)
 
-            if (controllerOrder.isNotEmpty()) {
-                hotkeyManager.setPlayer1ControllerId(controllerOrder.first().controllerId)
+            player1ControllerId(controllerOrder, connectedDevices)?.let {
+                hotkeyManager.setPlayer1ControllerId(it)
             }
 
             Log.d(TAG, "Input config loaded: ${controllerOrder.size} port assignments, ${mappings.size} mappings, ${hotkeys.size} hotkeys")
@@ -81,10 +84,20 @@ class InputConfigCoordinator(
         controllerOrderList = order
         controllerOrderCount = order.size
         portResolver.setControllerOrder(order)
-        if (order.isNotEmpty()) {
-            hotkeyManager.setPlayer1ControllerId(order.first().controllerId)
+        val connectedDevices = inputConfigRepository.getConnectedControllers()
+            .mapNotNull { InputDevice.getDevice(it.deviceId) }
+        portResolver.setAutoDetectedOrder(connectedDevices)
+        player1ControllerId(order, connectedDevices)?.let {
+            hotkeyManager.setPlayer1ControllerId(it)
         }
     }
+
+    private fun player1ControllerId(
+        order: List<ControllerOrderEntity>,
+        connectedDevices: List<InputDevice>
+    ): String? = order.firstOrNull()?.controllerId
+        ?: connectedDevices.firstOrNull { portResolver.getPort(it) == 0 }
+            ?.let { ControllerPortResolver.getControllerId(it) }
 
     fun setGameId(newGameId: Long?) {
         if (gameId == newGameId) return

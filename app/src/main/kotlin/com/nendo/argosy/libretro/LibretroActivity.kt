@@ -47,7 +47,6 @@ import androidx.compose.ui.platform.ComposeView
 import com.nendo.argosy.libretro.ui.RAConnectionNotification
 import com.nendo.argosy.core.input.ConnectedControllerTracker
 import com.nendo.argosy.core.input.ControllerDetector
-import com.nendo.argosy.core.input.DetectedLayout
 import com.nendo.argosy.ui.input.LocalABIconsSwapped
 import com.nendo.argosy.ui.input.LocalSwapStartSelect
 import com.nendo.argosy.ui.input.LocalXYIconsSwapped
@@ -645,11 +644,7 @@ class LibretroActivity : ComponentActivity() {
         val inputPrefs = launchPreferences
         menuWrapMode = inputPrefs.menuWrapMode
         val detectedLayout = ControllerDetector.detectFromActiveGamepad().layout
-        val isNintendoLayout = when (inputPrefs.controllerLayout) {
-            "nintendo" -> true
-            "xbox" -> false
-            else -> detectedLayout == DetectedLayout.NINTENDO
-        }
+        val isNintendoLayout = ControllerDetector.isNintendoLayout(inputPrefs.controllerLayout, detectedLayout)
         swapAB = isNintendoLayout xor inputPrefs.swapAB
         swapXY = isNintendoLayout xor inputPrefs.swapXY
         swapStartSelect = inputPrefs.swapStartSelect

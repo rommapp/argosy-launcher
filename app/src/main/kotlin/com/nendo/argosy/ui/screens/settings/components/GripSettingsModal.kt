@@ -22,6 +22,7 @@ import com.nendo.argosy.ui.components.InputButton
 import com.nendo.argosy.ui.components.Modal
 import com.nendo.argosy.ui.components.NavigationPreference
 import com.nendo.argosy.ui.components.SliderPreference
+import com.nendo.argosy.ui.input.GamepadEvent
 import com.nendo.argosy.ui.input.LocalGamepadInputHandler
 import com.nendo.argosy.ui.screens.settings.sections.GRIP_RESERVE_PERCENT_STEP
 import com.nendo.argosy.ui.screens.settings.sections.gripAutoControllerSubtitle
@@ -66,25 +67,25 @@ fun GripSettingsModal(
                 if (event.action == KeyEvent.ACTION_DOWN) {
                     val visible = currentRows.value
                     val row = visible.getOrNull(focusedIndex)
-                    when (event.keyCode) {
-                        KeyEvent.KEYCODE_BUTTON_B, KeyEvent.KEYCODE_BACK -> currentOnDismiss.value()
-                        KeyEvent.KEYCODE_DPAD_UP ->
+                    when (gamepadInputHandler?.mapKeyToEvent(event.keyCode)) {
+                        GamepadEvent.Back -> currentOnDismiss.value()
+                        GamepadEvent.Up ->
                             focusedIndex = (focusedIndex - 1).coerceAtLeast(0)
-                        KeyEvent.KEYCODE_DPAD_DOWN ->
+                        GamepadEvent.Down ->
                             focusedIndex = (focusedIndex + 1).coerceAtMost(visible.size - 1)
-                        KeyEvent.KEYCODE_DPAD_LEFT -> when (row) {
+                        GamepadEvent.Left -> when (row) {
                             GripSettingsRow.MODE -> currentOnCycleMode.value(-1)
                             GripSettingsRow.RESERVED_HEIGHT ->
                                 currentOnAdjustPercent.value(-GRIP_RESERVE_PERCENT_STEP)
                             else -> {}
                         }
-                        KeyEvent.KEYCODE_DPAD_RIGHT -> when (row) {
+                        GamepadEvent.Right -> when (row) {
                             GripSettingsRow.MODE -> currentOnCycleMode.value(1)
                             GripSettingsRow.RESERVED_HEIGHT ->
                                 currentOnAdjustPercent.value(GRIP_RESERVE_PERCENT_STEP)
                             else -> {}
                         }
-                        KeyEvent.KEYCODE_BUTTON_A, KeyEvent.KEYCODE_DPAD_CENTER -> when (row) {
+                        GamepadEvent.Confirm -> when (row) {
                             GripSettingsRow.MODE -> currentOnCycleMode.value(1)
                             GripSettingsRow.CONTROLLERS -> showControllers = true
                             else -> {}

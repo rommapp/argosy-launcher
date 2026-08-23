@@ -106,6 +106,11 @@ class PreLaunchStateSyncUseCase @Inject constructor(
         }
 
         val coreId = coreVersionExtractor.getCoreIdForEmulator(emulatorId, game.platformSlug)
+        val coreVersion = if (coreId != null && emulatorId.startsWith("retroarch")) {
+            coreVersionExtractor.getRetroArchCoreVersion(coreId, packageToResolve)
+        } else {
+            null
+        }
 
         Log.d(TAG, "Checking server states for ${game.title}")
 
@@ -130,7 +135,7 @@ class PreLaunchStateSyncUseCase @Inject constructor(
 
         val repaired = reconciled.map { it.state }
         val localByRommId = repaired.filter { it.rommSaveId != null }.associateBy { it.rommSaveId }
-        val localBySlot = repaired.associateBy { it.slotNumber }
+        val localBySlot = repaired.associateBy { it.slotNumber to it.channelName }
 
         var downloadedCount = 0
 
@@ -138,7 +143,7 @@ class PreLaunchStateSyncUseCase @Inject constructor(
             val parsed = stateCacheManager.parseStateFileName(serverState.fileName)
             val slotNumber = parsed.slotNumber
             val linked = localByRommId[serverState.id]
-            val localState = linked ?: localBySlot[slotNumber]
+            val localState = linked ?: localBySlot[slotNumber to parsed.channelName]
             val serverUpdatedAt = stateCacheManager.parseTimestamp(serverState.updatedAt)
 
             val shouldDownload = when {
@@ -189,7 +194,14 @@ class PreLaunchStateSyncUseCase @Inject constructor(
                     is StateCacheManager.StateCloudResult.Success -> {
                         downloadedCount++
                         Log.d(TAG, "Downloaded state ${serverState.fileName} for ${game.title}")
-                        materializeToLiveDir(serverState.id, game.localPath, game.platformSlug, emulatorId, coreId)
+                        materializeToLiveDir(
+                            serverState.id,
+                            game.localPath,
+                            game.platformSlug,
+                            emulatorId,
+                            coreId,
+                            coreVersion
+                        )
                     }
                     is StateCacheManager.StateCloudResult.Error -> {
                         Log.e(TAG, "Failed to download state ${serverState.fileName}: ${result.message}")
@@ -238,7 +250,8 @@ class PreLaunchStateSyncUseCase @Inject constructor(
         romPath: String?,
         platformSlug: String,
         emulatorId: String,
-        coreId: String?
+        coreId: String?,
+        coreVersion: String?
     ) {
         if (romPath == null) {
             Log.w(TAG, "Cannot restore downloaded state to live dir: game has no local path")
@@ -256,7 +269,8 @@ class PreLaunchStateSyncUseCase @Inject constructor(
             emulatorId = emulatorId,
             platformId = platformSlug,
             romPath = romPath,
-            currentCoreId = coreId
+            currentCoreId = coreId,
+            currentCoreVersion = coreVersion
         )) {
             is RestoreStateResult.Success ->
                 Log.d(TAG, "Restored downloaded state slot ${cached.slotNumber} to live dir")

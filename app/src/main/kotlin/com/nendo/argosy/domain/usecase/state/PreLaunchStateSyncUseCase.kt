@@ -31,6 +31,15 @@ internal data class ReconciledState(
  * A dropped row keeps its cached file and is queued to be re-created, so the slot is never
  * resolved by discarding what the player has locally.
  */
+/**
+ * Whether a downloaded state belongs in the live directory for this launch. The live directory
+ * holds one channel at a time and its file names carry no channel, so loading another channel's
+ * slot there overwrites the active one. Null and empty both mean the default channel, and the
+ * comparison ignores case because the server round-trips the name through a file name.
+ */
+internal fun belongsToChannel(stateChannel: String?, activeChannel: String?): Boolean =
+    stateChannel.orEmpty().equals(activeChannel.orEmpty(), ignoreCase = true)
+
 internal fun reconcileDeadServerLinks(
     localStates: List<StateCacheEntity>,
     liveServerIds: Set<Long>
@@ -68,7 +77,11 @@ class PreLaunchStateSyncUseCase @Inject constructor(
         data class Error(val message: String) : Result()
     }
 
-    suspend operator fun invoke(gameId: Long, emulatorPackage: String): Result {
+    suspend operator fun invoke(
+        gameId: Long,
+        emulatorPackage: String,
+        channelName: String? = null
+    ): Result {
         Log.d(TAG, "Pre-launch state sync check for gameId=$gameId, emulator=$emulatorPackage")
 
         val prefs = preferencesRepository.userPreferences.first()
@@ -194,6 +207,15 @@ class PreLaunchStateSyncUseCase @Inject constructor(
                     is StateCacheManager.StateCloudResult.Success -> {
                         downloadedCount++
                         Log.d(TAG, "Downloaded state ${serverState.fileName} for ${game.title}")
+                        if (!belongsToChannel(parsed.channelName, channelName)) {
+                            Log.d(
+                                TAG,
+                                "Cached ${serverState.fileName} for channel " +
+                                    "${parsed.channelName ?: "default"} without loading it; " +
+                                    "${channelName ?: "default"} is active"
+                            )
+                            continue
+                        }
                         materializeToLiveDir(
                             serverState.id,
                             game.localPath,

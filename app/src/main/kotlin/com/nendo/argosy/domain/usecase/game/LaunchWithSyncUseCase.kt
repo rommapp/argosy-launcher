@@ -117,8 +117,8 @@ class LaunchWithSyncUseCase @Inject constructor(
         }
     }
 
-    private suspend fun syncStatesQuietly(gameId: Long, emulatorPackage: String) {
-        runCatching { preLaunchStateSyncUseCase(gameId, emulatorPackage) }
+    private suspend fun syncStatesQuietly(gameId: Long, emulatorPackage: String, channelName: String?) {
+        runCatching { preLaunchStateSyncUseCase(gameId, emulatorPackage, channelName) }
             .onFailure { Logger.error(TAG, "Pre-launch state sync failed for gameId=$gameId", it) }
     }
 
@@ -174,7 +174,7 @@ class LaunchWithSyncUseCase @Inject constructor(
 
         if (!SavePathRegistry.canSyncWithSettings(emulatorId, prefs.saveSyncEnabled)) {
             if (romMRepository.isConnected()) {
-                syncStatesQuietly(gameId, emulatorPackage)
+                syncStatesQuietly(gameId, emulatorPackage, channelName)
             }
             emit(SyncProgress.Skipped)
             return@flow
@@ -196,7 +196,7 @@ class LaunchWithSyncUseCase @Inject constructor(
         saveSyncRepository.crossEmulatorMigrateIfNeeded(gameId, emulatorId)
 
         val syncResult = coroutineScope {
-            val stateSync = async { syncStatesQuietly(gameId, emulatorPackage) }
+            val stateSync = async { syncStatesQuietly(gameId, emulatorPackage, channelName) }
             val saveSync = saveSyncRepository.preLaunchSyncForGame(gameId, game.rommId, emulatorId, channelName, secureSaves = prefs.secureSaves)
             stateSync.await()
             saveSync

@@ -56,9 +56,12 @@ import com.nendo.argosy.ui.icons.InputIcons
 import com.nendo.argosy.ui.primitives.ArgosyProgressBar
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalArgosyTheme
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 private const val INHERITED_EMPHASIS = 0.45f
+private const val CANCEL_HOLD_MS = 1000L
+private const val MIN_PRESS_MS = 75L
 
 /**
  * [inherited] is what this scope would resolve to with no bindings of its own, so the editor can
@@ -120,6 +123,34 @@ fun InputMappingModal(
     val cancelProgress = remember { Animatable(0f) }
     val scope = rememberCoroutineScope()
 
+    val leaveRecording: (InputMappingState.Recording, Map<InputSource, Int>) -> Unit = { rec, mapping ->
+        val platform = MappingPlatforms.getByIndex(rec.platformIndex)
+        state = InputMappingState.PlatformMapping(
+            controller = rec.controller,
+            platformIndex = rec.platformIndex,
+            currentMapping = mapping,
+            focusedButtonIndex = platform.buttons.indexOf(rec.targetRetroButton).coerceAtLeast(0)
+        )
+    }
+
+    val recordMapping: (InputMappingState.Recording, InputSource) -> Unit = { rec, source ->
+        val newMapping = rec.currentMapping.toMutableMap()
+        if (rec.replaceMode) {
+            newMapping.entries.removeIf { it.value == rec.targetRetroButton }
+        }
+        newMapping[source] = rec.targetRetroButton
+        scope.launch {
+            onSaveMapping(
+                rec.controller,
+                newMapping,
+                null,
+                false,
+                MappingPlatforms.dbPlatformId(rec.platformIndex)
+            )
+            leaveRecording(rec, newMapping)
+        }
+    }
+
     if (autoSelectedController != null) {
         LaunchedEffect(Unit) {
             val platformIndex = lockedPlatformIndex ?: 0
@@ -133,7 +164,8 @@ fun InputMappingModal(
 
     DisposableEffect(state, gamepadInputHandler) {
         val keyListener: (KeyEvent) -> Boolean = { event ->
-            val isBackKey = event.keyCode == KeyEvent.KEYCODE_BUTTON_B || event.keyCode == KeyEvent.KEYCODE_BACK
+            val isBackKey = event.keyCode == KeyEvent.KEYCODE_BACK ||
+                gamepadInputHandler?.mapKeyToEvent(event.keyCode) == GamepadEvent.Back
             if (suppressBackUntilRelease && isBackKey) {
                 if (event.action == KeyEvent.ACTION_UP) suppressBackUntilRelease = false
                 true
@@ -258,50 +290,28 @@ fun InputMappingModal(
                     }
                 }
                 is InputMappingState.Recording -> {
-                    val isBackButton = event.keyCode == KeyEvent.KEYCODE_BUTTON_B || event.keyCode == KeyEvent.KEYCODE_BACK
-                    val recordingPlatformId = MappingPlatforms.dbPlatformId(currentState.platformIndex)
-                    if (isBackButton) {
-                        if (event.action == KeyEvent.ACTION_DOWN) {
-                            cancelHoldActive = true
-                        } else if (event.action == KeyEvent.ACTION_UP && cancelHoldActive) {
-                            cancelHoldActive = false
-                            if (device != null && isGamepadDevice(device)) {
-                                val inputSource = InputSource.Button(event.keyCode)
-                                val newMapping = currentState.currentMapping.toMutableMap()
-                                if (currentState.replaceMode) {
-                                    newMapping.entries.removeIf { it.value == currentState.targetRetroButton }
-                                }
-                                newMapping[inputSource] = currentState.targetRetroButton
-                                scope.launch {
-                                    onSaveMapping(currentState.controller, newMapping, null, false, recordingPlatformId)
-                                    val platform = MappingPlatforms.getByIndex(currentState.platformIndex)
-                                    val buttonIndex = platform.buttons.indexOf(currentState.targetRetroButton)
-                                    state = InputMappingState.PlatformMapping(
-                                        controller = currentState.controller,
-                                        platformIndex = currentState.platformIndex,
-                                        currentMapping = newMapping,
-                                        focusedButtonIndex = buttonIndex.coerceAtLeast(0)
-                                    )
+                    val isGamepad = device != null && isGamepadDevice(device)
+                    val heldLongEnough = event.eventTime - event.downTime >= MIN_PRESS_MS
+                    when {
+                        event.keyCode == KeyEvent.KEYCODE_BACK -> {
+                            if (event.action == KeyEvent.ACTION_DOWN) {
+                                cancelHoldActive = false
+                                suppressBackUntilRelease = true
+                                leaveRecording(currentState, currentState.currentMapping)
+                            }
+                        }
+                        isBackKey -> {
+                            if (event.action == KeyEvent.ACTION_DOWN) {
+                                cancelHoldActive = true
+                            } else if (event.action == KeyEvent.ACTION_UP && cancelHoldActive) {
+                                cancelHoldActive = false
+                                if (isGamepad && heldLongEnough && isMappableButton(event.keyCode)) {
+                                    recordMapping(currentState, InputSource.Button(event.keyCode))
                                 }
                             }
                         }
-                    } else if (event.action == KeyEvent.ACTION_DOWN && device != null && isGamepadDevice(device) && isMappableButton(event.keyCode)) {
-                        val inputSource = InputSource.Button(event.keyCode)
-                        val newMapping = currentState.currentMapping.toMutableMap()
-                        if (currentState.replaceMode) {
-                            newMapping.entries.removeIf { it.value == currentState.targetRetroButton }
-                        }
-                        newMapping[inputSource] = currentState.targetRetroButton
-                        scope.launch {
-                            onSaveMapping(currentState.controller, newMapping, null, false, recordingPlatformId)
-                            val platform = MappingPlatforms.getByIndex(currentState.platformIndex)
-                            val buttonIndex = platform.buttons.indexOf(currentState.targetRetroButton)
-                            state = InputMappingState.PlatformMapping(
-                                controller = currentState.controller,
-                                platformIndex = currentState.platformIndex,
-                                currentMapping = newMapping,
-                                focusedButtonIndex = buttonIndex.coerceAtLeast(0)
-                            )
+                        event.action == KeyEvent.ACTION_DOWN && isGamepad && isMappableButton(event.keyCode) -> {
+                            recordMapping(currentState, InputSource.Button(event.keyCode))
                         }
                     }
                 }
@@ -317,24 +327,7 @@ fun InputMappingModal(
                     if (device != null && isGamepadDevice(device)) {
                         val analogInput = detectAnalogInput(event)
                         if (analogInput != null) {
-                            val newMapping = currentState.currentMapping.toMutableMap()
-                            if (currentState.replaceMode) {
-                                newMapping.entries.removeIf { it.value == currentState.targetRetroButton }
-                            }
-                            newMapping[analogInput] = currentState.targetRetroButton
-                            val motionPlatformId = MappingPlatforms.dbPlatformId(currentState.platformIndex)
-
-                            scope.launch {
-                                onSaveMapping(currentState.controller, newMapping, null, false, motionPlatformId)
-                                val platform = MappingPlatforms.getByIndex(currentState.platformIndex)
-                                val buttonIndex = platform.buttons.indexOf(currentState.targetRetroButton)
-                                state = InputMappingState.PlatformMapping(
-                                    controller = currentState.controller,
-                                    platformIndex = currentState.platformIndex,
-                                    currentMapping = newMapping,
-                                    focusedButtonIndex = buttonIndex.coerceAtLeast(0)
-                                )
-                            }
+                            recordMapping(currentState, analogInput)
                         }
                     }
                 }
@@ -355,18 +348,15 @@ fun InputMappingModal(
     LaunchedEffect(cancelHoldActive, state) {
         if (cancelHoldActive && state is InputMappingState.Recording) {
             cancelProgress.snapTo(0f)
-            cancelProgress.animateTo(1f, tween(1000, easing = LinearEasing))
+            delay(MIN_PRESS_MS)
+            cancelProgress.animateTo(
+                1f,
+                tween((CANCEL_HOLD_MS - MIN_PRESS_MS).toInt(), easing = LinearEasing)
+            )
             val rec = state as? InputMappingState.Recording ?: return@LaunchedEffect
             cancelHoldActive = false
             suppressBackUntilRelease = true
-            val platform = MappingPlatforms.getByIndex(rec.platformIndex)
-            val buttonIndex = platform.buttons.indexOf(rec.targetRetroButton)
-            state = InputMappingState.PlatformMapping(
-                controller = rec.controller,
-                platformIndex = rec.platformIndex,
-                currentMapping = rec.currentMapping,
-                focusedButtonIndex = buttonIndex.coerceAtLeast(0)
-            )
+            leaveRecording(rec, rec.currentMapping)
         } else {
             cancelProgress.snapTo(0f)
         }

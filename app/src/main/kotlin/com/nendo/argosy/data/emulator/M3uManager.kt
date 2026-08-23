@@ -189,8 +189,9 @@ class M3uManager @Inject constructor(
             }
         }
 
-        val targetDir = conformToPlaylistFolder(parentDir, downloadFolderName(game.title)) ?: parentDir
-        val m3uFile = File(targetDir, playlistNameFor(targetDir, game.title))
+        val folderNames = folderNamesFor(game)
+        val targetDir = conformToPlaylistFolder(parentDir, folderNames) ?: parentDir
+        val m3uFile = File(targetDir, playlistNameFor(targetDir, folderNames.first()))
 
         val content = launchableFiles.joinToString("\n") {
             val placed = rebase(it, parentDir, targetDir)
@@ -219,17 +220,27 @@ class M3uManager @Inject constructor(
     }
 
     /**
-     * Renames a game's disc folder to `<title>.m3u` so ES-DE collapses it to a single entry.
+     * The names this game's folder may legitimately carry, newest rule first. The downloader names
+     * a folder after the server's own file name and older releases named it after the title, so
+     * both have to be recognised as this game's own folder.
+     */
+    private fun folderNamesFor(game: GameEntity): List<String> =
+        listOfNotNull(game.rommFileName?.substringBeforeLast('.')?.takeIf { it.isNotBlank() }, game.title)
+            .map(::downloadFolderName)
+            .distinct()
+
+    /**
+     * Renames a game's disc folder to `<name>.m3u` so ES-DE collapses it to a single entry.
      *
      * ES-DE treats a directory as one game only when its name matches a playlist inside it.
      * The rename is refused unless the directory is demonstrably this game's own folder, since
      * discs downloaded straight into a platform directory share it with every other game.
      * Returns null when the folder must be left alone.
      */
-    private fun conformToPlaylistFolder(parentDir: File, sanitizedTitle: String): File? {
-        val playlistName = "$sanitizedTitle.m3u"
-        if (parentDir.name.equals(playlistName, ignoreCase = true)) return parentDir
-        if (!parentDir.name.equals(sanitizedTitle, ignoreCase = true)) return null
+    private fun conformToPlaylistFolder(parentDir: File, folderNames: List<String>): File? {
+        val playlistName = "${folderNames.first()}.m3u"
+        if (folderNames.any { parentDir.name.equals("$it.m3u", ignoreCase = true) }) return parentDir
+        if (folderNames.none { parentDir.name.equals(it, ignoreCase = true) }) return null
 
         val target = File(parentDir.parentFile ?: return null, playlistName)
         if (target.exists()) {
@@ -247,11 +258,11 @@ class M3uManager @Inject constructor(
      * The playlist takes the folder's own name once the folder is conformed, so the two agree
      * even where the download path and this one sanitize a title differently.
      */
-    private fun playlistNameFor(targetDir: File, title: String): String =
+    private fun playlistNameFor(targetDir: File, folderName: String): String =
         if (targetDir.name.endsWith(".m3u", ignoreCase = true)) {
             targetDir.name
         } else {
-            sanitizeFileName(title) + ".m3u"
+            sanitizeFileName(folderName) + ".m3u"
         }
 
     private fun downloadFolderName(title: String): String = title

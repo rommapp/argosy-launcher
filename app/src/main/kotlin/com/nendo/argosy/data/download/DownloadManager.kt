@@ -617,6 +617,7 @@ class DownloadManager @Inject constructor(
         rommId: Long,
         fileName: String,
         gameTitle: String,
+        gameFolderName: String? = null,
         platformSlug: String,
         coverPath: String?,
         expectedSizeBytes: Long = 0
@@ -636,6 +637,7 @@ class DownloadManager @Inject constructor(
             discNumber = discNumber,
             fileName = diskFileName,
             gameTitle = gameTitle,
+            gameFolderName = gameFolderName,
             platformSlug = platformSlug,
             coverPath = coverPath,
             bytesDownloaded = 0,
@@ -657,6 +659,7 @@ class DownloadManager @Inject constructor(
             discNumber = discNumber,
             fileName = diskFileName,
             gameTitle = gameTitle,
+            gameFolderName = gameFolderName,
             platformSlug = platformSlug,
             coverPath = coverPath,
             bytesDownloaded = 0,
@@ -747,24 +750,31 @@ class DownloadManager @Inject constructor(
         }
     }
 
-    private suspend fun getGameFolder(platformSlug: String, gameTitle: String): File {
+    private suspend fun getGameFolder(platformSlug: String, vararg names: String): File {
         val platformDir = getDownloadDir(platformSlug)
-        val sanitizedTitle = gameTitle
-            .replace(Regex("[\\\\/:*?\"<>|]"), "_")
-            .replace(Regex("\\s+"), " ")
-            .trim()
-            .take(200)
-        return resolveGameFolder(platformDir, sanitizedTitle).apply { mkdirs() }
+        return resolveGameFolder(platformDir, names.map(::sanitizeFolderName)).apply { mkdirs() }
     }
 
     /**
-     * A multi-disc folder conformed for ES-DE carries a `.m3u` suffix, so later downloads for
-     * the same game must land in it rather than recreating the unsuffixed folder beside it.
+     * The folder a game's files belong in, preferring the server's own name and falling back to
+     * anything a previous release created, so a library downloaded under an older naming rule is
+     * added to rather than duplicated. A multi-disc folder conformed for ES-DE carries a `.m3u`
+     * suffix, so later downloads for the same game must land in it rather than recreating the
+     * unsuffixed folder beside it.
      */
-    private fun resolveGameFolder(platformDir: File, sanitizedTitle: String): File {
-        val playlistFolder = File(platformDir, "$sanitizedTitle.m3u")
-        return if (playlistFolder.isDirectory) playlistFolder else File(platformDir, sanitizedTitle)
+    private fun resolveGameFolder(platformDir: File, names: List<String>): File {
+        names.forEach { name ->
+            File(platformDir, "$name.m3u").takeIf(File::isDirectory)?.let { return it }
+            File(platformDir, name).takeIf(File::isDirectory)?.let { return it }
+        }
+        return File(platformDir, names.first())
     }
+
+    private fun sanitizeFolderName(name: String): String = name
+        .replace(Regex("[\\\\/:*?\"<>|]"), "_")
+        .replace(Regex("\\s+"), " ")
+        .trim()
+        .take(200)
 
     /** Server dir of this file relative to the rom root, or null for root files. */
     /**
@@ -858,7 +868,7 @@ class DownloadManager @Inject constructor(
             return if (isFlatUnderCombine(category)) {
                 platformDir
             } else {
-                getGameFolder(platformSlug, gameFolderName ?: gameTitle)
+                getGameFolder(platformSlug, *listOfNotNull(gameFolderName, gameTitle).toTypedArray())
             }
         }
         val game = gameDao.getById(gameId)
@@ -870,7 +880,7 @@ class DownloadManager @Inject constructor(
             return baseParent
         }
         if (hasPooledAddons(gameId, platformDir)) return platformDir
-        val gameFolder = getGameFolder(platformSlug, gameFolderName ?: gameTitle)
+        val gameFolder = getGameFolder(platformSlug, *listOfNotNull(gameFolderName, gameTitle).toTypedArray())
         val baseFile = basePath?.let { File(it) }
         if (baseFile != null && baseFile.isFile &&
             baseFile.parentFile?.absolutePath == platformDir.absolutePath
@@ -1243,6 +1253,7 @@ class DownloadManager @Inject constructor(
                 platformDir = unpackDir,
                 platformSlug = progress.platformSlug,
                 gameTitle = progress.gameTitle,
+                gameFolderName = progress.gameFolderName,
                 progressId = progress.id,
                 isDiscDownload = progress.isDiscDownload,
                 expectedSize = progress.totalBytes,
@@ -1610,6 +1621,7 @@ class DownloadManager @Inject constructor(
         platformDir: File,
         platformSlug: String,
         gameTitle: String,
+        gameFolderName: String? = null,
         progressId: Long = 0,
         isDiscDownload: Boolean = false,
         expectedSize: Long = 0,
@@ -1677,7 +1689,7 @@ class DownloadManager @Inject constructor(
             }
             isDiscDownload && M3uManager.supportsM3u(platformSlug) -> {
                 Log.d(TAG, "processDownloadedFile: BRANCH=DISC_ORGANIZE")
-                val result = organizeDiscFile(targetFile, gameTitle, platformDir)
+                val result = organizeDiscFile(targetFile, listOfNotNull(gameFolderName, gameTitle), platformDir)
                 Log.d(TAG, "processDownloadedFile: discResult=$result")
                 result
             }
@@ -1718,13 +1730,8 @@ class DownloadManager @Inject constructor(
         return resultPath
     }
 
-    private fun organizeDiscFile(romFile: File, gameTitle: String, platformDir: File): String {
-        val sanitizedTitle = gameTitle
-            .replace(Regex("[\\\\/:*?\"<>|]"), "_")
-            .replace(Regex("\\s+"), " ")
-            .trim()
-            .take(200)
-        val gameFolder = resolveGameFolder(platformDir, sanitizedTitle).apply { mkdirs() }
+    private fun organizeDiscFile(romFile: File, names: List<String>, platformDir: File): String {
+        val gameFolder = resolveGameFolder(platformDir, names.map(::sanitizeFolderName)).apply { mkdirs() }
         val targetFile = File(gameFolder, romFile.name)
 
         if (romFile.absolutePath != targetFile.absolutePath) {
@@ -1904,6 +1911,7 @@ class DownloadManager @Inject constructor(
                     rommId = item.rommId,
                     fileName = item.fileName,
                     gameTitle = item.gameTitle,
+                    gameFolderName = item.gameFolderName,
                     platformSlug = item.platformSlug,
                     coverPath = item.coverPath,
                     expectedSizeBytes = item.totalBytes
@@ -1964,6 +1972,7 @@ class DownloadManager @Inject constructor(
                 platformDir = platformDir,
                 platformSlug = queueEntry.platformSlug,
                 gameTitle = queueEntry.gameTitle,
+                gameFolderName = queueEntry.gameFolderName,
                 progressId = queueEntry.id,
                 isDiscDownload = isDiscDownload,
                 expectedSize = queueEntry.totalBytes,

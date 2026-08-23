@@ -120,17 +120,24 @@ class SessionStateStore(context: Context) {
         }
     }
 
-    fun setInputSwapPreferences(swapAB: Boolean, swapXY: Boolean, swapStartSelect: Boolean) {
+    fun setInputSwapPreferences(
+        swapAB: Boolean,
+        swapXY: Boolean,
+        swapStartSelect: Boolean,
+        controllerLayout: String
+    ) {
         prefs.edit()
             .putBoolean(KEY_SWAP_AB, swapAB)
             .putBoolean(KEY_SWAP_XY, swapXY)
             .putBoolean(KEY_SWAP_START_SELECT, swapStartSelect)
+            .putString(KEY_CONTROLLER_LAYOUT, controllerLayout)
             .apply()
     }
 
     fun getSwapAB(): Boolean = prefs.getBoolean(KEY_SWAP_AB, false)
     fun getSwapXY(): Boolean = prefs.getBoolean(KEY_SWAP_XY, false)
     fun getSwapStartSelect(): Boolean = prefs.getBoolean(KEY_SWAP_START_SELECT, false)
+    fun getControllerLayout(): String = prefs.getString(KEY_CONTROLLER_LAYOUT, "auto") ?: "auto"
 
     fun setDualScreenEnabled(enabled: Boolean) {
         prefs.edit().putBoolean(KEY_DUAL_SCREEN_ENABLED, enabled).commit()
@@ -370,6 +377,7 @@ class SessionStateStore(context: Context) {
         private const val KEY_SWAP_AB = "swap_ab"
         private const val KEY_SWAP_XY = "swap_xy"
         private const val KEY_SWAP_START_SELECT = "swap_start_select"
+        private const val KEY_CONTROLLER_LAYOUT = "controller_layout"
         private const val KEY_DISPLAY_ROLE_OVERRIDE = "display_role_override"
         private const val KEY_DUAL_SCREEN_INPUT_FOCUS = "dual_screen_input_focus"
         private const val KEY_ROLES_SWAPPED = "roles_swapped"

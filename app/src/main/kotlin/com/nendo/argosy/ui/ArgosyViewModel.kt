@@ -55,7 +55,6 @@ import com.nendo.argosy.data.repository.GameRepository
 import com.nendo.argosy.domain.usecase.libretro.LibretroMigrationUseCase
 import com.nendo.argosy.core.input.ControllerDetector
 import com.nendo.argosy.ui.input.InputDispatcher.Companion.computeWrappedIndex
-import com.nendo.argosy.core.input.DetectedLayout
 import com.nendo.argosy.ui.input.GamepadInputHandler
 import com.nendo.argosy.ui.input.HapticFeedbackManager
 import com.nendo.argosy.ui.input.HapticPattern
@@ -446,11 +445,7 @@ class ArgosyViewModel @Inject constructor(
         _startupComplete,
         _startupStatus
     ) { prefs, detectedLayout, startupDone, status ->
-        val isNintendoLayout = when (prefs.controllerLayout) {
-            "nintendo" -> true
-            "xbox" -> false
-            else -> detectedLayout == DetectedLayout.NINTENDO
-        }
+        val isNintendoLayout = ControllerDetector.isNintendoLayout(prefs.controllerLayout, detectedLayout)
         val hasExistingConfig = prefs.rommBaseUrl != null || prefs.romStoragePath != null
         ArgosyUiState(
             isFirstRun = !prefs.firstRunComplete && !hasExistingConfig,

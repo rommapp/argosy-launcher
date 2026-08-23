@@ -182,4 +182,16 @@ object ControllerDetector {
     }
 
     fun getDetectedLayout(): DetectedLayout? = detectFromActiveGamepad().layout
+
+    /**
+     * Resolves the pad lettering every surface draws glyphs against. [controllerLayout] is the
+     * user's Controller Layout preference and outranks [detected]; pass the live detection result
+     * so a surface that already holds one does not probe the input devices again.
+     */
+    fun isNintendoLayout(controllerLayout: String, detected: DetectedLayout?): Boolean =
+        when (controllerLayout) {
+            "nintendo" -> true
+            "xbox" -> false
+            else -> detected == DetectedLayout.NINTENDO
+        }
 }

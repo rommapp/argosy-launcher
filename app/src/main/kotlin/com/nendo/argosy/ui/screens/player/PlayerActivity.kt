@@ -19,7 +19,6 @@ import androidx.core.view.WindowInsetsControllerCompat
 import androidx.lifecycle.lifecycleScope
 import com.nendo.argosy.DualScreenManagerHolder
 import com.nendo.argosy.core.input.ControllerDetector
-import com.nendo.argosy.core.input.DetectedLayout
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.ui.input.GamepadEvent
 import com.nendo.argosy.ui.input.InputResult
@@ -193,12 +192,10 @@ class PlayerActivity : ComponentActivity() {
                 swapAB = prefs.swapAB
                 swapXY = prefs.swapXY
                 swapStartSelect = prefs.swapStartSelect
-                isNintendoLayout = when (prefs.controllerLayout) {
-                    "nintendo" -> true
-                    "xbox" -> false
-                    else -> ControllerDetector.detectFromActiveGamepad().layout ==
-                        DetectedLayout.NINTENDO
-                }
+                isNintendoLayout = ControllerDetector.isNintendoLayout(
+                    prefs.controllerLayout,
+                    ControllerDetector.detectFromActiveGamepad().layout
+                )
             }
         }
     }

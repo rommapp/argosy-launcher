@@ -13,7 +13,6 @@ import com.nendo.argosy.data.preferences.UserPreferences
 import com.nendo.argosy.ui.dualscreen.gamedetail.DualGameDetailViewModel
 import com.nendo.argosy.ui.dualscreen.home.DualHomeViewModel
 import com.nendo.argosy.core.input.ControllerDetector
-import com.nendo.argosy.core.input.DetectedLayout
 import com.nendo.argosy.ui.screens.secondaryhome.SecondaryHomeViewModel
 import com.nendo.argosy.util.DisplayAffinityHelper
 import com.nendo.argosy.util.DisplayRoleResolver
@@ -174,7 +173,10 @@ class SecondaryHomeStateManager(
         val swapStartSelect = sessionStateStore.getSwapStartSelect()
         val dualScreenInputFocus = sessionStateStore.getDualScreenInputFocus()
 
-        val isNintendoLayout = ControllerDetector.detectFromActiveGamepad().layout == DetectedLayout.NINTENDO
+        val isNintendoLayout = ControllerDetector.isNintendoLayout(
+            sessionStateStore.getControllerLayout(),
+            ControllerDetector.detectFromActiveGamepad().layout
+        )
         val abIconsSwapped = isNintendoLayout xor swapAB
         val xyIconsSwapped = isNintendoLayout xor swapXY
 
@@ -190,19 +192,17 @@ class SecondaryHomeStateManager(
     }
 
     /**
-     * Swap state from live preferences rather than the boot-time session mirror, and the
-     * only place the companion honours the Controller Layout override.
+     * Swap state from live preferences rather than the boot-time session mirror.
      *
      * `swap*` drive key mapping and are the raw preference; `*IconsSwapped` drive glyphs
      * and are xor'd with the pad's lettering. Start/Select has no xor by design. Feeding
      * an icon value into key mapping inverts the buttons.
      */
     fun inputSwapStateFrom(prefs: UserPreferences): InputSwapState {
-        val isNintendoLayout = when (prefs.controllerLayout) {
-            "nintendo" -> true
-            "xbox" -> false
-            else -> ControllerDetector.detectFromActiveGamepad().layout == DetectedLayout.NINTENDO
-        }
+        val isNintendoLayout = ControllerDetector.isNintendoLayout(
+            prefs.controllerLayout,
+            ControllerDetector.detectFromActiveGamepad().layout
+        )
 
         return InputSwapState(
             swapAB = prefs.swapAB,

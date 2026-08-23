@@ -63,7 +63,8 @@ class MainActivityPreferencesObserver(
                 sessionStateStore.setInputSwapPreferences(
                     swapAB = prefs.swapAB,
                     swapXY = prefs.swapXY,
-                    swapStartSelect = prefs.swapStartSelect
+                    swapStartSelect = prefs.swapStartSelect,
+                    controllerLayout = prefs.controllerLayout
                 )
 
                 if (prefs.dualScreenEnabled != previousDualScreenEnabled) {

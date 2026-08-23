@@ -28,7 +28,7 @@ internal fun routeOpenLaunchArgsModal(vm: SettingsViewModel, platformId: Long) {
             focusIndex = 0,
             override = override,
             defaultLaunchMethod = emulatorDef.defaultLaunchMethod.name,
-            defaultFlagsMask = launchConfig.defaultIntentFlags,
+            defaultFlagsMask = launchConfig.defaultIntentFlags(emulatorDef),
             defaultMimeType = launchConfig.defaultMimeType,
             defaultDataBinding = bindings.data,
             defaultExtraBinding = bindings.extras,

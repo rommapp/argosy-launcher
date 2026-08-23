@@ -30,7 +30,7 @@ class LaunchConfigDefaultsTest {
             Intent.FLAG_ACTIVITY_NEW_TASK or
                 Intent.FLAG_ACTIVITY_CLEAR_TASK or
                 Intent.FLAG_GRANT_READ_URI_PERMISSION,
-            config.defaultIntentFlags
+            config.defaultIntentFlags(emulatorWithAction())
         )
         assertEquals("application/octet-stream", config.defaultMimeType)
         assertNull(config.defaultDataBinding)
@@ -47,7 +47,7 @@ class LaunchConfigDefaultsTest {
         val config = LaunchConfig.FilePathExtra(extraKeys = listOf("ROM", "rom"))
         assertEquals(
             Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK,
-            config.defaultIntentFlags
+            config.defaultIntentFlags(emulatorWithAction())
         )
         assertNull(config.defaultMimeType)
         assertFalse(config.isCoreSelectable)
@@ -59,11 +59,13 @@ class LaunchConfigDefaultsTest {
     }
 
     @Test
-    fun `RetroArch is core-selectable and uses single-top flags`() {
+    fun `RetroArch is core-selectable and launches without history`() {
         val config = LaunchConfig.RetroArch()
         assertEquals(
-            Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP,
-            config.defaultIntentFlags
+            Intent.FLAG_ACTIVITY_NEW_TASK or
+                Intent.FLAG_ACTIVITY_CLEAR_TASK or
+                Intent.FLAG_ACTIVITY_NO_HISTORY,
+            config.defaultIntentFlags(emulatorWithAction())
         )
         assertNull(config.defaultMimeType)
         assertTrue(config.isCoreSelectable)
@@ -80,7 +82,18 @@ class LaunchConfigDefaultsTest {
             Intent.FLAG_ACTIVITY_NEW_TASK or
                 Intent.FLAG_ACTIVITY_CLEAR_TASK or
                 Intent.FLAG_GRANT_READ_URI_PERMISSION,
-            config.defaultIntentFlags
+            config.defaultIntentFlags(emulatorWithAction())
+        )
+    }
+
+    @Test
+    fun `Custom drops the ROM from recents when it rides on extras`() {
+        val config = LaunchConfig.Custom()
+        assertEquals(
+            Intent.FLAG_ACTIVITY_NEW_TASK or
+                Intent.FLAG_ACTIVITY_CLEAR_TASK or
+                Intent.FLAG_ACTIVITY_NO_HISTORY,
+            config.defaultIntentFlags(emulatorWithAction(Intent.ACTION_MAIN))
         )
     }
 
@@ -117,7 +130,7 @@ class LaunchConfigDefaultsTest {
             Intent.FLAG_ACTIVITY_NEW_TASK or
                 Intent.FLAG_ACTIVITY_CLEAR_TASK or
                 Intent.FLAG_ACTIVITY_NO_HISTORY,
-            config.defaultIntentFlags
+            config.defaultIntentFlags(emulatorWithAction())
         )
         val bindings = config.bindingDefaults(emulatorWithAction())
         assertTrue(bindings.dataLocked)
@@ -134,7 +147,7 @@ class LaunchConfigDefaultsTest {
             Intent.FLAG_ACTIVITY_NEW_TASK or
                 Intent.FLAG_ACTIVITY_CLEAR_TASK or
                 Intent.FLAG_ACTIVITY_NO_HISTORY,
-            config.defaultIntentFlags
+            config.defaultIntentFlags(emulatorWithAction())
         )
         val bindings = config.bindingDefaults(emulatorWithAction())
         assertTrue(bindings.extrasLocked)
@@ -143,7 +156,7 @@ class LaunchConfigDefaultsTest {
     @Test
     fun `BuiltIn is in-process, core-selectable, and reports N-A bindings`() {
         val config = LaunchConfig.BuiltIn
-        assertEquals(Intent.FLAG_ACTIVITY_NEW_TASK, config.defaultIntentFlags)
+        assertEquals(Intent.FLAG_ACTIVITY_NEW_TASK, config.defaultIntentFlags(emulatorWithAction()))
         assertNull(config.defaultMimeType)
         assertTrue(config.isInProcess)
         assertTrue(config.isCoreSelectable)
@@ -157,7 +170,7 @@ class LaunchConfigDefaultsTest {
         val config = LaunchConfig.ScummVM
         assertEquals(
             Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK,
-            config.defaultIntentFlags
+            config.defaultIntentFlags(emulatorWithAction())
         )
         assertNull(config.defaultMimeType)
         assertFalse(config.isCoreSelectable)

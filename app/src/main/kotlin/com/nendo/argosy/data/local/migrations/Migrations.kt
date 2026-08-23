@@ -3470,3 +3470,28 @@ object Migration_177_178 : Migration(177, 178) {
         db.execSQL("ALTER TABLE `media_items` ADD COLUMN `tvdbId` TEXT")
     }
 }
+
+/**
+ * Drops the stored intent-flag masks so every launch starts from the flags its emulator actually
+ * sends. The Launch Args editor had been seeding those rows from a declared default no launch
+ * ever read, so a mask saved against it records a set of flags the user was never shown. The rest
+ * of a row's overrides are untouched, and a mask saved from here on is honoured.
+ */
+object Migration_178_179 : Migration(178, 179) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("UPDATE `emulator_launch_args` SET `intentFlagsMask` = NULL")
+        db.execSQL(
+            """
+            DELETE FROM `emulator_launch_args`
+            WHERE `launchMethod` IS NULL
+                AND `romPathFormat` IS NULL
+                AND `intentFlagsMask` IS NULL
+                AND `mimeType` IS NULL
+                AND `dataBinding` IS NULL
+                AND `extraBinding` IS NULL
+                AND `clipDataBinding` IS NULL
+                AND `customExtras` IS NULL
+            """.trimIndent()
+        )
+    }
+}

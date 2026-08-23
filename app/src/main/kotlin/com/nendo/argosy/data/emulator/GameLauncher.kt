@@ -1095,8 +1095,7 @@ class GameLauncher @Inject constructor(
                 Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP or
                     Intent.FLAG_GRANT_READ_URI_PERMISSION
             } else {
-                Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK or
-                    Intent.FLAG_GRANT_READ_URI_PERMISSION
+                LaunchConfig.FileUri.defaultIntentFlags(emulator)
             },
             grantReadUriTo = listOf(uri),
             clipDataUri = uri
@@ -1120,7 +1119,7 @@ class GameLauncher @Inject constructor(
             intentFlags = if (forResume) {
                 Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP
             } else {
-                Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                config.defaultIntentFlags(emulator)
             }
         )
     }
@@ -1164,9 +1163,7 @@ class GameLauncher @Inject constructor(
         val baseFlags = if (forResume) {
             Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP
         } else {
-            Intent.FLAG_ACTIVITY_NEW_TASK or
-                Intent.FLAG_ACTIVITY_CLEAR_TASK or
-                Intent.FLAG_ACTIVITY_NO_HISTORY
+            config.defaultIntentFlags(emulator)
         }
         val grantFlag = if (romUri != null) Intent.FLAG_GRANT_READ_URI_PERMISSION else 0
 
@@ -1371,8 +1368,7 @@ class GameLauncher @Inject constructor(
                     Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP or
                         Intent.FLAG_GRANT_READ_URI_PERMISSION
                 } else {
-                    Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK or
-                        Intent.FLAG_GRANT_READ_URI_PERMISSION
+                    config.defaultIntentFlags(emulator)
                 },
                 grantReadUriTo = grantUris,
                 clipDataUri = documentUri ?: uri
@@ -1427,9 +1423,7 @@ class GameLauncher @Inject constructor(
             intentFlags = if (forResume) {
                 Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP or grantFlag
             } else {
-                Intent.FLAG_ACTIVITY_NEW_TASK or
-                    Intent.FLAG_ACTIVITY_CLEAR_TASK or
-                    Intent.FLAG_ACTIVITY_NO_HISTORY or grantFlag
+                config.defaultIntentFlags(emulator) or grantFlag
             },
             grantReadUriTo = grantUris,
             clipDataUri = clipDataUri
@@ -1520,9 +1514,7 @@ class GameLauncher @Inject constructor(
             intentFlags = if (forResume) {
                 Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP
             } else {
-                Intent.FLAG_ACTIVITY_NEW_TASK or
-                    Intent.FLAG_ACTIVITY_CLEAR_TASK or
-                    Intent.FLAG_ACTIVITY_NO_HISTORY
+                config.defaultIntentFlags(emulator)
             }
         )
     }
@@ -1547,9 +1539,7 @@ class GameLauncher @Inject constructor(
             activityClass = config.activityClass,
             categories = emptyList(),
             extras = extras,
-            intentFlags = Intent.FLAG_ACTIVITY_NEW_TASK or
-                Intent.FLAG_ACTIVITY_CLEAR_TASK or
-                Intent.FLAG_ACTIVITY_NO_HISTORY
+            intentFlags = config.defaultIntentFlags(emulator)
         )
     }
 
@@ -1603,7 +1593,7 @@ class GameLauncher @Inject constructor(
             intentFlags = if (forResume) {
                 Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP
             } else {
-                Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                LaunchConfig.ScummVM.defaultIntentFlags(emulator)
             }
         )
     }

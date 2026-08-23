@@ -60,7 +60,14 @@ data class EmulatorFamily(
  */
 sealed class LaunchConfig {
 
-    abstract val defaultIntentFlags: Int
+    protected abstract val defaultIntentFlags: Int
+
+    /**
+     * The flags a fresh launch actually carries, which is what the Launch Args editor shows as the
+     * default and what [GameLauncher] sends when the user has set no override. A subtype whose
+     * flags depend on the emulator's launch action overrides this rather than the val.
+     */
+    open fun defaultIntentFlags(emulator: EmulatorDef): Int = defaultIntentFlags
 
     open val defaultMimeType: String? get() = null
 
@@ -106,7 +113,9 @@ sealed class LaunchConfig {
         val activityClass: String = "com.retroarch.browser.retroactivity.RetroActivityFuture"
     ) : LaunchConfig() {
         override val defaultIntentFlags: Int =
-            Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP
+            Intent.FLAG_ACTIVITY_NEW_TASK or
+                Intent.FLAG_ACTIVITY_CLEAR_TASK or
+                Intent.FLAG_ACTIVITY_NO_HISTORY
 
         override val isCoreSelectable: Boolean = true
 
@@ -135,6 +144,19 @@ sealed class LaunchConfig {
             Intent.FLAG_ACTIVITY_NEW_TASK or
                 Intent.FLAG_ACTIVITY_CLEAR_TASK or
                 Intent.FLAG_GRANT_READ_URI_PERMISSION
+
+        /**
+         * A ROM that rides on the intent's data URI hands the emulator a grant and leaves it in
+         * recents; one that rides on extras is launched as a one-shot instead.
+         */
+        override fun defaultIntentFlags(emulator: EmulatorDef): Int =
+            if (emulator.launchAction == Intent.ACTION_VIEW) {
+                defaultIntentFlags
+            } else {
+                Intent.FLAG_ACTIVITY_NEW_TASK or
+                    Intent.FLAG_ACTIVITY_CLEAR_TASK or
+                    Intent.FLAG_ACTIVITY_NO_HISTORY
+            }
 
         override val defaultMimeType: String
             get() = mimeTypeOverride ?: "application/octet-stream"

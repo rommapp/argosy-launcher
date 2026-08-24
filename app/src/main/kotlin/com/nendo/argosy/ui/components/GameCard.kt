@@ -39,7 +39,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import com.nendo.argosy.ui.theme.LocalLauncherTheme
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
@@ -81,8 +80,6 @@ import android.graphics.drawable.BitmapDrawable
 import coil.compose.AsyncImage
 import com.nendo.argosy.data.preferences.BoxArtBorderStyle
 import com.nendo.argosy.data.preferences.BoxArtInnerEffect
-import com.nendo.argosy.data.preferences.BoxArtOuterEffect
-import com.nendo.argosy.data.preferences.GlowColorMode
 import com.nendo.argosy.data.preferences.SystemIconPosition
 import com.nendo.argosy.ui.common.rememberFileImageModel
 import com.nendo.argosy.ui.screens.home.GameDownloadIndicator
@@ -111,41 +108,12 @@ fun GameCard(
     saturationOverride: Float? = null,
     useBoxArt: Boolean = false
 ) {
-    val themeConfig = LocalLauncherTheme.current
     val boxArtStyle = LocalBoxArtStyle.current
-    val isDarkTheme = isSystemInDarkTheme()
     val effectiveCoverPath = com.nendo.argosy.ui.common.rememberResolvedCoverPath(
         gameId = game.id,
         source = coverPathOverride ?: game.coverPath
     ).orEmpty()
     val coverGradientColors = game.gradientColors
-
-    val glowColorMode = boxArtStyle.glowColorMode
-    val glowGradientColors: Pair<Color, Color>? = when (glowColorMode) {
-        GlowColorMode.AUTO -> when (boxArtStyle.borderStyle) {
-            BoxArtBorderStyle.GRADIENT, BoxArtBorderStyle.GLASS -> coverGradientColors
-            else -> null
-        }
-        GlowColorMode.ACCENT -> null
-        GlowColorMode.ACCENT_GRADIENT -> {
-            val accent = boxArtStyle.accentColor
-            val secondary = boxArtStyle.secondaryColor
-            if (accent != null && secondary != null) Pair(accent, secondary) else null
-        }
-        GlowColorMode.COVER -> coverGradientColors
-    }
-
-    val scale by animateFloatAsState(
-        targetValue = scaleOverride ?: if (isFocused) focusScale else ComponentDefaults.Focus.scaleDefault,
-        animationSpec = Motion.focusSpring,
-        label = "scale"
-    )
-
-    val alpha by animateFloatAsState(
-        targetValue = alphaOverride ?: if (isFocused) ComponentDefaults.Focus.alphaFocused else ComponentDefaults.Focus.alphaUnfocused,
-        animationSpec = Motion.focusSpring,
-        label = "alpha"
-    )
 
     val saturation by animateFloatAsState(
         targetValue = saturationOverride ?: 1f,
@@ -156,17 +124,16 @@ fun GameCard(
         ColorFilter.colorMatrix(ColorMatrix().apply { setToSaturation(saturation) })
     } else null
 
-    val outerEffect = boxArtStyle.outerEffect
-    val outerEffectRadius = boxArtStyle.outerEffectThicknessPx
-    val showOuterEffect = isFocused && outerEffect != BoxArtOuterEffect.OFF
-
-    val glowColor = boxArtStyle.accentColor ?: themeConfig.focusGlowColor
     val borderColor = MaterialTheme.colorScheme.primary
-    val shape = RoundedCornerShape(boxArtStyle.cornerRadiusDp)
 
-    val spineActiveForBackground = showPlatformBadge &&
+    val spinePathFor3d = game.boxSpinePath
+        ?.takeIf { useBoxArt && effectiveCoverPath.isNotEmpty() }
+
+    val spineActiveForBackground = spinePathFor3d == null && showPlatformBadge &&
         boxArtStyle.platformIndicatorStyle == com.nendo.argosy.data.preferences.PlatformIndicatorStyle.SPINE
-    val cardBackgroundBrush: androidx.compose.ui.graphics.Brush = if (spineActiveForBackground) {
+    val cardBackgroundBrush: androidx.compose.ui.graphics.Brush = if (spinePathFor3d != null) {
+        SolidColor(Color.Transparent)
+    } else if (spineActiveForBackground) {
         val accent = boxArtStyle.accentColor
         val secondary = boxArtStyle.secondaryColor
         val fallbackPrimary = accent ?: MaterialTheme.colorScheme.primary
@@ -187,44 +154,6 @@ fun GameCard(
         }
     } else {
         androidx.compose.ui.graphics.SolidColor(MaterialTheme.colorScheme.surfaceVariant)
-    }
-
-    val outerShineTransition = if (outerEffect == BoxArtOuterEffect.SHINE && isFocused) {
-        rememberInfiniteTransition(label = "outerShine")
-    } else null
-    val outerShineOffset by outerShineTransition?.animateFloat(
-        initialValue = -0.5f,
-        targetValue = 1.5f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(2000, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart
-        ),
-        label = "outerShine"
-    ) ?: remember { mutableStateOf(0f) }
-
-    val boxSpinePath = game.boxSpinePath
-    if (useBoxArt && boxSpinePath != null && effectiveCoverPath.isNotEmpty()) {
-        Box(
-            modifier = modifier.boxArtFrame(
-                isFocused = isFocused,
-                focusScale = focusScale,
-                scalePivotY = scalePivotY,
-                scaleOverride = scaleOverride,
-                alphaOverride = alphaOverride,
-                artworkGradient = coverGradientColors,
-                background = SolidColor(Color.Transparent),
-                drawBorder = false
-            ),
-            contentAlignment = Alignment.Center
-        ) {
-            Box3dCover(
-                frontPath = effectiveCoverPath,
-                spinePath = boxSpinePath,
-                isInteractive = false,
-                modifier = Modifier.fillMaxHeight()
-            )
-        }
-        return
     }
 
     BoxWithConstraints(
@@ -256,9 +185,10 @@ fun GameCard(
         val outerCornerRadiusPx = with(density) { boxArtStyle.cornerRadiusDp.toPx() }
         val frameWidthPx = with(density) { boxArtStyle.borderThicknessDp.toPx() }
         val oneDpPx = with(density) { 1.dp.toPx() }
-        val useGlassBorder = !spineActiveForBackground && isFocused && boxArtStyle.borderStyle == BoxArtBorderStyle.GLASS
-        val useGradientBorder = !spineActiveForBackground && isFocused && boxArtStyle.borderStyle == BoxArtBorderStyle.GRADIENT
-        val isStub = effectiveCoverPath.isEmpty()
+        val useGlassBorder = spinePathFor3d == null && !spineActiveForBackground &&
+            isFocused && boxArtStyle.borderStyle == BoxArtBorderStyle.GLASS
+        val useGradientBorder = spinePathFor3d == null && !spineActiveForBackground &&
+            isFocused && boxArtStyle.borderStyle == BoxArtBorderStyle.GRADIENT
 
         val gradientColors = game.gradientColors
         val hasGradientColors = gradientColors != null
@@ -293,7 +223,7 @@ fun GameCard(
 
         val indicatorActive = showPlatformBadge &&
             boxArtStyle.platformIndicatorStyle != com.nendo.argosy.data.preferences.PlatformIndicatorStyle.OFF
-        val spineActive = indicatorActive &&
+        val spineActive = spinePathFor3d == null && indicatorActive &&
             boxArtStyle.platformIndicatorStyle == com.nendo.argosy.data.preferences.PlatformIndicatorStyle.SPINE
         // Skip the cover's inner edge effect when the spine container wraps the cover;
         // the stroke at the cover's spine-side edge reads as a hard line between spine and cover.
@@ -331,7 +261,19 @@ fun GameCard(
         ) ?: remember { mutableStateOf(0f) }
 
         val coverBody: @Composable () -> Unit = {
-            if (effectiveCoverPath.isNotEmpty()) {
+            if (spinePathFor3d != null) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Box3dCover(
+                        frontPath = effectiveCoverPath,
+                        spinePath = spinePathFor3d,
+                        isInteractive = false,
+                        modifier = Modifier.fillMaxHeight()
+                    )
+                }
+            } else if (effectiveCoverPath.isNotEmpty()) {
                 CoverContent(
                     game = game,
                     effectiveCoverPath = effectiveCoverPath,

@@ -480,16 +480,27 @@ class SecondaryHomeViewModel @Inject constructor(
         _uiState.update { it.copy(isHoldingFocusedGame = false) }
     }
 
+    /**
+     * Opens the app drawer, and fills it once the installed apps have been read.
+     *
+     * The open state flips on the press rather than when the list arrives. Select is a toggle, and
+     * both halves read this flag, so setting it only after a full package-manager sweep leaves a
+     * window in which a second press opens the drawer a second time instead of closing it - and the
+     * drawer swallows whatever it does not handle, so the pad goes dead on the surface underneath.
+     *
+     * The previous list is kept while the new one loads, so reopening shows what was there rather
+     * than emptying and refilling.
+     */
     fun openDrawer() {
+        if (_uiState.value.isDrawerOpen) return
+        _uiState.update { it.copy(isDrawerOpen = true, drawerFocusedIndex = 0) }
         viewModelScope.launch {
             val pinnedPackages = _uiState.value.homeApps.map { it.packageName }.toSet()
             val installed = appsRepository.getInstalledApps(includeSystemApps = true)
             val drawerApps = installed
                 .sortedBy { it.label.lowercase() }
                 .map { DrawerAppUi(it.packageName, it.label, it.packageName in pinnedPackages) }
-            _uiState.update {
-                it.copy(isDrawerOpen = true, allApps = drawerApps, drawerFocusedIndex = 0)
-            }
+            _uiState.update { it.copy(allApps = drawerApps) }
         }
     }
 

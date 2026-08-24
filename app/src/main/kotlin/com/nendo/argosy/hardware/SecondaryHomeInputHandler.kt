@@ -102,7 +102,10 @@ class SecondaryHomeInputHandler(
             GamepadEvent.Confirm -> onConfirmMediaRow()
             GamepadEvent.Back -> com.nendo.argosy.DualScreenManagerHolder.instance
                 ?.setCompanionMediaVisible(false)
-            GamepadEvent.Select -> viewModel.openDrawer()
+            GamepadEvent.Select -> {
+                viewModel.openDrawer()
+                broadcasts.broadcastViewModeChange(drawerOpen = true)
+            }
             else -> {}
         }
         return InputResult.HANDLED
@@ -290,6 +293,7 @@ class SecondaryHomeInputHandler(
                     InputResult.HANDLED
                 } else if (appBarIndex == -1) {
                     viewModel.openDrawer()
+                    broadcasts.broadcastViewModeChange(drawerOpen = true)
                     InputResult.HANDLED
                 } else {
                     val packageName = apps.getOrNull(appBarIndex)
@@ -301,6 +305,7 @@ class SecondaryHomeInputHandler(
             }
             GamepadEvent.Select -> {
                 viewModel.openDrawer()
+                broadcasts.broadcastViewModeChange(drawerOpen = true)
                 InputResult.HANDLED
             }
             else -> InputResult.UNHANDLED

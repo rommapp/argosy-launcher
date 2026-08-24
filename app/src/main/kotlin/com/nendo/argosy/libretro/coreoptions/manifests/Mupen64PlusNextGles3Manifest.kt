@@ -3,6 +3,20 @@ package com.nendo.argosy.libretro.coreoptions.manifests
 import com.nendo.argosy.libretro.coreoptions.CoreOptionDef
 import com.nendo.argosy.libretro.coreoptions.CoreOptionManifest
 
+/**
+ * What the core's C1 to C4 tokens actually select, named so the choice is legible.
+ *
+ * The tokens are the core's own and are sent verbatim; the core resolves C1 to the RetroPad's A,
+ * C2 to Y, C3 to B and C4 to X, so a menu offering bare slot numbers hides the only thing the
+ * setting decides.
+ */
+private val CBUTTON_VALUE_LABELS = mapOf(
+    "C1" to "C1 (A)",
+    "C2" to "C2 (Y)",
+    "C3" to "C3 (B)",
+    "C4" to "C4 (X)"
+)
+
 object Mupen64PlusNextGles3Manifest : CoreOptionManifest {
     override val coreId = "mupen64plus_next_gles3"
     override val options = listOf(
@@ -569,36 +583,40 @@ object Mupen64PlusNextGles3Manifest : CoreOptionManifest {
             key = "mupen64plus-r-cbutton",
             displayName = "Right C Button",
             values = listOf("C1", "C2", "C3", "C4"),
+            valueLabels = CBUTTON_VALUE_LABELS,
             defaultValue = "C1",
-            description = "Maps the right C button to the selected C-button slot"
+            description = "Which button sends C-right while R2 is held. Unused when Independent C-button Controls is on"
         ),
         CoreOptionDef(
             key = "mupen64plus-l-cbutton",
             displayName = "Left C Button",
             values = listOf("C1", "C2", "C3", "C4"),
+            valueLabels = CBUTTON_VALUE_LABELS,
             defaultValue = "C2",
-            description = "Maps the left C button to the selected C-button slot"
+            description = "Which button sends C-left while R2 is held. Unused when Independent C-button Controls is on"
         ),
         CoreOptionDef(
             key = "mupen64plus-d-cbutton",
             displayName = "Down C Button",
             values = listOf("C1", "C2", "C3", "C4"),
+            valueLabels = CBUTTON_VALUE_LABELS,
             defaultValue = "C3",
-            description = "Maps the down C button to the selected C-button slot"
+            description = "Which button sends C-down while R2 is held. Unused when Independent C-button Controls is on"
         ),
         CoreOptionDef(
             key = "mupen64plus-u-cbutton",
             displayName = "Up C Button",
             values = listOf("C1", "C2", "C3", "C4"),
+            valueLabels = CBUTTON_VALUE_LABELS,
             defaultValue = "C4",
-            description = "Maps the up C button to the selected C-button slot"
+            description = "Which button sends C-up while R2 is held. Unused when Independent C-button Controls is on"
         ),
         CoreOptionDef(
             key = "mupen64plus-alt-map",
             displayName = "Independent C-button Controls",
             values = listOf("False", "True"),
             defaultValue = "False",
-            description = "Maps C-buttons to the right analog stick for independent control"
+            description = "Puts C-right, C-left, C-down and C-up on R, L, A and X permanently, instead of behind held R2. The right stick sends the C directions either way"
         ),
         CoreOptionDef(
             key = "mupen64plus-pak1",

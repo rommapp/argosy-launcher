@@ -367,7 +367,7 @@ object ParallelN64Manifest : CoreOptionManifest {
             displayName = "Independent C-button Controls",
             values = listOf("disabled", "enabled"),
             defaultValue = "disabled",
-            description = "Maps C-buttons to the right analog stick for independent control"
+            description = "Puts C-right, C-left, C-down and C-up on R, L, A and X permanently, instead of behind held R2. The right stick sends the C directions either way"
         ),
         CoreOptionDef(
             key = "parallel-n64-vcache-vbo",

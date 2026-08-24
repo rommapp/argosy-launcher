@@ -789,6 +789,7 @@ fun HomeScreen(
                                 downloadIndicatorFor = { uiState.downloadIndicatorFor(it) },
                                 onCoverLoadFailed = viewModel::repairCoverImage,
                                 onCoverLoaded = viewModel::extractGradientForGame,
+                                onPosterLoaded = viewModel::extractGradientForMedia,
                                 modifier = Modifier.fillMaxSize()
                             )
                         }
@@ -837,6 +838,7 @@ fun HomeScreen(
                                 },
                                 onCoverLoadFailed = viewModel::repairCoverImage,
                                 onCoverLoaded = viewModel::extractGradientForGame,
+                                onPosterLoaded = viewModel::extractGradientForMedia,
                                 onItemTap = { index -> viewModel.handleItemTap(index, onGameSelect) },
                                 onItemLongPress = viewModel::handleItemLongPress,
                                 modifier = Modifier.fillMaxSize()
@@ -867,6 +869,7 @@ fun HomeScreen(
                                 useBoxArt = uiState.carouselConfig.useBoxArt,
                                 onCoverLoadFailed = viewModel::repairCoverImage,
                                 onCoverLoaded = viewModel::extractGradientForGame,
+                                onPosterLoaded = viewModel::extractGradientForMedia,
                                 onItemTap = { index -> viewModel.handleItemTap(index, onGameSelect) },
                                 onItemLongPress = viewModel::handleItemLongPress,
                                 modifier = Modifier

@@ -40,7 +40,8 @@ private const val NEXT_UP_LABEL = "Next Up"
  */
 class DualMediaViewModel(
     private val mediaRepository: MediaRepository,
-    private val playback: StateFlow<ActiveMediaPlayback?>
+    private val playback: StateFlow<ActiveMediaPlayback?>,
+    private val gradientExtractionDelegate: com.nendo.argosy.ui.screens.common.GradientExtractionDelegate
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(DualMediaUiState())
@@ -213,5 +214,10 @@ class DualMediaViewModel(
     }
 
     private fun MediaItemEntity.toUi(userData: MediaUserDataEntity?): MediaItemUi =
-        toMediaItemUi(mediaRepository, userData)
+        toMediaItemUi(
+            mediaRepository,
+            userData,
+            emptyMap(),
+            gradientExtractionDelegate.mediaGradients.value
+        )
 }

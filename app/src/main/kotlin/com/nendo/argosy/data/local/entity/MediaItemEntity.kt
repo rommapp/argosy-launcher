@@ -73,7 +73,8 @@ data class MediaItemEntity(
     val downloadQuality: String? = null,
     val downloadedBytes: Long? = null,
     val downloadedAt: Instant? = null,
-    val lastSyncedAt: Instant? = null
+    val lastSyncedAt: Instant? = null,
+    val gradientColors: String? = null
 )
 
 /**

@@ -134,7 +134,8 @@ fun MediaLibraryScreen(
                                 viewModel.openResumePrompt(index) -> Unit
                                 else -> onPlay(item.itemId, false)
                             }
-                        }
+                        },
+                        onPosterLoaded = viewModel::onPosterLoaded
                     )
                 }
             }
@@ -188,7 +189,8 @@ private fun MediaGrid(
     gridState: LazyGridState,
     onColumnsChanged: (Int) -> Unit,
     onItemClick: (Int) -> Unit,
-    onItemLongClick: (Int) -> Unit
+    onItemLongClick: (Int) -> Unit,
+    onPosterLoaded: (String, android.graphics.Bitmap) -> Unit
 ) {
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
         val tileWidth = Dimens.mediaPosterWidth + Dimens.spacingMd
@@ -212,7 +214,8 @@ private fun MediaGrid(
                     item = item,
                     isFocused = index == uiState.focusedIndex,
                     onClick = { onItemClick(index) },
-                    onLongClick = { onItemLongClick(index) }
+                    onLongClick = { onItemLongClick(index) },
+                    onPosterLoaded = onPosterLoaded
                 )
             }
         }

@@ -112,7 +112,8 @@ fun HomeAutoGrid(
     showPlatformBadge: Boolean = true,
     downloadIndicatorFor: (CarouselItem) -> GameDownloadIndicator = { GameDownloadIndicator.NONE },
     onCoverLoadFailed: ((Long, String) -> Unit)? = null,
-    onCoverLoaded: ((Long, android.graphics.Bitmap) -> Unit)? = null
+    onCoverLoaded: ((Long, android.graphics.Bitmap) -> Unit)? = null,
+    onPosterLoaded: ((String, android.graphics.Bitmap) -> Unit)? = null
 ) {
     AutoGridFocusSync(gridState, focusedIndex, items.size, config)
     Column(modifier = modifier.fillMaxSize()) {
@@ -149,7 +150,8 @@ fun HomeAutoGrid(
                     onTap = { onItemTap(index) },
                     onLongPress = { onItemLongPress(index) },
                     onCoverLoadFailed = onCoverLoadFailed,
-                    onCoverLoaded = onCoverLoaded
+                    onCoverLoaded = onCoverLoaded,
+                    onPosterLoaded = onPosterLoaded
                 )
             }
             when (config.scrollAxis) {
@@ -331,7 +333,8 @@ private fun AutoGridCell(
     onTap: () -> Unit,
     onLongPress: () -> Unit,
     onCoverLoadFailed: ((Long, String) -> Unit)?,
-    onCoverLoaded: ((Long, android.graphics.Bitmap) -> Unit)?
+    onCoverLoaded: ((Long, android.graphics.Bitmap) -> Unit)?,
+    onPosterLoaded: ((String, android.graphics.Bitmap) -> Unit)?
 ) {
     val boxArtStyle = LocalBoxArtStyle.current
     val coverAspectRatio = boxArtStyle.aspectRatio
@@ -382,6 +385,7 @@ private fun AutoGridCell(
                     media = item.media,
                     isFocused = isFocused,
                     downloadIndicator = downloadIndicator,
+                    onPosterLoaded = onPosterLoaded,
                     modifier = Modifier
                         .then(if (fitByHeight) Modifier.fillMaxHeight() else Modifier.fillMaxWidth())
                         .aspectRatio(posterRatio, matchHeightConstraintsFirst = fitByHeight)

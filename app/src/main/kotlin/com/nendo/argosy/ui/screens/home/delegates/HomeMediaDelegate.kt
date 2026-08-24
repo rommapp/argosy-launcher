@@ -10,6 +10,7 @@ import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.remote.jellyfin.JellyfinResult
 import com.nendo.argosy.data.repository.MediaRepository
 import com.nendo.argosy.data.repository.MediaTransferProgress
+import com.nendo.argosy.ui.screens.common.GradientExtractionDelegate
 import com.nendo.argosy.ui.screens.home.HomeMediaUi
 import com.nendo.argosy.ui.screens.media.MediaLibraryUi
 import com.nendo.argosy.ui.screens.media.MediaResumePrompt
@@ -109,8 +110,11 @@ data class HomeMediaState(
 class HomeMediaDelegate @Inject constructor(
     private val mediaRepository: MediaRepository,
     private val preferencesRepository: UserPreferencesRepository,
-    private val availabilityVerifier: MediaAvailabilityVerifier
+    private val availabilityVerifier: MediaAvailabilityVerifier,
+    private val gradientExtractionDelegate: GradientExtractionDelegate
 ) {
+    private var gradientScope: CoroutineScope? = null
+
     private val _state = MutableStateFlow(HomeMediaState())
     val state: StateFlow<HomeMediaState> = _state.asStateFlow()
 
@@ -119,6 +123,7 @@ class HomeMediaDelegate @Inject constructor(
     private val librarySyncRequested = AtomicBoolean(false)
 
     fun observe(scope: CoroutineScope) {
+        gradientScope = scope
         scope.launch {
             mediaRepository.isSignedIn.collect { signedIn ->
                 _state.update { it.copy(isSignedIn = signedIn, isLoading = signedIn && it.isEmptyRails) }
@@ -498,15 +503,25 @@ class HomeMediaDelegate @Inject constructor(
         val userData = mediaRepository.getUserDataFor(entities.map { it.itemId })
         val seriesIds = entities.mapNotNull { it.seriesId }.distinct()
         val series = seriesIds.mapNotNull { mediaRepository.getItem(it) }.associateBy { it.itemId }
+        gradientScope?.let { scope ->
+            gradientExtractionDelegate.loadPersistedMediaGradients(scope, entities.map { it.itemId })
+        }
+        val gradients = gradientExtractionDelegate.mediaGradients.value
         return entities.map { entity ->
-            entity.toTile(userData[entity.itemId], series[entity.seriesId], verified[entity.itemId])
+            entity.toTile(
+                userData[entity.itemId],
+                series[entity.seriesId],
+                verified[entity.itemId],
+                gradients[entity.itemId]
+            )
         }
     }
 
     private fun MediaItemEntity.toTile(
         userData: MediaUserDataEntity?,
         series: MediaItemEntity?,
-        verified: MediaAvailability?
+        verified: MediaAvailability?,
+        gradientColors: Pair<androidx.compose.ui.graphics.Color, androidx.compose.ui.graphics.Color>?
     ): HomeMediaUi {
         val position = userData?.playbackPositionTicks ?: 0
         val played = userData?.played ?: false
@@ -529,7 +544,8 @@ class HomeMediaDelegate @Inject constructor(
             isSeries = kind == MediaItemType.SERIES,
             availability = mediaAvailabilityOf(localPath, verified),
             resumeTicks = position,
-            progressFraction = progressFraction(position, runTimeTicks, played)
+            progressFraction = progressFraction(position, runTimeTicks, played),
+            gradientColors = gradientColors
         )
     }
 

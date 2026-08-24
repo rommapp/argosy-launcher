@@ -181,6 +181,15 @@ class MediaRepository @Inject constructor(
     }
 
     /**
+     * Records the colours sampled from an item's poster, in the same serialized all-presets form a
+     * game's cover colours use, so switching preset later needs no second sampling pass.
+     */
+    suspend fun updateGradientColors(itemId: String, json: String) {
+        val owner = currentOwner() ?: return
+        mediaItemDao.updateGradientColors(owner, itemId, json)
+    }
+
+    /**
      * How far along every copy currently being fetched is, keyed by the item it belongs to.
      *
      * An entry exists only while a download is genuinely moving, so a tile can ask "is this one of

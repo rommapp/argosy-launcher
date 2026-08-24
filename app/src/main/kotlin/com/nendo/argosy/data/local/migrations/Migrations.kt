@@ -3495,3 +3495,17 @@ object Migration_178_179 : Migration(178, 179) {
         )
     }
 }
+
+/**
+ * Gives a media title the same sampled cover colours a game already carries, so a poster drives the
+ * border and glow that follow the artwork instead of falling back to the theme accent.
+ *
+ * The column starts empty and fills as posters are drawn, matching how a game's colours are
+ * derived. Nothing re-derives on upgrade: the serialized form holds every preset, so a row written
+ * once answers whichever preset the user later picks.
+ */
+object Migration_179_180 : Migration(179, 180) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE `media_items` ADD COLUMN `gradientColors` TEXT")
+    }
+}

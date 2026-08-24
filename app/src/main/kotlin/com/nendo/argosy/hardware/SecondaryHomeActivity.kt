@@ -924,7 +924,8 @@ class SecondaryHomeActivity :
         dualHomeViewModel.observeTilePrompts()
         dualMediaViewModel = DualMediaViewModel(
             mediaRepository = dsm.mediaRepository,
-            playback = dsm.mediaPlayback
+            playback = dsm.mediaPlayback,
+            gradientExtractionDelegate = dsm.gradientExtractionDelegate
         )
         observeCustomGridSelection()
         broadcasts = SecondaryHomeBroadcastHelper(

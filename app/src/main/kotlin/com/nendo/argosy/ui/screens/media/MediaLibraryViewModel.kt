@@ -7,6 +7,7 @@ import com.nendo.argosy.data.media.MediaAvailabilityVerifier
 import com.nendo.argosy.data.remote.jellyfin.JellyfinResult
 import com.nendo.argosy.data.repository.MediaRepository
 import com.nendo.argosy.ui.input.InputHandler
+import com.nendo.argosy.ui.screens.common.GradientExtractionDelegate
 import com.nendo.argosy.ui.input.InputResult
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -26,7 +27,8 @@ import javax.inject.Inject
 @HiltViewModel
 class MediaLibraryViewModel @Inject constructor(
     private val mediaRepository: MediaRepository,
-    private val availabilityVerifier: MediaAvailabilityVerifier
+    private val availabilityVerifier: MediaAvailabilityVerifier,
+    private val gradientExtractionDelegate: GradientExtractionDelegate
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(MediaLibraryUiState())
@@ -38,6 +40,7 @@ class MediaLibraryViewModel @Inject constructor(
         observeSignInState()
         observeLibraries()
         observeItems()
+        observeGradients()
         availabilityVerifier.verifyOnOpen()
     }
 
@@ -80,8 +83,15 @@ class MediaLibraryViewModel @Inject constructor(
                 .flatMapLatest { libraryId -> mediaRepository.observeLibraryItems(libraryId) }
                 .combine(availabilityVerifier.availability) { entities, verified -> entities to verified }
                 .map { (entities, verified) ->
+                    gradientExtractionDelegate.loadPersistedMediaGradients(
+                        viewModelScope,
+                        entities.map { it.itemId }
+                    )
                     val userData = mediaRepository.getUserDataFor(entities.map { it.itemId })
-                    entities.map { it.toMediaItemUi(mediaRepository, userData[it.itemId], verified) }
+                    val gradients = gradientExtractionDelegate.mediaGradients.value
+                    entities.map {
+                        it.toMediaItemUi(mediaRepository, userData[it.itemId], verified, gradients)
+                    }
                 }
                 .collect { items ->
                     _uiState.update { state ->
@@ -93,6 +103,37 @@ class MediaLibraryViewModel @Inject constructor(
                     }
                 }
         }
+    }
+
+    /**
+     * Folds newly sampled poster colours into tiles already on screen, rather than rebuilding the
+     * grid for each one. A screenful of posters lands one colour pair at a time as each image
+     * decodes, and re-running the item query that often would cost a database read per poster.
+     */
+    private fun observeGradients() {
+        viewModelScope.launch {
+            gradientExtractionDelegate.mediaGradients.collect { gradients ->
+                if (gradients.isEmpty()) return@collect
+                _uiState.update { state ->
+                    state.copy(
+                        items = state.items.map { item ->
+                            gradients[item.itemId]
+                                ?.takeIf { it != item.gradientColors }
+                                ?.let { item.copy(gradientColors = it) }
+                                ?: item
+                        }
+                    )
+                }
+            }
+        }
+    }
+
+    /**
+     * Samples an item's poster the first time it finishes decoding. A poster is fetched rather than
+     * stored, so the drawn bitmap is the only place its colours can be read from.
+     */
+    fun onPosterLoaded(itemId: String, bitmap: android.graphics.Bitmap) {
+        gradientExtractionDelegate.extractForMedia(viewModelScope, itemId, bitmap)
     }
 
     fun setColumnsCount(columns: Int) {

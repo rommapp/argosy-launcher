@@ -50,7 +50,8 @@ fun CustomGridSurface(
     showEmptySlots: Boolean = true,
     downloadIndicatorFor: (Long) -> GameDownloadIndicator = { GameDownloadIndicator.NONE },
     onCoverLoadFailed: ((Long, String) -> Unit)? = null,
-    onCoverLoaded: ((Long, android.graphics.Bitmap) -> Unit)? = null
+    onCoverLoaded: ((Long, android.graphics.Bitmap) -> Unit)? = null,
+    onPosterLoaded: ((String, android.graphics.Bitmap) -> Unit)? = null
 ) {
     val swipeThresholdPx = with(LocalDensity.current) {
         ComponentDefaults.CustomGrid.swipePageThresholdDp.dp.toPx()
@@ -122,6 +123,7 @@ fun CustomGridSurface(
                     downloadIndicatorFor = downloadIndicatorFor,
                     onCoverLoadFailed = onCoverLoadFailed,
                     onCoverLoaded = onCoverLoaded,
+                    onPosterLoaded = onPosterLoaded,
                     modifier = Modifier.fillMaxSize()
                 )
             }

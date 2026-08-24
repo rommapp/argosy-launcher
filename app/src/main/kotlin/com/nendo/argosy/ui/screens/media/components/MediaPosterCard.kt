@@ -1,5 +1,7 @@
 package com.nendo.argosy.ui.screens.media.components
 
+import android.graphics.Bitmap
+import android.graphics.drawable.BitmapDrawable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -57,7 +59,8 @@ fun MediaPosterCard(
     onClick: () -> Unit,
     onLongClick: () -> Unit,
     modifier: Modifier = Modifier,
-    scaleOverride: Float? = null
+    scaleOverride: Float? = null,
+    onPosterLoaded: ((itemId: String, bitmap: Bitmap) -> Unit)? = null
 ) {
     val theme = LocalArgosyTheme.current
     Column(
@@ -73,6 +76,7 @@ fun MediaPosterCard(
                 .boxArtFrame(
                     isFocused = isFocused,
                     scaleOverride = scaleOverride,
+                    artworkGradient = item.gradientColors,
                     background = SolidColor(theme.surfaceRaised)
                 )
         ) {
@@ -83,7 +87,11 @@ fun MediaPosterCard(
                     .build(),
                 contentDescription = item.title,
                 contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier.fillMaxSize(),
+                onSuccess = { state ->
+                    val bitmap = (state.result.drawable as? BitmapDrawable)?.bitmap
+                    if (bitmap != null) onPosterLoaded?.invoke(item.itemId, bitmap)
+                }
             )
             if (item.posterUrl.isBlank()) {
                 Icon(

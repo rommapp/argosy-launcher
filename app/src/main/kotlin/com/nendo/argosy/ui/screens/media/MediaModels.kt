@@ -283,7 +283,8 @@ data class MediaItemUi(
     val runTimeTicks: Long? = null,
     val played: Boolean = false,
     val isFavorite: Boolean = false,
-    val progressFraction: Float = 0f
+    val progressFraction: Float = 0f,
+    val gradientColors: Pair<androidx.compose.ui.graphics.Color, androidx.compose.ui.graphics.Color>? = null
 ) {
     val hasResumePosition: Boolean get() = resumeTicks > 0 && !played
 

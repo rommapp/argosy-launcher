@@ -35,14 +35,17 @@ fun MediaItemEntity.toMediaSeasonUi(): MediaSeasonUi = MediaSeasonUi(
  * assembled here: they carry the server's own image tag, which is what makes them cacheable
  * forever, and a hand-built address that drops the tag silently loses that.
  *
- * [verified] is what a verification pass established about downloaded copies. It is passed in as a
- * whole map rather than looked up per item so that building a screenful of tiles stays a set of map
- * reads; nothing here touches the filesystem.
+ * [verified] is what a verification pass established about downloaded copies, and [gradients] the
+ * colours sampled from posters already drawn. Both are passed in as whole maps rather than looked up
+ * per item so that building a screenful of tiles stays a set of map reads; nothing here touches the
+ * filesystem. An item with nothing sampled yet draws against the theme accent until its poster
+ * loads.
  */
 fun MediaItemEntity.toMediaItemUi(
     repository: MediaRepository,
     userData: MediaUserDataEntity?,
-    verified: Map<String, MediaAvailability> = emptyMap()
+    verified: Map<String, MediaAvailability> = emptyMap(),
+    gradients: Map<String, Pair<androidx.compose.ui.graphics.Color, androidx.compose.ui.graphics.Color>> = emptyMap()
 ): MediaItemUi {
     val position = userData?.playbackPositionTicks ?: 0
     val played = userData?.played ?: false
@@ -71,7 +74,8 @@ fun MediaItemEntity.toMediaItemUi(
         runTimeTicks = runTimeTicks,
         played = played,
         isFavorite = userData?.isFavorite ?: false,
-        progressFraction = progressFraction(position, runTimeTicks, played)
+        progressFraction = progressFraction(position, runTimeTicks, played),
+        gradientColors = gradients[itemId]
     )
 }
 

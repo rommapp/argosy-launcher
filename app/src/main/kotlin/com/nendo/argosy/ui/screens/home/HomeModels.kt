@@ -116,7 +116,8 @@ data class HomeMediaUi(
     val availability: MediaAvailability = MediaAvailability.NOT_DOWNLOADED,
     val resumeTicks: Long = 0,
     val progressFraction: Float = 0f,
-    val resumeItemId: String? = null
+    val resumeItemId: String? = null,
+    val gradientColors: Pair<androidx.compose.ui.graphics.Color, androidx.compose.ui.graphics.Color>? = null
 ) {
     val hasResumePosition: Boolean get() = resumeTicks > 0
 

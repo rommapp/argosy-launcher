@@ -28,7 +28,8 @@ import javax.inject.Singleton
 @Singleton
 class MediaSeriesDelegate @Inject constructor(
     private val mediaRepository: MediaRepository,
-    private val availabilityVerifier: MediaAvailabilityVerifier
+    private val availabilityVerifier: MediaAvailabilityVerifier,
+    private val gradientExtractionDelegate: com.nendo.argosy.ui.screens.common.GradientExtractionDelegate
 ) {
     /**
      * The seasons of one series. Deduplicated because the underlying query re-runs on any write to
@@ -53,7 +54,10 @@ class MediaSeriesDelegate @Inject constructor(
         ) { entities, _, verified -> entities to verified }
             .map { (entities, verified) ->
                 val userData = mediaRepository.getUserDataFor(entities.map { it.itemId })
-                entities.map { it.toMediaItemUi(mediaRepository, userData[it.itemId], verified) }
+                val gradients = gradientExtractionDelegate.mediaGradients.value
+                entities.map {
+                    it.toMediaItemUi(mediaRepository, userData[it.itemId], verified, gradients)
+                }
             }
 
     /**

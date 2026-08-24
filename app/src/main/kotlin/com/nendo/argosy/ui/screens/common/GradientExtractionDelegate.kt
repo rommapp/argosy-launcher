@@ -2,11 +2,11 @@ package com.nendo.argosy.ui.screens.common
 
 import android.graphics.Bitmap
 import androidx.compose.ui.graphics.Color
-import com.nendo.argosy.data.cache.GradientExtractionConfig
 import com.nendo.argosy.data.cache.GradientPreset
 import com.nendo.argosy.data.cache.ImageCacheManager
 import com.nendo.argosy.data.preferences.BoxArtBorderStyle
 import com.nendo.argosy.data.repository.GameRepository
+import com.nendo.argosy.data.repository.MediaRepository
 import com.nendo.argosy.ui.common.GradientColorExtractor
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -14,7 +14,6 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -24,19 +23,56 @@ data class GameGradientRequest(
     val coverPath: String?
 )
 
+/**
+ * What has been sampled for one kind of artwork, and what is still in flight for it.
+ *
+ * Games and films are held apart because their keys are: a game is a local row id, an item is the
+ * media server's own id, and the two spaces would collide in one map. The sampling itself is not
+ * duplicated, only the bookkeeping it writes into.
+ */
+private class GradientStore<K> {
+    val flow = MutableStateFlow<Map<K, Pair<Color, Color>>>(emptyMap())
+    val persistedPresets = mutableMapOf<K, Map<GradientPreset, Pair<Color, Color>>>()
+    val pending = mutableSetOf<K>()
+
+    fun has(key: K): Boolean = flow.value.containsKey(key)
+
+    fun put(key: K, colors: Pair<Color, Color>) {
+        flow.value = flow.value + (key to colors)
+    }
+
+    fun putAll(entries: Map<K, Pair<Color, Color>>) {
+        if (entries.isEmpty()) return
+        flow.value = flow.value + entries
+    }
+
+    fun rederive(preset: GradientPreset) {
+        flow.value = persistedPresets.mapNotNull { (key, presets) ->
+            presets[preset]?.let { key to it }
+        }.toMap()
+    }
+
+    fun clear() {
+        flow.value = emptyMap()
+        persistedPresets.clear()
+        pending.clear()
+    }
+}
+
 @Singleton
 class GradientExtractionDelegate @Inject constructor(
     private val gradientColorExtractor: GradientColorExtractor,
     private val gameRepository: GameRepository,
+    private val mediaRepository: MediaRepository,
     private val backgroundProcessor: GradientBackgroundProcessor,
     private val imageCacheManager: ImageCacheManager
 ) {
-    private val _gradients = MutableStateFlow<Map<Long, Pair<Color, Color>>>(emptyMap())
-    val gradients: StateFlow<Map<Long, Pair<Color, Color>>> = _gradients.asStateFlow()
+    private val games = GradientStore<Long>()
+    private val media = GradientStore<String>()
 
-    private val persistedPresets = mutableMapOf<Long, Map<GradientPreset, Pair<Color, Color>>>()
+    val gradients: StateFlow<Map<Long, Pair<Color, Color>>> = games.flow.asStateFlow()
+    val mediaGradients: StateFlow<Map<String, Pair<Color, Color>>> = media.flow.asStateFlow()
 
-    private val pendingExtractions = mutableSetOf<Long>()
     private var currentPreset: GradientPreset = GradientPreset.BALANCED
 
     @OptIn(ExperimentalCoroutinesApi::class)
@@ -45,13 +81,14 @@ class GradientExtractionDelegate @Inject constructor(
     fun updatePreferences(preset: GradientPreset, borderStyle: BoxArtBorderStyle) {
         val presetChanged = preset != currentPreset
         currentPreset = preset
+        if (!presetChanged) return
 
-        if (presetChanged && preset != GradientPreset.CUSTOM) {
-            rederiveFromCache()
-        } else if (presetChanged) {
-            _gradients.value = emptyMap()
-            persistedPresets.clear()
-            pendingExtractions.clear()
+        if (preset != GradientPreset.CUSTOM) {
+            games.rederive(preset)
+            media.rederive(preset)
+        } else {
+            games.clear()
+            media.clear()
             backgroundProcessor.pause()
         }
     }
@@ -83,15 +120,17 @@ class GradientExtractionDelegate @Inject constructor(
         }
     }
 
-    fun getGradient(gameId: Long): Pair<Color, Color>? = _gradients.value[gameId]
+    fun getGradient(gameId: Long): Pair<Color, Color>? = games.flow.value[gameId]
 
-    fun hasGradient(gameId: Long): Boolean = _gradients.value.containsKey(gameId)
+    fun hasGradient(gameId: Long): Boolean = games.has(gameId)
+
+    fun getMediaGradient(itemId: String): Pair<Color, Color>? = media.flow.value[itemId]
 
     fun loadPersistedGradientsForGames(
         scope: CoroutineScope,
         gameIds: List<Long>
     ) {
-        val missing = gameIds.filter { !hasGradient(it) }
+        val missing = gameIds.filter { !games.has(it) }
         if (missing.isEmpty()) return
 
         scope.launch(Dispatchers.IO) {
@@ -99,8 +138,33 @@ class GradientExtractionDelegate @Inject constructor(
         }
     }
 
+    /**
+     * Brings back what was sampled for these items on an earlier run, so a poster already seen does
+     * not have to be decoded again before its colours are available.
+     */
+    fun loadPersistedMediaGradients(
+        scope: CoroutineScope,
+        itemIds: List<String>
+    ) {
+        val missing = itemIds.filter { !media.has(it) }
+        if (missing.isEmpty()) return
+
+        scope.launch(Dispatchers.IO) {
+            val entities = mediaRepository.getItems(missing)
+            val loaded = mutableMapOf<String, Pair<Color, Color>>()
+            for (entity in entities) {
+                val json = entity.gradientColors ?: continue
+                val allPresets = gradientColorExtractor.deserializeAllPresets(json) ?: continue
+                media.persistedPresets[entity.itemId] = allPresets
+                val colors = allPresets[currentPreset] ?: continue
+                loaded[entity.itemId] = colors
+            }
+            media.putAll(loaded)
+        }
+    }
+
     private suspend fun loadPersistedGradientsImmediate(gameIds: List<Long>) {
-        val missing = gameIds.filter { !hasGradient(it) }
+        val missing = gameIds.filter { !games.has(it) }
         if (missing.isEmpty()) return
 
         val entities = gameRepository.getByIds(missing)
@@ -108,27 +172,25 @@ class GradientExtractionDelegate @Inject constructor(
         for (entity in entities) {
             val json = entity.gradientColors ?: continue
             val allPresets = gradientColorExtractor.deserializeAllPresets(json) ?: continue
-            persistedPresets[entity.id] = allPresets
+            games.persistedPresets[entity.id] = allPresets
             val colors = allPresets[currentPreset] ?: continue
             loaded[entity.id] = colors
         }
-        if (loaded.isNotEmpty()) {
-            _gradients.value = _gradients.value + loaded
-        }
+        games.putAll(loaded)
     }
 
     fun extractForVisibleGames(
         scope: CoroutineScope,
-        games: List<GameGradientRequest>,
+        requests: List<GameGradientRequest>,
         focusedIndex: Int,
         buffer: Int = 5
     ) {
-        if (games.isEmpty()) return
+        if (requests.isEmpty()) return
 
         val startIndex = (focusedIndex - buffer).coerceAtLeast(0)
-        val endIndex = (focusedIndex + buffer).coerceAtMost(games.size - 1)
+        val endIndex = (focusedIndex + buffer).coerceAtMost(requests.size - 1)
 
-        val gamesToLoad = games.subList(startIndex, endIndex + 1)
+        val gamesToLoad = requests.subList(startIndex, endIndex + 1)
             .filter { it.coverPath != null && !hasGradient(it.gameId) }
 
         if (gamesToLoad.isEmpty()) return
@@ -152,17 +214,17 @@ class GradientExtractionDelegate @Inject constructor(
     ) {
         if (coverPath == null) return
         if (!coverPath.startsWith("/")) return
-        if (hasGradient(gameId)) return
-        if (pendingExtractions.contains(gameId)) return
+        if (games.has(gameId)) return
+        if (games.pending.contains(gameId)) return
 
-        pendingExtractions.add(gameId)
+        games.pending.add(gameId)
         val dispatcher = if (prioritize) Dispatchers.IO else extractionDispatcher
 
         scope.launch(dispatcher) {
             try {
                 extractAndPersist(gameId, coverPath)
             } finally {
-                pendingExtractions.remove(gameId)
+                games.pending.remove(gameId)
             }
         }
     }
@@ -173,22 +235,55 @@ class GradientExtractionDelegate @Inject constructor(
         bitmap: Bitmap,
         prioritize: Boolean = false
     ) {
-        if (hasGradient(gameId)) return
-        if (pendingExtractions.contains(gameId)) return
+        extractFromBitmap(scope, games, gameId, bitmap, prioritize) { json ->
+            gameRepository.updateGradientColors(gameId, json)
+        }
+    }
 
-        pendingExtractions.add(gameId)
+    /**
+     * Samples an item's poster as it is drawn. A poster is fetched over the network rather than
+     * living on disk, so the loaded bitmap is the only place its colours can be read from.
+     */
+    fun extractForMedia(
+        scope: CoroutineScope,
+        itemId: String,
+        bitmap: Bitmap,
+        prioritize: Boolean = false
+    ) {
+        extractFromBitmap(scope, media, itemId, bitmap, prioritize) { json ->
+            mediaRepository.updateGradientColors(itemId, json)
+        }
+    }
+
+    private fun <K> extractFromBitmap(
+        scope: CoroutineScope,
+        store: GradientStore<K>,
+        key: K,
+        bitmap: Bitmap,
+        prioritize: Boolean,
+        persist: suspend (String) -> Unit
+    ) {
+        if (store.has(key)) return
+        if (store.pending.contains(key)) return
+
+        store.pending.add(key)
         val dispatcher = if (prioritize) Dispatchers.Default else extractionDispatcher
 
         scope.launch(dispatcher) {
             try {
-                extractAndPersistFromBitmap(gameId, bitmap)
+                extractAndPersistFromBitmap(store, key, bitmap, persist)
             } finally {
-                pendingExtractions.remove(gameId)
+                store.pending.remove(key)
             }
         }
     }
 
-    private suspend fun extractAndPersistFromBitmap(gameId: Long, bitmap: Bitmap) {
+    private suspend fun <K> extractAndPersistFromBitmap(
+        store: GradientStore<K>,
+        key: K,
+        bitmap: Bitmap,
+        persist: suspend (String) -> Unit
+    ) {
         val readable = if (bitmap.config == Bitmap.Config.HARDWARE) {
             bitmap.copy(Bitmap.Config.ARGB_8888, false) ?: return
         } else {
@@ -199,16 +294,16 @@ class GradientExtractionDelegate @Inject constructor(
         try {
             if (currentPreset == GradientPreset.CUSTOM) {
                 val result = gradientColorExtractor.extractWithMetrics(readable, currentPreset.toConfig())
-                _gradients.value = _gradients.value + (gameId to (result.primary to result.secondary))
+                store.put(key, result.primary to result.secondary)
                 return
             }
 
             val allPresets = gradientColorExtractor.extractAllPresetsFromBitmap(readable)
             val json = gradientColorExtractor.serializeAllPresets(allPresets)
-            gameRepository.updateGradientColors(gameId, json)
-            persistedPresets[gameId] = allPresets
+            persist(json)
+            store.persistedPresets[key] = allPresets
             val colors = allPresets[currentPreset] ?: return
-            _gradients.value = _gradients.value + (gameId to colors)
+            store.put(key, colors)
         } finally {
             if (ownsCopy) readable.recycle()
         }
@@ -220,7 +315,7 @@ class GradientExtractionDelegate @Inject constructor(
                 coverPath, currentPreset.toConfig()
             )
             if (colors != null) {
-                _gradients.value = _gradients.value + (gameId to colors)
+                games.put(gameId, colors)
             }
             return
         }
@@ -228,33 +323,23 @@ class GradientExtractionDelegate @Inject constructor(
         val allPresets = gradientColorExtractor.extractAllPresets(coverPath) ?: return
         val json = gradientColorExtractor.serializeAllPresets(allPresets)
         gameRepository.updateGradientColors(gameId, json)
-        persistedPresets[gameId] = allPresets
+        games.persistedPresets[gameId] = allPresets
         val colors = allPresets[currentPreset] ?: return
-        _gradients.value = _gradients.value + (gameId to colors)
+        games.put(gameId, colors)
     }
 
     private suspend fun loadPersistedGradient(gameId: Long) {
         val entity = gameRepository.getById(gameId) ?: return
         val json = entity.gradientColors ?: return
         val allPresets = gradientColorExtractor.deserializeAllPresets(json) ?: return
-        persistedPresets[gameId] = allPresets
+        games.persistedPresets[gameId] = allPresets
         val colors = allPresets[currentPreset] ?: return
-        _gradients.value = _gradients.value + (gameId to colors)
-    }
-
-    private fun rederiveFromCache() {
-        val rederived = mutableMapOf<Long, Pair<Color, Color>>()
-        for ((gameId, presets) in persistedPresets) {
-            val colors = presets[currentPreset] ?: continue
-            rederived[gameId] = colors
-        }
-        _gradients.value = rederived
+        games.put(gameId, colors)
     }
 
     fun clear() {
         backgroundProcessor.cancel()
-        _gradients.value = emptyMap()
-        persistedPresets.clear()
-        pendingExtractions.clear()
+        games.clear()
+        media.clear()
     }
 }

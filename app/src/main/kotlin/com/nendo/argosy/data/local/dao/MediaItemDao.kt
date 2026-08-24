@@ -177,6 +177,9 @@ interface MediaItemDao {
     @Query("UPDATE media_items SET localPath = :localPath WHERE ownerUserId = :ownerUserId AND itemId = :itemId")
     suspend fun updateLocalPath(ownerUserId: String, itemId: String, localPath: String)
 
+    @Query("UPDATE media_items SET gradientColors = :json WHERE ownerUserId = :ownerUserId AND itemId = :itemId")
+    suspend fun updateGradientColors(ownerUserId: String, itemId: String, json: String)
+
     @Query("DELETE FROM media_items WHERE ownerUserId = :ownerUserId AND itemId IN (:itemIds)")
     suspend fun deleteByItemIds(ownerUserId: String, itemIds: List<String>)
 

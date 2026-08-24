@@ -309,7 +309,8 @@ fun CarouselRail(
     onItemTap: (Int) -> Unit = {},
     onItemLongPress: ((Int) -> Unit)? = null,
     onCoverLoadFailed: ((Long, String) -> Unit)? = null,
-    onCoverLoaded: ((Long, Bitmap) -> Unit)? = null
+    onCoverLoaded: ((Long, Bitmap) -> Unit)? = null,
+    onPosterLoaded: ((String, Bitmap) -> Unit)? = null
 ) {
     val screenWidth = LocalConfiguration.current.screenWidthDp.dp
     val boxArtStyle = LocalBoxArtStyle.current
@@ -401,6 +402,7 @@ fun CarouselRail(
                         showFocusVisuals = showFocusVisuals,
                         metrics = metrics,
                         overrides = overrides,
+                        onPosterLoaded = onPosterLoaded,
                         modifier = placementModifier
                             .padding(top = NEW_BADGE_TOP_OVERFLOW)
                             .then(tapModifier)
@@ -463,6 +465,7 @@ private fun CarouselMediaCard(
     showFocusVisuals: Boolean,
     metrics: CarouselMetrics,
     overrides: CarouselOverrides,
+    onPosterLoaded: ((String, Bitmap) -> Unit)?,
     modifier: Modifier = Modifier
 ) {
     val maxWidth = if (isFocused) metrics.focusedCardWidth else metrics.cardWidth
@@ -476,6 +479,7 @@ private fun CarouselMediaCard(
         scalePivotY = metrics.scalePivotY,
         scaleOverride = if (isFocused) overrides.focusedScale else null,
         alphaOverride = if (isFocused) overrides.focusedAlpha else overrides.unfocusedAlpha,
+        onPosterLoaded = onPosterLoaded,
         modifier = modifier.size(cardSize.width, cardSize.height)
     )
 }

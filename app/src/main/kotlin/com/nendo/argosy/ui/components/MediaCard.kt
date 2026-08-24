@@ -1,5 +1,7 @@
 package com.nendo.argosy.ui.components
 
+import android.graphics.Bitmap
+import android.graphics.drawable.BitmapDrawable
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -92,7 +94,8 @@ fun MediaCard(
     scalePivotY: Float = 0.5f,
     scaleOverride: Float? = null,
     alphaOverride: Float? = null,
-    downloadIndicator: GameDownloadIndicator = GameDownloadIndicator.NONE
+    downloadIndicator: GameDownloadIndicator = GameDownloadIndicator.NONE,
+    onPosterLoaded: ((itemId: String, bitmap: Bitmap) -> Unit)? = null
 ) {
     val theme = LocalArgosyTheme.current
 
@@ -103,6 +106,7 @@ fun MediaCard(
             scalePivotY = scalePivotY,
             scaleOverride = scaleOverride,
             alphaOverride = alphaOverride,
+            artworkGradient = media.gradientColors,
             background = SolidColor(theme.surfaceRaised)
         )
     ) {
@@ -127,6 +131,10 @@ fun MediaCard(
                 contentDescription = media.title,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize(),
+                onSuccess = { state ->
+                    val bitmap = (state.result.drawable as? BitmapDrawable)?.bitmap
+                    if (bitmap != null) onPosterLoaded?.invoke(media.itemId, bitmap)
+                },
                 onError = { artworkFailed = true }
             )
         }

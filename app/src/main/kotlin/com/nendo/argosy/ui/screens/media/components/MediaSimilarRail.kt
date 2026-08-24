@@ -25,7 +25,8 @@ fun MediaSimilarRail(
     isSectionFocused: Boolean,
     onSelect: (Int) -> Unit,
     onOpen: (Int) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onPosterLoaded: ((String, android.graphics.Bitmap) -> Unit)? = null
 ) {
     val listState = rememberLazyListState()
     FocusedScroll(listState = listState, focusedIndex = focusedIndex)
@@ -53,7 +54,8 @@ fun MediaSimilarRail(
                     onSelect(index)
                     onOpen(index)
                 },
-                scaleOverride = 1f
+                scaleOverride = 1f,
+                onPosterLoaded = onPosterLoaded
             )
         }
     }

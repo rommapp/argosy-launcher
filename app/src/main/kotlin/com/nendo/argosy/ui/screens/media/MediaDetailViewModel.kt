@@ -33,6 +33,7 @@ class MediaDetailViewModel @Inject constructor(
     private val downloadDelegate: MediaDownloadDelegate,
     private val availabilityVerifier: MediaAvailabilityVerifier,
     private val getRelatedMedia: GetRelatedMediaUseCase,
+    private val gradientExtractionDelegate: com.nendo.argosy.ui.screens.common.GradientExtractionDelegate,
     preferencesRepository: UserPreferencesRepository
 ) : ViewModel() {
 
@@ -56,6 +57,7 @@ class MediaDetailViewModel @Inject constructor(
     private var extrasJob: Job? = null
 
     init {
+        observeGradients()
         viewModelScope.launch {
             preferencesRepository.preferences.collect { prefs ->
                 _backdropSettings.value = MediaBackdropSettings(
@@ -116,7 +118,12 @@ class MediaDetailViewModel @Inject constructor(
                 mediaRepository.observeUserData(itemId),
                 availabilityVerifier.availability
             ) { entity, userData, verified ->
-                entity?.toMediaItemUi(mediaRepository, userData, verified)
+                entity?.toMediaItemUi(
+                    mediaRepository,
+                    userData,
+                    verified,
+                    gradientExtractionDelegate.mediaGradients.value
+                )
             }.collect { item -> applyItem(itemId, item) }
         }
     }
@@ -158,13 +165,47 @@ class MediaDetailViewModel @Inject constructor(
      * a title opened with no network still draws them; a title synced before credits were collected
      * simply has none until its library syncs again.
      */
+    /**
+     * Samples a poster in the Similar rail as it decodes, so a title reached from here carries the
+     * same cover colours as one reached from the grid.
+     */
+    fun onPosterLoaded(itemId: String, bitmap: android.graphics.Bitmap) {
+        gradientExtractionDelegate.extractForMedia(viewModelScope, itemId, bitmap)
+    }
+
+    private fun observeGradients() {
+        viewModelScope.launch {
+            gradientExtractionDelegate.mediaGradients.collect { gradients ->
+                if (gradients.isEmpty()) return@collect
+                _uiState.update { state ->
+                    state.copy(
+                        similar = state.similar.map { item ->
+                            gradients[item.itemId]
+                                ?.takeIf { it != item.gradientColors }
+                                ?.let { item.copy(gradientColors = it) }
+                                ?: item
+                        }
+                    )
+                }
+            }
+        }
+    }
+
     private fun loadExtras(itemId: String) {
         extrasJob = viewModelScope.launch {
             val entity = mediaRepository.getItem(itemId) ?: return@launch
             val cast = mediaRepository.getCredits(itemId)
                 .distinctBy { it.personId }
                 .map { it.toCastUi(mediaRepository) }
-            val similar = getRelatedMedia(entity).map { it.toMediaItemUi(mediaRepository, null) }
+            val related = getRelatedMedia(entity)
+            gradientExtractionDelegate.loadPersistedMediaGradients(
+                viewModelScope,
+                related.map { it.itemId }
+            )
+            val gradients = gradientExtractionDelegate.mediaGradients.value
+            val similar = related.map {
+                it.toMediaItemUi(mediaRepository, null, emptyMap(), gradients)
+            }
             if (itemId != loadedItemId) return@launch
             _uiState.update { it.copy(cast = cast, similar = similar).withRail() }
         }

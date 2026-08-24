@@ -306,7 +306,8 @@ private fun MediaExtraRails(
                 focusedIndex = uiState.similarIndex,
                 isSectionFocused = uiState.section == MediaDetailSection.SIMILAR,
                 onSelect = viewModel::setSimilarIndex,
-                onOpen = { viewModel.openSimilarTitle() }
+                onOpen = { viewModel.openSimilarTitle() },
+                onPosterLoaded = viewModel::onPosterLoaded
             )
         }
     }

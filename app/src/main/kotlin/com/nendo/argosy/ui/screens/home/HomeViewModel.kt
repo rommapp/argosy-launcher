@@ -484,6 +484,22 @@ class HomeViewModel @Inject constructor(
                 }
             }
         }
+        viewModelScope.launch {
+            gradientExtractionDelegate.mediaGradients.collect { gradients ->
+                if (gradients.isEmpty()) return@collect
+                _uiState.update { state ->
+                    state.copy(
+                        nextUpMedia = state.nextUpMedia.applyMediaGradients(gradients),
+                        continueWatchingMedia = state.continueWatchingMedia.applyMediaGradients(gradients),
+                        favoriteMedia = state.favoriteMedia.applyMediaGradients(gradients),
+                        mediaLibraryItems = state.mediaLibraryItems.applyMediaGradients(gradients),
+                        tileMedia = state.tileMedia.mapValues { (_, media) ->
+                            media.applyMediaGradient(gradients)
+                        }
+                    )
+                }
+            }
+        }
     }
 
     private fun observePlatformChanges() {
@@ -1380,6 +1396,11 @@ class HomeViewModel @Inject constructor(
         val isFocused = _uiState.value.focusedGame?.id == gameId
         libraryDelegate.extractGradientForGame(viewModelScope, gameId, bitmap, isFocused)
     }
+
+    fun extractGradientForMedia(itemId: String, bitmap: android.graphics.Bitmap) {
+        val isFocused = _uiState.value.focusedMedia?.itemId == itemId
+        gradientExtractionDelegate.extractForMedia(viewModelScope, itemId, bitmap, prioritize = isFocused)
+    }
     fun repairCoverImage(gameId: Long, failedPath: String) = libraryDelegate.repairCoverImage(viewModelScope, gameId, failedPath)
     fun showLaunchError(message: String) = notificationManager.showError(message)
 
@@ -1473,6 +1494,12 @@ private fun HomeGameUi.applyGradient(gradients: Map<Long, Pair<androidx.compose.
 
 private fun List<HomeGameUi>.applyGradients(gradients: Map<Long, Pair<androidx.compose.ui.graphics.Color, androidx.compose.ui.graphics.Color>>): List<HomeGameUi> =
     map { it.applyGradient(gradients) }
+
+private fun HomeMediaUi.applyMediaGradient(gradients: Map<String, Pair<androidx.compose.ui.graphics.Color, androidx.compose.ui.graphics.Color>>): HomeMediaUi =
+    gradients[itemId]?.takeIf { it != gradientColors }?.let { copy(gradientColors = it) } ?: this
+
+private fun List<HomeMediaUi>.applyMediaGradients(gradients: Map<String, Pair<androidx.compose.ui.graphics.Color, androidx.compose.ui.graphics.Color>>): List<HomeMediaUi> =
+    map { it.applyMediaGradient(gradients) }
 
 private fun List<HomeRowItem>.applyRowGradients(gradients: Map<Long, Pair<androidx.compose.ui.graphics.Color, androidx.compose.ui.graphics.Color>>): List<HomeRowItem> =
     map { item ->

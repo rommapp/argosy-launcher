@@ -172,6 +172,7 @@ fun HomeCustomGridPage(
     },
     onCoverLoadFailed: ((Long, String) -> Unit)? = null,
     onCoverLoaded: ((Long, android.graphics.Bitmap) -> Unit)? = null,
+    onPosterLoaded: ((String, android.graphics.Bitmap) -> Unit)? = null,
     overlappedTileIds: Set<Long> = emptySet(),
     editingTileId: Long? = null,
     onTileDrag: ((GridCell) -> Unit)? = null,
@@ -232,7 +233,8 @@ fun HomeCustomGridPage(
                         isOverlapped = false,
                         downloadIndicatorFor = downloadIndicatorFor,
                         onCoverLoadFailed = null,
-                        onCoverLoaded = null
+                        onCoverLoaded = null,
+                        onPosterLoaded = null
                     )
                 }
             }
@@ -264,6 +266,7 @@ fun HomeCustomGridPage(
                 downloadIndicatorFor = downloadIndicatorFor,
                 onCoverLoadFailed = onCoverLoadFailed,
                 onCoverLoaded = onCoverLoaded,
+                onPosterLoaded = onPosterLoaded,
                 playbackPath = tilePlayback[tile.id],
                 isEngaged = tile.id == engagedTileId,
                 isPaused = tile.id == engagedTileId && engagedPaused,
@@ -314,6 +317,7 @@ private fun CustomGridCellBox(
     downloadIndicatorFor: (Long) -> com.nendo.argosy.ui.screens.home.GameDownloadIndicator,
     onCoverLoadFailed: ((Long, String) -> Unit)?,
     onCoverLoaded: ((Long, android.graphics.Bitmap) -> Unit)?,
+    onPosterLoaded: ((String, android.graphics.Bitmap) -> Unit)?,
     playbackPath: String? = null,
     isEngaged: Boolean = false,
     isPaused: Boolean = false,
@@ -401,6 +405,7 @@ private fun CustomGridCellBox(
                 isFocused = isFocused,
                 focusScale = focusScaleForSpan(rect),
                 alphaOverride = if (isOverlapped) OVERLAPPED_ALPHA else null,
+                onPosterLoaded = onPosterLoaded,
                 modifier = Modifier
                     .then(
                         if (fitByHeight) Modifier.fillMaxHeight() else Modifier.fillMaxWidth()

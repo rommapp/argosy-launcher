@@ -43,7 +43,8 @@ class RomMApiFactory @Inject constructor() {
         }
 
         val downloadTimeoutInterceptor = Interceptor { chain ->
-            if (chain.request().url.encodedPath.contains("/content")) {
+            val path = chain.request().url.encodedPath
+            if (path.contains("/content") || path.endsWith("/api/roms")) {
                 chain.withReadTimeout(DOWNLOAD_STALL_TIMEOUT_SECONDS, TimeUnit.SECONDS)
                     .withWriteTimeout(DOWNLOAD_STALL_TIMEOUT_SECONDS, TimeUnit.SECONDS)
                     .proceed(chain.request())

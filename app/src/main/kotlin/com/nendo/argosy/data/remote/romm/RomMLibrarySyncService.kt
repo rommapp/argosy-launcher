@@ -29,6 +29,7 @@ import com.nendo.argosy.data.repository.BiosRepository
 import com.nendo.argosy.data.storage.StorageAttributionRepository
 import com.nendo.argosy.data.storage.StorageCategory
 import com.nendo.argosy.util.Logger
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -327,18 +328,30 @@ class RomMLibrarySyncService @Inject constructor(
                     platformsSynced++
                     continue
                 }
-                gameDao.markSyncDirtyForOwner(storageId, ROMM_SOURCES, scope.ownerUserId)
 
-                val result = syncPlatformRoms(currentApi, platform, filters, scope)
-                gamesAdded += result.added
-                gamesUpdated += result.updated
-                result.error?.let { errors.add(it) }
+                try {
+                    gameDao.markSyncDirtyForOwner(storageId, ROMM_SOURCES, scope.ownerUserId)
 
-                gamesDeleted += processPostPlatformSync(currentApi, storageId, result, filters, scope)
+                    val result = syncPlatformRoms(currentApi, platform, filters, scope)
+                    gamesAdded += result.added
+                    gamesUpdated += result.updated
+                    result.error?.let { errors.add(it) }
 
-                platformsSynced++
-                if (result.error == null) {
-                    userPreferencesRepository.addSyncResumeCompletedPlatform(storageId)
+                    gamesDeleted += processPostPlatformSync(currentApi, storageId, result, filters, scope)
+
+                    platformsSynced++
+                    if (result.error == null) {
+                        userPreferencesRepository.addSyncResumeCompletedPlatform(storageId)
+                    }
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    Logger.warn(
+                        TAG,
+                        "doSyncLibrary: platform ${platform.name} failed, continuing with the rest: ${e.message}"
+                    )
+                    errors.add("${platform.name}: ${e.message ?: "sync failed"}")
+                    gameDao.clearSyncDirty(storageId, ROMM_SOURCES)
                 }
             }
 
@@ -362,6 +375,7 @@ class RomMLibrarySyncService @Inject constructor(
 
         } catch (e: Exception) {
             errors.add(e.message ?: "Sync failed")
+            gameDao.clearAllSyncDirtyForOwner(scope.ownerUserId)
         } finally {
             _syncProgress.value = SyncProgress(isSyncing = false)
         }

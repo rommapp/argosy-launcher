@@ -233,9 +233,37 @@ class BiosRepository @Inject constructor(
         }
     }
 
+    /**
+     * Clears the recorded path of any firmware whose file is no longer on disk, so a BIOS that was
+     * moved or deleted counts as missing again and can be fetched a second time.
+     *
+     * Only the app's own BIOS directory is examined. That is internal storage, so a file absent
+     * from it is genuinely gone rather than briefly unreachable, which is not something a copy
+     * distributed onto removable storage can promise. Distributed copies are left alone.
+     *
+     * Returns how many rows were cleared.
+     */
+    suspend fun reconcileDownloadedFirmware(): Int = withContext(Dispatchers.IO) {
+        val internalPath = getInternalBiosDir().absolutePath
+        var cleared = 0
+        for (firmware in firmwareDao.getAllDownloaded()) {
+            val path = firmware.localPath ?: continue
+            if (!path.startsWith(internalPath)) continue
+            if (File(path).exists()) continue
+            firmwareDao.updateLocalPath(firmware.id, null, null)
+            cleared++
+        }
+        if (cleared > 0) {
+            Logger.info(TAG, "Reconciled firmware: $cleared recorded file(s) no longer on disk")
+            attributionRepository.markDirty(StorageCategory.BIOS)
+        }
+        cleared
+    }
+
     suspend fun downloadAllMissing(
         onProgress: ((current: Int, total: Int, fileName: String) -> Unit)? = null
     ): Int = withContext(Dispatchers.IO) {
+        reconcileDownloadedFirmware()
         val missing = firmwareDao.getSyncEnabledMissing()
         if (missing.isEmpty()) return@withContext 0
 
@@ -258,6 +286,7 @@ class BiosRepository @Inject constructor(
         onProgress: ((current: Int, total: Int, fileName: String) -> Unit)? = null
     ): Int = withContext(Dispatchers.IO) {
         cleanupDisabledPlatformBios()
+        reconcileDownloadedFirmware()
 
         val all = firmwareDao.getSyncEnabledAll()
         if (all.isEmpty()) return@withContext 0

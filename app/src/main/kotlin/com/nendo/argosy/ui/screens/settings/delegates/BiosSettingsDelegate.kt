@@ -52,6 +52,7 @@ class BiosSettingsDelegate @Inject constructor(
 
     suspend fun loadBiosState() {
         val prefs = preferencesRepository.preferences.first()
+        biosRepository.reconcileDownloadedFirmware()
         val allFirmware = firmwareDao.getSyncEnabledAll()
         val platforms = platformRepository.getAllPlatforms()
 
@@ -140,6 +141,7 @@ class BiosSettingsDelegate @Inject constructor(
         scope.launch {
             _state.update { it.copy(isDownloading = true, downloadProgress = 0f) }
 
+            biosRepository.reconcileDownloadedFirmware()
             val missing = firmwareDao.getMissingByPlatformSlug(platformSlug)
             val targets = missing.ifEmpty { firmwareDao.getByPlatformSlug(platformSlug) }
             var completed = 0

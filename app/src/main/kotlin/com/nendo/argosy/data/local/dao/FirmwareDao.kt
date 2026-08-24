@@ -48,6 +48,9 @@ interface FirmwareDao {
     @Upsert
     suspend fun upsertAll(firmware: List<FirmwareEntity>)
 
+    @Query("SELECT * FROM firmware WHERE localPath IS NOT NULL")
+    suspend fun getAllDownloaded(): List<FirmwareEntity>
+
     @Query("UPDATE firmware SET localPath = :localPath, downloadedAt = :downloadedAt WHERE id = :id")
     suspend fun updateLocalPath(id: Long, localPath: String?, downloadedAt: Instant?)
 

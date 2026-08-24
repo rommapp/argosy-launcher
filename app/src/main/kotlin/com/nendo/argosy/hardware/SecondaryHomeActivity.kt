@@ -7,10 +7,6 @@ import android.os.Bundle
 import android.view.Display
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.core.view.WindowCompat
-import androidx.core.view.WindowInsetsCompat
-import androidx.core.view.WindowInsetsControllerCompat
-import androidx.core.view.doOnAttach
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -46,6 +42,8 @@ import com.nendo.argosy.ui.input.LocalSwapStartSelect
 import com.nendo.argosy.ui.input.mapKeycodeToGamepadEvent
 import com.nendo.argosy.ui.screens.secondaryhome.SecondaryHomeViewModel
 import com.nendo.argosy.util.PermissionHelper
+import com.nendo.argosy.util.hideSystemBars
+import com.nendo.argosy.util.installImmersiveMode
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
@@ -113,13 +111,7 @@ class SecondaryHomeActivity :
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        installSystemBarsWatchdog()
-
-        // On cold boot the WindowInsetsController is not fully wired before decor attach,
-        // so an immediate hideSystemUI() can be a no-op and the navbar stays visible until
-        // the first focus-change event. Defer the first hide until attach guarantees the
-        // controller is live.
-        window.decorView.doOnAttach { hideSystemUI() }
+        installImmersiveMode()
 
         if (!SessionStateStore(applicationContext).isDualScreenEnabled()) {
             android.util.Log.d("SecondaryHome", "dualScreenEnabled=false, finishing")
@@ -275,7 +267,7 @@ class SecondaryHomeActivity :
     override fun onResume() {
         super.onResume()
         if (releaseUnsupportedDisplay()) return
-        hideSystemUI()
+        window.hideSystemBars()
         if (!::dsm.isInitialized) return
         val currentDsm = DualScreenManagerHolder.instance
         if (currentDsm != null && dsm !== currentDsm) {
@@ -1240,34 +1232,8 @@ class SecondaryHomeActivity :
 
     override fun onWindowFocusChanged(hasFocus: Boolean) {
         super.onWindowFocusChanged(hasFocus)
-        if (hasFocus) hideSystemUI()
+        if (hasFocus) window.hideSystemBars()
     }
-
-    private fun hideSystemUI() {
-        WindowCompat.setDecorFitsSystemWindows(window, false)
-        WindowInsetsControllerCompat(window, window.decorView).let { controller ->
-            controller.hide(WindowInsetsCompat.Type.systemBars())
-            controller.systemBarsBehavior =
-                WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
-        }
-    }
-
-    private fun installSystemBarsWatchdog() {
-        androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(window.decorView) { _, insets ->
-            if (insets.isVisible(WindowInsetsCompat.Type.systemBars())) {
-                // Call hide() inline so it lands within the same insets dispatch - posting
-                // delays the request until the next UI tick, by which point the controller
-                // may again think the bars belong on screen.
-                WindowInsetsControllerCompat(window, window.decorView)
-                    .hide(WindowInsetsCompat.Type.systemBars())
-            }
-            insets
-        }
-        // Force a synchronous insets pass so the listener fires immediately after install
-        // rather than waiting for the next layout-driven dispatch.
-        androidx.core.view.ViewCompat.requestApplyInsets(window.decorView)
-    }
-
 }
 
 private const val CONFIRM_HOLD_MS = 500L

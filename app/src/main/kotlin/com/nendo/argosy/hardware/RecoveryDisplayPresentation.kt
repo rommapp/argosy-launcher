@@ -14,6 +14,7 @@ import android.view.View
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.TextView
+import com.nendo.argosy.util.hideSystemBars
 
 class RecoveryDisplayPresentation(
     context: Context,
@@ -42,6 +43,7 @@ class RecoveryDisplayPresentation(
 
         setContentView(container)
         setCancelable(false)
+        window?.hideSystemBars()
     }
 
     private fun createFooterBar(): View {

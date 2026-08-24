@@ -10,6 +10,7 @@ import android.view.SurfaceHolder
 import android.view.SurfaceView
 import android.view.ViewGroup
 import android.view.WindowManager
+import com.nendo.argosy.util.hideSystemBars
 
 /**
  * The console's other screen, on the other display.
@@ -55,6 +56,7 @@ class SecondScreenPresentation(
             )
         }
         setContentView(surfaceView)
+        window?.hideSystemBars()
 
         surfaceView.setOnTouchListener { view, event ->
             when (event.actionMasked) {

@@ -13,9 +13,6 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import androidx.core.view.WindowCompat
-import androidx.core.view.WindowInsetsCompat
-import androidx.core.view.WindowInsetsControllerCompat
 import androidx.lifecycle.lifecycleScope
 import com.nendo.argosy.DualScreenManagerHolder
 import com.nendo.argosy.core.input.ControllerDetector
@@ -28,6 +25,8 @@ import com.nendo.argosy.ui.input.LocalXYIconsSwapped
 import com.nendo.argosy.ui.input.mapKeycodeToGamepadEvent
 import com.nendo.argosy.ui.theme.ALauncherTheme
 import com.nendo.argosy.util.DisplayAffinityHelper
+import com.nendo.argosy.util.hideSystemBars
+import com.nendo.argosy.util.installImmersiveMode
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -67,7 +66,7 @@ class PlayerActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-        enterImmersiveMode()
+        installImmersiveMode()
 
         val args = intent.toPlayerArgs()
         if (args == null) {
@@ -104,6 +103,11 @@ class PlayerActivity : ComponentActivity() {
         viewModel.initialize(args)
     }
 
+    override fun onResume() {
+        super.onResume()
+        window.hideSystemBars()
+    }
+
     override fun onStart() {
         super.onStart()
         reportDisplay()
@@ -137,7 +141,7 @@ class PlayerActivity : ComponentActivity() {
     override fun onWindowFocusChanged(hasFocus: Boolean) {
         super.onWindowFocusChanged(hasFocus)
         if (hasFocus) {
-            enterImmersiveMode()
+            window.hideSystemBars()
             reportDisplay()
         }
     }
@@ -236,14 +240,6 @@ class PlayerActivity : ComponentActivity() {
             options = options
         )
         finish()
-    }
-
-    private fun enterImmersiveMode() {
-        WindowCompat.setDecorFitsSystemWindows(window, false)
-        WindowInsetsControllerCompat(window, window.decorView).apply {
-            hide(WindowInsetsCompat.Type.systemBars())
-            systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
-        }
     }
 
     private fun Intent.toPlayerArgs(): PlayerArgs? {

@@ -8,12 +8,7 @@ import android.view.KeyEvent
 import android.view.MotionEvent
 import androidx.activity.ComponentActivity
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.core.view.WindowCompat
-import androidx.core.view.WindowInsetsCompat
-import androidx.core.view.WindowInsetsControllerCompat
-import androidx.core.view.doOnAttach
 import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.collectAsState
@@ -48,6 +43,8 @@ import android.view.Display
 import com.nendo.argosy.hardware.SecondaryHomeActivity
 import com.nendo.argosy.util.DisplayAffinityHelper
 import com.nendo.argosy.util.Logger
+import com.nendo.argosy.util.hideSystemBars
+import com.nendo.argosy.util.installImmersiveMode
 import com.nendo.argosy.util.DisplayRoleResolver
 import dagger.hilt.android.AndroidEntryPoint
 import com.nendo.argosy.util.SafeCoroutineScope
@@ -285,12 +282,7 @@ class MainActivity : ComponentActivity() {
             return
         }
 
-        enableEdgeToEdge()
-        installSystemBarsWatchdog()
-        // Defer the first hide until decor attach so the WindowInsetsController is wired.
-        // An immediate call from onCreate races against initial layout on cold start and
-        // routinely no-ops, leaving the system bars on screen until first focus change.
-        window.decorView.doOnAttach { hideSystemUI() }
+        installImmersiveMode()
 
         discordPresenceManager.init(this)
 
@@ -441,6 +433,7 @@ class MainActivity : ComponentActivity() {
     @SuppressLint("NewApi")
     override fun onResume() {
         super.onResume()
+        window.hideSystemBars()
         onDimmerActivity?.invoke()
         Log.d(TAG, "onResume: swapped=${dualScreenManager.isRolesSwapped.value} gameActive=${if (::dualScreenManager.isInitialized) dualScreenManager.swappedIsGameActive.value else "N/A"} hasResumedBefore=$hasResumedBefore")
 
@@ -642,7 +635,7 @@ class MainActivity : ComponentActivity() {
                 reassertCompanionForwarding()
             }
             onDimmerActivity?.invoke()
-            hideSystemUI()
+            window.hideSystemBars()
             window.decorView.requestFocus()
             ambientAudioManager.fadeIn()
             ambientLedManager.setContext(AmbientLedContext.ARGOSY_UI)
@@ -821,34 +814,4 @@ class MainActivity : ComponentActivity() {
         return false
     }
 
-    private fun hideSystemUI() {
-        WindowCompat.setDecorFitsSystemWindows(window, false)
-        WindowInsetsControllerCompat(window, window.decorView).let { controller ->
-            controller.hide(WindowInsetsCompat.Type.systemBars())
-            controller.systemBarsBehavior =
-                WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
-        }
-    }
-
-    /**
-     * Re-hides the system bars whenever something brings them back.
-     *
-     * The listener must return the decor view's own inset handling rather than the insets it was
-     * given: it replaces that handling, and skipping it stops insets reaching the content view,
-     * which leaves Compose reading zero for the IME and every text field unusable.
-     */
-    private fun installSystemBarsWatchdog() {
-        androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(window.decorView) { view, insets ->
-            if (insets.isVisible(WindowInsetsCompat.Type.systemBars())) {
-                // Hide inline rather than via View.post - posting delays the request to the
-                // next UI tick, which is enough for the bars to stay drawn between insets
-                // dispatch and the post running.
-                WindowInsetsControllerCompat(window, window.decorView)
-                    .hide(WindowInsetsCompat.Type.systemBars())
-            }
-            androidx.core.view.ViewCompat.onApplyWindowInsets(view, insets)
-        }
-        // Force a synchronous insets pass so the listener fires immediately after install.
-        androidx.core.view.ViewCompat.requestApplyInsets(window.decorView)
-    }
 }

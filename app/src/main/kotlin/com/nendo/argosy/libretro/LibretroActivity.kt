@@ -15,7 +15,6 @@ import android.view.InputDevice
 import android.view.MotionEvent
 import android.widget.FrameLayout
 import androidx.activity.ComponentActivity
-import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -50,9 +49,6 @@ import com.nendo.argosy.core.input.ControllerDetector
 import com.nendo.argosy.ui.input.LocalABIconsSwapped
 import com.nendo.argosy.ui.input.LocalSwapStartSelect
 import com.nendo.argosy.ui.input.LocalXYIconsSwapped
-import androidx.core.view.WindowCompat
-import androidx.core.view.WindowInsetsCompat
-import androidx.core.view.WindowInsetsControllerCompat
 import androidx.lifecycle.lifecycleScope
 import com.nendo.argosy.BuildConfig
 import com.nendo.argosy.data.cheats.CheatsRepository
@@ -129,6 +125,8 @@ import com.nendo.argosy.ui.theme.GRIP_RESERVE_MIN_PERCENT
 import com.nendo.argosy.ui.theme.resolveGripReserveFraction
 import com.nendo.argosy.data.preferences.BuiltinEmulatorSettings
 import com.nendo.argosy.util.AppPaths
+import com.nendo.argosy.util.hideSystemBars
+import com.nendo.argosy.util.installImmersiveMode
 import com.swordfish.libretrodroid.GLRetroView
 import com.swordfish.libretrodroid.GLRetroViewData
 import com.swordfish.libretrodroid.LibretroDroid
@@ -331,8 +329,8 @@ class LibretroActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         Log.d(TAG, "onCreate: savedInstanceState=${savedInstanceState != null}")
-        enableEdgeToEdge()
-        enterImmersiveMode()
+        allowContentIntoDisplayCutout()
+        installImmersiveMode()
         currentOrientationState = resources.configuration.orientation
         currentRotationState = windowManager.defaultDisplay.rotation
         baselineRotation = currentRotationState
@@ -2690,28 +2688,19 @@ class LibretroActivity : ComponentActivity() {
         }
     }
 
-    private fun enterImmersiveMode() {
-        WindowCompat.setDecorFitsSystemWindows(window, false)
-
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
-            window.attributes.layoutInDisplayCutoutMode =
+    /**
+     * Lets the game surface reach the edges of a display with a cutout.
+     *
+     * The mode has to be written back through [android.view.Window.setAttributes]: the getter hands
+     * out the live parameters, so changing the field in place never reaches the window manager and
+     * the game stays letterboxed away from the notch.
+     */
+    private fun allowContentIntoDisplayCutout() {
+        if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.P) return
+        window.attributes = window.attributes.apply {
+            layoutInDisplayCutoutMode =
                 android.view.WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
         }
-
-        WindowInsetsControllerCompat(window, window.decorView).apply {
-            hide(WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.navigationBars())
-            systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
-        }
-
-        @Suppress("DEPRECATION")
-        window.decorView.systemUiVisibility = (
-            android.view.View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
-            or android.view.View.SYSTEM_UI_FLAG_FULLSCREEN
-            or android.view.View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
-            or android.view.View.SYSTEM_UI_FLAG_LAYOUT_STABLE
-            or android.view.View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
-            or android.view.View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
-        )
     }
 
     @SuppressLint("RestrictedApi")
@@ -2811,7 +2800,7 @@ class LibretroActivity : ComponentActivity() {
     override fun onResume() {
         super.onResume()
         autoSaveStateCaptured = false
-        enterImmersiveMode()
+        window.hideSystemBars()
         retroView.onResume()
         showSecondScreen()
         startRollingSave()
@@ -2940,7 +2929,7 @@ class LibretroActivity : ComponentActivity() {
     override fun onWindowFocusChanged(hasFocus: Boolean) {
         super.onWindowFocusChanged(hasFocus)
         if (hasFocus) {
-            enterImmersiveMode()
+            window.hideSystemBars()
         }
     }
 

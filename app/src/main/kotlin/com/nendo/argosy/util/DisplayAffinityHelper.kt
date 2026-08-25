@@ -51,6 +51,22 @@ class DisplayAffinityHelper @Inject constructor(
     private val secondaryDisplayId: Int?
         get() = physicalDisplays.getOrNull(1)?.displayId
 
+    /**
+     * The roomiest physical display, by pixel area.
+     *
+     * Measured rather than assumed to be the default one, because which panel is larger is a fact
+     * about the hardware; a handheld whose second screen is the bigger of the two would otherwise
+     * send video to the smaller.
+     */
+    fun largestDisplayId(): Int? = physicalDisplays
+        .maxByOrNull { display ->
+            val metrics = android.graphics.Point()
+            @Suppress("DEPRECATION")
+            display.getRealSize(metrics)
+            metrics.x.toLong() * metrics.y.toLong()
+        }
+        ?.displayId
+
     fun registerDisplayListener(
         listener: DisplayManager.DisplayListener,
         handler: android.os.Handler? = null

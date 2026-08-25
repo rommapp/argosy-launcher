@@ -515,15 +515,15 @@ class DualScreenManager(
     /**
      * Where a film belongs when nothing has stated a position yet.
      *
-     * Watching is something the viewer drives, so it lands on the display holding the interactive
-     * role, the same one carrying Home, Library and Media. A game already occupying that display is
-     * the one thing that overrides it, and then the film takes the other screen rather than opening
-     * underneath the game.
+     * The bigger panel wins, because watching is the one thing on this device that is better for
+     * having more screen, and unlike Home or Library it is not something the viewer is driving from
+     * moment to moment. A game already occupying that display is the only override, and then the
+     * film takes the other screen rather than opening underneath the game.
      */
     fun mediaPlayerRelocationDisplayId(): Int? {
         val emulator = emulatorDisplayId
         if (emulator != null) return displayAffinityHelper.getMediaPlayerDisplayId(emulator)
-        return interactiveDisplayId()
+        return displayAffinityHelper.largestDisplayId() ?: interactiveDisplayId()
     }
 
     /**

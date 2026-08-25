@@ -108,6 +108,7 @@ import kotlin.math.abs
 fun DualHomeLowerScreen(
     games: List<HomeGameUi>,
     mediaItems: List<com.nendo.argosy.ui.screens.home.HomeMediaUi> = emptyList(),
+    mediaDetails: List<com.nendo.argosy.ui.dualscreen.CompanionDetail> = emptyList(),
     selectedIndex: Int,
     platformName: String,
     totalCount: Int,
@@ -182,15 +183,11 @@ fun DualHomeLowerScreen(
     var skipNextProgrammatic by remember { mutableStateOf(false) }
     var isUserScroll by remember { mutableStateOf(false) }
 
-    LaunchedEffect(selectedIndex, mediaItems) {
-        val focused = mediaItems.getOrNull(selectedIndex) ?: return@LaunchedEffect
-        com.nendo.argosy.DualScreenManagerHolder.instance?.setCompanionDetail(
-            com.nendo.argosy.ui.dualscreen.CompanionDetail(
-                title = focused.title,
-                subtitle = focused.subtitle,
-                artUrl = focused.posterUrl
-            )
-        )
+    LaunchedEffect(selectedIndex, mediaItems, mediaDetails) {
+        if (mediaItems.getOrNull(selectedIndex) == null) return@LaunchedEffect
+        mediaDetails.getOrNull(selectedIndex)?.let { detail ->
+            com.nendo.argosy.DualScreenManagerHolder.instance?.setCompanionDetail(detail)
+        }
         if (skipNextProgrammatic) {
             skipNextProgrammatic = false
         } else {

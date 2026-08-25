@@ -49,6 +49,7 @@ fun DualHomeLowerContent(
                 DualHomeLowerScreen(
                     games = uiState.games,
                     mediaItems = uiState.mediaItems,
+                    mediaDetails = uiState.mediaDetails,
                     selectedIndex = uiState.selectedIndex,
                     platformName = uiState.platformName,
                     totalCount = uiState.totalCount,

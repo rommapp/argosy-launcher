@@ -204,8 +204,17 @@ fun ArgosyApp(
         (context as? com.nendo.argosy.MainActivity)?.isOnHomeScreen = isOnHomeScreen
     }
 
-    // Handle deep links from secondary home
     val activity = context as? com.nendo.argosy.MainActivity
+
+    val companionDetail by (
+        activity?.dualScreenManager?.companionDetail
+            ?: remember {
+                kotlinx.coroutines.flow.MutableStateFlow<
+                    com.nendo.argosy.ui.dualscreen.CompanionDetail?
+                    >(null)
+            }
+        ).collectAsState()
+    val describedByPrimary = companionDetail
 
     LaunchedEffect(activity) {
         val dsm = activity?.dualScreenManager ?: return@LaunchedEffect
@@ -1282,6 +1291,11 @@ fun ArgosyApp(
                                     modifier = Modifier.height(Dimens.footerHeight)
                                 )
                             },
+                            modifier = Modifier.blur(contentBlur)
+                        )
+                    } else if (describedByPrimary != null) {
+                        com.nendo.argosy.ui.dualscreen.CompanionDetailScreen(
+                            detail = describedByPrimary,
                             modifier = Modifier.blur(contentBlur)
                         )
                     } else if (viewMode == "COLLECTIONS" || collectionShowcaseState.focused) {

@@ -184,7 +184,7 @@ class SecondaryHomeActivity :
                         scrapingArtwork.isProcessing
                 ) {
                     val primaryDetail by _companionDetail.collectAsState()
-                    val describingPrimary = primaryDetail
+                    val describingPrimary = primaryDetail.takeIf { isShowcaseRole }
                     if (describingPrimary != null) {
                         CompanionDetailScreen(
                             detail = describingPrimary,

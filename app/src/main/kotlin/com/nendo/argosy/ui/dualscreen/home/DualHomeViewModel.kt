@@ -43,6 +43,8 @@ import com.nendo.argosy.ui.screens.home.GameDownloadIndicator
 import com.nendo.argosy.data.local.entity.MediaItemType
 import com.nendo.argosy.data.media.mediaAvailabilityOf
 import com.nendo.argosy.ui.screens.home.HomeGameUi
+import com.nendo.argosy.ui.dualscreen.CompanionDetail
+import com.nendo.argosy.ui.dualscreen.CompanionFact
 import com.nendo.argosy.ui.screens.home.HomeMediaUi
 import com.nendo.argosy.util.DisplayAffinityHelper
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -177,6 +179,7 @@ data class DualHomeUiState(
     val currentSectionIndex: Int = 0,
     val games: List<HomeGameUi> = emptyList(),
     val mediaItems: List<com.nendo.argosy.ui.screens.home.HomeMediaUi> = emptyList(),
+    val mediaDetails: List<com.nendo.argosy.ui.dualscreen.CompanionDetail> = emptyList(),
     val selectedIndex: Int = 0,
     val isLoading: Boolean = true,
     val focusZone: DualHomeFocusZone = DualHomeFocusZone.CAROUSEL,
@@ -227,8 +230,18 @@ data class DualHomeUiState(
     val currentSection: DualHomeSection?
         get() = sections.getOrNull(currentSectionIndex)
 
+    /**
+     * How many tiles the current row holds, whichever kind of thing it holds.
+     *
+     * Navigation, counts and clamping all ask this rather than the game list, because a media row
+     * fills [mediaItems] and leaves [games] empty; anything still measuring the row by its games
+     * reads a media row as empty and refuses to move.
+     */
+    val rowItemCount: Int
+        get() = if (mediaItems.isNotEmpty()) mediaItems.size else games.size
+
     val totalCount: Int
-        get() = if (platformTotalCount > 0) platformTotalCount else games.size
+        get() = if (platformTotalCount > 0) platformTotalCount else rowItemCount
 
     val hasMoreGames: Boolean
         get() = platformTotalCount > games.size
@@ -933,21 +946,37 @@ class DualHomeViewModel(
      */
     private suspend fun loadMediaForSection(section: DualHomeSection.MediaLibrary) {
         val repository = mediaRepository ?: return
-        val items = repository.observeLibraryItems(section.libraryId).first()
-            .map { entity ->
-                HomeMediaUi(
-                    itemId = entity.itemId,
-                    title = entity.name,
-                    subtitle = entity.productionYear?.toString(),
-                    posterUrl = repository.posterUrl(entity.itemId, entity.primaryImageTag),
-                    isSeries = MediaItemType.fromWire(entity.itemType) == MediaItemType.SERIES,
-                    availability = mediaAvailabilityOf(entity.localPath, null)
-                )
-            }
+        val entities = repository.observeLibraryItems(section.libraryId).first()
+        val items = entities.map { entity ->
+            HomeMediaUi(
+                itemId = entity.itemId,
+                title = entity.name,
+                subtitle = entity.productionYear?.toString(),
+                posterUrl = repository.posterUrl(entity.itemId, entity.primaryImageTag),
+                isSeries = MediaItemType.fromWire(entity.itemType) == MediaItemType.SERIES,
+                availability = mediaAvailabilityOf(entity.localPath, null)
+            )
+        }
+        val details = entities.map { entity ->
+            CompanionDetail(
+                title = entity.name,
+                subtitle = entity.productionYear?.toString(),
+                overview = entity.overview,
+                artUrl = repository.posterUrl(entity.itemId, entity.primaryImageTag),
+                facts = buildList {
+                    entity.productionYear?.let { add(CompanionFact("Year", it.toString())) }
+                    entity.officialRating?.let { add(CompanionFact("Rated", it)) }
+                    entity.communityRating?.let {
+                        add(CompanionFact("Rating", "%.1f".format(it)))
+                    }
+                }
+            )
+        }
         _uiState.update {
             it.copy(
                 games = emptyList(),
                 mediaItems = items,
+                mediaDetails = details,
                 platformTotalCount = 0,
                 selectedIndex = it.selectedIndex.coerceIn(0, (items.size - 1).coerceAtLeast(0))
             )
@@ -1244,8 +1273,8 @@ class DualHomeViewModel(
 
     fun selectNext() {
         val state = _uiState.value
-        if (state.games.isEmpty()) return
-        val maxIndex = if (state.hasMoreGames) state.games.size else state.games.size - 1
+        if (state.rowItemCount == 0) return
+        val maxIndex = if (state.hasMoreGames) state.rowItemCount else state.rowItemCount - 1
         val newIndex = (state.selectedIndex + 1).coerceAtMost(maxIndex)
         _uiState.update { it.copy(selectedIndex = newIndex) }
         persistSection()
@@ -1253,7 +1282,7 @@ class DualHomeViewModel(
 
     fun selectPrevious() {
         val state = _uiState.value
-        if (state.games.isEmpty()) return
+        if (state.rowItemCount == 0) return
         val newIndex = (state.selectedIndex - 1).coerceAtLeast(0)
         _uiState.update { it.copy(selectedIndex = newIndex) }
         persistSection()
@@ -1536,8 +1565,8 @@ class DualHomeViewModel(
 
     fun moveCarouselGridFocus(direction: GridDirection): AutoGridMove {
         val state = _uiState.value
-        if (state.games.isEmpty()) return AutoGridMove.None
-        val count = if (state.hasMoreGames) state.games.size + 1 else state.games.size
+        if (state.rowItemCount == 0) return AutoGridMove.None
+        val count = if (state.hasMoreGames) state.rowItemCount + 1 else state.rowItemCount
         val move = autoGridMove(
             itemCount = count,
             config = state.autoGridConfig,
@@ -1551,7 +1580,7 @@ class DualHomeViewModel(
     }
 
     fun setSelectedIndex(index: Int) {
-        _uiState.update { it.copy(selectedIndex = index.coerceIn(0, maxOf(0, it.games.size - 1))) }
+        _uiState.update { it.copy(selectedIndex = index.coerceIn(0, maxOf(0, it.rowItemCount - 1))) }
     }
 
     fun selectByTouch(index: Int) {

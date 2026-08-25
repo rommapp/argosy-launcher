@@ -1296,7 +1296,13 @@ fun ArgosyApp(
                     } else if (describedByPrimary != null) {
                         com.nendo.argosy.ui.dualscreen.CompanionDetailScreen(
                             detail = describedByPrimary,
-                            modifier = Modifier.blur(contentBlur)
+                            modifier = Modifier.blur(contentBlur),
+                            footerHints = {
+                                FooterHints(
+                                    hints = com.nendo.argosy.ui.dualscreen
+                                        .companionDetailHints(describedByPrimary)
+                                )
+                            }
                         )
                     } else if (viewMode == "COLLECTIONS" || collectionShowcaseState.focused) {
                         DualCollectionShowcase(
@@ -1334,6 +1340,11 @@ fun ArgosyApp(
                                             com.nendo.argosy.ui.components.InputButton.A to "Details",
                                             com.nendo.argosy.ui.components.InputButton.X to "Options",
                                             com.nendo.argosy.ui.components.InputButton.Y to "Filters",
+                                            com.nendo.argosy.ui.components.InputButton.B to "Back"
+                                        )
+                                        "MEDIA_GRID" -> listOf(
+                                            com.nendo.argosy.ui.components.InputButton.LB_RB to "Library",
+                                            com.nendo.argosy.ui.components.InputButton.A to "Play",
                                             com.nendo.argosy.ui.components.InputButton.B to "Back"
                                         )
                                         else -> if (drawerOpen) listOf(

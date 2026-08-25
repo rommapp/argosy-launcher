@@ -81,6 +81,7 @@ class DualHomeInputHandler(
             DualHomeViewMode.COLLECTIONS -> handleCollections(event)
             DualHomeViewMode.COLLECTION_GAMES -> handleCollectionGames(event)
             DualHomeViewMode.LIBRARY_GRID -> handleLibraryGrid(event)
+            DualHomeViewMode.MEDIA_GRID -> handleMediaGrid(event)
         }
     }
 
@@ -307,6 +308,46 @@ class DualHomeInputHandler(
                 InputResult.HANDLED
             }
             else -> InputResult.HANDLED
+        }
+    }
+
+    /**
+     * The media browser on this screen. Confirm starts the title, the shoulders change library and
+     * Back returns to the carousel, matching what the same buttons do in the game library grid.
+     */
+    private fun handleMediaGrid(event: GamepadEvent): InputResult {
+        val columns = viewModel.mediaGridColumns()
+        return when (event) {
+            GamepadEvent.Left ->
+                if (viewModel.moveMediaGridFocus(GridDirection.LEFT, columns)) InputResult.HANDLED
+                else InputResult.UNHANDLED
+            GamepadEvent.Right ->
+                if (viewModel.moveMediaGridFocus(GridDirection.RIGHT, columns)) InputResult.HANDLED
+                else InputResult.UNHANDLED
+            GamepadEvent.Up ->
+                if (viewModel.moveMediaGridFocus(GridDirection.UP, columns)) InputResult.HANDLED
+                else InputResult.UNHANDLED
+            GamepadEvent.Down ->
+                if (viewModel.moveMediaGridFocus(GridDirection.DOWN, columns)) InputResult.HANDLED
+                else InputResult.UNHANDLED
+            GamepadEvent.PrevSection -> {
+                viewModel.cycleMediaLibrary(-1)
+                InputResult.HANDLED
+            }
+            GamepadEvent.NextSection -> {
+                viewModel.cycleMediaLibrary(1)
+                InputResult.HANDLED
+            }
+            GamepadEvent.Confirm -> {
+                val itemId = viewModel.focusedMediaItemId() ?: return InputResult.UNHANDLED
+                com.nendo.argosy.DualScreenManagerHolder.instance?.playMediaItem(itemId)
+                InputResult.HANDLED
+            }
+            GamepadEvent.Back -> {
+                viewModel.exitToCarousel()
+                InputResult.HANDLED
+            }
+            else -> InputResult.UNHANDLED
         }
     }
 

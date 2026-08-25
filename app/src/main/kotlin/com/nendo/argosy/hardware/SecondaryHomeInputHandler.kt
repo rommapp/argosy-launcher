@@ -151,6 +151,48 @@ class SecondaryHomeInputHandler(
             DualHomeViewMode.COLLECTIONS -> handleCollectionsInput(event)
             DualHomeViewMode.COLLECTION_GAMES -> handleCollectionGamesInput(event)
             DualHomeViewMode.LIBRARY_GRID -> handleLibraryGridInput(event)
+            DualHomeViewMode.MEDIA_GRID -> handleMediaGridInput(event)
+        }
+    }
+
+    /**
+     * The media browser on this screen. Confirm starts the title, the shoulders change library and
+     * Back returns to the carousel, matching what the same buttons do in the game library grid.
+     */
+    private fun handleMediaGridInput(event: GamepadEvent): InputResult {
+        val vm = dualHomeViewModel
+        val columns = vm.mediaGridColumns()
+        return when (event) {
+            GamepadEvent.Left ->
+                if (vm.moveMediaGridFocus(GridDirection.LEFT, columns)) InputResult.HANDLED
+                else InputResult.handled(SoundType.BOUNDARY)
+            GamepadEvent.Right ->
+                if (vm.moveMediaGridFocus(GridDirection.RIGHT, columns)) InputResult.HANDLED
+                else InputResult.handled(SoundType.BOUNDARY)
+            GamepadEvent.Up ->
+                if (vm.moveMediaGridFocus(GridDirection.UP, columns)) InputResult.HANDLED
+                else InputResult.handled(SoundType.BOUNDARY)
+            GamepadEvent.Down ->
+                if (vm.moveMediaGridFocus(GridDirection.DOWN, columns)) InputResult.HANDLED
+                else InputResult.handled(SoundType.BOUNDARY)
+            GamepadEvent.PrevSection -> {
+                vm.cycleMediaLibrary(-1)
+                InputResult.handled(SoundType.SECTION_CHANGE)
+            }
+            GamepadEvent.NextSection -> {
+                vm.cycleMediaLibrary(1)
+                InputResult.handled(SoundType.SECTION_CHANGE)
+            }
+            GamepadEvent.Confirm -> {
+                val itemId = vm.focusedMediaItemId() ?: return InputResult.UNHANDLED
+                com.nendo.argosy.DualScreenManagerHolder.instance?.playMediaItem(itemId)
+                InputResult.HANDLED
+            }
+            GamepadEvent.Back -> {
+                vm.exitToCarousel()
+                InputResult.HANDLED
+            }
+            else -> InputResult.UNHANDLED
         }
     }
 
@@ -526,7 +568,11 @@ class SecondaryHomeInputHandler(
             }
             GamepadEvent.Confirm -> {
                 if (onMediaSlot) {
-                    com.nendo.argosy.DualScreenManagerHolder.instance?.toggleCompanionMediaView()
+                    val dsm = com.nendo.argosy.DualScreenManagerHolder.instance
+                    if (dsm?.mediaPlayback?.value != null) dsm.toggleCompanionMediaView()
+                    else dualHomeViewModel.enterMediaGrid {
+                        broadcasts.broadcastViewModeChange()
+                    }
                     InputResult.HANDLED
                 } else if (inAppBar && state.appBarIndex == -1) {
                     viewModel.openDrawer()
@@ -553,15 +599,27 @@ class SecondaryHomeInputHandler(
                     }
                     InputResult.HANDLED
                 } else {
+                    val mediaItemId = dualHomeViewModel.focusedMediaItemId()
                     val game = state.selectedGame
-                    if (game != null) {
-                        confirmGame(game)
-                        InputResult.HANDLED
-                    } else InputResult.UNHANDLED
+                    when {
+                        mediaItemId != null -> {
+                            com.nendo.argosy.DualScreenManagerHolder.instance
+                                ?.playMediaItem(mediaItemId)
+                            InputResult.HANDLED
+                        }
+                        game != null -> {
+                            confirmGame(game)
+                            InputResult.HANDLED
+                        }
+                        else -> InputResult.UNHANDLED
+                    }
                 }
             }
             GamepadEvent.ContextMenu -> {
                 if (inAppBar) return InputResult.UNHANDLED
+                dualHomeViewModel.focusedMediaItemId()?.let {
+                    return InputResult.handled(SoundType.BOUNDARY)
+                }
                 val game = state.selectedGame
                 if (game != null) {
                     onSelectGame(game.id)

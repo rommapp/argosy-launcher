@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -132,6 +133,30 @@ fun DualHomeLowerContent(
                     onGameTapped = onGridGameTapped,
                     onCoverLoadFailed = { gameId, path -> viewModel.repairCoverImage(gameId, path) },
                     onSectionClick = {}
+                )
+            }
+            DualHomeViewMode.MEDIA_GRID -> {
+                LaunchedEffect(uiState.mediaGridFocusedIndex, uiState.mediaGridDetails) {
+                    uiState.mediaGridDetails
+                        .getOrNull(uiState.mediaGridFocusedIndex)
+                        ?.let {
+                            com.nendo.argosy.DualScreenManagerHolder.instance
+                                ?.setCompanionDetail(it)
+                        }
+                }
+                com.nendo.argosy.ui.dualscreen.media.DualMediaGrid(
+                    items = uiState.mediaGridItems,
+                    focusedIndex = uiState.mediaGridFocusedIndex,
+                    libraryLabel = uiState.mediaLibraries
+                        .getOrNull(uiState.mediaLibraryIndex)?.name.orEmpty(),
+                    onColumnsChanged = { viewModel.setMediaGridColumns(it) },
+                    onItemTapped = { index ->
+                        viewModel.setMediaGridFocus(index)
+                        viewModel.focusedMediaItemId()?.let { itemId ->
+                            com.nendo.argosy.DualScreenManagerHolder.instance
+                                ?.playMediaItem(itemId)
+                        }
+                    }
                 )
             }
             DualHomeViewMode.LIBRARY_GRID -> {

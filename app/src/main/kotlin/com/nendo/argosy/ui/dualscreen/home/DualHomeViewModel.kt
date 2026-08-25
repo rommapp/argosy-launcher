@@ -40,12 +40,15 @@ import com.nendo.argosy.ui.components.AutoGridMove
 import com.nendo.argosy.ui.components.autoGridMove
 import com.nendo.argosy.ui.common.toHomeGameUi
 import com.nendo.argosy.ui.screens.home.GameDownloadIndicator
+import com.nendo.argosy.data.local.entity.MediaItemEntity
 import com.nendo.argosy.data.local.entity.MediaItemType
 import com.nendo.argosy.data.media.mediaAvailabilityOf
+import com.nendo.argosy.data.repository.MediaRepository
 import com.nendo.argosy.ui.screens.home.HomeGameUi
 import com.nendo.argosy.ui.dualscreen.CompanionDetail
 import com.nendo.argosy.ui.dualscreen.CompanionFact
 import com.nendo.argosy.ui.screens.home.HomeMediaUi
+import com.nendo.argosy.ui.screens.media.toMediaItemUi
 import com.nendo.argosy.util.DisplayAffinityHelper
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -110,7 +113,7 @@ sealed class DualHomeSection(
 
 enum class DualHomeFocusZone { CAROUSEL, APP_BAR }
 
-enum class DualHomeViewMode { CAROUSEL, COLLECTIONS, COLLECTION_GAMES, LIBRARY_GRID }
+enum class DualHomeViewMode { CAROUSEL, COLLECTIONS, COLLECTION_GAMES, LIBRARY_GRID, MEDIA_GRID }
 
 data class DualCollectionPickerEntry(val id: Long, val name: String, val isMember: Boolean)
 
@@ -180,6 +183,11 @@ data class DualHomeUiState(
     val games: List<HomeGameUi> = emptyList(),
     val mediaItems: List<com.nendo.argosy.ui.screens.home.HomeMediaUi> = emptyList(),
     val mediaDetails: List<com.nendo.argosy.ui.dualscreen.CompanionDetail> = emptyList(),
+    val mediaGridItems: List<com.nendo.argosy.ui.screens.media.MediaItemUi> = emptyList(),
+    val mediaGridDetails: List<com.nendo.argosy.ui.dualscreen.CompanionDetail> = emptyList(),
+    val mediaGridFocusedIndex: Int = 0,
+    val mediaLibraries: List<DualHomeSection.MediaLibrary> = emptyList(),
+    val mediaLibraryIndex: Int = 0,
     val selectedIndex: Int = 0,
     val isLoading: Boolean = true,
     val focusZone: DualHomeFocusZone = DualHomeFocusZone.CAROUSEL,
@@ -405,6 +413,8 @@ class DualHomeViewModel(
 
     private val _uiState = MutableStateFlow(DualHomeUiState())
     val uiState: StateFlow<DualHomeUiState> = _uiState.asStateFlow()
+
+    private var mediaGridColumns = 1
 
     private val _forwardingMode = MutableStateFlow(ForwardingMode.NONE)
     val forwardingMode: StateFlow<ForwardingMode> = _forwardingMode.asStateFlow()
@@ -944,34 +954,32 @@ class DualHomeViewModel(
      * translating titles into games: a film given a game's shape would answer questions about
      * emulators and downloads that mean nothing to it.
      */
+    private fun MediaItemEntity.toMediaTile(repository: MediaRepository) = HomeMediaUi(
+        itemId = itemId,
+        title = name,
+        subtitle = productionYear?.toString(),
+        posterUrl = repository.posterUrl(itemId, primaryImageTag),
+        isSeries = MediaItemType.fromWire(itemType) == MediaItemType.SERIES,
+        availability = mediaAvailabilityOf(localPath, null)
+    )
+
+    private fun MediaItemEntity.toCompanionDetail(repository: MediaRepository) = CompanionDetail(
+        title = name,
+        subtitle = productionYear?.toString(),
+        overview = overview,
+        artUrl = repository.posterUrl(itemId, primaryImageTag),
+        facts = buildList {
+            productionYear?.let { add(CompanionFact("Year", it.toString())) }
+            officialRating?.let { add(CompanionFact("Rated", it)) }
+            communityRating?.let { add(CompanionFact("Rating", "%.1f".format(it))) }
+        }
+    )
+
     private suspend fun loadMediaForSection(section: DualHomeSection.MediaLibrary) {
         val repository = mediaRepository ?: return
         val entities = repository.observeLibraryItems(section.libraryId).first()
-        val items = entities.map { entity ->
-            HomeMediaUi(
-                itemId = entity.itemId,
-                title = entity.name,
-                subtitle = entity.productionYear?.toString(),
-                posterUrl = repository.posterUrl(entity.itemId, entity.primaryImageTag),
-                isSeries = MediaItemType.fromWire(entity.itemType) == MediaItemType.SERIES,
-                availability = mediaAvailabilityOf(entity.localPath, null)
-            )
-        }
-        val details = entities.map { entity ->
-            CompanionDetail(
-                title = entity.name,
-                subtitle = entity.productionYear?.toString(),
-                overview = entity.overview,
-                artUrl = repository.posterUrl(entity.itemId, entity.primaryImageTag),
-                facts = buildList {
-                    entity.productionYear?.let { add(CompanionFact("Year", it.toString())) }
-                    entity.officialRating?.let { add(CompanionFact("Rated", it)) }
-                    entity.communityRating?.let {
-                        add(CompanionFact("Rating", "%.1f".format(it)))
-                    }
-                }
-            )
-        }
+        val items = entities.map { it.toMediaTile(repository) }
+        val details = entities.map { it.toCompanionDetail(repository) }
         _uiState.update {
             it.copy(
                 games = emptyList(),
@@ -984,12 +992,105 @@ class DualHomeViewModel(
     }
 
     /**
-     * The media title the cursor is on, or null when the row is not a media one.
+     * The media title the cursor is on, or null when the cursor is not on one.
+     *
+     * Answers for the grid and the carousel row alike, so a caller acting on "the focused title"
+     * does not have to know which of the two the viewer is looking at.
      */
     fun focusedMediaItemId(): String? {
         val state = _uiState.value
+        if (state.viewMode == DualHomeViewMode.MEDIA_GRID) {
+            return state.mediaGridItems.getOrNull(state.mediaGridFocusedIndex)?.itemId
+        }
         if (state.currentSection !is DualHomeSection.MediaLibrary) return null
         return state.mediaItems.getOrNull(state.selectedIndex)?.itemId
+    }
+
+    /**
+     * Opens the media browser on this screen, which is the one being driven.
+     *
+     * Media is a destination like Library, so it belongs on the interactive display rather than in
+     * the primary's navigation graph, which Android pins to the default display and would put the
+     * browser on whichever screen the viewer is not using.
+     */
+    fun enterMediaGrid(libraryId: String? = null, onLoaded: (() -> Unit)? = null) {
+        viewModelScope.launch {
+            val repository = mediaRepository ?: return@launch
+            val libraries = repository.observeLibraries().first()
+                .map { DualHomeSection.MediaLibrary(it.libraryId, it.name) }
+            if (libraries.isEmpty()) return@launch
+            val index = libraries.indexOfFirst { it.libraryId == libraryId }.coerceAtLeast(0)
+            _uiState.update {
+                it.copy(
+                    viewMode = DualHomeViewMode.MEDIA_GRID,
+                    mediaLibraries = libraries,
+                    mediaLibraryIndex = index,
+                    mediaGridFocusedIndex = 0
+                )
+            }
+            loadMediaGrid()
+            onLoaded?.invoke()
+        }
+    }
+
+    fun cycleMediaLibrary(direction: Int, onLoaded: (() -> Unit)? = null) {
+        val state = _uiState.value
+        if (state.mediaLibraries.size < 2) return
+        val next = (state.mediaLibraryIndex + direction).mod(state.mediaLibraries.size)
+        _uiState.update { it.copy(mediaLibraryIndex = next, mediaGridFocusedIndex = 0) }
+        viewModelScope.launch {
+            loadMediaGrid()
+            onLoaded?.invoke()
+        }
+    }
+
+    private suspend fun loadMediaGrid() {
+        val repository = mediaRepository ?: return
+        val state = _uiState.value
+        val library = state.mediaLibraries.getOrNull(state.mediaLibraryIndex) ?: return
+        val entities = repository.observeLibraryItems(library.libraryId).first()
+        _uiState.update {
+            it.copy(
+                mediaGridItems = entities.map { entity ->
+                    entity.toMediaItemUi(repository, userData = null)
+                },
+                mediaGridDetails = entities.map { entity -> entity.toCompanionDetail(repository) },
+                mediaGridFocusedIndex = it.mediaGridFocusedIndex
+                    .coerceIn(0, (entities.size - 1).coerceAtLeast(0))
+            )
+        }
+    }
+
+    fun moveMediaGridFocus(direction: GridDirection, columns: Int): Boolean {
+        val state = _uiState.value
+        val count = state.mediaGridItems.size
+        if (count == 0) return false
+        val current = state.mediaGridFocusedIndex
+        val target = when (direction) {
+            GridDirection.LEFT -> if (current % columns == 0) current else current - 1
+            GridDirection.RIGHT -> if ((current + 1) % columns == 0) current else current + 1
+            GridDirection.UP -> current - columns
+            GridDirection.DOWN -> current + columns
+        }
+        if (target < 0 || target >= count) return false
+        _uiState.update { it.copy(mediaGridFocusedIndex = target) }
+        return true
+    }
+
+    fun setMediaGridColumns(columns: Int) {
+        if (columns <= 0 || columns == mediaGridColumns) return
+        mediaGridColumns = columns
+    }
+
+    fun mediaGridColumns(): Int = mediaGridColumns
+
+    fun setMediaGridFocus(index: Int) {
+        _uiState.update {
+            it.copy(
+                mediaGridFocusedIndex = index
+                    .coerceIn(0, (it.mediaGridItems.size - 1).coerceAtLeast(0))
+            )
+        }
     }
 
     private fun sortRecentGamesWithNewPriority(games: List<GameEntity>): List<GameEntity> {

@@ -188,7 +188,13 @@ class SecondaryHomeActivity :
                     if (describingPrimary != null) {
                         CompanionDetailScreen(
                             detail = describingPrimary,
-                            modifier = Modifier.fillMaxSize()
+                            modifier = Modifier.fillMaxSize(),
+                            footerHints = {
+                                com.nendo.argosy.ui.components.FooterBar(
+                                    hints = com.nendo.argosy.ui.dualscreen
+                                        .companionDetailHints(describingPrimary)
+                                )
+                            }
                         )
                     } else if (isShowcaseRole) {
                         ShowcaseRoleContent(
@@ -268,7 +274,7 @@ class SecondaryHomeActivity :
                             dualMediaViewModel = dualMediaViewModel,
                             isMediaPanelVisible = isMediaPanelVisible,
                             mediaToggle = mediaToggle,
-                            onMediaToggle = { dsm.toggleCompanionMediaView() },
+                            onMediaToggle = ::openMediaFromAppBar,
                             onMediaRowTapped = { index -> dualMediaViewModel?.focusRow(index) },
                             onMediaRowConfirmed = ::playFocusedMediaRow
                         )
@@ -907,6 +913,21 @@ class SecondaryHomeActivity :
                 isPlaying = playback?.isPlaying == true
             )
         }
+    }
+
+    /**
+     * What the media button does, which depends on whether anything is being watched.
+     *
+     * Mid-playback it shows what is on, because that is the thing the viewer means. With nothing
+     * playing there is nothing to show, so it opens the browser on this screen instead of a panel
+     * that would be empty.
+     */
+    private fun openMediaFromAppBar() {
+        if (dsm.mediaPlayback.value != null) {
+            dsm.toggleCompanionMediaView()
+            return
+        }
+        dualHomeViewModel.enterMediaGrid()
     }
 
     fun confirmFocusedMediaRow() {

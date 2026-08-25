@@ -387,6 +387,11 @@ fun ShowcaseRoleContent(
                                         InputButton.Y to "Filters",
                                         InputButton.B to "Back"
                                     )
+                                    "MEDIA_GRID" -> listOf(
+                                        InputButton.LB_RB to "Library",
+                                        InputButton.A to "Play",
+                                        InputButton.B to "Back"
+                                    )
                                     else -> listOf(
                                         InputButton.LB_RB to "Platform",
                                         InputButton.A to actionLabel,

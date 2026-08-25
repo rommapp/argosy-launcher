@@ -35,7 +35,8 @@ import com.nendo.argosy.ui.theme.LocalUiScale
 @Composable
 fun CompanionDetailScreen(
     detail: CompanionDetail,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    footerHints: @Composable (() -> Unit)? = null
 ) {
     val theme = LocalArgosyTheme.current
     val isWideDisplay = LocalUiScale.current.aspectRatioClass.let {
@@ -146,6 +147,10 @@ fun CompanionDetailScreen(
                 }
             }
         }
+
+        footerHints?.let { hints ->
+            Box(modifier = Modifier.align(Alignment.BottomCenter)) { hints() }
+        }
     }
 }
 
@@ -157,6 +162,20 @@ fun CompanionDetailScreen(
  */
 private const val ART_WEIGHT = 0.4f
 private const val TEXT_WEIGHT = 1f
+/**
+ * What the buttons do on the screen being driven, spelled out on the screen describing it.
+ *
+ * The showcase takes no input of its own, so these name the other screen's actions; a viewer
+ * looking at the description still needs to be told what pressing A over there will do.
+ */
+fun companionDetailHints(
+    detail: CompanionDetail
+): List<Pair<com.nendo.argosy.ui.components.InputButton, String>> = listOf(
+    com.nendo.argosy.ui.components.InputButton.LB_RB to "Section",
+    com.nendo.argosy.ui.components.InputButton.A to if (detail.isGameTitle) "Open" else "Play",
+    com.nendo.argosy.ui.components.InputButton.B to "Back"
+)
+
 private const val SCRIM_TOP_ALPHA = 0.55f
 private const val SCRIM_BOTTOM_ALPHA = 0.92f
 private const val WIDE_ART_HEIGHT = 0.72f

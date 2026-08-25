@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Pause
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -30,10 +31,53 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.generated.ComponentDefaults
 import kotlin.math.sin
 
 private const val TWO_PI = (2.0 * Math.PI).toFloat()
+
+/**
+ * The download badge on its own, for artwork the water fill cannot be drawn over.
+ *
+ * A 3D box is a perspective render rather than a rectangle, so clipping a rising waterline to it
+ * would cut across the shape. The badge still says what the fill would have: how far along, or that
+ * it is waiting.
+ */
+@Composable
+fun DownloadProgressBadge(
+    progress: Float,
+    badgeSize: Dp,
+    modifier: Modifier = Modifier,
+    paused: Boolean = false
+) {
+    Box(
+        modifier = modifier
+            .size(badgeSize)
+            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.85f), CircleShape),
+        contentAlignment = Alignment.Center
+    ) {
+        CircularProgressIndicator(
+            progress = { progress.coerceIn(0f, 1f) },
+            strokeWidth = Dimens.borderMedium,
+            modifier = Modifier.size(badgeSize)
+        )
+        if (paused) {
+            Icon(
+                imageVector = Icons.Default.Pause,
+                contentDescription = "Paused",
+                tint = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.size(badgeSize / 2)
+            )
+        } else {
+            Text(
+                text = "${(progress * 100).toInt()}%",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+        }
+    }
+}
 
 /**
  * A cover filling up as its download proceeds.

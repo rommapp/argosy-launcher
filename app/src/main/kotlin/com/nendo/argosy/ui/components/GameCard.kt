@@ -272,6 +272,13 @@ fun GameCard(
                         isInteractive = false,
                         modifier = Modifier.fillMaxHeight()
                     )
+                    if (downloadIndicator.isShown) {
+                        DownloadProgressBadge(
+                            progress = downloadIndicator.progress,
+                            badgeSize = Dimens.iconLg,
+                            paused = downloadIndicator.isPaused
+                        )
+                    }
                 }
             } else if (effectiveCoverPath.isNotEmpty()) {
                 CoverContent(

@@ -106,19 +106,28 @@ private fun MediaItemEntity.wideImageUrl(repository: MediaRepository): String {
  * The full-bleed image a screen draws behind its content, resolved as a kind and an item together.
  *
  * An episode asks its series rather than itself. Episodes seldom carry a backdrop of their own, and
- * the series' art is the picture a screen showing an episode wants anyway. Everything else asks for
- * its own Backdrop and falls back to its own poster, which the header is already showing and so is
- * present whenever a backdrop is not.
+ * the series' art is the picture a screen showing an episode wants anyway.
+ *
+ * Everything else walks its own Backdrop, then its series' Backdrop where it has one, then its own
+ * Thumb, and only then its poster. Backdrop and Thumb are landscape and fill a full-bleed frame at
+ * the shape it wants; a poster is portrait and has to be blown up past its own width to cover the
+ * same area, which is what makes a background look soft. It stays last rather than being dropped
+ * because it is the one image every item has.
+ *
+ * No size is requested anywhere in the chain, so the server answers with the original rather than a
+ * resized copy: the ceiling is what the library holds, not what is asked for.
  *
  * The kind travels with the tag for the reason [wideImageUrl] pairs them: a tag names one image of
- * one item, so a parent's tag against a child's id is a request the server answers 404. The series
- * is therefore asked for untagged rather than asked for with a tag that is not its own.
+ * one item, so a parent's tag against a child's id is a request the server answers 404. A series is
+ * therefore asked for untagged rather than asked for with a tag that is not its own.
  */
 private fun MediaItemEntity.heroImageUrl(repository: MediaRepository): String {
     if (MediaItemType.fromWire(itemType) == MediaItemType.EPISODE) {
         seriesId?.let { return repository.imageUrl(it, MediaImageType.BACKDROP, null) }
     }
     backdropImageTag?.let { return repository.imageUrl(itemId, MediaImageType.BACKDROP, it) }
+    seriesId?.let { return repository.imageUrl(it, MediaImageType.BACKDROP, null) }
+    thumbImageTag?.let { return repository.imageUrl(itemId, MediaImageType.THUMB, it) }
     primaryImageTag?.let { return repository.imageUrl(itemId, MediaImageType.PRIMARY, it) }
     return ""
 }

@@ -94,6 +94,30 @@
       ],
       "path_exclude": [],
       "added_regex": "^import\\s+com\\.nendo\\.argosy\\.data\\.local\\.dao\\.(GameDao|PlatformDao|CollectionDao)$"
+    },
+    {
+      "id": "immersive-outside-owner",
+      "summary": "System-bar hiding written outside util/ImmersiveMode.kt",
+      "message": "Hiding the system bars has one owner: util/ImmersiveMode.kt (installImmersiveMode + Window.hideSystemBars). Four activities each carried their own copy and drifted into four different states; one of them silently broke the IME by returning the wrong insets. Call the shared functions instead. See AGENTS.md (Dual-screen OSOT).",
+      "path_include": [
+        "app/src/main/**/*.kt"
+      ],
+      "path_exclude": [
+        "app/src/main/**/util/ImmersiveMode.kt"
+      ],
+      "added_regex": "WindowInsetsControllerCompat|setDecorFitsSystemWindows"
+    },
+    {
+      "id": "boxart-frame-outside-owner",
+      "summary": "Box-art focus treatment written outside BoxArtFrame.kt",
+      "message": "How cover art reacts to focus has one owner: ui/components/BoxArtFrame.kt (Modifier.boxArtFrame). GameCard kept a byte-identical copy of the glow-mode block that nothing read, which is the shape that drifts the moment either side is edited. Pass artworkGradient to boxArtFrame instead. See AGENTS.md (Architecture).",
+      "path_include": [
+        "app/src/main/**/ui/**/*.kt"
+      ],
+      "path_exclude": [
+        "app/src/main/**/ui/components/BoxArtFrame.kt"
+      ],
+      "added_regex": "\\bGlowColorMode\\.(AUTO|ACCENT_GRADIENT|COVER)\\b"
     }
   ]
 }

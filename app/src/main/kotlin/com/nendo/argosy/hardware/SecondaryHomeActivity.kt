@@ -113,6 +113,7 @@ class SecondaryHomeActivity :
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         installImmersiveMode()
+        keepAwakeWhileUserActive()
 
         if (!SessionStateStore(applicationContext).isDualScreenEnabled()) {
             android.util.Log.d("SecondaryHome", "dualScreenEnabled=false, finishing")
@@ -640,6 +641,22 @@ class SecondaryHomeActivity :
         }
         if (action == android.view.KeyEvent.ACTION_DOWN && repeatCount == 0) {
             inputHandler.routeInput(gamepadEvent, true, isGameActive, currentScreen)
+        }
+    }
+
+    /**
+     * Holds this window awake while the person is using either screen, for the reason the primary
+     * does: activity is credited only to the display an event landed on.
+     */
+    private fun keepAwakeWhileUserActive() {
+        lifecycleScope.launch {
+            DualScreenManagerHolder.instance?.userActive?.collect { active ->
+                if (active) {
+                    window.addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                } else {
+                    window.clearFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                }
+            }
         }
     }
 

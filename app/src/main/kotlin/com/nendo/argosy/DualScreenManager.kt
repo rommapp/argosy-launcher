@@ -250,10 +250,44 @@ class DualScreenManager(
     private val inputDedup = InputDedupBuffer()
 
     fun claimInput(event: android.view.KeyEvent): Boolean =
-        inputDedup.claim(InputSignature.of(event))
+        inputDedup.claim(InputSignature.of(event)).also { if (it) notifyUserActivity() }
 
     fun claimInput(event: android.view.MotionEvent): Boolean =
-        inputDedup.claim(InputSignature.of(event))
+        inputDedup.claim(InputSignature.of(event)).also { if (it) notifyUserActivity() }
+
+    private val _userActive = MutableStateFlow(false)
+
+    /**
+     * Whether the person is currently using the device, from either screen's point of view.
+     *
+     * Android only credits user activity to the display an event landed on, so a pad press driving
+     * the companion leaves the other screen idling towards its dim. Both windows hold themselves
+     * awake while this is raised, which makes one input count for both.
+     *
+     * It falls again after the system's own screen-off timeout, so the setting the user chose still
+     * decides when the screens go dark; this only decides what counts as having used them.
+     */
+    val userActive: StateFlow<Boolean> = _userActive
+
+    private var userIdleJob: Job? = null
+
+    private fun notifyUserActivity() {
+        _userActive.value = true
+        userIdleJob?.cancel()
+        userIdleJob = scope.launch {
+            delay(screenOffTimeoutMs())
+            _userActive.value = false
+        }
+    }
+
+    private fun screenOffTimeoutMs(): Long {
+        val configured = android.provider.Settings.System.getInt(
+            appContext.contentResolver,
+            android.provider.Settings.System.SCREEN_OFF_TIMEOUT,
+            DEFAULT_SCREEN_OFF_TIMEOUT_MS.toInt()
+        ).toLong()
+        return configured.coerceIn(MIN_SCREEN_OFF_TIMEOUT_MS, MAX_SCREEN_OFF_TIMEOUT_MS)
+    }
 
     fun claimInput(signature: InputSignature): Boolean = inputDedup.claim(signature)
 
@@ -2930,6 +2964,9 @@ class DualScreenManager(
         private const val COMPANION_LAUNCH_VERIFY_MS = 8000L
         private const val MAX_COMPANION_LAUNCH_ATTEMPTS = 3
         private const val SWAP_DEBOUNCE_MS = 500L
+        private const val DEFAULT_SCREEN_OFF_TIMEOUT_MS = 60_000L
+        private const val MIN_SCREEN_OFF_TIMEOUT_MS = 15_000L
+        private const val MAX_SCREEN_OFF_TIMEOUT_MS = 30 * 60_000L
 
         /**
          * How long a swap waits for the incoming screen to settle before revealing it anyway.

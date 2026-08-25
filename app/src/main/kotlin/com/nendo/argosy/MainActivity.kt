@@ -283,6 +283,7 @@ class MainActivity : ComponentActivity() {
         }
 
         installImmersiveMode()
+        keepAwakeWhileUserActive()
 
         discordPresenceManager.init(this)
 
@@ -815,6 +816,24 @@ class MainActivity : ComponentActivity() {
             return true
         }
         return false
+    }
+
+    /**
+     * Holds this window awake while the person is using either screen.
+     *
+     * Input only counts as activity on the display it landed on, so without this the screen that
+     * is not being driven dims underneath a session the user is very much still in.
+     */
+    private fun keepAwakeWhileUserActive() {
+        activityScope.launch {
+            dualScreenManager.userActive.collect { active ->
+                if (active) {
+                    window.addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                } else {
+                    window.clearFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                }
+            }
+        }
     }
 
     /**

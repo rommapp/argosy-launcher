@@ -1905,13 +1905,14 @@ fun ArgosyApp(
                         onDrawerToggle = { if (isDrawerOpen) closeDrawer() else openDrawer() },
                         argosyViewModel = viewModel,
                         onPlayMedia = { itemId, startOver ->
-                            PlayerActivity.start(
-                                context = context,
-                                args = PlayerArgs(
-                                    itemId = itemId,
-                                    startPositionMs = if (startOver) 0L else -1L
+                            activity?.dualScreenManager?.playMediaItem(itemId, startOver)
+                                ?: PlayerActivity.start(
+                                    context = context,
+                                    args = PlayerArgs(
+                                        itemId = itemId,
+                                        startPositionMs = if (startOver) 0L else -1L
+                                    )
                                 )
-                            )
                         },
                         modifier = Modifier.blur(contentBlur)
                     )

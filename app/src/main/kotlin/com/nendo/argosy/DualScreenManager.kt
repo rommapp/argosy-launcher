@@ -512,8 +512,19 @@ class DualScreenManager(
      * to move it to. Null is the single-screen answer and also the answer when the game and the
      * player are already on different displays.
      */
-    fun mediaPlayerRelocationDisplayId(): Int? =
-        displayAffinityHelper.getMediaPlayerDisplayId(emulatorDisplayId)
+    /**
+     * Where a film belongs when nothing has stated a position yet.
+     *
+     * Watching is something the viewer drives, so it lands on the display holding the interactive
+     * role, the same one carrying Home, Library and Media. A game already occupying that display is
+     * the one thing that overrides it, and then the film takes the other screen rather than opening
+     * underneath the game.
+     */
+    fun mediaPlayerRelocationDisplayId(): Int? {
+        val emulator = emulatorDisplayId
+        if (emulator != null) return displayAffinityHelper.getMediaPlayerDisplayId(emulator)
+        return interactiveDisplayId()
+    }
 
     /**
      * Opens one media item in the player window wherever that window currently is.

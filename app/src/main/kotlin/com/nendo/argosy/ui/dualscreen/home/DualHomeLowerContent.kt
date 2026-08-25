@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -50,7 +49,6 @@ fun DualHomeLowerContent(
                 DualHomeLowerScreen(
                     games = uiState.games,
                     mediaItems = uiState.mediaItems,
-                    mediaDetails = uiState.mediaDetails,
                     selectedIndex = uiState.selectedIndex,
                     platformName = uiState.platformName,
                     totalCount = uiState.totalCount,
@@ -136,14 +134,6 @@ fun DualHomeLowerContent(
                 )
             }
             DualHomeViewMode.MEDIA_GRID -> {
-                LaunchedEffect(uiState.mediaGridFocusedIndex, uiState.mediaGridDetails) {
-                    uiState.mediaGridDetails
-                        .getOrNull(uiState.mediaGridFocusedIndex)
-                        ?.let {
-                            com.nendo.argosy.DualScreenManagerHolder.instance
-                                ?.setCompanionDetail(it)
-                        }
-                }
                 com.nendo.argosy.ui.dualscreen.media.DualMediaGrid(
                     items = uiState.mediaGridItems,
                     focusedIndex = uiState.mediaGridFocusedIndex,
@@ -152,11 +142,26 @@ fun DualHomeLowerContent(
                     onColumnsChanged = { viewModel.setMediaGridColumns(it) },
                     onItemTapped = { index ->
                         viewModel.setMediaGridFocus(index)
-                        viewModel.focusedMediaItemId()?.let { itemId ->
-                            com.nendo.argosy.DualScreenManagerHolder.instance
-                                ?.playMediaItem(itemId)
+                        viewModel.playFocusedMedia()
+                    },
+                    onItemLongPressed = { index ->
+                        viewModel.setMediaGridFocus(index)
+                        if (!viewModel.openMediaResumePrompt(index)) {
+                            viewModel.playFocusedMedia()
                         }
-                    }
+                    },
+                    onPosterLoaded = viewModel::onMediaPosterLoaded
+                )
+                com.nendo.argosy.ui.screens.media.modals.MediaResumeModalContent(
+                    prompt = uiState.mediaResumePrompt,
+                    focusedIndex = uiState.mediaResumeFocusIndex,
+                    onStartOver = { itemId ->
+                        viewModel.startMediaFromPrompt(itemId, startOver = true)
+                    },
+                    onResume = { itemId ->
+                        viewModel.startMediaFromPrompt(itemId, startOver = false)
+                    },
+                    onDismiss = viewModel::dismissMediaResumePrompt
                 )
             }
             DualHomeViewMode.LIBRARY_GRID -> {

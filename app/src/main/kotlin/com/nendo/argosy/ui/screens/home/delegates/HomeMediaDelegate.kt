@@ -2,16 +2,16 @@ package com.nendo.argosy.ui.screens.home.delegates
 
 import com.nendo.argosy.data.local.entity.MediaItemEntity
 import com.nendo.argosy.data.local.entity.MediaItemType
-import com.nendo.argosy.data.local.entity.MediaUserDataEntity
 import com.nendo.argosy.data.media.MediaAvailability
 import com.nendo.argosy.data.media.MediaAvailabilityVerifier
-import com.nendo.argosy.data.media.mediaAvailabilityOf
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
-import com.nendo.argosy.data.remote.jellyfin.JellyfinResult
 import com.nendo.argosy.data.repository.MediaRepository
 import com.nendo.argosy.data.repository.MediaTransferProgress
+import com.nendo.argosy.domain.model.MediaPlayTarget
+import com.nendo.argosy.domain.usecase.media.ResolveMediaPlayTargetUseCase
 import com.nendo.argosy.ui.screens.common.GradientExtractionDelegate
 import com.nendo.argosy.ui.screens.home.HomeMediaUi
+import com.nendo.argosy.ui.screens.home.toHomeMediaUi
 import com.nendo.argosy.ui.screens.media.MediaLibraryUi
 import com.nendo.argosy.ui.screens.media.MediaResumePrompt
 import com.nendo.argosy.ui.screens.media.toMediaLibraryUi
@@ -32,10 +32,6 @@ import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
 import javax.inject.Singleton
 
-private const val FINISHED_FRACTION = 0.95f
-
-private const val SPECIALS_SEASON_NUMBER = 0
-
 /**
  * How many titles the picker lists. High enough to reach a whole library by scrolling; the list is
  * lazy, so the cost is the query rather than the rows.
@@ -45,18 +41,6 @@ private const val TILE_PICKER_LIMIT = 2000
 private const val SERIES_LABEL = "Series"
 
 private const val MOVIE_LABEL = "Movie"
-
-/**
- * What a press on a media tile turns into once the tile has been asked what it actually stands for.
- *
- * [OpenDetail] is the answer for a series nothing playable can be found in, not a refusal: the detail
- * screen is where the seasons are, so a press that cannot resolve to an episode still lands somewhere
- * the user can pick one.
- */
-sealed class MediaPlayTarget {
-    data class Play(val itemId: String) : MediaPlayTarget()
-    data class OpenDetail(val itemId: String) : MediaPlayTarget()
-}
 
 /**
  * [libraryItems] belongs to [libraryItemsFor] and to no other library. Naming which library the
@@ -111,7 +95,8 @@ class HomeMediaDelegate @Inject constructor(
     private val mediaRepository: MediaRepository,
     private val preferencesRepository: UserPreferencesRepository,
     private val availabilityVerifier: MediaAvailabilityVerifier,
-    private val gradientExtractionDelegate: GradientExtractionDelegate
+    private val gradientExtractionDelegate: GradientExtractionDelegate,
+    private val resolveMediaPlayTarget: ResolveMediaPlayTargetUseCase
 ) {
     private var gradientScope: CoroutineScope? = null
 
@@ -443,56 +428,16 @@ class HomeMediaDelegate @Inject constructor(
     }
 
     /**
-     * What a press on this tile plays.
-     *
-     * A movie and a rail's episode play themselves. A series has to be asked, and the order the
-     * answer is looked for in is the order it is cheapest and most likely to be right:
-     *
-     * 1. the episode the Continue Watching rail is holding for this show, already carried on the tile
-     * 2. the episode the Next Up rail names for it, which is the server's own idea of what follows
-     * 3. what the episode table holds -- part watched first, then the first unwatched, then the first
-     * 4. failing all of that, the first season is fetched and the table asked again
-     *
-     * Step four is the normal path for a show that has never been opened, because episodes are synced
-     * a season at a time and a library sync stores only seasons. Fetching one season is enough: a show
-     * far enough in to make a later season the right answer is a show one of the rails names, and
-     * those are settled before any of this. A show whose seasons are not stored either, or whose fetch
-     * does not answer, resolves to its detail screen rather than to nothing.
+     * What a press on this tile plays. The rails this delegate holds are handed to the shared
+     * resolver as its first two rungs; everything after that is the resolver's own ladder.
      */
     suspend fun resolvePlayTarget(media: HomeMediaUi): MediaPlayTarget {
         if (!media.isSeries) return MediaPlayTarget.Play(media.itemId)
-        media.resumeItemId?.let { return MediaPlayTarget.Play(it) }
-        _state.value.nextUp.firstOrNull { it.seriesId == media.itemId }
-            ?.let { return MediaPlayTarget.Play(it.itemId) }
-        episodeToPlay(media.itemId)?.let { return MediaPlayTarget.Play(it) }
-        if (!fetchFirstSeason(media.itemId)) return MediaPlayTarget.OpenDetail(media.itemId)
-        return episodeToPlay(media.itemId)
-            ?.let { MediaPlayTarget.Play(it) }
-            ?: MediaPlayTarget.OpenDetail(media.itemId)
-    }
-
-    private suspend fun episodeToPlay(seriesId: String): String? {
-        val episodes = mediaRepository.getSeriesEpisodes(seriesId)
-        if (episodes.isEmpty()) return null
-        val watched = mediaRepository.getUserDataFor(episodes.map { it.itemId })
-        val partWatched = episodes.firstOrNull {
-            val userData = watched[it.itemId]
-            userData != null && !userData.played && userData.playbackPositionTicks > 0
-        }
-        val unwatched = episodes.firstOrNull { watched[it.itemId]?.played != true }
-        return (partWatched ?: unwatched ?: episodes.first()).itemId
-    }
-
-    /**
-     * Reads one season's episodes into the library. Specials are passed over when the show has an
-     * ordinary season to offer, since season zero sorts first and is nobody's idea of where a show
-     * starts.
-     */
-    private suspend fun fetchFirstSeason(seriesId: String): Boolean {
-        val seasons = mediaRepository.getSeasons(seriesId)
-        if (seasons.isEmpty()) return false
-        val season = seasons.firstOrNull { it.indexNumber != SPECIALS_SEASON_NUMBER } ?: seasons.first()
-        return mediaRepository.refreshEpisodes(seriesId, season.itemId) is JellyfinResult.Success
+        return resolveMediaPlayTarget(
+            itemId = media.itemId,
+            knownResumeItemId = media.resumeItemId,
+            nextUpHint = _state.value.nextUp.firstOrNull { it.seriesId == media.itemId }?.itemId
+        )
     }
 
     private suspend fun toTiles(
@@ -508,66 +453,14 @@ class HomeMediaDelegate @Inject constructor(
         }
         val gradients = gradientExtractionDelegate.mediaGradients.value
         return entities.map { entity ->
-            entity.toTile(
+            entity.toHomeMediaUi(
+                mediaRepository,
                 userData[entity.itemId],
                 series[entity.seriesId],
                 verified[entity.itemId],
                 gradients[entity.itemId]
             )
         }
-    }
-
-    private fun MediaItemEntity.toTile(
-        userData: MediaUserDataEntity?,
-        series: MediaItemEntity?,
-        verified: MediaAvailability?,
-        gradientColors: Pair<androidx.compose.ui.graphics.Color, androidx.compose.ui.graphics.Color>?
-    ): HomeMediaUi {
-        val position = userData?.playbackPositionTicks ?: 0
-        val played = userData?.played ?: false
-        val kind = MediaItemType.fromWire(itemType)
-        val isEpisode = kind == MediaItemType.EPISODE
-        val posterId = if (isEpisode) seriesId ?: itemId else itemId
-        val posterTag = when {
-            !isEpisode -> primaryImageTag
-            series != null -> series.primaryImageTag
-            seriesId != null -> null
-            else -> primaryImageTag
-        }
-        return HomeMediaUi(
-            itemId = itemId,
-            title = if (isEpisode) seriesName ?: series?.name ?: name else name,
-            subtitle = if (isEpisode) episodeSubtitle() else productionYear?.toString(),
-            posterUrl = mediaRepository.posterUrl(posterId, posterTag),
-            seriesId = seriesId,
-            isEpisode = isEpisode,
-            isSeries = kind == MediaItemType.SERIES,
-            availability = mediaAvailabilityOf(localPath, verified),
-            resumeTicks = position,
-            progressFraction = progressFraction(position, runTimeTicks, played),
-            gradientColors = gradientColors
-        )
-    }
-
-    /**
-     * The episode a tile will actually play, spelled out. Numbering is dropped when the server did
-     * not give it rather than printed as a blank, because a special has a name and no numbers.
-     */
-    private fun MediaItemEntity.episodeSubtitle(): String {
-        val season = parentIndexNumber
-        val episode = indexNumber
-        val marker = when {
-            season != null && episode != null -> "S$season E$episode"
-            episode != null -> "E$episode"
-            else -> null
-        }
-        return listOfNotNull(marker, name).joinToString(" - ")
-    }
-
-    private fun progressFraction(positionTicks: Long, runTimeTicks: Long?, played: Boolean): Float {
-        if (played) return 1f
-        if (positionTicks <= 0 || runTimeTicks == null || runTimeTicks <= 0) return 0f
-        return (positionTicks.toFloat() / runTimeTicks.toFloat()).coerceIn(0f, FINISHED_FRACTION)
     }
 }
 

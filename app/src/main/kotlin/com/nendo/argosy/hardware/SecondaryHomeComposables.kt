@@ -367,40 +367,15 @@ fun ShowcaseRoleContent(
                         }
                     )
                 } else {
-                    val actionLabel = if (showcase.isDownloaded) "Play" else "Download"
                     DualHomeUpperScreen(
                         state = showcase,
                         footerHints = {
                             FooterBar(
-                                hints = when (viewMode) {
-                                    "COLLECTION_GAMES" -> listOf(
-                                        InputButton.DPAD to "Navigate",
-                                        InputButton.A to actionLabel,
-                                        InputButton.X to "Details",
-                                        InputButton.B to "Back"
-                                    )
-                                    "LIBRARY_GRID" -> listOf(
-                                        InputButton.LB_RB to "Platform",
-                                        InputButton.LT_RT to "Letter",
-                                        InputButton.A to "Details",
-                                        InputButton.X to "Options",
-                                        InputButton.Y to "Filters",
-                                        InputButton.B to "Back"
-                                    )
-                                    "MEDIA_GRID" -> listOf(
-                                        InputButton.LB_RB to "Library",
-                                        InputButton.A to "Play",
-                                        InputButton.B to "Back"
-                                    )
-                                    else -> listOf(
-                                        InputButton.LB_RB to "Platform",
-                                        InputButton.A to actionLabel,
-                                        InputButton.X to "Details",
-                                        InputButton.Y to if (showcase.isFavorite) "Unfavorite" else "Favorite",
-                                        InputButton.DPAD_UP to "Collections",
-                                        InputButton.SELECT to "Library"
-                                    )
-                                }
+                                hints = com.nendo.argosy.ui.dualscreen.companionHomeHints(
+                                    viewMode = viewMode,
+                                    isDownloaded = showcase.isDownloaded,
+                                    isFavorite = showcase.isFavorite
+                                )
                             )
                         }
                     )

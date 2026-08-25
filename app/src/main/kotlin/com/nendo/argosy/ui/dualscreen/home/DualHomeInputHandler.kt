@@ -195,8 +195,7 @@ class DualHomeInputHandler(
                     val game = state.selectedGame
                     when {
                         mediaItemId != null -> {
-                            com.nendo.argosy.DualScreenManagerHolder.instance
-                                ?.playMediaItem(mediaItemId)
+                            viewModel.playFocusedMedia()
                             InputResult.HANDLED
                         }
                         game != null -> {
@@ -312,11 +311,15 @@ class DualHomeInputHandler(
     }
 
     /**
-     * The media browser on this screen. Confirm starts the title, the shoulders change library and
-     * Back returns to the carousel, matching what the same buttons do in the game library grid.
+     * The media browser on this screen. Confirm starts the title, the shoulders change library,
+     * X refreshes, Y resumes through the prompt, and Back returns to the carousel, matching the
+     * single-screen media library's bindings.
      */
     private fun handleMediaGrid(event: GamepadEvent): InputResult {
-        val columns = viewModel.mediaGridColumns()
+        if (viewModel.uiState.value.mediaResumePrompt != null) {
+            return handleMediaResumePrompt(event)
+        }
+        val columns = viewModel.uiState.value.mediaGridColumns
         return when (event) {
             GamepadEvent.Left ->
                 if (viewModel.moveMediaGridFocus(GridDirection.LEFT, columns)) InputResult.HANDLED
@@ -339,8 +342,19 @@ class DualHomeInputHandler(
                 InputResult.HANDLED
             }
             GamepadEvent.Confirm -> {
-                val itemId = viewModel.focusedMediaItemId() ?: return InputResult.UNHANDLED
-                com.nendo.argosy.DualScreenManagerHolder.instance?.playMediaItem(itemId)
+                if (viewModel.focusedMediaItemId() == null) return InputResult.UNHANDLED
+                viewModel.playFocusedMedia()
+                InputResult.HANDLED
+            }
+            GamepadEvent.ContextMenu -> {
+                viewModel.refreshMediaGrid()
+                InputResult.HANDLED
+            }
+            GamepadEvent.SecondaryAction -> {
+                if (viewModel.focusedMediaItemId() == null) return InputResult.UNHANDLED
+                if (!viewModel.openMediaResumePromptForFocused()) {
+                    viewModel.playFocusedMedia()
+                }
                 InputResult.HANDLED
             }
             GamepadEvent.Back -> {
@@ -349,6 +363,21 @@ class DualHomeInputHandler(
             }
             else -> InputResult.UNHANDLED
         }
+    }
+
+    /**
+     * The resume prompt owns the pad while it is up. Everything answers HANDLED, including the
+     * events the prompt ignores, so nothing leaks through to the grid underneath it.
+     */
+    private fun handleMediaResumePrompt(event: GamepadEvent): InputResult {
+        when (event) {
+            GamepadEvent.Up -> viewModel.moveMediaResumeFocus(-1)
+            GamepadEvent.Down -> viewModel.moveMediaResumeFocus(1)
+            GamepadEvent.Confirm -> viewModel.confirmMediaResumePrompt()
+            GamepadEvent.Back -> viewModel.dismissMediaResumePrompt()
+            else -> {}
+        }
+        return InputResult.HANDLED
     }
 
     private fun handleLibraryGrid(event: com.nendo.argosy.ui.input.GamepadEvent): InputResult {

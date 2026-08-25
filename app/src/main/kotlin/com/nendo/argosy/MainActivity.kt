@@ -142,6 +142,10 @@ class MainActivity : ComponentActivity() {
     @Inject lateinit var gradientExtractionDelegate: com.nendo.argosy.ui.screens.common.GradientExtractionDelegate
     @Inject lateinit var filePickerFlowUseCase: com.nendo.argosy.domain.usecase.download.FilePickerFlowUseCase
     @Inject lateinit var mediaRepository: com.nendo.argosy.data.repository.MediaRepository
+    @Inject lateinit var getRelatedMediaUseCase:
+        com.nendo.argosy.domain.usecase.media.GetRelatedMediaUseCase
+    @Inject lateinit var resolveMediaPlayTargetUseCase:
+        com.nendo.argosy.domain.usecase.media.ResolveMediaPlayTargetUseCase
     @Inject lateinit var mediaPlaybackTracker: com.nendo.argosy.data.media.MediaPlaybackTracker
 
     private val sessionStateStore by lazy {
@@ -359,6 +363,8 @@ class MainActivity : ComponentActivity() {
                 advanceCollectionFocusUseCase = advanceCollectionFocusUseCase,
                 prepareCollectionQueueUseCase = prepareCollectionQueueUseCase,
                 mediaRepository = mediaRepository,
+                getRelatedMediaUseCase = getRelatedMediaUseCase,
+                resolveMediaPlayTargetUseCase = resolveMediaPlayTargetUseCase,
                 mediaPlaybackTracker = mediaPlaybackTracker,
                 imageCacheManager = imageCacheManager,
                 resolveGameEmulatorContext = resolveGameEmulatorContext,

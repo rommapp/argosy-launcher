@@ -2,7 +2,6 @@ package com.nendo.argosy.domain.usecase.media
 
 import com.nendo.argosy.data.local.entity.MediaItemEntity
 import com.nendo.argosy.data.local.entity.MediaTilePlayMode
-import com.nendo.argosy.data.local.entity.MediaUserDataEntity
 import com.nendo.argosy.data.media.MediaAvailability
 import com.nendo.argosy.data.media.MediaAvailabilityVerifier
 import com.nendo.argosy.data.media.mediaAvailabilityOf
@@ -30,7 +29,8 @@ import javax.inject.Singleton
 class ResolveMediaTileUseCase @Inject constructor(
     private val mediaRepository: MediaRepository,
     private val availabilityVerifier: MediaAvailabilityVerifier,
-    private val fileAccessLayer: FileAccessLayer
+    private val fileAccessLayer: FileAccessLayer,
+    private val resolveMediaPlayTarget: ResolveMediaPlayTargetUseCase
 ) {
     private val randomChoices = ConcurrentHashMap<Long, String>()
 
@@ -117,17 +117,8 @@ class ResolveMediaTileUseCase @Inject constructor(
             .filter { it.localPath != null }
             .map { it.itemId }
 
-    /**
-     * Where a run is up to, read the way the rails read it: the episode left part way through, then
-     * the first one never started, then the first of the run for a viewer who has finished it all.
-     */
-    private suspend fun nextOf(itemIds: List<String>): String? {
-        if (itemIds.isEmpty()) return null
-        val watched = mediaRepository.getUserDataFor(itemIds)
-        val partWatched = itemIds.firstOrNull { watched[it].isPartWatched }
-        val unwatched = itemIds.firstOrNull { watched[it]?.played != true }
-        return partWatched ?: unwatched ?: itemIds.first()
-    }
+    private suspend fun nextOf(itemIds: List<String>): String? =
+        resolveMediaPlayTarget.nextOf(itemIds)
 
     private suspend fun randomOf(tileId: Long, itemIds: List<String>): String? {
         if (itemIds.isEmpty()) return null
@@ -154,6 +145,3 @@ class ResolveMediaTileUseCase @Inject constructor(
         return "$marker - ${item.name}"
     }
 }
-
-private val MediaUserDataEntity?.isPartWatched: Boolean
-    get() = this != null && !played && playbackPositionTicks > 0

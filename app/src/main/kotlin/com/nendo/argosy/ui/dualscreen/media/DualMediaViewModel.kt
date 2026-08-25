@@ -11,6 +11,7 @@ import com.nendo.argosy.data.local.entity.MediaUserDataEntity
 import com.nendo.argosy.data.media.ActiveMediaPlayback
 import com.nendo.argosy.data.repository.MediaRepository
 import com.nendo.argosy.ui.screens.media.MediaItemUi
+import com.nendo.argosy.ui.screens.media.toCastUi
 import com.nendo.argosy.ui.screens.media.toMediaItemUi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -25,6 +26,7 @@ import kotlinx.coroutines.launch
 
 private const val CONTINUE_WATCHING_LABEL = "Continue Watching"
 private const val NEXT_UP_LABEL = "Next Up"
+private const val MORE_LIKE_THIS_LABEL = "More Like This"
 
 /**
  * The companion's view of what is being watched.
@@ -41,7 +43,8 @@ private const val NEXT_UP_LABEL = "Next Up"
 class DualMediaViewModel(
     private val mediaRepository: MediaRepository,
     private val playback: StateFlow<ActiveMediaPlayback?>,
-    private val gradientExtractionDelegate: com.nendo.argosy.ui.screens.common.GradientExtractionDelegate
+    private val gradientExtractionDelegate: com.nendo.argosy.ui.screens.common.GradientExtractionDelegate,
+    private val getRelatedMedia: com.nendo.argosy.domain.usecase.media.GetRelatedMediaUseCase? = null
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(DualMediaUiState())
@@ -114,10 +117,7 @@ class DualMediaViewModel(
                 val seasonId = entity?.parentId
                 when {
                     entity == null -> observeRails(nowPlaying = null)
-                    seasonId == null -> {
-                        val userData = mediaRepository.getUserData(entity.itemId)
-                        observeRails(nowPlaying = entity.toUi(userData))
-                    }
+                    seasonId == null -> showTitleDetail(entity)
                     else -> observeSeason(seasonId, entity)
                 }
             }
@@ -153,8 +153,48 @@ class DualMediaViewModel(
     }
 
     /**
-     * The two media rails, which is what the panel offers when there is no episode list to show: a
-     * movie has no siblings, and an idle player has nothing to describe at all.
+     * What a film gets instead of an episode list: its synopsis, its cast, and titles like it.
+     *
+     * A movie has no siblings, so the rails this used to fall back on described somebody else's
+     * viewing rather than the film on screen. Worse, they only ever published once both rail flows
+     * had emitted, and a library with neither left the panel reading "loading" for good.
+     */
+    private suspend fun showTitleDetail(entity: MediaItemEntity) {
+        val userData = mediaRepository.getUserData(entity.itemId)
+        val nowPlaying = entity.toUi(userData)
+        _uiState.update {
+            it.copy(
+                nowPlaying = nowPlaying,
+                nowPlayingSubtitle = subtitleFor(nowPlaying),
+                overview = entity.overview,
+                rows = emptyList(),
+                focusedRowIndex = -1,
+                isLoading = false
+            )
+        }
+
+        val cast = mediaRepository.getCredits(entity.itemId)
+            .distinctBy { it.personId }
+            .map { it.toCastUi(mediaRepository) }
+        val related = getRelatedMedia?.invoke(entity).orEmpty()
+        val relatedUserData = mediaRepository.getUserDataFor(related.map { it.itemId })
+        val rows = buildList<DualMediaRow> {
+            if (related.isNotEmpty()) {
+                add(DualMediaRow.Header(MORE_LIKE_THIS_LABEL))
+                related.forEach { add(DualMediaRow.Item(it.toUi(relatedUserData[it.itemId]))) }
+            }
+        }
+        _uiState.update { state ->
+            state.copy(
+                cast = cast,
+                rows = rows,
+                focusedRowIndex = rows.indexOfFirst { it is DualMediaRow.Item }
+            )
+        }
+    }
+
+    /**
+     * The two media rails, which is what the panel offers when nothing is open at all.
      */
     private suspend fun observeRails(nowPlaying: MediaItemUi?) {
         combine(

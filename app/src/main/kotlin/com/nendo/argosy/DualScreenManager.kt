@@ -145,6 +145,10 @@ class DualScreenManager(
     internal val prepareCollectionQueueUseCase:
         com.nendo.argosy.domain.usecase.collection.PrepareCollectionQueueUseCase,
     internal val mediaRepository: com.nendo.argosy.data.repository.MediaRepository,
+    internal val getRelatedMediaUseCase:
+        com.nendo.argosy.domain.usecase.media.GetRelatedMediaUseCase,
+    internal val resolveMediaPlayTargetUseCase:
+        com.nendo.argosy.domain.usecase.media.ResolveMediaPlayTargetUseCase,
     private val mediaPlaybackTracker: com.nendo.argosy.data.media.MediaPlaybackTracker,
     initialRolesSwapped: Boolean = false
 ) {
@@ -921,7 +925,8 @@ class DualScreenManager(
             syncPreferencesRepository = syncPreferencesRepository,
             pageChooserEntrySource = pageChooserEntrySource,
             ambientAudioManager = ambientAudioManager,
-            mediaRepository = mediaRepository
+            mediaRepository = mediaRepository,
+            resolveMediaPlayTargetUseCase = resolveMediaPlayTargetUseCase
         )
         swappedDualHomeViewModel?.observeHomeTiles()
         swappedDualHomeViewModel?.observeTilePrompts()

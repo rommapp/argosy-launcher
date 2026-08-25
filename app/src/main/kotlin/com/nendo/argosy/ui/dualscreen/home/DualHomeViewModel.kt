@@ -40,19 +40,15 @@ import com.nendo.argosy.ui.components.AutoGridMove
 import com.nendo.argosy.ui.components.autoGridMove
 import com.nendo.argosy.ui.common.toHomeGameUi
 import com.nendo.argosy.ui.screens.home.GameDownloadIndicator
-import com.nendo.argosy.data.local.entity.MediaItemEntity
-import com.nendo.argosy.data.local.entity.MediaItemType
-import com.nendo.argosy.data.media.mediaAvailabilityOf
-import com.nendo.argosy.data.repository.MediaRepository
 import com.nendo.argosy.ui.screens.home.HomeGameUi
-import com.nendo.argosy.ui.dualscreen.CompanionDetail
-import com.nendo.argosy.ui.dualscreen.CompanionFact
-import com.nendo.argosy.ui.screens.home.HomeMediaUi
+import com.nendo.argosy.ui.screens.home.toHomeMediaUi
+import com.nendo.argosy.ui.screens.media.toCompanionDetail
 import com.nendo.argosy.ui.screens.media.toMediaItemUi
 import com.nendo.argosy.util.DisplayAffinityHelper
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -78,6 +74,8 @@ private const val SECTION_KIND_STEAM = "STEAM"
 private const val SECTION_KIND_PINNED = "PINNED"
 private const val SECTION_KIND_MEDIA = "MEDIA"
 private const val RESTORE_MAX_DEFERRALS = 8
+private const val MEDIA_RESUME_START_OVER_INDEX = 0
+private const val MEDIA_RESUME_OPTION_COUNT = 2
 
 sealed class DualHomeSection(
     val kind: HomeSectionKind,
@@ -182,10 +180,11 @@ data class DualHomeUiState(
     val currentSectionIndex: Int = 0,
     val games: List<HomeGameUi> = emptyList(),
     val mediaItems: List<com.nendo.argosy.ui.screens.home.HomeMediaUi> = emptyList(),
-    val mediaDetails: List<com.nendo.argosy.ui.dualscreen.CompanionDetail> = emptyList(),
     val mediaGridItems: List<com.nendo.argosy.ui.screens.media.MediaItemUi> = emptyList(),
-    val mediaGridDetails: List<com.nendo.argosy.ui.dualscreen.CompanionDetail> = emptyList(),
     val mediaGridFocusedIndex: Int = 0,
+    val mediaGridColumns: Int = 1,
+    val mediaResumePrompt: com.nendo.argosy.ui.screens.media.MediaResumePrompt? = null,
+    val mediaResumeFocusIndex: Int = 0,
     val mediaLibraries: List<DualHomeSection.MediaLibrary> = emptyList(),
     val mediaLibraryIndex: Int = 0,
     val selectedIndex: Int = 0,
@@ -408,13 +407,13 @@ class DualHomeViewModel(
     private val syncPreferencesRepository: com.nendo.argosy.data.preferences.SyncPreferencesRepository? = null,
     private val pageChooserEntrySource: com.nendo.argosy.ui.home.grid.PageChooserEntrySource? = null,
     private val ambientAudioManager: com.nendo.argosy.ui.audio.AmbientAudioManager? = null,
-    private val mediaRepository: com.nendo.argosy.data.repository.MediaRepository? = null
+    private val mediaRepository: com.nendo.argosy.data.repository.MediaRepository? = null,
+    private val resolveMediaPlayTargetUseCase:
+        com.nendo.argosy.domain.usecase.media.ResolveMediaPlayTargetUseCase? = null
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(DualHomeUiState())
     val uiState: StateFlow<DualHomeUiState> = _uiState.asStateFlow()
-
-    private var mediaGridColumns = 1
 
     private val _forwardingMode = MutableStateFlow(ForwardingMode.NONE)
     val forwardingMode: StateFlow<ForwardingMode> = _forwardingMode.asStateFlow()
@@ -554,6 +553,8 @@ class DualHomeViewModel(
         observeDownloads()
         observePlatformChanges()
         observeGradientChanges()
+        observeMediaGradientChanges()
+        observeMediaFocusForCompanion()
         observeLayoutConfig()
     }
 
@@ -954,37 +955,26 @@ class DualHomeViewModel(
      * translating titles into games: a film given a game's shape would answer questions about
      * emulators and downloads that mean nothing to it.
      */
-    private fun MediaItemEntity.toMediaTile(repository: MediaRepository) = HomeMediaUi(
-        itemId = itemId,
-        title = name,
-        subtitle = productionYear?.toString(),
-        posterUrl = repository.posterUrl(itemId, primaryImageTag),
-        isSeries = MediaItemType.fromWire(itemType) == MediaItemType.SERIES,
-        availability = mediaAvailabilityOf(localPath, null)
-    )
-
-    private fun MediaItemEntity.toCompanionDetail(repository: MediaRepository) = CompanionDetail(
-        title = name,
-        subtitle = productionYear?.toString(),
-        overview = overview,
-        artUrl = repository.posterUrl(itemId, primaryImageTag),
-        facts = buildList {
-            productionYear?.let { add(CompanionFact("Year", it.toString())) }
-            officialRating?.let { add(CompanionFact("Rated", it)) }
-            communityRating?.let { add(CompanionFact("Rating", "%.1f".format(it))) }
-        }
-    )
-
     private suspend fun loadMediaForSection(section: DualHomeSection.MediaLibrary) {
         val repository = mediaRepository ?: return
         val entities = repository.observeLibraryItems(section.libraryId).first()
-        val items = entities.map { it.toMediaTile(repository) }
-        val details = entities.map { it.toCompanionDetail(repository) }
+        val userData = repository.getUserDataFor(entities.map { it.itemId })
+        val seriesIds = entities.mapNotNull { it.seriesId }.distinct()
+        val series = seriesIds.mapNotNull { repository.getItem(it) }.associateBy { it.itemId }
+        val gradients = gradientExtractionDelegate?.mediaGradients?.value.orEmpty()
+        val items = entities.map {
+            it.toHomeMediaUi(
+                repository,
+                userData[it.itemId],
+                series[it.seriesId],
+                verified = null,
+                gradientColors = gradients[it.itemId]
+            )
+        }
         _uiState.update {
             it.copy(
                 games = emptyList(),
                 mediaItems = items,
-                mediaDetails = details,
                 platformTotalCount = 0,
                 selectedIndex = it.selectedIndex.coerceIn(0, (items.size - 1).coerceAtLeast(0))
             )
@@ -992,19 +982,30 @@ class DualHomeViewModel(
     }
 
     /**
-     * The media title the cursor is on, or null when the cursor is not on one.
+     * Starts the focused title, resolving a show to the episode a press should actually play
+     * through the shared resolver every surface uses.
      *
-     * Answers for the grid and the carousel row alike, so a caller acting on "the focused title"
-     * does not have to know which of the two the viewer is looking at.
+     * A show the resolver can only answer with its detail screen is left alone here: this display
+     * has no media detail surface, and the showcase is already describing the title.
      */
-    fun focusedMediaItemId(): String? {
-        val state = _uiState.value
-        if (state.viewMode == DualHomeViewMode.MEDIA_GRID) {
-            return state.mediaGridItems.getOrNull(state.mediaGridFocusedIndex)?.itemId
+    fun playFocusedMedia() {
+        val itemId = focusedMediaItemId() ?: return
+        val resolve = resolveMediaPlayTargetUseCase ?: return
+        viewModelScope.launch {
+            when (val target = resolve(itemId)) {
+                is com.nendo.argosy.domain.model.MediaPlayTarget.Play ->
+                    com.nendo.argosy.DualScreenManagerHolder.instance?.playMediaItem(target.itemId)
+                is com.nendo.argosy.domain.model.MediaPlayTarget.OpenDetail -> Unit
+            }
         }
-        if (state.currentSection !is DualHomeSection.MediaLibrary) return null
-        return state.mediaItems.getOrNull(state.selectedIndex)?.itemId
     }
+
+    /**
+     * The media title the cursor is on, or null when the cursor is not on one. Answers for the
+     * grid and the carousel row alike, so a caller acting on "the focused title" does not have to
+     * know which of the two the viewer is looking at.
+     */
+    fun focusedMediaItemId(): String? = focusedMediaId(_uiState.value)
 
     /**
      * Opens the media browser on this screen, which is the one being driven.
@@ -1049,15 +1050,33 @@ class DualHomeViewModel(
         val state = _uiState.value
         val library = state.mediaLibraries.getOrNull(state.mediaLibraryIndex) ?: return
         val entities = repository.observeLibraryItems(library.libraryId).first()
+        gradientExtractionDelegate?.loadPersistedMediaGradients(
+            viewModelScope,
+            entities.map { it.itemId }
+        )
+        val userData = repository.getUserDataFor(entities.map { it.itemId })
+        val gradients = gradientExtractionDelegate?.mediaGradients?.value.orEmpty()
         _uiState.update {
             it.copy(
                 mediaGridItems = entities.map { entity ->
-                    entity.toMediaItemUi(repository, userData = null)
+                    entity.toMediaItemUi(repository, userData[entity.itemId], gradients = gradients)
                 },
-                mediaGridDetails = entities.map { entity -> entity.toCompanionDetail(repository) },
                 mediaGridFocusedIndex = it.mediaGridFocusedIndex
                     .coerceIn(0, (entities.size - 1).coerceAtLeast(0))
             )
+        }
+    }
+
+    /**
+     * Asks the server for the library listing again and rebuilds the grid from what it answers,
+     * the deliberate, user-asked-for refresh the single-screen media library offers on the same
+     * button.
+     */
+    fun refreshMediaGrid() {
+        val repository = mediaRepository ?: return
+        viewModelScope.launch {
+            repository.refreshLibraries()
+            loadMediaGrid()
         }
     }
 
@@ -1078,11 +1097,11 @@ class DualHomeViewModel(
     }
 
     fun setMediaGridColumns(columns: Int) {
-        if (columns <= 0 || columns == mediaGridColumns) return
-        mediaGridColumns = columns
+        if (columns <= 0) return
+        _uiState.update {
+            if (it.mediaGridColumns == columns) it else it.copy(mediaGridColumns = columns)
+        }
     }
-
-    fun mediaGridColumns(): Int = mediaGridColumns
 
     fun setMediaGridFocus(index: Int) {
         _uiState.update {
@@ -1091,6 +1110,122 @@ class DualHomeViewModel(
                     .coerceIn(0, (it.mediaGridItems.size - 1).coerceAtLeast(0))
             )
         }
+    }
+
+    /**
+     * Raises the Start Over prompt for one grid tile. A series is not itself playable and an item
+     * with nothing to resume has no choice to offer, so neither raises the prompt and the caller
+     * plays instead.
+     */
+    fun openMediaResumePrompt(index: Int): Boolean {
+        val item = _uiState.value.mediaGridItems.getOrNull(index) ?: return false
+        if (!item.isPlayable || !item.hasResumePosition) return false
+        _uiState.update {
+            it.copy(
+                mediaGridFocusedIndex = index,
+                mediaResumePrompt = com.nendo.argosy.ui.screens.media.MediaResumePrompt(
+                    itemId = item.itemId,
+                    title = item.title,
+                    subtitle = item.episodeLabel ?: item.year?.toString(),
+                    resumeTicks = item.resumeTicks
+                ),
+                mediaResumeFocusIndex = MEDIA_RESUME_START_OVER_INDEX
+            )
+        }
+        return true
+    }
+
+    fun openMediaResumePromptForFocused(): Boolean =
+        openMediaResumePrompt(_uiState.value.mediaGridFocusedIndex)
+
+    fun moveMediaResumeFocus(delta: Int) {
+        _uiState.update {
+            it.copy(
+                mediaResumeFocusIndex = (it.mediaResumeFocusIndex + delta)
+                    .mod(MEDIA_RESUME_OPTION_COUNT)
+            )
+        }
+    }
+
+    fun confirmMediaResumePrompt() {
+        val state = _uiState.value
+        val prompt = state.mediaResumePrompt ?: return
+        startMediaFromPrompt(
+            prompt.itemId,
+            startOver = state.mediaResumeFocusIndex == MEDIA_RESUME_START_OVER_INDEX
+        )
+    }
+
+    fun startMediaFromPrompt(itemId: String, startOver: Boolean) {
+        dismissMediaResumePrompt()
+        com.nendo.argosy.DualScreenManagerHolder.instance?.playMediaItem(itemId, startOver)
+    }
+
+    fun dismissMediaResumePrompt() {
+        _uiState.update { it.copy(mediaResumePrompt = null) }
+    }
+
+    /**
+     * Samples a grid poster the first time it finishes decoding, the way the single-screen library
+     * does, so the colours a poster carries follow the title onto whichever surface draws it next.
+     */
+    fun onMediaPosterLoaded(itemId: String, bitmap: android.graphics.Bitmap) {
+        gradientExtractionDelegate?.extractForMedia(viewModelScope, itemId, bitmap)
+    }
+
+    private fun observeMediaGradientChanges() {
+        val delegate = gradientExtractionDelegate ?: return
+        viewModelScope.launch {
+            delegate.mediaGradients.collect { gradients ->
+                if (gradients.isEmpty()) return@collect
+                _uiState.update { state ->
+                    state.copy(
+                        mediaGridItems = state.mediaGridItems.map { item ->
+                            gradients[item.itemId]
+                                ?.takeIf { it != item.gradientColors }
+                                ?.let { item.copy(gradientColors = it) }
+                                ?: item
+                        }
+                    )
+                }
+            }
+        }
+    }
+
+    /**
+     * Tells the showcase screen what this one has focused, for the media grid and the carousel's
+     * media rows alike. Driven off state rather than called from each navigation method, following
+     * the single-screen media library's convention, so every path that moves the cursor reaches it.
+     */
+    private fun observeMediaFocusForCompanion() {
+        viewModelScope.launch {
+            _uiState
+                .map { focusedMediaId(it) }
+                .distinctUntilChanged()
+                .collect { itemId -> publishMediaCompanionDetail(itemId) }
+        }
+    }
+
+    private fun focusedMediaId(state: DualHomeUiState): String? = when {
+        state.viewMode == DualHomeViewMode.MEDIA_GRID ->
+            state.mediaGridItems.getOrNull(state.mediaGridFocusedIndex)?.itemId
+        state.currentSection is DualHomeSection.MediaLibrary ->
+            state.mediaItems.getOrNull(state.selectedIndex)?.itemId
+        else -> null
+    }
+
+    private suspend fun publishMediaCompanionDetail(itemId: String?) {
+        val holder = com.nendo.argosy.DualScreenManagerHolder.instance ?: return
+        if (itemId == null) {
+            holder.setCompanionDetail(null)
+            return
+        }
+        val repository = mediaRepository ?: return
+        val item = _uiState.value.mediaGridItems.firstOrNull { it.itemId == itemId }
+            ?: repository.getItem(itemId)
+                ?.toMediaItemUi(repository, repository.getUserData(itemId))
+            ?: return
+        holder.setCompanionDetail(item.toCompanionDetail())
     }
 
     private fun sortRecentGamesWithNewPriority(games: List<GameEntity>): List<GameEntity> {

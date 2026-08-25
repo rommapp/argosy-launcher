@@ -37,7 +37,7 @@ import com.nendo.argosy.ui.screens.home.delegates.HomeInputHandler
 import com.nendo.argosy.ui.screens.home.delegates.HomeLibraryDelegate
 import com.nendo.argosy.ui.screens.home.delegates.HomeMediaDelegate
 import com.nendo.argosy.ui.screens.home.delegates.HomeNavigationDelegate
-import com.nendo.argosy.ui.screens.home.delegates.MediaPlayTarget
+import com.nendo.argosy.domain.model.MediaPlayTarget
 import com.nendo.argosy.ui.screens.home.delegates.HomeSyncDelegate
 import com.nendo.argosy.ui.screens.home.delegates.HomeTilePickerDelegate
 import com.nendo.argosy.ui.screens.home.delegates.HomeVideoPreviewDelegate

@@ -156,12 +156,16 @@ class SecondaryHomeInputHandler(
     }
 
     /**
-     * The media browser on this screen. Confirm starts the title, the shoulders change library and
-     * Back returns to the carousel, matching what the same buttons do in the game library grid.
+     * The media browser on this screen. Confirm starts the title, the shoulders change library,
+     * X refreshes, Y resumes through the prompt, and Back returns to the carousel, matching the
+     * single-screen media library's bindings.
      */
     private fun handleMediaGridInput(event: GamepadEvent): InputResult {
         val vm = dualHomeViewModel
-        val columns = vm.mediaGridColumns()
+        if (vm.uiState.value.mediaResumePrompt != null) {
+            return handleMediaResumePromptInput(event)
+        }
+        val columns = vm.uiState.value.mediaGridColumns
         return when (event) {
             GamepadEvent.Left ->
                 if (vm.moveMediaGridFocus(GridDirection.LEFT, columns)) InputResult.HANDLED
@@ -184,8 +188,19 @@ class SecondaryHomeInputHandler(
                 InputResult.handled(SoundType.SECTION_CHANGE)
             }
             GamepadEvent.Confirm -> {
-                val itemId = vm.focusedMediaItemId() ?: return InputResult.UNHANDLED
-                com.nendo.argosy.DualScreenManagerHolder.instance?.playMediaItem(itemId)
+                if (vm.focusedMediaItemId() == null) return InputResult.UNHANDLED
+                vm.playFocusedMedia()
+                InputResult.HANDLED
+            }
+            GamepadEvent.ContextMenu -> {
+                vm.refreshMediaGrid()
+                InputResult.HANDLED
+            }
+            GamepadEvent.SecondaryAction -> {
+                if (vm.focusedMediaItemId() == null) return InputResult.UNHANDLED
+                if (!vm.openMediaResumePromptForFocused()) {
+                    vm.playFocusedMedia()
+                }
                 InputResult.HANDLED
             }
             GamepadEvent.Back -> {
@@ -194,6 +209,22 @@ class SecondaryHomeInputHandler(
             }
             else -> InputResult.UNHANDLED
         }
+    }
+
+    /**
+     * The resume prompt owns the pad while it is up. Everything answers HANDLED, including the
+     * events the prompt ignores, so nothing leaks through to the grid underneath it.
+     */
+    private fun handleMediaResumePromptInput(event: GamepadEvent): InputResult {
+        val vm = dualHomeViewModel
+        when (event) {
+            GamepadEvent.Up -> vm.moveMediaResumeFocus(-1)
+            GamepadEvent.Down -> vm.moveMediaResumeFocus(1)
+            GamepadEvent.Confirm -> vm.confirmMediaResumePrompt()
+            GamepadEvent.Back -> vm.dismissMediaResumePrompt()
+            else -> {}
+        }
+        return InputResult.HANDLED
     }
 
     fun handleDualDetailInput(event: GamepadEvent): InputResult {
@@ -603,8 +634,7 @@ class SecondaryHomeInputHandler(
                     val game = state.selectedGame
                     when {
                         mediaItemId != null -> {
-                            com.nendo.argosy.DualScreenManagerHolder.instance
-                                ?.playMediaItem(mediaItemId)
+                            dualHomeViewModel.playFocusedMedia()
                             InputResult.HANDLED
                         }
                         game != null -> {

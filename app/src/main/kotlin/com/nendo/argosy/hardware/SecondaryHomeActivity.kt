@@ -184,7 +184,8 @@ class SecondaryHomeActivity :
                         scrapingArtwork.isProcessing
                 ) {
                     val primaryDetail by _companionDetail.collectAsState()
-                    val describingPrimary = primaryDetail.takeIf { isShowcaseRole }
+                    val describingPrimary = primaryDetail
+                        .takeIf { isShowcaseRole && !isMediaPanelVisible }
                     if (describingPrimary != null) {
                         CompanionDetailScreen(
                             detail = describingPrimary,
@@ -942,6 +943,11 @@ class SecondaryHomeActivity :
      * header can hold it while a rail is being rebuilt underneath. Confirming in either state used
      * to return silently, which reads as the selector being dead rather than as a list that has not
      * settled.
+     *
+     * The row can hold a whole series -- related titles arrive as shows, not episodes -- so the id
+     * is resolved to something the player can negotiate before it is handed over. A series the
+     * resolver can only answer with its detail screen is logged and left alone, because this
+     * display has no media detail surface to open.
      */
     private fun playFocusedMediaRow(index: Int) {
         val vm = dualMediaViewModel ?: return
@@ -953,7 +959,17 @@ class SecondaryHomeActivity :
             return
         }
         vm.focusRow(rows.indexOf(target))
-        dsm.playMediaItem(target.item.itemId)
+        lifecycleScope.launch {
+            when (val resolved = dsm.resolveMediaPlayTargetUseCase(target.item.itemId)) {
+                is com.nendo.argosy.domain.model.MediaPlayTarget.Play ->
+                    dsm.playMediaItem(resolved.itemId)
+                is com.nendo.argosy.domain.model.MediaPlayTarget.OpenDetail ->
+                    android.util.Log.d(
+                        "SecondaryHome",
+                        "playFocusedMediaRow: no playable episode for ${resolved.itemId}"
+                    )
+            }
+        }
     }
 
     private fun applyInputSwapState(state: SecondaryHomeStateManager.InputSwapState) {
@@ -1002,14 +1018,16 @@ class SecondaryHomeActivity :
             syncPreferencesRepository = dsm.syncPreferencesRepository,
             pageChooserEntrySource = dsm.pageChooserEntrySource,
             ambientAudioManager = dsm.ambientAudioManager,
-            mediaRepository = dsm.mediaRepository
+            mediaRepository = dsm.mediaRepository,
+            resolveMediaPlayTargetUseCase = dsm.resolveMediaPlayTargetUseCase
         )
         dualHomeViewModel.observeHomeTiles()
         dualHomeViewModel.observeTilePrompts()
         dualMediaViewModel = DualMediaViewModel(
             mediaRepository = dsm.mediaRepository,
             playback = dsm.mediaPlayback,
-            gradientExtractionDelegate = dsm.gradientExtractionDelegate
+            gradientExtractionDelegate = dsm.gradientExtractionDelegate,
+            getRelatedMedia = dsm.getRelatedMediaUseCase
         )
         observeCustomGridSelection()
         broadcasts = SecondaryHomeBroadcastHelper(

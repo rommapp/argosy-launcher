@@ -1325,46 +1325,14 @@ fun ArgosyApp(
                         DualHomeUpperScreen(
                             state = showcaseState,
                             footerHints = {
-                                val actionLabel = if (showcaseState.isDownloaded) "Play" else "Download"
                                 FooterHints(
-                                    hints = when (viewMode) {
-                                        "COLLECTION_GAMES" -> listOf(
-                                            com.nendo.argosy.ui.components.InputButton.DPAD to "Navigate",
-                                            com.nendo.argosy.ui.components.InputButton.A to actionLabel,
-                                            com.nendo.argosy.ui.components.InputButton.X to "Details",
-                                            com.nendo.argosy.ui.components.InputButton.B to "Back"
-                                        )
-                                        "LIBRARY_GRID" -> listOf(
-                                            com.nendo.argosy.ui.components.InputButton.LB_RB to "Platform",
-                                            com.nendo.argosy.ui.components.InputButton.LT_RT to "Letter",
-                                            com.nendo.argosy.ui.components.InputButton.A to "Details",
-                                            com.nendo.argosy.ui.components.InputButton.X to "Options",
-                                            com.nendo.argosy.ui.components.InputButton.Y to "Filters",
-                                            com.nendo.argosy.ui.components.InputButton.B to "Back"
-                                        )
-                                        "MEDIA_GRID" -> listOf(
-                                            com.nendo.argosy.ui.components.InputButton.LB_RB to "Library",
-                                            com.nendo.argosy.ui.components.InputButton.A to "Play",
-                                            com.nendo.argosy.ui.components.InputButton.B to "Back"
-                                        )
-                                        else -> if (drawerOpen) listOf(
-                                            com.nendo.argosy.ui.components.InputButton.A to "Open",
-                                            com.nendo.argosy.ui.components.InputButton.X to "Pin/Unpin",
-                                            com.nendo.argosy.ui.components.InputButton.Y to "Open Top",
-                                            com.nendo.argosy.ui.components.InputButton.B to "Close"
-                                        ) else if (appBarFocused) listOf(
-                                            com.nendo.argosy.ui.components.InputButton.A to "Select",
-                                            com.nendo.argosy.ui.components.InputButton.Y to "Open Top",
-                                            com.nendo.argosy.ui.components.InputButton.SELECT to "All Apps"
-                                        ) else listOf(
-                                            com.nendo.argosy.ui.components.InputButton.LB_RB to "Platform",
-                                            com.nendo.argosy.ui.components.InputButton.A to actionLabel,
-                                            com.nendo.argosy.ui.components.InputButton.X to "Details",
-                                            com.nendo.argosy.ui.components.InputButton.Y to if (showcaseState.isFavorite) "Unfavorite" else "Favorite",
-                                            com.nendo.argosy.ui.components.InputButton.DPAD_UP to "Collections",
-                                            com.nendo.argosy.ui.components.InputButton.SELECT to "Library"
-                                        )
-                                    }
+                                    hints = com.nendo.argosy.ui.dualscreen.companionHomeHints(
+                                        viewMode = viewMode,
+                                        isDownloaded = showcaseState.isDownloaded,
+                                        isFavorite = showcaseState.isFavorite,
+                                        drawerOpen = drawerOpen,
+                                        appBarFocused = appBarFocused
+                                    )
                                 )
                             },
                             modifier = Modifier.blur(contentBlur)

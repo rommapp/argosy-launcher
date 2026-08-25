@@ -69,17 +69,13 @@ fun MediaResumeModalHost(
     modifier: Modifier = Modifier
 ) {
     var focusedIndex by remember { mutableIntStateOf(START_OVER_INDEX) }
-    var lastPrompt by remember { mutableStateOf<MediaResumePrompt?>(null) }
     val currentOnStartOver by rememberUpdatedState(onStartOver)
     val currentOnResume by rememberUpdatedState(onResume)
     val currentOnDismiss by rememberUpdatedState(onDismiss)
     val currentPrompt by rememberUpdatedState(prompt)
 
     LaunchedEffect(prompt) {
-        if (prompt != null) {
-            lastPrompt = prompt
-            focusedIndex = START_OVER_INDEX
-        }
+        if (prompt != null) focusedIndex = START_OVER_INDEX
     }
 
     val inputHandler = remember {
@@ -122,6 +118,35 @@ fun MediaResumeModalHost(
     }
 
     ModalInputEffect(active = prompt != null, handler = inputHandler)
+
+    MediaResumeModalContent(
+        prompt = prompt,
+        focusedIndex = focusedIndex,
+        onStartOver = onStartOver,
+        onResume = onResume,
+        onDismiss = onDismiss,
+        modifier = modifier
+    )
+}
+
+/**
+ * The prompt's visuals alone, with the focused option handed in rather than held here. The
+ * companion display renders this form and routes gamepad input through its own handler stack,
+ * which has no input dispatcher for [MediaResumeModalHost] to push onto.
+ */
+@Composable
+fun MediaResumeModalContent(
+    prompt: MediaResumePrompt?,
+    focusedIndex: Int,
+    onStartOver: (String) -> Unit,
+    onResume: (String) -> Unit,
+    onDismiss: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    var lastPrompt by remember { mutableStateOf<MediaResumePrompt?>(null) }
+    LaunchedEffect(prompt) {
+        if (prompt != null) lastPrompt = prompt
+    }
 
     val content = prompt ?: lastPrompt ?: return
     val theme = LocalArgosyTheme.current

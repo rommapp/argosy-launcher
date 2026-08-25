@@ -113,6 +113,33 @@ fun DualMediaLowerScreen(
                         ),
                         verticalArrangement = Arrangement.spacedBy(Dimens.spacingXs)
                     ) {
+                        state.overview?.takeIf { it.isNotBlank() }?.let { synopsis ->
+                            item(key = "overview") {
+                                Text(
+                                    text = synopsis,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.padding(
+                                        horizontal = Dimens.spacingMd,
+                                        vertical = Dimens.spacingXs
+                                    )
+                                )
+                            }
+                        }
+                        if (state.cast.isNotEmpty()) {
+                            item(key = "cast-header") { DualMediaSectionHeader("Cast") }
+                            item(key = "cast") {
+                                Text(
+                                    text = state.cast.joinToString(", ") { it.name },
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.padding(
+                                        horizontal = Dimens.spacingMd,
+                                        vertical = Dimens.spacingXs
+                                    )
+                                )
+                            }
+                        }
                         itemsIndexed(
                             items = state.rows,
                             key = { index, row ->

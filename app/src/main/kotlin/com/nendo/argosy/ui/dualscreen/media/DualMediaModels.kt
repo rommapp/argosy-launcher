@@ -36,7 +36,14 @@ data class DualMediaUiState(
     val rows: List<DualMediaRow> = emptyList(),
     val focusedRowIndex: Int = -1,
     val isLoading: Boolean = false,
-    val isSignedIn: Boolean = true
+    val isSignedIn: Boolean = true,
+    /**
+     * What a film has instead of an episode list. A movie has no siblings to walk, so the panel
+     * answers "what am I watching" with the synopsis and who is in it rather than leaving the screen
+     * to a list that will always be empty.
+     */
+    val overview: String? = null,
+    val cast: List<com.nendo.argosy.ui.screens.media.MediaCastUi> = emptyList()
 ) {
     val focusedItem: MediaItemUi?
         get() = (rows.getOrNull(focusedRowIndex) as? DualMediaRow.Item)?.item

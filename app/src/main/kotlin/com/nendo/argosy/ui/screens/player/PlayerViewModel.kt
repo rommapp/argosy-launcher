@@ -38,7 +38,6 @@ private const val TAG = "PlayerViewModel"
 private const val POSITION_TICK_MS = 250L
 private const val SCRUB_COMMIT_DELAY_MS = 600L
 private const val NEAR_END_MS = 15_000L
-private const val CHAPTER_BACK_GRACE_MS = 3_000L
 private const val AUTOPLAY_COUNTDOWN_SECONDS = 10
 private const val FULLY_PLAYED_PERCENT = 100.0
 
@@ -400,7 +399,15 @@ class PlayerViewModel @Inject constructor(
         if (isPlaying) chrome.restartTimer() else chrome.show()
     }
 
+    /**
+     * Reaching the end marks the item played outright rather than leaving it to the near-end
+     * heuristic, which cannot fire when the duration was never learned. Everything that resolves
+     * "what plays next" reads that local flag, so a finished episode that stayed unplayed would be
+     * offered again as if it had never been watched. Setting the override is idempotent; the
+     * session guard in [endMediaSession] keeps a repeated ended-state from writing twice.
+     */
     private fun onPlaybackCompleted() {
+        watchedOverride = true
         val duration = _uiState.value.durationMs
         endMediaSession(if (duration > 0) duration else currentItemPositionMs())
         if (_uiState.value.nextEpisode == null) {
@@ -643,15 +650,13 @@ class PlayerViewModel @Inject constructor(
         seekTo(segment.endMs)
     }
 
-    fun jumpChapter(direction: Int) {
-        val state = _uiState.value
-        if (state.chapters.isEmpty()) return
-        val target = if (direction > 0) {
-            state.chapters.firstOrNull { it.startMs > state.positionMs + CHAPTER_BACK_GRACE_MS }
-        } else {
-            state.chapters.lastOrNull { it.startMs < state.positionMs - CHAPTER_BACK_GRACE_MS }
-        } ?: return
-        seekTo(target.startMs)
+    /**
+     * The trigger seek, a coarser step than the shoulder skip. The triggers reach the player as one
+     * event per pull rather than a held stream - the axis emitter fires once when the pull crosses
+     * its threshold - so covering ground comes from the step size, not from repeat.
+     */
+    fun shuttleBy(direction: Int) {
+        seekTo(currentItemPositionMs() + direction * PLAYER_SHUTTLE_STEP_MS)
     }
 
     fun playChapter(index: Int) {

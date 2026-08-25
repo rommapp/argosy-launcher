@@ -306,3 +306,10 @@ private const val SECONDS_PER_HOUR = 3600L
  */
 const val PLAYER_SEEK_STEP_SECONDS = 10L
 const val PLAYER_SEEK_STEP_MS = PLAYER_SEEK_STEP_SECONDS * MILLIS_PER_SECOND
+
+/**
+ * How far one trigger pull moves the position. Larger than the shoulder step because the triggers
+ * are the coarse transport, and a trigger pull arrives as a single event rather than a held repeat.
+ */
+const val PLAYER_SHUTTLE_STEP_SECONDS = 30L
+const val PLAYER_SHUTTLE_STEP_MS = PLAYER_SHUTTLE_STEP_SECONDS * MILLIS_PER_SECOND

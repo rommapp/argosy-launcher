@@ -215,7 +215,18 @@ class SecondaryHomeActivity :
                             syncConflictFocusIndex = dsm.dualSyncOverlayFocusIndex,
                             onAppClick = ::launchApp,
                             dualMediaViewModel = dualMediaViewModel,
-                            isMediaPanelVisible = isMediaPanelVisible
+                            isMediaPanelVisible = isMediaPanelVisible,
+                            onMediaSeasonPickerToggled = {
+                                dualMediaViewModel?.toggleSeasonPicker()
+                            },
+                            onMediaSeasonSelected = { dualMediaViewModel?.selectSeason(it) },
+                            onMediaEpisodeLayoutSelected = {
+                                dualMediaViewModel?.setEpisodeLayout(it)
+                            },
+                            onMediaJumpToNowPlaying = {
+                                dualMediaViewModel?.jumpToNowPlaying()
+                            },
+                            onMediaEpisodeTapped = ::playMediaItemId
                         )
                     } else {
                         SecondaryHomeContent(
@@ -278,7 +289,18 @@ class SecondaryHomeActivity :
                             mediaToggle = mediaToggle,
                             onMediaToggle = ::openMediaFromAppBar,
                             onMediaRowTapped = { index -> dualMediaViewModel?.focusRow(index) },
-                            onMediaRowConfirmed = ::playFocusedMediaRow
+                            onMediaRowConfirmed = ::playFocusedMediaRow,
+                            onMediaSeasonPickerToggled = {
+                                dualMediaViewModel?.toggleSeasonPicker()
+                            },
+                            onMediaSeasonSelected = { dualMediaViewModel?.selectSeason(it) },
+                            onMediaEpisodeLayoutSelected = {
+                                dualMediaViewModel?.setEpisodeLayout(it)
+                            },
+                            onMediaJumpToNowPlaying = {
+                                dualMediaViewModel?.jumpToNowPlaying()
+                            },
+                            onMediaEpisodeTapped = ::playMediaItemId
                         )
                     }
                 }
@@ -395,6 +417,7 @@ class SecondaryHomeActivity :
         ::dualHomeViewModel.isInitialized && dualHomeViewModel.uiState.value.isTextEntryActive
 
     private fun handleGamepadKeyDown(keyCode: Int, event: android.view.KeyEvent): Boolean {
+        if (yieldsKeysToMediaPlayer()) return false
         if (::dsm.isInitialized && !dsm.claimInput(event)) return true
         if (event.repeatCount == 0) {
             val conflictEvent = mapKeycodeToGamepadEvent(keyCode, swapAB, swapXY, swapStartSelect)
@@ -441,6 +464,21 @@ class SecondaryHomeActivity :
             return true
         }
         return false
+    }
+
+    /**
+     * Whether the pad belongs to the video player right now. While the media panel is up over a
+     * live playback the panel is touch-only, so this window must not claim the key: the same press
+     * is delivered to the player's window in parallel, and a claim here would make its copy a
+     * duplicate that gets dropped. The conflict overlays keep their priority because they capture
+     * input on every surface.
+     */
+    private fun yieldsKeysToMediaPlayer(): Boolean {
+        if (!::dsm.isInitialized) return false
+        if (!isMediaPanelVisible || isGameActive) return false
+        if (dsm.mediaPlayback.value == null) return false
+        if (dsm.dualSyncOverlay.value != null || dsm.dualSaveConflict.value != null) return false
+        return true
     }
 
     /**
@@ -981,14 +1019,23 @@ class SecondaryHomeActivity :
             return
         }
         vm.focusRow(rows.indexOf(target))
+        playMediaItemId(target.item.itemId)
+    }
+
+    /**
+     * Sends one item to the player window wherever it currently is. The id is resolved first
+     * because a row can hold a whole series; a series the resolver can only answer with its detail
+     * screen is logged and left alone, because this display has no media detail surface to open.
+     */
+    private fun playMediaItemId(itemId: String) {
         lifecycleScope.launch {
-            when (val resolved = dsm.resolveMediaPlayTargetUseCase(target.item.itemId)) {
+            when (val resolved = dsm.resolveMediaPlayTargetUseCase(itemId)) {
                 is com.nendo.argosy.domain.model.MediaPlayTarget.Play ->
                     dsm.playMediaItem(resolved.itemId)
                 is com.nendo.argosy.domain.model.MediaPlayTarget.OpenDetail ->
                     android.util.Log.d(
                         "SecondaryHome",
-                        "playFocusedMediaRow: no playable episode for ${resolved.itemId}"
+                        "playMediaItemId: no playable episode for ${resolved.itemId}"
                     )
             }
         }
@@ -1052,7 +1099,8 @@ class SecondaryHomeActivity :
             playback = dsm.mediaPlayback,
             gradientExtractionDelegate = dsm.gradientExtractionDelegate,
             getRelatedMedia = dsm.getRelatedMediaUseCase,
-            availabilityVerifier = dsm.mediaAvailabilityVerifier
+            availabilityVerifier = dsm.mediaAvailabilityVerifier,
+            seriesDelegate = dsm.mediaSeriesDelegate
         )
         observeCustomGridSelection()
         broadcasts = SecondaryHomeBroadcastHelper(

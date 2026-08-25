@@ -154,6 +154,8 @@ class DualScreenManager(
         com.nendo.argosy.data.media.MediaAvailabilityVerifier? = null,
     internal val mediaDownloadDelegate:
         com.nendo.argosy.ui.screens.media.delegates.MediaDownloadDelegate? = null,
+    internal val mediaSeriesDelegate:
+        com.nendo.argosy.ui.screens.media.delegates.MediaSeriesDelegate? = null,
     initialRolesSwapped: Boolean = false
 ) {
 

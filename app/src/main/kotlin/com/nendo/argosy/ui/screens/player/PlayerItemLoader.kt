@@ -44,7 +44,8 @@ data class PlayerItemDetail(
  */
 class PlayerItemLoader @Inject constructor(
     private val apiClient: JellyfinApiClient,
-    private val mediaRepository: MediaRepository
+    private val mediaRepository: MediaRepository,
+    private val resolvePlayTarget: com.nendo.argosy.domain.usecase.media.ResolveMediaPlayTargetUseCase
 ) {
 
     suspend fun load(itemId: String): PlayerItemDetail = withContext(Dispatchers.IO) {
@@ -121,22 +122,16 @@ class PlayerItemLoader @Inject constructor(
     }
 
     /**
-     * The episode after this one, taken from what the library already holds.
-     *
-     * The stored order is season then episode, so the entry following this one is the next episode
-     * whether or not that crosses into another season. A film, an episode whose series was never
-     * stored, and the last episode there is all answer with nothing, and the button for it never
-     * appears rather than appearing and failing.
+     * The episode after this one, resolved by the shared play-target use case so a stored season
+     * boundary is crossed by fetching the following season rather than answering nothing. A film,
+     * an episode whose series was never stored, and the true last episode of a show still answer
+     * with nothing, and the button for it never appears rather than appearing and failing.
      */
     private suspend fun nextEpisodeOf(entity: MediaItemEntity): PlayerNextEpisode? {
         if (entity.itemType != MediaItemType.EPISODE.wireValue) return null
-        val seriesId = entity.seriesId ?: return null
-        val episodes = runCatching { mediaRepository.getSeriesEpisodes(seriesId) }
+        val next = runCatching { resolvePlayTarget.nextEpisodeAfter(entity.itemId) }
             .getOrNull()
             ?: return null
-        val position = episodes.indexOfFirst { it.itemId == entity.itemId }
-        if (position < 0) return null
-        val next = episodes.getOrNull(position + 1) ?: return null
         return PlayerNextEpisode(itemId = next.itemId, label = next.episodeLabel())
     }
 

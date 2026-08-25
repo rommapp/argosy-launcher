@@ -85,10 +85,15 @@ class SecondaryHomeInputHandler(
     private fun mediaSlotCount(): Int = if (hasMediaSlot()) 1 else 0
 
     /**
-     * The media panel's whole control surface: a cursor down the list, confirm to watch, and back to
-     * the launcher. Everything else is swallowed rather than falling through, because the screen
-     * underneath is not the one being looked at and a stray press landing on it moves a carousel
-     * nobody can see.
+     * The media panel's control surface for the one state without a player: browsing the rails with
+     * nothing open. A cursor down the list, confirm to watch, and back to the launcher; everything
+     * else is swallowed rather than falling through, because the screen underneath is not the one
+     * being looked at and a stray press landing on it moves a carousel nobody can see.
+     *
+     * While a playback is live the pad belongs to the player on the other display and the panel is
+     * touch-only, so every event is swallowed without moving anything. The activity normally never
+     * routes here in that state - it declines to claim the key so the player's copy wins - but a
+     * forwarded key entering directly must not walk the panel either.
      */
     private fun handleMediaPanelInput(event: GamepadEvent): InputResult {
         if (viewModel.uiState.value.isDrawerOpen) return handleDrawerInput(event)
@@ -96,6 +101,7 @@ class SecondaryHomeInputHandler(
             return InputResult.HANDLED
         }
         val vm = dualMediaViewModel() ?: return InputResult.UNHANDLED
+        if (vm.uiState.value.isPlaybackLive) return InputResult.HANDLED
         when (event) {
             GamepadEvent.Up, GamepadEvent.Left -> vm.moveFocus(-1)
             GamepadEvent.Down, GamepadEvent.Right -> vm.moveFocus(1)

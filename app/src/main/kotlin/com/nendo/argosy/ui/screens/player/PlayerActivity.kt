@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.view.KeyEvent
+import android.view.MotionEvent
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -53,6 +54,9 @@ class PlayerActivity : ComponentActivity() {
 
     @Inject
     lateinit var displayAffinityHelper: DisplayAffinityHelper
+
+    @Inject
+    lateinit var triggerAxisKeyEmitter: com.nendo.argosy.ui.input.TriggerAxisKeyEmitter
 
     private val viewModel: PlayerViewModel by viewModels()
     private val inputHandler by lazy { PlayerInputHandler(viewModel) }
@@ -161,6 +165,16 @@ class PlayerActivity : ComponentActivity() {
             if (route(gamepadEvent).handled) return true
         }
         return event.action == KeyEvent.ACTION_UP || super.dispatchKeyEvent(event)
+    }
+
+    /**
+     * Most pads report L2 and R2 as analog axes rather than key events, so the axis crossings are
+     * converted to the L2/R2 keycodes and fed through the same dispatch the digital pads use. This
+     * is the same conversion the launcher's own window performs.
+     */
+    override fun dispatchGenericMotionEvent(event: MotionEvent): Boolean {
+        triggerAxisKeyEmitter.emit(event).forEach { dispatchKeyEvent(it) }
+        return super.dispatchGenericMotionEvent(event)
     }
 
     private fun route(event: GamepadEvent): InputResult = when (event) {

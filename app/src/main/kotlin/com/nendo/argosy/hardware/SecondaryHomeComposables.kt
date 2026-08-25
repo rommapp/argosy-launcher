@@ -45,6 +45,7 @@ import com.nendo.argosy.ui.dualscreen.home.DualFilterCategory
 import com.nendo.argosy.ui.dualscreen.home.DualHomeShowcaseState
 import com.nendo.argosy.ui.dualscreen.home.DualHomeUpperScreen
 import com.nendo.argosy.ui.dualscreen.home.DualHomeViewModel
+import com.nendo.argosy.ui.dualscreen.media.DualMediaEpisodeLayout
 import com.nendo.argosy.ui.dualscreen.media.DualMediaLowerScreen
 import com.nendo.argosy.ui.dualscreen.media.DualMediaViewModel
 import com.nendo.argosy.ui.screens.secondaryhome.SecondaryHomeViewModel
@@ -91,7 +92,12 @@ fun SecondaryHomeContent(
     mediaToggle: CompanionMediaToggle? = null,
     onMediaToggle: () -> Unit = {},
     onMediaRowTapped: (Int) -> Unit = {},
-    onMediaRowConfirmed: (Int) -> Unit = {}
+    onMediaRowConfirmed: (Int) -> Unit = {},
+    onMediaSeasonPickerToggled: () -> Unit = {},
+    onMediaSeasonSelected: (Int) -> Unit = {},
+    onMediaEpisodeLayoutSelected: (DualMediaEpisodeLayout) -> Unit = {},
+    onMediaJumpToNowPlaying: () -> Unit = {},
+    onMediaEpisodeTapped: (String) -> Unit = {}
 ) {
     BackHandler(enabled = true) { }
 
@@ -172,7 +178,12 @@ fun SecondaryHomeContent(
                         isInteractive = true,
                         onRowTapped = onMediaRowTapped,
                         onRowConfirmed = onMediaRowConfirmed,
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.weight(1f),
+                        onSeasonPickerToggled = onMediaSeasonPickerToggled,
+                        onSeasonSelected = onMediaSeasonSelected,
+                        onEpisodeLayoutSelected = onMediaEpisodeLayoutSelected,
+                        onJumpToNowPlaying = onMediaJumpToNowPlaying,
+                        onEpisodeTapped = onMediaEpisodeTapped
                     )
                     val showAppBar = com.nendo.argosy.DualScreenManagerHolder.instance
                         ?.isExternalDisplay != true
@@ -265,7 +276,12 @@ fun ShowcaseRoleContent(
     syncConflictFocusIndex: StateFlow<Int>,
     onAppClick: (String) -> Unit,
     dualMediaViewModel: DualMediaViewModel? = null,
-    isMediaPanelVisible: Boolean = false
+    isMediaPanelVisible: Boolean = false,
+    onMediaSeasonPickerToggled: () -> Unit = {},
+    onMediaSeasonSelected: (Int) -> Unit = {},
+    onMediaEpisodeLayoutSelected: (DualMediaEpisodeLayout) -> Unit = {},
+    onMediaJumpToNowPlaying: () -> Unit = {},
+    onMediaEpisodeTapped: (String) -> Unit = {}
 ) {
     BackHandler(enabled = true) { }
 
@@ -312,7 +328,12 @@ fun ShowcaseRoleContent(
                     isInteractive = false,
                     onRowTapped = {},
                     onRowConfirmed = {},
-                    modifier = Modifier.blur(contentBlur)
+                    modifier = Modifier.blur(contentBlur),
+                    onSeasonPickerToggled = onMediaSeasonPickerToggled,
+                    onSeasonSelected = onMediaSeasonSelected,
+                    onEpisodeLayoutSelected = onMediaEpisodeLayoutSelected,
+                    onJumpToNowPlaying = onMediaJumpToNowPlaying,
+                    onEpisodeTapped = onMediaEpisodeTapped
                 )
             }
         }

@@ -97,15 +97,29 @@ class PlayerInputHandler(
         InputResult.HANDLED
     }
 
-    override fun onPrevSection(): InputResult = chapterJump(-1)
+    override fun onPrevSection(): InputResult = shoulderSeek(-1)
 
-    override fun onNextSection(): InputResult = chapterJump(1)
+    override fun onNextSection(): InputResult = shoulderSeek(1)
 
-    private fun chapterJump(direction: Int): InputResult {
+    override fun onPrevTrigger(): InputResult = triggerSeek(-1)
+
+    override fun onNextTrigger(): InputResult = triggerSeek(1)
+
+    /**
+     * L1 and R1 move the film by the standard skip step on every title, chapters or not. Chapter
+     * navigation lives on the chapter overlay, which onContextMenu opens.
+     */
+    private fun shoulderSeek(direction: Int): InputResult {
         if (state.overlay != PlayerOverlay.NONE) return InputResult.HANDLED
-        if (state.chapters.isEmpty()) return InputResult.UNHANDLED
         chrome.show()
-        viewModel.jumpChapter(direction)
+        viewModel.skipBy(direction)
+        return InputResult.HANDLED
+    }
+
+    private fun triggerSeek(direction: Int): InputResult {
+        if (state.overlay != PlayerOverlay.NONE) return InputResult.HANDLED
+        chrome.show()
+        viewModel.shuttleBy(direction)
         return InputResult.HANDLED
     }
 

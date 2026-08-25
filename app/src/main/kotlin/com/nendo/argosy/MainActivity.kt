@@ -150,6 +150,8 @@ class MainActivity : ComponentActivity() {
     @Inject lateinit var mediaAvailabilityVerifier: com.nendo.argosy.data.media.MediaAvailabilityVerifier
     @Inject lateinit var mediaDownloadDelegate:
         com.nendo.argosy.ui.screens.media.delegates.MediaDownloadDelegate
+    @Inject lateinit var mediaSeriesDelegate:
+        com.nendo.argosy.ui.screens.media.delegates.MediaSeriesDelegate
 
     private val sessionStateStore by lazy {
         com.nendo.argosy.data.preferences.SessionStateStore(this)
@@ -371,6 +373,7 @@ class MainActivity : ComponentActivity() {
                 mediaPlaybackTracker = mediaPlaybackTracker,
                 mediaAvailabilityVerifier = mediaAvailabilityVerifier,
                 mediaDownloadDelegate = mediaDownloadDelegate,
+                mediaSeriesDelegate = mediaSeriesDelegate,
                 imageCacheManager = imageCacheManager,
                 resolveGameEmulatorContext = resolveGameEmulatorContext,
                 hapticManager = hapticFeedbackManager,

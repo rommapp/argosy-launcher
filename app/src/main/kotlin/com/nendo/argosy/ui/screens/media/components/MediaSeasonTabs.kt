@@ -1,5 +1,6 @@
 package com.nendo.argosy.ui.screens.media.components
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -54,6 +55,7 @@ fun MediaSeasonTabs(
             Box(
                 modifier = Modifier
                     .clip(shape)
+                    .background(if (selected) theme.surfaceRaised else theme.surfaceBase, shape)
                     .argosyFocusIndicators(
                         focused = isSectionFocused && selected,
                         indicators = FocusIndicators.TabRow,
@@ -61,7 +63,7 @@ fun MediaSeasonTabs(
                         shape = shape
                     )
                     .clickableNoFocus { onSelect(index) }
-                    .padding(horizontal = Dimens.spacingMd, vertical = Dimens.spacingXs),
+                    .padding(horizontal = Dimens.spacingLg, vertical = Dimens.spacingSm),
                 contentAlignment = Alignment.Center
             ) {
                 Text(

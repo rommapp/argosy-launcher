@@ -83,7 +83,7 @@ object DimensionTokens {
         const val mediaBackdropWidth = 240
         const val mediaBackdropHeight = 135
         const val mediaEpisodeRowHeight = 88
-        const val mediaSeasonTabHeight = 40
+        const val mediaSeasonTabHeight = 56
         const val mediaCastPortraitSize = 96
         const val mediaCastTileWidth = 112
         const val mediaSimilarTileWidth = 120

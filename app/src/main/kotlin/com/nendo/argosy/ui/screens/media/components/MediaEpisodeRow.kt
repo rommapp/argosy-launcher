@@ -41,7 +41,8 @@ fun MediaEpisodeRow(
     isFocused: Boolean,
     onClick: () -> Unit,
     onLongClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    isNowPlaying: Boolean = false
 ) {
     val theme = LocalArgosyTheme.current
     val shape = RoundedCornerShape(Dimens.radiusMd)
@@ -49,6 +50,7 @@ fun MediaEpisodeRow(
         modifier = modifier
             .fillMaxWidth()
             .clip(shape)
+            .then(if (isNowPlaying) Modifier.background(theme.surfaceRaised, shape) else Modifier)
             .argosyFocusIndicators(focused = isFocused, indicators = FocusIndicators.ListRow, shape = shape)
             .clickableNoFocus(onClick = onClick, onLongClick = onLongClick)
             .padding(horizontal = Dimens.spacingSm, vertical = Dimens.spacingSm),

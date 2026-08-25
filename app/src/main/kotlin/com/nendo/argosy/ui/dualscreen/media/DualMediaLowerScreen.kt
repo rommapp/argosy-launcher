@@ -127,6 +127,7 @@ fun DualMediaLowerScreen(
                                 is DualMediaRow.Item -> MediaEpisodeRow(
                                     episode = row.item,
                                     isFocused = index == state.focusedRowIndex,
+                                    isNowPlaying = row.isNowPlaying,
                                     onClick = {
                                         onRowTapped(index)
                                         onRowConfirmed(index)

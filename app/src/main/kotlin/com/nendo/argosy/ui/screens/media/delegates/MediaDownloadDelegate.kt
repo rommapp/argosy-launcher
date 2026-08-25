@@ -46,7 +46,9 @@ private const val STORAGE_HEADROOM_BYTES = 200L * 1024 * 1024
 class MediaDownloadDelegate @Inject constructor(
     private val mediaRepository: MediaRepository,
     private val mediaDownloadManager: MediaDownloadManager,
-    private val availabilityVerifier: MediaAvailabilityVerifier
+    private val availabilityVerifier: MediaAvailabilityVerifier,
+    private val resolveMediaPlayTarget:
+        com.nendo.argosy.domain.usecase.media.ResolveMediaPlayTargetUseCase
 ) {
 
     /**
@@ -108,8 +110,18 @@ class MediaDownloadDelegate @Inject constructor(
         return episodesPrompt(item)
     }
 
+    /**
+     * Fetches a season before refusing, for a show reached from somewhere that never opened it.
+     *
+     * Episodes arrive a season at a time and only a screen that has opened the show has asked for
+     * any. A caller that starts from a grid tile has none stored, and refusing there would say the
+     * show cannot be downloaded when the truth is that nobody had looked yet.
+     */
     private suspend fun episodesPrompt(item: MediaItemUi): MediaDownloadPrompt? {
-        val rows = episodePickerRows(item.itemId)
+        var rows = episodePickerRows(item.itemId)
+        if (rows.isEmpty() && resolveMediaPlayTarget.fetchFirstSeason(item.itemId)) {
+            rows = episodePickerRows(item.itemId)
+        }
         if (rows.isEmpty()) return null
         return MediaDownloadPrompt(
             step = MediaDownloadStep.EPISODES,

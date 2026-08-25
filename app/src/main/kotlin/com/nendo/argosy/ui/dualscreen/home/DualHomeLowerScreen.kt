@@ -108,6 +108,8 @@ import kotlin.math.abs
 fun DualHomeLowerScreen(
     games: List<HomeGameUi>,
     mediaItems: List<com.nendo.argosy.ui.screens.home.HomeMediaUi> = emptyList(),
+    mediaDownloadIndicators: Map<String, com.nendo.argosy.ui.screens.home.GameDownloadIndicator> =
+        emptyMap(),
     selectedIndex: Int,
     platformName: String,
     totalCount: Int,
@@ -171,6 +173,7 @@ fun DualHomeLowerScreen(
     val railItems = rememberCompanionCarouselItems(
         games = games,
         mediaItems = mediaItems,
+        mediaDownloadIndicators = mediaDownloadIndicators,
         hasMoreGames = hasMoreGames,
         totalCount = totalCount,
         repairedCoverPaths = repairedCoverPaths
@@ -313,6 +316,13 @@ fun DualHomeLowerScreen(
                     }
                 },
                 onItemLongPress = { index -> onGameTapped(index) },
+                downloadIndicatorFor = { item ->
+                    when (item) {
+                        is CarouselItem.Game -> item.downloadIndicator
+                        is CarouselItem.Media -> item.downloadIndicator
+                        else -> com.nendo.argosy.ui.screens.home.GameDownloadIndicator.NONE
+                    }
+                },
                 onCoverLoadFailed = onCoverLoadFailed,
                 modifier = Modifier
                     .fillMaxWidth()
@@ -1035,13 +1045,28 @@ private fun DualSearchContent(
 private fun rememberCompanionCarouselItems(
     games: List<HomeGameUi>,
     mediaItems: List<com.nendo.argosy.ui.screens.home.HomeMediaUi>,
+    mediaDownloadIndicators: Map<String, com.nendo.argosy.ui.screens.home.GameDownloadIndicator>,
     hasMoreGames: Boolean,
     totalCount: Int,
     repairedCoverPaths: Map<Long, String>
-): List<CarouselItem> = remember(games, mediaItems, hasMoreGames, totalCount, repairedCoverPaths) {
+): List<CarouselItem> = remember(
+    games,
+    mediaItems,
+    mediaDownloadIndicators,
+    hasMoreGames,
+    totalCount,
+    repairedCoverPaths
+) {
     buildList {
         mediaItems.forEach { item ->
-            add(CarouselItem.Media(key = item.itemId, media = item))
+            add(
+                CarouselItem.Media(
+                    key = item.itemId,
+                    media = item,
+                    downloadIndicator = mediaDownloadIndicators[item.itemId]
+                        ?: com.nendo.argosy.ui.screens.home.GameDownloadIndicator.NONE
+                )
+            )
         }
         games.forEach { game ->
             add(

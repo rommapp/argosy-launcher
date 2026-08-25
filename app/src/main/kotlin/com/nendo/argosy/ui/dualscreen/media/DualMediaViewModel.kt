@@ -44,7 +44,8 @@ class DualMediaViewModel(
     private val mediaRepository: MediaRepository,
     private val playback: StateFlow<ActiveMediaPlayback?>,
     private val gradientExtractionDelegate: com.nendo.argosy.ui.screens.common.GradientExtractionDelegate,
-    private val getRelatedMedia: com.nendo.argosy.domain.usecase.media.GetRelatedMediaUseCase? = null
+    private val getRelatedMedia: com.nendo.argosy.domain.usecase.media.GetRelatedMediaUseCase? = null,
+    private val availabilityVerifier: com.nendo.argosy.data.media.MediaAvailabilityVerifier? = null
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(DualMediaUiState())
@@ -75,12 +76,19 @@ class DualMediaViewModel(
                 .distinctUntilChanged()
                 .collect { itemId -> if (isActive) restart(itemId) }
         }
+        availabilityVerifier?.let { verifier ->
+            viewModelScope.launch {
+                verifier.availability
+                    .collect { if (isActive) restart(playback.value?.itemId) }
+            }
+        }
     }
 
     fun setActive(active: Boolean) {
         if (isActive == active) return
         isActive = active
         if (active) {
+            availabilityVerifier?.verifyOnOpen()
             restart(playback.value?.itemId)
         } else {
             loadJob?.cancel()
@@ -257,7 +265,7 @@ class DualMediaViewModel(
         toMediaItemUi(
             mediaRepository,
             userData,
-            emptyMap(),
+            availabilityVerifier?.availability?.value.orEmpty(),
             gradientExtractionDelegate.mediaGradients.value
         )
 }

@@ -145,8 +145,11 @@ class SecondaryHomeInputHandler(
         if (dualHomeViewModel.forwardingMode.value != ForwardingMode.NONE) {
             return InputResult.HANDLED
         }
+        val homeState = dualHomeViewModel.uiState.value
+        if (homeState.mediaDownloadPrompt != null) return handleMediaDownloadPromptInput(event)
+        if (homeState.mediaMenu != null) return handleMediaMenuInput(event)
 
-        return when (dualHomeViewModel.uiState.value.viewMode) {
+        return when (homeState.viewMode) {
             DualHomeViewMode.CAROUSEL -> handleCarouselInput(event)
             DualHomeViewMode.COLLECTIONS -> handleCollectionsInput(event)
             DualHomeViewMode.COLLECTION_GAMES -> handleCollectionGamesInput(event)
@@ -157,8 +160,8 @@ class SecondaryHomeInputHandler(
 
     /**
      * The media browser on this screen. Confirm starts the title, the shoulders change library,
-     * X refreshes, Y resumes through the prompt, and Back returns to the carousel, matching the
-     * single-screen media library's bindings.
+     * X opens the options menu (favourite, download, refresh), Y resumes through the prompt, and
+     * Back returns to the carousel.
      */
     private fun handleMediaGridInput(event: GamepadEvent): InputResult {
         val vm = dualHomeViewModel
@@ -193,8 +196,8 @@ class SecondaryHomeInputHandler(
                 InputResult.HANDLED
             }
             GamepadEvent.ContextMenu -> {
-                vm.refreshMediaGrid()
-                InputResult.HANDLED
+                if (vm.openMediaMenuForFocused()) InputResult.handled(SoundType.OPEN_MODAL)
+                else InputResult.handled(SoundType.BOUNDARY)
             }
             GamepadEvent.SecondaryAction -> {
                 if (vm.focusedMediaItemId() == null) return InputResult.UNHANDLED
@@ -225,6 +228,65 @@ class SecondaryHomeInputHandler(
             else -> {}
         }
         return InputResult.HANDLED
+    }
+
+    /**
+     * The media options menu owns the pad while it is up, over the grid and the carousel alike.
+     */
+    private fun handleMediaMenuInput(event: GamepadEvent): InputResult = when (event) {
+        GamepadEvent.Up -> {
+            dualHomeViewModel.moveMediaMenuFocus(-1)
+            InputResult.HANDLED
+        }
+        GamepadEvent.Down -> {
+            dualHomeViewModel.moveMediaMenuFocus(1)
+            InputResult.HANDLED
+        }
+        GamepadEvent.Confirm -> {
+            dualHomeViewModel.confirmMediaMenu()
+            InputResult.HANDLED
+        }
+        GamepadEvent.Back, GamepadEvent.ContextMenu -> {
+            dualHomeViewModel.closeMediaMenu()
+            InputResult.handled(SoundType.CLOSE_MODAL)
+        }
+        else -> InputResult.HANDLED
+    }
+
+    /**
+     * The download prompt's bindings mirror the single-screen modal: confirm acts, X commits the
+     * episode selection, left and right fold a season, back dismisses.
+     */
+    private fun handleMediaDownloadPromptInput(event: GamepadEvent): InputResult = when (event) {
+        GamepadEvent.Up -> {
+            dualHomeViewModel.moveMediaDownloadFocus(-1)
+            InputResult.HANDLED
+        }
+        GamepadEvent.Down -> {
+            dualHomeViewModel.moveMediaDownloadFocus(1)
+            InputResult.HANDLED
+        }
+        GamepadEvent.Left -> {
+            dualHomeViewModel.moveMediaDownloadSideways(false)
+            InputResult.HANDLED
+        }
+        GamepadEvent.Right -> {
+            dualHomeViewModel.moveMediaDownloadSideways(true)
+            InputResult.HANDLED
+        }
+        GamepadEvent.Confirm -> {
+            dualHomeViewModel.confirmMediaDownloadOption()
+            InputResult.HANDLED
+        }
+        GamepadEvent.ContextMenu -> {
+            dualHomeViewModel.commitMediaEpisodeSelection()
+            InputResult.HANDLED
+        }
+        GamepadEvent.Back -> {
+            dualHomeViewModel.dismissMediaDownloadPrompt()
+            InputResult.handled(SoundType.CLOSE_MODAL)
+        }
+        else -> InputResult.HANDLED
     }
 
     fun handleDualDetailInput(event: GamepadEvent): InputResult {
@@ -647,8 +709,9 @@ class SecondaryHomeInputHandler(
             }
             GamepadEvent.ContextMenu -> {
                 if (inAppBar) return InputResult.UNHANDLED
-                dualHomeViewModel.focusedMediaItemId()?.let {
-                    return InputResult.handled(SoundType.BOUNDARY)
+                dualHomeViewModel.focusedMediaItemId()?.let { itemId ->
+                    dualHomeViewModel.openMediaMenu(itemId)
+                    return InputResult.handled(SoundType.OPEN_MODAL)
                 }
                 val game = state.selectedGame
                 if (game != null) {
@@ -664,7 +727,9 @@ class SecondaryHomeInputHandler(
                         InputResult.HANDLED
                     } else InputResult.UNHANDLED
                 } else {
-                    dualHomeViewModel.toggleFavorite()
+                    if (!dualHomeViewModel.toggleFocusedMediaFavorite()) {
+                        dualHomeViewModel.toggleFavorite()
+                    }
                     InputResult.HANDLED
                 }
             }

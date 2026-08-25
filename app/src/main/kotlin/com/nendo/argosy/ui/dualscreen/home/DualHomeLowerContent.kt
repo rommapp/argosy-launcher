@@ -38,6 +38,12 @@ fun DualHomeLowerContent(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val forwardingMode by viewModel.forwardingMode.collectAsState()
+    val mediaDownloadIndicators = androidx.compose.runtime.remember(
+        uiState.mediaItems,
+        uiState.mediaDownloadProgress
+    ) {
+        uiState.mediaItems.associate { it.itemId to uiState.mediaDownloadIndicatorFor(it) }
+    }
 
     Box(
         modifier = modifier
@@ -49,6 +55,7 @@ fun DualHomeLowerContent(
                 DualHomeLowerScreen(
                     games = uiState.games,
                     mediaItems = uiState.mediaItems,
+                    mediaDownloadIndicators = mediaDownloadIndicators,
                     selectedIndex = uiState.selectedIndex,
                     platformName = uiState.platformName,
                     totalCount = uiState.totalCount,
@@ -146,9 +153,7 @@ fun DualHomeLowerContent(
                     },
                     onItemLongPressed = { index ->
                         viewModel.setMediaGridFocus(index)
-                        if (!viewModel.openMediaResumePrompt(index)) {
-                            viewModel.playFocusedMedia()
-                        }
+                        viewModel.openMediaMenuForFocused()
                     },
                     onPosterLoaded = viewModel::onMediaPosterLoaded
                 )
@@ -225,6 +230,28 @@ fun DualHomeLowerContent(
                 onDismiss = viewModel::closeCollectionPicker
             )
         }
+
+        uiState.mediaMenu?.let { menu ->
+            com.nendo.argosy.ui.components.CustomTileMenuModal(
+                title = menu.item.title,
+                entries = menu.actions.map { it.label },
+                focusIndex = menu.focusIndex,
+                onSelect = { index ->
+                    viewModel.moveMediaMenuFocus(index - menu.focusIndex)
+                    viewModel.confirmMediaMenu()
+                },
+                onDismiss = viewModel::closeMediaMenu,
+                header = "MEDIA"
+            )
+        }
+
+        com.nendo.argosy.ui.screens.media.modals.MediaDownloadModalContent(
+            prompt = uiState.mediaDownloadPrompt,
+            onFocus = viewModel::focusMediaDownloadOption,
+            onConfirm = viewModel::confirmMediaDownloadOption,
+            onDismiss = viewModel::dismissMediaDownloadPrompt,
+            onCommitSelection = viewModel::commitMediaEpisodeSelection
+        )
 
         if (uiState.showLibraryMenu) {
             val libraryGame = viewModel.focusedLibraryGame()

@@ -102,7 +102,8 @@ sealed class CarouselItem {
      */
     data class Media(
         override val key: String,
-        val media: HomeMediaUi
+        val media: HomeMediaUi,
+        val downloadIndicator: GameDownloadIndicator = GameDownloadIndicator.NONE
     ) : CarouselItem()
 
     data class ViewAll(
@@ -479,6 +480,7 @@ private fun CarouselMediaCard(
         scalePivotY = metrics.scalePivotY,
         scaleOverride = if (isFocused) overrides.focusedScale else null,
         alphaOverride = if (isFocused) overrides.focusedAlpha else overrides.unfocusedAlpha,
+        downloadIndicator = item.downloadIndicator,
         onPosterLoaded = onPosterLoaded,
         modifier = modifier.size(cardSize.width, cardSize.height)
     )

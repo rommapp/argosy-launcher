@@ -495,6 +495,16 @@ class MediaRepository @Inject constructor(
     }
 
     /**
+     * Flips the favourite flag from its stored value and answers the new one, so every surface that
+     * offers a toggle shares one owner instead of hard-coding a direction.
+     */
+    suspend fun toggleFavorite(itemId: String): Boolean {
+        val next = !(getUserData(itemId)?.isFavorite ?: false)
+        setFavorite(itemId, next)
+        return next
+    }
+
+    /**
      * Repoints downloaded content after the media directory moves. Stored paths are absolute, so a
      * relocation that does not rewrite them leaves every downloaded item pointing into a tree that
      * no longer exists. Returns the number of rows repointed.

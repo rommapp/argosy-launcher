@@ -33,7 +33,7 @@ fun companionHomeHints(
         "MEDIA_GRID" -> listOf(
             InputButton.LB_RB to "Library",
             InputButton.Y to "Resume",
-            InputButton.X to "Refresh",
+            InputButton.X to "Options",
             InputButton.A to "Play",
             InputButton.B to "Back"
         )

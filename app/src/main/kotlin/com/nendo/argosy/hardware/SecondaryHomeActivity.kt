@@ -187,13 +187,14 @@ class SecondaryHomeActivity :
                     val describingPrimary = primaryDetail
                         .takeIf { isShowcaseRole && !isMediaPanelVisible }
                     if (describingPrimary != null) {
+                        val describedViewMode by _showcaseViewMode.collectAsState()
                         CompanionDetailScreen(
                             detail = describingPrimary,
                             modifier = Modifier.fillMaxSize(),
                             footerHints = {
                                 com.nendo.argosy.ui.components.FooterBar(
                                     hints = com.nendo.argosy.ui.dualscreen
-                                        .companionDetailHints(describingPrimary)
+                                        .companionDetailHints(describingPrimary, describedViewMode)
                                 )
                             }
                         )
@@ -611,6 +612,27 @@ class SecondaryHomeActivity :
         }
     }
 
+    override fun onOpenLibrary() {
+        runOnUiThread {
+            if (currentScreen != CompanionScreen.HOME) returnToHome()
+            dsm.setCompanionMediaVisible(false)
+            dualHomeViewModel.enterLibraryGrid {
+                broadcasts.broadcastViewModeChange()
+                broadcasts.broadcastLibraryGameSelection()
+            }
+        }
+    }
+
+    override fun onOpenMediaGrid() {
+        runOnUiThread {
+            if (currentScreen != CompanionScreen.HOME) returnToHome()
+            dsm.setCompanionMediaVisible(false)
+            dualHomeViewModel.enterMediaGrid {
+                broadcasts.broadcastViewModeChange()
+            }
+        }
+    }
+
     /**
      * Adopts the shared position before taking the driven role, not after.
      *
@@ -1019,7 +1041,9 @@ class SecondaryHomeActivity :
             pageChooserEntrySource = dsm.pageChooserEntrySource,
             ambientAudioManager = dsm.ambientAudioManager,
             mediaRepository = dsm.mediaRepository,
-            resolveMediaPlayTargetUseCase = dsm.resolveMediaPlayTargetUseCase
+            resolveMediaPlayTargetUseCase = dsm.resolveMediaPlayTargetUseCase,
+            mediaAvailabilityVerifier = dsm.mediaAvailabilityVerifier,
+            mediaDownloadDelegate = dsm.mediaDownloadDelegate
         )
         dualHomeViewModel.observeHomeTiles()
         dualHomeViewModel.observeTilePrompts()
@@ -1027,7 +1051,8 @@ class SecondaryHomeActivity :
             mediaRepository = dsm.mediaRepository,
             playback = dsm.mediaPlayback,
             gradientExtractionDelegate = dsm.gradientExtractionDelegate,
-            getRelatedMedia = dsm.getRelatedMediaUseCase
+            getRelatedMedia = dsm.getRelatedMediaUseCase,
+            availabilityVerifier = dsm.mediaAvailabilityVerifier
         )
         observeCustomGridSelection()
         broadcasts = SecondaryHomeBroadcastHelper(

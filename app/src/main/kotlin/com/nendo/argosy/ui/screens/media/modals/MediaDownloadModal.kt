@@ -131,6 +131,30 @@ fun MediaDownloadModalHost(
 
     ModalInputEffect(active = prompt != null, handler = inputHandler)
 
+    MediaDownloadModalContent(
+        prompt = prompt,
+        onFocus = onFocus,
+        onConfirm = onConfirm,
+        onDismiss = onDismiss,
+        onCommitSelection = onCommitSelection,
+        modifier = modifier
+    )
+}
+
+/**
+ * The prompt's visuals alone, with input left to the caller. The companion display renders this
+ * form and routes gamepad input through its own handler stack, which has no input dispatcher for
+ * [MediaDownloadModalHost] to push onto.
+ */
+@Composable
+fun MediaDownloadModalContent(
+    prompt: MediaDownloadPrompt?,
+    onFocus: (Int) -> Unit,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit,
+    modifier: Modifier = Modifier,
+    onCommitSelection: () -> Unit = {}
+) {
     val content = prompt ?: return
     val theme = LocalArgosyTheme.current
     val warningColor = LocalLauncherTheme.current.semanticColors.warning

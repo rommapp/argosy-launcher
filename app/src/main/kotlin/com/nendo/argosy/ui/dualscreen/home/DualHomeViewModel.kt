@@ -134,6 +134,26 @@ enum class DualLibraryMenuAction(val label: String) {
 
 enum class ForwardingMode { NONE, OVERLAY, BACKGROUND }
 
+enum class DualMediaMenuAction(val label: String) {
+    START_OVER("Start Over"),
+    FAVORITE("Favorite"),
+    UNFAVORITE("Unfavorite"),
+    DOWNLOAD("Download"),
+    REMOVE_DOWNLOADS("Remove Download"),
+    REFRESH("Refresh Library")
+}
+
+/**
+ * The options menu raised over one media tile. The target is captured when the menu opens rather
+ * than read back from the cursor while it is up, so a grid refreshing underneath it cannot move
+ * which title a confirm acts on.
+ */
+data class DualMediaMenuState(
+    val item: com.nendo.argosy.ui.screens.media.MediaItemUi,
+    val actions: List<DualMediaMenuAction> = emptyList(),
+    val focusIndex: Int = 0
+)
+
 sealed class DualCollectionListItem {
     data class Header(val title: String) : DualCollectionListItem()
     data class Collection(
@@ -232,7 +252,12 @@ data class DualHomeUiState(
     val showSectionOverlay: Boolean = false,
     val overlaySectionLabel: String = "",
     val libraryPlatformLabel: String = "All",
-    val repairedCoverPaths: Map<Long, String> = emptyMap()
+    val repairedCoverPaths: Map<Long, String> = emptyMap(),
+    val mediaDownloadProgress: Map<String, com.nendo.argosy.data.repository.MediaTransferProgress> =
+        emptyMap(),
+    val mediaMenu: DualMediaMenuState? = null,
+    val mediaDownloadPrompt: com.nendo.argosy.ui.screens.media.MediaDownloadPrompt? = null,
+    val mediaPromptItem: com.nendo.argosy.ui.screens.media.MediaItemUi? = null
 ) {
     val currentSection: DualHomeSection?
         get() = sections.getOrNull(currentSectionIndex)
@@ -277,6 +302,23 @@ data class DualHomeUiState(
                     showFilterOverlay &&
                     filterCategory == DualFilterCategory.SEARCH
                 )
+
+    /**
+     * The same indicator a game tile gets, for a title being fetched. A series answers for whatever
+     * episode of it is on the way, matching the single-screen home's rule.
+     */
+    fun mediaDownloadIndicatorFor(
+        media: com.nendo.argosy.ui.screens.home.HomeMediaUi
+    ): GameDownloadIndicator {
+        val transfer = mediaDownloadProgress[media.itemId]
+            ?: media.seriesId?.let { mediaDownloadProgress[it] }
+            ?: return GameDownloadIndicator.NONE
+        return GameDownloadIndicator(
+            isDownloading = !transfer.isPaused,
+            isPaused = transfer.isPaused,
+            progress = transfer.fraction
+        )
+    }
 
     val homeTiles: List<com.nendo.argosy.domain.model.HomeTile>
         get() = customGrid.tiles
@@ -409,7 +451,11 @@ class DualHomeViewModel(
     private val ambientAudioManager: com.nendo.argosy.ui.audio.AmbientAudioManager? = null,
     private val mediaRepository: com.nendo.argosy.data.repository.MediaRepository? = null,
     private val resolveMediaPlayTargetUseCase:
-        com.nendo.argosy.domain.usecase.media.ResolveMediaPlayTargetUseCase? = null
+        com.nendo.argosy.domain.usecase.media.ResolveMediaPlayTargetUseCase? = null,
+    private val mediaAvailabilityVerifier:
+        com.nendo.argosy.data.media.MediaAvailabilityVerifier? = null,
+    private val mediaDownloadDelegate:
+        com.nendo.argosy.ui.screens.media.delegates.MediaDownloadDelegate? = null
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(DualHomeUiState())
@@ -555,6 +601,8 @@ class DualHomeViewModel(
         observeGradientChanges()
         observeMediaGradientChanges()
         observeMediaFocusForCompanion()
+        observeMediaAvailability()
+        observeMediaDownloadProgress()
         observeLayoutConfig()
     }
 
@@ -962,12 +1010,13 @@ class DualHomeViewModel(
         val seriesIds = entities.mapNotNull { it.seriesId }.distinct()
         val series = seriesIds.mapNotNull { repository.getItem(it) }.associateBy { it.itemId }
         val gradients = gradientExtractionDelegate?.mediaGradients?.value.orEmpty()
+        val verified = mediaAvailabilityVerifier?.availability?.value.orEmpty()
         val items = entities.map {
             it.toHomeMediaUi(
                 repository,
                 userData[it.itemId],
                 series[it.seriesId],
-                verified = null,
+                verified = verified[it.itemId],
                 gradientColors = gradients[it.itemId]
             )
         }
@@ -1015,6 +1064,7 @@ class DualHomeViewModel(
      * browser on whichever screen the viewer is not using.
      */
     fun enterMediaGrid(libraryId: String? = null, onLoaded: (() -> Unit)? = null) {
+        mediaAvailabilityVerifier?.verifyOnOpen()
         viewModelScope.launch {
             val repository = mediaRepository ?: return@launch
             val libraries = repository.observeLibraries().first()
@@ -1056,10 +1106,11 @@ class DualHomeViewModel(
         )
         val userData = repository.getUserDataFor(entities.map { it.itemId })
         val gradients = gradientExtractionDelegate?.mediaGradients?.value.orEmpty()
+        val verified = mediaAvailabilityVerifier?.availability?.value.orEmpty()
         _uiState.update {
             it.copy(
                 mediaGridItems = entities.map { entity ->
-                    entity.toMediaItemUi(repository, userData[entity.itemId], gradients = gradients)
+                    entity.toMediaItemUi(repository, userData[entity.itemId], verified, gradients)
                 },
                 mediaGridFocusedIndex = it.mediaGridFocusedIndex
                     .coerceIn(0, (entities.size - 1).coerceAtLeast(0))
@@ -1074,6 +1125,7 @@ class DualHomeViewModel(
      */
     fun refreshMediaGrid() {
         val repository = mediaRepository ?: return
+        mediaAvailabilityVerifier?.verifyOnOpen()
         viewModelScope.launch {
             repository.refreshLibraries()
             loadMediaGrid()
@@ -1163,6 +1215,199 @@ class DualHomeViewModel(
 
     fun dismissMediaResumePrompt() {
         _uiState.update { it.copy(mediaResumePrompt = null) }
+    }
+
+    /**
+     * Rebuilds whatever media surface is on screen when a verification pass lands, so a badge over
+     * a file on ejected storage corrects itself without the row being re-entered.
+     */
+    private fun observeMediaAvailability() {
+        val verifier = mediaAvailabilityVerifier ?: return
+        viewModelScope.launch {
+            verifier.availability.collect {
+                reloadMediaSurfaces()
+            }
+        }
+    }
+
+    private fun observeMediaDownloadProgress() {
+        val repository = mediaRepository ?: return
+        viewModelScope.launch {
+            repository.observeDownloadProgress().distinctUntilChanged().collect { progress ->
+                _uiState.update { it.copy(mediaDownloadProgress = progress) }
+            }
+        }
+    }
+
+    private suspend fun reloadMediaSurfaces() {
+        val state = _uiState.value
+        if (state.viewMode == DualHomeViewMode.MEDIA_GRID) loadMediaGrid()
+        (state.currentSection as? DualHomeSection.MediaLibrary)?.let { loadMediaForSection(it) }
+    }
+
+    private suspend fun mediaItemFor(itemId: String): com.nendo.argosy.ui.screens.media.MediaItemUi? {
+        val repository = mediaRepository ?: return null
+        _uiState.value.mediaGridItems.firstOrNull { it.itemId == itemId }?.let { return it }
+        val entity = repository.getItem(itemId) ?: return null
+        return entity.toMediaItemUi(
+            repository,
+            repository.getUserData(itemId),
+            mediaAvailabilityVerifier?.availability?.value.orEmpty()
+        )
+    }
+
+    /**
+     * Flips the favourite flag on the focused media title, for the grid and the carousel rows
+     * alike. Answers false when the cursor is not on a media title, which is the caller's cue to
+     * fall through to the game handling.
+     */
+    fun toggleFocusedMediaFavorite(): Boolean {
+        val itemId = focusedMediaItemId() ?: return false
+        val repository = mediaRepository ?: return false
+        viewModelScope.launch {
+            repository.toggleFavorite(itemId)
+            reloadMediaSurfaces()
+        }
+        return true
+    }
+
+    /**
+     * Raises the options menu over the focused media title. Built asynchronously because whether
+     * removal is worth offering is a count of files on this device, not a flag on the tile.
+     */
+    fun openMediaMenuForFocused(): Boolean {
+        val itemId = focusedMediaItemId() ?: return false
+        openMediaMenu(itemId)
+        return true
+    }
+
+    fun openMediaMenu(itemId: String) {
+        viewModelScope.launch {
+            val item = mediaItemFor(itemId) ?: return@launch
+            val downloaded = mediaDownloadDelegate?.summaryFor(item, 0)?.downloaded ?: 0
+            val actions = buildList {
+                if (item.isPlayable && item.hasResumePosition) {
+                    add(DualMediaMenuAction.START_OVER)
+                }
+                add(
+                    if (item.isFavorite) DualMediaMenuAction.UNFAVORITE
+                    else DualMediaMenuAction.FAVORITE
+                )
+                if (mediaDownloadDelegate != null) {
+                    add(DualMediaMenuAction.DOWNLOAD)
+                    if (downloaded > 0) add(DualMediaMenuAction.REMOVE_DOWNLOADS)
+                }
+                if (_uiState.value.viewMode == DualHomeViewMode.MEDIA_GRID) {
+                    add(DualMediaMenuAction.REFRESH)
+                }
+            }
+            _uiState.update {
+                it.copy(mediaMenu = DualMediaMenuState(item = item, actions = actions))
+            }
+        }
+    }
+
+    fun closeMediaMenu() = _uiState.update { it.copy(mediaMenu = null) }
+
+    fun moveMediaMenuFocus(delta: Int) = _uiState.update { state ->
+        val menu = state.mediaMenu ?: return@update state
+        val maxIndex = (menu.actions.size - 1).coerceAtLeast(0)
+        state.copy(mediaMenu = menu.copy(focusIndex = (menu.focusIndex + delta).coerceIn(0, maxIndex)))
+    }
+
+    fun confirmMediaMenu() {
+        val menu = _uiState.value.mediaMenu ?: return
+        val action = menu.actions.getOrNull(menu.focusIndex) ?: return
+        _uiState.update { it.copy(mediaMenu = null) }
+        when (action) {
+            DualMediaMenuAction.START_OVER ->
+                com.nendo.argosy.DualScreenManagerHolder.instance
+                    ?.playMediaItem(menu.item.itemId, startOver = true)
+            DualMediaMenuAction.FAVORITE, DualMediaMenuAction.UNFAVORITE ->
+                viewModelScope.launch {
+                    mediaRepository?.toggleFavorite(menu.item.itemId)
+                    reloadMediaSurfaces()
+                }
+            DualMediaMenuAction.DOWNLOAD -> viewModelScope.launch {
+                val prompt = mediaDownloadDelegate?.openPrompt(menu.item) ?: return@launch
+                _uiState.update {
+                    it.copy(mediaDownloadPrompt = prompt, mediaPromptItem = menu.item)
+                }
+            }
+            DualMediaMenuAction.REMOVE_DOWNLOADS -> viewModelScope.launch {
+                val prompt = mediaDownloadDelegate?.openRemovalPrompt(menu.item) ?: return@launch
+                _uiState.update {
+                    it.copy(mediaDownloadPrompt = prompt, mediaPromptItem = menu.item)
+                }
+            }
+            DualMediaMenuAction.REFRESH -> refreshMediaGrid()
+        }
+    }
+
+    fun moveMediaDownloadFocus(delta: Int) {
+        val delegate = mediaDownloadDelegate ?: return
+        val prompt = _uiState.value.mediaDownloadPrompt ?: return
+        _uiState.update { it.copy(mediaDownloadPrompt = delegate.moveFocus(prompt, delta)) }
+    }
+
+    fun focusMediaDownloadOption(index: Int) {
+        val delegate = mediaDownloadDelegate ?: return
+        val prompt = _uiState.value.mediaDownloadPrompt ?: return
+        _uiState.update { it.copy(mediaDownloadPrompt = delegate.focus(prompt, index)) }
+    }
+
+    fun confirmMediaDownloadOption() {
+        val delegate = mediaDownloadDelegate ?: return
+        val state = _uiState.value
+        val prompt = state.mediaDownloadPrompt ?: return
+        val item = state.mediaPromptItem ?: return
+        if (prompt.step == com.nendo.argosy.ui.screens.media.MediaDownloadStep.EPISODES) {
+            when {
+                prompt.episodes.isCancelFocused -> dismissMediaDownloadPrompt()
+                prompt.episodes.isConfirmFocused -> commitMediaEpisodeSelection()
+                else -> _uiState.update {
+                    it.copy(mediaDownloadPrompt = delegate.toggleEpisode(prompt))
+                }
+            }
+            return
+        }
+        viewModelScope.launch {
+            val next = delegate.advance(prompt, item)
+            _uiState.update {
+                it.copy(
+                    mediaDownloadPrompt = next,
+                    mediaPromptItem = if (next == null) null else it.mediaPromptItem
+                )
+            }
+            if (next == null) reloadMediaSurfaces()
+        }
+    }
+
+    fun commitMediaEpisodeSelection() {
+        val delegate = mediaDownloadDelegate ?: return
+        val prompt = _uiState.value.mediaDownloadPrompt ?: return
+        if (prompt.step != com.nendo.argosy.ui.screens.media.MediaDownloadStep.EPISODES) return
+        if (!prompt.episodes.hasSelection) return
+        viewModelScope.launch {
+            val next = delegate.confirmEpisodeSelection(prompt)
+            _uiState.update {
+                it.copy(
+                    mediaDownloadPrompt = next,
+                    mediaPromptItem = if (next == null) null else it.mediaPromptItem
+                )
+            }
+        }
+    }
+
+    fun moveMediaDownloadSideways(towardsEnd: Boolean) {
+        val delegate = mediaDownloadDelegate ?: return
+        val prompt = _uiState.value.mediaDownloadPrompt ?: return
+        if (prompt.step != com.nendo.argosy.ui.screens.media.MediaDownloadStep.EPISODES) return
+        _uiState.update { it.copy(mediaDownloadPrompt = delegate.moveSideways(prompt, towardsEnd)) }
+    }
+
+    fun dismissMediaDownloadPrompt() {
+        _uiState.update { it.copy(mediaDownloadPrompt = null, mediaPromptItem = null) }
     }
 
     /**

@@ -76,7 +76,10 @@ class DualHomeInputHandler(
         if (viewModel.forwardingMode.value != ForwardingMode.NONE) {
             return InputResult.HANDLED
         }
-        return when (viewModel.uiState.value.viewMode) {
+        val state = viewModel.uiState.value
+        if (state.mediaDownloadPrompt != null) return handleMediaDownloadPrompt(event)
+        if (state.mediaMenu != null) return handleMediaMenu(event)
+        return when (state.viewMode) {
             DualHomeViewMode.CAROUSEL -> handleCarousel(event)
             DualHomeViewMode.COLLECTIONS -> handleCollections(event)
             DualHomeViewMode.COLLECTION_GAMES -> handleCollectionGames(event)
@@ -208,6 +211,11 @@ class DualHomeInputHandler(
             }
             com.nendo.argosy.ui.input.GamepadEvent.ContextMenu -> {
                 if (inAppBar) return InputResult.UNHANDLED
+                val mediaItemId = viewModel.focusedMediaItemId()
+                if (mediaItemId != null) {
+                    viewModel.openMediaMenu(mediaItemId)
+                    return InputResult.HANDLED
+                }
                 val game = state.selectedGame
                 if (game != null) {
                     onSelectGame(game.id)
@@ -222,7 +230,9 @@ class DualHomeInputHandler(
                         InputResult.HANDLED
                     } else InputResult.UNHANDLED
                 } else {
-                    viewModel.toggleFavorite()
+                    if (!viewModel.toggleFocusedMediaFavorite()) {
+                        viewModel.toggleFavorite()
+                    }
                     InputResult.HANDLED
                 }
             }
@@ -312,8 +322,8 @@ class DualHomeInputHandler(
 
     /**
      * The media browser on this screen. Confirm starts the title, the shoulders change library,
-     * X refreshes, Y resumes through the prompt, and Back returns to the carousel, matching the
-     * single-screen media library's bindings.
+     * X opens the options menu (favourite, download, refresh), Y resumes through the prompt, and
+     * Back returns to the carousel.
      */
     private fun handleMediaGrid(event: GamepadEvent): InputResult {
         if (viewModel.uiState.value.mediaResumePrompt != null) {
@@ -347,8 +357,8 @@ class DualHomeInputHandler(
                 InputResult.HANDLED
             }
             GamepadEvent.ContextMenu -> {
-                viewModel.refreshMediaGrid()
-                InputResult.HANDLED
+                if (viewModel.openMediaMenuForFocused()) InputResult.HANDLED
+                else InputResult.UNHANDLED
             }
             GamepadEvent.SecondaryAction -> {
                 if (viewModel.focusedMediaItemId() == null) return InputResult.UNHANDLED
@@ -378,6 +388,65 @@ class DualHomeInputHandler(
             else -> {}
         }
         return InputResult.HANDLED
+    }
+
+    /**
+     * The media options menu owns the pad while it is up, over the grid and the carousel alike.
+     */
+    private fun handleMediaMenu(event: GamepadEvent): InputResult = when (event) {
+        GamepadEvent.Up -> {
+            viewModel.moveMediaMenuFocus(-1)
+            InputResult.HANDLED
+        }
+        GamepadEvent.Down -> {
+            viewModel.moveMediaMenuFocus(1)
+            InputResult.HANDLED
+        }
+        GamepadEvent.Confirm -> {
+            viewModel.confirmMediaMenu()
+            InputResult.HANDLED
+        }
+        GamepadEvent.Back, GamepadEvent.ContextMenu -> {
+            viewModel.closeMediaMenu()
+            InputResult.HANDLED
+        }
+        else -> InputResult.HANDLED
+    }
+
+    /**
+     * The download prompt's bindings mirror the single-screen modal: confirm acts, X commits the
+     * episode selection, left and right fold a season, back dismisses.
+     */
+    private fun handleMediaDownloadPrompt(event: GamepadEvent): InputResult = when (event) {
+        GamepadEvent.Up -> {
+            viewModel.moveMediaDownloadFocus(-1)
+            InputResult.HANDLED
+        }
+        GamepadEvent.Down -> {
+            viewModel.moveMediaDownloadFocus(1)
+            InputResult.HANDLED
+        }
+        GamepadEvent.Left -> {
+            viewModel.moveMediaDownloadSideways(false)
+            InputResult.HANDLED
+        }
+        GamepadEvent.Right -> {
+            viewModel.moveMediaDownloadSideways(true)
+            InputResult.HANDLED
+        }
+        GamepadEvent.Confirm -> {
+            viewModel.confirmMediaDownloadOption()
+            InputResult.HANDLED
+        }
+        GamepadEvent.ContextMenu -> {
+            viewModel.commitMediaEpisodeSelection()
+            InputResult.HANDLED
+        }
+        GamepadEvent.Back -> {
+            viewModel.dismissMediaDownloadPrompt()
+            InputResult.HANDLED
+        }
+        else -> InputResult.HANDLED
     }
 
     private fun handleLibraryGrid(event: com.nendo.argosy.ui.input.GamepadEvent): InputResult {

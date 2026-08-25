@@ -332,6 +332,29 @@ fun ArgosyApp(
         }
     }
 
+    val navigateFromDrawer: (String) -> Unit = remember {
+        { route ->
+            val dsm = activity?.dualScreenManager
+            val handledOnDual = when (route) {
+                Screen.Library.route -> dsm?.openLibraryOnInteractiveSurface() == true
+                Screen.MediaLibrary.route -> dsm?.openMediaOnInteractiveSurface() == true
+                else -> false
+            }
+            val current = navController.currentDestination?.route
+            if (handledOnDual) {
+                if (current != Screen.Home.route) {
+                    navController.popBackStack(Screen.Home.route, false)
+                }
+            } else if (route != current) {
+                navController.navigate(route) {
+                    popUpTo(Screen.Home.route) { saveState = true }
+                    launchSingleTop = true
+                    restoreState = true
+                }
+            }
+        }
+    }
+
     // Create drawer input handler
     val drawerInputHandler = remember {
         viewModel.createDrawerInputHandler(
@@ -339,14 +362,7 @@ fun ArgosyApp(
                 inputDispatcher.unsubscribeDrawer()
                 viewModel.setDrawerOpen(false)
                 scope.launch { drawerState.close() }
-                val current = navController.currentDestination?.route
-                if (route != current) {
-                    navController.navigate(route) {
-                        popUpTo(Screen.Home.route) { saveState = true }
-                        launchSingleTop = true
-                        restoreState = true
-                    }
-                }
+                navigateFromDrawer(route)
             },
             onDismiss = {
                 inputDispatcher.unsubscribeDrawer()
@@ -1119,13 +1135,7 @@ fun ArgosyApp(
                             inputDispatcher.unsubscribeDrawer()
                             viewModel.setDrawerOpen(false)
                             scope.launch { drawerState.close() }
-                            if (route != currentRoute) {
-                                navController.navigate(route) {
-                                    popUpTo(Screen.Home.route) { saveState = true }
-                                    launchSingleTop = true
-                                    restoreState = true
-                                }
-                            }
+                            navigateFromDrawer(route)
                         },
                         onShowFriendCode = { viewModel.showFriendCodeModal() },
                         onShowAddFriend = { viewModel.showAddFriendModal() },
@@ -1300,7 +1310,7 @@ fun ArgosyApp(
                             footerHints = {
                                 FooterHints(
                                     hints = com.nendo.argosy.ui.dualscreen
-                                        .companionDetailHints(describedByPrimary)
+                                        .companionDetailHints(describedByPrimary, viewMode)
                                 )
                             }
                         )

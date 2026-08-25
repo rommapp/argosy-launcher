@@ -169,12 +169,29 @@ private const val TEXT_WEIGHT = 1f
  * looking at the description still needs to be told what pressing A over there will do.
  */
 fun companionDetailHints(
-    detail: CompanionDetail
-): List<Pair<com.nendo.argosy.ui.components.InputButton, String>> = listOf(
-    com.nendo.argosy.ui.components.InputButton.LB_RB to "Section",
-    com.nendo.argosy.ui.components.InputButton.A to if (detail.isGameTitle) "Open" else "Play",
-    com.nendo.argosy.ui.components.InputButton.B to "Back"
-)
+    detail: CompanionDetail,
+    viewMode: String = ""
+): List<Pair<com.nendo.argosy.ui.components.InputButton, String>> = when {
+    detail.isGameTitle -> listOf(
+        com.nendo.argosy.ui.components.InputButton.LB_RB to "Section",
+        com.nendo.argosy.ui.components.InputButton.A to "Open",
+        com.nendo.argosy.ui.components.InputButton.B to "Back"
+    )
+    viewMode == "MEDIA_GRID" -> listOf(
+        com.nendo.argosy.ui.components.InputButton.LB_RB to "Library",
+        com.nendo.argosy.ui.components.InputButton.Y to "Resume",
+        com.nendo.argosy.ui.components.InputButton.X to "Options",
+        com.nendo.argosy.ui.components.InputButton.A to "Play",
+        com.nendo.argosy.ui.components.InputButton.B to "Back"
+    )
+    else -> listOf(
+        com.nendo.argosy.ui.components.InputButton.LB_RB to "Section",
+        com.nendo.argosy.ui.components.InputButton.Y to "Favorite",
+        com.nendo.argosy.ui.components.InputButton.X to "Options",
+        com.nendo.argosy.ui.components.InputButton.A to "Play",
+        com.nendo.argosy.ui.components.InputButton.B to "Back"
+    )
+}
 
 private const val SCRIM_TOP_ALPHA = 0.55f
 private const val SCRIM_BOTTOM_ALPHA = 0.92f

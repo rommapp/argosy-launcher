@@ -147,6 +147,9 @@ class MainActivity : ComponentActivity() {
     @Inject lateinit var resolveMediaPlayTargetUseCase:
         com.nendo.argosy.domain.usecase.media.ResolveMediaPlayTargetUseCase
     @Inject lateinit var mediaPlaybackTracker: com.nendo.argosy.data.media.MediaPlaybackTracker
+    @Inject lateinit var mediaAvailabilityVerifier: com.nendo.argosy.data.media.MediaAvailabilityVerifier
+    @Inject lateinit var mediaDownloadDelegate:
+        com.nendo.argosy.ui.screens.media.delegates.MediaDownloadDelegate
 
     private val sessionStateStore by lazy {
         com.nendo.argosy.data.preferences.SessionStateStore(this)
@@ -366,6 +369,8 @@ class MainActivity : ComponentActivity() {
                 getRelatedMediaUseCase = getRelatedMediaUseCase,
                 resolveMediaPlayTargetUseCase = resolveMediaPlayTargetUseCase,
                 mediaPlaybackTracker = mediaPlaybackTracker,
+                mediaAvailabilityVerifier = mediaAvailabilityVerifier,
+                mediaDownloadDelegate = mediaDownloadDelegate,
                 imageCacheManager = imageCacheManager,
                 resolveGameEmulatorContext = resolveGameEmulatorContext,
                 hapticManager = hapticFeedbackManager,

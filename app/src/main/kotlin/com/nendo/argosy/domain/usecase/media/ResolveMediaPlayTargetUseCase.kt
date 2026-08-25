@@ -70,7 +70,7 @@ class ResolveMediaPlayTargetUseCase @Inject constructor(
      * ordinary season to offer, since season zero sorts first and is nobody's idea of where a show
      * starts.
      */
-    private suspend fun fetchFirstSeason(seriesId: String): Boolean {
+    suspend fun fetchFirstSeason(seriesId: String): Boolean {
         val seasons = mediaRepository.getSeasons(seriesId)
         if (seasons.isEmpty()) return false
         val season = seasons.firstOrNull { it.indexNumber != SPECIALS_SEASON_NUMBER }

@@ -150,6 +150,10 @@ class DualScreenManager(
     internal val resolveMediaPlayTargetUseCase:
         com.nendo.argosy.domain.usecase.media.ResolveMediaPlayTargetUseCase,
     private val mediaPlaybackTracker: com.nendo.argosy.data.media.MediaPlaybackTracker,
+    internal val mediaAvailabilityVerifier:
+        com.nendo.argosy.data.media.MediaAvailabilityVerifier? = null,
+    internal val mediaDownloadDelegate:
+        com.nendo.argosy.ui.screens.media.delegates.MediaDownloadDelegate? = null,
     initialRolesSwapped: Boolean = false
 ) {
 
@@ -181,6 +185,57 @@ class DualScreenManager(
      */
     fun showcaseDisplayId(): Int? =
         displayAffinityHelper.getRoleDisplayIds(_isRolesSwapped.value)?.second
+
+    /**
+     * Opens the library grid on whichever surface currently holds the interactive role, resolved
+     * from the role state rather than a display id. Answers false when no dual surface can host it,
+     * which is the caller's cue to navigate its own screen instead.
+     */
+    fun openLibraryOnInteractiveSurface(): Boolean {
+        if (!_isDualScreenDevice.value) return false
+        if (_isRolesSwapped.value) {
+            val vm = swappedDualHomeViewModel ?: return false
+            vm.enterLibraryGrid {
+                onViewModeChanged(
+                    com.nendo.argosy.ui.dualscreen.home.DualHomeViewMode.LIBRARY_GRID.name,
+                    false,
+                    false
+                )
+                val state = vm.uiState.value
+                state.libraryGames.getOrNull(state.libraryFocusedIndex)?.let { game ->
+                    onGameSelected(game.toShowcaseState())
+                }
+            }
+            return true
+        }
+        if (!_isCompanionActive.value) return false
+        val host = companionHost ?: return false
+        host.onOpenLibrary()
+        return true
+    }
+
+    /**
+     * Opens the media browser on the interactive surface, the same way [openLibraryOnInteractiveSurface]
+     * places the library.
+     */
+    fun openMediaOnInteractiveSurface(): Boolean {
+        if (!_isDualScreenDevice.value) return false
+        if (_isRolesSwapped.value) {
+            val vm = swappedDualHomeViewModel ?: return false
+            vm.enterMediaGrid {
+                onViewModeChanged(
+                    com.nendo.argosy.ui.dualscreen.home.DualHomeViewMode.MEDIA_GRID.name,
+                    false,
+                    false
+                )
+            }
+            return true
+        }
+        if (!_isCompanionActive.value) return false
+        val host = companionHost ?: return false
+        host.onOpenMediaGrid()
+        return true
+    }
 
     private val _isDualScreenDevice = MutableStateFlow(displayAffinityHelper.hasSecondaryDisplay)
     val isDualScreenDevice: StateFlow<Boolean> = _isDualScreenDevice
@@ -314,6 +369,8 @@ class DualScreenManager(
         fun onLibraryRefresh()
         fun onAccountSwitched()
         fun onOverlayRequested(eventName: String)
+        fun onOpenLibrary()
+        fun onOpenMediaGrid()
         fun onRoleSwapped(isSwapped: Boolean)
         fun onOverlayClosed()
         fun onBackgroundForward()
@@ -926,7 +983,9 @@ class DualScreenManager(
             pageChooserEntrySource = pageChooserEntrySource,
             ambientAudioManager = ambientAudioManager,
             mediaRepository = mediaRepository,
-            resolveMediaPlayTargetUseCase = resolveMediaPlayTargetUseCase
+            resolveMediaPlayTargetUseCase = resolveMediaPlayTargetUseCase,
+            mediaAvailabilityVerifier = mediaAvailabilityVerifier,
+            mediaDownloadDelegate = mediaDownloadDelegate
         )
         swappedDualHomeViewModel?.observeHomeTiles()
         swappedDualHomeViewModel?.observeTilePrompts()

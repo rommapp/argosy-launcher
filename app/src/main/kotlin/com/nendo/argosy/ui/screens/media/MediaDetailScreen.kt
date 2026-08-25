@@ -96,11 +96,15 @@ fun MediaDetailScreen(
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
                 inputDispatcher.subscribeView(inputHandler, forRoute = Screen.ROUTE_MEDIA_DETAIL)
+                viewModel.republishCompanionDetail()
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
         inputDispatcher.subscribeView(inputHandler, forRoute = Screen.ROUTE_MEDIA_DETAIL)
-        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+            viewModel.clearCompanionDetail()
+        }
     }
 
     Box(modifier = Modifier.fillMaxSize()) {

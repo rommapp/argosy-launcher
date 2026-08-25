@@ -2,6 +2,7 @@ package com.nendo.argosy.ui.screens.media
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.nendo.argosy.DualScreenManagerHolder
 import com.nendo.argosy.core.input.SoundType
 import com.nendo.argosy.data.media.MediaAvailabilityVerifier
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
@@ -158,6 +159,24 @@ class MediaDetailViewModel @Inject constructor(
         if (mode == MediaDetailMode.SERIES && seasonsJob == null) observeSeasons(itemId)
         if (downloadJob == null) observeDownloadSummary(item)
         if (extrasJob == null) loadExtras(itemId)
+        republishCompanionDetail()
+    }
+
+    /**
+     * Describes the open title on the showcase screen.
+     *
+     * A detail screen is still a driven screen, so the other one has to keep answering "what is
+     * that". Without this it falls back to the home menu, which is a different screen's answer to a
+     * question nobody asked.
+     */
+    fun republishCompanionDetail() {
+        DualScreenManagerHolder.instance?.setCompanionDetail(
+            _uiState.value.item?.toCompanionDetail()
+        )
+    }
+
+    fun clearCompanionDetail() {
+        DualScreenManagerHolder.instance?.setCompanionDetail(null)
     }
 
     /**

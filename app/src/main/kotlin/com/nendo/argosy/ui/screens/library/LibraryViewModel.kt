@@ -712,28 +712,41 @@ class LibraryViewModel @Inject constructor(
         _uiState
             .map { it.focusedGame }
             .distinctUntilChanged()
-            .onEach { game ->
-                DualScreenManagerHolder.instance?.setCompanionDetail(
-                    game?.let {
-                        CompanionDetail(
-                            title = it.title,
-                            subtitle = it.platformDisplayName,
-                            artUrl = it.coverPath,
-                            isGameTitle = true,
-                            facts = buildList {
-                                it.emulatorName?.let { name -> add(CompanionFact("Emulator", name)) }
-                                add(
-                                    CompanionFact(
-                                        "Storage",
-                                        if (it.isDownloaded) "Downloaded" else "Not downloaded"
-                                    )
-                                )
-                            }
+            .onEach { publishCompanionDetail(it) }
+            .launchIn(viewModelScope)
+    }
+
+    /**
+     * Re-states the focused game to the showcase, for a return from somewhere that replaced it.
+     *
+     * The observer above only speaks when the focus changes, and coming back from a detail screen
+     * changes nothing: without this the showcase keeps whatever the detail screen left there until
+     * the viewer happens to move.
+     */
+    fun republishCompanionDetail() {
+        publishCompanionDetail(_uiState.value.focusedGame)
+    }
+
+    private fun publishCompanionDetail(game: LibraryGameUi?) {
+        DualScreenManagerHolder.instance?.setCompanionDetail(
+            game?.let {
+                CompanionDetail(
+                    title = it.title,
+                    subtitle = it.platformDisplayName,
+                    artUrl = it.coverPath,
+                    isGameTitle = true,
+                    facts = buildList {
+                        it.emulatorName?.let { name -> add(CompanionFact("Emulator", name)) }
+                        add(
+                            CompanionFact(
+                                "Storage",
+                                if (it.isDownloaded) "Downloaded" else "Not downloaded"
+                            )
                         )
                     }
                 )
             }
-            .launchIn(viewModelScope)
+        )
     }
 
     /**
@@ -813,6 +826,7 @@ class LibraryViewModel @Inject constructor(
 
     fun onResume() {
         gameLaunchDelegate.handleSessionEnd(viewModelScope)
+        republishCompanionDetail()
 
         if (romMRepository.isConnected()) {
             viewModelScope.launch {

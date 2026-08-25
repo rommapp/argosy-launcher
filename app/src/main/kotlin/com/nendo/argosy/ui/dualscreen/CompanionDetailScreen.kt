@@ -74,15 +74,17 @@ fun CompanionDetailScreen(
                 AsyncImage(
                     model = art,
                     contentDescription = null,
-                    contentScale = ContentScale.Crop,
+                    contentScale = ContentScale.Fit,
+                    alignment = Alignment.Center,
                     modifier = Modifier
+                        .weight(ART_WEIGHT)
                         .fillMaxHeight(if (isWideDisplay) WIDE_ART_HEIGHT else NARROW_ART_HEIGHT)
                         .clip(RoundedCornerShape(Dimens.radiusSm))
                 )
             }
 
             Column(
-                modifier = Modifier.weight(1f),
+                modifier = Modifier.weight(TEXT_WEIGHT),
                 verticalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
             ) {
                 detail.subtitle?.let { subtitle ->
@@ -147,6 +149,14 @@ fun CompanionDetailScreen(
     }
 }
 
+/**
+ * The art and the text share the row by weight rather than the art sizing itself.
+ *
+ * An image asked only for a height reports whatever width its bitmap wants, which on a backdrop is
+ * wider than the screen, so the text beside it is measured at nothing and never appears.
+ */
+private const val ART_WEIGHT = 0.4f
+private const val TEXT_WEIGHT = 1f
 private const val SCRIM_TOP_ALPHA = 0.55f
 private const val SCRIM_BOTTOM_ALPHA = 0.92f
 private const val WIDE_ART_HEIGHT = 0.72f

@@ -75,6 +75,7 @@ fun MediaLibraryScreen(
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
                 inputDispatcher.subscribeView(inputHandler, forRoute = Screen.ROUTE_MEDIA_LIBRARY)
+                viewModel.republishCompanionDetail()
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)

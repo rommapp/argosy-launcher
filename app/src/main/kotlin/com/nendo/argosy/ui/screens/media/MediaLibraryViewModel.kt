@@ -186,10 +186,24 @@ class MediaLibraryViewModel @Inject constructor(
             _uiState
                 .map { it.items.getOrNull(it.focusedIndex) }
                 .distinctUntilChanged()
-                .collect { item ->
-                    DualScreenManagerHolder.instance?.setCompanionDetail(item?.toCompanionDetail())
-                }
+                .collect { publishCompanionDetail(it) }
         }
+    }
+
+    /**
+     * Re-states the focused item to the showcase, for a return from somewhere that replaced it.
+     *
+     * The observer above only speaks when the focus changes, and coming back from a detail screen
+     * changes nothing: without this the showcase keeps whatever the detail screen left there until
+     * the viewer happens to move.
+     */
+    fun republishCompanionDetail() {
+        val state = _uiState.value
+        publishCompanionDetail(state.items.getOrNull(state.focusedIndex))
+    }
+
+    private fun publishCompanionDetail(item: MediaItemUi?) {
+        DualScreenManagerHolder.instance?.setCompanionDetail(item?.toCompanionDetail())
     }
 
     /**

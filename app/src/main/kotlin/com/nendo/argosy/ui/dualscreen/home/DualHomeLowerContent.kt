@@ -48,6 +48,7 @@ fun DualHomeLowerContent(
             DualHomeViewMode.CAROUSEL -> {
                 DualHomeLowerScreen(
                     games = uiState.games,
+                    mediaItems = uiState.mediaItems,
                     selectedIndex = uiState.selectedIndex,
                     platformName = uiState.platformName,
                     totalCount = uiState.totalCount,

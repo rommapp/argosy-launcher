@@ -190,11 +190,20 @@ class DualHomeInputHandler(
                     }
                     InputResult.HANDLED
                 } else {
+                    val mediaItemId = viewModel.focusedMediaItemId()
                     val game = state.selectedGame
-                    if (game != null) {
-                        confirmGame(game)
-                        InputResult.HANDLED
-                    } else InputResult.UNHANDLED
+                    when {
+                        mediaItemId != null -> {
+                            com.nendo.argosy.DualScreenManagerHolder.instance
+                                ?.playMediaItem(mediaItemId)
+                            InputResult.HANDLED
+                        }
+                        game != null -> {
+                            confirmGame(game)
+                            InputResult.HANDLED
+                        }
+                        else -> InputResult.UNHANDLED
+                    }
                 }
             }
             com.nendo.argosy.ui.input.GamepadEvent.ContextMenu -> {

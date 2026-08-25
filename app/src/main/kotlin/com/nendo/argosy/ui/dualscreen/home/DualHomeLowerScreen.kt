@@ -107,6 +107,7 @@ import kotlin.math.abs
 @Composable
 fun DualHomeLowerScreen(
     games: List<HomeGameUi>,
+    mediaItems: List<com.nendo.argosy.ui.screens.home.HomeMediaUi> = emptyList(),
     selectedIndex: Int,
     platformName: String,
     totalCount: Int,
@@ -169,6 +170,7 @@ fun DualHomeLowerScreen(
     )
     val railItems = rememberCompanionCarouselItems(
         games = games,
+        mediaItems = mediaItems,
         hasMoreGames = hasMoreGames,
         totalCount = totalCount,
         repairedCoverPaths = repairedCoverPaths
@@ -179,6 +181,31 @@ fun DualHomeLowerScreen(
     val currentOnGameTapped by rememberUpdatedState(onGameTapped)
     var skipNextProgrammatic by remember { mutableStateOf(false) }
     var isUserScroll by remember { mutableStateOf(false) }
+
+    LaunchedEffect(selectedIndex, mediaItems) {
+        val focused = mediaItems.getOrNull(selectedIndex) ?: return@LaunchedEffect
+        com.nendo.argosy.DualScreenManagerHolder.instance?.setCompanionDetail(
+            com.nendo.argosy.ui.dualscreen.CompanionDetail(
+                title = focused.title,
+                subtitle = focused.subtitle,
+                artUrl = focused.posterUrl
+            )
+        )
+        if (skipNextProgrammatic) {
+            skipNextProgrammatic = false
+        } else {
+            listState.animateScrollToItem(
+                index = selectedIndex,
+                scrollOffset = CarouselAnchor.CENTER.snapOffsetPx
+            )
+        }
+    }
+
+    LaunchedEffect(mediaItems.isEmpty()) {
+        if (mediaItems.isEmpty()) {
+            com.nendo.argosy.DualScreenManagerHolder.instance?.setCompanionDetail(null)
+        }
+    }
 
     LaunchedEffect(selectedIndex, games, isCustomGrid) {
         if (games.isNotEmpty() && !isCustomGrid) {
@@ -1020,11 +1047,15 @@ private fun DualSearchContent(
 @Composable
 private fun rememberCompanionCarouselItems(
     games: List<HomeGameUi>,
+    mediaItems: List<com.nendo.argosy.ui.screens.home.HomeMediaUi>,
     hasMoreGames: Boolean,
     totalCount: Int,
     repairedCoverPaths: Map<Long, String>
-): List<CarouselItem> = remember(games, hasMoreGames, totalCount, repairedCoverPaths) {
+): List<CarouselItem> = remember(games, mediaItems, hasMoreGames, totalCount, repairedCoverPaths) {
     buildList {
+        mediaItems.forEach { item ->
+            add(CarouselItem.Media(key = item.itemId, media = item))
+        }
         games.forEach { game ->
             add(
                 CarouselItem.Game(

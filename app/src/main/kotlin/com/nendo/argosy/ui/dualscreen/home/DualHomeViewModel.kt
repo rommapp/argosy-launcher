@@ -40,7 +40,10 @@ import com.nendo.argosy.ui.components.AutoGridMove
 import com.nendo.argosy.ui.components.autoGridMove
 import com.nendo.argosy.ui.common.toHomeGameUi
 import com.nendo.argosy.ui.screens.home.GameDownloadIndicator
+import com.nendo.argosy.data.local.entity.MediaItemType
+import com.nendo.argosy.data.media.mediaAvailabilityOf
 import com.nendo.argosy.ui.screens.home.HomeGameUi
+import com.nendo.argosy.ui.screens.home.HomeMediaUi
 import com.nendo.argosy.util.DisplayAffinityHelper
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -68,6 +71,7 @@ private const val SECTION_KIND_RECOMMENDATIONS = "RECOMMENDATIONS"
 private const val SECTION_KIND_ANDROID = "ANDROID"
 private const val SECTION_KIND_STEAM = "STEAM"
 private const val SECTION_KIND_PINNED = "PINNED"
+private const val SECTION_KIND_MEDIA = "MEDIA"
 private const val RESTORE_MAX_DEFERRALS = 8
 
 sealed class DualHomeSection(
@@ -95,6 +99,11 @@ sealed class DualHomeSection(
         if (pinned is PinnedCollection.Virtual) HomeSectionKind.PINNED_VIRTUAL else HomeSectionKind.PINNED_REGULAR,
         pinned.displayName
     )
+
+    data class MediaLibrary(
+        val libraryId: String,
+        val name: String
+    ) : DualHomeSection(HomeSectionKind.MEDIA_LIBRARY, name)
 }
 
 enum class DualHomeFocusZone { CAROUSEL, APP_BAR }
@@ -167,6 +176,7 @@ data class DualHomeUiState(
     val sections: List<DualHomeSection> = emptyList(),
     val currentSectionIndex: Int = 0,
     val games: List<HomeGameUi> = emptyList(),
+    val mediaItems: List<com.nendo.argosy.ui.screens.home.HomeMediaUi> = emptyList(),
     val selectedIndex: Int = 0,
     val isLoading: Boolean = true,
     val focusZone: DualHomeFocusZone = DualHomeFocusZone.CAROUSEL,
@@ -376,7 +386,8 @@ class DualHomeViewModel(
     private val appsRepository: com.nendo.argosy.data.repository.AppsRepository? = null,
     private val syncPreferencesRepository: com.nendo.argosy.data.preferences.SyncPreferencesRepository? = null,
     private val pageChooserEntrySource: com.nendo.argosy.ui.home.grid.PageChooserEntrySource? = null,
-    private val ambientAudioManager: com.nendo.argosy.ui.audio.AmbientAudioManager? = null
+    private val ambientAudioManager: com.nendo.argosy.ui.audio.AmbientAudioManager? = null,
+    private val mediaRepository: com.nendo.argosy.data.repository.MediaRepository? = null
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(DualHomeUiState())
@@ -766,8 +777,22 @@ class DualHomeViewModel(
 
         sections.addAll(platformSections(platformRepository.getPlatformsWithGames()))
         sections.addAll(pinnedSections())
+        sections.addAll(mediaLibrarySections())
 
         return sections
+    }
+
+    /**
+     * One row per media library the server offers, matching the single-screen home.
+     *
+     * A library with nothing in it is left out, because a row that opens onto an empty shelf reads
+     * as a fault rather than as an empty library.
+     */
+    private suspend fun mediaLibrarySections(): List<DualHomeSection.MediaLibrary> {
+        val repository = mediaRepository ?: return emptyList()
+        return repository.observeLibraries().first()
+            .map { DualHomeSection.MediaLibrary(it.libraryId, it.name) }
+            .filter { repository.observeLibraryItems(it.libraryId).first().isNotEmpty() }
     }
 
     private fun platformSections(platforms: List<PlatformEntity>): List<DualHomeSection.Platform> =
@@ -817,6 +842,10 @@ class DualHomeViewModel(
 
     private suspend fun loadGamesForCurrentSectionSuspend() {
         val section = _uiState.value.currentSection ?: return
+        if (section is DualHomeSection.MediaLibrary) {
+            loadMediaForSection(section)
+            return
+        }
         val installedOnly = isInstalledOnlyEnabled()
         val uncapped = showsEveryGame()
         val platformLimit = if (uncapped) Int.MAX_VALUE else PLATFORM_GAMES_LIMIT
@@ -878,6 +907,7 @@ class DualHomeViewModel(
                 if (installedOnly) pinnedGames = filterPlayable(pinnedGames)
                 pinnedGames.map { it.toUi() }
             }
+            is DualHomeSection.MediaLibrary -> emptyList()
         }
 
         _uiState.update {
@@ -885,8 +915,52 @@ class DualHomeViewModel(
             val remapped = games.indexOfFirst { g -> g.id == previousId }
             val newIndex = if (remapped >= 0) remapped
             else it.selectedIndex.coerceIn(0, (games.size - 1).coerceAtLeast(0))
-            it.copy(games = games, platformTotalCount = realCount, selectedIndex = newIndex)
+            it.copy(
+                games = games,
+                mediaItems = emptyList(),
+                platformTotalCount = realCount,
+                selectedIndex = newIndex
+            )
         }
+    }
+
+    /**
+     * Fills a media row with the library's titles.
+     *
+     * Media and games do not share a tile model, so a media row empties the game list rather than
+     * translating titles into games: a film given a game's shape would answer questions about
+     * emulators and downloads that mean nothing to it.
+     */
+    private suspend fun loadMediaForSection(section: DualHomeSection.MediaLibrary) {
+        val repository = mediaRepository ?: return
+        val items = repository.observeLibraryItems(section.libraryId).first()
+            .map { entity ->
+                HomeMediaUi(
+                    itemId = entity.itemId,
+                    title = entity.name,
+                    subtitle = entity.productionYear?.toString(),
+                    posterUrl = repository.posterUrl(entity.itemId, entity.primaryImageTag),
+                    isSeries = MediaItemType.fromWire(entity.itemType) == MediaItemType.SERIES,
+                    availability = mediaAvailabilityOf(entity.localPath, null)
+                )
+            }
+        _uiState.update {
+            it.copy(
+                games = emptyList(),
+                mediaItems = items,
+                platformTotalCount = 0,
+                selectedIndex = it.selectedIndex.coerceIn(0, (items.size - 1).coerceAtLeast(0))
+            )
+        }
+    }
+
+    /**
+     * The media title the cursor is on, or null when the row is not a media one.
+     */
+    fun focusedMediaItemId(): String? {
+        val state = _uiState.value
+        if (state.currentSection !is DualHomeSection.MediaLibrary) return null
+        return state.mediaItems.getOrNull(state.selectedIndex)?.itemId
     }
 
     private fun sortRecentGamesWithNewPriority(games: List<GameEntity>): List<GameEntity> {
@@ -987,6 +1061,13 @@ class DualHomeViewModel(
         else -> -1
     }
 
+    /**
+     * Whether the cursor is sitting on a media row, which decides whether Confirm plays a title or
+     * opens a game.
+     */
+    fun isOnMediaSection(): Boolean =
+        _uiState.value.currentSection is DualHomeSection.MediaLibrary
+
     private suspend fun applyPendingRestore() {
         val pending = pendingRestore ?: run {
             _restorePending.value = false
@@ -1058,6 +1139,7 @@ class DualHomeViewModel(
             is DualHomeSection.Steam -> SECTION_KIND_STEAM
             is DualHomeSection.Platform -> SECTION_KIND_PLATFORM
             is DualHomeSection.Pinned -> SECTION_KIND_PINNED
+            is DualHomeSection.MediaLibrary -> SECTION_KIND_MEDIA
             null -> ""
         }
         val filters = state.activeFilters

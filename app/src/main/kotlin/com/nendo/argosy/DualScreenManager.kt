@@ -909,7 +909,8 @@ class DualScreenManager(
             appsRepository = appsRepository,
             syncPreferencesRepository = syncPreferencesRepository,
             pageChooserEntrySource = pageChooserEntrySource,
-            ambientAudioManager = ambientAudioManager
+            ambientAudioManager = ambientAudioManager,
+            mediaRepository = mediaRepository
         )
         swappedDualHomeViewModel?.observeHomeTiles()
         swappedDualHomeViewModel?.observeTilePrompts()

@@ -980,7 +980,8 @@ class SecondaryHomeActivity :
             appsRepository = dsm.appsRepository,
             syncPreferencesRepository = dsm.syncPreferencesRepository,
             pageChooserEntrySource = dsm.pageChooserEntrySource,
-            ambientAudioManager = dsm.ambientAudioManager
+            ambientAudioManager = dsm.ambientAudioManager,
+            mediaRepository = dsm.mediaRepository
         )
         dualHomeViewModel.observeHomeTiles()
         dualHomeViewModel.observeTilePrompts()

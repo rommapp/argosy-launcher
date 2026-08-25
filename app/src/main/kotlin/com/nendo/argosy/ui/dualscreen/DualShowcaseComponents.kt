@@ -28,14 +28,17 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.nendo.argosy.domain.model.CompletionStatus
 import com.nendo.argosy.ui.common.rememberFileImageModel
 import com.nendo.argosy.ui.theme.ALauncherColors
+import com.nendo.argosy.ui.theme.AspectRatioClass
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalArgosyTheme
+import com.nendo.argosy.ui.theme.LocalUiScale
 import com.nendo.argosy.ui.theme.backdrop.BackdropRole
 import com.nendo.argosy.ui.theme.backdrop.surfaceBackdrop
 import com.nendo.argosy.util.formatPlayTime
@@ -81,18 +84,40 @@ fun ShowcaseEyebrow(
     platformName: String?,
     releaseYear: Int?,
     developer: String?,
-    titleId: String? = null
+    titleId: String? = null,
+    stacked: Boolean = false
 ) {
-    Text(
-        text = listOfNotNull(
-            platformName?.takeIf { it.isNotBlank() }?.uppercase(),
-            releaseYear?.toString(),
-            developer,
-            titleId?.takeIf { it.isNotBlank() }
-        ).joinToString("  ·  "),
-        style = MaterialTheme.typography.labelLarge.copy(letterSpacing = 1.5.sp),
-        color = LocalArgosyTheme.current.focusAccent
-    )
+    val style = MaterialTheme.typography.labelLarge.copy(letterSpacing = 1.5.sp)
+    val color = LocalArgosyTheme.current.focusAccent
+    val provenance = listOfNotNull(
+        platformName?.takeIf { it.isNotBlank() }?.uppercase(),
+        releaseYear?.toString()
+    ).joinToString("  ·  ")
+    val maker = listOfNotNull(
+        developer,
+        titleId?.takeIf { it.isNotBlank() }
+    ).joinToString("  ·  ")
+
+    if (!stacked) {
+        Text(
+            text = listOfNotNull(
+                provenance.takeIf { it.isNotBlank() },
+                maker.takeIf { it.isNotBlank() }
+            ).joinToString("  ·  "),
+            style = style,
+            color = color
+        )
+        return
+    }
+
+    Column {
+        if (provenance.isNotBlank()) {
+            Text(text = provenance, style = style, color = color, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        }
+        if (maker.isNotBlank()) {
+            Text(text = maker, style = style, color = color, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        }
+    }
 }
 
 @Composable
@@ -163,7 +188,17 @@ private fun ShowcaseRatingItem(
     }
 }
 
-/** Fixed three-slot stats row; geometry never varies with data presence. */
+/**
+ * Fixed three-slot stats; geometry never varies with data presence.
+ *
+ * Slots share their width equally rather than taking what their text asks for. A row measures its
+ * children in order and hands the last one whatever is left, so on a narrow panel the third slot
+ * was collapsing to a few pixels and wrapping one character per line down the edge.
+ *
+ * A near-square panel drops status onto its own line instead of squeezing three across. A status
+ * reads as a word rather than a number, so it is the slot that outgrows a third of the width, and
+ * a full line keeps it at the same size as the two it sits under.
+ */
 @Composable
 fun ShowcaseStatsRow(
     playTimeMinutes: Int,
@@ -171,28 +206,62 @@ fun ShowcaseStatsRow(
     status: String?
 ) {
     val theme = LocalArgosyTheme.current
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(Dimens.spacingXxl)
-    ) {
+    val isWideDisplay = LocalUiScale.current.aspectRatioClass.let {
+        it == AspectRatioClass.WIDE || it == AspectRatioClass.ULTRA_WIDE
+    }
+
+    val playTime: @Composable (Modifier) -> Unit = { slot ->
         ShowcaseStatCell(
             label = "Play Time",
             value = formatPlayTime(playTimeMinutes),
-            valueColor = theme.textPrimary
+            valueColor = theme.textPrimary,
+            modifier = slot
         )
+    }
+    val lastPlayed: @Composable (Modifier) -> Unit = { slot ->
         ShowcaseStatCell(
             label = "Last Played",
             value = if (lastPlayedAt > 0) formatLastPlayedLabel(lastPlayedAt) else "Never",
-            valueColor = theme.textPrimary
+            valueColor = theme.textPrimary,
+            modifier = slot
         )
+    }
+    val completion: @Composable (Modifier) -> Unit = { slot ->
         ShowcaseStatCell(
             label = "Status",
             value = status?.let { raw ->
                 CompletionStatus.fromApiValue(raw)?.label
                     ?: raw.replace('_', ' ').replaceFirstChar { it.uppercase() }
             } ?: "None",
-            valueColor = if (status != null) theme.focusAccent else theme.textMute
+            valueColor = if (status != null) theme.focusAccent else theme.textMute,
+            modifier = slot
         )
+    }
+
+    if (isWideDisplay) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(Dimens.spacingMd)
+        ) {
+            playTime(Modifier.weight(1f))
+            lastPlayed(Modifier.weight(1f))
+            completion(Modifier.weight(1f))
+        }
+        return
+    }
+
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(Dimens.spacingMd)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(Dimens.spacingMd)
+        ) {
+            playTime(Modifier.weight(1f))
+            lastPlayed(Modifier.weight(1f))
+        }
+        completion(Modifier.fillMaxWidth())
     }
 }
 
@@ -200,19 +269,24 @@ fun ShowcaseStatsRow(
 private fun ShowcaseStatCell(
     label: String,
     value: String,
-    valueColor: Color
+    valueColor: Color,
+    modifier: Modifier = Modifier
 ) {
     val theme = LocalArgosyTheme.current
-    Column {
+    Column(modifier = modifier) {
         Text(
             text = label,
             style = MaterialTheme.typography.labelSmall,
-            color = theme.textMute
+            color = theme.textMute,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
         )
         Text(
             text = value,
             style = MaterialTheme.typography.titleLarge,
-            color = valueColor
+            color = valueColor,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
         )
     }
 }

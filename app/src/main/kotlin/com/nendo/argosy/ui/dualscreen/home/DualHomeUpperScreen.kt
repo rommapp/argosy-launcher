@@ -56,7 +56,9 @@ import com.nendo.argosy.ui.theme.LocalBoxArtStyle
 import com.nendo.argosy.ui.theme.backdrop.BackdropRole
 import com.nendo.argosy.ui.theme.backdrop.surfaceBackdrop
 import com.nendo.argosy.ui.theme.ALauncherColors
+import com.nendo.argosy.ui.theme.AspectRatioClass
 import com.nendo.argosy.ui.theme.Dimens
+import com.nendo.argosy.ui.theme.LocalUiScale
 import com.nendo.argosy.ui.theme.LocalArgosyTheme
 import com.nendo.argosy.util.formatPlayTime
 import java.time.Instant
@@ -116,15 +118,22 @@ fun DualHomeUpperScreen(
 
         Column(modifier = Modifier.fillMaxSize()) {
             if (state.gameId > 0) {
+                val isWideDisplay = LocalUiScale.current.aspectRatioClass.let {
+                    it == AspectRatioClass.WIDE || it == AspectRatioClass.ULTRA_WIDE
+                }
+                val gutter = if (isWideDisplay) Dimens.spacingXxl else Dimens.spacingLg
                 Row(
                     modifier = Modifier
                         .weight(1f)
                         .fillMaxWidth()
-                        .padding(horizontal = Dimens.spacingXxl),
+                        .padding(horizontal = gutter),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(Dimens.spacingXxl)
+                    horizontalArrangement = Arrangement.spacedBy(gutter)
                 ) {
-                    ShowcaseHeroCard(state)
+                    ShowcaseHeroCard(
+                        state = state,
+                        heightFraction = if (isWideDisplay) WIDE_ART_HEIGHT else NARROW_ART_HEIGHT
+                    )
                     ShowcaseInfoColumn(
                         state = state,
                         modifier = Modifier.weight(1f)
@@ -153,7 +162,7 @@ fun DualHomeUpperScreen(
 }
 
 @Composable
-private fun ShowcaseHeroCard(state: DualHomeShowcaseState) {
+private fun ShowcaseHeroCard(state: DualHomeShowcaseState, heightFraction: Float) {
     val boxArtStyle = LocalBoxArtStyle.current
     if (state.coverPath == null) return
     if (state.boxSpinePath != null && state.coverPath.startsWith("/")) {
@@ -161,7 +170,7 @@ private fun ShowcaseHeroCard(state: DualHomeShowcaseState) {
             frontPath = state.coverPath,
             spinePath = state.boxSpinePath,
             backPath = state.boxBackPath,
-            modifier = Modifier.fillMaxHeight(0.72f)
+            modifier = Modifier.fillMaxHeight(heightFraction)
         )
     } else {
         val artRatio = if (boxArtStyle.nativeAspectRatio) {
@@ -178,7 +187,7 @@ private fun ShowcaseHeroCard(state: DualHomeShowcaseState) {
             contentDescription = null,
             contentScale = ContentScale.Crop,
             modifier = Modifier
-                .fillMaxHeight(0.72f)
+                .fillMaxHeight(heightFraction)
                 .aspectRatio(artRatio)
                 .clip(RoundedCornerShape(Dimens.radiusSm))
         )
@@ -191,6 +200,9 @@ private fun ShowcaseInfoColumn(
     modifier: Modifier = Modifier
 ) {
     val theme = LocalArgosyTheme.current
+    val isWideDisplay = LocalUiScale.current.aspectRatioClass.let {
+        it == AspectRatioClass.WIDE || it == AspectRatioClass.ULTRA_WIDE
+    }
     Column(
         modifier = modifier,
         verticalArrangement = Arrangement.Center
@@ -198,7 +210,8 @@ private fun ShowcaseInfoColumn(
         ShowcaseEyebrow(
             platformName = state.platformName,
             releaseYear = state.releaseYear,
-            developer = state.developer
+            developer = state.developer,
+            stacked = !isWideDisplay
         )
         Spacer(modifier = Modifier.height(Dimens.spacingSm))
         GameTitle(
@@ -221,4 +234,14 @@ private fun ShowcaseInfoColumn(
         )
     }
 }
+
+/**
+ * How much of the panel's height the cover takes, which is also what decides its width.
+ *
+ * The art is sized by height and then given its own aspect ratio, so on a near-square panel the
+ * same fraction costs far more of the width than it does on a 16:9 one and squeezes everything
+ * beside it. The narrow figure buys that width back for the text.
+ */
+private const val WIDE_ART_HEIGHT = 0.72f
+private const val NARROW_ART_HEIGHT = 0.55f
 

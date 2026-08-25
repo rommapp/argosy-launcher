@@ -24,16 +24,44 @@ data class ParsedTitle(
     val gameName: String
 )
 
+/**
+ * Families that name their entries without a colon.
+ *
+ * A colon is the usual mark of "series, then entry", and it carries most titles on its own. These
+ * do not use one: "Pokémon Alpha Sapphire" is a Pokémon game the same way "Kingdom Hearts: Birth
+ * by Sleep" is a Kingdom Hearts one, and without an entry here it draws as a single run of bold
+ * text with the part that distinguishes it pushed off the end of the line.
+ *
+ * Only add a family whose name is followed by a distinct entry name. A family whose entries read
+ * as one phrase is better left whole, since splitting it strands a fragment on the second line.
+ */
+private val FAMILY_PREFIXES = listOf(
+    "Pokémon",
+    "Pokemon"
+)
+
 fun parseGameTitle(title: String): ParsedTitle {
     val colonIndex = title.indexOf(':')
-    return if (colonIndex > 0 && colonIndex < title.length - 1) {
-        ParsedTitle(
+    if (colonIndex > 0 && colonIndex < title.length - 1) {
+        return ParsedTitle(
             seriesName = title.substring(0, colonIndex).trim(),
             gameName = title.substring(colonIndex + 1).trim()
         )
-    } else {
-        ParsedTitle(seriesName = null, gameName = title)
     }
+
+    val family = FAMILY_PREFIXES.firstOrNull { prefix ->
+        title.length > prefix.length + 1 &&
+            title.startsWith(prefix, ignoreCase = true) &&
+            title[prefix.length] == ' '
+    }
+    if (family != null) {
+        return ParsedTitle(
+            seriesName = title.substring(0, family.length).trim(),
+            gameName = title.substring(family.length).trim()
+        )
+    }
+
+    return ParsedTitle(seriesName = null, gameName = title)
 }
 
 private val KEEP_TOGETHER_PHRASES = listOf(

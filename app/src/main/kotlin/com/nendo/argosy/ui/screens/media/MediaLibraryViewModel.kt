@@ -2,6 +2,7 @@ package com.nendo.argosy.ui.screens.media
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.nendo.argosy.DualScreenManagerHolder
 import com.nendo.argosy.core.input.SoundType
 import com.nendo.argosy.data.media.MediaAvailabilityVerifier
 import com.nendo.argosy.data.remote.jellyfin.JellyfinResult
@@ -41,6 +42,7 @@ class MediaLibraryViewModel @Inject constructor(
         observeLibraries()
         observeItems()
         observeGradients()
+        observeFocusForCompanion()
         availabilityVerifier.verifyOnOpen()
     }
 
@@ -170,6 +172,32 @@ class MediaLibraryViewModel @Inject constructor(
         val size = _uiState.value.items.size
         if (size == 0) return
         _uiState.update { it.copy(focusedIndex = index.coerceIn(0, size - 1)) }
+    }
+
+    /**
+     * Tells the showcase screen what this one has focused.
+     *
+     * Driven off state rather than called from each navigation method, because the other screen is
+     * describing a cursor rather than a destination: every path that moves the cursor has to reach
+     * it, and there are more of those than any one of them knows about.
+     */
+    private fun observeFocusForCompanion() {
+        viewModelScope.launch {
+            _uiState
+                .map { it.items.getOrNull(it.focusedIndex) }
+                .distinctUntilChanged()
+                .collect { item ->
+                    DualScreenManagerHolder.instance?.setCompanionDetail(item?.toCompanionDetail())
+                }
+        }
+    }
+
+    /**
+     * Stops describing this screen. Called when it goes away, so the showcase does not keep
+     * standing over a cursor that no longer exists.
+     */
+    fun clearCompanionDetail() {
+        DualScreenManagerHolder.instance?.setCompanionDetail(null)
     }
 
     /**

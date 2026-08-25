@@ -8,7 +8,9 @@ import android.view.Display
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.collectAsState
+import androidx.compose.ui.Modifier
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -38,6 +40,8 @@ import com.nendo.argosy.ui.dualscreen.media.DualMediaRow
 import com.nendo.argosy.ui.dualscreen.media.DualMediaViewModel
 import com.nendo.argosy.ui.input.LocalABIconsSwapped
 import com.nendo.argosy.ui.input.LocalXYIconsSwapped
+import com.nendo.argosy.ui.dualscreen.CompanionDetail
+import com.nendo.argosy.ui.dualscreen.CompanionDetailScreen
 import com.nendo.argosy.ui.input.LocalSwapStartSelect
 import com.nendo.argosy.ui.input.mapKeycodeToGamepadEvent
 import com.nendo.argosy.ui.screens.secondaryhome.SecondaryHomeViewModel
@@ -91,6 +95,7 @@ class SecondaryHomeActivity :
     var isShowcaseRole by mutableStateOf(false)
         private set
 
+    private val _companionDetail = MutableStateFlow<CompanionDetail?>(null)
     private val _showcaseState = MutableStateFlow(DualHomeShowcaseState())
     private val _showcaseViewMode = MutableStateFlow("CAROUSEL")
     private val _showcaseCollectionState = MutableStateFlow(DualCollectionShowcaseState())
@@ -178,7 +183,14 @@ class SecondaryHomeActivity :
                     com.nendo.argosy.ui.components.LocalArtworkScraping provides
                         scrapingArtwork.isProcessing
                 ) {
-                    if (isShowcaseRole) {
+                    val primaryDetail by _companionDetail.collectAsState()
+                    val describingPrimary = primaryDetail
+                    if (describingPrimary != null) {
+                        CompanionDetailScreen(
+                            detail = describingPrimary,
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    } else if (isShowcaseRole) {
                         ShowcaseRoleContent(
                             isInitialized = isInitialized,
                             isArgosyForeground = isArgosyForeground,
@@ -860,6 +872,7 @@ class SecondaryHomeActivity :
         loadInitialState()
         dsm.companionHost = this
         lifecycleScope.launch { dsm.dualScreenShowcase.collect { _showcaseState.value = it } }
+        lifecycleScope.launch { dsm.companionDetail.collect { _companionDetail.value = it } }
         lifecycleScope.launch { dsm.dualViewMode.collect { _showcaseViewMode.value = it } }
         lifecycleScope.launch { dsm.dualCollectionShowcase.collect { _showcaseCollectionState.value = it } }
         lifecycleScope.launch { dsm.dualGameDetailState.collect { _showcaseGameDetailState.value = it } }

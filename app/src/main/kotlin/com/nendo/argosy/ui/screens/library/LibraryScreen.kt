@@ -277,6 +277,7 @@ fun LibraryScreen(
         inputDispatcher.subscribeView(inputHandler, forRoute = Screen.ROUTE_LIBRARY)
         onDispose {
             lifecycleOwner.lifecycle.removeObserver(observer)
+            viewModel.clearCompanionDetail()
         }
     }
 

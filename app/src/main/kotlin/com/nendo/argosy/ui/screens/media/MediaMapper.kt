@@ -10,6 +10,8 @@ import com.nendo.argosy.data.media.MediaAvailability
 import com.nendo.argosy.data.media.mediaAvailabilityOf
 import com.nendo.argosy.data.repository.MediaImageType
 import com.nendo.argosy.data.repository.MediaRepository
+import com.nendo.argosy.ui.dualscreen.CompanionDetail
+import com.nendo.argosy.ui.dualscreen.CompanionFact
 
 private const val TICKS_PER_SECOND = MediaRepository.TICKS_PER_SECOND
 private const val SECONDS_PER_MINUTE = 60
@@ -101,6 +103,27 @@ private fun MediaItemEntity.wideImageUrl(repository: MediaRepository): String {
     primaryImageTag?.let { return repository.imageUrl(itemId, MediaImageType.PRIMARY, it) }
     return ""
 }
+
+/**
+ * How this title reads on the screen that is describing rather than driving.
+ *
+ * Facts are chosen for legibility from a distance rather than completeness: a runtime and a year
+ * answer "is this the one I meant", where a genre list read across a room answers nothing.
+ */
+fun MediaItemUi.toCompanionDetail(): CompanionDetail =
+    CompanionDetail(
+        title = title,
+        subtitle = listOfNotNull(seriesName, episodeLabel).joinToString(" - ").takeIf { it.isNotBlank() },
+        overview = overview,
+        artUrl = posterUrl.takeIf { it.isNotBlank() },
+        backdropUrl = backdropUrl.takeIf { it.isNotBlank() },
+        facts = buildList {
+            year?.let { add(CompanionFact("Year", it.toString())) }
+            runtimeLabel?.let { add(CompanionFact("Runtime", it)) }
+            officialRating?.let { add(CompanionFact("Rated", it)) }
+            communityRating?.let { add(CompanionFact("Rating", "%.1f".format(it))) }
+        }
+    )
 
 /**
  * The full-bleed image a screen draws behind its content, resolved as a kind and an item together.

@@ -79,7 +79,10 @@ fun MediaLibraryScreen(
         }
         lifecycleOwner.lifecycle.addObserver(observer)
         inputDispatcher.subscribeView(inputHandler, forRoute = Screen.ROUTE_MEDIA_LIBRARY)
-        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+            viewModel.clearCompanionDetail()
+        }
     }
 
     LaunchedEffect(uiState.focusedIndex, uiState.selectedLibraryIndex) {

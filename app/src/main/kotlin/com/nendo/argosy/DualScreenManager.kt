@@ -51,6 +51,7 @@ import com.nendo.argosy.hardware.FocusAccessibilityService
 import com.nendo.argosy.hardware.FocusDirectorActivity
 import com.nendo.argosy.hardware.SecondaryHomeActivity
 import com.nendo.argosy.hardware.withLiveQuickActionState
+import com.nendo.argosy.ui.dualscreen.CompanionDetail
 import com.nendo.argosy.util.DisplayAffinityHelper
 import com.nendo.argosy.util.SecondaryDisplayType
 import kotlinx.coroutines.CoroutineScope
@@ -413,6 +414,25 @@ class DualScreenManager(
      * the main screen is not.
      */
     val inputFeedback = com.nendo.argosy.ui.input.InputFeedbackPlayer(hapticManager, soundManager)
+
+    private val _companionDetail = MutableStateFlow<CompanionDetail?>(null)
+
+    /**
+     * What the showcase screen shows while the driven screen is on Library or Media.
+     *
+     * Held here rather than pushed through a callback because the two surfaces live in different
+     * activities and the callback route has already proved it can be implemented as an empty method
+     * and never noticed. A flow that nobody collects renders nothing; a callback that nobody
+     * implements looks exactly like one that works.
+     *
+     * Null means the driven screen is on Home, and the showcase falls back to the game it has
+     * focused there.
+     */
+    val companionDetail: StateFlow<CompanionDetail?> = _companionDetail
+
+    fun setCompanionDetail(detail: CompanionDetail?) {
+        _companionDetail.value = detail
+    }
 
     private val _dualScreenShowcase = MutableStateFlow(DualHomeShowcaseState())
     val dualScreenShowcase: StateFlow<DualHomeShowcaseState> = _dualScreenShowcase

@@ -61,10 +61,14 @@ import com.nendo.argosy.ui.screens.gamedetail.CollectionItemUi
 import com.nendo.argosy.ui.screens.home.HomePlatformUi
 import com.nendo.argosy.ui.screens.home.toHomePlatformUi
 import com.nendo.argosy.ui.util.GridUtils
+import com.nendo.argosy.DualScreenManagerHolder
 import com.nendo.argosy.ui.ModalResetSignal
+import com.nendo.argosy.ui.dualscreen.CompanionDetail
+import com.nendo.argosy.ui.dualscreen.CompanionFact
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.Job
@@ -456,6 +460,7 @@ class LibraryViewModel @Inject constructor(
         observeCollectionModal()
         observeGradientChanges()
         observeHiddenCount()
+        observeFocusForCompanion()
     }
 
     /**
@@ -697,6 +702,45 @@ class LibraryViewModel @Inject constructor(
                 }
             }
         }
+    }
+
+    /**
+     * Tells the showcase screen which game this one has focused, so the other screen describes the
+     * cursor rather than sitting on whatever it was last left showing.
+     */
+    private fun observeFocusForCompanion() {
+        _uiState
+            .map { it.focusedGame }
+            .distinctUntilChanged()
+            .onEach { game ->
+                DualScreenManagerHolder.instance?.setCompanionDetail(
+                    game?.let {
+                        CompanionDetail(
+                            title = it.title,
+                            subtitle = it.platformDisplayName,
+                            artUrl = it.coverPath,
+                            isGameTitle = true,
+                            facts = buildList {
+                                it.emulatorName?.let { name -> add(CompanionFact("Emulator", name)) }
+                                add(
+                                    CompanionFact(
+                                        "Storage",
+                                        if (it.isDownloaded) "Downloaded" else "Not downloaded"
+                                    )
+                                )
+                            }
+                        )
+                    }
+                )
+            }
+            .launchIn(viewModelScope)
+    }
+
+    /**
+     * Stops describing this screen once it is no longer the one being driven.
+     */
+    fun clearCompanionDetail() {
+        DualScreenManagerHolder.instance?.setCompanionDetail(null)
     }
 
     private fun extractGradientsForVisibleGames(focusedIndex: Int) {

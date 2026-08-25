@@ -373,8 +373,11 @@ class MainActivity : ComponentActivity() {
         }
 
         dualScreenManager.onRoleSwapped = { swapped ->
-            if (swapped && dualScreenManager.swappedDualHomeViewModel == null) {
-                dualScreenManager.initSwappedViewModel()
+            if (swapped) {
+                if (dualScreenManager.swappedDualHomeViewModel == null) {
+                    dualScreenManager.initSwappedViewModel()
+                }
+                refocusSelf()
             }
         }
         dualScreenManager.onOverlayFocusChanged = { _ -> }
@@ -814,4 +817,16 @@ class MainActivity : ComponentActivity() {
         return false
     }
 
+    /**
+     * Takes key focus back after a swap has made this the screen being driven.
+     *
+     * The companion does the same for itself when the roles go the other way. Without the matching
+     * move, a swap into this role leaves focus on the window that just became the showcase, and the
+     * pad reads as dead until a touch hands focus over.
+     */
+    private fun refocusSelf() = startActivity(
+        Intent(this, MainActivity::class.java).apply {
+            addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+        }
+    )
 }

@@ -64,6 +64,7 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -158,6 +159,23 @@ class DualScreenManager(
     fun setRolesSwapped(value: Boolean) {
         _isRolesSwapped.value = value
     }
+
+    /**
+     * The display the viewer is driving right now, or null on a single-screen device.
+     *
+     * Exactly one screen is interactive at a time and carries Home, Library and Media; the other
+     * describes whatever that screen has focused. A role swap is the only thing that moves them,
+     * so a surface asks which display holds its role rather than naming a display id, and keeps
+     * landing correctly after a swap.
+     */
+    fun interactiveDisplayId(): Int? =
+        displayAffinityHelper.getRoleDisplayIds(_isRolesSwapped.value)?.first
+
+    /**
+     * The display describing what the interactive one has focused, or null on a single screen.
+     */
+    fun showcaseDisplayId(): Int? =
+        displayAffinityHelper.getRoleDisplayIds(_isRolesSwapped.value)?.second
 
     private val _isDualScreenDevice = MutableStateFlow(displayAffinityHelper.hasSecondaryDisplay)
     val isDualScreenDevice: StateFlow<Boolean> = _isDualScreenDevice
@@ -419,6 +437,10 @@ class DualScreenManager(
      * The display the player window currently occupies, reported by the player itself. Held here
      * rather than in the activity because the companion has to be able to send an episode to a
      * window living on another display.
+     *
+     * It is an observation, not an assignment, so it is cleared when the roles swap: the position
+     * it records was chosen under the previous arrangement, and sending the next episode there
+     * would place it by a rule that no longer applies.
      */
     @Volatile var mediaPlayerDisplayId: Int? = null
 
@@ -443,13 +465,18 @@ class DualScreenManager(
      * Opens one media item in the player window wherever that window currently is.
      *
      * The companion is the caller: it lists the episodes of what is playing, and confirming one has
-     * to reach a window on the other display. Placement is stated rather than resolved, because
-     * resolution for a non-emulator activity answers "the secondary display" unconditionally and
-     * would drag the film off the screen it is being watched on.
+     * to reach a window on the other display. A live player states where it is, and that wins,
+     * because resolution for a non-emulator activity answers "the secondary display"
+     * unconditionally and would drag the film off the screen it is being watched on.
+     *
+     * Resolution is the fallback for when nothing has stated a position yet. Without it the first
+     * play of a session lands on the default display, on top of the launcher, where the home UI
+     * closes it the moment it comes forward.
      */
     fun playMediaItem(itemId: String, startOver: Boolean = false) {
         if (itemId.isBlank()) return
-        val options = mediaPlayerDisplayId?.let {
+        val target = mediaPlayerDisplayId ?: mediaPlayerRelocationDisplayId()
+        val options = target?.let {
             displayAffinityHelper.getActivityOptions(forEmulator = false, overrideDisplayId = it)
         }
         com.nendo.argosy.ui.screens.player.PlayerActivity.startOnDisplay(
@@ -841,13 +868,7 @@ class DualScreenManager(
      * position with a section-zero context the user never chose.
      */
     private fun restoreSwappedNavContext() {
-        val navContext = sessionStateStore.getCarouselNavContext()
-        val hasSomethingToRestore = navContext.hasContext ||
-            navContext.legacySectionIndex > 0 ||
-            navContext.legacySelectedIndex > 0
-        if (hasSomethingToRestore) {
-            swappedDualHomeViewModel?.restoreNavContext(navContext)
-        }
+        swappedDualHomeViewModel?.restoreNavContextIfPresent(sessionStateStore.getCarouselNavContext())
     }
 
     // --- Public methods for companion -> DSM direction ---
@@ -2705,8 +2726,37 @@ class DualScreenManager(
         }
         val newSwapped = newOverride == "SWAPPED" ||
             (newOverride == "AUTO" && displayAffinityHelper.secondaryDisplayType == SecondaryDisplayType.EXTERNAL)
+        if (!newSwapped) {
+            commitRoleSwap(newSwapped)
+            return
+        }
+
+        if (swappedDualHomeViewModel == null) initSwappedViewModel()
+        restoreSwappedNavContext()
+        val incoming = swappedDualHomeViewModel
+        if (incoming == null) {
+            commitRoleSwap(newSwapped)
+            return
+        }
+        scope.launch {
+            withTimeoutOrNull(SWAP_PREPARE_TIMEOUT_MS) {
+                incoming.restorePending.first { !it }
+            }
+            commitRoleSwap(newSwapped)
+        }
+    }
+
+    /**
+     * Hands the roles over, once the screen about to be revealed is already sitting where it should.
+     *
+     * The flip itself is what makes the incoming surface visible, so it happens last. A restore that
+     * has not landed leaves that surface showing the position it was left on, which reads as the
+     * swap arriving in the wrong place and then correcting itself.
+     */
+    private fun commitRoleSwap(newSwapped: Boolean) {
         _isRolesSwapped.value = newSwapped
         sessionStateStore.setRolesSwapped(newSwapped)
+        mediaPlayerDisplayId = null
         onRoleSwapped?.invoke(newSwapped)
         companionHost?.onRoleSwapped(newSwapped)
         if (!newSwapped) companionHost?.refocusSelf()
@@ -2880,6 +2930,14 @@ class DualScreenManager(
         private const val COMPANION_LAUNCH_VERIFY_MS = 8000L
         private const val MAX_COMPANION_LAUNCH_ATTEMPTS = 3
         private const val SWAP_DEBOUNCE_MS = 500L
+
+        /**
+         * How long a swap waits for the incoming screen to settle before revealing it anyway.
+         *
+         * A restore can defer indefinitely while its section list is still loading, so the wait is
+         * bounded: a swap that feels late is a nuisance, a swap that never happens is a dead button.
+         */
+        private const val SWAP_PREPARE_TIMEOUT_MS = 400L
     }
 
     fun updateHomeApps(homeApps: Set<String>) {

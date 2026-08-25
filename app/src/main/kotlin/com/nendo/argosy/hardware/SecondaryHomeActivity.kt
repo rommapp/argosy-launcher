@@ -46,6 +46,7 @@ import com.nendo.argosy.util.hideSystemBars
 import com.nendo.argosy.util.installImmersiveMode
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
@@ -590,8 +591,25 @@ class SecondaryHomeActivity :
         }
     }
 
+    /**
+     * Adopts the shared position before taking the driven role, not after.
+     *
+     * Restoring once the role flag has already flipped lets this surface draw its own stale cursor
+     * for a frame and then correct itself, which reads as the swap landing in the wrong place and
+     * jumping.
+     */
     override fun onRoleSwapped(isSwapped: Boolean) {
-        isShowcaseRole = isSwapped
+        if (isSwapped || !::dualHomeViewModel.isInitialized) {
+            isShowcaseRole = isSwapped
+            return
+        }
+        dualHomeViewModel.restoreNavContextIfPresent(dsm.sessionStateStore.getCarouselNavContext())
+        lifecycleScope.launch {
+            kotlinx.coroutines.withTimeoutOrNull(SWAP_PREPARE_TIMEOUT_MS) {
+                dualHomeViewModel.restorePending.first { !it }
+            }
+            isShowcaseRole = false
+        }
     }
 
     override fun onOverlayClosed() {
@@ -866,11 +884,25 @@ class SecondaryHomeActivity :
         playFocusedMediaRow(index)
     }
 
+    /**
+     * Plays the row at [index], or the first playable row when the index does not name one.
+     *
+     * The cursor is meant to rest only on an item, but it is -1 until the first list arrives and a
+     * header can hold it while a rail is being rebuilt underneath. Confirming in either state used
+     * to return silently, which reads as the selector being dead rather than as a list that has not
+     * settled.
+     */
     private fun playFocusedMediaRow(index: Int) {
         val vm = dualMediaViewModel ?: return
-        vm.focusRow(index)
-        val row = vm.uiState.value.rows.getOrNull(index) as? DualMediaRow.Item ?: return
-        dsm.playMediaItem(row.item.itemId)
+        val rows = vm.uiState.value.rows
+        val target = rows.getOrNull(index) as? DualMediaRow.Item
+            ?: rows.filterIsInstance<DualMediaRow.Item>().firstOrNull()
+        if (target == null) {
+            android.util.Log.d("SecondaryHome", "playFocusedMediaRow: no playable row for index $index")
+            return
+        }
+        vm.focusRow(rows.indexOf(target))
+        dsm.playMediaItem(target.item.itemId)
     }
 
     private fun applyInputSwapState(state: SecondaryHomeStateManager.InputSwapState) {
@@ -1238,4 +1270,12 @@ class SecondaryHomeActivity :
 }
 
 private const val CONFIRM_HOLD_MS = 500L
+
+/**
+ * How long this screen waits to settle on the restored position before it takes the driven role.
+ *
+ * Bounded for the reason the primary's wait is: a restore can defer while its sections load, and a
+ * swap that never completes is worse than one that lands a beat late.
+ */
+private const val SWAP_PREPARE_TIMEOUT_MS = 400L
 private const val SESSION_END_POLL_MS = 3000L

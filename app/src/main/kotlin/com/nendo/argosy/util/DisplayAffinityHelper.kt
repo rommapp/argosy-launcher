@@ -75,6 +75,24 @@ class DisplayAffinityHelper @Inject constructor(
     }
 
     /**
+     * Which physical display holds each role: the one the viewer is driving, then the one
+     * describing what that screen has focused. Null on a single-screen device, where there are no
+     * roles to hold.
+     *
+     * The interactive display carries Home, Library and Media. A role swap is the only thing that
+     * moves them, so a caller asks which display holds its role instead of naming a display id,
+     * and keeps landing correctly after a swap.
+     */
+    fun getRoleDisplayIds(rolesSwapped: Boolean): Pair<Int, Int>? {
+        val secondary = secondaryDisplayId ?: return null
+        return if (rolesSwapped) {
+            Display.DEFAULT_DISPLAY to secondary
+        } else {
+            secondary to Display.DEFAULT_DISPLAY
+        }
+    }
+
+    /**
      * Where the video player belongs once a game has claimed [emulatorDisplayId]: the other physical
      * display. Null when there is no second display, which is the single-screen answer - nothing
      * moves and the player stays where it is.

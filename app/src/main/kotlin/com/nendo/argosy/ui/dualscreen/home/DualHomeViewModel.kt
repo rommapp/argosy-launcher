@@ -499,6 +499,18 @@ class DualHomeViewModel(
     /** Invoked once the lower carousel has settled on its restored section + game. */
     var onRestoreComplete: (() -> Unit)? = null
 
+    private val _restorePending = MutableStateFlow(false)
+
+    /**
+     * Whether a restore has been asked for and not yet landed.
+     *
+     * A caller that is about to reveal this surface waits on this so the screen is already sitting
+     * on the right section and game when it appears. It stays raised while a restore defers on a
+     * section list that has not loaded, so anyone waiting must bound the wait rather than assume it
+     * always falls.
+     */
+    val restorePending: StateFlow<Boolean> = _restorePending.asStateFlow()
+
     fun startDrawerForwarding() { _forwardingMode.value = ForwardingMode.OVERLAY }
     fun startBackgroundForwarding() { _forwardingMode.value = ForwardingMode.BACKGROUND }
     fun stopDrawerForwarding() { _forwardingMode.value = ForwardingMode.NONE }
@@ -897,6 +909,21 @@ class DualHomeViewModel(
         )
     }
 
+    /**
+     * Adopts a saved position, if there is one worth adopting.
+     *
+     * Called whenever this surface becomes the one being driven, not only when it is built. The two
+     * home surfaces each keep their own cursor in memory, so a role swap that does not re-read the
+     * shared context resumes wherever that instance was left rather than where the user just was,
+     * and the rail and selection appear to jump on their own.
+     */
+    fun restoreNavContextIfPresent(ctx: SessionStateStore.CarouselNavContext) {
+        val hasSomethingToRestore = ctx.hasContext ||
+            ctx.legacySectionIndex > 0 ||
+            ctx.legacySelectedIndex > 0
+        if (hasSomethingToRestore) restoreNavContext(ctx)
+    }
+
     fun restoreNavContext(ctx: SessionStateStore.CarouselNavContext) {
         pendingRestore = PendingRestore(
             sectionKind = ctx.sectionKind,
@@ -909,6 +936,7 @@ class DualHomeViewModel(
             hasIdentity = ctx.hasContext && ctx.sectionKind.isNotEmpty()
         )
         restoreDeferrals = 0
+        _restorePending.value = true
         viewModelScope.launch { applyPendingRestore() }
     }
 
@@ -960,7 +988,10 @@ class DualHomeViewModel(
     }
 
     private suspend fun applyPendingRestore() {
-        val pending = pendingRestore ?: return
+        val pending = pendingRestore ?: run {
+            _restorePending.value = false
+            return
+        }
         val sections = _uiState.value.sections
         if (sections.isEmpty()) return
 
@@ -984,6 +1015,7 @@ class DualHomeViewModel(
             )
         }
 
+        _restorePending.value = false
         onRestoreComplete?.invoke()
     }
 

@@ -988,7 +988,9 @@ class SecondaryHomeActivity :
             dsm.toggleCompanionMediaView()
             return
         }
-        dualHomeViewModel.enterMediaGrid()
+        dualHomeViewModel.enterMediaGrid {
+            broadcasts.broadcastViewModeChange()
+        }
     }
 
     fun confirmFocusedMediaRow() {

@@ -8,12 +8,16 @@ package com.nendo.argosy.ui.dualscreen.home
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.util.touchOnly
 
 @Composable
@@ -322,5 +326,37 @@ fun DualHomeLowerContent(
                     .touchOnly { onDimTapped() }
             )
         }
+
+        uiState.mediaNotice?.let { notice ->
+            MediaNoticeBanner(
+                message = notice,
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = Dimens.spacingXl)
+            )
+        }
+    }
+}
+
+/**
+ * A short-lived line of feedback for a media action that could not proceed. Non-interactive and
+ * self-dismissing, so it captures no input on either modality.
+ */
+@Composable
+private fun MediaNoticeBanner(message: String, modifier: Modifier = Modifier) {
+    androidx.compose.material3.Surface(
+        modifier = modifier,
+        shape = RoundedCornerShape(Dimens.radiusMd),
+        color = MaterialTheme.colorScheme.surfaceVariant,
+        contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+    ) {
+        androidx.compose.material3.Text(
+            text = message,
+            style = MaterialTheme.typography.bodyMedium,
+            modifier = Modifier.padding(
+                horizontal = Dimens.spacingLg,
+                vertical = Dimens.spacingSm
+            )
+        )
     }
 }

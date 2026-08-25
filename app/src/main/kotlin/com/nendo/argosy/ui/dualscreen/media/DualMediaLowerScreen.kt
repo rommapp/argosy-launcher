@@ -163,7 +163,12 @@ private fun DualMediaShowBody(
     val listState = rememberLazyListState()
     val nowPlayingIndex = state.episodes.indexOfFirst { it.itemId == state.nowPlayingEpisodeId }
 
-    LaunchedEffect(state.jumpNonce, state.episodeLayout, nowPlayingIndex >= 0) {
+    LaunchedEffect(
+        state.jumpNonce,
+        state.episodeLayout,
+        state.nowPlayingEpisodeId,
+        nowPlayingIndex >= 0
+    ) {
         if (nowPlayingIndex >= 0) listState.animateScrollToItem(nowPlayingIndex)
     }
 

@@ -369,6 +369,8 @@ class DualHomeInputHandler(
             }
             GamepadEvent.Back -> {
                 viewModel.exitToCarousel()
+                onBroadcastViewModeChange()
+                onBroadcastCurrentGameSelection()
                 InputResult.HANDLED
             }
             else -> InputResult.UNHANDLED

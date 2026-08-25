@@ -214,6 +214,8 @@ class SecondaryHomeInputHandler(
             }
             GamepadEvent.Back -> {
                 vm.exitToCarousel()
+                broadcasts.broadcastViewModeChange()
+                broadcasts.broadcastCurrentGameSelection()
                 InputResult.HANDLED
             }
             else -> InputResult.UNHANDLED

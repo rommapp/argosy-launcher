@@ -11,6 +11,7 @@ import com.nendo.argosy.domain.usecase.media.GetRelatedMediaUseCase
 import com.nendo.argosy.ui.input.InputHandler
 import com.nendo.argosy.ui.input.InputResult
 import com.nendo.argosy.ui.screens.media.delegates.MediaDownloadDelegate
+import com.nendo.argosy.ui.screens.media.delegates.MediaDownloadPromptOutcome
 import com.nendo.argosy.ui.screens.media.delegates.MediaSeriesDelegate
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
@@ -309,8 +310,12 @@ class MediaDetailViewModel @Inject constructor(
         val item = state.item ?: return
         val target = if (state.section == MediaDetailSection.EPISODES) state.focusedEpisode ?: item else item
         viewModelScope.launch {
-            val prompt = downloadDelegate.openPrompt(target)
-            _uiState.update { it.copy(downloadPrompt = prompt) }
+            when (val outcome = downloadDelegate.openPrompt(target)) {
+                is MediaDownloadPromptOutcome.Ready ->
+                    _uiState.update { it.copy(downloadPrompt = outcome.prompt) }
+                is MediaDownloadPromptOutcome.Refused ->
+                    _uiState.update { it.copy(episodesErrorMessage = outcome.reason) }
+            }
         }
     }
 

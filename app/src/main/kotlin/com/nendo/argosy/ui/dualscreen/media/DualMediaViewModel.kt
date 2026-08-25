@@ -15,6 +15,7 @@ import com.nendo.argosy.ui.screens.media.MediaSeasonUi
 import com.nendo.argosy.ui.screens.media.toCastUi
 import com.nendo.argosy.ui.screens.media.toMediaItemUi
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -30,6 +31,15 @@ import kotlinx.coroutines.launch
 private const val CONTINUE_WATCHING_LABEL = "Continue Watching"
 private const val NEXT_UP_LABEL = "Next Up"
 private const val MORE_LIKE_THIS_LABEL = "More Like This"
+
+/**
+ * How long a playback gap is treated as an episode switch rather than a stop. The player closes
+ * the outgoing item before the incoming one has negotiated, so every switch passes through a
+ * multi-second window with no open item; tearing the episode browser down to the rails during
+ * that window is what blanked the panel between episodes. A gap that outlives this is a real
+ * stop and falls through to the rails as before.
+ */
+private const val PLAYBACK_SWITCH_GRACE_MS = 5_000L
 
 /**
  * The companion's view of what is being watched.
@@ -89,7 +99,10 @@ class DualMediaViewModel(
             playback
                 .map { it?.itemId }
                 .distinctUntilChanged()
-                .collect { itemId ->
+                .collectLatest { itemId ->
+                    if (itemId == null && _uiState.value.isShowMode) {
+                        delay(PLAYBACK_SWITCH_GRACE_MS)
+                    }
                     selectedSeasonId.value = null
                     _uiState.update { it.copy(isSeasonPickerOpen = false) }
                     if (isActive) restart(itemId)
@@ -97,8 +110,11 @@ class DualMediaViewModel(
         }
         availabilityVerifier?.let { verifier ->
             viewModelScope.launch {
-                verifier.availability
-                    .collect { if (isActive) restart(playback.value?.itemId) }
+                verifier.availability.collect {
+                    val itemId = playback.value?.itemId
+                    if (itemId == null && _uiState.value.isShowMode) return@collect
+                    if (isActive) restart(itemId)
+                }
             }
         }
     }

@@ -32,6 +32,16 @@ private const val BYTES_PER_GIGABYTE = 1024.0 * 1024.0 * 1024.0
 private const val STORAGE_HEADROOM_BYTES = 200L * 1024 * 1024
 
 /**
+ * The answer to asking for a download prompt: either the prompt itself, or the reason there is
+ * none. A refusal carries user-facing words because the caller's only correct move is to show
+ * them - closing the menu with nothing said reads as the button doing nothing.
+ */
+sealed interface MediaDownloadPromptOutcome {
+    data class Ready(val prompt: MediaDownloadPrompt) : MediaDownloadPromptOutcome
+    data class Refused(val reason: String) : MediaDownloadPromptOutcome
+}
+
+/**
  * The download half of a media detail view.
  *
  * A series opens the episode chooser and is asked at what quality afterwards, because the answer to
@@ -96,15 +106,18 @@ class MediaDownloadDelegate @Inject constructor(
     }
 
     /**
-     * A movie is asked only for a quality; a series opens the chooser.
+     * A movie is asked only for a quality; a series opens the chooser, or answers with the reason
+     * the chooser cannot be built.
      */
-    suspend fun openPrompt(item: MediaItemUi): MediaDownloadPrompt? {
+    suspend fun openPrompt(item: MediaItemUi): MediaDownloadPromptOutcome {
         if (!item.isSeries) {
-            return qualityPrompt(
-                title = item.title,
-                targets = listOf(item.itemId),
-                totalRuntimeTicks = item.runTimeTicks ?: 0,
-                allowRemove = item.isDownloaded
+            return MediaDownloadPromptOutcome.Ready(
+                qualityPrompt(
+                    title = item.title,
+                    targets = listOf(item.itemId),
+                    totalRuntimeTicks = item.runTimeTicks ?: 0,
+                    allowRemove = item.isDownloaded
+                )
             )
         }
         return episodesPrompt(item)
@@ -115,21 +128,34 @@ class MediaDownloadDelegate @Inject constructor(
      *
      * Episodes arrive a season at a time and only a screen that has opened the show has asked for
      * any. A caller that starts from a grid tile has none stored, and refusing there would say the
-     * show cannot be downloaded when the truth is that nobody had looked yet.
+     * show cannot be downloaded when the truth is that nobody had looked yet. A refusal says which
+     * of the two things went wrong: the fetch did not answer, or it answered with nothing.
      */
-    private suspend fun episodesPrompt(item: MediaItemUi): MediaDownloadPrompt? {
+    private suspend fun episodesPrompt(item: MediaItemUi): MediaDownloadPromptOutcome {
         var rows = episodePickerRows(item.itemId)
-        if (rows.isEmpty() && resolveMediaPlayTarget.fetchFirstSeason(item.itemId)) {
-            rows = episodePickerRows(item.itemId)
+        var fetchFailed = false
+        if (rows.isEmpty()) {
+            fetchFailed = !resolveMediaPlayTarget.fetchFirstSeason(item.itemId)
+            if (!fetchFailed) rows = episodePickerRows(item.itemId)
         }
-        if (rows.isEmpty()) return null
-        return MediaDownloadPrompt(
-            step = MediaDownloadStep.EPISODES,
-            title = item.title,
-            subtitle = "Choose episodes",
-            episodes = EpisodePickerState(
-                selection = EpisodeSelection(rows = rows),
-                quickActions = quickActionsFor(item.itemId)
+        if (rows.isEmpty()) {
+            return MediaDownloadPromptOutcome.Refused(
+                if (fetchFailed) {
+                    "Couldn't get this show's episodes from the server"
+                } else {
+                    "No episodes were found for this show"
+                }
+            )
+        }
+        return MediaDownloadPromptOutcome.Ready(
+            MediaDownloadPrompt(
+                step = MediaDownloadStep.EPISODES,
+                title = item.title,
+                subtitle = "Choose episodes",
+                episodes = EpisodePickerState(
+                    selection = EpisodeSelection(rows = rows),
+                    quickActions = quickActionsFor(item.itemId)
+                )
             )
         )
     }

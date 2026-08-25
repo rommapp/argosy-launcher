@@ -76,6 +76,7 @@ private const val SECTION_KIND_MEDIA = "MEDIA"
 private const val RESTORE_MAX_DEFERRALS = 8
 private const val MEDIA_RESUME_START_OVER_INDEX = 0
 private const val MEDIA_RESUME_OPTION_COUNT = 2
+private const val MEDIA_NOTICE_DURATION_MS = 4000L
 
 sealed class DualHomeSection(
     val kind: HomeSectionKind,
@@ -257,7 +258,8 @@ data class DualHomeUiState(
         emptyMap(),
     val mediaMenu: DualMediaMenuState? = null,
     val mediaDownloadPrompt: com.nendo.argosy.ui.screens.media.MediaDownloadPrompt? = null,
-    val mediaPromptItem: com.nendo.argosy.ui.screens.media.MediaItemUi? = null
+    val mediaPromptItem: com.nendo.argosy.ui.screens.media.MediaItemUi? = null,
+    val mediaNotice: String? = null
 ) {
     val currentSection: DualHomeSection?
         get() = sections.getOrNull(currentSectionIndex)
@@ -560,6 +562,7 @@ class DualHomeViewModel(
     private var latestDownloads: Map<Long, com.nendo.argosy.data.local.entity.DownloadQueueEntity> = emptyMap()
     private val pendingCoverRepairs = mutableSetOf<Long>()
     private var letterOverlayJob: kotlinx.coroutines.Job? = null
+    private var mediaNoticeJob: kotlinx.coroutines.Job? = null
 
     private data class PendingRestore(
         val sectionKind: String,
@@ -1309,6 +1312,20 @@ class DualHomeViewModel(
 
     fun closeMediaMenu() = _uiState.update { it.copy(mediaMenu = null) }
 
+    /**
+     * Says something a menu action could not do, on this screen, and takes the words back down on
+     * its own. The alternative was the menu closing over a silent failure, which reads as the
+     * action having worked.
+     */
+    private fun showMediaNotice(message: String) {
+        mediaNoticeJob?.cancel()
+        _uiState.update { it.copy(mediaNotice = message) }
+        mediaNoticeJob = viewModelScope.launch {
+            kotlinx.coroutines.delay(MEDIA_NOTICE_DURATION_MS)
+            _uiState.update { it.copy(mediaNotice = null) }
+        }
+    }
+
     fun moveMediaMenuFocus(delta: Int) = _uiState.update { state ->
         val menu = state.mediaMenu ?: return@update state
         val maxIndex = (menu.actions.size - 1).coerceAtLeast(0)
@@ -1329,9 +1346,14 @@ class DualHomeViewModel(
                     reloadMediaSurfaces()
                 }
             DualMediaMenuAction.DOWNLOAD -> viewModelScope.launch {
-                val prompt = mediaDownloadDelegate?.openPrompt(menu.item) ?: return@launch
-                _uiState.update {
-                    it.copy(mediaDownloadPrompt = prompt, mediaPromptItem = menu.item)
+                when (val outcome = mediaDownloadDelegate?.openPrompt(menu.item)) {
+                    is com.nendo.argosy.ui.screens.media.delegates.MediaDownloadPromptOutcome.Ready ->
+                        _uiState.update {
+                            it.copy(mediaDownloadPrompt = outcome.prompt, mediaPromptItem = menu.item)
+                        }
+                    is com.nendo.argosy.ui.screens.media.delegates.MediaDownloadPromptOutcome.Refused ->
+                        showMediaNotice(outcome.reason)
+                    null -> Unit
                 }
             }
             DualMediaMenuAction.REMOVE_DOWNLOADS -> viewModelScope.launch {

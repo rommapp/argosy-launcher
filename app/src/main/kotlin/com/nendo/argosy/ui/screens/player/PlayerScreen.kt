@@ -96,6 +96,18 @@ fun PlayerScreen(viewModel: PlayerViewModel) {
             )
         }
 
+        val countdown = state.autoplayCountdownSeconds
+        val next = state.nextEpisode
+        if (countdown != null && next != null) {
+            PlayerAutoplayPanel(
+                label = next.label,
+                secondsRemaining = countdown,
+                onPlayNow = { viewModel.confirmAutoplay() },
+                onCancel = { viewModel.cancelAutoplay() },
+                modifier = Modifier.align(Alignment.Center)
+            )
+        }
+
         PlayerOverlayHost(
             state = state,
             onSelect = { index ->
@@ -188,6 +200,47 @@ private fun PlayerErrorPanel(
         Row(horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm)) {
             PanelButton(label = "Try Again", focused = true, onClick = onRetry)
             PanelButton(label = "Close", focused = false, onClick = onClose)
+        }
+    }
+}
+
+/**
+ * The offer of the next episode, with the seconds left to refuse it.
+ *
+ * Confirm takes it now and Back declines, which is what the pad already does here, so the two
+ * buttons exist for touch rather than as the only way through.
+ */
+@Composable
+private fun PlayerAutoplayPanel(
+    label: String,
+    secondsRemaining: Int,
+    onPlayNow: () -> Unit,
+    onCancel: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val theme = LocalArgosyTheme.current
+    val shape = RoundedCornerShape(Dimens.radiusPanel)
+    Column(
+        modifier = modifier
+            .width(Dimens.modalWidth)
+            .clip(shape)
+            .background(theme.surfaceElevated)
+            .padding(Dimens.spacingLg),
+        verticalArrangement = Arrangement.spacedBy(Dimens.spacingMd)
+    ) {
+        Text(
+            text = "Up next in $secondsRemaining",
+            style = MaterialTheme.typography.labelMedium,
+            color = theme.textDim
+        )
+        Text(
+            text = label,
+            style = MaterialTheme.typography.titleMedium,
+            color = theme.textPrimary
+        )
+        Row(horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm)) {
+            PanelButton(label = "Play Now", focused = true, onClick = onPlayNow)
+            PanelButton(label = "Stop", focused = false, onClick = onCancel)
         }
     }
 }

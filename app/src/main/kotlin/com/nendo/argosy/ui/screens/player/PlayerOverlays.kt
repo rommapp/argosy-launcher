@@ -49,6 +49,40 @@ fun PlayerOverlayHost(
         PlayerOverlay.AUDIO_TRACKS -> AudioTrackOverlay(state, onSelect, onDismiss)
         PlayerOverlay.SUBTITLE_TRACKS -> SubtitleTrackOverlay(state, onSelect, onDismiss)
         PlayerOverlay.CHAPTERS -> ChapterOverlay(state, onSelect, onDismiss)
+        PlayerOverlay.QUALITY -> QualityOverlay(state, onSelect, onDismiss)
+    }
+}
+
+/**
+ * Picks the ceiling this viewing streams at.
+ *
+ * The choice lasts for this viewing only, so the row marked as current is the one in force now
+ * rather than the saved preference; changing it re-negotiates and picks the picture back up where
+ * it was.
+ */
+@Composable
+private fun QualityOverlay(
+    state: PlayerUiState,
+    onSelect: (Int) -> Unit,
+    onDismiss: () -> Unit
+) {
+    val tiers = com.nendo.argosy.data.preferences.MediaStreamingQuality.entries
+    Modal(
+        title = "Quality",
+        baseWidth = Dimens.modalWidth,
+        onDismiss = onDismiss,
+        footerHints = listOf(InputButton.A to "Use", InputButton.B to "Close")
+    ) {
+        OverlayList(selectedIndex = state.overlayIndex, itemCount = tiers.size) { index ->
+            val tier = tiers[index]
+            OverlayRow(
+                label = tier.displayName,
+                supporting = null,
+                selected = tier == state.streamingQuality,
+                focused = index == state.overlayIndex,
+                onClick = { onSelect(index) }
+            )
+        }
     }
 }
 

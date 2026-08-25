@@ -50,6 +50,10 @@ class PlayerInputHandler(
     }
 
     override fun onConfirm(): InputResult = whenReady {
+        if (state.autoplayCountdownSeconds != null) {
+            viewModel.confirmAutoplay()
+            return@whenReady InputResult.HANDLED
+        }
         if (state.errorMessage != null) {
             viewModel.retry()
             return@whenReady InputResult.HANDLED
@@ -66,6 +70,10 @@ class PlayerInputHandler(
     }
 
     override fun onBack(): InputResult {
+        if (state.autoplayCountdownSeconds != null) {
+            viewModel.cancelAutoplay()
+            return InputResult.HANDLED
+        }
         if (state.overlay == PlayerOverlay.NONE) viewModel.requestExit() else chrome.closeOverlay()
         return InputResult.HANDLED
     }

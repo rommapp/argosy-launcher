@@ -7,6 +7,7 @@ import com.nendo.argosy.data.media.MediaSubtitleDelivery
 import com.nendo.argosy.data.media.subtitleDeliveryFor
 import com.nendo.argosy.data.preferences.JellyfinPreferences
 import com.nendo.argosy.data.preferences.JellyfinPreferencesRepository
+import com.nendo.argosy.data.preferences.MediaStreamingQuality
 import com.nendo.argosy.data.preferences.MediaSubtitleMode
 import com.nendo.argosy.data.remote.jellyfin.JellyfinApiClient
 import com.nendo.argosy.data.remote.jellyfin.JellyfinDeviceProfileBuilder
@@ -73,7 +74,8 @@ class PlaybackNegotiator @Inject constructor(
         burnInImageSubtitles: Boolean,
         audioStreamIndex: Int? = null,
         subtitleStreamIndex: Int? = null,
-        mediaSourceId: String? = null
+        mediaSourceId: String? = null,
+        qualityOverride: MediaStreamingQuality? = null
     ): PlaybackNegotiation = withContext(Dispatchers.IO) {
         val localCopy = availabilityVerifier.verify(itemId)
         val fromDisk = if (localCopy.playsFromDisk) downloadedPlayback(itemId) else null
@@ -88,7 +90,7 @@ class PlaybackNegotiator @Inject constructor(
         val userId = apiClient.currentUserId()
             ?: return@withContext PlaybackNegotiation.Failed("Not signed in to Jellyfin")
 
-        val tier = prefs.streamingQuality
+        val tier = qualityOverride ?: prefs.streamingQuality
         val bitrateKbps = tier.maxBitrateKbps
         val profile = profileBuilder.build(
             maxStreamingBitrateKbps = bitrateKbps,

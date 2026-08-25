@@ -107,6 +107,9 @@ class PlayerChromeDelegate(
             PlayerOverlay.CHAPTERS -> current.chapters
                 .indexOfLast { it.startMs <= current.positionMs }
                 .coerceAtLeast(0)
+            PlayerOverlay.QUALITY -> com.nendo.argosy.data.preferences.MediaStreamingQuality.entries
+                .indexOf(current.streamingQuality)
+                .coerceAtLeast(0)
             PlayerOverlay.NONE -> 0
         }
         cancelTimer()

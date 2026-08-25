@@ -28,13 +28,14 @@ enum class PlayerControl(val group: PlayerControlGroup) {
     AUDIO(PlayerControlGroup.CONTENT),
     SUBTITLES(PlayerControlGroup.CONTENT),
     CHAPTERS(PlayerControlGroup.CONTENT),
+    QUALITY(PlayerControlGroup.CONTENT),
     NEXT_EPISODE(PlayerControlGroup.ITEM),
     MARK_WATCHED(PlayerControlGroup.ITEM),
     CLOSE(PlayerControlGroup.ITEM),
     SKIP(PlayerControlGroup.PROMPT)
 }
 
-enum class PlayerOverlay { NONE, AUDIO_TRACKS, SUBTITLE_TRACKS, CHAPTERS }
+enum class PlayerOverlay { NONE, AUDIO_TRACKS, SUBTITLE_TRACKS, CHAPTERS, QUALITY }
 
 /**
  * One selectable audio or subtitle stream.
@@ -193,7 +194,9 @@ data class PlayerUiState(
     val trickplay: PlayerTrickplay? = null,
     val trickplayAuthHeader: String? = null,
     val isWatched: Boolean = false,
-    val nextEpisode: PlayerNextEpisode? = null
+    val nextEpisode: PlayerNextEpisode? = null,
+    val autoplayCountdownSeconds: Int? = null,
+    val streamingQuality: com.nendo.argosy.data.preferences.MediaStreamingQuality? = null
 ) {
     /**
      * The transport row is derived from what this item actually offers rather than drawn with dead
@@ -209,6 +212,7 @@ data class PlayerUiState(
             if (audioTracks.size > 1) add(PlayerControl.AUDIO)
             if (subtitleTracks.isNotEmpty()) add(PlayerControl.SUBTITLES)
             if (chapters.isNotEmpty()) add(PlayerControl.CHAPTERS)
+            if (!isLocalPlayback) add(PlayerControl.QUALITY)
             if (nextEpisode != null) add(PlayerControl.NEXT_EPISODE)
             add(PlayerControl.MARK_WATCHED)
             add(PlayerControl.CLOSE)
@@ -254,6 +258,8 @@ data class PlayerUiState(
             PlayerOverlay.AUDIO_TRACKS -> audioTracks.size
             PlayerOverlay.SUBTITLE_TRACKS -> subtitleTracks.size + subtitleExtraRows
             PlayerOverlay.CHAPTERS -> chapters.size
+            PlayerOverlay.QUALITY ->
+                com.nendo.argosy.data.preferences.MediaStreamingQuality.entries.size
             PlayerOverlay.NONE -> 0
         }
 

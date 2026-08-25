@@ -32,6 +32,7 @@ import androidx.compose.material.icons.filled.Forward10
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Replay10
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.Subtitles
 import androidx.compose.material3.Icon
@@ -386,6 +387,7 @@ private fun PlayerControl.icon(isPlaying: Boolean, isWatched: Boolean): ImageVec
     PlayerControl.AUDIO -> Icons.Default.Audiotrack
     PlayerControl.SUBTITLES -> Icons.Default.Subtitles
     PlayerControl.CHAPTERS -> Icons.Default.FormatListBulleted
+    PlayerControl.QUALITY -> Icons.Default.Settings
     PlayerControl.NEXT_EPISODE -> Icons.Default.SkipNext
     PlayerControl.MARK_WATCHED ->
         if (isWatched) Icons.Default.CheckCircle else Icons.Default.CheckCircleOutline
@@ -416,6 +418,7 @@ private fun PlayerUiState.controlLabel(control: PlayerControl): String = when (c
     PlayerControl.AUDIO -> "Audio Track"
     PlayerControl.SUBTITLES -> "Subtitles"
     PlayerControl.CHAPTERS -> "Chapters"
+    PlayerControl.QUALITY -> streamingQuality?.displayName ?: "Quality"
     PlayerControl.NEXT_EPISODE -> nextEpisode?.label
         ?.takeIf { it.isNotBlank() }
         ?.let { "Next Episode  $it" }

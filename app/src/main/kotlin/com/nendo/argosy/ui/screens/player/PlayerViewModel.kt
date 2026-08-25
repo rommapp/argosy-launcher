@@ -39,6 +39,7 @@ private const val POSITION_TICK_MS = 250L
 private const val SCRUB_COMMIT_DELAY_MS = 600L
 private const val NEAR_END_MS = 15_000L
 private const val CHAPTER_BACK_GRACE_MS = 3_000L
+private const val AUTOPLAY_COUNTDOWN_SECONDS = 10
 private const val FULLY_PLAYED_PERCENT = 100.0
 
 /**
@@ -129,6 +130,7 @@ class PlayerViewModel @Inject constructor(
 
     private var startJob: Job? = null
     private var positionJob: Job? = null
+    private var autoplayJob: Job? = null
     private var scrubCommitJob: Job? = null
 
     private val playerListener = object : Player.Listener {
@@ -267,7 +269,8 @@ class PlayerViewModel @Inject constructor(
             burnInImageSubtitles = state.burnInImageSubtitles,
             audioStreamIndex = audioStreamIndex ?: state.selectedAudioStreamIndex,
             subtitleStreamIndex = subtitleStreamIndex ?: state.selectedSubtitleStreamIndex,
-            mediaSourceId = currentPlayback?.mediaSourceId
+            mediaSourceId = currentPlayback?.mediaSourceId,
+            qualityOverride = state.streamingQuality
         )
 
         when (negotiation) {
@@ -400,7 +403,68 @@ class PlayerViewModel @Inject constructor(
     private fun onPlaybackCompleted() {
         val duration = _uiState.value.durationMs
         endMediaSession(if (duration > 0) duration else currentItemPositionMs())
+        if (_uiState.value.nextEpisode == null) {
+            eventChannel.trySend(PlayerEvent.Finish)
+            return
+        }
+        startAutoplayCountdown()
+    }
+
+    /**
+     * Offers the next episode rather than starting it, and closes if nobody answers.
+     *
+     * A countdown is the only part of this that is a choice: rolling straight on is how a season
+     * plays itself out to an empty room, and stopping dead every time is how a viewer ends up
+     * reaching for the pad between every episode. The window is short enough to ignore and long
+     * enough to refuse.
+     */
+    private fun startAutoplayCountdown() {
+        autoplayJob?.cancel()
+        autoplayJob = viewModelScope.launch {
+            for (remaining in AUTOPLAY_COUNTDOWN_SECONDS downTo 1) {
+                _uiState.update { it.copy(autoplayCountdownSeconds = remaining) }
+                kotlinx.coroutines.delay(1000)
+            }
+            clearAutoplayCountdown()
+            playNextEpisode()
+        }
+    }
+
+    private fun clearAutoplayCountdown() {
+        autoplayJob?.cancel()
+        autoplayJob = null
+        _uiState.update { it.copy(autoplayCountdownSeconds = null) }
+    }
+
+    /**
+     * Changes the streaming quality of the viewing in progress.
+     *
+     * The server treats a new ceiling as a new session, so this goes through the same reload that a
+     * track change does and resumes at the position it was at. It holds for this viewing only; the
+     * saved preference is what the next one starts from, because a one-off drop on a weak
+     * connection is not a statement about how everything should look from now on.
+     */
+    fun setStreamingQuality(quality: com.nendo.argosy.data.preferences.MediaStreamingQuality) {
+        if (_uiState.value.streamingQuality == quality) return
+        _uiState.update { it.copy(streamingQuality = quality) }
+        chrome.closeOverlay()
+        reload()
+    }
+
+    /**
+     * Declines the next episode. The item is over, so declining closes the window.
+     */
+    fun cancelAutoplay() {
+        clearAutoplayCountdown()
         eventChannel.trySend(PlayerEvent.Finish)
+    }
+
+    /**
+     * Takes the next episode now rather than waiting the countdown out.
+     */
+    fun confirmAutoplay() {
+        clearAutoplayCountdown()
+        playNextEpisode()
     }
 
     /**
@@ -610,6 +674,10 @@ class PlayerViewModel @Inject constructor(
                 tracks.selectSubtitleTrack(state.overlayIndex - 1)
             }
             PlayerOverlay.CHAPTERS -> playChapter(state.overlayIndex)
+            PlayerOverlay.QUALITY ->
+                com.nendo.argosy.data.preferences.MediaStreamingQuality.entries
+                    .getOrNull(state.overlayIndex)
+                    ?.let { setStreamingQuality(it) }
             PlayerOverlay.NONE -> Unit
         }
     }
@@ -657,6 +725,7 @@ class PlayerViewModel @Inject constructor(
             PlayerControl.AUDIO -> chrome.openOverlay(PlayerOverlay.AUDIO_TRACKS)
             PlayerControl.SUBTITLES -> chrome.openOverlay(PlayerOverlay.SUBTITLE_TRACKS)
             PlayerControl.CHAPTERS -> chrome.openOverlay(PlayerOverlay.CHAPTERS)
+            PlayerControl.QUALITY -> chrome.openOverlay(PlayerOverlay.QUALITY)
             PlayerControl.NEXT_EPISODE -> playNextEpisode()
             PlayerControl.MARK_WATCHED -> toggleWatched()
             PlayerControl.CLOSE -> requestExit()

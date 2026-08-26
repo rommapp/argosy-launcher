@@ -42,6 +42,7 @@ class N3dsFolderHandlerDiscoveryTest {
             gciSaveHandler = mockk(relaxed = true),
             retroArchSaveHandler = mockk(relaxed = true),
             defaultSaveHandler = mockk(relaxed = true),
+            dreamcastSaveHandler = mockk(relaxed = true),
         )
         handler = registry.getFolderHandler("3ds") ?: error("3DS handler not registered")
     }

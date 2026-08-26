@@ -60,6 +60,7 @@ class Ps2ArchiveShapeTest {
             gciSaveHandler = mockk(relaxed = true),
             retroArchSaveHandler = mockk(relaxed = true),
             defaultSaveHandler = mockk(relaxed = true),
+            dreamcastSaveHandler = mockk(relaxed = true),
         )
         handler = registry.getFolderHandler("ps2") ?: error("PS2 handler not registered")
 

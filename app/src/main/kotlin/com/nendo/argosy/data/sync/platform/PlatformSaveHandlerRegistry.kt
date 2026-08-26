@@ -35,6 +35,7 @@ class PlatformSaveHandlerRegistry @Inject constructor(
     private val switchSaveHandler: SwitchSaveHandler,
     private val gciSaveHandler: GciSaveHandler,
     private val retroArchSaveHandler: RetroArchSaveHandler,
+    private val dreamcastSaveHandler: DreamcastSaveHandler,
     private val defaultSaveHandler: DefaultSaveHandler
 ) {
     /**
@@ -74,6 +75,7 @@ class PlatformSaveHandlerRegistry @Inject constructor(
         }
         if (emulatorId in RETROARCH_EMULATOR_IDS) return retroArchSaveHandler
         if (canonical == "switch") return switchSaveHandler
+        if (canonical == "dreamcast") return dreamcastSaveHandler
         return folderHandlers[canonical] ?: defaultSaveHandler
     }
 
@@ -402,9 +404,15 @@ private class N3dsFolderHandler(
         return bestMatchPath
     }
 
+    /**
+     * Both id segments are written lowercase because that is the case the emulator writes, and
+     * internal storage is case-sensitive: an uppercase segment creates a second directory the
+     * emulator never reads. Normalizing here rather than trusting the caller covers the save ids
+     * already cached on game rows in the case they were first extracted with.
+     */
     override fun constructSavePath(baseDir: String, saveId: String): String? {
-        val category = if (saveId.length >= 16) saveId.take(8) else DEFAULT_CATEGORY
-        val shortTitleId = if (saveId.length > 8) saveId.takeLast(8) else saveId
+        val category = (if (saveId.length >= 16) saveId.take(8) else DEFAULT_CATEGORY).lowercase()
+        val shortTitleId = (if (saveId.length > 8) saveId.takeLast(8) else saveId).lowercase()
 
         val id0Folder = fal.listFiles(baseDir)?.firstOrNull { it.isDirectory }
         if (id0Folder == null) {

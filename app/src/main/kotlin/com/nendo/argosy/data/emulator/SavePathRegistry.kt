@@ -621,6 +621,20 @@ object SavePathRegistry {
             supported = true
         ),
 
+        /**
+         * Flycast never implements RETRO_MEMORY_SAVE_RAM, so a Dreamcast save is a VMU image and
+         * never a `.srm`. With per-content VMUs on, the core writes port A1 as
+         * `<product number>.A1.bin` into the libretro save directory; the shared card under the
+         * system directory holds every game at once and is deliberately not a sync target.
+         */
+        "${BUILTIN_EMULATOR_ID}_dreamcast" to SavePathConfig(
+            emulatorId = BUILTIN_EMULATOR_ID,
+            defaultPaths = listOf("{filesDir}/${AppPaths.LIBRETRO_SAVES_SUBDIR}"),
+            saveExtensions = listOf("bin"),
+            usesInternalStorage = true,
+            supported = true
+        ),
+
         "${BUILTIN_EMULATOR_ID}_dsi" to SavePathConfig(
             emulatorId = BUILTIN_EMULATOR_ID,
             defaultPaths = listOf("{filesDir}/${AppPaths.LIBRETRO_SAVES_SUBDIR}"),

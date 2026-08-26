@@ -42,6 +42,7 @@ class UserChosenSavePathTest {
             gciSaveHandler = mockk(relaxed = true),
             retroArchSaveHandler = mockk(relaxed = true),
             defaultSaveHandler = mockk(relaxed = true),
+            dreamcastSaveHandler = mockk(relaxed = true),
         )
     }
 

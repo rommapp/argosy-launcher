@@ -192,10 +192,12 @@ class SavePathResolver @Inject constructor(
             return@withContext null
         }
 
+        val saveIdNames = saveIdFileNames(config, platformSlug, romPath, cachedSaveId, emulatorPackage, gameId)
+
         val perGameDir = perGameSaveDir(gameId, config, platformSlug)
         if (perGameDir != null) {
             if (romPath != null) {
-                val savePath = findSaveByRomName(perGameDir, romPath, config.saveExtensions)
+                val savePath = findSaveByRomName(perGameDir, romPath, config.saveExtensions, saveIdNames)
                 if (savePath != null) {
                     onDecision("perGame+romName", null, perGameDir)
                     return@withContext savePath
@@ -241,7 +243,7 @@ class SavePathResolver @Inject constructor(
                 }
             }
             if (romPath != null) {
-                val savePath = findSaveByRomName(overrideBaseDir, romPath, config.saveExtensions)
+                val savePath = findSaveByRomName(overrideBaseDir, romPath, config.saveExtensions, saveIdNames)
                 if (savePath != null) {
                     onDecision("override+romName", selectedMemcardForLog, savePathOverrideForLog)
                     return@withContext savePath
@@ -302,7 +304,7 @@ class SavePathResolver @Inject constructor(
 
         if (romPath != null) {
             for (basePath in paths) {
-                val savePath = findSaveByRomName(basePath, romPath, config.saveExtensions)
+                val savePath = findSaveByRomName(basePath, romPath, config.saveExtensions, saveIdNames)
                 if (savePath != null) {
                     Logger.debug(TAG, "discoverSavePath: ROM-based match found at $savePath")
                     onDecision("byRomName", selectedMemcardForLog, savePathOverrideForLog)
@@ -536,7 +538,68 @@ class SavePathResolver @Inject constructor(
         return newest
     }
 
-    private fun findSaveByRomName(basePath: String, romPath: String, extensions: List<String>): String? {
+    /**
+     * The file names this platform derives from the disc's save id, empty for the platforms that
+     * name a save after the rom. Resolving the id is what costs something, so the handler is asked
+     * whether it needs one before any ROM is read.
+     */
+    private suspend fun saveIdFileNames(
+        config: SavePathConfig,
+        platformSlug: String,
+        romPath: String?,
+        cachedSaveId: String?,
+        emulatorPackage: String?,
+        gameId: Long?
+    ): List<String> {
+        val handler = saveHandlerRegistry.getHandler(config, platformSlug, config.emulatorId)
+        if (!handler.namesSavesBySaveId) return emptyList()
+        val saveId = resolveFileSaveId(platformSlug, romPath, cachedSaveId, emulatorPackage, gameId)
+            ?: return emptyList()
+        val names = handler.saveFileBaseNames(saveId)
+        Logger.debug(TAG, "[SaveSync] DISCOVER | Save-id file names | platform=$platformSlug, saveId=$saveId, names=$names")
+        return names
+    }
+
+    /**
+     * The disc's save id for a file-named platform: the caller's cached value when it has one,
+     * otherwise sigil. A freshly extracted id is cached on the game row under the same rule folder
+     * discovery uses - fill in a missing save id, and only establish the title id and its lock when
+     * the row carries none.
+     */
+    private suspend fun resolveFileSaveId(
+        platformSlug: String,
+        romPath: String?,
+        cachedSaveId: String?,
+        emulatorPackage: String?,
+        gameId: Long?
+    ): String? {
+        cachedSaveId?.takeIf { it.isNotBlank() }?.let { return it }
+        val romFile = romPath?.let { File(it) } ?: return null
+        val extracted = titleIdExtractor.extractTitleIdWithSource(romFile, platformSlug, emulatorPackage)
+            ?: return null
+
+        val stored = gameId?.let { gameDao.getById(it) }
+        if (gameId != null && stored?.saveId.isNullOrBlank()) {
+            if (!stored?.titleId.isNullOrBlank()) {
+                gameDao.setSaveId(gameId, extracted.saveId)
+            } else {
+                gameDao.setTitleAndSaveIdWithLock(gameId, extracted.titleId, extracted.saveId, extracted.fromBinary)
+            }
+        }
+        return extracted.saveId
+    }
+
+    /**
+     * [saveIdBaseNames] are the names a platform derives from the disc's own id rather than from
+     * the rom file, and they are tried first: a per-game card named for the disc is the save the
+     * emulator actually writes, while a rom-named file beside it is at best a legacy copy.
+     */
+    private fun findSaveByRomName(
+        basePath: String,
+        romPath: String,
+        extensions: List<String>,
+        saveIdBaseNames: List<String> = emptyList()
+    ): String? {
         if (!fal.exists(basePath) || !fal.isDirectory(basePath)) {
             Logger.verbose(TAG) { "findSaveByRomName: dir does not exist: $basePath" }
             return null
@@ -544,10 +607,12 @@ class SavePathResolver @Inject constructor(
 
         val romFile = File(romPath)
         val romName = romFile.nameWithoutExtension
-        val candidateNames = listOfNotNull(
-            romName,
-            com.nendo.argosy.data.emulator.ArchiveRomNaming.launchBaseName(romFile)
-        ).distinct()
+        val candidateNames = (
+            saveIdBaseNames + listOfNotNull(
+                romName,
+                com.nendo.argosy.data.emulator.ArchiveRomNaming.launchBaseName(romFile)
+            )
+            ).distinct()
 
         Logger.verbose(TAG) {
             "findSaveByRomName: romPath=${romFile.name}, candidates=$candidateNames, extensions=$extensions, searchDir=$basePath"
@@ -678,10 +743,13 @@ class SavePathResolver @Inject constructor(
                 return null
             }
 
+        val saveIdNames = saveIdFileNames(config, platformSlug, romPath, cachedSaveId, null, gameId)
+
         val perGameDir = perGameSaveDir(gameId, config, platformSlug)
         if (perGameDir != null && (directoryExists(perGameDir) || saveArchiver.getFileForPath(perGameDir).mkdirs())) {
             val extension = config.saveExtensions.firstOrNull { it != "*" } ?: "sav"
-            val baseName = if (romPath != null) File(romPath).nameWithoutExtension else sanitizeFileName(gameTitle)
+            val baseName = saveIdNames.firstOrNull()
+                ?: if (romPath != null) File(romPath).nameWithoutExtension else sanitizeFileName(gameTitle)
             return "$perGameDir/$baseName.$extension"
         }
 
@@ -717,7 +785,8 @@ class SavePathResolver @Inject constructor(
 
         if (besideRomDir != null && romPath != null && !config.usesFolderBasedSaves) {
             val extension = config.saveExtensions.firstOrNull { it != "*" } ?: "sav"
-            return "$baseDir/${File(romPath).nameWithoutExtension}.$extension"
+            val baseName = saveIdNames.firstOrNull() ?: File(romPath).nameWithoutExtension
+            return "$baseDir/$baseName.$extension"
         }
 
         if ((folderShaped ?: config.usesFolderBasedSaves) && cachedSaveId != null) {
@@ -733,7 +802,8 @@ class SavePathResolver @Inject constructor(
         }
 
         val extension = config.saveExtensions.firstOrNull { it != "*" } ?: "sav"
-        val baseName = if (romPath != null) File(romPath).nameWithoutExtension else sanitizeFileName(gameTitle)
+        val baseName = saveIdNames.firstOrNull()
+            ?: if (romPath != null) File(romPath).nameWithoutExtension else sanitizeFileName(gameTitle)
         val fileName = "$baseName.$extension"
 
         return "$baseDir/$fileName"

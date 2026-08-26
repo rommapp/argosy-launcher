@@ -106,6 +106,7 @@ class GameLauncher @Inject constructor(
     private val accountSwitchMarkerStore: com.nendo.argosy.data.preferences.AccountSwitchMarkerStore,
     private val extContentOrganizer: com.nendo.argosy.data.download.ExtContentOrganizer,
     private val baseRomFileResolver: BaseRomFileResolver,
+    private val dreamcastVmuMigrator: DreamcastVmuMigrator,
     private val volumeHealth: StorageVolumeHealth
 ) {
     private val shellAmAvailable: Boolean by lazy {
@@ -619,6 +620,15 @@ class GameLauncher @Inject constructor(
         val effectiveStatePath = libretroStatePathResolver
             .liveStateBaseDir(platformLibretroOverride?.statePath, builtinSettings.customStatePath)
             .absolutePath
+        dreamcastVmuMigrator.seedLegacyCard(
+            platformSlug = game.platformSlug,
+            romFile = romFile,
+            saveDir = liveSaveDir(effectiveSavePath, variantFileId),
+            systemDir = systemDir,
+            saveId = game.saveId ?: game.titleId,
+            perContentVmus = coreVariables
+                .firstOrNull { it.key == DreamcastVmuMigrator.PER_CONTENT_VMUS_KEY }?.value
+        )
         return Intent(context, LibretroActivity::class.java).apply {
             putExtra(LibretroActivity.EXTRA_ROM_PATH, romFile.absolutePath)
             putExtra(LibretroActivity.EXTRA_VARIANT_FILE_ID, variantFileId ?: -1L)
@@ -636,6 +646,18 @@ class GameLauncher @Inject constructor(
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
     }
+
+    /**
+     * Where the built-in core will really write its saves. LibretroActivity isolates a version
+     * variant into its own subdirectory, so anything that seeds a file for the core to read has to
+     * land in the same place rather than in the base directory.
+     */
+    private fun liveSaveDir(basePath: String, variantFileId: Long?): File =
+        if (variantFileId != null && variantFileId >= 0) {
+            File(basePath, "variants/$variantFileId")
+        } else {
+            File(basePath)
+        }
 
     private fun launchGameNativeStoreGame(game: GameEntity): LaunchResult {
         val appId = game.steamAppId?.toInt()

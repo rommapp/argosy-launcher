@@ -47,6 +47,7 @@ class N3dsBasePathTest {
             gciSaveHandler = mockk(relaxed = true),
             retroArchSaveHandler = mockk(relaxed = true),
             defaultSaveHandler = mockk(relaxed = true),
+            dreamcastSaveHandler = mockk(relaxed = true),
         )
         handler = registry.getFolderHandler("3ds") ?: error("3DS handler not registered")
         sdRoot = File(tempDir, "Azahar/sdmc/Nintendo 3DS").apply { mkdirs() }

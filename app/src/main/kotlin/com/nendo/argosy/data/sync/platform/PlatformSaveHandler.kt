@@ -30,6 +30,18 @@ interface PlatformSaveHandler {
         listOf(localPath)
 
     /**
+     * True when a save FILE is named after the disc's save id rather than after the rom file, so a
+     * caller has to resolve the id before it can name or find the save.
+     */
+    val namesSavesBySaveId: Boolean get() = false
+
+    /**
+     * The file base names, extension excluded, a save for [saveId] can carry, most preferred
+     * first. Empty for the platforms that name a save after the rom.
+     */
+    fun saveFileBaseNames(saveId: String): List<String> = emptyList()
+
+    /**
      * Locate an existing save folder under [basePath] for [saveId]. Returns null when the
      * platform doesn't store saves per-save-id, or when no match is found.
      */

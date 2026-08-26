@@ -6,6 +6,7 @@ import com.nendo.argosy.data.emulator.SavePathRegistry
 import com.nendo.argosy.data.storage.FileAccessLayer
 import com.nendo.argosy.data.sync.SaveArchiver
 import io.mockk.mockk
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
@@ -20,6 +21,7 @@ class PlatformSaveHandlerRegistryRoutingTest {
     private val switchHandler = mockk<SwitchSaveHandler>(relaxed = true)
     private val gciHandler = mockk<GciSaveHandler>(relaxed = true)
     private val retroArchHandler = mockk<RetroArchSaveHandler>(relaxed = true)
+    private val dreamcastHandler = mockk<DreamcastSaveHandler>(relaxed = true)
     private val defaultHandler = mockk<DefaultSaveHandler>(relaxed = true)
 
     private lateinit var registry: PlatformSaveHandlerRegistry
@@ -33,8 +35,20 @@ class PlatformSaveHandlerRegistryRoutingTest {
             switchSaveHandler = switchHandler,
             gciSaveHandler = gciHandler,
             retroArchSaveHandler = retroArchHandler,
+            dreamcastSaveHandler = dreamcastHandler,
             defaultSaveHandler = defaultHandler,
         )
+    }
+
+    @Test
+    fun `built-in Dreamcast routes to the VMU handler rather than the file default`() {
+        val config = SavePathRegistry.getConfigForPlatform("builtin", "dreamcast")
+        assertNotNull("builtin_dreamcast config must exist", config)
+        assertEquals(listOf("bin"), config!!.saveExtensions)
+
+        val handler = registry.getHandler(config, "dreamcast", "builtin")
+
+        assertSame(dreamcastHandler, handler)
     }
 
     @Test

@@ -14,6 +14,20 @@ object FlycastManifest : CoreOptionManifest {
             description = "Uses high-level emulation instead of a real BIOS file"
         ),
         CoreOptionDef(
+            key = "reicast_per_content_vmus",
+            displayName = "Per-Game VMUs",
+            values = listOf("disabled", "VMU A1", "All VMUs"),
+            defaultValue = "VMU A1",
+            coreDefault = "disabled",
+            description = "Gives each game its own memory card in slot A1 instead of one card " +
+                "shared by every Dreamcast game",
+            valueLabels = mapOf(
+                "disabled" to "Off",
+                "VMU A1" to "Slot A1",
+                "All VMUs" to "All Slots"
+            )
+        ),
+        CoreOptionDef(
             key = "reicast_internal_resolution",
             displayName = "Internal Resolution",
             values = listOf(

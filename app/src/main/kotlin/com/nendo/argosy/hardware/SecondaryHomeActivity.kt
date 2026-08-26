@@ -540,7 +540,6 @@ class SecondaryHomeActivity :
     private fun mediaPanelIsSurfaceNow(): Boolean = mediaPanelIsSurface(
         isInitialized = isInitialized,
         isMediaPanelVisible = isMediaPanelVisible,
-        isGameActive = isGameActive,
         isWizardActive = isWizardActive,
         hasMediaViewModel = dualMediaViewModel != null
     )
@@ -1191,10 +1190,12 @@ class SecondaryHomeActivity :
      *
      * Mid-playback it shows what is on, because that is the thing the viewer means. With nothing
      * playing there is nothing to show, so it opens the browser on this screen instead of a panel
-     * that would be empty.
+     * that would be empty. During a session the panel is the answer either way: the browser lives
+     * on the home carousel, which the in-game dashboard has taken the screen from, so routing there
+     * would move a surface nobody is looking at.
      */
     private fun openMediaFromAppBar() {
-        if (dsm.mediaPlayback.value != null) {
+        if (dsm.mediaPlayback.value != null || isGameActive) {
             dsm.toggleCompanionMediaView()
             return
         }

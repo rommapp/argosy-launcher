@@ -59,15 +59,16 @@ enum class CompanionScreen { HOME, GAME_DETAIL }
  * Whether the media panel is the surface the companion is showing right now. Both role renderers
  * and the activity's key-yield gate derive from this one predicate, so the screen that is drawn
  * and the screen that receives controller input cannot disagree.
+ *
+ * A live session does not exclude it. The panel takes the screen from the in-game dashboard the
+ * same way it takes it from home, which is what makes a film reachable without leaving the game.
  */
 fun mediaPanelIsSurface(
     isInitialized: Boolean,
     isMediaPanelVisible: Boolean,
-    isGameActive: Boolean,
     isWizardActive: Boolean,
     hasMediaViewModel: Boolean
-): Boolean = isInitialized && isMediaPanelVisible && !isGameActive &&
-    !isWizardActive && hasMediaViewModel
+): Boolean = isInitialized && isMediaPanelVisible && !isWizardActive && hasMediaViewModel
 
 @Composable
 fun SecondaryHomeContent(
@@ -114,7 +115,6 @@ fun SecondaryHomeContent(
     val showMedia = mediaPanelIsSurface(
         isInitialized = isInitialized,
         isMediaPanelVisible = isMediaPanelVisible,
-        isGameActive = isGameActive,
         isWizardActive = isWizardActive,
         hasMediaViewModel = dualMediaViewModel != null
     )
@@ -305,7 +305,6 @@ fun ShowcaseRoleContent(
     val showMedia = mediaPanelIsSurface(
         isInitialized = isInitialized,
         isMediaPanelVisible = isMediaPanelVisible,
-        isGameActive = isGameActive,
         isWizardActive = isWizardActive,
         hasMediaViewModel = dualMediaViewModel != null
     )

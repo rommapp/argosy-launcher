@@ -64,7 +64,7 @@ class SecondaryHomeInputHandler(
                 ?.let { return it }
         }
 
-        if (isMediaPanelSurface() && !isGameActive) return handleMediaPanelInput(event)
+        if (isMediaPanelSurface()) return handleMediaPanelInput(event)
 
         return if (isArgosyForeground && !isGameActive) {
             when (currentScreen) {

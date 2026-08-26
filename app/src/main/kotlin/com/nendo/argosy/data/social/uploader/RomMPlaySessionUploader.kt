@@ -10,6 +10,7 @@ import javax.inject.Singleton
 
 private const val TAG = "RomMPlaySessionUploader"
 private const val MAX_BATCH_SIZE = 100
+private const val ERROR_BODY_LOG_LIMIT = 2000
 
 @Singleton
 class RomMPlaySessionUploader @Inject constructor(
@@ -46,8 +47,13 @@ class RomMPlaySessionUploader @Inject constructor(
             if (response.isSuccessful) {
                 uploaded += response.body()?.createdCount ?: 0
             } else {
+                val detail = try {
+                    response.errorBody()?.string()?.take(ERROR_BODY_LOG_LIMIT)
+                } catch (_: Exception) {
+                    null
+                }
                 val msg = "Ingest returned ${response.code()}"
-                Logger.error(TAG, "upload: $msg")
+                Logger.error(TAG, "upload: $msg${detail?.let { " | $it" } ?: ""}")
                 return UploadResult.Error(msg)
             }
         }

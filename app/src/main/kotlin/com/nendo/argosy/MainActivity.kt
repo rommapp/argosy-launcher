@@ -578,20 +578,49 @@ class MainActivity : ComponentActivity() {
         return super.dispatchKeyEvent(event)
     }
 
+    private var mediaDimSwallowsTouch = false
+
     /**
      * The finger going down is the wake, not the finger coming up: the activity signal fires here
      * directly rather than waiting on the framework's own interaction callback, so a dimmed screen
-     * brightens the moment it is touched.
+     * brightens the moment it is touched. A gesture that begins while the media dim holds this
+     * window, at either stage, is a wake and nothing else: it is swallowed through its final up or
+     * cancel so the content underneath never sees it, and the next gesture flows through normally.
      */
     override fun dispatchTouchEvent(event: MotionEvent): Boolean {
-        if (event.action == MotionEvent.ACTION_DOWN) {
+        if (event.actionMasked == MotionEvent.ACTION_DOWN) {
+            val dimmed = isMediaDimmed()
             ambientAudioManager.resumeFromSuspend()
             if (::dualScreenManager.isInitialized) {
                 dualScreenManager.notifyUserActivity("mainTouchDown")
             }
+            if (dimmed) {
+                mediaDimSwallowsTouch = true
+                Logger.debug(
+                    DualScreenManager.MEDIA_DIM_LOG_TAG,
+                    "wakeTouch swallowed window=main brightness=${window.attributes.screenBrightness}"
+                )
+            }
+        }
+        if (mediaDimSwallowsTouch) {
+            if (event.actionMasked == MotionEvent.ACTION_UP ||
+                event.actionMasked == MotionEvent.ACTION_CANCEL
+            ) {
+                mediaDimSwallowsTouch = false
+            }
+            return true
         }
         return super.dispatchTouchEvent(event)
     }
+
+    /**
+     * The media dim is the sole writer of this window's brightness override, so an override in
+     * place is exactly "this window is currently dimmed", at the partial stage as well as the dark
+     * one.
+     */
+    private fun isMediaDimmed(): Boolean =
+        window.attributes.screenBrightness !=
+            android.view.WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE
 
     override fun dispatchGenericMotionEvent(event: MotionEvent): Boolean {
         triggerAxisKeyEmitter.emit(event).forEach { dispatchKeyEvent(it) }
@@ -896,9 +925,12 @@ class MainActivity : ComponentActivity() {
      * A window brightness of zero drives the panel to its MINIMUM backlight, not off - the
      * platform has no attribute value that blanks a panel. The manager therefore fades an opaque
      * black cover over the window across the ramp's second leg, and this window renders it as a
-     * foreground drawable: it draws over everything but consumes no input, so a tap lands on the
-     * content underneath and wakes the screen through the same activity signal that clears the
-     * brightness override and the cover together.
+     * foreground drawable: it draws over everything and consumes no input itself. The waking tap
+     * is swallowed in dispatchTouchEvent for its whole gesture, so it clears the brightness
+     * override and starts the cover's fade-out without reaching the content underneath. The cover
+     * follows the display split rather than a live dim stage, because the wake fade runs after
+     * the override has already been released and the manager's alpha is the sole authority on how
+     * much cover remains.
      *
      * The player's display is the window's own report when one is current, otherwise the display
      * the relocation rules place the player on: the report is cleared when a playback closes, and
@@ -908,15 +940,16 @@ class MainActivity : ComponentActivity() {
     private fun applyMediaDim(playerDisplayId: Int?, dim: Float?, coverAlpha: Float) {
         val ownDisplayId = window.decorView.display?.displayId
         val resolvedPlayerId = playerDisplayId ?: dualScreenManager.mediaPlayerRelocationDisplayId()
-        val dimsThisWindow = dim != null && resolvedPlayerId != null &&
+        val isOtherDisplay = resolvedPlayerId != null &&
             ownDisplayId != null && ownDisplayId != resolvedPlayerId
+        val dimsThisWindow = dim != null && isOtherDisplay
         logMediaDimDecline(dimsThisWindow, ownDisplayId, playerDisplayId, resolvedPlayerId, dim)
         val target = if (dimsThisWindow && dim != null) {
             dim
         } else {
             android.view.WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE
         }
-        applyMediaDimCover(if (dimsThisWindow) coverAlpha else 0f)
+        applyMediaDimCover(if (isOtherDisplay) coverAlpha else 0f)
         val attributes = window.attributes
         if (attributes.screenBrightness == target) return
         Logger.debug(

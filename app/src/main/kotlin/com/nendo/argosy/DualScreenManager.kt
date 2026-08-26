@@ -412,8 +412,11 @@ class DualScreenManager(
      * Opacity of the black cover the dimmed window draws over its content, 0..1. A window
      * brightness of zero is the panel's minimum backlight, not off, so the ramp fades this in
      * across the second leg - from the partial stage to the off threshold - reaching fully opaque
-     * exactly when the brightness floor lands. Any wake snaps it straight back to zero; it never
-     * fades out.
+     * exactly when the brightness floor lands. A wake releases the brightness override at once but
+     * fades this cover out over [MEDIA_DIM_WAKE_FADE_MS] rather than snapping it, because the
+     * backlight's climb back to the user's level is the display controller's own ramp and cannot
+     * be hurried; the cover leaving in step with the light returning reads as one wake instead of
+     * black vanishing over a still-dim screen.
      */
     val mediaDimCoverAlpha: StateFlow<Float> = _mediaDimCoverAlpha
 
@@ -444,8 +447,10 @@ class DualScreenManager(
             val untilPartial = MEDIA_DIM_PARTIAL_DELAY_MS - idleMs
             if (untilPartial > 0) {
                 _mediaDimBrightness.value = null
-                _mediaDimCoverAlpha.value = 0f
-                delay(untilPartial)
+                fadeOutMediaDimCoverOnWake()
+                val remainingToPartial = MEDIA_DIM_PARTIAL_DELAY_MS -
+                    (android.os.SystemClock.elapsedRealtime() - lastUserActivityAtMs)
+                if (remainingToPartial > 0) delay(remainingToPartial)
             }
             _mediaDimBrightness.value = MEDIA_DIM_PARTIAL_BRIGHTNESS
             Logger.debug(MEDIA_DIM_LOG_TAG, "stage partial brightness=$MEDIA_DIM_PARTIAL_BRIGHTNESS")
@@ -466,6 +471,32 @@ class DualScreenManager(
             _mediaDimBrightness.value = MEDIA_DIM_OFF_BRIGHTNESS
             Logger.debug(MEDIA_DIM_LOG_TAG, "stage off brightness=$MEDIA_DIM_OFF_BRIGHTNESS cover=1")
         }
+    }
+
+    /**
+     * Fades the black cover out from its current opacity on wake instead of dropping it, so the
+     * cover leaves at roughly the pace the backlight returns. The duration scales with the
+     * starting opacity, keeping the fade rate constant when a wake lands mid-fade and the new ramp
+     * job resumes from a partial alpha. Runs inside [mediaDimJob]; further activity restarts it
+     * from the current alpha and a playback close cancels it and zeroes the cover.
+     */
+    private suspend fun fadeOutMediaDimCoverOnWake() {
+        val startAlpha = _mediaDimCoverAlpha.value
+        if (startAlpha <= 0f) return
+        val durationMs = (MEDIA_DIM_WAKE_FADE_MS * startAlpha).toLong().coerceAtLeast(1L)
+        Logger.debug(
+            MEDIA_DIM_LOG_TAG,
+            "wake cover fade start alpha=$startAlpha durationMs=$durationMs"
+        )
+        val fadeStart = android.os.SystemClock.elapsedRealtime()
+        while (true) {
+            val elapsed = android.os.SystemClock.elapsedRealtime() - fadeStart
+            if (elapsed >= durationMs) break
+            _mediaDimCoverAlpha.value = startAlpha * (1f - elapsed.toFloat() / durationMs)
+            delay(MEDIA_DIM_WAKE_FADE_STEP_MS)
+        }
+        _mediaDimCoverAlpha.value = 0f
+        Logger.debug(MEDIA_DIM_LOG_TAG, "wake cover fade done")
     }
 
     private fun stopMediaDimRamp(reason: String) {
@@ -3381,6 +3412,16 @@ class DualScreenManager(
         private const val MEDIA_DIM_PARTIAL_BRIGHTNESS = 0.4f
         private const val MEDIA_DIM_OFF_BRIGHTNESS = 0f
         private const val MEDIA_DIM_COVER_STEP_MS = 250L
+
+        /**
+         * How long the black cover takes to fade out on wake, from fully opaque. The backlight's
+         * return is the display controller's own ramp - rate configs the platform neither exposes
+         * nor lets a window influence - so this cannot be derived and is tuned by eye: short
+         * enough to clear slightly ahead of a typical slow-ramp climb, so the cover never makes
+         * the wake feel later than the light.
+         */
+        private const val MEDIA_DIM_WAKE_FADE_MS = 800L
+        private const val MEDIA_DIM_WAKE_FADE_STEP_MS = 33L
 
         /**
          * Temporary diagnostic channel for the playback dim ramp; filter with

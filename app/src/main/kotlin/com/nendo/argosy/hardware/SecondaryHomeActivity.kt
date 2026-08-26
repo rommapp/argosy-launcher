@@ -357,26 +357,68 @@ class SecondaryHomeActivity :
         super.onDestroy()
     }
 
+    private var mediaDimSwallowsTouch = false
+
+    /**
+     * A gesture that begins while the media dim holds this window, at either stage, is a wake and
+     * nothing else: it is swallowed through its final up or cancel so the content underneath never
+     * sees it. The swallowed up still runs the refocus handoff, because the touch has already
+     * moved window focus here and key focus must land where any other tap would leave it.
+     */
     override fun dispatchTouchEvent(event: android.view.MotionEvent): Boolean {
-        if (event.action == android.view.MotionEvent.ACTION_DOWN && ::dsm.isInitialized) {
-            dsm.notifyUserActivity("companionTouchDown")
+        if (event.actionMasked == android.view.MotionEvent.ACTION_DOWN) {
+            val dimmed = isMediaDimmed()
+            if (::dsm.isInitialized) {
+                dsm.notifyUserActivity("companionTouchDown")
+            }
+            if (dimmed) {
+                mediaDimSwallowsTouch = true
+                Logger.debug(
+                    DualScreenManager.MEDIA_DIM_LOG_TAG,
+                    "wakeTouch swallowed window=companion " +
+                        "brightness=${window.attributes.screenBrightness}"
+                )
+            }
+        }
+        if (mediaDimSwallowsTouch) {
+            when (event.actionMasked) {
+                android.view.MotionEvent.ACTION_UP -> {
+                    mediaDimSwallowsTouch = false
+                    refocusAfterTouch()
+                }
+                android.view.MotionEvent.ACTION_CANCEL -> mediaDimSwallowsTouch = false
+            }
+            return true
         }
         val result = super.dispatchTouchEvent(event)
         if (event.action == android.view.MotionEvent.ACTION_UP) {
-            if (isGameActive && ::dsm.isInitialized) {
-                window.decorView.post { dsm.refocusSession() }
-            } else if (isShowcaseRole) {
-                window.decorView.post { broadcasts.broadcastRefocusUpper() }
-            } else if (
-                dualHomeViewModel.forwardingMode.value ==
-                    com.nendo.argosy.ui.dualscreen.home.ForwardingMode.BACKGROUND &&
-                currentScreen == CompanionScreen.HOME
-            ) {
-                window.decorView.post { broadcasts.broadcastRefocusUpper() }
-            }
+            refocusAfterTouch()
         }
         return result
     }
+
+    private fun refocusAfterTouch() {
+        if (isGameActive && ::dsm.isInitialized) {
+            window.decorView.post { dsm.refocusSession() }
+        } else if (isShowcaseRole) {
+            window.decorView.post { broadcasts.broadcastRefocusUpper() }
+        } else if (
+            dualHomeViewModel.forwardingMode.value ==
+                com.nendo.argosy.ui.dualscreen.home.ForwardingMode.BACKGROUND &&
+            currentScreen == CompanionScreen.HOME
+        ) {
+            window.decorView.post { broadcasts.broadcastRefocusUpper() }
+        }
+    }
+
+    /**
+     * The media dim is the sole writer of this window's brightness override, so an override in
+     * place is exactly "this window is currently dimmed", at the partial stage as well as the dark
+     * one.
+     */
+    private fun isMediaDimmed(): Boolean =
+        window.attributes.screenBrightness !=
+            android.view.WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE
 
     /**
      * Gamepad keys are taken before the view hierarchy sees them, exactly as the primary activity
@@ -813,9 +855,12 @@ class SecondaryHomeActivity :
      * A window brightness of zero drives the panel to its MINIMUM backlight, not off - the
      * platform has no attribute value that blanks a panel. The manager therefore fades an opaque
      * black cover over the window across the ramp's second leg, and this window renders it as a
-     * foreground drawable: it draws over everything but consumes no input, so a tap lands on the
-     * content underneath and wakes the screen through the same activity signal that clears the
-     * brightness override and the cover together.
+     * foreground drawable: it draws over everything and consumes no input itself. The waking tap
+     * is swallowed in dispatchTouchEvent for its whole gesture, so it clears the brightness
+     * override and starts the cover's fade-out without reaching the content underneath. The cover
+     * follows the display split rather than a live dim stage, because the wake fade runs after
+     * the override has already been released and the manager's alpha is the sole authority on how
+     * much cover remains.
      *
      * The player's display is the window's own report when one is current, otherwise the display
      * the relocation rules place the player on: the report is cleared when a playback closes, and
@@ -825,15 +870,16 @@ class SecondaryHomeActivity :
     private fun applyMediaDim(playerDisplayId: Int?, dim: Float?, coverAlpha: Float) {
         val ownDisplayId = window.decorView.display?.displayId
         val resolvedPlayerId = playerDisplayId ?: dsm.mediaPlayerRelocationDisplayId()
-        val dimsThisWindow = dim != null && resolvedPlayerId != null &&
+        val isOtherDisplay = resolvedPlayerId != null &&
             ownDisplayId != null && ownDisplayId != resolvedPlayerId
+        val dimsThisWindow = dim != null && isOtherDisplay
         logMediaDimDecline(dimsThisWindow, ownDisplayId, playerDisplayId, resolvedPlayerId, dim)
         val target = if (dimsThisWindow && dim != null) {
             dim
         } else {
             android.view.WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE
         }
-        applyMediaDimCover(if (dimsThisWindow) coverAlpha else 0f)
+        applyMediaDimCover(if (isOtherDisplay) coverAlpha else 0f)
         val attributes = window.attributes
         if (attributes.screenBrightness == target) return
         Logger.debug(

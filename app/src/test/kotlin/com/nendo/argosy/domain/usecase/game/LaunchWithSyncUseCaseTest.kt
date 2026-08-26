@@ -72,7 +72,8 @@ class LaunchWithSyncUseCaseTest {
             mockk<com.nendo.argosy.domain.usecase.savechannel.ActivateSaveChannelUseCase>(relaxed = true),
             emulatorConfigDao, emulatorResolver,
             preferencesRepository, romMRepository, saveSyncRepository,
-            titleIdDownloadObserver, preLaunchStateSyncUseCase
+            titleIdDownloadObserver, preLaunchStateSyncUseCase,
+            mockk<com.nendo.argosy.data.sync.N3dsSaveCaseRepair>(relaxed = true)
         )
 
         every { preferencesRepository.userPreferences } returns MutableStateFlow(UserPreferences(saveSyncEnabled = true))

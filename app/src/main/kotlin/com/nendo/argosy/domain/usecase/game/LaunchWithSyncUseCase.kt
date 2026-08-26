@@ -34,7 +34,8 @@ class LaunchWithSyncUseCase @Inject constructor(
     private val romMRepository: RomMRepository,
     private val saveSyncRepository: SaveSyncRepository,
     private val titleIdDownloadObserver: TitleIdDownloadObserver,
-    private val preLaunchStateSyncUseCase: PreLaunchStateSyncUseCase
+    private val preLaunchStateSyncUseCase: PreLaunchStateSyncUseCase,
+    private val n3dsSaveCaseRepair: com.nendo.argosy.data.sync.N3dsSaveCaseRepair
 ) {
     @Deprecated("Use invokeWithProgress instead", ReplaceWith("invokeWithProgress(gameId)"))
     fun invoke(gameId: Long): Flow<SyncState> = flow {
@@ -192,6 +193,8 @@ class LaunchWithSyncUseCase @Inject constructor(
         emit(SyncProgress.PreLaunch.Connecting(channelName, success = true))
 
         titleIdDownloadObserver.extractTitleIdForGame(gameId)
+
+        n3dsSaveCaseRepair.repairIfNeeded(gameId, emulatorId, emulatorPackage)
 
         saveSyncRepository.crossEmulatorMigrateIfNeeded(gameId, emulatorId)
 

@@ -22,6 +22,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import com.nendo.argosy.ui.components.FooterHints
 import com.nendo.argosy.ui.components.InputButton
+import com.nendo.argosy.ui.components.animateScrollToItemCentered
 import com.nendo.argosy.ui.input.LocalInputDispatcher
 import com.nendo.argosy.ui.navigation.Screen
 import com.nendo.argosy.ui.screens.media.components.MediaEmptyState
@@ -82,7 +83,9 @@ fun MediaLibraryScreen(
 
     LaunchedEffect(uiState.focusedIndex, uiState.selectedLibraryIndex) {
         if (uiState.items.isNotEmpty()) {
-            gridState.animateScrollToItem(uiState.focusedIndex.coerceIn(0, uiState.items.lastIndex))
+            gridState.animateScrollToItemCentered(
+                uiState.focusedIndex.coerceIn(0, uiState.items.lastIndex)
+            )
         }
     }
 

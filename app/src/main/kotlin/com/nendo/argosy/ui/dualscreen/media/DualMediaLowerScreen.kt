@@ -255,7 +255,7 @@ private fun DualMediaTitleBody(
         if (showCursor && state.focusedRowIndex >= 0 &&
             state.focusedRowIndex < state.rows.size
         ) {
-            listState.animateScrollToItem(state.focusedRowIndex)
+            listState.animateScrollToItemCentered(state.focusedRowIndex)
         }
     }
 

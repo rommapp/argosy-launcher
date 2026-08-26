@@ -43,6 +43,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextOverflow
+import com.nendo.argosy.ui.components.animateScrollToItemCentered
 import com.nendo.argosy.ui.primitives.FocusIndicators
 import com.nendo.argosy.ui.primitives.argosyFocusIndicators
 import com.nendo.argosy.ui.screens.media.MediaDetailRow
@@ -72,15 +73,10 @@ fun MediaDetailMenu(
     val listState = rememberLazyListState()
     val isSectionFocused = uiState.section == MediaDetailSection.MENU
 
-    LaunchedEffect(uiState.rowIndex, uiState.rows.size) {
-        if (uiState.rowIndex !in uiState.rows.indices) return@LaunchedEffect
-        val layoutInfo = listState.layoutInfo
-        val itemInfo = layoutInfo.visibleItemsInfo.firstOrNull { it.index == uiState.rowIndex }
-        val visibleEnd = layoutInfo.viewportEndOffset - layoutInfo.afterContentPadding
-        val fullyVisible = itemInfo != null &&
-            itemInfo.offset >= layoutInfo.viewportStartOffset &&
-            itemInfo.offset + itemInfo.size <= visibleEnd
-        if (!fullyVisible) listState.animateScrollToItem(uiState.rowIndex)
+    LaunchedEffect(uiState.rows, uiState.rowIndex) {
+        if (uiState.rowIndex in uiState.rows.indices) {
+            listState.animateScrollToItemCentered(uiState.rowIndex)
+        }
     }
 
     LazyColumn(

@@ -96,6 +96,31 @@ suspend fun LazyListState.animateScrollToItemCentered(index: Int) {
     animateScrollToItem(index, -centerOffset)
 }
 
+/**
+ * The grid form of [LazyListState.animateScrollToItemCentered]. A grid scrolls by rows, so this
+ * centres the row the item at [index] sits in. Content padding is not discounted, which is why a
+ * grid with chrome drawn over it wants [GridFocusedScroll] instead.
+ */
+suspend fun LazyGridState.animateScrollToItemCentered(index: Int) {
+    if (index < 0) return
+    if (layoutInfo.totalItemsCount == 0) {
+        snapshotFlow { layoutInfo.totalItemsCount }.first { it > 0 }
+    }
+    val info = layoutInfo
+    if (index >= info.totalItemsCount) return
+    if (!canScrollForward && !canScrollBackward) return
+    val visible = info.visibleItemsInfo
+    if (visible.isEmpty()) {
+        animateScrollToItem(index)
+        return
+    }
+    val viewportHeight = info.viewportEndOffset - info.viewportStartOffset
+    val itemHeight = visible.firstOrNull { it.index == index }?.size?.height
+        ?: (visible.sumOf { it.size.height } / visible.size)
+    val centerOffset = (viewportHeight - itemHeight) / 2
+    animateScrollToItem(index, -centerOffset)
+}
+
 data class ListSection(
     val name: String? = null,
     val listStartIndex: Int,

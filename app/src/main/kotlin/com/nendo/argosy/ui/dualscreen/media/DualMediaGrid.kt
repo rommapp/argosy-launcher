@@ -18,6 +18,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
+import com.nendo.argosy.ui.components.animateScrollToItemCentered
 import com.nendo.argosy.ui.screens.media.MediaItemUi
 import com.nendo.argosy.ui.screens.media.components.MediaPosterGrid
 import com.nendo.argosy.ui.theme.Dimens
@@ -42,7 +43,7 @@ fun DualMediaGrid(
 
     LaunchedEffect(focusedIndex, items.size) {
         if (items.isNotEmpty()) {
-            gridState.animateScrollToItem(focusedIndex.coerceIn(0, items.lastIndex))
+            gridState.animateScrollToItemCentered(focusedIndex.coerceIn(0, items.lastIndex))
         }
     }
 

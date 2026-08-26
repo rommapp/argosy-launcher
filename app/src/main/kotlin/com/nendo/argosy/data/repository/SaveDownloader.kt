@@ -800,7 +800,12 @@ class SaveDownloader @Inject constructor(
                             )
                             val overrideBase = platformSlug?.let { overrideBaseFor(config, it) }
                             val basePaths = overrideBase?.let { listOf(it) }
-                                ?: SavePathRegistry.resolvePath(config, "ngc", null)
+                                ?: SavePathRegistry.resolvePath(
+                                    config,
+                                    "ngc",
+                                    if (config.usesInternalStorage) context.filesDir.absolutePath else null,
+                                    fal.externalStorageRoots()
+                                )
                             val baseDir = basePaths.firstOrNull { fal.exists(it) && fal.isDirectory(it) } ?: basePaths.firstOrNull()
                             if (baseDir != null) {
                                 val resolvedPath = GameCubeHeaderParser.buildGciPath(baseDir, romInfo.region, gciFilename)

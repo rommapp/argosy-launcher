@@ -197,7 +197,13 @@ open class FolderSaveHandler(
     override fun resolveBasePath(config: SavePathConfig, basePathOverride: String?): String? {
         if (basePathOverride != null) return normalizeBasePath(basePathOverride)
 
-        val resolvedPaths = SavePathRegistry.resolvePath(config, platformSlug, null)
+        val filesDir = if (config.usesInternalStorage) context.filesDir.absolutePath else null
+        val resolvedPaths = SavePathRegistry.resolvePath(
+            config,
+            platformSlug,
+            filesDir,
+            fal.externalStorageRoots()
+        )
         return resolvedPaths.firstOrNull { fal.exists(it) && fal.isDirectory(it) }
             ?: resolvedPaths.firstOrNull()
     }

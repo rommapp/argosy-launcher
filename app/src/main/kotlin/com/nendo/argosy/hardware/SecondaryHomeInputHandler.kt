@@ -59,6 +59,11 @@ class SecondaryHomeInputHandler(
         val saveConflictResult = handleSaveConflictInput(event)
         if (saveConflictResult.handled) return saveConflictResult
 
+        if (!isGameActive) {
+            com.nendo.argosy.ui.dualscreen.gamedetail.handleDualFilePickerInput(event)
+                ?.let { return it }
+        }
+
         if (isMediaPanelSurface() && !isGameActive) return handleMediaPanelInput(event)
 
         return if (isArgosyForeground && !isGameActive) {
@@ -1137,10 +1142,8 @@ class SecondaryHomeInputHandler(
                 return InputResult.HANDLED
             }
             ActiveModal.FILE_PICKER -> {
-                if (event == GamepadEvent.Back) {
-                    broadcasts.broadcastModalClose()
-                }
-                return InputResult.HANDLED
+                return com.nendo.argosy.ui.dualscreen.gamedetail
+                    .handleDualFilePickerInput(event) ?: InputResult.HANDLED
             }
             ActiveModal.STEAM_INSTALL -> {
                 when (event) {

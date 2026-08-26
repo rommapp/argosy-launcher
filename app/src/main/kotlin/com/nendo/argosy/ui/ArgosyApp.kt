@@ -1283,6 +1283,9 @@ fun ArgosyApp(
                             onFilePickerToggle = { row ->
                                 activity?.toggleDualFilePickerRow(row)
                             },
+                            onFilePickerSelectAll = {
+                                activity?.toggleDualFilePickerSelectAll()
+                            },
                             onFilePickerConfirm = {
                                 activity?.confirmDualFilePicker()
                             },

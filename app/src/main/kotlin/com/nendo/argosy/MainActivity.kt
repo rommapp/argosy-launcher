@@ -230,6 +230,7 @@ class MainActivity : ComponentActivity() {
         dualScreenManager.toggleDualFilePickerGroupCollapse(groupKey)
     fun moveDualFilePickerButtonFocus(delta: Int) = dualScreenManager.moveDualFilePickerButtonFocus(delta)
     fun activateDualFilePickerFocused() = dualScreenManager.activateDualFilePickerFocused()
+    fun toggleDualFilePickerSelectAll() = dualScreenManager.toggleDualFilePickerSelectAll()
     fun confirmDualFilePicker() = dualScreenManager.confirmDualFilePicker()
     fun moveDualCollectionFocus(delta: Int) = dualScreenManager.moveDualCollectionFocus(delta)
     fun toggleDualCollectionAtFocus() = dualScreenManager.toggleDualCollectionAtFocus()

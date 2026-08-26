@@ -90,6 +90,8 @@ class DualGameDetailInputHandler(
     override fun onRightStickClick() = dispatch(GamepadEvent.RightStickClick)
 
     fun dispatch(event: GamepadEvent): InputResult {
+        handleDualFilePickerInput(event)?.let { return it }
+
         val vm = viewModel() ?: return InputResult.UNHANDLED
 
         val modal = vm.activeModal.value
@@ -235,7 +237,7 @@ class DualGameDetailInputHandler(
                 return InputResult.HANDLED
             }
             ActiveModal.FILE_PICKER -> {
-                return InputResult.HANDLED
+                return handleDualFilePickerInput(event) ?: InputResult.HANDLED
             }
             ActiveModal.CORE -> {
                 when (event) {

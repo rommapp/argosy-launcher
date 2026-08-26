@@ -908,13 +908,15 @@ class GameDetailViewModel @Inject constructor(
     fun moveFilePickerFocus(delta: Int) = pickerModalDelegate.moveFilePickerFocus(delta)
     fun jumpFilePickerGroup(direction: Int) = pickerModalDelegate.jumpFilePickerGroup(direction)
     fun toggleFocusedFilePickerRow() = pickerModalDelegate.toggleFocusedFilePickerRow()
+    fun toggleFilePickerSelectAll() = pickerModalDelegate.toggleFilePickerSelectAll()
 
     fun activateFocusedFilePickerItem() {
         val st = pickerModalDelegate.state.value
         val rowCount = st.visibleFilePickerRows.size
         when {
             st.filePickerFocusIndex < rowCount -> pickerModalDelegate.toggleFocusedFilePickerRow()
-            st.filePickerFocusIndex == rowCount -> dismissFilePicker()
+            st.filePickerFocusIndex == rowCount -> pickerModalDelegate.toggleFilePickerSelectAll()
+            st.filePickerFocusIndex == rowCount + 1 -> dismissFilePicker()
             else -> confirmFilePicker()
         }
     }

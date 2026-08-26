@@ -8,6 +8,9 @@ import com.nendo.argosy.data.emulator.InstalledEmulator
 import com.nendo.argosy.data.emulator.RetroArchCore
 import com.nendo.argosy.data.launcher.SteamLauncher
 import com.nendo.argosy.data.launcher.SteamLaunchers
+import com.nendo.argosy.data.model.allSelectableSelected
+import com.nendo.argosy.data.model.selectAllSelection
+import com.nendo.argosy.data.model.selectNoneSelection
 import com.nendo.argosy.data.model.visibleWithCollapsed
 import com.nendo.argosy.data.preferences.MenuWrapMode
 import com.nendo.argosy.ui.input.InputDispatcher.Companion.computeWrappedIndex
@@ -434,7 +437,7 @@ class PickerModalDelegate @Inject constructor(
 
     fun moveFilePickerFocus(delta: Int) {
         _state.update { st ->
-            val maxIndex = st.visibleFilePickerRows.size + 1
+            val maxIndex = st.visibleFilePickerRows.size + 2
             st.copy(filePickerFocusIndex = computeWrappedIndex(st.filePickerFocusIndex, delta, maxIndex, menuWrapMode))
         }
     }
@@ -444,9 +447,26 @@ class PickerModalDelegate @Inject constructor(
         val buttonStart = st.visibleFilePickerRows.size
         if (st.filePickerFocusIndex < buttonStart) return false
         _state.update {
-            it.copy(filePickerFocusIndex = (it.filePickerFocusIndex + delta).coerceIn(buttonStart, buttonStart + 1))
+            it.copy(filePickerFocusIndex = (it.filePickerFocusIndex + delta).coerceIn(buttonStart, buttonStart + 2))
         }
         return true
+    }
+
+    fun toggleFilePickerSelectAll() {
+        _state.update { st ->
+            val selection = if (
+                st.filePickerRows.allSelectableSelected(st.filePickerSelected, st.filePickerSelectedVersions)
+            ) {
+                st.filePickerRows.selectNoneSelection()
+            } else {
+                st.filePickerRows.selectAllSelection()
+            }
+            st.copy(
+                filePickerSelected = selection.fileIds,
+                filePickerSelectedVersions = selection.versionIds
+            )
+        }
+        soundManager.play(SoundType.TOGGLE)
     }
 
     fun jumpFilePickerGroup(direction: Int) {

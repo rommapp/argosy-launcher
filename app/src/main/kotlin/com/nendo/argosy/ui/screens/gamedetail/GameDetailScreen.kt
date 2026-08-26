@@ -1015,6 +1015,7 @@ private fun GameDetailModals(
             focusIndex = pickerState.filePickerFocusIndex,
             summary = summary,
             onToggleRow = viewModel::toggleFilePickerRow,
+            onSelectAll = viewModel::toggleFilePickerSelectAll,
             onConfirm = viewModel::confirmFilePicker,
             onDismiss = viewModel::dismissFilePicker,
             allRows = fileRows,

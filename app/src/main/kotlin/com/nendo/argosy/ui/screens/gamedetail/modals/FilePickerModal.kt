@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
@@ -29,9 +30,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
 import com.nendo.argosy.data.model.FilePickerRow
+import com.nendo.argosy.data.model.allSelectableSelected
 import com.nendo.argosy.ui.components.ArgosyCheckState
 import com.nendo.argosy.ui.components.ArgosyCheckbox
 import com.nendo.argosy.ui.components.FocusedScroll
@@ -44,8 +48,8 @@ import com.nendo.argosy.util.formatBytes
 enum class GroupCheckState { ALL, NONE, PARTIAL }
 
 /**
- * Cherry-pick file selection for a download. Focus indices rows.size and
- * rows.size + 1 land on the Cancel and confirm footer buttons.
+ * Cherry-pick file selection for a download. Focus indices rows.size, rows.size + 1 and
+ * rows.size + 2 land on the select-all, Cancel and confirm footer buttons.
  */
 @Composable
 fun FilePickerModal(
@@ -57,6 +61,7 @@ fun FilePickerModal(
     focusIndex: Int,
     summary: String,
     onToggleRow: (FilePickerRow) -> Unit,
+    onSelectAll: () -> Unit,
     onConfirm: () -> Unit,
     onDismiss: () -> Unit,
     allRows: List<FilePickerRow> = rows,
@@ -86,6 +91,8 @@ fun FilePickerModal(
     }
     val confirmEnabled = !manageMode || pendingAdds + pendingRemoves > 0
     val confirmTint = if (manageMode && pendingRemoves > 0) theme.destructive else theme.focusAccent
+    val everythingSelected = allRows.allSelectableSelected(selectedIds, selectedVersionIds)
+    val screenHeight = LocalConfiguration.current.screenHeightDp.dp
 
     Box(
         modifier = Modifier
@@ -102,7 +109,11 @@ fun FilePickerModal(
                 .fillMaxWidth(0.92f)
                 .clickableNoFocus { }
         ) {
-            Column(modifier = Modifier.padding(Dimens.spacingLg)) {
+            Column(
+                modifier = Modifier
+                    .heightIn(max = screenHeight - (Dimens.footerHeight + Dimens.spacingLg) * 2)
+                    .padding(Dimens.spacingLg)
+            ) {
                 Text(
                     text = gameTitle.uppercase(),
                     style = MaterialTheme.typography.labelMedium,
@@ -156,17 +167,24 @@ fun FilePickerModal(
                     horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm, Alignment.End)
                 ) {
                     ModalActionButton(
-                        label = "Cancel",
+                        label = if (everythingSelected) "Deselect All" else "Select All",
                         tint = theme.focusAccent,
                         restLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
                         focused = focusIndex == rows.size,
+                        onClick = onSelectAll
+                    )
+                    ModalActionButton(
+                        label = "Cancel",
+                        tint = theme.focusAccent,
+                        restLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        focused = focusIndex == rows.size + 1,
                         onClick = onDismiss
                     )
                     ModalActionButton(
                         label = confirmLabel,
                         tint = confirmTint,
                         restLabelColor = MaterialTheme.colorScheme.onSurface,
-                        focused = focusIndex == rows.size + 1,
+                        focused = focusIndex == rows.size + 2,
                         onClick = onConfirm,
                         enabled = confirmEnabled
                     )

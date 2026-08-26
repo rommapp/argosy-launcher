@@ -13,6 +13,9 @@ import com.nendo.argosy.data.local.dao.GameFileDao
 import com.nendo.argosy.data.repository.CollectionRepository
 import com.nendo.argosy.data.repository.PlatformRepository
 import com.nendo.argosy.data.model.GameSource
+import com.nendo.argosy.data.model.allSelectableSelected
+import com.nendo.argosy.data.model.selectAllSelection
+import com.nendo.argosy.data.model.selectNoneSelection
 import com.nendo.argosy.data.emulator.DiscOption
 import com.nendo.argosy.data.emulator.EmulatorResolver
 import com.nendo.argosy.data.preferences.DisplayRoleOverride
@@ -2589,7 +2592,7 @@ class DualScreenManager(
     fun moveDualFilePickerFocus(delta: Int) {
         _dualGameDetailState.update { state ->
             if (state == null) return@update null
-            val maxIndex = state.visibleFilePickerRows.size + 1
+            val maxIndex = state.visibleFilePickerRows.size + 2
             state.copy(filePickerFocusIndex = com.nendo.argosy.ui.input.InputDispatcher.computeWrappedIndex(state.filePickerFocusIndex, delta, maxIndex, menuWrapMode))
         }
     }
@@ -2599,7 +2602,7 @@ class DualScreenManager(
         val buttonStart = state.visibleFilePickerRows.size
         if (state.filePickerFocusIndex < buttonStart) return false
         _dualGameDetailState.update {
-            it?.copy(filePickerFocusIndex = (it.filePickerFocusIndex + delta).coerceIn(buttonStart, buttonStart + 1))
+            it?.copy(filePickerFocusIndex = (it.filePickerFocusIndex + delta).coerceIn(buttonStart, buttonStart + 2))
         }
         return true
     }
@@ -2609,8 +2612,27 @@ class DualScreenManager(
         val rowCount = state.visibleFilePickerRows.size
         when {
             state.filePickerFocusIndex < rowCount -> toggleDualFilePickerRow()
-            state.filePickerFocusIndex == rowCount -> dismissDualModal()
+            state.filePickerFocusIndex == rowCount -> toggleDualFilePickerSelectAll()
+            state.filePickerFocusIndex == rowCount + 1 -> dismissDualModal()
             else -> confirmDualFilePicker()
+        }
+    }
+
+    fun toggleDualFilePickerSelectAll() {
+        _dualGameDetailState.update { state ->
+            if (state == null) return@update null
+            val rows = state.filePickerRows
+            val selection = if (
+                rows.allSelectableSelected(state.filePickerSelected, state.filePickerSelectedVersions)
+            ) {
+                rows.selectNoneSelection()
+            } else {
+                rows.selectAllSelection()
+            }
+            state.copy(
+                filePickerSelected = selection.fileIds,
+                filePickerSelectedVersions = selection.versionIds
+            )
         }
     }
 

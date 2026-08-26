@@ -1612,12 +1612,25 @@ class DualHomeViewModel(
         }
     }
 
-    private fun focusedMediaId(state: DualHomeUiState): String? = when {
-        state.viewMode == DualHomeViewMode.MEDIA_INFO -> state.mediaInfoItemId
-        state.viewMode == DualHomeViewMode.MEDIA_GRID ->
+    /**
+     * The media title under the cursor, or null when the cursor is not on one.
+     *
+     * The carousel's media row only counts while the carousel is the mode being shown. The section
+     * index survives a move into the library grid, the collections list or the collection games, so
+     * a row-based answer keeps naming a title the viewer has already left; the showcase then holds
+     * that description over every game the new mode focuses, because a standing media detail outranks
+     * the showcase state those modes publish.
+     */
+    private fun focusedMediaId(state: DualHomeUiState): String? = when (state.viewMode) {
+        DualHomeViewMode.MEDIA_INFO -> state.mediaInfoItemId
+        DualHomeViewMode.MEDIA_GRID ->
             state.mediaGridItems.getOrNull(state.mediaGridFocusedIndex)?.itemId
-        state.currentSection is DualHomeSection.MediaLibrary ->
-            state.mediaItems.getOrNull(state.selectedIndex)?.itemId
+        DualHomeViewMode.CAROUSEL ->
+            if (state.currentSection is DualHomeSection.MediaLibrary) {
+                state.mediaItems.getOrNull(state.selectedIndex)?.itemId
+            } else {
+                null
+            }
         else -> null
     }
 

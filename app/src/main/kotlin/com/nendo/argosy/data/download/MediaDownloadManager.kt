@@ -72,6 +72,14 @@ private const val KBPS_TO_BPS = 1000L
 private const val BITS_PER_BYTE = 8L
 private const val DEFAULT_CONTAINER = "mp4"
 private const val TRANSCODE_CONTAINER = "mp4"
+
+/**
+ * Device-sized downloads keep stereo audio on purpose: the encode exists to fit on the device, and
+ * a 5.1 track would spend the saved bytes on channels a handheld downmixes anyway. The streaming
+ * profile's higher channel ceiling is about preserving what the server can stream-copy, which has
+ * no equivalent here - this profile always encodes.
+ */
+private const val DOWNLOAD_MAX_AUDIO_CHANNELS = 2
 private const val DEFAULT_LIBRARY_DIR = "Library"
 private const val HLS_SUB_PROTOCOL = "hls"
 private const val PARTIAL_SUFFIX = ".part"
@@ -1269,7 +1277,7 @@ class MediaDownloadManager @Inject constructor(
                     audioCodec = "aac",
                     protocol = PROFILE_PROTOCOL_HTTP,
                     context = PROFILE_CONTEXT_STREAMING,
-                    maxAudioChannels = JellyfinDeviceProfileBuilder.DEFAULT_MAX_AUDIO_CHANNELS.toString()
+                    maxAudioChannels = DOWNLOAD_MAX_AUDIO_CHANNELS.toString()
                 )
             ),
             subtitleProfiles = if (burnInImageSubtitles) {

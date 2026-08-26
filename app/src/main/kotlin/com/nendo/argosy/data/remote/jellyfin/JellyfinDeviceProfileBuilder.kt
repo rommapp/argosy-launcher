@@ -14,6 +14,15 @@ private const val TRANSCODE_TARGET_VIDEO_CODEC = "h264"
 private const val TRANSCODE_TARGET_AUDIO_CODEC = "aac"
 
 /**
+ * Codecs the transcode containers can carry without re-encoding. A codec named in a transcoding
+ * profile is one the server is permitted to stream-copy into the output, so these lists are
+ * intersected with what the device actually decodes and appended after the encode target - never
+ * offered unconditionally. mpegts and mp4 both carry these; anything else is encoded to the target.
+ */
+private val TRANSCODE_COPYABLE_VIDEO_CODECS = listOf("h264", "hevc")
+private val TRANSCODE_COPYABLE_AUDIO_CODECS = listOf("aac", "mp3", "ac3", "eac3")
+
+/**
  * Codecs whose decoder ceiling is worth declaring. These two carry the libraries that reach a level
  * the hardware refuses; the rest are bounded by the containers they arrive in.
  */
@@ -107,7 +116,7 @@ class JellyfinDeviceProfileBuilder @Inject constructor() {
             maxStreamingBitrate = maxBitrateBps,
             maxStaticBitrate = DEFAULT_MAX_STATIC_BITRATE_BPS,
             directPlayProfiles = buildDirectPlayProfiles(videoCodecs, audioCodecs),
-            transcodingProfiles = buildTranscodingProfiles(maxAudioChannels),
+            transcodingProfiles = buildTranscodingProfiles(videoCodecs, audioCodecs, maxAudioChannels),
             codecProfiles = buildCodecProfiles(decoders, maxHeight, maxFramerate),
             subtitleProfiles = buildSubtitleProfiles(burnInImageSubtitles)
         )
@@ -137,17 +146,36 @@ class JellyfinDeviceProfileBuilder @Inject constructor() {
     }
 
     /**
-     * The fallback every device can play: h264 baseline video and aac audio in an HLS stream. It is
-     * deliberately the most conservative combination available rather than the best one the device
-     * reports, because this path exists precisely for the files whose own codecs did not match.
+     * What the server may produce when direct play fails - and, just as importantly, what it may
+     * keep. Each codec list names the conservative encode target first, h264 video and aac audio,
+     * so a stream that genuinely cannot be carried is re-encoded to the combination every device
+     * plays. The device's own decodable codecs follow, filtered to what the container can hold,
+     * because a codec listed here is one the server is allowed to stream-copy: an eac3 track on a
+     * device without a Dolby decoder then costs an audio-only transcode while the h264 or hevc
+     * picture is remuxed untouched, instead of a full re-encode of a video stream that was never
+     * the problem.
      */
-    private fun buildTranscodingProfiles(maxAudioChannels: Int): List<JellyfinTranscodingProfile> =
-        listOf(
+    private fun buildTranscodingProfiles(
+        videoCodecs: List<String>,
+        audioCodecs: List<String>,
+        maxAudioChannels: Int
+    ): List<JellyfinTranscodingProfile> {
+        val video = copyableCodecList(
+            TRANSCODE_TARGET_VIDEO_CODEC,
+            videoCodecs,
+            TRANSCODE_COPYABLE_VIDEO_CODECS
+        )
+        val audio = copyableCodecList(
+            TRANSCODE_TARGET_AUDIO_CODEC,
+            audioCodecs,
+            TRANSCODE_COPYABLE_AUDIO_CODECS
+        )
+        return listOf(
             JellyfinTranscodingProfile(
                 container = "ts",
                 type = PROFILE_TYPE_VIDEO,
-                videoCodec = TRANSCODE_TARGET_VIDEO_CODEC,
-                audioCodec = TRANSCODE_TARGET_AUDIO_CODEC,
+                videoCodec = video,
+                audioCodec = audio,
                 protocol = PROFILE_PROTOCOL_HLS,
                 context = PROFILE_CONTEXT_STREAMING,
                 maxAudioChannels = maxAudioChannels.toString(),
@@ -157,8 +185,8 @@ class JellyfinDeviceProfileBuilder @Inject constructor() {
             JellyfinTranscodingProfile(
                 container = "mp4",
                 type = PROFILE_TYPE_VIDEO,
-                videoCodec = TRANSCODE_TARGET_VIDEO_CODEC,
-                audioCodec = TRANSCODE_TARGET_AUDIO_CODEC,
+                videoCodec = video,
+                audioCodec = audio,
                 protocol = PROFILE_PROTOCOL_HTTP,
                 context = PROFILE_CONTEXT_STATIC,
                 maxAudioChannels = maxAudioChannels.toString()
@@ -171,6 +199,14 @@ class JellyfinDeviceProfileBuilder @Inject constructor() {
                 context = PROFILE_CONTEXT_STREAMING
             )
         )
+    }
+
+    private fun copyableCodecList(
+        target: String,
+        decodable: List<String>,
+        copyable: List<String>
+    ): String =
+        (listOf(target) + decodable.filter { it in copyable }).distinct().joinToString(",")
 
     /**
      * Ceilings within a codec the device does claim. A decoder that lists h264 still refuses a
@@ -306,6 +342,13 @@ class JellyfinDeviceProfileBuilder @Inject constructor() {
     }
 
     companion object {
-        const val DEFAULT_MAX_AUDIO_CHANNELS = 2
+        /**
+         * Ceiling on the audio channels a transcoding profile may carry, copied or encoded. Six
+         * keeps a 5.1 track eligible for stream copy - the server refuses to copy a track whose
+         * channel count exceeds this even when its codec is in the profile - and Android's
+         * mandatory aac decoder handles 5.1, with the audio pipeline downmixing to whatever the
+         * output device actually is. Direct play is not gated by this value at all.
+         */
+        const val DEFAULT_MAX_AUDIO_CHANNELS = 6
     }
 }

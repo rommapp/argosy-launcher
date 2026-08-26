@@ -2,6 +2,11 @@ package com.nendo.argosy.ui.screens.settings
 
 import android.util.Log
 import androidx.lifecycle.viewModelScope
+import com.nendo.argosy.core.notification.NotificationDuration
+import com.nendo.argosy.core.notification.NotificationType
+import com.nendo.argosy.core.notification.showError
+import com.nendo.argosy.data.preferences.SettingsExportResult
+import com.nendo.argosy.data.preferences.SettingsImportResult
 import com.nendo.argosy.data.remote.github.UpdateState
 import com.nendo.argosy.util.LogLevel
 import kotlinx.coroutines.Dispatchers
@@ -32,6 +37,56 @@ internal fun routeOpenLogFolderPicker(vm: SettingsViewModel) {
     vm.viewModelScope.launch {
         vm._openLogFolderPickerEvent.emit(Unit)
     }
+}
+
+internal fun routeExportSettings(vm: SettingsViewModel) {
+    vm.viewModelScope.launch {
+        when (val result = vm.settingsBackupRepository.exportToFile()) {
+            is SettingsExportResult.Success -> vm.notificationManager.show(
+                title = "Settings exported",
+                subtitle = "${result.count} settings written to ${result.path}",
+                type = NotificationType.SUCCESS,
+                duration = NotificationDuration.MEDIUM
+            )
+            is SettingsExportResult.Error -> vm.notificationManager.showError(result.message)
+        }
+    }
+}
+
+internal fun routeRequestImportSettings(vm: SettingsViewModel) {
+    vm._uiState.update { it.copy(showImportSettingsConfirm = true) }
+}
+
+internal fun routeCancelImportSettings(vm: SettingsViewModel) {
+    vm._uiState.update { it.copy(showImportSettingsConfirm = false) }
+}
+
+internal fun routeConfirmImportSettings(vm: SettingsViewModel) {
+    vm._uiState.update { it.copy(showImportSettingsConfirm = false) }
+    vm.viewModelScope.launch { vm._openSettingsBackupPickerEvent.emit(Unit) }
+}
+
+internal fun routeImportSettingsFrom(vm: SettingsViewModel, path: String) {
+    vm.viewModelScope.launch {
+        when (val result = vm.settingsBackupRepository.importFromFile(path)) {
+            is SettingsImportResult.Success -> {
+                vm.loadSettings()
+                vm.notificationManager.show(
+                    title = "Settings imported",
+                    subtitle = importSubtitle(result),
+                    type = NotificationType.SUCCESS,
+                    duration = NotificationDuration.MEDIUM
+                )
+            }
+            is SettingsImportResult.Error -> vm.notificationManager.showError(result.message)
+        }
+    }
+}
+
+private fun importSubtitle(result: SettingsImportResult.Success): String = when {
+    result.skipped > 0 ->
+        "${result.applied} applied, ${result.skipped} skipped. Restart to apply everything."
+    else -> "${result.applied} applied. Restart to apply everything."
 }
 
 internal fun routeSetFileLoggingPath(vm: SettingsViewModel, path: String) {

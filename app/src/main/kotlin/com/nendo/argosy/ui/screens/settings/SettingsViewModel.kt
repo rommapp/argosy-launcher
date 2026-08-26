@@ -96,6 +96,8 @@ class SettingsViewModel @Inject constructor(
     internal val builtinCoreResolver: BuiltinCoreResolver,
     internal val romMRepository: RomMRepository,
     internal val notificationManager: NotificationManager,
+    internal val settingsBackupRepository:
+        com.nendo.argosy.data.preferences.SettingsBackupRepository,
     internal val gameRepository: GameRepository,
     private val extContentOrganizer: com.nendo.argosy.data.download.ExtContentOrganizer,
     private val androidGameScanner: com.nendo.argosy.data.scanner.AndroidGameScanner,
@@ -220,6 +222,10 @@ class SettingsViewModel @Inject constructor(
 
     internal val _openLogFolderPickerEvent = MutableSharedFlow<Unit>()
     val openLogFolderPickerEvent: SharedFlow<Unit> = _openLogFolderPickerEvent.asSharedFlow()
+
+    internal val _openSettingsBackupPickerEvent = MutableSharedFlow<Unit>()
+    val openSettingsBackupPickerEvent: SharedFlow<Unit> =
+        _openSettingsBackupPickerEvent.asSharedFlow()
 
     internal val _openDeviceSettingsEvent = MutableSharedFlow<Unit>()
     val openDeviceSettingsEvent: SharedFlow<Unit> = _openDeviceSettingsEvent.asSharedFlow()
@@ -1615,6 +1621,12 @@ class SettingsViewModel @Inject constructor(
     fun openChangelog() = routeOpenChangelog(this)
     fun closeChangelog() = routeCloseChangelog(this)
     fun loadChangelogPage() = routeLoadChangelogPage(this)
+
+    fun exportSettings() = routeExportSettings(this)
+    fun requestImportSettings() = routeRequestImportSettings(this)
+    fun confirmImportSettings() = routeConfirmImportSettings(this)
+    fun cancelImportSettings() = routeCancelImportSettings(this)
+    fun importSettingsFrom(path: String) = routeImportSettingsFrom(this, path)
 
     fun writeSystemizeScript() {
         _uiState.update { it.copy(systemizeResult = com.nendo.argosy.util.SystemizeScript.write(context)) }

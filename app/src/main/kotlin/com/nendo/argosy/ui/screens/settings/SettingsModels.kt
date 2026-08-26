@@ -1433,6 +1433,7 @@ data class SettingsUiState(
     val social: SocialState = SocialState(),
     val permissions: PermissionsState = PermissionsState(),
     val launchFolderPicker: Boolean = false,
+    val showImportSettingsConfirm: Boolean = false,
     val showMigrationDialog: Boolean = false,
     val pendingStoragePath: String? = null,
     val isMigrating: Boolean = false,

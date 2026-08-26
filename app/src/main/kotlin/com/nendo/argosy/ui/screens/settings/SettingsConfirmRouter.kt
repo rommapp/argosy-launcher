@@ -1042,6 +1042,11 @@ private fun routeAboutConfirm(vm: SettingsViewModel, state: SettingsUiState): In
             vm.setAppAffinityEnabled(!state.appAffinityEnabled)
             return InputResult.handled(SoundType.TOGGLE)
         }
+        AboutItem.ExportSettings -> vm.exportSettings()
+        AboutItem.ImportSettings -> {
+            vm.requestImportSettings()
+            return InputResult.handled(SoundType.OPEN_MODAL)
+        }
         AboutItem.SystemizeHelper -> vm.writeSystemizeScript()
         AboutItem.RestartApp -> vm.restartApp()
         else -> {}

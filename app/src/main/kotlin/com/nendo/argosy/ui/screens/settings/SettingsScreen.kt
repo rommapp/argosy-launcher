@@ -199,6 +199,7 @@ fun SettingsScreen(
     var showFileBrowser by remember { mutableStateOf(false) }
     var fileBrowserTitle by remember { mutableStateOf<String?>(null) }
     var fileBrowserCallback by remember { mutableStateOf<((String) -> Unit)?>(null) }
+    var showSettingsBackupBrowser by remember { mutableStateOf(false) }
 
     val notificationPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
@@ -258,6 +259,12 @@ fun SettingsScreen(
         viewModel.openLogFolderPickerEvent.collect {
             fileBrowserCallback = { path -> viewModel.setFileLoggingPath(path) }
             showFileBrowser = true
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        viewModel.openSettingsBackupPickerEvent.collect {
+            showSettingsBackupBrowser = true
         }
     }
 
@@ -816,6 +823,15 @@ fun SettingsScreen(
     )
 
     ArgosyConfirmModalHost(
+        visible = uiState.showImportSettingsConfirm,
+        title = "Import Settings?",
+        message = "Pick a backup file and the settings it names replace yours. Anything the file leaves out is untouched, and accounts, servers, sync state and file locations are never carried.",
+        confirmLabel = "Choose File",
+        onConfirm = { viewModel.confirmImportSettings() },
+        onDismiss = { viewModel.cancelImportSettings() }
+    )
+
+    ArgosyConfirmModalHost(
         visible = uiState.showMigrationDialog,
         title = "Migrate Downloads?",
         message = "Move ${uiState.storage.downloadedGamesCount} games (${formatFileSize(uiState.storage.downloadedGamesSize)}) to the new location?",
@@ -1057,6 +1073,18 @@ fun SettingsScreen(
                 fileBrowserTitle = null
                 fileBrowserCallback = null
             }
+        )
+    }
+
+    if (showSettingsBackupBrowser) {
+        FileBrowserScreen(
+            mode = FileBrowserMode.FILE_SELECTION,
+            title = "Select Settings Backup",
+            onPathSelected = { path ->
+                showSettingsBackupBrowser = false
+                viewModel.importSettingsFrom(path)
+            },
+            onDismiss = { showSettingsBackupBrowser = false }
         )
     }
 

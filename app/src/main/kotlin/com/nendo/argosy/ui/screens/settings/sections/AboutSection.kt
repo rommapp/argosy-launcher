@@ -16,7 +16,9 @@ import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.HealthAndSafety
 import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material.icons.outlined.Article
+import androidx.compose.material.icons.outlined.Download
 import androidx.compose.material.icons.outlined.RestartAlt
+import androidx.compose.material.icons.outlined.Upload
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -37,6 +39,7 @@ import com.nendo.argosy.ui.components.ActionPreference
 import com.nendo.argosy.ui.components.CyclePreference
 import com.nendo.argosy.ui.components.SwitchPreference
 import com.nendo.argosy.ui.components.preferenceContentColor
+import com.nendo.argosy.data.preferences.SettingsBackupRepository
 import com.nendo.argosy.ui.components.preferenceModifier
 import com.nendo.argosy.ui.components.preferenceSecondaryColor
 import com.nendo.argosy.ui.primitives.ActionButton
@@ -58,7 +61,7 @@ internal sealed class AboutItem(
     val visibleWhen: (AboutLayoutState) -> Boolean = { true }
 ) {
     val isFocusable: Boolean get() = when (this) {
-        is Header, VersionInfo, SectionSpacer, SystemSpacer -> false
+        is Header, VersionInfo, SectionSpacer, SystemSpacer, BackupSpacer -> false
         else -> true
     }
 
@@ -71,6 +74,9 @@ internal sealed class AboutItem(
         visibleWhen = { it.hasChangelog }
     )
     data object BetaUpdates : AboutItem("betaUpdates", "version")
+    data object BackupSpacer : AboutItem("backupSpacer", "backup")
+    data object ExportSettings : AboutItem("exportSettings", "backup")
+    data object ImportSettings : AboutItem("importSettings", "backup")
     data object SystemSpacer : AboutItem("systemSpacer", "system")
     data object SystemizeHelper : AboutItem("systemizeHelper", "system")
     data object RestartApp : AboutItem("restartApp", "system")
@@ -90,12 +96,14 @@ internal sealed class AboutItem(
 
     companion object {
         private val VersionHeader = Header("versionHeader", "version", "VERSION")
+        private val BackupHeader = Header("backupHeader", "backup", "BACKUP")
         private val SystemHeader = Header("systemHeader", "system", "SYSTEM APP")
         private val DebugHeader = Header("debugHeader", "debug", "DEBUG")
 
         val ALL: List<AboutItem>
             get() = listOf(
                 VersionHeader, VersionInfo, CheckUpdates, ChangelogPreview, BetaUpdates,
+                BackupSpacer, BackupHeader, ExportSettings, ImportSettings,
                 SystemSpacer, SystemHeader, SystemizeHelper, RestartApp,
                 SectionSpacer, DebugHeader, FileLogging, LogLevel, SaveDebugLogging
             )
@@ -110,6 +118,7 @@ private val aboutLayout = SettingsLayout<AboutItem, AboutLayoutState>(
     sectionTitle = {
         when (it) {
             "version" -> "VERSION"
+            "backup" -> "BACKUP"
             "system" -> "SYSTEM APP"
             "debug" -> "DEBUG"
             else -> null
@@ -227,6 +236,24 @@ fun AboutSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                     isEnabled = uiState.betaUpdatesEnabled,
                     isFocused = isFocused(item),
                     onToggle = { viewModel.setBetaUpdatesEnabled(it) }
+                )
+
+                AboutItem.BackupSpacer -> Spacer(modifier = Modifier.height(Dimens.spacingMd))
+
+                AboutItem.ExportSettings -> ActionPreference(
+                    icon = Icons.Outlined.Upload,
+                    title = "Export Settings",
+                    subtitle = "Writes your appearance and navigation settings to ${SettingsBackupRepository.FILE_NAME}. No accounts, servers or sync state are included.",
+                    isFocused = isFocused(item),
+                    onClick = { viewModel.exportSettings() }
+                )
+
+                AboutItem.ImportSettings -> ActionPreference(
+                    icon = Icons.Outlined.Download,
+                    title = "Import Settings",
+                    subtitle = "Apply settings from a backup file",
+                    isFocused = isFocused(item),
+                    onClick = { viewModel.requestImportSettings() }
                 )
 
                 AboutItem.SystemSpacer -> Spacer(modifier = Modifier.height(Dimens.spacingMd))

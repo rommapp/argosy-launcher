@@ -49,6 +49,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextOverflow
 import coil.compose.AsyncImage
 import com.nendo.argosy.ui.common.rememberFileImageModel
+import com.nendo.argosy.ui.components.animateScrollToItemCentered
 import com.nendo.argosy.ui.quickmenu.GameCardUi
 import com.nendo.argosy.ui.quickmenu.GameRowUi
 import com.nendo.argosy.ui.quickmenu.QuickMenuOrb
@@ -372,15 +373,8 @@ private fun GameList(
     val listState = rememberLazyListState()
 
     LaunchedEffect(focusedIndex) {
-        if (games.isNotEmpty() && focusedIndex in games.indices) {
-            val visibleItems = listState.layoutInfo.visibleItemsInfo
-            val viewportHeight = listState.layoutInfo.viewportEndOffset
-            val avgItemHeight = if (visibleItems.isNotEmpty()) {
-                visibleItems.sumOf { it.size } / visibleItems.size
-            } else 80
-
-            val targetOffset = (viewportHeight / 2) - (avgItemHeight / 2)
-            listState.animateScrollToItem(focusedIndex, -targetOffset)
+        if (focusedIndex in games.indices) {
+            listState.animateScrollToItemCentered(focusedIndex)
         }
     }
 
@@ -410,15 +404,8 @@ private fun RecentSearchesList(
     val listState = rememberLazyListState()
 
     LaunchedEffect(focusedIndex) {
-        if (searches.isNotEmpty() && focusedIndex in searches.indices) {
-            val visibleItems = listState.layoutInfo.visibleItemsInfo
-            val viewportHeight = listState.layoutInfo.viewportEndOffset
-            val avgItemHeight = if (visibleItems.isNotEmpty()) {
-                visibleItems.sumOf { it.size } / visibleItems.size
-            } else 56
-
-            val targetOffset = (viewportHeight / 2) - (avgItemHeight / 2)
-            listState.animateScrollToItem(focusedIndex, -targetOffset)
+        if (focusedIndex in searches.indices) {
+            listState.animateScrollToItemCentered(focusedIndex)
         }
     }
 

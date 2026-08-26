@@ -112,7 +112,7 @@ sealed class DualHomeSection(
 
 enum class DualHomeFocusZone { CAROUSEL, APP_BAR }
 
-enum class DualHomeViewMode { CAROUSEL, COLLECTIONS, COLLECTION_GAMES, LIBRARY_GRID, MEDIA_GRID }
+enum class DualHomeViewMode { CAROUSEL, COLLECTIONS, COLLECTION_GAMES, LIBRARY_GRID, MEDIA_GRID, MEDIA_INFO }
 
 data class DualCollectionPickerEntry(val id: Long, val name: String, val isMember: Boolean)
 
@@ -136,6 +136,7 @@ enum class DualLibraryMenuAction(val label: String) {
 enum class ForwardingMode { NONE, OVERLAY, BACKGROUND }
 
 enum class DualMediaMenuAction(val label: String) {
+    OPEN_INFO("Open Media Info"),
     START_OVER("Start Over"),
     FAVORITE("Favorite"),
     UNFAVORITE("Unfavorite"),
@@ -259,7 +260,10 @@ data class DualHomeUiState(
     val mediaMenu: DualMediaMenuState? = null,
     val mediaDownloadPrompt: com.nendo.argosy.ui.screens.media.MediaDownloadPrompt? = null,
     val mediaPromptItem: com.nendo.argosy.ui.screens.media.MediaItemUi? = null,
-    val mediaNotice: String? = null
+    val mediaNotice: String? = null,
+    val mediaInfoItemId: String? = null,
+    val mediaInfoSiblingIds: List<String> = emptyList(),
+    val mediaInfoReturnMode: DualHomeViewMode = DualHomeViewMode.CAROUSEL
 ) {
     val currentSection: DualHomeSection?
         get() = sections.getOrNull(currentSectionIndex)
@@ -457,7 +461,9 @@ class DualHomeViewModel(
     private val mediaAvailabilityVerifier:
         com.nendo.argosy.data.media.MediaAvailabilityVerifier? = null,
     private val mediaDownloadDelegate:
-        com.nendo.argosy.ui.screens.media.delegates.MediaDownloadDelegate? = null
+        com.nendo.argosy.ui.screens.media.delegates.MediaDownloadDelegate? = null,
+    private val mediaSiblingsDelegate:
+        com.nendo.argosy.ui.screens.media.delegates.MediaSiblingsDelegate? = null
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(DualHomeUiState())
@@ -563,12 +569,16 @@ class DualHomeViewModel(
     private val pendingCoverRepairs = mutableSetOf<Long>()
     private var letterOverlayJob: kotlinx.coroutines.Job? = null
     private var mediaNoticeJob: kotlinx.coroutines.Job? = null
+    private var mediaInfoSiblingsJob: kotlinx.coroutines.Job? = null
+    private var mediaInfoSiblingLibraryId: String? = null
 
     private data class PendingRestore(
         val sectionKind: String,
         val platformId: Long,
         val pinId: Long,
         val gameId: Long,
+        val mediaLibraryId: String,
+        val mediaItemId: String,
         val filters: DualActiveFilters?,
         val legacySectionIndex: Int,
         val legacySelectedIndex: Int,
@@ -604,6 +614,7 @@ class DualHomeViewModel(
         observeGradientChanges()
         observeMediaGradientChanges()
         observeMediaFocusForCompanion()
+        observeMediaInfoExit()
         observeMediaAvailability()
         observeMediaDownloadProgress()
         observeLayoutConfig()
@@ -1289,6 +1300,7 @@ class DualHomeViewModel(
             val item = mediaItemFor(itemId) ?: return@launch
             val downloaded = mediaDownloadDelegate?.summaryFor(item, 0)?.downloaded ?: 0
             val actions = buildList {
+                add(DualMediaMenuAction.OPEN_INFO)
                 if (item.isPlayable && item.hasResumePosition) {
                     add(DualMediaMenuAction.START_OVER)
                 }
@@ -1337,6 +1349,7 @@ class DualHomeViewModel(
         val action = menu.actions.getOrNull(menu.focusIndex) ?: return
         _uiState.update { it.copy(mediaMenu = null) }
         when (action) {
+            DualMediaMenuAction.OPEN_INFO -> enterMediaInfo(menu.item.itemId)
             DualMediaMenuAction.START_OVER ->
                 com.nendo.argosy.DualScreenManagerHolder.instance
                     ?.playMediaItem(menu.item.itemId, startOver = true)
@@ -1363,6 +1376,110 @@ class DualHomeViewModel(
                 }
             }
             DualMediaMenuAction.REFRESH -> refreshMediaGrid()
+        }
+    }
+
+    /**
+     * Opens the media information panel for one title on this screen, remembering where the viewer
+     * came from so Back returns there. The requested id is published through DSM because the panel
+     * view model is owned per surface and only DSM state reaches whichever one is being driven; the
+     * view-mode broadcast lives here so the touch and gamepad entries cannot diverge.
+     */
+    fun enterMediaInfo(itemId: String) {
+        val holder = com.nendo.argosy.DualScreenManagerHolder.instance ?: return
+        _uiState.update { state ->
+            state.copy(
+                viewMode = DualHomeViewMode.MEDIA_INFO,
+                mediaInfoItemId = itemId,
+                mediaInfoReturnMode = if (state.viewMode == DualHomeViewMode.MEDIA_INFO) {
+                    state.mediaInfoReturnMode
+                } else {
+                    state.viewMode
+                }
+            )
+        }
+        holder.requestMediaInfo(itemId)
+        holder.onViewModeChanged(DualHomeViewMode.MEDIA_INFO.name, false, false)
+        observeMediaInfoSiblings(itemId)
+    }
+
+    /**
+     * Tracks the library run the information panel's shoulder buttons walk. Keyed by the library
+     * rather than the title so a step to a sibling keeps the run it is walking, the same carry the
+     * single-screen detail screen does.
+     */
+    private fun observeMediaInfoSiblings(itemId: String) {
+        val delegate = mediaSiblingsDelegate ?: return
+        viewModelScope.launch {
+            val libraryId = delegate.libraryIdOf(itemId)
+            if (libraryId == null) {
+                clearMediaInfoSiblings()
+                return@launch
+            }
+            if (mediaInfoSiblingLibraryId == libraryId && mediaInfoSiblingsJob?.isActive == true) {
+                return@launch
+            }
+            mediaInfoSiblingsJob?.cancel()
+            mediaInfoSiblingLibraryId = libraryId
+            mediaInfoSiblingsJob = viewModelScope.launch {
+                delegate.siblingIdsFlow(libraryId).collect { ids ->
+                    _uiState.update { it.copy(mediaInfoSiblingIds = ids) }
+                }
+            }
+        }
+    }
+
+    private fun clearMediaInfoSiblings() {
+        mediaInfoSiblingsJob?.cancel()
+        mediaInfoSiblingsJob = null
+        mediaInfoSiblingLibraryId = null
+        _uiState.update { it.copy(mediaInfoSiblingIds = emptyList()) }
+    }
+
+    /**
+     * Steps the information panel to the title beside the open one, in the order its library is
+     * shown in. Answers false at either end of the run and for a title with none, which is the
+     * caller's cue to sound a boundary rather than wrap to the other end.
+     */
+    fun stepMediaInfoSibling(direction: Int): Boolean {
+        val state = _uiState.value
+        if (state.viewMode != DualHomeViewMode.MEDIA_INFO) return false
+        val current = state.mediaInfoItemId ?: return false
+        val index = state.mediaInfoSiblingIds.indexOf(current)
+        if (index < 0) return false
+        val target = state.mediaInfoSiblingIds.getOrNull(index + direction) ?: return false
+        enterMediaInfo(target)
+        return true
+    }
+
+    /**
+     * Leaves the information panel for wherever it was opened from, and hands the panel back to
+     * following the playback. Broadcast here for the same reason [enterMediaInfo] broadcasts.
+     */
+    fun exitMediaInfo() {
+        if (_uiState.value.viewMode != DualHomeViewMode.MEDIA_INFO) return
+        _uiState.update {
+            it.copy(viewMode = it.mediaInfoReturnMode, mediaInfoItemId = null)
+        }
+        val holder = com.nendo.argosy.DualScreenManagerHolder.instance
+        holder?.clearMediaInfoRequest()
+        holder?.onViewModeChanged(_uiState.value.viewMode.name, false, false)
+    }
+
+    /**
+     * Acts on one row of the information panel. A playable resolution starts the title; a series
+     * the resolver cannot reduce to an episode opens its own information instead, which is the
+     * surface that can, unlike the play path, do something useful with it.
+     */
+    fun confirmMediaInfoRow(itemId: String) {
+        val resolve = resolveMediaPlayTargetUseCase ?: return
+        viewModelScope.launch {
+            when (val target = resolve(itemId)) {
+                is com.nendo.argosy.domain.model.MediaPlayTarget.Play ->
+                    com.nendo.argosy.DualScreenManagerHolder.instance?.playMediaItem(target.itemId)
+                is com.nendo.argosy.domain.model.MediaPlayTarget.OpenDetail ->
+                    enterMediaInfo(target.itemId)
+            }
         }
     }
 
@@ -1473,7 +1590,30 @@ class DualHomeViewModel(
         }
     }
 
+    /**
+     * Retires the info request whenever this surface leaves MEDIA_INFO through any door, not just
+     * the Back exit: several flows change the view mode directly, and a request left standing would
+     * pin the shared panel to a title the viewer has already walked away from.
+     */
+    private fun observeMediaInfoExit() {
+        viewModelScope.launch {
+            _uiState
+                .map { it.viewMode }
+                .distinctUntilChanged()
+                .collect { mode ->
+                    if (mode != DualHomeViewMode.MEDIA_INFO &&
+                        _uiState.value.mediaInfoItemId != null
+                    ) {
+                        _uiState.update { it.copy(mediaInfoItemId = null) }
+                        clearMediaInfoSiblings()
+                        com.nendo.argosy.DualScreenManagerHolder.instance?.clearMediaInfoRequest()
+                    }
+                }
+        }
+    }
+
     private fun focusedMediaId(state: DualHomeUiState): String? = when {
+        state.viewMode == DualHomeViewMode.MEDIA_INFO -> state.mediaInfoItemId
         state.viewMode == DualHomeViewMode.MEDIA_GRID ->
             state.mediaGridItems.getOrNull(state.mediaGridFocusedIndex)?.itemId
         state.currentSection is DualHomeSection.MediaLibrary ->
@@ -1536,6 +1676,8 @@ class DualHomeViewModel(
             platformId = ctx.platformId,
             pinId = ctx.pinId,
             gameId = ctx.gameId,
+            mediaLibraryId = ctx.mediaLibraryId,
+            mediaItemId = ctx.mediaItemId,
             filters = if (ctx.hasContext) ctx.toActiveFilters() else null,
             legacySectionIndex = ctx.legacySectionIndex,
             legacySelectedIndex = ctx.legacySelectedIndex,
@@ -1552,6 +1694,8 @@ class DualHomeViewModel(
             platformId = -1L,
             pinId = -1L,
             gameId = -1L,
+            mediaLibraryId = "",
+            mediaItemId = "",
             filters = null,
             legacySectionIndex = sectionIndex,
             legacySelectedIndex = selectedIndex,
@@ -1590,6 +1734,11 @@ class DualHomeViewModel(
         SECTION_KIND_PINNED -> sections.indexOfFirst {
             it is DualHomeSection.Pinned && it.pinned.id == pending.pinId
         }
+        SECTION_KIND_MEDIA -> if (pending.mediaLibraryId.isEmpty()) -1 else {
+            sections.indexOfFirst {
+                it is DualHomeSection.MediaLibrary && it.libraryId == pending.mediaLibraryId
+            }
+        }
         else -> -1
     }
 
@@ -1623,6 +1772,7 @@ class DualHomeViewModel(
         when {
             resolved >= 0 -> applyRestoreToSection(resolved, pending)
             restoreByGameIdentity(pending, sections) -> Unit
+            restoreByMediaIdentity(pending, sections) -> Unit
             else -> applyRestoreToSection(
                 pending.legacySectionIndex.coerceIn(0, sections.size - 1), pending
             )
@@ -1637,6 +1787,18 @@ class DualHomeViewModel(
             it.copy(currentSectionIndex = sectionIndex, selectedIndex = 0)
         }
         loadGamesForCurrentSectionSuspend()
+
+        val media = _uiState.value.mediaItems
+        if (media.isNotEmpty()) {
+            val byItem = if (pending.mediaItemId.isNotEmpty()) {
+                media.indexOfFirst { it.itemId == pending.mediaItemId }
+            } else {
+                -1
+            }
+            val target = if (byItem >= 0) byItem else pending.legacySelectedIndex
+            _uiState.update { it.copy(selectedIndex = target.coerceIn(0, media.size - 1)) }
+            return
+        }
 
         val games = _uiState.value.games
         if (games.isEmpty()) return
@@ -1660,6 +1822,20 @@ class DualHomeViewModel(
         return true
     }
 
+    private suspend fun restoreByMediaIdentity(
+        pending: PendingRestore,
+        sections: List<DualHomeSection>
+    ): Boolean {
+        if (pending.mediaItemId.isEmpty()) return false
+        val libraryId = mediaRepository?.getItem(pending.mediaItemId)?.libraryId ?: return false
+        val libraryIndex = sections.indexOfFirst {
+            it is DualHomeSection.MediaLibrary && it.libraryId == libraryId
+        }
+        if (libraryIndex < 0) return false
+        applyRestoreToSection(libraryIndex, pending)
+        return true
+    }
+
     fun currentNavContext(): SessionStateStore.CarouselNavContext {
         val state = _uiState.value
         val section = state.currentSection
@@ -1675,12 +1851,19 @@ class DualHomeViewModel(
             null -> ""
         }
         val filters = state.activeFilters
+        val mediaSection = section as? DualHomeSection.MediaLibrary
         return SessionStateStore.CarouselNavContext(
             hasContext = section != null,
             sectionKind = kind,
             platformId = (section as? DualHomeSection.Platform)?.id ?: -1L,
             pinId = (section as? DualHomeSection.Pinned)?.pinned?.id ?: -1L,
             gameId = state.selectedGame?.id ?: -1L,
+            mediaLibraryId = mediaSection?.libraryId ?: "",
+            mediaItemId = if (mediaSection != null) {
+                state.mediaItems.getOrNull(state.selectedIndex)?.itemId ?: ""
+            } else {
+                ""
+            },
             legacySectionIndex = state.currentSectionIndex,
             legacySelectedIndex = state.selectedIndex,
             filterSource = filters.source,
@@ -1712,6 +1895,8 @@ class DualHomeViewModel(
             sections.indexOfFirst { s ->
                 when {
                     c is DualHomeSection.Platform && s is DualHomeSection.Platform -> c.id == s.id
+                    c is DualHomeSection.MediaLibrary && s is DualHomeSection.MediaLibrary ->
+                        c.libraryId == s.libraryId
                     else -> c::class == s::class
                 }
             }.takeIf { it >= 0 }

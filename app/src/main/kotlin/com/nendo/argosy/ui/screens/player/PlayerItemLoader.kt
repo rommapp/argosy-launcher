@@ -24,11 +24,14 @@ data class PlayerItemDetail(
     val subtitle: String = "",
     val runtimeMs: Long = 0,
     val serverResumeMs: Long = 0,
+    val playedPercent: Double? = null,
     val chapters: List<PlayerChapter> = emptyList(),
     val skipSegments: List<PlayerSkipSegment> = emptyList(),
     val trickplay: PlayerTrickplay? = null,
     val isWatched: Boolean = false,
-    val nextEpisode: PlayerNextEpisode? = null
+    val isEpisode: Boolean = false,
+    val nextEpisode: PlayerNextEpisode? = null,
+    val previousEpisode: PlayerNextEpisode? = null
 )
 
 /**
@@ -62,6 +65,7 @@ class PlayerItemLoader @Inject constructor(
             runtimeMs = ((item.runTimeTicks ?: 0L) / TICKS_PER_MILLISECOND)
                 .takeIf { it > 0 } ?: stored.runtimeMs,
             serverResumeMs = (item.userData?.playbackPositionTicks ?: 0L) / TICKS_PER_MILLISECOND,
+            playedPercent = item.userData?.playedPercentage ?: stored.playedPercent,
             chapters = item.chapters.orEmpty().mapIndexed { index, chapter ->
                 PlayerChapter(
                     startMs = chapter.startPositionTicks / TICKS_PER_MILLISECOND,
@@ -71,7 +75,9 @@ class PlayerItemLoader @Inject constructor(
             skipSegments = loadSkipSegments(itemId),
             trickplay = trickplayOf(item),
             isWatched = item.userData?.played ?: stored.isWatched,
-            nextEpisode = stored.nextEpisode
+            isEpisode = stored.isEpisode || item.type == ITEM_TYPE_EPISODE,
+            nextEpisode = stored.nextEpisode,
+            previousEpisode = stored.previousEpisode
         )
     }
 
@@ -110,14 +116,20 @@ class PlayerItemLoader @Inject constructor(
         entity: MediaItemEntity?,
         itemId: String
     ): PlayerItemDetail {
-        val watched = runCatching { mediaRepository.getUserData(itemId)?.played }.getOrNull() == true
-        if (entity == null) return PlayerItemDetail(isWatched = watched)
+        val userData = runCatching { mediaRepository.getUserData(itemId) }.getOrNull()
+        val watched = userData?.played == true
+        if (entity == null) {
+            return PlayerItemDetail(isWatched = watched, playedPercent = userData?.playedPercentage)
+        }
         return PlayerItemDetail(
             title = entity.storedTitle(),
             subtitle = entity.storedSubtitle(),
             runtimeMs = (entity.runTimeTicks ?: 0L) / TICKS_PER_MILLISECOND,
+            playedPercent = userData?.playedPercentage,
             isWatched = watched,
-            nextEpisode = nextEpisodeOf(entity)
+            isEpisode = entity.itemType == MediaItemType.EPISODE.wireValue,
+            nextEpisode = nextEpisodeOf(entity),
+            previousEpisode = previousEpisodeOf(entity)
         )
     }
 
@@ -125,7 +137,7 @@ class PlayerItemLoader @Inject constructor(
      * The episode after this one, resolved by the shared play-target use case so a stored season
      * boundary is crossed by fetching the following season rather than answering nothing. A film,
      * an episode whose series was never stored, and the true last episode of a show still answer
-     * with nothing, and the button for it never appears rather than appearing and failing.
+     * with nothing, and the button for it renders disabled rather than working sometimes.
      */
     private suspend fun nextEpisodeOf(entity: MediaItemEntity): PlayerNextEpisode? {
         if (entity.itemType != MediaItemType.EPISODE.wireValue) return null
@@ -133,6 +145,18 @@ class PlayerItemLoader @Inject constructor(
             .getOrNull()
             ?: return null
         return PlayerNextEpisode(itemId = next.itemId, label = next.episodeLabel())
+    }
+
+    /**
+     * The mirror of [nextEpisodeOf], through the same shared use case so the two directions cannot
+     * drift into reading the episode table differently.
+     */
+    private suspend fun previousEpisodeOf(entity: MediaItemEntity): PlayerNextEpisode? {
+        if (entity.itemType != MediaItemType.EPISODE.wireValue) return null
+        val previous = runCatching { resolvePlayTarget.previousEpisodeBefore(entity.itemId) }
+            .getOrNull()
+            ?: return null
+        return PlayerNextEpisode(itemId = previous.itemId, label = previous.episodeLabel())
     }
 
     private fun MediaItemEntity.storedTitle(): String = when (itemType) {

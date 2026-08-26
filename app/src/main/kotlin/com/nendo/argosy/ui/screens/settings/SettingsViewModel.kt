@@ -2130,6 +2130,8 @@ class SettingsViewModel @Inject constructor(
         jellyfinDelegate.setSubtitleLanguage(viewModelScope, language)
     fun setJellyfinBurnInImageSubtitles(enabled: Boolean) =
         jellyfinDelegate.setBurnInImageSubtitles(viewModelScope, enabled)
+    fun setJellyfinConfirmPlayerExit(enabled: Boolean) =
+        jellyfinDelegate.setConfirmPlayerExit(viewModelScope, enabled)
     fun setJellyfinSharePresence(enabled: Boolean) =
         jellyfinDelegate.setSharePresence(viewModelScope, enabled)
 

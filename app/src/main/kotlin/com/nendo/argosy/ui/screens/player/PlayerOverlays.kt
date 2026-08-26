@@ -4,7 +4,9 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -18,12 +20,15 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.style.TextOverflow
 import com.nendo.argosy.ui.components.InputButton
 import com.nendo.argosy.ui.components.Modal
+import com.nendo.argosy.ui.components.WheelPicker
+import com.nendo.argosy.ui.components.animateScrollToItemCentered
 import com.nendo.argosy.ui.primitives.FocusIndicators
 import com.nendo.argosy.ui.primitives.argosyFocusIndicators
 import com.nendo.argosy.ui.theme.Dimens
@@ -42,6 +47,8 @@ private const val SUBTITLE_OFF_ROW = 0
 fun PlayerOverlayHost(
     state: PlayerUiState,
     onSelect: (Int) -> Unit,
+    onQualityWheelSelect: (QualityWheel, Int?) -> Unit,
+    onQualityApply: () -> Unit,
     onDismiss: () -> Unit
 ) {
     when (state.overlay) {
@@ -49,38 +56,85 @@ fun PlayerOverlayHost(
         PlayerOverlay.AUDIO_TRACKS -> AudioTrackOverlay(state, onSelect, onDismiss)
         PlayerOverlay.SUBTITLE_TRACKS -> SubtitleTrackOverlay(state, onSelect, onDismiss)
         PlayerOverlay.CHAPTERS -> ChapterOverlay(state, onSelect, onDismiss)
-        PlayerOverlay.QUALITY -> QualityOverlay(state, onSelect, onDismiss)
+        PlayerOverlay.QUALITY -> QualityOverlay(state, onQualityWheelSelect, onQualityApply, onDismiss)
     }
 }
 
 /**
- * Picks the ceiling this viewing streams at.
+ * Picks the ceilings this viewing streams under: resolution, frame rate and bit rate, one wheel
+ * each. Every wheel offers "Original" plus a ladder cut down to what the source can actually
+ * provide, and turning the resolution wheel re-cuts the bitrate ladder underneath it. A wheel the
+ * source leaves nothing to choose on is not drawn at all - the remaining wheels share the width as
+ * if it never existed - and a source at the bottom of every ladder never opens this overlay,
+ * because the Quality control itself is left out of the transport row.
  *
- * The choice lasts for this viewing only, so the row marked as current is the one in force now
- * rather than the saved preference; changing it re-negotiates and picks the picture back up where
- * it was.
+ * The wheels edit a draft; Apply is the one press that renegotiates, and the picture picks back up
+ * where it was. The choice lasts for this viewing only - the saved preference in settings is what
+ * the next one starts from.
  */
 @Composable
 private fun QualityOverlay(
     state: PlayerUiState,
-    onSelect: (Int) -> Unit,
+    onWheelSelect: (QualityWheel, Int?) -> Unit,
+    onApply: () -> Unit,
     onDismiss: () -> Unit
 ) {
-    val tiers = com.nendo.argosy.data.preferences.MediaStreamingQuality.entries
+    val theme = LocalArgosyTheme.current
+    val draft = state.qualityDraft ?: state.activeQuality
     Modal(
         title = "Quality",
-        baseWidth = Dimens.modalWidth,
+        baseWidth = Dimens.modalWidthLg,
         onDismiss = onDismiss,
-        footerHints = listOf(InputButton.A to "Use", InputButton.B to "Close")
+        footerHints = listOf(
+            InputButton.DPAD to "Choose",
+            InputButton.A to "Apply",
+            InputButton.B to "Cancel"
+        )
     ) {
-        OverlayList(selectedIndex = state.overlayIndex, itemCount = tiers.size) { index ->
-            val tier = tiers[index]
-            OverlayRow(
-                label = tier.displayName,
-                supporting = null,
-                selected = tier == state.streamingQuality,
-                focused = index == state.overlayIndex,
-                onClick = { onSelect(index) }
+        Row(horizontalArrangement = Arrangement.spacedBy(Dimens.spacingMd)) {
+            state.qualityWheels.forEachIndexed { wheelPosition, wheel ->
+                val options = remember(wheel, state.sourceVideo, draft) {
+                    qualityWheelOptions(wheel, state.sourceVideo, draft)
+                }
+                val labels = remember(options) { options.map { it.label } }
+                Column(
+                    modifier = Modifier.weight(1f),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(Dimens.spacingXs)
+                ) {
+                    Text(
+                        text = wheel.title,
+                        style = MaterialTheme.typography.labelMedium,
+                        color = theme.textDim,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    WheelPicker(
+                        options = labels,
+                        selectedIndex = options.indexOfValue(draft.valueFor(wheel)),
+                        focused = state.qualityWheelIndex == wheelPosition,
+                        onSelect = { index ->
+                            options.getOrNull(index)?.let { onWheelSelect(wheel, it.value) }
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            }
+        }
+        Spacer(modifier = Modifier.height(Dimens.spacingMd))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.Center
+        ) {
+            Text(
+                text = "Apply",
+                style = MaterialTheme.typography.labelLarge,
+                color = theme.focusAccent,
+                modifier = Modifier
+                    .clip(RoundedCornerShape(Dimens.radiusControl))
+                    .background(theme.surfaceElevated)
+                    .clickableNoFocus(onClick = onApply)
+                    .padding(horizontal = Dimens.buttonPaddingH, vertical = Dimens.buttonPaddingV)
             )
         }
     }
@@ -207,7 +261,9 @@ private fun OverlayList(
 ) {
     val listState = rememberLazyListState()
     LaunchedEffect(selectedIndex) {
-        if (itemCount > 0) listState.animateScrollToItem(selectedIndex.coerceIn(0, itemCount - 1))
+        if (itemCount > 0) {
+            listState.animateScrollToItemCentered(selectedIndex.coerceIn(0, itemCount - 1))
+        }
     }
     LazyColumn(
         state = listState,

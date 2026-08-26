@@ -227,6 +227,7 @@ class UserPreferencesRepository @Inject constructor(
             mediaSubtitleMode = jellyfin.subtitleMode,
             mediaSubtitleLanguage = jellyfin.subtitleLanguage,
             mediaBurnInImageSubtitles = jellyfin.burnInImageSubtitles,
+            mediaConfirmPlayerExit = jellyfin.confirmPlayerExit,
             shareMediaPresence = jellyfin.shareMediaPresence
         )
     }
@@ -447,6 +448,8 @@ class UserPreferencesRepository @Inject constructor(
         jellyfinPrefs.setSubtitleLanguage(language)
     suspend fun setMediaBurnInImageSubtitles(enabled: Boolean) =
         jellyfinPrefs.setBurnInImageSubtitles(enabled)
+    suspend fun setMediaConfirmPlayerExit(enabled: Boolean) =
+        jellyfinPrefs.setConfirmPlayerExit(enabled)
     suspend fun setShareMediaPresence(enabled: Boolean) = jellyfinPrefs.setShareMediaPresence(enabled)
 
     // --- App delegates ---
@@ -851,6 +854,7 @@ data class UserPreferences(
     val mediaSubtitleMode: MediaSubtitleMode = MediaSubtitleMode.PREFERRED,
     val mediaSubtitleLanguage: MediaSubtitleLanguage = MediaSubtitleLanguage.ENGLISH,
     val mediaBurnInImageSubtitles: Boolean = false,
+    val mediaConfirmPlayerExit: Boolean = false,
     val shareMediaPresence: Boolean = true
 ) {
     val isSocialLinked: Boolean get() = socialSessionToken != null

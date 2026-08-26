@@ -4,7 +4,6 @@
  */
 package com.nendo.argosy.ui.dualscreen.media
 
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -18,18 +17,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ViewList
-import androidx.compose.material.icons.filled.ExpandLess
-import androidx.compose.material.icons.filled.ExpandMore
-import androidx.compose.material.icons.filled.MyLocation
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.ViewCarousel
 import androidx.compose.material.icons.outlined.Movie
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -39,13 +33,13 @@ import androidx.compose.material3.Text
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import coil.compose.AsyncImage
 import com.nendo.argosy.ui.components.FooterBar
 import com.nendo.argosy.ui.components.InputButton
+import com.nendo.argosy.ui.components.animateScrollToItemCentered
 import com.nendo.argosy.ui.screens.media.MediaItemUi
 import com.nendo.argosy.ui.screens.media.components.MediaCastRail
 import com.nendo.argosy.ui.screens.media.components.MediaEpisodeRow
@@ -62,10 +56,13 @@ import com.nendo.argosy.ui.util.clickableNoFocus
  * The media panel on the companion screen.
  *
  * While the player runs on the other display the controller belongs to it, so everything drawn
- * here is a touch target and no focus cursor appears: an episode plays on tap, the toolbar swaps
- * seasons and layouts on tap, and none of it moves the player's own focus. The cursor and the
- * gamepad footer exist only in the one state without a player - browsing the rails with nothing
- * open. [isInteractive] is false in the showcase role, where this display is a readout.
+ * here is a touch target and no focus cursor appears: an episode plays on tap, a season tab swaps
+ * the listed episodes, and none of it moves the player's own focus. The cursor and the gamepad
+ * footer exist only in the states without a player - browsing the rails with nothing open, and the
+ * information view opened for one title. [isInteractive] is false in the showcase role, where this
+ * display is a readout. [playerLocked] is the exception to the live-playback rule: a viewer who
+ * locked the player's controls has handed the pad to this panel on purpose, so the cursor comes
+ * back while the film plays on untouched.
  */
 @Composable
 fun DualMediaLowerScreen(
@@ -74,13 +71,14 @@ fun DualMediaLowerScreen(
     onRowTapped: (Int) -> Unit,
     onRowConfirmed: (Int) -> Unit,
     modifier: Modifier = Modifier,
-    onSeasonPickerToggled: () -> Unit = {},
     onSeasonSelected: (Int) -> Unit = {},
-    onEpisodeLayoutSelected: (DualMediaEpisodeLayout) -> Unit = {},
-    onJumpToNowPlaying: () -> Unit = {},
-    onEpisodeTapped: (String) -> Unit = {}
+    onEpisodeTapped: (String) -> Unit = {},
+    onBackTapped: () -> Unit = {},
+    backHint: String = "Library",
+    playerLocked: Boolean = false
 ) {
-    val showCursor = isInteractive && !state.isPlaybackLive
+    val showCursor = isInteractive && (!state.isPlaybackLive || playerLocked)
+    val isSeriesBrowse = showCursor && state.isEpisodeBrowse
 
     Box(
         modifier = modifier
@@ -89,12 +87,24 @@ fun DualMediaLowerScreen(
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
             state.nowPlaying?.let { playing ->
-                DualMediaNowPlaying(
-                    item = playing,
-                    fallbackTitle = state.nowPlayingTitle,
-                    isPlaying = state.isPlaying,
-                    showBrief = state.isShowMode
-                )
+                if (isSeriesBrowse) {
+                    DualMediaBrowseHeader(
+                        title = playing.seriesName
+                            ?: playing.title.ifBlank { state.nowPlayingTitle },
+                        countLabel = state.episodes.size.takeIf { it > 0 }?.let { count ->
+                            if (count == 1) "1 episode" else "$count episodes"
+                        },
+                        onBack = onBackTapped
+                    )
+                } else {
+                    DualMediaNowPlaying(
+                        item = playing,
+                        fallbackTitle = state.nowPlayingTitle,
+                        isPlaying = state.isPlaying,
+                        showTransport = state.isPlaybackLive,
+                        showBrief = state.isShowMode
+                    )
+                }
             }
 
             Box(modifier = Modifier.fillMaxWidth().weight(1f)) {
@@ -106,10 +116,8 @@ fun DualMediaLowerScreen(
                     )
                     state.isShowMode -> DualMediaShowBody(
                         state = state,
-                        onSeasonPickerToggled = onSeasonPickerToggled,
+                        showCursor = showCursor,
                         onSeasonSelected = onSeasonSelected,
-                        onEpisodeLayoutSelected = onEpisodeLayoutSelected,
-                        onJumpToNowPlaying = onJumpToNowPlaying,
                         onEpisodeTapped = onEpisodeTapped
                     )
                     state.isLoading && !state.hasRows && state.nowPlaying == null ->
@@ -133,13 +141,17 @@ fun DualMediaLowerScreen(
             }
         }
 
-        if (showCursor && state.hasRows) {
+        val showEpisodeFooter = showCursor && state.isShowMode && state.episodes.isNotEmpty()
+        if (showEpisodeFooter || (showCursor && state.hasRows)) {
             Box(modifier = Modifier.align(Alignment.BottomCenter)) {
                 FooterBar(
-                    hints = listOf(
-                        InputButton.A to "Watch",
-                        InputButton.B to "Library"
-                    )
+                    hints = buildList {
+                        if (showEpisodeFooter && state.seasons.size > 1) {
+                            add(InputButton.DPAD_HORIZONTAL to "Season")
+                        }
+                        add(InputButton.A to "Watch")
+                        add(InputButton.B to backHint)
+                    }
                 )
             }
         }
@@ -147,40 +159,34 @@ fun DualMediaLowerScreen(
 }
 
 /**
- * The show mode below the hero: the season toolbar, the season strip while it is open, and the
- * selected season's episodes as a list or a rail. Every control is a touch target and none draws
- * focus - the pad is driving the player above.
+ * The show mode below the hero: the season list, always visible, and the selected season's
+ * episodes as a scrollable list. Every control is a touch target. While a playback is live the pad
+ * drives the player above, no focus is drawn, and the list follows the playing episode; with
+ * nothing playing [showCursor] puts the pad's episode cursor on the rows and the list follows it.
  */
 @Composable
 private fun DualMediaShowBody(
     state: DualMediaUiState,
-    onSeasonPickerToggled: () -> Unit,
+    showCursor: Boolean,
     onSeasonSelected: (Int) -> Unit,
-    onEpisodeLayoutSelected: (DualMediaEpisodeLayout) -> Unit,
-    onJumpToNowPlaying: () -> Unit,
     onEpisodeTapped: (String) -> Unit
 ) {
     val listState = rememberLazyListState()
     val nowPlayingIndex = state.episodes.indexOfFirst { it.itemId == state.nowPlayingEpisodeId }
 
-    LaunchedEffect(
-        state.jumpNonce,
-        state.episodeLayout,
-        state.nowPlayingEpisodeId,
-        nowPlayingIndex >= 0
-    ) {
-        if (nowPlayingIndex >= 0) listState.animateScrollToItem(nowPlayingIndex)
+    LaunchedEffect(state.episodes, state.nowPlayingEpisodeId, showCursor) {
+        if (!showCursor && nowPlayingIndex >= 0) {
+            listState.animateScrollToItemCentered(nowPlayingIndex)
+        }
+    }
+    LaunchedEffect(state.episodes, state.focusedEpisodeIndex, showCursor) {
+        if (showCursor && state.focusedEpisodeIndex in state.episodes.indices) {
+            listState.animateScrollToItemCentered(state.focusedEpisodeIndex)
+        }
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
-        DualMediaToolbar(
-            state = state,
-            onSeasonPickerToggled = onSeasonPickerToggled,
-            onEpisodeLayoutSelected = onEpisodeLayoutSelected,
-            onJumpToNowPlaying = onJumpToNowPlaying
-        )
-
-        AnimatedVisibility(visible = state.isSeasonPickerOpen && state.seasons.isNotEmpty()) {
+        if (state.seasons.isNotEmpty()) {
             MediaSeasonTabs(
                 seasons = state.seasons,
                 selectedIndex = state.selectedSeasonIndex.coerceAtLeast(0),
@@ -193,47 +199,34 @@ private fun DualMediaShowBody(
         when {
             state.episodes.isEmpty() -> MediaMessageState(
                 icon = Icons.Outlined.Movie,
-                title = if (state.isLoading) "Loading" else "No episodes here yet",
-                message = null
+                title = when {
+                    state.isLoading || state.isFetchingEpisodes -> "Loading"
+                    state.episodeFetchError != null -> "Couldn't load episodes"
+                    else -> "No episodes here yet"
+                },
+                message = state.episodeFetchError
+                    ?.takeIf { !state.isLoading && !state.isFetchingEpisodes }
             )
-            state.episodeLayout == DualMediaEpisodeLayout.RAIL -> LazyRow(
-                state = listState,
-                modifier = Modifier.fillMaxWidth(),
-                contentPadding = PaddingValues(
-                    start = Dimens.spacingLg,
-                    end = Dimens.spacingLg,
-                    top = Dimens.spacingXs,
-                    bottom = Dimens.spacingSm
-                ),
-                horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
-            ) {
-                itemsIndexed(
-                    items = state.episodes,
-                    key = { _, episode -> episode.itemId }
-                ) { _, episode ->
-                    DualMediaEpisodeRailCard(
-                        episode = episode,
-                        isNowPlaying = episode.itemId == state.nowPlayingEpisodeId,
-                        onClick = { onEpisodeTapped(episode.itemId) }
-                    )
-                }
-            }
             else -> LazyColumn(
                 state = listState,
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(
                     top = Dimens.spacingXs,
-                    bottom = Dimens.spacingLg
+                    bottom = if (showCursor) {
+                        Dimens.footerHeight + Dimens.spacingLg
+                    } else {
+                        Dimens.spacingLg
+                    }
                 ),
                 verticalArrangement = Arrangement.spacedBy(Dimens.spacingXs)
             ) {
                 itemsIndexed(
                     items = state.episodes,
                     key = { _, episode -> episode.itemId }
-                ) { _, episode ->
+                ) { index, episode ->
                     MediaEpisodeRow(
                         episode = episode,
-                        isFocused = false,
+                        isFocused = showCursor && index == state.focusedEpisodeIndex,
                         isNowPlaying = episode.itemId == state.nowPlayingEpisodeId,
                         onClick = { onEpisodeTapped(episode.itemId) },
                         onLongClick = { onEpisodeTapped(episode.itemId) },
@@ -327,177 +320,54 @@ private fun DualMediaTitleBody(
 }
 
 /**
- * The season toolbar: the season selector on the left, then the rail, jump and list affordances.
- * The jump button returns the list to the episode being watched, re-selecting its season first.
+ * The compact header for browsing a series with nothing playing: a tappable back affordance (the
+ * same exit B takes), the series title, and how many episodes the selected season lists. The
+ * episode list is the point of that screen, so this is one row where the now-playing hero would
+ * have described a playback that does not exist.
  */
 @Composable
-private fun DualMediaToolbar(
-    state: DualMediaUiState,
-    onSeasonPickerToggled: () -> Unit,
-    onEpisodeLayoutSelected: (DualMediaEpisodeLayout) -> Unit,
-    onJumpToNowPlaying: () -> Unit
+private fun DualMediaBrowseHeader(
+    title: String,
+    countLabel: String?,
+    onBack: () -> Unit
 ) {
     val theme = LocalArgosyTheme.current
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = Dimens.spacingLg, vertical = Dimens.spacingXs),
-        horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm),
+            .padding(horizontal = Dimens.spacingLg, vertical = Dimens.spacingMd),
+        horizontalArrangement = Arrangement.spacedBy(Dimens.spacingMd),
         verticalAlignment = Alignment.CenterVertically
-    ) {
-        if (state.seasons.isNotEmpty()) {
-            val shape = RoundedCornerShape(Dimens.radiusPill)
-            Row(
-                modifier = Modifier
-                    .clip(shape)
-                    .background(
-                        if (state.isSeasonPickerOpen) theme.surfaceRaised else theme.surfaceBase,
-                        shape
-                    )
-                    .clickableNoFocus { onSeasonPickerToggled() }
-                    .padding(horizontal = Dimens.spacingMd, vertical = Dimens.spacingSm),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(Dimens.spacingXs)
-            ) {
-                Text(
-                    text = state.selectedSeason?.let { season ->
-                        season.seasonNumber?.let { "Season $it" } ?: season.name
-                    } ?: "Seasons",
-                    style = MaterialTheme.typography.labelLarge,
-                    color = theme.textPrimary,
-                    maxLines = 1
-                )
-                Icon(
-                    imageVector = if (state.isSeasonPickerOpen) Icons.Filled.ExpandLess
-                    else Icons.Filled.ExpandMore,
-                    contentDescription = "Choose season",
-                    tint = theme.textDim,
-                    modifier = Modifier.size(Dimens.iconSm)
-                )
-            }
-        }
-        DualMediaToolbarButton(
-            icon = Icons.Filled.ViewCarousel,
-            contentDescription = "Episode rail",
-            isSelected = state.episodeLayout == DualMediaEpisodeLayout.RAIL,
-            onClick = { onEpisodeLayoutSelected(DualMediaEpisodeLayout.RAIL) }
-        )
-        DualMediaToolbarButton(
-            icon = Icons.Filled.MyLocation,
-            contentDescription = "Jump to playing episode",
-            isSelected = false,
-            onClick = onJumpToNowPlaying
-        )
-        DualMediaToolbarButton(
-            icon = Icons.AutoMirrored.Filled.ViewList,
-            contentDescription = "Episode list",
-            isSelected = state.episodeLayout == DualMediaEpisodeLayout.LIST,
-            onClick = { onEpisodeLayoutSelected(DualMediaEpisodeLayout.LIST) }
-        )
-    }
-}
-
-@Composable
-private fun DualMediaToolbarButton(
-    icon: ImageVector,
-    contentDescription: String,
-    isSelected: Boolean,
-    onClick: () -> Unit
-) {
-    val theme = LocalArgosyTheme.current
-    val shape = RoundedCornerShape(Dimens.radiusMd)
-    Box(
-        modifier = Modifier
-            .size(Dimens.iconXl)
-            .clip(shape)
-            .background(if (isSelected) theme.surfaceRaised else theme.surfaceBase, shape)
-            .clickableNoFocus { onClick() },
-        contentAlignment = Alignment.Center
-    ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = contentDescription,
-            tint = if (isSelected) theme.focusAccent else theme.textDim,
-            modifier = Modifier.size(Dimens.iconMd)
-        )
-    }
-}
-
-/**
- * One episode as a rail card: the thumbnail with progress, the catalog line, and the runtime. The
- * playing episode carries the same marker the list rows do.
- */
-@Composable
-private fun DualMediaEpisodeRailCard(
-    episode: MediaItemUi,
-    isNowPlaying: Boolean,
-    onClick: () -> Unit
-) {
-    val theme = LocalArgosyTheme.current
-    val shape = RoundedCornerShape(Dimens.radiusMd)
-    Column(
-        modifier = Modifier
-            .width(Dimens.mediaBackdropWidth)
-            .clip(shape)
-            .then(
-                if (isNowPlaying) Modifier.background(theme.surfaceRaised, shape) else Modifier
-            )
-            .clickableNoFocus { onClick() }
-            .padding(Dimens.spacingXs),
-        verticalArrangement = Arrangement.spacedBy(Dimens.spacingXs)
     ) {
         Box(
             modifier = Modifier
-                .fillMaxWidth()
-                .height(Dimens.mediaBackdropHeight)
-                .clip(RoundedCornerShape(Dimens.radiusSm))
+                .clip(RoundedCornerShape(Dimens.radiusPill))
                 .background(theme.surfaceRaised)
+                .clickableNoFocus { onBack() }
+                .padding(Dimens.spacingSm),
+            contentAlignment = Alignment.Center
         ) {
-            AsyncImage(
-                model = episode.thumbUrl,
-                contentDescription = episode.title,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxSize()
-            )
-            if (episode.progressFraction > 0f) {
-                MediaProgressBar(
-                    fraction = episode.progressFraction,
-                    modifier = Modifier.align(Alignment.BottomCenter)
-                )
-            }
-        }
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(Dimens.spacingXs)
-        ) {
-            if (isNowPlaying) {
-                Icon(
-                    imageVector = Icons.Filled.PlayArrow,
-                    contentDescription = "Playing",
-                    tint = theme.focusAccent,
-                    modifier = Modifier.size(Dimens.iconXs)
-                )
-            }
-            episode.episodeLabel?.let {
-                Text(
-                    text = it,
-                    style = MaterialTheme.typography.labelMedium,
-                    color = theme.focusAccent
-                )
-            }
-            Text(
-                text = episode.title,
-                style = MaterialTheme.typography.labelMedium,
-                color = theme.textPrimary,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                contentDescription = "Back",
+                tint = theme.textPrimary,
+                modifier = Modifier.size(Dimens.iconSm)
             )
         }
-        episode.runtimeLabel?.let {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            color = theme.textPrimary,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f)
+        )
+        countLabel?.let { label ->
             Text(
-                text = it,
-                style = MaterialTheme.typography.labelSmall,
-                color = theme.textMute,
+                text = label,
+                style = MaterialTheme.typography.bodySmall,
+                color = theme.textDim,
                 maxLines = 1
             )
         }
@@ -523,15 +393,18 @@ private fun DualMediaSectionHeader(label: String) {
 }
 
 /**
- * The hero for what the player has open. An episode leads with its show: the series name on top,
- * then the catalog line - season and episode number, title, runtime - then the brief. A film leads
- * with its own title and keeps its synopsis in the body below instead.
+ * The hero for the title this panel describes. An episode leads with its show: the series name on
+ * top, then the catalog line - season and episode number, title, runtime - then the brief. A film
+ * leads with its own title and keeps its synopsis in the body below instead. The transport icon is
+ * drawn only while a playback is live; an information view with nothing playing has no transport
+ * state to report.
  */
 @Composable
 private fun DualMediaNowPlaying(
     item: MediaItemUi,
     fallbackTitle: String,
     isPlaying: Boolean,
+    showTransport: Boolean,
     showBrief: Boolean
 ) {
     val theme = LocalArgosyTheme.current
@@ -575,12 +448,14 @@ private fun DualMediaNowPlaying(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
             ) {
-                Icon(
-                    imageVector = if (isPlaying) Icons.Filled.PlayArrow else Icons.Filled.Pause,
-                    contentDescription = if (isPlaying) "Playing" else "Paused",
-                    tint = if (isPlaying) theme.focusAccent else theme.textMute,
-                    modifier = Modifier.size(Dimens.iconSm)
-                )
+                if (showTransport) {
+                    Icon(
+                        imageVector = if (isPlaying) Icons.Filled.PlayArrow else Icons.Filled.Pause,
+                        contentDescription = if (isPlaying) "Playing" else "Paused",
+                        tint = if (isPlaying) theme.focusAccent else theme.textMute,
+                        modifier = Modifier.size(Dimens.iconSm)
+                    )
+                }
                 Text(
                     text = heading,
                     style = MaterialTheme.typography.titleMedium,

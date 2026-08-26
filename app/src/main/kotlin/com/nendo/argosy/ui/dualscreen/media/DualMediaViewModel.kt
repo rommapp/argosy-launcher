@@ -51,7 +51,9 @@ private const val PLAYBACK_SWITCH_GRACE_MS = 5_000L
  * Nothing is observed while the panel is off screen. [setActive] is what starts and stops the work,
  * because the rails refresh themselves from the server on first collection and a companion that
  * observed them permanently would ask for them again on every boot whether or not anyone was
- * watching.
+ * watching. A standing [requestedItem] also keeps the work alive: the information surface renders
+ * this state through the home content rather than the panel, so activity cannot be read from the
+ * panel's visibility alone.
  *
  * While a playback is live the panel is a touch surface only - the controller drives the player on
  * the other screen - so the focus cursor here moves only in the no-playback rails state.
@@ -62,7 +64,8 @@ class DualMediaViewModel(
     private val gradientExtractionDelegate: com.nendo.argosy.ui.screens.common.GradientExtractionDelegate,
     private val getRelatedMedia: com.nendo.argosy.domain.usecase.media.GetRelatedMediaUseCase? = null,
     private val availabilityVerifier: com.nendo.argosy.data.media.MediaAvailabilityVerifier? = null,
-    private val seriesDelegate: com.nendo.argosy.ui.screens.media.delegates.MediaSeriesDelegate? = null
+    private val seriesDelegate: com.nendo.argosy.ui.screens.media.delegates.MediaSeriesDelegate? = null,
+    private val requestedItem: StateFlow<String?> = MutableStateFlow(null)
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(DualMediaUiState())
@@ -96,36 +99,45 @@ class DualMediaViewModel(
             }
         }
         viewModelScope.launch {
-            playback
-                .map { it?.itemId }
+            combine(playback.map { it?.itemId }, requestedItem) { playing, requested ->
+                requested ?: playing
+            }
                 .distinctUntilChanged()
                 .collectLatest { itemId ->
                     if (itemId == null && _uiState.value.isShowMode) {
                         delay(PLAYBACK_SWITCH_GRACE_MS)
                     }
                     selectedSeasonId.value = null
-                    _uiState.update { it.copy(isSeasonPickerOpen = false) }
-                    if (isActive) restart(itemId)
+                    if (shouldObserve()) restart(itemId)
                 }
         }
         availabilityVerifier?.let { verifier ->
             viewModelScope.launch {
                 verifier.availability.collect {
-                    val itemId = playback.value?.itemId
+                    val itemId = effectiveItemId()
                     if (itemId == null && _uiState.value.isShowMode) return@collect
-                    if (isActive) restart(itemId)
+                    if (shouldObserve()) restart(itemId)
                 }
             }
         }
     }
+
+    /**
+     * An explicit request outranks the playback item: it is the viewer asking to see one title's
+     * information whether or not anything is playing. Clearing it returns the panel to following
+     * the playback, which is the standing behaviour.
+     */
+    private fun effectiveItemId(): String? = requestedItem.value ?: playback.value?.itemId
+
+    private fun shouldObserve(): Boolean = isActive || requestedItem.value != null
 
     fun setActive(active: Boolean) {
         if (isActive == active) return
         isActive = active
         if (active) {
             availabilityVerifier?.verifyOnOpen()
-            restart(playback.value?.itemId)
-        } else {
+            restart(effectiveItemId())
+        } else if (requestedItem.value == null) {
             loadJob?.cancel()
             loadJob = null
             _uiState.update {
@@ -135,9 +147,10 @@ class DualMediaViewModel(
                     isLoading = false,
                     seasons = emptyList(),
                     selectedSeasonIndex = -1,
-                    isSeasonPickerOpen = false,
                     episodes = emptyList(),
-                    nowPlayingEpisodeId = null
+                    focusedEpisodeIndex = -1,
+                    nowPlayingEpisodeId = null,
+                    isEpisodeBrowse = false
                 )
             }
         }
@@ -160,24 +173,42 @@ class DualMediaViewModel(
     fun selectSeason(index: Int) {
         val season = _uiState.value.seasons.getOrNull(index) ?: return
         selectedSeasonId.value = season.itemId
-        _uiState.update { it.copy(isSeasonPickerOpen = false) }
     }
 
-    fun toggleSeasonPicker() {
-        _uiState.update { it.copy(isSeasonPickerOpen = !it.isSeasonPickerOpen) }
+    fun moveEpisodeFocus(delta: Int) {
+        val state = _uiState.value
+        if (state.episodes.isEmpty()) return
+        val current = state.focusedEpisodeIndex.coerceIn(0, state.episodes.lastIndex)
+        val next = (current + delta).mod(state.episodes.size)
+        _uiState.update { it.copy(focusedEpisodeIndex = next) }
     }
 
-    fun setEpisodeLayout(layout: DualMediaEpisodeLayout) {
-        _uiState.update { it.copy(episodeLayout = layout) }
+    fun moveSeason(delta: Int) {
+        val state = _uiState.value
+        if (state.seasons.isEmpty()) return
+        val current = state.selectedSeasonIndex.coerceIn(0, state.seasons.lastIndex)
+        selectSeason((current + delta).mod(state.seasons.size))
     }
 
     /**
-     * Returns the episode list to the episode being watched: its season is re-selected and the list
-     * scrolls to its row.
+     * Where the episode cursor lands when a season's episodes publish. A season change resets it to
+     * the anchor episode (the one this panel describes) or the top; the same season keeps whatever
+     * the viewer had, unless the refreshed list no longer contains that index.
      */
-    fun jumpToNowPlaying() {
-        selectedSeasonId.value = null
-        _uiState.update { it.copy(isSeasonPickerOpen = false, jumpNonce = it.jumpNonce + 1) }
+    private fun episodeCursorFor(
+        previous: DualMediaUiState,
+        newSeasonIndex: Int,
+        episodes: List<MediaItemUi>,
+        anchorEpisodeId: String?
+    ): Int {
+        val anchorIndex = episodes.indexOfFirst { it.itemId == anchorEpisodeId }
+            .takeIf { it >= 0 } ?: 0
+        return when {
+            episodes.isEmpty() -> -1
+            previous.selectedSeasonIndex != newSeasonIndex -> anchorIndex
+            previous.focusedEpisodeIndex in episodes.indices -> previous.focusedEpisodeIndex
+            else -> anchorIndex
+        }
     }
 
     private fun restart(itemId: String?) {
@@ -192,8 +223,10 @@ class DualMediaViewModel(
                 val seasonId = entity?.parentId
                 when {
                     entity == null -> observeRails(nowPlaying = null)
-                    seasonId == null -> showTitleDetail(entity)
-                    else -> observeShow(seasonId, entity)
+                    seasonId != null -> observeShow(seasonId, entity)
+                    entity.itemType == com.nendo.argosy.data.local.entity.MediaItemType.SERIES.wireValue ->
+                        observeSeries(entity)
+                    else -> showTitleDetail(entity)
                 }
             }
         }
@@ -215,11 +248,13 @@ class DualMediaViewModel(
         combine(seasonsSource, selectedSeasonId) { seasons, chosen ->
             seasons to (chosen ?: playingSeasonId)
         }.collectLatest { (seasons, activeSeasonId) ->
+            ensureSeasonEpisodes(seriesId, activeSeasonId)
             episodesFor(activeSeasonId).collectLatest { episodes ->
                 val nowPlaying = playingEntity.toUi(
                     mediaRepository.getUserData(playingEntity.itemId)
                 )
                 _uiState.update { state ->
+                    val seasonIndex = seasons.indexOfFirst { it.itemId == activeSeasonId }
                     state.copy(
                         nowPlaying = nowPlaying,
                         overview = playingEntity.overview,
@@ -227,12 +262,96 @@ class DualMediaViewModel(
                         focusedRowIndex = -1,
                         cast = emptyList(),
                         seasons = seasons,
-                        selectedSeasonIndex = seasons.indexOfFirst { it.itemId == activeSeasonId },
+                        selectedSeasonIndex = seasonIndex,
                         episodes = episodes,
+                        focusedEpisodeIndex = episodeCursorFor(
+                            previous = state,
+                            newSeasonIndex = seasonIndex,
+                            episodes = episodes,
+                            anchorEpisodeId = playingEntity.itemId
+                        ),
                         nowPlayingEpisodeId = playingEntity.itemId,
+                        isEpisodeBrowse = false,
                         isLoading = false
                     )
                 }
+            }
+        }
+    }
+
+    /**
+     * The browse mode for a series asked about directly, with nothing of it playing: the series
+     * hero, its seasons, and the selected season's episodes. There is no now-playing marker to
+     * anchor the season, so the first season stands in until the viewer picks one; a series the
+     * delegate has no seasons for falls back to the title detail rather than an empty browser.
+     */
+    private suspend fun observeSeries(entity: MediaItemEntity) {
+        val delegate = seriesDelegate
+        if (delegate == null) {
+            showTitleDetail(entity)
+            return
+        }
+        combine(delegate.seasonsFlow(entity.itemId), selectedSeasonId) { seasons, chosen ->
+            seasons to (chosen ?: seasons.firstOrNull()?.itemId)
+        }.collectLatest { (seasons, activeSeasonId) ->
+            if (activeSeasonId == null) {
+                showTitleDetail(entity)
+                return@collectLatest
+            }
+            ensureSeasonEpisodes(entity.itemId, activeSeasonId)
+            episodesFor(activeSeasonId).collectLatest { episodes ->
+                val hero = entity.toUi(mediaRepository.getUserData(entity.itemId))
+                _uiState.update { state ->
+                    val seasonIndex = seasons.indexOfFirst { it.itemId == activeSeasonId }
+                    state.copy(
+                        nowPlaying = hero,
+                        overview = entity.overview,
+                        rows = emptyList(),
+                        focusedRowIndex = -1,
+                        cast = emptyList(),
+                        seasons = seasons,
+                        selectedSeasonIndex = seasonIndex,
+                        episodes = episodes,
+                        focusedEpisodeIndex = episodeCursorFor(
+                            previous = state,
+                            newSeasonIndex = seasonIndex,
+                            episodes = episodes,
+                            anchorEpisodeId = null
+                        ),
+                        nowPlayingEpisodeId = null,
+                        isEpisodeBrowse = true,
+                        isLoading = false
+                    )
+                }
+            }
+        }
+    }
+
+    private val refreshedSeasonIds = mutableSetOf<String>()
+    private val fetchingSeasonIds = mutableSetOf<String>()
+
+    /**
+     * Fetches a season's episodes if this panel has never asked for them. Episodes are stored a
+     * season at a time and only on request; nothing else asks on this screen, so a season shown
+     * here would otherwise list only whatever a previous resolve happened to store. The stored copy
+     * stays on screen while the fetch runs, and a failure is surfaced rather than left reading as
+     * an empty season; a failed season is retried on its next showing.
+     */
+    private fun ensureSeasonEpisodes(seriesId: String?, seasonId: String) {
+        val delegate = seriesDelegate ?: return
+        if (seriesId == null) return
+        if (seasonId in refreshedSeasonIds || seasonId in fetchingSeasonIds) return
+        fetchingSeasonIds.add(seasonId)
+        _uiState.update { it.copy(isFetchingEpisodes = true, episodeFetchError = null) }
+        viewModelScope.launch {
+            val failure = delegate.refreshEpisodes(seriesId, seasonId)
+            fetchingSeasonIds.remove(seasonId)
+            if (failure == null) refreshedSeasonIds.add(seasonId)
+            _uiState.update {
+                it.copy(
+                    isFetchingEpisodes = fetchingSeasonIds.isNotEmpty(),
+                    episodeFetchError = failure
+                )
             }
         }
     }
@@ -263,7 +382,9 @@ class DualMediaViewModel(
                 seasons = emptyList(),
                 selectedSeasonIndex = -1,
                 episodes = emptyList(),
+                focusedEpisodeIndex = -1,
                 nowPlayingEpisodeId = null,
+                isEpisodeBrowse = false,
                 isLoading = false
             )
         }
@@ -339,7 +460,9 @@ class DualMediaViewModel(
                 seasons = emptyList(),
                 selectedSeasonIndex = -1,
                 episodes = emptyList(),
+                focusedEpisodeIndex = -1,
                 nowPlayingEpisodeId = null,
+                isEpisodeBrowse = false,
                 isLoading = false
             )
         }

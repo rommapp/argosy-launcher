@@ -68,6 +68,34 @@ suspend fun LazyStaggeredGridState.fastAnimateScrollToItem(index: Int, scrollOff
     animateScrollToItem(index, scrollOffset)
 }
 
+/**
+ * Animates the list until the item at [index] sits vertically centred in the viewport,
+ * the way menu focus follows the cursor. A negative or out-of-range index is a no-op.
+ * An unmeasured list suspends until its first layout pass so an early call still lands.
+ * A list that fits its viewport cannot centre and is left where it is. When the target
+ * item is not yet laid out, its height is estimated from the average visible item, so
+ * rows of differing heights settle within one estimate of true centre.
+ */
+suspend fun LazyListState.animateScrollToItemCentered(index: Int) {
+    if (index < 0) return
+    if (layoutInfo.totalItemsCount == 0) {
+        snapshotFlow { layoutInfo.totalItemsCount }.first { it > 0 }
+    }
+    val info = layoutInfo
+    if (index >= info.totalItemsCount) return
+    if (!canScrollForward && !canScrollBackward) return
+    val visible = info.visibleItemsInfo
+    if (visible.isEmpty()) {
+        animateScrollToItem(index)
+        return
+    }
+    val viewportHeight = info.viewportEndOffset - info.viewportStartOffset
+    val itemHeight = visible.firstOrNull { it.index == index }?.size
+        ?: (visible.sumOf { it.size } / visible.size)
+    val centerOffset = (viewportHeight - itemHeight) / 2
+    animateScrollToItem(index, -centerOffset)
+}
+
 data class ListSection(
     val name: String? = null,
     val listStartIndex: Int,

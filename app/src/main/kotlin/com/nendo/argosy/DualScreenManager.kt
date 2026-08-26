@@ -22,6 +22,7 @@ import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.repository.SaveCacheManager
 import com.nendo.argosy.hardware.CompanionGuardService
 import com.nendo.argosy.util.DisplayRoleResolver
+import com.nendo.argosy.util.Logger
 import com.nendo.argosy.domain.model.CompletionStatus
 import com.nendo.argosy.data.remote.ra.RAConsoleIds
 import com.nendo.argosy.domain.model.UnifiedStateEntry
@@ -156,6 +157,8 @@ class DualScreenManager(
         com.nendo.argosy.ui.screens.media.delegates.MediaDownloadDelegate? = null,
     internal val mediaSeriesDelegate:
         com.nendo.argosy.ui.screens.media.delegates.MediaSeriesDelegate? = null,
+    internal val mediaSiblingsDelegate:
+        com.nendo.argosy.ui.screens.media.delegates.MediaSiblingsDelegate? = null,
     initialRolesSwapped: Boolean = false
 ) {
 
@@ -312,10 +315,36 @@ class DualScreenManager(
     private val inputDedup = InputDedupBuffer()
 
     fun claimInput(event: android.view.KeyEvent): Boolean =
-        inputDedup.claim(InputSignature.of(event)).also { if (it) notifyUserActivity() }
+        inputDedup.claim(InputSignature.of(event)).also {
+            if (it) notifyUserActivity("key=${event.keyCode} action=${event.action} device=${event.deviceId}")
+        }
 
     fun claimInput(event: android.view.MotionEvent): Boolean =
-        inputDedup.claim(InputSignature.of(event)).also { if (it) notifyUserActivity() }
+        inputDedup.claim(InputSignature.of(event)).also {
+            if (it && isMeaningfulMotion(event)) {
+                notifyUserActivity("motion action=${event.actionMasked} device=${event.deviceId} source=${event.source}")
+            }
+        }
+
+    private val lastMotionAxes = HashMap<Int, FloatArray>()
+
+    /**
+     * Whether a generic motion event represents a person moving something, as opposed to a
+     * connected pad streaming analog readings that have not changed. An idle stick with electrical
+     * drift emits a steady stream of joystick MOVE events; counting those as user activity resets
+     * the playback dim ramp forever. A joystick event counts only when at least one axis moved past
+     * [MOTION_ACTIVITY_AXIS_THRESHOLD] since the previous event from the same device; every
+     * non-joystick source counts unconditionally.
+     */
+    private fun isMeaningfulMotion(event: android.view.MotionEvent): Boolean {
+        if (!event.isFromSource(android.view.InputDevice.SOURCE_CLASS_JOYSTICK)) return true
+        val axes = FloatArray(MOTION_ACTIVITY_AXES.size) { event.getAxisValue(MOTION_ACTIVITY_AXES[it]) }
+        val previous = lastMotionAxes.put(event.deviceId, axes) ?: return false
+        for (i in axes.indices) {
+            if (kotlin.math.abs(axes[i] - previous[i]) >= MOTION_ACTIVITY_AXIS_THRESHOLD) return true
+        }
+        return false
+    }
 
     private val _userActive = MutableStateFlow(false)
 
@@ -333,12 +362,135 @@ class DualScreenManager(
 
     private var userIdleJob: Job? = null
 
-    private fun notifyUserActivity() {
+    private var lastUserActivityAtMs = android.os.SystemClock.elapsedRealtime()
+
+    /**
+     * The timers behind idleness and the playback dim run on this scope rather than on [scope],
+     * which is rebound to each new primary activity and cancelled when the old one is destroyed. A
+     * ramp riding [scope] dies silently when that happens - cancelled mid-delay with no value
+     * emitted, which froze the dim at its partial stage and never reached dark. This scope lives as
+     * long as the manager, so the only ways a ramp ends are the explicit ones, and every one of
+     * those publishes a level.
+     */
+    private val idleTimerScope =
+        com.nendo.argosy.util.SafeCoroutineScope(Dispatchers.Main, "MediaDimRamp")
+
+    /**
+     * The single notion of "the person did something", raised by every claimed key event, by
+     * touch on any of the app's windows, and by claimed joystick motion whose axes actually moved
+     * (see [isMeaningfulMotion]). It holds both screens awake and, during a playback, restores the
+     * dimmed screen to full brightness and restarts its dim ramp. [source] names the trigger for
+     * the diagnostic log.
+     */
+    fun notifyUserActivity(source: String) {
+        lastUserActivityAtMs = android.os.SystemClock.elapsedRealtime()
+        Logger.debug(MEDIA_DIM_LOG_TAG, "userActivity source=$source")
         _userActive.value = true
         userIdleJob?.cancel()
-        userIdleJob = scope.launch {
+        userIdleJob = idleTimerScope.launch {
             delay(screenOffTimeoutMs())
             _userActive.value = false
+        }
+        restartMediaDimRamp("userActivity:$source")
+    }
+
+    private val _mediaDimBrightness = MutableStateFlow<Float?>(null)
+
+    /**
+     * The window-brightness override for screens not showing a live playback, or null for no
+     * override. It ramps with inactivity while a playback is open - full, then
+     * [MEDIA_DIM_PARTIAL_BRIGHTNESS], then dark - and snaps back to null on any input and when the
+     * playback ends. Windows apply it only when the player has reported a display and theirs is a
+     * different one, so the screen showing the video never dims.
+     */
+    val mediaDimBrightness: StateFlow<Float?> = _mediaDimBrightness
+
+    private val _mediaDimCoverAlpha = MutableStateFlow(0f)
+
+    /**
+     * Opacity of the black cover the dimmed window draws over its content, 0..1. A window
+     * brightness of zero is the panel's minimum backlight, not off, so the ramp fades this in
+     * across the second leg - from the partial stage to the off threshold - reaching fully opaque
+     * exactly when the brightness floor lands. Any wake snaps it straight back to zero; it never
+     * fades out.
+     */
+    val mediaDimCoverAlpha: StateFlow<Float> = _mediaDimCoverAlpha
+
+    private var mediaDimJob: Job? = null
+
+    /**
+     * Arms the ramp from CURRENT state - a live playback plus the time since the last user input -
+     * rather than from a playback transition. StateFlow conflates, so an open edge following a
+     * close can be collapsed away during a fast item switch; arming from state means a missed or
+     * late edge can delay the ramp but never leave it dormant. When the accumulated idle time has
+     * already earned a stage, that stage is published immediately instead of restarting the ramp
+     * from zero.
+     */
+    private fun restartMediaDimRamp(reason: String) {
+        mediaDimJob?.cancel()
+        mediaDimJob = null
+        if (mediaPlaybackTracker.activePlayback.value == null) {
+            if (_mediaDimBrightness.value != null) {
+                Logger.debug(MEDIA_DIM_LOG_TAG, "cleared, no playback (reason=$reason)")
+            }
+            _mediaDimBrightness.value = null
+            _mediaDimCoverAlpha.value = 0f
+            return
+        }
+        val idleMs = android.os.SystemClock.elapsedRealtime() - lastUserActivityAtMs
+        Logger.debug(MEDIA_DIM_LOG_TAG, "armed reason=$reason idleMs=$idleMs")
+        mediaDimJob = idleTimerScope.launch {
+            val untilPartial = MEDIA_DIM_PARTIAL_DELAY_MS - idleMs
+            if (untilPartial > 0) {
+                _mediaDimBrightness.value = null
+                _mediaDimCoverAlpha.value = 0f
+                delay(untilPartial)
+            }
+            _mediaDimBrightness.value = MEDIA_DIM_PARTIAL_BRIGHTNESS
+            Logger.debug(MEDIA_DIM_LOG_TAG, "stage partial brightness=$MEDIA_DIM_PARTIAL_BRIGHTNESS")
+            val untilOff = MEDIA_DIM_OFF_DELAY_MS - maxOf(idleMs, MEDIA_DIM_PARTIAL_DELAY_MS)
+            if (untilOff > 0) {
+                Logger.debug(MEDIA_DIM_LOG_TAG, "cover fade start durationMs=$untilOff")
+                val fadeStart = android.os.SystemClock.elapsedRealtime()
+                val startAlpha = _mediaDimCoverAlpha.value
+                while (true) {
+                    val elapsed = android.os.SystemClock.elapsedRealtime() - fadeStart
+                    if (elapsed >= untilOff) break
+                    _mediaDimCoverAlpha.value =
+                        startAlpha + (1f - startAlpha) * (elapsed.toFloat() / untilOff)
+                    delay(MEDIA_DIM_COVER_STEP_MS)
+                }
+            }
+            _mediaDimCoverAlpha.value = 1f
+            _mediaDimBrightness.value = MEDIA_DIM_OFF_BRIGHTNESS
+            Logger.debug(MEDIA_DIM_LOG_TAG, "stage off brightness=$MEDIA_DIM_OFF_BRIGHTNESS cover=1")
+        }
+    }
+
+    private fun stopMediaDimRamp(reason: String) {
+        mediaDimJob?.cancel()
+        mediaDimJob = null
+        _mediaDimBrightness.value = null
+        _mediaDimCoverAlpha.value = 0f
+        Logger.debug(MEDIA_DIM_LOG_TAG, "stopped reason=$reason")
+    }
+
+    /**
+     * Drives the ramp from the playback flow's current value on the manager-lifetime timer scope.
+     * The activity-bound [scope] that hosts [observeMedia] dies with its activity and is only
+     * rebound on the next primary-activity create; the dim must survive that, so it observes here
+     * instead. Every emission of a live playback re-arms; re-arming is idempotent because the
+     * stages are computed from the last-activity timestamp, not from the moment of arming.
+     */
+    private fun observeMediaDim() {
+        idleTimerScope.launch {
+            mediaPlaybackTracker.activePlayback.collect { playback ->
+                if (playback != null) {
+                    restartMediaDimRamp("playback:${playback.itemId}")
+                } else {
+                    stopMediaDimRamp("playbackClosed")
+                }
+            }
         }
     }
 
@@ -550,6 +702,14 @@ class DualScreenManager(
      */
     val companionMediaVisible: StateFlow<Boolean> = _companionMediaVisible
 
+    private val _mediaPlayerDisplay = MutableStateFlow<Int?>(null)
+
+    /**
+     * The observable face of [mediaPlayerDisplayId], for the windows that dim themselves while a
+     * playback runs on some other display: a relocation re-reports here and the dimming follows it.
+     */
+    val mediaPlayerDisplay: StateFlow<Int?> = _mediaPlayerDisplay
+
     /**
      * The display the player window currently occupies, reported by the player itself. Held here
      * rather than in the activity because the companion has to be able to send an episode to a
@@ -559,7 +719,51 @@ class DualScreenManager(
      * it records was chosen under the previous arrangement, and sending the next episode there
      * would place it by a rule that no longer applies.
      */
-    @Volatile var mediaPlayerDisplayId: Int? = null
+    var mediaPlayerDisplayId: Int?
+        get() = _mediaPlayerDisplay.value
+        set(value) {
+            _mediaPlayerDisplay.value = value
+        }
+
+    /**
+     * The player window's own key dispatch, registered while that window is alive so the companion
+     * can hand over events Android delivered to it instead. A forwarded event runs the exact
+     * dispatch a directly-delivered one runs - claim, mapping and routing included - so the two
+     * paths cannot diverge. A separate pair from the emulator dispatchers because a game and a
+     * playback can be live at once, one per display, and a shared field would let either
+     * registration clobber the other. Cleared by the player on teardown and again here when the
+     * playback ends, so a window that died uncleanly cannot leave a sink behind to swallow input.
+     */
+    @Volatile var mediaPlayerKeyDispatcher: ((android.view.KeyEvent) -> Boolean)? = null
+
+    /**
+     * The motion half of [mediaPlayerKeyDispatcher]: raw trigger-axis motion the companion window
+     * receives goes through the player's own axis-to-key conversion rather than a second one.
+     */
+    @Volatile var mediaPlayerMotionDispatcher: ((android.view.MotionEvent) -> Boolean)? = null
+
+    private val _mediaPlayerControlsLocked = MutableStateFlow(false)
+
+    /**
+     * Whether the viewer has locked the player's controls. The companion's key-yield gate reads
+     * this and keeps the pad for itself while it holds, so the one gate that already decides who
+     * owns the pad during playback is also the one that honours the lock - there is no second
+     * routing path to disagree with it. Written only by the player window mirroring its own view
+     * model, and cleared here when the playback ends so a window that died uncleanly cannot leave
+     * the pad locked out of a player that no longer exists.
+     */
+    val mediaPlayerControlsLocked: StateFlow<Boolean> = _mediaPlayerControlsLocked
+
+    /**
+     * Engaging the lock also hands the pad to the companion window outright: forwarding stops at
+     * the gate, but the player's window may still hold input focus - a touch on it takes focus -
+     * and focus is what decides which window Android delivers keys to in the first place.
+     */
+    fun setMediaPlayerControlsLocked(locked: Boolean) {
+        if (_mediaPlayerControlsLocked.value == locked) return
+        _mediaPlayerControlsLocked.value = locked
+        if (locked) companionHost?.refocusSelf()
+    }
 
     fun toggleCompanionMediaView() {
         _companionMediaVisible.value = !_companionMediaVisible.value &&
@@ -568,6 +772,25 @@ class DualScreenManager(
 
     fun setCompanionMediaVisible(visible: Boolean) {
         _companionMediaVisible.value = visible
+    }
+
+    private val _mediaInfoRequest = MutableStateFlow<String?>(null)
+
+    /**
+     * The media title whose information the viewer explicitly asked to see, or null when the media
+     * panel should follow the playback as usual. Held here rather than in either home view model
+     * because the panel that renders it lives on whichever display holds the interactive role, and
+     * only DSM state reaches both.
+     */
+    val mediaInfoRequest: StateFlow<String?> = _mediaInfoRequest
+
+    fun requestMediaInfo(itemId: String) {
+        if (itemId.isBlank()) return
+        _mediaInfoRequest.value = itemId
+    }
+
+    fun clearMediaInfoRequest() {
+        _mediaInfoRequest.value = null
     }
 
     /**
@@ -607,8 +830,9 @@ class DualScreenManager(
         val options = target?.let {
             displayAffinityHelper.getActivityOptions(forEmulator = false, overrideDisplayId = it)
         }
+        val launchContext = target?.let { displayAffinityHelper.displayContext(it) } ?: appContext
         com.nendo.argosy.ui.screens.player.PlayerActivity.startOnDisplay(
-            context = appContext,
+            context = launchContext,
             args = com.nendo.argosy.ui.screens.player.PlayerArgs(
                 itemId = itemId,
                 startPositionMs = if (startOver) 0L else
@@ -616,6 +840,45 @@ class DualScreenManager(
             ),
             options = options
         )
+        if (target != null) directMediaPlayerFocus(target)
+    }
+
+    private var mediaFocusJob: Job? = null
+
+    /**
+     * Makes the player's display the focused one shortly after a playback launch. Firmwares that
+     * keep a per-display volume bind a playback's audio against the focused display, and a launch
+     * that began as a touch on the other screen leaves focus there - the film then answers to that
+     * screen's volume instead of its own. Skipped while a game is up or launching, because the
+     * game owns focus and taking it would also take the pad.
+     *
+     * The translucent focus director is tried first because it feeds the player window no input;
+     * the accessibility tap is the fallback for external displays, where the director launch is
+     * denied and a synthetic touch is the only remaining way to move display focus.
+     *
+     * A locked player yields: the lock deliberately parks focus on the companion window so the pad
+     * drives it, and reclaiming focus here would undo that routing.
+     */
+    fun directMediaPlayerFocus(displayId: Int) {
+        if (!displayAffinityHelper.hasSecondaryDisplay) return
+        if (sessionStateStore.hasActiveSession()) return
+        if (isLaunchingGame) return
+        if (_mediaPlayerControlsLocked.value) return
+        mediaFocusJob?.cancel()
+        mediaFocusJob = scope.launch {
+            delay(MEDIA_FOCUS_DIRECT_DELAY_MS)
+            if (sessionStateStore.hasActiveSession() || isLaunchingGame) return@launch
+            try {
+                FocusDirectorActivity.launchOnDisplay(appContext, displayId)
+            } catch (e: SecurityException) {
+                val a11y = FocusAccessibilityService.instance
+                if (a11y != null) {
+                    a11y.tapOnDisplay(displayId)
+                } else {
+                    Log.w(TAG, "Media focus direct blocked on display $displayId (device restriction)")
+                }
+            }
+        }
     }
 
     private var accountObserverJob: Job? = null
@@ -635,6 +898,7 @@ class DualScreenManager(
         }
         observeActiveAccount()
         observeMedia()
+        observeMediaDim()
     }
 
     /**
@@ -657,7 +921,14 @@ class DualScreenManager(
                 if (isOpen == wasOpen) return@collect
                 wasOpen = isOpen
                 _companionMediaVisible.value = isOpen
-                if (!isOpen) mediaPlayerDisplayId = null
+                if (!isOpen) {
+                    mediaFocusJob?.cancel()
+                    mediaFocusJob = null
+                    mediaPlayerDisplayId = null
+                    mediaPlayerKeyDispatcher = null
+                    mediaPlayerMotionDispatcher = null
+                    _mediaPlayerControlsLocked.value = false
+                }
             }
         }
     }
@@ -844,6 +1115,14 @@ class DualScreenManager(
     var swappedDualHomeViewModel: DualHomeViewModel? = null
         private set
 
+    /**
+     * The media panel view model for the swapped role, where the primary display holds the
+     * interactive home. The companion's own instance lives in SecondaryHomeActivity; this one exists
+     * so MEDIA_INFO renders on the display actually being driven.
+     */
+    var swappedMediaViewModel: com.nendo.argosy.ui.dualscreen.media.DualMediaViewModel? = null
+        private set
+
     private val _swappedCurrentScreen = MutableStateFlow(
         com.nendo.argosy.hardware.CompanionScreen.HOME
     )
@@ -923,6 +1202,8 @@ class DualScreenManager(
 
         _swappedGameDetailViewModel = null
         swappedDualHomeViewModel = null
+        swappedMediaViewModel = null
+        _mediaInfoRequest.value = null
         _swappedCurrentScreen.value = com.nendo.argosy.hardware.CompanionScreen.HOME
         _swappedIsGameActive.value = false
         _swappedCompanionState.value = com.nendo.argosy.hardware.CompanionInGameState()
@@ -987,10 +1268,20 @@ class DualScreenManager(
             mediaRepository = mediaRepository,
             resolveMediaPlayTargetUseCase = resolveMediaPlayTargetUseCase,
             mediaAvailabilityVerifier = mediaAvailabilityVerifier,
-            mediaDownloadDelegate = mediaDownloadDelegate
+            mediaDownloadDelegate = mediaDownloadDelegate,
+            mediaSiblingsDelegate = mediaSiblingsDelegate
         )
         swappedDualHomeViewModel?.observeHomeTiles()
         swappedDualHomeViewModel?.observeTilePrompts()
+        swappedMediaViewModel = com.nendo.argosy.ui.dualscreen.media.DualMediaViewModel(
+            mediaRepository = mediaRepository,
+            playback = mediaPlayback,
+            gradientExtractionDelegate = gradientExtractionDelegate,
+            getRelatedMedia = getRelatedMediaUseCase,
+            availabilityVerifier = mediaAvailabilityVerifier,
+            seriesDelegate = mediaSeriesDelegate,
+            requestedItem = mediaInfoRequest
+        )
         restoreSwappedNavContext()
     }
 
@@ -2889,6 +3180,7 @@ class DualScreenManager(
         _isRolesSwapped.value = newSwapped
         sessionStateStore.setRolesSwapped(newSwapped)
         mediaPlayerDisplayId = null
+        _mediaInfoRequest.value = null
         onRoleSwapped?.invoke(newSwapped)
         companionHost?.onRoleSwapped(newSwapped)
         if (!newSwapped) companionHost?.refocusSelf()
@@ -3062,9 +3354,52 @@ class DualScreenManager(
         private const val COMPANION_LAUNCH_VERIFY_MS = 8000L
         private const val MAX_COMPANION_LAUNCH_ATTEMPTS = 3
         private const val SWAP_DEBOUNCE_MS = 500L
+
+        /**
+         * How long a playback launch waits before directing focus to the player's display. Long
+         * enough for a cold player window to be up and frontmost there, so the transient director
+         * lands above it and hands focus down to it on finishing rather than to whatever was
+         * behind.
+         */
+        private const val MEDIA_FOCUS_DIRECT_DELAY_MS = 600L
         private const val DEFAULT_SCREEN_OFF_TIMEOUT_MS = 60_000L
         private const val MIN_SCREEN_OFF_TIMEOUT_MS = 15_000L
         private const val MAX_SCREEN_OFF_TIMEOUT_MS = 30 * 60_000L
+
+        /**
+         * The dim ramp for the screen not showing a live playback: untouched for
+         * [MEDIA_DIM_PARTIAL_DELAY_MS] it drops to [MEDIA_DIM_PARTIAL_BRIGHTNESS], still readable
+         * at a glance but no longer competing with the film, and at [MEDIA_DIM_OFF_DELAY_MS] it
+         * goes to [MEDIA_DIM_OFF_BRIGHTNESS]. A window-brightness zero is the panel's MINIMUM
+         * backlight, not off (a couple of nits on measured hardware), so the windows applying the
+         * off stage pair it with an opaque black cover; the display stays powered and wakes on any
+         * input.
+         */
+        private const val MEDIA_DIM_PARTIAL_DELAY_MS = 30_000L
+        private const val MEDIA_DIM_OFF_DELAY_MS = 60_000L
+        private const val MEDIA_DIM_PARTIAL_BRIGHTNESS = 0.4f
+        private const val MEDIA_DIM_OFF_BRIGHTNESS = 0f
+        private const val MEDIA_DIM_COVER_STEP_MS = 250L
+
+        /**
+         * Temporary diagnostic channel for the playback dim ramp; filter with
+         * `adb logcat -s MediaDimRamp`. Remove once the ramp is confirmed stable on device.
+         */
+        const val MEDIA_DIM_LOG_TAG = "MediaDimRamp"
+
+        private const val MOTION_ACTIVITY_AXIS_THRESHOLD = 0.05f
+        private val MOTION_ACTIVITY_AXES = intArrayOf(
+            android.view.MotionEvent.AXIS_X,
+            android.view.MotionEvent.AXIS_Y,
+            android.view.MotionEvent.AXIS_Z,
+            android.view.MotionEvent.AXIS_RZ,
+            android.view.MotionEvent.AXIS_HAT_X,
+            android.view.MotionEvent.AXIS_HAT_Y,
+            android.view.MotionEvent.AXIS_LTRIGGER,
+            android.view.MotionEvent.AXIS_RTRIGGER,
+            android.view.MotionEvent.AXIS_BRAKE,
+            android.view.MotionEvent.AXIS_GAS
+        )
 
         /**
          * How long a swap waits for the incoming screen to settle before revealing it anyway.
@@ -3101,10 +3436,26 @@ class DualScreenManager(
         sessionRefocus?.invoke()
     }
 
+    /**
+     * Brings the surface that should own the keys forward. During a live media playback that is
+     * the player window, addressed on the display it reported itself on: raising MainActivity over
+     * it would stop the stream and leave the pad driving neither screen. With no playback the
+     * launcher window is the target, as before, and an emulator session on the default display is
+     * left alone either way.
+     */
     private fun refocusMain() {
         if (emulatorDisplayId == android.view.Display.DEFAULT_DISPLAY &&
             sessionStateStore.hasActiveSession()
         ) return
+        if (mediaPlaybackTracker.activePlayback.value != null) {
+            val target = mediaPlayerDisplayId ?: mediaPlayerRelocationDisplayId()
+            val options = target?.let {
+                displayAffinityHelper.getActivityOptions(forEmulator = false, overrideDisplayId = it)
+            }
+            val launchContext = target?.let { displayAffinityHelper.displayContext(it) } ?: appContext
+            com.nendo.argosy.ui.screens.player.PlayerActivity.raise(launchContext, options)
+            return
+        }
         activityContext.startActivity(
             Intent(activityContext, MainActivity::class.java).apply {
                 addFlags(

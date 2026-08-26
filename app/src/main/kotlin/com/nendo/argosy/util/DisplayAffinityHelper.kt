@@ -119,6 +119,19 @@ class DisplayAffinityHelper @Inject constructor(
         return if (emulatorDisplayId == secondary) Display.DEFAULT_DISPLAY else secondary
     }
 
+    /**
+     * A context associated with one physical display, for launches whose side effects key off the
+     * caller's display rather than the launch options. Some dual-screen firmwares keep a volume
+     * level per display and bind a new playback to the display the launching context belongs to;
+     * the application context belongs to none, and such a launch inherits whichever screen was
+     * touched last. Null when the display is gone, which callers treat as "keep the context you
+     * already have".
+     */
+    fun displayContext(displayId: Int): Context? {
+        val display = displayManager.getDisplay(displayId) ?: return null
+        return context.createDisplayContext(display)
+    }
+
     fun getActivityOptions(
         forEmulator: Boolean,
         rolesSwapped: Boolean = false,

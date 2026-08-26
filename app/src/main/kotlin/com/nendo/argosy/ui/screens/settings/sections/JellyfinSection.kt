@@ -112,6 +112,10 @@ internal sealed class JellyfinItem(
         "jellyfinBurnInSubtitles", "playback",
         { it.hasServer && it.subtitlesEnabled }
     )
+    data object ConfirmPlayerExit : JellyfinItem(
+        "jellyfinConfirmPlayerExit", "playback",
+        { it.hasServer }
+    )
 
     data object DownloadQuality : JellyfinItem("jellyfinDownloadQuality", "downloads", { it.hasServer })
     data object MediaLocation : JellyfinItem("jellyfinMediaLocation", "downloads", { it.hasServer })
@@ -127,6 +131,7 @@ internal sealed class JellyfinItem(
                 SyncLibrary,
                 Header("jellyfinPlaybackHeader", "playback", "PLAYBACK", { it.hasServer }),
                 StreamingQuality, AudioLanguage, Subtitles, SubtitleLanguage, BurnInSubtitles,
+                ConfirmPlayerExit,
                 Header("jellyfinDownloadsHeader", "downloads", "DOWNLOADS", { it.hasServer }),
                 DownloadQuality, MediaLocation,
                 Header("jellyfinPrivacyHeader", "privacy", "PRIVACY", { it.hasServer }),
@@ -416,6 +421,18 @@ private fun JellyfinContent(uiState: SettingsUiState, viewModel: SettingsViewMod
                 isEnabled = jellyfin.burnInImageSubtitles,
                 isFocused = isFocused(item),
                 onToggle = { viewModel.setJellyfinBurnInImageSubtitles(it) }
+            )
+
+            JellyfinItem.ConfirmPlayerExit -> SwitchPreference(
+                title = "Prompt Before Leaving Player",
+                subtitle = if (jellyfin.confirmPlayerExit) {
+                    "Closing the player asks for confirmation first"
+                } else {
+                    "Closing the player exits right away"
+                },
+                isEnabled = jellyfin.confirmPlayerExit,
+                isFocused = isFocused(item),
+                onToggle = { viewModel.setJellyfinConfirmPlayerExit(it) }
             )
 
             JellyfinItem.DownloadQuality -> CyclePreference(

@@ -38,6 +38,7 @@ fun DualHomeLowerContent(
     onCustomGridActivate: () -> Unit = {},
     mediaToggle: com.nendo.argosy.hardware.CompanionMediaToggle? = null,
     onMediaToggle: () -> Unit = {},
+    dualMediaViewModel: com.nendo.argosy.ui.dualscreen.media.DualMediaViewModel? = null,
     modifier: Modifier = Modifier
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -60,6 +61,14 @@ fun DualHomeLowerContent(
                     games = uiState.games,
                     mediaItems = uiState.mediaItems,
                     mediaDownloadIndicators = mediaDownloadIndicators,
+                    onMediaTapped = { index ->
+                        viewModel.selectByTouch(index)
+                        viewModel.playFocusedMedia()
+                    },
+                    onMediaLongPressed = { index ->
+                        viewModel.selectByTouch(index)
+                        viewModel.openMediaMenuForFocused()
+                    },
                     selectedIndex = uiState.selectedIndex,
                     platformName = uiState.platformName,
                     totalCount = uiState.totalCount,
@@ -172,6 +181,27 @@ fun DualHomeLowerContent(
                     },
                     onDismiss = viewModel::dismissMediaResumePrompt
                 )
+            }
+            DualHomeViewMode.MEDIA_INFO -> {
+                val mediaVm = dualMediaViewModel
+                if (mediaVm != null) {
+                    val mediaState by mediaVm.uiState.collectAsState()
+                    com.nendo.argosy.ui.dualscreen.media.DualMediaLowerScreen(
+                        state = mediaState,
+                        isInteractive = true,
+                        onRowTapped = { index -> mediaVm.focusRow(index) },
+                        onRowConfirmed = { index ->
+                            val row = mediaState.rows.getOrNull(index)
+                            if (row is com.nendo.argosy.ui.dualscreen.media.DualMediaRow.Item) {
+                                viewModel.confirmMediaInfoRow(row.item.itemId)
+                            }
+                        },
+                        onSeasonSelected = { mediaVm.selectSeason(it) },
+                        onEpisodeTapped = { viewModel.confirmMediaInfoRow(it) },
+                        onBackTapped = { viewModel.exitMediaInfo() },
+                        backHint = "Back"
+                    )
+                }
             }
             DualHomeViewMode.LIBRARY_GRID -> {
                 if (uiState.showFilterOverlay) {

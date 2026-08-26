@@ -22,18 +22,25 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.VolumeDown
+import androidx.compose.material.icons.automirrored.filled.VolumeOff
+import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.Audiotrack
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.CheckCircleOutline
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.FastForward
+import androidx.compose.material.icons.filled.FitScreen
 import androidx.compose.material.icons.filled.FormatListBulleted
 import androidx.compose.material.icons.filled.Forward10
+import androidx.compose.material.icons.filled.Fullscreen
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Replay10
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.SkipNext
+import androidx.compose.material.icons.filled.SkipPrevious
 import androidx.compose.material.icons.filled.Subtitles
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -129,7 +136,8 @@ private fun ControlRow(state: PlayerUiState, onControlClick: (Int) -> Unit) {
         state.audioTracks,
         state.subtitleTracks,
         state.chapters,
-        state.nextEpisode,
+        state.isEpisode,
+        state.isLocalPlayback,
         state.activeSkip
     ) { state.controls }
     val listState = rememberLazyListState()
@@ -158,7 +166,10 @@ private fun ControlRow(state: PlayerUiState, onControlClick: (Int) -> Unit) {
                     control = control,
                     isPlaying = state.isPlaying,
                     isWatched = state.isWatched,
+                    videoScale = state.videoScale,
+                    volumeStep = state.volumeStep,
                     skipLabel = state.activeSkip?.kind?.label,
+                    enabled = state.isControlEnabled(control),
                     focused = onControls && focusedIndex == index,
                     onClick = { onControlClick(index) }
                 )
@@ -332,19 +343,31 @@ private fun clampPreviewOffset(center: Dp, previewWidth: Dp, trackWidth: Dp): Dp
  * A button in the transport row. Only the skip prompt carries its name inline: it is the one control
  * that appears part-way through a film and has to be recognised without being walked to, while every
  * other button is named by the caption line as soon as the highlight reaches it.
+ *
+ * A disabled button stays in the row and dims rather than vanishing, so the row never shifts under
+ * the user's thumb. It still takes the highlight - the caption is what explains why it does nothing
+ * - and the walk moves straight past it, so it can never hold the cursor.
  */
+@Suppress("LongParameterList")
 @Composable
 private fun TransportButton(
     control: PlayerControl,
     isPlaying: Boolean,
     isWatched: Boolean,
+    videoScale: PlayerVideoScale,
+    volumeStep: PlayerVolumeStep,
     skipLabel: String?,
+    enabled: Boolean,
     focused: Boolean,
     onClick: () -> Unit
 ) {
     val theme = LocalArgosyTheme.current
     val shape = RoundedCornerShape(Dimens.radiusControl)
-    val tint = if (focused) theme.focusAccent else theme.textPrimary
+    val tint = when {
+        !enabled -> theme.textMute
+        focused -> theme.focusAccent
+        else -> theme.textPrimary
+    }
     val label = if (control == PlayerControl.SKIP) skipLabel else null
 
     Row(
@@ -363,7 +386,7 @@ private fun TransportButton(
         horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm, Alignment.CenterHorizontally)
     ) {
         Icon(
-            imageVector = control.icon(isPlaying, isWatched),
+            imageVector = control.icon(isPlaying, isWatched, videoScale, volumeStep),
             contentDescription = null,
             tint = tint,
             modifier = Modifier.size(Dimens.iconSm)
@@ -380,7 +403,19 @@ private fun TransportButton(
     }
 }
 
-private fun PlayerControl.icon(isPlaying: Boolean, isWatched: Boolean): ImageVector = when (this) {
+/**
+ * Which glyph each button wears. The two-state toggles read like play and pause - the icon shows
+ * what a press moves TO - while the three-stop volume cycle reads like the watched mark and shows
+ * the state in force, because a cycle's "next stop" glyph would name only one of the two states it
+ * is leaving behind.
+ */
+private fun PlayerControl.icon(
+    isPlaying: Boolean,
+    isWatched: Boolean,
+    videoScale: PlayerVideoScale,
+    volumeStep: PlayerVolumeStep
+): ImageVector = when (this) {
+    PlayerControl.PREVIOUS_EPISODE -> Icons.Default.SkipPrevious
     PlayerControl.SKIP_BACK -> Icons.Default.Replay10
     PlayerControl.PLAY_PAUSE -> if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow
     PlayerControl.SKIP_FORWARD -> Icons.Default.Forward10
@@ -388,6 +423,14 @@ private fun PlayerControl.icon(isPlaying: Boolean, isWatched: Boolean): ImageVec
     PlayerControl.SUBTITLES -> Icons.Default.Subtitles
     PlayerControl.CHAPTERS -> Icons.Default.FormatListBulleted
     PlayerControl.QUALITY -> Icons.Default.Settings
+    PlayerControl.FIT_FILL ->
+        if (videoScale == PlayerVideoScale.FIT) Icons.Default.Fullscreen else Icons.Default.FitScreen
+    PlayerControl.VOLUME -> when (volumeStep) {
+        PlayerVolumeStep.FULL -> Icons.AutoMirrored.Filled.VolumeUp
+        PlayerVolumeStep.HALF -> Icons.AutoMirrored.Filled.VolumeDown
+        PlayerVolumeStep.MUTE -> Icons.AutoMirrored.Filled.VolumeOff
+    }
+    PlayerControl.LOCK -> Icons.Default.Lock
     PlayerControl.NEXT_EPISODE -> Icons.Default.SkipNext
     PlayerControl.MARK_WATCHED ->
         if (isWatched) Icons.Default.CheckCircle else Icons.Default.CheckCircleOutline
@@ -412,18 +455,34 @@ private fun PlayerUiState.scrubberCaption(): String {
 }
 
 private fun PlayerUiState.controlLabel(control: PlayerControl): String = when (control) {
+    PlayerControl.PREVIOUS_EPISODE -> episodeCaption("Previous Episode", previousEpisode)
     PlayerControl.SKIP_BACK -> "Back ${PLAYER_SEEK_STEP_SECONDS}s"
     PlayerControl.PLAY_PAUSE -> if (isPlaying) "Pause" else "Play"
     PlayerControl.SKIP_FORWARD -> "Forward ${PLAYER_SEEK_STEP_SECONDS}s"
     PlayerControl.AUDIO -> "Audio Track"
     PlayerControl.SUBTITLES -> "Subtitles"
     PlayerControl.CHAPTERS -> "Chapters"
-    PlayerControl.QUALITY -> streamingQuality?.displayName ?: "Quality"
-    PlayerControl.NEXT_EPISODE -> nextEpisode?.label
-        ?.takeIf { it.isNotBlank() }
-        ?.let { "Next Episode  $it" }
-        ?: "Next Episode"
+    PlayerControl.QUALITY -> "Quality  ${activeQuality.summaryLabel()}"
+    PlayerControl.FIT_FILL ->
+        if (videoScale == PlayerVideoScale.FIT) "Fill Screen" else "Fit Screen"
+    PlayerControl.VOLUME -> when (volumeStep) {
+        PlayerVolumeStep.FULL -> "Volume Full"
+        PlayerVolumeStep.HALF -> "Volume Half"
+        PlayerVolumeStep.MUTE -> "Muted"
+    }
+    PlayerControl.LOCK -> "Lock Controls"
+    PlayerControl.NEXT_EPISODE -> episodeCaption("Next Episode", nextEpisode)
     PlayerControl.MARK_WATCHED -> if (isWatched) "Watched" else "Mark Watched"
     PlayerControl.CLOSE -> "Close"
     PlayerControl.SKIP -> activeSkip?.kind?.label.orEmpty()
+}
+
+/**
+ * How an episode neighbour reads on the caption line: named when it exists, and named as absent
+ * when it does not, because a disabled button owes the viewer the reason it will not press.
+ */
+private fun episodeCaption(name: String, episode: PlayerNextEpisode?): String = when {
+    episode == null -> "No $name"
+    episode.label.isBlank() -> name
+    else -> "$name  ${episode.label}"
 }

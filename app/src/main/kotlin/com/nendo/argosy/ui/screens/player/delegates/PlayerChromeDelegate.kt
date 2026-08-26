@@ -26,7 +26,13 @@ class PlayerChromeDelegate(
 ) {
     private var hideJob: Job? = null
 
+    /**
+     * A locked player refuses to show its chrome, and this is the one gate that enforces it: every
+     * wake path - pad, touch, pause events, seeks - funnels through here, so the lock does not need
+     * to be re-checked at each of them.
+     */
     fun show() {
+        if (state.value.controlsLocked) return
         state.update { it.copy(isChromeVisible = true) }
         restartTimer()
     }
@@ -95,7 +101,9 @@ class PlayerChromeDelegate(
 
     /**
      * A list opens on the row that is already in force, so the first thing the viewer sees is what
-     * they are currently listening to, reading or watching rather than the top of an alphabet.
+     * they are currently listening to, reading or watching rather than the top of an alphabet. The
+     * quality overlay carries no row index at all - its wheels open on the ceilings in force, which
+     * the quality delegate seeds before the overlay is raised.
      */
     fun openOverlay(overlay: PlayerOverlay) {
         val current = state.value
@@ -107,9 +115,7 @@ class PlayerChromeDelegate(
             PlayerOverlay.CHAPTERS -> current.chapters
                 .indexOfLast { it.startMs <= current.positionMs }
                 .coerceAtLeast(0)
-            PlayerOverlay.QUALITY -> com.nendo.argosy.data.preferences.MediaStreamingQuality.entries
-                .indexOf(current.streamingQuality)
-                .coerceAtLeast(0)
+            PlayerOverlay.QUALITY -> 0
             PlayerOverlay.NONE -> 0
         }
         cancelTimer()
@@ -118,7 +124,13 @@ class PlayerChromeDelegate(
 
     fun closeOverlay() {
         state.update {
-            it.copy(overlay = PlayerOverlay.NONE, overlayIndex = 0, subtitleNotice = null)
+            it.copy(
+                overlay = PlayerOverlay.NONE,
+                overlayIndex = 0,
+                subtitleNotice = null,
+                qualityDraft = null,
+                qualityWheelIndex = 0
+            )
         }
         restartTimer()
     }

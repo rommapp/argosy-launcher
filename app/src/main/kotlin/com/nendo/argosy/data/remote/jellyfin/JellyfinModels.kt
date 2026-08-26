@@ -334,6 +334,7 @@ data class JellyfinMediaStream(
     @Json(name = "Level") val level: Double? = null,
     @Json(name = "Width") val width: Int? = null,
     @Json(name = "Height") val height: Int? = null,
+    @Json(name = "RealFrameRate") val realFrameRate: Double? = null,
     @Json(name = "BitRate") val bitRate: Int? = null,
     @Json(name = "Channels") val channels: Int? = null,
     @Json(name = "SampleRate") val sampleRate: Int? = null,

@@ -12,30 +12,52 @@ enum class PlayerRow { SCRUBBER, CONTROLS }
 
 /**
  * The bands the transport row is read in: moving through the film, choosing what is heard and seen,
- * acting on the item itself, and the one button that only exists while an intro or the credits are
- * on screen. A change of band draws a divider, so a row walked with one thumb still has structure.
+ * shaping how the viewing itself behaves, acting on the item itself, and the one button that only
+ * exists while an intro or the credits are on screen. A change of band draws a divider, so a row
+ * walked with one thumb still has structure.
  */
-enum class PlayerControlGroup { TRANSPORT, CONTENT, ITEM, PROMPT }
+enum class PlayerControlGroup { TRANSPORT, CONTENT, VIEW, ITEM, PROMPT }
 
 /**
  * One button in the transport row. The list is built per frame from what the item actually offers,
- * so a movie without chapters never grows a chapter button the user can land on.
+ * so a movie without chapters never grows a chapter button the user can land on. The two episode
+ * controls are the exception: on a show they are always in the row and merely disable when there is
+ * no neighbour to move to, because a button that vanishes shifts everything else out from under the
+ * user's thumb.
  */
 enum class PlayerControl(val group: PlayerControlGroup) {
+    PREVIOUS_EPISODE(PlayerControlGroup.TRANSPORT),
     SKIP_BACK(PlayerControlGroup.TRANSPORT),
     PLAY_PAUSE(PlayerControlGroup.TRANSPORT),
     SKIP_FORWARD(PlayerControlGroup.TRANSPORT),
+    NEXT_EPISODE(PlayerControlGroup.TRANSPORT),
     AUDIO(PlayerControlGroup.CONTENT),
     SUBTITLES(PlayerControlGroup.CONTENT),
     CHAPTERS(PlayerControlGroup.CONTENT),
     QUALITY(PlayerControlGroup.CONTENT),
-    NEXT_EPISODE(PlayerControlGroup.ITEM),
+    FIT_FILL(PlayerControlGroup.VIEW),
+    VOLUME(PlayerControlGroup.VIEW),
+    LOCK(PlayerControlGroup.VIEW),
     MARK_WATCHED(PlayerControlGroup.ITEM),
     CLOSE(PlayerControlGroup.ITEM),
     SKIP(PlayerControlGroup.PROMPT)
 }
 
 enum class PlayerOverlay { NONE, AUDIO_TRACKS, SUBTITLE_TRACKS, CHAPTERS, QUALITY }
+
+/**
+ * How the picture meets the screen. FIT keeps the whole frame visible and letterboxes the shorter
+ * dimension; FILL covers the screen and crops whatever the frame has too much of. Session-only by
+ * design - the right answer depends on the title being watched, not on the device.
+ */
+enum class PlayerVideoScale { FIT, FILL }
+
+/**
+ * The volume quick-cycle's three stops. FULL restores whatever level playback opened with rather
+ * than slamming the output to maximum, HALF is half of that, MUTE is silence. It wraps, so the
+ * button never dead-ends.
+ */
+enum class PlayerVolumeStep { FULL, HALF, MUTE }
 
 /**
  * One selectable audio or subtitle stream.
@@ -61,7 +83,8 @@ data class PlayerChapter(
 )
 
 /**
- * The episode that follows the one playing, when the library already holds it.
+ * An episode adjacent to the one playing - the one that follows or the one before - when the
+ * library already holds it.
  *
  * Resolved from what has been stored rather than asked of the server, so an episode whose season was
  * never synced is simply not offered - which is the honest answer, since it could not be played
@@ -124,7 +147,8 @@ data class NegotiatedPlayback(
     val subtitleStreamIndex: Int?,
     val sideloadedSubtitles: List<SideloadedSubtitle>,
     val isLocalFile: Boolean = false,
-    val localCopy: MediaAvailability = MediaAvailability.NOT_DOWNLOADED
+    val localCopy: MediaAvailability = MediaAvailability.NOT_DOWNLOADED,
+    val sourceVideo: PlayerSourceVideo? = null
 ) {
     /**
      * Whether zero on this stream's own clock is the position it was negotiated for.
@@ -177,6 +201,9 @@ data class PlayerUiState(
     val durationMs: Long = 0,
     val scrubTargetMs: Long? = null,
     val isChromeVisible: Boolean = true,
+    val videoScale: PlayerVideoScale = PlayerVideoScale.FIT,
+    val volumeStep: PlayerVolumeStep = PlayerVolumeStep.FULL,
+    val controlsLocked: Boolean = false,
     val focusRow: PlayerRow = PlayerRow.SCRUBBER,
     val controlIndex: Int = 0,
     val overlay: PlayerOverlay = PlayerOverlay.NONE,
@@ -194,30 +221,66 @@ data class PlayerUiState(
     val trickplay: PlayerTrickplay? = null,
     val trickplayAuthHeader: String? = null,
     val isWatched: Boolean = false,
+    val isEpisode: Boolean = false,
     val nextEpisode: PlayerNextEpisode? = null,
+    val previousEpisode: PlayerNextEpisode? = null,
     val autoplayCountdownSeconds: Int? = null,
-    val streamingQuality: com.nendo.argosy.data.preferences.MediaStreamingQuality? = null
+    val confirmPlayerExit: Boolean = false,
+    val showExitConfirm: Boolean = false,
+    val exitConfirmIndex: Int = 0,
+    val sourceVideo: PlayerSourceVideo? = null,
+    val defaultQuality: PlayerQualityCeilings = PlayerQualityCeilings(),
+    val sessionQuality: PlayerQualityCeilings? = null,
+    val qualityDraft: PlayerQualityCeilings? = null,
+    val qualityWheelIndex: Int = 0
 ) {
     /**
-     * The transport row is derived from what this item actually offers rather than drawn with dead
-     * buttons, so a focus index can never land on a control that does nothing. Skip is appended
-     * rather than prepended: it comes and goes with the position, and prepending it would shift
-     * every other button out from under the user's thumb each time an intro started.
+     * The transport row is derived from what this item actually offers. Controls an item can never
+     * use are left out entirely; the episode neighbours on a show stay in the row and disable
+     * instead, because whether a next or previous episode exists changes mid-viewing and a button
+     * that vanishes shifts the row under the user's thumb. Skip is appended rather than prepended
+     * for the same reason: it comes and goes with the position.
      */
     val controls: List<PlayerControl>
         get() = buildList {
+            if (isEpisode) add(PlayerControl.PREVIOUS_EPISODE)
             add(PlayerControl.SKIP_BACK)
             add(PlayerControl.PLAY_PAUSE)
             add(PlayerControl.SKIP_FORWARD)
+            if (isEpisode) add(PlayerControl.NEXT_EPISODE)
             if (audioTracks.size > 1) add(PlayerControl.AUDIO)
             if (subtitleTracks.isNotEmpty()) add(PlayerControl.SUBTITLES)
             if (chapters.isNotEmpty()) add(PlayerControl.CHAPTERS)
-            if (!isLocalPlayback) add(PlayerControl.QUALITY)
-            if (nextEpisode != null) add(PlayerControl.NEXT_EPISODE)
+            if (!isLocalPlayback && qualityWheels.isNotEmpty()) add(PlayerControl.QUALITY)
+            add(PlayerControl.FIT_FILL)
+            add(PlayerControl.VOLUME)
+            add(PlayerControl.LOCK)
             add(PlayerControl.MARK_WATCHED)
             add(PlayerControl.CLOSE)
             if (activeSkip != null) add(PlayerControl.SKIP)
         }
+
+    /**
+     * The quality selected for this viewing, or the saved default when nothing was chosen in the
+     * player. This is what the wheels open on and what a re-negotiation is measured against.
+     */
+    val activeQuality: PlayerQualityCeilings
+        get() = sessionQuality ?: defaultQuality
+
+    /**
+     * The quality wheels this source leaves anything to choose on. [qualityWheelIndex] indexes
+     * into this list, not [QualityWheel.entries]: a wheel with only "Original" to show is not
+     * drawn, and traversal walks only what is on screen. When every wheel is empty the list is
+     * too, and the Quality control is left out of the transport row entirely.
+     */
+    val qualityWheels: List<QualityWheel>
+        get() = availableQualityWheels(sourceVideo)
+
+    fun isControlEnabled(control: PlayerControl): Boolean = when (control) {
+        PlayerControl.PREVIOUS_EPISODE -> previousEpisode != null
+        PlayerControl.NEXT_EPISODE -> nextEpisode != null
+        else -> true
+    }
 
     /**
      * Where the highlight actually sits, which is not always where it was put. The row loses a button
@@ -251,15 +314,15 @@ data class PlayerUiState(
      * carries an extra leading row for "Off", because turning subtitles off has to be reachable
      * from the same list that turns them on, and a trailing row for burn-in, which is a decision
      * about this playback and therefore belongs beside the tracks it applies to. Burn-in is drawn by
-     * the server, so a file playing off the disk has no such row and no index for one.
+     * the server, so a file playing off the disk has no such row and no index for one. The quality
+     * overlay is not a list at all - its wheels carry their own selection - so it reports no rows.
      */
     val overlayItemCount: Int
         get() = when (overlay) {
             PlayerOverlay.AUDIO_TRACKS -> audioTracks.size
             PlayerOverlay.SUBTITLE_TRACKS -> subtitleTracks.size + subtitleExtraRows
             PlayerOverlay.CHAPTERS -> chapters.size
-            PlayerOverlay.QUALITY ->
-                com.nendo.argosy.data.preferences.MediaStreamingQuality.entries.size
+            PlayerOverlay.QUALITY -> 0
             PlayerOverlay.NONE -> 0
         }
 

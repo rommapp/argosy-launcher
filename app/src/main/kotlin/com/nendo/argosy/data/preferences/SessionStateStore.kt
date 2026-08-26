@@ -244,10 +244,12 @@ class SessionStateStore(context: Context) {
 
     /**
      * Stable identity of the lower home carousel: which section (by kind and, for
-     * a platform, its id) and which game (by id) were selected, plus the active
-     * home filter context. Restored by identity so a shifting dynamic section list
-     * does not strand the upper and lower screens on different games. Legacy index
-     * fields remain populated for graceful fallback before any id-context exists.
+     * a platform or media library, its id) and which item (game by Long id, media
+     * title by String id) were selected, plus the active home filter context.
+     * Restored by identity so a shifting dynamic section list does not strand the
+     * upper and lower screens on different games. Legacy index fields remain
+     * populated for graceful fallback before any id-context exists; the media id
+     * fields read back as empty from a context written before they existed.
      */
     data class CarouselNavContext(
         val hasContext: Boolean,
@@ -255,6 +257,8 @@ class SessionStateStore(context: Context) {
         val platformId: Long,
         val pinId: Long,
         val gameId: Long,
+        val mediaLibraryId: String,
+        val mediaItemId: String,
         val legacySectionIndex: Int,
         val legacySelectedIndex: Int,
         val filterSource: String,
@@ -274,6 +278,8 @@ class SessionStateStore(context: Context) {
             .putLong(KEY_CAROUSEL_PLATFORM_ID, ctx.platformId)
             .putLong(KEY_CAROUSEL_PIN_ID, ctx.pinId)
             .putLong(KEY_CAROUSEL_GAME_ID, ctx.gameId)
+            .putString(KEY_CAROUSEL_MEDIA_LIBRARY_ID, ctx.mediaLibraryId)
+            .putString(KEY_CAROUSEL_MEDIA_ITEM_ID, ctx.mediaItemId)
             .putInt(KEY_CAROUSEL_SECTION_INDEX, ctx.legacySectionIndex)
             .putInt(KEY_CAROUSEL_SELECTED_INDEX, ctx.legacySelectedIndex)
             .putString(KEY_CAROUSEL_FILTER_SOURCE, ctx.filterSource)
@@ -294,6 +300,8 @@ class SessionStateStore(context: Context) {
             platformId = prefs.getLong(KEY_CAROUSEL_PLATFORM_ID, -1),
             pinId = prefs.getLong(KEY_CAROUSEL_PIN_ID, -1),
             gameId = prefs.getLong(KEY_CAROUSEL_GAME_ID, -1),
+            mediaLibraryId = prefs.getString(KEY_CAROUSEL_MEDIA_LIBRARY_ID, "") ?: "",
+            mediaItemId = prefs.getString(KEY_CAROUSEL_MEDIA_ITEM_ID, "") ?: "",
             legacySectionIndex = prefs.getInt(KEY_CAROUSEL_SECTION_INDEX, 0),
             legacySelectedIndex = prefs.getInt(KEY_CAROUSEL_SELECTED_INDEX, 0),
             filterSource = prefs.getString(KEY_CAROUSEL_FILTER_SOURCE, "ALL") ?: "ALL",
@@ -390,6 +398,8 @@ class SessionStateStore(context: Context) {
         private const val KEY_CAROUSEL_PLATFORM_ID = "carousel_platform_id"
         private const val KEY_CAROUSEL_PIN_ID = "carousel_pin_id"
         private const val KEY_CAROUSEL_GAME_ID = "carousel_game_id"
+        private const val KEY_CAROUSEL_MEDIA_LIBRARY_ID = "carousel_media_library_id"
+        private const val KEY_CAROUSEL_MEDIA_ITEM_ID = "carousel_media_item_id"
         private const val KEY_CAROUSEL_FILTER_SOURCE = "carousel_filter_source"
         private const val KEY_CAROUSEL_FILTER_PLATFORM_ID = "carousel_filter_platform_id"
         private const val KEY_CAROUSEL_FILTER_SEARCH = "carousel_filter_search"

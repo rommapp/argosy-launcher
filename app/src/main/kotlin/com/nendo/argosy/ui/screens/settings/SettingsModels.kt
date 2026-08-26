@@ -1115,6 +1115,7 @@ data class JellyfinState(
     val subtitleMode: MediaSubtitleMode = MediaSubtitleMode.PREFERRED,
     val subtitleLanguage: MediaSubtitleLanguage = MediaSubtitleLanguage.ENGLISH,
     val burnInImageSubtitles: Boolean = false,
+    val confirmPlayerExit: Boolean = false,
     val sharePresence: Boolean = true,
     val mediaDirPath: String? = null,
     val pendingMediaRelocation: MediaRelocationPrompt? = null,

@@ -152,6 +152,8 @@ class MainActivity : ComponentActivity() {
         com.nendo.argosy.ui.screens.media.delegates.MediaDownloadDelegate
     @Inject lateinit var mediaSeriesDelegate:
         com.nendo.argosy.ui.screens.media.delegates.MediaSeriesDelegate
+    @Inject lateinit var mediaSiblingsDelegate:
+        com.nendo.argosy.ui.screens.media.delegates.MediaSiblingsDelegate
 
     private val sessionStateStore by lazy {
         com.nendo.argosy.data.preferences.SessionStateStore(this)
@@ -293,6 +295,7 @@ class MainActivity : ComponentActivity() {
 
         installImmersiveMode()
         keepAwakeWhileUserActive()
+        dimWhileMediaIdle()
 
         discordPresenceManager.init(this)
 
@@ -374,6 +377,7 @@ class MainActivity : ComponentActivity() {
                 mediaAvailabilityVerifier = mediaAvailabilityVerifier,
                 mediaDownloadDelegate = mediaDownloadDelegate,
                 mediaSeriesDelegate = mediaSeriesDelegate,
+                mediaSiblingsDelegate = mediaSiblingsDelegate,
                 imageCacheManager = imageCacheManager,
                 resolveGameEmulatorContext = resolveGameEmulatorContext,
                 hapticManager = hapticFeedbackManager,
@@ -573,9 +577,17 @@ class MainActivity : ComponentActivity() {
         return super.dispatchKeyEvent(event)
     }
 
+    /**
+     * The finger going down is the wake, not the finger coming up: the activity signal fires here
+     * directly rather than waiting on the framework's own interaction callback, so a dimmed screen
+     * brightens the moment it is touched.
+     */
     override fun dispatchTouchEvent(event: MotionEvent): Boolean {
         if (event.action == MotionEvent.ACTION_DOWN) {
             ambientAudioManager.resumeFromSuspend()
+            if (::dualScreenManager.isInitialized) {
+                dualScreenManager.notifyUserActivity("mainTouchDown")
+            }
         }
         return super.dispatchTouchEvent(event)
     }
@@ -833,20 +845,104 @@ class MainActivity : ComponentActivity() {
     }
 
     /**
-     * Holds this window awake while the person is using either screen.
+     * Holds this window awake while the person is using either screen, and for the whole of a
+     * playback.
      *
      * Input only counts as activity on the display it landed on, so without this the screen that
-     * is not being driven dims underneath a session the user is very much still in.
+     * is not being driven dims underneath a session the user is very much still in. During a
+     * playback the hold outlasts the idle signal because the launcher runs its own dim on this
+     * window: its darkest stage is a powered screen that looks off and wakes on any input, and
+     * dropping the flag mid-viewing invites the system to sleep the display underneath that ramp -
+     * at which point the ramp's later stages land on a screen that cannot show them and the waking
+     * touch is spent on the system's own wake instead of reaching the window.
      */
     private fun keepAwakeWhileUserActive() {
         activityScope.launch {
-            dualScreenManager.userActive.collect { active ->
-                if (active) {
-                    window.addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-                } else {
-                    window.clearFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+            kotlinx.coroutines.flow.combine(
+                dualScreenManager.userActive,
+                dualScreenManager.mediaPlayback
+            ) { active, playback -> active || playback != null }
+                .collect { keepOn ->
+                    if (keepOn) {
+                        window.addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                    } else {
+                        window.clearFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                    }
                 }
+        }
+    }
+
+    /**
+     * Fades this window towards dark while a playback on another display runs unattended, so it
+     * neither distracts from the film nor burns battery. The override is the window's own, never a
+     * display power-down, and any input clears it through the same activity signal that holds the
+     * screens awake. The screen the player itself reported never dims.
+     */
+    private fun dimWhileMediaIdle() {
+        activityScope.launch {
+            kotlinx.coroutines.flow.combine(
+                dualScreenManager.mediaPlayerDisplay,
+                dualScreenManager.mediaDimBrightness,
+                dualScreenManager.mediaDimCoverAlpha
+            ) { playerDisplayId, dim, coverAlpha -> Triple(playerDisplayId, dim, coverAlpha) }
+                .collect { (playerDisplayId, dim, coverAlpha) ->
+                    applyMediaDim(playerDisplayId, dim, coverAlpha)
+                }
+        }
+    }
+
+    /**
+     * A window brightness of zero drives the panel to its MINIMUM backlight, not off - the
+     * platform has no attribute value that blanks a panel. The manager therefore fades an opaque
+     * black cover over the window across the ramp's second leg, and this window renders it as a
+     * foreground drawable: it draws over everything but consumes no input, so a tap lands on the
+     * content underneath and wakes the screen through the same activity signal that clears the
+     * brightness override and the cover together.
+     */
+    private fun applyMediaDim(playerDisplayId: Int?, dim: Float?, coverAlpha: Float) {
+        val ownDisplayId = window.decorView.display?.displayId
+        val dimsThisWindow = dim != null && playerDisplayId != null &&
+            ownDisplayId != null && ownDisplayId != playerDisplayId
+        val target = if (dimsThisWindow && dim != null) {
+            dim
+        } else {
+            android.view.WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE
+        }
+        applyMediaDimCover(if (dimsThisWindow) coverAlpha else 0f)
+        val attributes = window.attributes
+        if (attributes.screenBrightness == target) return
+        Logger.debug(
+            DualScreenManager.MEDIA_DIM_LOG_TAG,
+            "apply window=main display=$ownDisplayId player=$playerDisplayId brightness=$target"
+        )
+        attributes.screenBrightness = target
+        window.attributes = attributes
+    }
+
+    private var mediaDimCover: android.graphics.drawable.ColorDrawable? = null
+
+    private fun applyMediaDimCover(alpha: Float) {
+        val alphaInt = (alpha.coerceIn(0f, 1f) * 255f).toInt()
+        if (alphaInt <= 0) {
+            if (mediaDimCover != null) {
+                mediaDimCover = null
+                window.decorView.foreground = null
             }
+            return
+        }
+        val cover = mediaDimCover
+            ?: android.graphics.drawable.ColorDrawable(android.graphics.Color.BLACK).also {
+                it.alpha = 0
+                mediaDimCover = it
+                window.decorView.foreground = it
+            }
+        cover.alpha = alphaInt
+    }
+
+    override fun onUserInteraction() {
+        super.onUserInteraction()
+        if (::dualScreenManager.isInitialized) {
+            dualScreenManager.notifyUserActivity("mainUserInteraction")
         }
     }
 

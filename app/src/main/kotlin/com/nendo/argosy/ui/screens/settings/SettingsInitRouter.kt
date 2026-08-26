@@ -676,6 +676,7 @@ internal fun routeLoadSettings(vm: SettingsViewModel) {
             subtitleMode = prefs.mediaSubtitleMode,
             subtitleLanguage = prefs.mediaSubtitleLanguage,
             burnInImageSubtitles = prefs.mediaBurnInImageSubtitles,
+            confirmPlayerExit = prefs.mediaConfirmPlayerExit,
             sharePresence = prefs.shareMediaPresence,
             mediaDirPath = jellyfinInFlight.mediaDirPath,
             isSyncingLibrary = jellyfinInFlight.isSyncingLibrary,

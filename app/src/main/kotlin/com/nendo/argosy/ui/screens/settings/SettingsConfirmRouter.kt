@@ -403,6 +403,10 @@ private fun routeJellyfinConfirm(vm: SettingsViewModel, state: SettingsUiState):
             vm.setJellyfinBurnInImageSubtitles(!state.jellyfin.burnInImageSubtitles)
             return InputResult.handled(SoundType.TOGGLE)
         }
+        JellyfinItem.ConfirmPlayerExit -> {
+            vm.setJellyfinConfirmPlayerExit(!state.jellyfin.confirmPlayerExit)
+            return InputResult.handled(SoundType.TOGGLE)
+        }
         JellyfinItem.SharePresence -> {
             vm.setJellyfinSharePresence(!state.jellyfin.sharePresence)
             return InputResult.handled(SoundType.TOGGLE)

@@ -110,6 +110,8 @@ fun DualHomeLowerScreen(
     mediaItems: List<com.nendo.argosy.ui.screens.home.HomeMediaUi> = emptyList(),
     mediaDownloadIndicators: Map<String, com.nendo.argosy.ui.screens.home.GameDownloadIndicator> =
         emptyMap(),
+    onMediaTapped: (Int) -> Unit = {},
+    onMediaLongPressed: (Int) -> Unit = {},
     selectedIndex: Int,
     platformName: String,
     totalCount: Int,
@@ -307,15 +309,21 @@ fun DualHomeLowerScreen(
                 gridState = gridState,
                 showPlatformBadge = false,
                 onItemTap = { index ->
+                    val media = mediaItems.getOrNull(index)
                     val game = games.getOrNull(index)
-                    if (game != null) {
-                        onGameTapped(index)
-                        onGameSelected(game.id)
-                    } else {
-                        onViewAllClick()
+                    when {
+                        media != null -> onMediaTapped(index)
+                        game != null -> {
+                            onGameTapped(index)
+                            onGameSelected(game.id)
+                        }
+                        else -> onViewAllClick()
                     }
                 },
-                onItemLongPress = { index -> onGameTapped(index) },
+                onItemLongPress = { index ->
+                    if (mediaItems.getOrNull(index) != null) onMediaLongPressed(index)
+                    else onGameTapped(index)
+                },
                 downloadIndicatorFor = { item ->
                     when (item) {
                         is CarouselItem.Game -> item.downloadIndicator

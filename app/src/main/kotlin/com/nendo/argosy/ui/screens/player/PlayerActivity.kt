@@ -30,6 +30,9 @@ import com.nendo.argosy.util.hideSystemBars
 import com.nendo.argosy.util.installImmersiveMode
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -61,6 +64,13 @@ class PlayerActivity : ComponentActivity() {
     private val viewModel: PlayerViewModel by viewModels()
     private val inputHandler by lazy { PlayerInputHandler(viewModel) }
 
+    private val forwardedKeyDispatcher: (KeyEvent) -> Boolean = { event ->
+        dispatchKeyEvent(event)
+    }
+    private val forwardedMotionDispatcher: (MotionEvent) -> Boolean = { event ->
+        dispatchGenericMotionEvent(event)
+    }
+
     private var swapAB by mutableStateOf(false)
     private var swapXY by mutableStateOf(false)
     private var swapStartSelect by mutableStateOf(false)
@@ -77,9 +87,12 @@ class PlayerActivity : ComponentActivity() {
             finish()
             return
         }
+        currentDisplayId()?.let { viewModel.onHostDisplayChanged(it) }
         viewModel.initialize(args)
         observeButtonSwaps()
         observeEvents()
+        observeControlsLock()
+        observeItemChanges()
 
         setContent {
             ALauncherTheme {
@@ -115,6 +128,7 @@ class PlayerActivity : ComponentActivity() {
     override fun onStart() {
         super.onStart()
         reportDisplay()
+        registerInputForwarding()
         if (wasStopped) {
             wasStopped = false
             viewModel.onEnteredForeground()
@@ -124,11 +138,24 @@ class PlayerActivity : ComponentActivity() {
     /**
      * Tells the launcher which screen this window landed on. The companion sends episodes to the
      * player and has to address the window where it actually is, which is not always where a
-     * resolver would have put it.
+     * resolver would have put it. The view model hears the same report, because the player it
+     * builds is bound to the window's display and must be rebuilt if that ever changes.
      */
     private fun reportDisplay() {
         val displayId = window.decorView.display?.displayId ?: return
         DualScreenManagerHolder.instance?.mediaPlayerDisplayId = displayId
+        viewModel.onHostDisplayChanged(displayId)
+    }
+
+    /**
+     * The display this window is on, readable before the decor view has attached. Needed at
+     * creation time because the view model must know the display before the first playback opens -
+     * the audio binding happens when the player is built, not when the window is later reported.
+     */
+    private fun currentDisplayId(): Int? {
+        window.decorView.display?.displayId?.let { return it }
+        @Suppress("DEPRECATION")
+        return windowManager.defaultDisplay?.displayId
     }
 
     /**
@@ -147,7 +174,63 @@ class PlayerActivity : ComponentActivity() {
         if (hasFocus) {
             window.hideSystemBars()
             reportDisplay()
+            registerInputForwarding()
         }
+    }
+
+    /**
+     * A touch on this window is evidence the viewer is present, exactly like a pad press, so it
+     * feeds the launcher's shared activity signal and restores the other screen from its playback
+     * dim. Keys already arrive there through the claim in [dispatchKeyEvent].
+     */
+    override fun onUserInteraction() {
+        super.onUserInteraction()
+        DualScreenManagerHolder.instance?.notifyUserActivity("playerUserInteraction")
+    }
+
+    /**
+     * Registers this window's own dispatch as the target for input the companion window receives
+     * during playback, mirroring how the built-in emulator registers with the launcher. Forwarded
+     * events enter [dispatchKeyEvent] and [dispatchGenericMotionEvent] exactly as directly
+     * delivered ones do, so a press cannot behave differently for having come the long way round.
+     */
+    private fun registerInputForwarding() {
+        val dsm = DualScreenManagerHolder.instance ?: return
+        dsm.mediaPlayerKeyDispatcher = forwardedKeyDispatcher
+        dsm.mediaPlayerMotionDispatcher = forwardedMotionDispatcher
+    }
+
+    /**
+     * Mirrors the view model's control lock into the launcher's shared state, where the companion's
+     * key-yield gate reads it. The view model owns the lock; this is only the bridge, plus the
+     * unconditional clear on teardown that keeps a dead window from leaving the pad pointed at
+     * nothing.
+     */
+    private fun observeControlsLock() {
+        lifecycleScope.launch {
+            viewModel.uiState.map { it.controlsLocked }.distinctUntilChanged().collect { locked ->
+                DualScreenManagerHolder.instance?.setMediaPlayerControlsLocked(locked)
+            }
+        }
+    }
+
+    /**
+     * The identity checks keep a relocation honest: the replacement window on the other display
+     * registers itself before the departing one is destroyed, and an unconditional clear here
+     * would unregister the survivor.
+     */
+    override fun onDestroy() {
+        val dsm = DualScreenManagerHolder.instance
+        if (dsm != null) {
+            dsm.setMediaPlayerControlsLocked(false)
+            if (dsm.mediaPlayerKeyDispatcher === forwardedKeyDispatcher) {
+                dsm.mediaPlayerKeyDispatcher = null
+            }
+            if (dsm.mediaPlayerMotionDispatcher === forwardedMotionDispatcher) {
+                dsm.mediaPlayerMotionDispatcher = null
+            }
+        }
+        super.onDestroy()
     }
 
     /**
@@ -218,6 +301,24 @@ class PlayerActivity : ComponentActivity() {
         }
     }
 
+    /**
+     * Re-asserts display focus for every item that starts playing in this window, not only the
+     * ones a launch delivered. An autoplay advance or a pad-driven episode skip builds a new audio
+     * pipeline with no launch involved, and on firmware that binds a playback's audio to the
+     * focused display that pipeline would otherwise inherit whichever screen was touched last.
+     */
+    private fun observeItemChanges() {
+        lifecycleScope.launch {
+            viewModel.uiState.map { it.itemId }
+                .filter { it.isNotBlank() }
+                .distinctUntilChanged()
+                .collect {
+                    val displayId = window.decorView.display?.displayId ?: return@collect
+                    DualScreenManagerHolder.instance?.directMediaPlayerFocus(displayId)
+                }
+        }
+    }
+
     private fun observeEvents() {
         lifecycleScope.launch {
             viewModel.events.collectLatest { event ->
@@ -249,7 +350,7 @@ class PlayerActivity : ComponentActivity() {
             overrideDisplayId = target
         ) ?: return
         relocateTo(
-            context = this,
+            context = displayAffinityHelper.displayContext(target) ?: this,
             args = PlayerArgs(itemId = event.itemId, startPositionMs = event.positionMs),
             options = options
         )
@@ -325,6 +426,25 @@ class PlayerActivity : ComponentActivity() {
                 intent(context, args).apply {
                     addFlags(
                         Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_MULTIPLE_TASK
+                    )
+                },
+                options
+            )
+        }
+
+        /**
+         * Brings the live window forward without handing it anything to play. The intent carries no
+         * item, so a single-top match reaches [onNewIntent] and is ignored - the running playback is
+         * not restarted or renegotiated, the window is only raised.
+         */
+        fun raise(context: Context, options: Bundle?) {
+            context.startActivity(
+                Intent(context, PlayerActivity::class.java).apply {
+                    addFlags(
+                        Intent.FLAG_ACTIVITY_NEW_TASK or
+                            Intent.FLAG_ACTIVITY_REORDER_TO_FRONT or
+                            Intent.FLAG_ACTIVITY_SINGLE_TOP or
+                            Intent.FLAG_ACTIVITY_NO_ANIMATION
                     )
                 },
                 options

@@ -21,6 +21,7 @@ import com.nendo.argosy.data.preferences.JellyfinPreferencesRepository
 import com.nendo.argosy.data.remote.jellyfin.JellyfinApiFactory
 import com.nendo.argosy.data.remote.jellyfin.JellyfinConnectionManager
 import com.nendo.argosy.data.remote.ssl.UserCertTrustManager.withUserCertTrust
+import com.nendo.argosy.util.DisplayAffinityHelper
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
@@ -52,7 +53,8 @@ fun sideloadedSubtitleId(streamIndex: Int): String = "argosy-sub-$streamIndex"
 class PlayerEngine @Inject constructor(
     @ApplicationContext private val context: Context,
     private val connectionManager: JellyfinConnectionManager,
-    private val jellyfinPreferencesRepository: JellyfinPreferencesRepository
+    private val jellyfinPreferencesRepository: JellyfinPreferencesRepository,
+    private val displayAffinityHelper: DisplayAffinityHelper
 ) {
 
     suspend fun authorizationHeader(): String = withContext(Dispatchers.IO) {
@@ -64,10 +66,22 @@ class PlayerEngine @Inject constructor(
         )
     }
 
-    fun createPlayer(authorizationHeader: String?, listener: Player.Listener): ExoPlayer {
+    /**
+     * Builds the player from a context tied to [displayId] when the device has a second display.
+     * Firmwares that keep a volume per display bind a playback's audio when its track is created,
+     * so the association has to exist before prepare runs - the application context belongs to no
+     * display and would leave the binding to whichever screen happened to hold focus. A player
+     * built this way is display-bound for its whole life; a window that changes display needs a
+     * new player. Single-screen devices always get the application context, unchanged.
+     */
+    fun createPlayer(
+        authorizationHeader: String?,
+        listener: Player.Listener,
+        displayId: Int?
+    ): ExoPlayer {
         val mediaSourceFactory = DefaultMediaSourceFactory(context)
             .setDataSourceFactory(dataSourceFactory(authorizationHeader))
-        return ExoPlayer.Builder(context)
+        return ExoPlayer.Builder(playbackContext(displayId))
             .setMediaSourceFactory(mediaSourceFactory)
             .build()
             .apply {
@@ -81,6 +95,12 @@ class PlayerEngine @Inject constructor(
                 setWakeMode(C.WAKE_MODE_NETWORK)
                 addListener(listener)
             }
+    }
+
+    private fun playbackContext(displayId: Int?): Context {
+        if (displayId == null) return context
+        if (!displayAffinityHelper.hasSecondaryDisplay) return context
+        return displayAffinityHelper.displayContext(displayId) ?: context
     }
 
     /**

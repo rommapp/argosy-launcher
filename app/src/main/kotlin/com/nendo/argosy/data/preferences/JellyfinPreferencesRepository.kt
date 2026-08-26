@@ -163,6 +163,7 @@ data class JellyfinPreferences(
     val subtitleMode: MediaSubtitleMode = MediaSubtitleMode.PREFERRED,
     val subtitleLanguage: MediaSubtitleLanguage = MediaSubtitleLanguage.ENGLISH,
     val burnInImageSubtitles: Boolean = false,
+    val confirmPlayerExit: Boolean = false,
     val shareMediaPresence: Boolean = true
 ) {
     val isSignedIn: Boolean get() = !accessToken.isNullOrBlank()
@@ -187,6 +188,7 @@ class JellyfinPreferencesRepository @Inject constructor(
         val SUBTITLE_MODE = stringPreferencesKey("jellyfin_subtitle_mode")
         val SUBTITLE_LANGUAGE = stringPreferencesKey("jellyfin_subtitle_language")
         val BURN_IN_IMAGE_SUBTITLES = booleanPreferencesKey("jellyfin_burn_in_image_subtitles")
+        val CONFIRM_PLAYER_EXIT = booleanPreferencesKey("jellyfin_confirm_player_exit")
         val SHARE_MEDIA_PRESENCE = booleanPreferencesKey("jellyfin_share_media_presence")
     }
 
@@ -203,6 +205,7 @@ class JellyfinPreferencesRepository @Inject constructor(
             subtitleMode = MediaSubtitleMode.fromString(prefs[Keys.SUBTITLE_MODE]),
             subtitleLanguage = MediaSubtitleLanguage.fromString(prefs[Keys.SUBTITLE_LANGUAGE]),
             burnInImageSubtitles = prefs[Keys.BURN_IN_IMAGE_SUBTITLES] ?: false,
+            confirmPlayerExit = prefs[Keys.CONFIRM_PLAYER_EXIT] ?: false,
             shareMediaPresence = prefs[Keys.SHARE_MEDIA_PRESENCE] ?: true
         )
     }
@@ -258,6 +261,10 @@ class JellyfinPreferencesRepository @Inject constructor(
 
     suspend fun setBurnInImageSubtitles(enabled: Boolean) {
         dataStore.edit { it[Keys.BURN_IN_IMAGE_SUBTITLES] = enabled }
+    }
+
+    suspend fun setConfirmPlayerExit(enabled: Boolean) {
+        dataStore.edit { it[Keys.CONFIRM_PLAYER_EXIT] = enabled }
     }
 
     suspend fun setShareMediaPresence(enabled: Boolean) {

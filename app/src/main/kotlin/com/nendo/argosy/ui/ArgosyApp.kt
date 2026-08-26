@@ -1483,7 +1483,8 @@ fun ArgosyApp(
                                             context.startActivity(launchIntent, options)
                                         }
                                     }
-                                }
+                                },
+                                dualMediaViewModel = { dualScreenManager.swappedMediaViewModel }
                             )
                         }
 
@@ -1897,6 +1898,7 @@ fun ArgosyApp(
                             onCustomGridActivate = { swappedInputHandler.onConfirm() },
                             mediaToggle = mediaToggle,
                             onMediaToggle = { dualScreenManager.toggleCompanionMediaView() },
+                            dualMediaViewModel = dualScreenManager.swappedMediaViewModel,
                             modifier = Modifier.blur(contentBlur)
                         )
                         }

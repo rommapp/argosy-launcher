@@ -13,6 +13,7 @@ import com.nendo.argosy.ui.input.InputResult
 import com.nendo.argosy.ui.screens.media.delegates.MediaDownloadDelegate
 import com.nendo.argosy.ui.screens.media.delegates.MediaDownloadPromptOutcome
 import com.nendo.argosy.ui.screens.media.delegates.MediaSeriesDelegate
+import com.nendo.argosy.ui.screens.media.delegates.MediaSiblingsDelegate
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -32,6 +33,7 @@ private const val PLAY_TARGET_WAIT_MS = 10_000L
 class MediaDetailViewModel @Inject constructor(
     private val mediaRepository: MediaRepository,
     private val seriesDelegate: MediaSeriesDelegate,
+    private val siblingsDelegate: MediaSiblingsDelegate,
     private val downloadDelegate: MediaDownloadDelegate,
     private val availabilityVerifier: MediaAvailabilityVerifier,
     private val getRelatedMedia: GetRelatedMediaUseCase,
@@ -251,8 +253,7 @@ class MediaDetailViewModel @Inject constructor(
         siblingsJob?.cancel()
         siblingLibraryId = libraryId
         siblingsJob = viewModelScope.launch {
-            mediaRepository.observeLibraryItems(libraryId).collect { entities ->
-                val ids = entities.map { it.itemId }
+            siblingsDelegate.siblingIdsFlow(libraryId).collect { ids ->
                 val current = loadedItemId
                 _uiState.update {
                     it.copy(

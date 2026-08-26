@@ -45,6 +45,7 @@ import com.nendo.argosy.ui.dualscreen.CompanionDetailScreen
 import com.nendo.argosy.ui.input.LocalSwapStartSelect
 import com.nendo.argosy.ui.input.mapKeycodeToGamepadEvent
 import com.nendo.argosy.ui.screens.secondaryhome.SecondaryHomeViewModel
+import com.nendo.argosy.util.Logger
 import com.nendo.argosy.util.PermissionHelper
 import com.nendo.argosy.util.hideSystemBars
 import com.nendo.argosy.util.installImmersiveMode
@@ -85,6 +86,7 @@ class SecondaryHomeActivity :
 
     private var confirmHoldJob: kotlinx.coroutines.Job? = null
     private var confirmHoldFired = false
+    private var mediaDimCollectJob: kotlinx.coroutines.Job? = null
 
     private lateinit var viewModel: SecondaryHomeViewModel
     private lateinit var dualHomeViewModel: DualHomeViewModel
@@ -216,16 +218,7 @@ class SecondaryHomeActivity :
                             onAppClick = ::launchApp,
                             dualMediaViewModel = dualMediaViewModel,
                             isMediaPanelVisible = isMediaPanelVisible,
-                            onMediaSeasonPickerToggled = {
-                                dualMediaViewModel?.toggleSeasonPicker()
-                            },
                             onMediaSeasonSelected = { dualMediaViewModel?.selectSeason(it) },
-                            onMediaEpisodeLayoutSelected = {
-                                dualMediaViewModel?.setEpisodeLayout(it)
-                            },
-                            onMediaJumpToNowPlaying = {
-                                dualMediaViewModel?.jumpToNowPlaying()
-                            },
                             onMediaEpisodeTapped = ::playMediaItemId
                         )
                     } else {
@@ -290,16 +283,7 @@ class SecondaryHomeActivity :
                             onMediaToggle = ::openMediaFromAppBar,
                             onMediaRowTapped = { index -> dualMediaViewModel?.focusRow(index) },
                             onMediaRowConfirmed = ::playFocusedMediaRow,
-                            onMediaSeasonPickerToggled = {
-                                dualMediaViewModel?.toggleSeasonPicker()
-                            },
                             onMediaSeasonSelected = { dualMediaViewModel?.selectSeason(it) },
-                            onMediaEpisodeLayoutSelected = {
-                                dualMediaViewModel?.setEpisodeLayout(it)
-                            },
-                            onMediaJumpToNowPlaying = {
-                                dualMediaViewModel?.jumpToNowPlaying()
-                            },
                             onMediaEpisodeTapped = ::playMediaItemId
                         )
                     }
@@ -374,6 +358,9 @@ class SecondaryHomeActivity :
     }
 
     override fun dispatchTouchEvent(event: android.view.MotionEvent): Boolean {
+        if (event.action == android.view.MotionEvent.ACTION_DOWN && ::dsm.isInitialized) {
+            dsm.notifyUserActivity("companionTouchDown")
+        }
         val result = super.dispatchTouchEvent(event)
         if (event.action == android.view.MotionEvent.ACTION_UP) {
             if (isGameActive && ::dsm.isInitialized) {
@@ -404,6 +391,11 @@ class SecondaryHomeActivity :
     @SuppressLint("RestrictedApi")
     override fun dispatchKeyEvent(event: android.view.KeyEvent): Boolean {
         if (isCompanionTextEntryActive()) return super.dispatchKeyEvent(event)
+        if (yieldsKeysToMediaPlayer()) {
+            val forward = dsm.mediaPlayerKeyDispatcher
+            if (forward != null && forward(event)) return true
+            return super.dispatchKeyEvent(event)
+        }
         when (event.action) {
             android.view.KeyEvent.ACTION_DOWN ->
                 if (handleGamepadKeyDown(event.keyCode, event)) return true
@@ -417,7 +409,6 @@ class SecondaryHomeActivity :
         ::dualHomeViewModel.isInitialized && dualHomeViewModel.uiState.value.isTextEntryActive
 
     private fun handleGamepadKeyDown(keyCode: Int, event: android.view.KeyEvent): Boolean {
-        if (yieldsKeysToMediaPlayer()) return false
         if (::dsm.isInitialized && !dsm.claimInput(event)) return true
         if (event.repeatCount == 0) {
             val conflictEvent = mapKeycodeToGamepadEvent(keyCode, swapAB, swapXY, swapStartSelect)
@@ -467,19 +458,48 @@ class SecondaryHomeActivity :
     }
 
     /**
-     * Whether the pad belongs to the video player right now. While the media panel is up over a
-     * live playback the panel is touch-only, so this window must not claim the key: the same press
-     * is delivered to the player's window in parallel, and a claim here would make its copy a
-     * duplicate that gets dropped. The conflict overlays keep their priority because they capture
-     * input on every surface.
+     * The companion window normally has no use for generic motion, but while it holds input focus
+     * during a playback the trigger axes land here instead of on the player, and L2/R2 would go
+     * dead. The raw event is forwarded so the player's own axis-to-key conversion runs - the same
+     * one a directly-delivered motion event gets.
+     */
+    override fun dispatchGenericMotionEvent(event: android.view.MotionEvent): Boolean {
+        if (yieldsKeysToMediaPlayer()) {
+            val forward = dsm.mediaPlayerMotionDispatcher
+            if (forward != null && forward(event)) return true
+        }
+        return super.dispatchGenericMotionEvent(event)
+    }
+
+    /**
+     * Whether the pad belongs to the video player right now. The yield happens only while the
+     * media panel is the surface this display is showing, decided by the same predicate the
+     * renderer asks, so any other screen the companion draws keeps its own controller input.
+     * While the panel is up over a live playback the panel is touch-only, and every key and
+     * trigger this window receives is handed to the player's own dispatch instead of being
+     * interpreted here. The claim is the player's to make: claiming before forwarding would make
+     * the player's copy of the same physical press look like a duplicate and get dropped. The
+     * conflict overlays and the app drawer keep their priority because this yields nothing while
+     * one is up. A locked player is the deliberate inversion: the viewer asked for the film to run
+     * untouched, so the pad stays here and drives the panel until the lock is released.
      */
     private fun yieldsKeysToMediaPlayer(): Boolean {
         if (!::dsm.isInitialized) return false
-        if (!isMediaPanelVisible || isGameActive) return false
+        if (dsm.mediaPlayerControlsLocked.value) return false
+        if (!mediaPanelIsSurfaceNow()) return false
+        if (viewModel.uiState.value.isDrawerOpen) return false
         if (dsm.mediaPlayback.value == null) return false
         if (dsm.dualSyncOverlay.value != null || dsm.dualSaveConflict.value != null) return false
         return true
     }
+
+    private fun mediaPanelIsSurfaceNow(): Boolean = mediaPanelIsSurface(
+        isInitialized = isInitialized,
+        isMediaPanelVisible = isMediaPanelVisible,
+        isGameActive = isGameActive,
+        isWizardActive = isWizardActive,
+        hasMediaViewModel = dualMediaViewModel != null
+    )
 
     /**
      * Only the curated grid needs a held A, and deferring the press everywhere else would put a
@@ -679,6 +699,11 @@ class SecondaryHomeActivity :
      * jumping.
      */
     override fun onRoleSwapped(isSwapped: Boolean) {
+        if (::dualHomeViewModel.isInitialized &&
+            dualHomeViewModel.uiState.value.viewMode == DualHomeViewMode.MEDIA_INFO
+        ) {
+            dualHomeViewModel.exitMediaInfo()
+        }
         if (isSwapped || !::dualHomeViewModel.isInitialized) {
             isShowcaseRole = isSwapped
             return
@@ -725,18 +750,98 @@ class SecondaryHomeActivity :
 
     /**
      * Holds this window awake while the person is using either screen, for the reason the primary
-     * does: activity is credited only to the display an event landed on.
+     * does: activity is credited only to the display an event landed on. Like the primary it also
+     * holds for the whole of a playback, because the launcher's own dim ramp needs this display
+     * powered to land its dark stage and to receive the touch that wakes it.
      */
     private fun keepAwakeWhileUserActive() {
         lifecycleScope.launch {
-            DualScreenManagerHolder.instance?.userActive?.collect { active ->
-                if (active) {
-                    window.addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-                } else {
-                    window.clearFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+            val manager = DualScreenManagerHolder.instance ?: return@launch
+            kotlinx.coroutines.flow.combine(
+                manager.userActive,
+                manager.mediaPlayback
+            ) { active, playback -> active || playback != null }
+                .collect { keepOn ->
+                    if (keepOn) {
+                        window.addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                    } else {
+                        window.clearFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                    }
                 }
-            }
         }
+    }
+
+    /**
+     * Fades this window towards dark while a playback on another display runs unattended, for the
+     * reason the primary does: it should neither distract from the film nor burn battery, and any
+     * input restores it in full. Launched from [initializeCompanion] so a stale-DSM reconnect
+     * replaces the collector rather than leaving one bound to the dead instance.
+     */
+    private fun dimWhileMediaIdle() {
+        mediaDimCollectJob?.cancel()
+        mediaDimCollectJob = lifecycleScope.launch {
+            kotlinx.coroutines.flow.combine(
+                dsm.mediaPlayerDisplay,
+                dsm.mediaDimBrightness,
+                dsm.mediaDimCoverAlpha
+            ) { playerDisplayId, dim, coverAlpha -> Triple(playerDisplayId, dim, coverAlpha) }
+                .collect { (playerDisplayId, dim, coverAlpha) ->
+                    applyMediaDim(playerDisplayId, dim, coverAlpha)
+                }
+        }
+    }
+
+    /**
+     * A window brightness of zero drives the panel to its MINIMUM backlight, not off - the
+     * platform has no attribute value that blanks a panel. The manager therefore fades an opaque
+     * black cover over the window across the ramp's second leg, and this window renders it as a
+     * foreground drawable: it draws over everything but consumes no input, so a tap lands on the
+     * content underneath and wakes the screen through the same activity signal that clears the
+     * brightness override and the cover together.
+     */
+    private fun applyMediaDim(playerDisplayId: Int?, dim: Float?, coverAlpha: Float) {
+        val ownDisplayId = window.decorView.display?.displayId
+        val dimsThisWindow = dim != null && playerDisplayId != null &&
+            ownDisplayId != null && ownDisplayId != playerDisplayId
+        val target = if (dimsThisWindow && dim != null) {
+            dim
+        } else {
+            android.view.WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE
+        }
+        applyMediaDimCover(if (dimsThisWindow) coverAlpha else 0f)
+        val attributes = window.attributes
+        if (attributes.screenBrightness == target) return
+        Logger.debug(
+            DualScreenManager.MEDIA_DIM_LOG_TAG,
+            "apply window=companion display=$ownDisplayId player=$playerDisplayId brightness=$target"
+        )
+        attributes.screenBrightness = target
+        window.attributes = attributes
+    }
+
+    private var mediaDimCover: android.graphics.drawable.ColorDrawable? = null
+
+    private fun applyMediaDimCover(alpha: Float) {
+        val alphaInt = (alpha.coerceIn(0f, 1f) * 255f).toInt()
+        if (alphaInt <= 0) {
+            if (mediaDimCover != null) {
+                mediaDimCover = null
+                window.decorView.foreground = null
+            }
+            return
+        }
+        val cover = mediaDimCover
+            ?: android.graphics.drawable.ColorDrawable(android.graphics.Color.BLACK).also {
+                it.alpha = 0
+                mediaDimCover = it
+                window.decorView.foreground = it
+            }
+        cover.alpha = alphaInt
+    }
+
+    override fun onUserInteraction() {
+        super.onUserInteraction()
+        if (::dsm.isInitialized) dsm.notifyUserActivity("companionUserInteraction")
     }
 
     override fun refocusSelf() = startActivity(
@@ -937,6 +1042,7 @@ class SecondaryHomeActivity :
         registerDisplayListener()
         initializeDependencies()
         loadInitialState()
+        if (!isShowcaseRole) dsm.clearMediaInfoRequest()
         dsm.companionHost = this
         lifecycleScope.launch { dsm.dualScreenShowcase.collect { _showcaseState.value = it } }
         lifecycleScope.launch { dsm.companionDetail.collect { _companionDetail.value = it } }
@@ -957,6 +1063,7 @@ class SecondaryHomeActivity :
                 applyInputSwapState(stateManager.inputSwapStateFrom(prefs))
             }
         }
+        dimWhileMediaIdle()
     }
 
     /**
@@ -1092,7 +1199,8 @@ class SecondaryHomeActivity :
             mediaRepository = dsm.mediaRepository,
             resolveMediaPlayTargetUseCase = dsm.resolveMediaPlayTargetUseCase,
             mediaAvailabilityVerifier = dsm.mediaAvailabilityVerifier,
-            mediaDownloadDelegate = dsm.mediaDownloadDelegate
+            mediaDownloadDelegate = dsm.mediaDownloadDelegate,
+            mediaSiblingsDelegate = dsm.mediaSiblingsDelegate
         )
         dualHomeViewModel.observeHomeTiles()
         dualHomeViewModel.observeTilePrompts()
@@ -1102,7 +1210,8 @@ class SecondaryHomeActivity :
             gradientExtractionDelegate = dsm.gradientExtractionDelegate,
             getRelatedMedia = dsm.getRelatedMediaUseCase,
             availabilityVerifier = dsm.mediaAvailabilityVerifier,
-            seriesDelegate = dsm.mediaSeriesDelegate
+            seriesDelegate = dsm.mediaSeriesDelegate,
+            requestedItem = dsm.mediaInfoRequest
         )
         observeCustomGridSelection()
         broadcasts = SecondaryHomeBroadcastHelper(
@@ -1149,6 +1258,7 @@ class SecondaryHomeActivity :
             onRefocusSelf = ::refocusSelf,
             context = applicationContext,
             lifecycleLaunch = { block -> lifecycleScope.launch { block() } },
+            isMediaPanelSurface = ::mediaPanelIsSurfaceNow,
             dualMediaViewModel = { dualMediaViewModel },
             onConfirmMediaRow = ::confirmFocusedMediaRow
         )

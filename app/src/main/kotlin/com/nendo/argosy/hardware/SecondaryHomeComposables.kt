@@ -45,7 +45,6 @@ import com.nendo.argosy.ui.dualscreen.home.DualFilterCategory
 import com.nendo.argosy.ui.dualscreen.home.DualHomeShowcaseState
 import com.nendo.argosy.ui.dualscreen.home.DualHomeUpperScreen
 import com.nendo.argosy.ui.dualscreen.home.DualHomeViewModel
-import com.nendo.argosy.ui.dualscreen.media.DualMediaEpisodeLayout
 import com.nendo.argosy.ui.dualscreen.media.DualMediaLowerScreen
 import com.nendo.argosy.ui.dualscreen.media.DualMediaViewModel
 import com.nendo.argosy.ui.screens.secondaryhome.SecondaryHomeViewModel
@@ -55,6 +54,20 @@ import com.nendo.argosy.ui.theme.backdrop.surfaceBackdrop
 import kotlinx.coroutines.flow.StateFlow
 
 enum class CompanionScreen { HOME, GAME_DETAIL }
+
+/**
+ * Whether the media panel is the surface the companion is showing right now. Both role renderers
+ * and the activity's key-yield gate derive from this one predicate, so the screen that is drawn
+ * and the screen that receives controller input cannot disagree.
+ */
+fun mediaPanelIsSurface(
+    isInitialized: Boolean,
+    isMediaPanelVisible: Boolean,
+    isGameActive: Boolean,
+    isWizardActive: Boolean,
+    hasMediaViewModel: Boolean
+): Boolean = isInitialized && isMediaPanelVisible && !isGameActive &&
+    !isWizardActive && hasMediaViewModel
 
 @Composable
 fun SecondaryHomeContent(
@@ -93,16 +106,18 @@ fun SecondaryHomeContent(
     onMediaToggle: () -> Unit = {},
     onMediaRowTapped: (Int) -> Unit = {},
     onMediaRowConfirmed: (Int) -> Unit = {},
-    onMediaSeasonPickerToggled: () -> Unit = {},
     onMediaSeasonSelected: (Int) -> Unit = {},
-    onMediaEpisodeLayoutSelected: (DualMediaEpisodeLayout) -> Unit = {},
-    onMediaJumpToNowPlaying: () -> Unit = {},
     onMediaEpisodeTapped: (String) -> Unit = {}
 ) {
     BackHandler(enabled = true) { }
 
-    val showMedia = isInitialized && isMediaPanelVisible && !isGameActive && !isWizardActive &&
-        dualMediaViewModel != null
+    val showMedia = mediaPanelIsSurface(
+        isInitialized = isInitialized,
+        isMediaPanelVisible = isMediaPanelVisible,
+        isGameActive = isGameActive,
+        isWizardActive = isWizardActive,
+        hasMediaViewModel = dualMediaViewModel != null
+    )
     val showLibrary = isInitialized && isArgosyForeground && !isGameActive && !isWizardActive &&
         !showMedia
     val showCompanion = isInitialized && !showLibrary && !showMedia && !isWizardActive
@@ -161,7 +176,8 @@ fun SecondaryHomeContent(
                 onDimTapped = onDimTapped,
                 onCustomGridActivate = onCustomGridActivate,
                 mediaToggle = mediaToggle,
-                onMediaToggle = onMediaToggle
+                onMediaToggle = onMediaToggle,
+                dualMediaViewModel = dualMediaViewModel
             )
         }
 
@@ -172,6 +188,8 @@ fun SecondaryHomeContent(
         ) {
             if (dualMediaViewModel != null) {
                 val mediaState by dualMediaViewModel.uiState.collectAsState()
+                val playerLocked = com.nendo.argosy.DualScreenManagerHolder.instance
+                    ?.mediaPlayerControlsLocked?.collectAsState()?.value == true
                 Column(modifier = Modifier.fillMaxSize()) {
                     DualMediaLowerScreen(
                         state = mediaState,
@@ -179,11 +197,13 @@ fun SecondaryHomeContent(
                         onRowTapped = onMediaRowTapped,
                         onRowConfirmed = onMediaRowConfirmed,
                         modifier = Modifier.weight(1f),
-                        onSeasonPickerToggled = onMediaSeasonPickerToggled,
                         onSeasonSelected = onMediaSeasonSelected,
-                        onEpisodeLayoutSelected = onMediaEpisodeLayoutSelected,
-                        onJumpToNowPlaying = onMediaJumpToNowPlaying,
-                        onEpisodeTapped = onMediaEpisodeTapped
+                        onEpisodeTapped = onMediaEpisodeTapped,
+                        onBackTapped = {
+                            com.nendo.argosy.DualScreenManagerHolder.instance
+                                ?.setCompanionMediaVisible(false)
+                        },
+                        playerLocked = playerLocked
                     )
                     val showAppBar = com.nendo.argosy.DualScreenManagerHolder.instance
                         ?.isExternalDisplay != true
@@ -277,16 +297,18 @@ fun ShowcaseRoleContent(
     onAppClick: (String) -> Unit,
     dualMediaViewModel: DualMediaViewModel? = null,
     isMediaPanelVisible: Boolean = false,
-    onMediaSeasonPickerToggled: () -> Unit = {},
     onMediaSeasonSelected: (Int) -> Unit = {},
-    onMediaEpisodeLayoutSelected: (DualMediaEpisodeLayout) -> Unit = {},
-    onMediaJumpToNowPlaying: () -> Unit = {},
     onMediaEpisodeTapped: (String) -> Unit = {}
 ) {
     BackHandler(enabled = true) { }
 
-    val showMedia = isInitialized && isMediaPanelVisible && !isGameActive && !isWizardActive &&
-        dualMediaViewModel != null
+    val showMedia = mediaPanelIsSurface(
+        isInitialized = isInitialized,
+        isMediaPanelVisible = isMediaPanelVisible,
+        isGameActive = isGameActive,
+        isWizardActive = isWizardActive,
+        hasMediaViewModel = dualMediaViewModel != null
+    )
     val showShowcase = isInitialized && !isGameActive && !isWizardActive && !showMedia
     val showSplash = !isInitialized || isWizardActive
 
@@ -329,10 +351,7 @@ fun ShowcaseRoleContent(
                     onRowTapped = {},
                     onRowConfirmed = {},
                     modifier = Modifier.blur(contentBlur),
-                    onSeasonPickerToggled = onMediaSeasonPickerToggled,
                     onSeasonSelected = onMediaSeasonSelected,
-                    onEpisodeLayoutSelected = onMediaEpisodeLayoutSelected,
-                    onJumpToNowPlaying = onMediaJumpToNowPlaying,
                     onEpisodeTapped = onMediaEpisodeTapped
                 )
             }

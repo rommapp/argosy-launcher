@@ -474,6 +474,13 @@ class JellyfinSettingsDelegate @Inject constructor(
         }
     }
 
+    fun setConfirmPlayerExit(scope: CoroutineScope, enabled: Boolean) {
+        scope.launch {
+            preferencesRepository.setMediaConfirmPlayerExit(enabled)
+            _state.update { it.copy(confirmPlayerExit = enabled) }
+        }
+    }
+
     fun setSharePresence(scope: CoroutineScope, enabled: Boolean) {
         scope.launch {
             preferencesRepository.setShareMediaPresence(enabled)

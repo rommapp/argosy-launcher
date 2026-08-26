@@ -273,6 +273,10 @@ internal class LightSectionsInput(
                 direction,
                 state.jellyfin.burnInImageSubtitles
             ) { viewModel.setJellyfinBurnInImageSubtitles(it) }
+            JellyfinItem.ConfirmPlayerExit -> return toggleLeftRight(
+                direction,
+                state.jellyfin.confirmPlayerExit
+            ) { viewModel.setJellyfinConfirmPlayerExit(it) }
             JellyfinItem.SharePresence -> return toggleLeftRight(
                 direction,
                 state.jellyfin.sharePresence

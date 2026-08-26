@@ -117,6 +117,52 @@ class ResolveMediaPlayTargetUseCase @Inject constructor(
     }
 
     /**
+     * The episode before [itemId] in its series, crossing a season boundary by fetching the season
+     * that precedes when the stored run starts at one. Null means there is genuinely nothing
+     * earlier: the first episode of the show, a film, or an episode whose series is unknown.
+     *
+     * Specials are passed over when the current episode is an ordinary one: season zero sorts below
+     * every numbered season, so without the filter the first episode proper would answer with the
+     * last special, which is nobody's idea of what came before the show started.
+     */
+    suspend fun previousEpisodeBefore(itemId: String): MediaItemEntity? {
+        val entity = mediaRepository.getItem(itemId) ?: return null
+        if (MediaItemType.fromWire(entity.itemType) != MediaItemType.EPISODE) return null
+        val seriesId = entity.seriesId ?: return null
+        var episodes = orderedRunFor(entity, mediaRepository.getSeriesEpisodes(seriesId))
+        if (episodes.none { it.itemId == entity.itemId }) {
+            val seasonId = entity.parentId ?: return null
+            if (mediaRepository.refreshEpisodes(seriesId, seasonId) !is JellyfinResult.Success) {
+                return null
+            }
+            episodes = orderedRunFor(entity, mediaRepository.getSeriesEpisodes(seriesId))
+        }
+        val position = episodes.indexOfFirst { it.itemId == entity.itemId }
+        if (position < 0) return null
+        if (position > 0) return episodes[position - 1]
+        val previousSeasonId = previousSeasonId(seriesId, entity) ?: return null
+        if (mediaRepository.refreshEpisodes(seriesId, previousSeasonId) !is JellyfinResult.Success) {
+            return null
+        }
+        val refreshed = orderedRunFor(entity, mediaRepository.getSeriesEpisodes(seriesId))
+        val refreshedPosition = refreshed.indexOfFirst { it.itemId == entity.itemId }
+        return if (refreshedPosition > 0) refreshed.getOrNull(refreshedPosition - 1) else null
+    }
+
+    /**
+     * The run an ordinary episode is walked in excludes specials; a special is walked among its own.
+     */
+    private fun orderedRunFor(
+        episode: MediaItemEntity,
+        episodes: List<MediaItemEntity>
+    ): List<MediaItemEntity> =
+        if (episode.parentIndexNumber == SPECIALS_SEASON_NUMBER) {
+            episodes
+        } else {
+            episodes.filter { it.parentIndexNumber != SPECIALS_SEASON_NUMBER }
+        }
+
+    /**
      * The season after the one [episode] belongs to, from the stored season list. Specials never
      * follow an ordinary season here - season zero is below every numbered season, so the numeric
      * comparison passes it over on its own.
@@ -133,6 +179,27 @@ class ResolveMediaPlayTargetUseCase @Inject constructor(
         }
         val position = seasons.indexOfFirst { it.itemId == episode.parentId }
         return if (position >= 0) seasons.getOrNull(position + 1)?.itemId else null
+    }
+
+    /**
+     * The season before the one [episode] belongs to. Season zero is excluded for the same reason
+     * [previousEpisodeBefore] skips it: the specials shelf is not where a numbered season came from.
+     */
+    private suspend fun previousSeasonId(seriesId: String, episode: MediaItemEntity): String? {
+        val seasons = mediaRepository.getSeasons(seriesId)
+        if (seasons.isEmpty()) return null
+        val currentNumber = episode.parentIndexNumber
+        if (currentNumber != null) {
+            return seasons
+                .filter {
+                    val number = it.indexNumber ?: return@filter false
+                    number != SPECIALS_SEASON_NUMBER && number < currentNumber
+                }
+                .maxByOrNull { it.indexNumber ?: Int.MIN_VALUE }
+                ?.itemId
+        }
+        val position = seasons.indexOfFirst { it.itemId == episode.parentId }
+        return if (position > 0) seasons.getOrNull(position - 1)?.itemId else null
     }
 
     /**

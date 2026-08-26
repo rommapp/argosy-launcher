@@ -7,7 +7,6 @@ import com.nendo.argosy.data.media.MediaSubtitleDelivery
 import com.nendo.argosy.data.media.subtitleDeliveryFor
 import com.nendo.argosy.data.preferences.JellyfinPreferences
 import com.nendo.argosy.data.preferences.JellyfinPreferencesRepository
-import com.nendo.argosy.data.preferences.MediaStreamingQuality
 import com.nendo.argosy.data.preferences.MediaSubtitleMode
 import com.nendo.argosy.data.remote.jellyfin.JellyfinApiClient
 import com.nendo.argosy.data.remote.jellyfin.JellyfinDeviceProfileBuilder
@@ -25,9 +24,11 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import java.io.File
 import javax.inject.Inject
+import kotlin.math.roundToInt
 
 private const val TAG = "PlaybackNegotiator"
 private const val KBPS_TO_BPS = 1000
+private const val STREAM_TYPE_VIDEO = "Video"
 private const val STREAM_TYPE_AUDIO = "Audio"
 private const val STREAM_TYPE_SUBTITLE = "Subtitle"
 
@@ -44,11 +45,12 @@ private const val STREAM_TYPE_SUBTITLE = "Subtitle"
  * which hold still between one playback and the next. The addresses it returns also expire with the
  * transcode session behind them, so a cached one plays for a while and then stops mid-film.
  *
- * The tier reaches the server as a height ceiling and a bitrate ceiling on the profile rather than
- * as an instruction to transcode. A title already inside both ceilings therefore satisfies the
+ * Quality reaches the server as ceilings on the profile - height, frame rate and bitrate - rather
+ * than as an instruction to transcode. A title already inside every ceiling therefore satisfies the
  * profile as it stands and is direct-played: there is no quality to gain from re-encoding a picture
  * that is already smaller than the limit, and asking for one would cost the server an encoder and
- * the picture a generation.
+ * the picture a generation. The saved tier supplies the ceilings when the player has not chosen its
+ * own for this viewing.
  */
 class PlaybackNegotiator @Inject constructor(
     private val apiClient: JellyfinApiClient,
@@ -75,7 +77,7 @@ class PlaybackNegotiator @Inject constructor(
         audioStreamIndex: Int? = null,
         subtitleStreamIndex: Int? = null,
         mediaSourceId: String? = null,
-        qualityOverride: MediaStreamingQuality? = null
+        qualityOverride: PlayerQualityCeilings? = null
     ): PlaybackNegotiation = withContext(Dispatchers.IO) {
         val localCopy = availabilityVerifier.verify(itemId)
         val fromDisk = if (localCopy.playsFromDisk) downloadedPlayback(itemId) else null
@@ -90,17 +92,21 @@ class PlaybackNegotiator @Inject constructor(
         val userId = apiClient.currentUserId()
             ?: return@withContext PlaybackNegotiation.Failed("Not signed in to Jellyfin")
 
-        val tier = qualityOverride ?: prefs.streamingQuality
-        val bitrateKbps = tier.maxBitrateKbps
-        val profile = profileBuilder.build(
-            maxStreamingBitrateKbps = bitrateKbps,
+        val tier = prefs.streamingQuality
+        val ceilings = qualityOverride ?: PlayerQualityCeilings(
             maxHeight = tier.maxHeight,
+            maxBitrateKbps = tier.maxBitrateKbps
+        )
+        val profile = profileBuilder.build(
+            maxStreamingBitrateKbps = ceilings.maxBitrateKbps,
+            maxHeight = ceilings.maxHeight,
+            maxFramerate = ceilings.maxFramerate,
             burnInImageSubtitles = burnInImageSubtitles
         )
 
         val request = JellyfinPlaybackInfoRequest(
             userId = userId,
-            maxStreamingBitrate = bitrateKbps?.let { it * KBPS_TO_BPS },
+            maxStreamingBitrate = ceilings.maxBitrateKbps?.let { it * KBPS_TO_BPS },
             startTimeTicks = startPositionMs * TICKS_PER_MILLISECOND,
             audioStreamIndex = audioStreamIndex,
             subtitleStreamIndex = subtitleStreamIndex,
@@ -224,6 +230,17 @@ class PlaybackNegotiator @Inject constructor(
         val isHls = isHlsDelivery(source, streamUrl)
         val startsAtNegotiatedOffset = isTranscode && !isHls
 
+        val videoStream = source.mediaStreams.firstOrNull { it.type == STREAM_TYPE_VIDEO }
+        val sourceVideo = videoStream?.let { stream ->
+            PlayerSourceVideo(
+                height = stream.height?.takeIf { it > 0 },
+                framerate = stream.realFrameRate?.takeIf { it > 0 }?.roundToInt(),
+                bitrateKbps = (stream.bitRate ?: source.bitrate)
+                    ?.takeIf { it > 0 }
+                    ?.div(KBPS_TO_BPS)
+            )
+        }
+
         val audioStreams = source.mediaStreams
             .filter { it.type == STREAM_TYPE_AUDIO }
             .sortedBy { it.index }
@@ -279,7 +296,8 @@ class PlaybackNegotiator @Inject constructor(
                 subtitleTracks = subtitleTracks,
                 audioStreamIndex = selectedAudio,
                 subtitleStreamIndex = selectedSubtitle,
-                sideloadedSubtitles = sideloaded
+                sideloadedSubtitles = sideloaded,
+                sourceVideo = sourceVideo
             )
         )
     }

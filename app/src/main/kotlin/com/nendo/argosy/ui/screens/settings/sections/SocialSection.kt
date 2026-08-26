@@ -43,6 +43,7 @@ import com.google.zxing.BarcodeFormat
 import com.google.zxing.EncodeHintType
 import com.google.zxing.qrcode.QRCodeWriter
 import com.nendo.argosy.ui.components.ActionPreference
+import com.nendo.argosy.ui.components.animateScrollToItemCentered
 import com.nendo.argosy.ui.primitives.ActionButton
 import com.nendo.argosy.ui.screens.settings.components.SectionPaneLayout
 import com.nendo.argosy.ui.components.SwitchPreference
@@ -305,11 +306,7 @@ fun SocialSection(
 
         LaunchedEffect(uiState.focusedIndex) {
             if (uiState.focusedIndex == 0) {
-                val layoutInfo = listState.layoutInfo
-                val viewportHeight = layoutInfo.viewportEndOffset - layoutInfo.viewportStartOffset
-                val itemHeight = layoutInfo.visibleItemsInfo.firstOrNull()?.size ?: 60
-                val centerOffset = (viewportHeight - itemHeight) / 2
-                listState.animateScrollToItem(0, -centerOffset)
+                listState.animateScrollToItemCentered(0)
             }
         }
 

@@ -1,5 +1,6 @@
 package com.nendo.argosy.ui.dualscreen.home
 
+import com.nendo.argosy.core.input.SoundType
 import com.nendo.argosy.domain.model.HomeLayoutKind
 import com.nendo.argosy.ui.common.GridDirection
 import com.nendo.argosy.ui.components.AutoGridMove
@@ -19,7 +20,8 @@ class DualHomeInputHandler(
     private val onBroadcastDirectAction: (String, Long) -> Unit,
     private val onSelectGame: (Long) -> Unit,
     private val onLaunchApp: (String) -> Unit,
-    private val onLaunchAppAlternate: (String) -> Unit = {}
+    private val onLaunchAppAlternate: (String) -> Unit = {},
+    private val dualMediaViewModel: () -> com.nendo.argosy.ui.dualscreen.media.DualMediaViewModel? = { null }
 ) : InputHandler {
 
     private fun confirmGame(game: HomeGameUi) {
@@ -85,6 +87,81 @@ class DualHomeInputHandler(
             DualHomeViewMode.COLLECTION_GAMES -> handleCollectionGames(event)
             DualHomeViewMode.LIBRARY_GRID -> handleLibraryGrid(event)
             DualHomeViewMode.MEDIA_GRID -> handleMediaGrid(event)
+            DualHomeViewMode.MEDIA_INFO -> handleMediaInfo(event)
+        }
+    }
+
+    /**
+     * The media information panel opened for one title. Mirrors the companion path: a series walks
+     * its episodes on Up and Down and switches seasons on Left and Right with wrap, a title without
+     * seasons keeps the cursor on the related rows, Confirm plays the focused entry (or opens its
+     * information when it is a series with nothing resolvable), the shoulders step to the previous
+     * or next title in the same library with a boundary refusal at either end, Back returns to
+     * wherever the panel was opened from, and everything unbound is swallowed.
+     */
+    private fun handleMediaInfo(event: GamepadEvent): InputResult {
+        val vm = dualMediaViewModel()
+        val mediaState = vm?.uiState?.value
+        if (mediaState?.isShowMode == true) {
+            return when (event) {
+                GamepadEvent.Up -> {
+                    vm.moveEpisodeFocus(-1)
+                    InputResult.HANDLED
+                }
+                GamepadEvent.Down -> {
+                    vm.moveEpisodeFocus(1)
+                    InputResult.HANDLED
+                }
+                GamepadEvent.Left -> {
+                    vm.moveSeason(-1)
+                    InputResult.HANDLED
+                }
+                GamepadEvent.Right -> {
+                    vm.moveSeason(1)
+                    InputResult.HANDLED
+                }
+                GamepadEvent.Confirm -> {
+                    mediaState.focusedEpisode?.itemId?.let { viewModel.confirmMediaInfoRow(it) }
+                    InputResult.HANDLED
+                }
+                GamepadEvent.PrevSection ->
+                    if (viewModel.stepMediaInfoSibling(-1)) InputResult.HANDLED
+                    else InputResult.handled(SoundType.BOUNDARY)
+                GamepadEvent.NextSection ->
+                    if (viewModel.stepMediaInfoSibling(1)) InputResult.HANDLED
+                    else InputResult.handled(SoundType.BOUNDARY)
+                GamepadEvent.Back -> {
+                    viewModel.exitMediaInfo()
+                    InputResult.HANDLED
+                }
+                else -> InputResult.HANDLED
+            }
+        }
+        return when (event) {
+            GamepadEvent.Up, GamepadEvent.Left -> {
+                vm?.moveFocus(-1)
+                InputResult.HANDLED
+            }
+            GamepadEvent.Down, GamepadEvent.Right -> {
+                vm?.moveFocus(1)
+                InputResult.HANDLED
+            }
+            GamepadEvent.Confirm -> {
+                val itemId = mediaState?.focusedItem?.itemId
+                if (itemId != null) viewModel.confirmMediaInfoRow(itemId)
+                InputResult.HANDLED
+            }
+            GamepadEvent.PrevSection ->
+                if (viewModel.stepMediaInfoSibling(-1)) InputResult.HANDLED
+                else InputResult.handled(SoundType.BOUNDARY)
+            GamepadEvent.NextSection ->
+                if (viewModel.stepMediaInfoSibling(1)) InputResult.HANDLED
+                else InputResult.handled(SoundType.BOUNDARY)
+            GamepadEvent.Back -> {
+                viewModel.exitMediaInfo()
+                InputResult.HANDLED
+            }
+            else -> InputResult.HANDLED
         }
     }
 

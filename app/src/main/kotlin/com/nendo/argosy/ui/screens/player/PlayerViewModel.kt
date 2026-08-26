@@ -16,6 +16,7 @@ import com.nendo.argosy.data.remote.jellyfin.TICKS_PER_MILLISECOND
 import com.nendo.argosy.data.repository.MediaRepository
 import com.nendo.argosy.ui.audio.AmbientAudioManager
 import com.nendo.argosy.ui.screens.player.delegates.PlayerChromeDelegate
+import com.nendo.argosy.ui.screens.player.delegates.PlayerQualityDelegate
 import com.nendo.argosy.ui.screens.player.delegates.PlayerTrackDelegate
 import com.nendo.argosy.util.Logger
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -38,8 +39,24 @@ private const val TAG = "PlayerViewModel"
 private const val POSITION_TICK_MS = 250L
 private const val SCRUB_COMMIT_DELAY_MS = 600L
 private const val NEAR_END_MS = 15_000L
+private const val NEAR_END_PERCENT = 95.0
+private const val MIN_COMPLETED_PROGRESS_MS = 10_000L
 private const val AUTOPLAY_COUNTDOWN_SECONDS = 10
 private const val FULLY_PLAYED_PERCENT = 100.0
+private const val HALF_VOLUME_FACTOR = 0.5f
+
+/**
+ * How close two Back presses must land to count as the deliberate double-press that releases a
+ * locked player from the pad, for the windows where a double-tap is not available because the
+ * device has no touch.
+ */
+private const val LOCK_RELEASE_DOUBLE_PRESS_MS = 400L
+
+/**
+ * The exit confirmation's two buttons, in the confirm modal's own order: cancel at index zero,
+ * the committing action last.
+ */
+private const val EXIT_CONFIRM_LEAVE_INDEX = 1
 
 /**
  * How the player was asked to open. [startPositionMs] below zero means the caller made no decision
@@ -109,13 +126,23 @@ class PlayerViewModel @Inject constructor(
         closeOverlay = { chrome.closeOverlay() }
     )
 
+    val quality = PlayerQualityDelegate(
+        state = _uiState,
+        openOverlay = { chrome.openOverlay(it) },
+        closeOverlay = { chrome.closeOverlay() },
+        reload = { reload() }
+    )
+
     private var initialized = false
+    private var hostDisplayId: Int? = null
     private var skipSegments: List<PlayerSkipSegment> = emptyList()
     private var currentPlayback: NegotiatedPlayback? = null
     private var transcodeOffsetMs: Long = 0
     private val detachedScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     private var mediaSessionOpen = false
+    private var playbackStartPositionMs = 0L
+    private var completionHandled = false
     private var interruptedAtMs: Long? = null
     private var wasPlayingBeforeInterrupt = true
     private var authorizationHeader: String? = null
@@ -126,6 +153,15 @@ class PlayerViewModel @Inject constructor(
      * where it was left.
      */
     private var watchedOverride: Boolean? = null
+
+    /**
+     * The player's own volume when playback first opened, which is what "full" restores. Captured
+     * once so cycling to mute and back lands the viewer where they started rather than at the
+     * stream's maximum.
+     */
+    private var openingVolume: Float? = null
+
+    private var lastLockedBackPressMs = 0L
 
     private var startJob: Job? = null
     private var positionJob: Job? = null
@@ -152,6 +188,7 @@ class PlayerViewModel @Inject constructor(
 
         override fun onPlayerError(error: PlaybackException) {
             Logger.error(TAG, "playback failed", error)
+            unlockControls()
             _uiState.update {
                 it.copy(
                     isLoading = false,
@@ -179,16 +216,19 @@ class PlayerViewModel @Inject constructor(
             observeGameSessions()
         }
         initialized = true
+        val carried = _uiState.value
         _uiState.value = PlayerUiState(
             itemId = args.itemId,
             title = args.title,
-            subtitle = args.subtitle
+            subtitle = args.subtitle,
+            videoScale = carried.videoScale,
+            volumeStep = carried.volumeStep
         )
         startJob = viewModelScope.launch {
             authorizationHeader = engine.authorizationHeader()
-            val burnIn = negotiator.readPreferences().burnInImageSubtitles
+            val prefs = negotiator.readPreferences()
             val detail = itemLoader.load(args.itemId)
-            val resumeMs = resolveResumePosition(args.itemId, detail.serverResumeMs, detail.runtimeMs)
+            val resumeMs = resolveResumePosition(args.itemId, detail)
             skipSegments = detail.skipSegments
             _uiState.update {
                 it.copy(
@@ -198,9 +238,16 @@ class PlayerViewModel @Inject constructor(
                     chapters = detail.chapters,
                     trickplay = detail.trickplay,
                     trickplayAuthHeader = authorizationHeader,
-                    burnInImageSubtitles = burnIn,
+                    burnInImageSubtitles = prefs.burnInImageSubtitles,
+                    confirmPlayerExit = prefs.confirmPlayerExit,
                     isWatched = detail.isWatched,
-                    nextEpisode = detail.nextEpisode
+                    isEpisode = detail.isEpisode,
+                    nextEpisode = detail.nextEpisode,
+                    previousEpisode = detail.previousEpisode,
+                    defaultQuality = PlayerQualityCeilings(
+                        maxHeight = prefs.streamingQuality.maxHeight,
+                        maxBitrateKbps = prefs.streamingQuality.maxBitrateKbps
+                    )
                 )
             }
             if (args.startPositionMs >= 0) startPlayback(args.startPositionMs) else startPlayback(resumeMs)
@@ -209,6 +256,8 @@ class PlayerViewModel @Inject constructor(
 
     private fun closeCurrentItem() {
         startJob?.cancel()
+        clearAutoplayCountdown()
+        unlockControls()
         endMediaSession(currentItemPositionMs())
         chrome.cancelTimer()
         skipSegments = emptyList()
@@ -224,22 +273,31 @@ class PlayerViewModel @Inject constructor(
     }
 
     /**
-     * The position the item resumes from. The local row is consulted alongside the server's because
-     * a position written while offline is the only copy that exists, and the later of the two is the
-     * one the viewer actually reached. The local value is in the server's own tick unit, matching
-     * how it is stored.
+     * The position the item resumes from. A title the viewer has already finished starts from the
+     * beginning outright: whatever position such an item still carries is end-of-file residue, and
+     * honouring it plays the last instant and completes at once.
+     *
+     * For a part-watched title the local row is consulted alongside the server's because a position
+     * written while offline is the only copy that exists, and the later of the two is the one the
+     * viewer actually reached. The local value is in the server's own tick unit, matching how it is
+     * stored.
      *
      * A position within the closing seconds is treated as no position at all: resuming there shows
-     * the credits and nothing else, which is never what was wanted.
+     * the credits and nothing else, which is never what was wanted. When the runtime is not known
+     * the closing seconds cannot be measured, so the stored played percentage stands in for them;
+     * with neither signal the position is honoured, because wiping a real mid-file position costs
+     * more than the rare stale one.
      */
-    private suspend fun resolveResumePosition(
-        itemId: String,
-        serverResumeMs: Long,
-        runtimeMs: Long
-    ): Long {
+    private suspend fun resolveResumePosition(itemId: String, detail: PlayerItemDetail): Long {
+        if (detail.isWatched) return 0
         val localTicks = runCatching { mediaRepository.resumePositionFor(itemId) }.getOrNull() ?: 0L
-        val resume = maxOf(serverResumeMs, localTicks / TICKS_PER_MILLISECOND).coerceAtLeast(0)
-        if (runtimeMs > 0 && resume >= runtimeMs - NEAR_END_MS) return 0
+        val resume = maxOf(detail.serverResumeMs, localTicks / TICKS_PER_MILLISECOND).coerceAtLeast(0)
+        if (resume <= 0) return 0
+        if (detail.runtimeMs > 0) {
+            return if (resume >= detail.runtimeMs - NEAR_END_MS) 0 else resume
+        }
+        val percent = detail.playedPercent
+        if (percent != null && percent >= NEAR_END_PERCENT) return 0
         return resume
     }
 
@@ -269,7 +327,7 @@ class PlayerViewModel @Inject constructor(
             audioStreamIndex = audioStreamIndex ?: state.selectedAudioStreamIndex,
             subtitleStreamIndex = subtitleStreamIndex ?: state.selectedSubtitleStreamIndex,
             mediaSourceId = currentPlayback?.mediaSourceId,
-            qualityOverride = state.streamingQuality
+            qualityOverride = state.sessionQuality
         )
 
         when (negotiation) {
@@ -331,9 +389,12 @@ class PlayerViewModel @Inject constructor(
         transcodeOffsetMs = if (playback.startsAtNegotiatedOffset) startPositionMs else 0
         tracks.resetForPlayback()
 
-        val activePlayer = _player.value ?: engine.createPlayer(header, playerListener).also {
-            _player.value = it
-        }
+        val activePlayer = _player.value
+            ?: engine.createPlayer(header, playerListener, hostDisplayId).also {
+                _player.value = it
+            }
+        if (openingVolume == null) openingVolume = activePlayer.volume
+        applyVolumeStep(_uiState.value.volumeStep)
 
         activePlayer.setMediaItem(
             engine.buildMediaItem(playback),
@@ -352,6 +413,7 @@ class PlayerViewModel @Inject constructor(
                 positionMs = startPositionMs,
                 scrubTargetMs = null,
                 isLocalPlayback = playback.isLocalFile,
+                sourceVideo = playback.sourceVideo,
                 playbackNotice = streamingFallbackNotice(playback),
                 errorMessage = null
             )
@@ -372,6 +434,8 @@ class PlayerViewModel @Inject constructor(
         }
         playbackTracker.onPlaybackStarted(playback.itemId, _uiState.value.title)
         mediaSessionOpen = true
+        playbackStartPositionMs = startPositionMs
+        completionHandled = false
         startPositionTicker()
         chrome.restartTimer()
     }
@@ -403,10 +467,34 @@ class PlayerViewModel @Inject constructor(
      * Reaching the end marks the item played outright rather than leaving it to the near-end
      * heuristic, which cannot fire when the duration was never learned. Everything that resolves
      * "what plays next" reads that local flag, so a finished episode that stayed unplayed would be
-     * offered again as if it had never been watched. Setting the override is idempotent; the
-     * session guard in [endMediaSession] keeps a repeated ended-state from writing twice.
+     * offered again as if it had never been watched.
+     *
+     * Handled once per opened playback: an ended state can arrive again for the same item, and the
+     * player also reports ended when a playlist is cleared to make way for the next one, which the
+     * session guard filters out.
+     *
+     * An end with almost nothing played is not a finished viewing - it is a stale end-of-file
+     * position that slipped past resume resolution, or a stream that died on arrival. It marks
+     * nothing played and offers no next episode. When the playback began mid-file with no known
+     * runtime it is retried once from the beginning, which is where such a playback should have
+     * started; a playback that already began at zero has nothing left to retry and closes.
      */
     private fun onPlaybackCompleted() {
+        if (completionHandled || !mediaSessionOpen) return
+        completionHandled = true
+        unlockControls()
+        val startedFrom = playbackStartPositionMs
+        val progressedMs = currentItemPositionMs() - startedFrom
+        if (progressedMs < MIN_COMPLETED_PROGRESS_MS) {
+            val runtimeUnknown = _uiState.value.durationMs <= 0
+            endMediaSession(currentItemPositionMs())
+            if (runtimeUnknown && startedFrom > 0) {
+                reload(startPositionMs = 0)
+            } else {
+                eventChannel.trySend(PlayerEvent.Finish)
+            }
+            return
+        }
         watchedOverride = true
         val duration = _uiState.value.durationMs
         endMediaSession(if (duration > 0) duration else currentItemPositionMs())
@@ -441,21 +529,6 @@ class PlayerViewModel @Inject constructor(
         autoplayJob?.cancel()
         autoplayJob = null
         _uiState.update { it.copy(autoplayCountdownSeconds = null) }
-    }
-
-    /**
-     * Changes the streaming quality of the viewing in progress.
-     *
-     * The server treats a new ceiling as a new session, so this goes through the same reload that a
-     * track change does and resumes at the position it was at. It holds for this viewing only; the
-     * saved preference is what the next one starts from, because a one-off drop on a weak
-     * connection is not a statement about how everything should look from now on.
-     */
-    fun setStreamingQuality(quality: com.nendo.argosy.data.preferences.MediaStreamingQuality) {
-        if (_uiState.value.streamingQuality == quality) return
-        _uiState.update { it.copy(streamingQuality = quality) }
-        chrome.closeOverlay()
-        reload()
     }
 
     /**
@@ -546,6 +619,8 @@ class PlayerViewModel @Inject constructor(
     }
 
     private fun suspendForInterruption() {
+        clearAutoplayCountdown()
+        unlockControls()
         val position = currentItemPositionMs()
         wasPlayingBeforeInterrupt = _uiState.value.isPlaying
         _player.value?.playWhenReady = false
@@ -561,6 +636,36 @@ class PlayerViewModel @Inject constructor(
         startJob = viewModelScope.launch {
             startPlayback(resumeFrom)
             if (!wasPlayingBeforeInterrupt) _player.value?.playWhenReady = false
+        }
+    }
+
+    /**
+     * Which physical display the hosting window is on, reported by the window itself. The player
+     * is built from a context tied to this display, because that is what firmwares with a volume
+     * per display bind the audio against - and the binding is fixed when the audio track is
+     * created, so a window that moved displays cannot keep its player. A move with a playback open
+     * therefore rebuilds the player and reopens the item where it was, exactly like a return from
+     * the background; the first report of a fresh window rebuilds nothing.
+     */
+    fun onHostDisplayChanged(displayId: Int) {
+        if (hostDisplayId == displayId) return
+        val playerNeedsRebuild = hostDisplayId != null && _player.value != null
+        hostDisplayId = displayId
+        if (playerNeedsRebuild) rebuildPlayerForNewDisplay()
+    }
+
+    private fun rebuildPlayerForNewDisplay() {
+        val activePlayer = _player.value ?: return
+        val position = currentItemPositionMs()
+        val wasPlaying = activePlayer.playWhenReady
+        activePlayer.removeListener(playerListener)
+        activePlayer.release()
+        _player.value = null
+        if (!mediaSessionOpen) return
+        startJob?.cancel()
+        startJob = viewModelScope.launch {
+            startPlayback(position)
+            if (!wasPlaying) _player.value?.playWhenReady = false
         }
     }
 
@@ -600,10 +705,16 @@ class PlayerViewModel @Inject constructor(
      * A seek on a transcoded stream is a new negotiation, because the encoder can only start where
      * it was told to start. The stall that follows is the server restarting it and is not something
      * the client can hide.
+     *
+     * A seek also withdraws a pending next-episode offer and re-arms completion: moving the
+     * position away from the end means the viewer is watching this item again, and reaching the
+     * end after that is a fresh completion.
      */
     fun seekTo(targetMs: Long) {
         scrubCommitJob?.cancel()
         scrubCommitJob = null
+        clearAutoplayCountdown()
+        completionHandled = false
         val duration = _uiState.value.durationMs
         val clamped = targetMs.coerceIn(0, if (duration > 0) duration else Long.MAX_VALUE)
         _uiState.update { it.copy(scrubTargetMs = null, positionMs = clamped) }
@@ -679,10 +790,7 @@ class PlayerViewModel @Inject constructor(
                 tracks.selectSubtitleTrack(state.overlayIndex - 1)
             }
             PlayerOverlay.CHAPTERS -> playChapter(state.overlayIndex)
-            PlayerOverlay.QUALITY ->
-                com.nendo.argosy.data.preferences.MediaStreamingQuality.entries
-                    .getOrNull(state.overlayIndex)
-                    ?.let { setStreamingQuality(it) }
+            PlayerOverlay.QUALITY -> quality.applyDraft()
             PlayerOverlay.NONE -> Unit
         }
     }
@@ -708,6 +816,83 @@ class PlayerViewModel @Inject constructor(
     }
 
     /**
+     * Flips the picture between fitting inside the screen and filling it. Session-only: it lives in
+     * the ui state, carries across episodes in the same window, and resets with the window, because
+     * whether a crop is acceptable is a property of the title rather than of the device.
+     */
+    fun toggleVideoScale() {
+        _uiState.update {
+            it.copy(
+                videoScale = if (it.videoScale == PlayerVideoScale.FIT) PlayerVideoScale.FILL
+                else PlayerVideoScale.FIT
+            )
+        }
+        chrome.show()
+    }
+
+    /**
+     * Walks the volume one stop around full, half and mute. It drives the player's own gain rather
+     * than the device stream, so the launcher's sounds and every other app keep their level, and
+     * "full" is the level playback opened with.
+     */
+    fun cycleVolume() {
+        val next = when (_uiState.value.volumeStep) {
+            PlayerVolumeStep.FULL -> PlayerVolumeStep.HALF
+            PlayerVolumeStep.HALF -> PlayerVolumeStep.MUTE
+            PlayerVolumeStep.MUTE -> PlayerVolumeStep.FULL
+        }
+        _uiState.update { it.copy(volumeStep = next) }
+        applyVolumeStep(next)
+        chrome.show()
+    }
+
+    private fun applyVolumeStep(step: PlayerVolumeStep) {
+        val activePlayer = _player.value ?: return
+        val full = openingVolume ?: activePlayer.volume
+        activePlayer.volume = when (step) {
+            PlayerVolumeStep.FULL -> full
+            PlayerVolumeStep.HALF -> full * HALF_VOLUME_FACTOR
+            PlayerVolumeStep.MUTE -> 0f
+        }
+    }
+
+    /**
+     * Hides the chrome and keeps it hidden: while the lock holds, the chrome delegate refuses to
+     * show and the input handler swallows the pad, so neither a wake press nor a transport event
+     * can bring the controls back over the film.
+     */
+    fun lockControls() {
+        _uiState.update { it.copy(controlsLocked = true) }
+        chrome.hide()
+    }
+
+    /**
+     * Releases the lock and brings the chrome back so the release is visible. Also called by every
+     * path that ends or interrupts the viewing, so a locked player can never outlive the playback
+     * it was locking.
+     */
+    fun unlockControls() {
+        if (!_uiState.value.controlsLocked) return
+        lastLockedBackPressMs = 0L
+        _uiState.update { it.copy(controlsLocked = false) }
+        chrome.show()
+    }
+
+    /**
+     * The pad's release gesture while locked: two Back presses inside the double-press window. A
+     * single press is swallowed like every other key, which is what keeps an accidental press from
+     * waking the chrome, while still leaving a touchless device a way out.
+     */
+    fun registerLockedBackPress() {
+        val now = System.currentTimeMillis()
+        if (now - lastLockedBackPressMs <= LOCK_RELEASE_DOUBLE_PRESS_MS) {
+            unlockControls()
+        } else {
+            lastLockedBackPressMs = now
+        }
+    }
+
+    /**
      * Moves the window on to the following episode. It is the same path a second title arriving from
      * anywhere else takes, so the current one is closed down properly and the server is told its
      * stream ended before the next is negotiated.
@@ -719,18 +904,33 @@ class PlayerViewModel @Inject constructor(
     }
 
     /**
+     * Moves the window back to the episode before this one, down the same path the next episode
+     * takes. With no previous episode resolved the press does nothing, which is what the disabled
+     * button already promised.
+     */
+    fun playPreviousEpisode() {
+        val state = _uiState.value
+        val previous = state.previousEpisode ?: return
+        initialize(PlayerArgs(itemId = previous.itemId, title = state.title, subtitle = previous.label))
+    }
+
+    /**
      * What one transport button does. Both ways of pressing it land here so a touch and a gamepad
      * confirm cannot come to mean different things on the same button.
      */
     fun activateControl(control: PlayerControl?) {
         when (control) {
+            PlayerControl.PREVIOUS_EPISODE -> playPreviousEpisode()
             PlayerControl.SKIP_BACK -> skipBy(-1)
             PlayerControl.PLAY_PAUSE -> togglePlayPause()
             PlayerControl.SKIP_FORWARD -> skipBy(1)
             PlayerControl.AUDIO -> chrome.openOverlay(PlayerOverlay.AUDIO_TRACKS)
             PlayerControl.SUBTITLES -> chrome.openOverlay(PlayerOverlay.SUBTITLE_TRACKS)
             PlayerControl.CHAPTERS -> chrome.openOverlay(PlayerOverlay.CHAPTERS)
-            PlayerControl.QUALITY -> chrome.openOverlay(PlayerOverlay.QUALITY)
+            PlayerControl.QUALITY -> quality.openWheels()
+            PlayerControl.FIT_FILL -> toggleVideoScale()
+            PlayerControl.VOLUME -> cycleVolume()
+            PlayerControl.LOCK -> lockControls()
             PlayerControl.NEXT_EPISODE -> playNextEpisode()
             PlayerControl.MARK_WATCHED -> toggleWatched()
             PlayerControl.CLOSE -> requestExit()
@@ -739,7 +939,54 @@ class PlayerViewModel @Inject constructor(
         }
     }
 
+    /**
+     * A deliberate ask to leave - the B ladder's last rung, the Close button, and the error
+     * panel's Close. Only these are ever gated behind the exit confirmation: the closures that
+     * happen with nobody at the pad (a declined or absent next episode, a dead-on-arrival stream)
+     * send [PlayerEvent.Finish] directly and never see the prompt. An ask that arrives during the
+     * autoplay countdown also skips the prompt, because the item is already over and the countdown
+     * is itself the standing question.
+     */
     fun requestExit() {
+        val current = _uiState.value
+        if (current.confirmPlayerExit && current.autoplayCountdownSeconds == null) {
+            chrome.cancelTimer()
+            _uiState.update { it.copy(showExitConfirm = true, exitConfirmIndex = 0) }
+            return
+        }
+        performExit()
+    }
+
+    fun moveExitConfirmFocus(delta: Int) {
+        _uiState.update {
+            it.copy(
+                exitConfirmIndex = (it.exitConfirmIndex + delta)
+                    .coerceIn(0, EXIT_CONFIRM_LEAVE_INDEX)
+            )
+        }
+    }
+
+    fun confirmExitSelection() {
+        if (_uiState.value.exitConfirmIndex == EXIT_CONFIRM_LEAVE_INDEX) {
+            confirmExit()
+        } else {
+            dismissExitConfirm()
+        }
+    }
+
+    fun confirmExit() {
+        _uiState.update { it.copy(showExitConfirm = false, exitConfirmIndex = 0) }
+        performExit()
+    }
+
+    fun dismissExitConfirm() {
+        _uiState.update { it.copy(showExitConfirm = false, exitConfirmIndex = 0) }
+        chrome.restartTimer()
+    }
+
+    private fun performExit() {
+        clearAutoplayCountdown()
+        unlockControls()
         endMediaSession(currentItemPositionMs())
         eventChannel.trySend(PlayerEvent.Finish)
     }

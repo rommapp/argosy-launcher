@@ -37,6 +37,12 @@ fun companionHomeHints(
             InputButton.A to "Play",
             InputButton.B to "Back"
         )
+        "MEDIA_INFO" -> listOf(
+            InputButton.LB_RB to "Prev/Next Title",
+            InputButton.DPAD_HORIZONTAL to "Season",
+            InputButton.A to "Watch",
+            InputButton.B to "Back"
+        )
         else -> when {
             drawerOpen -> listOf(
                 InputButton.A to "Open",

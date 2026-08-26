@@ -184,6 +184,12 @@ fun companionDetailHints(
         com.nendo.argosy.ui.components.InputButton.A to "Play",
         com.nendo.argosy.ui.components.InputButton.B to "Back"
     )
+    viewMode == "MEDIA_INFO" -> listOf(
+        com.nendo.argosy.ui.components.InputButton.LB_RB to "Prev/Next Title",
+        com.nendo.argosy.ui.components.InputButton.DPAD_HORIZONTAL to "Season",
+        com.nendo.argosy.ui.components.InputButton.A to "Watch",
+        com.nendo.argosy.ui.components.InputButton.B to "Back"
+    )
     else -> listOf(
         com.nendo.argosy.ui.components.InputButton.LB_RB to "Section",
         com.nendo.argosy.ui.components.InputButton.Y to "Favorite",

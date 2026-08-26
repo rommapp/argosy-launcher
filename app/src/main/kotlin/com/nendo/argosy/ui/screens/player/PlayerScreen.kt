@@ -5,6 +5,7 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -26,10 +27,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.media3.common.util.UnstableApi
+import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.media3.ui.PlayerView
+import com.nendo.argosy.ui.primitives.ArgosyConfirmModal
 import com.nendo.argosy.ui.primitives.FocusIndicators
 import com.nendo.argosy.ui.primitives.argosyFocusIndicators
 import com.nendo.argosy.ui.theme.Dimens
@@ -56,7 +60,15 @@ fun PlayerScreen(viewModel: PlayerViewModel) {
         modifier = Modifier
             .fillMaxSize()
             .background(Color.Black)
-            .clickableNoFocus { viewModel.chrome.toggle() }
+            .then(
+                if (state.controlsLocked) {
+                    Modifier.pointerInput(Unit) {
+                        detectTapGestures(onDoubleTap = { viewModel.unlockControls() })
+                    }
+                } else {
+                    Modifier.clickableNoFocus { viewModel.chrome.toggle() }
+                }
+            )
     ) {
         AndroidView(
             factory = { context ->
@@ -65,7 +77,14 @@ fun PlayerScreen(viewModel: PlayerViewModel) {
                     setShutterBackgroundColor(android.graphics.Color.BLACK)
                 }
             },
-            update = { view -> view.player = player },
+            update = { view ->
+                view.player = player
+                view.resizeMode = if (state.videoScale == PlayerVideoScale.FILL) {
+                    AspectRatioFrameLayout.RESIZE_MODE_ZOOM
+                } else {
+                    AspectRatioFrameLayout.RESIZE_MODE_FIT
+                }
+            },
             modifier = Modifier.fillMaxSize()
         )
 
@@ -114,7 +133,23 @@ fun PlayerScreen(viewModel: PlayerViewModel) {
                 viewModel.chrome.setOverlayIndex(index)
                 viewModel.confirmOverlaySelection()
             },
+            onQualityWheelSelect = { wheel, value ->
+                viewModel.quality.focusWheel(wheel)
+                viewModel.quality.setWheelValue(wheel, value)
+            },
+            onQualityApply = { viewModel.quality.applyDraft() },
             onDismiss = { viewModel.chrome.closeOverlay() }
+        )
+
+        ArgosyConfirmModal(
+            visible = state.showExitConfirm,
+            title = "Leave the player?",
+            message = "Playback will stop. You can pick up where you left off.",
+            confirmLabel = "Leave",
+            cancelLabel = "Keep Watching",
+            onConfirm = { viewModel.confirmExit() },
+            onDismiss = { viewModel.dismissExitConfirm() },
+            focusedIndex = state.exitConfirmIndex
         )
     }
 }

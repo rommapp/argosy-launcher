@@ -93,6 +93,7 @@ class JellyfinDeviceProfileBuilder @Inject constructor() {
     fun build(
         maxStreamingBitrateKbps: Int? = null,
         maxHeight: Int? = null,
+        maxFramerate: Int? = null,
         burnInImageSubtitles: Boolean = false,
         maxAudioChannels: Int = DEFAULT_MAX_AUDIO_CHANNELS
     ): JellyfinDeviceProfile {
@@ -107,7 +108,7 @@ class JellyfinDeviceProfileBuilder @Inject constructor() {
             maxStaticBitrate = DEFAULT_MAX_STATIC_BITRATE_BPS,
             directPlayProfiles = buildDirectPlayProfiles(videoCodecs, audioCodecs),
             transcodingProfiles = buildTranscodingProfiles(maxAudioChannels),
-            codecProfiles = buildCodecProfiles(decoders, maxHeight),
+            codecProfiles = buildCodecProfiles(decoders, maxHeight, maxFramerate),
             subtitleProfiles = buildSubtitleProfiles(burnInImageSubtitles)
         )
     }
@@ -176,24 +177,26 @@ class JellyfinDeviceProfileBuilder @Inject constructor() {
      * stream above the level it was built for, and the server can only avoid handing one over if it
      * is told the number.
      *
-     * [maxHeight] is the user's own ceiling and rides on the same conditions, which is the only
-     * place a resolution limit reaches the server: it is what turns a picture too tall into a
-     * transcode and then sizes that transcode's output. It applies to every codec the device
-     * offers, not just the transcode target - a limit written against h264 alone leaves an hevc
-     * copy of the same film direct-playing at its full height.
+     * [maxHeight] and [maxFramerate] are the user's own ceilings and ride on the same conditions,
+     * which is the only place a resolution or frame-rate limit reaches the server: a condition the
+     * source violates is what turns it into a transcode, and the ceiling then sizes that
+     * transcode's output. They apply to every codec the device offers, not just the transcode
+     * target - a limit written against h264 alone leaves an hevc copy of the same film
+     * direct-playing at its full height.
      */
     private fun buildCodecProfiles(
         decoders: DecoderSupport,
-        maxHeight: Int?
+        maxHeight: Int?,
+        maxFramerate: Int?
     ): List<JellyfinCodecProfile> {
-        val codecs = if (maxHeight == null) {
+        val codecs = if (maxHeight == null && maxFramerate == null) {
             DECODER_CEILING_CODECS.toSet()
         } else {
             decoders.videoCodecs + TRANSCODE_TARGET_VIDEO_CODEC
         }
         return codecs.mapNotNull { codec ->
             val decoderMax = decoders.maxVideoSize[codec]?.takeIf { codec in DECODER_CEILING_CODECS }
-            val conditions = videoSizeConditions(decoderMax, maxHeight)
+            val conditions = videoSizeConditions(decoderMax, maxHeight, maxFramerate)
             if (conditions.isEmpty()) {
                 null
             } else {
@@ -208,12 +211,14 @@ class JellyfinDeviceProfileBuilder @Inject constructor() {
 
     private fun videoSizeConditions(
         decoderMax: VideoSize?,
-        maxHeight: Int?
+        maxHeight: Int?,
+        maxFramerate: Int?
     ): List<JellyfinProfileCondition> {
         val height = listOfNotNull(decoderMax?.height, maxHeight).minOrNull()
         return buildList {
             decoderMax?.let { add(sizeCondition("Width", it.width)) }
             height?.let { add(sizeCondition("Height", it)) }
+            maxFramerate?.let { add(sizeCondition("VideoFramerate", it)) }
         }
     }
 

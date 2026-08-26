@@ -400,8 +400,9 @@ class DualScreenManager(
      * The window-brightness override for screens not showing a live playback, or null for no
      * override. It ramps with inactivity while a playback is open - full, then
      * [MEDIA_DIM_PARTIAL_BRIGHTNESS], then dark - and snaps back to null on any input and when the
-     * playback ends. Windows apply it only when the player has reported a display and theirs is a
-     * different one, so the screen showing the video never dims.
+     * playback ends. Windows apply it only when the player's display - its report, or the
+     * relocation target while the report is cleared - is a different one, so the screen showing
+     * the video never dims.
      */
     val mediaDimBrightness: StateFlow<Float?> = _mediaDimBrightness
 

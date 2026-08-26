@@ -816,11 +816,18 @@ class SecondaryHomeActivity :
      * foreground drawable: it draws over everything but consumes no input, so a tap lands on the
      * content underneath and wakes the screen through the same activity signal that clears the
      * brightness override and the cover together.
+     *
+     * The player's display is the window's own report when one is current, otherwise the display
+     * the relocation rules place the player on: the report is cleared when a playback closes, and
+     * an episode switch reuses the window without restarting it, so a missing report during a live
+     * playback means stale bookkeeping, never "no player".
      */
     private fun applyMediaDim(playerDisplayId: Int?, dim: Float?, coverAlpha: Float) {
         val ownDisplayId = window.decorView.display?.displayId
-        val dimsThisWindow = dim != null && playerDisplayId != null &&
-            ownDisplayId != null && ownDisplayId != playerDisplayId
+        val resolvedPlayerId = playerDisplayId ?: dsm.mediaPlayerRelocationDisplayId()
+        val dimsThisWindow = dim != null && resolvedPlayerId != null &&
+            ownDisplayId != null && ownDisplayId != resolvedPlayerId
+        logMediaDimDecline(dimsThisWindow, ownDisplayId, playerDisplayId, resolvedPlayerId, dim)
         val target = if (dimsThisWindow && dim != null) {
             dim
         } else {
@@ -831,10 +838,42 @@ class SecondaryHomeActivity :
         if (attributes.screenBrightness == target) return
         Logger.debug(
             DualScreenManager.MEDIA_DIM_LOG_TAG,
-            "apply window=companion display=$ownDisplayId player=$playerDisplayId brightness=$target"
+            "apply window=companion display=$ownDisplayId player=$resolvedPlayerId brightness=$target"
         )
         attributes.screenBrightness = target
         window.attributes = attributes
+    }
+
+    private var mediaDimDeclineKey: String? = null
+
+    /**
+     * Logs a dim stage this window received and chose not to apply, once per stage and reason, so
+     * a ramp whose output is being discarded shows up in the MediaDimRamp channel instead of
+     * failing silently. Declining because this display shows the playback is the expected case and
+     * is still logged - it is the positive proof of which window abstained and why.
+     */
+    private fun logMediaDimDecline(
+        dimsThisWindow: Boolean,
+        ownDisplayId: Int?,
+        reportedPlayerId: Int?,
+        resolvedPlayerId: Int?,
+        dim: Float?
+    ) {
+        val reason = when {
+            dim == null || dimsThisWindow -> null
+            ownDisplayId == null -> "ownDisplayUnknown"
+            resolvedPlayerId == null -> "playerDisplayUnresolved"
+            else -> "ownDisplayShowsPlayback"
+        }
+        val key = reason?.let { "$it dim=$dim" }
+        if (key != null && key != mediaDimDeclineKey) {
+            Logger.debug(
+                DualScreenManager.MEDIA_DIM_LOG_TAG,
+                "declined window=companion display=$ownDisplayId playerReported=$reportedPlayerId " +
+                    "playerResolved=$resolvedPlayerId brightness=$dim reason=$reason"
+            )
+        }
+        mediaDimDeclineKey = key
     }
 
     private var mediaDimCover: android.graphics.drawable.ColorDrawable? = null

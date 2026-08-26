@@ -93,6 +93,7 @@ class PlayerActivity : ComponentActivity() {
         observeEvents()
         observeControlsLock()
         observeItemChanges()
+        observePlaybackDisplay()
 
         setContent {
             ALauncherTheme {
@@ -316,6 +317,22 @@ class PlayerActivity : ComponentActivity() {
                     val displayId = window.decorView.display?.displayId ?: return@collect
                     DualScreenManagerHolder.instance?.directMediaPlayerFocus(displayId)
                 }
+        }
+    }
+
+    /**
+     * Re-states this window's display each time a playback opens. The launcher clears the report
+     * when a playback closes, and an episode switch closes one playback and opens the next inside
+     * the same window - no restart, no focus change - so without this the new playback would run
+     * with no reported display. Collecting the playback flow itself orders the re-report after
+     * that clear, which a report at intent time would race and lose.
+     */
+    private fun observePlaybackDisplay() {
+        val dsm = DualScreenManagerHolder.instance ?: return
+        lifecycleScope.launch {
+            dsm.mediaPlayback.collect { playback ->
+                if (playback != null) reportDisplay()
+            }
         }
     }
 

@@ -41,7 +41,11 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import androidx.core.graphics.ColorUtils
 import javax.inject.Inject
+
+private const val LED_HUE_SATURATION = 0.7f
+private const val LED_HUE_LIGHTNESS = 0.5f
 
 data class ThemeState(
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
@@ -90,10 +94,23 @@ class ThemeViewModel @Inject constructor(
     private fun observeThemeForLed() {
         preferencesRepository.userPreferences
             .onEach { prefs ->
-                val defaultPrimary = if (BuildConfig.DEBUG) ALauncherColors.Orange else ALauncherColors.Indigo
-                val primary = prefs.primaryColor?.let { Color(it) } ?: defaultPrimary
-                val secondary = prefs.secondaryColor?.let { Color(it) }
-                ambientLedManager.setUiColors(primary, secondary)
+                if (prefs.ambientLedCustomColor) {
+                    val custom = Color(
+                        ColorUtils.HSLToColor(
+                            floatArrayOf(
+                                prefs.ambientLedCustomColorHue.toFloat(),
+                                LED_HUE_SATURATION,
+                                LED_HUE_LIGHTNESS
+                            )
+                        )
+                    )
+                    ambientLedManager.setUiColors(custom, null)
+                } else {
+                    val defaultPrimary = if (BuildConfig.DEBUG) ALauncherColors.Orange else ALauncherColors.Indigo
+                    val primary = prefs.primaryColor?.let { Color(it) } ?: defaultPrimary
+                    val secondary = prefs.secondaryColor?.let { Color(it) }
+                    ambientLedManager.setUiColors(primary, secondary)
+                }
             }
             .launchIn(viewModelScope)
     }

@@ -1,12 +1,17 @@
 package com.nendo.argosy.hardware
 
 import androidx.compose.ui.graphics.Color
+import com.nendo.argosy.util.Logger
 import com.nendo.argosy.util.PServerExecutor
+import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
 class OdinLEDController @Inject constructor() : LEDController {
+
+    private val lastWriteOkByKey = ConcurrentHashMap<String, Boolean>()
+    @Volatile private var readbackPending = false
 
     override val isAvailable: Boolean
         get() = PServerExecutor.isAvailable
@@ -14,18 +19,44 @@ class OdinLEDController @Inject constructor() : LEDController {
     override fun setColor(left: Color, right: Color): Boolean {
         val leftHex = left.toHexArgb()
         val rightHex = right.toHexArgb()
-        return PServerExecutor.setSystemSetting(KEY_COLOR, "$leftHex,$rightHex")
+        val ok = PServerExecutor.setSystemSetting(KEY_COLOR, "$leftHex,$rightHex")
+        logWriteTransition(KEY_COLOR, "$leftHex,$rightHex", ok)
+        if (ok) logReadbackIfPending()
+        return ok
     }
 
     override fun setBrightness(percent: Float): Boolean {
         val clamped = percent.coerceIn(0f, 1f)
-        return PServerExecutor.setSystemSettingFloat(KEY_BRIGHTNESS, clamped)
+        val ok = PServerExecutor.setSystemSettingFloat(KEY_BRIGHTNESS, clamped)
+        logWriteTransition(KEY_BRIGHTNESS, clamped.toString(), ok)
+        return ok
     }
 
     override fun setEnabled(left: Boolean, right: Boolean): Boolean {
         val leftVal = if (left) "1" else "0"
         val rightVal = if (right) "1" else "0"
-        return PServerExecutor.setSystemSetting(KEY_ENABLED, "$leftVal,$rightVal")
+        val ok = PServerExecutor.setSystemSetting(KEY_ENABLED, "$leftVal,$rightVal")
+        Logger.info(TAG, "setEnabled $leftVal,$rightVal -> ${if (ok) "ok" else "FAILED"} (pserver=${PServerExecutor.isAvailable})")
+        if (ok && (left || right)) readbackPending = true
+        return ok
+    }
+
+    private fun logWriteTransition(key: String, value: String, ok: Boolean) {
+        if (lastWriteOkByKey.put(key, ok) == ok) return
+        if (ok) {
+            Logger.info(TAG, "LED write ok ($key=$value)")
+        } else {
+            Logger.warn(TAG, "LED write FAILED ($key=$value)")
+        }
+    }
+
+    private fun logReadbackIfPending() {
+        if (!readbackPending) return
+        readbackPending = false
+        val color = PServerExecutor.execute("settings get system $KEY_COLOR").getOrNull()
+        val brightness = PServerExecutor.execute("settings get system $KEY_BRIGHTNESS").getOrNull()
+        val enabled = PServerExecutor.execute("settings get system $KEY_ENABLED").getOrNull()
+        Logger.info(TAG, "Readback: $KEY_COLOR=[$color] $KEY_BRIGHTNESS=[$brightness] $KEY_ENABLED=[$enabled]")
     }
 
     fun getState(): LEDState? {
@@ -75,6 +106,7 @@ class OdinLEDController @Inject constructor() : LEDController {
     }
 
     companion object {
+        private const val TAG = "AmbientLed"
         private const val KEY_COLOR = "joystick_led_light_picker_color"
         private const val KEY_BRIGHTNESS = "led_light_brightness_percent"
         private const val KEY_ENABLED = "joystick_light_enabled"

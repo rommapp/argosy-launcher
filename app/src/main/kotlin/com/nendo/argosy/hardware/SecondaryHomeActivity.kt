@@ -393,8 +393,10 @@ class SecondaryHomeActivity :
         if (isCompanionTextEntryActive()) return super.dispatchKeyEvent(event)
         if (yieldsKeysToMediaPlayer()) {
             val forward = dsm.mediaPlayerKeyDispatcher
-            if (forward != null && forward(event)) return true
-            return super.dispatchKeyEvent(event)
+            if (forward != null) {
+                if (forward(event)) return true
+                return super.dispatchKeyEvent(event)
+            }
         }
         when (event.action) {
             android.view.KeyEvent.ACTION_DOWN ->
@@ -725,6 +727,14 @@ class SecondaryHomeActivity :
         dualHomeViewModel.startBackgroundForwarding()
     }
 
+    /**
+     * Keys the primary display forwarded keep the media-player yield the directly-delivered ones
+     * get: while the panel fronts a live playback they are rebuilt as key events and handed to the
+     * player's dispatch. The rebuild carries fresh timestamps because the source event was already
+     * claimed by the forwarding activity, and the player's own claim would otherwise read the copy
+     * as a duplicate and drop it. With no player dispatch registered the key falls through to the
+     * companion's own routing instead of vanishing.
+     */
     override fun onForwardKey(
         keyCode: Int,
         action: Int,
@@ -733,6 +743,14 @@ class SecondaryHomeActivity :
         swapXY: Boolean,
         swapStartSelect: Boolean
     ) {
+        if (yieldsKeysToMediaPlayer()) {
+            val forward = dsm.mediaPlayerKeyDispatcher
+            if (forward != null) {
+                val time = android.os.SystemClock.uptimeMillis()
+                forward(android.view.KeyEvent(time, time, action, keyCode, repeatCount))
+                return
+            }
+        }
         val gamepadEvent = mapKeycodeToGamepadEvent(keyCode, swapAB, swapXY, swapStartSelect) ?: return
         if (gamepadEvent == com.nendo.argosy.ui.input.GamepadEvent.Confirm &&
             (confirmHoldJob != null || deferConfirm())

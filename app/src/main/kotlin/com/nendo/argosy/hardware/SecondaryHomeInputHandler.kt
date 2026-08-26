@@ -89,11 +89,12 @@ class SecondaryHomeInputHandler(
      * being looked at and a stray press landing on it moves a carousel nobody can see.
      *
      * While a playback is live the pad belongs to the player on the other display and the panel is
-     * touch-only, so every event is swallowed without moving anything. The activity normally never
-     * routes here in that state - it declines to claim the key so the player's copy wins - but a
-     * forwarded key entering directly must not walk the panel either. The one exception is a
-     * locked player: the lock exists precisely to point the pad at this panel while the film
-     * plays, so the live-playback swallow steps aside for it.
+     * touch-only. The activity hands every route to the player's own dispatch before anything
+     * reaches this handler, so a live-playback event arriving here means that hand-off did not
+     * happen. With a player dispatch still registered the event is swallowed so it cannot walk a
+     * panel nobody is looking at; with none registered the panel takes the pad rather than letting
+     * the press vanish. The other exception is a locked player: the lock exists precisely to point
+     * the pad at this panel while the film plays on untouched.
      */
     private fun handleMediaPanelInput(event: GamepadEvent): InputResult {
         if (viewModel.uiState.value.isDrawerOpen) return handleDrawerInput(event)
@@ -101,9 +102,12 @@ class SecondaryHomeInputHandler(
             return InputResult.HANDLED
         }
         val vm = dualMediaViewModel() ?: return InputResult.UNHANDLED
-        val playerLocked = com.nendo.argosy.DualScreenManagerHolder.instance
-            ?.mediaPlayerControlsLocked?.value == true
-        if (vm.uiState.value.isPlaybackLive && !playerLocked) return InputResult.HANDLED
+        val dsm = com.nendo.argosy.DualScreenManagerHolder.instance
+        val playerLocked = dsm?.mediaPlayerControlsLocked?.value == true
+        val playerReachable = dsm?.mediaPlayerKeyDispatcher != null
+        if (vm.uiState.value.isPlaybackLive && !playerLocked && playerReachable) {
+            return InputResult.HANDLED
+        }
         when (event) {
             GamepadEvent.Up, GamepadEvent.Left -> vm.moveFocus(-1)
             GamepadEvent.Down, GamepadEvent.Right -> vm.moveFocus(1)

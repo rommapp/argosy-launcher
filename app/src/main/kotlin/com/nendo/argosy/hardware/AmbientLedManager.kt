@@ -2,11 +2,12 @@ package com.nendo.argosy.hardware
 
 import android.content.Context
 import android.media.audiofx.Visualizer
-import android.util.Log
+import android.os.Build
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
 import com.nendo.argosy.data.preferences.AmbientLedColorMode
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
+import com.nendo.argosy.util.Logger
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -19,6 +20,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -71,7 +73,6 @@ class AmbientLedManager @Inject constructor(
     private var colorMode = AmbientLedColorMode.DOMINANT_3
     @Volatile var coverArtEnabled = true
         private set
-    private var screenEnabled = false
     private var transitionMs = 250L
     private var achievementFlashEnabled = true
 
@@ -111,7 +112,6 @@ class AmbientLedManager @Inject constructor(
                 audioColorsEnabled = prefs.ambientLedAudioColors
                 colorMode = prefs.ambientLedColorMode
                 coverArtEnabled = prefs.ambientLedCoverArtEnabled
-                screenEnabled = prefs.ambientLedScreenEnabled
                 transitionMs = prefs.ambientLedTransitionMs.toLong()
                 achievementFlashEnabled = prefs.ambientLedAchievementFlash
 
@@ -119,20 +119,31 @@ class AmbientLedManager @Inject constructor(
                     start()
                 } else if (!isEnabled && wasEnabled) {
                     stop()
-                } else if (isEnabled && oldBrightness != brightnessScalar) {
-                    updateLeds()
+                } else if (isEnabled) {
+                    if (audioBrightnessEnabled && audioJob == null) {
+                        startAudioCapture()
+                    } else if (!audioBrightnessEnabled && audioJob != null) {
+                        stopAudioCapture()
+                        _state.update { it.copy(brightness = 1f, intensity = 0f) }
+                        updateLeds()
+                    }
+                    if (oldBrightness != brightnessScalar) {
+                        updateLeds()
+                    }
                 }
             }
         }
     }
 
     fun start() {
+        val controllerName = ledController.javaClass.simpleName
+        val deviceName = "${Build.MANUFACTURER} ${Build.MODEL}"
         if (!ledController.isAvailable) {
-            Log.w(TAG, "LED controller not available")
+            Logger.warn(TAG, "LED controller not available (controller=$controllerName, device=$deviceName)")
             return
         }
 
-        Log.i(TAG, "Starting ambient LED manager")
+        Logger.info(TAG, "Starting ambient LED manager (controller=$controllerName, device=$deviceName)")
         ledController.setEnabled(true)
 
         if (audioBrightnessEnabled) {
@@ -143,7 +154,7 @@ class AmbientLedManager @Inject constructor(
     }
 
     fun stop() {
-        Log.i(TAG, "Stopping ambient LED manager")
+        Logger.info(TAG, "Stopping ambient LED manager")
         stopAudioCapture()
         flashJob?.cancel()
         flashActive = false
@@ -160,7 +171,7 @@ class AmbientLedManager @Inject constructor(
     }
 
     fun setContext(newContext: AmbientLedContext) {
-        Log.d(TAG, "setContext: $newContext, uiColorsInitialized=$uiColorsInitialized, hoverColors=${_state.value.hoverLeftColor != null}")
+        Logger.debug(TAG, "setContext: $newContext, uiColorsInitialized=$uiColorsInitialized, hoverColors=${_state.value.hoverLeftColor != null}")
         _state.value = _state.value.copy(context = newContext)
         if (isEnabled && shouldUpdateLeds()) {
             updateLeds()
@@ -481,9 +492,9 @@ class AmbientLedManager @Inject constructor(
                 }
             }
 
-            Log.i(TAG, "Audio capture started")
+            Logger.info(TAG, "Audio capture started")
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to start audio capture", e)
+            Logger.error(TAG, "Failed to start audio capture", e)
         }
     }
 
@@ -493,7 +504,7 @@ class AmbientLedManager @Inject constructor(
         visualizer?.enabled = false
         visualizer?.release()
         visualizer = null
-        Log.i(TAG, "Audio capture stopped")
+        Logger.info(TAG, "Audio capture stopped")
     }
 
     private fun smoothBassOrMid(current: Float, newValue: Float): Float {
@@ -519,7 +530,7 @@ class AmbientLedManager @Inject constructor(
     }
 
     companion object {
-        private const val TAG = "AmbientLedManager"
+        private const val TAG = "AmbientLed"
         private const val FRAME_MS = 16L
         private const val HOVER_FRAME_MS = 83L
         private const val MIN_WRITE_INTERVAL_MS = 33L

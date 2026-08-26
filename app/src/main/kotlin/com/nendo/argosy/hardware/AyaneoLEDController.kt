@@ -3,9 +3,12 @@ package com.nendo.argosy.hardware
 import android.content.Context
 import android.provider.Settings
 import androidx.compose.ui.graphics.Color
+import com.nendo.argosy.util.Logger
 import kotlin.math.roundToInt
 
 class AyaneoLEDController(private val context: Context) : LEDController {
+
+    @Volatile private var lastWriteOk: Boolean? = null
 
     override val isAvailable: Boolean
         get() = Settings.System.canWrite(context)
@@ -23,10 +26,18 @@ class AyaneoLEDController(private val context: Context) : LEDController {
     override fun setEnabled(left: Boolean, right: Boolean): Boolean =
         put(KEY_ENABLED, if (left || right) "true" else "false")
 
-    private fun put(key: String, value: String): Boolean = try {
-        Settings.System.putString(context.contentResolver, key, value)
-    } catch (e: Exception) {
-        false
+    private fun put(key: String, value: String): Boolean {
+        val result = runCatching { Settings.System.putString(context.contentResolver, key, value) }
+        val ok = result.getOrDefault(false)
+        if (ok != lastWriteOk) {
+            lastWriteOk = ok
+            if (ok) {
+                Logger.info(TAG, "Ayaneo LED write ok ($key=$value)")
+            } else {
+                Logger.warn(TAG, "Ayaneo LED write failed ($key=$value)", result.exceptionOrNull())
+            }
+        }
+        return ok
     }
 
     private fun Color.toRgbTriple(): String {
@@ -37,6 +48,7 @@ class AyaneoLEDController(private val context: Context) : LEDController {
     }
 
     companion object {
+        private const val TAG = "AmbientLed"
         private const val KEY_ENABLED = "ayaneo/share/aya_rgb_is_open.conf"
         private const val KEY_MODE = "ayaneo/share/aya_rgb_mode.conf"
         private const val KEY_COLOR = "ayaneo/share/aya_rgb_single_mode_color.conf"

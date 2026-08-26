@@ -417,6 +417,7 @@ class MainActivity : ComponentActivity() {
             sessionStateStore = sessionStateStore,
             dualScreenManager = dualScreenManager,
             displayAffinityHelper = displayAffinityHelper,
+            screenCaptureManager = screenCaptureManager,
             onDualScreenChanged = { dualScreenManager.setDualScreenDevice(it) },
             hasWindowFocus = ::hasWindowFocus
         )

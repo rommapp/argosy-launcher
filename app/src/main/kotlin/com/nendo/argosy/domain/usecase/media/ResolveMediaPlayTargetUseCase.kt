@@ -2,9 +2,12 @@ package com.nendo.argosy.domain.usecase.media
 
 import com.nendo.argosy.data.local.entity.MediaItemEntity
 import com.nendo.argosy.data.local.entity.MediaItemType
+import com.nendo.argosy.data.local.entity.MediaUserDataEntity
 import com.nendo.argosy.data.remote.jellyfin.JellyfinResult
+import com.nendo.argosy.data.remote.jellyfin.TICKS_PER_MILLISECOND
 import com.nendo.argosy.data.repository.MediaRepository
 import com.nendo.argosy.domain.model.MediaPlayTarget
+import com.nendo.argosy.domain.model.isPastMediaCompletion
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -51,25 +54,52 @@ class ResolveMediaPlayTargetUseCase @Inject constructor(
      * Where a run of episodes is up to: the one left part way through, then the first never
      * started, then the first of the run for a viewer who has finished it all. Shared with every
      * caller that already holds an episode list, so all of them read watch state the same way.
+     *
+     * A position past the completion threshold counts as finished, not part watched: an episode
+     * stopped in its credits without a completion event would otherwise be replayed forever instead
+     * of the run moving on.
      */
     suspend fun nextOf(itemIds: List<String>): String? {
         if (itemIds.isEmpty()) return null
         val watched = mediaRepository.getUserDataFor(itemIds)
-        val partWatched = itemIds.firstOrNull {
-            val userData = watched[it]
-            userData != null && !userData.played && userData.playbackPositionTicks > 0
+        var partWatched: String? = null
+        val finished = mutableSetOf<String>()
+        for (itemId in itemIds) {
+            val userData = watched[itemId] ?: continue
+            when {
+                userData.played -> finished.add(itemId)
+                userData.playbackPositionTicks <= 0 -> Unit
+                isEffectivelyFinished(itemId, userData) -> finished.add(itemId)
+                partWatched == null -> partWatched = itemId
+            }
         }
-        val unwatched = itemIds.firstOrNull { watched[it]?.played != true }
+        val unwatched = itemIds.firstOrNull { it !in finished }
         return partWatched ?: unwatched ?: itemIds.first()
     }
 
     /**
      * A rail hint is only trusted while the episode it names is still unfinished locally. The rails
      * are cached, so just after an episode completes they still name it - honouring that would
-     * replay what was just watched instead of moving on.
+     * replay what was just watched instead of moving on. A position past the completion threshold
+     * discredits a hint the same way a played flag does.
      */
-    private suspend fun isStillWatchable(itemId: String): Boolean =
-        mediaRepository.getUserData(itemId)?.played != true
+    private suspend fun isStillWatchable(itemId: String): Boolean {
+        val userData = mediaRepository.getUserData(itemId) ?: return true
+        if (userData.played) return false
+        return !isEffectivelyFinished(itemId, userData)
+    }
+
+    private suspend fun isEffectivelyFinished(
+        itemId: String,
+        userData: MediaUserDataEntity
+    ): Boolean {
+        val runtimeMs = (mediaRepository.getItem(itemId)?.runTimeTicks ?: 0) / TICKS_PER_MILLISECOND
+        return isPastMediaCompletion(
+            positionMs = userData.playbackPositionTicks / TICKS_PER_MILLISECOND,
+            runtimeMs = runtimeMs,
+            playedPercentage = userData.playedPercentage
+        )
+    }
 
     /**
      * Specials sort as season zero, so a fully-watched show would restart on a special rather than

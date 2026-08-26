@@ -14,6 +14,7 @@ import com.nendo.argosy.data.media.MediaPlaybackTracker
 import com.nendo.argosy.data.remote.jellyfin.JellyfinApiClient
 import com.nendo.argosy.data.remote.jellyfin.TICKS_PER_MILLISECOND
 import com.nendo.argosy.data.repository.MediaRepository
+import com.nendo.argosy.domain.model.isPastMediaCompletion
 import com.nendo.argosy.ui.audio.AmbientAudioManager
 import com.nendo.argosy.ui.screens.player.delegates.PlayerChromeDelegate
 import com.nendo.argosy.ui.screens.player.delegates.PlayerQualityDelegate
@@ -39,7 +40,6 @@ private const val TAG = "PlayerViewModel"
 private const val POSITION_TICK_MS = 250L
 private const val SCRUB_COMMIT_DELAY_MS = 600L
 private const val NEAR_END_MS = 15_000L
-private const val NEAR_END_PERCENT = 95.0
 private const val MIN_COMPLETED_PROGRESS_MS = 10_000L
 private const val AUTOPLAY_COUNTDOWN_SECONDS = 10
 private const val FULLY_PLAYED_PERCENT = 100.0
@@ -282,22 +282,20 @@ class PlayerViewModel @Inject constructor(
      * viewer actually reached. The local value is in the server's own tick unit, matching how it is
      * stored.
      *
-     * A position within the closing seconds is treated as no position at all: resuming there shows
-     * the credits and nothing else, which is never what was wanted. When the runtime is not known
-     * the closing seconds cannot be measured, so the stored played percentage stands in for them;
-     * with neither signal the position is honoured, because wiping a real mid-file position costs
-     * more than the rare stale one.
+     * A position past the completion threshold is treated as no position at all: resuming there
+     * shows the credits and nothing else, which is never what was wanted. The same threshold drives
+     * what plays next, so an item the resolver considers finished also restarts when chosen
+     * deliberately. A shorter literal end-of-file guard remains for items too short for the
+     * threshold to cover; with neither runtime nor percentage known the position is honoured,
+     * because wiping a real mid-file position costs more than the rare stale one.
      */
     private suspend fun resolveResumePosition(itemId: String, detail: PlayerItemDetail): Long {
         if (detail.isWatched) return 0
         val localTicks = runCatching { mediaRepository.resumePositionFor(itemId) }.getOrNull() ?: 0L
         val resume = maxOf(detail.serverResumeMs, localTicks / TICKS_PER_MILLISECOND).coerceAtLeast(0)
         if (resume <= 0) return 0
-        if (detail.runtimeMs > 0) {
-            return if (resume >= detail.runtimeMs - NEAR_END_MS) 0 else resume
-        }
-        val percent = detail.playedPercent
-        if (percent != null && percent >= NEAR_END_PERCENT) return 0
+        if (isPastMediaCompletion(resume, detail.runtimeMs, detail.playedPercent)) return 0
+        if (detail.runtimeMs > 0 && resume >= detail.runtimeMs - NEAR_END_MS) return 0
         return resume
     }
 

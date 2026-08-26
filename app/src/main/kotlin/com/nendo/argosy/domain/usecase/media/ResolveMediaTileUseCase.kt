@@ -5,12 +5,14 @@ import com.nendo.argosy.data.local.entity.MediaTilePlayMode
 import com.nendo.argosy.data.media.MediaAvailability
 import com.nendo.argosy.data.media.MediaAvailabilityVerifier
 import com.nendo.argosy.data.media.mediaAvailabilityOf
+import com.nendo.argosy.data.remote.jellyfin.TICKS_PER_MILLISECOND
 import com.nendo.argosy.data.repository.MediaRepository
 import com.nendo.argosy.data.storage.FileAccessLayer
 import com.nendo.argosy.domain.model.HomeTile
 import com.nendo.argosy.domain.model.HomeTileTargetRef
 import com.nendo.argosy.domain.model.MediaTilePendingReason
 import com.nendo.argosy.domain.model.MediaTilePlayback
+import com.nendo.argosy.domain.model.isPastMediaCompletion
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -89,8 +91,26 @@ class ResolveMediaTileUseCase @Inject constructor(
             itemId = itemId,
             title = titleOf(item),
             subtitle = subtitleOf(item),
-            resumeTicks = mediaRepository.getUserData(itemId)?.playbackPositionTicks ?: 0
+            resumeTicks = resumeTicksOf(item)
         )
+    }
+
+    /**
+     * The position a tile play opens at, taken straight to the player without the player's own
+     * resume resolution. A position past the completion threshold is dropped here for the same
+     * reason the player drops one: it is end-of-credits residue, and honouring it would open the
+     * item on its final seconds.
+     */
+    private suspend fun resumeTicksOf(item: MediaItemEntity): Long {
+        val userData = mediaRepository.getUserData(item.itemId) ?: return 0
+        val ticks = userData.playbackPositionTicks
+        if (ticks <= 0) return 0
+        val finished = isPastMediaCompletion(
+            positionMs = ticks / TICKS_PER_MILLISECOND,
+            runtimeMs = (item.runTimeTicks ?: 0) / TICKS_PER_MILLISECOND,
+            playedPercentage = userData.playedPercentage
+        )
+        return if (finished) 0 else ticks
     }
 
     private suspend fun chooseItem(tile: HomeTile, target: HomeTileTargetRef.Media): String? =

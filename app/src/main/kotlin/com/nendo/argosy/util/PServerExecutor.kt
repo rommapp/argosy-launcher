@@ -24,7 +24,10 @@ object PServerExecutor {
         val reply = Parcel.obtain()
         return try {
             data.writeStringArray(arrayOf(cmd, "1"))
-            b.transact(0, data, reply, 0)
+            val transacted = b.transact(0, data, reply, 0)
+            if (!transacted) {
+                return Result.failure(IllegalStateException("PServerBinder rejected transaction"))
+            }
             val result = reply.createByteArray()?.toString(Charset.defaultCharset())?.trim()
             Result.success(if (result == "null") null else result)
         } catch (e: Exception) {

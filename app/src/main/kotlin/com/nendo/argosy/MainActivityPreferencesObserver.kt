@@ -2,6 +2,7 @@ package com.nendo.argosy
 
 import com.nendo.argosy.data.preferences.SessionStateStore
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
+import com.nendo.argosy.hardware.ScreenCaptureManager
 import com.nendo.argosy.ui.audio.AmbientAudioManager
 import com.nendo.argosy.ui.audio.BgmPlaylistCoordinator
 import com.nendo.argosy.util.Logger
@@ -16,6 +17,7 @@ class MainActivityPreferencesObserver(
     private val sessionStateStore: SessionStateStore,
     private val dualScreenManager: DualScreenManager,
     private val displayAffinityHelper: com.nendo.argosy.util.DisplayAffinityHelper,
+    private val screenCaptureManager: ScreenCaptureManager,
     private val onDualScreenChanged: (Boolean) -> Unit,
     private val hasWindowFocus: () -> Boolean,
 ) {
@@ -23,6 +25,7 @@ class MainActivityPreferencesObserver(
     private var previousHomeApps: Set<String>? = null
     private var previousPrimaryColor: Int? = null
     private var previousDualScreenEnabled: Boolean? = null
+    private var previousWantScreenCapture: Boolean? = null
 
     fun collectIn(scope: CoroutineScope) {
         scope.launch {
@@ -77,6 +80,18 @@ class MainActivityPreferencesObserver(
                     )
                 }
                 previousDualScreenEnabled = prefs.dualScreenEnabled
+
+                val wantScreenCapture = shouldInitializeScreenCapture(prefs)
+                if (previousWantScreenCapture != null && wantScreenCapture != previousWantScreenCapture) {
+                    if (wantScreenCapture) {
+                        if (screenCaptureManager.hasPermission.value && !screenCaptureManager.isCapturing.value) {
+                            screenCaptureManager.startCapture()
+                        }
+                    } else if (screenCaptureManager.isCapturing.value) {
+                        screenCaptureManager.stopCapture()
+                    }
+                }
+                previousWantScreenCapture = wantScreenCapture
 
                 sessionStateStore.setSaveSyncEnabled(prefs.saveSyncEnabled)
             }
